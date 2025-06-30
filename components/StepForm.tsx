@@ -1555,7 +1555,7 @@ export default function StepForm({ step, stepIndex, workflow, onSave }: StepForm
   const [isSaving, setIsSaving] = useState(false);
   const [lastSaved, setLastSaved] = useState<Date | null>(null);
 
-  // Sync with step data when step changes
+  // Sync with step data ONLY when switching to a different step
   useEffect(() => {
     console.log('Step changed, updating local state:', { 
       stepId: step.id, 
@@ -1565,7 +1565,7 @@ export default function StepForm({ step, stepIndex, workflow, onSave }: StepForm
     });
     setLocalOutputs(step.outputs || {});
     setLocalInputs(step.inputs || {});
-  }, [step.id, stepIndex, step.outputs, step.inputs]);
+  }, [step.id, stepIndex]); // Remove step.outputs and step.inputs from deps!
 
   const handleSave = async () => {
     try {
