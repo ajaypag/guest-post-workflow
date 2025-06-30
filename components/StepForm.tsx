@@ -1568,7 +1568,7 @@ export default function StepForm({ step, stepIndex, workflow, onSave }: StepForm
           className="inline-flex items-center px-4 py-2 bg-green-600 text-white rounded-md hover:bg-green-700 transition-colors"
         >
           <Save className="w-4 h-4 mr-2" />
-          Save & Mark Complete
+          Save Progress
         </button>
       </div>
     </div>

@@ -34,23 +34,17 @@ export default function WorkflowDetail() {
         if (index === activeStep) {
           return {
             ...step,
-            status: 'completed' as const,
             inputs,
             outputs,
             completedAt: new Date()
           };
         }
         return step;
-      }),
-      currentStep: Math.min(activeStep + 1, WORKFLOW_STEPS.length - 1)
+      })
     };
 
     setWorkflow(updatedWorkflow);
     storage.saveWorkflow(updatedWorkflow);
-
-    if (activeStep < WORKFLOW_STEPS.length - 1) {
-      setActiveStep(activeStep + 1);
-    }
   };
 
   const getStepIcon = (step: any, index: number) => {
