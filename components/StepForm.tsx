@@ -1,27 +1,29 @@
 'use client';
 
 import { useState } from 'react';
-import { WorkflowStep } from '@/types/workflow';
+import { WorkflowStep, GuestPostWorkflow } from '@/types/workflow';
 import { Save, ExternalLink } from 'lucide-react';
 
 interface StepFormProps {
   step: WorkflowStep;
   stepIndex: number;
+  workflow: GuestPostWorkflow;
   onSave: (inputs: Record<string, any>, outputs: Record<string, any>) => void;
 }
 
-const stepForms: Record<string, React.FC<{ step: WorkflowStep; onChange: (data: any) => void }>> = {
-  'domain-selection': ({ step, onChange }) => (
+const stepForms: Record<string, React.FC<{ step: WorkflowStep; workflow: GuestPostWorkflow; onChange: (data: any) => void }>> = {
+  'domain-selection': ({ step, workflow, onChange }) => (
     <div className="space-y-4">
       <div>
         <label className="block text-sm font-medium mb-1">Selected Domain</label>
         <input
           type="text"
-          value={step.outputs.domain || ''}
+          value={step.outputs.domain || workflow.targetDomain}
           onChange={(e) => onChange({ ...step.outputs, domain: e.target.value })}
           className="w-full px-3 py-2 border rounded-md"
-          placeholder="Enter the domain you selected"
+          placeholder={`Default: ${workflow.targetDomain}`}
         />
+        <p className="text-xs text-gray-500 mt-1">Pre-filled from workflow setup: {workflow.targetDomain}</p>
       </div>
       <div>
         <label className="block text-sm font-medium mb-1">Notes</label>
@@ -35,12 +37,12 @@ const stepForms: Record<string, React.FC<{ step: WorkflowStep; onChange: (data: 
     </div>
   ),
 
-  'keyword-research': ({ step, onChange }) => (
+  'keyword-research': ({ step, workflow, onChange }) => (
     <div className="space-y-4">
       <div className="bg-blue-50 p-4 rounded-md">
         <h3 className="font-semibold mb-2">Step 2a: Find Topically Relevant Keywords</h3>
         <p className="text-sm mb-2">
-          Take your client URL/target URL and paste it into this GPT to get a list of keywords:
+          Take your client URL <span className="font-semibold text-blue-700">({workflow.clientUrl})</span> and paste it into this GPT to get a list of keywords:
         </p>
         <a href="https://chatgpt.com/g/g-685ea890d99c8191bd1550784c329f03-find-topically-relevant-keywords-your-client-page?model=o3" 
            target="_blank" 
@@ -72,7 +74,7 @@ const stepForms: Record<string, React.FC<{ step: WorkflowStep; onChange: (data: 
         <p className="text-sm mt-3 mb-2 font-semibold">Then:</p>
         <ol className="text-sm space-y-1 ml-4">
           <li>1. <strong>Replace keywords</strong> in the URL filter with keywords from ChatGPT output</li>
-          <li>2. <strong>Change the domain</strong> in search bar to the site from Step 1 (where you want the guest post)</li>
+          <li>2. <strong>Change the domain</strong> in search bar to <span className="font-semibold text-blue-700">{workflow.targetDomain}</span></li>
           <li>3. <strong>Export to CSV</strong> if the site has relevant results</li>
           <li>4. <strong>If no results</strong> → this site is not viable</li>
         </ol>
@@ -94,7 +96,8 @@ const stepForms: Record<string, React.FC<{ step: WorkflowStep; onChange: (data: 
       <div className="bg-blue-50 p-4 rounded-md">
         <h3 className="font-semibold mb-2">Step 2c: Get Client URL Summaries</h3>
         <p className="text-sm mb-2">
-          Input the client URL(s) you want to write a guest post for:
+          Input the client URL(s) you want to write a guest post for. <br/>
+          <strong>Your client URL:</strong> <span className="text-blue-700">{workflow.clientUrl}</span>
         </p>
         <a href="https://chatgpt.com/g/g-685eb391880c8191afc2808e42086ade-summarize-the-client-s-articles-or-urls?model=o3" 
            target="_blank" 
@@ -128,7 +131,7 @@ const stepForms: Record<string, React.FC<{ step: WorkflowStep; onChange: (data: 
     </div>
   ),
 
-  'topic-generation': ({ step, onChange }) => (
+  'topic-generation': ({ step, workflow, onChange }) => (
     <div className="space-y-4">
       <div className="bg-blue-50 p-4 rounded-md">
         <h3 className="font-semibold mb-2">Step 2d: Generate Guest Post Topics</h3>
@@ -136,7 +139,7 @@ const stepForms: Record<string, React.FC<{ step: WorkflowStep; onChange: (data: 
           This step combines outputs from the previous three steps. Create a prompt like this:
         </p>
         <div className="bg-white p-3 rounded border border-blue-200 text-sm font-mono">
-          <p>Guest post site: [URL from Step 1]</p>
+          <p>Guest post site: <span className="text-blue-700 font-semibold">{workflow.targetDomain}</span></p>
           <p className="mt-1">List of your target urls + summary</p>
           <p className="mt-1">[Attach CSV file from Step 2b]</p>
         </div>
@@ -282,7 +285,7 @@ const stepForms: Record<string, React.FC<{ step: WorkflowStep; onChange: (data: 
     </div>
   ),
 
-  'deep-research': ({ step, onChange }) => (
+  'deep-research': ({ step, workflow, onChange }) => (
     <div className="space-y-4">
       <div className="bg-blue-50 p-4 rounded-md">
         <h3 className="font-semibold mb-2">Step 3: Run Deep Research in GPT-o3</h3>
@@ -357,7 +360,7 @@ const stepForms: Record<string, React.FC<{ step: WorkflowStep; onChange: (data: 
     </div>
   ),
 
-  'article-draft': ({ step, onChange }) => (
+  'article-draft': ({ step, workflow, onChange }) => (
     <div className="space-y-4">
       <div className="bg-blue-50 p-4 rounded-md">
         <h3 className="font-semibold mb-2">Step 4: Draft the Article (o3 Advanced Reasoning)</h3>
@@ -446,6 +449,16 @@ const stepForms: Record<string, React.FC<{ step: WorkflowStep; onChange: (data: 
       </div>
 
       <div>
+        <label className="block text-sm font-medium mb-1">Full Article Text</label>
+        <textarea
+          value={step.outputs.fullArticle || ''}
+          onChange={(e) => onChange({ ...step.outputs, fullArticle: e.target.value })}
+          className="w-full px-3 py-2 border rounded-md h-64"
+          placeholder="Paste the complete article text here from your Google Doc. This will be used in subsequent steps for auditing and optimization."
+        />
+      </div>
+
+      <div>
         <label className="block text-sm font-medium mb-1">Draft Notes</label>
         <textarea
           value={step.outputs.draftNotes || ''}
@@ -457,7 +470,14 @@ const stepForms: Record<string, React.FC<{ step: WorkflowStep; onChange: (data: 
     </div>
   ),
 
-  'content-audit': ({ step, onChange }) => (
+  'content-audit': ({ step, workflow, onChange }) => {
+    // Get the article from the previous step
+    const articleDraftStep = workflow.steps.find(s => s.id === 'article-draft');
+    const fullArticle = articleDraftStep?.outputs?.fullArticle || '';
+    const researchOutlineStep = workflow.steps.find(s => s.id === 'deep-research');
+    const outlineShareLink = researchOutlineStep?.outputs?.outlineShareLink || '';
+
+    return (
     <div className="space-y-4">
       <div className="bg-blue-50 p-4 rounded-md">
         <h3 className="font-semibold mb-2">Step 5: Audit & SEO-Tighten the Draft</h3>
@@ -477,11 +497,45 @@ const stepForms: Record<string, React.FC<{ step: WorkflowStep; onChange: (data: 
         <p className="text-sm mb-2">Copy and paste EXACTLY:</p>
         <div className="bg-white p-3 rounded border border-purple-200 text-xs font-mono overflow-x-auto">
           <p>This is an article that you wrote for me:</p>
-          <p className="mt-1">(paste the full article here)</p>
+          <div className="mt-2 p-2 bg-gray-50 border rounded max-h-32 overflow-y-auto">
+            {fullArticle ? (
+              <div className="text-xs text-gray-700 whitespace-pre-wrap">
+                {fullArticle.substring(0, 500)}{fullArticle.length > 500 ? '...' : ''}
+              </div>
+            ) : (
+              <div className="text-red-600 text-xs">⚠️ No article found from Step 4. Please complete the article draft first.</div>
+            )}
+          </div>
           <p className="mt-2">If you look at your knowledge base, you'll see that I've added some instructions for semantic SEO in writing. I want you to be a content editor, and I want you to review the article section by section to see if it's meeting the best practices that we discuss. For full reference, this was the original deep research data and outline that might be useful as you edit.</p>
-          <p className="mt-1">(paste the full deep research outline here)</p>
+          <div className="mt-2 p-2 bg-gray-50 border rounded">
+            {outlineShareLink ? (
+              <div className="text-xs">Research outline: <a href={outlineShareLink} target="_blank" className="text-blue-600 underline">{outlineShareLink}</a></div>
+            ) : (
+              <div className="text-gray-500 text-xs">Research outline will appear here from Step 3</div>
+            )}
+          </div>
           <p className="mt-2">Now I realize this is a lot, so i want your first output to only be an audit of the first section. the format i want is to show the strengths, weaknesses, and the updated section that has your full fixes. start with the first section if cases where a section has many subsections, output just the subsection.</p>
         </div>
+        
+        {fullArticle && (
+          <div className="mt-3 p-3 bg-green-50 border border-green-200 rounded">
+            <p className="text-sm font-semibold text-green-800 mb-2">✅ Ready to Copy Full Prompt:</p>
+            <div className="bg-white p-2 rounded border text-xs font-mono max-h-40 overflow-y-auto">
+              <div className="select-all cursor-pointer">
+                {`This is an article that you wrote for me:
+
+${fullArticle}
+
+If you look at your knowledge base, you'll see that I've added some instructions for semantic SEO in writing. I want you to be a content editor, and I want you to review the article section by section to see if it's meeting the best practices that we discuss. For full reference, this was the original deep research data and outline that might be useful as you edit.
+
+${outlineShareLink ? `Research outline: ${outlineShareLink}` : '(Research outline from Step 3)'}
+
+Now I realize this is a lot, so i want your first output to only be an audit of the first section. the format i want is to show the strengths, weaknesses, and the updated section that has your full fixes. start with the first section if cases where a section has many subsections, output just the subsection.`}
+              </div>
+            </div>
+            <p className="text-xs text-green-700 mt-1">Click in the box above to select all text, then copy and paste into ChatGPT</p>
+          </div>
+        )}
       </div>
 
       <div>
@@ -543,9 +597,14 @@ const stepForms: Record<string, React.FC<{ step: WorkflowStep; onChange: (data: 
         />
       </div>
     </div>
-  ),
+    );
+  },
 
-  'final-polish': ({ step, onChange }) => (
+  'final-polish': ({ step, workflow, onChange }) => {
+    const articleDraftStep = workflow.steps.find(s => s.id === 'article-draft');
+    const fullArticle = articleDraftStep?.outputs?.fullArticle || '';
+
+    return (
     <div className="space-y-4">
       <div className="bg-blue-50 p-4 rounded-md">
         <h3 className="font-semibold mb-2">Step 6: Polish & Finalize the Draft</h3>
@@ -565,9 +624,33 @@ const stepForms: Record<string, React.FC<{ step: WorkflowStep; onChange: (data: 
         <p className="text-sm mb-2">Paste this UNCHANGED:</p>
         <div className="bg-white p-3 rounded border border-orange-200 text-xs font-mono overflow-x-auto">
           <p>Okay, here's my article.</p>
-          <p className="mt-1">((Paste article generated from step 14))</p>
+          <div className="mt-2 p-2 bg-gray-50 border rounded max-h-32 overflow-y-auto">
+            {fullArticle ? (
+              <div className="text-xs text-gray-700 whitespace-pre-wrap">
+                {fullArticle.substring(0, 500)}{fullArticle.length > 500 ? '...' : ''}
+              </div>
+            ) : (
+              <div className="text-red-600 text-xs">⚠️ Article needed from Step 4</div>
+            )}
+          </div>
           <p className="mt-2">Review one of my project files for my brand guide and the Semantic SEO writing tips. I want you to review my article section by section, starting with the first section. Gauge how well it follows the brand guide and semantic seo tips and give it a strengths and weaknesses and update the section with some updates.</p>
         </div>
+        
+        {fullArticle && (
+          <div className="mt-3 p-3 bg-green-50 border border-green-200 rounded">
+            <p className="text-sm font-semibold text-green-800 mb-2">✅ Ready to Copy Full Prompt:</p>
+            <div className="bg-white p-2 rounded border text-xs font-mono max-h-40 overflow-y-auto">
+              <div className="select-all cursor-pointer">
+                {`Okay, here's my article.
+
+${fullArticle}
+
+Review one of my project files for my brand guide and the Semantic SEO writing tips. I want you to review my article section by section, starting with the first section. Gauge how well it follows the brand guide and semantic seo tips and give it a strengths and weaknesses and update the section with some updates.`}
+              </div>
+            </div>
+            <p className="text-xs text-green-700 mt-1">Click to select all, then copy and paste into ChatGPT</p>
+          </div>
+        )}
       </div>
 
       <div className="bg-red-50 p-4 rounded-md border-2 border-red-300">
@@ -645,9 +728,10 @@ const stepForms: Record<string, React.FC<{ step: WorkflowStep; onChange: (data: 
         />
       </div>
     </div>
-  ),
+    );
+  },
 
-  'formatting-qa': ({ step, onChange }) => (
+  'formatting-qa': ({ step, workflow, onChange }) => (
     <div className="space-y-4">
       <div className="bg-blue-50 p-4 rounded-md">
         <h3 className="font-semibold mb-2">Step 7: Manual Formatting & Single-Citation QA</h3>
@@ -753,13 +837,23 @@ const stepForms: Record<string, React.FC<{ step: WorkflowStep; onChange: (data: 
     </div>
   ),
 
-  'internal-links': ({ step, onChange }) => (
+  'internal-links': ({ step, workflow, onChange }) => {
+    const articleDraftStep = workflow.steps.find(s => s.id === 'article-draft');
+    const fullArticle = articleDraftStep?.outputs?.fullArticle || '';
+
+    return (
     <div className="space-y-4">
       <div className="bg-blue-50 p-4 rounded-md">
         <h3 className="font-semibold mb-2">Step 8: Internal Links to Guest Post Site</h3>
         <p className="text-sm mb-2">
-          Make sure model o3 is selected. Paste in the article and the site where you're guest posting.
+          Make sure model o3 is selected. Paste in the article and the site <strong>{workflow.targetDomain}</strong> where you're guest posting.
         </p>
+        {fullArticle && (
+          <div className="mt-2 p-2 bg-green-50 border border-green-200 rounded">
+            <p className="text-sm font-semibold text-green-800">✅ Article ready from Step 4</p>
+            <p className="text-xs text-green-700">Article preview: {fullArticle.substring(0, 100)}...</p>
+          </div>
+        )}
         <a href="https://chatgpt.com/g/g-685c386ba4848191ac01d0bcea6e8db7-guest-post-internal-links" 
            target="_blank" 
            className="text-blue-600 hover:underline inline-flex items-center font-medium">
@@ -807,7 +901,8 @@ const stepForms: Record<string, React.FC<{ step: WorkflowStep; onChange: (data: 
         </select>
       </div>
     </div>
-  ),
+    );
+  },
 
   'external-links': ({ step, onChange }) => (
     <div className="space-y-4">
@@ -918,7 +1013,7 @@ const stepForms: Record<string, React.FC<{ step: WorkflowStep; onChange: (data: 
     </div>
   ),
 
-  'client-link': ({ step, onChange }) => (
+  'client-link': ({ step, workflow, onChange }) => (
     <div className="space-y-4">
       <div className="bg-blue-50 p-4 rounded-md">
         <h3 className="font-semibold mb-2">Step 11: Client Link Placement</h3>
@@ -936,11 +1031,12 @@ const stepForms: Record<string, React.FC<{ step: WorkflowStep; onChange: (data: 
         <label className="block text-sm font-medium mb-1">Client URL to Link</label>
         <input
           type="url"
-          value={step.outputs.clientUrl || ''}
+          value={step.outputs.clientUrl || workflow.clientUrl}
           onChange={(e) => onChange({ ...step.outputs, clientUrl: e.target.value })}
           className="w-full px-3 py-2 border rounded-md"
-          placeholder="https://vanta.com/..."
+          placeholder={workflow.clientUrl}
         />
+        <p className="text-xs text-gray-500 mt-1">Default: {workflow.clientUrl}</p>
       </div>
 
       <div>
@@ -1268,7 +1364,7 @@ const stepForms: Record<string, React.FC<{ step: WorkflowStep; onChange: (data: 
   )
 };
 
-const defaultForm = ({ step, onChange }: { step: WorkflowStep; onChange: (data: any) => void }) => (
+const defaultForm = ({ step, workflow, onChange }: { step: WorkflowStep; workflow: GuestPostWorkflow; onChange: (data: any) => void }) => (
   <div className="space-y-4">
     <div>
       <label className="block text-sm font-medium mb-1">Input/Notes</label>
@@ -1291,7 +1387,7 @@ const defaultForm = ({ step, onChange }: { step: WorkflowStep; onChange: (data: 
   </div>
 );
 
-export default function StepForm({ step, stepIndex, onSave }: StepFormProps) {
+export default function StepForm({ step, stepIndex, workflow, onSave }: StepFormProps) {
   const [localOutputs, setLocalOutputs] = useState(step.outputs);
   const [localInputs, setLocalInputs] = useState(step.inputs);
 
@@ -1310,6 +1406,7 @@ export default function StepForm({ step, stepIndex, onSave }: StepFormProps) {
 
       <FormComponent 
         step={{ ...step, inputs: localInputs, outputs: localOutputs }}
+        workflow={workflow}
         onChange={(data) => {
           if (stepForms[step.id]) {
             setLocalOutputs(data);

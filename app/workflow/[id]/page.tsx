@@ -113,6 +113,7 @@ export default function WorkflowDetail() {
           <StepForm
             step={workflow.steps[activeStep]}
             stepIndex={activeStep}
+            workflow={workflow}
             onSave={handleStepSave}
           />
         </div>
