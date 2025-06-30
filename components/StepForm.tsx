@@ -2,7 +2,7 @@
 
 import { useState } from 'react';
 import { WorkflowStep, GuestPostWorkflow } from '@/types/workflow';
-import { Save, ExternalLink } from 'lucide-react';
+import { Save, ExternalLink, Copy, Check } from 'lucide-react';
 
 interface StepFormProps {
   step: WorkflowStep;
@@ -10,6 +10,44 @@ interface StepFormProps {
   workflow: GuestPostWorkflow;
   onSave: (inputs: Record<string, any>, outputs: Record<string, any>) => void;
 }
+
+// Reusable copy button component
+const CopyButton = ({ text, label = "Copy" }: { text: string; label?: string }) => {
+  const [copied, setCopied] = useState(false);
+
+  const handleCopy = async () => {
+    try {
+      await navigator.clipboard.writeText(text);
+      setCopied(true);
+      setTimeout(() => setCopied(false), 2000);
+    } catch (err) {
+      console.error('Failed to copy text: ', err);
+    }
+  };
+
+  return (
+    <button
+      onClick={handleCopy}
+      className={`inline-flex items-center px-2 py-1 text-xs rounded transition-colors ${
+        copied 
+          ? 'bg-green-100 text-green-800' 
+          : 'bg-gray-100 hover:bg-gray-200 text-gray-700'
+      }`}
+    >
+      {copied ? (
+        <>
+          <Check className="w-3 h-3 mr-1" />
+          Copied!
+        </>
+      ) : (
+        <>
+          <Copy className="w-3 h-3 mr-1" />
+          {label}
+        </>
+      )}
+    </button>
+  );
+};
 
 const stepForms: Record<string, React.FC<{ step: WorkflowStep; workflow: GuestPostWorkflow; onChange: (data: any) => void }>> = {
   'domain-selection': ({ step, workflow, onChange }) => (
@@ -138,7 +176,13 @@ const stepForms: Record<string, React.FC<{ step: WorkflowStep; workflow: GuestPo
         <p className="text-sm mb-2">
           This step combines outputs from the previous three steps. Create a prompt like this:
         </p>
-        <div className="bg-white p-3 rounded border border-blue-200 text-sm font-mono">
+        <div className="bg-white p-3 rounded border border-blue-200 text-sm font-mono relative">
+          <div className="absolute top-2 right-2">
+            <CopyButton 
+              text={`Guest post site: ${workflow.targetDomain}\n\nList of your target urls + summary\n\n[Attach CSV file from Step 2b]`}
+              label="Copy Template"
+            />
+          </div>
           <p>Guest post site: <span className="text-blue-700 font-semibold">{workflow.targetDomain}</span></p>
           <p className="mt-1">List of your target urls + summary</p>
           <p className="mt-1">[Attach CSV file from Step 2b]</p>
@@ -377,7 +421,13 @@ const stepForms: Record<string, React.FC<{ step: WorkflowStep; workflow: GuestPo
       <div className="bg-green-50 p-4 rounded-md">
         <h4 className="font-semibold mb-2">Prompt #1: Planning Phase</h4>
         <p className="text-sm mb-2">Copy and paste this EXACTLY (then add your research outline):</p>
-        <div className="bg-white p-3 rounded border border-green-200 text-xs font-mono overflow-x-auto">
+        <div className="bg-white p-3 rounded border border-green-200 text-xs font-mono overflow-x-auto relative">
+          <div className="absolute top-2 right-2">
+            <CopyButton 
+              text="Okay, I'm about to give you a lot of information. Here is a data dump of a deep research we did that's going to lead to an article that you will write for me. I don't want you to start writing. I want you to first just take everything in, analyze it, and start preparing.After that, you're going to start thinking about the outline and flushing it out. I'm not necessarily writing yet, but taking the outline and flushing it out - you're deciding what goes where, you're picking a 3 citations only  and planning where they go. Let's just say total initial planning so that the article can flow through. Determine a word count as well. An acceptable range is 1500-2500.\n\n((((Paste deep research outline here))))"
+              label="Copy"
+            />
+          </div>
           <p>Okay, I'm about to give you a lot of information. Here is a data dump of a deep research we did that's going to lead to an article that you will write for me. I don't want you to start writing. I want you to first just take everything in, analyze it, and start preparing.After that, you're going to start thinking about the outline and flushing it out. I'm not necessarily writing yet, but taking the outline and flushing it out - you're deciding what goes where, you're picking a 3 citations only  and planning where they go. Let's just say total initial planning so that the article can flow through. Determine a word count as well. An acceptable range is 1500-2500.</p>
           <p className="mt-2">((((Paste deep research outline here))))</p>
         </div>
@@ -399,7 +449,13 @@ const stepForms: Record<string, React.FC<{ step: WorkflowStep; workflow: GuestPo
       <div className="bg-green-50 p-4 rounded-md">
         <h4 className="font-semibold mb-2">Prompt #2: Title + Introduction</h4>
         <p className="text-sm mb-2">Reply with this EXACT text:</p>
-        <div className="bg-white p-3 rounded border border-green-200 text-xs font-mono overflow-x-auto">
+        <div className="bg-white p-3 rounded border border-green-200 text-xs font-mono overflow-x-auto relative">
+          <div className="absolute top-2 right-2">
+            <CopyButton 
+              text="Yes, remember we're going to be creating this article section by section. And the format should be primarily narrative, which means its piece is built on flowing prose—full sentences and connected paragraphs that guide the reader smoothly from one idea to the next. They should be short, punchy paragraphs—rarely more than 2-to-3 lines each—so the eye never hits an intimidating wall of text. Frequent line breaks to create natural breathing room and improve scannability.Lists can appear, but only sparingly and only when they truly clarify complex details or highlight a quick sequence the reader might otherwise struggle to absorb. The backbone remains storytelling: each section sets context, explains, and transitions naturally, so the article reads more like a well-structured conversation than a slide deck of bullet points. Start with the title and introduction. Be sure to consult the project documents on Writing Guidelines and Semantic SEO before each section to remind yourself of the best practices that we want to follow. Avoid using Em-dashes. the section you create must follow that of the original outline provided. Remember to keep total word count of article in mind and how you decided to divy up the words per section so you can allocate appropriate word count for this section."
+              label="Copy"
+            />
+          </div>
           <p>Yes, remember we're going to be creating this article section by section. And the format should be primarily narrative, which means its piece is built on flowing prose—full sentences and connected paragraphs that guide the reader smoothly from one idea to the next. They should be short, punchy paragraphs—rarely more than 2-to-3 lines each—so the eye never hits an intimidating wall of text. Frequent line breaks to create natural breathing room and improve scannability.Lists can appear, but only sparingly and only when they truly clarify complex details or highlight a quick sequence the reader might otherwise struggle to absorb. The backbone remains storytelling: each section sets context, explains, and transitions naturally, so the article reads more like a well-structured conversation than a slide deck of bullet points. Start with the title and introduction. Be sure to consult the project documents on Writing Guidelines and Semantic SEO before each section to remind yourself of the best practices that we want to follow. Avoid using Em-dashes. the section you create must follow that of the original outline provided. Remember to keep total word count of article in mind and how you decided to divy up the words per section so you can allocate appropriate word count for this section.</p>
         </div>
       </div>
@@ -418,7 +474,13 @@ const stepForms: Record<string, React.FC<{ step: WorkflowStep; workflow: GuestPo
       <div className="bg-green-50 p-4 rounded-md">
         <h4 className="font-semibold mb-2">Looping Prompt: For Every Subsequent Section</h4>
         <p className="text-sm mb-2">Reply with this UNCHANGED each time:</p>
-        <div className="bg-white p-3 rounded border border-green-200 text-xs font-mono overflow-x-auto">
+        <div className="bg-white p-3 rounded border border-green-200 text-xs font-mono overflow-x-auto relative">
+          <div className="absolute top-2 right-2">
+            <CopyButton 
+              text="Proceed to the next section. Remember, the format should be primarily narrative, which means its piece is built on flowing prose—full sentences and connected paragraphs that guide the reader smoothly from one idea to the next. They should be short, punchy paragraphs—rarely more than 2-to-3 lines each—so the eye never hits an intimidating wall of text. Frequent line breaks to create natural breathing room and improve scannability.Lists can appear, but only sparingly and only when they truly clarify complex details or highlight a quick sequence the reader might otherwise struggle to absorb. The backbone remains storytelling: each section sets context, explains, and transitions naturally, so the article reads more like a well-structured conversation than a slide deck of bullet points. Be sure to consult the project documents on Writing Guidelines and Semantic SEO before each section to remind yourself of the best practices that we want to follow. Also be sure to reference my original prompt that contains the article information that should feed your context. I've already done the research and given it to you there - so that's what you need to reference each time. Avoid using Em-dashes. If it's the section that is the \"meat\" of the article, you must further break your output down into subsections and only output the first subsection so as not to over simplify each component. Note: defining what a subsection means is important. We're not doing sub-subsections, so if the section of the article is already apparently a subsection, then that entire section should be included in your output even if there are apparently sub-subsections within. Note 2: the section you create must follow that of the original outline provided. Remember to keep total word count of article in mind and how you decided to divy up the words per section so you can allocate appropriate word count for this section."
+              label="Copy"
+            />
+          </div>
           <p>Proceed to the next section. Remember, the format should be primarily narrative, which means its piece is built on flowing prose—full sentences and connected paragraphs that guide the reader smoothly from one idea to the next. They should be short, punchy paragraphs—rarely more than 2-to-3 lines each—so the eye never hits an intimidating wall of text. Frequent line breaks to create natural breathing room and improve scannability.Lists can appear, but only sparingly and only when they truly clarify complex details or highlight a quick sequence the reader might otherwise struggle to absorb. The backbone remains storytelling: each section sets context, explains, and transitions naturally, so the article reads more like a well-structured conversation than a slide deck of bullet points. Be sure to consult the project documents on Writing Guidelines and Semantic SEO before each section to remind yourself of the best practices that we want to follow. Also be sure to reference my original prompt that contains the article information that should feed your context. I've already done the research and given it to you there - so that's what you need to reference each time. Avoid using Em-dashes. If it's the section that is the "meat" of the article, you must further break your output down into subsections and only output the first subsection so as not to over simplify each component. Note: defining what a subsection means is important. We're not doing sub-subsections, so if the section of the article is already apparently a subsection, then that entire section should be included in your output even if there are apparently sub-subsections within. Note 2: the section you create must follow that of the original outline provided. Remember to keep total word count of article in mind and how you decided to divy up the words per section so you can allocate appropriate word count for this section.</p>
         </div>
         <p className="text-sm mt-2 font-semibold">Repeat until o3 signals the article is complete</p>
@@ -519,7 +581,21 @@ const stepForms: Record<string, React.FC<{ step: WorkflowStep; workflow: GuestPo
         
         {fullArticle && (
           <div className="mt-3 p-3 bg-green-50 border border-green-200 rounded">
-            <p className="text-sm font-semibold text-green-800 mb-2">✅ Ready to Copy Full Prompt:</p>
+            <div className="flex justify-between items-center mb-2">
+              <p className="text-sm font-semibold text-green-800">✅ Ready to Copy Full Prompt:</p>
+              <CopyButton 
+                text={`This is an article that you wrote for me:
+
+${fullArticle}
+
+If you look at your knowledge base, you'll see that I've added some instructions for semantic SEO in writing. I want you to be a content editor, and I want you to review the article section by section to see if it's meeting the best practices that we discuss. For full reference, this was the original deep research data and outline that might be useful as you edit.
+
+${outlineShareLink ? `Research outline: ${outlineShareLink}` : '(Research outline from Step 3)'}
+
+Now I realize this is a lot, so i want your first output to only be an audit of the first section. the format i want is to show the strengths, weaknesses, and the updated section that has your full fixes. start with the first section if cases where a section has many subsections, output just the subsection.`}
+                label="Copy Full Prompt"
+              />
+            </div>
             <div className="bg-white p-2 rounded border text-xs font-mono max-h-40 overflow-y-auto">
               <div className="select-all cursor-pointer">
                 {`This is an article that you wrote for me:
@@ -533,7 +609,7 @@ ${outlineShareLink ? `Research outline: ${outlineShareLink}` : '(Research outlin
 Now I realize this is a lot, so i want your first output to only be an audit of the first section. the format i want is to show the strengths, weaknesses, and the updated section that has your full fixes. start with the first section if cases where a section has many subsections, output just the subsection.`}
               </div>
             </div>
-            <p className="text-xs text-green-700 mt-1">Click in the box above to select all text, then copy and paste into ChatGPT</p>
+            <p className="text-xs text-green-700 mt-1">Click the copy button above or click in the box to select all text</p>
           </div>
         )}
       </div>
@@ -554,7 +630,13 @@ Now I realize this is a lot, so i want your first output to only be an audit of 
       <div className="bg-purple-50 p-4 rounded-md">
         <h4 className="font-semibold mb-2">Looping Audit Prompt #2: Subsequent Sections</h4>
         <p className="text-sm mb-2">Use this EXACT text for each subsequent section:</p>
-        <div className="bg-white p-3 rounded border border-purple-200 text-xs font-mono overflow-x-auto">
+        <div className="bg-white p-3 rounded border border-purple-200 text-xs font-mono overflow-x-auto relative">
+          <div className="absolute top-2 right-2">
+            <CopyButton 
+              text="Okay, now I want you to proceed your audit with the next section. As a reminder, the format i want is to show the strengths, weaknesses, and the updated section that has your full fixes. start with the first section if cases where a section has many subsections, output just the subsection. In my paste, the formatting for headers did not translate to add those back in logically. While auditing, keep in mind we are creating a \"primarily narrative\" article so bull points can appear but only sporadically. Note, we will rarely include citations within the article. Only a max are 3 in total are allowed. you can reference the citation without a link though. keep in mind variability too. if this is your 3rd+ section that your editing, maybe you are repeating your editing pattern too much. for example, if you used bullets in your last output, maybe don't in this output"
+              label="Copy"
+            />
+          </div>
           <p>Okay, now I want you to proceed your audit with the next section. As a reminder, the format i want is to show the strengths, weaknesses, and the updated section that has your full fixes. start with the first section if cases where a section has many subsections, output just the subsection. In my paste, the formatting for headers did not translate to add those back in logically. While auditing, keep in mind we are creating a "primarily narrative" article so bull points can appear but only sporadically. Note, we will rarely include citations within the article. Only a max are 3 in total are allowed. you can reference the citation without a link though. keep in mind variability too. if this is your 3rd+ section that your editing, maybe you are repeating your editing pattern too much. for example, if you used bullets in your last output, maybe don't in this output</p>
         </div>
       </div>
@@ -675,7 +757,13 @@ Review one of my project files for my brand guide and the Semantic SEO writing t
       <div className="bg-green-50 p-4 rounded-md">
         <h4 className="font-semibold mb-2">🟢 STEP 1: Proceed Prompt (Get Next Section)</h4>
         <p className="text-sm mb-2">Use this UNCHANGED for each section:</p>
-        <div className="bg-white p-3 rounded border border-green-200 text-xs font-mono overflow-x-auto">
+        <div className="bg-white p-3 rounded border border-green-200 text-xs font-mono overflow-x-auto relative">
+          <div className="absolute top-2 right-2">
+            <CopyButton 
+              text="Okay that is good. Now, proceed to the next section. Re-review my project files for my brand guide and the Semantic SEO writing tips. Gauge how well it follows the brand guide and semantic seo tips and give it a strengths and weaknesses and update the section with some updates. Be sure to reference the conclusions you made during your thinking process when writing the updating article. Don't use em-dashes"
+              label="Copy"
+            />
+          </div>
           <p>Okay that is good. Now, proceed to the next section. Re-review my project files for my brand guide and the Semantic SEO writing tips. Gauge how well it follows the brand guide and semantic seo tips and give it a strengths and weaknesses and update the section with some updates. Be sure to reference the conclusions you made during your thinking process when writing the updating article. Don't use em-dashes</p>
         </div>
         <p className="text-sm mt-2 italic">→ This gives you: Strengths | Weaknesses | Updated Section</p>
@@ -684,7 +772,13 @@ Review one of my project files for my brand guide and the Semantic SEO writing t
       <div className="bg-blue-50 p-4 rounded-md">
         <h4 className="font-semibold mb-2">🔵 STEP 2: Cleanup Prompt (Refine Section)</h4>
         <p className="text-sm mb-2">Immediately reply with this after EVERY section edit:</p>
-        <div className="bg-white p-3 rounded border border-blue-200 text-xs font-mono overflow-x-auto">
+        <div className="bg-white p-3 rounded border border-blue-200 text-xs font-mono overflow-x-auto relative">
+          <div className="absolute top-2 right-2">
+            <CopyButton 
+              text="Before you proceed to the next section, review your previous output. Compare it to the brand kit and the words to not use document. Based on that, make any potential updates"
+              label="Copy"
+            />
+          </div>
           <p>Before you proceed to the next section, review your previous output. Compare it to the brand kit and the words to not use document. Based on that, make any potential updates</p>
         </div>
         <p className="text-sm mt-2 italic">→ This gives you: Cleaned Section (COPY THIS TO TAB 3)</p>
@@ -1063,7 +1157,13 @@ Review one of my project files for my brand guide and the Semantic SEO writing t
       <div className="bg-yellow-50 p-4 rounded-md">
         <h4 className="font-semibold mb-2">Follow-up Prompt #1</h4>
         <p className="text-sm mb-2">Ask this prompt after the initial suggestion:</p>
-        <div className="bg-white p-3 rounded border border-yellow-200 text-xs font-mono overflow-x-auto">
+        <div className="bg-white p-3 rounded border border-yellow-200 text-xs font-mono overflow-x-auto relative">
+          <div className="absolute top-2 right-2">
+            <CopyButton 
+              text="again, a link insert should not feel random or out of left field or feel like theres no reason why its being linked to. a good link is one that instantly looks like it belongs. as in, the article is saying something, and the way the link is introduced is a natural extension of wahts being said. this is deeper than just looking for the word in the article. context is key. if you cannot find existing context, then you need to think about a) what type of leadin would make sense when generating a link to the target url, and b) what lead in can you add to the existing article to make it work."
+              label="Copy"
+            />
+          </div>
           <p>again, a link insert should not feel random or out of left field or feel like theres no reason why its being linked to. a good link is one that instantly looks like it belongs. as in, the article is saying something, and the way the link is introduced is a natural extension of wahts being said. this is deeper than just looking for the word in the article. context is key. if you cannot find existing context, then you need to think about a) what type of leadin would make sense when generating a link to the target url, and b) what lead in can you add to the existing article to make it work.</p>
         </div>
       </div>
@@ -1081,7 +1181,13 @@ Review one of my project files for my brand guide and the Semantic SEO writing t
       <div className="bg-yellow-50 p-4 rounded-md">
         <h4 className="font-semibold mb-2">Follow-up Prompt #2</h4>
         <p className="text-sm mb-2">Ask this final prompt:</p>
-        <div className="bg-white p-3 rounded border border-yellow-200 text-xs font-mono overflow-x-auto">
+        <div className="bg-white p-3 rounded border border-yellow-200 text-xs font-mono overflow-x-auto relative">
+          <div className="absolute top-2 right-2">
+            <CopyButton 
+              text="what makes more sense to do it is take something from the article that is being linkeded to, reference it in the guest post and then link back to the article as the source using the anchor text. with those constraints, you may actually manage to do something actually useful and natural. note, if the anchor text doesnt match the same intent of the client url page title, its probably not viable. you are also allowed to create a while new paragraph if you aren't finding anything perfectly viable or add a new sentence at the beginning of a section or paragraph. do not settle for average. WHAT YOU MUST ABSOLUTELY NOT DO IS JUST ACT LIKE A \"THROW IN SENTENCE IS OKAY\". IF YOU ARE GOING TO CREATE A SENTENCE, THEN YOU WILL LIKELY NEED TO MODIFY THE SURROUNDED SENTENCES OR ENTIRE PARAGRAPH TO ACTUALLY JUSTIFY IT. YOU ARE TO THINK LIKE A WRITER. JUST ADDING RANDOM SENTENCES IS NOT WRITING - ITS BEING LAZY. IF YOU ARE ADDING A SENTENCE YOU ARE NOT FUCKING ALLOWED TO NOT EDIT OTHER THINGS WITHIN THE OUTPUT YOU PROVIDE. do not use em-dashes. IN YOUR EDIT, DO NOT DO SOMETHING LAME LIKE AS X EXPLAINS... THAT IS NOT WRITING. ANCHOR TEXT AS SOURCE IS A NATURAL WAY OF WRITING AND DOES NOT REQUIRE ADDITIONAL LEADIN LIKE SAYING AS PER XYZ, ESPECIALLY WHEN ITS A NOT A DATA POINT OR STUDY."
+              label="Copy"
+            />
+          </div>
           <p>what makes more sense to do it is take something from the article that is being linkeded to, reference it in the guest post and then link back to the article as the source using the anchor text. with those constraints, you may actually manage to do something actually useful and natural. note, if the anchor text doesnt match the same intent of the client url page title, its probably not viable. you are also allowed to create a while new paragraph if you aren't finding anything perfectly viable or add a new sentence at the beginning of a section or paragraph. do not settle for average. WHAT YOU MUST ABSOLUTELY NOT DO IS JUST ACT LIKE A "THROW IN SENTENCE IS OKAY". IF YOU ARE GOING TO CREATE A SENTENCE, THEN YOU WILL LIKELY NEED TO MODIFY THE SURROUNDED SENTENCES OR ENTIRE PARAGRAPH TO ACTUALLY JUSTIFY IT. YOU ARE TO THINK LIKE A WRITER. JUST ADDING RANDOM SENTENCES IS NOT WRITING - ITS BEING LAZY. IF YOU ARE ADDING A SENTENCE YOU ARE NOT FUCKING ALLOWED TO NOT EDIT OTHER THINGS WITHIN THE OUTPUT YOU PROVIDE. do not use em-dashes. IN YOUR EDIT, DO NOT DO SOMETHING LAME LIKE AS X EXPLAINS... THAT IS NOT WRITING. ANCHOR TEXT AS SOURCE IS A NATURAL WAY OF WRITING AND DOES NOT REQUIRE ADDITIONAL LEADIN LIKE SAYING AS PER XYZ, ESPECIALLY WHEN ITS A NOT A DATA POINT OR STUDY.</p>
         </div>
       </div>
