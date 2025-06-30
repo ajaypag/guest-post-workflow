@@ -1,0 +1,42 @@
+<\!DOCTYPE html>
+<html>
+<head><title>Test Save</title></head>
+<body>
+<h1>Test LocalStorage Save</h1>
+<button onclick="testSave()">Test Save</button>
+<button onclick="testLoad()">Test Load</button>
+<button onclick="clearAll()">Clear All</button>
+<pre id="output"></pre>
+
+<script>
+function log(msg) {
+  document.getElementById('output').innerText += msg + '\n';
+}
+
+function testSave() {
+  const testData = {
+    id: 'test-123',
+    steps: [{
+      id: 'keyword-research',
+      outputs: {
+        urlSummaries: 'This is test data saved at ' + new Date().toISOString()
+      }
+    }]
+  };
+  
+  localStorage.setItem('guest-post-workflows', JSON.stringify([testData]));
+  log('Saved: ' + JSON.stringify(testData, null, 2));
+}
+
+function testLoad() {
+  const data = localStorage.getItem('guest-post-workflows');
+  log('Loaded: ' + data);
+}
+
+function clearAll() {
+  localStorage.clear();
+  log('Cleared all localStorage');
+}
+</script>
+</body>
+</html>

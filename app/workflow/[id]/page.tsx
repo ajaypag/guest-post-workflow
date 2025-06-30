@@ -49,6 +49,10 @@ export default function WorkflowDetail() {
         })
       };
 
+      console.log('=== DETAILED SAVE DEBUG ===');
+      console.log('Current activeStep:', activeStep);
+      console.log('Received outputs:', outputs);
+      console.log('Before update - step outputs:', workflow.steps[activeStep]?.outputs);
       console.log('Updating workflow with step data:', { 
         workflowId: workflow.id, 
         stepIndex: activeStep, 
@@ -58,6 +62,11 @@ export default function WorkflowDetail() {
 
       setWorkflow(updatedWorkflow);
       storage.saveWorkflow(updatedWorkflow);
+      
+      // Verify what was actually saved
+      const savedWorkflow = storage.getWorkflow(workflow.id);
+      console.log('After save - step outputs:', savedWorkflow?.steps[activeStep]?.outputs);
+      console.log('=== END SAVE DEBUG ===');
       
       // Show success feedback (you could add a toast notification here)
       console.log('Step saved successfully');
