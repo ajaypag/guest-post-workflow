@@ -1,6 +1,6 @@
 'use client';
 
-import { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { WorkflowStep, GuestPostWorkflow } from '@/types/workflow';
 import { Save, ExternalLink, Copy, Check } from 'lucide-react';
 
@@ -183,7 +183,11 @@ const stepForms: Record<string, React.FC<{ step: WorkflowStep; workflow: GuestPo
     </div>
   ),
 
-  'topic-generation': ({ step, workflow, onChange }) => (
+  'topic-generation': ({ step, workflow, onChange }) => {
+    const keywordResearchStep = workflow.steps.find(s => s.id === 'keyword-research');
+    const urlSummaries = keywordResearchStep?.outputs?.urlSummaries || 'List of your target urls + summary';
+    
+    return (
     <div className="space-y-4">
       <div className="bg-blue-50 p-4 rounded-md">
         <h3 className="font-semibold mb-2">Step 2d: Generate Guest Post Topics</h3>
@@ -193,12 +197,20 @@ const stepForms: Record<string, React.FC<{ step: WorkflowStep; workflow: GuestPo
         <div className="bg-white p-3 rounded border border-blue-200 text-sm font-mono relative">
           <div className="absolute top-2 right-2">
             <CopyButton 
-              text={`Guest post site: ${workflow.targetDomain}\n\nList of your target urls + summary\n\n[Attach CSV file from Step 2b]`}
+              text={`Guest post site: ${workflow.targetDomain}\n\n${urlSummaries}\n\n[Attach CSV file from Step 2b]`}
               label="Copy Template"
             />
           </div>
           <p>Guest post site: <span className="text-blue-700 font-semibold">{workflow.targetDomain}</span></p>
-          <p className="mt-1">List of your target urls + summary</p>
+          <div className="mt-1">
+            {urlSummaries === 'List of your target urls + summary' ? (
+              <p className="text-gray-500 italic">List of your target urls + summary</p>
+            ) : (
+              <div className="p-2 bg-gray-50 border rounded text-xs max-h-24 overflow-y-auto">
+                {urlSummaries}
+              </div>
+            )}
+          </div>
           <p className="mt-1">[Attach CSV file from Step 2b]</p>
         </div>
         <p className="text-sm mt-2 mb-2">
@@ -341,7 +353,8 @@ const stepForms: Record<string, React.FC<{ step: WorkflowStep; workflow: GuestPo
         />
       </div>
     </div>
-  ),
+    );
+  },
 
   'deep-research': ({ step, workflow, onChange }) => (
     <div className="space-y-4">
@@ -1511,7 +1524,16 @@ export default function StepForm({ step, stepIndex, workflow, onSave }: StepForm
   const [localOutputs, setLocalOutputs] = useState(step.outputs);
   const [localInputs, setLocalInputs] = useState(step.inputs);
 
+  // Sync with step data when step changes but preserve current edits
+  useEffect(() => {
+    if (step.id) {
+      setLocalOutputs(step.outputs);
+      setLocalInputs(step.inputs);
+    }
+  }, [step.id, stepIndex]);
+
   const handleSave = () => {
+    console.log('Saving step data:', { localInputs, localOutputs });
     onSave(localInputs, localOutputs);
   };
 
