@@ -28,9 +28,10 @@ export default function NewWorkflow() {
       currentStep: 0,
       steps: WORKFLOW_STEPS.map(step => ({
         ...step,
-        status: 'pending',
+        status: 'pending' as const,
         inputs: {},
-        outputs: {}
+        outputs: {},
+        completedAt: undefined
       })),
       metadata: {}
     };

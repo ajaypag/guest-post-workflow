@@ -58,6 +58,10 @@ export default function WorkflowList() {
                     <Calendar className="w-4 h-4 mr-1" />
                     Created {format(new Date(workflow.createdAt), 'MMM d, yyyy')}
                   </div>
+                  <div className="flex items-center text-sm text-gray-500 mt-1">
+                    <Calendar className="w-4 h-4 mr-1" />
+                    Last saved {format(new Date(workflow.updatedAt), 'MMM d, yyyy h:mm a')}
+                  </div>
                 </div>
                 <button
                   onClick={() => handleDelete(workflow.id)}

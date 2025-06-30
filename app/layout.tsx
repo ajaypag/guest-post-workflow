@@ -1,5 +1,6 @@
 import type { Metadata } from "next";
 import "./globals.css";
+import DebugLoader from "@/components/DebugLoader";
 
 export const metadata: Metadata = {
   title: "Guest Post Workflow Manager",
@@ -24,6 +25,7 @@ export default function RootLayout({
         <main className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
           {children}
         </main>
+        <DebugLoader />
       </body>
     </html>
   );

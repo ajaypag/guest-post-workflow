@@ -1,0 +1,25 @@
+
+<!DOCTYPE html>
+<html>
+<head><title>Debug localStorage</title></head>
+<body>
+<script>
+// Test localStorage functionality
+console.log('Testing localStorage...');
+try {
+  localStorage.setItem('test', 'hello');
+  const result = localStorage.getItem('test');
+  console.log('localStorage test result:', result);
+  
+  // Check for existing workflow data
+  const existing = localStorage.getItem('guest-post-workflows');
+  console.log('Existing workflows:', existing);
+  
+  // List all localStorage keys
+  console.log('All localStorage keys:', Object.keys(localStorage));
+} catch (e) {
+  console.error('localStorage error:', e);
+}
+</script>
+</body>
+</html>

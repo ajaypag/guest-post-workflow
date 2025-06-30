@@ -16,9 +16,13 @@ export default function WorkflowDetail() {
 
   useEffect(() => {
     const data = storage.getWorkflow(params.id as string);
+    console.log('Loading workflow:', data);
     if (data) {
+      console.log('Workflow steps:', data.steps);
+      console.log('Keyword research step:', data.steps.find(s => s.id === 'keyword-research'));
       setWorkflow(data);
-      setActiveStep(data.currentStep);
+      // Don't auto-jump to currentStep, stay on step 0 by default
+      setActiveStep(0);
     } else {
       router.push('/');
     }
@@ -27,24 +31,41 @@ export default function WorkflowDetail() {
   const handleStepSave = (inputs: Record<string, any>, outputs: Record<string, any>) => {
     if (!workflow) return;
 
-    const updatedWorkflow = {
-      ...workflow,
-      updatedAt: new Date(),
-      steps: workflow.steps.map((step, index) => {
-        if (index === activeStep) {
-          return {
-            ...step,
-            inputs,
-            outputs,
-            completedAt: new Date()
-          };
-        }
-        return step;
-      })
-    };
+    try {
+      const updatedWorkflow = {
+        ...workflow,
+        updatedAt: new Date(),
+        steps: workflow.steps.map((step, index) => {
+          if (index === activeStep) {
+            return {
+              ...step,
+              inputs: inputs || {},
+              outputs: outputs || {},
+              completedAt: new Date(),
+              status: 'in-progress' as const
+            };
+          }
+          return step;
+        })
+      };
 
-    setWorkflow(updatedWorkflow);
-    storage.saveWorkflow(updatedWorkflow);
+      console.log('Updating workflow with step data:', { 
+        workflowId: workflow.id, 
+        stepIndex: activeStep, 
+        inputs, 
+        outputs 
+      });
+
+      setWorkflow(updatedWorkflow);
+      storage.saveWorkflow(updatedWorkflow);
+      
+      // Show success feedback (you could add a toast notification here)
+      console.log('Step saved successfully');
+    } catch (error) {
+      console.error('Error saving step:', error);
+      // You could add error notification here
+      alert('Failed to save step. Please try again.');
+    }
   };
 
   const getStepIcon = (step: any, index: number) => {
