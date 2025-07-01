@@ -13,17 +13,19 @@ interface DomainSelectionStepProps {
 export const DomainSelectionStep = ({ step, workflow, onChange }: DomainSelectionStepProps) => (
   <div className="space-y-4">
     <SavedField
-      label="Selected Domain"
-      value={step.outputs.domain || workflow.targetDomain}
-      placeholder={`Default: ${workflow.targetDomain}`}
+      label="Guest Post Website"
+      value={step.outputs.domain || ''}
+      placeholder="e.g., techcrunch.com, industry-magazine.com, blog.example.com"
       onChange={(value) => onChange({ ...step.outputs, domain: value })}
     />
-    <p className="text-xs text-gray-500">Pre-filled from workflow setup: {workflow.targetDomain}</p>
+    <p className="text-xs text-gray-500">
+      Enter the website where your guest post article will be published (NOT your client's website)
+    </p>
     
     <SavedField
       label="Notes"
       value={step.outputs.notes || ''}
-      placeholder="Any notes about this domain"
+      placeholder="Any research notes about this guest post website"
       onChange={(value) => onChange({ ...step.outputs, notes: value })}
       isTextarea={true}
       height="h-24"

@@ -18,8 +18,17 @@ import {
   ClientMentionStep,
   ClientLinkStep,
   ImagesStep,
-  LinkRequestsStep
+  LinkRequestsStep,
+  UrlSuggestionStep,
+  EmailTemplateStep
 } from './steps';
+import { KeywordResearchStepClean } from './steps/KeywordResearchStepClean';
+import { DomainSelectionStepClean } from './steps/DomainSelectionStepClean';
+import { TopicGenerationStepClean } from './steps/TopicGenerationStepClean';
+import { DeepResearchStepClean } from './steps/DeepResearchStepClean';
+import { ArticleDraftStepClean } from './steps/ArticleDraftStepClean';
+import { ContentAuditStepClean } from './steps/ContentAuditStepClean';
+import { FinalPolishStepClean } from './steps/FinalPolishStepClean';
 
 interface StepFormProps {
   step: WorkflowStep;
@@ -29,13 +38,13 @@ interface StepFormProps {
 }
 
 const stepForms: Record<string, React.FC<{ step: WorkflowStep; workflow: GuestPostWorkflow; onChange: (data: any) => void }>> = {
-  'domain-selection': DomainSelectionStep,
-  'keyword-research': KeywordResearchStep,
-  'topic-generation': TopicGenerationStep,
-  'deep-research': DeepResearchStep,
-  'article-draft': ArticleDraftStep,
-  'content-audit': ContentAuditStep,
-  'final-polish': FinalPolishStep,
+  'domain-selection': DomainSelectionStepClean,
+  'keyword-research': KeywordResearchStepClean,
+  'topic-generation': TopicGenerationStepClean,
+  'deep-research': DeepResearchStepClean,
+  'article-draft': ArticleDraftStepClean,
+  'content-audit': ContentAuditStepClean,
+  'final-polish': FinalPolishStepClean,
   'formatting-qa': FormattingQAStep,
   'internal-links': InternalLinksStep,
   'external-links': ExternalLinksStep,
@@ -43,6 +52,8 @@ const stepForms: Record<string, React.FC<{ step: WorkflowStep; workflow: GuestPo
   'client-link': ClientLinkStep,
   'images': ImagesStep,
   'link-requests': LinkRequestsStep,
+  'url-suggestion': UrlSuggestionStep,
+  'email-template': EmailTemplateStep,
 };
 
 export default function StepForm({ step, stepIndex, workflow, onSave }: StepFormProps) {
@@ -144,7 +155,7 @@ export default function StepForm({ step, stepIndex, workflow, onSave }: StepForm
           className="inline-flex items-center px-4 py-2 bg-green-600 text-white text-sm font-medium rounded-md hover:bg-green-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-green-500"
         >
           <Save className="w-4 h-4 mr-2" />
-          Save Progress
+          {stepIndex === workflow.steps.length - 1 ? 'Save & Complete' : 'Save & Next Step'}
         </button>
       </div>
     </div>

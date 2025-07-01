@@ -1,0 +1,44 @@
+
+> guest-post-workflow@0.1.0 dev
+> next dev --turbopack
+
+   ▲ Next.js 15.3.4 (Turbopack)
+   - Local:        http://localhost:3000
+   - Network:      http://10.255.255.254:3000
+
+ ✓ Starting...
+ ✓ Ready in 901ms
+ ○ Compiling / ...
+ ✓ Compiled / in 1706ms
+ GET / 200 in 2154ms
+ ○ Compiling /favicon.ico ...
+ ✓ Compiled /favicon.ico in 662ms
+ GET /favicon.ico?favicon.45db1c09.ico 200 in 936ms
+ GET /favicon.ico?favicon.45db1c09.ico 200 in 262ms
+ GET / 200 in 89ms
+ ○ Compiling /workflow/[id] ...
+ ✓ Compiled /workflow/[id] in 1204ms
+ GET /workflow/a151e028-ceb8-4080-9aaf-d6955fbceefa 200 in 1620ms
+ GET /workflow/a151e028-ceb8-4080-9aaf-d6955fbceefa?step=4 200 in 63ms
+ GET /workflow/a151e028-ceb8-4080-9aaf-d6955fbceefa?step=7 200 in 65ms
+ GET /workflow/a151e028-ceb8-4080-9aaf-d6955fbceefa?step=6 200 in 63ms
+ GET /workflow/a151e028-ceb8-4080-9aaf-d6955fbceefa?step=7 200 in 90ms
+ GET /workflow/a151e028-ceb8-4080-9aaf-d6955fbceefa?step=8 200 in 77ms
+ GET /workflow/a151e028-ceb8-4080-9aaf-d6955fbceefa?step=11 200 in 87ms
+ GET / 200 in 71ms
+ ○ Compiling /clients ...
+ ✓ Compiled /clients in 2.4s
+ GET /clients 200 in 2480ms
+ GET /clients 200 in 121ms
+ GET / 200 in 58ms
+ GET /workflow/a151e028-ceb8-4080-9aaf-d6955fbceefa 200 in 67ms
+ GET /workflow/a151e028-ceb8-4080-9aaf-d6955fbceefa?step=3 200 in 66ms
+ GET /workflow/a151e028-ceb8-4080-9aaf-d6955fbceefa?step=2 200 in 79ms
+ GET /workflow/a151e028-ceb8-4080-9aaf-d6955fbceefa?step=1 200 in 75ms
+ ✓ Compiled in 186ms
+ ✓ Compiled in 208ms
+ ✓ Compiled in 208ms
+ ✓ Compiled in 188ms
+ ✓ Compiled in 238ms
+ ✓ Compiled in 242ms
+[?25h

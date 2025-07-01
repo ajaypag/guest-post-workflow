@@ -6,6 +6,20 @@ export interface WorkflowStep {
   inputs: Record<string, any>;
   outputs: Record<string, any>;
   completedAt?: Date;
+  fields?: {
+    inputs?: Array<{
+      name: string;
+      label: string;
+      placeholder?: string;
+      type?: string;
+    }>;
+    outputs?: Array<{
+      name: string;
+      label: string;
+      placeholder?: string;
+      type?: string;
+    }>;
+  };
 }
 
 export interface GuestPostWorkflow {
@@ -16,6 +30,8 @@ export interface GuestPostWorkflow {
   clientUrl: string;
   targetDomain: string;
   currentStep: number;
+  createdBy: string; // User name who created the workflow
+  createdByEmail?: string; // Optional: User email for more identification
   steps: WorkflowStep[];
   metadata: {
     pitchKeyword?: string;
@@ -24,6 +40,7 @@ export interface GuestPostWorkflow {
     wordCount?: number;
     googleDocUrl?: string;
     finalDraftUrl?: string;
+    clientId?: string;
   };
 }
 
@@ -32,37 +49,37 @@ export const WORKFLOW_STEPS = [
   {
     id: 'domain-selection',
     title: 'Guest Post Site Selection',
-    description: 'Choose a site for guest posting'
+    description: 'Identify the specific website where your guest post will be published. This forms the foundation for all subsequent analysis and content strategy.'
   },
   {
     id: 'keyword-research',
     title: 'Site Qualification and Preparation',
-    description: 'Generate keywords and analyze in Ahrefs'
+    description: 'Find topic overlap between the guest post site and your client to identify content opportunities with ranking potential.'
   },
   {
     id: 'topic-generation',
     title: 'Topic Generation',
-    description: 'Generate guest post topics using GPT'
+    description: 'Generate guest post topics that meet three criteria: relevant to the guest post site, relevant to your client URL, and have search volume (10-50 searches/month target range).'
   },
   {
     id: 'deep-research',
     title: 'Outline Creation',
-    description: 'Create detailed article outline'
+    description: 'Use GPT-o3 Deep Research to create a comprehensive, well-researched outline for your guest post with detailed findings and structure.'
   },
   {
     id: 'article-draft',
     title: 'Article Draft',
-    description: 'Write the article using o3 Advanced Reasoning'
+    description: 'Use GPT-o3 Advanced Reasoning to write the article section by section, building from research outline to complete draft with structured prompts and narrative flow.'
   },
   {
     id: 'content-audit',
     title: 'Semantic SEO Optimization',
-    description: 'Audit and optimize the draft'
+    description: 'Review and optimize the article section by section against semantic SEO best practices using structured audit prompts to improve content quality and search performance.'
   },
   {
     id: 'final-polish',
     title: 'Polish & Finalize',
-    description: 'Final edits and brand alignment'
+    description: 'Review article section by section for brand alignment using a critical two-prompt loop pattern (Proceed → Cleanup) to ensure voice consistency and adherence to brand guidelines.'
   },
   {
     id: 'formatting-qa',
@@ -103,5 +120,10 @@ export const WORKFLOW_STEPS = [
     id: 'url-suggestion',
     title: 'URL Suggestion',
     description: 'Suggest URL structure for the post'
+  },
+  {
+    id: 'email-template',
+    title: 'Email Template',
+    description: 'Generate professional email template for sending guest post to publisher with all relevant details and links.'
   }
 ];

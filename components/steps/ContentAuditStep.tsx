@@ -18,6 +18,7 @@ export const ContentAuditStep = ({ step, workflow, onChange }: ContentAuditStepP
   const fullArticle = articleDraftStep?.outputs?.fullArticle || '';
   const googleDocUrl = articleDraftStep?.outputs?.googleDocUrl || '';
   const researchOutlineStep = workflow.steps.find(s => s.id === 'deep-research');
+  const outlineContent = researchOutlineStep?.outputs?.outlineContent || '';
   const outlineShareLink = researchOutlineStep?.outputs?.outlineShareLink || '';
 
   return (
@@ -27,12 +28,11 @@ export const ContentAuditStep = ({ step, workflow, onChange }: ContentAuditStepP
         <p className="text-sm mb-2">
           <strong>Create a NEW CHAT</strong> in the same workspace:
         </p>
-        <a href="https://chatgpt.com/g/g-p-685ece4776fc8191963c943f9aed9d36-outreachlabs-guest-posts/project" 
+        <a href="https://chatgpt.com/g/g-p-685ece4776fc8191963c943f9aed9d36-outreachlabs-guest-posts/project?model=o3" 
            target="_blank" 
            className="text-blue-600 hover:underline inline-flex items-center font-medium">
-          OutreachLabs Guest Posts Project <ExternalLink className="w-3 h-3 ml-1" />
+          OutreachLabs Guest Posts Project (o3) <ExternalLink className="w-3 h-3 ml-1" />
         </a>
-        <p className="text-sm mt-2 font-semibold">Switch to o3 Advanced Reasoning</p>
       </div>
 
       <div className="bg-purple-50 p-4 rounded-md">
@@ -50,11 +50,11 @@ export const ContentAuditStep = ({ step, workflow, onChange }: ContentAuditStepP
             )}
           </div>
           <p className="mt-2">If you look at your knowledge base, you'll see that I've added some instructions for semantic SEO in writing. I want you to be a content editor, and I want you to review the article section by section to see if it's meeting the best practices that we discuss. For full reference, this was the original deep research data and outline that might be useful as you edit.</p>
-          <div className="mt-2 p-2 bg-gray-50 border rounded">
-            {outlineShareLink ? (
-              <div className="text-xs">Research outline: <a href={outlineShareLink} target="_blank" className="text-blue-600 underline">{outlineShareLink}</a></div>
+          <div className="mt-2 p-2 bg-gray-50 border rounded max-h-32 overflow-y-auto">
+            {outlineContent ? (
+              <div className="text-xs text-gray-700 whitespace-pre-wrap">{outlineContent}</div>
             ) : (
-              <div className="text-gray-500 text-xs">Research outline will appear here from Step 3</div>
+              <div className="text-gray-500 text-xs">Research outline content will appear here from Step 3</div>
             )}
           </div>
           <p className="mt-2">Now I realize this is a lot, so i want your first output to only be an audit of the first section. the format i want is to show the strengths, weaknesses, and the updated section that has your full fixes. start with the first section if cases where a section has many subsections, output just the subsection.</p>
@@ -71,7 +71,8 @@ ${fullArticle}
 
 If you look at your knowledge base, you'll see that I've added some instructions for semantic SEO in writing. I want you to be a content editor, and I want you to review the article section by section to see if it's meeting the best practices that we discuss. For full reference, this was the original deep research data and outline that might be useful as you edit.
 
-${outlineShareLink ? `Research outline: ${outlineShareLink}` : '(Research outline from Step 3)'}
+Original research outline and findings:
+${outlineContent || '(Complete Step 3: Deep Research first to get outline content)'}
 
 Now I realize this is a lot, so i want your first output to only be an audit of the first section. the format i want is to show the strengths, weaknesses, and the updated section that has your full fixes. start with the first section if cases where a section has many subsections, output just the subsection.`}
                 label="Copy Full Prompt"
@@ -144,6 +145,22 @@ Now I realize this is a lot, so i want your first output to only be an audit of 
         onChange={(value) => onChange({ ...step.outputs, auditNotes: value })}
         isTextarea={true}
         height="h-24"
+      />
+
+      <div className="bg-green-50 p-3 rounded-md mt-4">
+        <h4 className="font-semibold mb-2">📝 SEO-Optimized Article</h4>
+        <p className="text-sm text-gray-600 mb-2">
+          After completing all sections, paste the final SEO-optimized article here. This will be used in the next step (Polish & Finalize).
+        </p>
+      </div>
+
+      <SavedField
+        label="SEO-Optimized Full Article"
+        value={step.outputs.seoOptimizedArticle || ''}
+        placeholder="Paste the complete SEO-optimized article after all sections have been audited and improved"
+        onChange={(value) => onChange({ ...step.outputs, seoOptimizedArticle: value })}
+        isTextarea={true}
+        height="h-64"
       />
     </div>
   );

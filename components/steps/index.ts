@@ -12,3 +12,5 @@ export { ClientMentionStep } from './ClientMentionStep';
 export { ClientLinkStep } from './ClientLinkStep';
 export { ImagesStep } from './ImagesStep';
 export { LinkRequestsStep } from './LinkRequestsStep';
+export { UrlSuggestionStep } from './UrlSuggestionStep';
+export { EmailTemplateStep } from './EmailTemplateStep';

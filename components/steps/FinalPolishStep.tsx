@@ -13,8 +13,15 @@ interface FinalPolishStepProps {
 }
 
 export const FinalPolishStep = ({ step, workflow, onChange }: FinalPolishStepProps) => {
+  // Get the SEO-optimized article from Step 5, fallback to original draft if not available
+  const contentAuditStep = workflow.steps.find(s => s.id === 'content-audit');
+  const seoOptimizedArticle = contentAuditStep?.outputs?.seoOptimizedArticle || '';
+  
+  // Fallback to original draft if SEO version not available
   const articleDraftStep = workflow.steps.find(s => s.id === 'article-draft');
-  const fullArticle = articleDraftStep?.outputs?.fullArticle || '';
+  const originalArticle = articleDraftStep?.outputs?.fullArticle || '';
+  
+  const fullArticle = seoOptimizedArticle || originalArticle;
   const googleDocUrl = articleDraftStep?.outputs?.googleDocUrl || '';
 
   return (
@@ -24,16 +31,24 @@ export const FinalPolishStep = ({ step, workflow, onChange }: FinalPolishStepPro
         <p className="text-sm mb-2">
           Open a <strong>FRESH CHAT</strong> in the same workspace:
         </p>
-        <a href="https://chatgpt.com/g/g-p-685ece4776fc8191963c943f9aed9d36-outreachlabs-guest-posts/project" 
+        <a href="https://chatgpt.com/g/g-p-685ece4776fc8191963c943f9aed9d36-outreachlabs-guest-posts/project?model=o3" 
            target="_blank" 
            className="text-blue-600 hover:underline inline-flex items-center font-medium">
-          OutreachLabs Guest Posts Project <ExternalLink className="w-3 h-3 ml-1" />
+          OutreachLabs Guest Posts Project (o3) <ExternalLink className="w-3 h-3 ml-1" />
         </a>
-        <p className="text-sm mt-2 font-semibold">Switch to o3 Advanced Reasoning</p>
       </div>
 
       <div className="bg-orange-50 p-4 rounded-md">
         <h4 className="font-semibold mb-2">Kick-off Prompt: First Section Edit</h4>
+        {seoOptimizedArticle ? (
+          <div className="bg-green-100 border border-green-300 rounded p-2 mb-2">
+            <p className="text-sm text-green-800">✅ Using SEO-optimized article from Step 5</p>
+          </div>
+        ) : originalArticle ? (
+          <div className="bg-yellow-100 border border-yellow-300 rounded p-2 mb-2">
+            <p className="text-sm text-yellow-800">⚠️ Using original draft from Step 4 (complete Step 5 for SEO-optimized version)</p>
+          </div>
+        ) : null}
         <p className="text-sm mb-2">Paste this UNCHANGED:</p>
         <div className="bg-white p-3 rounded border border-orange-200 text-xs font-mono overflow-x-auto">
           <p>Okay, here's my article.</p>
@@ -43,7 +58,7 @@ export const FinalPolishStep = ({ step, workflow, onChange }: FinalPolishStepPro
                 {fullArticle.substring(0, 500)}{fullArticle.length > 500 ? '...' : ''}
               </div>
             ) : (
-              <div className="text-red-600 text-xs">⚠️ Article needed from Step 4</div>
+              <div className="text-red-600 text-xs">⚠️ Complete Step 5 (Semantic SEO) first to get the optimized article</div>
             )}
           </div>
           <p className="mt-2">Review one of my project files for my brand guide and the Semantic SEO writing tips. I want you to review my article section by section, starting with the first section. Gauge how well it follows the brand guide and semantic seo tips and give it a strengths and weaknesses and update the section with some updates.</p>
@@ -91,11 +106,11 @@ Review one of my project files for my brand guide and the Semantic SEO writing t
         <div className="bg-white p-3 rounded border border-green-200 text-xs font-mono overflow-x-auto relative">
           <div className="absolute top-2 right-2">
             <CopyButton 
-              text="Okay that is good. Now, proceed to the next section. Re-review my project files for my brand guide and the Semantic SEO writing tips. Gauge how well it follows the brand guide and semantic seo tips and give it a strengths and weaknesses and update the section with some updates. Be sure to reference the conclusions you made during your thinking process when writing the updating article. Don't use em-dashes"
+              text="Okay that is good. Now, proceed to the next section. Re-review my project files for my brand guide and the Semantic SEO writing tips. Gauge how well it follows the brand guide and semantic seo tips and give it a strengths and weaknesses and update the section with some updates. Be sure to reference the conclusions you made during your thinking process when writing the updating article. Don't use em-dashes. The updated section output should be ready to copy-paste back into my article."
               label="Copy"
             />
           </div>
-          <p>Okay that is good. Now, proceed to the next section. Re-review my project files for my brand guide and the Semantic SEO writing tips. Gauge how well it follows the brand guide and semantic seo tips and give it a strengths and weaknesses and update the section with some updates. Be sure to reference the conclusions you made during your thinking process when writing the updating article. Don't use em-dashes</p>
+          <p>Okay that is good. Now, proceed to the next section. Re-review my project files for my brand guide and the Semantic SEO writing tips. Gauge how well it follows the brand guide and semantic seo tips and give it a strengths and weaknesses and update the section with some updates. Be sure to reference the conclusions you made during your thinking process when writing the updating article. Don't use em-dashes. The updated section output should be ready to copy-paste back into my article.</p>
         </div>
         <p className="text-sm mt-2 italic">→ This gives you: Strengths | Weaknesses | Updated Section</p>
       </div>
@@ -163,6 +178,22 @@ Review one of my project files for my brand guide and the Semantic SEO writing t
         onChange={(value) => onChange({ ...step.outputs, brandNotes: value })}
         isTextarea={true}
         height="h-24"
+      />
+
+      <div className="bg-green-50 p-3 rounded-md mt-4">
+        <h4 className="font-semibold mb-2">📝 Final Polished Article</h4>
+        <p className="text-sm text-gray-600 mb-2">
+          After completing all sections and cleanup prompts, paste the complete final article here. This will be used in subsequent steps (Internal Links, External Links, etc.).
+        </p>
+      </div>
+
+      <SavedField
+        label="Final Polished Article"
+        value={step.outputs.finalArticle || ''}
+        placeholder="Paste the complete polished article after all sections have been reviewed and refined"
+        onChange={(value) => onChange({ ...step.outputs, finalArticle: value })}
+        isTextarea={true}
+        height="h-64"
       />
     </div>
   );

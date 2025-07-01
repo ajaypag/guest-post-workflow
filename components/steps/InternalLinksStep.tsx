@@ -3,6 +3,7 @@
 import React from 'react';
 import { WorkflowStep, GuestPostWorkflow } from '@/types/workflow';
 import { SavedField } from '../SavedField';
+import { CopyButton } from '../ui/CopyButton';
 import { ExternalLink } from 'lucide-react';
 
 interface InternalLinksStepProps {
@@ -12,29 +13,79 @@ interface InternalLinksStepProps {
 }
 
 export const InternalLinksStep = ({ step, workflow, onChange }: InternalLinksStepProps) => {
+  // Get the target domain from domain selection step
+  const domainSelectionStep = workflow.steps.find(s => s.id === 'domain-selection');
+  const targetDomain = domainSelectionStep?.outputs?.domain || workflow.targetDomain || '';
+  
+  // Get the final polished article from Step 6, fallback to earlier versions
+  const finalPolishStep = workflow.steps.find(s => s.id === 'final-polish');
+  const finalArticle = finalPolishStep?.outputs?.finalArticle || '';
+  
+  // Fallback chain if final article not available
+  const contentAuditStep = workflow.steps.find(s => s.id === 'content-audit');
+  const seoOptimizedArticle = contentAuditStep?.outputs?.seoOptimizedArticle || '';
+  
   const articleDraftStep = workflow.steps.find(s => s.id === 'article-draft');
-  const fullArticle = articleDraftStep?.outputs?.fullArticle || '';
+  const originalArticle = articleDraftStep?.outputs?.fullArticle || '';
+  
+  const fullArticle = finalArticle || seoOptimizedArticle || originalArticle;
+  
+  // Build complete prompt for GPT
+  const completePrompt = `Target Domain: ${targetDomain}
+
+Article Content:
+
+${fullArticle || 'Complete previous steps to get article content'}`;
 
   return (
     <div className="space-y-4">
       <div className="bg-blue-50 p-4 rounded-md">
         <h3 className="font-semibold mb-2">Step 8: Internal Links to Guest Post Site</h3>
-        <p className="text-sm mb-2">
-          Make sure model o3 is selected. Paste in the article and the site <strong>{workflow.targetDomain}</strong> where you're guest posting.
-        </p>
-        {fullArticle && (
-          <div className="mt-2 p-2 bg-green-50 border border-green-200 rounded">
-            <p className="text-sm font-semibold text-green-800">✅ Article ready from Step 4</p>
-            <p className="text-xs text-green-700">Article preview: {fullArticle.substring(0, 100)}...</p>
+        
+        {finalArticle ? (
+          <div className="bg-green-100 border border-green-300 rounded p-2 mb-3">
+            <p className="text-sm text-green-800">✅ Using final polished article from Step 6</p>
           </div>
-        )}
-        <a href="https://chatgpt.com/g/g-685c386ba4848191ac01d0bcea6e8db7-guest-post-internal-links" 
+        ) : seoOptimizedArticle ? (
+          <div className="bg-yellow-100 border border-yellow-300 rounded p-2 mb-3">
+            <p className="text-sm text-yellow-800">⚠️ Using SEO-optimized article from Step 5 (complete Step 6 for final version)</p>
+          </div>
+        ) : originalArticle ? (
+          <div className="bg-orange-100 border border-orange-300 rounded p-2 mb-3">
+            <p className="text-sm text-orange-800">⚠️ Using original draft from Step 4 (complete Steps 5-6 for final version)</p>
+          </div>
+        ) : null}
+
+        <div className="bg-gray-100 p-3 rounded mb-3">
+          <h4 className="font-semibold mb-2">📋 Complete Prompt for GPT:</h4>
+          <div className="bg-white p-3 rounded border text-sm font-mono relative">
+            <div className="absolute top-2 right-2">
+              <CopyButton 
+                text={completePrompt}
+                label="Copy Complete Prompt"
+              />
+            </div>
+            <div className="pr-16">
+              <p><strong>Target Domain:</strong> {targetDomain}</p>
+              <p className="mt-2"><strong>Article Content:</strong></p>
+              <div className="mt-1 p-2 bg-gray-50 border rounded max-h-32 overflow-y-auto">
+                {fullArticle ? (
+                  <p className="text-xs whitespace-pre-wrap">{fullArticle.substring(0, 300)}{fullArticle.length > 300 ? '...' : ''}</p>
+                ) : (
+                  <p className="text-gray-500 text-xs italic">Complete previous steps to get article content</p>
+                )}
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <a href="https://chatgpt.com/g/g-685c386ba4848191ac01d0bcea6e8db7-guest-post-internal-links?model=o3" 
            target="_blank" 
-           className="text-blue-600 hover:underline inline-flex items-center font-medium">
-          Guest Post Internal Links GPT <ExternalLink className="w-3 h-3 ml-1" />
+           className="inline-flex items-center px-4 py-2 bg-blue-600 text-white rounded-md hover:bg-blue-700 transition-colors font-medium">
+          Open Guest Post Internal Links GPT <ExternalLink className="w-3 h-3 ml-2 text-white" />
         </a>
         <p className="text-sm mt-2 italic">
-          The GPT will tell you what internal links to add to the article.
+          Use the "Copy Complete Prompt" button above to get both the target domain and article content in one click. Paste into the GPT for internal link suggestions.
         </p>
       </div>
 

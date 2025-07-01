@@ -1,22 +1,70 @@
 'use client';
 
-import { useState } from 'react';
-import { useRouter } from 'next/navigation';
+import { useState, useEffect, Suspense } from 'react';
+import { useRouter, useSearchParams } from 'next/navigation';
 import { ArrowLeft } from 'lucide-react';
 import Link from 'next/link';
+import AuthWrapper from '@/components/AuthWrapper';
+import Header from '@/components/Header';
 import { GuestPostWorkflow, WORKFLOW_STEPS } from '@/types/workflow';
 import { storage } from '@/lib/storage';
+import { clientStorage, sessionStorage } from '@/lib/userStorage';
+import { Client } from '@/types/user';
 
-export default function NewWorkflow() {
+function NewWorkflowContent() {
   const router = useRouter();
+  const searchParams = useSearchParams();
+  const [clients, setClients] = useState<Client[]>([]);
+  const [selectedClient, setSelectedClient] = useState<Client | null>(null);
   const [formData, setFormData] = useState({
     clientName: '',
-    clientUrl: '',
-    targetDomain: ''
+    clientUrl: ''
   });
+
+  useEffect(() => {
+    loadClients();
+    
+    // Pre-select client if coming from client page
+    const clientId = searchParams.get('clientId');
+    if (clientId) {
+      const client = clientStorage.getClient(clientId);
+      if (client) {
+        handleClientSelect(client);
+      }
+    }
+  }, [searchParams]);
+
+  const loadClients = () => {
+    const session = sessionStorage.getSession();
+    if (!session) return;
+
+    if (session.role === 'admin') {
+      setClients(clientStorage.getAllClients());
+    } else {
+      setClients(clientStorage.getUserClients(session.userId));
+    }
+  };
+
+  const handleClientSelect = (client: Client | null) => {
+    setSelectedClient(client);
+    if (client) {
+      setFormData({
+        clientName: client.name,
+        clientUrl: client.website
+      });
+    } else {
+      setFormData({
+        clientName: '',
+        clientUrl: ''
+      });
+    }
+  };
 
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
+    
+    // Get current user session for creator information
+    const session = sessionStorage.getSession();
     
     const workflow: GuestPostWorkflow = {
       id: crypto?.randomUUID ? crypto.randomUUID() : `workflow-${Date.now()}-${Math.random().toString(36).substr(2, 9)}`,
@@ -24,8 +72,10 @@ export default function NewWorkflow() {
       updatedAt: new Date(),
       clientName: formData.clientName,
       clientUrl: formData.clientUrl,
-      targetDomain: formData.targetDomain,
+      targetDomain: '', // Will be set in Step 1: Guest Post Site Selection
       currentStep: 0,
+      createdBy: session?.name || 'Unknown User',
+      createdByEmail: session?.email,
       steps: WORKFLOW_STEPS.map(step => ({
         ...step,
         status: 'pending' as const,
@@ -33,84 +83,131 @@ export default function NewWorkflow() {
         outputs: {},
         completedAt: undefined
       })),
-      metadata: {}
+      metadata: selectedClient ? { clientId: selectedClient.id } : {}
     };
 
     storage.saveWorkflow(workflow);
     router.push(`/workflow/${workflow.id}`);
   };
 
+
   return (
-    <div className="max-w-2xl mx-auto">
-      <div className="mb-6">
-        <Link
-          href="/"
-          className="inline-flex items-center text-gray-600 hover:text-gray-900"
-        >
-          <ArrowLeft className="w-4 h-4 mr-2" />
-          Back to Workflows
-        </Link>
-      </div>
-
-      <div className="bg-white rounded-lg shadow p-6">
-        <h2 className="text-2xl font-bold mb-6">Create New Workflow</h2>
+    <AuthWrapper>
+      <div className="min-h-screen bg-gray-50">
+        <Header />
         
-        <form onSubmit={handleSubmit} className="space-y-4">
-          <div>
-            <label htmlFor="clientName" className="block text-sm font-medium text-gray-700 mb-1">
-              Client Name
-            </label>
-            <input
-              type="text"
-              id="clientName"
-              required
-              value={formData.clientName}
-              onChange={(e) => setFormData({ ...formData, clientName: e.target.value })}
-              className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
-              placeholder="e.g., Vanta"
-            />
-          </div>
-
-          <div>
-            <label htmlFor="clientUrl" className="block text-sm font-medium text-gray-700 mb-1">
-              Client URL
-            </label>
-            <input
-              type="url"
-              id="clientUrl"
-              required
-              value={formData.clientUrl}
-              onChange={(e) => setFormData({ ...formData, clientUrl: e.target.value })}
-              className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
-              placeholder="e.g., https://vanta.com"
-            />
-          </div>
-
-          <div>
-            <label htmlFor="targetDomain" className="block text-sm font-medium text-gray-700 mb-1">
-              Target Domain (Guest Post Site)
-            </label>
-            <input
-              type="text"
-              id="targetDomain"
-              required
-              value={formData.targetDomain}
-              onChange={(e) => setFormData({ ...formData, targetDomain: e.target.value })}
-              className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
-              placeholder="e.g., techcrunch.com"
-            />
-          </div>
-
-          <div className="pt-4">
-            <button
-              type="submit"
-              className="w-full px-4 py-2 bg-blue-600 text-white rounded-md hover:bg-blue-700 transition-colors"
+        <div className="max-w-2xl mx-auto px-4 py-8">
+          <div className="mb-6">
+            <Link
+              href="/"
+              className="inline-flex items-center text-gray-600 hover:text-gray-900"
             >
-              Create Workflow
-            </button>
+              <ArrowLeft className="w-4 h-4 mr-2" />
+              Back to Workflows
+            </Link>
           </div>
-        </form>
+
+          <div className="bg-white rounded-lg shadow p-6">
+            <h1 className="text-2xl font-bold mb-6">Create New Workflow</h1>
+
+            <form onSubmit={handleSubmit} className="space-y-6">
+              {/* Client Selection */}
+              {clients.length > 0 && (
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-2">
+                    Select Client (Optional)
+                  </label>
+                  <select
+                    value={selectedClient?.id || ''}
+                    onChange={(e) => {
+                      const client = e.target.value 
+                        ? clients.find(c => c.id === e.target.value) || null
+                        : null;
+                      handleClientSelect(client);
+                    }}
+                    className="w-full px-3 py-2 border border-gray-300 rounded-md focus:ring-blue-500 focus:border-blue-500"
+                  >
+                    <option value="">Manual Entry</option>
+                    {clients.map(client => (
+                      <option key={client.id} value={client.id}>
+                        {client.name} ({client.website})
+                      </option>
+                    ))}
+                  </select>
+                  <p className="text-xs text-gray-500 mt-1">
+                    Choose from existing clients to auto-fill data, or enter manually
+                  </p>
+                </div>
+              )}
+
+              {/* Client Name */}
+              <div>
+                <label htmlFor="clientName" className="block text-sm font-medium text-gray-700 mb-2">
+                  Client Name
+                </label>
+                <input
+                  type="text"
+                  id="clientName"
+                  required
+                  value={formData.clientName}
+                  onChange={(e) => setFormData({ ...formData, clientName: e.target.value })}
+                  className="w-full px-3 py-2 border border-gray-300 rounded-md focus:ring-blue-500 focus:border-blue-500"
+                  placeholder="Enter client name"
+                  disabled={!!selectedClient}
+                />
+              </div>
+
+              {/* Client URL */}
+              <div>
+                <label htmlFor="clientUrl" className="block text-sm font-medium text-gray-700 mb-2">
+                  Client Website
+                </label>
+                <input
+                  type="url"
+                  id="clientUrl"
+                  required
+                  value={formData.clientUrl}
+                  onChange={(e) => setFormData({ ...formData, clientUrl: e.target.value })}
+                  className="w-full px-3 py-2 border border-gray-300 rounded-md focus:ring-blue-500 focus:border-blue-500"
+                  placeholder="https://client-website.com"
+                  disabled={!!selectedClient}
+                />
+              </div>
+
+
+              {/* Submit */}
+              <div className="pt-4">
+                <button
+                  type="submit"
+                  className="w-full inline-flex justify-center py-2 px-4 border border-transparent shadow-sm text-sm font-medium rounded-md text-white bg-blue-600 hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500"
+                >
+                  Create Workflow
+                </button>
+              </div>
+            </form>
+
+            {/* Help Text */}
+            <div className="mt-6 p-4 bg-blue-50 rounded-md">
+              <h3 className="text-sm font-medium text-blue-800 mb-2">Quick Start Guide:</h3>
+              <ul className="text-sm text-blue-700 space-y-1">
+                <li>• Select an existing client to auto-fill their information</li>
+                <li>• Or enter client information manually for new clients</li>
+                <li>• Step 1 of the workflow will help you select the guest post website</li>
+                <li>• Later steps will help you determine which client URLs to link to</li>
+                <li>• You can <Link href="/clients" className="underline">manage clients</Link> to add target pages for linking</li>
+              </ul>
+            </div>
+          </div>
+        </div>
       </div>
-    </div>
+    </AuthWrapper>
+  );
+}
+
+export default function NewWorkflow() {
+  return (
+    <Suspense fallback={<div className="min-h-screen bg-gray-50 flex items-center justify-center">Loading...</div>}>
+      <NewWorkflowContent />
+    </Suspense>
   );
 }
