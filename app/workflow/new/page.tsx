@@ -19,7 +19,7 @@ export default function NewWorkflow() {
     e.preventDefault();
     
     const workflow: GuestPostWorkflow = {
-      id: crypto.randomUUID(),
+      id: crypto?.randomUUID ? crypto.randomUUID() : `workflow-${Date.now()}-${Math.random().toString(36).substr(2, 9)}`,
       createdAt: new Date(),
       updatedAt: new Date(),
       clientName: formData.clientName,

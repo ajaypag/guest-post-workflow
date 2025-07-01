@@ -27,15 +27,16 @@ export interface GuestPostWorkflow {
   };
 }
 
+// Updated step titles - force reload
 export const WORKFLOW_STEPS = [
   {
     id: 'domain-selection',
-    title: 'Domain Selection',
+    title: 'Guest Post Site Selection',
     description: 'Choose a site for guest posting'
   },
   {
     id: 'keyword-research',
-    title: 'Keyword Research & Analysis',
+    title: 'Site Qualification and Preparation',
     description: 'Generate keywords and analyze in Ahrefs'
   },
   {
@@ -45,7 +46,7 @@ export const WORKFLOW_STEPS = [
   },
   {
     id: 'deep-research',
-    title: 'Deep Research',
+    title: 'Outline Creation',
     description: 'Create detailed article outline'
   },
   {
@@ -55,7 +56,7 @@ export const WORKFLOW_STEPS = [
   },
   {
     id: 'content-audit',
-    title: 'Content Audit & SEO',
+    title: 'Semantic SEO Optimization',
     description: 'Audit and optimize the draft'
   },
   {
@@ -70,12 +71,12 @@ export const WORKFLOW_STEPS = [
   },
   {
     id: 'internal-links',
-    title: 'Internal Links',
+    title: 'Add Internal Links',
     description: 'Add internal links to guest post site'
   },
   {
     id: 'external-links',
-    title: 'External Links',
+    title: 'Add Tier 2 Links',
     description: 'Link to other guest posts'
   },
   {
@@ -95,7 +96,7 @@ export const WORKFLOW_STEPS = [
   },
   {
     id: 'link-requests',
-    title: 'Link Requests',
+    title: 'Internal Links to New Guest Post',
     description: 'Find articles for internal link requests'
   },
   {

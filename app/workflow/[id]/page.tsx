@@ -16,10 +16,7 @@ export default function WorkflowDetail() {
 
   useEffect(() => {
     const data = storage.getWorkflow(params.id as string);
-    console.log('Loading workflow:', data);
     if (data) {
-      console.log('Workflow steps:', data.steps);
-      console.log('Keyword research step:', data.steps.find(s => s.id === 'keyword-research'));
       setWorkflow(data);
       // Don't auto-jump to currentStep, stay on step 0 by default
       setActiveStep(0);
@@ -32,44 +29,27 @@ export default function WorkflowDetail() {
     if (!workflow) return;
 
     try {
+
       const updatedWorkflow = {
         ...workflow,
         updatedAt: new Date(),
         steps: workflow.steps.map((step, index) => {
           if (index === activeStep) {
-            return {
+            const updatedStep = {
               ...step,
               inputs: inputs || {},
               outputs: outputs || {},
               completedAt: new Date(),
               status: 'in-progress' as const
             };
+            return updatedStep;
           }
           return step;
         })
       };
 
-      console.log('=== DETAILED SAVE DEBUG ===');
-      console.log('Current activeStep:', activeStep);
-      console.log('Received outputs:', outputs);
-      console.log('Before update - step outputs:', workflow.steps[activeStep]?.outputs);
-      console.log('Updating workflow with step data:', { 
-        workflowId: workflow.id, 
-        stepIndex: activeStep, 
-        inputs, 
-        outputs 
-      });
-
       setWorkflow(updatedWorkflow);
       storage.saveWorkflow(updatedWorkflow);
-      
-      // Verify what was actually saved
-      const savedWorkflow = storage.getWorkflow(workflow.id);
-      console.log('After save - step outputs:', savedWorkflow?.steps[activeStep]?.outputs);
-      console.log('=== END SAVE DEBUG ===');
-      
-      // Show success feedback (you could add a toast notification here)
-      console.log('Step saved successfully');
     } catch (error) {
       console.error('Error saving step:', error);
       // You could add error notification here
