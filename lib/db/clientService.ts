@@ -180,4 +180,39 @@ export class ClientService {
       return false;
     }
   }
+
+  // Client assignment methods
+  static async assignUserToClient(clientId: string, userId: string): Promise<boolean> {
+    try {
+      await db.insert(clientAssignments).values({
+        clientId,
+        userId
+      });
+      return true;
+    } catch (error) {
+      // Ignore duplicate assignments
+      if (error && typeof error === 'object' && 'code' in error && error.code === '23505') {
+        return true; // User already assigned
+      }
+      console.error('Error assigning user to client:', error);
+      return false;
+    }
+  }
+
+  static async removeUserFromClient(clientId: string, userId: string): Promise<boolean> {
+    try {
+      await db
+        .delete(clientAssignments)
+        .where(
+          and(
+            eq(clientAssignments.clientId, clientId),
+            eq(clientAssignments.userId, userId)
+          )
+        );
+      return true;
+    } catch (error) {
+      console.error('Error removing user from client:', error);
+      return false;
+    }
+  }
 }

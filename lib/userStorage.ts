@@ -168,58 +168,181 @@ export const sessionStorage = {
   }
 };
 
-// Client Management - Temporarily simplified for initial deployment
+// Client Management
 export const clientStorage = {
   // Get all clients
   async getAllClients(): Promise<Client[]> {
     if (typeof window === 'undefined') return [];
     try {
-      // TODO: Implement with API routes
-      return [];
+      const response = await fetch('/api/clients');
+      if (!response.ok) return [];
+      
+      const { clients } = await response.json();
+      return clients;
     } catch (error) {
       console.error('Error loading clients:', error);
       return [];
     }
   },
 
-  // Get clients for current user - TODO: Implement with API routes
+  // Get clients for current user
   async getUserClients(userId: string): Promise<Client[]> {
-    return [];
+    try {
+      const response = await fetch(`/api/clients?userId=${userId}`);
+      if (!response.ok) return [];
+      
+      const { clients } = await response.json();
+      return clients;
+    } catch (error) {
+      console.error('Error loading user clients:', error);
+      return [];
+    }
   },
 
-  // Get client by ID - TODO: Implement with API routes
+  // Get client by ID
   async getClient(id: string): Promise<Client | null> {
-    return null;
+    try {
+      const response = await fetch(`/api/clients/${id}`);
+      if (!response.ok) return null;
+      
+      const { client } = await response.json();
+      return client;
+    } catch (error) {
+      console.error('Error getting client:', error);
+      return null;
+    }
   },
 
-  // Create new client - TODO: Implement with API routes
+  // Create new client
   async createClient(clientData: Omit<Client, 'id' | 'createdAt' | 'updatedAt'>): Promise<Client> {
-    throw new Error('Client creation not implemented yet');
+    try {
+      const response = await fetch('/api/clients', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify(clientData),
+      });
+
+      if (!response.ok) {
+        const error = await response.json();
+        throw new Error(error.error || 'Failed to create client');
+      }
+
+      const { client } = await response.json();
+      return client;
+    } catch (error) {
+      console.error('Error creating client:', error);
+      throw error;
+    }
   },
 
-  // Update client - TODO: Implement with API routes
+  // Update client
   async updateClient(id: string, updates: Partial<Client>): Promise<Client | null> {
-    return null;
+    try {
+      const response = await fetch(`/api/clients/${id}`, {
+        method: 'PUT',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify(updates),
+      });
+
+      if (!response.ok) return null;
+
+      const { client } = await response.json();
+      return client;
+    } catch (error) {
+      console.error('Error updating client:', error);
+      return null;
+    }
   },
 
-  // Delete client - TODO: Implement with API routes
+  // Delete client
   async deleteClient(id: string): Promise<boolean> {
-    return false;
+    try {
+      const response = await fetch(`/api/clients/${id}`, {
+        method: 'DELETE',
+      });
+      
+      return response.ok;
+    } catch (error) {
+      console.error('Error deleting client:', error);
+      return false;
+    }
   },
 
-  // Add target pages to client - TODO: Implement with API routes
+  // Add target pages to client
   async addTargetPages(clientId: string, urls: string[]): Promise<boolean> {
-    return false;
+    try {
+      const client = await this.getClient(clientId);
+      if (!client) return false;
+
+      const newPages: TargetPage[] = urls.map(url => ({
+        id: generateUUID(),
+        url,
+        domain: new URL(url).hostname,
+        status: 'active',
+        addedAt: new Date()
+      }));
+
+      // For now, just update the client with the new pages
+      // TODO: Create separate API endpoint for target pages
+      const existingPages = (client as any).targetPages || [];
+      return (await this.updateClient(clientId, {
+        targetPages: [...existingPages, ...newPages]
+      } as any)) !== null;
+    } catch (error) {
+      console.error('Error adding target pages:', error);
+      return false;
+    }
   },
 
-  // Update target page status - TODO: Implement with API routes
+  // Update target page status
   async updateTargetPageStatus(clientId: string, pageIds: string[], status: TargetPage['status']): Promise<boolean> {
-    return false;
+    try {
+      const client = await this.getClient(clientId);
+      if (!client) return false;
+
+      const existingPages = (client as any).targetPages || [];
+      const updatedPages = existingPages.map((page: TargetPage) => {
+        if (pageIds.includes(page.id)) {
+          return {
+            ...page,
+            status,
+            completedAt: status === 'completed' ? new Date() : undefined
+          };
+        }
+        return page;
+      });
+
+      return (await this.updateClient(clientId, {
+        targetPages: updatedPages
+      } as any)) !== null;
+    } catch (error) {
+      console.error('Error updating target page status:', error);
+      return false;
+    }
   },
 
-  // Remove target pages - TODO: Implement with API routes
+  // Remove target pages
   async removeTargetPages(clientId: string, pageIds: string[]): Promise<boolean> {
-    return false;
+    try {
+      const client = await this.getClient(clientId);
+      if (!client) return false;
+
+      const existingPages = (client as any).targetPages || [];
+      const filteredPages = existingPages.filter((page: TargetPage) => 
+        !pageIds.includes(page.id)
+      );
+
+      return (await this.updateClient(clientId, {
+        targetPages: filteredPages
+      } as any)) !== null;
+    } catch (error) {
+      console.error('Error removing target pages:', error);
+      return false;
+    }
   }
 };
 
