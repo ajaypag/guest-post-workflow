@@ -169,7 +169,13 @@ export class WorkflowService {
 
       // Create workflow record
       console.log('Creating workflow record...');
-      const createdWorkflow = await db.insert(workflows).values(workflowData).returning();
+      console.log('workflowData being inserted:', JSON.stringify(workflowData, null, 2));
+      
+      // Explicitly exclude fields that should be auto-generated
+      const { id, createdAt, updatedAt, ...insertData } = workflowData as any;
+      console.log('Cleaned insertData:', JSON.stringify(insertData, null, 2));
+      
+      const createdWorkflow = await db.insert(workflows).values(insertData).returning();
       const workflow = createdWorkflow[0];
       console.log('Workflow record created:', workflow.id);
 
@@ -177,8 +183,9 @@ export class WorkflowService {
       console.log('Creating workflow steps...');
       const stepPromises = stepsData.map((stepData, index) => {
         console.log(`Creating step ${index + 1}:`, stepData.title);
+        const { id, createdAt, updatedAt, ...cleanStepData } = stepData as any;
         return db.insert(workflowSteps).values({
-          ...stepData,
+          ...cleanStepData,
           workflowId: workflow.id,
         }).returning();
       });
