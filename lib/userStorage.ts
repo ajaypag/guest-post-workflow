@@ -1,5 +1,20 @@
 import { User, Client, TargetPage, AuthSession } from '@/types/user';
 
+// Safe UUID generator that works in all environments
+function generateUUID(): string {
+  // Try crypto.randomUUID first if available
+  if (typeof crypto !== 'undefined' && typeof crypto.randomUUID === 'function') {
+    return crypto.randomUUID();
+  }
+  
+  // Fallback to manual UUID v4 generation
+  return 'xxxxxxxx-xxxx-4xxx-yxxx-xxxxxxxxxxxx'.replace(/[xy]/g, function(c) {
+    const r = Math.random() * 16 | 0;
+    const v = c === 'x' ? r : (r & 0x3 | 0x8);
+    return v.toString(16);
+  });
+}
+
 const USERS_KEY = 'guest_post_users';
 const CLIENTS_KEY = 'guest_post_clients';
 const SESSION_KEY = 'guest_post_session';
@@ -35,7 +50,7 @@ export const userStorage = {
     const users = this.getAllUsers();
     const newUser: User = {
       ...userData,
-      id: crypto.randomUUID(),
+      id: generateUUID(),
       createdAt: new Date(),
     };
     
@@ -166,7 +181,7 @@ export const clientStorage = {
     const clients = this.getAllClients();
     const newClient: Client = {
       ...clientData,
-      id: crypto.randomUUID(),
+      id: generateUUID(),
       createdAt: new Date(),
       updatedAt: new Date(),
     };
@@ -209,7 +224,7 @@ export const clientStorage = {
     if (!client) return false;
 
     const newPages: TargetPage[] = urls.map(url => ({
-      id: crypto.randomUUID(),
+      id: generateUUID(),
       url,
       domain: new URL(url).hostname,
       status: 'active',

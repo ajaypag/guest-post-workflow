@@ -11,6 +11,18 @@ import { storage } from '@/lib/storage';
 import { clientStorage, sessionStorage } from '@/lib/userStorage';
 import { Client } from '@/types/user';
 
+// Safe UUID generator
+function generateUUID(): string {
+  if (typeof crypto !== 'undefined' && typeof crypto.randomUUID === 'function') {
+    return crypto.randomUUID();
+  }
+  return 'xxxxxxxx-xxxx-4xxx-yxxx-xxxxxxxxxxxx'.replace(/[xy]/g, function(c) {
+    const r = Math.random() * 16 | 0;
+    const v = c === 'x' ? r : (r & 0x3 | 0x8);
+    return v.toString(16);
+  });
+}
+
 function NewWorkflowContent() {
   const router = useRouter();
   const searchParams = useSearchParams();
@@ -67,7 +79,7 @@ function NewWorkflowContent() {
     const session = sessionStorage.getSession();
     
     const workflow: GuestPostWorkflow = {
-      id: crypto?.randomUUID ? crypto.randomUUID() : `workflow-${Date.now()}-${Math.random().toString(36).substr(2, 9)}`,
+      id: generateUUID(),
       createdAt: new Date(),
       updatedAt: new Date(),
       clientName: formData.clientName,
