@@ -36,24 +36,25 @@ function NewWorkflowContent() {
   useEffect(() => {
     loadClients();
     
-    // Pre-select client if coming from client page
-    const clientId = searchParams.get('clientId');
-    if (clientId) {
-      const client = clientStorage.getClient(clientId);
-      if (client) {
-        handleClientSelect(client);
-      }
-    }
+    // Pre-select client if coming from client page - TODO: Implement with API routes
+    // const clientId = searchParams.get('clientId');
+    // if (clientId) {
+    //   const client = await clientStorage.getClient(clientId);
+    //   if (client) {
+    //     handleClientSelect(client);
+    //   }
+    // }
   }, [searchParams]);
 
-  const loadClients = () => {
+  const loadClients = async () => {
     const session = sessionStorage.getSession();
     if (!session) return;
 
-    if (session.role === 'admin') {
-      setClients(clientStorage.getAllClients());
-    } else {
-      setClients(clientStorage.getUserClients(session.userId));
+    try {
+      // TODO: Implement with API routes - for now return empty array
+      setClients([]);
+    } catch (error) {
+      console.error('Error loading clients:', error);
     }
   };
 

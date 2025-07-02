@@ -6,7 +6,8 @@ import Link from 'next/link';
 import { ArrowLeft, TrendingUp, Calendar, Clock, Target, Award, Activity, Users, FileText, CheckCircle } from 'lucide-react';
 import AuthWrapper from '@/components/AuthWrapper';
 import Header from '@/components/Header';
-import { User as UserType, AuthSession } from '@/types/user';
+import { User as UserType } from '@/types/user';
+import { type AuthSession } from '@/lib/auth';
 import { userStorage, sessionStorage } from '@/lib/userStorage';
 import { storage } from '@/lib/storage';
 import { format, subDays, subWeeks, subMonths, startOfWeek, endOfWeek, startOfMonth, endOfMonth, eachDayOfInterval, eachWeekOfInterval, eachMonthOfInterval } from 'date-fns';
@@ -47,11 +48,12 @@ export default function Analytics() {
     calculateAnalytics();
   }, [router, timeRange]);
 
-  const calculateAnalytics = () => {
-    const users = userStorage.getAllUsers();
-    const workflows = storage.getAllWorkflows();
-    
-    const analytics: UserAnalytics[] = users.map(user => {
+  const calculateAnalytics = async () => {
+    try {
+      const users = await userStorage.getAllUsers();
+      const workflows = await storage.getAllWorkflows();
+      
+      const analytics: UserAnalytics[] = users.map(user => {
       const userWorkflows = workflows.filter(w => w.createdByEmail === user.email);
       
       // Time range calculations
@@ -130,8 +132,12 @@ export default function Analytics() {
       };
     });
     
-    setUserAnalytics(analytics.sort((a, b) => b.productivityScore - a.productivityScore));
-    setLoading(false);
+      setUserAnalytics(analytics.sort((a, b) => b.productivityScore - a.productivityScore));
+    } catch (error) {
+      console.error('Error calculating analytics:', error);
+    } finally {
+      setLoading(false);
+    }
   };
 
   const calculateStreak = (workflows: any[]) => {

@@ -1,7 +1,5 @@
-import { User, Client, TargetPage, AuthSession } from '@/types/user';
-import { UserService } from './db/userService';
-import { ClientService } from './db/clientService';
-import { AuthService } from './auth';
+import { User, Client, TargetPage } from '@/types/user';
+import { AuthService, type AuthSession } from './auth';
 
 // Safe UUID generator that works in all environments
 function generateUUID(): string {
@@ -24,7 +22,11 @@ export const userStorage = {
   async getAllUsers(): Promise<User[]> {
     if (typeof window === 'undefined') return [];
     try {
-      return await UserService.getAllUsers();
+      const response = await fetch('/api/users');
+      if (!response.ok) return [];
+      
+      const { users } = await response.json();
+      return users;
     } catch (error) {
       console.error('Error loading users:', error);
       return [];
@@ -34,7 +36,11 @@ export const userStorage = {
   // Get user by ID
   async getUser(id: string): Promise<User | null> {
     try {
-      return await UserService.getUser(id);
+      const response = await fetch(`/api/users/${id}`);
+      if (!response.ok) return null;
+      
+      const { user } = await response.json();
+      return user;
     } catch (error) {
       console.error('Error getting user:', error);
       return null;
@@ -44,7 +50,8 @@ export const userStorage = {
   // Get user by email
   async getUserByEmail(email: string): Promise<User | null> {
     try {
-      return await UserService.getUserByEmail(email);
+      const users = await this.getAllUsers();
+      return users.find(user => user.email === email) || null;
     } catch (error) {
       console.error('Error getting user by email:', error);
       return null;
@@ -54,11 +61,24 @@ export const userStorage = {
   // Create new user
   async createUser(userData: Omit<User, 'id' | 'createdAt'>): Promise<User> {
     try {
-      return await UserService.createUser({
-        ...userData,
-        password: userData.password,
-        isActive: userData.isActive ?? true
+      const response = await fetch('/api/users', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+          ...userData,
+          isActive: userData.isActive ?? true
+        }),
       });
+
+      if (!response.ok) {
+        const error = await response.json();
+        throw new Error(error.error || 'Failed to create user');
+      }
+
+      const { user } = await response.json();
+      return user;
     } catch (error) {
       console.error('Error creating user:', error);
       throw error;
@@ -68,7 +88,18 @@ export const userStorage = {
   // Update user
   async updateUser(id: string, updates: Partial<User>): Promise<User | null> {
     try {
-      return await UserService.updateUser(id, updates);
+      const response = await fetch(`/api/users/${id}`, {
+        method: 'PUT',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify(updates),
+      });
+
+      if (!response.ok) return null;
+
+      const { user } = await response.json();
+      return user;
     } catch (error) {
       console.error('Error updating user:', error);
       return null;
@@ -78,8 +109,11 @@ export const userStorage = {
   // Delete user
   async deleteUser(id: string): Promise<boolean> {
     try {
-      await UserService.deleteUser(id);
-      return true;
+      const response = await fetch(`/api/users/${id}`, {
+        method: 'DELETE',
+      });
+      
+      return response.ok;
     } catch (error) {
       console.error('Error deleting user:', error);
       return false;
@@ -89,9 +123,9 @@ export const userStorage = {
   // Initialize with admin user if no users exist
   async initializeAdmin(): Promise<void> {
     try {
-      const users = await UserService.getAllUsers();
+      const users = await this.getAllUsers();
       if (users.length === 0) {
-        await UserService.createUser({
+        await this.createUser({
           email: 'admin@example.com',
           name: 'Admin User',
           password: 'admin123',
@@ -109,7 +143,7 @@ export const userStorage = {
 // Session Management - Delegated to AuthService
 export const sessionStorage = {
   // Set current session
-  setSession(user: User): void {
+  setSession(user: any): void {
     AuthService.setSession(user);
   },
 
@@ -134,136 +168,58 @@ export const sessionStorage = {
   }
 };
 
-// Client Management
+// Client Management - Temporarily simplified for initial deployment
 export const clientStorage = {
   // Get all clients
   async getAllClients(): Promise<Client[]> {
     if (typeof window === 'undefined') return [];
     try {
-      return await ClientService.getAllClients();
+      // TODO: Implement with API routes
+      return [];
     } catch (error) {
       console.error('Error loading clients:', error);
       return [];
     }
   },
 
-  // Get clients for current user
+  // Get clients for current user - TODO: Implement with API routes
   async getUserClients(userId: string): Promise<Client[]> {
-    try {
-      return await ClientService.getUserClients(userId);
-    } catch (error) {
-      console.error('Error loading user clients:', error);
-      return [];
-    }
+    return [];
   },
 
-  // Get client by ID
+  // Get client by ID - TODO: Implement with API routes
   async getClient(id: string): Promise<Client | null> {
-    try {
-      return await ClientService.getClient(id);
-    } catch (error) {
-      console.error('Error getting client:', error);
-      return null;
-    }
+    return null;
   },
 
-  // Create new client
+  // Create new client - TODO: Implement with API routes
   async createClient(clientData: Omit<Client, 'id' | 'createdAt' | 'updatedAt'>): Promise<Client> {
-    try {
-      return await ClientService.createClient(clientData);
-    } catch (error) {
-      console.error('Error creating client:', error);
-      throw error;
-    }
+    throw new Error('Client creation not implemented yet');
   },
 
-  // Update client
+  // Update client - TODO: Implement with API routes
   async updateClient(id: string, updates: Partial<Client>): Promise<Client | null> {
-    try {
-      return await ClientService.updateClient(id, updates);
-    } catch (error) {
-      console.error('Error updating client:', error);
-      return null;
-    }
+    return null;
   },
 
-  // Delete client
+  // Delete client - TODO: Implement with API routes
   async deleteClient(id: string): Promise<boolean> {
-    try {
-      await ClientService.deleteClient(id);
-      return true;
-    } catch (error) {
-      console.error('Error deleting client:', error);
-      return false;
-    }
+    return false;
   },
 
-  // Add target pages to client
+  // Add target pages to client - TODO: Implement with API routes
   async addTargetPages(clientId: string, urls: string[]): Promise<boolean> {
-    try {
-      const client = await this.getClient(clientId);
-      if (!client) return false;
-
-      const newPages: TargetPage[] = urls.map(url => ({
-        id: generateUUID(),
-        url,
-        domain: new URL(url).hostname,
-        status: 'active',
-        addedAt: new Date()
-      }));
-
-      return (await this.updateClient(clientId, {
-        targetPages: [...client.targetPages, ...newPages]
-      })) !== null;
-    } catch (error) {
-      console.error('Error adding target pages:', error);
-      return false;
-    }
+    return false;
   },
 
-  // Update target page status (bulk operation)
+  // Update target page status - TODO: Implement with API routes
   async updateTargetPageStatus(clientId: string, pageIds: string[], status: TargetPage['status']): Promise<boolean> {
-    try {
-      const client = await this.getClient(clientId);
-      if (!client) return false;
-
-      const updatedPages = client.targetPages.map(page => {
-        if (pageIds.includes(page.id)) {
-          return {
-            ...page,
-            status,
-            completedAt: status === 'completed' ? new Date() : undefined
-          };
-        }
-        return page;
-      });
-
-      return (await this.updateClient(clientId, {
-        targetPages: updatedPages
-      })) !== null;
-    } catch (error) {
-      console.error('Error updating target page status:', error);
-      return false;
-    }
+    return false;
   },
 
-  // Remove target pages (bulk operation)
+  // Remove target pages - TODO: Implement with API routes
   async removeTargetPages(clientId: string, pageIds: string[]): Promise<boolean> {
-    try {
-      const client = await this.getClient(clientId);
-      if (!client) return false;
-
-      const filteredPages = client.targetPages.filter(page => 
-        !pageIds.includes(page.id)
-      );
-
-      return (await this.updateClient(clientId, {
-        targetPages: filteredPages
-      })) !== null;
-    } catch (error) {
-      console.error('Error removing target pages:', error);
-      return false;
-    }
+    return false;
   }
 };
 

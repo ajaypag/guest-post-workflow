@@ -21,18 +21,24 @@ export default function ClientsPage() {
     loadClients();
   }, []);
 
-  const loadClients = () => {
+  const loadClients = async () => {
     const session = sessionStorage.getSession();
     if (!session) return;
 
-    if (session.role === 'admin') {
-      setClients(clientStorage.getAllClients());
-    } else {
-      setClients(clientStorage.getUserClients(session.userId));
+    try {
+      if (session.role === 'admin') {
+        const allClients = await clientStorage.getAllClients();
+        setClients(allClients);
+      } else {
+        const userClients = await clientStorage.getUserClients(session.userId);
+        setClients(userClients);
+      }
+    } catch (error) {
+      console.error('Error loading clients:', error);
     }
   };
 
-  const handleCreateClient = (e: React.FormEvent) => {
+  const handleCreateClient = async (e: React.FormEvent) => {
     e.preventDefault();
     const session = sessionStorage.getSession();
     if (!session) return;
@@ -44,7 +50,7 @@ export default function ClientsPage() {
         .map(url => url.trim())
         .filter(url => url.length > 0);
 
-      const client = clientStorage.createClient({
+      const client = await clientStorage.createClient({
         name: newClient.name,
         website: newClient.website,
         targetPages: [],
@@ -54,12 +60,12 @@ export default function ClientsPage() {
 
       // Add target pages if provided
       if (urls.length > 0) {
-        clientStorage.addTargetPages(client.id, urls);
+        await clientStorage.addTargetPages(client.id, urls);
       }
 
       setNewClient({ name: '', website: '', targetPages: '' });
       setShowNewClientForm(false);
-      loadClients();
+      await loadClients();
     } catch (error: any) {
       alert('Error creating client: ' + error.message);
     }

@@ -19,25 +19,34 @@ export default function WorkflowDetail() {
   const sidebarRef = useRef<HTMLDivElement>(null);
 
   useEffect(() => {
-    const data = storage.getWorkflow(params.id as string);
-    if (data) {
-      setWorkflow(data);
-      
-      // Check if there's a step parameter in the URL
-      const stepParam = searchParams.get('step');
-      if (stepParam) {
-        const stepIndex = parseInt(stepParam, 10);
-        if (stepIndex >= 0 && stepIndex < data.steps.length) {
-          setActiveStep(stepIndex);
+    const loadWorkflow = async () => {
+      try {
+        const data = await storage.getWorkflow(params.id as string);
+        if (data) {
+          setWorkflow(data);
+          
+          // Check if there's a step parameter in the URL
+          const stepParam = searchParams.get('step');
+          if (stepParam) {
+            const stepIndex = parseInt(stepParam, 10);
+            if (stepIndex >= 0 && stepIndex < data.steps.length) {
+              setActiveStep(stepIndex);
+            } else {
+              setActiveStep(0);
+            }
+          } else {
+            setActiveStep(0);
+          }
         } else {
-          setActiveStep(0);
+          router.push('/');
         }
-      } else {
-        setActiveStep(0);
+      } catch (error) {
+        console.error('Error loading workflow:', error);
+        router.push('/');
       }
-    } else {
-      router.push('/');
-    }
+    };
+    
+    loadWorkflow();
   }, [params.id, router, searchParams]);
 
   // Function to update URL when step changes
@@ -66,7 +75,7 @@ export default function WorkflowDetail() {
     }, 100);
   };
 
-  const handleStepSave = (inputs: Record<string, any>, outputs: Record<string, any>) => {
+  const handleStepSave = async (inputs: Record<string, any>, outputs: Record<string, any>) => {
     if (!workflow) return;
 
     try {
@@ -89,7 +98,7 @@ export default function WorkflowDetail() {
       };
 
       setWorkflow(updatedWorkflow);
-      storage.saveWorkflow(updatedWorkflow);
+      await storage.saveWorkflow(updatedWorkflow);
       
       // Auto-advance to next step if not at the last step
       if (activeStep < workflow.steps.length - 1) {

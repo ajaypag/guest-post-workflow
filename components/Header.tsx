@@ -3,7 +3,7 @@
 import Link from 'next/link';
 import { useRouter } from 'next/navigation';
 import { sessionStorage } from '@/lib/userStorage';
-import { AuthSession } from '@/types/user';
+import { type AuthSession } from '@/lib/auth';
 import { useState, useEffect } from 'react';
 import { User, LogOut, Users, Building2, Zap } from 'lucide-react';
 

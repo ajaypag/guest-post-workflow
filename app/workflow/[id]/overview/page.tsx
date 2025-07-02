@@ -16,12 +16,21 @@ export default function WorkflowOverview() {
   const [workflow, setWorkflow] = useState<GuestPostWorkflow | null>(null);
 
   useEffect(() => {
-    const data = storage.getWorkflow(params.id as string);
-    if (data) {
-      setWorkflow(data);
-    } else {
-      router.push('/');
-    }
+    const loadWorkflow = async () => {
+      try {
+        const data = await storage.getWorkflow(params.id as string);
+        if (data) {
+          setWorkflow(data);
+        } else {
+          router.push('/');
+        }
+      } catch (error) {
+        console.error('Error loading workflow:', error);
+        router.push('/');
+      }
+    };
+    
+    loadWorkflow();
   }, [params.id, router]);
 
   if (!workflow) {
@@ -81,14 +90,19 @@ export default function WorkflowOverview() {
                 {getProgress()}% Complete
               </div>
               <button
-                onClick={() => {
-                  const data = storage.exportWorkflow(workflow.id);
-                  const blob = new Blob([data], { type: 'application/json' });
-                  const url = URL.createObjectURL(blob);
-                  const a = document.createElement('a');
-                  a.href = url;
-                  a.download = `workflow-overview-${workflow.clientName}-${workflow.id}.json`;
-                  a.click();
+                onClick={async () => {
+                  try {
+                    const data = await storage.exportWorkflow(workflow.id);
+                    const blob = new Blob([data], { type: 'application/json' });
+                    const url = URL.createObjectURL(blob);
+                    const a = document.createElement('a');
+                    a.href = url;
+                    a.download = `workflow-overview-${workflow.clientName}-${workflow.id}.json`;
+                    a.click();
+                  } catch (error) {
+                    console.error('Error exporting workflow:', error);
+                    alert('Failed to export workflow');
+                  }
                 }}
                 className="px-4 py-2 bg-gray-50 text-gray-700 border border-gray-200 rounded-lg hover:bg-gray-100 transition-colors"
               >

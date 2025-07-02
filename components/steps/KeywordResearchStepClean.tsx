@@ -25,10 +25,10 @@ export const KeywordResearchStepClean = ({ step, workflow, onChange }: KeywordRe
   const guestPostSite = domainSelectionStep?.outputs?.domain || '';
   const keywords = step.outputs.keywords || '';
   
-  // Get client data if available
+  // Get client data if available - TODO: Implement with async API calls
   const clientId = workflow.metadata?.clientId;
-  const client = clientId ? clientStorage.getClient(clientId) : null;
-  const activeTargetPages = client?.targetPages.filter(page => page.status === 'active') || [];
+  // const client = clientId ? await clientStorage.getClient(clientId) : null;
+  const activeTargetPages: any[] = []; // TODO: Load from client when implemented
   
   const toggleSection = (section: string) => {
     setExpandedSections(prev => ({
@@ -315,11 +315,11 @@ export const KeywordResearchStepClean = ({ step, workflow, onChange }: KeywordRe
                 </div>
               </div>
 
-              {/* Client Target URLs */}
-              {client && activeTargetPages.length > 0 && (
+              {/* Client Target URLs - TODO: Implement when client API is ready */}
+              {false && activeTargetPages.length > 0 && (
                 <div className="bg-purple-50 border border-purple-200 rounded-lg p-4">
                   <h4 className="font-medium text-purple-800 mb-3">
-                    📌 Target URLs for {client.name}
+                    📌 Target URLs
                   </h4>
                   <p className="text-sm text-purple-700 mb-3">
                     These are the active target URLs configured for this client. Click to copy any URL.

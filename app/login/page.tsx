@@ -3,7 +3,6 @@
 import { useState, useEffect } from 'react';
 import { useRouter } from 'next/navigation';
 import { AuthService } from '@/lib/auth';
-import { initializeDatabase } from '@/lib/db/init';
 
 export default function LoginPage() {
   const router = useRouter();
@@ -15,28 +14,11 @@ export default function LoginPage() {
   });
   const [error, setError] = useState('');
   const [loading, setLoading] = useState(false);
-  const [dbInitialized, setDbInitialized] = useState(false);
-
-  useEffect(() => {
-    // Initialize database on component mount
-    initializeDatabase().then(success => {
-      setDbInitialized(success);
-      if (!success) {
-        setError('Database connection failed. Please try again later.');
-      }
-    });
-  }, []);
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     setError('');
     setLoading(true);
-
-    if (!dbInitialized) {
-      setError('Database not ready. Please refresh the page.');
-      setLoading(false);
-      return;
-    }
 
     try {
       if (isLogin) {

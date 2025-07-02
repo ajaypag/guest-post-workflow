@@ -26,16 +26,21 @@ export default function ClientDetailPage() {
     loadClient();
   }, [params.id]);
 
-  const loadClient = () => {
-    const clientData = clientStorage.getClient(params.id as string);
-    if (!clientData) {
+  const loadClient = async () => {
+    try {
+      const clientData = await clientStorage.getClient(params.id as string);
+      if (!clientData) {
+        router.push('/clients');
+        return;
+      }
+      setClient(clientData);
+    } catch (error) {
+      console.error('Error loading client:', error);
       router.push('/clients');
-      return;
     }
-    setClient(clientData);
   };
 
-  const handleAddPages = (e: React.FormEvent) => {
+  const handleAddPages = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!client) return;
 
@@ -47,16 +52,16 @@ export default function ClientDetailPage() {
     if (urls.length === 0) return;
 
     try {
-      clientStorage.addTargetPages(client.id, urls);
+      await clientStorage.addTargetPages(client.id, urls);
       setNewPages('');
       setShowAddForm(false);
-      loadClient();
+      await loadClient();
     } catch (error: any) {
       alert('Error adding pages: ' + error.message);
     }
   };
 
-  const handleBulkAction = () => {
+  const handleBulkAction = async () => {
     if (!client || selectedPages.length === 0 || !bulkAction) return;
 
     const confirmMessage = bulkAction === 'delete' 
@@ -67,14 +72,14 @@ export default function ClientDetailPage() {
 
     try {
       if (bulkAction === 'delete') {
-        clientStorage.removeTargetPages(client.id, selectedPages);
+        await clientStorage.removeTargetPages(client.id, selectedPages);
       } else {
-        clientStorage.updateTargetPageStatus(client.id, selectedPages, bulkAction);
+        await clientStorage.updateTargetPageStatus(client.id, selectedPages, bulkAction);
       }
       
       setSelectedPages([]);
       setBulkAction('');
-      loadClient();
+      await loadClient();
     } catch (error: any) {
       alert('Error performing bulk action: ' + error.message);
     }

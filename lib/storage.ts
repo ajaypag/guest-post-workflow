@@ -1,5 +1,4 @@
 import { GuestPostWorkflow } from '@/types/workflow';
-import { WorkflowService } from './db/workflowService';
 import { AuthService } from './auth';
 
 // Helper function to safely parse dates
@@ -25,7 +24,10 @@ export const storage = {
       const session = AuthService.getSession();
       if (!session) return [];
       
-      const workflows = await WorkflowService.getUserWorkflows(session.userId);
+      const response = await fetch(`/api/workflows?userId=${session.userId}`);
+      if (!response.ok) return [];
+      
+      const { workflows } = await response.json();
       return workflows.map(parseWorkflowDates);
     } catch (error) {
       console.error('Error loading workflows from database:', error);
@@ -35,7 +37,10 @@ export const storage = {
 
   getWorkflow: async (id: string): Promise<GuestPostWorkflow | null> => {
     try {
-      const workflow = await WorkflowService.getWorkflow(id);
+      const response = await fetch(`/api/workflows/${id}`);
+      if (!response.ok) return null;
+      
+      const { workflow } = await response.json();
       return workflow ? parseWorkflowDates(workflow) : null;
     } catch (error) {
       console.error('Error getting workflow:', error);
@@ -49,27 +54,52 @@ export const storage = {
       const session = AuthService.getSession();
       if (!session) throw new Error('User not authenticated');
       
-      const existing = await WorkflowService.getWorkflow(workflow.id);
-      if (existing) {
-        await WorkflowService.updateWorkflow(workflow.id, {
-          clientId: workflow.clientId,
-          title: workflow.title,
-          status: workflow.status,
-          content: workflow.content,
-          targetPages: workflow.targetPages,
-          steps: workflow.steps
+      // Check if workflow exists
+      const existingResponse = await fetch(`/api/workflows/${workflow.id}`);
+      const exists = existingResponse.ok;
+      
+      if (exists) {
+        // Update existing workflow
+        const response = await fetch(`/api/workflows/${workflow.id}`, {
+          method: 'PUT',
+          headers: {
+            'Content-Type': 'application/json',
+          },
+          body: JSON.stringify({
+            clientId: workflow.metadata?.clientId,
+            title: workflow.clientName, // Using clientName as title
+            status: 'active', // Default status
+            content: JSON.stringify(workflow),
+            targetPages: [],
+            steps: workflow.steps
+          }),
         });
+        
+        if (!response.ok) {
+          throw new Error('Failed to update workflow');
+        }
       } else {
-        await WorkflowService.createWorkflow({
-          id: workflow.id,
-          userId: session.userId,
-          clientId: workflow.clientId,
-          title: workflow.title,
-          status: workflow.status,
-          content: workflow.content,
-          targetPages: workflow.targetPages,
-          steps: workflow.steps
+        // Create new workflow
+        const response = await fetch('/api/workflows', {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+          },
+          body: JSON.stringify({
+            id: workflow.id,
+            userId: session.userId,
+            clientId: workflow.metadata?.clientId,
+            title: workflow.clientName, // Using clientName as title
+            status: 'active', // Default status
+            content: JSON.stringify(workflow),
+            targetPages: [],
+            steps: workflow.steps
+          }),
         });
+        
+        if (!response.ok) {
+          throw new Error('Failed to create workflow');
+        }
       }
       console.log('Workflow saved successfully');
     } catch (error) {
@@ -80,7 +110,13 @@ export const storage = {
 
   deleteWorkflow: async (id: string): Promise<void> => {
     try {
-      await WorkflowService.deleteWorkflow(id);
+      const response = await fetch(`/api/workflows/${id}`, {
+        method: 'DELETE',
+      });
+      
+      if (!response.ok) {
+        throw new Error('Failed to delete workflow');
+      }
     } catch (error) {
       console.error('Error deleting workflow:', error);
       throw error;

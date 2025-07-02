@@ -15,7 +15,7 @@ export default function UpdateWorkflows() {
     setUpdateResult(null);
 
     try {
-      const count = updateAllWorkflowsWithNewSteps();
+      const count = await updateAllWorkflowsWithNewSteps();
       setUpdateResult(count);
     } catch (err) {
       setError(err instanceof Error ? err.message : 'Update failed');

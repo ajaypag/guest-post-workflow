@@ -4,12 +4,12 @@ import { WORKFLOW_STEPS } from '@/types/workflow';
 /**
  * Updates all existing workflows to include new steps from WORKFLOW_STEPS
  */
-export function updateAllWorkflowsWithNewSteps() {
+export async function updateAllWorkflowsWithNewSteps() {
   try {
-    const workflows = storage.getAllWorkflows();
+    const workflows = await storage.getAllWorkflows();
     let updatedCount = 0;
 
-    workflows.forEach(workflow => {
+    workflows.forEach(async (workflow) => {
       // Check if workflow needs updating (missing steps)
       const needsUpdate = workflow.steps.length < WORKFLOW_STEPS.length;
       
@@ -29,7 +29,7 @@ export function updateAllWorkflowsWithNewSteps() {
           steps: [...workflow.steps, ...missingSteps]
         };
 
-        storage.saveWorkflow(updatedWorkflow);
+        await storage.saveWorkflow(updatedWorkflow);
         updatedCount++;
       }
     });

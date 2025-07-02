@@ -1,4 +1,3 @@
-import { UserService } from './db/userService';
 import { type User } from './db/schema';
 
 export interface AuthSession {
@@ -12,7 +11,7 @@ export class AuthService {
   private static SESSION_KEY = 'guest_post_session';
 
   // Set current session
-  static setSession(user: User): void {
+  static setSession(user: any): void {
     const session: AuthSession = {
       userId: user.id,
       email: user.email,
@@ -59,7 +58,19 @@ export class AuthService {
   // Login with email and password
   static async login(email: string, password: string): Promise<User | null> {
     try {
-      const user = await UserService.verifyPassword(email, password);
+      const response = await fetch('/api/auth/login', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({ email, password }),
+      });
+
+      if (!response.ok) {
+        return null;
+      }
+
+      const { user } = await response.json();
       if (user) {
         this.setSession(user);
       }
@@ -78,14 +89,20 @@ export class AuthService {
     role?: string;
   }): Promise<User | null> {
     try {
-      const user = await UserService.createUser({
-        email: userData.email,
-        name: userData.name,
-        password: userData.password,
-        role: userData.role || 'user',
-        isActive: true,
+      const response = await fetch('/api/auth/register', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify(userData),
       });
-      
+
+      if (!response.ok) {
+        const error = await response.json();
+        throw new Error(error.error || 'Registration failed');
+      }
+
+      const { user } = await response.json();
       if (user) {
         this.setSession(user);
       }
@@ -103,7 +120,11 @@ export class AuthService {
     if (!session) return null;
     
     try {
-      return await UserService.getUser(session.userId);
+      const response = await fetch(`/api/users/${session.userId}`);
+      if (!response.ok) return null;
+      
+      const { user } = await response.json();
+      return user;
     } catch (error) {
       console.error('Error getting current user:', error);
       return null;
