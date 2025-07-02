@@ -97,13 +97,29 @@ Review one of my project files for my brand guide and the Semantic SEO writing t
               <div className="bg-blue-50 rounded-lg p-4">
                 <h4 className="font-medium text-blue-900 mb-2">Open FRESH CHAT</h4>
                 <p className="text-sm text-blue-800 mb-3">
-                  Start a completely new chat in the same workspace for brand alignment review:
+                  Start a completely new chat in the same workspace for brand alignment review.
+                  Select the link based on your OpenAI account:
                 </p>
-                <a href="https://chatgpt.com/g/g-p-685ece4776fc8191963c943f9aed9d36-outreachlabs-guest-posts/project?model=o3" 
-                   target="_blank" 
-                   className="inline-flex items-center px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors font-medium">
-                  OutreachLabs Guest Posts Project (o3) <ExternalLink className="w-4 h-4 ml-2 text-white" />
-                </a>
+                <div className="space-y-2">
+                  <a href="https://chatgpt.com/g/g-p-685ece4776fc8191963c943f9aed9d36-outreachlabs-guest-posts/project?model=o3" 
+                     target="_blank" 
+                     className="inline-flex items-center px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors font-medium w-full justify-between">
+                    <span>info@onlyoutreach.com</span>
+                    <ExternalLink className="w-4 h-4 text-white" />
+                  </a>
+                  <a href="https://chatgpt.com/g/g-p-68658030ad0881919f08923d7958b566-outreach-labs-guest-posting/project?model=o3" 
+                     target="_blank" 
+                     className="inline-flex items-center px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors font-medium w-full justify-between">
+                    <span>ajay@pitchpanda.com</span>
+                    <ExternalLink className="w-4 h-4 text-white" />
+                  </a>
+                  <a href="https://chatgpt.com/g/g-p-6863fd37b78481919da9926011ab939d-outreach-labs-guest-posts/project?model=o3" 
+                     target="_blank" 
+                     className="inline-flex items-center px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors font-medium w-full justify-between">
+                    <span>ajay@linkio.com</span>
+                    <ExternalLink className="w-4 h-4 text-white" />
+                  </a>
+                </div>
               </div>
 
               {/* Article source indicator */}

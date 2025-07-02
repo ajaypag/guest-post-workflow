@@ -26,13 +26,24 @@ ${outlineContent || '((((Complete Step 3: Deep Research first to get outline con
     <div className="space-y-4">
       <div className="bg-blue-50 p-4 rounded-md">
         <h3 className="font-semibold mb-2">Step 4: Draft the Article (o3 Advanced Reasoning)</h3>
-        <p className="text-sm mb-2">Open a new chat in the OutreachLabs Guest Posts project:</p>
-        <a href="https://chatgpt.com/g/g-p-685ece4776fc8191963c943f9aed9d36-outreachlabs-guest-posts/project?model=o3" 
-           target="_blank" 
-           className="text-blue-600 hover:underline inline-flex items-center font-medium">
-          OutreachLabs Guest Posts Project (o3) <ExternalLink className="w-3 h-3 ml-1" />
-        </a>
-        <p className="text-sm mt-2 italic">Note: Must be logged into info@onlyoutreach.com</p>
+        <p className="text-sm mb-2">Open a new chat in the OutreachLabs Guest Posts project based on your OpenAI account:</p>
+        <div className="space-y-2 mt-2">
+          <a href="https://chatgpt.com/g/g-p-685ece4776fc8191963c943f9aed9d36-outreachlabs-guest-posts/project?model=o3" 
+             target="_blank" 
+             className="text-blue-600 hover:underline inline-flex items-center font-medium text-sm">
+            <span className="mr-2">→</span> info@onlyoutreach.com <ExternalLink className="w-3 h-3 ml-1" />
+          </a>
+          <a href="https://chatgpt.com/g/g-p-68658030ad0881919f08923d7958b566-outreach-labs-guest-posting/project?model=o3" 
+             target="_blank" 
+             className="text-blue-600 hover:underline inline-flex items-center font-medium text-sm">
+            <span className="mr-2">→</span> ajay@pitchpanda.com <ExternalLink className="w-3 h-3 ml-1" />
+          </a>
+          <a href="https://chatgpt.com/g/g-p-6863fd37b78481919da9926011ab939d-outreach-labs-guest-posts/project?model=o3" 
+             target="_blank" 
+             className="text-blue-600 hover:underline inline-flex items-center font-medium text-sm">
+            <span className="mr-2">→</span> ajay@linkio.com <ExternalLink className="w-3 h-3 ml-1" />
+          </a>
+        </div>
       </div>
 
       <div className="bg-green-50 p-4 rounded-md">
