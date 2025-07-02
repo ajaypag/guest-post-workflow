@@ -182,7 +182,18 @@ export class WorkflowService {
       
       console.log('Final insertData:', JSON.stringify(insertData, null, 2));
       
-      const createdWorkflow = await db.insert(workflows).values(insertData).returning();
+      let createdWorkflow;
+      try {
+        createdWorkflow = await db.insert(workflows).values(insertData).returning();
+      } catch (insertError) {
+        console.error('Database insert error details:', insertError);
+        if (insertError && typeof insertError === 'object') {
+          console.error('Error code:', (insertError as any).code);
+          console.error('Error message:', (insertError as any).message);
+          console.error('Error detail:', (insertError as any).detail);
+        }
+        throw insertError;
+      }
       const workflow = createdWorkflow[0];
       console.log('Workflow record created:', workflow.id);
 
