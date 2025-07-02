@@ -1,5 +1,6 @@
 import { eq, and } from 'drizzle-orm';
 import bcrypt from 'bcryptjs';
+import crypto from 'crypto';
 import { db } from './connection';
 import { users, clients, clientAssignments, type User, type NewUser } from './schema';
 
@@ -48,12 +49,16 @@ export class UserService {
       // Hash password
       const passwordHash = await bcrypt.hash(userData.password, 12);
 
+      const now = new Date();
       const newUserData: NewUser = {
+        id: crypto.randomUUID(),
         email: userData.email,
         name: userData.name,
         passwordHash,
         role: userData.role || 'user',
         isActive: userData.isActive !== undefined ? userData.isActive : true,
+        createdAt: now,
+        updatedAt: now,
       };
 
       const result = await db.insert(users).values(newUserData).returning();
@@ -168,8 +173,10 @@ export class UserService {
   static async assignUserToClient(userId: string, clientId: string): Promise<boolean> {
     try {
       await db.insert(clientAssignments).values({
+        id: crypto.randomUUID(),
         userId,
         clientId,
+        createdAt: new Date(),
       });
       return true;
     } catch (error) {

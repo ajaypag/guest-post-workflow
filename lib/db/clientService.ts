@@ -1,4 +1,5 @@
 import { eq, and } from 'drizzle-orm';
+import crypto from 'crypto';
 import { db } from './connection';
 import { clients, clientAssignments, targetPages, type Client, type NewClient, type TargetPage, type NewTargetPage } from './schema';
 
@@ -91,7 +92,14 @@ export class ClientService {
   // Create new client
   static async createClient(clientData: Omit<NewClient, 'id' | 'createdAt' | 'updatedAt'>): Promise<Client> {
     try {
-      const result = await db.insert(clients).values(clientData).returning();
+      const now = new Date();
+      const insertData = {
+        id: crypto.randomUUID(),
+        ...clientData,
+        createdAt: now,
+        updatedAt: now
+      };
+      const result = await db.insert(clients).values(insertData).returning();
       return result[0];
     } catch (error) {
       console.error('Error creating client:', error);
@@ -144,11 +152,14 @@ export class ClientService {
   // Add target pages to client
   static async addTargetPages(clientId: string, urls: string[]): Promise<boolean> {
     try {
+      const now = new Date();
       const newPages: NewTargetPage[] = urls.map(url => ({
+        id: crypto.randomUUID(),
         clientId,
         url,
         domain: new URL(url).hostname,
         status: 'active',
+        addedAt: now,
       }));
 
       await db.insert(targetPages).values(newPages);
@@ -209,8 +220,10 @@ export class ClientService {
   static async assignUserToClient(clientId: string, userId: string): Promise<boolean> {
     try {
       await db.insert(clientAssignments).values({
+        id: crypto.randomUUID(),
         clientId,
-        userId
+        userId,
+        createdAt: new Date()
       });
       return true;
     } catch (error) {

@@ -3,50 +3,50 @@ import { relations } from 'drizzle-orm';
 
 // Users table
 export const users = pgTable('users', {
-  id: uuid('id').primaryKey().defaultRandom(),
+  id: uuid('id').primaryKey(), // Remove defaultRandom() to handle in application code
   email: varchar('email', { length: 255 }).notNull().unique(),
   name: varchar('name', { length: 255 }).notNull(),
   passwordHash: varchar('password_hash', { length: 255 }).notNull(),
   role: varchar('role', { length: 50 }).notNull().default('user'), // 'user' | 'admin'
   isActive: boolean('is_active').notNull().default(true),
   lastLogin: timestamp('last_login'),
-  createdAt: timestamp('created_at').notNull().defaultNow(),
-  updatedAt: timestamp('updated_at').notNull().defaultNow(),
+  createdAt: timestamp('created_at').notNull(), // Remove defaultNow() to handle in application code
+  updatedAt: timestamp('updated_at').notNull(), // Remove defaultNow() to handle in application code
 });
 
 // Clients table
 export const clients = pgTable('clients', {
-  id: uuid('id').primaryKey().defaultRandom(),
+  id: uuid('id').primaryKey(), // Remove defaultRandom() to handle in application code
   name: varchar('name', { length: 255 }).notNull(),
   website: varchar('website', { length: 255 }).notNull(),
   description: text('description').default(''),
   createdBy: uuid('created_by').notNull().references(() => users.id),
-  createdAt: timestamp('created_at').notNull().defaultNow(),
-  updatedAt: timestamp('updated_at').notNull().defaultNow(),
+  createdAt: timestamp('created_at').notNull(), // Remove defaultNow() to handle in application code
+  updatedAt: timestamp('updated_at').notNull(), // Remove defaultNow() to handle in application code
 });
 
 // Client assignments (which users can access which clients)
 export const clientAssignments = pgTable('client_assignments', {
-  id: uuid('id').primaryKey().defaultRandom(),
+  id: uuid('id').primaryKey(), // Remove defaultRandom() to handle in application code
   clientId: uuid('client_id').notNull().references(() => clients.id, { onDelete: 'cascade' }),
   userId: uuid('user_id').notNull().references(() => users.id, { onDelete: 'cascade' }),
-  createdAt: timestamp('created_at').notNull().defaultNow(),
+  createdAt: timestamp('created_at').notNull(), // Remove defaultNow() to handle in application code
 });
 
 // Target pages for clients
 export const targetPages = pgTable('target_pages', {
-  id: uuid('id').primaryKey().defaultRandom(),
+  id: uuid('id').primaryKey(), // Remove defaultRandom() to handle in application code
   clientId: uuid('client_id').notNull().references(() => clients.id, { onDelete: 'cascade' }),
   url: varchar('url', { length: 500 }).notNull(),
   domain: varchar('domain', { length: 255 }).notNull(),
   status: varchar('status', { length: 50 }).notNull().default('active'), // 'active' | 'completed' | 'inactive'
-  addedAt: timestamp('added_at').notNull().defaultNow(),
+  addedAt: timestamp('added_at').notNull(), // Remove defaultNow() to handle in application code
   completedAt: timestamp('completed_at'),
 });
 
 // Workflows table
 export const workflows = pgTable('workflows', {
-  id: uuid('id').primaryKey().defaultRandom(),
+  id: uuid('id').primaryKey(), // Remove defaultRandom() to handle in application code
   clientName: varchar('client_name', { length: 255 }).notNull(),
   clientUrl: varchar('client_url', { length: 255 }).notNull(),
   targetDomain: varchar('target_domain', { length: 255 }),
@@ -55,13 +55,13 @@ export const workflows = pgTable('workflows', {
   createdByName: varchar('created_by_name', { length: 255 }).notNull(),
   createdByEmail: varchar('created_by_email', { length: 255 }),
   clientId: uuid('client_id').references(() => clients.id), // Optional link to client
-  createdAt: timestamp('created_at').notNull().defaultNow(),
-  updatedAt: timestamp('updated_at').notNull().defaultNow(),
+  createdAt: timestamp('created_at').notNull(), // Remove defaultNow() to handle in application code
+  updatedAt: timestamp('updated_at').notNull(), // Remove defaultNow() to handle in application code
 });
 
 // Workflow steps table
 export const workflowSteps = pgTable('workflow_steps', {
-  id: uuid('id').primaryKey().defaultRandom(),
+  id: uuid('id').primaryKey(), // Remove defaultRandom() to handle in application code
   workflowId: uuid('workflow_id').notNull().references(() => workflows.id, { onDelete: 'cascade' }),
   stepNumber: integer('step_number').notNull(),
   title: varchar('title', { length: 255 }).notNull(),
@@ -70,8 +70,8 @@ export const workflowSteps = pgTable('workflow_steps', {
   inputs: jsonb('inputs').notNull().default({}),
   outputs: jsonb('outputs').notNull().default({}),
   completedAt: timestamp('completed_at'),
-  createdAt: timestamp('created_at').notNull().defaultNow(),
-  updatedAt: timestamp('updated_at').notNull().defaultNow(),
+  createdAt: timestamp('created_at').notNull(), // Remove defaultNow() to handle in application code
+  updatedAt: timestamp('updated_at').notNull(), // Remove defaultNow() to handle in application code
 });
 
 // Relations

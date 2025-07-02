@@ -2,6 +2,7 @@ import { eq, desc } from 'drizzle-orm';
 import { db } from './connection';
 import { workflows, workflowSteps, type Workflow, type NewWorkflow, type WorkflowStep, type NewWorkflowStep } from './schema';
 import { GuestPostWorkflow, WORKFLOW_STEPS } from '@/types/workflow';
+import crypto from 'crypto';
 
 export class WorkflowService {
   // Transform GuestPostWorkflow to database format
@@ -167,26 +168,35 @@ export class WorkflowService {
       console.log('Transformed workflow data:', workflowData);
       console.log('Transformed steps data count:', stepsData.length);
 
-      // Create workflow record
+      // Create workflow record with explicit values instead of relying on database defaults
       console.log('Creating workflow record...');
-      console.log('workflowData being inserted:', JSON.stringify(workflowData, null, 2));
+      const now = new Date();
+      const workflowId = crypto.randomUUID();
       
-      // Explicitly exclude fields that should be auto-generated
-      const { id, createdAt, updatedAt, ...insertData } = workflowData as any;
-      console.log('Cleaned insertData:', JSON.stringify(insertData, null, 2));
+      const insertData = {
+        id: workflowId,
+        ...workflowData,
+        createdAt: now,
+        updatedAt: now
+      };
+      
+      console.log('Final insertData:', JSON.stringify(insertData, null, 2));
       
       const createdWorkflow = await db.insert(workflows).values(insertData).returning();
       const workflow = createdWorkflow[0];
       console.log('Workflow record created:', workflow.id);
 
-      // Create workflow steps
+      // Create workflow steps with explicit values
       console.log('Creating workflow steps...');
       const stepPromises = stepsData.map((stepData, index) => {
         console.log(`Creating step ${index + 1}:`, stepData.title);
-        const { id, createdAt, updatedAt, ...cleanStepData } = stepData as any;
+        const stepId = crypto.randomUUID();
         return db.insert(workflowSteps).values({
-          ...cleanStepData,
+          id: stepId,
+          ...stepData,
           workflowId: workflow.id,
+          createdAt: now,
+          updatedAt: now
         }).returning();
       });
 
@@ -213,7 +223,14 @@ export class WorkflowService {
   // Create new workflow (database format - keep for internal use)
   static async createWorkflow(workflowData: Omit<NewWorkflow, 'id' | 'createdAt' | 'updatedAt'>): Promise<Workflow> {
     try {
-      const result = await db.insert(workflows).values(workflowData).returning();
+      const now = new Date();
+      const insertData = {
+        id: crypto.randomUUID(),
+        ...workflowData,
+        createdAt: now,
+        updatedAt: now
+      };
+      const result = await db.insert(workflows).values(insertData).returning();
       return result[0];
     } catch (error) {
       console.error('Error creating workflow:', error);
@@ -269,7 +286,14 @@ export class WorkflowService {
   // Create workflow step
   static async createWorkflowStep(stepData: Omit<NewWorkflowStep, 'id' | 'createdAt' | 'updatedAt'>): Promise<WorkflowStep> {
     try {
-      const result = await db.insert(workflowSteps).values(stepData).returning();
+      const now = new Date();
+      const insertData = {
+        id: crypto.randomUUID(),
+        ...stepData,
+        createdAt: now,
+        updatedAt: now
+      };
+      const result = await db.insert(workflowSteps).values(insertData).returning();
       return result[0];
     } catch (error) {
       console.error('Error creating workflow step:', error);
