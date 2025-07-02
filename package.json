@@ -11,7 +11,8 @@
     "db:migrate": "drizzle-kit migrate",
     "db:studio": "drizzle-kit studio",
     "db:push": "drizzle-kit push",
-    "db:migrate-apply": "tsx scripts/migrate.ts"
+    "db:migrate-apply": "tsx scripts/migrate.ts",
+    "db:debug": "tsx scripts/debug-and-migrate.ts"
   },
   "dependencies": {
     "@hookform/resolvers": "^5.1.1",
