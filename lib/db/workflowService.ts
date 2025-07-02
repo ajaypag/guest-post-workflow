@@ -1,9 +1,95 @@
 import { eq, desc } from 'drizzle-orm';
 import { db } from './connection';
 import { workflows, workflowSteps, type Workflow, type NewWorkflow, type WorkflowStep, type NewWorkflowStep } from './schema';
+import { GuestPostWorkflow, WORKFLOW_STEPS } from '@/types/workflow';
 
 export class WorkflowService {
-  // Get all workflows for a user
+  // Transform GuestPostWorkflow to database format
+  static guestPostWorkflowToDatabase(guestWorkflow: GuestPostWorkflow, userId: string, userName: string, userEmail?: string): {
+    workflow: Omit<NewWorkflow, 'id' | 'createdAt' | 'updatedAt'>;
+    steps: Omit<NewWorkflowStep, 'id' | 'workflowId' | 'createdAt' | 'updatedAt'>[];
+  } {
+    const workflow = {
+      clientName: guestWorkflow.clientName,
+      clientUrl: guestWorkflow.clientUrl,
+      targetDomain: guestWorkflow.targetDomain || '',
+      currentStep: guestWorkflow.currentStep,
+      createdBy: userId,
+      createdByName: userName,
+      createdByEmail: userEmail,
+      clientId: guestWorkflow.metadata?.clientId || null,
+    };
+
+    const steps = guestWorkflow.steps.map((step, index) => ({
+      stepNumber: index + 1,
+      title: step.title,
+      description: step.description,
+      status: step.status,
+      inputs: step.inputs || {},
+      outputs: step.outputs || {},
+      completedAt: step.completedAt || null,
+    }));
+
+    return { workflow, steps };
+  }
+
+  // Transform database records to GuestPostWorkflow format
+  static databaseToGuestPostWorkflow(
+    workflow: Workflow, 
+    steps: WorkflowStep[]
+  ): GuestPostWorkflow {
+    // Sort steps by stepNumber
+    const sortedSteps = steps.sort((a, b) => a.stepNumber - b.stepNumber);
+
+    return {
+      id: workflow.id,
+      createdAt: workflow.createdAt,
+      updatedAt: workflow.updatedAt,
+      clientName: workflow.clientName,
+      clientUrl: workflow.clientUrl,
+      targetDomain: workflow.targetDomain || '',
+      currentStep: workflow.currentStep,
+      createdBy: workflow.createdByName, // Use name, not ID
+      createdByEmail: workflow.createdByEmail || undefined,
+      steps: sortedSteps.map(step => ({
+        id: step.id,
+        title: step.title,
+        description: step.description || '',
+        status: step.status as 'pending' | 'in-progress' | 'completed',
+        inputs: step.inputs || {},
+        outputs: step.outputs || {},
+        completedAt: step.completedAt || undefined,
+      })),
+      metadata: {
+        clientId: workflow.clientId || undefined,
+      },
+    };
+  }
+  // Get all workflows for a user (returns GuestPostWorkflow format)
+  static async getUserGuestPostWorkflows(userId: string): Promise<GuestPostWorkflow[]> {
+    try {
+      const workflowList = await db
+        .select()
+        .from(workflows)
+        .where(eq(workflows.createdBy, userId))
+        .orderBy(desc(workflows.updatedAt));
+
+      // Get steps for each workflow and transform to GuestPostWorkflow format
+      const guestPostWorkflows = await Promise.all(
+        workflowList.map(async (workflow) => {
+          const steps = await this.getWorkflowSteps(workflow.id);
+          return this.databaseToGuestPostWorkflow(workflow, steps);
+        })
+      );
+
+      return guestPostWorkflows;
+    } catch (error) {
+      console.error('Error loading user workflows:', error);
+      return [];
+    }
+  }
+
+  // Get all workflows for a user (database format - keep for internal use)
   static async getUserWorkflows(userId: string): Promise<Workflow[]> {
     try {
       return await db
@@ -30,7 +116,21 @@ export class WorkflowService {
     }
   }
 
-  // Get workflow by ID
+  // Get workflow by ID (returns GuestPostWorkflow format)
+  static async getGuestPostWorkflow(id: string): Promise<GuestPostWorkflow | null> {
+    try {
+      const workflow = await this.getWorkflow(id);
+      if (!workflow) return null;
+
+      const steps = await this.getWorkflowSteps(id);
+      return this.databaseToGuestPostWorkflow(workflow, steps);
+    } catch (error) {
+      console.error('Error loading guest post workflow:', error);
+      return null;
+    }
+  }
+
+  // Get workflow by ID (database format - keep for internal use)
   static async getWorkflow(id: string): Promise<Workflow | null> {
     try {
       const result = await db.select().from(workflows).where(eq(workflows.id, id));
@@ -41,7 +141,46 @@ export class WorkflowService {
     }
   }
 
-  // Create new workflow
+  // Create new workflow from GuestPostWorkflow format
+  static async createGuestPostWorkflow(
+    guestWorkflow: GuestPostWorkflow, 
+    userId: string, 
+    userName: string, 
+    userEmail?: string
+  ): Promise<GuestPostWorkflow> {
+    try {
+      // Transform to database format
+      const { workflow: workflowData, steps: stepsData } = this.guestPostWorkflowToDatabase(
+        guestWorkflow, 
+        userId, 
+        userName, 
+        userEmail
+      );
+
+      // Create workflow record
+      const createdWorkflow = await db.insert(workflows).values(workflowData).returning();
+      const workflow = createdWorkflow[0];
+
+      // Create workflow steps
+      const stepPromises = stepsData.map(stepData => 
+        db.insert(workflowSteps).values({
+          ...stepData,
+          workflowId: workflow.id,
+        }).returning()
+      );
+
+      const createdSteps = await Promise.all(stepPromises);
+      const steps = createdSteps.map(result => result[0]);
+
+      // Transform back to GuestPostWorkflow format
+      return this.databaseToGuestPostWorkflow(workflow, steps);
+    } catch (error) {
+      console.error('Error creating guest post workflow:', error);
+      throw error;
+    }
+  }
+
+  // Create new workflow (database format - keep for internal use)
   static async createWorkflow(workflowData: Omit<NewWorkflow, 'id' | 'createdAt' | 'updatedAt'>): Promise<Workflow> {
     try {
       const result = await db.insert(workflows).values(workflowData).returning();
