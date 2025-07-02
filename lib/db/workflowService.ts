@@ -15,7 +15,7 @@ export class WorkflowService {
       clientUrl: guestWorkflow.clientUrl,
       targetDomain: guestWorkflow.targetDomain || '',
       currentStep: guestWorkflow.currentStep,
-      createdBy: userId,
+      userId: userId, // Fixed: use userId instead of createdBy
       createdByName: userName,
       createdByEmail: userEmail,
       clientId: guestWorkflow.metadata?.clientId || null,
@@ -72,7 +72,7 @@ export class WorkflowService {
       const workflowList = await db
         .select()
         .from(workflows)
-        .where(eq(workflows.createdBy, userId))
+        .where(eq(workflows.userId, userId))
         .orderBy(desc(workflows.updatedAt));
 
       // Get steps for each workflow and transform to GuestPostWorkflow format
@@ -96,7 +96,7 @@ export class WorkflowService {
       return await db
         .select()
         .from(workflows)
-        .where(eq(workflows.createdBy, userId))
+        .where(eq(workflows.userId, userId))
         .orderBy(desc(workflows.updatedAt));
     } catch (error) {
       console.error('Error loading user workflows:', error);

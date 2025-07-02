@@ -51,7 +51,7 @@ export const workflows = pgTable('workflows', {
   clientUrl: varchar('client_url', { length: 255 }).notNull(),
   targetDomain: varchar('target_domain', { length: 255 }),
   currentStep: integer('current_step').notNull().default(0),
-  createdBy: uuid('created_by').notNull().references(() => users.id),
+  userId: uuid('user_id').notNull().references(() => users.id), // Fixed: matches database column
   createdByName: varchar('created_by_name', { length: 255 }).notNull(),
   createdByEmail: varchar('created_by_email', { length: 255 }),
   clientId: uuid('client_id').references(() => clients.id), // Optional link to client
@@ -111,7 +111,7 @@ export const targetPagesRelations = relations(targetPages, ({ one }) => ({
 
 export const workflowsRelations = relations(workflows, ({ one, many }) => ({
   creator: one(users, {
-    fields: [workflows.createdBy],
+    fields: [workflows.userId],
     references: [users.id],
   }),
   client: one(clients, {
