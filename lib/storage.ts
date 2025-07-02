@@ -59,24 +59,28 @@ export const storage = {
       const exists = existingResponse.ok;
       
       if (exists) {
-        // Update existing workflow
+        // Update existing workflow - send the complete workflow object
+        console.log('Updating existing workflow via PUT:', workflow.id);
         const response = await fetch(`/api/workflows/${workflow.id}`, {
           method: 'PUT',
           headers: {
             'Content-Type': 'application/json',
           },
-          body: JSON.stringify({
-            clientId: workflow.metadata?.clientId,
-            title: workflow.clientName, // Using clientName as title
-            status: 'active', // Default status
-            content: JSON.stringify(workflow),
-            targetPages: [],
-            steps: workflow.steps
-          }),
+          body: JSON.stringify(workflow), // Send complete workflow object
         });
         
         if (!response.ok) {
-          throw new Error('Failed to update workflow');
+          const errorText = await response.text();
+          console.error('PUT API Error Response:', response.status, errorText);
+          throw new Error(`Failed to update workflow: ${response.status} ${errorText}`);
+        }
+        
+        const result = await response.json();
+        console.log('Workflow update API response:', result);
+        
+        // Validate that the update was actually successful
+        if (!result.success) {
+          throw new Error('Workflow update returned unsuccessful result');
         }
       } else {
         // Create new workflow - send the workflow directly
