@@ -32,6 +32,8 @@ function NewWorkflowContent() {
     clientName: '',
     clientUrl: ''
   });
+  const [isSubmitting, setIsSubmitting] = useState(false);
+  const [submitError, setSubmitError] = useState<string | null>(null);
 
   useEffect(() => {
     loadClients();
@@ -51,10 +53,11 @@ function NewWorkflowContent() {
     if (!session) return;
 
     try {
-      // TODO: Implement with API routes - for now return empty array
-      setClients([]);
+      const userClients = await clientStorage.getUserClients(session.userId);
+      setClients(userClients);
     } catch (error) {
       console.error('Error loading clients:', error);
+      setClients([]); // Fallback to empty array on error
     }
   };
 
@@ -73,34 +76,45 @@ function NewWorkflowContent() {
     }
   };
 
-  const handleSubmit = (e: React.FormEvent) => {
+  const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
+    setIsSubmitting(true);
+    setSubmitError(null);
     
-    // Get current user session for creator information
-    const session = sessionStorage.getSession();
-    
-    const workflow: GuestPostWorkflow = {
-      id: generateUUID(),
-      createdAt: new Date(),
-      updatedAt: new Date(),
-      clientName: formData.clientName,
-      clientUrl: formData.clientUrl,
-      targetDomain: '', // Will be set in Step 1: Guest Post Site Selection
-      currentStep: 0,
-      createdBy: session?.name || 'Unknown User',
-      createdByEmail: session?.email,
-      steps: WORKFLOW_STEPS.map(step => ({
-        ...step,
-        status: 'pending' as const,
-        inputs: {},
-        outputs: {},
-        completedAt: undefined
-      })),
-      metadata: selectedClient ? { clientId: selectedClient.id } : {}
-    };
+    try {
+      // Get current user session for creator information
+      const session = sessionStorage.getSession();
+      
+      const workflow: GuestPostWorkflow = {
+        id: generateUUID(),
+        createdAt: new Date(),
+        updatedAt: new Date(),
+        clientName: formData.clientName,
+        clientUrl: formData.clientUrl,
+        targetDomain: '', // Will be set in Step 1: Guest Post Site Selection
+        currentStep: 0,
+        createdBy: session?.name || 'Unknown User',
+        createdByEmail: session?.email,
+        steps: WORKFLOW_STEPS.map(step => ({
+          ...step,
+          status: 'pending' as const,
+          inputs: {},
+          outputs: {},
+          completedAt: undefined
+        })),
+        metadata: selectedClient ? { clientId: selectedClient.id } : {}
+      };
 
-    storage.saveWorkflow(workflow);
-    router.push(`/workflow/${workflow.id}`);
+      console.log('Creating workflow:', workflow.id, 'for client:', workflow.clientName);
+      await storage.saveWorkflow(workflow);
+      console.log('Workflow saved successfully, navigating to:', `/workflow/${workflow.id}`);
+      router.push(`/workflow/${workflow.id}`);
+    } catch (error) {
+      console.error('Error creating workflow:', error);
+      setSubmitError(error instanceof Error ? error.message : 'Failed to create workflow. Please try again.');
+    } finally {
+      setIsSubmitting(false);
+    }
   };
 
 
@@ -188,13 +202,21 @@ function NewWorkflowContent() {
               </div>
 
 
+              {/* Error Display */}
+              {submitError && (
+                <div className="p-3 bg-red-100 border border-red-400 text-red-700 rounded-md">
+                  {submitError}
+                </div>
+              )}
+
               {/* Submit */}
               <div className="pt-4">
                 <button
                   type="submit"
-                  className="w-full inline-flex justify-center py-2 px-4 border border-transparent shadow-sm text-sm font-medium rounded-md text-white bg-blue-600 hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500"
+                  disabled={isSubmitting || !formData.clientName.trim() || !formData.clientUrl.trim()}
+                  className="w-full inline-flex justify-center py-2 px-4 border border-transparent shadow-sm text-sm font-medium rounded-md text-white bg-blue-600 hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500 disabled:opacity-50 disabled:cursor-not-allowed"
                 >
-                  Create Workflow
+                  {isSubmitting ? 'Creating Workflow...' : 'Create Workflow'}
                 </button>
               </div>
             </form>

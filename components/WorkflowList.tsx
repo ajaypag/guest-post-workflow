@@ -10,6 +10,7 @@ import Link from 'next/link';
 export default function WorkflowList() {
   const [workflows, setWorkflows] = useState<GuestPostWorkflow[]>([]);
   const [loading, setLoading] = useState(true);
+  const [error, setError] = useState<string | null>(null);
 
   useEffect(() => {
     loadWorkflows();
@@ -17,10 +18,14 @@ export default function WorkflowList() {
 
   const loadWorkflows = async () => {
     try {
+      setError(null);
+      console.log('Loading workflows...');
       const allWorkflows = await storage.getAllWorkflows();
+      console.log('Loaded workflows:', allWorkflows.length, 'workflows');
       setWorkflows(allWorkflows);
     } catch (error) {
       console.error('Error loading workflows:', error);
+      setError('Failed to load workflows. Please refresh the page.');
     } finally {
       setLoading(false);
     }
@@ -63,6 +68,20 @@ export default function WorkflowList() {
         <div className="bg-white rounded-2xl border border-gray-200 p-12 text-center">
           <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-blue-600 mx-auto"></div>
           <p className="mt-2 text-gray-600">Loading workflows...</p>
+        </div>
+      ) : error ? (
+        <div className="bg-white rounded-2xl border border-red-200 p-12 text-center">
+          <div className="w-16 h-16 bg-red-100 rounded-2xl flex items-center justify-center mx-auto mb-6">
+            <FileText className="w-8 h-8 text-red-400" />
+          </div>
+          <h3 className="text-xl font-semibold text-red-900 mb-2">Error Loading Workflows</h3>
+          <p className="text-red-600 mb-6">{error}</p>
+          <button
+            onClick={loadWorkflows}
+            className="inline-flex items-center px-4 py-2 bg-red-600 text-white rounded-lg hover:bg-red-700 transition-colors"
+          >
+            Try Again
+          </button>
         </div>
       ) : workflows.length === 0 ? (
         <div className="bg-white rounded-2xl border border-gray-200 p-12 text-center">
