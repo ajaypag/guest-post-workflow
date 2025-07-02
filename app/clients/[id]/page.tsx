@@ -98,7 +98,7 @@ export default function ClientDetailPage() {
     if (selectedPages.length === filteredPages.length) {
       setSelectedPages([]);
     } else {
-      setSelectedPages(filteredPages.map(page => page.id));
+      setSelectedPages(filteredPages.map((page: any) => page.id));
     }
   };
 
@@ -331,7 +331,7 @@ export default function ClientDetailPage() {
 
                   {/* Pages */}
                   <div className="divide-y divide-gray-200">
-                    {filteredPages.map((page) => (
+                    {filteredPages.map((page: any) => (
                       <div key={page.id} className="px-4 py-4 flex items-center hover:bg-gray-50">
                         <input
                           type="checkbox"

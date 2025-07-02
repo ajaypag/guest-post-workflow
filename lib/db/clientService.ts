@@ -12,7 +12,7 @@ export class ClientService {
       const clientsWithPages = await Promise.all(
         clientList.map(async (client) => {
           const pages = await this.getTargetPages(client.id);
-          return { ...client, targetPages: pages };
+          return { ...client, targetPages: pages } as any;
         })
       );
       
@@ -60,7 +60,7 @@ export class ClientService {
       const clientsWithPages = await Promise.all(
         uniqueClients.map(async (client) => {
           const pages = await this.getTargetPages(client.id);
-          return { ...client, targetPages: pages };
+          return { ...client, targetPages: pages } as any;
         })
       );
 
@@ -81,7 +81,7 @@ export class ClientService {
       
       // Add target pages to the client
       const pages = await this.getTargetPages(client.id);
-      return { ...client, targetPages: pages };
+      return { ...client, targetPages: pages } as any;
     } catch (error) {
       console.error('Error loading client:', error);
       return null;
