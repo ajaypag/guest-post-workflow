@@ -11,7 +11,7 @@ export async function POST() {
 
     const pool = new Pool({
       connectionString,
-      ssl: process.env.NODE_ENV === 'production' ? { rejectUnauthorized: false } : false,
+      ssl: false, // Coolify PostgreSQL doesn't use SSL
     });
 
     const client = await pool.connect();

@@ -9,7 +9,7 @@ const connectionString = process.env.DATABASE_URL ||
 // Create connection pool
 const pool = new Pool({
   connectionString,
-  ssl: process.env.NODE_ENV === 'production' ? { rejectUnauthorized: false } : false,
+  ssl: false, // Coolify PostgreSQL doesn't use SSL
 });
 
 // Create Drizzle instance
