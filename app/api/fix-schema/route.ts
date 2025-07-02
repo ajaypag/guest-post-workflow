@@ -16,18 +16,33 @@ export async function POST() {
       ssl: false, // Coolify PostgreSQL doesn't use SSL
     });
 
-    // Fix the clients table description column default
-    await pool.query(`
-      ALTER TABLE clients 
-      ALTER COLUMN description SET DEFAULT '';
+    // Check if description column exists and add it if missing
+    const columnCheck = await pool.query(`
+      SELECT column_name 
+      FROM information_schema.columns 
+      WHERE table_name = 'clients' AND column_name = 'description';
     `);
 
-    // Update existing null descriptions to empty string
-    await pool.query(`
-      UPDATE clients 
-      SET description = '' 
-      WHERE description IS NULL;
-    `);
+    if (columnCheck.rows.length === 0) {
+      // Add the description column if it doesn't exist
+      await pool.query(`
+        ALTER TABLE clients 
+        ADD COLUMN description TEXT DEFAULT '';
+      `);
+    } else {
+      // If it exists, just set the default
+      await pool.query(`
+        ALTER TABLE clients 
+        ALTER COLUMN description SET DEFAULT '';
+      `);
+
+      // Update existing null descriptions to empty string
+      await pool.query(`
+        UPDATE clients 
+        SET description = '' 
+        WHERE description IS NULL;
+      `);
+    }
 
     await pool.end();
 
