@@ -72,10 +72,11 @@ export default function ClientsPage() {
   };
 
   const getStatusCounts = (client: Client) => {
-    const active = client.targetPages.filter(p => p.status === 'active').length;
-    const inactive = client.targetPages.filter(p => p.status === 'inactive').length;
-    const completed = client.targetPages.filter(p => p.status === 'completed').length;
-    return { active, inactive, completed, total: client.targetPages.length };
+    const pages = (client as any).targetPages || [];
+    const active = pages.filter((p: any) => p.status === 'active').length;
+    const inactive = pages.filter((p: any) => p.status === 'inactive').length;
+    const completed = pages.filter((p: any) => p.status === 'completed').length;
+    return { active, inactive, completed, total: pages.length };
   };
 
   return (

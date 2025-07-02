@@ -104,8 +104,9 @@ export default function ClientDetailPage() {
 
   const getFilteredPages = () => {
     if (!client) return [];
-    if (filter === 'all') return client.targetPages;
-    return client.targetPages.filter(page => page.status === filter);
+    const pages = (client as any).targetPages || [];
+    if (filter === 'all') return pages;
+    return pages.filter((page: any) => page.status === filter);
   };
 
   const getStatusIcon = (status: TargetPage['status']) => {
@@ -144,11 +145,12 @@ export default function ClientDetailPage() {
   }
 
   const filteredPages = getFilteredPages();
+  const pages = (client as any)?.targetPages || [];
   const stats = {
-    total: client.targetPages.length,
-    active: client.targetPages.filter(p => p.status === 'active').length,
-    inactive: client.targetPages.filter(p => p.status === 'inactive').length,
-    completed: client.targetPages.filter(p => p.status === 'completed').length,
+    total: pages.length,
+    active: pages.filter((p: any) => p.status === 'active').length,
+    inactive: pages.filter((p: any) => p.status === 'inactive').length,
+    completed: pages.filter((p: any) => p.status === 'completed').length,
   };
 
   return (

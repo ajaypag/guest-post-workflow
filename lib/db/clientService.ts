@@ -6,7 +6,17 @@ export class ClientService {
   // Get all clients
   static async getAllClients(): Promise<Client[]> {
     try {
-      return await db.select().from(clients);
+      const clientList = await db.select().from(clients);
+      
+      // Add target pages to each client
+      const clientsWithPages = await Promise.all(
+        clientList.map(async (client) => {
+          const pages = await this.getTargetPages(client.id);
+          return { ...client, targetPages: pages };
+        })
+      );
+      
+      return clientsWithPages;
     } catch (error) {
       console.error('Error loading clients:', error);
       return [];
@@ -46,7 +56,15 @@ export class ClientService {
         index === self.findIndex(c => c.id === client.id)
       );
 
-      return uniqueClients;
+      // Add target pages to each client
+      const clientsWithPages = await Promise.all(
+        uniqueClients.map(async (client) => {
+          const pages = await this.getTargetPages(client.id);
+          return { ...client, targetPages: pages };
+        })
+      );
+
+      return clientsWithPages;
     } catch (error) {
       console.error('Error loading user clients:', error);
       return [];
@@ -57,7 +75,13 @@ export class ClientService {
   static async getClient(id: string): Promise<Client | null> {
     try {
       const result = await db.select().from(clients).where(eq(clients.id, id));
-      return result[0] || null;
+      const client = result[0];
+      
+      if (!client) return null;
+      
+      // Add target pages to the client
+      const pages = await this.getTargetPages(client.id);
+      return { ...client, targetPages: pages };
     } catch (error) {
       console.error('Error loading client:', error);
       return null;
