@@ -275,23 +275,25 @@ export const clientStorage = {
   // Add target pages to client
   async addTargetPages(clientId: string, urls: string[]): Promise<boolean> {
     try {
-      const client = await this.getClient(clientId);
-      if (!client) return false;
+      console.log(`Adding target pages to client ${clientId}:`, urls);
+      
+      const response = await fetch(`/api/clients/${clientId}/target-pages`, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({ urls }),
+      });
 
-      const newPages: TargetPage[] = urls.map(url => ({
-        id: generateUUID(),
-        url,
-        domain: new URL(url).hostname,
-        status: 'active',
-        addedAt: new Date()
-      }));
+      if (!response.ok) {
+        const errorData = await response.json();
+        console.error('API Error adding target pages:', errorData);
+        return false;
+      }
 
-      // For now, just update the client with the new pages
-      // TODO: Create separate API endpoint for target pages
-      const existingPages = (client as any).targetPages || [];
-      return (await this.updateClient(clientId, {
-        targetPages: [...existingPages, ...newPages]
-      } as any)) !== null;
+      const result = await response.json();
+      console.log('Target pages added successfully:', result);
+      return result.success;
     } catch (error) {
       console.error('Error adding target pages:', error);
       return false;
@@ -301,24 +303,25 @@ export const clientStorage = {
   // Update target page status
   async updateTargetPageStatus(clientId: string, pageIds: string[], status: TargetPage['status']): Promise<boolean> {
     try {
-      const client = await this.getClient(clientId);
-      if (!client) return false;
-
-      const existingPages = (client as any).targetPages || [];
-      const updatedPages = existingPages.map((page: TargetPage) => {
-        if (pageIds.includes(page.id)) {
-          return {
-            ...page,
-            status,
-            completedAt: status === 'completed' ? new Date() : undefined
-          };
-        }
-        return page;
+      console.log(`Updating target page status for client ${clientId}:`, { pageIds, status });
+      
+      const response = await fetch(`/api/clients/${clientId}/target-pages`, {
+        method: 'PUT',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({ pageIds, status }),
       });
 
-      return (await this.updateClient(clientId, {
-        targetPages: updatedPages
-      } as any)) !== null;
+      if (!response.ok) {
+        const errorData = await response.json();
+        console.error('API Error updating target page status:', errorData);
+        return false;
+      }
+
+      const result = await response.json();
+      console.log('Target page status updated successfully:', result);
+      return result.success;
     } catch (error) {
       console.error('Error updating target page status:', error);
       return false;
@@ -328,17 +331,25 @@ export const clientStorage = {
   // Remove target pages
   async removeTargetPages(clientId: string, pageIds: string[]): Promise<boolean> {
     try {
-      const client = await this.getClient(clientId);
-      if (!client) return false;
+      console.log(`Removing target pages from client ${clientId}:`, pageIds);
+      
+      const response = await fetch(`/api/clients/${clientId}/target-pages`, {
+        method: 'DELETE',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({ pageIds }),
+      });
 
-      const existingPages = (client as any).targetPages || [];
-      const filteredPages = existingPages.filter((page: TargetPage) => 
-        !pageIds.includes(page.id)
-      );
+      if (!response.ok) {
+        const errorData = await response.json();
+        console.error('API Error removing target pages:', errorData);
+        return false;
+      }
 
-      return (await this.updateClient(clientId, {
-        targetPages: filteredPages
-      } as any)) !== null;
+      const result = await response.json();
+      console.log('Target pages removed successfully:', result);
+      return result.success;
     } catch (error) {
       console.error('Error removing target pages:', error);
       return false;
