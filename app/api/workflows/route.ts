@@ -14,11 +14,8 @@ export async function GET(request: NextRequest) {
     } else {
       // For admin - get all workflows and transform them
       const allWorkflows = await WorkflowService.getAllWorkflows();
-      workflows = await Promise.all(
-        allWorkflows.map(async (workflow) => {
-          const steps = await WorkflowService.getWorkflowSteps(workflow.id);
-          return WorkflowService.databaseToGuestPostWorkflow(workflow, steps);
-        })
+      workflows = allWorkflows.map(workflow => 
+        WorkflowService.databaseToGuestPostWorkflow(workflow)
       );
     }
 

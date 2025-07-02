@@ -2,65 +2,56 @@ import { eq, desc } from 'drizzle-orm';
 import { db } from './connection';
 import { workflows, workflowSteps, type Workflow, type NewWorkflow, type WorkflowStep, type NewWorkflowStep } from './schema';
 import { GuestPostWorkflow, WORKFLOW_STEPS } from '@/types/workflow';
-import crypto from 'crypto';
 
 export class WorkflowService {
-  // Transform GuestPostWorkflow to database format
-  static guestPostWorkflowToDatabase(guestWorkflow: GuestPostWorkflow, userId: string, userName: string, userEmail?: string): {
-    workflow: Omit<NewWorkflow, 'id' | 'createdAt' | 'updatedAt'>;
-    steps: Omit<NewWorkflowStep, 'id' | 'workflowId' | 'createdAt' | 'updatedAt'>[];
+  // Transform GuestPostWorkflow to database format (simplified for JSON storage)
+  static guestPostWorkflowToDatabase(guestWorkflow: GuestPostWorkflow, userId: string): {
+    id: string;
+    userId: string;
+    clientId: string | null;
+    title: string;
+    status: string;
+    content: any;
+    targetPages: any[];
+    createdAt: Date;
+    updatedAt: Date;
   } {
-    const workflow = {
-      clientName: guestWorkflow.clientName,
-      clientUrl: guestWorkflow.clientUrl,
-      targetDomain: guestWorkflow.targetDomain || '',
-      currentStep: guestWorkflow.currentStep,
-      userId: userId, // Fixed: use userId instead of createdBy
-      createdByName: userName,
-      createdByEmail: userEmail,
+    return {
+      id: crypto.randomUUID(),
+      userId: userId,
       clientId: guestWorkflow.metadata?.clientId || null,
+      title: guestWorkflow.clientName,
+      status: 'active',
+      content: guestWorkflow, // Store entire workflow as JSON
+      targetPages: [], // Empty for now
+      createdAt: new Date(),
+      updatedAt: new Date(),
     };
-
-    const steps = guestWorkflow.steps.map((step, index) => ({
-      stepNumber: index + 1,
-      title: step.title,
-      description: step.description,
-      status: step.status,
-      inputs: step.inputs || {},
-      outputs: step.outputs || {},
-      completedAt: step.completedAt || null,
-    }));
-
-    return { workflow, steps };
   }
 
-  // Transform database records to GuestPostWorkflow format
-  static databaseToGuestPostWorkflow(
-    workflow: Workflow, 
-    steps: WorkflowStep[]
-  ): GuestPostWorkflow {
-    // Sort steps by stepNumber
-    const sortedSteps = steps.sort((a, b) => a.stepNumber - b.stepNumber);
+  // Transform database records to GuestPostWorkflow format (simplified for JSON storage)
+  static databaseToGuestPostWorkflow(workflow: any): GuestPostWorkflow {
+    // If content exists, return it directly (it's the stored GuestPostWorkflow)
+    if (workflow.content && typeof workflow.content === 'object') {
+      return {
+        ...workflow.content,
+        id: workflow.id, // Ensure we use the database ID
+        createdAt: new Date(workflow.createdAt),
+        updatedAt: new Date(workflow.updatedAt),
+      };
+    }
 
+    // Fallback for malformed data
     return {
       id: workflow.id,
-      createdAt: workflow.createdAt,
-      updatedAt: workflow.updatedAt,
-      clientName: workflow.clientName,
-      clientUrl: workflow.clientUrl,
-      targetDomain: workflow.targetDomain || '',
-      currentStep: workflow.currentStep,
-      createdBy: workflow.createdByName, // Use name, not ID
-      createdByEmail: workflow.createdByEmail || undefined,
-      steps: sortedSteps.map(step => ({
-        id: step.id,
-        title: step.title,
-        description: step.description || '',
-        status: step.status as 'pending' | 'in-progress' | 'completed',
-        inputs: step.inputs || {},
-        outputs: step.outputs || {},
-        completedAt: step.completedAt || undefined,
-      })),
+      createdAt: new Date(workflow.createdAt),
+      updatedAt: new Date(workflow.updatedAt),
+      clientName: workflow.title || 'Unknown Client',
+      clientUrl: '',
+      targetDomain: '',
+      currentStep: 0,
+      createdBy: 'Unknown User',
+      steps: [],
       metadata: {
         clientId: workflow.clientId || undefined,
       },
@@ -75,12 +66,9 @@ export class WorkflowService {
         .where(eq(workflows.userId, userId))
         .orderBy(desc(workflows.updatedAt));
 
-      // Get steps for each workflow and transform to GuestPostWorkflow format
-      const guestPostWorkflows = await Promise.all(
-        workflowList.map(async (workflow) => {
-          const steps = await this.getWorkflowSteps(workflow.id);
-          return this.databaseToGuestPostWorkflow(workflow, steps);
-        })
+      // Transform to GuestPostWorkflow format (no steps table needed)
+      const guestPostWorkflows = workflowList.map(workflow => 
+        this.databaseToGuestPostWorkflow(workflow)
       );
 
       return guestPostWorkflows;
@@ -123,8 +111,7 @@ export class WorkflowService {
       const workflow = await this.getWorkflow(id);
       if (!workflow) return null;
 
-      const steps = await this.getWorkflowSteps(id);
-      return this.databaseToGuestPostWorkflow(workflow, steps);
+      return this.databaseToGuestPostWorkflow(workflow);
     } catch (error) {
       console.error('Error loading guest post workflow:', error);
       return null;
@@ -157,66 +144,19 @@ export class WorkflowService {
         stepCount: guestWorkflow.steps?.length
       });
 
-      // Transform to database format
-      const { workflow: workflowData, steps: stepsData } = this.guestPostWorkflowToDatabase(
-        guestWorkflow, 
-        userId, 
-        userName, 
-        userEmail
-      );
-
-      console.log('Transformed workflow data:', workflowData);
-      console.log('Transformed steps data count:', stepsData.length);
-
-      // Create workflow record with explicit values instead of relying on database defaults
+      // Transform to database format (simplified for JSON storage)
+      const workflowData = this.guestPostWorkflowToDatabase(guestWorkflow, userId);
+      
+      console.log('Final workflow data to insert:', JSON.stringify(workflowData, null, 2));
+      
+      // Insert workflow record
       console.log('Creating workflow record...');
-      const now = new Date();
-      const workflowId = crypto.randomUUID();
-      
-      const insertData = {
-        id: workflowId,
-        ...workflowData,
-        createdAt: now,
-        updatedAt: now
-      };
-      
-      console.log('Final insertData:', JSON.stringify(insertData, null, 2));
-      
-      let createdWorkflow;
-      try {
-        createdWorkflow = await db.insert(workflows).values(insertData).returning();
-      } catch (insertError) {
-        console.error('Database insert error details:', insertError);
-        if (insertError && typeof insertError === 'object') {
-          console.error('Error code:', (insertError as any).code);
-          console.error('Error message:', (insertError as any).message);
-          console.error('Error detail:', (insertError as any).detail);
-        }
-        throw insertError;
-      }
+      const createdWorkflow = await db.insert(workflows).values(workflowData).returning();
       const workflow = createdWorkflow[0];
       console.log('Workflow record created:', workflow.id);
 
-      // Create workflow steps with explicit values
-      console.log('Creating workflow steps...');
-      const stepPromises = stepsData.map((stepData, index) => {
-        console.log(`Creating step ${index + 1}:`, stepData.title);
-        const stepId = crypto.randomUUID();
-        return db.insert(workflowSteps).values({
-          id: stepId,
-          ...stepData,
-          workflowId: workflow.id,
-          createdAt: now,
-          updatedAt: now
-        }).returning();
-      });
-
-      const createdSteps = await Promise.all(stepPromises);
-      const steps = createdSteps.map(result => result[0]);
-      console.log('All workflow steps created:', steps.length);
-
       // Transform back to GuestPostWorkflow format
-      const result = this.databaseToGuestPostWorkflow(workflow, steps);
+      const result = this.databaseToGuestPostWorkflow(workflow);
       console.log('Workflow creation completed successfully');
       return result;
     } catch (error) {
@@ -363,20 +303,5 @@ export class WorkflowService {
     }
   }
 
-  // Advance workflow to next step
-  static async advanceWorkflow(workflowId: string): Promise<Workflow | null> {
-    try {
-      const workflow = await this.getWorkflow(workflowId);
-      if (!workflow) {
-        return null;
-      }
-
-      return await this.updateWorkflow(workflowId, {
-        currentStep: workflow.currentStep + 1,
-      });
-    } catch (error) {
-      console.error('Error advancing workflow:', error);
-      return null;
-    }
-  }
+  // Note: Workflow advancement is now handled within the JSON content
 }

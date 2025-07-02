@@ -44,19 +44,17 @@ export const targetPages = pgTable('target_pages', {
   completedAt: timestamp('completed_at'),
 });
 
-// Workflows table
+// Workflows table - matches actual database structure
 export const workflows = pgTable('workflows', {
-  id: uuid('id').primaryKey(), // Remove defaultRandom() to handle in application code
-  clientName: varchar('client_name', { length: 255 }).notNull(),
-  clientUrl: varchar('client_url', { length: 255 }).notNull(),
-  targetDomain: varchar('target_domain', { length: 255 }),
-  currentStep: integer('current_step').notNull().default(0),
-  userId: uuid('user_id').notNull().references(() => users.id), // Fixed: matches database column
-  createdByName: varchar('created_by_name', { length: 255 }).notNull(),
-  createdByEmail: varchar('created_by_email', { length: 255 }),
-  clientId: uuid('client_id').references(() => clients.id), // Optional link to client
-  createdAt: timestamp('created_at').notNull(), // Remove defaultNow() to handle in application code
-  updatedAt: timestamp('updated_at').notNull(), // Remove defaultNow() to handle in application code
+  id: uuid('id').primaryKey(),
+  userId: uuid('user_id').notNull().references(() => users.id),
+  clientId: uuid('client_id').references(() => clients.id),
+  title: varchar('title', { length: 255 }).notNull(),
+  status: varchar('status', { length: 50 }).notNull().default('active'),
+  content: jsonb('content'), // Stores the complete GuestPostWorkflow as JSON
+  targetPages: jsonb('target_pages'), // Stores target pages as JSON
+  createdAt: timestamp('created_at').notNull(),
+  updatedAt: timestamp('updated_at').notNull(),
 });
 
 // Workflow steps table
