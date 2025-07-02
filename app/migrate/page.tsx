@@ -8,10 +8,10 @@ export default function MigratePage() {
 
   const runMigrations = async () => {
     setLoading(true);
-    setStatus('Running migrations...');
+    setStatus('Setting up database...');
     
     try {
-      const response = await fetch('/api/migrate', {
+      const response = await fetch('/api/setup-db', {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
@@ -21,9 +21,9 @@ export default function MigratePage() {
       const data = await response.json();
       
       if (response.ok) {
-        setStatus(`✅ Success: ${data.message || 'Migrations completed'}`);
+        setStatus(`✅ Success: ${data.message || 'Database setup completed'}\n\nDetails:\n${JSON.stringify(data, null, 2)}`);
       } else {
-        setStatus(`❌ Error: ${data.error || 'Migration failed'} - ${data.details || ''}`);
+        setStatus(`❌ Error: ${data.error || 'Setup failed'} - ${data.details || ''}`);
       }
     } catch (error) {
       setStatus(`❌ Error: ${error instanceof Error ? error.message : 'Unknown error'}`);
