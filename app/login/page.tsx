@@ -1,9 +1,9 @@
 'use client';
 
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { useRouter } from 'next/navigation';
-import { userStorage, sessionStorage } from '@/lib/userStorage';
-import { User } from '@/types/user';
+import { AuthService } from '@/lib/auth';
+import { initializeDatabase } from '@/lib/db/init';
 
 export default function LoginPage() {
   const router = useRouter();
@@ -15,21 +15,37 @@ export default function LoginPage() {
   });
   const [error, setError] = useState('');
   const [loading, setLoading] = useState(false);
+  const [dbInitialized, setDbInitialized] = useState(false);
+
+  useEffect(() => {
+    // Initialize database on component mount
+    initializeDatabase().then(success => {
+      setDbInitialized(success);
+      if (!success) {
+        setError('Database connection failed. Please try again later.');
+      }
+    });
+  }, []);
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     setError('');
     setLoading(true);
 
+    if (!dbInitialized) {
+      setError('Database not ready. Please refresh the page.');
+      setLoading(false);
+      return;
+    }
+
     try {
       if (isLogin) {
-        // Login logic (simplified - just check if user exists)
-        const user = userStorage.getUserByEmail(formData.email);
+        // Login logic
+        const user = await AuthService.login(formData.email, formData.password);
         if (!user) {
-          throw new Error('User not found');
+          throw new Error('Invalid email or password');
         }
         
-        sessionStorage.setSession(user);
         router.push('/');
       } else {
         // Registration logic
@@ -37,15 +53,17 @@ export default function LoginPage() {
           throw new Error('Name is required');
         }
         
-        const newUser = userStorage.createUser({
+        const user = await AuthService.register({
           email: formData.email,
           name: formData.name,
           password: formData.password,
           role: 'user', // Default role
-          isActive: true
         });
         
-        sessionStorage.setSession(newUser);
+        if (!user) {
+          throw new Error('Registration failed');
+        }
+        
         router.push('/');
       }
     } catch (error: any) {

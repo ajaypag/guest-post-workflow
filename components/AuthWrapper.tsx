@@ -2,8 +2,7 @@
 
 import { useEffect, useState } from 'react';
 import { useRouter } from 'next/navigation';
-import { sessionStorage } from '@/lib/userStorage';
-import { AuthSession } from '@/types/user';
+import { AuthService, type AuthSession } from '@/lib/auth';
 
 interface AuthWrapperProps {
   children: React.ReactNode;
@@ -17,7 +16,7 @@ export default function AuthWrapper({ children, requireAdmin = false }: AuthWrap
 
   useEffect(() => {
     const checkAuth = () => {
-      const currentSession = sessionStorage.getSession();
+      const currentSession = AuthService.getSession();
       
       if (!currentSession) {
         router.push('/login');
