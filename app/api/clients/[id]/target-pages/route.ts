@@ -161,7 +161,7 @@ export async function PUT(
     }
 
     // Update target page statuses using ClientService
-    const success = await ClientService.updateTargetPageStatus(pageIds, status);
+    const success = await ClientService.updateTargetPageStatus(id, pageIds, status);
     
     if (!success) {
       return NextResponse.json(
@@ -223,7 +223,7 @@ export async function DELETE(
     }
 
     // Remove target pages using ClientService
-    const success = await ClientService.removeTargetPages(pageIds);
+    const success = await ClientService.removeTargetPages(id, pageIds);
     
     if (!success) {
       return NextResponse.json(
