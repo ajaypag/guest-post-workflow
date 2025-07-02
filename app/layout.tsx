@@ -1,3 +1,4 @@
+import '../polyfills/randomUUID';   // load UUID polyfill before anything else
 import type { Metadata } from "next";
 import "./globals.css";
 import DebugLoader from "@/components/DebugLoader";
