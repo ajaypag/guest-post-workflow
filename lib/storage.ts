@@ -79,27 +79,27 @@ export const storage = {
           throw new Error('Failed to update workflow');
         }
       } else {
-        // Create new workflow
+        // Create new workflow - send the workflow directly
+        console.log('Sending workflow to API:', workflow);
         const response = await fetch('/api/workflows', {
           method: 'POST',
           headers: {
             'Content-Type': 'application/json',
           },
           body: JSON.stringify({
-            id: workflow.id,
-            userId: session.userId,
-            clientId: workflow.metadata?.clientId,
-            title: workflow.clientName, // Using clientName as title
-            status: 'active', // Default status
-            content: JSON.stringify(workflow),
-            targetPages: [],
-            steps: workflow.steps
+            ...workflow,
+            userId: session.userId // Add userId for API
           }),
         });
         
         if (!response.ok) {
-          throw new Error('Failed to create workflow');
+          const errorText = await response.text();
+          console.error('API Error Response:', response.status, errorText);
+          throw new Error(`Failed to create workflow: ${response.status} ${errorText}`);
         }
+        
+        const result = await response.json();
+        console.log('Workflow creation API response:', result);
       }
       console.log('Workflow saved successfully');
     } catch (error) {

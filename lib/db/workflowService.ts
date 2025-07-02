@@ -149,6 +149,13 @@ export class WorkflowService {
     userEmail?: string
   ): Promise<GuestPostWorkflow> {
     try {
+      console.log('WorkflowService.createGuestPostWorkflow - Starting', {
+        workflowId: guestWorkflow.id,
+        userId,
+        userName,
+        stepCount: guestWorkflow.steps?.length
+      });
+
       // Transform to database format
       const { workflow: workflowData, steps: stepsData } = this.guestPostWorkflowToDatabase(
         guestWorkflow, 
@@ -157,25 +164,41 @@ export class WorkflowService {
         userEmail
       );
 
+      console.log('Transformed workflow data:', workflowData);
+      console.log('Transformed steps data count:', stepsData.length);
+
       // Create workflow record
+      console.log('Creating workflow record...');
       const createdWorkflow = await db.insert(workflows).values(workflowData).returning();
       const workflow = createdWorkflow[0];
+      console.log('Workflow record created:', workflow.id);
 
       // Create workflow steps
-      const stepPromises = stepsData.map(stepData => 
-        db.insert(workflowSteps).values({
+      console.log('Creating workflow steps...');
+      const stepPromises = stepsData.map((stepData, index) => {
+        console.log(`Creating step ${index + 1}:`, stepData.title);
+        return db.insert(workflowSteps).values({
           ...stepData,
           workflowId: workflow.id,
-        }).returning()
-      );
+        }).returning();
+      });
 
       const createdSteps = await Promise.all(stepPromises);
       const steps = createdSteps.map(result => result[0]);
+      console.log('All workflow steps created:', steps.length);
 
       // Transform back to GuestPostWorkflow format
-      return this.databaseToGuestPostWorkflow(workflow, steps);
+      const result = this.databaseToGuestPostWorkflow(workflow, steps);
+      console.log('Workflow creation completed successfully');
+      return result;
     } catch (error) {
       console.error('Error creating guest post workflow:', error);
+      if (error && typeof error === 'object' && 'message' in error) {
+        console.error('Error message:', error.message);
+      }
+      if (error && typeof error === 'object' && 'stack' in error) {
+        console.error('Error stack:', error.stack);
+      }
       throw error;
     }
   }
