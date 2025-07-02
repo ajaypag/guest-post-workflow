@@ -1,6 +1,6 @@
 import { GuestPostWorkflow } from '@/types/workflow';
-
-const STORAGE_KEY = 'guest-post-workflows';
+import { WorkflowService } from './db/workflowService';
+import { AuthService } from './auth';
 
 // Helper function to safely parse dates
 const parseWorkflowDates = (workflow: any): GuestPostWorkflow => {
@@ -17,93 +17,85 @@ const parseWorkflowDates = (workflow: any): GuestPostWorkflow => {
   };
 };
 
-// Helper function to ensure workflow data is serializable
-const prepareForStorage = (workflow: GuestPostWorkflow): any => {
-  return {
-    ...workflow,
-    createdAt: workflow.createdAt.toISOString(),
-    updatedAt: workflow.updatedAt.toISOString(),
-    steps: workflow.steps.map(step => ({
-      ...step,
-      completedAt: step.completedAt ? step.completedAt.toISOString() : undefined,
-      inputs: step.inputs || {},
-      outputs: step.outputs || {}
-    }))
-  };
-};
-
 export const storage = {
-  getAllWorkflows: (): GuestPostWorkflow[] => {
+  getAllWorkflows: async (): Promise<GuestPostWorkflow[]> => {
     if (typeof window === 'undefined') return [];
     
     try {
-      const data = localStorage.getItem(STORAGE_KEY);
-      if (!data) return [];
+      const session = AuthService.getSession();
+      if (!session) return [];
       
-      const parsed = JSON.parse(data);
-      return Array.isArray(parsed) 
-        ? parsed.map(parseWorkflowDates)
-        : [];
+      const workflows = await WorkflowService.getUserWorkflows(session.userId);
+      return workflows.map(parseWorkflowDates);
     } catch (error) {
-      console.error('Error loading workflows from localStorage:', error);
+      console.error('Error loading workflows from database:', error);
       return [];
     }
   },
 
-  getWorkflow: (id: string): GuestPostWorkflow | null => {
+  getWorkflow: async (id: string): Promise<GuestPostWorkflow | null> => {
     try {
-      const workflows = storage.getAllWorkflows();
-      const workflow = workflows.find(w => w.id === id);
-      return workflow || null;
+      const workflow = await WorkflowService.getWorkflow(id);
+      return workflow ? parseWorkflowDates(workflow) : null;
     } catch (error) {
       console.error('Error getting workflow:', error);
       return null;
     }
   },
 
-  saveWorkflow: (workflow: GuestPostWorkflow): void => {
+  saveWorkflow: async (workflow: GuestPostWorkflow): Promise<void> => {
     try {
       console.log('Saving workflow:', workflow.id);
-      const workflows = storage.getAllWorkflows();
-      const index = workflows.findIndex(w => w.id === workflow.id);
+      const session = AuthService.getSession();
+      if (!session) throw new Error('User not authenticated');
       
-      const workflowToSave = prepareForStorage(workflow);
-      
-      if (index >= 0) {
-        workflows[index] = parseWorkflowDates(workflowToSave);
+      const existing = await WorkflowService.getWorkflow(workflow.id);
+      if (existing) {
+        await WorkflowService.updateWorkflow(workflow.id, {
+          clientId: workflow.clientId,
+          title: workflow.title,
+          status: workflow.status,
+          content: workflow.content,
+          targetPages: workflow.targetPages,
+          steps: workflow.steps
+        });
       } else {
-        workflows.push(parseWorkflowDates(workflowToSave));
+        await WorkflowService.createWorkflow({
+          id: workflow.id,
+          userId: session.userId,
+          clientId: workflow.clientId,
+          title: workflow.title,
+          status: workflow.status,
+          content: workflow.content,
+          targetPages: workflow.targetPages,
+          steps: workflow.steps
+        });
       }
-      
-      const dataToStore = workflows.map(prepareForStorage);
-      localStorage.setItem(STORAGE_KEY, JSON.stringify(dataToStore));
       console.log('Workflow saved successfully');
     } catch (error) {
       console.error('Error saving workflow:', error);
-      throw error; // Re-throw to handle in UI
+      throw error;
     }
   },
 
-  deleteWorkflow: (id: string): void => {
+  deleteWorkflow: async (id: string): Promise<void> => {
     try {
-      const workflows = storage.getAllWorkflows().filter(w => w.id !== id);
-      const dataToStore = workflows.map(prepareForStorage);
-      localStorage.setItem(STORAGE_KEY, JSON.stringify(dataToStore));
+      await WorkflowService.deleteWorkflow(id);
     } catch (error) {
       console.error('Error deleting workflow:', error);
       throw error;
     }
   },
 
-  exportWorkflow: (id: string): string => {
-    const workflow = storage.getWorkflow(id);
+  exportWorkflow: async (id: string): Promise<string> => {
+    const workflow = await storage.getWorkflow(id);
     if (!workflow) throw new Error('Workflow not found');
     
-    return JSON.stringify(prepareForStorage(workflow), null, 2);
+    return JSON.stringify(workflow, null, 2);
   },
 
-  exportAllWorkflows: (): string => {
-    const workflows = storage.getAllWorkflows();
-    return JSON.stringify(workflows.map(prepareForStorage), null, 2);
+  exportAllWorkflows: async (): Promise<string> => {
+    const workflows = await storage.getAllWorkflows();
+    return JSON.stringify(workflows, null, 2);
   }
 };

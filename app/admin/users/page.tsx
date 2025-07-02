@@ -17,6 +17,8 @@ export default function UsersManagement() {
   const [currentSession, setCurrentSession] = useState<AuthSession | null>(null);
   const [showAddUser, setShowAddUser] = useState(false);
   const [editingUser, setEditingUser] = useState<UserType | null>(null);
+  const [loading, setLoading] = useState(true);
+  const [workflowCounts, setWorkflowCounts] = useState<Record<string, number>>({});
   const [formData, setFormData] = useState({
     name: '',
     email: '',
@@ -25,67 +27,100 @@ export default function UsersManagement() {
   });
 
   useEffect(() => {
-    const session = sessionStorage.getSession();
-    setCurrentSession(session);
-    
-    // Check if user is admin
-    if (!session || session.role !== 'admin') {
-      router.push('/');
-      return;
-    }
-    
-    // Load all users
-    setUsers(userStorage.getAllUsers());
+    loadData();
   }, [router]);
 
-  const handleAddUser = (e: React.FormEvent) => {
-    e.preventDefault();
-    
-    const newUserData = {
-      email: formData.email,
-      name: formData.name,
-      password: formData.password, // In real app, this should be hashed
-      role: formData.role,
-      isActive: true
-    };
-
-    userStorage.createUser(newUserData);
-    setUsers(userStorage.getAllUsers());
-    setShowAddUser(false);
-    setFormData({ name: '', email: '', password: '', role: 'user' });
+  const loadData = async () => {
+    try {
+      const session = sessionStorage.getSession();
+      setCurrentSession(session);
+      
+      // Check if user is admin
+      if (!session || session.role !== 'admin') {
+        router.push('/');
+        return;
+      }
+      
+      // Load all users
+      const allUsers = await userStorage.getAllUsers();
+      setUsers(allUsers);
+      
+      // Load workflow counts for each user
+      const workflows = await storage.getAllWorkflows();
+      const counts: Record<string, number> = {};
+      allUsers.forEach(user => {
+        counts[user.id] = workflows.filter(w => w.createdByEmail === user.email).length;
+      });
+      setWorkflowCounts(counts);
+    } catch (error) {
+      console.error('Error loading data:', error);
+    } finally {
+      setLoading(false);
+    }
   };
 
-  const handleEditUser = (e: React.FormEvent) => {
+  const handleAddUser = async (e: React.FormEvent) => {
+    e.preventDefault();
+    
+    try {
+      const newUserData = {
+        email: formData.email,
+        name: formData.name,
+        password: formData.password,
+        role: formData.role,
+        isActive: true
+      };
+
+      await userStorage.createUser(newUserData);
+      await loadData();
+      setShowAddUser(false);
+      setFormData({ name: '', email: '', password: '', role: 'user' });
+    } catch (error) {
+      console.error('Error creating user:', error);
+      alert('Failed to create user');
+    }
+  };
+
+  const handleEditUser = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!editingUser) return;
 
-    const updatedUser: UserType = {
-      ...editingUser,
-      name: formData.name,
-      email: formData.email,
-      role: formData.role,
-      ...(formData.password && { password: formData.password })
-    };
+    try {
+      const updateData: Partial<UserType> = {
+        name: formData.name,
+        email: formData.email,
+        role: formData.role,
+        ...(formData.password && { password: formData.password })
+      };
 
-    userStorage.updateUser(editingUser.id, updatedUser);
-    setUsers(userStorage.getAllUsers());
-    setEditingUser(null);
-    setFormData({ name: '', email: '', password: '', role: 'user' });
+      await userStorage.updateUser(editingUser.id, updateData);
+      await loadData();
+      setEditingUser(null);
+      setFormData({ name: '', email: '', password: '', role: 'user' });
+    } catch (error) {
+      console.error('Error updating user:', error);
+      alert('Failed to update user');
+    }
   };
 
-  const handleDeleteUser = (userId: string) => {
+  const handleDeleteUser = async (userId: string) => {
     if (userId === currentSession?.userId) {
       alert('You cannot delete your own account');
       return;
     }
     
     if (confirm('Are you sure you want to delete this user? This action cannot be undone.')) {
-      userStorage.deleteUser(userId);
-      setUsers(userStorage.getAllUsers());
+      try {
+        await userStorage.deleteUser(userId);
+        await loadData();
+      } catch (error) {
+        console.error('Error deleting user:', error);
+        alert('Failed to delete user');
+      }
     }
   };
 
-  const toggleUserStatus = (userId: string) => {
+  const toggleUserStatus = async (userId: string) => {
     if (userId === currentSession?.userId) {
       alert('You cannot deactivate your own account');
       return;
@@ -93,14 +128,18 @@ export default function UsersManagement() {
 
     const user = users.find(u => u.id === userId);
     if (user) {
-      userStorage.updateUser(userId, { isActive: !user.isActive });
-      setUsers(userStorage.getAllUsers());
+      try {
+        await userStorage.updateUser(userId, { isActive: !user.isActive });
+        await loadData();
+      } catch (error) {
+        console.error('Error updating user status:', error);
+        alert('Failed to update user status');
+      }
     }
   };
 
   const getUserWorkflowCount = (userId: string) => {
-    const workflows = storage.getAllWorkflows();
-    return workflows.filter(w => w.createdByEmail === users.find(u => u.id === userId)?.email).length;
+    return workflowCounts[userId] || 0;
   };
 
   const startEdit = (user: UserType) => {
@@ -119,6 +158,19 @@ export default function UsersManagement() {
     setShowAddUser(false);
     setFormData({ name: '', email: '', password: '', role: 'user' });
   };
+
+  if (loading) {
+    return (
+      <AuthWrapper>
+        <div className="min-h-screen bg-gray-50 flex items-center justify-center">
+          <div className="text-center">
+            <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-blue-600 mx-auto"></div>
+            <p className="mt-2 text-gray-600">Loading users...</p>
+          </div>
+        </div>
+      </AuthWrapper>
+    );
+  }
 
   if (!currentSession || currentSession.role !== 'admin') {
     return <div>Access denied. Admin privileges required.</div>;
@@ -198,7 +250,7 @@ export default function UsersManagement() {
                   <Activity className="w-6 h-6 text-blue-600" />
                 </div>
                 <div>
-                  <div className="text-2xl font-bold text-gray-900">{storage.getAllWorkflows().length}</div>
+                  <div className="text-2xl font-bold text-gray-900">{Object.values(workflowCounts).reduce((a, b) => a + b, 0)}</div>
                   <div className="text-gray-600 text-sm">Total Workflows</div>
                 </div>
               </div>

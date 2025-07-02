@@ -9,15 +9,32 @@ import Link from 'next/link';
 
 export default function WorkflowList() {
   const [workflows, setWorkflows] = useState<GuestPostWorkflow[]>([]);
+  const [loading, setLoading] = useState(true);
 
   useEffect(() => {
-    setWorkflows(storage.getAllWorkflows());
+    loadWorkflows();
   }, []);
 
-  const handleDelete = (id: string) => {
+  const loadWorkflows = async () => {
+    try {
+      const allWorkflows = await storage.getAllWorkflows();
+      setWorkflows(allWorkflows);
+    } catch (error) {
+      console.error('Error loading workflows:', error);
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const handleDelete = async (id: string) => {
     if (confirm('Are you sure you want to delete this workflow?')) {
-      storage.deleteWorkflow(id);
-      setWorkflows(storage.getAllWorkflows());
+      try {
+        await storage.deleteWorkflow(id);
+        await loadWorkflows();
+      } catch (error) {
+        console.error('Error deleting workflow:', error);
+        alert('Failed to delete workflow');
+      }
     }
   };
 
@@ -42,7 +59,12 @@ export default function WorkflowList() {
         </Link>
       </div>
 
-      {workflows.length === 0 ? (
+      {loading ? (
+        <div className="bg-white rounded-2xl border border-gray-200 p-12 text-center">
+          <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-blue-600 mx-auto"></div>
+          <p className="mt-2 text-gray-600">Loading workflows...</p>
+        </div>
+      ) : workflows.length === 0 ? (
         <div className="bg-white rounded-2xl border border-gray-200 p-12 text-center">
           <div className="w-16 h-16 bg-gray-100 rounded-2xl flex items-center justify-center mx-auto mb-6">
             <FileText className="w-8 h-8 text-gray-400" />
@@ -165,14 +187,19 @@ export default function WorkflowList() {
                   Overview
                 </Link>
                 <button
-                  onClick={() => {
-                    const data = storage.exportWorkflow(workflow.id);
-                    const blob = new Blob([data], { type: 'application/json' });
-                    const url = URL.createObjectURL(blob);
-                    const a = document.createElement('a');
-                    a.href = url;
-                    a.download = `workflow-${workflow.clientName}-${workflow.id}.json`;
-                    a.click();
+                  onClick={async () => {
+                    try {
+                      const data = await storage.exportWorkflow(workflow.id);
+                      const blob = new Blob([data], { type: 'application/json' });
+                      const url = URL.createObjectURL(blob);
+                      const a = document.createElement('a');
+                      a.href = url;
+                      a.download = `workflow-${workflow.clientName}-${workflow.id}.json`;
+                      a.click();
+                    } catch (error) {
+                      console.error('Error exporting workflow:', error);
+                      alert('Failed to export workflow');
+                    }
                   }}
                   className="px-6 py-3 bg-gray-50 text-gray-700 border border-gray-200 rounded-xl hover:bg-gray-100 transition-colors font-medium"
                 >

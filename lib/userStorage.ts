@@ -1,4 +1,7 @@
 import { User, Client, TargetPage, AuthSession } from '@/types/user';
+import { UserService } from './db/userService';
+import { ClientService } from './db/clientService';
+import { AuthService } from './auth';
 
 // Safe UUID generator that works in all environments
 function generateUUID(): string {
@@ -15,18 +18,13 @@ function generateUUID(): string {
   });
 }
 
-const USERS_KEY = 'guest_post_users';
-const CLIENTS_KEY = 'guest_post_clients';
-const SESSION_KEY = 'guest_post_session';
-
 // User Management
 export const userStorage = {
   // Get all users (admin only)
-  getAllUsers(): User[] {
+  async getAllUsers(): Promise<User[]> {
     if (typeof window === 'undefined') return [];
     try {
-      const stored = localStorage.getItem(USERS_KEY);
-      return stored ? JSON.parse(stored) : [];
+      return await UserService.getAllUsers();
     } catch (error) {
       console.error('Error loading users:', error);
       return [];
@@ -34,128 +32,115 @@ export const userStorage = {
   },
 
   // Get user by ID
-  getUser(id: string): User | null {
-    const users = this.getAllUsers();
-    return users.find(user => user.id === id) || null;
-  },
-
-  // Get user by email
-  getUserByEmail(email: string): User | null {
-    const users = this.getAllUsers();
-    return users.find(user => user.email === email) || null;
-  },
-
-  // Create new user
-  createUser(userData: Omit<User, 'id' | 'createdAt'>): User {
-    const users = this.getAllUsers();
-    const newUser: User = {
-      ...userData,
-      id: generateUUID(),
-      createdAt: new Date(),
-    };
-    
-    // Check if email already exists
-    if (users.some(user => user.email === userData.email)) {
-      throw new Error('User with this email already exists');
-    }
-
-    users.push(newUser);
-    localStorage.setItem(USERS_KEY, JSON.stringify(users));
-    return newUser;
-  },
-
-  // Update user
-  updateUser(id: string, updates: Partial<User>): User | null {
-    const users = this.getAllUsers();
-    const index = users.findIndex(user => user.id === id);
-    
-    if (index === -1) return null;
-    
-    users[index] = { ...users[index], ...updates };
-    localStorage.setItem(USERS_KEY, JSON.stringify(users));
-    return users[index];
-  },
-
-  // Delete user
-  deleteUser(id: string): boolean {
-    const users = this.getAllUsers();
-    const filteredUsers = users.filter(user => user.id !== id);
-    
-    if (filteredUsers.length === users.length) return false;
-    
-    localStorage.setItem(USERS_KEY, JSON.stringify(filteredUsers));
-    return true;
-  },
-
-  // Initialize with admin user if no users exist
-  initializeAdmin(): void {
-    const users = this.getAllUsers();
-    if (users.length === 0) {
-      this.createUser({
-        email: 'admin@example.com',
-        name: 'Admin User',
-        password: 'admin123', // Default password
-        role: 'admin',
-        isActive: true
-      });
-      console.log('Admin user created: admin@example.com');
-    }
-  }
-};
-
-// Session Management
-export const sessionStorage = {
-  // Set current session
-  setSession(user: User): void {
-    const session: AuthSession = {
-      userId: user.id,
-      email: user.email,
-      name: user.name,
-      role: user.role
-    };
-    localStorage.setItem(SESSION_KEY, JSON.stringify(session));
-    
-    // Update last login
-    userStorage.updateUser(user.id, { lastLogin: new Date() });
-  },
-
-  // Get current session
-  getSession(): AuthSession | null {
-    if (typeof window === 'undefined') return null;
+  async getUser(id: string): Promise<User | null> {
     try {
-      const stored = localStorage.getItem(SESSION_KEY);
-      return stored ? JSON.parse(stored) : null;
+      return await UserService.getUser(id);
     } catch (error) {
-      console.error('Error loading session:', error);
+      console.error('Error getting user:', error);
       return null;
     }
   },
 
+  // Get user by email
+  async getUserByEmail(email: string): Promise<User | null> {
+    try {
+      return await UserService.getUserByEmail(email);
+    } catch (error) {
+      console.error('Error getting user by email:', error);
+      return null;
+    }
+  },
+
+  // Create new user
+  async createUser(userData: Omit<User, 'id' | 'createdAt'>): Promise<User> {
+    try {
+      return await UserService.createUser({
+        ...userData,
+        password: userData.password,
+        isActive: userData.isActive ?? true
+      });
+    } catch (error) {
+      console.error('Error creating user:', error);
+      throw error;
+    }
+  },
+
+  // Update user
+  async updateUser(id: string, updates: Partial<User>): Promise<User | null> {
+    try {
+      return await UserService.updateUser(id, updates);
+    } catch (error) {
+      console.error('Error updating user:', error);
+      return null;
+    }
+  },
+
+  // Delete user
+  async deleteUser(id: string): Promise<boolean> {
+    try {
+      await UserService.deleteUser(id);
+      return true;
+    } catch (error) {
+      console.error('Error deleting user:', error);
+      return false;
+    }
+  },
+
+  // Initialize with admin user if no users exist
+  async initializeAdmin(): Promise<void> {
+    try {
+      const users = await UserService.getAllUsers();
+      if (users.length === 0) {
+        await UserService.createUser({
+          email: 'admin@example.com',
+          name: 'Admin User',
+          password: 'admin123',
+          role: 'admin',
+          isActive: true
+        });
+        console.log('Admin user created: admin@example.com');
+      }
+    } catch (error) {
+      console.error('Error initializing admin:', error);
+    }
+  }
+};
+
+// Session Management - Delegated to AuthService
+export const sessionStorage = {
+  // Set current session
+  setSession(user: User): void {
+    AuthService.setSession(user);
+  },
+
+  // Get current session
+  getSession(): AuthSession | null {
+    return AuthService.getSession();
+  },
+
   // Clear session (logout)
   clearSession(): void {
-    localStorage.removeItem(SESSION_KEY);
+    AuthService.clearSession();
   },
 
   // Check if user is logged in
   isLoggedIn(): boolean {
-    return this.getSession() !== null;
+    return AuthService.isLoggedIn();
   },
 
   // Check if user is admin
   isAdmin(): boolean {
-    const session = this.getSession();
-    return session?.role === 'admin';
+    return AuthService.isAdmin();
   }
 };
 
 // Client Management
 export const clientStorage = {
   // Get all clients
-  getAllClients(): Client[] {
+  async getAllClients(): Promise<Client[]> {
     if (typeof window === 'undefined') return [];
     try {
-      const stored = localStorage.getItem(CLIENTS_KEY);
-      return stored ? JSON.parse(stored) : [];
+      return await ClientService.getAllClients();
     } catch (error) {
       console.error('Error loading clients:', error);
       return [];
@@ -163,116 +148,126 @@ export const clientStorage = {
   },
 
   // Get clients for current user
-  getUserClients(userId: string): Client[] {
-    const clients = this.getAllClients();
-    return clients.filter(client => 
-      client.assignedUsers.includes(userId) || client.createdBy === userId
-    );
+  async getUserClients(userId: string): Promise<Client[]> {
+    try {
+      return await ClientService.getUserClients(userId);
+    } catch (error) {
+      console.error('Error loading user clients:', error);
+      return [];
+    }
   },
 
   // Get client by ID
-  getClient(id: string): Client | null {
-    const clients = this.getAllClients();
-    return clients.find(client => client.id === id) || null;
+  async getClient(id: string): Promise<Client | null> {
+    try {
+      return await ClientService.getClient(id);
+    } catch (error) {
+      console.error('Error getting client:', error);
+      return null;
+    }
   },
 
   // Create new client
-  createClient(clientData: Omit<Client, 'id' | 'createdAt' | 'updatedAt'>): Client {
-    const clients = this.getAllClients();
-    const newClient: Client = {
-      ...clientData,
-      id: generateUUID(),
-      createdAt: new Date(),
-      updatedAt: new Date(),
-    };
-
-    clients.push(newClient);
-    localStorage.setItem(CLIENTS_KEY, JSON.stringify(clients));
-    return newClient;
+  async createClient(clientData: Omit<Client, 'id' | 'createdAt' | 'updatedAt'>): Promise<Client> {
+    try {
+      return await ClientService.createClient(clientData);
+    } catch (error) {
+      console.error('Error creating client:', error);
+      throw error;
+    }
   },
 
   // Update client
-  updateClient(id: string, updates: Partial<Client>): Client | null {
-    const clients = this.getAllClients();
-    const index = clients.findIndex(client => client.id === id);
-    
-    if (index === -1) return null;
-    
-    clients[index] = { 
-      ...clients[index], 
-      ...updates, 
-      updatedAt: new Date() 
-    };
-    localStorage.setItem(CLIENTS_KEY, JSON.stringify(clients));
-    return clients[index];
+  async updateClient(id: string, updates: Partial<Client>): Promise<Client | null> {
+    try {
+      return await ClientService.updateClient(id, updates);
+    } catch (error) {
+      console.error('Error updating client:', error);
+      return null;
+    }
   },
 
   // Delete client
-  deleteClient(id: string): boolean {
-    const clients = this.getAllClients();
-    const filteredClients = clients.filter(client => client.id !== id);
-    
-    if (filteredClients.length === clients.length) return false;
-    
-    localStorage.setItem(CLIENTS_KEY, JSON.stringify(filteredClients));
-    return true;
+  async deleteClient(id: string): Promise<boolean> {
+    try {
+      await ClientService.deleteClient(id);
+      return true;
+    } catch (error) {
+      console.error('Error deleting client:', error);
+      return false;
+    }
   },
 
   // Add target pages to client
-  addTargetPages(clientId: string, urls: string[]): boolean {
-    const client = this.getClient(clientId);
-    if (!client) return false;
+  async addTargetPages(clientId: string, urls: string[]): Promise<boolean> {
+    try {
+      const client = await this.getClient(clientId);
+      if (!client) return false;
 
-    const newPages: TargetPage[] = urls.map(url => ({
-      id: generateUUID(),
-      url,
-      domain: new URL(url).hostname,
-      status: 'active',
-      addedAt: new Date()
-    }));
+      const newPages: TargetPage[] = urls.map(url => ({
+        id: generateUUID(),
+        url,
+        domain: new URL(url).hostname,
+        status: 'active',
+        addedAt: new Date()
+      }));
 
-    return this.updateClient(clientId, {
-      targetPages: [...client.targetPages, ...newPages]
-    }) !== null;
+      return (await this.updateClient(clientId, {
+        targetPages: [...client.targetPages, ...newPages]
+      })) !== null;
+    } catch (error) {
+      console.error('Error adding target pages:', error);
+      return false;
+    }
   },
 
   // Update target page status (bulk operation)
-  updateTargetPageStatus(clientId: string, pageIds: string[], status: TargetPage['status']): boolean {
-    const client = this.getClient(clientId);
-    if (!client) return false;
+  async updateTargetPageStatus(clientId: string, pageIds: string[], status: TargetPage['status']): Promise<boolean> {
+    try {
+      const client = await this.getClient(clientId);
+      if (!client) return false;
 
-    const updatedPages = client.targetPages.map(page => {
-      if (pageIds.includes(page.id)) {
-        return {
-          ...page,
-          status,
-          completedAt: status === 'completed' ? new Date() : undefined
-        };
-      }
-      return page;
-    });
+      const updatedPages = client.targetPages.map(page => {
+        if (pageIds.includes(page.id)) {
+          return {
+            ...page,
+            status,
+            completedAt: status === 'completed' ? new Date() : undefined
+          };
+        }
+        return page;
+      });
 
-    return this.updateClient(clientId, {
-      targetPages: updatedPages
-    }) !== null;
+      return (await this.updateClient(clientId, {
+        targetPages: updatedPages
+      })) !== null;
+    } catch (error) {
+      console.error('Error updating target page status:', error);
+      return false;
+    }
   },
 
   // Remove target pages (bulk operation)
-  removeTargetPages(clientId: string, pageIds: string[]): boolean {
-    const client = this.getClient(clientId);
-    if (!client) return false;
+  async removeTargetPages(clientId: string, pageIds: string[]): Promise<boolean> {
+    try {
+      const client = await this.getClient(clientId);
+      if (!client) return false;
 
-    const filteredPages = client.targetPages.filter(page => 
-      !pageIds.includes(page.id)
-    );
+      const filteredPages = client.targetPages.filter(page => 
+        !pageIds.includes(page.id)
+      );
 
-    return this.updateClient(clientId, {
-      targetPages: filteredPages
-    }) !== null;
+      return (await this.updateClient(clientId, {
+        targetPages: filteredPages
+      })) !== null;
+    } catch (error) {
+      console.error('Error removing target pages:', error);
+      return false;
+    }
   }
 };
 
 // Initialize admin user on first load
 if (typeof window !== 'undefined') {
-  userStorage.initializeAdmin();
+  userStorage.initializeAdmin().catch(console.error);
 }
