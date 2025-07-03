@@ -6,15 +6,20 @@ import AuthWrapper from '@/components/AuthWrapper';
 import Header from '@/components/Header';
 import { clientStorage, sessionStorage } from '@/lib/userStorage';
 import { Client } from '@/types/user';
-import { Building2, Plus, Users, Globe, CheckCircle, XCircle, Clock } from 'lucide-react';
+import { Building2, Plus, Users, Globe, CheckCircle, XCircle, Clock, Edit, Trash2, X } from 'lucide-react';
 
 export default function ClientsPage() {
   const [clients, setClients] = useState<Client[]>([]);
   const [showNewClientForm, setShowNewClientForm] = useState(false);
+  const [editingClient, setEditingClient] = useState<Client | null>(null);
   const [newClient, setNewClient] = useState({
     name: '',
     website: '',
     targetPages: ''
+  });
+  const [editClient, setEditClient] = useState({
+    name: '',
+    website: ''
   });
 
   useEffect(() => {
@@ -64,6 +69,58 @@ export default function ClientsPage() {
     } catch (error: any) {
       alert('Error creating client: ' + error.message);
     }
+  };
+
+  const handleEditClient = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!editingClient) return;
+
+    try {
+      const updatedClient = await clientStorage.updateClient(editingClient.id, {
+        name: editClient.name,
+        website: editClient.website
+      });
+      
+      if (updatedClient) {
+        setEditingClient(null);
+        setEditClient({ name: '', website: '' });
+        await loadClients();
+      } else {
+        alert('Failed to update client');
+      }
+    } catch (error: any) {
+      alert('Error updating client: ' + error.message);
+    }
+  };
+
+  const handleDeleteClient = async (client: Client) => {
+    if (!confirm(`Are you sure you want to delete "${client.name}"? This action cannot be undone.`)) {
+      return;
+    }
+
+    try {
+      const success = await clientStorage.deleteClient(client.id);
+      if (success) {
+        await loadClients();
+      } else {
+        alert('Failed to delete client');
+      }
+    } catch (error: any) {
+      alert('Error deleting client: ' + error.message);
+    }
+  };
+
+  const startEditClient = (client: Client) => {
+    setEditingClient(client);
+    setEditClient({
+      name: client.name,
+      website: client.website
+    });
+  };
+
+  const cancelEdit = () => {
+    setEditingClient(null);
+    setEditClient({ name: '', website: '' });
   };
 
   const getStatusCounts = (client: Client) => {
@@ -165,6 +222,66 @@ export default function ClientsPage() {
             </div>
           )}
 
+          {/* Edit Client Form */}
+          {editingClient && (
+            <div className="bg-white rounded-lg shadow p-6 mb-6">
+              <div className="flex justify-between items-center mb-4">
+                <h3 className="text-lg font-medium">Edit Client</h3>
+                <button
+                  onClick={cancelEdit}
+                  className="text-gray-400 hover:text-gray-600"
+                >
+                  <X className="w-5 h-5" />
+                </button>
+              </div>
+              <form onSubmit={handleEditClient} className="space-y-4">
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                  <div>
+                    <label className="block text-sm font-medium text-gray-700 mb-1">
+                      Client Name
+                    </label>
+                    <input
+                      type="text"
+                      required
+                      value={editClient.name}
+                      onChange={(e) => setEditClient({ ...editClient, name: e.target.value })}
+                      className="w-full px-3 py-2 border border-gray-300 rounded-md focus:ring-blue-500 focus:border-blue-500"
+                      placeholder="Acme Corp"
+                    />
+                  </div>
+                  <div>
+                    <label className="block text-sm font-medium text-gray-700 mb-1">
+                      Website
+                    </label>
+                    <input
+                      type="url"
+                      required
+                      value={editClient.website}
+                      onChange={(e) => setEditClient({ ...editClient, website: e.target.value })}
+                      className="w-full px-3 py-2 border border-gray-300 rounded-md focus:ring-blue-500 focus:border-blue-500"
+                      placeholder="https://example.com"
+                    />
+                  </div>
+                </div>
+                <div className="flex space-x-3">
+                  <button
+                    type="submit"
+                    className="px-4 py-2 bg-blue-600 text-white text-sm font-medium rounded-md hover:bg-blue-700"
+                  >
+                    Update Client
+                  </button>
+                  <button
+                    type="button"
+                    onClick={cancelEdit}
+                    className="px-4 py-2 bg-gray-200 text-gray-800 text-sm font-medium rounded-md hover:bg-gray-300"
+                  >
+                    Cancel
+                  </button>
+                </div>
+              </form>
+            </div>
+          )}
+
           {/* Clients Grid */}
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
             {clients.map((client) => {
@@ -176,6 +293,22 @@ export default function ClientsPage() {
                       <div className="flex items-center">
                         <Building2 className="w-5 h-5 text-gray-400 mr-2" />
                         <h3 className="text-lg font-medium text-gray-900">{client.name}</h3>
+                      </div>
+                      <div className="flex space-x-2">
+                        <button
+                          onClick={() => startEditClient(client)}
+                          className="text-gray-400 hover:text-blue-600 transition-colors"
+                          title="Edit client"
+                        >
+                          <Edit className="w-4 h-4" />
+                        </button>
+                        <button
+                          onClick={() => handleDeleteClient(client)}
+                          className="text-gray-400 hover:text-red-600 transition-colors"
+                          title="Delete client"
+                        >
+                          <Trash2 className="w-4 h-4" />
+                        </button>
                       </div>
                     </div>
                     

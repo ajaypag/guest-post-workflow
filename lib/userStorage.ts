@@ -240,12 +240,12 @@ export const clientStorage = {
   // Update client
   async updateClient(id: string, updates: Partial<Client>): Promise<Client | null> {
     try {
-      const response = await fetch(`/api/clients/${id}`, {
+      const response = await fetch('/api/clients', {
         method: 'PUT',
         headers: {
           'Content-Type': 'application/json',
         },
-        body: JSON.stringify(updates),
+        body: JSON.stringify({ id, ...updates }),
       });
 
       if (!response.ok) return null;
@@ -261,7 +261,7 @@ export const clientStorage = {
   // Delete client
   async deleteClient(id: string): Promise<boolean> {
     try {
-      const response = await fetch(`/api/clients/${id}`, {
+      const response = await fetch(`/api/clients?id=${id}`, {
         method: 'DELETE',
       });
       

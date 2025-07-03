@@ -44,3 +44,65 @@ export async function POST(request: NextRequest) {
     );
   }
 }
+
+export async function PUT(request: NextRequest) {
+  try {
+    const data = await request.json();
+    const { id, ...updates } = data;
+    
+    if (!id) {
+      return NextResponse.json(
+        { error: 'Client ID is required' },
+        { status: 400 }
+      );
+    }
+
+    const client = await ClientService.updateClient(id, updates);
+    
+    if (!client) {
+      return NextResponse.json(
+        { error: 'Client not found' },
+        { status: 404 }
+      );
+    }
+
+    return NextResponse.json({ client });
+  } catch (error) {
+    console.error('Error updating client:', error);
+    return NextResponse.json(
+      { error: error instanceof Error ? error.message : 'Failed to update client' },
+      { status: 500 }
+    );
+  }
+}
+
+export async function DELETE(request: NextRequest) {
+  try {
+    const { searchParams } = new URL(request.url);
+    const id = searchParams.get('id');
+    
+    if (!id) {
+      return NextResponse.json(
+        { error: 'Client ID is required' },
+        { status: 400 }
+      );
+    }
+
+    const success = await ClientService.deleteClient(id);
+    
+    if (!success) {
+      return NextResponse.json(
+        { error: 'Client not found or could not be deleted' },
+        { status: 404 }
+      );
+    }
+
+    return NextResponse.json({ success: true });
+  } catch (error) {
+    console.error('Error deleting client:', error);
+    return NextResponse.json(
+      { error: error instanceof Error ? error.message : 'Failed to delete client' },
+      { status: 500 }
+    );
+  }
+}
