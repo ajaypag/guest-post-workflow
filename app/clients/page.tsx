@@ -26,13 +26,8 @@ export default function ClientsPage() {
     if (!session) return;
 
     try {
-      if (session.role === 'admin') {
-        const allClients = await clientStorage.getAllClients();
-        setClients(allClients);
-      } else {
-        const userClients = await clientStorage.getUserClients(session.userId);
-        setClients(userClients);
-      }
+      const allClients = await clientStorage.getAllClients();
+      setClients(allClients);
     } catch (error) {
       console.error('Error loading clients:', error);
     }
