@@ -30,7 +30,7 @@ export const DomainSelectionStepClean = ({ step, workflow, onChange }: DomainSel
   return (
     <div className="space-y-6">
       <TutorialVideo 
-        videoUrl="https://www.loom.com/share/90796a8df0d74e36bbd9dfb536121f86"
+        videoUrl="https://www.loom.com/share/31c7f383913d4dc5bae49935b31f88b5?sid=0e73abf0-8aa1-42f7-9a6e-b4edb52ef113"
         title="Guest Post Site Selection Tutorial"
         description="Learn how to select the right guest post publication site for your client"
       />
