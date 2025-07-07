@@ -3,6 +3,7 @@
 import React from 'react';
 import { WorkflowStep, GuestPostWorkflow } from '@/types/workflow';
 import { SavedField } from '../SavedField';
+import { TutorialVideo } from '../ui/TutorialVideo';
 import { ExternalLink } from 'lucide-react';
 
 interface FormattingQAStepProps {
@@ -17,6 +18,13 @@ export const FormattingQAStep = ({ step, workflow, onChange }: FormattingQAStepP
 
   return (
     <div className="space-y-4">
+      <TutorialVideo 
+        videoUrl="https://www.loom.com/share/90796a8df0d74e36bbd9dfb536121f86?t=175&sid=0fe90d42-f1ca-455f-b97c-bd119f8773fb"
+        title="Formatting & QA Tutorial"
+        description="Learn how to format and quality-check your guest post before submission"
+        timestamp="2:55"
+      />
+      
       <div className="bg-blue-50 p-4 rounded-md">
         <h3 className="font-semibold mb-2">Step 7: Manual Formatting & Single-Citation QA</h3>
         <p className="text-sm mb-2">

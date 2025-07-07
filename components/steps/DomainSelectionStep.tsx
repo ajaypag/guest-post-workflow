@@ -3,6 +3,7 @@
 import React from 'react';
 import { WorkflowStep, GuestPostWorkflow } from '@/types/workflow';
 import { SavedField } from '../SavedField';
+import { TutorialVideo } from '../ui/TutorialVideo';
 
 interface DomainSelectionStepProps {
   step: WorkflowStep;
@@ -12,6 +13,12 @@ interface DomainSelectionStepProps {
 
 export const DomainSelectionStep = ({ step, workflow, onChange }: DomainSelectionStepProps) => (
   <div className="space-y-4">
+    <TutorialVideo 
+      videoUrl="https://www.loom.com/share/90796a8df0d74e36bbd9dfb536121f86"
+      title="Guest Post Site Selection Tutorial"
+      description="Learn how to select the right guest post publication site for your client"
+    />
+    
     <SavedField
       label="Guest Post Website"
       value={step.outputs.domain || ''}

@@ -4,6 +4,7 @@ import React from 'react';
 import { WorkflowStep, GuestPostWorkflow } from '@/types/workflow';
 import { SavedField } from '../SavedField';
 import { CopyButton } from '../ui/CopyButton';
+import { TutorialVideo } from '../ui/TutorialVideo';
 import { ExternalLink } from 'lucide-react';
 
 interface DeepResearchStepProps {
@@ -19,6 +20,12 @@ export const DeepResearchStep = ({ step, workflow, onChange }: DeepResearchStepP
 
   return (
     <div className="space-y-4">
+      <TutorialVideo 
+        videoUrl="https://www.loom.com/share/0f7db8ced4574c4abfc62d84b16c424c"
+        title="Outline Creation Tutorial"
+        description="Learn how to create detailed research outlines using GPT-o3 Deep Research"
+      />
+      
       <div className="bg-blue-50 p-4 rounded-md">
         <h3 className="font-semibold mb-3">Step 3: Create Detailed Research Outline</h3>
         

@@ -4,6 +4,7 @@ import React from 'react';
 import { WorkflowStep, GuestPostWorkflow } from '@/types/workflow';
 import { SavedField } from '../SavedField';
 import { CopyButton } from '../ui/CopyButton';
+import { TutorialVideo } from '../ui/TutorialVideo';
 import { ExternalLink } from 'lucide-react';
 
 interface FinalPolishStepProps {
@@ -26,6 +27,12 @@ export const FinalPolishStep = ({ step, workflow, onChange }: FinalPolishStepPro
 
   return (
     <div className="space-y-4">
+      <TutorialVideo 
+        videoUrl="https://www.loom.com/share/90796a8df0d74e36bbd9dfb536121f86"
+        title="Polish & Finalize Tutorial"
+        description="Learn how to finalize and polish your guest post content for publication"
+      />
+      
       <div className="bg-blue-50 p-4 rounded-md">
         <h3 className="font-semibold mb-2">Step 6: Polish & Finalize the Draft</h3>
         <p className="text-sm mb-2">

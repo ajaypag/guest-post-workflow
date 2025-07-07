@@ -4,6 +4,7 @@ import React from 'react';
 import { WorkflowStep, GuestPostWorkflow } from '@/types/workflow';
 import { SavedField } from '../SavedField';
 import { CopyButton } from '../ui/CopyButton';
+import { TutorialVideo } from '../ui/TutorialVideo';
 import { ExternalLink } from 'lucide-react';
 
 interface ArticleDraftStepProps {
@@ -24,6 +25,13 @@ ${outlineContent || '((((Complete Step 3: Deep Research first to get outline con
 
   return (
     <div className="space-y-4">
+      <TutorialVideo 
+        videoUrl="https://www.loom.com/share/0f7db8ced4574c4abfc62d84b16c424c?t=152&sid=774f1471-0f47-4edb-8191-9369cfba89ec"
+        title="Article Draft Tutorial"
+        description="Learn how to write compelling guest post articles using GPT-o3 Advanced Reasoning"
+        timestamp="2:32"
+      />
+      
       <div className="bg-blue-50 p-4 rounded-md">
         <h3 className="font-semibold mb-2">Step 4: Draft the Article (o3 Advanced Reasoning)</h3>
         <p className="text-sm mb-2">Open a new chat in the OutreachLabs Guest Posts project based on your OpenAI account:</p>

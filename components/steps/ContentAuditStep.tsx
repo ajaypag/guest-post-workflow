@@ -4,6 +4,7 @@ import React from 'react';
 import { WorkflowStep, GuestPostWorkflow } from '@/types/workflow';
 import { SavedField } from '../SavedField';
 import { CopyButton } from '../ui/CopyButton';
+import { TutorialVideo } from '../ui/TutorialVideo';
 import { ExternalLink } from 'lucide-react';
 
 interface ContentAuditStepProps {
@@ -23,6 +24,12 @@ export const ContentAuditStep = ({ step, workflow, onChange }: ContentAuditStepP
 
   return (
     <div className="space-y-4">
+      <TutorialVideo 
+        videoUrl="https://www.loom.com/share/ec2612d683f746b7899048e32bcdd599"
+        title="Semantic SEO Optimization Tutorial"
+        description="Learn how to audit and optimize your guest post content for better SEO performance"
+      />
+      
       <div className="bg-blue-50 p-4 rounded-md">
         <h3 className="font-semibold mb-2">Step 5: Audit & SEO-Tighten the Draft</h3>
         <p className="text-sm mb-2">

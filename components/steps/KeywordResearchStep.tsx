@@ -4,6 +4,7 @@ import React from 'react';
 import { WorkflowStep, GuestPostWorkflow } from '@/types/workflow';
 import { SavedField } from '../SavedField';
 import { CopyButton } from '../ui/CopyButton';
+import { TutorialVideo } from '../ui/TutorialVideo';
 import { ExternalLink } from 'lucide-react';
 
 interface KeywordResearchStepProps {
@@ -59,6 +60,13 @@ export const KeywordResearchStep = ({ step, workflow, onChange }: KeywordResearc
   
   return (
     <div className="space-y-4">
+      <TutorialVideo 
+        videoUrl="https://www.loom.com/share/31c7f383913d4dc5bae49935b31f88b5?t=19&sid=0e73abf0-8aa1-42f7-9a6e-b4edb52ef113"
+        title="Site Qualification and Preparation Tutorial"
+        description="Learn how to research and qualify your guest post site before creating content"
+        timestamp="0:19"
+      />
+      
       <div className="bg-blue-50 p-4 rounded-md">
         <h3 className="font-semibold mb-2">Step 2a: Find Topically Relevant Keywords</h3>
         
