@@ -65,6 +65,35 @@ export const TopicGenerationStepClean = ({ step, workflow, onChange }: TopicGene
     }
   };
 
+  // Build enhanced research prompt with client link planning
+  const buildEnhancedResearchPrompt = (rawPrompt: string) => {
+    return buildEnhancedResearchPromptWithOutputs(rawPrompt, step.outputs);
+  };
+
+  // Build enhanced research prompt with specific outputs
+  const buildEnhancedResearchPromptWithOutputs = (rawPrompt: string, outputs: any) => {
+    if (!rawPrompt) return '';
+    
+    const clientTargetUrl = outputs.clientTargetUrl || '';
+    const desiredAnchorText = outputs.desiredAnchorText || '';
+    
+    let enhancement = '';
+    if (clientTargetUrl) {
+      enhancement = `\n\nCLIENT LINK REQUIREMENTS:
+Although this article should not seem sponsored or like an advertorial in any way, this is a guest post that we're writing on behalf of a client. Therefore, we do need to find a way to naturally mention the client's link within the article one time.
+
+Target URL: ${clientTargetUrl}`;
+      
+      if (desiredAnchorText) {
+        enhancement += `\nDesired Anchor Text: ${desiredAnchorText}`;
+      }
+      
+      enhancement += `\n\nPlease ensure the research outline includes guidance on how to naturally incorporate this client link into the content without making it seem promotional.`;
+    }
+    
+    return rawPrompt + enhancement;
+  };
+
   // Build summary for sharing with supervisors
   const buildTopicSummary = () => {
     const clientName = workflow.clientName || '[Client Name]';
@@ -398,7 +427,7 @@ ${step.outputs.outlinePrompt ? 'Ready for deep research phase' : 'Waiting for de
           <h3 className="font-medium text-purple-900">📎 Client Link Planning</h3>
         </div>
         <p className="text-sm text-purple-800 mb-4">
-          Now that you have a topic, determine which client URL you want to link to and the desired anchor text. This will be used in the Client Link step later.
+          Now that you have a topic, determine which client URL you want to link to and the desired anchor text. This information will be automatically included in your deep research prompt to ensure the outline considers natural client link placement.
         </p>
         
         <div className="space-y-4">
@@ -406,15 +435,43 @@ ${step.outputs.outlinePrompt ? 'Ready for deep research phase' : 'Waiting for de
             label="Client Target URL"
             value={step.outputs.clientTargetUrl || ''}
             placeholder="The specific client URL you want to link to in this guest post"
-            onChange={(value) => onChange({ ...step.outputs, clientTargetUrl: value })}
+            onChange={(value) => {
+              const updatedOutputs: any = { ...step.outputs, clientTargetUrl: value };
+              // Auto-update enhanced prompt if it exists
+              if (step.outputs.rawOutlinePrompt) {
+                // Need to use the updated outputs for the function
+                const tempOutputs = { ...step.outputs, clientTargetUrl: value };
+                const enhanced = buildEnhancedResearchPromptWithOutputs(step.outputs.rawOutlinePrompt, tempOutputs);
+                updatedOutputs.outlinePrompt = enhanced;
+              }
+              onChange(updatedOutputs);
+            }}
           />
 
           <SavedField
             label="Desired Anchor Text (Optional)"
             value={step.outputs.desiredAnchorText || ''}
             placeholder="Preferred anchor text for the client link (leave blank if you want help from the GPT later)"
-            onChange={(value) => onChange({ ...step.outputs, desiredAnchorText: value })}
+            onChange={(value) => {
+              const updatedOutputs: any = { ...step.outputs, desiredAnchorText: value };
+              // Auto-update enhanced prompt if it exists
+              if (step.outputs.rawOutlinePrompt) {
+                // Need to use the updated outputs for the function
+                const tempOutputs = { ...step.outputs, desiredAnchorText: value };
+                const enhanced = buildEnhancedResearchPromptWithOutputs(step.outputs.rawOutlinePrompt, tempOutputs);
+                updatedOutputs.outlinePrompt = enhanced;
+              }
+              onChange(updatedOutputs);
+            }}
           />
+          
+          {step.outputs.clientTargetUrl && (
+            <div className="bg-blue-50 border border-blue-200 rounded p-3">
+              <p className="text-sm text-blue-800">
+                ✅ This client link information will be automatically included in your deep research prompt in Step 2h.
+              </p>
+            </div>
+          )}
         </div>
       </div>
 
@@ -445,13 +502,41 @@ ${step.outputs.outlinePrompt ? 'Ready for deep research phase' : 'Waiting for de
               </div>
 
               <SavedField
-                label="Deep Research Prompt"
-                value={step.outputs.outlinePrompt || ''}
-                placeholder="Copy the full prompt GPT provides for deep research"
-                onChange={(value) => onChange({ ...step.outputs, outlinePrompt: value })}
+                label="Raw GPT Deep Research Prompt"
+                value={step.outputs.rawOutlinePrompt || ''}
+                placeholder="Copy the raw prompt GPT provides for deep research"
+                onChange={(value) => {
+                  // Update raw prompt and auto-generate enhanced version
+                  const enhanced = buildEnhancedResearchPrompt(value);
+                  onChange({ 
+                    ...step.outputs, 
+                    rawOutlinePrompt: value,
+                    outlinePrompt: enhanced 
+                  });
+                }}
                 isTextarea={true}
                 height="h-32"
               />
+
+              {step.outputs.rawOutlinePrompt && (
+                <div className="space-y-4">
+                  <div className="bg-green-50 border border-green-200 rounded-lg p-4">
+                    <h4 className="font-medium text-green-800 mb-2">✨ Enhanced Research Prompt (Auto-Generated)</h4>
+                    <p className="text-sm text-green-700">
+                      This enhanced version includes your client link planning information and will be used in Step 3.
+                    </p>
+                  </div>
+
+                  <SavedField
+                    label="Enhanced Deep Research Prompt (For Step 3)"
+                    value={step.outputs.outlinePrompt || ''}
+                    placeholder="Enhanced prompt with client link requirements"
+                    onChange={(value) => onChange({ ...step.outputs, outlinePrompt: value })}
+                    isTextarea={true}
+                    height="h-40"
+                  />
+                </div>
+              )}
             </div>
           </div>
         )}
