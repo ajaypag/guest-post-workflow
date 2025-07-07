@@ -4,6 +4,7 @@ import React, { useState } from 'react';
 import { WorkflowStep, GuestPostWorkflow } from '@/types/workflow';
 import { SavedField } from '../SavedField';
 import { CopyButton } from '../ui/CopyButton';
+import { TutorialVideo } from '../ui/TutorialVideo';
 import { ExternalLink, ChevronDown, ChevronRight, Search, CheckCircle, AlertCircle, Target, FileText, BarChart3 } from 'lucide-react';
 
 interface ContentAuditStepProps {
@@ -75,6 +76,12 @@ Now I realize this is a lot, so i want your first output to only be an audit of 
 
   return (
     <div className="space-y-6">
+      <TutorialVideo 
+        videoUrl="https://www.loom.com/share/ec2612d683f746b7899048e32bcdd599"
+        title="Semantic SEO Optimization Tutorial"
+        description="Learn how to audit and optimize your guest post content for better SEO performance"
+      />
+      
       {/* Setup New Chat */}
       <div className="bg-white border border-gray-200 rounded-xl overflow-hidden">
         <button

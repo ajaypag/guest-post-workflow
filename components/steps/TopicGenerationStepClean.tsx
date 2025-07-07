@@ -4,6 +4,7 @@ import React, { useState } from 'react';
 import { WorkflowStep, GuestPostWorkflow } from '@/types/workflow';
 import { SavedField } from '../SavedField';
 import { CopyButton } from '../ui/CopyButton';
+import { TutorialVideo } from '../ui/TutorialVideo';
 import { ExternalLink, ChevronDown, ChevronRight, Target, FileText, CheckCircle, AlertCircle, Lightbulb, Search, LinkIcon } from 'lucide-react';
 
 interface TopicGenerationStepProps {
@@ -97,6 +98,12 @@ ${step.outputs.outlinePrompt ? 'Ready for deep research phase' : 'Waiting for de
 
   return (
     <div className="space-y-6">
+      <TutorialVideo 
+        videoUrl="https://www.loom.com/share/31c7f383913d4dc5bae49935b31f88b5?t=214&sid=9a86bbe6-9c79-47cf-aa3a-f028e064d2fb"
+        title="Topic Generation Tutorial"
+        description="Learn how to generate compelling guest post topics using the Topic Machine GPT"
+        timestamp="3:34"
+      />
 
       {/* Step 2d: Generate Guest Post Topics */}
       <div className="bg-white border border-gray-200 rounded-xl overflow-hidden">

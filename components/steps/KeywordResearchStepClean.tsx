@@ -4,6 +4,7 @@ import React, { useState } from 'react';
 import { WorkflowStep, GuestPostWorkflow } from '@/types/workflow';
 import { SavedField } from '../SavedField';
 import { CopyButton } from '../ui/CopyButton';
+import { TutorialVideo } from '../ui/TutorialVideo';
 import { ExternalLink, ChevronDown, ChevronRight, Target, Search, FileText, CheckCircle, AlertCircle, Copy } from 'lucide-react';
 import { clientStorage } from '@/lib/userStorage';
 
@@ -94,6 +95,12 @@ export const KeywordResearchStepClean = ({ step, workflow, onChange }: KeywordRe
 
   return (
     <div className="space-y-6">
+      <TutorialVideo 
+        videoUrl="https://www.loom.com/share/31c7f383913d4dc5bae49935b31f88b5?t=19&sid=0e73abf0-8aa1-42f7-9a6e-b4edb52ef113"
+        title="Site Qualification and Preparation Tutorial"
+        description="Learn how to research and qualify your guest post site before creating content"
+        timestamp="0:19"
+      />
 
       {/* Step 2a: Find Keywords */}
       <div className="bg-white border border-gray-200 rounded-xl overflow-hidden">

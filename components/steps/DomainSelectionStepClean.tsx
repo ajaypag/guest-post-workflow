@@ -3,6 +3,7 @@
 import React, { useState } from 'react';
 import { WorkflowStep, GuestPostWorkflow } from '@/types/workflow';
 import { SavedField } from '../SavedField';
+import { TutorialVideo } from '../ui/TutorialVideo';
 import { Globe, CheckCircle, AlertCircle, Info, Target } from 'lucide-react';
 
 interface DomainSelectionStepProps {
@@ -28,6 +29,11 @@ export const DomainSelectionStepClean = ({ step, workflow, onChange }: DomainSel
 
   return (
     <div className="space-y-6">
+      <TutorialVideo 
+        videoUrl="https://www.loom.com/share/90796a8df0d74e36bbd9dfb536121f86"
+        title="Guest Post Site Selection Tutorial"
+        description="Learn how to select the right guest post publication site for your client"
+      />
 
       {/* Main Selection */}
       <div className="bg-white border border-gray-200 rounded-xl overflow-hidden">

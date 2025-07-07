@@ -4,6 +4,7 @@ import React, { useState } from 'react';
 import { WorkflowStep, GuestPostWorkflow } from '@/types/workflow';
 import { SavedField } from '../SavedField';
 import { CopyButton } from '../ui/CopyButton';
+import { TutorialVideo } from '../ui/TutorialVideo';
 import { ExternalLink, ChevronDown, ChevronRight, FileText, CheckCircle, AlertCircle, Target, RefreshCw, BookOpen } from 'lucide-react';
 
 interface ArticleDraftStepProps {
@@ -69,6 +70,13 @@ ${outlineContent || '((((Complete Step 3: Deep Research first to get outline con
 
   return (
     <div className="space-y-6">
+      <TutorialVideo 
+        videoUrl="https://www.loom.com/share/0f7db8ced4574c4abfc62d84b16c424c?t=152&sid=774f1471-0f47-4edb-8191-9369cfba89ec"
+        title="Article Draft Tutorial"
+        description="Learn how to write compelling guest post articles using GPT-o3 Advanced Reasoning"
+        timestamp="2:32"
+      />
+      
       {/* Planning Phase */}
       <div className="bg-white border border-gray-200 rounded-xl overflow-hidden">
         <button

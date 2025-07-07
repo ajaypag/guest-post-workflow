@@ -4,6 +4,7 @@ import React, { useState } from 'react';
 import { WorkflowStep, GuestPostWorkflow } from '@/types/workflow';
 import { SavedField } from '../SavedField';
 import { CopyButton } from '../ui/CopyButton';
+import { TutorialVideo } from '../ui/TutorialVideo';
 import { ExternalLink, ChevronDown, ChevronRight, Sparkles, CheckCircle, AlertCircle, Target, RefreshCw, FileText } from 'lucide-react';
 
 interface FinalPolishStepProps {
@@ -74,6 +75,12 @@ Review one of my project files for my brand guide and the Semantic SEO writing t
 
   return (
     <div className="space-y-6">
+      <TutorialVideo 
+        videoUrl="https://www.loom.com/share/90796a8df0d74e36bbd9dfb536121f86"
+        title="Polish & Finalize Tutorial"
+        description="Learn how to finalize and polish your guest post content for publication"
+      />
+      
       {/* Setup Fresh Chat */}
       <div className="bg-white border border-gray-200 rounded-xl overflow-hidden">
         <button
