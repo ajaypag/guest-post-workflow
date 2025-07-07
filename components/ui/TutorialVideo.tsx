@@ -16,6 +16,14 @@ export const TutorialVideo = ({
   description,
   timestamp 
 }: TutorialVideoProps) => {
+  const openVideoWindow = () => {
+    window.open(
+      videoUrl,
+      'tutorial-video',
+      'width=1024,height=768,scrollbars=yes,resizable=yes,location=yes,toolbar=no,menubar=no,status=no'
+    );
+  };
+
   return (
     <div className="bg-purple-50 border border-purple-200 rounded-lg p-4 mb-4">
       <div className="flex items-start space-x-3">
@@ -38,14 +46,12 @@ export const TutorialVideo = ({
               {description}
             </p>
           )}
-          <a 
-            href={videoUrl}
-            target="_blank"
-            rel="noopener noreferrer"
-            className="inline-flex items-center text-purple-600 hover:text-purple-800 font-medium text-sm hover:underline"
+          <button 
+            onClick={openVideoWindow}
+            className="inline-flex items-center text-purple-600 hover:text-purple-800 font-medium text-sm hover:underline cursor-pointer bg-transparent border-none p-0"
           >
             Watch Tutorial <ExternalLink className="w-3 h-3 ml-1" />
-          </a>
+          </button>
         </div>
       </div>
     </div>
