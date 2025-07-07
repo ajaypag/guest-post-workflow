@@ -4,6 +4,7 @@ import React from 'react';
 import { WorkflowStep, GuestPostWorkflow } from '@/types/workflow';
 import { SavedField } from '../SavedField';
 import { CopyButton } from '../ui/CopyButton';
+import { TutorialVideo } from '../ui/TutorialVideo';
 import { ExternalLink } from 'lucide-react';
 
 interface ImagesStepProps {
@@ -28,6 +29,12 @@ export const ImagesStep = ({ step, workflow, onChange }: ImagesStepProps) => {
 
   return (
     <div className="space-y-4">
+      <TutorialVideo 
+        videoUrl="https://www.loom.com/share/9efd5118eda6497e9283023c48607262"
+        title="Create Images Tutorial"
+        description="Learn how to create and optimize images for your guest post"
+      />
+      
       <div className="bg-blue-50 p-4 rounded-md">
         <h3 className="font-semibold mb-3">Step 12: Create Images for Your Guest Post</h3>
         

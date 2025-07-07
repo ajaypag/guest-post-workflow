@@ -4,6 +4,7 @@ import React from 'react';
 import { WorkflowStep, GuestPostWorkflow } from '@/types/workflow';
 import { SavedField } from '../SavedField';
 import { CopyButton } from '../ui/CopyButton';
+import { TutorialVideo } from '../ui/TutorialVideo';
 import { ExternalLink } from 'lucide-react';
 
 interface ExternalLinksStepProps {
@@ -40,6 +41,12 @@ ${fullArticle || 'Complete previous steps to get article content'}`;
 
   return (
     <div className="space-y-4">
+      <TutorialVideo 
+        videoUrl="https://www.loom.com/share/7f044b17f4fc4d8ea444350245aebc6e"
+        title="Tier 2 Links Tutorial"
+        description="Learn how to add links to other guest posts for better link building"
+      />
+      
       <div className="bg-blue-50 p-4 rounded-md">
         <h3 className="font-semibold mb-2">Step 9: Add Tier 2 Links (Other Guest Posts)</h3>
         

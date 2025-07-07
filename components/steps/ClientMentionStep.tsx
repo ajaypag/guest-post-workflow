@@ -4,6 +4,7 @@ import React from 'react';
 import { WorkflowStep, GuestPostWorkflow } from '@/types/workflow';
 import { SavedField } from '../SavedField';
 import { CopyButton } from '../ui/CopyButton';
+import { TutorialVideo } from '../ui/TutorialVideo';
 import { ExternalLink } from 'lucide-react';
 
 interface ClientMentionStepProps {
@@ -38,6 +39,12 @@ ${fullArticle || 'Complete previous steps to get article content'}`;
 
   return (
     <div className="space-y-4">
+      <TutorialVideo 
+        videoUrl="https://www.loom.com/share/3d9da7ac6e8e48acbfc1459b68493054?sid=c4ebe04e-6ea1-4c03-8c1d-83983194c15c"
+        title="Client Mention Tutorial"
+        description="Learn how to add strategic brand mentions for AI-first SEO"
+      />
+      
       <div className="bg-blue-50 p-4 rounded-md">
         <h3 className="font-semibold mb-2">Step 10: Client Brand Mention (AI-First SEO)</h3>
         

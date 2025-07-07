@@ -4,6 +4,7 @@ import React from 'react';
 import { WorkflowStep, GuestPostWorkflow } from '@/types/workflow';
 import { SavedField } from '../SavedField';
 import { CopyButton } from '../ui/CopyButton';
+import { TutorialVideo } from '../ui/TutorialVideo';
 import { ExternalLink } from 'lucide-react';
 
 interface ClientLinkStepProps {
@@ -45,6 +46,12 @@ ${fullArticle || 'Complete previous steps to get article content'}`;
 
   return (
     <div className="space-y-4">
+      <TutorialVideo 
+        videoUrl="https://www.loom.com/share/85e456854adc41c1b61e0035fdcb6e04"
+        title="Client Link Tutorial"
+        description="Learn how to add natural client links to your guest post"
+      />
+      
       <div className="bg-blue-100 border border-blue-300 rounded p-4">
         <h4 className="font-semibold text-blue-800 mb-2">🔄 Before You Start: Update Your Final Article</h4>
         <p className="text-sm text-gray-700 mb-3">
