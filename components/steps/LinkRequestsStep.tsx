@@ -4,6 +4,7 @@ import React from 'react';
 import { WorkflowStep, GuestPostWorkflow } from '@/types/workflow';
 import { SavedField } from '../SavedField';
 import { CopyButton } from '../ui/CopyButton';
+import { TutorialVideo } from '../ui/TutorialVideo';
 import { ExternalLink } from 'lucide-react';
 
 interface LinkRequestsStepProps {
@@ -39,6 +40,12 @@ ${fullArticle || 'Complete previous steps to get article content'}`;
 
   return (
     <div className="space-y-4">
+      <TutorialVideo 
+        videoUrl="https://www.loom.com/share/f368de59ab314a329541a44e0b1c049a"
+        title="Internal Link Requests Tutorial"
+        description="Learn how to request internal links from the guest post site to boost your article"
+      />
+      
       <div className="bg-blue-50 p-4 rounded-md">
         <h3 className="font-semibold mb-2">Step 13: Internal Link Requests</h3>
         

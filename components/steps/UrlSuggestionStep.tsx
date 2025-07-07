@@ -4,6 +4,7 @@ import React from 'react';
 import { WorkflowStep, GuestPostWorkflow } from '@/types/workflow';
 import { SavedField } from '../SavedField';
 import { CopyButton } from '../ui/CopyButton';
+import { TutorialVideo } from '../ui/TutorialVideo';
 import { ExternalLink } from 'lucide-react';
 
 interface UrlSuggestionStepProps {
@@ -55,6 +56,12 @@ ${fullArticle || 'Complete previous steps to get article content'}`;
 
   return (
     <div className="space-y-4">
+      <TutorialVideo 
+        videoUrl="https://www.loom.com/share/60360bf7d90a45bca5a50b760bcf4138"
+        title="URL Suggestion Tutorial"
+        description="Learn how to suggest SEO-optimized URLs for your guest posts"
+      />
+      
       <div className="bg-blue-50 p-4 rounded-md">
         <h3 className="font-semibold mb-2">Step 14: URL Suggestion</h3>
         

@@ -4,6 +4,7 @@ import React, { useState } from 'react';
 import { WorkflowStep, GuestPostWorkflow } from '@/types/workflow';
 import { SavedField } from '../SavedField';
 import { CopyButton } from '../ui/CopyButton';
+import { TutorialVideo } from '../ui/TutorialVideo';
 import { Mail, CheckCircle, AlertCircle, Send, FileText } from 'lucide-react';
 
 interface EmailTemplateStepProps {
@@ -92,6 +93,12 @@ ${body}`;
 
   return (
     <div className="space-y-6">
+      <TutorialVideo 
+        videoUrl="https://www.loom.com/share/0d0b54c7cefa4c8ab7396b5aeb925309?sid=47d9de39-142d-40c5-b3e9-7635ba052387"
+        title="Email Template Tutorial"
+        description="Learn how to craft effective email templates for guest post submissions"
+      />
+      
       {/* Status Check */}
       {missingFields.length > 0 ? (
         <div className="bg-yellow-50 border border-yellow-200 rounded-lg p-4">
