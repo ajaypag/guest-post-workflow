@@ -80,7 +80,7 @@ export const TopicGenerationStepClean = ({ step, workflow, onChange }: TopicGene
     let enhancement = '';
     if (clientTargetUrl) {
       enhancement = `\n\nCLIENT LINK REQUIREMENTS:
-Although this article should not seem sponsored or like an advertorial in any way, this is a guest post that we're writing on behalf of a client. Therefore, we do need to find a way to naturally mention the client's link within the article one time.
+Although this article should not seem sponsored or like an advertorial in any way, this is content that we're writing on behalf of a client. Therefore, we do need to find a way to naturally mention the client's link within the article one time.
 
 Target URL: ${clientTargetUrl}`;
       
