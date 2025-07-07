@@ -16,10 +16,10 @@ interface TopicGenerationStepProps {
 export const TopicGenerationStepClean = ({ step, workflow, onChange }: TopicGenerationStepProps) => {
   const [expandedSections, setExpandedSections] = useState<{ [key: string]: boolean }>({
     '2d': true,
-    '2f-2g': false,
-    '2h': false,
-    '2i': false,
-    '2j': false
+    '2e': false,
+    '2f': false,
+    '2g': false,
+    '2h': false
   });
 
   const keywordResearchStep = workflow.steps.find(s => s.id === 'keyword-research');
@@ -38,17 +38,16 @@ export const TopicGenerationStepClean = ({ step, workflow, onChange }: TopicGene
   const getStepStatus = (stepId: string) => {
     switch (stepId) {
       case '2d':
-        return step.outputs.suggestedTopics ? 'completed' : 'pending';
-      case '2f-2g':
-        return (step.outputs.primaryKeyword && step.outputs.keywordVariations) ? 'completed' : 
-               step.outputs.primaryKeyword ? 'ready' : 'pending';
-      case '2h':
+        return 'completed'; // Always completed after user reads instructions
+      case '2e':
+        return step.outputs.keywordVariations ? 'completed' : 'pending';
+      case '2f':
         return step.outputs.finalKeyword ? 'completed' : 
                step.outputs.keywordVariations ? 'ready' : 'pending';
-      case '2i':
+      case '2g':
         return step.outputs.postTitle ? 'completed' : 
                step.outputs.finalKeyword ? 'ready' : 'pending';
-      case '2j':
+      case '2h':
         return step.outputs.outlinePrompt ? 'completed' : 'pending';
       default:
         return 'pending';
@@ -82,11 +81,10 @@ FINAL RESULTS:
 - Desired Anchor Text: ${step.outputs.desiredAnchorText || '[None specified]'}
 
 RESEARCH PROCESS:
-Primary Keyword: ${step.outputs.primaryKeyword || '[Not determined]'}
 Keyword Variations: ${step.outputs.keywordVariations || '[Not generated]'}
 
 TOPIC VALIDATION:
-${step.outputs.suggestedTopics ? 'Initial topics generated and reviewed' : 'Topics not yet generated'}
+${step.outputs.keywordVariations ? 'Keywords generated from GPT' : 'Keywords not yet generated'}
 ${step.outputs.finalKeyword ? 'Keyword validated and confirmed' : 'Keyword validation pending'}
 ${step.outputs.postTitle ? 'Post title created and approved' : 'Post title creation pending'}
 
@@ -156,7 +154,7 @@ ${step.outputs.outlinePrompt ? 'Ready for deep research phase' : 'Waiting for de
                     { step: 2, title: "Open the Guest Post Topic Machine GPT", desc: "Click the link below to open the GPT in a new tab" },
                     { step: 3, title: "Paste the template into the GPT", desc: "Paste the copied template as your message" },
                     { step: 4, title: "CRITICAL: Attach your Ahrefs CSV file", desc: "Use the paperclip icon in ChatGPT to attach the CSV file you downloaded from Step 2b", critical: true },
-                    { step: 5, title: "Send and wait for analysis", desc: "The GPT will process your data and suggest optimal topics" }
+                    { step: 5, title: "Send and wait for analysis", desc: "The GPT will process your data and suggest keyword variations" }
                   ].map((item) => (
                     <div key={item.step} className="flex items-start space-x-3">
                       <span className={`${item.critical ? 'bg-red-600' : 'bg-blue-600'} text-white rounded-full w-6 h-6 flex items-center justify-center text-sm font-semibold flex-shrink-0`}>
@@ -202,13 +200,42 @@ ${step.outputs.outlinePrompt ? 'Ready for deep research phase' : 'Waiting for de
                   Open Guest Post Topic Machine GPT <ExternalLink className="w-4 h-4 ml-2" />
                 </a>
               </div>
+            </div>
+          </div>
+        )}
+      </div>
 
-              {/* Input field */}
+      {/* Step 2e: Keyword Variations from GPT */}
+      <div className="bg-white border border-gray-200 rounded-xl overflow-hidden">
+        <button
+          onClick={() => toggleSection('2e')}
+          className="w-full px-6 py-4 flex items-center justify-between hover:bg-gray-50 transition-colors"
+        >
+          <div className="flex items-center">
+            <StatusIcon status={getStepStatus('2e')} />
+            <div className="ml-3 text-left">
+              <h3 className="font-medium text-gray-900">Step 2e: Keyword Variations from GPT</h3>
+              <p className="text-sm text-gray-500">Paste the complete keyword list from the Topic Machine</p>
+            </div>
+          </div>
+          {expandedSections['2e'] ? <ChevronDown className="w-5 h-5" /> : <ChevronRight className="w-5 h-5" />}
+        </button>
+
+        {expandedSections['2e'] && (
+          <div className="px-6 pb-6 border-t border-gray-100">
+            <div className="space-y-4">
+              <div className="bg-blue-50 rounded-lg p-4">
+                <h4 className="font-medium text-blue-900 mb-2">📝 Paste the GPT Output</h4>
+                <p className="text-sm text-blue-800">
+                  Copy and paste the complete list of keyword variations that the Topic Machine GPT provided. Don't worry about separating primary vs variations - that distinction happens after validation.
+                </p>
+              </div>
+
               <SavedField
-                label="Suggested Topics Output"
-                value={step.outputs.suggestedTopics || ''}
-                placeholder="Paste all topics suggested by GPT"
-                onChange={(value) => onChange({ ...step.outputs, suggestedTopics: value })}
+                label="Keyword Variations from GPT"
+                value={step.outputs.keywordVariations || ''}
+                placeholder="Paste the complete list of keyword variations from GPT (one per line for best results)"
+                onChange={(value) => onChange({ ...step.outputs, keywordVariations: value })}
                 isTextarea={true}
                 height="h-32"
               />
@@ -217,82 +244,29 @@ ${step.outputs.outlinePrompt ? 'Ready for deep research phase' : 'Waiting for de
         )}
       </div>
 
-      {/* Step 2f & 2g: Primary Keyword and Variations */}
+      {/* Step 2f: Validate in Ahrefs & Choose Final Keyword */}
       <div className="bg-white border border-gray-200 rounded-xl overflow-hidden">
         <button
-          onClick={() => toggleSection('2f-2g')}
+          onClick={() => toggleSection('2f')}
           className="w-full px-6 py-4 flex items-center justify-between hover:bg-gray-50 transition-colors"
         >
           <div className="flex items-center">
-            <StatusIcon status={getStepStatus('2f-2g')} />
+            <StatusIcon status={getStepStatus('2f')} />
             <div className="ml-3 text-left">
-              <h3 className="font-medium text-gray-900">Steps 2f & 2g: Primary Keyword and Variations</h3>
-              <p className="text-sm text-gray-500">Record the primary keyword and full list of variations</p>
+              <h3 className="font-medium text-gray-900">Step 2f: Validate in Ahrefs & Choose Final Keyword</h3>
+              <p className="text-sm text-gray-500">Check search volume and select your final keyword</p>
             </div>
           </div>
-          {expandedSections['2f-2g'] ? <ChevronDown className="w-5 h-5" /> : <ChevronRight className="w-5 h-5" />}
+          {expandedSections['2f'] ? <ChevronDown className="w-5 h-5" /> : <ChevronRight className="w-5 h-5" />}
         </button>
 
-        {expandedSections['2f-2g'] && (
+        {expandedSections['2f'] && (
           <div className="px-6 pb-6 border-t border-gray-100">
             <div className="space-y-4">
               <div className="bg-blue-50 rounded-lg p-4">
-                <h4 className="font-medium text-blue-900 mb-2">Primary Focus & Variations</h4>
+                <h4 className="font-medium text-blue-900 mb-2">🎯 Validation Goal</h4>
                 <p className="text-sm text-blue-800">
-                  Record the primary keyword that aligns with both the guest site's authority and your client's page content, plus all variations suggested by GPT.
-                </p>
-              </div>
-
-              <SavedField
-                label="Primary Keyword"
-                value={step.outputs.primaryKeyword || ''}
-                placeholder="The main keyword GPT suggested"
-                onChange={(value) => onChange({ ...step.outputs, primaryKeyword: value })}
-              />
-
-              <div className="bg-yellow-50 border border-yellow-200 rounded-lg p-4">
-                <h4 className="font-medium text-yellow-800 mb-2">⏳ Don't update sheet yet</h4>
-                <p className="text-sm text-yellow-700">
-                  Wait until Step 2h validation before finalizing your keyword strategy.
-                </p>
-              </div>
-
-              <SavedField
-                label="Keyword Variations"
-                value={step.outputs.keywordVariations || ''}
-                placeholder="Full list of keyword variations from GPT (one per line for best results)"
-                onChange={(value) => onChange({ ...step.outputs, keywordVariations: value })}
-                isTextarea={true}
-                height="h-24"
-              />
-            </div>
-          </div>
-        )}
-      </div>
-
-      {/* Step 2h: Validate in Ahrefs */}
-      <div className="bg-white border border-gray-200 rounded-xl overflow-hidden">
-        <button
-          onClick={() => toggleSection('2h')}
-          className="w-full px-6 py-4 flex items-center justify-between hover:bg-gray-50 transition-colors"
-        >
-          <div className="flex items-center">
-            <StatusIcon status={getStepStatus('2h')} />
-            <div className="ml-3 text-left">
-              <h3 className="font-medium text-gray-900">Step 2h: Validate in Ahrefs</h3>
-              <p className="text-sm text-gray-500">Check search volume and difficulty</p>
-            </div>
-          </div>
-          {expandedSections['2h'] ? <ChevronDown className="w-5 h-5" /> : <ChevronRight className="w-5 h-5" />}
-        </button>
-
-        {expandedSections['2h'] && (
-          <div className="px-6 pb-6 border-t border-gray-100">
-            <div className="space-y-4">
-              <div className="bg-blue-50 rounded-lg p-4">
-                <h4 className="font-medium text-blue-900 mb-2">Validation Goal</h4>
-                <p className="text-sm text-blue-800">
-                  Use Ahrefs Keyword Explorer to check search volume and difficulty for the keywords GPT suggested.
+                  Use Ahrefs Keyword Explorer to check search volume for the keywords GPT suggested, then choose your final target keyword.
                 </p>
               </div>
 
@@ -317,12 +291,12 @@ ${step.outputs.outlinePrompt ? 'Ready for deep research phase' : 'Waiting for de
                         Open Keywords in Ahrefs <ExternalLink className="w-4 h-4 ml-2" />
                       </a>
                       <p className="text-xs text-gray-600 mt-1">
-                        Keywords from Step 2g automatically pre-filled
+                        Keywords from Step 2e automatically pre-filled
                       </p>
                     </div>
                     
                     <div className="text-xs text-gray-500 italic">
-                      💡 Tip: Keywords should be entered one per line in Step 2g for best results
+                      💡 Tip: Keywords should be entered one per line in Step 2e for best results
                     </div>
                   </div>
                 ) : (
@@ -334,7 +308,7 @@ ${step.outputs.outlinePrompt ? 'Ready for deep research phase' : 'Waiting for de
                       Open Ahrefs Keyword Explorer <ExternalLink className="w-4 h-4 ml-2" />
                     </a>
                     <p className="text-xs text-gray-600 mt-1">
-                      Add keywords from Step 2g first for auto-filled link
+                      Add keywords from Step 2e first for auto-filled link
                     </p>
                   </div>
                 )}
@@ -379,27 +353,27 @@ ${step.outputs.outlinePrompt ? 'Ready for deep research phase' : 'Waiting for de
         )}
       </div>
 
-      {/* Step 2i: Return to GPT with Final Keyword */}
+      {/* Step 2g: Return to GPT with Final Keyword */}
       <div className="bg-white border border-gray-200 rounded-xl overflow-hidden">
         <button
-          onClick={() => toggleSection('2i')}
+          onClick={() => toggleSection('2g')}
           className="w-full px-6 py-4 flex items-center justify-between hover:bg-gray-50 transition-colors"
         >
           <div className="flex items-center">
-            <StatusIcon status={getStepStatus('2i')} />
+            <StatusIcon status={getStepStatus('2g')} />
             <div className="ml-3 text-left">
-              <h3 className="font-medium text-gray-900">Step 2i: Return to GPT with Final Keyword</h3>
+              <h3 className="font-medium text-gray-900">Step 2g: Return to GPT with Final Keyword</h3>
               <p className="text-sm text-gray-500">Get guest post title and angle</p>
             </div>
           </div>
-          {expandedSections['2i'] ? <ChevronDown className="w-5 h-5" /> : <ChevronRight className="w-5 h-5" />}
+          {expandedSections['2g'] ? <ChevronDown className="w-5 h-5" /> : <ChevronRight className="w-5 h-5" />}
         </button>
 
-        {expandedSections['2i'] && (
+        {expandedSections['2g'] && (
           <div className="px-6 pb-6 border-t border-gray-100">
             <div className="space-y-4">
               <div className="bg-blue-50 rounded-lg p-4">
-                <h4 className="font-medium text-blue-900 mb-2">Next GPT Interaction</h4>
+                <h4 className="font-medium text-blue-900 mb-2">🔄 Return to GPT</h4>
                 <p className="text-sm text-blue-800">
                   Go back to the Guest Post Topic Machine GPT and simply enter your final validated keyword. 
                   The GPT will automatically proceed with suggesting a guest post title and angle.
@@ -444,27 +418,27 @@ ${step.outputs.outlinePrompt ? 'Ready for deep research phase' : 'Waiting for de
         </div>
       </div>
 
-      {/* Step 2j: Get Deep Research Prompt */}
+      {/* Step 2h: Get Deep Research Prompt */}
       <div className="bg-white border border-gray-200 rounded-xl overflow-hidden">
         <button
-          onClick={() => toggleSection('2j')}
+          onClick={() => toggleSection('2h')}
           className="w-full px-6 py-4 flex items-center justify-between hover:bg-gray-50 transition-colors"
         >
           <div className="flex items-center">
-            <StatusIcon status={getStepStatus('2j')} />
+            <StatusIcon status={getStepStatus('2h')} />
             <div className="ml-3 text-left">
-              <h3 className="font-medium text-gray-900">Step 2j: Get Deep Research Prompt</h3>
+              <h3 className="font-medium text-gray-900">Step 2h: Get Deep Research Prompt</h3>
               <p className="text-sm text-gray-500">Obtain the research outline from GPT</p>
             </div>
           </div>
-          {expandedSections['2j'] ? <ChevronDown className="w-5 h-5" /> : <ChevronRight className="w-5 h-5" />}
+          {expandedSections['2h'] ? <ChevronDown className="w-5 h-5" /> : <ChevronRight className="w-5 h-5" />}
         </button>
 
-        {expandedSections['2j'] && (
+        {expandedSections['2h'] && (
           <div className="px-6 pb-6 border-t border-gray-100">
             <div className="space-y-4">
               <div className="bg-blue-50 rounded-lg p-4">
-                <h4 className="font-medium text-blue-900 mb-2">Final GPT Interaction</h4>
+                <h4 className="font-medium text-blue-900 mb-2">📋 Final GPT Interaction</h4>
                 <p className="text-sm text-blue-800">
                   When GPT asks if you want a deep research outline, respond "Yes"
                 </p>
