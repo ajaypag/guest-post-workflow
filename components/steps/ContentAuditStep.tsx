@@ -51,6 +51,11 @@ export const ContentAuditStep = ({ step, workflow, onChange }: ContentAuditStepP
              className="text-blue-600 hover:underline inline-flex items-center font-medium text-sm">
             <span className="mr-2">→</span> ajay@linkio.com <ExternalLink className="w-3 h-3 ml-1" />
           </a>
+          <a href="https://chatgpt.com/g/g-p-686ea60485908191a5ac7a73ebf3a945/project?model=o3" 
+             target="_blank" 
+             className="text-blue-600 hover:underline inline-flex items-center font-medium text-sm">
+            <span className="mr-2">→</span> Teams Workspace <ExternalLink className="w-3 h-3 ml-1" />
+          </a>
         </div>
       </div>
 
