@@ -126,6 +126,12 @@ Review one of my project files for my brand guide and the Semantic SEO writing t
                     <span>ajay@linkio.com</span>
                     <ExternalLink className="w-4 h-4 text-white" />
                   </a>
+                  <a href="https://chatgpt.com/g/g-p-686ea60485908191a5ac7a73ebf3a945/project?model=o3" 
+                     target="_blank" 
+                     className="inline-flex items-center px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors font-medium w-full justify-between">
+                    <span>Teams Workspace</span>
+                    <ExternalLink className="w-4 h-4 text-white" />
+                  </a>
                 </div>
               </div>
 
