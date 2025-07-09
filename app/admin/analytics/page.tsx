@@ -34,7 +34,9 @@ export default function Analytics() {
   const [currentSession, setCurrentSession] = useState<AuthSession | null>(null);
   const [timeRange, setTimeRange] = useState<'7d' | '30d' | '90d'>('30d');
   const [userAnalytics, setUserAnalytics] = useState<UserAnalytics[]>([]);
+  const [allUsers, setAllUsers] = useState<UserType[]>([]);
   const [loading, setLoading] = useState(true);
+  const [selectedUser, setSelectedUser] = useState<string>('me'); // 'me', 'all', or specific userId
 
   useEffect(() => {
     const session = sessionStorage.getSession();
@@ -46,14 +48,24 @@ export default function Analytics() {
     }
     
     calculateAnalytics();
-  }, [router, timeRange]);
+  }, [router, timeRange, selectedUser]);
 
   const calculateAnalytics = async () => {
     try {
       const users = await userStorage.getAllUsers();
       const workflows = await storage.getAllWorkflows();
       
-      const analytics: UserAnalytics[] = users.map(user => {
+      // Store all users for the filter dropdown
+      setAllUsers(users);
+      
+      // Filter users based on selection
+      const filteredUsers = selectedUser === 'all' 
+        ? users 
+        : selectedUser === 'me' 
+          ? users.filter(u => u.email === currentSession?.email)
+          : users.filter(u => u.id === selectedUser);
+      
+      const analytics: UserAnalytics[] = filteredUsers.map(user => {
       const userWorkflows = workflows.filter(w => w.createdByEmail === user.email);
       
       // Time range calculations
@@ -303,17 +315,38 @@ export default function Analytics() {
               </Link>
             </div>
             
-            <div className="flex items-center space-x-2">
-              <span className="text-sm text-gray-600">Time Range:</span>
-              <select
-                value={timeRange}
-                onChange={(e) => setTimeRange(e.target.value as '7d' | '30d' | '90d')}
-                className="px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
-              >
-                <option value="7d">Last 7 days</option>
-                <option value="30d">Last 30 days</option>
-                <option value="90d">Last 90 days</option>
-              </select>
+            <div className="flex items-center space-x-6">
+              <div className="flex items-center space-x-2">
+                <span className="text-sm text-gray-600">Show:</span>
+                <select
+                  value={selectedUser}
+                  onChange={(e) => setSelectedUser(e.target.value)}
+                  className="px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
+                >
+                  <option value="me">My Workflows</option>
+                  <option value="all">All Users</option>
+                  <optgroup label="Specific Users">
+                    {allUsers.map(user => (
+                      <option key={user.id} value={user.id}>
+                        {user.name} ({user.email})
+                      </option>
+                    ))}
+                  </optgroup>
+                </select>
+              </div>
+              
+              <div className="flex items-center space-x-2">
+                <span className="text-sm text-gray-600">Time Range:</span>
+                <select
+                  value={timeRange}
+                  onChange={(e) => setTimeRange(e.target.value as '7d' | '30d' | '90d')}
+                  className="px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
+                >
+                  <option value="7d">Last 7 days</option>
+                  <option value="30d">Last 30 days</option>
+                  <option value="90d">Last 90 days</option>
+                </select>
+              </div>
             </div>
           </div>
 
