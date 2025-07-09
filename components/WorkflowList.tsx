@@ -1,34 +1,87 @@
 'use client';
 
 import { useState, useEffect } from 'react';
-import { Plus, FileText, Trash2, Calendar, ExternalLink } from 'lucide-react';
+import { Plus, FileText, Trash2, Calendar, ExternalLink, Filter } from 'lucide-react';
 import { GuestPostWorkflow, WORKFLOW_STEPS } from '@/types/workflow';
 import { storage } from '@/lib/storage';
+import { userStorage } from '@/lib/userStorage';
+import { AuthService } from '@/lib/auth';
+import { User as UserType } from '@/types/user';
 import { format } from 'date-fns';
 import Link from 'next/link';
 
 export default function WorkflowList() {
   const [workflows, setWorkflows] = useState<GuestPostWorkflow[]>([]);
+  const [filteredWorkflows, setFilteredWorkflows] = useState<GuestPostWorkflow[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
+  const [users, setUsers] = useState<UserType[]>([]);
+  const [selectedUser, setSelectedUser] = useState<string>('me'); // 'me', 'all', or specific userId/email
+  const [selectedClient, setSelectedClient] = useState<string>('all'); // 'all' or specific client name
+  const [currentUserEmail, setCurrentUserEmail] = useState<string>('');
 
   useEffect(() => {
-    loadWorkflows();
+    loadData();
   }, []);
 
-  const loadWorkflows = async () => {
+  useEffect(() => {
+    filterWorkflows();
+  }, [workflows, selectedUser, selectedClient, currentUserEmail]);
+
+  const loadData = async () => {
     try {
       setError(null);
-      console.log('Loading workflows...');
-      const allWorkflows = await storage.getAllWorkflows();
+      
+      // Get current user info
+      const session = AuthService.getSession();
+      if (session) {
+        setCurrentUserEmail(session.email);
+      }
+      
+      // Load workflows and users
+      console.log('Loading workflows and users...');
+      const [allWorkflows, allUsers] = await Promise.all([
+        storage.getAllWorkflows(),
+        userStorage.getAllUsers()
+      ]);
+      
       console.log('Loaded workflows:', allWorkflows.length, 'workflows');
+      console.log('Loaded users:', allUsers.length, 'users');
+      
       setWorkflows(allWorkflows);
+      setUsers(allUsers);
     } catch (error) {
-      console.error('Error loading workflows:', error);
-      setError('Failed to load workflows. Please refresh the page.');
+      console.error('Error loading data:', error);
+      setError('Failed to load data. Please refresh the page.');
     } finally {
       setLoading(false);
     }
+  };
+
+  const filterWorkflows = () => {
+    let filtered = [...workflows];
+
+    // Filter by user
+    if (selectedUser === 'me') {
+      filtered = filtered.filter(w => w.createdByEmail === currentUserEmail);
+    } else if (selectedUser !== 'all') {
+      // Filter by specific user
+      const selectedUserData = users.find(u => u.id === selectedUser);
+      if (selectedUserData) {
+        filtered = filtered.filter(w => w.createdByEmail === selectedUserData.email);
+      }
+    }
+
+    // Filter by client
+    if (selectedClient !== 'all') {
+      filtered = filtered.filter(w => w.clientName === selectedClient);
+    }
+
+    setFilteredWorkflows(filtered);
+  };
+
+  const loadWorkflows = async () => {
+    await loadData();
   };
 
   const handleDelete = async (id: string) => {
@@ -64,6 +117,57 @@ export default function WorkflowList() {
         </Link>
       </div>
 
+      {/* Filters */}
+      {!loading && workflows.length > 0 && (
+        <div className="mb-6 bg-white rounded-xl border border-gray-200 p-4">
+          <div className="flex flex-wrap items-center gap-4">
+            <div className="flex items-center">
+              <Filter className="w-4 h-4 text-gray-500 mr-2" />
+              <span className="text-sm font-medium text-gray-700">Filters:</span>
+            </div>
+            
+            <div className="flex items-center space-x-2">
+              <label className="text-sm text-gray-600">Show:</label>
+              <select
+                value={selectedUser}
+                onChange={(e) => setSelectedUser(e.target.value)}
+                className="px-3 py-1.5 border border-gray-300 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
+              >
+                <option value="me">My Workflows</option>
+                <option value="all">All Users</option>
+                <optgroup label="Specific Users">
+                  {users.map(user => (
+                    <option key={user.id} value={user.id}>
+                      {user.name} ({user.email})
+                    </option>
+                  ))}
+                </optgroup>
+              </select>
+            </div>
+
+            <div className="flex items-center space-x-2">
+              <label className="text-sm text-gray-600">Client:</label>
+              <select
+                value={selectedClient}
+                onChange={(e) => setSelectedClient(e.target.value)}
+                className="px-3 py-1.5 border border-gray-300 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
+              >
+                <option value="all">All Clients</option>
+                {Array.from(new Set(workflows.map(w => w.clientName))).sort().map(client => (
+                  <option key={client} value={client}>
+                    {client}
+                  </option>
+                ))}
+              </select>
+            </div>
+
+            <div className="ml-auto text-sm text-gray-500">
+              Showing {filteredWorkflows.length} of {workflows.length} workflows
+            </div>
+          </div>
+        </div>
+      )}
+
       {loading ? (
         <div className="bg-white rounded-2xl border border-gray-200 p-12 text-center">
           <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-blue-600 mx-auto"></div>
@@ -83,26 +187,55 @@ export default function WorkflowList() {
             Try Again
           </button>
         </div>
-      ) : workflows.length === 0 ? (
+      ) : filteredWorkflows.length === 0 ? (
         <div className="bg-white rounded-2xl border border-gray-200 p-12 text-center">
           <div className="w-16 h-16 bg-gray-100 rounded-2xl flex items-center justify-center mx-auto mb-6">
             <FileText className="w-8 h-8 text-gray-400" />
           </div>
-          <h3 className="text-xl font-semibold text-gray-900 mb-2">No workflows yet</h3>
-          <p className="text-gray-600 mb-6 max-w-md mx-auto">
-            Get started by creating your first guest post workflow. Our 15-step process will guide you through everything.
-          </p>
-          <Link
-            href="/workflow/new"
-            className="inline-flex items-center px-6 py-3 bg-gradient-to-r from-blue-500 to-purple-600 text-white rounded-xl hover:from-blue-600 hover:to-purple-700 transition-all duration-200"
-          >
-            <Plus className="w-5 h-5 mr-2" />
-            Create Your First Workflow
-          </Link>
+          {workflows.length === 0 ? (
+            <>
+              <h3 className="text-xl font-semibold text-gray-900 mb-2">No workflows yet</h3>
+              <p className="text-gray-600 mb-6 max-w-md mx-auto">
+                Get started by creating your first guest post workflow. Our 15-step process will guide you through everything.
+              </p>
+              <Link
+                href="/workflow/new"
+                className="inline-flex items-center px-6 py-3 bg-gradient-to-r from-blue-500 to-purple-600 text-white rounded-xl hover:from-blue-600 hover:to-purple-700 transition-all duration-200"
+              >
+                <Plus className="w-5 h-5 mr-2" />
+                Create Your First Workflow
+              </Link>
+            </>
+          ) : (
+            <>
+              <h3 className="text-xl font-semibold text-gray-900 mb-2">No workflows match your filters</h3>
+              <p className="text-gray-600 mb-6 max-w-md mx-auto">
+                Try adjusting your filters to see more workflows, or create a new workflow.
+              </p>
+              <div className="flex gap-3 justify-center">
+                <button
+                  onClick={() => {
+                    setSelectedUser('all');
+                    setSelectedClient('all');
+                  }}
+                  className="inline-flex items-center px-4 py-2 border border-gray-300 text-gray-700 rounded-lg hover:bg-gray-50 transition-colors"
+                >
+                  Clear Filters
+                </button>
+                <Link
+                  href="/workflow/new"
+                  className="inline-flex items-center px-6 py-3 bg-gradient-to-r from-blue-500 to-purple-600 text-white rounded-xl hover:from-blue-600 hover:to-purple-700 transition-all duration-200"
+                >
+                  <Plus className="w-5 h-5 mr-2" />
+                  Create Workflow
+                </Link>
+              </div>
+            </>
+          )}
         </div>
       ) : (
         <div className="grid gap-6">
-          {workflows.map((workflow) => (
+          {filteredWorkflows.map((workflow) => (
             <div key={workflow.id} className="bg-white rounded-2xl border border-gray-200 p-6 hover:shadow-lg transition-shadow duration-200">
               <div className="flex justify-between items-start mb-6">
                 <div className="flex-1">
