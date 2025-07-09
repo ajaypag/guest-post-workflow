@@ -19,7 +19,7 @@ export default function WorkflowDetail() {
   const sidebarRef = useRef<HTMLDivElement>(null);
 
   useEffect(() => {
-    const loadWorkflow = async () => {
+    const loadWorkflow = async (retryCount = 0) => {
       try {
         const data = await storage.getWorkflow(params.id as string);
         if (data) {
@@ -38,10 +38,30 @@ export default function WorkflowDetail() {
             setActiveStep(0);
           }
         } else {
+          // If workflow not found, retry up to 3 times with increasing delay
+          // This handles the race condition where workflow was just created
+          if (retryCount < 3) {
+            const delay = (retryCount + 1) * 500; // 500ms, 1s, 1.5s
+            console.log(`Workflow not found, retrying in ${delay}ms (attempt ${retryCount + 1}/3)`);
+            setTimeout(() => loadWorkflow(retryCount + 1), delay);
+            return;
+          }
+          
+          // After 3 retries, redirect to dashboard
+          console.log('Workflow not found after retries, redirecting to dashboard');
           router.push('/');
         }
       } catch (error) {
         console.error('Error loading workflow:', error);
+        
+        // On error, also retry a few times before giving up
+        if (retryCount < 2) {
+          const delay = (retryCount + 1) * 1000; // 1s, 2s
+          console.log(`Error loading workflow, retrying in ${delay}ms (attempt ${retryCount + 1}/2)`);
+          setTimeout(() => loadWorkflow(retryCount + 1), delay);
+          return;
+        }
+        
         router.push('/');
       }
     };
