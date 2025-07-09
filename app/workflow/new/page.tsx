@@ -9,6 +9,7 @@ import Header from '@/components/Header';
 import { GuestPostWorkflow, WORKFLOW_STEPS } from '@/types/workflow';
 import { storage } from '@/lib/storage';
 import { clientStorage, sessionStorage } from '@/lib/userStorage';
+import { AuthService } from '@/lib/auth';
 import { Client } from '@/types/user';
 
 // Safe UUID generator
@@ -49,7 +50,7 @@ function NewWorkflowContent() {
   }, [searchParams]);
 
   const loadClients = async () => {
-    const session = sessionStorage.getSession();
+    const session = AuthService.getSession();
     if (!session) return;
 
     try {
@@ -83,7 +84,7 @@ function NewWorkflowContent() {
     
     try {
       // Get current user session for creator information
-      const session = sessionStorage.getSession();
+      const session = AuthService.getSession();
       
       const workflow: GuestPostWorkflow = {
         id: generateUUID(),
