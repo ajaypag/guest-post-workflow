@@ -91,6 +91,45 @@ NEXTAUTH_URL=https://your-domain.com
 4. **Workflow steps** data is stored within the workflow JSON content
 5. **Build must pass** before deployment - run `npm run build` to verify
 
+## CRITICAL: Step Component Technical Debt
+**🚨 BEFORE EDITING ANY STEP COMPONENTS - READ THIS FIRST 🚨**
+
+### The Problem
+There are TWO versions of step components due to technical debt:
+- **Original files** (e.g., `ArticleDraftStep.tsx`) - **DEPRECATED, NOT USED**
+- **Clean files** (e.g., `ArticleDraftStepClean.tsx`) - **ACTIVE IN PRODUCTION**
+
+### Which Files Are Actually Used
+Check `components/StepForm.tsx` - line 40-57 shows the REAL component mapping:
+```typescript
+const stepForms = {
+  'article-draft': ArticleDraftStepClean,     // NOT ArticleDraftStep
+  'content-audit': ContentAuditStepClean,    // NOT ContentAuditStep  
+  'final-polish': FinalPolishStepClean,      // NOT FinalPolishStep
+  // ... other steps
+};
+```
+
+### MANDATORY Process Before Editing Step Components
+1. **Find component imports first**: `grep -r "ComponentName" --include="*.tsx"`
+2. **Check StepForm.tsx** to see which version is actually used
+3. **Look for multiple versions** of the same component
+4. **Only edit the version that's imported in StepForm.tsx**
+5. **Verify changes appear** in files that are actually imported
+
+### Current Active Files (as of 2025-01-09)
+- `ArticleDraftStepClean.tsx` ✅ EDIT THIS
+- `ContentAuditStepClean.tsx` ✅ EDIT THIS  
+- `FinalPolishStepClean.tsx` ✅ EDIT THIS
+- `ArticleDraftStep.tsx` ❌ DO NOT EDIT (deprecated)
+- `ContentAuditStep.tsx` ❌ DO NOT EDIT (deprecated)
+- `FinalPolishStep.tsx` ❌ DO NOT EDIT (deprecated)
+
+### Teams Workspace Button Added
+All three active step components now include the Teams Workspace button:
+- URL: https://chatgpt.com/g/g-p-686ea60485908191a5ac7a73ebf3a945/project?model=o3
+- Added alongside the three OpenAI account buttons
+
 ## Contact
 Created for OutreachLabs by Claude with Ajay
 Repository: https://github.com/ajaypag/guest-post-workflow
