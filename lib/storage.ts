@@ -24,7 +24,12 @@ export const storage = {
       const session = AuthService.getSession();
       if (!session) return [];
       
-      const response = await fetch(`/api/workflows?userId=${session.userId}`);
+      // For admin users, get all workflows. For regular users, filter by userId
+      const url = session.role === 'admin' 
+        ? '/api/workflows'  // Get all workflows for admin
+        : `/api/workflows?userId=${session.userId}`;  // Filter for regular users
+      
+      const response = await fetch(url);
       if (!response.ok) return [];
       
       const { workflows } = await response.json();
