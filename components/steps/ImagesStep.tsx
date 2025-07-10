@@ -123,6 +123,31 @@ export const ImagesStep = ({ step, workflow, onChange }: ImagesStepProps) => {
           </div>
         </div>
 
+        {/* Logo handling guidance */}
+        <div className="bg-amber-50 border border-amber-200 rounded p-4 mt-4">
+          <h4 className="font-semibold text-amber-800 mb-2">⚠️ Getting Only Logos? (Software/Service Listicles)</h4>
+          <p className="text-sm text-gray-700 mb-3">
+            When writing about software or services, the Image Finder often returns just logos, which aren't visually engaging for articles.
+          </p>
+          <div className="bg-white p-3 rounded border border-amber-200">
+            <p className="text-sm font-semibold text-amber-700 mb-2">📸 Solution: Request formatted images instead</p>
+            <div className="bg-gray-50 p-3 rounded text-sm relative">
+              <div className="absolute top-2 right-2">
+                <CopyButton 
+                  text="Can you create nicely formatted images for each one of these? Right now, these are just low-quality logos. Ensure a widescreen image format"
+                  label="Copy Follow-up"
+                />
+              </div>
+              <p className="font-mono text-xs pr-16">
+                Can you create nicely formatted images for each one of these? Right now, these are just low-quality logos. Ensure a widescreen image format
+              </p>
+            </div>
+            <p className="text-sm text-gray-600 mt-2 italic">
+              This prompts the GPT to create properly formatted, article-ready images instead of plain logos.
+            </p>
+          </div>
+        </div>
+
         <div className="bg-blue-100 border border-blue-300 rounded p-3 mt-4">
           <p className="text-sm font-semibold text-blue-800 mb-2">💡 Recommended Workflow for Listicles</p>
           <div className="text-sm text-gray-700 space-y-2">
