@@ -88,7 +88,7 @@ Target URL: ${clientTargetUrl}`;
         enhancement += `\nDesired Anchor Text: ${desiredAnchorText}`;
       }
       
-      enhancement += `\n\nPlease ensure the research outline includes guidance on how to naturally incorporate this client link into the content without making it seem promotional.`;
+      enhancement += `\n\nPlease ensure the research outline includes guidance on how to naturally incorporate this client link into the content without making it seem promotional. The link should appear after the introduction but within the first 1/3 of the article's outline.`;
     }
     
     return rawPrompt + enhancement;
