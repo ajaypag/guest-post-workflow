@@ -1,11 +1,11 @@
 'use client';
 
-import React from 'react';
+import React, { useState } from 'react';
 import { WorkflowStep, GuestPostWorkflow } from '@/types/workflow';
 import { SavedField } from '../SavedField';
 import { CopyButton } from '../ui/CopyButton';
 import { TutorialVideo } from '../ui/TutorialVideo';
-import { ExternalLink } from 'lucide-react';
+import { ExternalLink, AlertCircle, X } from 'lucide-react';
 
 interface ClientLinkStepProps {
   step: WorkflowStep;
@@ -14,6 +14,9 @@ interface ClientLinkStepProps {
 }
 
 export const ClientLinkStep = ({ step, workflow, onChange }: ClientLinkStepProps) => {
+  // State for managing workflow update alert
+  const [showAlert, setShowAlert] = useState(!step.outputs.alertDismissed);
+  
   // Get client target URL and anchor text from step 2i (topic generation)
   const topicGenerationStep = workflow.steps.find(s => s.id === 'topic-generation');
   const plannedClientUrl = topicGenerationStep?.outputs?.clientTargetUrl || '';
@@ -51,6 +54,29 @@ ${fullArticle || 'Complete previous steps to get article content'}`;
         title="Client Link Tutorial"
         description="Learn how to add natural client links to your guest post"
       />
+      
+      {showAlert && (
+        <div className="bg-blue-50 border border-blue-200 rounded-lg p-4 relative">
+          <button
+            onClick={() => {
+              setShowAlert(false);
+              onChange({ ...step.outputs, alertDismissed: true });
+            }}
+            className="absolute top-3 right-3 text-blue-400 hover:text-blue-600"
+          >
+            <X className="w-4 h-4" />
+          </button>
+          <div className="flex items-start space-x-3 pr-8">
+            <AlertCircle className="w-5 h-5 text-blue-600 mt-0.5 flex-shrink-0" />
+            <div>
+              <h4 className="font-semibold text-blue-800 mb-2">🆕 Workflow Update: New Follow-up Prompt Added</h4>
+              <p className="text-sm text-blue-700">
+                We've added a new follow-up prompt (#3) to help validate that your suggested anchor text and client URL make contextual sense together. This helps ensure better link relevance and quality.
+              </p>
+            </div>
+          </div>
+        </div>
+      )}
       
       <div className="bg-blue-100 border border-blue-300 rounded p-4">
         <h4 className="font-semibold text-blue-800 mb-2">🔄 Before You Start: Update Your Final Article</h4>
@@ -223,9 +249,39 @@ ${fullArticle || 'Complete previous steps to get article content'}`;
 
           <div>
             <SavedField
+              label="Third GPT Response"
+              value={step.outputs.thirdResponse || ''}
+              placeholder="Paste GPT's response to second follow-up"
+              onChange={(value) => onChange({ ...step.outputs, thirdResponse: value })}
+              isTextarea={true}
+              height="h-20"
+            />
+          </div>
+
+          <div className="bg-white p-3 rounded border">
+            <h5 className="font-semibold mb-2">Follow-up Prompt #3:</h5>
+            <div className="bg-gray-50 p-3 rounded text-xs font-mono relative">
+              <div className="absolute top-2 right-2">
+                <CopyButton 
+                  text={`Okay, now:\n\nwhat is this article about? ${clientUrl}.\n\nBased on the anchor text you suggested in the sentence, what would you assume that the link that the anchor text is pointing to would be about?\n\nNext, review what the client url is about: what is this article about? ${clientUrl}.\n\nTell me if that's making sense or not.`}
+                  label="Copy"
+                />
+              </div>
+              <div className="pr-16">
+                <p>Okay, now:</p>
+                <p className="mt-2">what is this article about? {clientUrl}.</p>
+                <p className="mt-2">Based on the anchor text you suggested in the sentence, what would you assume that the link that the anchor text is pointing to would be about?</p>
+                <p className="mt-2">Next, review what the client url is about: what is this article about? {clientUrl}.</p>
+                <p className="mt-2">Tell me if that's making sense or not.</p>
+              </div>
+            </div>
+          </div>
+
+          <div>
+            <SavedField
               label="Final GPT Suggestion"
               value={step.outputs.finalSuggestion || ''}
-              placeholder="Paste the final, refined suggestion"
+              placeholder="Paste the final, refined suggestion after validation"
               onChange={(value) => onChange({ ...step.outputs, finalSuggestion: value })}
               isTextarea={true}
               height="h-24"
