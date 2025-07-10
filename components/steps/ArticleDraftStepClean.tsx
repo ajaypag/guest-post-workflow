@@ -145,6 +145,12 @@ ${outlineContent || '((((Complete Step 3: Deep Research first to get outline con
                     <span>alex@outreachlabs.com</span>
                     <ExternalLink className="w-4 h-4 text-white" />
                   </a>
+                  <a href="https://chatgpt.com/g/g-p-686fc5659e4881918176e7bd4a9f8133/project?model=o3" 
+                     target="_blank" 
+                     className="inline-flex items-center px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors font-medium w-full justify-between">
+                    <span>viktor@outreachlabs.com</span>
+                    <ExternalLink className="w-4 h-4 text-white" />
+                  </a>
                 </div>
                 <p className="text-xs text-blue-700 mt-2 italic">Note: Click the link that matches your current OpenAI login</p>
               </div>
