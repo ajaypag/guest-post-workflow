@@ -7,7 +7,6 @@ import { SavedField } from './SavedField';
 import {
   DomainSelectionStep,
   KeywordResearchStep,
-  TopicGenerationStep,
   DeepResearchStep,
   ArticleDraftStep,
   ContentAuditStep,

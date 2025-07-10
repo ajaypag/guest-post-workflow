@@ -299,48 +299,45 @@ ${step.outputs.outlinePrompt ? 'Ready for deep research phase' : 'Waiting for de
                 </p>
               </div>
 
-              {/* Dynamic Ahrefs link */}
+              {/* Ahrefs keyword checking */}
               <div className="bg-white border border-gray-200 rounded-lg p-4">
-                {step.outputs.keywordVariations ? (
-                  <div className="space-y-3">
-                    <div>
-                      <p className="text-sm font-medium mb-2">📊 Check Your Keywords in Ahrefs:</p>
-                      <a href={(() => {
-                        // Convert keyword variations to comma-separated format for Ahrefs
-                        const keywords = step.outputs.keywordVariations
-                          .split('\n')
-                          .filter((k: string) => k.trim())
-                          .map((k: string) => k.trim())
-                          .join(', ');
-                        
-                        return `https://app.ahrefs.com/keywords-explorer/google/us/overview?keyword=${encodeURIComponent(keywords)}`;
-                      })()}
-                         target="_blank"
-                         className="inline-flex items-center px-4 py-2 bg-orange-600 text-white rounded-lg hover:bg-orange-700 transition-colors text-sm font-medium">
-                        Open Keywords in Ahrefs <ExternalLink className="w-4 h-4 ml-2" />
-                      </a>
-                      <p className="text-xs text-gray-600 mt-1">
-                        Keywords from Step 2e automatically pre-filled
-                      </p>
-                    </div>
-                    
-                    <div className="text-xs text-gray-500 italic">
-                      💡 Tip: Keywords should be entered one per line in Step 2e for best results
-                    </div>
-                  </div>
-                ) : (
+                <div className="space-y-3">
                   <div>
-                    <p className="text-sm font-medium mb-2">📊 Open Ahrefs Keyword Explorer:</p>
-                    <a href="https://app.ahrefs.com/keywords-explorer/google/us/overview"
+                    <p className="text-sm font-medium mb-2">📊 Check Your Keywords in Ahrefs:</p>
+                    <a href="https://app.ahrefs.com/keywords-explorer"
                        target="_blank"
-                       className="inline-flex items-center px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors text-sm font-medium">
+                       className="inline-flex items-center px-4 py-2 bg-orange-600 text-white rounded-lg hover:bg-orange-700 transition-colors text-sm font-medium">
                       Open Ahrefs Keyword Explorer <ExternalLink className="w-4 h-4 ml-2" />
                     </a>
-                    <p className="text-xs text-gray-600 mt-1">
-                      Add keywords from Step 2e first for auto-filled link
-                    </p>
                   </div>
-                )}
+                  
+                  <div className="bg-blue-50 border border-blue-200 rounded p-3">
+                    <p className="text-sm text-blue-800 font-medium mb-2">Instructions:</p>
+                    <ol className="text-sm text-blue-700 space-y-1">
+                      <li>1. Click the button above to open Ahrefs Keyword Explorer</li>
+                      <li>2. Copy your keyword list from Step 2e above</li>
+                      <li>3. Paste the keywords into the Keyword Explorer text area</li>
+                      <li>4. Review search volumes and select your final keyword</li>
+                    </ol>
+                  </div>
+                  
+                  {step.outputs.keywordVariations && (
+                    <div className="bg-gray-50 border border-gray-200 rounded p-3">
+                      <p className="text-sm font-medium text-gray-800 mb-2">Your keywords to copy:</p>
+                      <div className="bg-white border rounded p-2 max-h-24 overflow-y-auto">
+                        <div className="text-sm text-gray-700 whitespace-pre-wrap font-mono">
+                          {step.outputs.keywordVariations}
+                        </div>
+                      </div>
+                      <div className="mt-2">
+                        <CopyButton 
+                          text={step.outputs.keywordVariations}
+                          label="Copy Keywords"
+                        />
+                      </div>
+                    </div>
+                  )}
+                </div>
               </div>
 
               {/* No volume fallback */}
