@@ -127,10 +127,28 @@ Now I realize this is a lot, so i want your first output to only be an audit of 
                     <span>ajay@linkio.com</span>
                     <ExternalLink className="w-4 h-4 text-white" />
                   </a>
-                  <a href="https://chatgpt.com/g/g-p-686ea60485908191a5ac7a73ebf3a945/project?model=o3" 
+                  <a href="https://chatgpt.com/g/g-p-686fc2a8d248819180607c190de9461a/project?model=o3" 
                      target="_blank" 
                      className="inline-flex items-center px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors font-medium w-full justify-between">
-                    <span>Teams Workspace</span>
+                    <span>darko@outreachlabs.com</span>
+                    <ExternalLink className="w-4 h-4 text-white" />
+                  </a>
+                  <a href="https://chatgpt.com/g/g-p-686fc171c7a48191bb19b0828c468af7-outreachlabs-guest-post/project?model=o3" 
+                     target="_blank" 
+                     className="inline-flex items-center px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors font-medium w-full justify-between">
+                    <span>ezra@outreachlabs.com</span>
+                    <ExternalLink className="w-4 h-4 text-white" />
+                  </a>
+                  <a href="https://chatgpt.com/g/g-p-686fc3144b648191939582c8a042b3fe/project?model=o3" 
+                     target="_blank" 
+                     className="inline-flex items-center px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors font-medium w-full justify-between">
+                    <span>leo@outreachlabs.com</span>
+                    <ExternalLink className="w-4 h-4 text-white" />
+                  </a>
+                  <a href="https://chatgpt.com/g/g-p-686fc3fb7fb4819189fc57ae51f49f76/project?model=o3" 
+                     target="_blank" 
+                     className="inline-flex items-center px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors font-medium w-full justify-between">
+                    <span>alex@outreachlabs.com</span>
                     <ExternalLink className="w-4 h-4 text-white" />
                   </a>
                 </div>
