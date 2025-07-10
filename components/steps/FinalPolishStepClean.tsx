@@ -156,6 +156,12 @@ Review one of my project files for my brand guide and the Semantic SEO writing t
                     <span>viktor@outreachlabs.com</span>
                     <ExternalLink className="w-4 h-4 text-white" />
                   </a>
+                  <a href="https://chatgpt.com/g/g-p-686fca3e73548191a99d322ca89a391f-outreachlabs-guest-post/project?model=o3" 
+                     target="_blank" 
+                     className="inline-flex items-center px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors font-medium w-full justify-between">
+                    <span>ken@outreachlabs.com</span>
+                    <ExternalLink className="w-4 h-4 text-white" />
+                  </a>
                 </div>
               </div>
 
