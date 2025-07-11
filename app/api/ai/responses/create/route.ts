@@ -67,12 +67,28 @@ export async function POST(request: NextRequest) {
       }
     };
 
+    // Debug: log the full response structure
+    console.log('Full response object:', JSON.stringify(response, null, 2));
+    
+    // Try different ways to extract content from Responses API
+    const responseContent = 
+      (response as any).output || 
+      (response as any).content || 
+      (response as any).message?.content ||
+      (response as any).choices?.[0]?.message?.content ||
+      (response as any).text ||
+      'No content found in response';
+
+    console.log('Extracted content:', responseContent);
+
     return NextResponse.json({
       id: response.id,
-      content: (response as any).content || (response as any).message?.content || 'No content available',
+      content: responseContent,
       tokenUsage: tokenUsage,
       model: (response as any).model || 'o3',
-      created: (response as any).created || Date.now()
+      created: (response as any).created || Date.now(),
+      // Include raw response for debugging
+      rawResponse: response
     });
 
   } catch (error) {
