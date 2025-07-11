@@ -19,32 +19,13 @@ export async function POST(request: NextRequest) {
       apiKey: process.env.OPENAI_API_KEY,
     });
 
-    // Use OpenAI Responses API with the correct structure
+    // Use OpenAI Responses API with minimal structure like working example
     const response = await openai.responses.create({
       prompt: {
         id: "pmpt_68710db9410c8196ab64b7921e7325730317ff998ddbc50b",
         version: "1"
       },
-      input: input,
-      reasoning: {},
-      tools: [
-        {
-          type: "file_search",
-          vector_store_ids: ["vs_68710d7858ec8191b829a50012da7707"]
-        },
-        {
-          type: "web_search_preview",
-          search_context_size: "medium",
-          user_location: {
-            type: "approximate",
-            city: null,
-            country: null,
-            region: null,
-            timezone: null
-          }
-        }
-      ],
-      store: true
+      input: input
     });
 
     // Calculate token usage and cost (o3 pricing: $2.00 input, $8.00 output per 1M tokens)
