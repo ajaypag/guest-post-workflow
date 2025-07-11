@@ -5,6 +5,7 @@ import { WorkflowStep, GuestPostWorkflow } from '@/types/workflow';
 import { SavedField } from '../SavedField';
 import { CopyButton } from '../ui/CopyButton';
 import { TutorialVideo } from '../ui/TutorialVideo';
+import { ChatInterface } from '../ui/ChatInterface';
 import { ExternalLink, ChevronDown, ChevronRight, FileText, CheckCircle, AlertCircle, Target, RefreshCw, BookOpen } from 'lucide-react';
 
 interface ArticleDraftStepProps {
@@ -23,6 +24,12 @@ export const ArticleDraftStepClean = ({ step, workflow, onChange }: ArticleDraft
 
   // Tab system state
   const [activeTab, setActiveTab] = useState<'chatgpt' | 'builtin'>('chatgpt');
+
+  // Chat state management
+  const [conversation, setConversation] = useState<any[]>([]);
+  const [conversationId, setConversationId] = useState<string | null>(null);
+  const [isLoading, setIsLoading] = useState(false);
+  const [chatHeight, setChatHeight] = useState(400);
 
   // Get the outline content from the Deep Research step
   const deepResearchStep = workflow.steps.find(s => s.id === 'deep-research');
@@ -73,6 +80,78 @@ ${outlineContent || '((((Complete Step 3: Deep Research first to get outline con
         return <Target className="w-5 h-5 text-blue-500" />;
       default:
         return <AlertCircle className="w-5 h-5 text-gray-400" />;
+    }
+  };
+
+  // Handle chat message sending
+  const handleSendMessage = async (message: string) => {
+    setIsLoading(true);
+    
+    // Add user message to conversation
+    const userMessage = {
+      role: 'user' as const,
+      content: message,
+      timestamp: new Date()
+    };
+    
+    setConversation(prev => [...prev, userMessage]);
+
+    try {
+      // Determine which API endpoint to use
+      const endpoint = conversationId ? '/api/ai/responses/continue' : '/api/ai/responses/create';
+      
+      const requestBody = conversationId 
+        ? {
+            previous_response_id: conversationId,
+            input: message
+          }
+        : {
+            input: `${planningPrompt}\n\nUser: ${message}`,
+            outline_content: outlineContent
+          };
+
+      const response = await fetch(endpoint, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify(requestBody),
+      });
+
+      if (!response.ok) {
+        throw new Error(`HTTP error! status: ${response.status}`);
+      }
+
+      const data = await response.json();
+
+      // Add AI response to conversation
+      const aiMessage = {
+        role: 'assistant' as const,
+        content: data.content || data.message || 'No response received',
+        timestamp: new Date(),
+        tokenUsage: data.tokenUsage
+      };
+
+      setConversation(prev => [...prev, aiMessage]);
+      
+      // Update conversation ID for future messages
+      if (data.id) {
+        setConversationId(data.id);
+      }
+
+    } catch (error) {
+      console.error('Error sending message:', error);
+      
+      // Add error message to conversation
+      const errorMessage = {
+        role: 'assistant' as const,
+        content: `Error: ${error instanceof Error ? error.message : 'Unknown error occurred'}`,
+        timestamp: new Date()
+      };
+      
+      setConversation(prev => [...prev, errorMessage]);
+    } finally {
+      setIsLoading(false);
     }
   };
 
@@ -450,9 +529,78 @@ ${outlineContent || '((((Complete Step 3: Deep Research first to get outline con
               </div>
             </div>
           ) : (
-            <div className="text-center py-8">
-              <p className="text-gray-600 mb-4">Built-in chat interface will be integrated here</p>
-              <p className="text-sm text-gray-500">Chat functionality will be added in subsequent steps</p>
+            <div className="space-y-6">
+              {/* Built-in Chat Interface */}
+              
+              {/* Instructions */}
+              <div className="bg-blue-50 border border-blue-200 rounded-lg p-4">
+                <h3 className="font-medium text-blue-900 mb-2">🤖 Built-in AI Chat</h3>
+                <p className="text-sm text-blue-800 mb-3">
+                  Complete 3-step workflow using integrated o3 reasoning model:
+                </p>
+                <ol className="text-sm text-blue-700 space-y-1 list-decimal list-inside">
+                  <li><strong>Planning:</strong> Start conversation to analyze research and plan article structure</li>
+                  <li><strong>Title & Intro:</strong> Ask for title and introduction section</li>
+                  <li><strong>Continue:</strong> Request each subsequent section until article is complete</li>
+                </ol>
+                <div className="mt-3 p-3 bg-blue-100 rounded border border-blue-300">
+                  <p className="text-xs text-blue-800 font-medium">💡 Copy each AI response to your Google Doc as you build the article section by section.</p>
+                </div>
+              </div>
+
+              {/* Dependency check */}
+              {outlineContent ? (
+                <div className="bg-green-50 border border-green-200 rounded-lg p-4">
+                  <div className="flex items-center">
+                    <CheckCircle className="w-5 h-5 text-green-600 mr-2" />
+                    <p className="text-sm text-green-800">Research outline automatically included in conversation context</p>
+                  </div>
+                </div>
+              ) : (
+                <div className="bg-yellow-50 border border-yellow-200 rounded-lg p-4">
+                  <div className="flex items-center">
+                    <AlertCircle className="w-5 h-5 text-yellow-500 mr-2" />
+                    <p className="text-sm text-yellow-800">Complete Step 3 (Deep Research) first to get outline content for better results</p>
+                  </div>
+                </div>
+              )}
+
+              {/* Chat Interface */}
+              <ChatInterface
+                conversation={conversation}
+                onSendMessage={handleSendMessage}
+                isLoading={isLoading}
+                height={chatHeight}
+                onHeightChange={setChatHeight}
+              />
+
+              {/* Quick Start Prompts */}
+              <div className="bg-gray-50 border border-gray-200 rounded-lg p-4">
+                <h4 className="font-medium text-gray-800 mb-3">Quick Start Prompts:</h4>
+                <div className="space-y-2">
+                  <button
+                    onClick={() => handleSendMessage("Let's start planning this article. Please analyze the research data and create a detailed outline with word count allocation.")}
+                    disabled={isLoading}
+                    className="w-full text-left px-3 py-2 text-sm bg-white border border-gray-300 rounded hover:bg-gray-50 disabled:opacity-50"
+                  >
+                    🎯 <strong>Start Planning:</strong> Analyze research and create outline
+                  </button>
+                  <button
+                    onClick={() => handleSendMessage("Please write the title and introduction section following the narrative style guidelines.")}
+                    disabled={isLoading}
+                    className="w-full text-left px-3 py-2 text-sm bg-white border border-gray-300 rounded hover:bg-gray-50 disabled:opacity-50"
+                  >
+                    ✍️ <strong>Title & Intro:</strong> Create opening section
+                  </button>
+                  <button
+                    onClick={() => handleSendMessage("Please continue with the next section of the article, maintaining the narrative flow.")}
+                    disabled={isLoading}
+                    className="w-full text-left px-3 py-2 text-sm bg-white border border-gray-300 rounded hover:bg-gray-50 disabled:opacity-50"
+                  >
+                    ➡️ <strong>Continue:</strong> Write next section
+                  </button>
+                </div>
+              </div>
             </div>
           )}
         </div>
