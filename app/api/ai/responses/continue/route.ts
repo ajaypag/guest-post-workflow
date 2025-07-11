@@ -14,12 +14,10 @@ export async function POST(request: NextRequest) {
       apiKey: process.env.OPENAI_API_KEY,
     });
 
-    // Continue conversation using OpenAI Responses API with correct structure
+    // Continue conversation using OpenAI Responses API  
     const response = await openai.responses.create({
-      model: "o3",
-      input: input,
       previous_response_id: previous_response_id,
-      instructions: "You are a helpful assistant specialized in creating high-quality guest post content. Use the provided research and guidelines to create engaging, well-structured articles.",
+      input: input,
       reasoning: { effort: "high" },
       store: true
     });

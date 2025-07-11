@@ -19,11 +19,12 @@ export async function POST(request: NextRequest) {
       apiKey: process.env.OPENAI_API_KEY,
     });
 
-    // Use OpenAI Responses API with correct structure based on documentation
+    // Use OpenAI Responses API with specific prompt ID
     const response = await openai.responses.create({
-      model: "o3",
+      prompt: { 
+        id: "pmpt_68710db9410c8196ab64b7921e7325730317ff998ddbc50b" 
+      },
       input: input,
-      instructions: "You are a helpful assistant specialized in creating high-quality guest post content. Use the provided research and guidelines to create engaging, well-structured articles.",
       reasoning: { effort: "high" },
       store: true
     });
