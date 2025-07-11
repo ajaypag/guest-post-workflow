@@ -19,13 +19,13 @@ export async function POST(request: NextRequest) {
       apiKey: process.env.OPENAI_API_KEY,
     });
 
-    // Use OpenAI Responses API with minimal structure like working example
+    // Use OpenAI Responses API with correct structure based on documentation
     const response = await openai.responses.create({
-      prompt: {
-        id: "pmpt_68710db9410c8196ab64b7921e7325730317ff998ddbc50b",
-        version: "1"
-      },
-      input: input
+      model: "o3",
+      input: input,
+      instructions: "You are a helpful assistant specialized in creating high-quality guest post content. Use the provided research and guidelines to create engaging, well-structured articles.",
+      reasoning: { effort: "high" },
+      store: true
     });
 
     // Calculate token usage and cost (o3 pricing: $2.00 input, $8.00 output per 1M tokens)
@@ -48,28 +48,21 @@ export async function POST(request: NextRequest) {
       }
     };
 
-    // Debug: log the full response structure
-    console.log('Full response object:', JSON.stringify(response, null, 2));
+    // Extract content using correct Responses API structure
+    const responseContent = response.output_text || 'No content available';
     
-    // Try different ways to extract content from Responses API
-    const responseContent = 
-      (response as any).output || 
-      (response as any).content || 
-      (response as any).message?.content ||
-      (response as any).choices?.[0]?.message?.content ||
-      (response as any).text ||
-      'No content found in response';
-
-    console.log('Extracted content:', responseContent);
+    console.log('Response status:', response.status);
+    console.log('Conversation ID:', response.conversation_id);
+    console.log('Output text length:', responseContent.length);
 
     return NextResponse.json({
       id: response.id,
       content: responseContent,
       tokenUsage: tokenUsage,
-      model: (response as any).model || 'o3',
-      created: (response as any).created || Date.now(),
-      // Include raw response for debugging
-      rawResponse: response
+      model: response.model || 'o3',
+      created: response.created_at || Date.now(),
+      conversationId: response.conversation_id,
+      status: response.status
     });
 
   } catch (error) {

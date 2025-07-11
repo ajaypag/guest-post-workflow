@@ -3,10 +3,10 @@ import OpenAI from 'openai';
 
 export async function POST(request: NextRequest) {
   try {
-    const { previous_response_id, input } = await request.json();
+    const { conversation_id, input } = await request.json();
 
-    if (!input || !previous_response_id) {
-      return NextResponse.json({ error: 'Input and previous_response_id are required' }, { status: 400 });
+    if (!input || !conversation_id) {
+      return NextResponse.json({ error: 'Input and conversation_id are required' }, { status: 400 });
     }
 
     // Initialize OpenAI client inside the function
@@ -14,10 +14,14 @@ export async function POST(request: NextRequest) {
       apiKey: process.env.OPENAI_API_KEY,
     });
 
-    // Continue conversation using OpenAI Responses API with minimal structure
+    // Continue conversation using OpenAI Responses API with correct structure
     const response = await openai.responses.create({
-      previous_response_id: previous_response_id,
-      input: input
+      model: "o3",
+      input: input,
+      conversation_id: conversation_id,
+      instructions: "You are a helpful assistant specialized in creating high-quality guest post content. Use the provided research and guidelines to create engaging, well-structured articles.",
+      reasoning: { effort: "high" },
+      store: true
     });
 
     // Calculate token usage and cost (o3 pricing: $2.00 input, $8.00 output per 1M tokens)
@@ -43,10 +47,12 @@ export async function POST(request: NextRequest) {
 
     return NextResponse.json({
       id: response.id,
-      content: (response as any).content || (response as any).message?.content || 'No content available',
+      content: response.output_text || 'No content available',
       tokenUsage: tokenUsage,
-      model: (response as any).model || 'o3',
-      created: (response as any).created || Date.now()
+      model: response.model || 'o3',
+      created: response.created_at || Date.now(),
+      conversationId: response.conversation_id,
+      status: response.status
     });
 
   } catch (error) {
