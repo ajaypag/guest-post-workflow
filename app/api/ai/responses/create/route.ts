@@ -55,6 +55,7 @@ export async function POST(request: NextRequest) {
     console.log('Response status:', response.status);
     console.log('Response ID:', response.id);
     console.log('Output text length:', responseContent.length);
+    console.log('Full response keys:', Object.keys(response));
 
     return NextResponse.json({
       id: response.id,
@@ -65,17 +66,25 @@ export async function POST(request: NextRequest) {
       status: response.status
     });
 
-  } catch (error) {
+  } catch (error: any) {
     console.error('Error in AI responses create:', error);
-    console.error('Error details:', JSON.stringify(error, null, 2));
+    console.error('Error status:', error.status);
+    console.error('Error body:', error.body);
+    console.error('Full error details:', JSON.stringify(error, null, 2));
+    
+    // Extract more specific error information
+    const errorMessage = error.body?.error?.message || error.message || 'Unknown error';
+    const errorType = error.body?.error?.type || error.constructor?.name;
+    const errorParam = error.body?.error?.param;
+    
     return NextResponse.json(
       { 
         error: 'Failed to generate AI response', 
-        details: error instanceof Error ? error.message : 'Unknown error',
-        errorType: error?.constructor?.name,
-        errorStack: error instanceof Error ? error.stack : undefined
+        details: errorMessage,
+        type: errorType,
+        param: errorParam
       },
-      { status: 500 }
+      { status: error.status || 500 }
     );
   }
 }

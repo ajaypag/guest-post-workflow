@@ -14,13 +14,22 @@ export async function POST(request: NextRequest) {
       apiKey: process.env.OPENAI_API_KEY,
     });
 
-    // Continue conversation using OpenAI Responses API  
-    const response = await openai.responses.create({
-      previous_response_id: previous_response_id,
+    // Continue conversation using OpenAI Responses API
+    // Note: When using previous_response_id, don't include prompt parameter
+    const body: any = {
       input: input,
       reasoning: { effort: "high" },
       store: true
-    });
+    };
+    
+    // Only add previous_response_id if it's defined
+    if (previous_response_id) {
+      body.previous_response_id = previous_response_id;
+    }
+    
+    console.log('Continuing conversation with:', { previous_response_id, input_length: input.length });
+    
+    const response = await openai.responses.create(body);
 
     // Calculate token usage and cost (o3 pricing: $2.00 input, $8.00 output per 1M tokens)
     // Note: Response API usage structure may be different - using fallback values
@@ -52,11 +61,26 @@ export async function POST(request: NextRequest) {
       status: response.status
     });
 
-  } catch (error) {
+  } catch (error: any) {
     console.error('Error in AI responses continue:', error);
+    console.error('Error status:', error.status);
+    console.error('Error body:', error.body);
+    console.error('Full error details:', JSON.stringify(error, null, 2));
+    
+    // Extract more specific error information
+    const errorMessage = error.body?.error?.message || error.message || 'Unknown error';
+    const errorType = error.body?.error?.type || error.constructor?.name;
+    const errorParam = error.body?.error?.param;
+    
     return NextResponse.json(
-      { error: 'Failed to continue AI conversation', details: error instanceof Error ? error.message : 'Unknown error' },
-      { status: 500 }
+      { 
+        error: 'Failed to continue AI conversation', 
+        details: errorMessage,
+        type: errorType,
+        param: errorParam,
+        previousResponseId: previous_response_id 
+      },
+      { status: error.status || 500 }
     );
   }
 }

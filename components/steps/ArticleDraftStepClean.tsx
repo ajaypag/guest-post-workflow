@@ -119,10 +119,13 @@ ${outlineContent || '((((Complete Step 3: Deep Research first to get outline con
       });
 
       if (!response.ok) {
-        throw new Error(`HTTP error! status: ${response.status}`);
+        const errorData = await response.json();
+        console.error('API Error:', errorData);
+        throw new Error(errorData.details || `HTTP error! status: ${response.status}`);
       }
 
       const data = await response.json();
+      console.log('Response data:', data);
 
       // Add AI response to conversation
       const aiMessage = {
@@ -136,7 +139,10 @@ ${outlineContent || '((((Complete Step 3: Deep Research first to get outline con
       
       // Update conversation ID for future messages (using response.id)
       if (data.id) {
+        console.log('Setting conversation ID:', data.id);
         setConversationId(data.id);
+      } else {
+        console.warn('No ID in response:', data);
       }
 
     } catch (error) {
