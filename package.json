@@ -30,6 +30,7 @@
     "react": "^19.0.0",
     "react-dom": "^19.0.0",
     "react-hook-form": "^7.59.0",
+    "react-markdown": "^10.1.0",
     "tsx": "^4.20.3",
     "uuid": "^11.1.0",
     "zod": "^3.25.67"
