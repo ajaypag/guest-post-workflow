@@ -2,6 +2,8 @@
 
 import React, { useState, useCallback } from 'react';
 import { Send, Loader2 } from 'lucide-react';
+import ReactMarkdown from 'react-markdown';
+import rehypeRaw from 'rehype-raw';
 
 // Basic interfaces - no external dependencies
 interface TokenUsage {
@@ -100,7 +102,13 @@ export const ChatInterface = ({
                   ? 'bg-blue-500 text-white' 
                   : 'bg-gray-100 text-gray-900'
               }`}>
-                <div className="whitespace-pre-wrap">{message.content}</div>
+                {message.role === 'assistant' ? (
+                  <div className="prose prose-sm max-w-none">
+                    <ReactMarkdown rehypePlugins={[rehypeRaw]}>{message.content}</ReactMarkdown>
+                  </div>
+                ) : (
+                  <div className="whitespace-pre-wrap">{message.content}</div>
+                )}
                 
                 {/* Token usage display */}
                 {message.tokenUsage && (
