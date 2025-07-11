@@ -102,7 +102,7 @@ ${outlineContent || '((((Complete Step 3: Deep Research first to get outline con
       
       const requestBody = conversationId 
         ? {
-            conversation_id: conversationId,
+            previous_response_id: conversationId,
             input: message
           }
         : {
@@ -134,9 +134,9 @@ ${outlineContent || '((((Complete Step 3: Deep Research first to get outline con
 
       setConversation(prev => [...prev, aiMessage]);
       
-      // Update conversation ID for future messages
-      if (data.conversationId) {
-        setConversationId(data.conversationId);
+      // Update conversation ID for future messages (using response.id)
+      if (data.id) {
+        setConversationId(data.id);
       }
 
     } catch (error) {

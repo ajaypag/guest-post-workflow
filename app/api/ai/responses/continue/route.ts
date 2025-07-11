@@ -3,10 +3,10 @@ import OpenAI from 'openai';
 
 export async function POST(request: NextRequest) {
   try {
-    const { conversation_id, input } = await request.json();
+    const { previous_response_id, input } = await request.json();
 
-    if (!input || !conversation_id) {
-      return NextResponse.json({ error: 'Input and conversation_id are required' }, { status: 400 });
+    if (!input || !previous_response_id) {
+      return NextResponse.json({ error: 'Input and previous_response_id are required' }, { status: 400 });
     }
 
     // Initialize OpenAI client inside the function
@@ -18,7 +18,7 @@ export async function POST(request: NextRequest) {
     const response = await openai.responses.create({
       model: "o3",
       input: input,
-      conversation_id: conversation_id,
+      previous_response_id: previous_response_id,
       instructions: "You are a helpful assistant specialized in creating high-quality guest post content. Use the provided research and guidelines to create engaging, well-structured articles.",
       reasoning: { effort: "high" },
       store: true
@@ -51,7 +51,6 @@ export async function POST(request: NextRequest) {
       tokenUsage: tokenUsage,
       model: response.model || 'o3',
       created: response.created_at || Date.now(),
-      conversationId: response.conversation_id,
       status: response.status
     });
 

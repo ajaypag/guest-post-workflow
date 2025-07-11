@@ -52,7 +52,7 @@ export async function POST(request: NextRequest) {
     const responseContent = response.output_text || 'No content available';
     
     console.log('Response status:', response.status);
-    console.log('Conversation ID:', response.conversation_id);
+    console.log('Response ID:', response.id);
     console.log('Output text length:', responseContent.length);
 
     return NextResponse.json({
@@ -61,7 +61,6 @@ export async function POST(request: NextRequest) {
       tokenUsage: tokenUsage,
       model: response.model || 'o3',
       created: response.created_at || Date.now(),
-      conversationId: response.conversation_id,
       status: response.status
     });
 
