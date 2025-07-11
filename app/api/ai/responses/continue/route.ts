@@ -2,8 +2,13 @@ import { NextRequest, NextResponse } from 'next/server';
 import OpenAI from 'openai';
 
 export async function POST(request: NextRequest) {
+  let previous_response_id: string | undefined;
+  let input: string | undefined;
+  
   try {
-    const { previous_response_id, input } = await request.json();
+    const body = await request.json();
+    previous_response_id = body.previous_response_id;
+    input = body.input;
 
     if (!input || !previous_response_id) {
       return NextResponse.json({ error: 'Input and previous_response_id are required' }, { status: 400 });
@@ -16,7 +21,7 @@ export async function POST(request: NextRequest) {
 
     // Continue conversation using OpenAI Responses API
     // Note: When using previous_response_id, don't include prompt parameter
-    const body: any = {
+    const requestBody: any = {
       input: input,
       reasoning: { effort: "high" },
       store: true
@@ -24,12 +29,12 @@ export async function POST(request: NextRequest) {
     
     // Only add previous_response_id if it's defined
     if (previous_response_id) {
-      body.previous_response_id = previous_response_id;
+      requestBody.previous_response_id = previous_response_id;
     }
     
     console.log('Continuing conversation with:', { previous_response_id, input_length: input.length });
     
-    const response = await openai.responses.create(body);
+    const response = await openai.responses.create(requestBody);
 
     // Calculate token usage and cost (o3 pricing: $2.00 input, $8.00 output per 1M tokens)
     // Note: Response API usage structure may be different - using fallback values
