@@ -106,7 +106,7 @@ ${outlineContent || '((((Complete Step 3: Deep Research first to get outline con
             input: message
           }
         : {
-            input: `${planningPrompt}\n\nUser: ${message}`,
+            input: message, // Use the exact message (which could be planningPrompt, titleIntroPrompt, etc.)
             outline_content: outlineContent
           };
 
@@ -536,15 +536,16 @@ ${outlineContent || '((((Complete Step 3: Deep Research first to get outline con
               <div className="bg-blue-50 border border-blue-200 rounded-lg p-4">
                 <h3 className="font-medium text-blue-900 mb-2">🤖 Built-in AI Chat</h3>
                 <p className="text-sm text-blue-800 mb-3">
-                  Complete 3-step workflow using integrated o3 reasoning model:
+                  Same workflow as ChatGPT.com tab, but integrated directly in the app:
                 </p>
-                <ol className="text-sm text-blue-700 space-y-1 list-decimal list-inside">
-                  <li><strong>Planning:</strong> Start conversation to analyze research and plan article structure</li>
-                  <li><strong>Title & Intro:</strong> Ask for title and introduction section</li>
-                  <li><strong>Continue:</strong> Request each subsequent section until article is complete</li>
-                </ol>
+                <ul className="text-sm text-blue-700 space-y-1 list-disc list-inside">
+                  <li><strong>Same exact prompts</strong> as the ChatGPT.com tab</li>
+                  <li><strong>Same status tracking</strong> and form fields</li>
+                  <li><strong>Same Google Doc workflow</strong> for building articles</li>
+                  <li><strong>Conversation continuity</strong> with o3 reasoning model</li>
+                </ul>
                 <div className="mt-3 p-3 bg-blue-100 rounded border border-blue-300">
-                  <p className="text-xs text-blue-800 font-medium">💡 Copy each AI response to your Google Doc as you build the article section by section.</p>
+                  <p className="text-xs text-blue-800 font-medium">💡 Use the buttons below to follow the same workflow steps as the ChatGPT.com tab - just integrated here with conversation history.</p>
                 </div>
               </div>
 
@@ -574,32 +575,128 @@ ${outlineContent || '((((Complete Step 3: Deep Research first to get outline con
                 onHeightChange={setChatHeight}
               />
 
-              {/* Quick Start Prompts */}
-              <div className="bg-gray-50 border border-gray-200 rounded-lg p-4">
-                <h4 className="font-medium text-gray-800 mb-3">Quick Start Prompts:</h4>
-                <div className="space-y-2">
+              {/* Workflow Status & Actions */}
+              <div className="space-y-4">
+                
+                {/* Planning Status */}
+                <div className="bg-gray-50 border border-gray-200 rounded-lg p-4">
+                  <div className="flex items-center justify-between mb-3">
+                    <h4 className="font-medium text-gray-800">Planning Phase</h4>
+                    <StatusIcon status={getStepStatus('planning')} />
+                  </div>
                   <button
-                    onClick={() => handleSendMessage("Let's start planning this article. Please analyze the research data and create a detailed outline with word count allocation.")}
+                    onClick={() => handleSendMessage(planningPrompt)}
                     disabled={isLoading}
-                    className="w-full text-left px-3 py-2 text-sm bg-white border border-gray-300 rounded hover:bg-gray-50 disabled:opacity-50"
+                    className="w-full text-left px-3 py-2 text-sm bg-white border border-gray-300 rounded hover:bg-gray-50 disabled:opacity-50 mb-3"
                   >
-                    🎯 <strong>Start Planning:</strong> Analyze research and create outline
+                    🎯 <strong>Send Planning Prompt:</strong> Initialize with research data
                   </button>
-                  <button
-                    onClick={() => handleSendMessage("Please write the title and introduction section following the narrative style guidelines.")}
-                    disabled={isLoading}
-                    className="w-full text-left px-3 py-2 text-sm bg-white border border-gray-300 rounded hover:bg-gray-50 disabled:opacity-50"
-                  >
-                    ✍️ <strong>Title & Intro:</strong> Create opening section
-                  </button>
-                  <button
-                    onClick={() => handleSendMessage("Please continue with the next section of the article, maintaining the narrative flow.")}
-                    disabled={isLoading}
-                    className="w-full text-left px-3 py-2 text-sm bg-white border border-gray-300 rounded hover:bg-gray-50 disabled:opacity-50"
-                  >
-                    ➡️ <strong>Continue:</strong> Write next section
-                  </button>
+                  <div>
+                    <label className="block text-sm font-medium text-gray-700 mb-2">Planning Status</label>
+                    <select
+                      value={step.outputs.planningStatus || ''}
+                      onChange={(e) => onChange({ ...step.outputs, planningStatus: e.target.value })}
+                      className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
+                    >
+                      <option value="">Select status...</option>
+                      <option value="completed">Planning phase completed</option>
+                      <option value="in-progress">Still in planning</option>
+                    </select>
+                  </div>
                 </div>
+
+                {/* Google Doc Setup */}
+                {step.outputs.planningStatus === 'completed' && (
+                  <div className="bg-gray-50 border border-gray-200 rounded-lg p-4">
+                    <div className="flex items-center justify-between mb-3">
+                      <h4 className="font-medium text-gray-800">Google Doc Setup</h4>
+                      <StatusIcon status={getStepStatus('setup')} />
+                    </div>
+                    <div className="bg-yellow-50 border border-yellow-200 rounded-lg p-3 mb-3">
+                      <p className="text-sm text-yellow-800">
+                        <strong>📄 Create your Google Doc:</strong> <a href="https://docs.new" target="_blank" className="text-blue-600 hover:underline font-medium">Click here</a> → Share → "Anyone with link can view" → Copy URL below
+                      </p>
+                    </div>
+                    <SavedField
+                      label="Google Doc URL"
+                      value={step.outputs.googleDocUrl || ''}
+                      placeholder="https://docs.google.com/document/d/... (make it shareable)"
+                      onChange={(value) => onChange({ ...step.outputs, googleDocUrl: value })}
+                    />
+                  </div>
+                )}
+
+                {/* Writing Phase */}
+                {step.outputs.googleDocUrl && (
+                  <div className="bg-gray-50 border border-gray-200 rounded-lg p-4">
+                    <div className="flex items-center justify-between mb-3">
+                      <h4 className="font-medium text-gray-800">Writing Phase</h4>
+                      <StatusIcon status={getStepStatus('writing')} />
+                    </div>
+                    <div className="space-y-2 mb-3">
+                      <button
+                        onClick={() => handleSendMessage(titleIntroPrompt)}
+                        disabled={isLoading}
+                        className="w-full text-left px-3 py-2 text-sm bg-white border border-gray-300 rounded hover:bg-gray-50 disabled:opacity-50"
+                      >
+                        ✍️ <strong>Title & Introduction:</strong> Send exact prompt from ChatGPT.com tab
+                      </button>
+                      <button
+                        onClick={() => handleSendMessage(loopingPrompt)}
+                        disabled={isLoading}
+                        className="w-full text-left px-3 py-2 text-sm bg-white border border-gray-300 rounded hover:bg-gray-50 disabled:opacity-50"
+                      >
+                        ➡️ <strong>Continue Sections:</strong> Send looping prompt for next section
+                      </button>
+                    </div>
+                    <div>
+                      <label className="block text-sm font-medium text-gray-700 mb-2">Draft Status</label>
+                      <select
+                        value={step.outputs.draftStatus || ''}
+                        onChange={(e) => onChange({ ...step.outputs, draftStatus: e.target.value })}
+                        className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
+                      >
+                        <option value="">Select status...</option>
+                        <option value="in-progress">Still drafting sections</option>
+                        <option value="completed">All sections complete</option>
+                      </select>
+                    </div>
+                  </div>
+                )}
+
+                {/* Final Article Capture */}
+                {step.outputs.draftStatus === 'completed' && (
+                  <div className="bg-gray-50 border border-gray-200 rounded-lg p-4">
+                    <div className="flex items-center justify-between mb-3">
+                      <h4 className="font-medium text-gray-800">Final Article</h4>
+                      <StatusIcon status={getStepStatus('final')} />
+                    </div>
+                    <div className="space-y-4">
+                      <SavedField
+                        label="Word Count"
+                        value={step.outputs.wordCount || ''}
+                        placeholder="Final word count"
+                        onChange={(value) => onChange({ ...step.outputs, wordCount: value })}
+                      />
+                      <SavedField
+                        label="Full Article Text"
+                        value={step.outputs.fullArticle || ''}
+                        placeholder="Copy complete article from Google Doc for subsequent optimization steps"
+                        onChange={(value) => onChange({ ...step.outputs, fullArticle: value })}
+                        isTextarea={true}
+                        height="h-64"
+                      />
+                      <SavedField
+                        label="Draft Notes (Optional)"
+                        value={step.outputs.draftNotes || ''}
+                        placeholder="Any notes about the drafting process"
+                        onChange={(value) => onChange({ ...step.outputs, draftNotes: value })}
+                        isTextarea={true}
+                        height="h-24"
+                      />
+                    </div>
+                  </div>
+                )}
               </div>
             </div>
           )}
