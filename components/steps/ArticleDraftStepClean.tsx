@@ -21,10 +21,18 @@ export const ArticleDraftStepClean = ({ step, workflow, onChange }: ArticleDraft
     'final': false
   });
 
+  // Tab system state
+  const [activeTab, setActiveTab] = useState<'chatgpt' | 'builtin'>('chatgpt');
+
   // Get the outline content from the Deep Research step
   const deepResearchStep = workflow.steps.find(s => s.id === 'deep-research');
   const outlineContent = deepResearchStep?.outputs?.outlineContent || '';
   
+  // Prompt constants to prevent JSX rendering issues
+  const titleIntroPrompt = "Yes, remember we're going to be creating this article section by section. And the format should be primarily narrative, which means its piece is built on flowing prose--full sentences and connected paragraphs that guide the reader smoothly from one idea to the next. They should be short, punchy paragraphs--rarely more than 2-to-3 lines each--so the eye never hits an intimidating wall of text. Frequent line breaks to create natural breathing room and improve scannability.Lists can appear, but only sparingly and only when they truly clarify complex details or highlight a quick sequence the reader might otherwise struggle to absorb. The backbone remains storytelling: each section sets context, explains, and transitions naturally, so the article reads more like a well-structured conversation than a slide deck of bullet points. Start with the title and introduction. Be sure to consult the project documents on Writing Guidelines and Semantic SEO before each section to remind yourself of the best practices that we want to follow. Avoid using Em-dashes. the section you create must follow that of the original outline provided. Remember to keep total word count of article in mind and how you decided to divy up the words per section so you can allocate appropriate word count for this section.";
+
+  const loopingPrompt = "Proceed to the next section. Remember, the format should be primarily narrative, which means its piece is built on flowing prose--full sentences and connected paragraphs that guide the reader smoothly from one idea to the next. They should be short, punchy paragraphs--rarely more than 2-to-3 lines each--so the eye never hits an intimidating wall of text. Frequent line breaks to create natural breathing room and improve scannability.Lists can appear, but only sparingly and only when they truly clarify complex details or highlight a quick sequence the reader might otherwise struggle to absorb. The backbone remains storytelling: each section sets context, explains, and transitions naturally, so the article reads more like a well-structured conversation than a slide deck of bullet points. Be sure to consult the project documents on Writing Guidelines and Semantic SEO before each section to remind yourself of the best practices that we want to follow. Also be sure to reference my original prompt that contains the article information that should feed your context. I've already done the research and given it to you there - so that's what you need to reference each time. Avoid using Em-dashes. If it's the section that is the \"meat\" of the article, you must further break your output down into subsections and only output the first subsection so as not to over simplify each component. Note: defining what a subsection means is important. We're not doing sub-subsections, so if the section of the article is already apparently a subsection, then that entire section should be included in your output even if there are apparently sub-subsections within. Note 2: the section you create must follow that of the original outline provided. Remember to keep total word count of article in mind and how you decided to divy up the words per section so you can allocate appropriate word count for this section.";
+
   // Build the complete prompt with outline content
   const planningPrompt = `Okay, I'm about to give you a lot of information. Here is a data dump of a deep research we did that's going to lead to an article that you will write for me. I don't want you to start writing. I want you to first just take everything in, analyze it, and start preparing.After that, you're going to start thinking about the outline and flushing it out. I'm not necessarily writing yet, but taking the outline and flushing it out - you're deciding what goes where, you're picking a 3 citations only  and planning where they go. Let's just say total initial planning so that the article can flow through. Determine a word count as well. An acceptable range is 1500-2500.
 
@@ -76,6 +84,46 @@ ${outlineContent || '((((Complete Step 3: Deep Research first to get outline con
         description="Learn how to write compelling guest post articles using GPT-o3 Advanced Reasoning"
         timestamp="2:32"
       />
+
+      {/* Tab Navigation */}
+      <div className="bg-white border border-gray-200 rounded-xl overflow-hidden">
+        <div className="flex border-b border-gray-200">
+          <button
+            onClick={() => setActiveTab('chatgpt')}
+            className={`flex-1 px-6 py-4 text-sm font-medium transition-colors ${
+              activeTab === 'chatgpt'
+                ? 'bg-blue-50 text-blue-700 border-b-2 border-blue-500'
+                : 'text-gray-500 hover:text-gray-700 hover:bg-gray-50'
+            }`}
+          >
+            ChatGPT.com
+          </button>
+          <button
+            onClick={() => setActiveTab('builtin')}
+            className={`flex-1 px-6 py-4 text-sm font-medium transition-colors ${
+              activeTab === 'builtin'
+                ? 'bg-blue-50 text-blue-700 border-b-2 border-blue-500'
+                : 'text-gray-500 hover:text-gray-700 hover:bg-gray-50'
+            }`}
+          >
+            Built-in Chat
+          </button>
+        </div>
+
+        <div className="p-6">
+          {activeTab === 'chatgpt' ? (
+            <div className="text-center py-8">
+              <p className="text-gray-600 mb-4">Original ChatGPT.com workflow will be preserved here</p>
+              <p className="text-sm text-gray-500">Content will be moved here in the next step</p>
+            </div>
+          ) : (
+            <div className="text-center py-8">
+              <p className="text-gray-600 mb-4">Built-in chat interface will be integrated here</p>
+              <p className="text-sm text-gray-500">Chat functionality will be added in subsequent steps</p>
+            </div>
+          )}
+        </div>
+      </div>
       
       {/* Planning Phase */}
       <div className="bg-white border border-gray-200 rounded-xl overflow-hidden">
