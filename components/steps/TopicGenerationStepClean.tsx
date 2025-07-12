@@ -306,12 +306,12 @@ ${step.outputs.outlinePrompt ? 'Ready for deep research phase' : 'Waiting for de
                 </a>
               </div>
 
-              {/* Keyword Preferences Configuration - RIGHT WHERE IT MATTERS */}
+              {/* Guest Post Topic Preferences Configuration - RIGHT WHERE IT MATTERS */}
               <div className="bg-purple-50 border border-purple-200 rounded-lg p-4">
                 <div className="flex items-center justify-between mb-3">
                   <div className="flex items-center">
                     <Settings className="w-5 h-5 text-purple-600 mr-2" />
-                    <h4 className="font-medium text-purple-900">🎯 Keyword Preferences</h4>
+                    <h4 className="font-medium text-purple-900">🎯 Guest Post Topic Preferences</h4>
                   </div>
                   {keywordPreferences && (
                     <span className="text-xs px-2 py-1 bg-purple-200 text-purple-800 rounded">
@@ -329,7 +329,7 @@ ${step.outputs.outlinePrompt ? 'Ready for deep research phase' : 'Waiting for de
                     return (
                       <div className="bg-blue-50 border border-blue-200 rounded p-2 mb-3">
                         <p className="text-xs text-blue-700">
-                          🔧 <strong>Workflow Override:</strong> Using custom preferences for this workflow
+                          🔧 <strong>Workflow Override:</strong> Using custom topic preferences for this workflow
                         </p>
                       </div>
                     );
@@ -337,7 +337,7 @@ ${step.outputs.outlinePrompt ? 'Ready for deep research phase' : 'Waiting for de
                     return (
                       <div className="bg-green-50 border border-green-200 rounded p-2 mb-3">
                         <p className="text-xs text-green-700">
-                          👤 <strong>Client Default:</strong> Using {workflow.clientName}'s default preferences
+                          👤 <strong>Client Default:</strong> Using {workflow.clientName}'s default topic preferences
                         </p>
                       </div>
                     );
@@ -346,7 +346,7 @@ ${step.outputs.outlinePrompt ? 'Ready for deep research phase' : 'Waiting for de
                 })()}
                 
                 <p className="text-sm text-purple-800 mb-4">
-                  Configure keyword preferences for this workflow. This will automatically enhance the GPT prompt above.
+                  Configure guest post topic preferences for this workflow. This will automatically enhance the GPT prompt above.
                   {getClientKeywordPreferences(client) && !getWorkflowKeywordPreferences(workflow) && 
                     " (Currently using client defaults - configure below to override for this workflow.)"
                   }
@@ -387,7 +387,7 @@ ${step.outputs.outlinePrompt ? 'Ready for deep research phase' : 'Waiting for de
                 {!keywordPreferences && (
                   <div className="bg-amber-50 border border-amber-200 rounded p-3 mt-3">
                     <p className="text-sm text-amber-700">
-                      💡 <strong>No preferences set.</strong> Configure client defaults in <a href={`/clients/${clientId}`} target="_blank" className="underline">client settings</a> or set workflow-specific preferences above.
+                      💡 <strong>No topic preferences set.</strong> Configure client defaults in <a href={`/clients/${clientId}`} target="_blank" className="underline">client settings</a> or set workflow-specific topic preferences above.
                     </p>
                   </div>
                 )}

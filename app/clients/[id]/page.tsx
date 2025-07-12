@@ -97,7 +97,7 @@ export default function ClientDetailPage() {
       await clientStorage.updateClient(client.id, updatedClient as any);
       await loadClient(); // Reload to get updated data
     } catch (error: any) {
-      alert('Error updating keyword preferences: ' + error.message);
+      alert('Error updating topic preferences: ' + error.message);
     }
   };
 
@@ -214,7 +214,7 @@ export default function ClientDetailPage() {
                   className="inline-flex items-center px-4 py-2 bg-purple-600 text-white text-sm font-medium rounded-md hover:bg-purple-700"
                 >
                   <Settings className="w-4 h-4 mr-2" />
-                  Keyword Preferences
+                  Topic Preferences
                 </button>
                 <button
                   onClick={() => setShowAddForm(true)}
@@ -251,7 +251,7 @@ export default function ClientDetailPage() {
           {showKeywordPrefs && (
             <div className="bg-white rounded-lg shadow p-6 mb-6">
               <div className="flex items-center justify-between mb-4">
-                <h3 className="text-lg font-medium">Default Keyword Preferences for {client.name}</h3>
+                <h3 className="text-lg font-medium">Default Guest Post Topic Preferences for {client.name}</h3>
                 <button
                   onClick={() => setShowKeywordPrefs(false)}
                   className="text-gray-400 hover:text-gray-600"
@@ -260,7 +260,7 @@ export default function ClientDetailPage() {
                 </button>
               </div>
               <p className="text-sm text-gray-600 mb-6">
-                Set default keyword preferences for this client. These will be automatically applied to all new workflows, but can be overridden at the workflow level when needed.
+                Set default guest post topic preferences for this client. These will be automatically applied to all new workflows, but can be overridden at the workflow level when needed.
               </p>
               
               <KeywordPreferencesSelector

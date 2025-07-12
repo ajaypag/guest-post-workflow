@@ -1,4 +1,4 @@
-// SAFE IMPLEMENTATION: Keyword preferences using existing workflow metadata
+// SAFE IMPLEMENTATION: Guest post topic preferences using existing workflow metadata
 // No database schema changes required
 
 export type PrimaryKeywordFocus = 
@@ -8,7 +8,7 @@ export type PrimaryKeywordFocus =
   | 'mixed'                   // Balanced approach
   | 'custom';                 // Advanced custom configuration
 
-// Simplified keyword preferences for initial implementation
+// Guest post topic preferences for targeting specific content types
 export interface KeywordPreferences {
   // Primary simple selection
   primaryFocus: PrimaryKeywordFocus;
@@ -26,26 +26,26 @@ export interface KeywordPreferences {
   };
 }
 
-// Default preference templates
+// Default guest post topic preference templates
 export const KEYWORD_PREFERENCE_TEMPLATES: Record<PrimaryKeywordFocus, Partial<KeywordPreferences>> = {
   'commercial-investigation': {
     primaryFocus: 'commercial-investigation',
-    customInstructions: 'Focus on comparison keywords, review terms, and evaluation phrases that indicate buying research intent.'
+    customInstructions: 'Focus on comparison topics, review articles, and evaluation content that targets buying research intent.'
   },
   
   'informational': {
     primaryFocus: 'informational',
-    customInstructions: 'Focus on educational keywords, how-to terms, and informational queries that help users learn.'
+    customInstructions: 'Focus on educational topics, how-to guides, and informational content that helps users learn.'
   },
   
   'transactional': {
     primaryFocus: 'transactional',
-    customInstructions: 'Focus on high-intent keywords that indicate ready-to-purchase behavior and direct buying signals.'
+    customInstructions: 'Focus on high-intent topics that target ready-to-purchase behavior and direct buying signals.'
   },
   
   'mixed': {
     primaryFocus: 'mixed',
-    customInstructions: 'Use a balanced approach mixing educational and commercial keywords to capture users at different funnel stages.'
+    customInstructions: 'Use a balanced approach mixing educational and commercial topics to capture users at different funnel stages.'
   },
   
   'custom': {
@@ -53,7 +53,7 @@ export const KEYWORD_PREFERENCE_TEMPLATES: Record<PrimaryKeywordFocus, Partial<K
   }
 };
 
-// Human-readable descriptions for UI
+// Human-readable descriptions for guest post topic types
 export const KEYWORD_DESCRIPTIONS = {
   primaryFocus: {
     'commercial-investigation': {
@@ -84,12 +84,12 @@ export const KEYWORD_DESCRIPTIONS = {
   }
 };
 
-// Generate prompt enhancement text based on preferences
+// Generate prompt enhancement text based on guest post topic preferences
 export function generatePromptEnhancement(preferences: KeywordPreferences, targetUrl?: string): string {
   // Check for URL-specific preferences first
   if (targetUrl && preferences.urlSpecificPreferences?.[targetUrl]) {
     const urlPref = preferences.urlSpecificPreferences[targetUrl];
-    let enhancement = `\n\nNote: For this target URL, I prefer ${urlPref.primaryFocus.replace('-', ' ')} keywords.`;
+    let enhancement = `\n\nNote: For this target URL, I prefer ${urlPref.primaryFocus.replace('-', ' ')} guest post topics.`;
     
     if (urlPref.reason) {
       enhancement += ` Reason: ${urlPref.reason}`;
@@ -104,7 +104,7 @@ export function generatePromptEnhancement(preferences: KeywordPreferences, targe
   
   // Use general preferences
   const template = KEYWORD_PREFERENCE_TEMPLATES[preferences.primaryFocus];
-  let enhancement = `\n\nNote: I prefer ${preferences.primaryFocus.replace('-', ' ')} keywords.`;
+  let enhancement = `\n\nNote: I prefer ${preferences.primaryFocus.replace('-', ' ')} guest post topics.`;
   
   if (template?.customInstructions) {
     enhancement += ` ${template.customInstructions}`;
@@ -141,7 +141,7 @@ export function getClientKeywordPreferences(client: any): KeywordPreferences | n
       return JSON.parse(jsonData);
     }
   } catch (error) {
-    console.error('Error parsing client keyword preferences:', error);
+    console.error('Error parsing client topic preferences:', error);
   }
   return null;
 }

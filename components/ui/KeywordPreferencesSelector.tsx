@@ -9,7 +9,7 @@ import {
 } from '@/types/keywordPreferences';
 import { Info } from 'lucide-react';
 
-interface KeywordPreferencesSelectorProps {
+interface TopicPreferencesSelectorProps {
   preferences?: KeywordPreferences;
   onChange: (preferences: KeywordPreferences) => void;
   compact?: boolean;
@@ -19,7 +19,7 @@ export const KeywordPreferencesSelector = ({
   preferences, 
   onChange,
   compact = false 
-}: KeywordPreferencesSelectorProps) => {
+}: TopicPreferencesSelectorProps) => {
   // Initialize with default if none provided
   const currentPrefs: KeywordPreferences = preferences || {
     primaryFocus: 'mixed',
@@ -40,7 +40,7 @@ export const KeywordPreferencesSelector = ({
       <div className="space-y-3">
         <div>
           <label className="block text-sm font-medium text-gray-700 mb-2">
-            Keyword Focus
+            Guest Post Topic Focus
           </label>
           <select
             value={currentPrefs.primaryFocus}
@@ -68,7 +68,7 @@ export const KeywordPreferencesSelector = ({
               onChange={(e) => onChange({ ...currentPrefs, customInstructions: e.target.value })}
               rows={2}
               className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 text-sm"
-              placeholder="Describe your keyword preferences..."
+              placeholder="Describe your guest post topic preferences..."
             />
           </div>
         )}
@@ -81,7 +81,7 @@ export const KeywordPreferencesSelector = ({
       {/* Primary Focus Selection */}
       <div>
         <label className="block text-sm font-medium text-gray-700 mb-3">
-          Primary Keyword Focus
+          Primary Guest Post Topic Focus
         </label>
         <div className="space-y-3">
           {Object.entries(KEYWORD_DESCRIPTIONS.primaryFocus).map(([key, desc]) => (
