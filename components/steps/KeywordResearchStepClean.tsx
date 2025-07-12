@@ -181,6 +181,13 @@ export const KeywordResearchStepClean = ({ step, workflow, onChange }: KeywordRe
                       </h4>
                       <div className="flex items-center space-x-2">
                         <button
+                          onClick={() => window.open(`/clients/${clientId}`, '_blank')}
+                          className="text-xs px-3 py-1 text-purple-600 border border-purple-300 rounded-lg hover:bg-purple-100 transition-colors flex items-center space-x-1"
+                        >
+                          <Target className="w-3 h-3" />
+                          <span>Add More</span>
+                        </button>
+                        <button
                           onClick={() => {
                             const allUrls = activeTargetPages.map((page: any) => page.url).join('\n');
                             navigator.clipboard.writeText(allUrls);
@@ -265,22 +272,24 @@ export const KeywordResearchStepClean = ({ step, workflow, onChange }: KeywordRe
 
                 {/* Encourage adding target URLs when none exist */}
                 {activeTargetPages.length === 0 && clientId && !loadingClient && (
-                  <div className="bg-amber-50 border border-amber-200 rounded-lg p-3">
-                    <div className="flex items-center space-x-2 mb-2">
-                      <Target className="w-4 h-4 text-amber-600" />
-                      <h4 className="font-medium text-amber-800">💡 Enhance Your Keyword Research</h4>
+                  <div className="bg-amber-50 border border-amber-200 rounded-lg p-4">
+                    <div className="flex items-center justify-between mb-3">
+                      <div className="flex items-center space-x-2">
+                        <Target className="w-4 h-4 text-amber-600" />
+                        <h4 className="font-medium text-amber-800">💡 Enhance Your Keyword Research</h4>
+                      </div>
+                      <button
+                        onClick={() => window.open(`/clients/${clientId}`, '_blank')}
+                        className="px-4 py-2 bg-amber-600 text-white text-sm rounded-lg hover:bg-amber-700 transition-colors flex items-center space-x-2"
+                      >
+                        <Target className="w-4 h-4" />
+                        <span>Add Target URLs</span>
+                        <ExternalLink className="w-4 h-4" />
+                      </button>
                     </div>
-                    <p className="text-sm text-amber-700 mb-2">
-                      Add target URLs to this client for more efficient keyword research. This gives you quick access to specific pages for analysis.
+                    <p className="text-sm text-amber-700">
+                      Add target URLs to this client for more efficient keyword research. This gives you quick access to specific pages for analysis instead of just using the homepage.
                     </p>
-                    <a 
-                      href={`/clients/${clientId}`}
-                      target="_blank"
-                      className="text-xs text-amber-800 hover:text-amber-900 underline font-medium flex items-center space-x-1"
-                    >
-                      <span>Manage target URLs</span>
-                      <ExternalLink className="w-3 h-3" />
-                    </a>
                   </div>
                 )}
 
