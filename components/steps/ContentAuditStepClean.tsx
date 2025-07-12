@@ -5,6 +5,8 @@ import { WorkflowStep, GuestPostWorkflow } from '@/types/workflow';
 import { SavedField } from '../SavedField';
 import { CopyButton } from '../ui/CopyButton';
 import { TutorialVideo } from '../ui/TutorialVideo';
+import { ChatInterface } from '../ui/ChatInterface';
+import { SplitPromptButton } from '../ui/SplitPromptButton';
 import { ExternalLink, ChevronDown, ChevronRight, Search, CheckCircle, AlertCircle, Target, FileText, BarChart3 } from 'lucide-react';
 
 interface ContentAuditStepProps {
@@ -20,6 +22,16 @@ export const ContentAuditStepClean = ({ step, workflow, onChange }: ContentAudit
     'results': false
   });
 
+  // Tab system state
+  const [activeTab, setActiveTab] = useState<'chatgpt' | 'builtin'>('chatgpt');
+
+  // Chat state management
+  const [conversation, setConversation] = useState<any[]>([]);
+  const [conversationId, setConversationId] = useState<string | null>(null);
+  const [isLoading, setIsLoading] = useState(false);
+  const [chatHeight, setChatHeight] = useState(600);
+  const [prefilledInput, setPrefilledInput] = useState('');
+
   // Get the article from the previous step
   const articleDraftStep = workflow.steps.find(s => s.id === 'article-draft');
   const fullArticle = articleDraftStep?.outputs?.fullArticle || '';
@@ -34,7 +46,7 @@ export const ContentAuditStepClean = ({ step, workflow, onChange }: ContentAudit
     }));
   };
 
-  // Build the full audit prompt
+  // Prompt constants to prevent JSX rendering issues
   const fullAuditPrompt = `This is an article that you wrote for me:
 
 ${fullArticle}
@@ -45,6 +57,8 @@ Original research outline and findings:
 ${outlineContent || '(Complete Step 3: Deep Research first to get outline content)'}
 
 Now I realize this is a lot, so i want your first output to only be an audit of the first section. the format i want is to show the strengths, weaknesses, and the updated section that has your full fixes. start with the first section if cases where a section has many subsections, output just the subsection.`;
+
+  const loopingAuditPrompt = "Okay, now I want you to proceed your audit with the next section. As a reminder, the format i want is to show the strengths, weaknesses, and the updated section that has your full fixes. start with the first section if cases where a section has many subsections, output just the subsection. In my paste, the formatting for headers did not translate to add those back in logically. While auditing, keep in mind we are creating a \"primarily narrative\" article so bull points can appear but only sporadically. Note, we will rarely include citations within the article. Only a max are 3 in total are allowed. you can reference the citation without a link though. keep in mind variability too. if this is your 3rd+ section that your editing, maybe you are repeating your editing pattern too much. for example, if you used bullets in your last output, maybe don't in this output";
 
   // Status indicators
   const getStepStatus = (stepId: string) => {
@@ -74,6 +88,84 @@ Now I realize this is a lot, so i want your first output to only be an audit of 
     }
   };
 
+  // Handle chat message sending
+  const handleSendMessage = async (message: string) => {
+    setIsLoading(true);
+    
+    // Add user message to conversation
+    const userMessage = {
+      role: 'user' as const,
+      content: message,
+      timestamp: new Date()
+    };
+    
+    setConversation(prev => [...prev, userMessage]);
+
+    try {
+      // Determine which API endpoint to use
+      const endpoint = conversationId ? '/api/ai/responses/continue' : '/api/ai/responses/create';
+      
+      const requestBody = conversationId 
+        ? {
+            previous_response_id: conversationId,
+            input: message
+          }
+        : {
+            input: message, // Use the exact message (which could be fullAuditPrompt, loopingAuditPrompt, etc.)
+            outline_content: outlineContent
+          };
+
+      const response = await fetch(endpoint, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify(requestBody),
+      });
+
+      if (!response.ok) {
+        const errorData = await response.json();
+        console.error('API Error:', errorData);
+        throw new Error(errorData.details || `HTTP error! status: ${response.status}`);
+      }
+
+      const data = await response.json();
+      console.log('Response data:', data);
+
+      // Add AI response to conversation
+      const aiMessage = {
+        role: 'assistant' as const,
+        content: data.content || data.message || 'No response received',
+        timestamp: new Date(),
+        tokenUsage: data.tokenUsage
+      };
+
+      setConversation(prev => [...prev, aiMessage]);
+      
+      // Update conversation ID for future messages (using response.id)
+      if (data.id) {
+        console.log('Setting conversation ID:', data.id);
+        setConversationId(data.id);
+      } else {
+        console.warn('No ID in response:', data);
+      }
+
+    } catch (error) {
+      console.error('Error sending message:', error);
+      
+      // Add error message to conversation
+      const errorMessage = {
+        role: 'assistant' as const,
+        content: `Error: ${error instanceof Error ? error.message : 'Unknown error occurred'}`,
+        timestamp: new Date()
+      };
+      
+      setConversation(prev => [...prev, errorMessage]);
+    } finally {
+      setIsLoading(false);
+    }
+  };
+
   return (
     <div className="space-y-6">
       <TutorialVideo 
@@ -81,8 +173,38 @@ Now I realize this is a lot, so i want your first output to only be an audit of 
         title="Semantic SEO Optimization Tutorial"
         description="Learn how to audit and optimize your guest post content for better SEO performance"
       />
-      
-      {/* Setup New Chat */}
+
+      {/* Tab Navigation */}
+      <div className="bg-white border border-gray-200 rounded-xl overflow-hidden">
+        <div className="flex border-b border-gray-200">
+          <button
+            onClick={() => setActiveTab('chatgpt')}
+            className={`flex-1 px-6 py-4 text-sm font-medium transition-colors ${
+              activeTab === 'chatgpt'
+                ? 'bg-blue-50 text-blue-700 border-b-2 border-blue-500'
+                : 'text-gray-500 hover:text-gray-700 hover:bg-gray-50'
+            }`}
+          >
+            ChatGPT.com
+          </button>
+          <button
+            onClick={() => setActiveTab('builtin')}
+            className={`flex-1 px-6 py-4 text-sm font-medium transition-colors ${
+              activeTab === 'builtin'
+                ? 'bg-blue-50 text-blue-700 border-b-2 border-blue-500'
+                : 'text-gray-500 hover:text-gray-700 hover:bg-gray-50'
+            }`}
+          >
+            Built-in Chat
+          </button>
+        </div>
+
+        <div className="p-6">
+          {activeTab === 'chatgpt' ? (
+            <div className="space-y-6">
+              {/* Original ChatGPT.com workflow */}
+              
+              {/* Setup New Chat */}
       <div className="bg-white border border-gray-200 rounded-xl overflow-hidden">
         <button
           onClick={() => toggleSection('setup')}
@@ -380,6 +502,145 @@ Now I realize this is a lot, so i want your first output to only be an audit of 
             </div>
           </div>
         )}
+      </div>
+
+            </div>
+          ) : (
+            <div className="space-y-6">
+              {/* Built-in Chat Interface */}
+              
+              {/* Instructions */}
+              <div className="bg-blue-50 border border-blue-200 rounded-lg p-4">
+                <h3 className="font-medium text-blue-900 mb-2">🤖 Built-in AI Chat</h3>
+                <p className="text-sm text-blue-800 mb-3">
+                  Same semantic SEO audit workflow as ChatGPT.com tab, but integrated directly in the app:
+                </p>
+                <ul className="text-sm text-blue-700 space-y-1 list-disc list-inside">
+                  <li><strong>Same audit prompts</strong> with full article content</li>
+                  <li><strong>Section-by-section review</strong> with strengths/weaknesses format</li>
+                  <li><strong>Conversation continuity</strong> with o3 reasoning model</li>
+                  <li><strong>Automatic content loading</strong> from previous steps</li>
+                </ul>
+                <div className="mt-3 p-3 bg-blue-100 rounded border border-blue-300">
+                  <p className="text-xs text-blue-800 font-medium">💡 Use the prompt buttons below to start the semantic SEO audit process.</p>
+                </div>
+              </div>
+
+              {/* Dependency check */}
+              {fullArticle ? (
+                <div className="bg-green-50 border border-green-200 rounded-lg p-4">
+                  <div className="flex items-center">
+                    <CheckCircle className="w-5 h-5 text-green-600 mr-2" />
+                    <p className="text-sm text-green-800">Article ready for audit from Step 4</p>
+                  </div>
+                </div>
+              ) : (
+                <div className="bg-yellow-50 border border-yellow-200 rounded-lg p-4">
+                  <div className="flex items-center">
+                    <AlertCircle className="w-5 h-5 text-yellow-500 mr-2" />
+                    <p className="text-sm text-yellow-800">Complete Step 4 (Article Draft) first to get the article content for audit</p>
+                  </div>
+                </div>
+              )}
+
+              {/* Audit Prompt Buttons */}
+              <div className="space-y-4">
+                <div className="bg-purple-50 border border-purple-200 rounded-lg p-4">
+                  <h4 className="font-medium text-purple-800 mb-3">📝 Audit Prompts</h4>
+                  <div className="space-y-3">
+                    <SplitPromptButton
+                      onSend={() => handleSendMessage(fullAuditPrompt)}
+                      onEdit={() => setPrefilledInput(fullAuditPrompt)}
+                      disabled={!fullArticle || isLoading}
+                      className="w-full"
+                    >
+                      1️⃣ Start Initial Audit (First Section)
+                    </SplitPromptButton>
+                    
+                    <SplitPromptButton
+                      onSend={() => handleSendMessage(loopingAuditPrompt)}
+                      onEdit={() => setPrefilledInput(loopingAuditPrompt)}
+                      disabled={!conversationId || isLoading}
+                      className="w-full"
+                    >
+                      2️⃣ Continue Audit (Next Section)
+                    </SplitPromptButton>
+                  </div>
+                </div>
+              </div>
+
+              {/* Chat Interface */}
+              <ChatInterface
+                conversation={conversation}
+                onSendMessage={handleSendMessage}
+                isLoading={isLoading}
+                height={chatHeight}
+                onHeightChange={setChatHeight}
+                prefilledInput={prefilledInput}
+                onPrefilledInputChange={setPrefilledInput}
+              />
+
+              {/* Workflow Status & Actions */}
+              <div className="space-y-4">
+                
+                {/* Audit Progress */}
+                <div className="bg-gray-50 border border-gray-200 rounded-lg p-4">
+                  <div className="bg-purple-50 border-l-4 border-purple-400 p-4 mb-4 rounded-r-lg">
+                    <h4 className="font-medium text-purple-800 mb-2">📊 Audit Progress Tracking</h4>
+                    <p className="text-sm text-purple-700">Track your section-by-section audit progress and paste optimized content to Google Doc Tab 2.</p>
+                  </div>
+
+                  <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                    <div>
+                      <label className="block text-sm font-medium text-gray-700 mb-2">Google Doc Tab 2 Created?</label>
+                      <select
+                        value={step.outputs.tab2Created || ''}
+                        onChange={(e) => onChange({ ...step.outputs, tab2Created: e.target.value })}
+                        className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
+                      >
+                        <option value="">Select status...</option>
+                        <option value="yes">Yes - Tab 2 created for audit results</option>
+                        <option value="no">Not yet</option>
+                      </select>
+                    </div>
+
+                    <div>
+                      <label className="block text-sm font-medium text-gray-700 mb-2">Audit Progress</label>
+                      <select
+                        value={step.outputs.auditProgress || ''}
+                        onChange={(e) => onChange({ ...step.outputs, auditProgress: e.target.value })}
+                        className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
+                      >
+                        <option value="">Select progress...</option>
+                        <option value="25">25% - Introduction audited</option>
+                        <option value="50">50% - Half sections completed</option>
+                        <option value="75">75% - Most sections audited</option>
+                        <option value="100">100% - All sections completed</option>
+                      </select>
+                    </div>
+                  </div>
+                </div>
+
+                {/* Final Optimized Article */}
+                <div className="bg-gray-50 border border-gray-200 rounded-lg p-4">
+                  <div className="bg-green-50 border-l-4 border-green-400 p-4 mb-4 rounded-r-lg">
+                    <h4 className="font-medium text-green-800 mb-2">✅ Final SEO-Optimized Article</h4>
+                    <p className="text-sm text-green-700">Once audit is complete, paste the final optimized article here for use in subsequent steps.</p>
+                  </div>
+
+                  <SavedField
+                    label="SEO-Optimized Article"
+                    value={step.outputs.seoOptimizedArticle || ''}
+                    placeholder="Paste the complete SEO-optimized article from your Google Doc Tab 2..."
+                    onChange={(value) => onChange({ ...step.outputs, seoOptimizedArticle: value })}
+                    isTextarea={true}
+                    height="h-64"
+                  />
+                </div>
+              </div>
+            </div>
+          )}
+        </div>
       </div>
     </div>
   );
