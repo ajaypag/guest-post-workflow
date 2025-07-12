@@ -46,7 +46,7 @@ export const SplitPromptButton = ({
         <button
           onClick={handleSend}
           disabled={disabled}
-          className="flex-1 text-left px-3 py-2 text-sm bg-white border border-gray-300 rounded-l hover:bg-gray-50 disabled:opacity-50"
+          className="flex-1 text-left px-4 py-3 text-sm bg-blue-600 text-white border border-blue-600 rounded-l hover:bg-blue-700 disabled:opacity-50 disabled:cursor-not-allowed font-medium shadow-sm transition-colors"
         >
           {children}
         </button>
@@ -55,7 +55,7 @@ export const SplitPromptButton = ({
         <button
           onClick={handleDropdownToggle}
           disabled={disabled}
-          className="px-2 py-2 text-sm bg-white border-l-0 border-t border-r border-b border-gray-300 rounded-r hover:bg-gray-50 disabled:opacity-50"
+          className="px-3 py-3 text-sm bg-blue-600 text-white border-l border-blue-700 border-t border-r border-b border-blue-600 rounded-r hover:bg-blue-700 disabled:opacity-50 disabled:cursor-not-allowed shadow-sm transition-colors"
         >
           <ChevronDown className="w-3 h-3" />
         </button>

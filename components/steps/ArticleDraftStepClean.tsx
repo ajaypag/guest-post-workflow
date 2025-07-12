@@ -590,18 +590,23 @@ ${outlineContent || '((((Complete Step 3: Deep Research first to get outline con
                 
                 {/* Planning Status */}
                 <div className="bg-gray-50 border border-gray-200 rounded-lg p-4">
-                  <div className="flex items-center justify-between mb-3">
-                    <h4 className="font-medium text-gray-800">Planning Phase</h4>
-                    <StatusIcon status={getStepStatus('planning')} />
+                  <div className="bg-blue-50 border-l-4 border-blue-400 p-4 mb-4 rounded-r-lg">
+                    <div className="flex items-center justify-between mb-3">
+                      <div className="flex items-center">
+                        <div className="bg-blue-500 text-white rounded-full w-6 h-6 flex items-center justify-center text-sm font-bold mr-3">1</div>
+                        <h4 className="font-semibold text-blue-900">STEP 1: Planning Phase</h4>
+                      </div>
+                      <StatusIcon status={getStepStatus('planning')} />
+                    </div>
+                    <p className="text-blue-700 text-sm mb-3">Start by sending the planning prompt to analyze your research and create an outline.</p>
+                    <SplitPromptButton
+                      onSend={() => handleSendMessage(planningPrompt)}
+                      onEdit={() => setPrefilledInput(planningPrompt)}
+                      disabled={isLoading}
+                    >
+                      🎯 <strong>Send Planning Prompt:</strong> Initialize with research data
+                    </SplitPromptButton>
                   </div>
-                  <SplitPromptButton
-                    onSend={() => handleSendMessage(planningPrompt)}
-                    onEdit={() => setPrefilledInput(planningPrompt)}
-                    disabled={isLoading}
-                    className="mb-3"
-                  >
-                    🎯 <strong>Send Planning Prompt:</strong> Initialize with research data
-                  </SplitPromptButton>
                   <div>
                     <label className="block text-sm font-medium text-gray-700 mb-2">Planning Status</label>
                     <select
@@ -640,25 +645,44 @@ ${outlineContent || '((((Complete Step 3: Deep Research first to get outline con
                 {/* Writing Phase */}
                 {step.outputs.googleDocUrl && (
                   <div className="bg-gray-50 border border-gray-200 rounded-lg p-4">
-                    <div className="flex items-center justify-between mb-3">
-                      <h4 className="font-medium text-gray-800">Writing Phase</h4>
-                      <StatusIcon status={getStepStatus('writing')} />
-                    </div>
-                    <div className="space-y-2 mb-3">
-                      <SplitPromptButton
-                        onSend={() => handleSendMessage(titleIntroPrompt)}
-                        onEdit={() => setPrefilledInput(titleIntroPrompt)}
-                        disabled={isLoading}
-                      >
-                        ✍️ <strong>Title & Introduction:</strong> Send exact prompt from ChatGPT.com tab
-                      </SplitPromptButton>
-                      <SplitPromptButton
-                        onSend={() => handleSendMessage(loopingPrompt)}
-                        onEdit={() => setPrefilledInput(loopingPrompt)}
-                        disabled={isLoading}
-                      >
-                        ➡️ <strong>Continue Sections:</strong> Send looping prompt for next section
-                      </SplitPromptButton>
+                    <div className="space-y-4">
+                      {/* Step 2: Title & Introduction */}
+                      <div className="bg-green-50 border-l-4 border-green-400 p-4 rounded-r-lg">
+                        <div className="flex items-center justify-between mb-3">
+                          <div className="flex items-center">
+                            <div className="bg-green-500 text-white rounded-full w-6 h-6 flex items-center justify-center text-sm font-bold mr-3">2</div>
+                            <h4 className="font-semibold text-green-900">STEP 2: Title & Introduction</h4>
+                          </div>
+                          <StatusIcon status={getStepStatus('writing')} />
+                        </div>
+                        <p className="text-green-700 text-sm mb-3">Generate the article title and opening introduction section.</p>
+                        <SplitPromptButton
+                          onSend={() => handleSendMessage(titleIntroPrompt)}
+                          onEdit={() => setPrefilledInput(titleIntroPrompt)}
+                          disabled={isLoading}
+                        >
+                          ✍️ <strong>Title & Introduction:</strong> Send exact prompt from ChatGPT.com tab
+                        </SplitPromptButton>
+                      </div>
+
+                      {/* Step 3: Continue Sections */}
+                      <div className="bg-purple-50 border-l-4 border-purple-400 p-4 rounded-r-lg">
+                        <div className="flex items-center justify-between mb-3">
+                          <div className="flex items-center">
+                            <div className="bg-purple-500 text-white rounded-full w-6 h-6 flex items-center justify-center text-sm font-bold mr-3">3</div>
+                            <h4 className="font-semibold text-purple-900">STEP 3: Continue Sections</h4>
+                          </div>
+                          <div className="bg-purple-100 text-purple-800 px-2 py-1 rounded-full text-xs font-medium">REPEAT</div>
+                        </div>
+                        <p className="text-purple-700 text-sm mb-3">Keep clicking this button to generate each remaining section until your article is complete.</p>
+                        <SplitPromptButton
+                          onSend={() => handleSendMessage(loopingPrompt)}
+                          onEdit={() => setPrefilledInput(loopingPrompt)}
+                          disabled={isLoading}
+                        >
+                          ➡️ <strong>Continue Sections:</strong> Send looping prompt for next section
+                        </SplitPromptButton>
+                      </div>
                     </div>
                     <div>
                       <label className="block text-sm font-medium text-gray-700 mb-2">Draft Status</label>
