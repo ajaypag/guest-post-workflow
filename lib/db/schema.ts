@@ -20,6 +20,7 @@ export const clients = pgTable('clients', {
   name: varchar('name', { length: 255 }).notNull(),
   website: varchar('website', { length: 255 }).notNull(),
   description: text('description').default(''),
+  keywordPreferences: jsonb('keyword_preferences'), // Stores KeywordPreferences as JSON
   createdBy: uuid('created_by').notNull().references(() => users.id),
   createdAt: timestamp('created_at').notNull(), // Remove defaultNow() to handle in application code
   updatedAt: timestamp('updated_at').notNull(), // Remove defaultNow() to handle in application code
@@ -53,6 +54,7 @@ export const workflows = pgTable('workflows', {
   status: varchar('status', { length: 50 }).notNull().default('active'),
   content: jsonb('content'), // Stores the complete GuestPostWorkflow as JSON
   targetPages: jsonb('target_pages'), // Stores target pages as JSON
+  keywordPreferences: jsonb('keyword_preferences'), // Workflow-specific preference overrides
   createdAt: timestamp('created_at').notNull(),
   updatedAt: timestamp('updated_at').notNull(),
 });

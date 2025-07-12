@@ -1,11 +1,13 @@
 'use client';
 
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { WorkflowStep, GuestPostWorkflow } from '@/types/workflow';
 import { SavedField } from '../SavedField';
 import { CopyButton } from '../ui/CopyButton';
 import { TutorialVideo } from '../ui/TutorialVideo';
 import { ExternalLink, ChevronDown, ChevronRight, Target, FileText, CheckCircle, AlertCircle, Lightbulb, Search, LinkIcon } from 'lucide-react';
+import { generatePromptEnhancement, KeywordPreferences } from '@/types/keywordPreferences';
+import { clientStorage } from '@/lib/userStorage';
 
 interface TopicGenerationStepProps {
   step: WorkflowStep;
@@ -22,11 +24,40 @@ export const TopicGenerationStepClean = ({ step, workflow, onChange }: TopicGene
     '2g': false,
     '2h': false
   });
+  
+  const [client, setClient] = useState<any>(null);
+  const [loadingClient, setLoadingClient] = useState(false);
 
   const keywordResearchStep = workflow.steps.find(s => s.id === 'keyword-research');
   const domainSelectionStep = workflow.steps.find(s => s.id === 'domain-selection');
   const guestPostSite = domainSelectionStep?.outputs?.domain || 'Guest post website from Step 1';
   const urlSummaries = keywordResearchStep?.outputs?.urlSummaries || 'List of your target urls + summary';
+  
+  // Load client data for keyword preferences
+  const clientId = workflow.metadata?.clientId;
+  
+  useEffect(() => {
+    const loadClient = async () => {
+      if (!clientId || loadingClient) return;
+      
+      setLoadingClient(true);
+      try {
+        const clientData = await clientStorage.getClient(clientId);
+        setClient(clientData);
+      } catch (error) {
+        console.error('Error loading client:', error);
+      } finally {
+        setLoadingClient(false);
+      }
+    };
+
+    loadClient();
+  }, [clientId]);
+  
+  // Get effective keyword preferences (workflow overrides client defaults)
+  const getKeywordPreferences = (): KeywordPreferences | null => {
+    return workflow.keywordPreferences || client?.keywordPreferences || null;
+  };
   
   const toggleSection = (section: string) => {
     setExpandedSections(prev => ({
@@ -206,7 +237,16 @@ ${step.outputs.outlinePrompt ? 'Ready for deep research phase' : 'Waiting for de
               <div className="bg-white border border-gray-200 rounded-lg p-4 relative">
                 <div className="absolute top-3 right-3">
                   <CopyButton 
-                    text={`Guest post site: ${guestPostSite}\n\n${urlSummaries}\n\nFor each of your keyword suggestions and based on your topical cluster analysis of the target site provide justification each keyword in the sense that it has potential to rank. If the keyword doesn't make sense anymore after further review, that's okay too, remove it.\n\nProper justification means you must take a keyword or list of keywords from the keywords rankings sheet that I provided you about the target site. And prove clear and direct overlap. Keep going until you find 10 justifiable keyword suggestions.\n\nAfter you generate your 10 justifiable keywords suggestions and their variations, output a final master list that lists everything in a long one per line list so I can copy paste elsewhere.`}
+                    text={(() => {
+                      const basePrompt = `Guest post site: ${guestPostSite}\n\n${urlSummaries}\n\nFor each of your keyword suggestions and based on your topical cluster analysis of the target site provide justification each keyword in the sense that it has potential to rank. If the keyword doesn't make sense anymore after further review, that's okay too, remove it.\n\nProper justification means you must take a keyword or list of keywords from the keywords rankings sheet that I provided you about the target site. And prove clear and direct overlap. Keep going until you find 10 justifiable keyword suggestions.\n\nAfter you generate your 10 justifiable keywords suggestions and their variations, output a final master list that lists everything in a long one per line list so I can copy paste elsewhere.`;
+                      
+                      const keywordPrefs = getKeywordPreferences();
+                      if (keywordPrefs) {
+                        const targetUrl = step.outputs.clientTargetUrl;
+                        return basePrompt + generatePromptEnhancement(keywordPrefs, targetUrl);
+                      }
+                      return basePrompt;
+                    })()}
                     label="Copy Template"
                   />
                 </div>
@@ -224,6 +264,23 @@ ${step.outputs.outlinePrompt ? 'Ready for deep research phase' : 'Waiting for de
                   <p className="mt-4 text-gray-700">For each of your keyword suggestions and based on your topical cluster analysis of the target site provide justification each keyword in the sense that it has potential to rank. If the keyword doesn't make sense anymore after further review, that's okay too, remove it.</p>
                   <p className="mt-2 text-gray-700">Proper justification means you must take a keyword or list of keywords from the keywords rankings sheet that I provided you about the target site. And prove clear and direct overlap. Keep going until you find 10 justifiable keyword suggestions.</p>
                   <p className="mt-2 text-gray-700">After you generate your 10 justifiable keywords suggestions and their variations, output a final master list that lists everything in a long one per line list so I can copy paste elsewhere.</p>
+                  
+                  {/* Keyword Preference Enhancement */}
+                  {(() => {
+                    const keywordPrefs = getKeywordPreferences();
+                    if (keywordPrefs) {
+                      const targetUrl = step.outputs.clientTargetUrl;
+                      const enhancement = generatePromptEnhancement(keywordPrefs, targetUrl);
+                      return (
+                        <div className="mt-4 p-3 bg-green-50 border border-green-200 rounded">
+                          <p className="text-sm font-medium text-green-800 mb-1">✨ Smart Keyword Guidance</p>
+                          <p className="text-sm text-green-700">{enhancement.trim()}</p>
+                        </div>
+                      );
+                    }
+                    return null;
+                  })()}
+                  
                   <p className="mt-4 text-red-600 font-semibold">[Attach CSV file from Step 2b]</p>
                 </div>
               </div>
