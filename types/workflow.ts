@@ -33,7 +33,6 @@ export interface GuestPostWorkflow {
   createdBy: string; // User name who created the workflow
   createdByEmail?: string; // Optional: User email for more identification
   steps: WorkflowStep[];
-  keywordPreferences?: import('./keywordPreferences').KeywordPreferences; // Workflow-specific overrides
   metadata: {
     pitchKeyword?: string;
     pitchTopic?: string;

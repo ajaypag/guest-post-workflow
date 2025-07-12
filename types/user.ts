@@ -15,7 +15,6 @@ export interface Client {
   website: string;
   targetPages: TargetPage[];
   assignedUsers: string[]; // User IDs
-  keywordPreferences?: import('./keywordPreferences').KeywordPreferences;
   createdAt: Date;
   updatedAt: Date;
   createdBy: string; // User ID
