@@ -87,14 +87,6 @@ export const ChatInterface = ({
 
   return (
     <div className="border border-gray-200 rounded-lg bg-white">
-      {/* Resize Handle */}
-      <div 
-        className={`h-2 bg-gray-100 cursor-row-resize flex items-center justify-center hover:bg-gray-200 transition-colors ${isResizing ? 'bg-blue-200' : ''}`}
-        onMouseDown={handleResizeStart}
-      >
-        <div className="w-8 h-1 bg-gray-400 rounded"></div>
-      </div>
-
       {/* Chat Messages */}
       <div 
         className="overflow-y-auto p-4 space-y-4"
@@ -189,6 +181,14 @@ export const ChatInterface = ({
           </button>
         </div>
       </form>
+
+      {/* Resize Handle - at bottom for intuitive dragging */}
+      <div 
+        className={`h-2 bg-gray-100 cursor-row-resize flex items-center justify-center hover:bg-gray-200 transition-colors ${isResizing ? 'bg-blue-200' : ''}`}
+        onMouseDown={handleResizeStart}
+      >
+        <div className="w-8 h-1 bg-gray-400 rounded"></div>
+      </div>
     </div>
   );
 };
