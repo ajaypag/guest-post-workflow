@@ -1,13 +1,14 @@
 'use client';
 
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { WorkflowStep, GuestPostWorkflow } from '@/types/workflow';
 import { SavedField } from '../SavedField';
 import { CopyButton } from '../ui/CopyButton';
 import { TutorialVideo } from '../ui/TutorialVideo';
 import { KeywordPreferencesSelector } from '../ui/KeywordPreferencesSelector';
-import { generatePromptEnhancement, getWorkflowKeywordPreferences, setWorkflowKeywordPreferences, KeywordPreferences } from '@/types/keywordPreferences';
+import { generatePromptEnhancement, getWorkflowKeywordPreferences, setWorkflowKeywordPreferences, getClientKeywordPreferences, KeywordPreferences } from '@/types/keywordPreferences';
 import { ExternalLink, ChevronDown, ChevronRight, Target, FileText, CheckCircle, AlertCircle, Lightbulb, Search, LinkIcon, Settings } from 'lucide-react';
+import { clientStorage } from '@/lib/userStorage';
 
 interface TopicGenerationStepProps {
   step: WorkflowStep;
@@ -27,8 +28,37 @@ export const TopicGenerationStepClean = ({ step, workflow, onChange, onWorkflowC
     'keyword-prefs': false
   });
   
-  // Get current keyword preferences from workflow metadata (SAFE - no database needed)
-  const keywordPreferences = getWorkflowKeywordPreferences(workflow);
+  // Load client data for client-level preferences
+  const [client, setClient] = useState<any>(null);
+  const [loadingClient, setLoadingClient] = useState(false);
+  const clientId = workflow.metadata?.clientId;
+  
+  useEffect(() => {
+    const loadClient = async () => {
+      if (!clientId || loadingClient) return;
+      
+      setLoadingClient(true);
+      try {
+        const clientData = await clientStorage.getClient(clientId);
+        setClient(clientData);
+      } catch (error) {
+        console.error('Error loading client:', error);
+      } finally {
+        setLoadingClient(false);
+      }
+    };
+
+    loadClient();
+  }, [clientId]);
+
+  // Get effective keyword preferences: workflow overrides > client defaults > none
+  const getEffectiveKeywordPreferences = () => {
+    const workflowPrefs = getWorkflowKeywordPreferences(workflow);
+    const clientPrefs = getClientKeywordPreferences(client);
+    return workflowPrefs || clientPrefs || null;
+  };
+  
+  const keywordPreferences = getEffectiveKeywordPreferences();
 
   const keywordResearchStep = workflow.steps.find(s => s.id === 'keyword-research');
   const domainSelectionStep = workflow.steps.find(s => s.id === 'domain-selection');
@@ -274,6 +304,93 @@ ${step.outputs.outlinePrompt ? 'Ready for deep research phase' : 'Waiting for de
                    className="inline-flex items-center px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors font-medium">
                   Open Guest Post Topic Machine GPT <ExternalLink className="w-4 h-4 ml-2" />
                 </a>
+              </div>
+
+              {/* Keyword Preferences Configuration - RIGHT WHERE IT MATTERS */}
+              <div className="bg-purple-50 border border-purple-200 rounded-lg p-4">
+                <div className="flex items-center justify-between mb-3">
+                  <div className="flex items-center">
+                    <Settings className="w-5 h-5 text-purple-600 mr-2" />
+                    <h4 className="font-medium text-purple-900">🎯 Keyword Preferences</h4>
+                  </div>
+                  {keywordPreferences && (
+                    <span className="text-xs px-2 py-1 bg-purple-200 text-purple-800 rounded">
+                      Active: {keywordPreferences.primaryFocus.replace('-', ' ')}
+                    </span>
+                  )}
+                </div>
+                
+                {/* Show preference source */}
+                {(() => {
+                  const workflowPrefs = getWorkflowKeywordPreferences(workflow);
+                  const clientPrefs = getClientKeywordPreferences(client);
+                  
+                  if (workflowPrefs) {
+                    return (
+                      <div className="bg-blue-50 border border-blue-200 rounded p-2 mb-3">
+                        <p className="text-xs text-blue-700">
+                          🔧 <strong>Workflow Override:</strong> Using custom preferences for this workflow
+                        </p>
+                      </div>
+                    );
+                  } else if (clientPrefs) {
+                    return (
+                      <div className="bg-green-50 border border-green-200 rounded p-2 mb-3">
+                        <p className="text-xs text-green-700">
+                          👤 <strong>Client Default:</strong> Using {workflow.clientName}'s default preferences
+                        </p>
+                      </div>
+                    );
+                  }
+                  return null;
+                })()}
+                
+                <p className="text-sm text-purple-800 mb-4">
+                  Configure keyword preferences for this workflow. This will automatically enhance the GPT prompt above.
+                  {getClientKeywordPreferences(client) && !getWorkflowKeywordPreferences(workflow) && 
+                    " (Currently using client defaults - configure below to override for this workflow.)"
+                  }
+                </p>
+                
+                {onWorkflowChange ? (
+                  <div className="space-y-3">
+                    <KeywordPreferencesSelector
+                      preferences={getWorkflowKeywordPreferences(workflow) || undefined}
+                      onChange={handleKeywordPreferencesChange}
+                      compact={true}
+                    />
+                    
+                    {/* Clear workflow override button */}
+                    {getWorkflowKeywordPreferences(workflow) && (
+                      <button
+                        onClick={() => {
+                          if (onWorkflowChange) {
+                            const clearedWorkflow = { ...workflow };
+                            if (clearedWorkflow.metadata) {
+                              delete (clearedWorkflow.metadata as any).keywordPreferences;
+                            }
+                            onWorkflowChange(clearedWorkflow);
+                          }
+                        }}
+                        className="text-xs px-3 py-1 bg-gray-200 text-gray-700 rounded hover:bg-gray-300 transition-colors"
+                      >
+                        Clear Override (Use Client Default)
+                      </button>
+                    )}
+                  </div>
+                ) : (
+                  <div className="text-sm text-gray-600 italic">
+                    Keyword preferences can be configured when editing this workflow.
+                  </div>
+                )}
+
+                {!keywordPreferences && (
+                  <div className="bg-amber-50 border border-amber-200 rounded p-3 mt-3">
+                    <p className="text-sm text-amber-700">
+                      💡 <strong>No preferences set.</strong> Configure client defaults in <a href={`/clients/${clientId}`} target="_blank" className="underline">client settings</a> or set workflow-specific preferences above.
+                    </p>
+                  </div>
+                )}
               </div>
             </div>
           </div>
@@ -689,65 +806,6 @@ ${step.outputs.outlinePrompt ? 'Ready for deep research phase' : 'Waiting for de
         </div>
       </div>
 
-      {/* TEST: This should be visible if deployment worked */}
-      <div className="bg-red-100 border border-red-300 rounded p-2 mb-4">
-        <p className="text-red-800 text-sm">🔴 TEST: If you see this red box, the deployment worked! The keyword preferences are below.</p>
-      </div>
-
-      {/* Keyword Preferences (SAFE - stores in workflow metadata) */}
-      <div className="bg-purple-50 border border-purple-200 rounded-xl overflow-hidden">
-        <button
-          onClick={() => toggleSection('keyword-prefs')}
-          className="w-full px-6 py-4 flex items-center justify-between hover:bg-purple-100 transition-colors"
-        >
-          <div className="flex items-center">
-            <Settings className="w-5 h-5 text-purple-600 mr-3" />
-            <div className="text-left">
-              <h3 className="font-medium text-purple-900">🎯 Keyword Preferences</h3>
-              <p className="text-sm text-purple-700">
-                {keywordPreferences ? 
-                  `Active: ${keywordPreferences.primaryFocus.replace('-', ' ')} keywords` : 
-                  'Configure smart keyword guidance for this workflow'
-                }
-              </p>
-            </div>
-          </div>
-          {expandedSections['keyword-prefs'] ? <ChevronDown className="w-5 h-5 text-purple-600" /> : <ChevronRight className="w-5 h-5 text-purple-600" />}
-        </button>
-
-        {expandedSections['keyword-prefs'] && (
-          <div className="px-6 pb-6 border-t border-purple-100">
-            <div className="space-y-4">
-              <div className="bg-white border border-purple-200 rounded-lg p-4">
-                <h4 className="font-medium text-purple-900 mb-2">🚀 Smart Prompt Enhancement</h4>
-                <p className="text-sm text-purple-800 mb-4">
-                  Configure keyword preferences for this workflow. Your preferences will automatically enhance the GPT prompts above with targeted keyword guidance.
-                </p>
-                
-                {onWorkflowChange ? (
-                  <KeywordPreferencesSelector
-                    preferences={keywordPreferences || undefined}
-                    onChange={handleKeywordPreferencesChange}
-                    compact={true}
-                  />
-                ) : (
-                  <div className="text-sm text-gray-600 italic">
-                    Keyword preferences can be configured when editing this workflow.
-                  </div>
-                )}
-              </div>
-
-              {!keywordPreferences && (
-                <div className="bg-blue-50 border border-blue-200 rounded p-3">
-                  <p className="text-sm text-blue-700">
-                    💡 <strong>Tip:</strong> Setting keyword preferences will automatically add smart guidance to your GPT prompts, like "Note: I prefer commercial investigation keywords" based on your configuration.
-                  </p>
-                </div>
-              )}
-            </div>
-          </div>
-        )}
-      </div>
     </div>
   );
 };

@@ -131,3 +131,26 @@ export function setWorkflowKeywordPreferences(workflow: any, preferences: Keywor
     }
   };
 }
+
+// SAFE: Store client preferences in client description field temporarily (no schema changes)
+export function getClientKeywordPreferences(client: any): KeywordPreferences | null {
+  // Store as JSON in description field temporarily until we add proper column
+  try {
+    if (client?.description?.startsWith('KEYWORD_PREFS:')) {
+      const jsonData = client.description.replace('KEYWORD_PREFS:', '');
+      return JSON.parse(jsonData);
+    }
+  } catch (error) {
+    console.error('Error parsing client keyword preferences:', error);
+  }
+  return null;
+}
+
+export function setClientKeywordPreferences(client: any, preferences: KeywordPreferences): any {
+  // Store as JSON in description field temporarily
+  const prefData = `KEYWORD_PREFS:${JSON.stringify(preferences)}`;
+  return {
+    ...client,
+    description: prefData
+  };
+}

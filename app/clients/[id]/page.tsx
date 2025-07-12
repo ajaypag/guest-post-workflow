@@ -9,8 +9,10 @@ import { clientStorage, sessionStorage } from '@/lib/userStorage';
 import { Client, TargetPage } from '@/types/user';
 import { 
   ArrowLeft, Plus, Trash2, CheckCircle, XCircle, Clock, 
-  Edit, Globe, ExternalLink, Check 
+  Edit, Globe, ExternalLink, Check, Settings 
 } from 'lucide-react';
+import { KeywordPreferencesSelector } from '@/components/ui/KeywordPreferencesSelector';
+import { getClientKeywordPreferences, setClientKeywordPreferences, KeywordPreferences } from '@/types/keywordPreferences';
 
 export default function ClientDetailPage() {
   const params = useParams();
@@ -21,6 +23,7 @@ export default function ClientDetailPage() {
   const [bulkAction, setBulkAction] = useState<'active' | 'inactive' | 'completed' | 'delete' | ''>('');
   const [newPages, setNewPages] = useState('');
   const [filter, setFilter] = useState<'all' | 'active' | 'inactive' | 'completed'>('all');
+  const [showKeywordPrefs, setShowKeywordPrefs] = useState(false);
 
   useEffect(() => {
     loadClient();
@@ -82,6 +85,19 @@ export default function ClientDetailPage() {
       await loadClient();
     } catch (error: any) {
       alert('Error performing bulk action: ' + error.message);
+    }
+  };
+
+  // Handle client keyword preference updates
+  const handleClientKeywordPreferencesUpdate = async (preferences: KeywordPreferences) => {
+    if (!client) return;
+
+    try {
+      const updatedClient = setClientKeywordPreferences(client, preferences);
+      await clientStorage.updateClient(client.id, updatedClient as any);
+      await loadClient(); // Reload to get updated data
+    } catch (error: any) {
+      alert('Error updating keyword preferences: ' + error.message);
     }
   };
 
@@ -194,6 +210,13 @@ export default function ClientDetailPage() {
                   Create Workflow
                 </Link>
                 <button
+                  onClick={() => setShowKeywordPrefs(true)}
+                  className="inline-flex items-center px-4 py-2 bg-purple-600 text-white text-sm font-medium rounded-md hover:bg-purple-700"
+                >
+                  <Settings className="w-4 h-4 mr-2" />
+                  Keyword Preferences
+                </button>
+                <button
                   onClick={() => setShowAddForm(true)}
                   className="inline-flex items-center px-4 py-2 bg-blue-600 text-white text-sm font-medium rounded-md hover:bg-blue-700"
                 >
@@ -223,6 +246,38 @@ export default function ClientDetailPage() {
               <div className="text-sm text-gray-600">Completed</div>
             </div>
           </div>
+
+          {/* Client Keyword Preferences Form */}
+          {showKeywordPrefs && (
+            <div className="bg-white rounded-lg shadow p-6 mb-6">
+              <div className="flex items-center justify-between mb-4">
+                <h3 className="text-lg font-medium">Default Keyword Preferences for {client.name}</h3>
+                <button
+                  onClick={() => setShowKeywordPrefs(false)}
+                  className="text-gray-400 hover:text-gray-600"
+                >
+                  <Check className="w-5 h-5" />
+                </button>
+              </div>
+              <p className="text-sm text-gray-600 mb-6">
+                Set default keyword preferences for this client. These will be automatically applied to all new workflows, but can be overridden at the workflow level when needed.
+              </p>
+              
+              <KeywordPreferencesSelector
+                preferences={getClientKeywordPreferences(client) || undefined}
+                onChange={handleClientKeywordPreferencesUpdate}
+              />
+              
+              <div className="mt-6 pt-4 border-t flex justify-end">
+                <button
+                  onClick={() => setShowKeywordPrefs(false)}
+                  className="px-4 py-2 bg-purple-600 text-white text-sm font-medium rounded-md hover:bg-purple-700"
+                >
+                  Done
+                </button>
+              </div>
+            </div>
+          )}
 
           {/* Add Pages Form */}
           {showAddForm && (
