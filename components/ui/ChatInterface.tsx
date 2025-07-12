@@ -103,8 +103,15 @@ export const ChatInterface = ({
                   : 'bg-gray-100 text-gray-900'
               }`}>
                 {message.role === 'assistant' ? (
-                  <div className="prose prose-sm max-w-none">
-                    <ReactMarkdown rehypePlugins={[rehypeRaw]}>{message.content}</ReactMarkdown>
+                  <div className="prose prose-sm max-w-none [&>p]:my-3">
+                    <ReactMarkdown 
+                      rehypePlugins={[rehypeRaw]}
+                      components={{
+                        p: ({ children }) => <p className="mb-4">{children}</p>
+                      }}
+                    >
+                      {message.content.replace(/\n\n/g, '\n\n').replace(/\n(?!\n)/g, '  \n')}
+                    </ReactMarkdown>
                   </div>
                 ) : (
                   <div className="whitespace-pre-wrap">{message.content}</div>
