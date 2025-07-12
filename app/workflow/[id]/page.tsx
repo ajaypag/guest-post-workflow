@@ -194,16 +194,16 @@ export default function WorkflowDetail() {
             </div>
           </div>
 
-          <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
+          <div className="grid grid-cols-1 lg:grid-cols-5 gap-6">
             <div className="lg:col-span-1">
-              <div className="bg-white rounded-lg shadow p-4 lg:sticky lg:top-6">
-                <h3 className="font-semibold mb-4">Workflow Progress</h3>
-                <div ref={sidebarRef} className="max-h-[calc(100vh-12rem)] overflow-y-auto space-y-2 pr-2">
+              <div className="bg-white rounded-lg shadow p-3 lg:sticky lg:top-6">
+                <h3 className="font-semibold mb-3 text-sm">Workflow Progress</h3>
+                <div ref={sidebarRef} className="max-h-[calc(100vh-12rem)] overflow-y-auto space-y-1 pr-1">
                   {workflow.steps.map((step, index) => (
                     <button
                       key={step.id}
                       onClick={() => changeActiveStep(index)}
-                      className={`w-full text-left px-3 py-2 rounded-md flex items-center gap-3 transition-colors ${
+                      className={`w-full text-left px-2 py-1.5 rounded-md flex items-center gap-2 transition-colors ${
                         index === activeStep
                           ? 'bg-blue-600 text-white'
                           : step.status === 'completed'
@@ -211,8 +211,8 @@ export default function WorkflowDetail() {
                           : 'hover:bg-gray-50'
                       }`}
                     >
-                      <div className="flex items-center gap-2">
-                        <span className={`text-xs font-semibold px-1.5 py-0.5 rounded ${
+                      <div className="flex items-center gap-1.5">
+                        <span className={`text-xs font-semibold px-1 py-0.5 rounded ${
                           index === activeStep
                             ? 'bg-blue-800 text-white'
                             : step.status === 'completed'
@@ -223,14 +223,14 @@ export default function WorkflowDetail() {
                         </span>
                         {getStepIcon(step, index)}
                       </div>
-                      <span className="text-sm flex-1">{step.title}</span>
+                      <span className="text-xs flex-1 leading-tight">{step.title}</span>
                     </button>
                   ))}
                 </div>
               </div>
             </div>
 
-            <div className="lg:col-span-2">
+            <div className="lg:col-span-4">
               <StepForm
                 step={workflow.steps[activeStep]}
                 stepIndex={activeStep}

@@ -36,7 +36,7 @@ export const ChatInterface = ({
   conversation, 
   onSendMessage, 
   isLoading = false,
-  height = 400,
+  height = 600,
   onHeightChange 
 }: ChatInterfaceProps) => {
   const [input, setInput] = useState('');
