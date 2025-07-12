@@ -69,7 +69,7 @@ export const ChatInterface = ({
     const startHeight = height;
 
     const handleMouseMove = (e: MouseEvent) => {
-      const newHeight = Math.min(Math.max(startHeight + (startY - e.clientY), 300), 1000);
+      const newHeight = Math.min(Math.max(startHeight + (e.clientY - startY), 300), 1000);
       onHeightChange?.(newHeight);
     };
 
