@@ -92,11 +92,15 @@ export default function ClientDetailPage() {
   const handleClientKeywordPreferencesUpdate = async (preferences: KeywordPreferences) => {
     if (!client) return;
 
+    console.log('🟦 Updating client preferences:', preferences);
     try {
       const updatedClient = setClientKeywordPreferences(client, preferences);
+      console.log('🟦 Updated client object:', updatedClient);
       await clientStorage.updateClient(client.id, updatedClient as any);
       await loadClient(); // Reload to get updated data
+      console.log('🟦 Client reloaded successfully');
     } catch (error: any) {
+      console.error('🟦 Error updating preferences:', error);
       alert('Error updating topic preferences: ' + error.message);
     }
   };

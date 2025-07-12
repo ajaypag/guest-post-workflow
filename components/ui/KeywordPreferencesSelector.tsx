@@ -20,19 +20,22 @@ export const KeywordPreferencesSelector = ({
   onChange,
   compact = false 
 }: TopicPreferencesSelectorProps) => {
-  // Initialize with default if none provided
-  const currentPrefs: KeywordPreferences = preferences || {
+  // Initialize with default if none provided, but properly handle undefined
+  const currentPrefs: KeywordPreferences = preferences !== undefined ? preferences : {
     primaryFocus: 'mixed',
     customInstructions: KEYWORD_PREFERENCE_TEMPLATES.mixed.customInstructions
   };
 
   const handlePrimaryFocusChange = (focus: PrimaryKeywordFocus) => {
+    console.log('🔴 Focus change:', focus, 'current:', currentPrefs.primaryFocus);
     const template = KEYWORD_PREFERENCE_TEMPLATES[focus];
-    onChange({
+    const newPrefs = {
       ...currentPrefs,
       primaryFocus: focus,
       customInstructions: template.customInstructions || ''
-    });
+    };
+    console.log('🔴 Calling onChange with:', newPrefs);
+    onChange(newPrefs);
   };
 
   if (compact) {
