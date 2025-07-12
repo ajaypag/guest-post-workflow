@@ -31,20 +31,39 @@ export async function PUT(
   try {
     const { id } = await params;
     const updates = await request.json();
-    const client = await ClientService.updateClient(id, updates);
     
-    if (!client) {
+    console.log('🟨 PUT /api/clients/[id] - ID:', id);
+    console.log('🟨 PUT /api/clients/[id] - Updates:', updates);
+    
+    // First check if client exists
+    const existingClient = await ClientService.getClient(id);
+    console.log('🟨 Existing client found:', !!existingClient);
+    
+    if (!existingClient) {
+      console.log('🟨 Client not found in database for ID:', id);
       return NextResponse.json(
-        { error: 'Client not found' },
+        { error: 'Client not found in database' },
         { status: 404 }
       );
     }
     
+    const client = await ClientService.updateClient(id, updates);
+    console.log('🟨 Update result:', !!client);
+    
+    if (!client) {
+      console.log('🟨 ClientService.updateClient returned null');
+      return NextResponse.json(
+        { error: 'Update operation failed' },
+        { status: 404 }
+      );
+    }
+    
+    console.log('🟨 Update successful, returning client');
     return NextResponse.json({ client });
   } catch (error) {
-    console.error('Error updating client:', error);
+    console.error('🟨 Error updating client:', error);
     return NextResponse.json(
-      { error: 'Failed to update client' },
+      { error: 'Failed to update client: ' + (error as Error).message },
       { status: 500 }
     );
   }
