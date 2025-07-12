@@ -689,6 +689,11 @@ ${step.outputs.outlinePrompt ? 'Ready for deep research phase' : 'Waiting for de
         </div>
       </div>
 
+      {/* TEST: This should be visible if deployment worked */}
+      <div className="bg-red-100 border border-red-300 rounded p-2 mb-4">
+        <p className="text-red-800 text-sm">🔴 TEST: If you see this red box, the deployment worked! The keyword preferences are below.</p>
+      </div>
+
       {/* Keyword Preferences (SAFE - stores in workflow metadata) */}
       <div className="bg-purple-50 border border-purple-200 rounded-xl overflow-hidden">
         <button
