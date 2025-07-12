@@ -124,13 +124,39 @@ export const ChatInterface = ({
                   : 'bg-gray-100 text-gray-900'
               }`}>
                 {message.role === 'assistant' ? (
-                  <div className="text-sm leading-relaxed prose prose-sm max-w-none">
+                  <div className="text-sm leading-relaxed prose prose-sm max-w-none prose-table:my-4">
                     <ReactMarkdown 
                       rehypePlugins={[rehypeRaw]}
                       components={{
                         p: ({ children }) => <p className="mb-3">{children}</p>,
                         ul: ({ children }) => <ul className="mb-3 ml-4">{children}</ul>,
-                        li: ({ children }) => <li className="mb-1">{children}</li>
+                        li: ({ children }) => <li className="mb-1">{children}</li>,
+                        table: ({ children }) => (
+                          <div className="overflow-x-auto my-4">
+                            <table className="min-w-full border-collapse border border-gray-300 bg-white">
+                              {children}
+                            </table>
+                          </div>
+                        ),
+                        thead: ({ children }) => (
+                          <thead className="bg-gray-50">{children}</thead>
+                        ),
+                        tbody: ({ children }) => (
+                          <tbody className="bg-white">{children}</tbody>
+                        ),
+                        tr: ({ children }) => (
+                          <tr className="border-b border-gray-200">{children}</tr>
+                        ),
+                        th: ({ children }) => (
+                          <th className="px-4 py-3 text-left text-xs font-medium text-gray-700 uppercase tracking-wider border-r border-gray-300 last:border-r-0">
+                            {children}
+                          </th>
+                        ),
+                        td: ({ children }) => (
+                          <td className="px-4 py-3 text-sm text-gray-900 border-r border-gray-300 last:border-r-0">
+                            {children}
+                          </td>
+                        )
                       }}
                     >
                       {message.content
