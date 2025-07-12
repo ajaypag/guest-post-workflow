@@ -202,7 +202,7 @@ ${step.outputs.outlinePrompt ? 'Ready for deep research phase' : 'Waiting for de
               <div className="bg-white border border-gray-200 rounded-lg p-4 relative">
                 <div className="absolute top-3 right-3">
                   <CopyButton 
-                    text={`Guest post site: ${guestPostSite}\n\n${urlSummaries}`}
+                    text={`Guest post site: ${guestPostSite}\n\n${urlSummaries}\n\nFor each of your keyword suggestions and based on your topical cluster analysis of the target site provide justification each keyword in the sense that it has potential to rank. If the keyword doesn't make sense anymore after further review, that's okay too, remove it.\n\nProper justification means you must take a keyword or list of keywords from the keywords rankings sheet that I provided you about the target site. And prove clear and direct overlap. Keep going until you find 10 justifiable keyword suggestions.\n\nAfter you generate your 10 justifiable keywords suggestions and their variations, output a final master list that lists everything in a long one per line list so I can copy paste elsewhere.`}
                     label="Copy Template"
                   />
                 </div>
@@ -217,7 +217,10 @@ ${step.outputs.outlinePrompt ? 'Ready for deep research phase' : 'Waiting for de
                       </div>
                     )}
                   </div>
-                  <p className="mt-2 text-red-600 font-semibold">[Attach CSV file from Step 2b]</p>
+                  <p className="mt-4 text-gray-700">For each of your keyword suggestions and based on your topical cluster analysis of the target site provide justification each keyword in the sense that it has potential to rank. If the keyword doesn't make sense anymore after further review, that's okay too, remove it.</p>
+                  <p className="mt-2 text-gray-700">Proper justification means you must take a keyword or list of keywords from the keywords rankings sheet that I provided you about the target site. And prove clear and direct overlap. Keep going until you find 10 justifiable keyword suggestions.</p>
+                  <p className="mt-2 text-gray-700">After you generate your 10 justifiable keywords suggestions and their variations, output a final master list that lists everything in a long one per line list so I can copy paste elsewhere.</p>
+                  <p className="mt-4 text-red-600 font-semibold">[Attach CSV file from Step 2b]</p>
                 </div>
               </div>
 
