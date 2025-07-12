@@ -5,23 +5,30 @@ import { WorkflowStep, GuestPostWorkflow } from '@/types/workflow';
 import { SavedField } from '../SavedField';
 import { CopyButton } from '../ui/CopyButton';
 import { TutorialVideo } from '../ui/TutorialVideo';
-import { ExternalLink, ChevronDown, ChevronRight, Target, FileText, CheckCircle, AlertCircle, Lightbulb, Search, LinkIcon } from 'lucide-react';
+import { KeywordPreferencesSelector } from '../ui/KeywordPreferencesSelector';
+import { generatePromptEnhancement, getWorkflowKeywordPreferences, setWorkflowKeywordPreferences, KeywordPreferences } from '@/types/keywordPreferences';
+import { ExternalLink, ChevronDown, ChevronRight, Target, FileText, CheckCircle, AlertCircle, Lightbulb, Search, LinkIcon, Settings } from 'lucide-react';
 
 interface TopicGenerationStepProps {
   step: WorkflowStep;
   workflow: GuestPostWorkflow;
   onChange: (data: any) => void;
+  onWorkflowChange?: (workflow: GuestPostWorkflow) => void;
 }
 
-export const TopicGenerationStepClean = ({ step, workflow, onChange }: TopicGenerationStepProps) => {
+export const TopicGenerationStepClean = ({ step, workflow, onChange, onWorkflowChange }: TopicGenerationStepProps) => {
   const [expandedSections, setExpandedSections] = useState<{ [key: string]: boolean }>({
     '2d': true,
     '2e': false,
     '2e2': false,
     '2f': false,
     '2g': false,
-    '2h': false
+    '2h': false,
+    'keyword-prefs': false
   });
+  
+  // Get current keyword preferences from workflow metadata (SAFE - no database needed)
+  const keywordPreferences = getWorkflowKeywordPreferences(workflow);
 
   const keywordResearchStep = workflow.steps.find(s => s.id === 'keyword-research');
   const domainSelectionStep = workflow.steps.find(s => s.id === 'domain-selection');
@@ -33,6 +40,14 @@ export const TopicGenerationStepClean = ({ step, workflow, onChange }: TopicGene
       ...prev,
       [section]: !prev[section]
     }));
+  };
+
+  // Handle keyword preference changes (SAFE - stores in workflow metadata)
+  const handleKeywordPreferencesChange = (preferences: KeywordPreferences) => {
+    if (onWorkflowChange) {
+      const updatedWorkflow = setWorkflowKeywordPreferences(workflow, preferences);
+      onWorkflowChange(updatedWorkflow);
+    }
   };
 
   // Status indicators for each sub-step
@@ -206,7 +221,16 @@ ${step.outputs.outlinePrompt ? 'Ready for deep research phase' : 'Waiting for de
               <div className="bg-white border border-gray-200 rounded-lg p-4 relative">
                 <div className="absolute top-3 right-3">
                   <CopyButton 
-                    text={`Guest post site: ${guestPostSite}\n\n${urlSummaries}\n\nFor each of your keyword suggestions and based on your topical cluster analysis of the target site provide justification each keyword in the sense that it has potential to rank. If the keyword doesn't make sense anymore after further review, that's okay too, remove it.\n\nProper justification means you must take a keyword or list of keywords from the keywords rankings sheet that I provided you about the target site. And prove clear and direct overlap. Keep going until you find 10 justifiable keyword suggestions.\n\nAfter you generate your 10 justifiable keywords suggestions and their variations, output a final master list that lists everything in a long one per line list so I can copy paste elsewhere.`}
+                    text={(() => {
+                      const basePrompt = `Guest post site: ${guestPostSite}\n\n${urlSummaries}\n\nFor each of your keyword suggestions and based on your topical cluster analysis of the target site provide justification each keyword in the sense that it has potential to rank. If the keyword doesn't make sense anymore after further review, that's okay too, remove it.\n\nProper justification means you must take a keyword or list of keywords from the keywords rankings sheet that I provided you about the target site. And prove clear and direct overlap. Keep going until you find 10 justifiable keyword suggestions.\n\nAfter you generate your 10 justifiable keywords suggestions and their variations, output a final master list that lists everything in a long one per line list so I can copy paste elsewhere.`;
+                      
+                      // Add keyword preferences enhancement if configured
+                      if (keywordPreferences) {
+                        const targetUrl = step.outputs.clientTargetUrl;
+                        return basePrompt + generatePromptEnhancement(keywordPreferences, targetUrl);
+                      }
+                      return basePrompt;
+                    })()}
                     label="Copy Template"
                   />
                 </div>
@@ -224,6 +248,21 @@ ${step.outputs.outlinePrompt ? 'Ready for deep research phase' : 'Waiting for de
                   <p className="mt-4 text-gray-700">For each of your keyword suggestions and based on your topical cluster analysis of the target site provide justification each keyword in the sense that it has potential to rank. If the keyword doesn't make sense anymore after further review, that's okay too, remove it.</p>
                   <p className="mt-2 text-gray-700">Proper justification means you must take a keyword or list of keywords from the keywords rankings sheet that I provided you about the target site. And prove clear and direct overlap. Keep going until you find 10 justifiable keyword suggestions.</p>
                   <p className="mt-2 text-gray-700">After you generate your 10 justifiable keywords suggestions and their variations, output a final master list that lists everything in a long one per line list so I can copy paste elsewhere.</p>
+                  
+                  {/* Keyword Preference Enhancement Display */}
+                  {keywordPreferences && (
+                    <div className="mt-4 p-3 bg-green-50 border border-green-200 rounded">
+                      <p className="text-sm font-medium text-green-800 mb-1">✨ Smart Keyword Guidance</p>
+                      <p className="text-sm text-green-700">
+                        {(() => {
+                          const targetUrl = step.outputs.clientTargetUrl;
+                          const enhancement = generatePromptEnhancement(keywordPreferences, targetUrl);
+                          return enhancement.trim();
+                        })()}
+                      </p>
+                    </div>
+                  )}
+                  
                   <p className="mt-4 text-red-600 font-semibold">[Attach CSV file from Step 2b]</p>
                 </div>
               </div>
@@ -648,6 +687,61 @@ ${step.outputs.outlinePrompt ? 'Ready for deep research phase' : 'Waiting for de
             </pre>
           </div>
         </div>
+      </div>
+
+      {/* Keyword Preferences (SAFE - stores in workflow metadata) */}
+      <div className="bg-purple-50 border border-purple-200 rounded-xl overflow-hidden">
+        <button
+          onClick={() => toggleSection('keyword-prefs')}
+          className="w-full px-6 py-4 flex items-center justify-between hover:bg-purple-100 transition-colors"
+        >
+          <div className="flex items-center">
+            <Settings className="w-5 h-5 text-purple-600 mr-3" />
+            <div className="text-left">
+              <h3 className="font-medium text-purple-900">🎯 Keyword Preferences</h3>
+              <p className="text-sm text-purple-700">
+                {keywordPreferences ? 
+                  `Active: ${keywordPreferences.primaryFocus.replace('-', ' ')} keywords` : 
+                  'Configure smart keyword guidance for this workflow'
+                }
+              </p>
+            </div>
+          </div>
+          {expandedSections['keyword-prefs'] ? <ChevronDown className="w-5 h-5 text-purple-600" /> : <ChevronRight className="w-5 h-5 text-purple-600" />}
+        </button>
+
+        {expandedSections['keyword-prefs'] && (
+          <div className="px-6 pb-6 border-t border-purple-100">
+            <div className="space-y-4">
+              <div className="bg-white border border-purple-200 rounded-lg p-4">
+                <h4 className="font-medium text-purple-900 mb-2">🚀 Smart Prompt Enhancement</h4>
+                <p className="text-sm text-purple-800 mb-4">
+                  Configure keyword preferences for this workflow. Your preferences will automatically enhance the GPT prompts above with targeted keyword guidance.
+                </p>
+                
+                {onWorkflowChange ? (
+                  <KeywordPreferencesSelector
+                    preferences={keywordPreferences || undefined}
+                    onChange={handleKeywordPreferencesChange}
+                    compact={true}
+                  />
+                ) : (
+                  <div className="text-sm text-gray-600 italic">
+                    Keyword preferences can be configured when editing this workflow.
+                  </div>
+                )}
+              </div>
+
+              {!keywordPreferences && (
+                <div className="bg-blue-50 border border-blue-200 rounded p-3">
+                  <p className="text-sm text-blue-700">
+                    💡 <strong>Tip:</strong> Setting keyword preferences will automatically add smart guidance to your GPT prompts, like "Note: I prefer commercial investigation keywords" based on your configuration.
+                  </p>
+                </div>
+              )}
+            </div>
+          </div>
+        )}
       </div>
     </div>
   );

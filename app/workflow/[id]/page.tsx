@@ -110,6 +110,17 @@ export default function WorkflowDetail() {
     }
   };
 
+  // Handle workflow changes (for keyword preferences stored in metadata)
+  const handleWorkflowChange = async (updatedWorkflow: GuestPostWorkflow) => {
+    try {
+      setWorkflow(updatedWorkflow);
+      await storage.saveWorkflow(updatedWorkflow);
+    } catch (error) {
+      console.error('Error saving workflow:', error);
+      alert('Failed to save workflow changes. Please try again.');
+    }
+  };
+
   const getStepIcon = (step: any, index: number) => {
     if (step.status === 'completed') {
       return <Check className="w-5 h-5 text-green-600" />;
@@ -236,6 +247,7 @@ export default function WorkflowDetail() {
                 stepIndex={activeStep}
                 workflow={workflow}
                 onSave={handleStepSave}
+                onWorkflowChange={handleWorkflowChange}
               />
             </div>
           </div>

@@ -34,9 +34,10 @@ interface StepFormProps {
   stepIndex: number;
   workflow: GuestPostWorkflow;
   onSave: (inputs: Record<string, any>, outputs: Record<string, any>) => void;
+  onWorkflowChange?: (workflow: GuestPostWorkflow) => void;
 }
 
-const stepForms: Record<string, React.FC<{ step: WorkflowStep; workflow: GuestPostWorkflow; onChange: (data: any) => void }>> = {
+const stepForms: Record<string, React.FC<{ step: WorkflowStep; workflow: GuestPostWorkflow; onChange: (data: any) => void; onWorkflowChange?: (workflow: GuestPostWorkflow) => void }>> = {
   'domain-selection': DomainSelectionStepClean,
   'keyword-research': KeywordResearchStepClean,
   'topic-generation': TopicGenerationStepClean,
@@ -55,7 +56,7 @@ const stepForms: Record<string, React.FC<{ step: WorkflowStep; workflow: GuestPo
   'email-template': EmailTemplateStep,
 };
 
-export default function StepForm({ step, stepIndex, workflow, onSave }: StepFormProps) {
+export default function StepForm({ step, stepIndex, workflow, onSave, onWorkflowChange }: StepFormProps) {
   const [localInputs, setLocalInputs] = useState(step.inputs || {});
   const [localOutputs, setLocalOutputs] = useState(step.outputs || {});
 
@@ -126,6 +127,7 @@ export default function StepForm({ step, stepIndex, workflow, onSave }: StepForm
           step={{ ...step, outputs: localOutputs }}
           workflow={workflow}
           onChange={handleOutputChange}
+          onWorkflowChange={onWorkflowChange}
         />
 
         {/* Outputs Section */}
