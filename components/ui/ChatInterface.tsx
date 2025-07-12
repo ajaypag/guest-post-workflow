@@ -45,7 +45,11 @@ export const ChatInterface = ({
   
   // Auto-scroll to bottom when conversation updates or when loading
   useEffect(() => {
-    messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' });
+    messagesEndRef.current?.scrollIntoView({ 
+      behavior: 'smooth', 
+      block: 'nearest',  // Don't scroll the page, just within the container
+      inline: 'nearest'
+    });
   }, [conversation, isLoading]);
 
   const handleSubmit = async (e: React.FormEvent) => {

@@ -591,7 +591,11 @@ ${outlineContent || '((((Complete Step 3: Deep Research first to get outline con
                     <StatusIcon status={getStepStatus('planning')} />
                   </div>
                   <button
-                    onClick={() => handleSendMessage(planningPrompt)}
+                    onClick={(e) => {
+                      e.preventDefault();
+                      e.stopPropagation();
+                      handleSendMessage(planningPrompt);
+                    }}
                     disabled={isLoading}
                     className="w-full text-left px-3 py-2 text-sm bg-white border border-gray-300 rounded hover:bg-gray-50 disabled:opacity-50 mb-3"
                   >
@@ -641,14 +645,22 @@ ${outlineContent || '((((Complete Step 3: Deep Research first to get outline con
                     </div>
                     <div className="space-y-2 mb-3">
                       <button
-                        onClick={() => handleSendMessage(titleIntroPrompt)}
+                        onClick={(e) => {
+                          e.preventDefault();
+                          e.stopPropagation();
+                          handleSendMessage(titleIntroPrompt);
+                        }}
                         disabled={isLoading}
                         className="w-full text-left px-3 py-2 text-sm bg-white border border-gray-300 rounded hover:bg-gray-50 disabled:opacity-50"
                       >
                         ✍️ <strong>Title & Introduction:</strong> Send exact prompt from ChatGPT.com tab
                       </button>
                       <button
-                        onClick={() => handleSendMessage(loopingPrompt)}
+                        onClick={(e) => {
+                          e.preventDefault();
+                          e.stopPropagation();
+                          handleSendMessage(loopingPrompt);
+                        }}
                         disabled={isLoading}
                         className="w-full text-left px-3 py-2 text-sm bg-white border border-gray-300 rounded hover:bg-gray-50 disabled:opacity-50"
                       >
