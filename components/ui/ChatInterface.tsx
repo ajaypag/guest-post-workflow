@@ -51,6 +51,12 @@ export const ChatInterface = ({
   useEffect(() => {
     if (prefilledInput && prefilledInput !== input) {
       setInput(prefilledInput);
+      // Focus the textarea after loading
+      setTimeout(() => {
+        const textareaElement = document.querySelector('textarea[placeholder="Type your message..."]') as HTMLTextAreaElement;
+        textareaElement?.focus();
+        textareaElement?.setSelectionRange(textareaElement.value.length, textareaElement.value.length);
+      }, 100);
       // Clear the prefilled input after setting it
       onPrefilledInputChange?.('');
     }
@@ -172,19 +178,31 @@ export const ChatInterface = ({
 
       {/* Input Form */}
       <form onSubmit={handleSubmit} className="border-t border-gray-200 p-4">
-        <div className="flex space-x-2">
-          <input
-            type="text"
-            value={input}
-            onChange={(e) => setInput(e.target.value)}
-            placeholder="Type your message..."
-            className="flex-1 px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
-            disabled={isLoading}
-          />
+        <div className="flex space-x-3 items-end">
+          <div className="flex-1">
+            <textarea
+              value={input}
+              onChange={(e) => setInput(e.target.value)}
+              placeholder="Type your message..."
+              className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 resize-none"
+              disabled={isLoading}
+              rows={input.split('\n').length < 6 ? Math.max(1, input.split('\n').length) : 6}
+              style={{ minHeight: '40px', maxHeight: '150px' }}
+              onKeyDown={(e) => {
+                if (e.key === 'Enter' && !e.shiftKey) {
+                  e.preventDefault();
+                  handleSubmit(e);
+                }
+              }}
+            />
+            <div className="text-xs text-gray-500 mt-1">
+              Press Enter to send, Shift+Enter for new line
+            </div>
+          </div>
           <button
             type="submit"
             disabled={!input.trim() || isLoading}
-            className="px-4 py-2 bg-blue-500 text-white rounded-lg hover:bg-blue-600 disabled:opacity-50 disabled:cursor-not-allowed flex items-center space-x-2"
+            className="px-4 py-2 bg-blue-500 text-white rounded-lg hover:bg-blue-600 disabled:opacity-50 disabled:cursor-not-allowed flex items-center space-x-2 h-10"
           >
             {isLoading ? (
               <Loader2 className="w-4 h-4 animate-spin" />
