@@ -1,6 +1,6 @@
 'use client';
 
-import React, { useState, useCallback } from 'react';
+import React, { useState, useCallback, useEffect, useRef } from 'react';
 import { Send, Loader2 } from 'lucide-react';
 import ReactMarkdown from 'react-markdown';
 import rehypeRaw from 'rehype-raw';
@@ -41,6 +41,12 @@ export const ChatInterface = ({
 }: ChatInterfaceProps) => {
   const [input, setInput] = useState('');
   const [isResizing, setIsResizing] = useState(false);
+  const messagesEndRef = useRef<HTMLDivElement>(null);
+  
+  // Auto-scroll to bottom when conversation updates or when loading
+  useEffect(() => {
+    messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' });
+  }, [conversation, isLoading]);
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -150,6 +156,9 @@ export const ChatInterface = ({
             </div>
           </div>
         )}
+        
+        {/* Invisible element to scroll to */}
+        <div ref={messagesEndRef} />
       </div>
 
       {/* Input Form */}
