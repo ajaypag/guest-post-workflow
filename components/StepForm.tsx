@@ -24,7 +24,6 @@ import {
 import { KeywordResearchStepClean } from './steps/KeywordResearchStepClean';
 import { DomainSelectionStepClean } from './steps/DomainSelectionStepClean';
 import { TopicGenerationStepClean } from './steps/TopicGenerationStepClean';
-import { TopicGenerationWizard } from './steps/TopicGenerationWizard';
 import { DeepResearchStepClean } from './steps/DeepResearchStepClean';
 import { ArticleDraftStepClean } from './steps/ArticleDraftStepClean';
 import { ContentAuditStepClean } from './steps/ContentAuditStepClean';
@@ -41,7 +40,7 @@ interface StepFormProps {
 const stepForms: Record<string, React.FC<{ step: WorkflowStep; workflow: GuestPostWorkflow; onChange: (data: any) => void; onWorkflowChange?: (workflow: GuestPostWorkflow) => void }>> = {
   'domain-selection': DomainSelectionStepClean,
   'keyword-research': KeywordResearchStepClean,
-  'topic-generation': TopicGenerationWizard, // NEW: Wizard-style redesign. To revert: change to TopicGenerationStepClean
+  'topic-generation': TopicGenerationStepClean,
   'deep-research': DeepResearchStepClean,
   'article-draft': ArticleDraftStepClean,
   'content-audit': ContentAuditStepClean,
