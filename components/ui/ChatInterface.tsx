@@ -102,9 +102,29 @@ export const ChatInterface = ({
                   ? 'bg-blue-500 text-white' 
                   : 'bg-gray-100 text-gray-900'
               }`}>
-                <div className="whitespace-pre-wrap text-sm leading-relaxed">
-                  {message.content}
-                </div>
+                {message.role === 'assistant' ? (
+                  <div className="text-sm leading-relaxed prose prose-sm max-w-none">
+                    <ReactMarkdown 
+                      rehypePlugins={[rehypeRaw]}
+                      components={{
+                        p: ({ children }) => <p className="mb-3">{children}</p>,
+                        ul: ({ children }) => <ul className="mb-3 ml-4">{children}</ul>,
+                        li: ({ children }) => <li className="mb-1">{children}</li>
+                      }}
+                    >
+                      {message.content
+                        // Convert bullet points to markdown
+                        .replace(/^•\s/gm, '- ')
+                        // Ensure proper line breaks for markdown
+                        .replace(/\n(?!\n)/g, '  \n')
+                      }
+                    </ReactMarkdown>
+                  </div>
+                ) : (
+                  <div className="whitespace-pre-wrap text-sm leading-relaxed">
+                    {message.content}
+                  </div>
+                )}
                 
                 {/* Token usage display */}
                 {message.tokenUsage && (
