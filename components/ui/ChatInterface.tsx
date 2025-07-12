@@ -128,9 +128,27 @@ export const ChatInterface = ({
                     <ReactMarkdown 
                       rehypePlugins={[rehypeRaw]}
                       components={{
+                        // Paragraphs
                         p: ({ children }) => <p className="mb-3">{children}</p>,
+                        
+                        // Headers
+                        h1: ({ children }) => <h1 className="text-2xl font-bold mb-4 mt-6 text-gray-900">{children}</h1>,
+                        h2: ({ children }) => <h2 className="text-xl font-bold mb-3 mt-5 text-gray-900">{children}</h2>,
+                        h3: ({ children }) => <h3 className="text-lg font-semibold mb-3 mt-4 text-gray-900">{children}</h3>,
+                        h4: ({ children }) => <h4 className="text-base font-semibold mb-2 mt-3 text-gray-900">{children}</h4>,
+                        h5: ({ children }) => <h5 className="text-sm font-semibold mb-2 mt-3 text-gray-900">{children}</h5>,
+                        h6: ({ children }) => <h6 className="text-sm font-medium mb-2 mt-3 text-gray-700">{children}</h6>,
+                        
+                        // Lists
                         ul: ({ children }) => <ul className="mb-3 ml-4">{children}</ul>,
+                        ol: ({ children }) => <ol className="mb-3 ml-4 list-decimal">{children}</ol>,
                         li: ({ children }) => <li className="mb-1">{children}</li>,
+                        
+                        // Text formatting
+                        strong: ({ children }) => <strong className="font-semibold">{children}</strong>,
+                        em: ({ children }) => <em className="italic">{children}</em>,
+                        
+                        // Tables
                         table: ({ children }) => (
                           <div className="overflow-x-auto my-4">
                             <table className="min-w-full border-collapse border border-gray-300 bg-white">
@@ -162,6 +180,16 @@ export const ChatInterface = ({
                       {message.content
                         // Convert bullet points to markdown
                         .replace(/^•\s/gm, '- ')
+                        // Ensure headers are properly formatted
+                        .replace(/^([A-Z][^.!?]*)\n$/gm, (match, title) => {
+                          // Convert standalone title lines to h2 headers
+                          if (title.length > 5 && title.length < 100 && !title.includes(':')) {
+                            return `## ${title}\n`;
+                          }
+                          return match;
+                        })
+                        // Convert lines that end with colons to h3 headers  
+                        .replace(/^([A-Z][^:\n]{5,50}):?\s*$/gm, '### $1')
                         // Ensure proper line breaks for markdown
                         .replace(/\n(?!\n)/g, '  \n')
                       }
