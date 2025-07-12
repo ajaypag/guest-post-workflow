@@ -50,6 +50,8 @@ export async function PUT(request: NextRequest) {
     const data = await request.json();
     const { id, ...updates } = data;
     
+    console.log('🟨 PUT /api/clients - Received data:', { id, updates });
+    
     if (!id) {
       return NextResponse.json(
         { error: 'Client ID is required' },
@@ -58,8 +60,10 @@ export async function PUT(request: NextRequest) {
     }
 
     const client = await ClientService.updateClient(id, updates);
+    console.log('🟨 ClientService.updateClient result:', client);
     
     if (!client) {
+      console.log('🟨 Client not found for ID:', id);
       return NextResponse.json(
         { error: 'Client not found' },
         { status: 404 }
@@ -68,7 +72,7 @@ export async function PUT(request: NextRequest) {
 
     return NextResponse.json({ client });
   } catch (error) {
-    console.error('Error updating client:', error);
+    console.error('🟨 Error updating client:', error);
     return NextResponse.json(
       { error: error instanceof Error ? error.message : 'Failed to update client' },
       { status: 500 }
