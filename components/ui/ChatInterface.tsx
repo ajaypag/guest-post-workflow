@@ -178,18 +178,8 @@ export const ChatInterface = ({
                       }}
                     >
                       {message.content
-                        // Convert bullet points to markdown
+                        // Only convert bullet points to markdown (safe conversion)
                         .replace(/^•\s/gm, '- ')
-                        // Ensure headers are properly formatted
-                        .replace(/^([A-Z][^.!?]*)\n$/gm, (match, title) => {
-                          // Convert standalone title lines to h2 headers
-                          if (title.length > 5 && title.length < 100 && !title.includes(':')) {
-                            return `## ${title}\n`;
-                          }
-                          return match;
-                        })
-                        // Convert lines that end with colons to h3 headers  
-                        .replace(/^([A-Z][^:\n]{5,50}):?\s*$/gm, '### $1')
                         // Ensure proper line breaks for markdown
                         .replace(/\n(?!\n)/g, '  \n')
                       }
