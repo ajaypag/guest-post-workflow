@@ -240,15 +240,17 @@ export const clientStorage = {
   // Update client
   async updateClient(id: string, updates: Partial<Client>): Promise<Client | null> {
     try {
-      const response = await fetch('/api/clients', {
+      const response = await fetch(`/api/clients/${id}`, {
         method: 'PUT',
         headers: {
           'Content-Type': 'application/json',
         },
-        body: JSON.stringify({ id, ...updates }),
+        body: JSON.stringify(updates),
       });
 
-      if (!response.ok) return null;
+      if (!response.ok) {
+        throw new Error(`${response.status} ${response.statusText}`);
+      }
 
       const { client } = await response.json();
       return client;

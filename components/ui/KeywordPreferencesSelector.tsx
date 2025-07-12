@@ -27,14 +27,12 @@ export const KeywordPreferencesSelector = ({
   };
 
   const handlePrimaryFocusChange = (focus: PrimaryKeywordFocus) => {
-    console.log('🔴 Focus change:', focus, 'current:', currentPrefs.primaryFocus);
     const template = KEYWORD_PREFERENCE_TEMPLATES[focus];
     const newPrefs = {
       ...currentPrefs,
       primaryFocus: focus,
       customInstructions: template.customInstructions || ''
     };
-    console.log('🔴 Calling onChange with:', newPrefs);
     onChange(newPrefs);
   };
 
