@@ -17,6 +17,7 @@ export const TopicGenerationStepClean = ({ step, workflow, onChange }: TopicGene
   const [expandedSections, setExpandedSections] = useState<{ [key: string]: boolean }>({
     '2d': true,
     '2e': false,
+    '2e2': false,
     '2f': false,
     '2g': false,
     '2h': false
@@ -41,9 +42,12 @@ export const TopicGenerationStepClean = ({ step, workflow, onChange }: TopicGene
         return 'completed'; // Always completed after user reads instructions
       case '2e':
         return step.outputs.keywordVariations ? 'completed' : 'pending';
+      case '2e2':
+        return step.outputs.volumeAnalysis ? 'completed' : 
+               step.outputs.keywordVariations ? 'ready' : 'pending';
       case '2f':
         return step.outputs.finalKeyword ? 'completed' : 
-               step.outputs.keywordVariations ? 'ready' : 'pending';
+               (step.outputs.volumeAnalysis || step.outputs.keywordVariations) ? 'ready' : 'pending';
       case '2g':
         return step.outputs.postTitle ? 'completed' : 
                step.outputs.finalKeyword ? 'ready' : 'pending';
@@ -259,7 +263,7 @@ ${step.outputs.outlinePrompt ? 'Ready for deep research phase' : 'Waiting for de
               <div className="bg-blue-50 rounded-lg p-4">
                 <h4 className="font-medium text-blue-900 mb-2">📝 Paste the GPT Output</h4>
                 <p className="text-sm text-blue-800">
-                  Copy and paste the complete list of keyword variations that the Topic Machine GPT provided. Don't worry about separating primary vs variations - that distinction happens after validation.
+                  Copy and paste the complete list of keyword variations that the Topic Machine GPT provided. This list should include the 10 justified keywords and their variations in a one-per-line format.
                 </p>
               </div>
 
@@ -276,7 +280,118 @@ ${step.outputs.outlinePrompt ? 'Ready for deep research phase' : 'Waiting for de
         )}
       </div>
 
-      {/* Step 2f: Validate in Ahrefs & Choose Final Keyword */}
+      {/* Step 2e2: Volume Analysis & GPT Refinement */}
+      <div className="bg-white border border-gray-200 rounded-xl overflow-hidden">
+        <button
+          onClick={() => toggleSection('2e2')}
+          className="w-full px-6 py-4 flex items-center justify-between hover:bg-gray-50 transition-colors"
+        >
+          <div className="flex items-center">
+            <StatusIcon status={getStepStatus('2e2')} />
+            <div className="ml-3 text-left">
+              <h3 className="font-medium text-gray-900">Step 2e2: Volume Analysis & GPT Refinement</h3>
+              <p className="text-sm text-gray-500">Check volumes in Ahrefs and refine with GPT using volume data</p>
+            </div>
+          </div>
+          {expandedSections['2e2'] ? <ChevronDown className="w-5 h-5" /> : <ChevronRight className="w-5 h-5" />}
+        </button>
+
+        {expandedSections['2e2'] && (
+          <div className="px-6 pb-6 border-t border-gray-100">
+            <div className="space-y-4">
+              <div className="bg-orange-50 rounded-lg p-4">
+                <h4 className="font-medium text-orange-900 mb-2">🔄 Enhanced Volume-Based Refinement Process</h4>
+                <p className="text-sm text-orange-800">
+                  Now that you have the keyword list, check volumes in Ahrefs and return to GPT with the volume data for intelligent refinement.
+                </p>
+              </div>
+
+              {/* Step-by-step process */}
+              <div className="bg-gray-50 rounded-lg p-4">
+                <h4 className="font-medium text-gray-800 mb-3">📊 Volume Analysis Workflow:</h4>
+                <div className="space-y-3">
+                  {[
+                    { step: 1, title: "Copy your keyword list from Step 2e", desc: "Use the keyword list you just pasted above" },
+                    { step: 2, title: "Open Ahrefs Keyword Explorer", desc: "Click the button below to open Ahrefs" },
+                    { step: 3, title: "Paste keywords and get volume data", desc: "Paste the keywords into Ahrefs and run the analysis" },
+                    { step: 4, title: "Export the volume results as CSV", desc: "Download the CSV file with volume data", critical: true },
+                    { step: 5, title: "Return to GPT with volume data", desc: "Upload the CSV to the same GPT conversation with the refinement prompt" }
+                  ].map((item) => (
+                    <div key={item.step} className="flex items-start space-x-3">
+                      <span className={`${item.critical ? 'bg-red-600' : 'bg-orange-600'} text-white rounded-full w-6 h-6 flex items-center justify-center text-sm font-semibold flex-shrink-0`}>
+                        {item.step}
+                      </span>
+                      <div>
+                        <p className={`text-sm font-semibold ${item.critical ? 'text-red-700' : ''}`}>{item.title}</p>
+                        <p className="text-sm text-gray-600">{item.desc}</p>
+                      </div>
+                    </div>
+                  ))}
+                </div>
+              </div>
+
+              {/* Ahrefs link */}
+              <div>
+                <a href="https://app.ahrefs.com/keywords-explorer"
+                   target="_blank"
+                   className="inline-flex items-center px-4 py-2 bg-orange-600 text-white rounded-lg hover:bg-orange-700 transition-colors text-sm font-medium">
+                  Open Ahrefs Keyword Explorer <ExternalLink className="w-4 h-4 ml-2" />
+                </a>
+              </div>
+
+              {/* Quick copy of keywords */}
+              {step.outputs.keywordVariations && (
+                <div className="bg-blue-50 border border-blue-200 rounded p-3">
+                  <div className="flex items-center justify-between mb-2">
+                    <p className="text-sm font-medium text-blue-800">Quick Copy: Your Keywords for Ahrefs</p>
+                    <CopyButton 
+                      text={step.outputs.keywordVariations}
+                      label="Copy Keywords"
+                    />
+                  </div>
+                  <div className="bg-white border rounded p-2 max-h-24 overflow-y-auto">
+                    <div className="text-xs text-blue-700 whitespace-pre-wrap font-mono">
+                      {step.outputs.keywordVariations}
+                    </div>
+                  </div>
+                </div>
+              )}
+
+              {/* GPT refinement prompt */}
+              <div className="bg-purple-50 border border-purple-200 rounded-lg p-4">
+                <h4 className="font-medium text-purple-800 mb-2">🤖 GPT Refinement Prompt</h4>
+                <p className="text-sm text-purple-700 mb-3">
+                  After getting volume data from Ahrefs, return to the SAME GPT conversation and upload the CSV file with this prompt:
+                </p>
+                
+                <div className="bg-white border border-purple-300 rounded-lg p-3 relative">
+                  <div className="absolute top-2 right-2">
+                    <CopyButton 
+                      text="Here is the volume data of the keywords you suggested. Based on this added data, paired with what you have access to already in terms of the client url target pages, what topics and rankings the target site has, and what keywords have longtail search volume, identify what a good main keyword could be. If none of the keywords have search volume, you are tasked with finding something that has search volume, even if it's low (from 10 searches a month to 50 searches a month) based on everything you know about our client url topics, the topical clusters the target site ranks for, the keywords that it already ranks for. What do you think would be some good potential keywords, long-tail keywords to target? Be sure to output your keywords in a list so it's easy to copy-paste into a volume checker."
+                      label="Copy Prompt"
+                    />
+                  </div>
+                  <p className="text-xs text-purple-700 pr-16 whitespace-pre-wrap">
+                    Here is the volume data of the keywords you suggested. Based on this added data, paired with what you have access to already in terms of the client url target pages, what topics and rankings the target site has, and what keywords have longtail search volume, identify what a good main keyword could be. If none of the keywords have search volume, you are tasked with finding something that has search volume, even if it's low (from 10 searches a month to 50 searches a month) based on everything you know about our client url topics, the topical clusters the target site ranks for, the keywords that it already ranks for. What do you think would be some good potential keywords, long-tail keywords to target? Be sure to output your keywords in a list so it's easy to copy-paste into a volume checker.
+                  </p>
+                </div>
+              </div>
+
+              {/* Save GPT response */}
+              <SavedField
+                label="Volume-Based Analysis from GPT"
+                value={step.outputs.volumeAnalysis || ''}
+                placeholder="Paste the GPT's response after providing volume data - this should include main keyword recommendations or new suggestions with volume"
+                onChange={(value) => onChange({ ...step.outputs, volumeAnalysis: value })}
+                isTextarea={true}
+                height="h-32"
+              />
+            </div>
+          </div>
+        )}
+      </div>
+
+      {/* Step 2f: Choose Final Keyword */}
       <div className="bg-white border border-gray-200 rounded-xl overflow-hidden">
         <button
           onClick={() => toggleSection('2f')}
@@ -285,8 +400,8 @@ ${step.outputs.outlinePrompt ? 'Ready for deep research phase' : 'Waiting for de
           <div className="flex items-center">
             <StatusIcon status={getStepStatus('2f')} />
             <div className="ml-3 text-left">
-              <h3 className="font-medium text-gray-900">Step 2f: Validate in Ahrefs & Choose Final Keyword</h3>
-              <p className="text-sm text-gray-500">Check search volume and select your final keyword</p>
+              <h3 className="font-medium text-gray-900">Step 2f: Choose Final Keyword</h3>
+              <p className="text-sm text-gray-500">Select your final target keyword from the volume-analyzed results</p>
             </div>
           </div>
           {expandedSections['2f'] ? <ChevronDown className="w-5 h-5" /> : <ChevronRight className="w-5 h-5" />}
@@ -296,84 +411,50 @@ ${step.outputs.outlinePrompt ? 'Ready for deep research phase' : 'Waiting for de
           <div className="px-6 pb-6 border-t border-gray-100">
             <div className="space-y-4">
               <div className="bg-blue-50 rounded-lg p-4">
-                <h4 className="font-medium text-blue-900 mb-2">🎯 Validation Goal</h4>
+                <h4 className="font-medium text-blue-900 mb-2">🎯 Final Selection</h4>
                 <p className="text-sm text-blue-800">
-                  Use Ahrefs Keyword Explorer to check search volume for the keywords GPT suggested, then choose your final target keyword.
+                  Based on the volume analysis and GPT refinement from Step 2e2, choose your final target keyword. The GPT should have provided recommendations based on actual volume data.
                 </p>
               </div>
 
-              {/* Ahrefs keyword checking */}
-              <div className="bg-white border border-gray-200 rounded-lg p-4">
-                <div className="space-y-3">
-                  <div>
-                    <p className="text-sm font-medium mb-2">📊 Check Your Keywords in Ahrefs:</p>
-                    <a href="https://app.ahrefs.com/keywords-explorer"
-                       target="_blank"
-                       className="inline-flex items-center px-4 py-2 bg-orange-600 text-white rounded-lg hover:bg-orange-700 transition-colors text-sm font-medium">
-                      Open Ahrefs Keyword Explorer <ExternalLink className="w-4 h-4 ml-2" />
-                    </a>
-                  </div>
-                  
-                  <div className="bg-blue-50 border border-blue-200 rounded p-3">
-                    <p className="text-sm text-blue-800 font-medium mb-2">Instructions:</p>
-                    <ol className="text-sm text-blue-700 space-y-1">
-                      <li>1. Click the button above to open Ahrefs Keyword Explorer</li>
-                      <li>2. Copy your keyword list from Step 2e above</li>
-                      <li>3. Paste the keywords into the Keyword Explorer text area</li>
-                      <li>4. Review search volumes and select your final keyword</li>
-                    </ol>
-                  </div>
-                  
-                  {step.outputs.keywordVariations && (
-                    <div className="bg-gray-50 border border-gray-200 rounded p-3">
-                      <p className="text-sm font-medium text-gray-800 mb-2">Your keywords to copy:</p>
-                      <div className="bg-white border rounded p-2 max-h-24 overflow-y-auto">
-                        <div className="text-sm text-gray-700 whitespace-pre-wrap font-mono">
-                          {step.outputs.keywordVariations}
-                        </div>
-                      </div>
-                      <div className="mt-2">
-                        <CopyButton 
-                          text={step.outputs.keywordVariations}
-                          label="Copy Keywords"
-                        />
-                      </div>
+              {/* Show volume analysis if available */}
+              {step.outputs.volumeAnalysis && (
+                <div className="bg-green-50 border border-green-200 rounded p-3">
+                  <p className="text-sm font-medium text-green-800 mb-2">📊 Volume-Based Recommendations from GPT:</p>
+                  <div className="bg-white border rounded p-2 max-h-32 overflow-y-auto">
+                    <div className="text-xs text-green-700 whitespace-pre-wrap">
+                      {step.outputs.volumeAnalysis}
                     </div>
-                  )}
-                </div>
-              </div>
-
-              {/* No volume fallback */}
-              <div className="bg-red-50 border border-red-200 rounded-lg p-4">
-                <h4 className="font-medium text-red-800 mb-2">❌ If keywords have no search volume:</h4>
-                <p className="text-sm text-red-700 mb-2">Go back to the GPT and use this follow-up prompt:</p>
-                
-                <div className="bg-white border rounded-lg p-3 relative mt-2">
-                  <div className="absolute top-2 right-2">
-                    <CopyButton 
-                      text="these dont have any search volume. If you are a keyword research person and you were finding that your suggestions really just aren't having anything that has search volume, but you are tasked with finding something that has search volume, even if it's low (from 10 searches a month to 50 searches a month) based on everything you know about our target URL and everything you know about the niche of this site. What do you think would be some good potential keywords, long-tail keywords to target? Be sure to output your keywords in a list so it's easy to copy-paste into a volume checker."
-                      label="Copy Follow-up"
-                    />
                   </div>
-                  <p className="text-xs text-gray-600 pr-16">
-                    "these dont have any search volume. If you are a keyword research person and you were finding that your suggestions really just aren't having anything that has search volume, but you are tasked with finding something that has search volume, even if it's low (from 10 searches a month to 50 searches a month) based on everything you know about our target URL and everything you know about the niche of this site. What do you think would be some good potential keywords, long-tail keywords to target? Be sure to output your keywords in a list so it's easy to copy-paste into a volume checker."
-                  </p>
                 </div>
-              </div>
+              )}
+
+              {/* Manual check option for edge cases */}
+              {!step.outputs.volumeAnalysis && step.outputs.keywordVariations && (
+                <div className="bg-yellow-50 border border-yellow-200 rounded-lg p-4">
+                  <h4 className="font-medium text-yellow-800 mb-2">📊 Manual Volume Check (if Step 2e2 skipped)</h4>
+                  <p className="text-sm text-yellow-700 mb-3">If you skipped the volume analysis step, you can manually check volumes:</p>
+                  <a href="https://app.ahrefs.com/keywords-explorer"
+                     target="_blank"
+                     className="inline-flex items-center px-4 py-2 bg-orange-600 text-white rounded-lg hover:bg-orange-700 transition-colors text-sm font-medium">
+                    Open Ahrefs Keyword Explorer <ExternalLink className="w-4 h-4 ml-2" />
+                  </a>
+                </div>
+              )}
 
               {/* Results */}
               <div className="space-y-4">
                 <SavedField
                   label="Final Validated Keyword"
                   value={step.outputs.finalKeyword || ''}
-                  placeholder="Final keyword after Ahrefs validation"
+                  placeholder="Final keyword selected based on volume analysis and GPT recommendation"
                   onChange={(value) => onChange({ ...step.outputs, finalKeyword: value })}
                 />
 
                 <SavedField
                   label="Keyword Volume"
                   value={step.outputs.keywordVolume || ''}
-                  placeholder="Monthly search volume"
+                  placeholder="Monthly search volume (if known)"
                   onChange={(value) => onChange({ ...step.outputs, keywordVolume: value })}
                 />
               </div>
