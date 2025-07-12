@@ -448,7 +448,7 @@ Target URL: ${clientTargetUrl}`;
                   <RefreshCw className="w-5 h-5 mr-2" />
                   Intelligent Iteration Process
                 </h4>
-                <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+                <div className="grid grid-cols-1 md:grid-cols-4 gap-3">
                   <div className="flex items-center">
                     <span className="bg-purple-600 text-white rounded-full w-6 h-6 flex items-center justify-center text-sm font-bold mr-3">1</span>
                     <span className="text-sm text-purple-800">AI analyzes & suggests keywords</span>
@@ -460,6 +460,10 @@ Target URL: ${clientTargetUrl}`;
                   <div className="flex items-center">
                     <span className="bg-purple-600 text-white rounded-full w-6 h-6 flex items-center justify-center text-sm font-bold mr-3">3</span>
                     <span className="text-sm text-purple-800">AI refines with volume data</span>
+                  </div>
+                  <div className="flex items-center">
+                    <span className="bg-purple-600 text-white rounded-full w-6 h-6 flex items-center justify-center text-sm font-bold mr-3">4</span>
+                    <span className="text-sm text-purple-800">Ranking likelihood analysis</span>
                   </div>
                 </div>
               </div>
@@ -552,6 +556,60 @@ Target URL: ${clientTargetUrl}`;
                   </div>
                 </div>
               )}
+
+              {/* Step 4: Ranking Likelihood Analysis (Optional Decision Support) */}
+              {step.outputs.volumeAnalysis && (
+                <div className="border border-indigo-200 rounded-lg p-4 bg-indigo-50">
+                  <h4 className="font-medium mb-3 flex items-center text-indigo-900">
+                    <span className="bg-indigo-600 text-white rounded-full w-6 h-6 flex items-center justify-center text-sm font-bold mr-3">4</span>
+                    Ranking Likelihood Analysis (Optional)
+                  </h4>
+                  <div className="bg-amber-50 border border-amber-200 rounded p-3 mb-4">
+                    <p className="text-sm text-amber-800 mb-2">
+                      <strong>💡 When to use this:</strong> You have multiple good keyword options and need help deciding which has the best ranking potential.
+                    </p>
+                    <p className="text-sm text-amber-700">
+                      This advanced analysis helps the AI evaluate which topics are most likely to rank based on the site's existing keyword authority and rankings.
+                    </p>
+                  </div>
+
+                  <p className="text-sm text-indigo-800 mb-4">
+                    For deeper analysis when you have multiple strong candidates, ask the AI to evaluate ranking likelihood based on the site's existing keyword authority.
+                  </p>
+
+                  <div className="bg-white border border-indigo-300 rounded-lg p-3 mb-4">
+                    <div className="flex items-center justify-between mb-2">
+                      <p className="text-sm font-medium text-indigo-800">🎯 Ranking Likelihood Analysis Prompt:</p>
+                      <CopyButton 
+                        text="Okay for each of these finalists, review again the keyword rankings of the target site, identify which overlapping keyword rankings there are that share terms and give the average rankings of those terms and based on that, rank the topic most likely to rank if I were to publish an article about it"
+                        label="Copy Prompt"
+                      />
+                    </div>
+                    <div className="text-xs text-indigo-700 bg-indigo-50 border border-indigo-200 rounded p-2">
+                      <strong>Copy this prompt</strong> and send it in the same ChatGPT conversation to get ranking likelihood analysis for your finalist keywords.
+                    </div>
+                  </div>
+
+                  <div className="mt-4">
+                    <SavedField
+                      label="Ranking Likelihood Analysis (Optional)"
+                      value={step.outputs.rankingAnalysis || ''}
+                      placeholder="Paste the AI's ranking likelihood analysis if you used this advanced step"
+                      onChange={(value) => onChange({ ...step.outputs, rankingAnalysis: value })}
+                      isTextarea={true}
+                      height="h-32"
+                    />
+                  </div>
+
+                  {step.outputs.rankingAnalysis && (
+                    <div className="mt-3 bg-green-50 border border-green-200 rounded p-3">
+                      <p className="text-sm text-green-800">
+                        ✅ <strong>Enhanced Decision Support:</strong> You now have both volume data and ranking likelihood analysis to make the best keyword choice.
+                      </p>
+                    </div>
+                  )}
+                </div>
+              )}
             </div>
           </div>
         )}
@@ -580,6 +638,21 @@ Target URL: ${clientTargetUrl}`;
                     <div className="text-xs text-green-700 whitespace-pre-wrap">
                       {step.outputs.volumeAnalysis}
                     </div>
+                  </div>
+                </div>
+              )}
+
+              {/* Show ranking analysis if available */}
+              {step.outputs.rankingAnalysis && (
+                <div className="bg-indigo-50 border border-indigo-200 rounded p-3">
+                  <p className="text-sm font-medium text-indigo-800 mb-2">🎯 AI's Ranking Likelihood Analysis:</p>
+                  <div className="bg-white border rounded p-2 max-h-32 overflow-y-auto">
+                    <div className="text-xs text-indigo-700 whitespace-pre-wrap">
+                      {step.outputs.rankingAnalysis}
+                    </div>
+                  </div>
+                  <div className="mt-2 text-xs text-indigo-700">
+                    <strong>💡 Pro tip:</strong> This analysis considers the site's existing keyword authority to predict ranking potential.
                   </div>
                 </div>
               )}
