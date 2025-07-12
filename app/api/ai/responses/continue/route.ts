@@ -22,6 +22,7 @@ export async function POST(request: NextRequest) {
     // Continue conversation using OpenAI Responses API
     // Note: When using previous_response_id, don't include prompt parameter
     const requestBody: any = {
+      model: "o3",                    // Model is always required
       input: input,
       reasoning: { effort: "high" },
       store: true

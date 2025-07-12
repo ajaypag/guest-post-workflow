@@ -21,6 +21,7 @@ export async function POST(request: NextRequest) {
 
     // Use OpenAI Responses API with specific prompt ID
     const response = await openai.responses.create({
+      model: "o3",                    // Model is always required
       prompt: { 
         id: "pmpt_68710db9410c8196ab64b7921e7325730317ff998ddbc50b" 
       },
