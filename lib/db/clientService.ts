@@ -110,10 +110,23 @@ export class ClientService {
   // Update client
   static async updateClient(id: string, updates: Partial<Client>): Promise<Client | null> {
     try {
+      console.log('🟨 ClientService.updateClient - Raw updates:', updates);
+      
+      // Clean the updates object - remove fields that shouldn't be updated directly
+      const { id: updateId, createdAt, targetPages, ...cleanUpdates } = updates as any;
+      
+      // Ensure dates are proper Date objects
       const updateData = {
-        ...updates,
+        ...cleanUpdates,
         updatedAt: new Date(),
       };
+      
+      // Convert any string dates to Date objects
+      if (updateData.createdAt && typeof updateData.createdAt === 'string') {
+        updateData.createdAt = new Date(updateData.createdAt);
+      }
+
+      console.log('🟨 ClientService.updateClient - Clean update data:', updateData);
 
       const result = await db
         .update(clients)
@@ -121,9 +134,10 @@ export class ClientService {
         .where(eq(clients.id, id))
         .returning();
 
+      console.log('🟨 ClientService.updateClient - DB result:', result);
       return result[0] || null;
     } catch (error) {
-      console.error('Error updating client:', error);
+      console.error('🟨 Error updating client in ClientService:', error);
       return null;
     }
   }

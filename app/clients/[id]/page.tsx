@@ -95,8 +95,13 @@ export default function ClientDetailPage() {
     try {
       const updatedClient = setClientKeywordPreferences(client, preferences);
       
+      // Only send the fields that actually changed (just description in this case)
+      const updates = {
+        description: updatedClient.description
+      };
+      
       // Save to server first, then update local state
-      await clientStorage.updateClient(client.id, updatedClient as any);
+      await clientStorage.updateClient(client.id, updates as any);
       
       // Update local state after successful save
       setClient(updatedClient);
