@@ -7,7 +7,6 @@ import { CopyButton } from '../ui/CopyButton';
 import { TutorialVideo } from '../ui/TutorialVideo';
 import { ExternalLink, ChevronDown, ChevronRight, Target, Search, FileText, CheckCircle, AlertCircle, Copy } from 'lucide-react';
 import { clientStorage } from '@/lib/userStorage';
-import { useEffect } from 'react';
 
 interface KeywordResearchStepProps {
   step: WorkflowStep;
@@ -22,34 +21,15 @@ export const KeywordResearchStepClean = ({ step, workflow, onChange }: KeywordRe
     '2c': false
   });
   const [copiedUrl, setCopiedUrl] = useState<string | null>(null);
-  const [client, setClient] = useState<any>(null);
-  const [loadingClient, setLoadingClient] = useState(false);
 
   const domainSelectionStep = workflow.steps.find(s => s.id === 'domain-selection');
   const guestPostSite = domainSelectionStep?.outputs?.domain || '';
   const keywords = step.outputs.keywords || '';
   
-  // Load client data with target pages
+  // Get client data if available - TODO: Implement with async API calls
   const clientId = workflow.metadata?.clientId;
-  const activeTargetPages = client?.targetPages?.filter((page: any) => page.status === 'active') || [];
-
-  useEffect(() => {
-    const loadClient = async () => {
-      if (!clientId || loadingClient) return;
-      
-      setLoadingClient(true);
-      try {
-        const clientData = await clientStorage.getClient(clientId);
-        setClient(clientData);
-      } catch (error) {
-        console.error('Error loading client:', error);
-      } finally {
-        setLoadingClient(false);
-      }
-    };
-
-    loadClient();
-  }, [clientId]);
+  // const client = clientId ? await clientStorage.getClient(clientId) : null;
+  const activeTargetPages: any[] = []; // TODO: Load from client when implemented
   
   const toggleSection = (section: string) => {
     setExpandedSections(prev => ({
@@ -320,11 +300,8 @@ export const KeywordResearchStepClean = ({ step, workflow, onChange }: KeywordRe
               {/* Goal */}
               <div className="bg-blue-50 rounded-lg p-4">
                 <h4 className="font-medium text-blue-900 mb-2">Goal: Choose Your Link Targets</h4>
-                <p className="text-sm text-blue-800 mb-2">
+                <p className="text-sm text-blue-800">
                   Decide which specific pages on your client's website you'll link to from the guest post.
-                </p>
-                <p className="text-sm text-blue-700 font-medium">
-                  💡 Tip: You're encouraged to include the target URL you have in mind (not just the homepage), and you can add multiple pages for a wider keyword analysis.
                 </p>
               </div>
 
@@ -345,17 +322,17 @@ export const KeywordResearchStepClean = ({ step, workflow, onChange }: KeywordRe
                 </div>
               </div>
 
-              {/* Client Target URLs */}
-              {activeTargetPages.length > 0 && (
+              {/* Client Target URLs - TODO: Implement when client API is ready */}
+              {false && activeTargetPages.length > 0 && (
                 <div className="bg-purple-50 border border-purple-200 rounded-lg p-4">
                   <h4 className="font-medium text-purple-800 mb-3">
-                    📌 Your Client's Target URLs
+                    📌 Target URLs
                   </h4>
                   <p className="text-sm text-purple-700 mb-3">
-                    These are the target URLs you've configured for this client. Click to copy URLs you want to focus on for this guest post. You can select multiple pages for a broader keyword analysis.
+                    These are the active target URLs configured for this client. Click to copy any URL.
                   </p>
                   <div className="space-y-2">
-                    {activeTargetPages.map((page: any) => (
+                    {activeTargetPages.map((page) => (
                       <div 
                         key={page.id}
                         className="bg-white border border-purple-200 rounded-lg p-3 flex items-center justify-between group hover:bg-purple-50 transition-colors"
@@ -388,51 +365,17 @@ export const KeywordResearchStepClean = ({ step, workflow, onChange }: KeywordRe
                   </div>
                   <div className="mt-3 flex items-center justify-between">
                     <p className="text-xs text-purple-600">
-                      💡 Recommended: Submit multiple URLs to the GPT for comprehensive keyword analysis
+                      💡 Tip: You can submit multiple URLs to the GPT for analysis
                     </p>
                     <button
                       onClick={() => {
-                        const allUrls = activeTargetPages.map((page: any) => page.url).join('\n');
+                        const allUrls = activeTargetPages.map(page => page.url).join('\n');
                         navigator.clipboard.writeText(allUrls);
-                        setCopiedUrl('all');
-                        setTimeout(() => setCopiedUrl(null), 2000);
                       }}
-                      className="text-xs px-3 py-1 bg-purple-600 text-white rounded-lg hover:bg-purple-700 transition-colors flex items-center space-x-1"
+                      className="text-xs px-3 py-1 bg-purple-600 text-white rounded-lg hover:bg-purple-700 transition-colors"
                     >
-                      {copiedUrl === 'all' ? (
-                        <>
-                          <CheckCircle className="w-3 h-3" />
-                          <span>Copied!</span>
-                        </>
-                      ) : (
-                        <>
-                          <Copy className="w-3 h-3" />
-                          <span>Copy All URLs</span>
-                        </>
-                      )}
+                      Copy All URLs
                     </button>
-                  </div>
-                </div>
-              )}
-
-              {/* Encourage adding target URLs when none exist */}
-              {activeTargetPages.length === 0 && clientId && !loadingClient && (
-                <div className="bg-amber-50 border border-amber-200 rounded-lg p-4">
-                  <h4 className="font-medium text-amber-800 mb-2">💡 Consider Adding Target URLs</h4>
-                  <p className="text-sm text-amber-700 mb-3">
-                    You can make this process more efficient by pre-configuring target URLs for this client. 
-                    This will give you quick access to specific pages you want to focus on for guest posts.
-                  </p>
-                  <div className="flex items-center space-x-2">
-                    <span className="text-xs text-amber-600">Add target URLs in the</span>
-                    <a 
-                      href={`/clients/${clientId}`}
-                      target="_blank"
-                      className="text-xs text-amber-800 hover:text-amber-900 underline font-medium"
-                    >
-                      client management page
-                    </a>
-                    <ExternalLink className="w-3 h-3 text-amber-600" />
                   </div>
                 </div>
               )}
@@ -442,12 +385,9 @@ export const KeywordResearchStepClean = ({ step, workflow, onChange }: KeywordRe
                 <div className="flex items-center justify-between">
                   <div>
                     <p className="text-sm text-gray-700 mb-1">
-                      Homepage: <code className="bg-gray-100 px-2 py-1 rounded text-sm">{workflow.clientUrl}</code>
+                      Starting client URL: <code className="bg-gray-100 px-2 py-1 rounded text-sm">{workflow.clientUrl}</code>
                     </p>
-                    <p className="text-sm text-gray-500">
-                      Submit your target URL(s) for analysis. Include specific pages you want to link to, not just the homepage.
-                      {activeTargetPages.length > 0 && " Use the target URLs above or add additional specific pages."}
-                    </p>
+                    <p className="text-sm text-gray-500">Submit your URL(s) for analysis and summarization</p>
                   </div>
                 </div>
                 
