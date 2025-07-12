@@ -1,11 +1,11 @@
 'use client';
 
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { WorkflowStep, GuestPostWorkflow } from '@/types/workflow';
 import { SavedField } from '../SavedField';
 import { CopyButton } from '../ui/CopyButton';
 import { TutorialVideo } from '../ui/TutorialVideo';
-import { ExternalLink, ChevronDown, ChevronRight, Target, Search, FileText, CheckCircle, AlertCircle, Copy } from 'lucide-react';
+import { ExternalLink, ChevronDown, ChevronRight, Target, Search, FileText, CheckCircle, AlertCircle, Copy, Eye, EyeOff } from 'lucide-react';
 import { clientStorage } from '@/lib/userStorage';
 
 interface KeywordResearchStepProps {
@@ -21,15 +21,35 @@ export const KeywordResearchStepClean = ({ step, workflow, onChange }: KeywordRe
     '2c': false
   });
   const [copiedUrl, setCopiedUrl] = useState<string | null>(null);
+  const [client, setClient] = useState<any>(null);
+  const [loadingClient, setLoadingClient] = useState(false);
+  const [showAllTargetUrls, setShowAllTargetUrls] = useState(false);
 
   const domainSelectionStep = workflow.steps.find(s => s.id === 'domain-selection');
   const guestPostSite = domainSelectionStep?.outputs?.domain || '';
   const keywords = step.outputs.keywords || '';
   
-  // Get client data if available - TODO: Implement with async API calls
+  // Load client data with target pages
   const clientId = workflow.metadata?.clientId;
-  // const client = clientId ? await clientStorage.getClient(clientId) : null;
-  const activeTargetPages: any[] = []; // TODO: Load from client when implemented
+  const activeTargetPages = client?.targetPages?.filter((page: any) => page.status === 'active') || [];
+  
+  useEffect(() => {
+    const loadClient = async () => {
+      if (!clientId || loadingClient) return;
+      
+      setLoadingClient(true);
+      try {
+        const clientData = await clientStorage.getClient(clientId);
+        setClient(clientData);
+      } catch (error) {
+        console.error('Error loading client:', error);
+      } finally {
+        setLoadingClient(false);
+      }
+    };
+
+    loadClient();
+  }, [clientId]);
   
   const toggleSection = (section: string) => {
     setExpandedSections(prev => ({
@@ -136,8 +156,12 @@ export const KeywordResearchStepClean = ({ step, workflow, onChange }: KeywordRe
                   <div className="flex-shrink-0 w-6 h-6 bg-blue-100 rounded-full flex items-center justify-center text-sm font-medium text-blue-600">1</div>
                   <div className="flex-1">
                     <p className="text-sm text-gray-700 mb-2">
-                      Submit your client URL to the GPT: <code className="bg-gray-100 px-2 py-1 rounded text-sm">{workflow.clientUrl}</code>
+                      Submit your client URLs to the GPT. <strong>Include specific target pages, not just the homepage:</strong>
                     </p>
+                    <div className="bg-gray-50 rounded-lg p-3 mb-3">
+                      <p className="text-xs text-gray-600 mb-2">Homepage: <code className="bg-gray-100 px-2 py-1 rounded text-xs">{workflow.clientUrl}</code></p>
+                      <p className="text-xs text-gray-600">💡 <strong>Recommended:</strong> Add specific target pages you want to link to for broader keyword analysis</p>
+                    </div>
                     <a 
                       href="https://chatgpt.com/g/g-685ea890d99c8191bd1550784c329f03-find-topically-relevant-keywords-your-client-page?model=o3" 
                       target="_blank" 
@@ -147,6 +171,118 @@ export const KeywordResearchStepClean = ({ step, workflow, onChange }: KeywordRe
                     </a>
                   </div>
                 </div>
+
+                {/* Client Target URLs */}
+                {activeTargetPages.length > 0 && (
+                  <div className="bg-purple-50 border border-purple-200 rounded-lg p-4">
+                    <div className="flex items-center justify-between mb-3">
+                      <h4 className="font-medium text-purple-800">
+                        📌 Your Client's Target URLs ({activeTargetPages.length})
+                      </h4>
+                      <div className="flex items-center space-x-2">
+                        <button
+                          onClick={() => {
+                            const allUrls = activeTargetPages.map((page: any) => page.url).join('\n');
+                            navigator.clipboard.writeText(allUrls);
+                            setCopiedUrl('all');
+                            setTimeout(() => setCopiedUrl(null), 2000);
+                          }}
+                          className="text-xs px-3 py-1 bg-purple-600 text-white rounded-lg hover:bg-purple-700 transition-colors flex items-center space-x-1"
+                        >
+                          {copiedUrl === 'all' ? (
+                            <>
+                              <CheckCircle className="w-3 h-3" />
+                              <span>Copied!</span>
+                            </>
+                          ) : (
+                            <>
+                              <Copy className="w-3 h-3" />
+                              <span>Copy All</span>
+                            </>
+                          )}
+                        </button>
+                        {activeTargetPages.length > 5 && (
+                          <button
+                            onClick={() => setShowAllTargetUrls(!showAllTargetUrls)}
+                            className="text-xs px-3 py-1 text-purple-600 border border-purple-300 rounded-lg hover:bg-purple-100 transition-colors flex items-center space-x-1"
+                          >
+                            {showAllTargetUrls ? (
+                              <>
+                                <EyeOff className="w-3 h-3" />
+                                <span>Show Less</span>
+                              </>
+                            ) : (
+                              <>
+                                <Eye className="w-3 h-3" />
+                                <span>Show All</span>
+                              </>
+                            )}
+                          </button>
+                        )}
+                      </div>
+                    </div>
+                    <p className="text-sm text-purple-700 mb-3">
+                      Click any URL to copy it. Submit multiple URLs to the GPT for comprehensive keyword analysis.
+                    </p>
+                    
+                    <div className="grid grid-cols-1 gap-2 max-h-60 overflow-y-auto">
+                      {(showAllTargetUrls ? activeTargetPages : activeTargetPages.slice(0, 5)).map((page: any, index: number) => (
+                        <div 
+                          key={page.id}
+                          className="bg-white border border-purple-200 rounded-lg p-2 flex items-center justify-between group hover:bg-purple-50 transition-colors cursor-pointer"
+                          onClick={() => {
+                            navigator.clipboard.writeText(page.url);
+                            setCopiedUrl(page.url);
+                            setTimeout(() => setCopiedUrl(null), 2000);
+                          }}
+                        >
+                          <div className="flex-1 min-w-0">
+                            <p className="text-xs font-medium text-gray-900 truncate">
+                              {page.url}
+                            </p>
+                            {page.notes && (
+                              <p className="text-xs text-gray-500 truncate">{page.notes}</p>
+                            )}
+                          </div>
+                          <div className="ml-2 opacity-0 group-hover:opacity-100 transition-opacity">
+                            {copiedUrl === page.url ? (
+                              <CheckCircle className="w-4 h-4 text-green-600" />
+                            ) : (
+                              <Copy className="w-4 h-4 text-purple-600" />
+                            )}
+                          </div>
+                        </div>
+                      ))}
+                    </div>
+                    
+                    {!showAllTargetUrls && activeTargetPages.length > 5 && (
+                      <p className="text-xs text-purple-600 mt-2 text-center">
+                        ...and {activeTargetPages.length - 5} more URLs
+                      </p>
+                    )}
+                  </div>
+                )}
+
+                {/* Encourage adding target URLs when none exist */}
+                {activeTargetPages.length === 0 && clientId && !loadingClient && (
+                  <div className="bg-amber-50 border border-amber-200 rounded-lg p-3">
+                    <div className="flex items-center space-x-2 mb-2">
+                      <Target className="w-4 h-4 text-amber-600" />
+                      <h4 className="font-medium text-amber-800">💡 Enhance Your Keyword Research</h4>
+                    </div>
+                    <p className="text-sm text-amber-700 mb-2">
+                      Add target URLs to this client for more efficient keyword research. This gives you quick access to specific pages for analysis.
+                    </p>
+                    <a 
+                      href={`/clients/${clientId}`}
+                      target="_blank"
+                      className="text-xs text-amber-800 hover:text-amber-900 underline font-medium flex items-center space-x-1"
+                    >
+                      <span>Manage target URLs</span>
+                      <ExternalLink className="w-3 h-3" />
+                    </a>
+                  </div>
+                )}
 
                 <div className="flex items-start space-x-3">
                   <div className="flex-shrink-0 w-6 h-6 bg-blue-100 rounded-full flex items-center justify-center text-sm font-medium text-blue-600">2</div>
@@ -332,7 +468,7 @@ export const KeywordResearchStepClean = ({ step, workflow, onChange }: KeywordRe
                     These are the active target URLs configured for this client. Click to copy any URL.
                   </p>
                   <div className="space-y-2">
-                    {activeTargetPages.map((page) => (
+                    {activeTargetPages.map((page: any) => (
                       <div 
                         key={page.id}
                         className="bg-white border border-purple-200 rounded-lg p-3 flex items-center justify-between group hover:bg-purple-50 transition-colors"
@@ -369,7 +505,7 @@ export const KeywordResearchStepClean = ({ step, workflow, onChange }: KeywordRe
                     </p>
                     <button
                       onClick={() => {
-                        const allUrls = activeTargetPages.map(page => page.url).join('\n');
+                        const allUrls = activeTargetPages.map((page: any) => page.url).join('\n');
                         navigator.clipboard.writeText(allUrls);
                       }}
                       className="text-xs px-3 py-1 bg-purple-600 text-white rounded-lg hover:bg-purple-700 transition-colors"
