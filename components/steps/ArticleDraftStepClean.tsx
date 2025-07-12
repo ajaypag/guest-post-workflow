@@ -6,6 +6,7 @@ import { SavedField } from '../SavedField';
 import { CopyButton } from '../ui/CopyButton';
 import { TutorialVideo } from '../ui/TutorialVideo';
 import { ChatInterface } from '../ui/ChatInterface';
+import { SplitPromptButton } from '../ui/SplitPromptButton';
 import { ExternalLink, ChevronDown, ChevronRight, FileText, CheckCircle, AlertCircle, Target, RefreshCw, BookOpen } from 'lucide-react';
 
 interface ArticleDraftStepProps {
@@ -29,7 +30,8 @@ export const ArticleDraftStepClean = ({ step, workflow, onChange }: ArticleDraft
   const [conversation, setConversation] = useState<any[]>([]);
   const [conversationId, setConversationId] = useState<string | null>(null);
   const [isLoading, setIsLoading] = useState(false);
-  const [chatHeight, setChatHeight] = useState(400);
+  const [chatHeight, setChatHeight] = useState(600);
+  const [prefilledInput, setPrefilledInput] = useState('');
 
   // Get the outline content from the Deep Research step
   const deepResearchStep = workflow.steps.find(s => s.id === 'deep-research');
@@ -579,6 +581,8 @@ ${outlineContent || '((((Complete Step 3: Deep Research first to get outline con
                 isLoading={isLoading}
                 height={chatHeight}
                 onHeightChange={setChatHeight}
+                prefilledInput={prefilledInput}
+                onPrefilledInputChange={setPrefilledInput}
               />
 
               {/* Workflow Status & Actions */}
@@ -590,17 +594,14 @@ ${outlineContent || '((((Complete Step 3: Deep Research first to get outline con
                     <h4 className="font-medium text-gray-800">Planning Phase</h4>
                     <StatusIcon status={getStepStatus('planning')} />
                   </div>
-                  <button
-                    onClick={(e) => {
-                      e.preventDefault();
-                      e.stopPropagation();
-                      handleSendMessage(planningPrompt);
-                    }}
+                  <SplitPromptButton
+                    onSend={() => handleSendMessage(planningPrompt)}
+                    onEdit={() => setPrefilledInput(planningPrompt)}
                     disabled={isLoading}
-                    className="w-full text-left px-3 py-2 text-sm bg-white border border-gray-300 rounded hover:bg-gray-50 disabled:opacity-50 mb-3"
+                    className="mb-3"
                   >
                     🎯 <strong>Send Planning Prompt:</strong> Initialize with research data
-                  </button>
+                  </SplitPromptButton>
                   <div>
                     <label className="block text-sm font-medium text-gray-700 mb-2">Planning Status</label>
                     <select
@@ -644,28 +645,20 @@ ${outlineContent || '((((Complete Step 3: Deep Research first to get outline con
                       <StatusIcon status={getStepStatus('writing')} />
                     </div>
                     <div className="space-y-2 mb-3">
-                      <button
-                        onClick={(e) => {
-                          e.preventDefault();
-                          e.stopPropagation();
-                          handleSendMessage(titleIntroPrompt);
-                        }}
+                      <SplitPromptButton
+                        onSend={() => handleSendMessage(titleIntroPrompt)}
+                        onEdit={() => setPrefilledInput(titleIntroPrompt)}
                         disabled={isLoading}
-                        className="w-full text-left px-3 py-2 text-sm bg-white border border-gray-300 rounded hover:bg-gray-50 disabled:opacity-50"
                       >
                         ✍️ <strong>Title & Introduction:</strong> Send exact prompt from ChatGPT.com tab
-                      </button>
-                      <button
-                        onClick={(e) => {
-                          e.preventDefault();
-                          e.stopPropagation();
-                          handleSendMessage(loopingPrompt);
-                        }}
+                      </SplitPromptButton>
+                      <SplitPromptButton
+                        onSend={() => handleSendMessage(loopingPrompt)}
+                        onEdit={() => setPrefilledInput(loopingPrompt)}
                         disabled={isLoading}
-                        className="w-full text-left px-3 py-2 text-sm bg-white border border-gray-300 rounded hover:bg-gray-50 disabled:opacity-50"
                       >
                         ➡️ <strong>Continue Sections:</strong> Send looping prompt for next section
-                      </button>
+                      </SplitPromptButton>
                     </div>
                     <div>
                       <label className="block text-sm font-medium text-gray-700 mb-2">Draft Status</label>

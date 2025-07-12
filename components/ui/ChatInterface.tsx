@@ -30,6 +30,8 @@ interface ChatInterfaceProps {
   isLoading?: boolean;
   height?: number;
   onHeightChange?: (height: number) => void;
+  prefilledInput?: string;
+  onPrefilledInputChange?: (value: string) => void;
 }
 
 export const ChatInterface = ({ 
@@ -37,11 +39,22 @@ export const ChatInterface = ({
   onSendMessage, 
   isLoading = false,
   height = 600,
-  onHeightChange 
+  onHeightChange,
+  prefilledInput = '',
+  onPrefilledInputChange
 }: ChatInterfaceProps) => {
   const [input, setInput] = useState('');
   const [isResizing, setIsResizing] = useState(false);
   const messagesEndRef = useRef<HTMLDivElement>(null);
+
+  // Sync with prefilled input
+  useEffect(() => {
+    if (prefilledInput && prefilledInput !== input) {
+      setInput(prefilledInput);
+      // Clear the prefilled input after setting it
+      onPrefilledInputChange?.('');
+    }
+  }, [prefilledInput, input, onPrefilledInputChange]);
   
   // Auto-scroll to bottom when conversation updates or when loading
   useEffect(() => {
