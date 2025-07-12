@@ -467,61 +467,124 @@ export const KeywordResearchStepClean = ({ step, workflow, onChange }: KeywordRe
                 </div>
               </div>
 
-              {/* Client Target URLs - TODO: Implement when client API is ready */}
-              {false && activeTargetPages.length > 0 && (
+              {/* Client Target URLs */}
+              {activeTargetPages.length > 0 && (
                 <div className="bg-purple-50 border border-purple-200 rounded-lg p-4">
-                  <h4 className="font-medium text-purple-800 mb-3">
-                    📌 Target URLs
-                  </h4>
+                  <div className="flex items-center justify-between mb-3">
+                    <h4 className="font-medium text-purple-800">
+                      📌 Your Client's Target URLs ({activeTargetPages.length})
+                    </h4>
+                    <div className="flex items-center space-x-2">
+                      <button
+                        onClick={() => window.open(`/clients/${clientId}`, '_blank')}
+                        className="text-xs px-3 py-1 text-purple-600 border border-purple-300 rounded-lg hover:bg-purple-100 transition-colors flex items-center space-x-1"
+                      >
+                        <Target className="w-3 h-3" />
+                        <span>Add More</span>
+                      </button>
+                      <button
+                        onClick={() => {
+                          const allUrls = activeTargetPages.map((page: any) => page.url).join('\n');
+                          navigator.clipboard.writeText(allUrls);
+                          setCopiedUrl('all-2c');
+                          setTimeout(() => setCopiedUrl(null), 2000);
+                        }}
+                        className="text-xs px-3 py-1 bg-purple-600 text-white rounded-lg hover:bg-purple-700 transition-colors flex items-center space-x-1"
+                      >
+                        {copiedUrl === 'all-2c' ? (
+                          <>
+                            <CheckCircle className="w-3 h-3" />
+                            <span>Copied!</span>
+                          </>
+                        ) : (
+                          <>
+                            <Copy className="w-3 h-3" />
+                            <span>Copy All</span>
+                          </>
+                        )}
+                      </button>
+                      {activeTargetPages.length > 5 && (
+                        <button
+                          onClick={() => setShowAllTargetUrls(!showAllTargetUrls)}
+                          className="text-xs px-3 py-1 text-purple-600 border border-purple-300 rounded-lg hover:bg-purple-100 transition-colors flex items-center space-x-1"
+                        >
+                          {showAllTargetUrls ? (
+                            <>
+                              <EyeOff className="w-3 h-3" />
+                              <span>Show Less</span>
+                            </>
+                          ) : (
+                            <>
+                              <Eye className="w-3 h-3" />
+                              <span>Show All</span>
+                            </>
+                          )}
+                        </button>
+                      )}
+                    </div>
+                  </div>
                   <p className="text-sm text-purple-700 mb-3">
-                    These are the active target URLs configured for this client. Click to copy any URL.
+                    These are your pre-configured target URLs. Click any URL to copy it for analysis, or select multiple URLs to submit to the GPT.
                   </p>
-                  <div className="space-y-2">
-                    {activeTargetPages.map((page: any) => (
+                  
+                  <div className="grid grid-cols-1 gap-2 max-h-60 overflow-y-auto">
+                    {(showAllTargetUrls ? activeTargetPages : activeTargetPages.slice(0, 5)).map((page: any, index: number) => (
                       <div 
                         key={page.id}
-                        className="bg-white border border-purple-200 rounded-lg p-3 flex items-center justify-between group hover:bg-purple-50 transition-colors"
+                        className="bg-white border border-purple-200 rounded-lg p-2 flex items-center justify-between group hover:bg-purple-50 transition-colors cursor-pointer"
+                        onClick={() => {
+                          navigator.clipboard.writeText(page.url);
+                          setCopiedUrl(page.url);
+                          setTimeout(() => setCopiedUrl(null), 2000);
+                        }}
                       >
                         <div className="flex-1 min-w-0">
-                          <p className="text-sm font-medium text-gray-900 truncate">
+                          <p className="text-xs font-medium text-gray-900 truncate">
                             {page.url}
                           </p>
                           {page.notes && (
-                            <p className="text-xs text-gray-600 mt-1">{page.notes}</p>
+                            <p className="text-xs text-gray-500 truncate">{page.notes}</p>
                           )}
                         </div>
-                        <button
-                          onClick={() => {
-                            navigator.clipboard.writeText(page.url);
-                            setCopiedUrl(page.url);
-                            setTimeout(() => setCopiedUrl(null), 2000);
-                          }}
-                          className="ml-3 p-2 text-purple-600 hover:bg-purple-100 rounded-lg transition-colors opacity-0 group-hover:opacity-100"
-                          title="Copy URL"
-                        >
+                        <div className="ml-2 opacity-0 group-hover:opacity-100 transition-opacity">
                           {copiedUrl === page.url ? (
                             <CheckCircle className="w-4 h-4 text-green-600" />
                           ) : (
-                            <Copy className="w-4 h-4" />
+                            <Copy className="w-4 h-4 text-purple-600" />
                           )}
-                        </button>
+                        </div>
                       </div>
                     ))}
                   </div>
-                  <div className="mt-3 flex items-center justify-between">
-                    <p className="text-xs text-purple-600">
-                      💡 Tip: You can submit multiple URLs to the GPT for analysis
+                  
+                  {!showAllTargetUrls && activeTargetPages.length > 5 && (
+                    <p className="text-xs text-purple-600 mt-2 text-center">
+                      ...and {activeTargetPages.length - 5} more URLs
                     </p>
+                  )}
+                </div>
+              )}
+
+              {/* Encourage adding target URLs when none exist */}
+              {activeTargetPages.length === 0 && clientId && !loadingClient && (
+                <div className="bg-amber-50 border border-amber-200 rounded-lg p-4">
+                  <div className="flex items-center justify-between mb-3">
+                    <div className="flex items-center space-x-2">
+                      <Target className="w-4 h-4 text-amber-600" />
+                      <h4 className="font-medium text-amber-800">💡 Configure Target URLs for This Client</h4>
+                    </div>
                     <button
-                      onClick={() => {
-                        const allUrls = activeTargetPages.map((page: any) => page.url).join('\n');
-                        navigator.clipboard.writeText(allUrls);
-                      }}
-                      className="text-xs px-3 py-1 bg-purple-600 text-white rounded-lg hover:bg-purple-700 transition-colors"
+                      onClick={() => window.open(`/clients/${clientId}`, '_blank')}
+                      className="px-4 py-2 bg-amber-600 text-white text-sm rounded-lg hover:bg-amber-700 transition-colors flex items-center space-x-2"
                     >
-                      Copy All URLs
+                      <Target className="w-4 h-4" />
+                      <span>Add Target URLs</span>
+                      <ExternalLink className="w-4 h-4" />
                     </button>
                   </div>
+                  <p className="text-sm text-amber-700">
+                    Pre-configure specific target URLs for this client to make link target selection much easier. This helps you quickly choose which pages to analyze and link to from guest posts.
+                  </p>
                 </div>
               )}
 
