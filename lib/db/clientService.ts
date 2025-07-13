@@ -266,4 +266,26 @@ export class ClientService {
       return false;
     }
   }
+
+  // Update target page keywords (separate method - doesn't affect existing functionality)
+  static async updateTargetPageKeywords(pageId: string, keywords: string): Promise<boolean> {
+    try {
+      const result = await db
+        .update(targetPages)
+        .set({ keywords })
+        .where(eq(targetPages.id, pageId))
+        .returning();
+
+      console.log('🟢 Keywords updated for target page:', {
+        pageId,
+        keywordsLength: keywords.length,
+        success: result.length > 0
+      });
+
+      return result.length > 0;
+    } catch (error) {
+      console.error('🔴 Error updating target page keywords:', error);
+      return false;
+    }
+  }
 }

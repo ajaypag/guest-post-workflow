@@ -12,7 +12,8 @@
     "db:studio": "drizzle-kit studio",
     "db:push": "drizzle-kit push",
     "db:migrate-apply": "tsx scripts/migrate.ts",
-    "db:debug": "tsx scripts/debug-and-migrate.ts"
+    "db:debug": "tsx scripts/debug-and-migrate.ts",
+    "test:keywords": "tsx scripts/test-keyword-generation.ts"
   },
   "dependencies": {
     "@hookform/resolvers": "^5.1.1",
