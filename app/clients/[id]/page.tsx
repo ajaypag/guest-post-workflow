@@ -254,78 +254,137 @@ export default function ClientDetailPage() {
       return targetPages.find((page: any) => page.id === pageId);
     }).filter(Boolean);
 
-    // Count pages with and without data (keywords OR descriptions)
-    const pagesWithData = pagesToProcess.filter((page: any) => 
-      (page.keywords && page.keywords.trim() !== '') || (page.description && page.description.trim() !== '')
-    );
-    const pagesWithoutData = pagesToProcess.filter((page: any) => 
-      (!page.keywords || page.keywords.trim() === '') && (!page.description || page.description.trim() === '')
-    );
-
-    let finalPagesToProcess = pagesToProcess;
-
-    // Credit-efficient: Skip pages that already have data by default
-    if (pagesWithData.length > 0 && pagesWithoutData.length > 0) {
-      const choice = confirm(
-        `${pagesWithoutData.length} pages need keywords & descriptions, ${pagesWithData.length} already have some data.\n\n` +
-        `💰 CREDIT SAVER: Click OK to generate ONLY for pages that need them (${pagesWithoutData.length} pages).\n` +
-        `Click Cancel to regenerate ALL selected pages (${pagesToProcess.length} pages).`
-      );
+    // Analyze each page's data state for granular handling
+    const pageAnalysis = pagesToProcess.map(page => {
+      const hasKeywords = page.keywords && page.keywords.trim() !== '';
+      const hasDescription = page.description && page.description.trim() !== '';
       
-      if (choice) {
-        finalPagesToProcess = pagesWithoutData;
+      return {
+        page,
+        hasKeywords,
+        hasDescription,
+        needsKeywords: !hasKeywords,
+        needsDescription: !hasDescription,
+        needsBoth: !hasKeywords && !hasDescription,
+        hasPartial: (hasKeywords && !hasDescription) || (!hasKeywords && hasDescription),
+        isComplete: hasKeywords && hasDescription
+      };
+    });
+
+    // Categorize pages by data state
+    const completePages = pageAnalysis.filter(p => p.isComplete);
+    const partialPages = pageAnalysis.filter(p => p.hasPartial);
+    const emptyPages = pageAnalysis.filter(p => p.needsBoth);
+    
+    // Count what needs to be generated
+    const keywordsNeeded = pageAnalysis.filter(p => p.needsKeywords).length;
+    const descriptionsNeeded = pageAnalysis.filter(p => p.needsDescription).length;
+    
+    let generateOnlyMissing = true;
+    let pagesToActuallyProcess = pageAnalysis;
+
+    // Smart user prompts based on data state
+    if (partialPages.length > 0 || completePages.length > 0) {
+      let message = '';
+      
+      if (partialPages.length > 0 && emptyPages.length > 0) {
+        message = `📊 SMART GENERATION:\n` +
+          `• ${emptyPages.length} pages need both keywords & descriptions\n` +
+          `• ${partialPages.length} pages have partial data (missing ${keywordsNeeded} keywords, ${descriptionsNeeded} descriptions)\n` +
+          `• ${completePages.length} pages are complete\n\n` +
+          `💰 EFFICIENT: Click OK to generate ONLY missing data (${keywordsNeeded + descriptionsNeeded} API calls).\n` +
+          `Click Cancel to regenerate EVERYTHING (${pagesToProcess.length * 2} API calls).`;
+      } else if (partialPages.length > 0 && emptyPages.length === 0) {
+        message = `📊 PARTIAL DATA DETECTED:\n` +
+          `• ${partialPages.length} pages have partial data (missing ${keywordsNeeded} keywords, ${descriptionsNeeded} descriptions)\n` +
+          `• ${completePages.length} pages are complete\n\n` +
+          `💰 EFFICIENT: Click OK to generate ONLY missing data (${keywordsNeeded + descriptionsNeeded} API calls).\n` +
+          `Click Cancel to regenerate EVERYTHING (${pagesToProcess.length * 2} API calls).`;
+      } else if (completePages.length > 0 && emptyPages.length > 0) {
+        message = `📊 MIXED DATA STATE:\n` +
+          `• ${emptyPages.length} pages need both keywords & descriptions\n` +
+          `• ${completePages.length} pages already have both\n\n` +
+          `💰 EFFICIENT: Click OK to generate ONLY for empty pages (${emptyPages.length * 2} API calls).\n` +
+          `Click Cancel to regenerate ALL pages (${pagesToProcess.length * 2} API calls).`;
+      } else if (completePages.length === pagesToProcess.length) {
+        message = `All ${completePages.length} selected pages already have complete data.\n\n` +
+          `💰 This will regenerate keywords & descriptions for all (${pagesToProcess.length * 2} API calls). Continue anyway?`;
       }
-    } else if (pagesWithData.length > 0 && pagesWithoutData.length === 0) {
-      const choice = confirm(
-        `All ${pagesWithData.length} selected pages already have some data.\n\n` +
-        `💰 This will regenerate keywords & descriptions for all. Continue anyway?`
-      );
+
+      const choice = confirm(message);
       
-      if (!choice) return;
-    } else if (pagesWithoutData.length > 0) {
-      const choice = confirm(`Generate keywords & descriptions for ${pagesWithoutData.length} pages?`);
+      if (!choice) {
+        generateOnlyMissing = false; // Regenerate everything
+      } else if (completePages.length === pagesToProcess.length) {
+        // All complete, user confirmed to regenerate everything
+        generateOnlyMissing = false;
+      }
+    } else if (emptyPages.length > 0) {
+      const choice = confirm(`Generate keywords & descriptions for ${emptyPages.length} pages? (${emptyPages.length * 2} API calls)`);
       if (!choice) return;
     }
 
+    // Filter pages to process based on user choice
+    if (generateOnlyMissing) {
+      pagesToActuallyProcess = pageAnalysis.filter(p => p.needsKeywords || p.needsDescription);
+    }
+
+    if (pagesToActuallyProcess.length === 0) {
+      setKeywordMessage('✅ No generation needed - all selected pages have complete data!');
+      setTimeout(() => setKeywordMessage(''), 3000);
+      return;
+    }
+
     // Start bulk generation
-    setBulkKeywordProgress({ current: 0, total: finalPagesToProcess.length });
+    setBulkKeywordProgress({ current: 0, total: pagesToActuallyProcess.length });
     setSelectedPages([]);
     setBulkAction('');
 
-    for (let i = 0; i < finalPagesToProcess.length; i++) {
-      const page = finalPagesToProcess[i];
-      setBulkKeywordProgress({ current: i + 1, total: finalPagesToProcess.length });
+    let totalApiCalls = 0;
+    
+    for (let i = 0; i < pagesToActuallyProcess.length; i++) {
+      const { page, needsKeywords, needsDescription } = pagesToActuallyProcess[i];
+      setBulkKeywordProgress({ current: i + 1, total: pagesToActuallyProcess.length });
 
       try {
-        // Generate BOTH keywords AND descriptions for this page
-        const [keywordResponse, descriptionResponse] = await Promise.all([
-          fetch(`/api/target-pages/${page.id}/keywords`, {
-            method: 'POST',
-            headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({ targetUrl: page.url })
-          }),
-          fetch(`/api/target-pages/${page.id}/description`, {
-            method: 'POST',
-            headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({ targetUrl: page.url })
-          })
-        ]);
+        const apiCalls = [];
+        
+        // Conditional API calls based on what's needed
+        if (!generateOnlyMissing || needsKeywords) {
+          apiCalls.push(
+            fetch(`/api/target-pages/${page.id}/keywords`, {
+              method: 'POST',
+              headers: { 'Content-Type': 'application/json' },
+              body: JSON.stringify({ targetUrl: page.url })
+            })
+          );
+          totalApiCalls++;
+        }
+        
+        if (!generateOnlyMissing || needsDescription) {
+          apiCalls.push(
+            fetch(`/api/target-pages/${page.id}/description`, {
+              method: 'POST',
+              headers: { 'Content-Type': 'application/json' },
+              body: JSON.stringify({ targetUrl: page.url })
+            })
+          );
+          totalApiCalls++;
+        }
 
-        if (keywordResponse.ok && descriptionResponse.ok) {
-          const [keywordResult, descriptionResult] = await Promise.all([
-            keywordResponse.json(),
-            descriptionResponse.json()
-          ]);
-          console.log(`Keywords & description generated for ${page.url}:`, {
-            keywords: keywordResult.keywords,
-            description: descriptionResult.description
+        if (apiCalls.length > 0) {
+          const responses = await Promise.all(apiCalls);
+          const results = await Promise.all(responses.map(r => r.json()));
+          
+          console.log(`Generated data for ${page.url}:`, {
+            generatedKeywords: needsKeywords || !generateOnlyMissing,
+            generatedDescription: needsDescription || !generateOnlyMissing,
+            results
           });
-        } else {
-          console.error(`Failed to generate data for ${page.url}`);
         }
 
         // Small delay between requests to avoid overwhelming the API
-        if (i < finalPagesToProcess.length - 1) {
+        if (i < pagesToActuallyProcess.length - 1) {
           await new Promise(resolve => setTimeout(resolve, 1500));
         }
       } catch (error) {
@@ -336,7 +395,9 @@ export default function ClientDetailPage() {
     // Reset state and refresh data
     setBulkKeywordProgress({ current: 0, total: 0 });
     await loadClient();
-    setKeywordMessage(`✅ Bulk keywords & descriptions generation completed for ${finalPagesToProcess.length} pages!`);
+    
+    const efficiencyNote = generateOnlyMissing ? ` (${totalApiCalls} efficient API calls)` : ` (${totalApiCalls} total API calls)`;
+    setKeywordMessage(`✅ Bulk generation completed for ${pagesToActuallyProcess.length} pages${efficiencyNote}!`);
     setTimeout(() => setKeywordMessage(''), 5000);
   };
 
