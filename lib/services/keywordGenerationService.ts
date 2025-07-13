@@ -52,7 +52,7 @@ export async function generateKeywords(targetUrl: string): Promise<KeywordGenera
     });
 
     // Step 2: Follow-up question about listicles
-    const followUpInput = "should any of these be listicles? if so, which ones";
+    const followUpInput = "And what about listicles that this site would show up on? What various themes could those listicles be about? Think about one word themes. While it's okay to be specific, keep in mind that oftentimes this is an industry that overlaps with many other industries, or it may serve a different purpose. Maybe it's a good thing to gift. For example, maybe it's a good thing for hobbyists - think wide as well. Merge your output with the output from above.";
     
     console.log('🚀 Making follow-up OpenAI Responses API call...');
     
