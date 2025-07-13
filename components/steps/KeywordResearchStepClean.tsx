@@ -229,9 +229,54 @@ export const KeywordResearchStepClean = ({ step, workflow, onChange }: KeywordRe
                         )}
                       </div>
                     </div>
-                    <p className="text-sm text-purple-700 mb-3">
-                      Click any URL to copy it. Check pages with keywords to add them to your workflow.
-                    </p>
+                    <div className="flex items-center justify-between mb-3">
+                      <p className="text-sm text-purple-700">
+                        Click any URL to copy it. Check pages with keywords to add them to your workflow.
+                      </p>
+                      {(() => {
+                        const pagesWithData = activeTargetPages.filter((page: any) => 
+                          (page.keywords && page.keywords.trim() !== '') || (page.description && page.description.trim() !== '')
+                        );
+                        const visiblePagesWithData = (showAllTargetUrls ? pagesWithData : pagesWithData.slice(0, 5));
+                        
+                        if (visiblePagesWithData.length > 1) {
+                          const allSelected = visiblePagesWithData.every((page: any) => selectedTargetPages.includes(page.id));
+                          return (
+                            <button
+                              onClick={() => {
+                                if (allSelected) {
+                                  // Deselect all visible pages with data
+                                  const visibleIds = visiblePagesWithData.map((page: any) => page.id);
+                                  setSelectedTargetPages(prev => prev.filter((id: string) => !visibleIds.includes(id)));
+                                } else {
+                                  // Select all visible pages with data
+                                  const visibleIds = visiblePagesWithData.map((page: any) => page.id);
+                                  setSelectedTargetPages(prev => {
+                                    const newSelection = [...prev];
+                                    visibleIds.forEach((id: string) => {
+                                      if (!newSelection.includes(id)) {
+                                        newSelection.push(id);
+                                      }
+                                    });
+                                    return newSelection;
+                                  });
+                                }
+                              }}
+                              className="text-xs px-3 py-1 text-purple-600 border border-purple-300 rounded-lg hover:bg-purple-100 transition-colors flex items-center space-x-1"
+                            >
+                              <input
+                                type="checkbox"
+                                checked={allSelected}
+                                readOnly
+                                className="w-3 h-3 text-purple-600 pointer-events-none"
+                              />
+                              <span>{allSelected ? 'Deselect All' : `Select All (${visiblePagesWithData.length})`}</span>
+                            </button>
+                          );
+                        }
+                        return null;
+                      })()}
+                    </div>
                     
                     <div className="grid grid-cols-1 gap-2 max-h-60 overflow-y-auto">
                       {(showAllTargetUrls ? activeTargetPages : activeTargetPages.slice(0, 5)).map((page: any, index: number) => (
