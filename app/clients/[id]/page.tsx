@@ -162,11 +162,10 @@ export default function ClientDetailPage() {
 
       try {
         // Generate keywords for this page
-        const response = await fetch('/api/target-pages/generate-keywords', {
+        const response = await fetch(`/api/target-pages/${page.id}/keywords`, {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
           body: JSON.stringify({
-            targetPageId: page.id,
             targetUrl: page.url
           })
         });
