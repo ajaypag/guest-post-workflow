@@ -13,7 +13,7 @@ export async function GET(request: NextRequest) {
       AND column_name = 'keywords';
     `);
 
-    const exists = result.length > 0;
+    const exists = result.rows && result.rows.length > 0;
     
     console.log(`📊 Keywords column exists: ${exists}`);
     
