@@ -13,6 +13,8 @@ import {
 } from 'lucide-react';
 import { KeywordPreferencesSelector } from '@/components/ui/KeywordPreferencesSelector';
 import { getClientKeywordPreferences, setClientKeywordPreferences, KeywordPreferences } from '@/types/keywordPreferences';
+import { KeywordGenerationButton } from '@/components/ui/KeywordGenerationButton';
+import { KeywordDisplay } from '@/components/ui/KeywordDisplay';
 
 export default function ClientDetailPage() {
   const params = useParams();
@@ -24,6 +26,7 @@ export default function ClientDetailPage() {
   const [newPages, setNewPages] = useState('');
   const [filter, setFilter] = useState<'all' | 'active' | 'inactive' | 'completed'>('all');
   const [showKeywordPrefs, setShowKeywordPrefs] = useState(false);
+  const [keywordMessage, setKeywordMessage] = useState('');
 
   useEffect(() => {
     loadClient();
@@ -109,6 +112,20 @@ export default function ClientDetailPage() {
       console.error('Error updating topic preferences:', error);
       alert('Error updating topic preferences: ' + error.message);
     }
+  };
+
+  const handleKeywordSuccess = (keywords: string[]) => {
+    setKeywordMessage(`✅ Generated ${keywords.length} keywords successfully!`);
+    // Refresh client data to show updated keywords
+    loadClient();
+    // Clear message after 5 seconds
+    setTimeout(() => setKeywordMessage(''), 5000);
+  };
+
+  const handleKeywordError = (error: string) => {
+    setKeywordMessage(`❌ Keyword generation failed: ${error}`);
+    // Clear message after 8 seconds
+    setTimeout(() => setKeywordMessage(''), 8000);
   };
 
   const togglePageSelection = (pageId: string) => {
@@ -236,6 +253,17 @@ export default function ClientDetailPage() {
               </div>
             </div>
           </div>
+
+          {/* Keyword Generation Message */}
+          {keywordMessage && (
+            <div className={`mb-6 p-4 rounded-lg ${
+              keywordMessage.includes('✅') 
+                ? 'bg-green-50 border border-green-200 text-green-800'
+                : 'bg-red-50 border border-red-200 text-red-800'
+            }`}>
+              {keywordMessage}
+            </div>
+          )}
 
           {/* Stats */}
           <div className="grid grid-cols-2 md:grid-cols-4 gap-4 mb-6">
@@ -422,6 +450,22 @@ export default function ClientDetailPage() {
                             {page.completedAt && (
                               <> • Completed: {new Date(page.completedAt).toLocaleDateString()}</>
                             )}
+                          </div>
+                          
+                          {/* Keywords Section */}
+                          <div className="mt-2 space-y-2">
+                            <KeywordDisplay 
+                              keywords={page.keywords} 
+                              className="text-xs"
+                              maxDisplay={3}
+                            />
+                            <KeywordGenerationButton
+                              targetPageId={page.id}
+                              targetUrl={page.url}
+                              onSuccess={handleKeywordSuccess}
+                              onError={handleKeywordError}
+                              size="sm"
+                            />
                           </div>
                         </div>
                         
