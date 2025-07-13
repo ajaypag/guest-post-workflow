@@ -211,23 +211,22 @@ export const KeywordResearchStepClean = ({ step, workflow, onChange }: KeywordRe
                       const pagesWithData = activeTargetPages.filter((page: any) => 
                         (page.keywords && page.keywords.trim() !== '') || (page.description && page.description.trim() !== '')
                       );
-                      const visiblePagesWithData = (showAllTargetUrls ? pagesWithData : pagesWithData.slice(0, 5));
                       
-                      if (visiblePagesWithData.length > 1) {
-                        const allSelected = visiblePagesWithData.every((page: any) => selectedTargetPages.includes(page.id));
+                      if (pagesWithData.length > 1) {
+                        const allDataPagesSelected = pagesWithData.every((page: any) => selectedTargetPages.includes(page.id));
                         return (
                           <button
                             onClick={() => {
-                              if (allSelected) {
-                                // Deselect all visible pages with data
-                                const visibleIds = visiblePagesWithData.map((page: any) => page.id);
-                                setSelectedTargetPages(prev => prev.filter((id: string) => !visibleIds.includes(id)));
+                              if (allDataPagesSelected) {
+                                // Deselect all pages with data
+                                const allDataIds = pagesWithData.map((page: any) => page.id);
+                                setSelectedTargetPages(prev => prev.filter((id: string) => !allDataIds.includes(id)));
                               } else {
-                                // Select all visible pages with data
-                                const visibleIds = visiblePagesWithData.map((page: any) => page.id);
+                                // Select all pages with data (regardless of visibility)
+                                const allDataIds = pagesWithData.map((page: any) => page.id);
                                 setSelectedTargetPages(prev => {
                                   const newSelection = [...prev];
-                                  visibleIds.forEach((id: string) => {
+                                  allDataIds.forEach((id: string) => {
                                     if (!newSelection.includes(id)) {
                                       newSelection.push(id);
                                     }
@@ -240,11 +239,11 @@ export const KeywordResearchStepClean = ({ step, workflow, onChange }: KeywordRe
                           >
                             <input
                               type="checkbox"
-                              checked={allSelected}
+                              checked={allDataPagesSelected}
                               readOnly
                               className="w-3 h-3 text-purple-600 pointer-events-none"
                             />
-                            <span>{allSelected ? 'Deselect All' : `Select All (${visiblePagesWithData.length})`}</span>
+                            <span>{allDataPagesSelected ? 'Deselect All' : `Select All (${pagesWithData.length})`}</span>
                           </button>
                         );
                       }
