@@ -74,6 +74,43 @@ export const workflowSteps = pgTable('workflow_steps', {
   updatedAt: timestamp('updated_at').notNull(), // Remove defaultNow() to handle in application code
 });
 
+// Article sections for agentic workflow
+export const articleSections = pgTable('article_sections', {
+  id: uuid('id').primaryKey(),
+  workflowId: uuid('workflow_id').notNull().references(() => workflows.id, { onDelete: 'cascade' }),
+  sectionNumber: integer('section_number').notNull(),
+  title: varchar('title', { length: 255 }).notNull(),
+  content: text('content'),
+  wordCount: integer('word_count').default(0),
+  status: varchar('status', { length: 50 }).notNull().default('pending'), // 'pending' | 'generating' | 'completed' | 'error'
+  agentConversationId: varchar('agent_conversation_id', { length: 255 }),
+  generationMetadata: jsonb('generation_metadata'), // Stores agent context, prompts, etc
+  errorMessage: text('error_message'),
+  createdAt: timestamp('created_at').notNull(),
+  updatedAt: timestamp('updated_at').notNull(),
+});
+
+// Agent sessions for tracking agentic workflows
+export const agentSessions = pgTable('agent_sessions', {
+  id: uuid('id').primaryKey(),
+  workflowId: uuid('workflow_id').notNull().references(() => workflows.id, { onDelete: 'cascade' }),
+  stepId: varchar('step_id', { length: 100 }).notNull(), // e.g., 'article-draft'
+  status: varchar('status', { length: 50 }).notNull().default('pending'), // 'pending' | 'planning' | 'writing' | 'completed' | 'error'
+  agentId: varchar('agent_id', { length: 255 }),
+  conversationId: varchar('conversation_id', { length: 255 }),
+  totalSections: integer('total_sections').default(0),
+  completedSections: integer('completed_sections').default(0),
+  targetWordCount: integer('target_word_count'),
+  currentWordCount: integer('current_word_count').default(0),
+  outline: text('outline'), // The article outline from Deep Research
+  sessionMetadata: jsonb('session_metadata'), // Stores context, style rules, etc
+  errorMessage: text('error_message'),
+  startedAt: timestamp('started_at'),
+  completedAt: timestamp('completed_at'),
+  createdAt: timestamp('created_at').notNull(),
+  updatedAt: timestamp('updated_at').notNull(),
+});
+
 // Relations
 export const usersRelations = relations(users, ({ many }) => ({
   clients: many(clients),
@@ -119,11 +156,27 @@ export const workflowsRelations = relations(workflows, ({ one, many }) => ({
     references: [clients.id],
   }),
   steps: many(workflowSteps),
+  articleSections: many(articleSections),
+  agentSessions: many(agentSessions),
 }));
 
 export const workflowStepsRelations = relations(workflowSteps, ({ one }) => ({
   workflow: one(workflows, {
     fields: [workflowSteps.workflowId],
+    references: [workflows.id],
+  }),
+}));
+
+export const articleSectionsRelations = relations(articleSections, ({ one }) => ({
+  workflow: one(workflows, {
+    fields: [articleSections.workflowId],
+    references: [workflows.id],
+  }),
+}));
+
+export const agentSessionsRelations = relations(agentSessions, ({ one, many }) => ({
+  workflow: one(workflows, {
+    fields: [agentSessions.workflowId],
     references: [workflows.id],
   }),
 }));
@@ -139,3 +192,7 @@ export type Workflow = typeof workflows.$inferSelect;
 export type NewWorkflow = typeof workflows.$inferInsert;
 export type WorkflowStep = typeof workflowSteps.$inferSelect;
 export type NewWorkflowStep = typeof workflowSteps.$inferInsert;
+export type ArticleSection = typeof articleSections.$inferSelect;
+export type NewArticleSection = typeof articleSections.$inferInsert;
+export type AgentSession = typeof agentSessions.$inferSelect;
+export type NewAgentSession = typeof agentSessions.$inferInsert;
