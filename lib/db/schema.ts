@@ -41,6 +41,7 @@ export const targetPages = pgTable('target_pages', {
   domain: varchar('domain', { length: 255 }).notNull(),
   status: varchar('status', { length: 50 }).notNull().default('active'), // 'active' | 'completed' | 'inactive'
   keywords: text('keywords'), // Comma-separated list of AI-generated keywords
+  description: text('description'), // AI-generated description of the URL content
   addedAt: timestamp('added_at').notNull(), // Remove defaultNow() to handle in application code
   completedAt: timestamp('completed_at'),
 });

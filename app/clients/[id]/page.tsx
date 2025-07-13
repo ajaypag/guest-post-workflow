@@ -15,6 +15,8 @@ import { KeywordPreferencesSelector } from '@/components/ui/KeywordPreferencesSe
 import { getClientKeywordPreferences, setClientKeywordPreferences, KeywordPreferences } from '@/types/keywordPreferences';
 import { KeywordGenerationButton } from '@/components/ui/KeywordGenerationButton';
 import { KeywordDisplay } from '@/components/ui/KeywordDisplay';
+import { DescriptionGenerationButton } from '@/components/ui/DescriptionGenerationButton';
+import { DescriptionDisplay } from '@/components/ui/DescriptionDisplay';
 
 export default function ClientDetailPage() {
   const params = useParams();
@@ -22,11 +24,12 @@ export default function ClientDetailPage() {
   const [client, setClient] = useState<Client | null>(null);
   const [selectedPages, setSelectedPages] = useState<string[]>([]);
   const [showAddForm, setShowAddForm] = useState(false);
-  const [bulkAction, setBulkAction] = useState<'active' | 'inactive' | 'completed' | 'delete' | 'generate-keywords' | ''>('');
+  const [bulkAction, setBulkAction] = useState<'active' | 'inactive' | 'completed' | 'delete' | 'generate-keywords' | 'generate-descriptions' | ''>('');
   const [newPages, setNewPages] = useState('');
   const [filter, setFilter] = useState<'all' | 'active' | 'inactive' | 'completed'>('all');
   const [showKeywordPrefs, setShowKeywordPrefs] = useState(false);
   const [keywordMessage, setKeywordMessage] = useState('');
+  const [descriptionMessage, setDescriptionMessage] = useState('');
   const [showKeywordPrompt, setShowKeywordPrompt] = useState(false);
   const [newlyAddedPages, setNewlyAddedPages] = useState<any[]>([]);
   const [bulkKeywordProgress, setBulkKeywordProgress] = useState({ current: 0, total: 0 });
@@ -79,6 +82,11 @@ export default function ClientDetailPage() {
 
     if (bulkAction === 'generate-keywords') {
       handleBulkSelectedKeywordGeneration();
+      return;
+    }
+
+    if (bulkAction === 'generate-descriptions') {
+      handleBulkSelectedDescriptionGeneration();
       return;
     }
 
@@ -146,6 +154,28 @@ export default function ClientDetailPage() {
     loadClient();
     // Clear message after 5 seconds
     setTimeout(() => setKeywordMessage(''), 5000);
+  };
+
+  const handleDescriptionSuccess = (description: string) => {
+    setDescriptionMessage(`✅ Generated description successfully! (${description.length} characters)`);
+    // Refresh client data to show updated description
+    loadClient();
+    // Clear message after 5 seconds
+    setTimeout(() => setDescriptionMessage(''), 5000);
+  };
+
+  const handleDescriptionError = (error: string) => {
+    setDescriptionMessage(`❌ Description generation failed: ${error}`);
+    // Clear message after 8 seconds
+    setTimeout(() => setDescriptionMessage(''), 8000);
+  };
+
+  const handleDescriptionUpdate = (description: string) => {
+    setDescriptionMessage(`✅ Description updated! (${description.length} characters)`);
+    // Refresh client data to show updated description
+    loadClient();
+    // Clear message after 5 seconds
+    setTimeout(() => setDescriptionMessage(''), 5000);
   };
 
   const handleBulkKeywordGeneration = async () => {
@@ -267,6 +297,71 @@ export default function ClientDetailPage() {
     await loadClient();
     setKeywordMessage(`✅ Bulk keyword generation completed for ${pagesToProcess.length} selected pages!`);
     setTimeout(() => setKeywordMessage(''), 5000);
+  };
+
+  const handleBulkSelectedDescriptionGeneration = async () => {
+    if (!client || selectedPages.length === 0) return;
+
+    // Get selected target pages from client data
+    const targetPages = (client as any)?.targetPages || [];
+    const pagesToProcess = selectedPages.map(pageId => {
+      return targetPages.find((page: any) => page.id === pageId);
+    }).filter(Boolean);
+
+    // Count pages with and without descriptions
+    const pagesWithDescriptions = pagesToProcess.filter((page: any) => page.description && page.description.trim() !== '');
+    const pagesWithoutDescriptions = pagesToProcess.filter((page: any) => !page.description || page.description.trim() === '');
+
+    let confirmMessage = `Generate descriptions for ${pagesToProcess.length} selected pages?`;
+    if (pagesWithDescriptions.length > 0) {
+      confirmMessage += `\n\n${pagesWithDescriptions.length} pages already have descriptions and will be regenerated.`;
+    }
+    if (pagesWithoutDescriptions.length > 0) {
+      confirmMessage += `\n${pagesWithoutDescriptions.length} pages don't have descriptions yet.`;
+    }
+
+    if (!confirm(confirmMessage)) return;
+
+    // Start bulk generation
+    setBulkKeywordProgress({ current: 0, total: pagesToProcess.length });
+    setSelectedPages([]);
+    setBulkAction('');
+
+    for (let i = 0; i < pagesToProcess.length; i++) {
+      const page = pagesToProcess[i];
+      setBulkKeywordProgress({ current: i + 1, total: pagesToProcess.length });
+
+      try {
+        // Generate description for this page
+        const response = await fetch(`/api/target-pages/${page.id}/description`, {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            targetUrl: page.url
+          })
+        });
+
+        if (response.ok) {
+          const result = await response.json();
+          console.log(`Description generated for ${page.url}:`, result.description);
+        } else {
+          console.error(`Failed to generate description for ${page.url}`);
+        }
+
+        // Small delay between requests to avoid overwhelming the API
+        if (i < pagesToProcess.length - 1) {
+          await new Promise(resolve => setTimeout(resolve, 1000));
+        }
+      } catch (error) {
+        console.error(`Error generating description for ${page.url}:`, error);
+      }
+    }
+
+    // Reset state and refresh data
+    setBulkKeywordProgress({ current: 0, total: 0 });
+    await loadClient();
+    setDescriptionMessage(`✅ Bulk description generation completed for ${pagesToProcess.length} selected pages!`);
+    setTimeout(() => setDescriptionMessage(''), 5000);
   };
 
   const togglePageSelection = (pageId: string) => {
@@ -403,6 +498,17 @@ export default function ClientDetailPage() {
                 : 'bg-red-50 border border-red-200 text-red-800'
             }`}>
               {keywordMessage}
+            </div>
+          )}
+
+          {/* Description Generation Message */}
+          {descriptionMessage && (
+            <div className={`mb-6 p-4 rounded-lg ${
+              descriptionMessage.includes('✅') 
+                ? 'bg-green-50 border border-green-200 text-green-800'
+                : 'bg-red-50 border border-red-200 text-red-800'
+            }`}>
+              {descriptionMessage}
             </div>
           )}
 
@@ -585,6 +691,7 @@ export default function ClientDetailPage() {
                       <option value="inactive">Mark as Inactive</option>
                       <option value="completed">Mark as Completed</option>
                       <option value="generate-keywords">Generate Keywords</option>
+                      <option value="generate-descriptions">Generate Descriptions</option>
                       <option value="delete">Delete</option>
                     </select>
                     <button
@@ -660,6 +767,23 @@ export default function ClientDetailPage() {
                               targetUrl={page.url}
                               onSuccess={handleKeywordSuccess}
                               onError={handleKeywordError}
+                              size="sm"
+                            />
+                          </div>
+
+                          {/* Description Section */}
+                          <div className="mt-2 space-y-2">
+                            <DescriptionDisplay 
+                              description={page.description} 
+                              className="text-xs"
+                              targetPageId={page.id}
+                              onDescriptionUpdate={handleDescriptionUpdate}
+                            />
+                            <DescriptionGenerationButton
+                              targetPageId={page.id}
+                              targetUrl={page.url}
+                              onSuccess={handleDescriptionSuccess}
+                              onError={handleDescriptionError}
                               size="sm"
                             />
                           </div>

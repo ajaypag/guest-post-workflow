@@ -288,4 +288,26 @@ export class ClientService {
       return false;
     }
   }
+
+  // Update target page description (separate method - doesn't affect existing functionality)
+  static async updateTargetPageDescription(pageId: string, description: string): Promise<boolean> {
+    try {
+      const result = await db
+        .update(targetPages)
+        .set({ description })
+        .where(eq(targetPages.id, pageId))
+        .returning();
+
+      console.log('🟢 Description updated for target page:', {
+        pageId,
+        descriptionLength: description.length,
+        success: result.length > 0
+      });
+
+      return result.length > 0;
+    } catch (error) {
+      console.error('🔴 Error updating target page description:', error);
+      return false;
+    }
+  }
 }

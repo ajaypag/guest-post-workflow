@@ -91,6 +91,79 @@ export default function DatabaseMigrationPage() {
     setIsLoading(false);
   };
 
+  const checkDescriptionColumnExists = async () => {
+    setIsLoading(true);
+    setMessage('');
+    
+    try {
+      const response = await fetch('/api/admin/check-description-column');
+      const data = await response.json();
+      
+      if (data.exists) {
+        setMessage('✅ Description column exists in target_pages table');
+        setMessageType('success');
+      } else {
+        setMessage('ℹ️ Description column does not exist in target_pages table');
+        setMessageType('info');
+      }
+    } catch (error) {
+      setMessage(`❌ Error checking description column: ${error instanceof Error ? error.message : 'Unknown error'}`);
+      setMessageType('error');
+    }
+    
+    setIsLoading(false);
+  };
+
+  const runDescriptionMigration = async () => {
+    setIsLoading(true);
+    setMessage('');
+    
+    try {
+      const response = await fetch('/api/admin/migrate-description', {
+        method: 'POST'
+      });
+      const data = await response.json();
+      
+      if (data.success) {
+        setMessage('✅ Description column migration completed successfully!');
+        setMessageType('success');
+      } else {
+        setMessage(`❌ Migration failed: ${data.error}`);
+        setMessageType('error');
+      }
+    } catch (error) {
+      setMessage(`❌ Error: ${error instanceof Error ? error.message : 'Unknown error'}`);
+      setMessageType('error');
+    }
+    
+    setIsLoading(false);
+  };
+
+  const runDescriptionRollback = async () => {
+    setIsLoading(true);
+    setMessage('');
+    
+    try {
+      const response = await fetch('/api/admin/migrate-description', {
+        method: 'DELETE'
+      });
+      const data = await response.json();
+      
+      if (data.success) {
+        setMessage('✅ Description column rollback completed successfully!');
+        setMessageType('success');
+      } else {
+        setMessage(`❌ Rollback failed: ${data.error}`);
+        setMessageType('error');
+      }
+    } catch (error) {
+      setMessage(`❌ Error: ${error instanceof Error ? error.message : 'Unknown error'}`);
+      setMessageType('error');
+    }
+    
+    setIsLoading(false);
+  };
+
   return (
     <div className="min-h-screen bg-gray-50 py-8">
       <div className="max-w-4xl mx-auto px-4 sm:px-6 lg:px-8">
@@ -169,6 +242,80 @@ export default function DatabaseMigrationPage() {
               >
                 <RotateCcw className="w-4 h-4 mr-2" />
                 {isLoading ? 'Rolling Back...' : 'Remove Keywords Column'}
+              </button>
+            </div>
+          </div>
+
+          {/* Description Column Migration Section */}
+          <div className="mt-12 mb-8">
+            <h2 className="text-lg font-semibold text-gray-900 mb-4">Description Column Migration</h2>
+            <p className="text-gray-600 mb-4">
+              This migration adds a <code className="bg-gray-100 px-2 py-1 rounded">description</code> column to the target_pages table 
+              to support AI-generated URL descriptions for site qualification workflow steps.
+            </p>
+            
+            <div className="bg-blue-50 border border-blue-200 rounded-lg p-4 mb-6">
+              <div className="flex items-start space-x-3">
+                <AlertTriangle className="w-5 h-5 text-blue-600 mt-0.5" />
+                <div>
+                  <h3 className="text-sm font-semibold text-blue-800">Description Column Features:</h3>
+                  <ul className="text-sm text-blue-700 mt-2 space-y-1">
+                    <li>• Stores AI-generated descriptions of target URL content</li>
+                    <li>• Used for site qualification and preparation workflow steps</li>
+                    <li>• Safe migration - only adds new optional column</li>
+                    <li>• Can be rolled back if needed</li>
+                  </ul>
+                </div>
+              </div>
+            </div>
+          </div>
+
+          <div className="space-y-4 mb-8">
+            {/* Check Description Column Status */}
+            <div className="border border-gray-200 rounded-lg p-4">
+              <h3 className="font-semibold text-gray-900 mb-2">Check Description Column Status</h3>
+              <p className="text-gray-600 text-sm mb-3">
+                Check if the description column already exists in your database.
+              </p>
+              <button
+                onClick={checkDescriptionColumnExists}
+                disabled={isLoading}
+                className="inline-flex items-center px-4 py-2 bg-blue-600 text-white text-sm font-medium rounded-md hover:bg-blue-700 disabled:opacity-50 disabled:cursor-not-allowed"
+              >
+                <Database className="w-4 h-4 mr-2" />
+                {isLoading ? 'Checking...' : 'Check Description Column Status'}
+              </button>
+            </div>
+
+            {/* Run Description Migration */}
+            <div className="border border-green-200 rounded-lg p-4">
+              <h3 className="font-semibold text-gray-900 mb-2">Add Description Column</h3>
+              <p className="text-gray-600 text-sm mb-3">
+                Safely add the description column to enable AI description generation features.
+              </p>
+              <button
+                onClick={runDescriptionMigration}
+                disabled={isLoading}
+                className="inline-flex items-center px-4 py-2 bg-green-600 text-white text-sm font-medium rounded-md hover:bg-green-700 disabled:opacity-50 disabled:cursor-not-allowed"
+              >
+                <Play className="w-4 h-4 mr-2" />
+                {isLoading ? 'Running Migration...' : 'Add Description Column'}
+              </button>
+            </div>
+
+            {/* Description Rollback */}
+            <div className="border border-red-200 rounded-lg p-4">
+              <h3 className="font-semibold text-gray-900 mb-2">Remove Description Column (Rollback)</h3>
+              <p className="text-gray-600 text-sm mb-3">
+                Remove the description column and all stored description data. This action cannot be undone.
+              </p>
+              <button
+                onClick={runDescriptionRollback}
+                disabled={isLoading}
+                className="inline-flex items-center px-4 py-2 bg-red-600 text-white text-sm font-medium rounded-md hover:bg-red-700 disabled:opacity-50 disabled:cursor-not-allowed"
+              >
+                <RotateCcw className="w-4 h-4 mr-2" />
+                {isLoading ? 'Rolling Back...' : 'Remove Description Column'}
               </button>
             </div>
           </div>
