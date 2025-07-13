@@ -128,6 +128,14 @@ export default function ClientDetailPage() {
     setTimeout(() => setKeywordMessage(''), 8000);
   };
 
+  const handleKeywordsUpdate = (keywords: string[]) => {
+    setKeywordMessage(`✅ Keywords updated! Now showing ${keywords.length} keywords.`);
+    // Refresh client data to show updated keywords
+    loadClient();
+    // Clear message after 5 seconds
+    setTimeout(() => setKeywordMessage(''), 5000);
+  };
+
   const togglePageSelection = (pageId: string) => {
     setSelectedPages(prev => 
       prev.includes(pageId) 
@@ -458,6 +466,8 @@ export default function ClientDetailPage() {
                               keywords={page.keywords} 
                               className="text-xs"
                               maxDisplay={3}
+                              targetPageId={page.id}
+                              onKeywordsUpdate={handleKeywordsUpdate}
                             />
                             <KeywordGenerationButton
                               targetPageId={page.id}

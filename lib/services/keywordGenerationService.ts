@@ -99,60 +99,88 @@ export async function generateKeywords(targetUrl: string): Promise<KeywordGenera
  */
 function parseKeywordsFromResponse(content: string): string[] {
   try {
-    // Look for comma-separated lists in the content
+    console.log('🔍 Parsing keywords from content:', content.substring(0, 200) + '...');
+    
+    // First, check if it looks like an error message
+    const errorIndicators = ['error', 'failed', 'sorry', 'unable', 'cannot', 'issue', 'problem'];
+    if (errorIndicators.some(indicator => content.toLowerCase().includes(indicator))) {
+      console.warn('⚠️ Response appears to contain error message');
+    }
+    
+    // Look for the most comma-rich line (likely the keyword list)
     const lines = content.split('\n');
-    let keywordLines: string[] = [];
+    let bestLine = '';
+    let maxCommas = 0;
     
     for (const line of lines) {
       const trimmedLine = line.trim();
+      const commaCount = (trimmedLine.match(/,/g) || []).length;
       
-      // Skip empty lines and obvious non-keyword content
+      // Skip obvious non-keyword content
       if (!trimmedLine || 
-          trimmedLine.length < 3 || 
+          trimmedLine.length < 10 ||
           trimmedLine.includes('?') ||
+          trimmedLine.toLowerCase().includes('here are') ||
+          trimmedLine.toLowerCase().includes('these are') ||
           trimmedLine.toLowerCase().includes('listicle') ||
-          trimmedLine.toLowerCase().includes('should') ||
+          trimmedLine.toLowerCase().includes('themes') ||
           trimmedLine.toLowerCase().includes('analysis') ||
+          trimmedLine.toLowerCase().includes('output') ||
+          trimmedLine.toLowerCase().includes('response') ||
           trimmedLine.startsWith('#') ||
-          trimmedLine.startsWith('*')) {
+          trimmedLine.startsWith('**') ||
+          trimmedLine.includes(':::')) {
         continue;
       }
       
-      // Look for lines with commas (likely keyword lists)
-      if (trimmedLine.includes(',')) {
-        keywordLines.push(trimmedLine);
-      }
-      // Also capture single keywords that don't have commas
-      else if (trimmedLine.length > 5 && trimmedLine.length < 100) {
-        keywordLines.push(trimmedLine);
+      if (commaCount > maxCommas) {
+        maxCommas = commaCount;
+        bestLine = trimmedLine;
       }
     }
     
-    // Parse keywords from the identified lines
-    const allKeywords: string[] = [];
-    
-    for (const line of keywordLines) {
-      if (line.includes(',')) {
-        // Split by comma and clean up
-        const keywords = line.split(',').map(k => k.trim()).filter(k => k.length > 0);
-        allKeywords.push(...keywords);
-      } else {
-        // Single keyword
-        allKeywords.push(line.trim());
-      }
+    // If we didn't find a good comma-separated line, try to extract from all content
+    if (!bestLine || maxCommas < 3) {
+      console.log('🔍 No clear keyword line found, extracting from all content');
+      bestLine = content.replace(/\n/g, ' ');
     }
     
-    // Clean up and deduplicate keywords
-    const cleanedKeywords = allKeywords
+    console.log('🎯 Best keyword line found:', bestLine.substring(0, 150) + '...');
+    
+    // Split by commas and clean up each keyword
+    const rawKeywords = bestLine.split(',');
+    
+    const cleanedKeywords = rawKeywords
       .map(keyword => keyword.trim())
-      .map(keyword => keyword.replace(/^["']|["']$/g, '')) // Remove quotes
-      .map(keyword => keyword.replace(/^\d+\.\s*/, '')) // Remove list numbers
-      .map(keyword => keyword.replace(/^-\s*/, '')) // Remove list dashes
-      .filter(keyword => keyword.length > 2 && keyword.length < 150) // Reasonable length
+      .map(keyword => keyword.replace(/^["'`]|["'`]$/g, '')) // Remove quotes
+      .map(keyword => keyword.replace(/^\d+\.\s*/, '')) // Remove list numbers (1. 2. etc)
+      .map(keyword => keyword.replace(/^[-•*]\s*/, '')) // Remove bullet points
+      .map(keyword => keyword.replace(/^\w+:\s*/, '')) // Remove labels like "Keywords:"
+      .map(keyword => keyword.replace(/\s+/g, ' ')) // Normalize whitespace
+      .map(keyword => keyword.replace(/[^\w\s-]/g, '')) // Remove special chars except hyphens
+      .filter(keyword => {
+        const k = keyword.toLowerCase();
+        return keyword.length > 2 && 
+               keyword.length < 50 && 
+               !k.includes('keyword') &&
+               !k.includes('theme') &&
+               !k.includes('listicle') &&
+               !k.includes('output') &&
+               !k.includes('response') &&
+               !k.includes('merge') &&
+               !k.includes('above') &&
+               !k.includes('previous') &&
+               !k.match(/^\d+$/) && // No pure numbers
+               k.split(' ').length <= 4; // Max 4 words
+      })
       .filter((keyword, index, arr) => arr.indexOf(keyword) === index) // Deduplicate
-      .slice(0, 20); // Limit to 20 keywords max
+      .slice(0, 30); // Limit to 30 keywords max
     
-    console.log('Parsed keywords:', cleanedKeywords);
+    console.log('✅ Final parsed keywords:', cleanedKeywords);
+    
+    if (cleanedKeywords.length === 0) {
+      console.warn('⚠️ No valid keywords extracted from response');
+    }
     
     return cleanedKeywords;
     
