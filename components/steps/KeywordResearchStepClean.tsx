@@ -24,6 +24,7 @@ export const KeywordResearchStepClean = ({ step, workflow, onChange }: KeywordRe
   const [client, setClient] = useState<any>(null);
   const [loadingClient, setLoadingClient] = useState(false);
   const [showAllTargetUrls, setShowAllTargetUrls] = useState(false);
+  const [selectedTargetPages, setSelectedTargetPages] = useState<string[]>([]);
 
   const domainSelectionStep = workflow.steps.find(s => s.id === 'domain-selection');
   const guestPostSite = domainSelectionStep?.outputs?.domain || '';
@@ -229,38 +230,137 @@ export const KeywordResearchStepClean = ({ step, workflow, onChange }: KeywordRe
                       </div>
                     </div>
                     <p className="text-sm text-purple-700 mb-3">
-                      Click any URL to copy it. Submit multiple URLs to the GPT for comprehensive keyword analysis.
+                      Click any URL to copy it. Check pages with keywords to add them to your workflow.
                     </p>
                     
                     <div className="grid grid-cols-1 gap-2 max-h-60 overflow-y-auto">
                       {(showAllTargetUrls ? activeTargetPages : activeTargetPages.slice(0, 5)).map((page: any, index: number) => (
                         <div 
                           key={page.id}
-                          className="bg-white border border-purple-200 rounded-lg p-2 flex items-center justify-between group hover:bg-purple-50 transition-colors cursor-pointer"
-                          onClick={() => {
-                            navigator.clipboard.writeText(page.url);
-                            setCopiedUrl(page.url);
-                            setTimeout(() => setCopiedUrl(null), 2000);
-                          }}
+                          className="bg-white border border-purple-200 rounded-lg p-2 flex items-center group hover:bg-purple-50 transition-colors"
                         >
-                          <div className="flex-1 min-w-0">
-                            <p className="text-xs font-medium text-gray-900 truncate">
-                              {page.url}
-                            </p>
-                            {page.notes && (
-                              <p className="text-xs text-gray-500 truncate">{page.notes}</p>
-                            )}
-                          </div>
-                          <div className="ml-2 opacity-0 group-hover:opacity-100 transition-opacity">
-                            {copiedUrl === page.url ? (
-                              <CheckCircle className="w-4 h-4 text-green-600" />
-                            ) : (
-                              <Copy className="w-4 h-4 text-purple-600" />
-                            )}
+                          {/* Checkbox for pages with keywords or descriptions */}
+                          {(page.keywords && page.keywords.trim() !== '') || (page.description && page.description.trim() !== '') ? (
+                            <div className="mr-3">
+                              <input
+                                type="checkbox"
+                                checked={selectedTargetPages.includes(page.id)}
+                                onChange={(e) => {
+                                  e.stopPropagation();
+                                  if (e.target.checked) {
+                                    setSelectedTargetPages(prev => [...prev, page.id]);
+                                  } else {
+                                    setSelectedTargetPages(prev => prev.filter(id => id !== page.id));
+                                  }
+                                }}
+                                className="w-4 h-4 text-purple-600 focus:ring-purple-500 border-gray-300 rounded"
+                              />
+                            </div>
+                          ) : null}
+                          
+                          <div 
+                            className="flex-1 min-w-0 cursor-pointer"
+                            onClick={() => {
+                              navigator.clipboard.writeText(page.url);
+                              setCopiedUrl(page.url);
+                              setTimeout(() => setCopiedUrl(null), 2000);
+                            }}
+                          >
+                            <div className="flex items-center justify-between">
+                              <div className="flex-1 min-w-0">
+                                <p className="text-xs font-medium text-gray-900 truncate">
+                                  {page.url}
+                                </p>
+                                {page.keywords && page.keywords.trim() !== '' && (
+                                  <p className="text-xs text-purple-600 truncate">
+                                    {page.keywords.split(',').length} keywords available
+                                  </p>
+                                )}
+                                {page.notes && (
+                                  <p className="text-xs text-gray-500 truncate">{page.notes}</p>
+                                )}
+                              </div>
+                              <div className="ml-2 opacity-0 group-hover:opacity-100 transition-opacity">
+                                {copiedUrl === page.url ? (
+                                  <CheckCircle className="w-4 h-4 text-green-600" />
+                                ) : (
+                                  <Copy className="w-4 h-4 text-purple-600" />
+                                )}
+                              </div>
+                            </div>
                           </div>
                         </div>
                       ))}
                     </div>
+
+                    {/* Add Selected Keywords Button */}
+                    {selectedTargetPages.length > 0 && (
+                      <div className="mt-4 p-3 bg-purple-50 border border-purple-200 rounded-lg">
+                        <div className="flex items-center justify-between">
+                          <div>
+                            <p className="text-sm font-medium text-purple-900">
+                              {selectedTargetPages.length} page{selectedTargetPages.length !== 1 ? 's' : ''} selected
+                            </p>
+                            <p className="text-xs text-purple-700">
+                              Will populate both keywords (2A) and descriptions (2C) for selected pages
+                            </p>
+                          </div>
+                          <button
+                            onClick={() => {
+                              // Get data from selected pages
+                              const selectedPages = activeTargetPages.filter((page: any) => 
+                                selectedTargetPages.includes(page.id)
+                              );
+                              
+                              // Collect keywords from pages that have them
+                              const existingKeywords = keywords ? keywords.split(',').map((k: string) => k.trim()).filter((k: string) => k) : [];
+                              const newKeywords: string[] = [];
+                              
+                              selectedPages.forEach((page: any) => {
+                                if (page.keywords && page.keywords.trim() !== '') {
+                                  const pageKeywords = page.keywords.split(',').map((k: string) => k.trim()).filter((k: string) => k);
+                                  newKeywords.push(...pageKeywords);
+                                }
+                              });
+                              
+                              // Deduplicate keywords (case-insensitive)
+                              const allKeywords = [...existingKeywords, ...newKeywords];
+                              const uniqueKeywords = allKeywords.filter((keyword, index) => {
+                                const lowerKeyword = keyword.toLowerCase();
+                                return allKeywords.findIndex((k: string) => k.toLowerCase() === lowerKeyword) === index;
+                              });
+
+                              // Collect URLs and descriptions for Step 2C
+                              const pagesWithDescriptions = selectedPages.filter((page: any) => 
+                                page.description && page.description.trim() !== ''
+                              );
+                              const urls = pagesWithDescriptions.map((page: any) => page.url).join('\n');
+                              const descriptions = pagesWithDescriptions.map((page: any) => 
+                                `${page.url}\n${page.description}`
+                              ).join('\n\n');
+                              
+                              // Update both keywords (2A) and descriptions (2C)
+                              const updateData: any = {};
+                              if (uniqueKeywords.length > 0) {
+                                updateData.keywords = uniqueKeywords.join(', ');
+                              }
+                              if (urls) {
+                                updateData.clientUrls = urls;
+                                updateData.urlSummaries = descriptions;
+                              }
+                              
+                              onChange(updateData);
+                              
+                              // Clear selection
+                              setSelectedTargetPages([]);
+                            }}
+                            className="px-4 py-2 bg-purple-600 text-white text-sm font-medium rounded-md hover:bg-purple-700 transition-colors"
+                          >
+                            Add to Workflow (Keywords + Descriptions)
+                          </button>
+                        </div>
+                      </div>
+                    )}
                     
                     {!showAllTargetUrls && activeTargetPages.length > 5 && (
                       <p className="text-xs text-purple-600 mt-2 text-center">
@@ -524,37 +624,64 @@ export const KeywordResearchStepClean = ({ step, workflow, onChange }: KeywordRe
                     </div>
                   </div>
                   <p className="text-sm text-purple-700 mb-3">
-                    These are your pre-configured target URLs. Click any URL to copy it for analysis, or select multiple URLs to submit to the GPT.
+                    Click any URL to copy it. Use Step 2A above to select pages for your workflow.
                   </p>
                   
                   <div className="grid grid-cols-1 gap-2 max-h-60 overflow-y-auto">
                     {(showAllTargetUrls ? activeTargetPages : activeTargetPages.slice(0, 5)).map((page: any, index: number) => (
                       <div 
                         key={page.id}
-                        className="bg-white border border-purple-200 rounded-lg p-2 flex items-center justify-between group hover:bg-purple-50 transition-colors cursor-pointer"
-                        onClick={() => {
-                          navigator.clipboard.writeText(page.url);
-                          setCopiedUrl(page.url);
-                          setTimeout(() => setCopiedUrl(null), 2000);
-                        }}
+                        className="bg-white border border-purple-200 rounded-lg p-2 flex items-center group hover:bg-purple-50 transition-colors"
                       >
-                        <div className="flex-1 min-w-0">
-                          <p className="text-xs font-medium text-gray-900 truncate">
-                            {page.url}
-                          </p>
-                          {page.notes && (
-                            <p className="text-xs text-gray-500 truncate">{page.notes}</p>
-                          )}
-                        </div>
-                        <div className="ml-2 opacity-0 group-hover:opacity-100 transition-opacity">
-                          {copiedUrl === page.url ? (
-                            <CheckCircle className="w-4 h-4 text-green-600" />
-                          ) : (
-                            <Copy className="w-4 h-4 text-purple-600" />
-                          )}
+                        {/* Note: Selection is now handled in Step 2A unified action */}
+                        {page.description && page.description.trim() !== '' && (
+                          <div className="mr-3">
+                            <div className="w-4 h-4 bg-green-100 rounded flex items-center justify-center">
+                              <CheckCircle className="w-3 h-3 text-green-600" />
+                            </div>
+                          </div>
+                        )}
+                        
+                        <div 
+                          className="flex-1 min-w-0 cursor-pointer"
+                          onClick={() => {
+                            navigator.clipboard.writeText(page.url);
+                            setCopiedUrl(page.url);
+                            setTimeout(() => setCopiedUrl(null), 2000);
+                          }}
+                        >
+                          <div className="flex items-center justify-between">
+                            <div className="flex-1 min-w-0">
+                              <p className="text-xs font-medium text-gray-900 truncate">
+                                {page.url}
+                              </p>
+                              {page.description && page.description.trim() !== '' && (
+                                <p className="text-xs text-purple-600 truncate">
+                                  Description available ({page.description.length} characters)
+                                </p>
+                              )}
+                              {page.notes && (
+                                <p className="text-xs text-gray-500 truncate">{page.notes}</p>
+                              )}
+                            </div>
+                            <div className="ml-2 opacity-0 group-hover:opacity-100 transition-opacity">
+                              {copiedUrl === page.url ? (
+                                <CheckCircle className="w-4 h-4 text-green-600" />
+                              ) : (
+                                <Copy className="w-4 h-4 text-purple-600" />
+                              )}
+                            </div>
+                          </div>
                         </div>
                       </div>
                     ))}
+                  </div>
+
+                  {/* Note: URL and description selection is now handled in Step 2A unified action */}
+                  <div className="mt-4 p-3 bg-blue-50 border border-blue-200 rounded-lg">
+                    <p className="text-sm text-blue-700">
+                      💡 <strong>Tip:</strong> Use the checkbox selection in Step 2A above to add both keywords and descriptions to your workflow in one action.
+                    </p>
                   </div>
                   
                   {!showAllTargetUrls && activeTargetPages.length > 5 && (
