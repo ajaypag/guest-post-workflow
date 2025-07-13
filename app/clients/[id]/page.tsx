@@ -69,7 +69,7 @@ export default function ClientDetailPage() {
       setShowAddForm(false);
       await loadClient();
       
-      // Prompt user to generate keywords for newly added pages
+      // Prompt user to generate keywords AND descriptions for newly added pages
       setNewlyAddedPages(urls.map(url => ({ url })));
       setShowKeywordPrompt(true);
     } catch (error: any) {
@@ -81,12 +81,12 @@ export default function ClientDetailPage() {
     if (!client || selectedPages.length === 0 || !bulkAction) return;
 
     if (bulkAction === 'generate-keywords') {
-      handleBulkSelectedKeywordGeneration();
+      handleBulkSelectedKeywordAndDescriptionGeneration();
       return;
     }
 
     if (bulkAction === 'generate-descriptions') {
-      handleBulkSelectedDescriptionGeneration();
+      handleBulkSelectedKeywordAndDescriptionGeneration();
       return;
     }
 
@@ -178,7 +178,7 @@ export default function ClientDetailPage() {
     setTimeout(() => setDescriptionMessage(''), 5000);
   };
 
-  const handleBulkKeywordGeneration = async () => {
+  const handleBulkKeywordAndDescriptionGeneration = async () => {
     if (!client || newlyAddedPages.length === 0) return;
 
     setBulkKeywordProgress({ current: 0, total: newlyAddedPages.length });
@@ -196,28 +196,39 @@ export default function ClientDetailPage() {
       setBulkKeywordProgress({ current: i + 1, total: pagesToProcess.length });
 
       try {
-        // Generate keywords for this page
-        const response = await fetch(`/api/target-pages/${page.id}/keywords`, {
-          method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({
-            targetUrl: page.url
+        // Generate BOTH keywords AND descriptions for this page
+        const [keywordResponse, descriptionResponse] = await Promise.all([
+          fetch(`/api/target-pages/${page.id}/keywords`, {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ targetUrl: page.url })
+          }),
+          fetch(`/api/target-pages/${page.id}/description`, {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ targetUrl: page.url })
           })
-        });
+        ]);
 
-        if (response.ok) {
-          const result = await response.json();
-          console.log(`Keywords generated for ${page.url}:`, result.keywords);
+        if (keywordResponse.ok && descriptionResponse.ok) {
+          const [keywordResult, descriptionResult] = await Promise.all([
+            keywordResponse.json(),
+            descriptionResponse.json()
+          ]);
+          console.log(`Keywords & description generated for ${page.url}:`, {
+            keywords: keywordResult.keywords,
+            description: descriptionResult.description
+          });
         } else {
-          console.error(`Failed to generate keywords for ${page.url}`);
+          console.error(`Failed to generate data for ${page.url}`);
         }
 
         // Small delay between requests to avoid overwhelming the API
         if (i < pagesToProcess.length - 1) {
-          await new Promise(resolve => setTimeout(resolve, 1000));
+          await new Promise(resolve => setTimeout(resolve, 1500));
         }
       } catch (error) {
-        console.error(`Error generating keywords for ${page.url}:`, error);
+        console.error(`Error generating data for ${page.url}:`, error);
       }
     }
 
@@ -225,7 +236,7 @@ export default function ClientDetailPage() {
     setBulkKeywordProgress({ current: 0, total: 0 });
     setNewlyAddedPages([]);
     await loadClient();
-    setKeywordMessage(`✅ Bulk keyword generation completed for ${pagesToProcess.length} pages!`);
+    setKeywordMessage(`✅ Bulk keywords & descriptions generation completed for ${pagesToProcess.length} pages!`);
     setTimeout(() => setKeywordMessage(''), 5000);
   };
 
@@ -234,7 +245,7 @@ export default function ClientDetailPage() {
     setNewlyAddedPages([]);
   };
 
-  const handleBulkSelectedKeywordGeneration = async () => {
+  const handleBulkSelectedKeywordAndDescriptionGeneration = async () => {
     if (!client || selectedPages.length === 0) return;
 
     // Get selected target pages from client data
@@ -243,32 +254,36 @@ export default function ClientDetailPage() {
       return targetPages.find((page: any) => page.id === pageId);
     }).filter(Boolean);
 
-    // Count pages with and without keywords
-    const pagesWithKeywords = pagesToProcess.filter((page: any) => page.keywords && page.keywords.trim() !== '');
-    const pagesWithoutKeywords = pagesToProcess.filter((page: any) => !page.keywords || page.keywords.trim() === '');
+    // Count pages with and without data (keywords OR descriptions)
+    const pagesWithData = pagesToProcess.filter((page: any) => 
+      (page.keywords && page.keywords.trim() !== '') || (page.description && page.description.trim() !== '')
+    );
+    const pagesWithoutData = pagesToProcess.filter((page: any) => 
+      (!page.keywords || page.keywords.trim() === '') && (!page.description || page.description.trim() === '')
+    );
 
     let finalPagesToProcess = pagesToProcess;
 
-    // Credit-efficient: Skip pages that already have keywords by default
-    if (pagesWithKeywords.length > 0 && pagesWithoutKeywords.length > 0) {
+    // Credit-efficient: Skip pages that already have data by default
+    if (pagesWithData.length > 0 && pagesWithoutData.length > 0) {
       const choice = confirm(
-        `${pagesWithoutKeywords.length} pages need keywords, ${pagesWithKeywords.length} already have them.\n\n` +
-        `💰 CREDIT SAVER: Click OK to generate keywords ONLY for pages that need them (${pagesWithoutKeywords.length} pages).\n` +
+        `${pagesWithoutData.length} pages need keywords & descriptions, ${pagesWithData.length} already have some data.\n\n` +
+        `💰 CREDIT SAVER: Click OK to generate ONLY for pages that need them (${pagesWithoutData.length} pages).\n` +
         `Click Cancel to regenerate ALL selected pages (${pagesToProcess.length} pages).`
       );
       
       if (choice) {
-        finalPagesToProcess = pagesWithoutKeywords;
+        finalPagesToProcess = pagesWithoutData;
       }
-    } else if (pagesWithKeywords.length > 0 && pagesWithoutKeywords.length === 0) {
+    } else if (pagesWithData.length > 0 && pagesWithoutData.length === 0) {
       const choice = confirm(
-        `All ${pagesWithKeywords.length} selected pages already have keywords.\n\n` +
-        `💰 This will regenerate them all. Continue anyway?`
+        `All ${pagesWithData.length} selected pages already have some data.\n\n` +
+        `💰 This will regenerate keywords & descriptions for all. Continue anyway?`
       );
       
       if (!choice) return;
-    } else if (pagesWithoutKeywords.length > 0) {
-      const choice = confirm(`Generate keywords for ${pagesWithoutKeywords.length} pages?`);
+    } else if (pagesWithoutData.length > 0) {
+      const choice = confirm(`Generate keywords & descriptions for ${pagesWithoutData.length} pages?`);
       if (!choice) return;
     }
 
@@ -282,117 +297,49 @@ export default function ClientDetailPage() {
       setBulkKeywordProgress({ current: i + 1, total: finalPagesToProcess.length });
 
       try {
-        // Generate keywords for this page
-        const response = await fetch(`/api/target-pages/${page.id}/keywords`, {
-          method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({
-            targetUrl: page.url
+        // Generate BOTH keywords AND descriptions for this page
+        const [keywordResponse, descriptionResponse] = await Promise.all([
+          fetch(`/api/target-pages/${page.id}/keywords`, {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ targetUrl: page.url })
+          }),
+          fetch(`/api/target-pages/${page.id}/description`, {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ targetUrl: page.url })
           })
-        });
+        ]);
 
-        if (response.ok) {
-          const result = await response.json();
-          console.log(`Keywords generated for ${page.url}:`, result.keywords);
+        if (keywordResponse.ok && descriptionResponse.ok) {
+          const [keywordResult, descriptionResult] = await Promise.all([
+            keywordResponse.json(),
+            descriptionResponse.json()
+          ]);
+          console.log(`Keywords & description generated for ${page.url}:`, {
+            keywords: keywordResult.keywords,
+            description: descriptionResult.description
+          });
         } else {
-          console.error(`Failed to generate keywords for ${page.url}`);
+          console.error(`Failed to generate data for ${page.url}`);
         }
 
         // Small delay between requests to avoid overwhelming the API
         if (i < finalPagesToProcess.length - 1) {
-          await new Promise(resolve => setTimeout(resolve, 1000));
+          await new Promise(resolve => setTimeout(resolve, 1500));
         }
       } catch (error) {
-        console.error(`Error generating keywords for ${page.url}:`, error);
+        console.error(`Error generating data for ${page.url}:`, error);
       }
     }
 
     // Reset state and refresh data
     setBulkKeywordProgress({ current: 0, total: 0 });
     await loadClient();
-    setKeywordMessage(`✅ Bulk keyword generation completed for ${finalPagesToProcess.length} pages!`);
+    setKeywordMessage(`✅ Bulk keywords & descriptions generation completed for ${finalPagesToProcess.length} pages!`);
     setTimeout(() => setKeywordMessage(''), 5000);
   };
 
-  const handleBulkSelectedDescriptionGeneration = async () => {
-    if (!client || selectedPages.length === 0) return;
-
-    // Get selected target pages from client data
-    const targetPages = (client as any)?.targetPages || [];
-    const pagesToProcess = selectedPages.map(pageId => {
-      return targetPages.find((page: any) => page.id === pageId);
-    }).filter(Boolean);
-
-    // Count pages with and without descriptions
-    const pagesWithDescriptions = pagesToProcess.filter((page: any) => page.description && page.description.trim() !== '');
-    const pagesWithoutDescriptions = pagesToProcess.filter((page: any) => !page.description || page.description.trim() === '');
-
-    let finalPagesToProcess = pagesToProcess;
-
-    // Credit-efficient: Skip pages that already have descriptions by default
-    if (pagesWithDescriptions.length > 0 && pagesWithoutDescriptions.length > 0) {
-      const choice = confirm(
-        `${pagesWithoutDescriptions.length} pages need descriptions, ${pagesWithDescriptions.length} already have them.\n\n` +
-        `💰 CREDIT SAVER: Click OK to generate descriptions ONLY for pages that need them (${pagesWithoutDescriptions.length} pages).\n` +
-        `Click Cancel to regenerate ALL selected pages (${pagesToProcess.length} pages).`
-      );
-      
-      if (choice) {
-        finalPagesToProcess = pagesWithoutDescriptions;
-      }
-    } else if (pagesWithDescriptions.length > 0 && pagesWithoutDescriptions.length === 0) {
-      const choice = confirm(
-        `All ${pagesWithDescriptions.length} selected pages already have descriptions.\n\n` +
-        `💰 This will regenerate them all. Continue anyway?`
-      );
-      
-      if (!choice) return;
-    } else if (pagesWithoutDescriptions.length > 0) {
-      const choice = confirm(`Generate descriptions for ${pagesWithoutDescriptions.length} pages?`);
-      if (!choice) return;
-    }
-
-    // Start bulk generation
-    setBulkKeywordProgress({ current: 0, total: finalPagesToProcess.length });
-    setSelectedPages([]);
-    setBulkAction('');
-
-    for (let i = 0; i < finalPagesToProcess.length; i++) {
-      const page = finalPagesToProcess[i];
-      setBulkKeywordProgress({ current: i + 1, total: finalPagesToProcess.length });
-
-      try {
-        // Generate description for this page
-        const response = await fetch(`/api/target-pages/${page.id}/description`, {
-          method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({
-            targetUrl: page.url
-          })
-        });
-
-        if (response.ok) {
-          const result = await response.json();
-          console.log(`Description generated for ${page.url}:`, result.description);
-        } else {
-          console.error(`Failed to generate description for ${page.url}`);
-        }
-
-        // Small delay between requests to avoid overwhelming the API
-        if (i < finalPagesToProcess.length - 1) {
-          await new Promise(resolve => setTimeout(resolve, 1000));
-        }
-      } catch (error) {
-        console.error(`Error generating description for ${page.url}:`, error);
-      }
-    }
-
-    // Reset state and refresh data
-    setBulkKeywordProgress({ current: 0, total: 0 });
-    await loadClient();
-    setDescriptionMessage(`✅ Bulk description generation completed for ${finalPagesToProcess.length} pages!`);
-    setTimeout(() => setDescriptionMessage(''), 5000);
-  };
 
   const togglePageSelection = (pageId: string) => {
     setSelectedPages(prev => 
@@ -637,22 +584,22 @@ export default function ClientDetailPage() {
           {/* Keyword Generation Prompt */}
           {showKeywordPrompt && (
             <div className="bg-white rounded-lg shadow p-6 mb-6 border-l-4 border-purple-500">
-              <h3 className="text-lg font-medium mb-4 text-purple-800">Generate Keywords for New Pages?</h3>
+              <h3 className="text-lg font-medium mb-4 text-purple-800">Generate Keywords & Descriptions for New Pages?</h3>
               <p className="text-sm text-gray-600 mb-4">
-                You just added {newlyAddedPages.length} new target page(s). Would you like to automatically generate keywords for all of them using AI?
+                You just added {newlyAddedPages.length} new target page(s). Would you like to automatically generate keywords AND descriptions for all of them using AI?
               </p>
               <div className="bg-purple-50 p-3 rounded-md mb-4">
                 <p className="text-xs text-purple-700">
-                  This will use OpenAI to analyze each page and generate relevant keywords for guest post targeting. 
-                  The process takes about 1-2 seconds per page.
+                  This will use OpenAI to analyze each page and generate both relevant keywords and page descriptions for guest post targeting. 
+                  The process takes about 2-3 seconds per page (both APIs run in parallel).
                 </p>
               </div>
               <div className="flex space-x-3">
                 <button
-                  onClick={handleBulkKeywordGeneration}
+                  onClick={handleBulkKeywordAndDescriptionGeneration}
                   className="px-4 py-2 bg-purple-600 text-white text-sm font-medium rounded-md hover:bg-purple-700"
                 >
-                  Yes, Generate Keywords
+                  Yes, Generate Keywords & Descriptions
                 </button>
                 <button
                   onClick={cancelBulkKeywordGeneration}
@@ -667,7 +614,7 @@ export default function ClientDetailPage() {
           {/* Bulk Keyword Generation Progress */}
           {bulkKeywordProgress.total > 0 && (
             <div className="bg-white rounded-lg shadow p-6 mb-6 border-l-4 border-blue-500">
-              <h3 className="text-lg font-medium mb-4 text-blue-800">Generating Keywords...</h3>
+              <h3 className="text-lg font-medium mb-4 text-blue-800">Generating Keywords & Descriptions...</h3>
               <div className="space-y-3">
                 <div className="flex justify-between text-sm">
                   <span>Progress: {bulkKeywordProgress.current} of {bulkKeywordProgress.total} pages</span>
@@ -680,7 +627,7 @@ export default function ClientDetailPage() {
                   ></div>
                 </div>
                 <p className="text-xs text-gray-600">
-                  Please wait while AI generates keywords for your target pages...
+                  Please wait while AI generates keywords & descriptions for your target pages...
                 </p>
               </div>
             </div>
@@ -720,8 +667,7 @@ export default function ClientDetailPage() {
                       <option value="active">Mark as Active</option>
                       <option value="inactive">Mark as Inactive</option>
                       <option value="completed">Mark as Completed</option>
-                      <option value="generate-keywords">Generate Keywords</option>
-                      <option value="generate-descriptions">Generate Descriptions</option>
+                      <option value="generate-keywords">Generate Keywords & Descriptions</option>
                       <option value="delete">Delete</option>
                     </select>
                     <button
