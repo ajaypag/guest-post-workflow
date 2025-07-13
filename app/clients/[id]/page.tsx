@@ -27,6 +27,9 @@ export default function ClientDetailPage() {
   const [filter, setFilter] = useState<'all' | 'active' | 'inactive' | 'completed'>('all');
   const [showKeywordPrefs, setShowKeywordPrefs] = useState(false);
   const [keywordMessage, setKeywordMessage] = useState('');
+  const [showKeywordPrompt, setShowKeywordPrompt] = useState(false);
+  const [newlyAddedPages, setNewlyAddedPages] = useState<any[]>([]);
+  const [bulkKeywordProgress, setBulkKeywordProgress] = useState({ current: 0, total: 0 });
 
   useEffect(() => {
     loadClient();
@@ -62,6 +65,10 @@ export default function ClientDetailPage() {
       setNewPages('');
       setShowAddForm(false);
       await loadClient();
+      
+      // Prompt user to generate keywords for newly added pages
+      setNewlyAddedPages(urls.map(url => ({ url })));
+      setShowKeywordPrompt(true);
     } catch (error: any) {
       alert('Error adding pages: ' + error.message);
     }
@@ -134,6 +141,63 @@ export default function ClientDetailPage() {
     loadClient();
     // Clear message after 5 seconds
     setTimeout(() => setKeywordMessage(''), 5000);
+  };
+
+  const handleBulkKeywordGeneration = async () => {
+    if (!client || newlyAddedPages.length === 0) return;
+
+    setBulkKeywordProgress({ current: 0, total: newlyAddedPages.length });
+    setShowKeywordPrompt(false);
+
+    // Find the actual target page IDs from the loaded client data
+    const targetPages = (client as any)?.targetPages || [];
+    const pagesToProcess = newlyAddedPages.map(newPage => {
+      const foundPage = targetPages.find((page: any) => page.url === newPage.url);
+      return foundPage;
+    }).filter(Boolean);
+
+    for (let i = 0; i < pagesToProcess.length; i++) {
+      const page = pagesToProcess[i];
+      setBulkKeywordProgress({ current: i + 1, total: pagesToProcess.length });
+
+      try {
+        // Generate keywords for this page
+        const response = await fetch('/api/target-pages/generate-keywords', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            targetPageId: page.id,
+            targetUrl: page.url
+          })
+        });
+
+        if (response.ok) {
+          const result = await response.json();
+          console.log(`Keywords generated for ${page.url}:`, result.keywords);
+        } else {
+          console.error(`Failed to generate keywords for ${page.url}`);
+        }
+
+        // Small delay between requests to avoid overwhelming the API
+        if (i < pagesToProcess.length - 1) {
+          await new Promise(resolve => setTimeout(resolve, 1000));
+        }
+      } catch (error) {
+        console.error(`Error generating keywords for ${page.url}:`, error);
+      }
+    }
+
+    // Reset state and refresh data
+    setBulkKeywordProgress({ current: 0, total: 0 });
+    setNewlyAddedPages([]);
+    await loadClient();
+    setKeywordMessage(`✅ Bulk keyword generation completed for ${pagesToProcess.length} pages!`);
+    setTimeout(() => setKeywordMessage(''), 5000);
+  };
+
+  const cancelBulkKeywordGeneration = () => {
+    setShowKeywordPrompt(false);
+    setNewlyAddedPages([]);
   };
 
   const togglePageSelection = (pageId: string) => {
@@ -362,6 +426,58 @@ export default function ClientDetailPage() {
                   </button>
                 </div>
               </form>
+            </div>
+          )}
+
+          {/* Keyword Generation Prompt */}
+          {showKeywordPrompt && (
+            <div className="bg-white rounded-lg shadow p-6 mb-6 border-l-4 border-purple-500">
+              <h3 className="text-lg font-medium mb-4 text-purple-800">Generate Keywords for New Pages?</h3>
+              <p className="text-sm text-gray-600 mb-4">
+                You just added {newlyAddedPages.length} new target page(s). Would you like to automatically generate keywords for all of them using AI?
+              </p>
+              <div className="bg-purple-50 p-3 rounded-md mb-4">
+                <p className="text-xs text-purple-700">
+                  This will use OpenAI to analyze each page and generate relevant keywords for guest post targeting. 
+                  The process takes about 1-2 seconds per page.
+                </p>
+              </div>
+              <div className="flex space-x-3">
+                <button
+                  onClick={handleBulkKeywordGeneration}
+                  className="px-4 py-2 bg-purple-600 text-white text-sm font-medium rounded-md hover:bg-purple-700"
+                >
+                  Yes, Generate Keywords
+                </button>
+                <button
+                  onClick={cancelBulkKeywordGeneration}
+                  className="px-4 py-2 bg-gray-200 text-gray-800 text-sm font-medium rounded-md hover:bg-gray-300"
+                >
+                  Skip for Now
+                </button>
+              </div>
+            </div>
+          )}
+
+          {/* Bulk Keyword Generation Progress */}
+          {bulkKeywordProgress.total > 0 && (
+            <div className="bg-white rounded-lg shadow p-6 mb-6 border-l-4 border-blue-500">
+              <h3 className="text-lg font-medium mb-4 text-blue-800">Generating Keywords...</h3>
+              <div className="space-y-3">
+                <div className="flex justify-between text-sm">
+                  <span>Progress: {bulkKeywordProgress.current} of {bulkKeywordProgress.total} pages</span>
+                  <span>{Math.round((bulkKeywordProgress.current / bulkKeywordProgress.total) * 100)}%</span>
+                </div>
+                <div className="w-full bg-gray-200 rounded-full h-2">
+                  <div 
+                    className="bg-blue-600 h-2 rounded-full transition-all duration-300"
+                    style={{ width: `${(bulkKeywordProgress.current / bulkKeywordProgress.total) * 100}%` }}
+                  ></div>
+                </div>
+                <p className="text-xs text-gray-600">
+                  Please wait while AI generates keywords for your target pages...
+                </p>
+              </div>
             </div>
           )}
 
