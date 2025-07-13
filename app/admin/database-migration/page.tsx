@@ -164,6 +164,83 @@ export default function DatabaseMigrationPage() {
     setIsLoading(false);
   };
 
+  const checkAgenticTablesExist = async () => {
+    setIsLoading(true);
+    setMessage('');
+    
+    try {
+      const response = await fetch('/api/admin/check-agentic-tables');
+      const data = await response.json();
+      
+      if (data.exists) {
+        setMessage('✅ Agentic workflow tables (article_sections, agent_sessions) exist');
+        setMessageType('success');
+      } else {
+        setMessage(`ℹ️ ${data.message || 'Agentic workflow tables do not exist'}`);
+        setMessageType('info');
+      }
+    } catch (error) {
+      setMessage(`❌ Error checking agentic tables: ${error instanceof Error ? error.message : 'Unknown error'}`);
+      setMessageType('error');
+    }
+    
+    setIsLoading(false);
+  };
+
+  const runAgenticMigration = async () => {
+    setIsLoading(true);
+    setMessage('');
+    
+    try {
+      const response = await fetch('/api/admin/migrate-agentic', {
+        method: 'POST'
+      });
+      const data = await response.json();
+      
+      if (data.success) {
+        setMessage('✅ Agentic workflow tables migration completed successfully!');
+        setMessageType('success');
+      } else {
+        setMessage(`❌ Migration failed: ${data.error}`);
+        setMessageType('error');
+      }
+    } catch (error) {
+      setMessage(`❌ Error: ${error instanceof Error ? error.message : 'Unknown error'}`);
+      setMessageType('error');
+    }
+    
+    setIsLoading(false);
+  };
+
+  const runAgenticRollback = async () => {
+    if (!confirm('Are you sure you want to remove the agentic workflow tables? This will delete all AI-generated articles and session data.')) {
+      return;
+    }
+    
+    setIsLoading(true);
+    setMessage('');
+    
+    try {
+      const response = await fetch('/api/admin/migrate-agentic', {
+        method: 'DELETE'
+      });
+      const data = await response.json();
+      
+      if (data.success) {
+        setMessage('✅ Agentic workflow tables rollback completed successfully!');
+        setMessageType('success');
+      } else {
+        setMessage(`❌ Rollback failed: ${data.error}`);
+        setMessageType('error');
+      }
+    } catch (error) {
+      setMessage(`❌ Error: ${error instanceof Error ? error.message : 'Unknown error'}`);
+      setMessageType('error');
+    }
+    
+    setIsLoading(false);
+  };
+
   return (
     <div className="min-h-screen bg-gray-50 py-8">
       <div className="max-w-4xl mx-auto px-4 sm:px-6 lg:px-8">
@@ -316,6 +393,82 @@ export default function DatabaseMigrationPage() {
               >
                 <RotateCcw className="w-4 h-4 mr-2" />
                 {isLoading ? 'Rolling Back...' : 'Remove Description Column'}
+              </button>
+            </div>
+          </div>
+
+          {/* Agentic Workflow Tables Migration Section */}
+          <div className="mt-12 mb-8">
+            <h2 className="text-lg font-semibold text-gray-900 mb-4">Agentic Workflow Tables Migration</h2>
+            <p className="text-gray-600 mb-4">
+              This migration creates the <code className="bg-gray-100 px-2 py-1 rounded">article_sections</code> and{' '}
+              <code className="bg-gray-100 px-2 py-1 rounded">agent_sessions</code> tables required for AI-powered 
+              automatic article generation using OpenAI Agents SDK.
+            </p>
+            
+            <div className="bg-purple-50 border border-purple-200 rounded-lg p-4 mb-6">
+              <div className="flex items-start space-x-3">
+                <AlertTriangle className="w-5 h-5 text-purple-600 mt-0.5" />
+                <div>
+                  <h3 className="text-sm font-semibold text-purple-800">Agentic Workflow Features:</h3>
+                  <ul className="text-sm text-purple-700 mt-2 space-y-1">
+                    <li>• Enables fully automated article generation in Article Draft step</li>
+                    <li>• Stores article sections and generation progress in real-time</li>
+                    <li>• Tracks AI agent sessions and conversation context</li>
+                    <li>• Required for the "🤖 AI Agent (Auto)" tab functionality</li>
+                    <li>• Safe migration - creates new tables without affecting existing data</li>
+                  </ul>
+                </div>
+              </div>
+            </div>
+          </div>
+
+          <div className="space-y-4 mb-8">
+            {/* Check Agentic Tables Status */}
+            <div className="border border-gray-200 rounded-lg p-4">
+              <h3 className="font-semibold text-gray-900 mb-2">Check Agentic Tables Status</h3>
+              <p className="text-gray-600 text-sm mb-3">
+                Check if the agentic workflow tables already exist in your database.
+              </p>
+              <button
+                onClick={checkAgenticTablesExist}
+                disabled={isLoading}
+                className="inline-flex items-center px-4 py-2 bg-blue-600 text-white text-sm font-medium rounded-md hover:bg-blue-700 disabled:opacity-50 disabled:cursor-not-allowed"
+              >
+                <Database className="w-4 h-4 mr-2" />
+                {isLoading ? 'Checking...' : 'Check Agentic Tables Status'}
+              </button>
+            </div>
+
+            {/* Run Agentic Migration */}
+            <div className="border border-green-200 rounded-lg p-4">
+              <h3 className="font-semibold text-gray-900 mb-2">Create Agentic Workflow Tables</h3>
+              <p className="text-gray-600 text-sm mb-3">
+                Create the article_sections and agent_sessions tables to enable AI-powered article generation.
+              </p>
+              <button
+                onClick={runAgenticMigration}
+                disabled={isLoading}
+                className="inline-flex items-center px-4 py-2 bg-green-600 text-white text-sm font-medium rounded-md hover:bg-green-700 disabled:opacity-50 disabled:cursor-not-allowed"
+              >
+                <Play className="w-4 h-4 mr-2" />
+                {isLoading ? 'Running Migration...' : 'Create Agentic Tables'}
+              </button>
+            </div>
+
+            {/* Agentic Rollback */}
+            <div className="border border-red-200 rounded-lg p-4">
+              <h3 className="font-semibold text-gray-900 mb-2">Remove Agentic Workflow Tables (Rollback)</h3>
+              <p className="text-gray-600 text-sm mb-3">
+                Remove the agentic workflow tables and all stored AI-generated articles and sessions. This action cannot be undone.
+              </p>
+              <button
+                onClick={runAgenticRollback}
+                disabled={isLoading}
+                className="inline-flex items-center px-4 py-2 bg-red-600 text-white text-sm font-medium rounded-md hover:bg-red-700 disabled:opacity-50 disabled:cursor-not-allowed"
+              >
+                <RotateCcw className="w-4 h-4 mr-2" />
+                {isLoading ? 'Rolling Back...' : 'Remove Agentic Tables'}
               </button>
             </div>
           </div>
