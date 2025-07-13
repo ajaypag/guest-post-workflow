@@ -109,6 +109,10 @@ function parseDescriptionFromResponse(content: string): string {
       description = description.replace(regex, '');
     }
     
+    // Remove source citations like (outreachlabs.com) or ([outreachlabs.com](url))
+    description = description.replace(/\s*\([^)]*\)\s*/g, ' ');
+    description = description.replace(/\s*\[[^\]]*\]\([^)]*\)\s*/g, ' ');
+    
     // Remove markdown formatting
     description = description.replace(/\*\*(.*?)\*\*/g, '$1'); // Remove bold
     description = description.replace(/\*(.*?)\*/g, '$1');     // Remove italic
@@ -128,9 +132,9 @@ function parseDescriptionFromResponse(content: string): string {
       description += '.';
     }
     
-    // Limit description length (500 characters should be plenty)
-    if (description.length > 500) {
-      description = description.substring(0, 497) + '...';
+    // Limit description length (2000 characters for full descriptions)
+    if (description.length > 2000) {
+      description = description.substring(0, 1997) + '...';
     }
     
     console.log('✅ Final parsed description:', description);
