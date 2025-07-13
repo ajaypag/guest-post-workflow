@@ -22,7 +22,7 @@ export default function ClientDetailPage() {
   const [client, setClient] = useState<Client | null>(null);
   const [selectedPages, setSelectedPages] = useState<string[]>([]);
   const [showAddForm, setShowAddForm] = useState(false);
-  const [bulkAction, setBulkAction] = useState<'active' | 'inactive' | 'completed' | 'delete' | ''>('');
+  const [bulkAction, setBulkAction] = useState<'active' | 'inactive' | 'completed' | 'delete' | 'generate-keywords' | ''>('');
   const [newPages, setNewPages] = useState('');
   const [filter, setFilter] = useState<'all' | 'active' | 'inactive' | 'completed'>('all');
   const [showKeywordPrefs, setShowKeywordPrefs] = useState(false);
@@ -76,6 +76,11 @@ export default function ClientDetailPage() {
 
   const handleBulkAction = async () => {
     if (!client || selectedPages.length === 0 || !bulkAction) return;
+
+    if (bulkAction === 'generate-keywords') {
+      handleBulkSelectedKeywordGeneration();
+      return;
+    }
 
     const confirmMessage = bulkAction === 'delete' 
       ? `Delete ${selectedPages.length} selected pages?`
@@ -197,6 +202,71 @@ export default function ClientDetailPage() {
   const cancelBulkKeywordGeneration = () => {
     setShowKeywordPrompt(false);
     setNewlyAddedPages([]);
+  };
+
+  const handleBulkSelectedKeywordGeneration = async () => {
+    if (!client || selectedPages.length === 0) return;
+
+    // Get selected target pages from client data
+    const targetPages = (client as any)?.targetPages || [];
+    const pagesToProcess = selectedPages.map(pageId => {
+      return targetPages.find((page: any) => page.id === pageId);
+    }).filter(Boolean);
+
+    // Count pages with and without keywords
+    const pagesWithKeywords = pagesToProcess.filter((page: any) => page.keywords && page.keywords.trim() !== '');
+    const pagesWithoutKeywords = pagesToProcess.filter((page: any) => !page.keywords || page.keywords.trim() === '');
+
+    let confirmMessage = `Generate keywords for ${pagesToProcess.length} selected pages?`;
+    if (pagesWithKeywords.length > 0) {
+      confirmMessage += `\n\n${pagesWithKeywords.length} pages already have keywords and will be regenerated.`;
+    }
+    if (pagesWithoutKeywords.length > 0) {
+      confirmMessage += `\n${pagesWithoutKeywords.length} pages don't have keywords yet.`;
+    }
+
+    if (!confirm(confirmMessage)) return;
+
+    // Start bulk generation
+    setBulkKeywordProgress({ current: 0, total: pagesToProcess.length });
+    setSelectedPages([]);
+    setBulkAction('');
+
+    for (let i = 0; i < pagesToProcess.length; i++) {
+      const page = pagesToProcess[i];
+      setBulkKeywordProgress({ current: i + 1, total: pagesToProcess.length });
+
+      try {
+        // Generate keywords for this page
+        const response = await fetch(`/api/target-pages/${page.id}/keywords`, {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            targetUrl: page.url
+          })
+        });
+
+        if (response.ok) {
+          const result = await response.json();
+          console.log(`Keywords generated for ${page.url}:`, result.keywords);
+        } else {
+          console.error(`Failed to generate keywords for ${page.url}`);
+        }
+
+        // Small delay between requests to avoid overwhelming the API
+        if (i < pagesToProcess.length - 1) {
+          await new Promise(resolve => setTimeout(resolve, 1000));
+        }
+      } catch (error) {
+        console.error(`Error generating keywords for ${page.url}:`, error);
+      }
+    }
+
+    // Reset state and refresh data
+    setBulkKeywordProgress({ current: 0, total: 0 });
+    await loadClient();
+    setKeywordMessage(`✅ Bulk keyword generation completed for ${pagesToProcess.length} selected pages!`);
+    setTimeout(() => setKeywordMessage(''), 5000);
   };
 
   const togglePageSelection = (pageId: string) => {
@@ -514,6 +584,7 @@ export default function ClientDetailPage() {
                       <option value="active">Mark as Active</option>
                       <option value="inactive">Mark as Inactive</option>
                       <option value="completed">Mark as Completed</option>
+                      <option value="generate-keywords">Generate Keywords</option>
                       <option value="delete">Delete</option>
                     </select>
                     <button
