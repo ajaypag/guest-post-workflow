@@ -247,24 +247,39 @@ export default function ClientDetailPage() {
     const pagesWithKeywords = pagesToProcess.filter((page: any) => page.keywords && page.keywords.trim() !== '');
     const pagesWithoutKeywords = pagesToProcess.filter((page: any) => !page.keywords || page.keywords.trim() === '');
 
-    let confirmMessage = `Generate keywords for ${pagesToProcess.length} selected pages?`;
-    if (pagesWithKeywords.length > 0) {
-      confirmMessage += `\n\n${pagesWithKeywords.length} pages already have keywords and will be regenerated.`;
-    }
-    if (pagesWithoutKeywords.length > 0) {
-      confirmMessage += `\n${pagesWithoutKeywords.length} pages don't have keywords yet.`;
-    }
+    let finalPagesToProcess = pagesToProcess;
 
-    if (!confirm(confirmMessage)) return;
+    // Credit-efficient: Skip pages that already have keywords by default
+    if (pagesWithKeywords.length > 0 && pagesWithoutKeywords.length > 0) {
+      const choice = confirm(
+        `${pagesWithoutKeywords.length} pages need keywords, ${pagesWithKeywords.length} already have them.\n\n` +
+        `💰 CREDIT SAVER: Click OK to generate keywords ONLY for pages that need them (${pagesWithoutKeywords.length} pages).\n` +
+        `Click Cancel to regenerate ALL selected pages (${pagesToProcess.length} pages).`
+      );
+      
+      if (choice) {
+        finalPagesToProcess = pagesWithoutKeywords;
+      }
+    } else if (pagesWithKeywords.length > 0 && pagesWithoutKeywords.length === 0) {
+      const choice = confirm(
+        `All ${pagesWithKeywords.length} selected pages already have keywords.\n\n` +
+        `💰 This will regenerate them all. Continue anyway?`
+      );
+      
+      if (!choice) return;
+    } else if (pagesWithoutKeywords.length > 0) {
+      const choice = confirm(`Generate keywords for ${pagesWithoutKeywords.length} pages?`);
+      if (!choice) return;
+    }
 
     // Start bulk generation
-    setBulkKeywordProgress({ current: 0, total: pagesToProcess.length });
+    setBulkKeywordProgress({ current: 0, total: finalPagesToProcess.length });
     setSelectedPages([]);
     setBulkAction('');
 
-    for (let i = 0; i < pagesToProcess.length; i++) {
-      const page = pagesToProcess[i];
-      setBulkKeywordProgress({ current: i + 1, total: pagesToProcess.length });
+    for (let i = 0; i < finalPagesToProcess.length; i++) {
+      const page = finalPagesToProcess[i];
+      setBulkKeywordProgress({ current: i + 1, total: finalPagesToProcess.length });
 
       try {
         // Generate keywords for this page
@@ -284,7 +299,7 @@ export default function ClientDetailPage() {
         }
 
         // Small delay between requests to avoid overwhelming the API
-        if (i < pagesToProcess.length - 1) {
+        if (i < finalPagesToProcess.length - 1) {
           await new Promise(resolve => setTimeout(resolve, 1000));
         }
       } catch (error) {
@@ -295,7 +310,7 @@ export default function ClientDetailPage() {
     // Reset state and refresh data
     setBulkKeywordProgress({ current: 0, total: 0 });
     await loadClient();
-    setKeywordMessage(`✅ Bulk keyword generation completed for ${pagesToProcess.length} selected pages!`);
+    setKeywordMessage(`✅ Bulk keyword generation completed for ${finalPagesToProcess.length} pages!`);
     setTimeout(() => setKeywordMessage(''), 5000);
   };
 
@@ -312,24 +327,39 @@ export default function ClientDetailPage() {
     const pagesWithDescriptions = pagesToProcess.filter((page: any) => page.description && page.description.trim() !== '');
     const pagesWithoutDescriptions = pagesToProcess.filter((page: any) => !page.description || page.description.trim() === '');
 
-    let confirmMessage = `Generate descriptions for ${pagesToProcess.length} selected pages?`;
-    if (pagesWithDescriptions.length > 0) {
-      confirmMessage += `\n\n${pagesWithDescriptions.length} pages already have descriptions and will be regenerated.`;
-    }
-    if (pagesWithoutDescriptions.length > 0) {
-      confirmMessage += `\n${pagesWithoutDescriptions.length} pages don't have descriptions yet.`;
-    }
+    let finalPagesToProcess = pagesToProcess;
 
-    if (!confirm(confirmMessage)) return;
+    // Credit-efficient: Skip pages that already have descriptions by default
+    if (pagesWithDescriptions.length > 0 && pagesWithoutDescriptions.length > 0) {
+      const choice = confirm(
+        `${pagesWithoutDescriptions.length} pages need descriptions, ${pagesWithDescriptions.length} already have them.\n\n` +
+        `💰 CREDIT SAVER: Click OK to generate descriptions ONLY for pages that need them (${pagesWithoutDescriptions.length} pages).\n` +
+        `Click Cancel to regenerate ALL selected pages (${pagesToProcess.length} pages).`
+      );
+      
+      if (choice) {
+        finalPagesToProcess = pagesWithoutDescriptions;
+      }
+    } else if (pagesWithDescriptions.length > 0 && pagesWithoutDescriptions.length === 0) {
+      const choice = confirm(
+        `All ${pagesWithDescriptions.length} selected pages already have descriptions.\n\n` +
+        `💰 This will regenerate them all. Continue anyway?`
+      );
+      
+      if (!choice) return;
+    } else if (pagesWithoutDescriptions.length > 0) {
+      const choice = confirm(`Generate descriptions for ${pagesWithoutDescriptions.length} pages?`);
+      if (!choice) return;
+    }
 
     // Start bulk generation
-    setBulkKeywordProgress({ current: 0, total: pagesToProcess.length });
+    setBulkKeywordProgress({ current: 0, total: finalPagesToProcess.length });
     setSelectedPages([]);
     setBulkAction('');
 
-    for (let i = 0; i < pagesToProcess.length; i++) {
-      const page = pagesToProcess[i];
-      setBulkKeywordProgress({ current: i + 1, total: pagesToProcess.length });
+    for (let i = 0; i < finalPagesToProcess.length; i++) {
+      const page = finalPagesToProcess[i];
+      setBulkKeywordProgress({ current: i + 1, total: finalPagesToProcess.length });
 
       try {
         // Generate description for this page
@@ -349,7 +379,7 @@ export default function ClientDetailPage() {
         }
 
         // Small delay between requests to avoid overwhelming the API
-        if (i < pagesToProcess.length - 1) {
+        if (i < finalPagesToProcess.length - 1) {
           await new Promise(resolve => setTimeout(resolve, 1000));
         }
       } catch (error) {
@@ -360,7 +390,7 @@ export default function ClientDetailPage() {
     // Reset state and refresh data
     setBulkKeywordProgress({ current: 0, total: 0 });
     await loadClient();
-    setDescriptionMessage(`✅ Bulk description generation completed for ${pagesToProcess.length} selected pages!`);
+    setDescriptionMessage(`✅ Bulk description generation completed for ${finalPagesToProcess.length} pages!`);
     setTimeout(() => setDescriptionMessage(''), 5000);
   };
 
