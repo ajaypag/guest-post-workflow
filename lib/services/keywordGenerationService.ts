@@ -14,17 +14,26 @@ interface KeywordGenerationResult {
  */
 export async function generateKeywords(targetUrl: string): Promise<KeywordGenerationResult> {
   try {
+    console.log('🔍 generateKeywords called with URL:', targetUrl);
+    
     if (!process.env.OPENAI_API_KEY) {
+      console.error('🔴 Missing OPENAI_API_KEY environment variable');
       throw new Error('OpenAI API key not configured');
     }
+
+    console.log('🔑 OpenAI API key found, initializing client...');
 
     // Initialize OpenAI client inside the function to avoid build-time issues
     const openai = new OpenAI({
       apiKey: process.env.OPENAI_API_KEY,
     });
 
+    console.log('🟡 OpenAI client initialized, starting keyword generation...');
+
     // Step 1: Initial keyword generation with the provided prompt ID
     const initialInput = targetUrl;
+    
+    console.log('🚀 Making initial OpenAI Responses API call...');
     
     const initialResponse = await openai.responses.create({
       model: "o3",
@@ -36,7 +45,7 @@ export async function generateKeywords(targetUrl: string): Promise<KeywordGenera
       store: true
     });
 
-    console.log('Initial keyword generation response:', {
+    console.log('✅ Initial keyword generation response received:', {
       id: initialResponse.id,
       status: initialResponse.status,
       contentLength: initialResponse.output_text?.length || 0
@@ -44,6 +53,8 @@ export async function generateKeywords(targetUrl: string): Promise<KeywordGenera
 
     // Step 2: Follow-up question about listicles
     const followUpInput = "should any of these be listicles? if so, which ones";
+    
+    console.log('🚀 Making follow-up OpenAI Responses API call...');
     
     const followUpResponse = await openai.responses.create({
       model: "o3",
@@ -53,7 +64,7 @@ export async function generateKeywords(targetUrl: string): Promise<KeywordGenera
       store: true
     });
 
-    console.log('Follow-up listicle response:', {
+    console.log('✅ Follow-up listicle response received:', {
       id: followUpResponse.id,
       status: followUpResponse.status,
       contentLength: followUpResponse.output_text?.length || 0
