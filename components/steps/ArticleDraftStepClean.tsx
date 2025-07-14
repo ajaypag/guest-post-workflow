@@ -7,6 +7,7 @@ import { CopyButton } from '../ui/CopyButton';
 import { TutorialVideo } from '../ui/TutorialVideo';
 import { ChatInterface } from '../ui/ChatInterface';
 import { AgenticArticleGenerator } from '../ui/AgenticArticleGenerator';
+import { SplitPromptButton } from '../ui/SplitPromptButton';
 import { ExternalLink, ChevronDown, ChevronRight, FileText, CheckCircle, AlertCircle, Target, RefreshCw, BookOpen } from 'lucide-react';
 
 interface ArticleDraftStepProps {
@@ -82,6 +83,84 @@ ${outlineContent || '((((Complete Step 3: Deep Research first to get outline con
         return <Target className="w-5 h-5 text-blue-500" />;
       default:
         return <AlertCircle className="w-5 h-5 text-gray-400" />;
+    }
+  };
+
+  // Handle chat message sending
+  const handleSendMessage = async (message: string) => {
+    setIsLoading(true);
+    
+    // Add user message to conversation
+    const userMessage = {
+      role: 'user' as const,
+      content: message,
+      timestamp: new Date()
+    };
+    
+    setConversation(prev => [...prev, userMessage]);
+
+    try {
+      // Determine which API endpoint to use
+      const endpoint = conversationId ? '/api/ai/responses/continue' : '/api/ai/responses/create';
+      
+      const requestBody = conversationId 
+        ? {
+            previous_response_id: conversationId,
+            input: message
+          }
+        : {
+            input: message, // Use the exact message (which could be planningPrompt, titleIntroPrompt, etc.)
+            outline_content: outlineContent
+          };
+
+      const response = await fetch(endpoint, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify(requestBody),
+      });
+
+      if (!response.ok) {
+        const errorData = await response.json();
+        console.error('API Error:', errorData);
+        throw new Error(errorData.details || `HTTP error! status: ${response.status}`);
+      }
+
+      const data = await response.json();
+      console.log('Response data:', data);
+
+      // Add AI response to conversation
+      const aiMessage = {
+        role: 'assistant' as const,
+        content: data.content || data.message || 'No response received',
+        timestamp: new Date(),
+        tokenUsage: data.tokenUsage
+      };
+
+      setConversation(prev => [...prev, aiMessage]);
+      
+      // Update conversation ID for future messages (using response.id)
+      if (data.id) {
+        console.log('Setting conversation ID:', data.id);
+        setConversationId(data.id);
+      } else {
+        console.warn('No ID in response:', data);
+      }
+
+    } catch (error) {
+      console.error('Error sending message:', error);
+      
+      // Add error message to conversation
+      const errorMessage = {
+        role: 'assistant' as const,
+        content: `Error: ${error instanceof Error ? error.message : 'Unknown error occurred'}`,
+        timestamp: new Date()
+      };
+      
+      setConversation(prev => [...prev, errorMessage]);
+    } finally {
+      setIsLoading(false);
     }
   };
 
@@ -470,71 +549,161 @@ ${outlineContent || '((((Complete Step 3: Deep Research first to get outline con
             </div>
           ) : activeTab === 'builtin' ? (
             <div className="space-y-6">
-              {/* Built-in Chat Interface */}
+              {/* Built-in Chat Interface with Workflow */}
               <div className="bg-gray-50 rounded-lg p-4">
-                <h3 className="font-medium text-gray-900 mb-2">Built-in Chat Interface</h3>
+                <h3 className="font-medium text-gray-900 mb-2">Interactive Article Writing</h3>
                 <p className="text-sm text-gray-600 mb-4">
-                  Use the built-in chat to write your article with the same prompts and workflow.
+                  Use the same prompts and workflow as ChatGPT.com, but with an integrated chat interface. Click buttons to send prompts or edit them first.
                 </p>
-                
-                <ChatInterface
-                  conversation={conversation}
-                  onSendMessage={async (message: string) => {
-                    setIsLoading(true);
-                    try {
-                      // Built-in chat API call
-                      const response = await fetch('/api/ai/responses/create', {
-                        method: 'POST',
-                        headers: { 'Content-Type': 'application/json' },
-                        body: JSON.stringify({
-                          message,
-                          conversation_id: conversationId,
-                          model: 'o3-high',
-                          system_prompt: 'You are an expert content writer for guest posts.'
-                        })
-                      });
-                      
-                      const data = await response.json();
-                      
-                      if (response.ok) {
-                        const newConversation = [
-                          ...conversation,
-                          { role: 'user' as const, content: message, timestamp: new Date() },
-                          { role: 'assistant' as const, content: data.content || data.message, timestamp: new Date() }
-                        ];
-                        setConversation(newConversation);
-                        
-                        if (data.id) {
-                          setConversationId(data.id);
-                        }
-                      } else {
-                        throw new Error(data.error || 'Failed to get response');
-                      }
-                    } catch (error) {
-                      console.error('Chat error:', error);
-                      const errorMsg = { role: 'assistant' as const, content: `Error: ${error instanceof Error ? error.message : 'Unknown error'}`, timestamp: new Date() };
-                      setConversation(prev => [...prev, errorMsg]);
-                    } finally {
-                      setIsLoading(false);
-                    }
-                  }}
-                  isLoading={isLoading}
-                  height={chatHeight}
-                  onHeightChange={setChatHeight}
-                  prefilledInput={prefilledInput}
-                  onPrefilledInputChange={setPrefilledInput}
-                />
+
+                {/* Workflow Section 1: Planning */}
+                <div className="mb-6 bg-white rounded-lg p-4 border">
+                  <h4 className="font-medium text-gray-800 mb-3 flex items-center">
+                    <StatusIcon status={getStepStatus('planning')} />
+                    <span className="ml-2">Step 1: Planning Phase</span>
+                  </h4>
+                  
+                  {outlineContent ? (
+                    <div className="bg-green-50 border border-green-200 rounded-lg p-3 mb-3">
+                      <div className="flex items-center">
+                        <CheckCircle className="w-4 h-4 text-green-600 mr-2" />
+                        <p className="text-sm text-green-800">Research outline automatically included</p>
+                      </div>
+                    </div>
+                  ) : (
+                    <div className="bg-yellow-50 border border-yellow-200 rounded-lg p-3 mb-3">
+                      <div className="flex items-center">
+                        <AlertCircle className="w-4 h-4 text-yellow-500 mr-2" />
+                        <p className="text-sm text-yellow-800">Complete Step 3 (Deep Research) first</p>
+                      </div>
+                    </div>
+                  )}
+
+                  <SplitPromptButton
+                    onSend={() => handleSendMessage(planningPrompt)}
+                    onEdit={() => setPrefilledInput(planningPrompt)}
+                    disabled={!outlineContent}
+                    className="w-full"
+                  >
+                    <div className="text-left">
+                      <div className="font-medium text-sm text-gray-800">Planning Prompt</div>
+                      <div className="text-xs text-gray-600 mt-1">Initialize with research data and plan structure</div>
+                    </div>
+                  </SplitPromptButton>
+                </div>
+
+                {/* Workflow Section 2: Title & Introduction */}
+                <div className="mb-6 bg-white rounded-lg p-4 border">
+                  <h4 className="font-medium text-gray-800 mb-3 flex items-center">
+                    <StatusIcon status={getStepStatus('writing')} />
+                    <span className="ml-2">Step 2: Title & Introduction</span>
+                  </h4>
+                  
+                  <SplitPromptButton
+                    onSend={() => handleSendMessage(titleIntroPrompt)}
+                    onEdit={() => setPrefilledInput(titleIntroPrompt)}
+                    disabled={step.outputs.planningStatus !== 'completed'}
+                    className="w-full"
+                  >
+                    <div className="text-left">
+                      <div className="font-medium text-sm text-gray-800">Title & Introduction Prompt</div>
+                      <div className="text-xs text-gray-600 mt-1">Start writing with title and introduction section</div>
+                    </div>
+                  </SplitPromptButton>
+                </div>
+
+                {/* Workflow Section 3: Looping Sections */}
+                <div className="mb-6 bg-white rounded-lg p-4 border">
+                  <h4 className="font-medium text-gray-800 mb-3 flex items-center">
+                    <StatusIcon status={getStepStatus('writing')} />
+                    <span className="ml-2">Step 3: Continue Each Section</span>
+                  </h4>
+                  
+                  <SplitPromptButton
+                    onSend={() => handleSendMessage(loopingPrompt)}
+                    onEdit={() => setPrefilledInput(loopingPrompt)}
+                    disabled={step.outputs.planningStatus !== 'completed'}
+                    className="w-full"
+                  >
+                    <div className="text-left">
+                      <div className="font-medium text-sm text-gray-800">Next Section Prompt</div>
+                      <div className="text-xs text-gray-600 mt-1">Use this prompt for each subsequent section</div>
+                    </div>
+                  </SplitPromptButton>
+                  
+                  <p className="text-xs text-blue-600 mt-2 italic">
+                    💡 Repeat this prompt until the article is complete
+                  </p>
+                </div>
+
+                {/* Chat Interface */}
+                <div className="bg-white rounded-lg border">
+                  <div className="border-b p-3">
+                    <h4 className="font-medium text-gray-800">Chat Interface</h4>
+                    <p className="text-sm text-gray-600">Click buttons above to send prompts, or type your own messages</p>
+                  </div>
+                  
+                  <ChatInterface
+                    conversation={conversation}
+                    onSendMessage={handleSendMessage}
+                    isLoading={isLoading}
+                    height={chatHeight}
+                    onHeightChange={setChatHeight}
+                    prefilledInput={prefilledInput}
+                    onPrefilledInputChange={setPrefilledInput}
+                  />
+                </div>
+
+                {/* Status Tracking */}
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mt-6">
+                  <div>
+                    <label className="block text-sm font-medium text-gray-700 mb-2">Planning Status</label>
+                    <select
+                      value={step.outputs.planningStatus || ''}
+                      onChange={(e) => onChange({ ...step.outputs, planningStatus: e.target.value })}
+                      className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
+                    >
+                      <option value="">Not started</option>
+                      <option value="completed">Planning completed</option>
+                      <option value="in-progress">In progress</option>
+                    </select>
+                  </div>
+                  
+                  <div>
+                    <label className="block text-sm font-medium text-gray-700 mb-2">Draft Status</label>
+                    <select
+                      value={step.outputs.draftStatus || ''}
+                      onChange={(e) => onChange({ ...step.outputs, draftStatus: e.target.value })}
+                      className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
+                    >
+                      <option value="">Not started</option>
+                      <option value="in-progress">Writing sections</option>
+                      <option value="completed">Article completed</option>
+                    </select>
+                  </div>
+                </div>
 
                 {/* Article Output */}
                 <div className="mt-6">
                   <SavedField
                     label="Full Article Text"
                     value={step.outputs.fullArticle || ''}
-                    placeholder="Article content will appear here after chat completion"
+                    placeholder="Copy and paste your completed article here from the chat above. This will be used in subsequent workflow steps."
                     onChange={(value) => onChange({ ...step.outputs, fullArticle: value })}
                     isTextarea={true}
                     height="h-64"
                   />
+                  
+                  {step.outputs.fullArticle && (
+                    <div className="bg-green-50 border border-green-200 rounded-lg p-4 mt-3">
+                      <div className="flex items-center">
+                        <CheckCircle className="w-5 h-5 text-green-600 mr-2" />
+                        <p className="text-sm text-green-800">
+                          Article saved! Ready for content audit and optimization steps.
+                        </p>
+                      </div>
+                    </div>
+                  )}
                 </div>
               </div>
             </div>
