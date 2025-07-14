@@ -113,17 +113,22 @@ export const agentSessions = pgTable('agent_sessions', {
   updatedAt: timestamp('updated_at').notNull(),
 });
 
-// Audit sessions for tracking semantic SEO audit workflows
+// Audit sessions for tracking semantic SEO audit and final polish workflows
 export const auditSessions = pgTable('audit_sessions', {
   id: uuid('id').primaryKey(),
   workflowId: uuid('workflow_id').notNull().references(() => workflows.id, { onDelete: 'cascade' }),
   version: integer('version').notNull().default(1), // Version number for each audit run
-  stepId: varchar('step_id', { length: 100 }).notNull(), // e.g., 'content-audit'
+  stepId: varchar('step_id', { length: 100 }).notNull(), // e.g., 'content-audit', 'final-polish'
+  auditType: varchar('audit_type', { length: 50 }).notNull().default('semantic_seo'), // 'semantic_seo' | 'final_polish'
   status: varchar('status', { length: 50 }).notNull().default('pending'), // 'pending' | 'auditing' | 'completed' | 'error'
   totalSections: integer('total_sections').default(0),
   completedSections: integer('completed_sections').default(0),
   totalCitationsUsed: integer('total_citations_used').default(0), // Track citations across sections
-  originalArticle: text('original_article'), // The article being audited
+  totalProceedSteps: integer('total_proceed_steps').default(0), // For final polish: proceed prompt steps
+  completedProceedSteps: integer('completed_proceed_steps').default(0), // For final polish
+  totalCleanupSteps: integer('total_cleanup_steps').default(0), // For final polish: cleanup prompt steps
+  completedCleanupSteps: integer('completed_cleanup_steps').default(0), // For final polish
+  originalArticle: text('original_article'), // The article being audited/polished
   researchOutline: text('research_outline'), // Research data for context
   auditMetadata: jsonb('audit_metadata'), // Stores editing patterns, context, etc
   errorMessage: text('error_message'),
@@ -133,7 +138,7 @@ export const auditSessions = pgTable('audit_sessions', {
   updatedAt: timestamp('updated_at').notNull(),
 });
 
-// Audit sections for tracking section-by-section semantic SEO audits
+// Audit sections for tracking section-by-section semantic SEO audits and final polish
 export const auditSections = pgTable('audit_sections', {
   id: uuid('id').primaryKey(),
   auditSessionId: uuid('audit_session_id').notNull().references(() => auditSessions.id, { onDelete: 'cascade' }),
@@ -142,11 +147,17 @@ export const auditSections = pgTable('audit_sections', {
   sectionNumber: integer('section_number').notNull(),
   title: varchar('title', { length: 255 }).notNull(),
   originalContent: text('original_content'), // Original section content
-  auditedContent: text('audited_content'), // SEO-optimized content
+  auditedContent: text('audited_content'), // SEO-optimized or polished content
   strengths: text('strengths'), // Identified strengths
   weaknesses: text('weaknesses'), // Identified weaknesses
   editingPattern: varchar('editing_pattern', { length: 100 }), // 'bullets', 'prose', 'citations', etc.
   citationsAdded: integer('citations_added').default(0), // Citations added in this section
+  // Final polish specific fields
+  proceedContent: text('proceed_content'), // Content after proceed prompt (before cleanup)
+  cleanupContent: text('cleanup_content'), // Content after cleanup prompt (final)
+  proceedStatus: varchar('proceed_status', { length: 50 }).default('pending'), // 'pending' | 'processing' | 'completed' | 'error'
+  cleanupStatus: varchar('cleanup_status', { length: 50 }).default('pending'), // 'pending' | 'processing' | 'completed' | 'error'
+  brandComplianceScore: integer('brand_compliance_score'), // 1-10 score for brand alignment
   status: varchar('status', { length: 50 }).notNull().default('pending'), // 'pending' | 'auditing' | 'completed' | 'error'
   auditMetadata: jsonb('audit_metadata'), // Section-specific audit context
   errorMessage: text('error_message'),

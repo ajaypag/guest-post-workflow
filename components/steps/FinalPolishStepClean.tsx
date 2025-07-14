@@ -7,6 +7,7 @@ import { CopyButton } from '../ui/CopyButton';
 import { TutorialVideo } from '../ui/TutorialVideo';
 import { ChatInterface } from '../ui/ChatInterface';
 import { SplitPromptButton } from '../ui/SplitPromptButton';
+import { AgenticFinalPolisher } from '../ui/AgenticFinalPolisher';
 import { ExternalLink, ChevronDown, ChevronRight, Sparkles, CheckCircle, AlertCircle, Target, RefreshCw, FileText } from 'lucide-react';
 
 interface FinalPolishStepProps {
@@ -23,7 +24,7 @@ export const FinalPolishStepClean = ({ step, workflow, onChange }: FinalPolishSt
   });
 
   // Tab system state
-  const [activeTab, setActiveTab] = useState<'chatgpt' | 'builtin'>('chatgpt');
+  const [activeTab, setActiveTab] = useState<'chatgpt' | 'builtin' | 'agentic'>('chatgpt');
 
   // Chat state management
   const [conversation, setConversation] = useState<any[]>([]);
@@ -197,6 +198,19 @@ Review one of my project files for my brand guide and the Semantic SEO writing t
             }`}
           >
             Built-in Chat
+          </button>
+          <button
+            onClick={() => setActiveTab('agentic')}
+            className={`flex-1 px-6 py-4 text-sm font-medium transition-colors ${
+              activeTab === 'agentic'
+                ? 'bg-purple-50 text-purple-700 border-b-2 border-purple-500'
+                : 'text-gray-500 hover:text-gray-700 hover:bg-gray-50'
+            }`}
+          >
+            <div className="flex items-center justify-center space-x-2">
+              <Sparkles className="w-4 h-4" />
+              <span>AI Agent</span>
+            </div>
           </button>
         </div>
 
@@ -523,6 +537,24 @@ Review one of my project files for my brand guide and the Semantic SEO writing t
         )}
       </div>
 
+            </div>
+          ) : activeTab === 'agentic' ? (
+            <div className="space-y-6">
+              {/* AI Agent Polish Interface */}
+              {(() => {
+                const researchOutlineStep = workflow.steps.find(s => s.id === 'deep-research');
+                const outlineContent = researchOutlineStep?.outputs?.outlineContent || '';
+                
+                return (
+                  <AgenticFinalPolisher
+                    workflowId={workflow.id}
+                    seoOptimizedArticle={seoOptimizedArticle}
+                    researchOutline={outlineContent}
+                    existingPolishedArticle={step.outputs?.finalArticle || ''}
+                    onComplete={(polishedArticle) => onChange({ ...step.outputs, finalArticle: polishedArticle })}
+                  />
+                );
+              })()}
             </div>
           ) : (
             <div className="space-y-6">
