@@ -254,13 +254,26 @@ This is an automated workflow - execute these steps without asking for permissio
               .orderBy(articleSections.sectionNumber);
             
             const finalArticle = finalSections.map(section => {
-              // Check if content already includes the header to avoid duplication
-              const contentStartsWithHeader = section.content?.trim().startsWith(`## ${section.title}`);
-              if (contentStartsWithHeader) {
-                return section.content;
-              } else {
-                return `## ${section.title}\n\n${section.content}`;
+              const content = section.content?.trim() || '';
+              const sectionTitle = section.title || '';
+              
+              // Check if content starts with an H2 header that matches this section's title (case-insensitive)
+              const h2Match = content.match(/^##\s+(.+?)(\n|$)/);
+              if (h2Match) {
+                const headerText = h2Match[1].trim();
+                const titleText = sectionTitle.trim();
+                
+                // Compare case-insensitive and handle basic punctuation differences
+                const normalizeText = (text: string) => text.toLowerCase().replace(/[""'"]/g, '"');
+                
+                if (normalizeText(headerText) === normalizeText(titleText)) {
+                  // Agent included the exact section header - use as-is
+                  return section.content;
+                }
               }
+              
+              // Either no header, or header doesn't match section title - add our header
+              return `## ${section.title}\n\n${section.content}`;
             }).join('\n\n');
             
             ssePush(sessionId, { 
@@ -306,12 +319,17 @@ IMMEDIATE NEXT ACTIONS (execute these now):
 2. THEN: Reference the original research data from our conversation history  
 3. IMMEDIATELY: Write the section "${nextSection?.title || 'next section'}" using the write_section function
 
-WRITING INSTRUCTIONS: The format should be primarily narrative, which means the piece is built on flowing prose--full sentences and connected paragraphs that guide the reader smoothly from one idea to the next. They should be short, punchy paragraphs--rarely more than 2-to-3 lines each--so the eye never hits an intimidating wall of text. Frequent line breaks to create natural breathing room and improve scannability. Lists can appear, but only sparingly and only when they truly clarify complex details or highlight a quick sequence the reader might otherwise struggle to absorb. The backbone remains storytelling: each section sets context, explains, and transitions naturally, so the article reads more like a well-structured conversation than a slide deck of bullet points.
+WRITING INSTRUCTIONS: 
+- Format should be primarily narrative with flowing prose and connected paragraphs
+- Short, punchy paragraphs (2-3 lines max) with frequent line breaks for readability
+- Lists only when necessary for clarity
+- Natural storytelling transitions between ideas
+- Avoid Em-dashes
+- Reference the original research data provided at the start of our conversation
+- If this is a "meat" section, break it into subsections and write the first subsection only
 
 Target word count: ${nextSection?.est_words || 'as planned'} words
 Content Requirements: ${nextSection?.content_requirements || 'Follow the planned structure'}
-
-Avoid Em-dashes. Reference the original research data provided at the start of our conversation. If this is a "meat" section, break it into subsections and write the first subsection only.
 
 START WRITING THE NEXT SECTION NOW - DO NOT ASK FOR PERMISSION OR CONFIRMATION.`;
           }
@@ -545,13 +563,26 @@ START WRITING THE NEXT SECTION NOW - DO NOT ASK FOR PERMISSION OR CONFIRMATION.`
 
     // Combine into final article
     const fullArticle = sections.map(section => {
-      // Check if content already includes the header to avoid duplication
-      const contentStartsWithHeader = section.content?.trim().startsWith(`## ${section.title}`);
-      if (contentStartsWithHeader) {
-        return section.content;
-      } else {
-        return `## ${section.title}\n\n${section.content}`;
+      const content = section.content?.trim() || '';
+      const sectionTitle = section.title || '';
+      
+      // Check if content starts with an H2 header that matches this section's title (case-insensitive)
+      const h2Match = content.match(/^##\s+(.+?)(\n|$)/);
+      if (h2Match) {
+        const headerText = h2Match[1].trim();
+        const titleText = sectionTitle.trim();
+        
+        // Compare case-insensitive and handle basic punctuation differences
+        const normalizeText = (text: string) => text.toLowerCase().replace(/[""'"]/g, '"');
+        
+        if (normalizeText(headerText) === normalizeText(titleText)) {
+          // Agent included the exact section header - use as-is
+          return section.content;
+        }
       }
+      
+      // Either no header, or header doesn't match section title - add our header
+      return `## ${section.title}\n\n${section.content}`;
     }).join('\n\n');
 
     const totalWords = sections.reduce((sum, section) => sum + (section.wordCount || 0), 0);
