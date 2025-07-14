@@ -391,6 +391,31 @@ export default function DatabaseMigrationPage() {
     setIsLoading(false);
   };
 
+  const runFinalPolishMigration = async () => {
+    setIsLoading(true);
+    setMessage('');
+    
+    try {
+      const response = await fetch('/api/admin/migrate-final-polish', {
+        method: 'POST'
+      });
+      const data = await response.json();
+      
+      if (data.success) {
+        setMessage('✅ Final polish migration completed successfully!');
+        setMessageType('success');
+      } else {
+        setMessage(`❌ Migration failed: ${data.error}`);
+        setMessageType('error');
+      }
+    } catch (error) {
+      setMessage(`❌ Error: ${error instanceof Error ? error.message : 'Unknown error'}`);
+      setMessageType('error');
+    }
+    
+    setIsLoading(false);
+  };
+
   return (
     <div className="min-h-screen bg-gray-50 py-8">
       <div className="max-w-4xl mx-auto px-4 sm:px-6 lg:px-8">
@@ -771,6 +796,50 @@ export default function DatabaseMigrationPage() {
               >
                 <RotateCcw className="w-4 h-4 mr-2" />
                 {isLoading ? 'Rolling Back...' : 'Remove Semantic Audit Tables'}
+              </button>
+            </div>
+          </div>
+
+          {/* Final Polish Migration Section */}
+          <div className="mt-12 mb-8">
+            <h2 className="text-lg font-semibold text-gray-900 mb-4">Final Polish Migration</h2>
+            <p className="text-gray-600 mb-4">
+              This migration extends the existing audit tables to support final polish workflows. It adds 
+              brand alignment columns and two-prompt workflow tracking to enable AI-powered brand compliance 
+              polishing in Step 7 (Final Polish).
+            </p>
+            
+            <div className="bg-purple-50 border border-purple-200 rounded-lg p-4 mb-6">
+              <div className="flex items-start space-x-3">
+                <AlertTriangle className="w-5 h-5 text-purple-600 mt-0.5" />
+                <div>
+                  <h3 className="text-sm font-semibold text-purple-800">Final Polish Features:</h3>
+                  <ul className="text-sm text-purple-700 mt-2 space-y-1">
+                    <li>• Extends existing audit tables for brand alignment workflows</li>
+                    <li>• Enables two-prompt workflow: proceed → cleanup for each section</li>
+                    <li>• Tracks brand compliance scores and editing patterns</li>
+                    <li>• Required for the "🤖 AI Agent" tab in Final Polish step</li>
+                    <li>• Safe migration - extends existing tables without data loss</li>
+                  </ul>
+                </div>
+              </div>
+            </div>
+          </div>
+
+          <div className="space-y-4 mb-8">
+            {/* Run Final Polish Migration */}
+            <div className="border border-green-200 rounded-lg p-4">
+              <h3 className="font-semibold text-gray-900 mb-2">Enable Final Polish Support</h3>
+              <p className="text-gray-600 text-sm mb-3">
+                Extend audit tables to support brand alignment and two-prompt workflows for AI-powered final polish.
+              </p>
+              <button
+                onClick={runFinalPolishMigration}
+                disabled={isLoading}
+                className="inline-flex items-center px-4 py-2 bg-green-600 text-white text-sm font-medium rounded-md hover:bg-green-700 disabled:opacity-50 disabled:cursor-not-allowed"
+              >
+                <Play className="w-4 h-4 mr-2" />
+                {isLoading ? 'Running Migration...' : 'Enable Final Polish Support'}
               </button>
             </div>
           </div>
