@@ -246,7 +246,15 @@ REQUIRED ACTION: You must now call the write_section function to write the next 
         
         // Process the streaming result
         for await (const event of result.toStream()) {
-          // Stream text deltas for UI only
+          // 1) Log any raw full‐response that slipped through
+          if (event.type === 'raw_model_stream_event' && event.data.response) {
+            console.log(
+              '💡 RAW API RESPONSE:',
+              JSON.stringify(event.data.response, null, 2)
+            );
+          }
+
+          // 2) Stream text deltas for UI only
           if (event.type === 'raw_model_stream_event') {
             if (event.data.type === 'output_text_delta' && event.data.delta) {
               ssePush(sessionId, { type: 'text', content: event.data.delta });
