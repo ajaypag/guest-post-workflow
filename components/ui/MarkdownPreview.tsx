@@ -141,6 +141,38 @@ export const MarkdownPreview = ({ content, className = '' }: MarkdownPreviewProp
                 hr: () => (
                   <hr className="border-gray-300 my-8" />
                 ),
+                table: ({ children }) => (
+                  <div className="overflow-x-auto my-6">
+                    <table className="min-w-full border border-gray-300 border-collapse">
+                      {children}
+                    </table>
+                  </div>
+                ),
+                thead: ({ children }) => (
+                  <thead className="bg-gray-50">
+                    {children}
+                  </thead>
+                ),
+                tbody: ({ children }) => (
+                  <tbody className="bg-white">
+                    {children}
+                  </tbody>
+                ),
+                tr: ({ children }) => (
+                  <tr className="border-b border-gray-200">
+                    {children}
+                  </tr>
+                ),
+                th: ({ children }) => (
+                  <th className="px-4 py-3 text-left text-sm font-semibold text-gray-900 border-r border-gray-300 last:border-r-0">
+                    {children}
+                  </th>
+                ),
+                td: ({ children }) => (
+                  <td className="px-4 py-3 text-sm text-gray-700 border-r border-gray-300 last:border-r-0">
+                    {children}
+                  </td>
+                ),
                 }}
               >
                 {content}
