@@ -139,7 +139,7 @@ Remember we're going to be creating this article section by section. The format 
 
 Start with the title and introduction. Be sure to consult the project documents on Writing Guidelines and Semantic SEO before each section to remind yourself of the best practices that we want to follow. Avoid using Em-dashes. The section you create must follow that of the original outline provided. Remember to keep total word count of article in mind and how you decided to divide up the words per section so you can allocate appropriate word count for this section.
 
-Use the write_section function to write the title and introduction section.`;
+REQUIRED ACTION: You must now call the write_section function to write the title and introduction section. Do not respond with text - call the function immediately.`;
         }
       });
 
@@ -198,7 +198,7 @@ Proceed to the next section. Remember, the format should be primarily narrative,
 
 Be sure to consult the project documents on Writing Guidelines and Semantic SEO before each section to remind yourself of the best practices that we want to follow. Also be sure to reference my original prompt that contains the article information that should feed your context. I've already done the research and given it to you there - so that's what you need to reference each time. Avoid using Em-dashes. If it's the section that is the "meat" of the article, you must further break your output down into subsections and only output the first subsection so as not to over simplify each component. Note: defining what a subsection means is important. We're not doing sub-subsections, so if the section of the article is already apparently a subsection, then that entire section should be included in your output even if there are apparently sub-subsections within. Note 2: the section you create must follow that of the original outline provided. Remember to keep total word count of article in mind and how you decided to divide up the words per section so you can allocate appropriate word count for this section.
 
-Use the write_section function to write the next section.`;
+REQUIRED ACTION: You must now call the write_section function to write the next section. Do not respond with text - call the function immediately.`;
           }
         }
       });
