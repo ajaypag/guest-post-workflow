@@ -207,7 +207,7 @@ Use the write_section function to write the next section.`;
       const agent = new Agent({
         name: 'ArticleWriter',
         instructions: 'You are an expert article writer for guest posts. Follow the user instructions carefully and use the provided tools to plan and write the article systematically.',
-        model: 'o3-2025-01-16',
+        model: 'o3',
         tools: [planTool, writeTool]
       });
 
