@@ -247,11 +247,16 @@ REQUIRED ACTION: You must now call the write_section function to write the next 
         // Process the streaming result
         for await (const event of result.toStream()) {
           // 1) Log any raw full‐response that slipped through
-          if (event.type === 'raw_model_stream_event' && event.data.response) {
-            console.log(
-              '💡 RAW API RESPONSE:',
-              JSON.stringify(event.data.response, null, 2)
-            );
+          if (event.type === 'raw_model_stream_event') {
+            if (event.data.type === 'response_done' && (event.data as any).response) {
+              console.log(
+                '💡 RAW API RESPONSE:',
+                JSON.stringify((event.data as any).response, null, 2)
+              );
+            }
+            
+            // Also log any errors or unexpected events
+            console.log('Raw model stream event:', JSON.stringify(event.data, null, 2));
           }
 
           // 2) Stream text deltas for UI only
