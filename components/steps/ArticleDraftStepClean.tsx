@@ -580,7 +580,11 @@ ${outlineContent || '((((Complete Step 3: Deep Research first to get outline con
                   )}
 
                   <SplitPromptButton
-                    onSend={() => handleSendMessage(planningPrompt)}
+                    onSend={() => {
+                      handleSendMessage(planningPrompt);
+                      // Automatically mark planning as completed when clicked
+                      onChange({ ...step.outputs, planningStatus: 'completed' });
+                    }}
                     onEdit={() => setPrefilledInput(planningPrompt)}
                     disabled={!outlineContent}
                     className="w-full"
@@ -600,7 +604,11 @@ ${outlineContent || '((((Complete Step 3: Deep Research first to get outline con
                   </h4>
                   
                   <SplitPromptButton
-                    onSend={() => handleSendMessage(titleIntroPrompt)}
+                    onSend={() => {
+                      handleSendMessage(titleIntroPrompt);
+                      // Mark draft as in-progress after using title/intro prompt
+                      onChange({ ...step.outputs, draftStatus: 'in-progress' });
+                    }}
                     onEdit={() => setPrefilledInput(titleIntroPrompt)}
                     disabled={step.outputs.planningStatus !== 'completed'}
                     className="w-full"
@@ -622,7 +630,7 @@ ${outlineContent || '((((Complete Step 3: Deep Research first to get outline con
                   <SplitPromptButton
                     onSend={() => handleSendMessage(loopingPrompt)}
                     onEdit={() => setPrefilledInput(loopingPrompt)}
-                    disabled={step.outputs.planningStatus !== 'completed'}
+                    disabled={step.outputs.draftStatus !== 'in-progress'}
                     className="w-full"
                   >
                     <div className="text-left">
