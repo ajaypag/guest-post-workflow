@@ -2,6 +2,7 @@
 
 import React from 'react';
 import ReactMarkdown from 'react-markdown';
+import remarkGfm from 'remark-gfm';
 import { Eye, EyeOff } from 'lucide-react';
 
 interface MarkdownPreviewProps {
@@ -52,6 +53,7 @@ export const MarkdownPreview = ({ content, className = '' }: MarkdownPreviewProp
           <div className="bg-white rounded-lg border p-8 shadow-sm">
             <div className="prose prose-gray prose-lg max-w-none">
               <ReactMarkdown
+                remarkPlugins={[remarkGfm]}
                 components={{
                 // Custom styling for different elements
                 h1: ({ children }) => (
