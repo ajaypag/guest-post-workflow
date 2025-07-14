@@ -214,9 +214,8 @@ REQUIRED ACTION: You must now call the write_section function to write the next 
         instructions: 'You are an expert article writer for guest posts. Follow the user instructions carefully and use the provided tools to plan and write the article systematically.',
         model: 'o3',
         tools: [
-          // Temporarily disabled to debug the error
-          // fileSearch,
-          // webSearchPreview,
+          fileSearch,
+          webSearchPreview,
           planTool,
           writeTool
         ]
