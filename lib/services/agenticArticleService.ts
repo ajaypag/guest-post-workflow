@@ -328,9 +328,6 @@ WRITING INSTRUCTIONS:
 - Reference the original research data provided at the start of our conversation
 - If this is a "meat" section, break it into subsections and write the first subsection only
 
-Target word count: ${nextSection?.est_words || 'as planned'} words
-Content Requirements: ${nextSection?.content_requirements || 'Follow the planned structure'}
-
 START WRITING THE NEXT SECTION NOW - DO NOT ASK FOR PERMISSION OR CONFIRMATION.`;
           }
         }
