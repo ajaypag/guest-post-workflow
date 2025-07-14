@@ -203,9 +203,15 @@ REQUIRED ACTION: You must now call the write_section function to write the title
               ))
               .orderBy(articleSections.sectionNumber);
             
-            const finalArticle = finalSections.map(section => 
-              `## ${section.title}\n\n${section.content}`
-            ).join('\n\n');
+            const finalArticle = finalSections.map(section => {
+              // Check if content already includes the header to avoid duplication
+              const contentStartsWithHeader = section.content?.trim().startsWith(`## ${section.title}`);
+              if (contentStartsWithHeader) {
+                return section.content;
+              } else {
+                return `## ${section.title}\n\n${section.content}`;
+              }
+            }).join('\n\n');
             
             ssePush(sessionId, { 
               type: 'completed', 
@@ -435,9 +441,15 @@ REQUIRED ACTION: You must now call the write_section function to write the next 
       .orderBy(articleSections.sectionNumber);
 
     // Combine into final article
-    const fullArticle = sections.map(section => 
-      `## ${section.title}\n\n${section.content}`
-    ).join('\n\n');
+    const fullArticle = sections.map(section => {
+      // Check if content already includes the header to avoid duplication
+      const contentStartsWithHeader = section.content?.trim().startsWith(`## ${section.title}`);
+      if (contentStartsWithHeader) {
+        return section.content;
+      } else {
+        return `## ${section.title}\n\n${section.content}`;
+      }
+    }).join('\n\n');
 
     const totalWords = sections.reduce((sum, section) => sum + (section.wordCount || 0), 0);
 
