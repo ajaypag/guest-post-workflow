@@ -50,9 +50,9 @@ export const MarkdownPreview = ({ content, className = '' }: MarkdownPreviewProp
       {isPreviewVisible && (
         <div className="p-6 bg-gray-50">
           <div className="bg-white rounded-lg border p-8 shadow-sm">
-            <ReactMarkdown
-              className="prose prose-gray prose-lg max-w-none"
-              components={{
+            <div className="prose prose-gray prose-lg max-w-none">
+              <ReactMarkdown
+                components={{
                 // Custom styling for different elements
                 h1: ({ children }) => (
                   <h1 className="text-3xl font-bold text-gray-900 mb-6 pb-2 border-b-2 border-gray-200">
@@ -141,10 +141,11 @@ export const MarkdownPreview = ({ content, className = '' }: MarkdownPreviewProp
                 hr: () => (
                   <hr className="border-gray-300 my-8" />
                 ),
-              }}
-            >
-              {content}
-            </ReactMarkdown>
+                }}
+              >
+                {content}
+              </ReactMarkdown>
+            </div>
           </div>
         </div>
       )}
