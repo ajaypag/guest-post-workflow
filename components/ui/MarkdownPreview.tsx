@@ -34,12 +34,7 @@ export const MarkdownPreview = ({ content, className = '' }: MarkdownPreviewProp
       // Fix numbered lists that might be inline
       .replace(/([^\n])\s*(\d+[.)]\s)/g, '$1\n\n$2');
     
-    // Create tight lists by removing extra line breaks between consecutive list items
-    processed = processed
-      // Remove extra blank lines between bullet points for tight lists
-      .replace(/^(•\s+.+)\n\n+(•\s+)/gm, '$1\n$2')
-      // Remove extra blank lines between numbered items for tight lists
-      .replace(/^(\d+[.)]\s+.+)\n\n+(\d+[.)]\s+)/gm, '$1\n$2');
+    // Don't mess with list structure - let markdown parser handle it properly
     
     // Fix inline tables - split table patterns that span multiple logical rows
     processed = processed.replace(/([^|\n]*\|[^|\n]+\|[^|\n]+\|[^|\n]+\|)([^|\n]*\|[^|\n]+\|[^|\n]+\|[^|\n]+\|)/g, 
@@ -191,17 +186,17 @@ export const MarkdownPreview = ({ content, className = '' }: MarkdownPreviewProp
                   </em>
                 ),
                 ul: ({ children }) => (
-                  <ul className="list-disc list-inside ml-4 mb-4 space-y-1">
+                  <ul className="list-disc list-outside ml-6 mb-4 space-y-0">
                     {children}
                   </ul>
                 ),
                 ol: ({ children }) => (
-                  <ol className="list-decimal list-inside ml-4 mb-4 space-y-1">
+                  <ol className="list-decimal list-outside ml-6 mb-4 space-y-0">
                     {children}
                   </ol>
                 ),
                 li: ({ children }) => (
-                  <li className="text-gray-700 leading-relaxed">
+                  <li className="text-gray-700 leading-relaxed mb-1">
                     {children}
                   </li>
                 ),
