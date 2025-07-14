@@ -135,9 +135,16 @@ export class AgenticArticleService {
       // Create initial prompt with the exact same content as the manual flow
       const initialPrompt = `Okay, I'm about to give you a lot of information. Here is a data dump of a deep research we did that's going to lead to an article that you will write for me. I don't want you to start writing. I want you to first just take everything in, analyze it, and start preparing. After that, you're going to start thinking about the outline and flushing it out. I'm not necessarily writing yet, but taking the outline and flushing it out - you're deciding what goes where, you're picking 3 citations only and planning where they go. Let's just say total initial planning so that the article can flow through. Determine a word count as well. An acceptable range is 1500-2500.
 
+IMPORTANT: You have access to a file search tool that contains Writing Guidelines and Semantic SEO best practices. Use the file search tool to review these guidelines BEFORE planning to ensure your article plan follows our established standards.
+
 ${outline}
 
-Once you've analyzed and planned everything, use the plan_article function to record your plan. Then I'll give you instructions for writing the actual sections.`;
+REQUIRED ACTIONS:
+1. FIRST: Use the file search tool to search for "Writing Guidelines" and "Semantic SEO" to understand our content standards
+2. THEN: Analyze the research data provided above
+3. FINALLY: Use the plan_article function to record your plan incorporating both the research and the guidelines
+
+Start by searching the project files for our writing standards.`;
 
       // Create tools that save data but let the agent control the flow
       const planTool = tool({
@@ -155,9 +162,22 @@ Once you've analyzed and planned everything, use the plan_article function to re
 
 Remember we're going to be creating this article section by section. The format should be primarily narrative, which means the piece is built on flowing prose--full sentences and connected paragraphs that guide the reader smoothly from one idea to the next. They should be short, punchy paragraphs--rarely more than 2-to-3 lines each--so the eye never hits an intimidating wall of text. Frequent line breaks to create natural breathing room and improve scannability. Lists can appear, but only sparingly and only when they truly clarify complex details or highlight a quick sequence the reader might otherwise struggle to absorb. The backbone remains storytelling: each section sets context, explains, and transitions naturally, so the article reads more like a well-structured conversation than a slide deck of bullet points. 
 
-Start with the title and introduction. Be sure to consult the project documents on Writing Guidelines and Semantic SEO before each section to remind yourself of the best practices that we want to follow. Avoid using Em-dashes. The section you create must follow that of the original outline provided. Remember to keep total word count of article in mind and how you decided to divide up the words per section so you can allocate appropriate word count for this section.
+Start with the title and introduction. 
 
-REQUIRED ACTION: You must now call the write_section function to write the title and introduction section. Do not respond with text - call the function immediately.`;
+BEFORE WRITING: Use the file search tool to search for "Writing Guidelines" and "Semantic SEO" to refresh your memory of our best practices. This is critical for maintaining quality standards.
+
+Writing requirements:
+- Follow the narrative format from the guidelines
+- Avoid using Em-dashes  
+- Follow the original outline provided
+- Allocate appropriate word count for this section based on your plan
+- Reference the original research data for facts and context
+
+REQUIRED ACTIONS:
+1. FIRST: Use file search to review Writing Guidelines and Semantic SEO best practices
+2. THEN: Write the title and introduction section using the write_section function
+
+Do not skip the file search step - it contains essential formatting and style requirements.`;
         }
       });
 
@@ -239,11 +259,27 @@ REQUIRED ACTION: You must now call the write_section function to write the title
           } else {
             return `Excellent work on "${section_title}"! This is section ${ordinal}. 
 
-Proceed to the next section. Remember, the format should be primarily narrative, which means the piece is built on flowing prose--full sentences and connected paragraphs that guide the reader smoothly from one idea to the next. They should be short, punchy paragraphs--rarely more than 2-to-3 lines each--so the eye never hits an intimidating wall of text. Frequent line breaks to create natural breathing room and improve scannability. Lists can appear, but only sparingly and only when they truly clarify complex details or highlight a quick sequence the reader might otherwise struggle to absorb. The backbone remains storytelling: each section sets context, explains, and transitions naturally, so the article reads more like a well-structured conversation than a slide deck of bullet points. 
+Now proceed to the next section.
 
-Be sure to consult the project documents on Writing Guidelines and Semantic SEO before each section to remind yourself of the best practices that we want to follow. Also be sure to reference my original prompt that contains the article information that should feed your context. I've already done the research and given it to you there - so that's what you need to reference each time. Avoid using Em-dashes. If it's the section that is the "meat" of the article, you must further break your output down into subsections and only output the first subsection so as not to over simplify each component. Note: defining what a subsection means is important. We're not doing sub-subsections, so if the section of the article is already apparently a subsection, then that entire section should be included in your output even if there are apparently sub-subsections within. Note 2: the section you create must follow that of the original outline provided. Remember to keep total word count of article in mind and how you decided to divide up the words per section so you can allocate appropriate word count for this section.
+BEFORE WRITING EACH SECTION: Use the file search tool to search for "Writing Guidelines" and "Semantic SEO" to ensure you're following our standards. This is mandatory for quality control.
 
-REQUIRED ACTION: You must now call the write_section function to write the next section. Do not respond with text - call the function immediately.`;
+Writing requirements:
+- Follow narrative format: flowing prose, connected paragraphs
+- Short, punchy paragraphs (2-3 lines max)  
+- Frequent line breaks for readability
+- Lists only when necessary for clarity
+- Natural storytelling transitions
+- NO em-dashes allowed
+- Reference the original research data provided in the conversation
+- Follow your planned outline and word allocation
+- For "meat" sections: break into subsections, write first subsection only
+
+REQUIRED ACTIONS:
+1. FIRST: Use file search tool to review "Writing Guidelines" and "Semantic SEO" 
+2. THEN: Reference the original research data from our conversation history
+3. FINALLY: Write the next section using the write_section function
+
+Always start with file search - do not skip this step as it contains critical formatting requirements.`;
           }
         }
       });
@@ -311,6 +347,12 @@ REQUIRED ACTION: You must now call the write_section function to write the next 
             if (event.name === 'tool_called') {
               const toolCall = event.item as any;
               console.log('Tool called:', toolCall.name, toolCall.id);
+              
+              // Special logging for file search usage
+              if (toolCall.name === 'file_search') {
+                console.log('🔍 FILE SEARCH USED:', JSON.stringify(toolCall.args, null, 2));
+                ssePush(sessionId, { type: 'tool_call', name: 'file_search', query: toolCall.args?.query });
+              }
               
               // Construct assistant message with tool call
               try {
