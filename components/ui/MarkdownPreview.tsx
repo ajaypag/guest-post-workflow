@@ -34,7 +34,77 @@ export const MarkdownPreview = ({ content, className = '' }: MarkdownPreviewProp
       // Fix numbered lists that might be inline
       .replace(/([^\n])\s*(\d+[.)]\s)/g, '$1\n\n$2');
     
+    // Fix inline tables - split table patterns that span multiple logical rows
+    processed = processed.replace(/([^|\n]*\|[^|\n]+\|[^|\n]+\|[^|\n]+\|)([^|\n]*\|[^|\n]+\|[^|\n]+\|[^|\n]+\|)/g, 
+      (match, firstPart, secondPart) => {
+        // Split what appears to be two table rows on one line
+        return firstPart.trim() + '\n' + secondPart.trim();
+      }
+    );
+    
+    // Additional fix for consecutive pipe sections
+    processed = processed.replace(/(\|[^|\n]+\|)\s*(\|[^|\n]+\|)/g, '$1\n$2');
+    
+    // Fix tables that might be inline or missing separator rows
+    processed = fixMarkdownTables(processed);
+    
     return processed;
+  };
+
+  // Fix markdown tables
+  const fixMarkdownTables = (text: string): string => {
+    // Find potential table rows (lines with multiple | characters)
+    const lines = text.split('\n');
+    const processedLines: string[] = [];
+    let inTable = false;
+    let tableStartIndex = -1;
+    
+    for (let i = 0; i < lines.length; i++) {
+      const line = lines[i].trim();
+      const pipeCount = (line.match(/\|/g) || []).length;
+      
+      // Detect table rows (at least 2 pipes for a minimum 3-column table)
+      if (pipeCount >= 2 && line.includes('|')) {
+        if (!inTable) {
+          inTable = true;
+          tableStartIndex = processedLines.length;
+          
+          // Check if this looks like a header row
+          const cells = line.split('|').map(cell => cell.trim()).filter(cell => cell);
+          
+          // If line doesn't start/end with |, add them
+          let formattedLine = line;
+          if (!line.startsWith('|')) formattedLine = '| ' + formattedLine;
+          if (!line.endsWith('|')) formattedLine = formattedLine + ' |';
+          
+          processedLines.push(formattedLine);
+          
+          // Check if next line is already a separator
+          const nextLine = lines[i + 1]?.trim() || '';
+          const isSeparator = nextLine.includes('|') && nextLine.includes('-');
+          
+          if (!isSeparator && cells.length > 0) {
+            // Add separator row
+            const separator = '|' + cells.map(() => '---').join('|') + '|';
+            processedLines.push(separator);
+          }
+        } else {
+          // Format table row
+          let formattedLine = line;
+          if (!line.startsWith('|')) formattedLine = '| ' + formattedLine;
+          if (!line.endsWith('|')) formattedLine = formattedLine + ' |';
+          processedLines.push(formattedLine);
+        }
+      } else {
+        // Not a table row
+        if (inTable) {
+          inTable = false;
+        }
+        processedLines.push(lines[i]);
+      }
+    }
+    
+    return processedLines.join('\n');
   };
 
   const processedContent = preprocessContent(content);
