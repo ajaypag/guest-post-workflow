@@ -17,6 +17,28 @@ export const MarkdownPreview = ({ content, className = '' }: MarkdownPreviewProp
     return null;
   }
 
+  // Preprocess content to fix common markdown formatting issues
+  const preprocessContent = (text: string): string => {
+    // Fix inline bullet points by ensuring they're on new lines
+    let processed = text
+      // Replace bullet characters that are not at the start of a line
+      .replace(/([^\n])\s*[•·▸▹►]/g, '$1\n\n•')
+      // Ensure bullet points at start of lines have proper spacing
+      .replace(/^([•·▸▹►])/gm, '• ')
+      // Fix multiple bullet points on same line
+      .replace(/([•·▸▹►]\s*[^•\n]+)([•·▸▹►])/g, '$1\n$2')
+      // Ensure there's a blank line before first bullet after text
+      .replace(/([^\n])(\n[•·▸▹►])/g, '$1\n$2')
+      // Convert common dash lists to bullets
+      .replace(/^[-–—]\s+/gm, '• ')
+      // Fix numbered lists that might be inline
+      .replace(/([^\n])\s*(\d+[.)]\s)/g, '$1\n\n$2');
+    
+    return processed;
+  };
+
+  const processedContent = preprocessContent(content);
+
   return (
     <div className={`bg-white border border-gray-200 rounded-lg ${className}`}>
       {/* Header */}
@@ -177,7 +199,7 @@ export const MarkdownPreview = ({ content, className = '' }: MarkdownPreviewProp
                 ),
                 }}
               >
-                {content}
+                {processedContent}
               </ReactMarkdown>
             </div>
           </div>
