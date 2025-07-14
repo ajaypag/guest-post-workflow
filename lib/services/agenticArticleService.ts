@@ -1,6 +1,6 @@
 import OpenAI from 'openai';
 import { Runner, FunctionTool, RunToolCallItem, Agent, tool } from '@openai/agents';
-import { OpenAIProvider } from '@openai/agents-openai';
+import { OpenAIProvider, fileSearchTool, webSearchTool } from '@openai/agents-openai';
 import { db } from '@/lib/db/connection';
 import { articleSections, agentSessions, workflows } from '@/lib/db/schema';
 import { eq, and } from 'drizzle-orm';
@@ -68,6 +68,11 @@ function ssePush(sessionId: string, payload: any) {
     activeStreams.delete(sessionId);
   }
 }
+
+// Create file search and web search tools
+const fileSearch = fileSearchTool(['vs_68710d7858ec8191b829a50012da7707']);
+
+const webSearchPreview = webSearchTool();
 
 export class AgenticArticleService {
   private openaiProvider: OpenAIProvider;
@@ -208,7 +213,12 @@ REQUIRED ACTION: You must now call the write_section function to write the next 
         name: 'ArticleWriter',
         instructions: 'You are an expert article writer for guest posts. Follow the user instructions carefully and use the provided tools to plan and write the article systematically.',
         model: 'o3',
-        tools: [planTool, writeTool]
+        tools: [
+          fileSearch,
+          webSearchPreview,
+          planTool,
+          writeTool
+        ]
       });
 
       // Create Runner and run agent with streaming
