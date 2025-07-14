@@ -214,8 +214,9 @@ REQUIRED ACTION: You must now call the write_section function to write the next 
         instructions: 'You are an expert article writer for guest posts. Follow the user instructions carefully and use the provided tools to plan and write the article systematically.',
         model: 'o3',
         tools: [
-          fileSearch,
-          webSearchPreview,
+          // Temporarily disabled to debug the error
+          // fileSearch,
+          // webSearchPreview,
           planTool,
           writeTool
         ]
@@ -260,18 +261,22 @@ REQUIRED ACTION: You must now call the write_section function to write the next 
               console.log('Tool called:', toolCall.name, toolCall.id);
               
               // Construct assistant message with tool call
-              messages.push({
-                role: 'assistant',
-                content: null,
-                tool_calls: [{
-                  id: toolCall.id,
-                  type: 'function',
-                  function: {
-                    name: toolCall.name,
-                    arguments: JSON.stringify(toolCall.args)
-                  }
-                }]
-              });
+              try {
+                messages.push({
+                  role: 'assistant',
+                  content: null,
+                  tool_calls: [{
+                    id: toolCall.id,
+                    type: 'function',
+                    function: {
+                      name: toolCall.name,
+                      arguments: toolCall.args ? JSON.stringify(toolCall.args) : '{}'
+                    }
+                  }]
+                });
+              } catch (error) {
+                console.error('Error constructing tool call message:', error, 'Tool call:', toolCall);
+              }
               ssePush(sessionId, { type: 'tool_call', name: toolCall.name });
               
               // Track completion
