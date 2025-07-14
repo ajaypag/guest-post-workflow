@@ -230,7 +230,8 @@ Use the write_section function to write the next section.`;
         
         // Run the agent with full message history
         const result = await runner.run(agent, messages, {
-          stream: true
+          stream: true,
+          maxTurns: 50  // Override default 10-turn limit for article generation
         });
         
         // Process the streaming result
