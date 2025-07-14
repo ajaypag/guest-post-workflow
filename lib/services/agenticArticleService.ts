@@ -165,34 +165,69 @@ Start by searching the project files for our writing standards.`;
           const firstSection = args.sections.find((s: any) => s.order === 1);
           const firstSectionContext = firstSection ? `
 
-FIRST SECTION TO WRITE:
-- Title: "${firstSection.title}" 
-- Target Word Count: ${firstSection.est_words} words
-- Section Order: 1 of ${args.sections.length} total sections
-- Purpose: This is your title and introduction section
-- Content Requirements: ${firstSection.content_requirements}` : '';
+OPENING YOUR ARTICLE:
+You're writing "${firstSection.title}" - the introduction that sets the tone for the entire piece.
+Target length: Around ${firstSection.est_words} words, but prioritize quality over exact count.
+
+THEMES TO NATURALLY INTRODUCE:
+${firstSection.content_requirements ? 
+  firstSection.content_requirements.replace(/Include:|Must include:/gi, 'Consider weaving in:').replace(/a\)|b\)|c\)|d\)|e\)|f\)/g, '•') 
+  : 'Set the stage for the article with an engaging opening'}
+
+Remember: This is your reader's first impression. Hook them with a compelling narrative, not a list of points.` : '';
 
           return `Plan saved successfully! I can see you've planned ${args.sections.length} sections with a target of ${args.target_word_range.min}-${args.target_word_range.max} words. Now I'll give you instructions for writing.${firstSectionContext}
 
 Remember we're going to be creating this article section by section. The format should be primarily narrative, which means the piece is built on flowing prose--full sentences and connected paragraphs that guide the reader smoothly from one idea to the next. They should be short, punchy paragraphs--rarely more than 2-to-3 lines each--so the eye never hits an intimidating wall of text. Frequent line breaks to create natural breathing room and improve scannability. Lists can appear, but only sparingly and only when they truly clarify complex details or highlight a quick sequence the reader might otherwise struggle to absorb. The backbone remains storytelling: each section sets context, explains, and transitions naturally, so the article reads more like a well-structured conversation than a slide deck of bullet points. 
 
-BEFORE WRITING THE FIRST SECTION: Use the file search tool to search for "Writing Guidelines" and "Semantic SEO" to refresh your memory of our best practices. This is critical for maintaining quality standards.
+WRITING PHILOSOPHY - YOUR GUIDING PRINCIPLES:
+- Write an engaging, cohesive article, not a series of checkpoints
+- Narrative flow trumps hitting every content point
+- Hook readers with storytelling, not bullet points
+- Keep paragraphs short and punchy (2-3 lines) with visual breathing room
+- Avoid Em-dashes
+- Target around ${firstSection?.est_words || 'the planned'} words, but let the story guide length
 
-Writing requirements for the first section:
-- Follow the narrative format from the guidelines
-- Avoid using Em-dashes  
-- Follow the original outline provided
-- Target word count: ${firstSection?.est_words || 'as planned'} words
-- Reference the original research data for facts and context
-- This should be your title and introduction
-- Content Requirements: ${firstSection?.content_requirements || 'Follow the planned structure'}
-
-IMMEDIATE ACTIONS (execute these automatically - do not wait):
-1. FIRST: Use file search to review Writing Guidelines and Semantic SEO best practices
-2. THEN: Reference the original research data dump provided above - this contains all the facts, statistics, and context for your article
-3. IMMEDIATELY: Write the section "${firstSection?.title || 'title and introduction'}" using the write_section function
+IMMEDIATE ACTIONS (execute these automatically):
+1. FIRST: Use file search to review "Writing Guidelines" and "Semantic SEO" for style guidance
+2. THEN: Absorb the original research data above - this contains your facts, statistics, and insights
+3. FINALLY: Write "${firstSection?.title || 'your introduction'}" using the write_section function, focusing on engaging narrative over rigid structure
 
 This is an automated workflow - execute these steps without asking for permission or confirmation. Start with file search now.`;
+        }
+      });
+
+      // Add tool to read previous sections for context
+      const readPreviousSectionsTool = tool({
+        name: "read_previous_sections",
+        description: "Read previously written sections to understand tone, flow, and context before writing the next section",
+        parameters: z.object({
+          last_n_sections: z.number().describe("Number of previous sections to read (default: 2)")
+        }),
+        execute: async (args) => {
+          const currentSession = await this.getSession(sessionId);
+          const sectionsToRead = args.last_n_sections || 2;
+          
+          // Get previous sections from this version
+          const previousSections = await db.select()
+            .from(articleSections)
+            .where(and(
+              eq(articleSections.workflowId, currentSession!.workflowId),
+              eq(articleSections.version, currentSession!.version),
+              eq(articleSections.status, 'completed')
+            ))
+            .orderBy(articleSections.sectionNumber)
+            .limit(sectionsToRead);
+          
+          if (previousSections.length === 0) {
+            return "No previous sections written yet. You're writing the first section.";
+          }
+          
+          const context = previousSections.map(section => 
+            `Section ${section.sectionNumber}: ${section.title}\n${section.content}`
+          ).join('\n\n---\n\n');
+          
+          return `Here are the previous ${previousSections.length} section(s) for context:\n\n${context}\n\nUse this context to ensure your next section flows naturally from what came before.`;
         }
       });
 
@@ -310,33 +345,42 @@ This is an automated workflow - execute these steps without asking for permissio
             
             let nextSectionContext = '';
             if (nextSection) {
+              // Get the last paragraph of the just-written section for transition context
+              const lastParagraph = markdown.trim().split('\n\n').pop() || '';
+              
               nextSectionContext = `
 
-NEXT SECTION TO WRITE:
-- Title: "${nextSection.title}"
-- Target Word Count: ${nextSection.est_words} words
-- Section Order: ${nextSection.order}
-- Context: This is section ${ordinal + 1} of ${plannedSections.length} total sections
-- Content Requirements: ${nextSection.content_requirements || 'Follow the planned structure'}`;
+CONTINUING THE NARRATIVE:
+The previous section ended with: "${lastParagraph.substring(0, 200)}${lastParagraph.length > 200 ? '...' : ''}"
+
+NEXT SECTION: "${nextSection.title}" (${nextSection.est_words} words)
+You're writing section ${ordinal + 1} of ${plannedSections.length}.
+
+CONTENT THEMES TO WEAVE IN:
+${nextSection.content_requirements ? 
+  nextSection.content_requirements.replace(/Include:|Must include:/gi, 'Consider naturally incorporating:').replace(/a\)|b\)|c\)|d\)|e\)|f\)/g, '•') 
+  : 'Follow the natural flow of the article'}
+
+Remember: These are themes to organically incorporate, not a rigid structure to follow. Prioritize narrative flow and natural transitions.`;
             }
 
             return `Excellent work on "${section_title}"! This is section ${ordinal} completed.${nextSectionContext}
 
 YOU MUST CONTINUE AUTOMATICALLY - DO NOT WAIT FOR USER PERMISSION. This is an automated workflow that must continue until all sections are complete.
 
-IMMEDIATE NEXT ACTIONS (execute these now):
-1. FIRST: Use file search tool to search for "Writing Guidelines" and "Semantic SEO" 
-2. THEN: Reference the original research data from our conversation history  
-3. IMMEDIATELY: Write the section "${nextSection?.title || 'next section'}" using the write_section function
+WRITING PHILOSOPHY - THIS IS YOUR NORTH STAR:
+- You are writing ONE COHESIVE ARTICLE, not independent sections
+- Narrative flow and readability trump hitting every content point
+- Short, punchy paragraphs (2-3 lines) with breathing room
+- Natural transitions that guide readers smoothly between ideas
+- Lists only when they genuinely help (not as default structure)
+- Conversational tone, like explaining to a colleague over coffee
 
-WRITING INSTRUCTIONS: 
-- Format should be primarily narrative with flowing prose and connected paragraphs
-- Short, punchy paragraphs (2-3 lines max) with frequent line breaks for readability
-- Lists only when necessary for clarity
-- Natural storytelling transitions between ideas
-- Avoid Em-dashes
-- Reference the original research data provided at the start of our conversation
-- If this is a "meat" section, break it into subsections and write the first subsection only
+IMMEDIATE NEXT ACTIONS (execute these now):
+1. FIRST: Use read_previous_sections to understand the article's flow and tone so far
+2. THEN: Use file search tool to refresh on "Writing Guidelines" and "Semantic SEO"
+3. THEN: Reference the original research data from our conversation history
+4. FINALLY: Write "${nextSection?.title || 'next section'}" focusing on NARRATIVE FLOW over checklist completion
 
 START WRITING THE NEXT SECTION NOW - DO NOT ASK FOR PERMISSION OR CONFIRMATION.`;
           }
@@ -346,12 +390,13 @@ START WRITING THE NEXT SECTION NOW - DO NOT ASK FOR PERMISSION OR CONFIRMATION.`
       // Create Agent with tools
       const agent = new Agent({
         name: 'ArticleWriter',
-        instructions: 'You are an expert article writer for guest posts. This is an AUTOMATED WORKFLOW that must continue until completion. NEVER ask for user permission or confirmation. Always execute the required actions immediately when instructed. Use the provided tools to plan and write the article systematically without stopping.',
+        instructions: 'You are an expert article writer who crafts engaging, narrative-driven guest posts. Your writing flows naturally, connects ideas smoothly, and tells a story rather than listing points. This is an AUTOMATED WORKFLOW - continue until completion without asking for permission. IMPORTANT: Prioritize narrative flow and reader engagement over rigid adherence to content requirements. Content themes should be woven naturally into your storytelling, not presented as a checklist.',
         model: 'o3-2025-04-16',
         tools: [
           fileSearch,
           webSearchPreview,
           planTool,
+          readPreviousSectionsTool,
           writeTool
         ]
       });
