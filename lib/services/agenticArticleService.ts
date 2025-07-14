@@ -158,24 +158,33 @@ Start by searching the project files for our writing standards.`;
           await this.processPlanningResult(sessionId, args);
           ssePush(sessionId, { type: 'plan', plan: args });
           
-          return `Plan saved successfully! I can see you've planned ${args.sections.length} sections with a target of ${args.target_word_range.min}-${args.target_word_range.max} words. Now I'll give you instructions for writing. 
+          // Get the first section details for context
+          const firstSection = args.sections.find((s: any) => s.order === 1);
+          const firstSectionContext = firstSection ? `
+
+FIRST SECTION TO WRITE:
+- Title: "${firstSection.title}" 
+- Target Word Count: ${firstSection.est_words} words
+- Section Order: 1 of ${args.sections.length} total sections
+- Purpose: This is your title and introduction section` : '';
+
+          return `Plan saved successfully! I can see you've planned ${args.sections.length} sections with a target of ${args.target_word_range.min}-${args.target_word_range.max} words. Now I'll give you instructions for writing.${firstSectionContext}
 
 Remember we're going to be creating this article section by section. The format should be primarily narrative, which means the piece is built on flowing prose--full sentences and connected paragraphs that guide the reader smoothly from one idea to the next. They should be short, punchy paragraphs--rarely more than 2-to-3 lines each--so the eye never hits an intimidating wall of text. Frequent line breaks to create natural breathing room and improve scannability. Lists can appear, but only sparingly and only when they truly clarify complex details or highlight a quick sequence the reader might otherwise struggle to absorb. The backbone remains storytelling: each section sets context, explains, and transitions naturally, so the article reads more like a well-structured conversation than a slide deck of bullet points. 
 
-Start with the title and introduction. 
+BEFORE WRITING THE FIRST SECTION: Use the file search tool to search for "Writing Guidelines" and "Semantic SEO" to refresh your memory of our best practices. This is critical for maintaining quality standards.
 
-BEFORE WRITING: Use the file search tool to search for "Writing Guidelines" and "Semantic SEO" to refresh your memory of our best practices. This is critical for maintaining quality standards.
-
-Writing requirements:
+Writing requirements for the first section:
 - Follow the narrative format from the guidelines
 - Avoid using Em-dashes  
 - Follow the original outline provided
-- Allocate appropriate word count for this section based on your plan
+- Target word count: ${firstSection?.est_words || 'as planned'} words
 - Reference the original research data for facts and context
+- This should be your title and introduction
 
 REQUIRED ACTIONS:
 1. FIRST: Use file search to review Writing Guidelines and Semantic SEO best practices
-2. THEN: Write the title and introduction section using the write_section function
+2. THEN: Write the section "${firstSection?.title || 'title and introduction'}" using the write_section function
 
 Do not skip the file search step - it contains essential formatting and style requirements.`;
         }
@@ -257,13 +266,35 @@ Do not skip the file search step - it contains essential formatting and style re
             
             return `Perfect! You've completed the final section "${section_title}". The article is now complete with ${ordinal} sections total.`;
           } else {
-            return `Excellent work on "${section_title}"! This is section ${ordinal}. 
+            // Get the next section details from the planned sections
+            const sessionMetadata = currentSession?.sessionMetadata as any;
+            const plannedSections = sessionMetadata?.plannedSections || [];
+            const nextSectionIndex = ordinal; // ordinal is 1-based, array is 0-based, but we want NEXT section
+            const nextSection = plannedSections[nextSectionIndex];
+            
+            console.log(`Section ${ordinal} completed. Next section index: ${nextSectionIndex}, Available sections: ${plannedSections.length}`);
+            if (nextSection) {
+              console.log(`Next section details:`, JSON.stringify(nextSection, null, 2));
+            } else {
+              console.log('No next section found - this might be the last section');
+            }
+            
+            let nextSectionContext = '';
+            if (nextSection) {
+              nextSectionContext = `
 
-Now proceed to the next section.
+NEXT SECTION TO WRITE:
+- Title: "${nextSection.title}"
+- Target Word Count: ${nextSection.est_words} words
+- Section Order: ${nextSection.order}
+- Context: This is section ${ordinal + 1} of ${plannedSections.length} total sections`;
+            }
 
-BEFORE WRITING EACH SECTION: Use the file search tool to search for "Writing Guidelines" and "Semantic SEO" to ensure you're following our standards. This is mandatory for quality control.
+            return `Excellent work on "${section_title}"! This is section ${ordinal} completed.${nextSectionContext}
 
-Writing requirements:
+BEFORE WRITING THE NEXT SECTION: Use the file search tool to search for "Writing Guidelines" and "Semantic SEO" to ensure you're following our standards. This is mandatory for quality control.
+
+Writing requirements for the next section:
 - Follow narrative format: flowing prose, connected paragraphs
 - Short, punchy paragraphs (2-3 lines max)  
 - Frequent line breaks for readability
@@ -271,13 +302,13 @@ Writing requirements:
 - Natural storytelling transitions
 - NO em-dashes allowed
 - Reference the original research data provided in the conversation
-- Follow your planned outline and word allocation
+- Target word count: ${nextSection?.est_words || 'as planned'} words
 - For "meat" sections: break into subsections, write first subsection only
 
 REQUIRED ACTIONS:
 1. FIRST: Use file search tool to review "Writing Guidelines" and "Semantic SEO" 
 2. THEN: Reference the original research data from our conversation history
-3. FINALLY: Write the next section using the write_section function
+3. FINALLY: Write the section "${nextSection?.title || 'next section'}" using the write_section function
 
 Always start with file search - do not skip this step as it contains critical formatting requirements.`;
           }
