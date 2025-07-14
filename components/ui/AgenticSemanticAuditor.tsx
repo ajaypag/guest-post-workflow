@@ -2,6 +2,7 @@
 
 import React, { useState, useEffect, useRef } from 'react';
 import { Play, Pause, CheckCircle, AlertCircle, Clock, Search, Zap, Target } from 'lucide-react';
+import { MarkdownPreview } from './MarkdownPreview';
 
 interface AgenticSemanticAuditorProps {
   workflowId: string;
@@ -66,6 +67,7 @@ export const AgenticSemanticAuditor = ({
     editingPattern: string;
     citationsAdded: number;
   }>>([]);
+  const [finalAuditedArticle, setFinalAuditedArticle] = useState<string>('');
   const eventSourceRef = useRef<EventSource | null>(null);
 
   const addLog = (message: string) => {
@@ -87,6 +89,7 @@ export const AgenticSemanticAuditor = ({
     setError(null);
     setLogs([]);
     setAuditResults([]);
+    setFinalAuditedArticle('');
     addLog('Starting semantic SEO audit...');
 
     try {
@@ -170,6 +173,7 @@ export const AgenticSemanticAuditor = ({
             
             if (data.finalAuditedArticle) {
               addLog(`Final audit: ${data.totalSections} sections, ${data.totalCitationsUsed} citations, patterns: ${data.editingPatterns?.join(', ')}`);
+              setFinalAuditedArticle(data.finalAuditedArticle);
               onComplete(data.finalAuditedArticle);
             } else {
               addLog('Warning: No final audited article received');
@@ -372,6 +376,35 @@ export const AgenticSemanticAuditor = ({
               </div>
             ))}
           </div>
+        </div>
+      )}
+
+      {/* Final Audited Article */}
+      {finalAuditedArticle && (
+        <div className="space-y-4">
+          <h4 className="font-medium text-gray-900 flex items-center space-x-2">
+            <CheckCircle className="w-5 h-5 text-green-600" />
+            <span>Final Audited Article</span>
+          </h4>
+          
+          {/* Article Text Field */}
+          <div className="space-y-2">
+            <label className="block text-sm font-medium text-gray-700">
+              SEO-Optimized Article (Markdown)
+            </label>
+            <textarea
+              value={finalAuditedArticle}
+              readOnly
+              className="w-full h-64 p-3 border border-gray-300 rounded-lg bg-gray-50 text-sm font-mono resize-none focus:ring-2 focus:ring-green-500 focus:border-green-500"
+              placeholder="The final audited article will appear here..."
+            />
+          </div>
+
+          {/* HTML Preview */}
+          <MarkdownPreview 
+            content={finalAuditedArticle}
+            className="mt-4"
+          />
         </div>
       )}
 
