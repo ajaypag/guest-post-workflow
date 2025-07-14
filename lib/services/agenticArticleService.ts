@@ -3,7 +3,7 @@ import { Runner, FunctionTool, RunToolCallItem, Agent, tool } from '@openai/agen
 import { OpenAIProvider, fileSearchTool, webSearchTool } from '@openai/agents-openai';
 import { db } from '@/lib/db/connection';
 import { articleSections, agentSessions, workflows } from '@/lib/db/schema';
-import { eq, and } from 'drizzle-orm';
+import { eq, and, sql } from 'drizzle-orm';
 import { v4 as uuidv4 } from 'uuid';
 import { z } from 'zod';
 
@@ -85,19 +85,32 @@ export class AgenticArticleService {
 
   async startAgenticSession(workflowId: string, outline: string): Promise<string> {
     try {
-      // Create agent session record
+      // Get the next version number for this workflow
+      const maxVersionResult = await db.select({
+        maxVersion: sql<number>`COALESCE(MAX(${agentSessions.version}), 0)`.as('maxVersion')
+      })
+      .from(agentSessions)
+      .where(eq(agentSessions.workflowId, workflowId));
+      
+      const nextVersion = (maxVersionResult[0]?.maxVersion || 0) + 1;
+      
+      console.log(`Starting agentic session v${nextVersion} for workflow ${workflowId}`);
+      
+      // Create agent session record with version
       const sessionId = uuidv4();
       const now = new Date();
       
       await db.insert(agentSessions).values({
         id: sessionId,
         workflowId,
+        version: nextVersion,
         stepId: 'article-draft',
         status: 'planning',
         outline,
         sessionMetadata: {
           styleRules: WRITING_STYLE_RULES,
-          startedAt: now.toISOString()
+          startedAt: now.toISOString(),
+          version: nextVersion
         },
         startedAt: now,
         createdAt: now,
@@ -157,11 +170,12 @@ REQUIRED ACTION: You must now call the write_section function to write the title
           const { section_title, markdown, is_last } = args;
           const currentSession = await this.getSession(sessionId);
           
-          // Save section to database
+          // Save section to database with session version
           const ordinal = (currentSession?.completedSections || 0) + 1;
           await db.insert(articleSections).values({
             id: uuidv4(),
             workflowId: currentSession!.workflowId,
+            version: currentSession!.version,
             sectionNumber: ordinal,
             title: section_title,
             content: markdown,
@@ -194,11 +208,12 @@ REQUIRED ACTION: You must now call the write_section function to write the title
               completedAt: new Date()
             });
             
-            // Get the final assembled article to send to UI
+            // Get the final assembled article to send to UI (latest version only)
             const finalSections = await db.select()
               .from(articleSections)
               .where(and(
                 eq(articleSections.workflowId, currentSession!.workflowId),
+                eq(articleSections.version, currentSession!.version),
                 eq(articleSections.status, 'completed')
               ))
               .orderBy(articleSections.sectionNumber);
@@ -415,6 +430,7 @@ REQUIRED ACTION: You must now call the write_section function to write the next 
     const sectionInserts = sections.map((section: any) => ({
       id: uuidv4(),
       workflowId: session!.workflowId,
+      version: session!.version,
       sectionNumber: section.order,
       title: section.title,
       status: 'pending' as const,
@@ -431,11 +447,21 @@ REQUIRED ACTION: You must now call the write_section function to write the next 
 
 
   private async updateWorkflowWithFinalArticle(workflowId: string): Promise<void> {
-    // Get all completed sections
+    // Get the latest version for this workflow
+    const latestVersionResult = await db.select({
+      maxVersion: sql<number>`MAX(${articleSections.version})`.as('maxVersion')
+    })
+    .from(articleSections)
+    .where(eq(articleSections.workflowId, workflowId));
+    
+    const latestVersion = latestVersionResult[0]?.maxVersion || 1;
+    
+    // Get all completed sections from the latest version only
     const sections = await db.select()
       .from(articleSections)
       .where(and(
         eq(articleSections.workflowId, workflowId),
+        eq(articleSections.version, latestVersion),
         eq(articleSections.status, 'completed')
       ))
       .orderBy(articleSections.sectionNumber);
@@ -498,7 +524,10 @@ REQUIRED ACTION: You must now call the write_section function to write the next 
 
     const sections = await db.select()
       .from(articleSections)
-      .where(eq(articleSections.workflowId, session.workflowId))
+      .where(and(
+        eq(articleSections.workflowId, session.workflowId),
+        eq(articleSections.version, session.version)
+      ))
       .orderBy(articleSections.sectionNumber);
 
     return {

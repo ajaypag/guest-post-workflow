@@ -241,6 +241,79 @@ export default function DatabaseMigrationPage() {
     setIsLoading(false);
   };
 
+  const checkVersioningExists = async () => {
+    setIsLoading(true);
+    setMessage('');
+    
+    try {
+      const response = await fetch('/api/admin/check-agentic-versioning');
+      const data = await response.json();
+      
+      if (data.exists) {
+        setMessage('✅ Version columns exist in agentic workflow tables');
+        setMessageType('success');
+      } else {
+        setMessage(`ℹ️ ${data.message || 'Version columns do not exist'}`);
+        setMessageType('info');
+      }
+    } catch (error) {
+      setMessage(`❌ Error checking version columns: ${error instanceof Error ? error.message : 'Unknown error'}`);
+      setMessageType('error');
+    }
+    
+    setIsLoading(false);
+  };
+
+  const runVersioningMigration = async () => {
+    setIsLoading(true);
+    setMessage('');
+    
+    try {
+      const response = await fetch('/api/admin/migrate-agentic-versioning', {
+        method: 'POST'
+      });
+      const data = await response.json();
+      
+      if (data.success) {
+        setMessage('✅ Version columns added successfully!');
+        setMessageType('success');
+      } else {
+        setMessage(`❌ Migration failed: ${data.error}`);
+        setMessageType('error');
+      }
+    } catch (error) {
+      setMessage(`❌ Error: ${error instanceof Error ? error.message : 'Unknown error'}`);
+      setMessageType('error');
+    }
+    
+    setIsLoading(false);
+  };
+
+  const runVersioningRollback = async () => {
+    setIsLoading(true);
+    setMessage('');
+    
+    try {
+      const response = await fetch('/api/admin/migrate-agentic-versioning', {
+        method: 'DELETE'
+      });
+      const data = await response.json();
+      
+      if (data.success) {
+        setMessage('✅ Version columns rollback completed successfully!');
+        setMessageType('success');
+      } else {
+        setMessage(`❌ Rollback failed: ${data.error}`);
+        setMessageType('error');
+      }
+    } catch (error) {
+      setMessage(`❌ Error: ${error instanceof Error ? error.message : 'Unknown error'}`);
+      setMessageType('error');
+    }
+    
+    setIsLoading(false);
+  };
+
   return (
     <div className="min-h-screen bg-gray-50 py-8">
       <div className="max-w-4xl mx-auto px-4 sm:px-6 lg:px-8">
@@ -469,6 +542,82 @@ export default function DatabaseMigrationPage() {
               >
                 <RotateCcw className="w-4 h-4 mr-2" />
                 {isLoading ? 'Rolling Back...' : 'Remove Agentic Tables'}
+              </button>
+            </div>
+          </div>
+
+          {/* Agentic Versioning Migration Section */}
+          <div className="mt-12 mb-8">
+            <h2 className="text-lg font-semibold text-gray-900 mb-4">Agentic Versioning Migration</h2>
+            <p className="text-gray-600 mb-4">
+              This migration adds <code className="bg-gray-100 px-2 py-1 rounded">version</code> columns to the{' '}
+              <code className="bg-gray-100 px-2 py-1 rounded">article_sections</code> and{' '}
+              <code className="bg-gray-100 px-2 py-1 rounded">agent_sessions</code> tables. This enables proper versioning 
+              so each agentic run creates a new version instead of accumulating sections.
+            </p>
+            
+            <div className="bg-yellow-50 border border-yellow-200 rounded-lg p-4 mb-6">
+              <div className="flex items-start space-x-3">
+                <AlertTriangle className="w-5 h-5 text-yellow-600 mt-0.5" />
+                <div>
+                  <h3 className="text-sm font-semibold text-yellow-800">Important Notes:</h3>
+                  <ul className="text-sm text-yellow-700 mt-2 space-y-1">
+                    <li>• This requires the agentic workflow tables to exist first</li>
+                    <li>• Existing data will be preserved with version = 1</li>
+                    <li>• Future runs will increment version numbers automatically</li>
+                    <li>• Fixes the article accumulation issue on multiple runs</li>
+                  </ul>
+                </div>
+              </div>
+            </div>
+          </div>
+
+          <div className="space-y-4">
+            {/* Check Versioning Status */}
+            <div className="border border-gray-200 rounded-lg p-4">
+              <h3 className="font-semibold text-gray-900 mb-2">Check Versioning Status</h3>
+              <p className="text-gray-600 text-sm mb-3">
+                Check if version columns exist in the agentic workflow tables.
+              </p>
+              <button
+                onClick={checkVersioningExists}
+                disabled={isLoading}
+                className="inline-flex items-center px-4 py-2 bg-blue-600 text-white text-sm font-medium rounded-md hover:bg-blue-700 disabled:opacity-50 disabled:cursor-not-allowed"
+              >
+                <Database className="w-4 h-4 mr-2" />
+                {isLoading ? 'Checking...' : 'Check Versioning Status'}
+              </button>
+            </div>
+
+            {/* Run Versioning Migration */}
+            <div className="border border-green-200 rounded-lg p-4">
+              <h3 className="font-semibold text-gray-900 mb-2">Add Version Columns</h3>
+              <p className="text-gray-600 text-sm mb-3">
+                Add version columns to enable proper agentic workflow versioning.
+              </p>
+              <button
+                onClick={runVersioningMigration}
+                disabled={isLoading}
+                className="inline-flex items-center px-4 py-2 bg-green-600 text-white text-sm font-medium rounded-md hover:bg-green-700 disabled:opacity-50 disabled:cursor-not-allowed"
+              >
+                <Play className="w-4 h-4 mr-2" />
+                {isLoading ? 'Running Migration...' : 'Add Version Columns'}
+              </button>
+            </div>
+
+            {/* Rollback Versioning */}
+            <div className="border border-red-200 rounded-lg p-4">
+              <h3 className="font-semibold text-gray-900 mb-2">Remove Version Columns (Rollback)</h3>
+              <p className="text-gray-600 text-sm mb-3">
+                Remove version columns. This will lose version tracking but preserve existing data.
+              </p>
+              <button
+                onClick={runVersioningRollback}
+                disabled={isLoading}
+                className="inline-flex items-center px-4 py-2 bg-red-600 text-white text-sm font-medium rounded-md hover:bg-red-700 disabled:opacity-50 disabled:cursor-not-allowed"
+              >
+                <RotateCcw className="w-4 h-4 mr-2" />
+                {isLoading ? 'Rolling Back...' : 'Remove Version Columns'}
               </button>
             </div>
           </div>

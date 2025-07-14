@@ -78,6 +78,7 @@ export const workflowSteps = pgTable('workflow_steps', {
 export const articleSections = pgTable('article_sections', {
   id: uuid('id').primaryKey(),
   workflowId: uuid('workflow_id').notNull().references(() => workflows.id, { onDelete: 'cascade' }),
+  version: integer('version').notNull().default(1), // Version number for each generation run
   sectionNumber: integer('section_number').notNull(),
   title: varchar('title', { length: 255 }).notNull(),
   content: text('content'),
@@ -94,6 +95,7 @@ export const articleSections = pgTable('article_sections', {
 export const agentSessions = pgTable('agent_sessions', {
   id: uuid('id').primaryKey(),
   workflowId: uuid('workflow_id').notNull().references(() => workflows.id, { onDelete: 'cascade' }),
+  version: integer('version').notNull().default(1), // Version number for each generation run
   stepId: varchar('step_id', { length: 100 }).notNull(), // e.g., 'article-draft'
   status: varchar('status', { length: 50 }).notNull().default('pending'), // 'pending' | 'planning' | 'writing' | 'completed' | 'error'
   agentId: varchar('agent_id', { length: 255 }),
