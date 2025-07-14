@@ -7,6 +7,7 @@ import { CopyButton } from '../ui/CopyButton';
 import { TutorialVideo } from '../ui/TutorialVideo';
 import { ChatInterface } from '../ui/ChatInterface';
 import { SplitPromptButton } from '../ui/SplitPromptButton';
+import { AgenticSemanticAuditor } from '../ui/AgenticSemanticAuditor';
 import { ExternalLink, ChevronDown, ChevronRight, Search, CheckCircle, AlertCircle, Target, FileText, BarChart3 } from 'lucide-react';
 
 interface ContentAuditStepProps {
@@ -23,7 +24,7 @@ export const ContentAuditStepClean = ({ step, workflow, onChange }: ContentAudit
   });
 
   // Tab system state
-  const [activeTab, setActiveTab] = useState<'chatgpt' | 'builtin'>('chatgpt');
+  const [activeTab, setActiveTab] = useState<'chatgpt' | 'builtin' | 'agent'>('chatgpt');
 
   // Chat state management
   const [conversation, setConversation] = useState<any[]>([]);
@@ -58,7 +59,7 @@ ${outlineContent || '(Complete Step 3: Deep Research first to get outline conten
 
 Now I realize this is a lot, so i want your first output to only be an audit of the first section. the format i want is to show the strengths, weaknesses, and the updated section that has your full fixes. start with the first section if cases where a section has many subsections, output just the subsection.`;
 
-  const loopingAuditPrompt = "Okay, now I want you to proceed your audit with the next section. As a reminder, the format i want is to show the strengths, weaknesses, and the updated section that has your full fixes. start with the first section if cases where a section has many subsections, output just the subsection. In my paste, the formatting for headers did not translate to add those back in logically. While auditing, keep in mind we are creating a \"primarily narrative\" article so bull points can appear but only sporadically. Note, we will rarely include citations within the article. Only a max are 3 in total are allowed. you can reference the citation without a link though. keep in mind variability too. if this is your 3rd+ section that your editing, maybe you are repeating your editing pattern too much. for example, if you used bullets in your last output, maybe don't in this output";
+  const loopingAuditPrompt = "Okay, now I want you to proceed your audit with the next section. As a reminder, the format i want is to show the strengths, weaknesses, and the updated section that has your full fixes. start with the first section if cases where a section has many subsections, output just the subsection. In my paste, the formatting for headers did not translate to add those back in logically. While auditing, keep in mind we are creating a 'primarily narrative' article so bull points can appear but only sporadically. Note, we will rarely include citations within the article. Only a max are 3 in total are allowed. you can reference the citation without a link though. keep in mind variability too. if this is your 3rd+ section that your editing, maybe you are repeating your editing pattern too much. for example, if you used bullets in your last output, maybe don't in this output";
 
   // Status indicators
   const getStepStatus = (stepId: string) => {
@@ -168,12 +169,6 @@ Now I realize this is a lot, so i want your first output to only be an audit of 
 
   return (
     <div className="space-y-6">
-      <TutorialVideo 
-        videoUrl="https://www.loom.com/share/ec2612d683f746b7899048e32bcdd599"
-        title="Semantic SEO Optimization Tutorial"
-        description="Learn how to audit and optimize your guest post content for better SEO performance"
-      />
-
       {/* Tab Navigation */}
       <div className="bg-white border border-gray-200 rounded-xl overflow-hidden">
         <div className="flex border-b border-gray-200">
@@ -196,6 +191,16 @@ Now I realize this is a lot, so i want your first output to only be an audit of 
             }`}
           >
             Built-in Chat
+          </button>
+          <button
+            onClick={() => setActiveTab('agent')}
+            className={`flex-1 px-6 py-4 text-sm font-medium transition-colors ${
+              activeTab === 'agent'
+                ? 'bg-green-50 text-green-700 border-b-2 border-green-500'
+                : 'text-gray-500 hover:text-gray-700 hover:bg-gray-50'
+            }`}
+          >
+            🤖 AI Agent (Auto)
           </button>
         </div>
 
@@ -505,7 +510,7 @@ Now I realize this is a lot, so i want your first output to only be an audit of 
       </div>
 
             </div>
-          ) : (
+          ) : activeTab === 'builtin' ? (
             <div className="space-y-6">
               {/* Built-in Chat Interface */}
               
@@ -639,7 +644,24 @@ Now I realize this is a lot, so i want your first output to only be an audit of 
                 </div>
               </div>
             </div>
-          )}
+          ) : activeTab === 'agent' ? (
+            <div className="space-y-6">
+              {/* AI Agent Semantic Audit */}
+              <AgenticSemanticAuditor
+                workflowId={workflow.id}
+                originalArticle={fullArticle}
+                researchOutline={outlineContent}
+                onComplete={(auditedArticle) => {
+                  onChange({ 
+                    ...step.outputs, 
+                    seoOptimizedArticle: auditedArticle,
+                    auditGenerated: true,
+                    auditedAt: new Date().toISOString()
+                  });
+                }}
+              />
+            </div>
+          ) : null}
         </div>
       </div>
     </div>

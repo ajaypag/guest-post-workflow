@@ -113,6 +113,47 @@ export const agentSessions = pgTable('agent_sessions', {
   updatedAt: timestamp('updated_at').notNull(),
 });
 
+// Audit sessions for tracking semantic SEO audit workflows
+export const auditSessions = pgTable('audit_sessions', {
+  id: uuid('id').primaryKey(),
+  workflowId: uuid('workflow_id').notNull().references(() => workflows.id, { onDelete: 'cascade' }),
+  version: integer('version').notNull().default(1), // Version number for each audit run
+  stepId: varchar('step_id', { length: 100 }).notNull(), // e.g., 'content-audit'
+  status: varchar('status', { length: 50 }).notNull().default('pending'), // 'pending' | 'auditing' | 'completed' | 'error'
+  totalSections: integer('total_sections').default(0),
+  completedSections: integer('completed_sections').default(0),
+  totalCitationsUsed: integer('total_citations_used').default(0), // Track citations across sections
+  originalArticle: text('original_article'), // The article being audited
+  researchOutline: text('research_outline'), // Research data for context
+  auditMetadata: jsonb('audit_metadata'), // Stores editing patterns, context, etc
+  errorMessage: text('error_message'),
+  startedAt: timestamp('started_at'),
+  completedAt: timestamp('completed_at'),
+  createdAt: timestamp('created_at').notNull(),
+  updatedAt: timestamp('updated_at').notNull(),
+});
+
+// Audit sections for tracking section-by-section semantic SEO audits
+export const auditSections = pgTable('audit_sections', {
+  id: uuid('id').primaryKey(),
+  auditSessionId: uuid('audit_session_id').notNull().references(() => auditSessions.id, { onDelete: 'cascade' }),
+  workflowId: uuid('workflow_id').notNull().references(() => workflows.id, { onDelete: 'cascade' }),
+  version: integer('version').notNull().default(1), // Version number for each audit run
+  sectionNumber: integer('section_number').notNull(),
+  title: varchar('title', { length: 255 }).notNull(),
+  originalContent: text('original_content'), // Original section content
+  auditedContent: text('audited_content'), // SEO-optimized content
+  strengths: text('strengths'), // Identified strengths
+  weaknesses: text('weaknesses'), // Identified weaknesses
+  editingPattern: varchar('editing_pattern', { length: 100 }), // 'bullets', 'prose', 'citations', etc.
+  citationsAdded: integer('citations_added').default(0), // Citations added in this section
+  status: varchar('status', { length: 50 }).notNull().default('pending'), // 'pending' | 'auditing' | 'completed' | 'error'
+  auditMetadata: jsonb('audit_metadata'), // Section-specific audit context
+  errorMessage: text('error_message'),
+  createdAt: timestamp('created_at').notNull(),
+  updatedAt: timestamp('updated_at').notNull(),
+});
+
 // Relations
 export const usersRelations = relations(users, ({ many }) => ({
   clients: many(clients),
@@ -160,6 +201,8 @@ export const workflowsRelations = relations(workflows, ({ one, many }) => ({
   steps: many(workflowSteps),
   articleSections: many(articleSections),
   agentSessions: many(agentSessions),
+  auditSessions: many(auditSessions),
+  auditSections: many(auditSections),
 }));
 
 export const workflowStepsRelations = relations(workflowSteps, ({ one }) => ({
@@ -183,6 +226,25 @@ export const agentSessionsRelations = relations(agentSessions, ({ one, many }) =
   }),
 }));
 
+export const auditSessionsRelations = relations(auditSessions, ({ one, many }) => ({
+  workflow: one(workflows, {
+    fields: [auditSessions.workflowId],
+    references: [workflows.id],
+  }),
+  auditSections: many(auditSections),
+}));
+
+export const auditSectionsRelations = relations(auditSections, ({ one }) => ({
+  auditSession: one(auditSessions, {
+    fields: [auditSections.auditSessionId],
+    references: [auditSessions.id],
+  }),
+  workflow: one(workflows, {
+    fields: [auditSections.workflowId],
+    references: [workflows.id],
+  }),
+}));
+
 // Type exports
 export type User = typeof users.$inferSelect;
 export type NewUser = typeof users.$inferInsert;
@@ -198,3 +260,7 @@ export type ArticleSection = typeof articleSections.$inferSelect;
 export type NewArticleSection = typeof articleSections.$inferInsert;
 export type AgentSession = typeof agentSessions.$inferSelect;
 export type NewAgentSession = typeof agentSessions.$inferInsert;
+export type AuditSession = typeof auditSessions.$inferSelect;
+export type NewAuditSession = typeof auditSessions.$inferInsert;
+export type AuditSection = typeof auditSections.$inferSelect;
+export type NewAuditSection = typeof auditSections.$inferInsert;

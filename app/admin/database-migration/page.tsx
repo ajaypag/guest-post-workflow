@@ -314,6 +314,83 @@ export default function DatabaseMigrationPage() {
     setIsLoading(false);
   };
 
+  const checkSemanticAuditTablesExist = async () => {
+    setIsLoading(true);
+    setMessage('');
+    
+    try {
+      const response = await fetch('/api/admin/check-semantic-audit-tables');
+      const data = await response.json();
+      
+      if (data.exists) {
+        setMessage('✅ Semantic audit tables (audit_sessions, audit_sections) exist');
+        setMessageType('success');
+      } else {
+        setMessage(`ℹ️ ${data.message || 'Semantic audit tables do not exist'}`);
+        setMessageType('info');
+      }
+    } catch (error) {
+      setMessage(`❌ Error checking semantic audit tables: ${error instanceof Error ? error.message : 'Unknown error'}`);
+      setMessageType('error');
+    }
+    
+    setIsLoading(false);
+  };
+
+  const runSemanticAuditMigration = async () => {
+    setIsLoading(true);
+    setMessage('');
+    
+    try {
+      const response = await fetch('/api/admin/migrate-semantic-audit', {
+        method: 'POST'
+      });
+      const data = await response.json();
+      
+      if (data.success) {
+        setMessage('✅ Semantic audit tables migration completed successfully!');
+        setMessageType('success');
+      } else {
+        setMessage(`❌ Migration failed: ${data.error}`);
+        setMessageType('error');
+      }
+    } catch (error) {
+      setMessage(`❌ Error: ${error instanceof Error ? error.message : 'Unknown error'}`);
+      setMessageType('error');
+    }
+    
+    setIsLoading(false);
+  };
+
+  const runSemanticAuditRollback = async () => {
+    if (!confirm('Are you sure you want to remove the semantic audit tables? This will delete all AI audit sessions and results.')) {
+      return;
+    }
+    
+    setIsLoading(true);
+    setMessage('');
+    
+    try {
+      const response = await fetch('/api/admin/migrate-semantic-audit', {
+        method: 'DELETE'
+      });
+      const data = await response.json();
+      
+      if (data.success) {
+        setMessage('✅ Semantic audit tables rollback completed successfully!');
+        setMessageType('success');
+      } else {
+        setMessage(`❌ Rollback failed: ${data.error}`);
+        setMessageType('error');
+      }
+    } catch (error) {
+      setMessage(`❌ Error: ${error instanceof Error ? error.message : 'Unknown error'}`);
+      setMessageType('error');
+    }
+    
+    setIsLoading(false);
+  };
+
   return (
     <div className="min-h-screen bg-gray-50 py-8">
       <div className="max-w-4xl mx-auto px-4 sm:px-6 lg:px-8">
@@ -618,6 +695,82 @@ export default function DatabaseMigrationPage() {
               >
                 <RotateCcw className="w-4 h-4 mr-2" />
                 {isLoading ? 'Rolling Back...' : 'Remove Version Columns'}
+              </button>
+            </div>
+          </div>
+
+          {/* Semantic Audit Tables Migration Section */}
+          <div className="mt-12 mb-8">
+            <h2 className="text-lg font-semibold text-gray-900 mb-4">Semantic Audit Tables Migration</h2>
+            <p className="text-gray-600 mb-4">
+              This migration creates the <code className="bg-gray-100 px-2 py-1 rounded">audit_sessions</code> and{' '}
+              <code className="bg-gray-100 px-2 py-1 rounded">audit_sections</code> tables required for the new 
+              AI-powered semantic SEO audit workflow in Step 6 (Content Audit).
+            </p>
+            
+            <div className="bg-green-50 border border-green-200 rounded-lg p-4 mb-6">
+              <div className="flex items-start space-x-3">
+                <AlertTriangle className="w-5 h-5 text-green-600 mt-0.5" />
+                <div>
+                  <h3 className="text-sm font-semibold text-green-800">Semantic Audit Features:</h3>
+                  <ul className="text-sm text-green-700 mt-2 space-y-1">
+                    <li>• Enables automated section-by-section semantic SEO auditing</li>
+                    <li>• Stores audit sessions, progress, and optimized content</li>
+                    <li>• Tracks citation usage and editing patterns for variety</li>
+                    <li>• Required for the "🤖 AI Agent (Auto)" tab in Content Audit step</li>
+                    <li>• Safe migration - creates new tables without affecting existing data</li>
+                  </ul>
+                </div>
+              </div>
+            </div>
+          </div>
+
+          <div className="space-y-4 mb-8">
+            {/* Check Semantic Audit Tables Status */}
+            <div className="border border-gray-200 rounded-lg p-4">
+              <h3 className="font-semibold text-gray-900 mb-2">Check Semantic Audit Tables Status</h3>
+              <p className="text-gray-600 text-sm mb-3">
+                Check if the semantic audit tables already exist in your database.
+              </p>
+              <button
+                onClick={checkSemanticAuditTablesExist}
+                disabled={isLoading}
+                className="inline-flex items-center px-4 py-2 bg-blue-600 text-white text-sm font-medium rounded-md hover:bg-blue-700 disabled:opacity-50 disabled:cursor-not-allowed"
+              >
+                <Database className="w-4 h-4 mr-2" />
+                {isLoading ? 'Checking...' : 'Check Semantic Audit Tables Status'}
+              </button>
+            </div>
+
+            {/* Run Semantic Audit Migration */}
+            <div className="border border-green-200 rounded-lg p-4">
+              <h3 className="font-semibold text-gray-900 mb-2">Create Semantic Audit Tables</h3>
+              <p className="text-gray-600 text-sm mb-3">
+                Create the audit_sessions and audit_sections tables to enable AI-powered semantic SEO auditing.
+              </p>
+              <button
+                onClick={runSemanticAuditMigration}
+                disabled={isLoading}
+                className="inline-flex items-center px-4 py-2 bg-green-600 text-white text-sm font-medium rounded-md hover:bg-green-700 disabled:opacity-50 disabled:cursor-not-allowed"
+              >
+                <Play className="w-4 h-4 mr-2" />
+                {isLoading ? 'Running Migration...' : 'Create Semantic Audit Tables'}
+              </button>
+            </div>
+
+            {/* Semantic Audit Rollback */}
+            <div className="border border-red-200 rounded-lg p-4">
+              <h3 className="font-semibold text-gray-900 mb-2">Remove Semantic Audit Tables (Rollback)</h3>
+              <p className="text-gray-600 text-sm mb-3">
+                Remove the semantic audit tables and all stored audit sessions and results. This action cannot be undone.
+              </p>
+              <button
+                onClick={runSemanticAuditRollback}
+                disabled={isLoading}
+                className="inline-flex items-center px-4 py-2 bg-red-600 text-white text-sm font-medium rounded-md hover:bg-red-700 disabled:opacity-50 disabled:cursor-not-allowed"
+              >
+                <RotateCcw className="w-4 h-4 mr-2" />
+                {isLoading ? 'Rolling Back...' : 'Remove Semantic Audit Tables'}
               </button>
             </div>
           </div>
