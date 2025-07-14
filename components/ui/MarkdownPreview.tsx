@@ -19,22 +19,25 @@ export const MarkdownPreview = ({ content, className = '' }: MarkdownPreviewProp
 
   // Preprocess content to fix common markdown formatting issues
   const preprocessContent = (text: string): string => {
-    // Fix inline bullet points by ensuring they're on new lines
+    // Convert pseudo-bullet lists to proper markdown lists
     let processed = text
-      // Replace bullet characters that are not at the start of a line
+      // First, fix inline bullet points by ensuring they're on new lines
       .replace(/([^\n])\s*[•·▸▹►]/g, '$1\n\n•')
-      // Ensure bullet points at start of lines have proper spacing
-      .replace(/^([•·▸▹►])/gm, '• ')
       // Fix multiple bullet points on same line
       .replace(/([•·▸▹►]\s*[^•\n]+)([•·▸▹►])/g, '$1\n$2')
       // Ensure there's a blank line before first bullet after text
       .replace(/([^\n])(\n[•·▸▹►])/g, '$1\n$2')
-      // Convert common dash lists to bullets
-      .replace(/^[-–—]\s+/gm, '• ')
       // Fix numbered lists that might be inline
       .replace(/([^\n])\s*(\d+[.)]\s)/g, '$1\n\n$2');
     
-    // Don't mess with list structure - let markdown parser handle it properly
+    // Convert bullet characters to proper markdown list syntax
+    processed = processed
+      // Convert lines starting with bullet characters to markdown list items
+      .replace(/^[•·▸▹►]\s+(.+)$/gm, '- $1')
+      // Convert lines starting with dashes to proper markdown lists  
+      .replace(/^[-–—]\s+(.+)$/gm, '- $1')
+      // Convert numbered pseudo-lists to proper markdown numbered lists
+      .replace(/^(\d+)[.)]\s+(.+)$/gm, '$1. $2');
     
     // Fix inline tables - split table patterns that span multiple logical rows
     processed = processed.replace(/([^|\n]*\|[^|\n]+\|[^|\n]+\|[^|\n]+\|)([^|\n]*\|[^|\n]+\|[^|\n]+\|[^|\n]+\|)/g, 
