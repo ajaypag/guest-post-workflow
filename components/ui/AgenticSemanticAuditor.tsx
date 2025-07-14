@@ -8,6 +8,7 @@ interface AgenticSemanticAuditorProps {
   workflowId: string;
   originalArticle: string;
   researchOutline: string;
+  existingAuditedArticle?: string;
   onComplete: (auditedArticle: string) => void;
 }
 
@@ -52,6 +53,7 @@ export const AgenticSemanticAuditor = ({
   workflowId, 
   originalArticle, 
   researchOutline, 
+  existingAuditedArticle = '',
   onComplete 
 }: AgenticSemanticAuditorProps) => {
   const [isAuditing, setIsAuditing] = useState(false);
@@ -67,12 +69,17 @@ export const AgenticSemanticAuditor = ({
     editingPattern: string;
     citationsAdded: number;
   }>>([]);
-  const [finalAuditedArticle, setFinalAuditedArticle] = useState<string>('');
+  const [finalAuditedArticle, setFinalAuditedArticle] = useState<string>(existingAuditedArticle);
   const eventSourceRef = useRef<EventSource | null>(null);
 
   const addLog = (message: string) => {
     setLogs(prev => [...prev, `${new Date().toLocaleTimeString()}: ${message}`]);
   };
+
+  // Sync with existing audited article changes
+  useEffect(() => {
+    setFinalAuditedArticle(existingAuditedArticle);
+  }, [existingAuditedArticle]);
 
   const startAudit = async () => {
     if (!originalArticle.trim()) {
