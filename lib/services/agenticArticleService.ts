@@ -17,7 +17,8 @@ const planArticleSchema = z.object({
   sections: z.array(z.object({
     title: z.string().describe('Section title'),
     est_words: z.number().describe('Estimated word count for this section'),
-    order: z.number().describe('Section order number')
+    order: z.number().describe('Section order number'),
+    content_requirements: z.string().describe('Detailed content requirements for this section including structure, key points, examples, pros/cons, statistics, etc.')
   })),
   writing_style_notes: z.string().describe('Key style rules and guidelines to follow')
 });
@@ -137,19 +138,21 @@ export class AgenticArticleService {
 
 IMPORTANT: You have access to a file search tool that contains Writing Guidelines and Semantic SEO best practices. Use the file search tool to review these guidelines BEFORE planning to ensure your article plan follows our established standards.
 
+CRITICAL: When you extract sections from the outline, you MUST also extract the detailed content requirements for each section. For example, if the outline mentions "Starter Packages" and includes details like "What You Typically Get", "Example Pricing", "Pros", "Cons/Cautions", etc., you must capture these specific requirements in the content_requirements field for that section. Do not just extract titles and word counts - extract the complete structural details and requirements.
+
 ${outline}
 
 REQUIRED ACTIONS:
 1. FIRST: Use the file search tool to search for "Writing Guidelines" and "Semantic SEO" to understand our content standards
-2. THEN: Analyze the research data provided above
-3. FINALLY: Use the plan_article function to record your plan incorporating both the research and the guidelines
+2. THEN: Analyze the research data provided above and extract detailed content requirements for each section (not just titles)
+3. FINALLY: Use the plan_article function to record your plan incorporating both the research and the guidelines, ensuring each section has comprehensive content_requirements
 
 Start by searching the project files for our writing standards.`;
 
       // Create tools that save data but let the agent control the flow
       const planTool = tool({
         name: "plan_article",
-        description: "Save the article plan with headline, sections, word count, and style notes",
+        description: "Save the article plan with headline, sections, word count, and style notes. Extract detailed content requirements for each section from the research outline.",
         parameters: planArticleSchema,
         execute: async (args) => {
           console.log('Plan tool executed:', args);
@@ -166,7 +169,8 @@ FIRST SECTION TO WRITE:
 - Title: "${firstSection.title}" 
 - Target Word Count: ${firstSection.est_words} words
 - Section Order: 1 of ${args.sections.length} total sections
-- Purpose: This is your title and introduction section` : '';
+- Purpose: This is your title and introduction section
+- Content Requirements: ${firstSection.content_requirements}` : '';
 
           return `Plan saved successfully! I can see you've planned ${args.sections.length} sections with a target of ${args.target_word_range.min}-${args.target_word_range.max} words. Now I'll give you instructions for writing.${firstSectionContext}
 
@@ -181,12 +185,14 @@ Writing requirements for the first section:
 - Target word count: ${firstSection?.est_words || 'as planned'} words
 - Reference the original research data for facts and context
 - This should be your title and introduction
+- Content Requirements: ${firstSection?.content_requirements || 'Follow the planned structure'}
 
 REQUIRED ACTIONS:
 1. FIRST: Use file search to review Writing Guidelines and Semantic SEO best practices
-2. THEN: Write the section "${firstSection?.title || 'title and introduction'}" using the write_section function
+2. THEN: Reference the original research data dump provided above - this contains all the facts, statistics, and context for your article
+3. FINALLY: Write the section "${firstSection?.title || 'title and introduction'}" using the write_section function
 
-Do not skip the file search step - it contains essential formatting and style requirements.`;
+Do not skip the file search step - it contains essential formatting and style requirements. The original research data contains all the outreach content and information you need to reference for accurate, fact-based writing.`;
         }
       });
 
@@ -287,27 +293,24 @@ NEXT SECTION TO WRITE:
 - Title: "${nextSection.title}"
 - Target Word Count: ${nextSection.est_words} words
 - Section Order: ${nextSection.order}
-- Context: This is section ${ordinal + 1} of ${plannedSections.length} total sections`;
+- Context: This is section ${ordinal + 1} of ${plannedSections.length} total sections
+- Content Requirements: ${nextSection.content_requirements || 'Follow the planned structure'}`;
             }
 
             return `Excellent work on "${section_title}"! This is section ${ordinal} completed.${nextSectionContext}
 
 BEFORE WRITING THE NEXT SECTION: Use the file search tool to search for "Writing Guidelines" and "Semantic SEO" to ensure you're following our standards. This is mandatory for quality control.
 
-Writing requirements for the next section:
-- Follow narrative format: flowing prose, connected paragraphs
-- Short, punchy paragraphs (2-3 lines max)  
-- Frequent line breaks for readability
-- Lists only when necessary for clarity
-- Natural storytelling transitions
-- NO em-dashes allowed
-- Reference the original research data provided in the conversation
-- Target word count: ${nextSection?.est_words || 'as planned'} words
-- For "meat" sections: break into subsections, write first subsection only
+Proceed to the next section. Remember, the format should be primarily narrative, which means the piece is built on flowing prose--full sentences and connected paragraphs that guide the reader smoothly from one idea to the next. They should be short, punchy paragraphs--rarely more than 2-to-3 lines each--so the eye never hits an intimidating wall of text. Frequent line breaks to create natural breathing room and improve scannability. Lists can appear, but only sparingly and only when they truly clarify complex details or highlight a quick sequence the reader might otherwise struggle to absorb. The backbone remains storytelling: each section sets context, explains, and transitions naturally, so the article reads more like a well-structured conversation than a slide deck of bullet points. 
+
+Be sure to consult the project documents on Writing Guidelines and Semantic SEO before each section to remind yourself of the best practices that we want to follow. Also be sure to reference my original prompt that contains the article information that should feed your context. I've already done the research and given it to you there - so that's what you need to reference each time. Avoid using Em-dashes. If it's the section that is the "meat" of the article, you must further break your output down into subsections and only output the first subsection so as not to over simplify each component. Note: defining what a subsection means is important. We're not doing sub-subsections, so if the section of the article is already apparently a subsection, then that entire section should be included in your output even if there are apparently sub-subsections within. Note 2: the section you create must follow that of the original outline provided. Remember to keep total word count of article in mind and how you decided to divide up the words per section so you can allocate appropriate word count for this section.
+
+Target word count for this section: ${nextSection?.est_words || 'as planned'} words
+Content Requirements: ${nextSection?.content_requirements || 'Follow the planned structure'}
 
 REQUIRED ACTIONS:
 1. FIRST: Use file search tool to review "Writing Guidelines" and "Semantic SEO" 
-2. THEN: Reference the original research data from our conversation history
+2. THEN: Reference the original research data from our conversation history  
 3. FINALLY: Write the section "${nextSection?.title || 'next section'}" using the write_section function
 
 Always start with file search - do not skip this step as it contains critical formatting requirements.`;
@@ -509,7 +512,8 @@ Always start with file search - do not skip this step as it contains critical fo
       status: 'pending' as const,
       generationMetadata: {
         targetWordCount: section.est_words,
-        planningNotes: writing_style_notes
+        planningNotes: writing_style_notes,
+        contentRequirements: section.content_requirements
       },
       createdAt: now,
       updatedAt: now
