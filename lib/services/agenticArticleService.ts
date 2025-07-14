@@ -212,7 +212,7 @@ REQUIRED ACTION: You must now call the write_section function to write the next 
       const agent = new Agent({
         name: 'ArticleWriter',
         instructions: 'You are an expert article writer for guest posts. Follow the user instructions carefully and use the provided tools to plan and write the article systematically.',
-        model: 'o3',
+        model: 'o3-2025-04-16',
         tools: [
           fileSearch,
           webSearchPreview,
