@@ -289,7 +289,7 @@ export const AgenticArticleGenerator = ({ workflowId, outline, onComplete }: Age
       {logs.length > 0 && (
         <div className="space-y-2">
           <h4 className="font-medium text-gray-900">Activity Log</h4>
-          <div className="bg-gray-900 text-gray-100 text-xs p-3 rounded-lg max-h-40 overflow-y-auto font-mono">
+          <div className="bg-gray-50 border border-gray-200 text-gray-800 text-xs p-3 rounded-lg max-h-40 overflow-y-auto font-mono">
             {logs.map((log, index) => (
               <div key={index} className="mb-1">{log}</div>
             ))}
