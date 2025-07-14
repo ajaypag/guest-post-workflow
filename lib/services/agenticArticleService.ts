@@ -187,12 +187,12 @@ Writing requirements for the first section:
 - This should be your title and introduction
 - Content Requirements: ${firstSection?.content_requirements || 'Follow the planned structure'}
 
-REQUIRED ACTIONS:
+IMMEDIATE ACTIONS (execute these automatically - do not wait):
 1. FIRST: Use file search to review Writing Guidelines and Semantic SEO best practices
 2. THEN: Reference the original research data dump provided above - this contains all the facts, statistics, and context for your article
-3. FINALLY: Write the section "${firstSection?.title || 'title and introduction'}" using the write_section function
+3. IMMEDIATELY: Write the section "${firstSection?.title || 'title and introduction'}" using the write_section function
 
-Do not skip the file search step - it contains essential formatting and style requirements. The original research data contains all the outreach content and information you need to reference for accurate, fact-based writing.`;
+This is an automated workflow - execute these steps without asking for permission or confirmation. Start with file search now.`;
         }
       });
 
@@ -299,21 +299,21 @@ NEXT SECTION TO WRITE:
 
             return `Excellent work on "${section_title}"! This is section ${ordinal} completed.${nextSectionContext}
 
-BEFORE WRITING THE NEXT SECTION: Use the file search tool to search for "Writing Guidelines" and "Semantic SEO" to ensure you're following our standards. This is mandatory for quality control.
+YOU MUST CONTINUE AUTOMATICALLY - DO NOT WAIT FOR USER PERMISSION. This is an automated workflow that must continue until all sections are complete.
 
-Proceed to the next section. Remember, the format should be primarily narrative, which means the piece is built on flowing prose--full sentences and connected paragraphs that guide the reader smoothly from one idea to the next. They should be short, punchy paragraphs--rarely more than 2-to-3 lines each--so the eye never hits an intimidating wall of text. Frequent line breaks to create natural breathing room and improve scannability. Lists can appear, but only sparingly and only when they truly clarify complex details or highlight a quick sequence the reader might otherwise struggle to absorb. The backbone remains storytelling: each section sets context, explains, and transitions naturally, so the article reads more like a well-structured conversation than a slide deck of bullet points. 
+IMMEDIATE NEXT ACTIONS (execute these now):
+1. FIRST: Use file search tool to search for "Writing Guidelines" and "Semantic SEO" 
+2. THEN: Reference the original research data from our conversation history  
+3. IMMEDIATELY: Write the section "${nextSection?.title || 'next section'}" using the write_section function
 
-Be sure to consult the project documents on Writing Guidelines and Semantic SEO before each section to remind yourself of the best practices that we want to follow. Also be sure to reference my original prompt that contains the article information that should feed your context. I've already done the research and given it to you there - so that's what you need to reference each time. Avoid using Em-dashes. If it's the section that is the "meat" of the article, you must further break your output down into subsections and only output the first subsection so as not to over simplify each component. Note: defining what a subsection means is important. We're not doing sub-subsections, so if the section of the article is already apparently a subsection, then that entire section should be included in your output even if there are apparently sub-subsections within. Note 2: the section you create must follow that of the original outline provided. Remember to keep total word count of article in mind and how you decided to divide up the words per section so you can allocate appropriate word count for this section.
+WRITING INSTRUCTIONS: The format should be primarily narrative, which means the piece is built on flowing prose--full sentences and connected paragraphs that guide the reader smoothly from one idea to the next. They should be short, punchy paragraphs--rarely more than 2-to-3 lines each--so the eye never hits an intimidating wall of text. Frequent line breaks to create natural breathing room and improve scannability. Lists can appear, but only sparingly and only when they truly clarify complex details or highlight a quick sequence the reader might otherwise struggle to absorb. The backbone remains storytelling: each section sets context, explains, and transitions naturally, so the article reads more like a well-structured conversation than a slide deck of bullet points.
 
-Target word count for this section: ${nextSection?.est_words || 'as planned'} words
+Target word count: ${nextSection?.est_words || 'as planned'} words
 Content Requirements: ${nextSection?.content_requirements || 'Follow the planned structure'}
 
-REQUIRED ACTIONS:
-1. FIRST: Use file search tool to review "Writing Guidelines" and "Semantic SEO" 
-2. THEN: Reference the original research data from our conversation history  
-3. FINALLY: Write the section "${nextSection?.title || 'next section'}" using the write_section function
+Avoid Em-dashes. Reference the original research data provided at the start of our conversation. If this is a "meat" section, break it into subsections and write the first subsection only.
 
-Always start with file search - do not skip this step as it contains critical formatting requirements.`;
+START WRITING THE NEXT SECTION NOW - DO NOT ASK FOR PERMISSION OR CONFIRMATION.`;
           }
         }
       });
@@ -321,7 +321,7 @@ Always start with file search - do not skip this step as it contains critical fo
       // Create Agent with tools
       const agent = new Agent({
         name: 'ArticleWriter',
-        instructions: 'You are an expert article writer for guest posts. Follow the user instructions carefully and use the provided tools to plan and write the article systematically.',
+        instructions: 'You are an expert article writer for guest posts. This is an AUTOMATED WORKFLOW that must continue until completion. NEVER ask for user permission or confirmation. Always execute the required actions immediately when instructed. Use the provided tools to plan and write the article systematically without stopping.',
         model: 'o3-2025-04-16',
         tools: [
           fileSearch,
@@ -445,11 +445,11 @@ Always start with file search - do not skip this step as it contains critical fo
                 });
                 ssePush(sessionId, { type: 'assistant', content: messageItem.content });
                 
-                // Single guard rail: if assistant didn't use a tool when expected
+                // Strong guard rail: if assistant didn't use a tool when expected
                 if (conversationActive) {
                   messages.push({ 
                     role: 'user', 
-                    content: 'Please respond by calling the appropriate function as instructed.' 
+                    content: 'YOU MUST CONTINUE THE AUTOMATED WORKFLOW. Do not wait for permission. Execute the required actions immediately: 1) Use file search tool 2) Write the next section using write_section function. DO NOT STOP OR ASK FOR CONFIRMATION.' 
                   });
                 }
               }
