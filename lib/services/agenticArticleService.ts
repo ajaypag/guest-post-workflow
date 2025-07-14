@@ -257,22 +257,32 @@ This is an automated workflow - execute these steps without asking for permissio
               const content = section.content?.trim() || '';
               const sectionTitle = section.title || '';
               
-              // Check if content starts with an H2 header that matches this section's title (case-insensitive)
+              // Normalize text for comparison (case-insensitive, punctuation)
+              const normalizeText = (text: string) => text.toLowerCase().replace(/[""'"]/g, '"');
+              const normalizedTitle = normalizeText(sectionTitle.trim());
+              
+              // Check for H2 header first (priority)
               const h2Match = content.match(/^##\s+(.+?)(\n|$)/);
               if (h2Match) {
                 const headerText = h2Match[1].trim();
-                const titleText = sectionTitle.trim();
-                
-                // Compare case-insensitive and handle basic punctuation differences
-                const normalizeText = (text: string) => text.toLowerCase().replace(/[""'"]/g, '"');
-                
-                if (normalizeText(headerText) === normalizeText(titleText)) {
-                  // Agent included the exact section header - use as-is
+                if (normalizeText(headerText) === normalizedTitle) {
+                  // Agent included matching H2 header - keep as-is
                   return section.content;
                 }
               }
               
-              // Either no header, or header doesn't match section title - add our header
+              // Check for H3 header (should be replaced with H2)
+              const h3Match = content.match(/^###\s+(.+?)(\n|$)/);
+              if (h3Match) {
+                const headerText = h3Match[1].trim();
+                if (normalizeText(headerText) === normalizedTitle) {
+                  // Agent used H3 for section title - remove it and use our H2
+                  const contentWithoutH3 = content.replace(/^###\s+.+?(\n|$)/, '').trim();
+                  return `## ${section.title}\n\n${contentWithoutH3}`;
+                }
+              }
+              
+              // No matching header found - add our H2 header
               return `## ${section.title}\n\n${section.content}`;
             }).join('\n\n');
             
@@ -563,22 +573,32 @@ START WRITING THE NEXT SECTION NOW - DO NOT ASK FOR PERMISSION OR CONFIRMATION.`
       const content = section.content?.trim() || '';
       const sectionTitle = section.title || '';
       
-      // Check if content starts with an H2 header that matches this section's title (case-insensitive)
+      // Normalize text for comparison (case-insensitive, punctuation)
+      const normalizeText = (text: string) => text.toLowerCase().replace(/[""'"]/g, '"');
+      const normalizedTitle = normalizeText(sectionTitle.trim());
+      
+      // Check for H2 header first (priority)
       const h2Match = content.match(/^##\s+(.+?)(\n|$)/);
       if (h2Match) {
         const headerText = h2Match[1].trim();
-        const titleText = sectionTitle.trim();
-        
-        // Compare case-insensitive and handle basic punctuation differences
-        const normalizeText = (text: string) => text.toLowerCase().replace(/[""'"]/g, '"');
-        
-        if (normalizeText(headerText) === normalizeText(titleText)) {
-          // Agent included the exact section header - use as-is
+        if (normalizeText(headerText) === normalizedTitle) {
+          // Agent included matching H2 header - keep as-is
           return section.content;
         }
       }
       
-      // Either no header, or header doesn't match section title - add our header
+      // Check for H3 header (should be replaced with H2)
+      const h3Match = content.match(/^###\s+(.+?)(\n|$)/);
+      if (h3Match) {
+        const headerText = h3Match[1].trim();
+        if (normalizeText(headerText) === normalizedTitle) {
+          // Agent used H3 for section title - remove it and use our H2
+          const contentWithoutH3 = content.replace(/^###\s+.+?(\n|$)/, '').trim();
+          return `## ${section.title}\n\n${contentWithoutH3}`;
+        }
+      }
+      
+      // No matching header found - add our H2 header
       return `## ${section.title}\n\n${section.content}`;
     }).join('\n\n');
 
