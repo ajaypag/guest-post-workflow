@@ -193,7 +193,26 @@ REQUIRED ACTION: You must now call the write_section function to write the title
               status: 'completed',
               completedAt: new Date()
             });
-            ssePush(sessionId, { type: 'completed' });
+            
+            // Get the final assembled article to send to UI
+            const finalSections = await db.select()
+              .from(articleSections)
+              .where(and(
+                eq(articleSections.workflowId, currentSession!.workflowId),
+                eq(articleSections.status, 'completed')
+              ))
+              .orderBy(articleSections.sectionNumber);
+            
+            const finalArticle = finalSections.map(section => 
+              `## ${section.title}\n\n${section.content}`
+            ).join('\n\n');
+            
+            ssePush(sessionId, { 
+              type: 'completed', 
+              finalArticle,
+              totalSections: finalSections.length,
+              totalWords: finalSections.reduce((sum, section) => sum + (section.wordCount || 0), 0)
+            });
             
             return `Perfect! You've completed the final section "${section_title}". The article is now complete with ${ordinal} sections total.`;
           } else {

@@ -122,26 +122,19 @@ export const AgenticArticleGenerator = ({ workflowId, outline, onComplete }: Age
             }
             break;
             
-          case 'complete':
+          case 'completed':
             setIsGenerating(false);
             eventSource.close();
             
-            if (data.status === 'completed') {
-              addLog('🎉 Article generation completed successfully!');
-              
-              // Compile final article from sections
-              if (progress?.sections) {
-                const finalArticle = progress.sections
-                  .filter(s => s.status === 'completed')
-                  .sort((a, b) => a.sectionNumber - b.sectionNumber)
-                  .map(s => `## ${s.title}\n\n${s.content}`)
-                  .join('\n\n');
-                
-                onComplete(finalArticle);
-              }
+            addLog('🎉 Article generation completed successfully!');
+            
+            // Use the final article from the server instead of assembling from progress
+            if (data.finalArticle) {
+              addLog(`Final article: ${data.totalSections} sections, ${data.totalWords} words`);
+              onComplete(data.finalArticle);
             } else {
-              addLog(`❌ Generation failed: ${data.errorMessage}`);
-              setError(data.errorMessage || 'Generation failed');
+              addLog('Warning: No final article received from server');
+              setError('No final article received from server');
             }
             break;
             
