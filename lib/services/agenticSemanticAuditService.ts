@@ -7,14 +7,14 @@ import { eq, and, sql } from 'drizzle-orm';
 import { v4 as uuidv4 } from 'uuid';
 import { z } from 'zod';
 
-// Zod schemas for audit tool parameters
+// Zod schemas for audit tool parameters - keeping the advanced features but fixing OpenAI compatibility
 const parseArticleSchema = z.object({
   sections: z.array(z.object({
     title: z.string().describe('Section or subsection title'),
     content: z.string().describe('Section/subsection content - should be manageable audit chunk'),
     order: z.number().describe('Sequential order number for auditing'),
     level: z.enum(['section', 'subsection']).describe('Whether this is a main section (H2) or subsection (H3)'),
-    parentSection: z.string().optional().describe('Parent section title if this is a subsection'),
+    parentSection: z.string().describe('Parent section title if this is a subsection, or empty string for main sections'),
     headerLevel: z.enum(['h2', 'h3']).describe('Header level to use in final output')
   })),
   totalSections: z.number().describe('Total number of sections and subsections identified for auditing')
