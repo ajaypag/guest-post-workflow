@@ -8,6 +8,7 @@ import { TutorialVideo } from '../ui/TutorialVideo';
 import { ChatInterface } from '../ui/ChatInterface';
 import { AgenticArticleGenerator } from '../ui/AgenticArticleGenerator';
 import { SplitPromptButton } from '../ui/SplitPromptButton';
+import { MarkdownPreview } from '../ui/MarkdownPreview';
 import { ExternalLink, ChevronDown, ChevronRight, FileText, CheckCircle, AlertCircle, Target, RefreshCw, BookOpen } from 'lucide-react';
 
 interface ArticleDraftStepProps {
@@ -533,14 +534,21 @@ ${outlineContent || '((((Complete Step 3: Deep Research first to get outline con
                       />
 
                       {step.outputs.fullArticle && (
-                        <div className="bg-green-50 border border-green-200 rounded-lg p-4">
-                          <div className="flex items-center">
-                            <CheckCircle className="w-5 h-5 text-green-600 mr-2" />
-                            <p className="text-sm text-green-800">
-                              Article captured! Ready for semantic SEO optimization and further refinement.
-                            </p>
+                        <>
+                          <div className="bg-green-50 border border-green-200 rounded-lg p-4 mb-4">
+                            <div className="flex items-center">
+                              <CheckCircle className="w-5 h-5 text-green-600 mr-2" />
+                              <p className="text-sm text-green-800">
+                                Article captured! Ready for semantic SEO optimization and further refinement.
+                              </p>
+                            </div>
                           </div>
-                        </div>
+                          
+                          <MarkdownPreview 
+                            content={step.outputs.fullArticle}
+                            className="mt-4"
+                          />
+                        </>
                       )}
                     </div>
                   </div>
@@ -703,14 +711,21 @@ ${outlineContent || '((((Complete Step 3: Deep Research first to get outline con
                   />
                   
                   {step.outputs.fullArticle && (
-                    <div className="bg-green-50 border border-green-200 rounded-lg p-4 mt-3">
-                      <div className="flex items-center">
-                        <CheckCircle className="w-5 h-5 text-green-600 mr-2" />
-                        <p className="text-sm text-green-800">
-                          Article saved! Ready for content audit and optimization steps.
-                        </p>
+                    <>
+                      <div className="bg-green-50 border border-green-200 rounded-lg p-4 mt-3 mb-4">
+                        <div className="flex items-center">
+                          <CheckCircle className="w-5 h-5 text-green-600 mr-2" />
+                          <p className="text-sm text-green-800">
+                            Article saved! Ready for content audit and optimization steps.
+                          </p>
+                        </div>
                       </div>
-                    </div>
+                      
+                      <MarkdownPreview 
+                        content={step.outputs.fullArticle}
+                        className="mt-4"
+                      />
+                    </>
                   )}
                 </div>
               </div>
@@ -755,6 +770,11 @@ ${outlineContent || '((((Complete Step 3: Deep Research first to get outline con
                       Word count: {step.outputs.wordCount}
                     </p>
                   )}
+                  
+                  <MarkdownPreview 
+                    content={step.outputs.fullArticle}
+                    className="mt-4"
+                  />
                 </div>
               )}
             </div>
