@@ -31,13 +31,12 @@ const writeSectionSchema = z.object({
 
 // Style rules that will be enforced by the agent
 const WRITING_STYLE_RULES = `
-NARRATIVE FORMAT REQUIREMENTS:
-- Primarily narrative format with flowing prose
-- Full sentences and connected paragraphs 
-- Short, punchy paragraphs (2-3 lines max)
-- Frequent line breaks for readability
-- Lists only when necessary for clarity
-- Natural storytelling transitions between sections
+PROSE FORMAT REQUIREMENTS:
+- Write in natural, paragraph-based prose that prioritizes clarity, flow, and coherence—like a knowledgeable human explaining the topic conversationally and thoughtfully
+- Full sentences and connected paragraphs that flow logically from one idea to the next
+- Short, punchy paragraphs (2-3 lines max) with frequent line breaks for readability
+- Bullet points or other formatting structures should be used only when they add genuine clarity or emphasis, not as a default or shortcut
+- The content should feel connected and intentional, avoiding a list-like or overly mechanical tone
 - NO em-dashes allowed
 - Avoid intimidating walls of text
 
@@ -136,9 +135,11 @@ export class AgenticArticleService {
       // Create initial prompt with the exact same content as the manual flow
       const initialPrompt = `Okay, I'm about to give you a lot of information. Here is a data dump of a deep research we did that's going to lead to an article that you will write for me. I don't want you to start writing. I want you to first just take everything in, analyze it, and start preparing. After that, you're going to start thinking about the outline and flushing it out. I'm not necessarily writing yet, but taking the outline and flushing it out - you're deciding what goes where, you're picking 3 citations only and planning where they go. Let's just say total initial planning so that the article can flow through. Determine a word count as well. An acceptable range is 1500-2500.
 
-IMPORTANT: You have access to a file search tool that contains Writing Guidelines and Semantic SEO best practices. Use the file search tool to review these guidelines BEFORE planning to ensure your article plan follows our established standards.
+WRITING STYLE: Write in natural, paragraph-based prose that prioritizes clarity, flow, and coherence—like a knowledgeable human explaining the topic conversationally and thoughtfully. Bullet points or other formatting structures should be used only when they add genuine clarity or emphasis, not as a default or shortcut. The content should feel connected and intentional, avoiding a list-like or overly mechanical tone.
 
-CRITICAL: When you extract sections from the outline, you MUST also extract the detailed content requirements for each section. For example, if the outline mentions "Starter Packages" and includes details like "What You Typically Get", "Example Pricing", "Pros", "Cons/Cautions", etc., you must capture these specific requirements in the content_requirements field for that section. Do not just extract titles and word counts - extract the complete structural details and requirements.
+IMPORTANT: You have access to a file search tool that contains Brand kit, Writing Guidelines and Semantic SEO best practices. Use the file search tool to review these guidelines BEFORE planning to ensure your article plan follows our established standards.
+
+CRITICAL: When you extract sections from the outline, you MUST also extract the detailed content requirements for each section. For example, if the outline mentions what to put in a section, you must include that information in the content_requirements field for that section. Do not just extract titles and word counts - extract the complete details for that section so the tool can better produce content. Also, you are encouraged to review the entire outline when extracting details for a section so that you can add some additional detail, narrative, or insights that would be useful for this specific section.
 
 ${outline}
 
@@ -174,19 +175,19 @@ ${firstSection.content_requirements ?
   firstSection.content_requirements.replace(/Include:|Must include:/gi, 'Consider weaving in:').replace(/a\)|b\)|c\)|d\)|e\)|f\)/g, '•') 
   : 'Set the stage for the article with an engaging opening'}
 
-Remember: This is your reader's first impression. Hook them with a compelling narrative, not a list of points.` : '';
+Remember: These are themes to organically incorporate, not a rigid structure to follow.` : '';
 
           return `Plan saved successfully! I can see you've planned ${args.sections.length} sections with a target of ${args.target_word_range.min}-${args.target_word_range.max} words. Now I'll give you instructions for writing.${firstSectionContext}
 
-Remember we're going to be creating this article section by section. The format should be primarily narrative, which means the piece is built on flowing prose--full sentences and connected paragraphs that guide the reader smoothly from one idea to the next. They should be short, punchy paragraphs--rarely more than 2-to-3 lines each--so the eye never hits an intimidating wall of text. Frequent line breaks to create natural breathing room and improve scannability. Lists can appear, but only sparingly and only when they truly clarify complex details or highlight a quick sequence the reader might otherwise struggle to absorb. The backbone remains storytelling: each section sets context, explains, and transitions naturally, so the article reads more like a well-structured conversation than a slide deck of bullet points. 
+Remember we're going to be creating this article section by section. Write in natural, paragraph-based prose that prioritizes clarity, flow, and coherence—like a knowledgeable human explaining the topic conversationally and thoughtfully. They should be short, punchy paragraphs--rarely more than 2-to-3 lines each--so the eye never hits an intimidating wall of text. Frequent line breaks to create natural breathing room and improve scannability. Bullet points or other formatting structures should be used only when they add genuine clarity or emphasis, not as a default or shortcut. The content should feel connected and intentional, avoiding a list-like or overly mechanical tone. 
 
 WRITING PHILOSOPHY - YOUR GUIDING PRINCIPLES:
 - Write an engaging, cohesive article, not a series of checkpoints
-- Narrative flow trumps hitting every content point
-- Hook readers with storytelling, not bullet points
+- Flow and coherence trumps hitting every content point
+- Prioritize clarity and thoughtful explanations
 - Keep paragraphs short and punchy (2-3 lines) with visual breathing room
 - Avoid Em-dashes
-- Target around ${firstSection?.est_words || 'the planned'} words, but let the story guide length
+- Target around ${firstSection?.est_words || 'the planned'} words, but let the content guide length
 
 IMMEDIATE ACTIONS (execute these automatically):
 1. FIRST: Use file search to review "Writing Guidelines" and "Semantic SEO" for style guidance
@@ -368,19 +369,29 @@ Remember: These are themes to organically incorporate, not a rigid structure to 
 
 YOU MUST CONTINUE AUTOMATICALLY - DO NOT WAIT FOR USER PERMISSION. This is an automated workflow that must continue until all sections are complete.
 
+CORE WRITING STYLE: Write in natural, paragraph-based prose that prioritizes clarity, flow, and coherence—like a knowledgeable human explaining the topic conversationally and thoughtfully. Bullet points or other formatting structures should be used only when they add genuine clarity or emphasis, not as a default or shortcut. The content should feel connected and intentional, avoiding a list-like or overly mechanical tone.
+
+SPECIFIC FORMATTING GUIDELINES:
+- Short, punchy paragraphs--rarely more than 2-to-3 lines each--so the eye never hits an intimidating wall of text
+- Frequent line breaks to create natural breathing room and improve scannability
+- Bullet points or other formatting structures should be used only when they add genuine clarity or emphasis, not as a default or shortcut
+
 WRITING PHILOSOPHY - THIS IS YOUR NORTH STAR:
-- You are writing ONE COHESIVE ARTICLE, not independent sections
-- Narrative flow and readability trump hitting every content point
-- Short, punchy paragraphs (2-3 lines) with breathing room
+- Think about what the reader for this article topic needs to see and understand at this stage of their journey and within this section. Think about what is the best type of writing approach that would really hit the nail on the head for this person?
+- Even though you are writing a section, you have to remember that it's actually a section that's part of one cohesive article. So you need to be thinking about what came before this and what's going to come after this as well, so that ultimately it's a flowing article and not something that feels piecemeal.
+- Flow and coherence trumps hitting every content point
+- Prioritize clarity and thoughtful explanations
 - Natural transitions that guide readers smoothly between ideas
-- Lists only when they genuinely help (not as default structure)
-- Conversational tone, like explaining to a colleague over coffee
+- Avoid Em-dashes
+- Target around ${nextSection?.est_words || 'the planned'} words, but let the content guide length
+
+CONTENT INTEGRATION APPROACH: These are themes to organically incorporate, not a rigid structure to follow. Content requirements should be woven naturally into your explanations, not presented as a checklist.
 
 IMMEDIATE NEXT ACTIONS (execute these now):
 1. FIRST: Use read_previous_sections to understand the article's flow and tone so far
-2. THEN: Use file search tool to refresh on "Writing Guidelines" and "Semantic SEO"
-3. THEN: Reference the original research data from our conversation history
-4. FINALLY: Write "${nextSection?.title || 'next section'}" focusing on NARRATIVE FLOW over checklist completion
+2. THEN: Use file search tool to refresh on "Brand kit, Writing Guidelines" and "Semantic SEO"
+3. THEN: Observe the original data from the original outline given in the first prompt, which contains competitor research, news, section briefing. Think about what elements from the whole you could add to your section to make it feel like you are a writer that's going beyond the basic effort.
+4. FINALLY: Write "${nextSection?.title || 'next section'}" focusing on flow and coherence over checklist completion
 
 START WRITING THE NEXT SECTION NOW - DO NOT ASK FOR PERMISSION OR CONFIRMATION.`;
           }
