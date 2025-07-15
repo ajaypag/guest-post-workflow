@@ -246,9 +246,11 @@ Begin the brand polish now.`;
           if (!currentSession) throw new Error('Session not found');
           
           // Save proceed results to database
-          const ordinal = (currentSession.completedProceedSteps || 0) + 1;
+          // Find the section number based on the title instead of using completedProceedSteps
           const sessionMetadata = currentSession.auditMetadata as any;
           const parsedSections = sessionMetadata?.parsedSections || [];
+          const sectionMatch = parsedSections.find((s: any) => s.title === section_title);
+          const ordinal = sectionMatch ? sectionMatch.order : (currentSession.completedProceedSteps || 0) + 1;
           const originalSection = parsedSections.find((s: any) => s.order === ordinal);
           
           // Create or update section record (upsert logic)
@@ -365,9 +367,11 @@ DO NOT proceed to the next section until cleanup is complete. This is the mandat
           if (!currentSession) throw new Error('Session not found');
           
           // Find the section record to update
-          const ordinal = (currentSession.completedCleanupSteps || 0) + 1;
+          // Find the section number based on the title instead of using completedCleanupSteps
           const sessionMetadata = currentSession.auditMetadata as any;
           const parsedSections = sessionMetadata?.parsedSections || [];
+          const sectionMatch = parsedSections.find((s: any) => s.title === section_title);
+          const ordinal = sectionMatch ? sectionMatch.order : (currentSession.completedCleanupSteps || 0) + 1;
           
           // Update section with cleanup results - check if record exists first
           const existingSection = await db.select().from(auditSections)
