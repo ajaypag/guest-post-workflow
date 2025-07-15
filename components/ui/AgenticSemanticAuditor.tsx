@@ -143,13 +143,20 @@ export const AgenticSemanticAuditor = ({
             break;
             
           case 'progress':
-            setProgress(data);
-            
-            // Log audit updates
-            if (data.session.status === 'auditing' && data.sections && Array.isArray(data.sections)) {
-              const currentSection = data.sections.find((s: AuditSection) => s.status === 'auditing');
-              if (currentSection) {
-                addLog(`Auditing section ${currentSection.sectionNumber}: "${currentSection.title}"`);
+            // Ensure data has proper structure before setting
+            if (data && data.session) {
+              setProgress({
+                session: data.session,
+                sections: data.sections || [],
+                progress: data.progress || { total: 0, completed: 0, citationsUsed: 0, citationsRemaining: 0 }
+              });
+              
+              // Log audit updates
+              if (data.session.status === 'auditing' && data.sections && Array.isArray(data.sections)) {
+                const currentSection = data.sections.find((s: AuditSection) => s.status === 'auditing');
+                if (currentSection) {
+                  addLog(`Auditing section ${currentSection.sectionNumber}: "${currentSection.title}"`);
+                }
               }
             }
             break;
@@ -245,6 +252,13 @@ export const AgenticSemanticAuditor = ({
   const progressPercentage = progress && progress.progress && progress.progress.total > 0
     ? Math.round((progress.progress.completed / progress.progress.total) * 100) 
     : 0;
+  
+  // Ensure progress has proper structure
+  const safeProgress = progress ? {
+    session: progress.session || { status: 'pending', totalSections: 0, completedSections: 0, totalCitationsUsed: 0 },
+    sections: progress.sections || [],
+    progress: progress.progress || { total: 0, completed: 0, citationsUsed: 0, citationsRemaining: 0 }
+  } : null;
 
   return (
     <div className="bg-white border border-gray-200 rounded-xl p-6 space-y-6">
@@ -289,7 +303,7 @@ export const AgenticSemanticAuditor = ({
       )}
 
       {/* Progress Display */}
-      {progress && (
+      {safeProgress && (
         <div className="space-y-4">
           {/* Overall Progress */}
           <div className="bg-gray-50 rounded-lg p-4">
@@ -304,19 +318,19 @@ export const AgenticSemanticAuditor = ({
               />
             </div>
             <div className="flex justify-between text-xs text-gray-600">
-              <span>Status: {progress.session.status}</span>
+              <span>Status: {safeProgress.session.status}</span>
               <span>
-                Citations: {progress.progress.citationsUsed}/3 used, {progress.progress.citationsRemaining} remaining
+                Citations: {safeProgress.progress.citationsUsed}/3 used, {safeProgress.progress.citationsRemaining} remaining
               </span>
             </div>
           </div>
 
           {/* Sections List */}
-          {progress.sections && Array.isArray(progress.sections) && progress.sections.length > 0 && (
+          {safeProgress.sections && Array.isArray(safeProgress.sections) && safeProgress.sections.length > 0 && (
             <div className="space-y-2">
               <h4 className="font-medium text-gray-900">Article Sections</h4>
               <div className="space-y-2 max-h-60 overflow-y-auto">
-                {progress.sections.map((section) => (
+                {safeProgress.sections.map((section) => (
                   <div key={section.id} className="flex items-center justify-between p-3 bg-gray-50 rounded-lg">
                     <div className="flex items-center space-x-3">
                       {getStatusIcon(section.status)}
