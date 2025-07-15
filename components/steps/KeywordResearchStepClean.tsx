@@ -160,15 +160,15 @@ export const KeywordResearchStepClean = ({ step, workflow, onChange }: KeywordRe
       // Simple keyword theme detection
       let groupKey = 'Other';
       
-      if (keywords.some(k => k.includes('seo') || k.includes('search') || k.includes('ranking'))) {
+      if (keywords.some((k: string) => k.includes('seo') || k.includes('search') || k.includes('ranking'))) {
         groupKey = 'SEO & Search';
-      } else if (keywords.some(k => k.includes('content') || k.includes('blog') || k.includes('article'))) {
+      } else if (keywords.some((k: string) => k.includes('content') || k.includes('blog') || k.includes('article'))) {
         groupKey = 'Content Marketing';
-      } else if (keywords.some(k => k.includes('tool') || k.includes('software') || k.includes('platform'))) {
+      } else if (keywords.some((k: string) => k.includes('tool') || k.includes('software') || k.includes('platform'))) {
         groupKey = 'Tools & Software';
-      } else if (keywords.some(k => k.includes('service') || k.includes('consulting') || k.includes('agency'))) {
+      } else if (keywords.some((k: string) => k.includes('service') || k.includes('consulting') || k.includes('agency'))) {
         groupKey = 'Services';
-      } else if (keywords.some(k => k.includes('product') || k.includes('feature') || k.includes('solution'))) {
+      } else if (keywords.some((k: string) => k.includes('product') || k.includes('feature') || k.includes('solution'))) {
         groupKey = 'Products';
       }
       
