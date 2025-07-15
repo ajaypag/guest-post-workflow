@@ -1,7 +1,7 @@
 'use client';
 
 import React, { useState } from 'react';
-import { Database, AlertTriangle, CheckCircle, X, Play, RotateCcw, Sparkles } from 'lucide-react';
+import { Database, AlertTriangle, CheckCircle, X, Play, RotateCcw, Sparkles, Bug, Wrench } from 'lucide-react';
 
 export default function DatabaseMigrationPage() {
   const [isLoading, setIsLoading] = useState(false);
@@ -559,6 +559,56 @@ export default function DatabaseMigrationPage() {
     setIsLoading(false);
   };
 
+  const testTableInsert = async () => {
+    setIsLoading(true);
+    setMessage('');
+    
+    try {
+      const response = await fetch('/api/debug/test-insert', {
+        method: 'POST'
+      });
+      const data = await response.json();
+      
+      if (data.success) {
+        setMessage('✅ Test insert successful! Table schema is correct and working properly.');
+        setMessageType('success');
+      } else {
+        setMessage(`❌ Test insert failed: ${data.error}\n\nThis means the table schema doesn't match what the application expects. Try the "Fix Missing Columns" button below.`);
+        setMessageType('error');
+      }
+    } catch (error) {
+      setMessage(`❌ Error testing insert: ${error instanceof Error ? error.message : 'Unknown error'}`);
+      setMessageType('error');
+    }
+    
+    setIsLoading(false);
+  };
+
+  const addMissingColumns = async () => {
+    setIsLoading(true);
+    setMessage('');
+    
+    try {
+      const response = await fetch('/api/admin/add-final-polish-columns', {
+        method: 'POST'
+      });
+      const data = await response.json();
+      
+      if (data.success) {
+        setMessage('✅ Missing columns added successfully! Final polish should now work properly. Try testing again.');
+        setMessageType('success');
+      } else {
+        setMessage(`❌ Failed to add columns: ${data.error}`);
+        setMessageType('error');
+      }
+    } catch (error) {
+      setMessage(`❌ Error adding columns: ${error instanceof Error ? error.message : 'Unknown error'}`);
+      setMessageType('error');
+    }
+    
+    setIsLoading(false);
+  };
+
   return (
     <div className="min-h-screen bg-gray-50 py-8">
       <div className="max-w-4xl mx-auto px-4 sm:px-6 lg:px-8">
@@ -1056,6 +1106,57 @@ export default function DatabaseMigrationPage() {
                 <RotateCcw className="w-4 h-4 mr-2" />
                 {isLoading ? 'Rolling Back...' : 'Remove Final Polish Support'}
               </button>
+            </div>
+            
+            {/* Debug Section */}
+            <div className="mt-8 bg-orange-50 border border-orange-200 rounded-lg p-6">
+              <h3 className="font-semibold text-orange-900 mb-4 flex items-center">
+                <Bug className="w-5 h-5 mr-2" />
+                Debug Final Polish Issues
+              </h3>
+              <p className="text-orange-700 text-sm mb-4">
+                If the final polish workflow is showing column errors, use these diagnostic tools to identify and fix the problem.
+              </p>
+              
+              <div className="space-y-3">
+                {/* Test Insert */}
+                <div className="border border-orange-200 rounded-lg p-4 bg-white">
+                  <h4 className="font-medium text-gray-900 mb-2">1. Test Table Schema</h4>
+                  <p className="text-gray-600 text-sm mb-3">
+                    Test if the current table structure matches what the application expects.
+                  </p>
+                  <button
+                    onClick={testTableInsert}
+                    disabled={isLoading}
+                    className="inline-flex items-center px-4 py-2 bg-orange-600 text-white text-sm font-medium rounded-md hover:bg-orange-700 disabled:opacity-50 disabled:cursor-not-allowed"
+                  >
+                    <Bug className="w-4 h-4 mr-2" />
+                    {isLoading ? 'Testing...' : 'Test Table Schema'}
+                  </button>
+                </div>
+                
+                {/* Fix Missing Columns */}
+                <div className="border border-orange-200 rounded-lg p-4 bg-white">
+                  <h4 className="font-medium text-gray-900 mb-2">2. Fix Missing Columns</h4>
+                  <p className="text-gray-600 text-sm mb-3">
+                    Add any missing final polish columns to existing tables without dropping data.
+                  </p>
+                  <button
+                    onClick={addMissingColumns}
+                    disabled={isLoading}
+                    className="inline-flex items-center px-4 py-2 bg-green-600 text-white text-sm font-medium rounded-md hover:bg-green-700 disabled:opacity-50 disabled:cursor-not-allowed"
+                  >
+                    <Wrench className="w-4 h-4 mr-2" />
+                    {isLoading ? 'Adding Columns...' : 'Fix Missing Columns'}
+                  </button>
+                </div>
+              </div>
+              
+              <div className="mt-4 bg-orange-100 border border-orange-200 rounded p-3">
+                <p className="text-orange-800 text-sm">
+                  <strong>Usage:</strong> First click "Test Table Schema" to see if there are issues. If it fails, click "Fix Missing Columns" to resolve them.
+                </p>
+              </div>
             </div>
           </div>
 
