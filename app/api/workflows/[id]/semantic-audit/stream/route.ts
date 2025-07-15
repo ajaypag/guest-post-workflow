@@ -52,10 +52,14 @@ export async function GET(
           try {
             const progress = await agenticSemanticAuditService.getAuditProgress(sessionId);
             if (progress) {
-              const progressMessage = `data: ${JSON.stringify({ 
-                type: 'progress', 
-                ...progress 
-              })}\n\n`;
+              // Ensure progress has all required fields
+              const safeProgress = {
+                type: 'progress',
+                session: progress.session || {},
+                sections: progress.sections || [],
+                progress: progress.progress || { total: 0, completed: 0, citationsUsed: 0, citationsRemaining: 0 }
+              };
+              const progressMessage = `data: ${JSON.stringify(safeProgress)}\n\n`;
               controller.enqueue(encoder.encode(progressMessage));
             }
           } catch (error) {

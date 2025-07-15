@@ -26,7 +26,9 @@ export const TopicGenerationImproved = ({ step, workflow, onChange, onWorkflowCh
   });
   
   // Branch selection for volume analysis
-  const [volumeBranch, setVolumeBranch] = useState<'has-volume' | 'no-volume' | 'want-other' | null>(null);
+  const [volumeBranch, setVolumeBranch] = useState<'has-volume' | 'no-volume' | 'want-other' | null>(
+    step.outputs.volumeBranch || null
+  );
   
   // Load client data for client-level preferences
   const [client, setClient] = useState<any>(null);
@@ -607,18 +609,55 @@ Target URL: ${clientTargetUrl}`;
 
                   {volumeBranch === 'no-volume' && (
                     <>
-                      <div className="bg-blue-50 border border-blue-200 rounded p-3 mb-4">
-                        <p className="text-sm text-blue-800">
-                          <strong>No Volume Flow:</strong> Instructions for this flow will be provided soon.
+                      <div className="bg-red-50 border border-red-200 rounded-lg p-4 mb-4">
+                        <h4 className="font-medium text-red-900 mb-3 flex items-center">
+                          <AlertCircle className="w-5 h-5 mr-2" />
+                          No Search Volume Found
+                        </h4>
+                        <p className="text-sm text-red-800 mb-4">
+                          The keywords don't have search volume. You need to request new keywords that meet all three criteria:
                         </p>
-                        {/* Placeholder for no-volume flow */}
+                        <ul className="text-sm text-red-700 space-y-1 ml-5 mb-4">
+                          <li>• Have existing topical authority for the target site</li>
+                          <li>• Have overlap and relevance to your client's target pages</li>
+                          <li>• Have search volume (preferably long-tail keywords)</li>
+                        </ul>
+                        
+                        <div className="bg-white border border-red-300 rounded-lg p-3">
+                          <div className="flex items-center justify-between mb-2">
+                            <p className="text-sm font-medium text-red-800">📝 Copy this prompt for ChatGPT:</p>
+                            <CopyButton 
+                              text="The keywords you provided have no search volume. Can you please try again? Keep in mind that I need to find keywords for topics that have existing topical authority to the target site, have overlap and relevance to my client's target pages, and have search volume. Preferably long-tail search volume."
+                              label="Copy Prompt"
+                            />
+                          </div>
+                          <div className="bg-gray-50 border border-gray-200 rounded p-3 text-xs font-mono">
+                            The keywords you provided have no search volume. Can you please try again? Keep in mind that I need to find keywords for topics that have existing topical authority to the target site, have overlap and relevance to my client's target pages, and have search volume. Preferably long-tail search volume.
+                          </div>
+                        </div>
+                      </div>
+
+                      <div className="bg-blue-50 border border-blue-200 rounded-lg p-4 mb-4">
+                        <h4 className="font-medium text-blue-900 mb-2">🔄 Next Steps:</h4>
+                        <ol className="text-sm text-blue-800 space-y-2">
+                          <li>1. Copy the prompt above and paste it in your ChatGPT conversation</li>
+                          <li>2. Wait for ChatGPT to generate new keyword suggestions</li>
+                          <li>3. Copy the new keywords and check their volume in Ahrefs again</li>
+                          <li>4. Return here and select the appropriate option:
+                            <ul className="ml-4 mt-1 space-y-1 text-xs">
+                              <li>• If keywords have volume → Select "Has Volume" tab</li>
+                              <li>• If still no volume → Use this prompt again</li>
+                              <li>• If you want different keywords → Select "Want Other" tab</li>
+                            </ul>
+                          </li>
+                        </ol>
                       </div>
                       
                       <div className="mt-4">
                         <SavedField
-                          label="Volume Based Keyword Choices and Analysis from AI"
+                          label="New Keywords from AI (After Using No Volume Prompt)"
                           value={step.outputs.volumeAnalysis || ''}
-                          placeholder="Paste the AI's response for keywords with no volume"
+                          placeholder="Paste the AI's new keyword suggestions here for reference"
                           onChange={(value) => onChange({ ...step.outputs, volumeAnalysis: value })}
                           isTextarea={true}
                           height="h-32"
