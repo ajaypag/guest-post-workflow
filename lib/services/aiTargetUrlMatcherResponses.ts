@@ -127,11 +127,20 @@ Be specific in your reasoning and reference actual content/topics you found on t
       });
 
       if (!apiResponse.ok) {
-        const error = await apiResponse.text();
-        throw new Error(`OpenAI API error: ${error}`);
+        const errorText = await apiResponse.text();
+        console.error('OpenAI API error response:', errorText);
+        throw new Error(`OpenAI API error: ${errorText}`);
       }
 
-      const response = await apiResponse.json();
+      const responseText = await apiResponse.text();
+      console.log('Raw API response:', responseText.substring(0, 200) + '...');
+      
+      let response;
+      try {
+        response = JSON.parse(responseText);
+      } catch (e) {
+        throw new Error(`API returned non-JSON response: ${responseText.substring(0, 100)}...`);
+      }
 
       // Wait for the response to complete if needed
       let finalResponse = response;
@@ -194,8 +203,14 @@ Be specific in your reasoning and reference actual content/topics you found on t
           cleanedOutput = jsonMatch[0];
         }
         
-        const result = JSON.parse(cleanedOutput);
-        return this.processResults(result, topCount, startTime);
+        try {
+          const result = JSON.parse(cleanedOutput);
+          return this.processResults(result, topCount, startTime);
+        } catch (parseError) {
+          console.error('Failed to parse JSON from fallback. Raw output:', textContent.text);
+          console.error('Cleaned output:', cleanedOutput);
+          throw new Error(`Invalid JSON response from AI. Response started with: ${cleanedOutput.substring(0, 100)}...`);
+        }
       }
 
       // Clean up the output in case it has markdown or extra text
@@ -214,8 +229,14 @@ Be specific in your reasoning and reference actual content/topics you found on t
         cleanedOutput = jsonMatch[0];
       }
       
-      const result = JSON.parse(cleanedOutput);
-      return this.processResults(result, topCount, startTime);
+      try {
+        const result = JSON.parse(cleanedOutput);
+        return this.processResults(result, topCount, startTime);
+      } catch (parseError) {
+        console.error('Failed to parse JSON. Raw output:', outputText);
+        console.error('Cleaned output:', cleanedOutput);
+        throw new Error(`Invalid JSON response from AI. Response started with: ${cleanedOutput.substring(0, 100)}...`);
+      }
 
     } catch (error) {
       console.error('AI Target URL matching failed:', error);
