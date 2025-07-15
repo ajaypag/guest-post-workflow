@@ -4,26 +4,26 @@ import { sql } from 'drizzle-orm';
 
 export async function GET() {
   try {
-    // Check if audit_sessions table exists
-    const auditSessionsCheck = await db.execute(sql`
-      SELECT EXISTS (
-        SELECT FROM information_schema.tables 
-        WHERE table_schema = 'public' 
-        AND table_name = 'audit_sessions'
-      ) as exists
-    `);
+    // Use direct table access instead of information_schema
+    // This avoids PostgreSQL transaction isolation issues
+    let auditSessionsExists = false;
+    let auditSectionsExists = false;
 
-    // Check if audit_sections table exists  
-    const auditSectionsCheck = await db.execute(sql`
-      SELECT EXISTS (
-        SELECT FROM information_schema.tables 
-        WHERE table_schema = 'public' 
-        AND table_name = 'audit_sections'
-      ) as exists
-    `);
+    try {
+      await db.execute(sql`SELECT 1 FROM audit_sessions LIMIT 1`);
+      auditSessionsExists = true;
+      console.log('✅ Direct query confirms: audit_sessions table exists');
+    } catch (error) {
+      console.log('❌ audit_sessions table not accessible');
+    }
 
-    const auditSessionsExists = (auditSessionsCheck as any)[0]?.exists === true;
-    const auditSectionsExists = (auditSectionsCheck as any)[0]?.exists === true;
+    try {
+      await db.execute(sql`SELECT 1 FROM audit_sections LIMIT 1`);
+      auditSectionsExists = true;
+      console.log('✅ Direct query confirms: audit_sections table exists');
+    } catch (error) {
+      console.log('❌ audit_sections table not accessible');
+    }
 
     let message = '';
     if (auditSessionsExists && auditSectionsExists) {
