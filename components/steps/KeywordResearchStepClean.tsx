@@ -1,11 +1,11 @@
 'use client';
 
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useCallback } from 'react';
 import { WorkflowStep, GuestPostWorkflow } from '@/types/workflow';
 import { SavedField } from '../SavedField';
 import { CopyButton } from '../ui/CopyButton';
 import { TutorialVideo } from '../ui/TutorialVideo';
-import { ExternalLink, ChevronDown, ChevronRight, Target, Search, FileText, CheckCircle, AlertCircle, Copy, Eye, EyeOff } from 'lucide-react';
+import { ExternalLink, ChevronDown, ChevronRight, Target, Search, FileText, CheckCircle, AlertCircle, Copy, Eye, EyeOff, X } from 'lucide-react';
 import { clientStorage } from '@/lib/userStorage';
 
 interface KeywordResearchStepProps {
@@ -24,6 +24,19 @@ export const KeywordResearchStepClean = ({ step, workflow, onChange }: KeywordRe
   const [loadingClient, setLoadingClient] = useState(false);
   const [showAllTargetUrls, setShowAllTargetUrls] = useState(false);
   const [selectedTargetPages, setSelectedTargetPages] = useState<string[]>([]);
+  
+  // Keyword management
+  const KEYWORD_LIMIT = 50; // Conservative limit to prevent Ahrefs URL issues
+  const [keywordCount, setKeywordCount] = useState(0);
+  const [selectedKeywords, setSelectedKeywords] = useState<string[]>([]);
+  
+  // Search and filter
+  const [searchQuery, setSearchQuery] = useState('');
+  
+  // Grouping functionality
+  const [showGroupedView, setShowGroupedView] = useState(false);
+  const [groupBy, setGroupBy] = useState<'path' | 'keywords'>('path');
+  const [expandedGroups, setExpandedGroups] = useState<Set<string>>(new Set());
 
   const domainSelectionStep = workflow.steps.find(s => s.id === 'domain-selection');
   const guestPostSite = domainSelectionStep?.outputs?.domain || '';
@@ -31,7 +44,20 @@ export const KeywordResearchStepClean = ({ step, workflow, onChange }: KeywordRe
   
   // Load client data with target pages
   const clientId = workflow.metadata?.clientId;
-  const activeTargetPages = client?.targetPages?.filter((page: any) => page.status === 'active') || [];
+  const allActiveTargetPages = client?.targetPages?.filter((page: any) => page.status === 'active') || [];
+  
+  // Filter pages based on search query
+  const activeTargetPages = allActiveTargetPages.filter((page: any) => {
+    if (!searchQuery.trim()) return true;
+    
+    const query = searchQuery.toLowerCase();
+    const urlMatch = page.url.toLowerCase().includes(query);
+    const keywordMatch = page.keywords && page.keywords.toLowerCase().includes(query);
+    const descriptionMatch = page.description && page.description.toLowerCase().includes(query);
+    const notesMatch = page.notes && page.notes.toLowerCase().includes(query);
+    
+    return urlMatch || keywordMatch || descriptionMatch || notesMatch;
+  });
   
   useEffect(() => {
     const loadClient = async () => {
@@ -49,7 +75,7 @@ export const KeywordResearchStepClean = ({ step, workflow, onChange }: KeywordRe
     };
 
     loadClient();
-  }, [clientId]);
+  }, [clientId, loadingClient]);
   
   const toggleSection = (section: string) => {
     setExpandedSections(prev => ({
@@ -58,7 +84,116 @@ export const KeywordResearchStepClean = ({ step, workflow, onChange }: KeywordRe
     }));
   };
 
-  // Build dynamic Ahrefs URL (keeping existing logic)
+  // Calculate keywords from selected pages
+  const calculateSelectedKeywords = useCallback(() => {
+    const selectedPages = allActiveTargetPages.filter((page: any) => 
+      selectedTargetPages.includes(page.id)
+    );
+    
+    const existingKeywords = keywords ? keywords.split(',').map((k: string) => k.trim()).filter((k: string) => k) : [];
+    const newKeywords: string[] = [];
+    
+    selectedPages.forEach((page: any) => {
+      if (page.keywords && page.keywords.trim() !== '') {
+        const pageKeywords = page.keywords.split(',').map((k: string) => k.trim()).filter((k: string) => k);
+        newKeywords.push(...pageKeywords);
+      }
+    });
+    
+    // Deduplicate keywords (case-insensitive)
+    const allKeywords = [...existingKeywords, ...newKeywords];
+    const uniqueKeywords = allKeywords.filter((keyword, index) => {
+      const lowerKeyword = keyword.toLowerCase();
+      return allKeywords.findIndex((k: string) => k.toLowerCase() === lowerKeyword) === index;
+    });
+    
+    return uniqueKeywords;
+  }, [selectedTargetPages, keywords, allActiveTargetPages]);
+
+  // Group pages by URL path
+  const groupPagesByPath = (pages: any[]) => {
+    const groups: { [key: string]: any[] } = {};
+    
+    pages.forEach(page => {
+      try {
+        const url = new URL(page.url);
+        const pathSegments = url.pathname.split('/').filter(segment => segment);
+        
+        // Get the first meaningful path segment
+        let groupKey = '/';
+        if (pathSegments.length > 0) {
+          groupKey = `/${pathSegments[0]}/`;
+        }
+        
+        if (!groups[groupKey]) {
+          groups[groupKey] = [];
+        }
+        groups[groupKey].push(page);
+      } catch (error) {
+        // If URL parsing fails, put in "Other" group
+        if (!groups['Other']) {
+          groups['Other'] = [];
+        }
+        groups['Other'].push(page);
+      }
+    });
+    
+    return groups;
+  };
+
+  // Group pages by keyword themes (simple implementation)
+  const groupPagesByKeywords = (pages: any[]) => {
+    const groups: { [key: string]: any[] } = {};
+    
+    pages.forEach(page => {
+      if (!page.keywords || page.keywords.trim() === '') {
+        // Pages without keywords
+        if (!groups['No Keywords']) {
+          groups['No Keywords'] = [];
+        }
+        groups['No Keywords'].push(page);
+        return;
+      }
+      
+      const keywords = page.keywords.split(',').map((k: string) => k.trim().toLowerCase());
+      
+      // Simple keyword theme detection
+      let groupKey = 'Other';
+      
+      if (keywords.some((k: string) => k.includes('seo') || k.includes('search') || k.includes('ranking'))) {
+        groupKey = 'SEO & Search';
+      } else if (keywords.some((k: string) => k.includes('content') || k.includes('blog') || k.includes('article'))) {
+        groupKey = 'Content Marketing';
+      } else if (keywords.some((k: string) => k.includes('tool') || k.includes('software') || k.includes('platform'))) {
+        groupKey = 'Tools & Software';
+      } else if (keywords.some((k: string) => k.includes('service') || k.includes('consulting') || k.includes('agency'))) {
+        groupKey = 'Services';
+      } else if (keywords.some((k: string) => k.includes('product') || k.includes('feature') || k.includes('solution'))) {
+        groupKey = 'Products';
+      }
+      
+      if (!groups[groupKey]) {
+        groups[groupKey] = [];
+      }
+      groups[groupKey].push(page);
+    });
+    
+    return groups;
+  };
+
+  // Get grouped pages
+  const groupedPages = showGroupedView 
+    ? (groupBy === 'path' ? groupPagesByPath(activeTargetPages) : groupPagesByKeywords(activeTargetPages))
+    : null;
+
+  // Update keyword count when selection changes
+  useEffect(() => {
+    const currentKeywords = calculateSelectedKeywords();
+    setSelectedKeywords(currentKeywords);
+    setKeywordCount(currentKeywords.length);
+  }, [selectedTargetPages, keywords, allActiveTargetPages, calculateSelectedKeywords]);
+
+  // Build dynamic Ahrefs URL (with keyword limit protection)
   const buildAhrefsUrl = () => {
     if (!guestPostSite) {
       return "https://app.ahrefs.com/v2-site-explorer/organic-keywords";
@@ -69,7 +204,16 @@ export const KeywordResearchStepClean = ({ step, workflow, onChange }: KeywordRe
     
     let url = `https://app.ahrefs.com/v2-site-explorer/organic-keywords?brandedMode=all&chartGranularity=daily&chartInterval=year5&compareDate=dontCompare&country=us&currentDate=today&dataMode=text&hiddenColumns=&intentsAttrs=`;
     
-    if (keywords.trim()) {
+    // Use selectedKeywords (with limit) instead of raw keywords
+    const keywordsToUse = selectedKeywords.slice(0, KEYWORD_LIMIT);
+    
+    if (keywordsToUse.length > 0) {
+      const cleanKeywords = keywordsToUse.join(', ');
+      const keywordRulesArray = [["contains","all"], cleanKeywords, "any"];
+      const keywordRulesEncoded = encodeURIComponent(JSON.stringify(keywordRulesArray));
+      url += `&keywordRules=${keywordRulesEncoded}`;
+    } else if (keywords.trim()) {
+      // Fallback to manual keywords if no pages selected
       const cleanKeywords = keywords.replace(/\n/g, ', ').replace(/\s+/g, ' ').trim();
       const keywordRulesArray = [["contains","all"], cleanKeywords, "any"];
       const keywordRulesEncoded = encodeURIComponent(JSON.stringify(keywordRulesArray));
@@ -147,14 +291,258 @@ export const KeywordResearchStepClean = ({ step, workflow, onChange }: KeywordRe
                 </p>
               </div>
 
-              {/* Client Target URLs */}
-              {activeTargetPages.length > 0 && (
+              {/* Search Box */}
+              {allActiveTargetPages.length > 0 && (
+                <div className="mb-4">
+                  <div className="relative">
+                    <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400 w-4 h-4" />
+                    <input
+                      type="text"
+                      placeholder="Filter URLs, keywords, or descriptions..."
+                      value={searchQuery}
+                      onChange={(e) => setSearchQuery(e.target.value)}
+                      className="w-full pl-10 pr-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-purple-500 focus:border-purple-500"
+                    />
+                    {searchQuery && (
+                      <button
+                        onClick={() => setSearchQuery('')}
+                        className="absolute right-3 top-1/2 transform -translate-y-1/2 text-gray-400 hover:text-gray-600"
+                      >
+                        <X className="w-4 h-4" />
+                      </button>
+                    )}
+                  </div>
+                  {searchQuery && (
+                    <p className="text-sm text-gray-600 mt-2">
+                      Showing {activeTargetPages.length} of {allActiveTargetPages.length} URLs
+                    </p>
+                  )}
+                </div>
+              )}
+
+              {/* Group Toggle Controls */}
+              {allActiveTargetPages.length > 5 && (
+                <div className="mb-4 bg-gray-50 border border-gray-200 rounded-lg p-3">
+                  <div className="flex items-center justify-between">
+                    <div className="flex items-center space-x-4">
+                      <label className="flex items-center space-x-2">
+                        <input
+                          type="checkbox"
+                          checked={showGroupedView}
+                          onChange={(e) => setShowGroupedView(e.target.checked)}
+                          className="w-4 h-4 text-purple-600 focus:ring-purple-500 border-gray-300 rounded"
+                        />
+                        <span className="text-sm font-medium text-gray-700">Show Grouped View</span>
+                      </label>
+                      
+                      {showGroupedView && (
+                        <div className="flex items-center space-x-2">
+                          <span className="text-sm text-gray-600">Group by:</span>
+                          <select
+                            value={groupBy}
+                            onChange={(e) => setGroupBy(e.target.value as 'path' | 'keywords')}
+                            className="text-sm border border-gray-300 rounded px-2 py-1 focus:ring-2 focus:ring-purple-500 focus:border-purple-500"
+                          >
+                            <option value="path">URL Path</option>
+                            <option value="keywords">Keyword Themes</option>
+                          </select>
+                        </div>
+                      )}
+                    </div>
+                    
+                    {showGroupedView && groupedPages && (
+                      <div className="text-sm text-gray-600">
+                        {Object.keys(groupedPages).length} groups
+                      </div>
+                    )}
+                  </div>
+                </div>
+              )}
+
+              {/* No Results Message */}
+              {allActiveTargetPages.length > 0 && activeTargetPages.length === 0 && searchQuery && (
+                <div className="bg-gray-50 border border-gray-200 rounded-lg p-4 text-center">
+                  <Search className="w-8 h-8 text-gray-400 mx-auto mb-2" />
+                  <p className="text-gray-600 font-medium">No URLs found</p>
+                  <p className="text-sm text-gray-500">Try adjusting your search terms</p>
+                  <button
+                    onClick={() => setSearchQuery('')}
+                    className="mt-2 text-sm text-purple-600 hover:text-purple-700"
+                  >
+                    Clear search
+                  </button>
+                </div>
+              )}
+
+              {/* Client Target URLs - Grouped View */}
+              {showGroupedView && groupedPages && Object.keys(groupedPages).length > 0 && (
+                <div className="space-y-4">
+                  {Object.entries(groupedPages)
+                    .sort(([a], [b]) => b.localeCompare(a)) // Sort groups
+                    .map(([groupName, pages]) => (
+                    <div key={groupName} className="bg-purple-50 border border-purple-200 rounded-lg">
+                      <button
+                        onClick={() => {
+                          const newExpanded = new Set(expandedGroups);
+                          if (newExpanded.has(groupName)) {
+                            newExpanded.delete(groupName);
+                          } else {
+                            newExpanded.add(groupName);
+                          }
+                          setExpandedGroups(newExpanded);
+                        }}
+                        className="w-full px-4 py-3 flex items-center justify-between hover:bg-purple-100 transition-colors"
+                      >
+                        <div className="flex items-center space-x-3">
+                          {expandedGroups.has(groupName) ? (
+                            <ChevronDown className="w-4 h-4 text-purple-600" />
+                          ) : (
+                            <ChevronRight className="w-4 h-4 text-purple-600" />
+                          )}
+                          <span className="font-medium text-purple-900">{groupName}</span>
+                          <span className="text-sm text-purple-700">({pages.length})</span>
+                        </div>
+                        <div className="flex items-center space-x-2">
+                          {/* Group-level keyword counter */}
+                          <div className="text-xs text-purple-600">
+                            {pages.filter((page: any) => selectedTargetPages.includes(page.id)).length} selected
+                          </div>
+                          
+                          {/* Select All in Group button */}
+                          <button
+                            onClick={(e) => {
+                              e.stopPropagation();
+                              const pagesWithData = pages.filter((page: any) => 
+                                (page.keywords && page.keywords.trim() !== '') || (page.description && page.description.trim() !== '')
+                              );
+                              
+                              if (pagesWithData.length > 0) {
+                                const allGroupPagesSelected = pagesWithData.every((page: any) => selectedTargetPages.includes(page.id));
+                                
+                                if (allGroupPagesSelected) {
+                                  // Deselect all pages in this group
+                                  const groupPageIds = pagesWithData.map((page: any) => page.id);
+                                  setSelectedTargetPages(prev => prev.filter(id => !groupPageIds.includes(id)));
+                                } else {
+                                  // Select all pages in this group
+                                  const groupPageIds = pagesWithData.map((page: any) => page.id);
+                                  setSelectedTargetPages(prev => {
+                                    const newSelection = [...prev];
+                                    groupPageIds.forEach(id => {
+                                      if (!newSelection.includes(id)) {
+                                        newSelection.push(id);
+                                      }
+                                    });
+                                    return newSelection;
+                                  });
+                                }
+                              }
+                            }}
+                            className="text-xs px-2 py-1 bg-purple-600 text-white rounded hover:bg-purple-700 transition-colors"
+                          >
+                            {(() => {
+                              const pagesWithData = pages.filter((page: any) => 
+                                (page.keywords && page.keywords.trim() !== '') || (page.description && page.description.trim() !== '')
+                              );
+                              const allGroupPagesSelected = pagesWithData.every((page: any) => selectedTargetPages.includes(page.id));
+                              return allGroupPagesSelected ? 'Deselect All' : `Select All (${pagesWithData.length})`;
+                            })()}
+                          </button>
+                        </div>
+                      </button>
+                      
+                      {expandedGroups.has(groupName) && (
+                        <div className="px-4 pb-4 border-t border-purple-200">
+                          <div className="grid grid-cols-1 gap-2 mt-3">
+                            {pages.map((page: any) => (
+                              <div 
+                                key={page.id}
+                                className="bg-white border border-purple-200 rounded-lg p-2 flex items-center group hover:bg-purple-50 transition-colors"
+                              >
+                                {/* Checkbox for pages with keywords or descriptions */}
+                                {(page.keywords && page.keywords.trim() !== '') || (page.description && page.description.trim() !== '') ? (
+                                  <div className="mr-3">
+                                    <input
+                                      type="checkbox"
+                                      checked={selectedTargetPages.includes(page.id)}
+                                      onChange={(e) => {
+                                        e.stopPropagation();
+                                        if (e.target.checked) {
+                                          setSelectedTargetPages(prev => [...prev, page.id]);
+                                        } else {
+                                          setSelectedTargetPages(prev => prev.filter(id => id !== page.id));
+                                        }
+                                      }}
+                                      className="w-4 h-4 text-purple-600 focus:ring-purple-500 border-gray-300 rounded"
+                                    />
+                                  </div>
+                                ) : null}
+                                
+                                <div 
+                                  className="flex-1 min-w-0 cursor-pointer"
+                                  onClick={() => {
+                                    navigator.clipboard.writeText(page.url);
+                                    setCopiedUrl(page.url);
+                                    setTimeout(() => setCopiedUrl(null), 2000);
+                                  }}
+                                >
+                                  <div className="flex items-center justify-between">
+                                    <div className="flex-1 min-w-0">
+                                      <p className="text-xs font-medium text-gray-900 truncate">
+                                        {page.url}
+                                      </p>
+                                      {page.keywords && page.keywords.trim() !== '' && (
+                                        <p className="text-xs text-purple-600 truncate">
+                                          {page.keywords.split(',').length} keywords available
+                                        </p>
+                                      )}
+                                      {page.description && page.description.trim() !== '' && (
+                                        <p className="text-xs text-green-600 truncate">
+                                          Description available ({page.description.length} chars)
+                                        </p>
+                                      )}
+                                      {page.notes && (
+                                        <p className="text-xs text-gray-500 truncate">{page.notes}</p>
+                                      )}
+                                    </div>
+                                    <div className="ml-2 opacity-0 group-hover:opacity-100 transition-opacity">
+                                      {copiedUrl === page.url ? (
+                                        <CheckCircle className="w-4 h-4 text-green-600" />
+                                      ) : (
+                                        <Copy className="w-4 h-4 text-purple-600" />
+                                      )}
+                                    </div>
+                                  </div>
+                                </div>
+                              </div>
+                            ))}
+                          </div>
+                        </div>
+                      )}
+                    </div>
+                  ))}
+                </div>
+              )}
+
+              {/* Client Target URLs - Regular List View */}
+              {!showGroupedView && activeTargetPages.length > 0 && (
                 <div className="bg-purple-50 border border-purple-200 rounded-lg p-4">
                   <div className="flex items-center justify-between mb-3">
                     <h4 className="font-medium text-purple-800">
                       📌 Your Client's Target URLs ({activeTargetPages.length})
                     </h4>
                     <div className="flex items-center space-x-2">
+                      {/* Keyword Counter */}
+                      <div className={`text-xs px-3 py-1 rounded-lg font-medium ${
+                        keywordCount > KEYWORD_LIMIT 
+                          ? 'bg-red-100 text-red-800 border border-red-300' 
+                          : keywordCount > KEYWORD_LIMIT * 0.8 
+                          ? 'bg-yellow-100 text-yellow-800 border border-yellow-300'
+                          : 'bg-green-100 text-green-800 border border-green-300'
+                      }`}>
+                        {keywordCount}/{KEYWORD_LIMIT} keywords
+                      </div>
+                      
                       <button
                         onClick={() => window.open(`/clients/${clientId}`, '_blank')}
                         className="text-xs px-3 py-1 text-purple-600 border border-purple-300 rounded-lg hover:bg-purple-100 transition-colors flex items-center space-x-1"
@@ -203,6 +591,22 @@ export const KeywordResearchStepClean = ({ step, workflow, onChange }: KeywordRe
                       )}
                     </div>
                   </div>
+                  {/* Keyword Limit Warning */}
+                  {keywordCount > KEYWORD_LIMIT && (
+                    <div className="bg-red-50 border border-red-200 rounded-lg p-3 mb-3">
+                      <div className="flex items-center space-x-2">
+                        <AlertCircle className="w-4 h-4 text-red-500" />
+                        <div>
+                          <p className="text-sm font-medium text-red-800">Too many keywords selected!</p>
+                          <p className="text-xs text-red-700">
+                            You have {keywordCount} keywords selected. Ahrefs URLs may not work with more than {KEYWORD_LIMIT} keywords. 
+                            Please deselect some pages or we'll automatically limit to the first {KEYWORD_LIMIT} keywords.
+                          </p>
+                        </div>
+                      </div>
+                    </div>
+                  )}
+                  
                   <div className="flex items-center justify-between mb-3">
                     <p className="text-sm text-purple-700">
                       Click any URL to copy it. Check pages with keywords/descriptions to add them to your workflow.
@@ -316,6 +720,36 @@ export const KeywordResearchStepClean = ({ step, workflow, onChange }: KeywordRe
                     ))}
                   </div>
 
+                  {/* Keyword Cloud Preview */}
+                  {selectedKeywords.length > 0 && (
+                    <div className="mt-4 p-3 bg-blue-50 border border-blue-200 rounded-lg">
+                      <h5 className="font-medium text-blue-900 mb-2">
+                        Selected Keywords ({selectedKeywords.length}/{KEYWORD_LIMIT})
+                      </h5>
+                      <div className="flex flex-wrap gap-2 max-h-32 overflow-y-auto">
+                        {selectedKeywords.slice(0, KEYWORD_LIMIT).map((keyword, index) => (
+                          <span
+                            key={index}
+                            className={`inline-block px-2 py-1 rounded-full text-xs font-medium ${
+                              index < KEYWORD_LIMIT * 0.8 
+                                ? 'bg-blue-100 text-blue-800' 
+                                : index < KEYWORD_LIMIT 
+                                ? 'bg-yellow-100 text-yellow-800'
+                                : 'bg-red-100 text-red-800'
+                            }`}
+                          >
+                            {keyword}
+                          </span>
+                        ))}
+                        {selectedKeywords.length > KEYWORD_LIMIT && (
+                          <span className="inline-block px-2 py-1 rounded-full text-xs font-medium bg-red-100 text-red-800">
+                            +{selectedKeywords.length - KEYWORD_LIMIT} more (will be limited)
+                          </span>
+                        )}
+                      </div>
+                    </div>
+                  )}
+
                   {/* Add Selected URLs Button */}
                   {selectedTargetPages.length > 0 && (
                     <div className="mt-4 p-3 bg-purple-50 border border-purple-200 rounded-lg">
@@ -330,8 +764,8 @@ export const KeywordResearchStepClean = ({ step, workflow, onChange }: KeywordRe
                         </div>
                         <button
                           onClick={() => {
-                            // Get data from selected pages
-                            const selectedPages = activeTargetPages.filter((page: any) => 
+                            // Get data from selected pages (from all pages, not just filtered)
+                            const selectedPages = allActiveTargetPages.filter((page: any) => 
                               selectedTargetPages.includes(page.id)
                             );
                             
@@ -519,12 +953,22 @@ export const KeywordResearchStepClean = ({ step, workflow, onChange }: KeywordRe
                   Open Ahrefs Site Explorer <ExternalLink className="w-4 h-4 ml-2" />
                 </a>
 
-                {guestPostSite && keywords.trim() && (
+                {guestPostSite && (selectedKeywords.length > 0 || keywords.trim()) && (
                   <div className="bg-gray-50 rounded-lg p-3 text-sm">
                     <p className="font-medium text-gray-700 mb-1">Pre-configured with:</p>
                     <ul className="text-gray-600 space-y-1">
                       <li>• Site: {guestPostSite}</li>
-                      <li>• Keywords: {keywords.replace(/\n/g, ', ').replace(/\s+/g, ' ').trim().substring(0, 100)}{keywords.length > 100 ? '...' : ''}</li>
+                      {selectedKeywords.length > 0 ? (
+                        <li>
+                          • Keywords: {selectedKeywords.slice(0, KEYWORD_LIMIT).join(', ').substring(0, 100)}
+                          {selectedKeywords.slice(0, KEYWORD_LIMIT).join(', ').length > 100 ? '...' : ''}
+                          {selectedKeywords.length > KEYWORD_LIMIT && (
+                            <span className="text-red-600 font-medium"> (limited to first {KEYWORD_LIMIT})</span>
+                          )}
+                        </li>
+                      ) : (
+                        <li>• Keywords: {keywords.replace(/\n/g, ', ').replace(/\s+/g, ' ').trim().substring(0, 100)}{keywords.length > 100 ? '...' : ''}</li>
+                      )}
                     </ul>
                   </div>
                 )}
