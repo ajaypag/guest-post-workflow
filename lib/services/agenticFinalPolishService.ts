@@ -252,6 +252,7 @@ Begin the brand polish now.`;
           const originalSection = parsedSections.find((s: any) => s.order === ordinal);
           
           // Create or update section record (upsert logic)
+          console.log(`🔍 PROCEED_POLISH: Checking for existing record - sessionId: ${sessionId}, ordinal: ${ordinal}`);
           const existingProceedSection = await db.select().from(auditSections)
             .where(and(
               eq(auditSections.auditSessionId, sessionId),
@@ -259,7 +260,11 @@ Begin the brand polish now.`;
             ))
             .limit(1);
           
+          console.log(`🔍 PROCEED_POLISH: Found ${existingProceedSection.length} existing records`);
+          
           if (existingProceedSection.length > 0) {
+            console.log(`🔄 PROCEED_POLISH: Updating existing record for section ${ordinal}`);
+            
             // Update existing record
             await db.update(auditSections)
               .set({
@@ -287,6 +292,7 @@ Begin the brand polish now.`;
                 eq(auditSections.sectionNumber, ordinal)
               ));
           } else {
+            console.log(`➕ PROCEED_POLISH: Creating new record for section ${ordinal}`);
             // Create new record
             await db.insert(auditSections).values({
               id: uuidv4(),
