@@ -1,6 +1,7 @@
 import { NextResponse } from 'next/server';
 import { db } from '@/lib/db/connection';
 import { auditSessions, auditSections } from '@/lib/db/schema';
+import { eq } from 'drizzle-orm';
 import { v4 as uuidv4 } from 'uuid';
 
 export async function POST() {
@@ -62,8 +63,8 @@ export async function POST() {
     console.log('Section inserted successfully!');
     
     // Clean up test data
-    await db.delete(auditSections).where(auditSections.id.eq(sectionId));
-    await db.delete(auditSessions).where(auditSessions.id.eq(sessionId));
+    await db.delete(auditSections).where(eq(auditSections.id, sectionId));
+    await db.delete(auditSessions).where(eq(auditSessions.id, sessionId));
     
     return NextResponse.json({
       success: true,
