@@ -592,7 +592,7 @@ START AUDITING THE NEXT SECTION NOW - DO NOT ASK FOR PERMISSION OR CONFIRMATION.
 
     return {
       session,
-      sections,
+      sections: sections || [], // Ensure sections is always an array
       progress: {
         total: session.totalSections || 0,
         completed: session.completedSections || 0,

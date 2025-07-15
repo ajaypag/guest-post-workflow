@@ -146,7 +146,7 @@ export const AgenticSemanticAuditor = ({
             setProgress(data);
             
             // Log audit updates
-            if (data.session.status === 'auditing') {
+            if (data.session.status === 'auditing' && data.sections && Array.isArray(data.sections)) {
               const currentSection = data.sections.find((s: AuditSection) => s.status === 'auditing');
               if (currentSection) {
                 addLog(`Auditing section ${currentSection.sectionNumber}: "${currentSection.title}"`);
@@ -242,7 +242,7 @@ export const AgenticSemanticAuditor = ({
     }
   };
 
-  const progressPercentage = progress 
+  const progressPercentage = progress && progress.progress && progress.progress.total > 0
     ? Math.round((progress.progress.completed / progress.progress.total) * 100) 
     : 0;
 
@@ -312,7 +312,7 @@ export const AgenticSemanticAuditor = ({
           </div>
 
           {/* Sections List */}
-          {progress.sections.length > 0 && (
+          {progress.sections && Array.isArray(progress.sections) && progress.sections.length > 0 && (
             <div className="space-y-2">
               <h4 className="font-medium text-gray-900">Article Sections</h4>
               <div className="space-y-2 max-h-60 overflow-y-auto">
