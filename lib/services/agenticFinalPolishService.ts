@@ -326,21 +326,58 @@ DO NOT proceed to the next section until cleanup is complete. This is the mandat
           const sessionMetadata = currentSession.auditMetadata as any;
           const parsedSections = sessionMetadata?.parsedSections || [];
           
-          // Update section with cleanup results
-          await db.update(auditSections)
-            .set({
-              cleanupContent: cleaned_content,
-              auditedContent: cleaned_content, // Final polished content
-              brandComplianceScore: brand_compliance_score,
-              cleanupStatus: 'completed',
-              status: 'completed',
-              auditMetadata: sql`jsonb_set(${auditSections.auditMetadata}, '{cleanupAt}', '"${new Date().toISOString()}"')`,
-              updatedAt: new Date()
-            })
+          // Update section with cleanup results - check if record exists first
+          const existingSection = await db.select().from(auditSections)
             .where(and(
               eq(auditSections.auditSessionId, sessionId),
               eq(auditSections.sectionNumber, ordinal)
-            ));
+            ))
+            .limit(1);
+          
+          if (existingSection.length > 0) {
+            // Update existing record
+            await db.update(auditSections)
+              .set({
+                cleanupContent: cleaned_content,
+                auditedContent: cleaned_content, // Final polished content
+                brandComplianceScore: brand_compliance_score,
+                cleanupStatus: 'completed',
+                status: 'completed',
+                auditMetadata: sql`jsonb_set(${auditSections.auditMetadata}, '{cleanupAt}', '"${new Date().toISOString()}"')`,
+                updatedAt: new Date()
+              })
+              .where(and(
+                eq(auditSections.auditSessionId, sessionId),
+                eq(auditSections.sectionNumber, ordinal)
+              ));
+          } else {
+            // Create new record if proceed step failed
+            const originalSection = parsedSections.find((s: any) => s.order === ordinal);
+            await db.insert(auditSections).values({
+              id: uuidv4(),
+              auditSessionId: sessionId,
+              workflowId: currentSession.workflowId,
+              version: currentSession.version,
+              sectionNumber: ordinal,
+              title: section_title,
+              originalContent: originalSection?.content || '',
+              cleanupContent: cleaned_content,
+              auditedContent: cleaned_content,
+              brandComplianceScore: brand_compliance_score,
+              proceedStatus: 'skipped', // Mark as skipped since proceed didn't work
+              cleanupStatus: 'completed',
+              status: 'completed',
+              auditMetadata: {
+                cleanupAt: new Date().toISOString(),
+                headerLevel: originalSection?.headerLevel || 'h2',
+                level: originalSection?.level || 'section',
+                parentSection: originalSection?.parentSection,
+                proceedSkipped: true
+              },
+              createdAt: new Date(),
+              updatedAt: new Date()
+            });
+          }
 
           // Update session cleanup progress and completed sections
           await this.updatePolishSession(sessionId, {
@@ -433,7 +470,7 @@ START POLISHING THE NEXT SECTION NOW - DO NOT ASK FOR PERMISSION OR CONFIRMATION
       const agent = new Agent({
         name: 'BrandAlignmentPolisher',
         instructions: 'You are an expert content editor specializing in brand alignment and voice consistency for guest posts. You work systematically section by section using a mandatory two-prompt workflow: PROCEED then CLEANUP for each section. This is an AUTOMATED WORKFLOW - continue until completion without asking for permission.',
-        model: 'gpt-4o',
+        model: 'o3',
         tools: [
           brandGuidelinesFileSearch,
           parseArticleTool,
@@ -595,7 +632,7 @@ START POLISHING THE NEXT SECTION NOW - DO NOT ASK FOR PERMISSION OR CONFIRMATION
       .where(eq(auditSections.auditSessionId, sessionId))
       .orderBy(auditSections.sectionNumber);
 
-    return sections
+    return (sections || [])
       .map(section => {
         // Use final polished content (cleanup) or fallback to proceed content
         const content = section.cleanupContent || section.auditedContent || section.originalContent;
@@ -652,7 +689,7 @@ START POLISHING THE NEXT SECTION NOW - DO NOT ASK FOR PERMISSION OR CONFIRMATION
       .where(eq(auditSections.auditSessionId, sessionId))
       .orderBy(auditSections.sectionNumber);
 
-    const polishSections = sections.map(section => ({
+    const polishSections = (sections || []).map(section => ({
       id: section.id,
       sectionNumber: section.sectionNumber,
       title: section.title,
