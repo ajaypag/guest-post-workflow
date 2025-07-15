@@ -124,31 +124,25 @@ export async function POST() {
       }
     }
 
-    // If verification still fails, try a simple table query instead
-    if (!finalSessionsExists || !finalSectionsExists) {
-      console.log('Information schema check failed, trying direct table queries...');
-      
-      try {
-        await db.execute(sql`SELECT 1 FROM audit_sessions LIMIT 1`);
-        finalSessionsExists = true;
-        console.log('Direct query: audit_sessions exists');
-      } catch {
-        console.log('Direct query: audit_sessions does not exist');
-      }
-      
-      try {
-        await db.execute(sql`SELECT 1 FROM audit_sections LIMIT 1`);
-        finalSectionsExists = true;
-        console.log('Direct query: audit_sections exists');
-      } catch {
-        console.log('Direct query: audit_sections does not exist');
-      }
+    // Skip information_schema verification - use direct table access instead
+    console.log('Skipping information_schema verification, using direct table access...');
+    
+    try {
+      await db.execute(sql`SELECT 1 FROM audit_sessions LIMIT 1`);
+      finalSessionsExists = true;
+      console.log('✅ Direct query confirms: audit_sessions table exists and is accessible');
+    } catch (error) {
+      console.error('❌ Direct query failed: audit_sessions table not accessible:', error);
+      throw new Error(`audit_sessions table creation failed: ${error instanceof Error ? error.message : 'Unknown error'}`);
     }
     
-    // Final check - if still failing, it's likely a real issue
-    if (!finalSessionsExists || !finalSectionsExists) {
-      console.error('Table verification failed after all attempts');
-      throw new Error(`Table creation verification failed. Sessions exists: ${finalSessionsExists}, Sections exists: ${finalSectionsExists}. This may be a database connectivity or permissions issue.`);
+    try {
+      await db.execute(sql`SELECT 1 FROM audit_sections LIMIT 1`);
+      finalSectionsExists = true;
+      console.log('✅ Direct query confirms: audit_sections table exists and is accessible');
+    } catch (error) {
+      console.error('❌ Direct query failed: audit_sections table not accessible:', error);
+      throw new Error(`audit_sections table creation failed: ${error instanceof Error ? error.message : 'Unknown error'}`);
     }
 
     console.log('Semantic audit tables created successfully');
