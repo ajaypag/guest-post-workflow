@@ -1,11 +1,11 @@
 'use client';
 
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useCallback } from 'react';
 import { WorkflowStep, GuestPostWorkflow } from '@/types/workflow';
 import { SavedField } from '../SavedField';
 import { CopyButton } from '../ui/CopyButton';
 import { TutorialVideo } from '../ui/TutorialVideo';
-import { ExternalLink, ChevronDown, ChevronRight, Target, Search, FileText, CheckCircle, AlertCircle, Copy, Eye, EyeOff } from 'lucide-react';
+import { ExternalLink, ChevronDown, ChevronRight, Target, Search, FileText, CheckCircle, AlertCircle, Copy, Eye, EyeOff, X } from 'lucide-react';
 import { clientStorage } from '@/lib/userStorage';
 
 interface KeywordResearchStepProps {
@@ -70,7 +70,7 @@ export const KeywordResearchStepClean = ({ step, workflow, onChange }: KeywordRe
     };
 
     loadClient();
-  }, [clientId]);
+  }, [clientId, loadingClient]);
   
   const toggleSection = (section: string) => {
     setExpandedSections(prev => ({
@@ -80,7 +80,7 @@ export const KeywordResearchStepClean = ({ step, workflow, onChange }: KeywordRe
   };
 
   // Calculate keywords from selected pages
-  const calculateSelectedKeywords = () => {
+  const calculateSelectedKeywords = useCallback(() => {
     const selectedPages = allActiveTargetPages.filter((page: any) => 
       selectedTargetPages.includes(page.id)
     );
@@ -103,14 +103,14 @@ export const KeywordResearchStepClean = ({ step, workflow, onChange }: KeywordRe
     });
     
     return uniqueKeywords;
-  };
+  }, [selectedTargetPages, keywords, allActiveTargetPages]);
 
   // Update keyword count when selection changes
   useEffect(() => {
     const currentKeywords = calculateSelectedKeywords();
     setSelectedKeywords(currentKeywords);
     setKeywordCount(currentKeywords.length);
-  }, [selectedTargetPages, keywords, allActiveTargetPages]);
+  }, [selectedTargetPages, keywords, allActiveTargetPages, calculateSelectedKeywords]);
 
   // Build dynamic Ahrefs URL (with keyword limit protection)
   const buildAhrefsUrl = () => {
