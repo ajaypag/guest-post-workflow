@@ -5,7 +5,7 @@ import { WorkflowStep, GuestPostWorkflow } from '@/types/workflow';
 import { SavedField } from '../SavedField';
 import { CopyButton } from '../ui/CopyButton';
 import { TutorialVideo } from '../ui/TutorialVideo';
-import { ExternalLink, ChevronDown, ChevronRight, Target, Search, FileText, CheckCircle, AlertCircle, Copy, Eye, EyeOff, X } from 'lucide-react';
+import { ExternalLink, ChevronDown, ChevronRight, Target, Search, FileText, CheckCircle, AlertCircle, Copy, Eye, EyeOff, X, Brain, Sparkles, Loader2 } from 'lucide-react';
 import { clientStorage } from '@/lib/userStorage';
 
 interface KeywordResearchStepProps {
@@ -37,6 +37,12 @@ export const KeywordResearchStepClean = ({ step, workflow, onChange }: KeywordRe
   const [showGroupedView, setShowGroupedView] = useState(false);
   const [groupBy, setGroupBy] = useState<'path' | 'keywords'>('path');
   const [expandedGroups, setExpandedGroups] = useState<Set<string>>(new Set());
+  
+  // AI Analysis
+  const [showAiAnalysis, setShowAiAnalysis] = useState(false);
+  const [isAnalyzing, setIsAnalyzing] = useState(false);
+  const [aiResults, setAiResults] = useState<any>(null);
+  const [aiError, setAiError] = useState<string | null>(null);
 
   const domainSelectionStep = workflow.steps.find(s => s.id === 'domain-selection');
   const guestPostSite = domainSelectionStep?.outputs?.domain || '';
@@ -295,6 +301,50 @@ export const KeywordResearchStepClean = ({ step, workflow, onChange }: KeywordRe
                (step.outputs.keywords || step.outputs.urlSummaries) ? 'ready' : 'pending';
       default:
         return 'pending';
+    }
+  };
+
+  // AI Analysis function
+  const runAiAnalysis = async (topCount: number = 20) => {
+    if (!guestPostSite || activeTargetPages.length === 0) {
+      setAiError('Please ensure you have a guest post site selected and target URLs available.');
+      return;
+    }
+
+    setIsAnalyzing(true);
+    setAiError(null);
+    setShowAiAnalysis(true);
+
+    try {
+      const response = await fetch(`/api/workflows/${workflow.id}/analyze-target-urls`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          guestPostSite,
+          targetPageIds: activeTargetPages.map((page: any) => page.id),
+          clientId,
+          topCount
+        })
+      });
+
+      const data = await response.json();
+
+      if (!response.ok) {
+        throw new Error(data.error || 'Failed to analyze URLs');
+      }
+
+      setAiResults(data);
+      
+      // Auto-select the top recommended URLs
+      if (data.rankedPageIds && data.rankedPageIds.length > 0) {
+        setSelectedTargetPages(data.rankedPageIds);
+      }
+      
+    } catch (error) {
+      console.error('AI analysis error:', error);
+      setAiError(error instanceof Error ? error.message : 'An error occurred during analysis');
+    } finally {
+      setIsAnalyzing(false);
     }
   };
 
@@ -645,6 +695,116 @@ export const KeywordResearchStepClean = ({ step, workflow, onChange }: KeywordRe
                       )}
                     </div>
                   </div>
+                  {/* AI Analysis Section */}
+                  {guestPostSite && activeTargetPages.length > 0 && (
+                    <div className="bg-gradient-to-r from-purple-50 to-blue-50 border border-purple-200 rounded-lg p-4 mb-4">
+                      <div className="flex items-start justify-between">
+                        <div className="flex-1">
+                          <div className="flex items-center mb-2">
+                            <Brain className="w-5 h-5 text-purple-600 mr-2" />
+                            <h4 className="font-medium text-purple-900">AI-Powered URL Selection</h4>
+                            <Sparkles className="w-4 h-4 text-purple-500 ml-2" />
+                          </div>
+                          <p className="text-sm text-purple-700 mb-3">
+                            Let AI search and analyze {guestPostSite} to automatically select the most relevant target URLs based on their actual content, topical authority, and compatibility with your client pages.
+                          </p>
+                          {!showAiAnalysis && (
+                            <button
+                              onClick={() => runAiAnalysis(20)}
+                              disabled={isAnalyzing}
+                              className="px-4 py-2 bg-purple-600 text-white rounded-lg hover:bg-purple-700 transition-colors flex items-center space-x-2 disabled:opacity-50 disabled:cursor-not-allowed"
+                            >
+                              {isAnalyzing ? (
+                                <>
+                                  <Loader2 className="w-4 h-4 animate-spin" />
+                                  <span>Analyzing Site...</span>
+                                </>
+                              ) : (
+                                <>
+                                  <Brain className="w-4 h-4" />
+                                  <span>Analyze & Select Top 20 URLs</span>
+                                </>
+                              )}
+                            </button>
+                          )}
+                        </div>
+                      </div>
+
+                      {/* AI Results Display */}
+                      {showAiAnalysis && aiResults && (
+                        <div className="mt-4 space-y-3">
+                          <div className="bg-white border border-purple-200 rounded-lg p-3">
+                            <h5 className="font-medium text-purple-900 mb-2">Site Analysis</h5>
+                            <p className="text-sm text-gray-700">{aiResults.siteAnalysis}</p>
+                          </div>
+
+                          <div className="bg-white border border-purple-200 rounded-lg p-3">
+                            <div className="flex items-center justify-between mb-2">
+                              <h5 className="font-medium text-purple-900">Top {aiResults.rankedUrls?.length || 0} Recommended URLs</h5>
+                              <span className="text-xs text-purple-600">Auto-selected below</span>
+                            </div>
+                            
+                            <div className="space-y-2 max-h-48 overflow-y-auto">
+                              {aiResults.rankedUrls?.map((result: any, index: number) => (
+                                <div key={index} className="border-l-4 border-purple-400 pl-3 py-2">
+                                  <div className="flex items-start justify-between">
+                                    <div className="flex-1">
+                                      <p className="text-sm font-medium text-gray-900">
+                                        {index + 1}. {result.url}
+                                      </p>
+                                      <p className="text-xs text-gray-600 mt-1">{result.reasoning}</p>
+                                      <div className="flex items-center mt-1 space-x-4">
+                                        <span className={`text-xs font-medium ${
+                                          result.relevanceScore >= 80 ? 'text-green-600' :
+                                          result.relevanceScore >= 60 ? 'text-yellow-600' :
+                                          'text-red-600'
+                                        }`}>
+                                          Score: {result.relevanceScore}/100
+                                        </span>
+                                        <span className="text-xs text-purple-600">
+                                          Topics: {result.topicalOverlap?.join(', ') || 'N/A'}
+                                        </span>
+                                      </div>
+                                    </div>
+                                    <span className={`px-2 py-1 text-xs rounded-full ${
+                                      result.confidenceLevel === 'high' ? 'bg-green-100 text-green-800' :
+                                      result.confidenceLevel === 'medium' ? 'bg-yellow-100 text-yellow-800' :
+                                      'bg-red-100 text-red-800'
+                                    }`}>
+                                      {result.confidenceLevel}
+                                    </span>
+                                  </div>
+                                </div>
+                              ))}
+                            </div>
+                          </div>
+
+                          <div className="flex items-center justify-between">
+                            <p className="text-sm text-purple-700">
+                              Analyzed in {(aiResults.processingTime / 1000).toFixed(1)}s
+                            </p>
+                            <button
+                              onClick={() => {
+                                setShowAiAnalysis(false);
+                                setAiResults(null);
+                              }}
+                              className="text-sm text-purple-600 hover:text-purple-800"
+                            >
+                              Hide Analysis
+                            </button>
+                          </div>
+                        </div>
+                      )}
+
+                      {/* AI Error Display */}
+                      {aiError && (
+                        <div className="mt-3 bg-red-50 border border-red-200 rounded-lg p-3">
+                          <p className="text-sm text-red-700">{aiError}</p>
+                        </div>
+                      )}
+                    </div>
+                  )}
+
                   {/* Keyword Limit Warning */}
                   {keywordCount > KEYWORD_LIMIT && (
                     <div className="bg-red-50 border border-red-200 rounded-lg p-3 mb-3">
