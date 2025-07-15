@@ -251,32 +251,69 @@ Begin the brand polish now.`;
           const parsedSections = sessionMetadata?.parsedSections || [];
           const originalSection = parsedSections.find((s: any) => s.order === ordinal);
           
-          // Create or update section record
-          await db.insert(auditSections).values({
-            id: uuidv4(),
-            auditSessionId: sessionId,
-            workflowId: currentSession.workflowId,
-            version: currentSession.version,
-            sectionNumber: ordinal,
-            title: section_title,
-            originalContent: originalSection?.content || '',
-            proceedContent: updated_content,
-            strengths: strengths,
-            weaknesses: weaknesses,
-            editingPattern: editing_pattern,
-            proceedStatus: 'completed',
-            cleanupStatus: 'pending',
-            status: 'auditing',
-            auditMetadata: {
-              proceedAt: new Date().toISOString(),
-              headerLevel: originalSection?.headerLevel || 'h2',
-              level: originalSection?.level || 'section',
-              parentSection: originalSection?.parentSection,
-              brandElements: brand_elements
-            },
-            createdAt: new Date(),
-            updatedAt: new Date()
-          });
+          // Create or update section record (upsert logic)
+          const existingProceedSection = await db.select().from(auditSections)
+            .where(and(
+              eq(auditSections.auditSessionId, sessionId),
+              eq(auditSections.sectionNumber, ordinal)
+            ))
+            .limit(1);
+          
+          if (existingProceedSection.length > 0) {
+            // Update existing record
+            await db.update(auditSections)
+              .set({
+                title: section_title,
+                originalContent: originalSection?.content || '',
+                proceedContent: updated_content,
+                strengths: strengths,
+                weaknesses: weaknesses,
+                editingPattern: editing_pattern,
+                proceedStatus: 'completed',
+                cleanupStatus: 'pending',
+                status: 'auditing',
+                auditMetadata: {
+                  ...((existingProceedSection[0].auditMetadata as any) || {}),
+                  proceedAt: new Date().toISOString(),
+                  headerLevel: originalSection?.headerLevel || 'h2',
+                  level: originalSection?.level || 'section',
+                  parentSection: originalSection?.parentSection,
+                  brandElements: brand_elements
+                },
+                updatedAt: new Date()
+              })
+              .where(and(
+                eq(auditSections.auditSessionId, sessionId),
+                eq(auditSections.sectionNumber, ordinal)
+              ));
+          } else {
+            // Create new record
+            await db.insert(auditSections).values({
+              id: uuidv4(),
+              auditSessionId: sessionId,
+              workflowId: currentSession.workflowId,
+              version: currentSession.version,
+              sectionNumber: ordinal,
+              title: section_title,
+              originalContent: originalSection?.content || '',
+              proceedContent: updated_content,
+              strengths: strengths,
+              weaknesses: weaknesses,
+              editingPattern: editing_pattern,
+              proceedStatus: 'completed',
+              cleanupStatus: 'pending',
+              status: 'auditing',
+              auditMetadata: {
+                proceedAt: new Date().toISOString(),
+                headerLevel: originalSection?.headerLevel || 'h2',
+                level: originalSection?.level || 'section',
+                parentSection: originalSection?.parentSection,
+                brandElements: brand_elements
+              },
+              createdAt: new Date(),
+              updatedAt: new Date()
+            });
+          }
 
           // Update session proceed progress
           await this.updatePolishSession(sessionId, {
