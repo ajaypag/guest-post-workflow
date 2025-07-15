@@ -25,6 +25,9 @@ export const TopicGenerationImproved = ({ step, workflow, onChange, onWorkflowCh
     'finalization': false
   });
   
+  // Branch selection for volume analysis
+  const [volumeBranch, setVolumeBranch] = useState<'has-volume' | 'no-volume' | 'want-other' | null>(null);
+  
   // Load client data for client-level preferences
   const [client, setClient] = useState<any>(null);
   const [loadingClient, setLoadingClient] = useState(false);
@@ -526,39 +529,130 @@ Target URL: ${clientTargetUrl}`;
 
                     <div className="bg-white border border-orange-300 rounded-lg p-3">
                       <p className="text-xs font-medium text-orange-800 mb-1">📥 After volume check:</p>
-                      <p className="text-xs text-orange-700">Return to the SAME ChatGPT conversation with your volume data</p>
+                      <p className="text-xs text-orange-700">Select the appropriate option below based on your findings</p>
                     </div>
                   </div>
 
-                  {/* GPT refinement prompt */}
-                  <div className="bg-white border border-orange-300 rounded-lg p-3">
-                    <div className="flex items-center justify-between mb-2">
-                      <p className="text-sm font-medium text-orange-800">🤖 Volume Analysis Prompt for ChatGPT:</p>
-                      <CopyButton 
-                        text="Here is the volume data of the keywords you suggested. Based on this added data, paired with what you have access to already in terms of the client url target pages, what topics and rankings the target site has, and what keywords have longtail search volume, identify what a good main keyword could be. If none of the keywords have search volume, you are tasked with finding something that has search volume, even if it's low (from 10 searches a month to 50 searches a month) based on everything you know about our client url topics, the topical clusters the target site ranks for, the keywords that it already ranks for. What do you think would be some good potential keywords, long-tail keywords to target? Be sure to output your keywords in a list so it's easy to copy-paste into a volume checker."
-                        label="Copy Prompt"
-                      />
-                    </div>
-                    <div className="text-xs text-orange-700 bg-gray-50 border rounded p-2">
-                      Upload your volume CSV + paste this prompt in the same ChatGPT conversation
+                  {/* Branch Selection */}
+                  <div className="bg-white border border-orange-300 rounded-lg p-4 mb-4">
+                    <p className="text-sm font-medium text-orange-800 mb-3">What did you find in your volume check?</p>
+                    <div className="grid grid-cols-1 md:grid-cols-3 gap-3">
+                      <button
+                        onClick={() => setVolumeBranch('has-volume')}
+                        className={`p-3 rounded-lg border-2 transition-all ${
+                          volumeBranch === 'has-volume' 
+                            ? 'border-orange-600 bg-orange-50 text-orange-800' 
+                            : 'border-gray-300 hover:border-orange-400'
+                        }`}
+                      >
+                        <div className="font-medium mb-1">✅ Has Volume</div>
+                        <div className="text-xs">Keywords have search volume</div>
+                      </button>
+
+                      <button
+                        onClick={() => setVolumeBranch('no-volume')}
+                        className={`p-3 rounded-lg border-2 transition-all ${
+                          volumeBranch === 'no-volume' 
+                            ? 'border-orange-600 bg-orange-50 text-orange-800' 
+                            : 'border-gray-300 hover:border-orange-400'
+                        }`}
+                      >
+                        <div className="font-medium mb-1">❌ No Volume</div>
+                        <div className="text-xs">Keywords have no volume</div>
+                      </button>
+
+                      <button
+                        onClick={() => setVolumeBranch('want-other')}
+                        className={`p-3 rounded-lg border-2 transition-all ${
+                          volumeBranch === 'want-other' 
+                            ? 'border-orange-600 bg-orange-50 text-orange-800' 
+                            : 'border-gray-300 hover:border-orange-400'
+                        }`}
+                      >
+                        <div className="font-medium mb-1">🔄 Want Other</div>
+                        <div className="text-xs">I want different keywords</div>
+                      </button>
                     </div>
                   </div>
 
-                  <div className="mt-4">
-                    <SavedField
-                      label="Volume-Based Analysis from AI"
-                      value={step.outputs.volumeAnalysis || ''}
-                      placeholder="Paste the AI's refined recommendations after providing volume data"
-                      onChange={(value) => onChange({ ...step.outputs, volumeAnalysis: value })}
-                      isTextarea={true}
-                      height="h-32"
-                    />
-                  </div>
+                  {/* Branch Content */}
+                  {volumeBranch === 'has-volume' && (
+                    <>
+                      {/* GPT refinement prompt - existing flow */}
+                      <div className="bg-white border border-orange-300 rounded-lg p-3">
+                        <div className="flex items-center justify-between mb-2">
+                          <p className="text-sm font-medium text-orange-800">🤖 Volume Analysis Prompt for ChatGPT:</p>
+                          <CopyButton 
+                            text="Here is the volume data of the keywords you suggested. Based on this added data, paired with what you have access to already in terms of the client url target pages, what topics and rankings the target site has, and what keywords have longtail search volume, identify what a good main keyword could be. If none of the keywords have search volume, you are tasked with finding something that has search volume, even if it's low (from 10 searches a month to 50 searches a month) based on everything you know about our client url topics, the topical clusters the target site ranks for, the keywords that it already ranks for. What do you think would be some good potential keywords, long-tail keywords to target? Be sure to output your keywords in a list so it's easy to copy-paste into a volume checker."
+                            label="Copy Prompt"
+                          />
+                        </div>
+                        <div className="text-xs text-orange-700 bg-gray-50 border rounded p-2">
+                          Upload your volume CSV + paste this prompt in the same ChatGPT conversation
+                        </div>
+                      </div>
+
+                      <div className="mt-4">
+                        <SavedField
+                          label="Volume Based Keyword Choices and Analysis from AI"
+                          value={step.outputs.volumeAnalysis || ''}
+                          placeholder="Paste the AI's refined recommendations after providing volume data"
+                          onChange={(value) => onChange({ ...step.outputs, volumeAnalysis: value })}
+                          isTextarea={true}
+                          height="h-32"
+                        />
+                      </div>
+                    </>
+                  )}
+
+                  {volumeBranch === 'no-volume' && (
+                    <>
+                      <div className="bg-blue-50 border border-blue-200 rounded p-3 mb-4">
+                        <p className="text-sm text-blue-800">
+                          <strong>No Volume Flow:</strong> Instructions for this flow will be provided soon.
+                        </p>
+                        {/* Placeholder for no-volume flow */}
+                      </div>
+                      
+                      <div className="mt-4">
+                        <SavedField
+                          label="Volume Based Keyword Choices and Analysis from AI"
+                          value={step.outputs.volumeAnalysis || ''}
+                          placeholder="Paste the AI's response for keywords with no volume"
+                          onChange={(value) => onChange({ ...step.outputs, volumeAnalysis: value })}
+                          isTextarea={true}
+                          height="h-32"
+                        />
+                      </div>
+                    </>
+                  )}
+
+                  {volumeBranch === 'want-other' && (
+                    <>
+                      <div className="bg-purple-50 border border-purple-200 rounded p-3 mb-4">
+                        <p className="text-sm text-purple-800">
+                          <strong>Want Other Keywords Flow:</strong> Instructions for this flow will be provided soon.
+                        </p>
+                        {/* Placeholder for want-other flow */}
+                      </div>
+                      
+                      <div className="mt-4">
+                        <SavedField
+                          label="Volume Based Keyword Choices and Analysis from AI"
+                          value={step.outputs.volumeAnalysis || ''}
+                          placeholder="Paste the AI's alternative keyword recommendations"
+                          onChange={(value) => onChange({ ...step.outputs, volumeAnalysis: value })}
+                          isTextarea={true}
+                          height="h-32"
+                        />
+                      </div>
+                    </>
+                  )}
                 </div>
               )}
 
               {/* Step 4: Ranking Likelihood Analysis (Optional Decision Support) */}
-              {step.outputs.volumeAnalysis && (
+              {(step.outputs.volumeAnalysis || volumeBranch) && (
                 <div className="border border-indigo-200 rounded-lg p-4 bg-indigo-50">
                   <h4 className="font-medium mb-3 flex items-center text-indigo-900">
                     <span className="bg-indigo-600 text-white rounded-full w-6 h-6 flex items-center justify-center text-sm font-bold mr-3">4</span>
