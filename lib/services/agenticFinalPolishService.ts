@@ -343,7 +343,7 @@ DO NOT proceed to the next section until cleanup is complete. This is the mandat
                 brandComplianceScore: brand_compliance_score,
                 cleanupStatus: 'completed',
                 status: 'completed',
-                auditMetadata: sql`jsonb_set(${auditSections.auditMetadata}, '{cleanupAt}', '"${new Date().toISOString()}"')`,
+                auditMetadata: sql`jsonb_set(COALESCE(${auditSections.auditMetadata}, '{}'), '{cleanupAt}', '"${new Date().toISOString()}"')`,
                 updatedAt: new Date()
               })
               .where(and(
