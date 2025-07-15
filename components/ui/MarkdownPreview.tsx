@@ -30,6 +30,14 @@ export const MarkdownPreview = ({ content, className = '' }: MarkdownPreviewProp
       // Fix numbered lists that might be inline
       .replace(/([^\n])\s*(\d+[.)]\s)/g, '$1\n\n$2');
     
+    // Fix numbered lists with bold formatting at the start
+    // This handles cases like **1. Title text** where the bold wraps the number
+    processed = processed
+      // Fix **1. Title** format - move the ** after the number
+      .replace(/^\*\*(\d+)\.\s+([^*]+)\*\*$/gm, '$1. **$2**')
+      // Fix **1. Title text** with text after the bold
+      .replace(/^\*\*(\d+)\.\s+([^*]+)\*\*\s*(.+)$/gm, '$1. **$2** $3');
+    
     // Convert bullet characters to proper markdown list syntax
     processed = processed
       // Convert lines starting with bullet characters to markdown list items
