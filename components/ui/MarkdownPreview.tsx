@@ -34,9 +34,7 @@ export const MarkdownPreview = ({ content, className = '' }: MarkdownPreviewProp
       // Fix multiple bullet points on same line
       .replace(/([•·▸▹►]\s*[^•\n]+)([•·▸▹►])/g, '$1\n$2')
       // Ensure there's a blank line before first bullet after text
-      .replace(/([^\n])(\n[•·▸▹►])/g, '$1\n$2')
-      // Fix numbered lists that might be inline (but skip those starting with bold)
-      .replace(/([^\n])\s*(?<!\*\*)(\d+[.)]\s)/g, '$1\n\n$2');
+      .replace(/([^\n])(\n[•·▸▹►])/g, '$1\n$2');
     
     // Convert bullet characters to proper markdown list syntax
     processed = processed
