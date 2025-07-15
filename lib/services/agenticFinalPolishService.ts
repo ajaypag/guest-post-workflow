@@ -621,10 +621,10 @@ START POLISHING THE NEXT SECTION NOW - DO NOT ASK FOR PERMISSION OR CONFIRMATION
               // Track completion for two-prompt workflow
               if (toolCall.name === 'cleanup_polish') {
                 console.log('Cleanup polish tool called, checking if workflow complete');
-              }
-              
-              if (toolCall.name === 'proceed_polish' || toolCall.name === 'cleanup_polish') {
-                sectionCount++;
+                // Update sectionCount based on actual database state
+                const currentProgress = await this.getPolishProgress(sessionId);
+                sectionCount = currentProgress.progress.completed;
+                console.log(`📊 Updated section count to ${sectionCount} based on database state`);
               }
             }
             
