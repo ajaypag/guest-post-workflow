@@ -29,6 +29,9 @@ export const KeywordResearchStepClean = ({ step, workflow, onChange }: KeywordRe
   const KEYWORD_LIMIT = 50; // Conservative limit to prevent Ahrefs URL issues
   const [keywordCount, setKeywordCount] = useState(0);
   const [selectedKeywords, setSelectedKeywords] = useState<string[]>([]);
+  
+  // Search and filter
+  const [searchQuery, setSearchQuery] = useState('');
 
   const domainSelectionStep = workflow.steps.find(s => s.id === 'domain-selection');
   const guestPostSite = domainSelectionStep?.outputs?.domain || '';
@@ -36,7 +39,20 @@ export const KeywordResearchStepClean = ({ step, workflow, onChange }: KeywordRe
   
   // Load client data with target pages
   const clientId = workflow.metadata?.clientId;
-  const activeTargetPages = client?.targetPages?.filter((page: any) => page.status === 'active') || [];
+  const allActiveTargetPages = client?.targetPages?.filter((page: any) => page.status === 'active') || [];
+  
+  // Filter pages based on search query
+  const activeTargetPages = allActiveTargetPages.filter((page: any) => {
+    if (!searchQuery.trim()) return true;
+    
+    const query = searchQuery.toLowerCase();
+    const urlMatch = page.url.toLowerCase().includes(query);
+    const keywordMatch = page.keywords && page.keywords.toLowerCase().includes(query);
+    const descriptionMatch = page.description && page.description.toLowerCase().includes(query);
+    const notesMatch = page.notes && page.notes.toLowerCase().includes(query);
+    
+    return urlMatch || keywordMatch || descriptionMatch || notesMatch;
+  });
   
   useEffect(() => {
     const loadClient = async () => {
@@ -65,7 +81,7 @@ export const KeywordResearchStepClean = ({ step, workflow, onChange }: KeywordRe
 
   // Calculate keywords from selected pages
   const calculateSelectedKeywords = () => {
-    const selectedPages = activeTargetPages.filter((page: any) => 
+    const selectedPages = allActiveTargetPages.filter((page: any) => 
       selectedTargetPages.includes(page.id)
     );
     
@@ -94,7 +110,7 @@ export const KeywordResearchStepClean = ({ step, workflow, onChange }: KeywordRe
     const currentKeywords = calculateSelectedKeywords();
     setSelectedKeywords(currentKeywords);
     setKeywordCount(currentKeywords.length);
-  }, [selectedTargetPages, keywords, activeTargetPages]);
+  }, [selectedTargetPages, keywords, allActiveTargetPages]);
 
   // Build dynamic Ahrefs URL (with keyword limit protection)
   const buildAhrefsUrl = () => {
@@ -193,6 +209,50 @@ export const KeywordResearchStepClean = ({ step, workflow, onChange }: KeywordRe
                   Below are your client's target URLs with AI-generated keywords and descriptions. Select the ones you want to target in this guest post.
                 </p>
               </div>
+
+              {/* Search Box */}
+              {allActiveTargetPages.length > 0 && (
+                <div className="mb-4">
+                  <div className="relative">
+                    <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400 w-4 h-4" />
+                    <input
+                      type="text"
+                      placeholder="Filter URLs, keywords, or descriptions..."
+                      value={searchQuery}
+                      onChange={(e) => setSearchQuery(e.target.value)}
+                      className="w-full pl-10 pr-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-purple-500 focus:border-purple-500"
+                    />
+                    {searchQuery && (
+                      <button
+                        onClick={() => setSearchQuery('')}
+                        className="absolute right-3 top-1/2 transform -translate-y-1/2 text-gray-400 hover:text-gray-600"
+                      >
+                        <X className="w-4 h-4" />
+                      </button>
+                    )}
+                  </div>
+                  {searchQuery && (
+                    <p className="text-sm text-gray-600 mt-2">
+                      Showing {activeTargetPages.length} of {allActiveTargetPages.length} URLs
+                    </p>
+                  )}
+                </div>
+              )}
+
+              {/* No Results Message */}
+              {allActiveTargetPages.length > 0 && activeTargetPages.length === 0 && searchQuery && (
+                <div className="bg-gray-50 border border-gray-200 rounded-lg p-4 text-center">
+                  <Search className="w-8 h-8 text-gray-400 mx-auto mb-2" />
+                  <p className="text-gray-600 font-medium">No URLs found</p>
+                  <p className="text-sm text-gray-500">Try adjusting your search terms</p>
+                  <button
+                    onClick={() => setSearchQuery('')}
+                    className="mt-2 text-sm text-purple-600 hover:text-purple-700"
+                  >
+                    Clear search
+                  </button>
+                </div>
+              )}
 
               {/* Client Target URLs */}
               {activeTargetPages.length > 0 && (
@@ -404,8 +464,8 @@ export const KeywordResearchStepClean = ({ step, workflow, onChange }: KeywordRe
                         </div>
                         <button
                           onClick={() => {
-                            // Get data from selected pages
-                            const selectedPages = activeTargetPages.filter((page: any) => 
+                            // Get data from selected pages (from all pages, not just filtered)
+                            const selectedPages = allActiveTargetPages.filter((page: any) => 
                               selectedTargetPages.includes(page.id)
                             );
                             
