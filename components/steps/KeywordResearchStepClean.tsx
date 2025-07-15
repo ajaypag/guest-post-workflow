@@ -706,7 +706,7 @@ export const KeywordResearchStepClean = ({ step, workflow, onChange }: KeywordRe
                             <Sparkles className="w-4 h-4 text-purple-500 ml-2" />
                           </div>
                           <p className="text-sm text-purple-700 mb-3">
-                            Let AI analyze {guestPostSite} and automatically select the most relevant target URLs based on topical authority and content compatibility.
+                            Let AI search and analyze {guestPostSite} to automatically select the most relevant target URLs based on their actual content, topical authority, and compatibility with your client pages.
                           </p>
                           {!showAiAnalysis && (
                             <button

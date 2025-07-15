@@ -1,5 +1,5 @@
 import { NextRequest, NextResponse } from 'next/server';
-import { aiTargetUrlMatcher } from '@/lib/services/aiTargetUrlMatcher';
+import { aiTargetUrlMatcherResponses } from '@/lib/services/aiTargetUrlMatcherResponses';
 import { db } from '@/lib/db/connection';
 import { workflows, targetPages } from '@/lib/db/schema';
 import { eq, and, sql } from 'drizzle-orm';
@@ -60,8 +60,8 @@ export async function POST(
       description: page.description || undefined
     }));
 
-    // Run AI analysis
-    const results = await aiTargetUrlMatcher.analyzeAndRankTargetUrls(
+    // Run AI analysis with web search
+    const results = await aiTargetUrlMatcherResponses.analyzeAndRankTargetUrls(
       guestPostSite,
       pagesForAnalysis,
       topCount
