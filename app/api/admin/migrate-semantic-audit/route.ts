@@ -67,8 +67,8 @@ export async function POST() {
     `);
     console.log('audit_sessions result:', sessionsResult);
 
-    // Create audit_sections table
-    console.log('Creating audit_sections table...');
+    // Create audit_sections table with final polish support
+    console.log('Creating audit_sections table with final polish columns...');
     const sectionsResult = await db.execute(sql`
       CREATE TABLE IF NOT EXISTS audit_sections (
         id UUID PRIMARY KEY,
@@ -83,6 +83,11 @@ export async function POST() {
         weaknesses TEXT,
         editing_pattern VARCHAR(100),
         citations_added INTEGER DEFAULT 0,
+        proceed_content TEXT,
+        cleanup_content TEXT,
+        proceed_status VARCHAR(50) DEFAULT 'pending',
+        cleanup_status VARCHAR(50) DEFAULT 'pending',
+        brand_compliance_score INTEGER DEFAULT NULL,
         status VARCHAR(50) NOT NULL DEFAULT 'pending',
         audit_metadata JSONB,
         error_message TEXT,
