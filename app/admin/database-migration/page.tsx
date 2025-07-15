@@ -1,7 +1,7 @@
 'use client';
 
 import React, { useState } from 'react';
-import { Database, AlertTriangle, CheckCircle, X, Play, RotateCcw } from 'lucide-react';
+import { Database, AlertTriangle, CheckCircle, X, Play, RotateCcw, Sparkles } from 'lucide-react';
 
 export default function DatabaseMigrationPage() {
   const [isLoading, setIsLoading] = useState(false);
@@ -503,6 +503,62 @@ export default function DatabaseMigrationPage() {
     setIsLoading(false);
   };
 
+  // One-click complete setup for final polish
+  const runCompleteSetup = async () => {
+    setIsLoading(true);
+    setMessage('');
+    
+    try {
+      // Step 1: Setup core database if needed
+      setMessage('🔄 Step 1/3: Setting up core database tables...');
+      const setupResponse = await fetch('/api/setup-db', {
+        method: 'POST'
+      });
+      const setupData = await setupResponse.json();
+      
+      if (!setupResponse.ok) {
+        setMessage(`❌ Core database setup failed: ${setupData.error || 'Unknown error'}`);
+        setMessageType('error');
+        setIsLoading(false);
+        return;
+      }
+      
+      // Step 2: Create semantic audit tables
+      setMessage('🔄 Step 2/3: Creating semantic audit tables...');
+      const semanticResponse = await fetch('/api/admin/migrate-semantic-audit', {
+        method: 'POST'
+      });
+      const semanticData = await semanticResponse.json();
+      
+      if (!semanticData.success) {
+        setMessage(`❌ Failed to create semantic audit tables: ${semanticData.error}`);
+        setMessageType('error');
+        setIsLoading(false);
+        return;
+      }
+      
+      // Step 3: Enable final polish support
+      setMessage('🔄 Step 3/3: Enabling final polish support...');
+      const polishResponse = await fetch('/api/admin/migrate-final-polish', {
+        method: 'POST'
+      });
+      const polishData = await polishResponse.json();
+      
+      if (polishData.success) {
+        setMessage('🎉 Complete setup successful! Your database is ready for the Final Polish workflow.');
+        setMessageType('success');
+      } else {
+        setMessage(`❌ Final polish setup failed: ${polishData.error}`);
+        setMessageType('error');
+      }
+    } catch (error) {
+      setMessage(`❌ Setup error: ${error instanceof Error ? error.message : 'Unknown error'}`);
+      setMessageType('error');
+    }
+    
+    setIsLoading(false);
+  };
+
   return (
     <div className="min-h-screen bg-gray-50 py-8">
       <div className="max-w-4xl mx-auto px-4 sm:px-6 lg:px-8">
@@ -510,6 +566,32 @@ export default function DatabaseMigrationPage() {
           <div className="flex items-center space-x-3 mb-6">
             <Database className="w-8 h-8 text-blue-600" />
             <h1 className="text-2xl font-bold text-gray-900">Database Migration Manager</h1>
+          </div>
+
+          {/* ONE-CLICK SETUP SECTION */}
+          <div className="mb-12 bg-gradient-to-r from-purple-600 to-blue-600 rounded-xl p-6 text-white">
+            <div className="flex items-center justify-between">
+              <div>
+                <h2 className="text-2xl font-bold mb-2 flex items-center">
+                  <Sparkles className="w-6 h-6 mr-2" />
+                  🎯 CLICK HERE TO ENABLE FINAL POLISH
+                </h2>
+                <p className="text-purple-100 mb-4">
+                  One button does everything: Creates all required database tables for the Final Polish AI workflow.
+                </p>
+                <p className="text-xs text-purple-200">
+                  This will run 3 steps automatically: Core DB → Semantic Audit Tables → Final Polish Support
+                </p>
+              </div>
+              <button
+                onClick={runCompleteSetup}
+                disabled={isLoading}
+                className="bg-white text-purple-600 px-8 py-4 rounded-lg font-bold text-lg hover:bg-purple-50 disabled:opacity-50 disabled:cursor-not-allowed flex items-center space-x-2 min-w-[200px] justify-center"
+              >
+                <Sparkles className="w-5 h-5" />
+                <span>{isLoading ? 'Setting Up...' : 'Complete Setup'}</span>
+              </button>
+            </div>
           </div>
 
           <div className="mb-8">
