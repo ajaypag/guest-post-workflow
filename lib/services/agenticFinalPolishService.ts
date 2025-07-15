@@ -535,9 +535,41 @@ START POLISHING THE NEXT SECTION NOW - DO NOT ASK FOR PERMISSION OR CONFIRMATION
       
       let conversationActive = true;
       let sectionCount = 0;
+      let lastCompletedCount = 0;
+      let turnsWithoutProgress = 0;
       
       while (conversationActive) {
         console.log(`Starting polish turn ${messages.length} with ${sectionCount} sections polished`);
+        
+        // Check progress to avoid infinite loops
+        try {
+          const progress = await this.getPolishProgress(sessionId);
+          console.log(`🔍 PROGRESS CHECK: ${progress.progress.completed}/${progress.progress.total} sections completed`);
+          
+          // Check if we're making progress
+          if (progress.progress.completed === lastCompletedCount) {
+            turnsWithoutProgress++;
+            console.log(`⚠️ No progress for ${turnsWithoutProgress} turns`);
+            
+            if (turnsWithoutProgress >= 5) {
+              console.log('❌ Stopping due to lack of progress');
+              conversationActive = false;
+              break;
+            }
+          } else {
+            lastCompletedCount = progress.progress.completed;
+            turnsWithoutProgress = 0;
+          }
+          
+          // If all sections are complete, stop
+          if (progress.progress.completed >= progress.progress.total && progress.progress.total > 0) {
+            console.log('✅ All sections completed, stopping conversation');
+            conversationActive = false;
+            break;
+          }
+        } catch (error) {
+          console.error('❌ Error checking progress:', error);
+        }
         
         // Run the agent with full message history
         const result = await runner.run(agent, messages, {
@@ -681,9 +713,10 @@ START POLISHING THE NEXT SECTION NOW - DO NOT ASK FOR PERMISSION OR CONFIRMATION
         const content = section.cleanupContent || section.auditedContent || section.originalContent;
         const sectionMetadata = section.auditMetadata as any;
         const headerLevel = sectionMetadata?.headerLevel === 'h3' ? '###' : '##';
-        return `${headerLevel} ${section.title}\n\n${content}`;
+        const title = section.title || 'Untitled Section';
+        return `${headerLevel} ${title}\n\n${content || ''}`;
       })
-      .filter(content => content)
+      .filter(content => content && content.trim())
       .join('\n\n');
   }
 
