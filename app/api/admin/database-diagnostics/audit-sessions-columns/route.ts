@@ -47,7 +47,9 @@ export async function GET() {
       'total_proceed_steps', 
       'completed_proceed_steps',
       'total_cleanup_steps',
-      'completed_cleanup_steps'
+      'completed_cleanup_steps',
+      'original_article',
+      'research_outline'
     ];
 
     const columnMap = new Map();

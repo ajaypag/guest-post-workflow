@@ -28,18 +28,33 @@ export async function POST() {
     
     console.log('Pre-migration check:', { sessionsExists, sectionsExists });
 
-    // Create audit_sessions table
-    console.log('Creating audit_sessions table...');
+    // Drop existing tables to recreate with correct schema
+    console.log('Dropping existing audit tables to recreate with final polish support...');
+    try {
+      await db.execute(sql`DROP TABLE IF EXISTS audit_sections CASCADE`);
+      await db.execute(sql`DROP TABLE IF EXISTS audit_sessions CASCADE`);
+      console.log('Existing tables dropped successfully');
+    } catch (error) {
+      console.log('Drop tables failed (might not exist):', error);
+    }
+
+    // Create audit_sessions table with final polish support
+    console.log('Creating audit_sessions table with final polish columns...');
     const sessionsResult = await db.execute(sql`
       CREATE TABLE IF NOT EXISTS audit_sessions (
         id UUID PRIMARY KEY,
         workflow_id UUID NOT NULL REFERENCES workflows(id) ON DELETE CASCADE,
         version INTEGER NOT NULL DEFAULT 1,
         step_id VARCHAR(100) NOT NULL,
+        audit_type VARCHAR(50) DEFAULT NULL,
         status VARCHAR(50) NOT NULL DEFAULT 'pending',
         total_sections INTEGER DEFAULT 0,
         completed_sections INTEGER DEFAULT 0,
         total_citations_used INTEGER DEFAULT 0,
+        total_proceed_steps INTEGER DEFAULT 0,
+        completed_proceed_steps INTEGER DEFAULT 0,
+        total_cleanup_steps INTEGER DEFAULT 0,
+        completed_cleanup_steps INTEGER DEFAULT 0,
         original_article TEXT,
         research_outline TEXT,
         audit_metadata JSONB,
