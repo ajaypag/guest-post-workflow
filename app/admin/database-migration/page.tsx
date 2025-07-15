@@ -396,6 +396,18 @@ export default function DatabaseMigrationPage() {
     setMessage('');
     
     try {
+      // First check if semantic audit tables exist (prerequisite)
+      const semanticResponse = await fetch('/api/admin/check-semantic-audit-tables');
+      const semanticData = await semanticResponse.json();
+      
+      if (!semanticData.exists) {
+        setMessage('⚠️ Final polish requires semantic audit tables first. Please run "Create Semantic Audit Tables" migration first.');
+        setMessageType('error');
+        setIsLoading(false);
+        return;
+      }
+      
+      // Now check final polish status
       const response = await fetch('/api/admin/migrate-final-polish', {
         method: 'GET'
       });
@@ -405,7 +417,7 @@ export default function DatabaseMigrationPage() {
         setMessage('✅ Final polish support is already enabled in audit tables');
         setMessageType('success');
       } else {
-        setMessage('ℹ️ Final polish support columns do not exist yet');
+        setMessage('ℹ️ Final polish support columns do not exist yet (semantic audit tables found)');
         setMessageType('info');
       }
     } catch (error) {
@@ -421,13 +433,34 @@ export default function DatabaseMigrationPage() {
     setMessage('');
     
     try {
+      // Auto-check and create semantic audit tables if needed
+      const semanticResponse = await fetch('/api/admin/check-semantic-audit-tables');
+      const semanticData = await semanticResponse.json();
+      
+      if (!semanticData.exists) {
+        setMessage('🔄 Creating semantic audit tables first (required for final polish)...');
+        
+        const createSemanticResponse = await fetch('/api/admin/migrate-semantic-audit', {
+          method: 'POST'
+        });
+        const createSemanticData = await createSemanticResponse.json();
+        
+        if (!createSemanticData.success) {
+          setMessage(`❌ Failed to create prerequisite semantic audit tables: ${createSemanticData.error}`);
+          setMessageType('error');
+          setIsLoading(false);
+          return;
+        }
+      }
+      
+      // Now run final polish migration
       const response = await fetch('/api/admin/migrate-final-polish', {
         method: 'POST'
       });
       const data = await response.json();
       
       if (data.success) {
-        setMessage('✅ Final polish migration completed successfully!');
+        setMessage('✅ Final polish migration completed successfully! (Auto-created semantic audit tables if needed)');
         setMessageType('success');
       } else {
         setMessage(`❌ Migration failed: ${data.error}`);
@@ -862,6 +895,20 @@ export default function DatabaseMigrationPage() {
               brand alignment columns and two-prompt workflow tracking to enable AI-powered brand compliance 
               polishing in Step 7 (Final Polish).
             </p>
+
+            {/* Dependency Notice */}
+            <div className="bg-amber-50 border border-amber-200 rounded-lg p-4 mb-4">
+              <div className="flex items-start space-x-3">
+                <AlertTriangle className="w-5 h-5 text-amber-600 mt-0.5" />
+                <div>
+                  <h3 className="text-sm font-semibold text-amber-800">⚡ AUTOMATIC DEPENDENCY HANDLING</h3>
+                  <p className="text-sm text-amber-700 mt-1">
+                    <strong>Don't worry about order!</strong> The "Enable Final Polish Support" button will automatically create semantic audit tables first if needed.
+                    Just click the button and everything will be handled for you.
+                  </p>
+                </div>
+              </div>
+            </div>
             
             <div className="bg-purple-50 border border-purple-200 rounded-lg p-4 mb-6">
               <div className="flex items-start space-x-3">
