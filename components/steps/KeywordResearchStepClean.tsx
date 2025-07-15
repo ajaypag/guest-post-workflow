@@ -720,6 +720,36 @@ export const KeywordResearchStepClean = ({ step, workflow, onChange }: KeywordRe
                     ))}
                   </div>
 
+                  {/* Keyword Cloud Preview */}
+                  {selectedKeywords.length > 0 && (
+                    <div className="mt-4 p-3 bg-blue-50 border border-blue-200 rounded-lg">
+                      <h5 className="font-medium text-blue-900 mb-2">
+                        Selected Keywords ({selectedKeywords.length}/{KEYWORD_LIMIT})
+                      </h5>
+                      <div className="flex flex-wrap gap-2 max-h-32 overflow-y-auto">
+                        {selectedKeywords.slice(0, KEYWORD_LIMIT).map((keyword, index) => (
+                          <span
+                            key={index}
+                            className={`inline-block px-2 py-1 rounded-full text-xs font-medium ${
+                              index < KEYWORD_LIMIT * 0.8 
+                                ? 'bg-blue-100 text-blue-800' 
+                                : index < KEYWORD_LIMIT 
+                                ? 'bg-yellow-100 text-yellow-800'
+                                : 'bg-red-100 text-red-800'
+                            }`}
+                          >
+                            {keyword}
+                          </span>
+                        ))}
+                        {selectedKeywords.length > KEYWORD_LIMIT && (
+                          <span className="inline-block px-2 py-1 rounded-full text-xs font-medium bg-red-100 text-red-800">
+                            +{selectedKeywords.length - KEYWORD_LIMIT} more (will be limited)
+                          </span>
+                        )}
+                      </div>
+                    </div>
+                  )}
+
                   {/* Add Selected URLs Button */}
                   {selectedTargetPages.length > 0 && (
                     <div className="mt-4 p-3 bg-purple-50 border border-purple-200 rounded-lg">
