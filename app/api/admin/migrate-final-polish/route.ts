@@ -2,6 +2,59 @@ import { NextResponse } from 'next/server';
 import { db } from '@/lib/db/connection';
 import { sql } from 'drizzle-orm';
 
+export async function GET() {
+  try {
+    console.log('Checking final polish support status...');
+
+    // Check if audit_type column exists (indicator of final polish support)
+    const auditTypeExists = await db.execute(sql`
+      SELECT column_name 
+      FROM information_schema.columns 
+      WHERE table_name = 'audit_sessions' 
+      AND column_name = 'audit_type'
+    `);
+
+    // Check if proceed/cleanup columns exist
+    const polishColumnsExist = await db.execute(sql`
+      SELECT column_name 
+      FROM information_schema.columns 
+      WHERE table_name = 'audit_sections' 
+      AND column_name IN ('proceed_content', 'cleanup_content', 'brand_compliance_score')
+    `);
+
+    const hasAuditType = (auditTypeExists as unknown as any[]).length > 0;
+    const hasPolishColumns = (polishColumnsExist as unknown as any[]).length >= 3;
+    const isFullySupported = hasAuditType && hasPolishColumns;
+
+    return NextResponse.json({
+      success: true,
+      supported: isFullySupported,
+      details: isFullySupported ? {
+        auditTypeSupported: hasAuditType,
+        polishColumnsSupported: hasPolishColumns,
+        newFeatures: [
+          'audit_type column for workflow differentiation',
+          'proceed/cleanup progress tracking',
+          'brand compliance scoring',
+          'two-prompt workflow support'
+        ]
+      } : {
+        auditTypeSupported: hasAuditType,
+        polishColumnsSupported: hasPolishColumns,
+        missing: 'Final polish support columns not fully configured'
+      }
+    });
+
+  } catch (error) {
+    console.error('Error checking final polish status:', error);
+    return NextResponse.json({
+      success: false,
+      error: error instanceof Error ? error.message : 'Unknown error',
+      details: 'Check server logs for full error details'
+    }, { status: 500 });
+  }
+}
+
 export async function POST() {
   try {
     console.log('Starting final polish database migration...');
@@ -120,6 +173,81 @@ export async function POST() {
     return NextResponse.json({
       success: false,
       error: error instanceof Error ? error.message : 'Unknown migration error',
+      details: 'Check server logs for full error details'
+    }, { status: 500 });
+  }
+}
+
+export async function DELETE() {
+  try {
+    console.log('Starting final polish rollback...');
+
+    // Remove final polish specific columns from audit_sessions
+    console.log('Removing polish-specific columns from audit_sessions...');
+    
+    await db.execute(sql`
+      ALTER TABLE audit_sessions 
+      DROP COLUMN IF EXISTS audit_type,
+      DROP COLUMN IF EXISTS total_proceed_steps,
+      DROP COLUMN IF EXISTS completed_proceed_steps,
+      DROP COLUMN IF EXISTS total_cleanup_steps,
+      DROP COLUMN IF EXISTS completed_cleanup_steps
+    `);
+    console.log('✅ Removed polish session columns');
+
+    // Remove final polish specific columns from audit_sections
+    console.log('Removing polish-specific columns from audit_sections...');
+    
+    await db.execute(sql`
+      ALTER TABLE audit_sections 
+      DROP COLUMN IF EXISTS proceed_content,
+      DROP COLUMN IF EXISTS cleanup_content,
+      DROP COLUMN IF EXISTS proceed_status,
+      DROP COLUMN IF EXISTS cleanup_status,
+      DROP COLUMN IF EXISTS brand_compliance_score
+    `);
+    console.log('✅ Removed polish section columns');
+
+    // Verify rollback
+    console.log('Verifying rollback...');
+    
+    const sessionColumns = await db.execute(sql`
+      SELECT column_name 
+      FROM information_schema.columns 
+      WHERE table_name = 'audit_sessions' 
+      ORDER BY ordinal_position
+    `);
+
+    const sectionColumns = await db.execute(sql`
+      SELECT column_name 
+      FROM information_schema.columns 
+      WHERE table_name = 'audit_sections' 
+      ORDER BY ordinal_position
+    `);
+
+    console.log('audit_sessions columns after rollback:', (sessionColumns as unknown as any[]).length);
+    console.log('audit_sections columns after rollback:', (sectionColumns as unknown as any[]).length);
+
+    return NextResponse.json({
+      success: true,
+      message: 'Final polish support rollback completed successfully',
+      details: {
+        sessionColumns: (sessionColumns as unknown as any[]).length,
+        sectionColumns: (sectionColumns as unknown as any[]).length,
+        removedFeatures: [
+          'audit_type column removed',
+          'proceed/cleanup progress tracking removed',
+          'brand compliance scoring removed',
+          'two-prompt workflow support removed'
+        ]
+      }
+    });
+
+  } catch (error) {
+    console.error('Final polish rollback error:', error);
+    return NextResponse.json({
+      success: false,
+      error: error instanceof Error ? error.message : 'Unknown rollback error',
       details: 'Check server logs for full error details'
     }, { status: 500 });
   }

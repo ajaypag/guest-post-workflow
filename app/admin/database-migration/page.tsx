@@ -391,6 +391,31 @@ export default function DatabaseMigrationPage() {
     setIsLoading(false);
   };
 
+  const checkFinalPolishTablesExist = async () => {
+    setIsLoading(true);
+    setMessage('');
+    
+    try {
+      const response = await fetch('/api/admin/migrate-final-polish', {
+        method: 'GET'
+      });
+      const data = await response.json();
+      
+      if (data.success && data.details?.newFeatures) {
+        setMessage('✅ Final polish support is already enabled in audit tables');
+        setMessageType('success');
+      } else {
+        setMessage('ℹ️ Final polish support columns do not exist yet');
+        setMessageType('info');
+      }
+    } catch (error) {
+      setMessage(`❌ Error checking final polish status: ${error instanceof Error ? error.message : 'Unknown error'}`);
+      setMessageType('error');
+    }
+    
+    setIsLoading(false);
+  };
+
   const runFinalPolishMigration = async () => {
     setIsLoading(true);
     setMessage('');
@@ -406,6 +431,35 @@ export default function DatabaseMigrationPage() {
         setMessageType('success');
       } else {
         setMessage(`❌ Migration failed: ${data.error}`);
+        setMessageType('error');
+      }
+    } catch (error) {
+      setMessage(`❌ Error: ${error instanceof Error ? error.message : 'Unknown error'}`);
+      setMessageType('error');
+    }
+    
+    setIsLoading(false);
+  };
+
+  const runFinalPolishRollback = async () => {
+    if (!confirm('Are you sure you want to remove final polish support? This will delete brand compliance columns and polish workflow data.')) {
+      return;
+    }
+    
+    setIsLoading(true);
+    setMessage('');
+    
+    try {
+      const response = await fetch('/api/admin/migrate-final-polish', {
+        method: 'DELETE'
+      });
+      const data = await response.json();
+      
+      if (data.success) {
+        setMessage('✅ Final polish support rollback completed successfully!');
+        setMessageType('success');
+      } else {
+        setMessage(`❌ Rollback failed: ${data.error}`);
         setMessageType('error');
       }
     } catch (error) {
@@ -827,6 +881,22 @@ export default function DatabaseMigrationPage() {
           </div>
 
           <div className="space-y-4 mb-8">
+            {/* Check Final Polish Status */}
+            <div className="border border-gray-200 rounded-lg p-4">
+              <h3 className="font-semibold text-gray-900 mb-2">Check Final Polish Status</h3>
+              <p className="text-gray-600 text-sm mb-3">
+                Check if final polish support columns already exist in the audit tables.
+              </p>
+              <button
+                onClick={checkFinalPolishTablesExist}
+                disabled={isLoading}
+                className="inline-flex items-center px-4 py-2 bg-blue-600 text-white text-sm font-medium rounded-md hover:bg-blue-700 disabled:opacity-50 disabled:cursor-not-allowed"
+              >
+                <Database className="w-4 h-4 mr-2" />
+                {isLoading ? 'Checking...' : 'Check Final Polish Status'}
+              </button>
+            </div>
+
             {/* Run Final Polish Migration */}
             <div className="border border-green-200 rounded-lg p-4">
               <h3 className="font-semibold text-gray-900 mb-2">Enable Final Polish Support</h3>
@@ -840,6 +910,22 @@ export default function DatabaseMigrationPage() {
               >
                 <Play className="w-4 h-4 mr-2" />
                 {isLoading ? 'Running Migration...' : 'Enable Final Polish Support'}
+              </button>
+            </div>
+
+            {/* Final Polish Rollback */}
+            <div className="border border-red-200 rounded-lg p-4">
+              <h3 className="font-semibold text-gray-900 mb-2">Remove Final Polish Support (Rollback)</h3>
+              <p className="text-gray-600 text-sm mb-3">
+                Remove final polish support columns and all brand compliance data. This action cannot be undone.
+              </p>
+              <button
+                onClick={runFinalPolishRollback}
+                disabled={isLoading}
+                className="inline-flex items-center px-4 py-2 bg-red-600 text-white text-sm font-medium rounded-md hover:bg-red-700 disabled:opacity-50 disabled:cursor-not-allowed"
+              >
+                <RotateCcw className="w-4 h-4 mr-2" />
+                {isLoading ? 'Rolling Back...' : 'Remove Final Polish Support'}
               </button>
             </div>
           </div>
