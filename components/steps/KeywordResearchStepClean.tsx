@@ -407,6 +407,47 @@ export const KeywordResearchStepClean = ({ step, workflow, onChange }: KeywordRe
                           <div className="text-xs text-purple-600">
                             {pages.filter((page: any) => selectedTargetPages.includes(page.id)).length} selected
                           </div>
+                          
+                          {/* Select All in Group button */}
+                          <button
+                            onClick={(e) => {
+                              e.stopPropagation();
+                              const pagesWithData = pages.filter((page: any) => 
+                                (page.keywords && page.keywords.trim() !== '') || (page.description && page.description.trim() !== '')
+                              );
+                              
+                              if (pagesWithData.length > 0) {
+                                const allGroupPagesSelected = pagesWithData.every((page: any) => selectedTargetPages.includes(page.id));
+                                
+                                if (allGroupPagesSelected) {
+                                  // Deselect all pages in this group
+                                  const groupPageIds = pagesWithData.map((page: any) => page.id);
+                                  setSelectedTargetPages(prev => prev.filter(id => !groupPageIds.includes(id)));
+                                } else {
+                                  // Select all pages in this group
+                                  const groupPageIds = pagesWithData.map((page: any) => page.id);
+                                  setSelectedTargetPages(prev => {
+                                    const newSelection = [...prev];
+                                    groupPageIds.forEach(id => {
+                                      if (!newSelection.includes(id)) {
+                                        newSelection.push(id);
+                                      }
+                                    });
+                                    return newSelection;
+                                  });
+                                }
+                              }
+                            }}
+                            className="text-xs px-2 py-1 bg-purple-600 text-white rounded hover:bg-purple-700 transition-colors"
+                          >
+                            {(() => {
+                              const pagesWithData = pages.filter((page: any) => 
+                                (page.keywords && page.keywords.trim() !== '') || (page.description && page.description.trim() !== '')
+                              );
+                              const allGroupPagesSelected = pagesWithData.every((page: any) => selectedTargetPages.includes(page.id));
+                              return allGroupPagesSelected ? 'Deselect All' : `Select All (${pagesWithData.length})`;
+                            })()}
+                          </button>
                         </div>
                       </button>
                       
