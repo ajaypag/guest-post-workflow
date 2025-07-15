@@ -193,40 +193,94 @@ export const KeywordResearchStepClean = ({ step, workflow, onChange }: KeywordRe
     setKeywordCount(currentKeywords.length);
   }, [selectedTargetPages, keywords, allActiveTargetPages, calculateSelectedKeywords]);
 
-  // Build dynamic Ahrefs URL (with keyword limit protection)
-  const buildAhrefsUrl = () => {
+  // Distribute keywords evenly across selected pages
+  const distributeKeywords = (keywords: string[], limit: number) => {
+    if (keywords.length <= limit) return keywords;
+    
+    // Get selected pages for better distribution
+    const selectedPages = allActiveTargetPages.filter((page: any) => 
+      selectedTargetPages.includes(page.id)
+    );
+    
+    if (selectedPages.length === 0) return keywords.slice(0, limit);
+    
+    const distributedKeywords: string[] = [];
+    const keywordsPerPage = Math.ceil(limit / selectedPages.length);
+    
+    // Take keywords from each page evenly
+    selectedPages.forEach((page: any, pageIndex: number) => {
+      if (distributedKeywords.length >= limit) return;
+      
+      const pageKeywords = page.keywords ? page.keywords.split(',').map((k: string) => k.trim()).filter((k: string) => k) : [];
+      const keywordsToTake = Math.min(keywordsPerPage, limit - distributedKeywords.length);
+      
+      pageKeywords.slice(0, keywordsToTake).forEach((keyword: string) => {
+        if (distributedKeywords.length < limit && !distributedKeywords.some(k => k.toLowerCase() === keyword.toLowerCase())) {
+          distributedKeywords.push(keyword);
+        }
+      });
+    });
+    
+    // If still under limit, fill with remaining keywords
+    if (distributedKeywords.length < limit) {
+      keywords.forEach(keyword => {
+        if (distributedKeywords.length < limit && !distributedKeywords.some(k => k.toLowerCase() === keyword.toLowerCase())) {
+          distributedKeywords.push(keyword);
+        }
+      });
+    }
+    
+    return distributedKeywords;
+  };
+
+  // Build multiple Ahrefs URLs for batches of keywords
+  const buildAhrefsUrls = () => {
     if (!guestPostSite) {
-      return "https://app.ahrefs.com/v2-site-explorer/organic-keywords";
+      return [{ url: "https://app.ahrefs.com/v2-site-explorer/organic-keywords", batch: 1, keywords: [] }];
     }
     
     let cleanDomain = guestPostSite.replace(/^https?:\/\//, '').replace(/\/$/, '');
     const targetUrl = `https://${cleanDomain}/`;
     
-    let url = `https://app.ahrefs.com/v2-site-explorer/organic-keywords?brandedMode=all&chartGranularity=daily&chartInterval=year5&compareDate=dontCompare&country=us&currentDate=today&dataMode=text&hiddenColumns=&intentsAttrs=`;
+    // Distribute keywords across pages
+    const allKeywords = selectedKeywords.length > 0 ? selectedKeywords : 
+                       (keywords.trim() ? keywords.split(',').map((k: string) => k.trim()).filter((k: string) => k) : []);
     
-    // Use selectedKeywords (with limit) instead of raw keywords
-    const keywordsToUse = selectedKeywords.slice(0, KEYWORD_LIMIT);
-    
-    if (keywordsToUse.length > 0) {
-      const cleanKeywords = keywordsToUse.join(', ');
-      const keywordRulesArray = [["contains","all"], cleanKeywords, "any"];
-      const keywordRulesEncoded = encodeURIComponent(JSON.stringify(keywordRulesArray));
-      url += `&keywordRules=${keywordRulesEncoded}`;
-    } else if (keywords.trim()) {
-      // Fallback to manual keywords if no pages selected
-      const cleanKeywords = keywords.replace(/\n/g, ', ').replace(/\s+/g, ' ').trim();
-      const keywordRulesArray = [["contains","all"], cleanKeywords, "any"];
-      const keywordRulesEncoded = encodeURIComponent(JSON.stringify(keywordRulesArray));
-      url += `&keywordRules=${keywordRulesEncoded}`;
-    } else {
-      url += `&keywordRules=`;
+    if (allKeywords.length === 0) {
+      const baseUrl = `https://app.ahrefs.com/v2-site-explorer/organic-keywords?brandedMode=all&chartGranularity=daily&chartInterval=year5&compareDate=dontCompare&country=us&currentDate=today&dataMode=text&hiddenColumns=&intentsAttrs=&keywordRules=&limit=100&localMode=all&mainOnly=0&mode=subdomains&multipleUrlsOnly=0&offset=0&performanceChartTopPosition=top11_20%7C%7Ctop21_50%7C%7Ctop3%7C%7Ctop4_10%7C%7Ctop51&positionChanges=&serpFeatures=&sort=OrganicTrafficInitial&sortDirection=desc&target=${encodeURIComponent(targetUrl)}&urlRules=&volume_type=average`;
+      return [{ url: baseUrl, batch: 1, keywords: [] }];
     }
     
-    url += `&limit=100&localMode=all&mainOnly=0&mode=subdomains&multipleUrlsOnly=0&offset=0&performanceChartTopPosition=top11_20%7C%7Ctop21_50%7C%7Ctop3%7C%7Ctop4_10%7C%7Ctop51&positionChanges=&serpFeatures=&sort=OrganicTrafficInitial&sortDirection=desc`;
-    url += `&target=${encodeURIComponent(targetUrl)}`;
-    url += `&urlRules=&volume_type=average`;
+    // Create batches of keywords
+    const batches: { url: string, batch: number, keywords: string[] }[] = [];
+    const distributedKeywords = distributeKeywords(allKeywords, allKeywords.length);
     
-    return url;
+    for (let i = 0; i < distributedKeywords.length; i += KEYWORD_LIMIT) {
+      const batchKeywords = distributedKeywords.slice(i, i + KEYWORD_LIMIT);
+      const cleanKeywords = batchKeywords.join(', ');
+      const keywordRulesArray = [["contains","all"], cleanKeywords, "any"];
+      const keywordRulesEncoded = encodeURIComponent(JSON.stringify(keywordRulesArray));
+      
+      let url = `https://app.ahrefs.com/v2-site-explorer/organic-keywords?brandedMode=all&chartGranularity=daily&chartInterval=year5&compareDate=dontCompare&country=us&currentDate=today&dataMode=text&hiddenColumns=&intentsAttrs=`;
+      url += `&keywordRules=${keywordRulesEncoded}`;
+      url += `&limit=100&localMode=all&mainOnly=0&mode=subdomains&multipleUrlsOnly=0&offset=0&performanceChartTopPosition=top11_20%7C%7Ctop21_50%7C%7Ctop3%7C%7Ctop4_10%7C%7Ctop51&positionChanges=&serpFeatures=&sort=OrganicTrafficInitial&sortDirection=desc`;
+      url += `&target=${encodeURIComponent(targetUrl)}`;
+      url += `&urlRules=&volume_type=average`;
+      
+      batches.push({ 
+        url, 
+        batch: Math.floor(i / KEYWORD_LIMIT) + 1, 
+        keywords: batchKeywords 
+      });
+    }
+    
+    return batches;
+  };
+
+  // Build dynamic Ahrefs URL (with keyword limit protection) - for backward compatibility
+  const buildAhrefsUrl = () => {
+    const urls = buildAhrefsUrls();
+    return urls[0]?.url || "https://app.ahrefs.com/v2-site-explorer/organic-keywords";
   };
 
   const dynamicAhrefsUrl = buildAhrefsUrl();
@@ -750,16 +804,24 @@ export const KeywordResearchStepClean = ({ step, workflow, onChange }: KeywordRe
                     </div>
                   )}
 
-                  {/* Add Selected URLs Button */}
+                  {/* Add Selected URLs Button - More prominent when grouped view is active */}
                   {selectedTargetPages.length > 0 && (
-                    <div className="mt-4 p-3 bg-purple-50 border border-purple-200 rounded-lg">
+                    <div className={`mt-4 p-3 rounded-lg transition-all ${
+                      showGroupedView 
+                        ? 'bg-gradient-to-r from-purple-500 to-purple-600 shadow-lg animate-pulse' 
+                        : 'bg-purple-50 border border-purple-200'
+                    }`}>
                       <div className="flex items-center justify-between">
                         <div>
-                          <p className="text-sm font-medium text-purple-900">
+                          <p className={`text-sm font-medium ${
+                            showGroupedView ? 'text-white' : 'text-purple-900'
+                          }`}>
                             {selectedTargetPages.length} page{selectedTargetPages.length !== 1 ? 's' : ''} selected
                           </p>
-                          <p className="text-xs text-purple-700">
-                            Will add keywords and descriptions to your workflow
+                          <p className={`text-xs ${
+                            showGroupedView ? 'text-purple-100' : 'text-purple-700'
+                          }`}>
+                            {showGroupedView ? 'Click to add all selected pages to your workflow' : 'Will add keywords and descriptions to your workflow'}
                           </p>
                         </div>
                         <button
@@ -811,7 +873,11 @@ export const KeywordResearchStepClean = ({ step, workflow, onChange }: KeywordRe
                             // Clear selection
                             setSelectedTargetPages([]);
                           }}
-                          className="px-4 py-2 bg-purple-600 text-white text-sm font-medium rounded-md hover:bg-purple-700 transition-colors"
+                          className={`px-4 py-2 text-sm font-medium rounded-md transition-all ${
+                            showGroupedView 
+                              ? 'bg-white text-purple-600 hover:bg-purple-50 shadow-md' 
+                              : 'bg-purple-600 text-white hover:bg-purple-700'
+                          }`}
                         >
                           Add Selected URLs to Workflow
                         </button>
@@ -938,40 +1004,94 @@ export const KeywordResearchStepClean = ({ step, workflow, onChange }: KeywordRe
                 </p>
               </div>
 
-              {/* Ahrefs link */}
+              {/* Ahrefs links */}
               <div className="space-y-3">
-                <div className="flex items-center justify-between">
-                  <h4 className="font-medium text-gray-900">Open Ahrefs (pre-filled with your keywords):</h4>
-                  <CopyButton text={dynamicAhrefsUrl} label="Copy URL" />
-                </div>
-                
-                <a 
-                  href={dynamicAhrefsUrl} 
-                  target="_blank" 
-                  className="inline-flex items-center px-4 py-2 bg-orange-600 text-white text-sm rounded-lg hover:bg-orange-700 transition-colors"
-                >
-                  Open Ahrefs Site Explorer <ExternalLink className="w-4 h-4 ml-2" />
-                </a>
-
-                {guestPostSite && (selectedKeywords.length > 0 || keywords.trim()) && (
-                  <div className="bg-gray-50 rounded-lg p-3 text-sm">
-                    <p className="font-medium text-gray-700 mb-1">Pre-configured with:</p>
-                    <ul className="text-gray-600 space-y-1">
-                      <li>• Site: {guestPostSite}</li>
-                      {selectedKeywords.length > 0 ? (
-                        <li>
-                          • Keywords: {selectedKeywords.slice(0, KEYWORD_LIMIT).join(', ').substring(0, 100)}
-                          {selectedKeywords.slice(0, KEYWORD_LIMIT).join(', ').length > 100 ? '...' : ''}
-                          {selectedKeywords.length > KEYWORD_LIMIT && (
-                            <span className="text-red-600 font-medium"> (limited to first {KEYWORD_LIMIT})</span>
-                          )}
-                        </li>
-                      ) : (
-                        <li>• Keywords: {keywords.replace(/\n/g, ', ').replace(/\s+/g, ' ').trim().substring(0, 100)}{keywords.length > 100 ? '...' : ''}</li>
+                {(() => {
+                  const ahrefsUrls = buildAhrefsUrls();
+                  const hasMultipleBatches = ahrefsUrls.length > 1;
+                  
+                  return (
+                    <>
+                      <div className="flex items-center justify-between">
+                        <h4 className="font-medium text-gray-900">
+                          {hasMultipleBatches 
+                            ? `Open Ahrefs in ${ahrefsUrls.length} batches (${KEYWORD_LIMIT} keywords each):`
+                            : 'Open Ahrefs (pre-filled with your keywords):'
+                          }
+                        </h4>
+                        {!hasMultipleBatches && (
+                          <CopyButton text={dynamicAhrefsUrl} label="Copy URL" />
+                        )}
+                      </div>
+                      
+                      {hasMultipleBatches && selectedKeywords.length > KEYWORD_LIMIT && (
+                        <div className="bg-amber-50 border border-amber-200 rounded-lg p-3">
+                          <div className="flex items-start space-x-2">
+                            <AlertCircle className="w-5 h-5 text-amber-500 mt-0.5 flex-shrink-0" />
+                            <div>
+                              <p className="text-sm font-medium text-amber-800">
+                                Too many keywords for one Ahrefs URL ({selectedKeywords.length} total)
+                              </p>
+                              <p className="text-xs text-amber-700 mt-1">
+                                Keywords have been distributed evenly across {selectedTargetPages.length} selected pages. 
+                                Click each batch below to check different sets of keywords.
+                              </p>
+                            </div>
+                          </div>
+                        </div>
                       )}
-                    </ul>
-                  </div>
-                )}
+                      
+                      <div className={hasMultipleBatches ? "space-y-2" : ""}>
+                        {ahrefsUrls.map(({ url, batch, keywords: batchKeywords }, index) => (
+                          <div key={index} className={hasMultipleBatches ? "flex items-center space-x-2" : ""}>
+                            <a 
+                              href={url} 
+                              target="_blank" 
+                              className={`inline-flex items-center px-4 py-2 bg-orange-600 text-white text-sm rounded-lg hover:bg-orange-700 transition-colors ${
+                                hasMultipleBatches ? 'flex-1' : ''
+                              }`}
+                            >
+                              {hasMultipleBatches 
+                                ? `Batch ${batch}: Check ${batchKeywords.length} keywords`
+                                : 'Open Ahrefs Site Explorer'
+                              }
+                              <ExternalLink className="w-4 h-4 ml-2" />
+                            </a>
+                            {hasMultipleBatches && (
+                              <CopyButton text={url} label="Copy" />
+                            )}
+                          </div>
+                        ))}
+                      </div>
+
+                      {guestPostSite && (selectedKeywords.length > 0 || keywords.trim()) && (
+                        <div className="bg-gray-50 rounded-lg p-3 text-sm">
+                          <p className="font-medium text-gray-700 mb-1">Pre-configured with:</p>
+                          <ul className="text-gray-600 space-y-1">
+                            <li>• Site: {guestPostSite}</li>
+                            {hasMultipleBatches ? (
+                              <>
+                                <li>• Total Keywords: {selectedKeywords.length}</li>
+                                <li>• Batches: {ahrefsUrls.length} (up to {KEYWORD_LIMIT} keywords each)</li>
+                                <li className="text-xs text-gray-500 italic">
+                                  Keywords distributed evenly from {selectedTargetPages.length} selected pages
+                                </li>
+                              </>
+                            ) : (
+                              <li>
+                                • Keywords: {selectedKeywords.length > 0 
+                                  ? selectedKeywords.join(', ').substring(0, 100)
+                                  : keywords.replace(/\n/g, ', ').replace(/\s+/g, ' ').trim().substring(0, 100)
+                                }
+                                {(selectedKeywords.join(', ').length > 100 || keywords.length > 100) ? '...' : ''}
+                              </li>
+                            )}
+                          </ul>
+                        </div>
+                      )}
+                    </>
+                  );
+                })()}
               </div>
 
               {/* Next steps */}
