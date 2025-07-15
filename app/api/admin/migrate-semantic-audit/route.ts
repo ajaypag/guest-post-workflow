@@ -77,30 +77,78 @@ export async function POST() {
     `);
     console.log('audit_sections result:', sectionsResult);
 
-    // Verify tables were created
-    const finalCheckSessions = await db.execute(sql`
-      SELECT EXISTS (
-        SELECT FROM information_schema.tables 
-        WHERE table_schema = 'public' 
-        AND table_name = 'audit_sessions'
-      ) as exists
-    `);
-    
-    const finalCheckSections = await db.execute(sql`
-      SELECT EXISTS (
-        SELECT FROM information_schema.tables 
-        WHERE table_schema = 'public' 
-        AND table_name = 'audit_sections'
-      ) as exists
-    `);
+    // Wait a moment for the transactions to commit
+    await new Promise(resolve => setTimeout(resolve, 1000));
 
-    const finalSessionsExists = (finalCheckSessions as any)[0]?.exists === true;
-    const finalSectionsExists = (finalCheckSections as any)[0]?.exists === true;
+    // Verify tables were created - try multiple times if needed
+    let finalSessionsExists = false;
+    let finalSectionsExists = false;
     
-    console.log('Post-migration verification:', { finalSessionsExists, finalSectionsExists });
+    for (let attempt = 0; attempt < 3; attempt++) {
+      console.log(`Verification attempt ${attempt + 1}...`);
+      
+      try {
+        const finalCheckSessions = await db.execute(sql`
+          SELECT EXISTS (
+            SELECT FROM information_schema.tables 
+            WHERE table_schema = 'public' 
+            AND table_name = 'audit_sessions'
+          ) as exists
+        `);
+        
+        const finalCheckSections = await db.execute(sql`
+          SELECT EXISTS (
+            SELECT FROM information_schema.tables 
+            WHERE table_schema = 'public' 
+            AND table_name = 'audit_sections'
+          ) as exists
+        `);
 
+        finalSessionsExists = (finalCheckSessions as any)[0]?.exists === true;
+        finalSectionsExists = (finalCheckSections as any)[0]?.exists === true;
+        
+        console.log(`Attempt ${attempt + 1} verification:`, { finalSessionsExists, finalSectionsExists });
+        
+        if (finalSessionsExists && finalSectionsExists) {
+          break; // Success!
+        }
+        
+        if (attempt < 2) {
+          await new Promise(resolve => setTimeout(resolve, 1000));
+        }
+      } catch (verifyError) {
+        console.error(`Verification attempt ${attempt + 1} failed:`, verifyError);
+        if (attempt < 2) {
+          await new Promise(resolve => setTimeout(resolve, 1000));
+        }
+      }
+    }
+
+    // If verification still fails, try a simple table query instead
     if (!finalSessionsExists || !finalSectionsExists) {
-      throw new Error(`Table creation failed. Sessions exists: ${finalSessionsExists}, Sections exists: ${finalSectionsExists}`);
+      console.log('Information schema check failed, trying direct table queries...');
+      
+      try {
+        await db.execute(sql`SELECT 1 FROM audit_sessions LIMIT 1`);
+        finalSessionsExists = true;
+        console.log('Direct query: audit_sessions exists');
+      } catch {
+        console.log('Direct query: audit_sessions does not exist');
+      }
+      
+      try {
+        await db.execute(sql`SELECT 1 FROM audit_sections LIMIT 1`);
+        finalSectionsExists = true;
+        console.log('Direct query: audit_sections exists');
+      } catch {
+        console.log('Direct query: audit_sections does not exist');
+      }
+    }
+    
+    // Final check - if still failing, it's likely a real issue
+    if (!finalSessionsExists || !finalSectionsExists) {
+      console.error('Table verification failed after all attempts');
+      throw new Error(`Table creation verification failed. Sessions exists: ${finalSessionsExists}, Sections exists: ${finalSectionsExists}. This may be a database connectivity or permissions issue.`);
     }
 
     console.log('Semantic audit tables created successfully');
