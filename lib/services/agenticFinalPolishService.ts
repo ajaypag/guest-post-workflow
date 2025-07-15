@@ -377,7 +377,7 @@ DO NOT proceed to the next section until cleanup is complete. This is the mandat
               .set({
                 cleanupContent: cleaned_content,
                 auditedContent: cleaned_content, // Final polished content
-                brandComplianceScore: brand_compliance_score,
+                brandComplianceScore: Math.round(brand_compliance_score),
                 cleanupStatus: 'completed',
                 status: 'completed',
                 auditMetadata: sql`jsonb_set(COALESCE(${auditSections.auditMetadata}, '{}'::jsonb), '{cleanupAt}', to_jsonb(${new Date().toISOString()}::timestamptz))`,
@@ -400,7 +400,7 @@ DO NOT proceed to the next section until cleanup is complete. This is the mandat
               originalContent: originalSection?.content || '',
               cleanupContent: cleaned_content,
               auditedContent: cleaned_content,
-              brandComplianceScore: brand_compliance_score,
+              brandComplianceScore: Math.round(brand_compliance_score),
               proceedStatus: 'skipped', // Mark as skipped since proceed didn't work
               cleanupStatus: 'completed',
               status: 'completed',
@@ -426,7 +426,7 @@ DO NOT proceed to the next section until cleanup is complete. This is the mandat
             type: 'section_cleanup', 
             sectionTitle: section_title,
             cleanupContent: cleaned_content,
-            brandComplianceScore: brand_compliance_score
+            brandComplianceScore: Math.round(brand_compliance_score)
           });
 
           // Check if this is the last section
