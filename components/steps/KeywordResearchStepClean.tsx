@@ -24,6 +24,11 @@ export const KeywordResearchStepClean = ({ step, workflow, onChange }: KeywordRe
   const [loadingClient, setLoadingClient] = useState(false);
   const [showAllTargetUrls, setShowAllTargetUrls] = useState(false);
   const [selectedTargetPages, setSelectedTargetPages] = useState<string[]>([]);
+  
+  // Keyword management
+  const KEYWORD_LIMIT = 50; // Conservative limit to prevent Ahrefs URL issues
+  const [keywordCount, setKeywordCount] = useState(0);
+  const [selectedKeywords, setSelectedKeywords] = useState<string[]>([]);
 
   const domainSelectionStep = workflow.steps.find(s => s.id === 'domain-selection');
   const guestPostSite = domainSelectionStep?.outputs?.domain || '';
@@ -58,7 +63,40 @@ export const KeywordResearchStepClean = ({ step, workflow, onChange }: KeywordRe
     }));
   };
 
-  // Build dynamic Ahrefs URL (keeping existing logic)
+  // Calculate keywords from selected pages
+  const calculateSelectedKeywords = () => {
+    const selectedPages = activeTargetPages.filter((page: any) => 
+      selectedTargetPages.includes(page.id)
+    );
+    
+    const existingKeywords = keywords ? keywords.split(',').map((k: string) => k.trim()).filter((k: string) => k) : [];
+    const newKeywords: string[] = [];
+    
+    selectedPages.forEach((page: any) => {
+      if (page.keywords && page.keywords.trim() !== '') {
+        const pageKeywords = page.keywords.split(',').map((k: string) => k.trim()).filter((k: string) => k);
+        newKeywords.push(...pageKeywords);
+      }
+    });
+    
+    // Deduplicate keywords (case-insensitive)
+    const allKeywords = [...existingKeywords, ...newKeywords];
+    const uniqueKeywords = allKeywords.filter((keyword, index) => {
+      const lowerKeyword = keyword.toLowerCase();
+      return allKeywords.findIndex((k: string) => k.toLowerCase() === lowerKeyword) === index;
+    });
+    
+    return uniqueKeywords;
+  };
+
+  // Update keyword count when selection changes
+  useEffect(() => {
+    const currentKeywords = calculateSelectedKeywords();
+    setSelectedKeywords(currentKeywords);
+    setKeywordCount(currentKeywords.length);
+  }, [selectedTargetPages, keywords, activeTargetPages]);
+
+  // Build dynamic Ahrefs URL (with keyword limit protection)
   const buildAhrefsUrl = () => {
     if (!guestPostSite) {
       return "https://app.ahrefs.com/v2-site-explorer/organic-keywords";
@@ -69,7 +107,16 @@ export const KeywordResearchStepClean = ({ step, workflow, onChange }: KeywordRe
     
     let url = `https://app.ahrefs.com/v2-site-explorer/organic-keywords?brandedMode=all&chartGranularity=daily&chartInterval=year5&compareDate=dontCompare&country=us&currentDate=today&dataMode=text&hiddenColumns=&intentsAttrs=`;
     
-    if (keywords.trim()) {
+    // Use selectedKeywords (with limit) instead of raw keywords
+    const keywordsToUse = selectedKeywords.slice(0, KEYWORD_LIMIT);
+    
+    if (keywordsToUse.length > 0) {
+      const cleanKeywords = keywordsToUse.join(', ');
+      const keywordRulesArray = [["contains","all"], cleanKeywords, "any"];
+      const keywordRulesEncoded = encodeURIComponent(JSON.stringify(keywordRulesArray));
+      url += `&keywordRules=${keywordRulesEncoded}`;
+    } else if (keywords.trim()) {
+      // Fallback to manual keywords if no pages selected
       const cleanKeywords = keywords.replace(/\n/g, ', ').replace(/\s+/g, ' ').trim();
       const keywordRulesArray = [["contains","all"], cleanKeywords, "any"];
       const keywordRulesEncoded = encodeURIComponent(JSON.stringify(keywordRulesArray));
@@ -155,6 +202,17 @@ export const KeywordResearchStepClean = ({ step, workflow, onChange }: KeywordRe
                       📌 Your Client's Target URLs ({activeTargetPages.length})
                     </h4>
                     <div className="flex items-center space-x-2">
+                      {/* Keyword Counter */}
+                      <div className={`text-xs px-3 py-1 rounded-lg font-medium ${
+                        keywordCount > KEYWORD_LIMIT 
+                          ? 'bg-red-100 text-red-800 border border-red-300' 
+                          : keywordCount > KEYWORD_LIMIT * 0.8 
+                          ? 'bg-yellow-100 text-yellow-800 border border-yellow-300'
+                          : 'bg-green-100 text-green-800 border border-green-300'
+                      }`}>
+                        {keywordCount}/{KEYWORD_LIMIT} keywords
+                      </div>
+                      
                       <button
                         onClick={() => window.open(`/clients/${clientId}`, '_blank')}
                         className="text-xs px-3 py-1 text-purple-600 border border-purple-300 rounded-lg hover:bg-purple-100 transition-colors flex items-center space-x-1"
@@ -203,6 +261,22 @@ export const KeywordResearchStepClean = ({ step, workflow, onChange }: KeywordRe
                       )}
                     </div>
                   </div>
+                  {/* Keyword Limit Warning */}
+                  {keywordCount > KEYWORD_LIMIT && (
+                    <div className="bg-red-50 border border-red-200 rounded-lg p-3 mb-3">
+                      <div className="flex items-center space-x-2">
+                        <AlertCircle className="w-4 h-4 text-red-500" />
+                        <div>
+                          <p className="text-sm font-medium text-red-800">Too many keywords selected!</p>
+                          <p className="text-xs text-red-700">
+                            You have {keywordCount} keywords selected. Ahrefs URLs may not work with more than {KEYWORD_LIMIT} keywords. 
+                            Please deselect some pages or we'll automatically limit to the first {KEYWORD_LIMIT} keywords.
+                          </p>
+                        </div>
+                      </div>
+                    </div>
+                  )}
+                  
                   <div className="flex items-center justify-between mb-3">
                     <p className="text-sm text-purple-700">
                       Click any URL to copy it. Check pages with keywords/descriptions to add them to your workflow.
@@ -519,12 +593,22 @@ export const KeywordResearchStepClean = ({ step, workflow, onChange }: KeywordRe
                   Open Ahrefs Site Explorer <ExternalLink className="w-4 h-4 ml-2" />
                 </a>
 
-                {guestPostSite && keywords.trim() && (
+                {guestPostSite && (selectedKeywords.length > 0 || keywords.trim()) && (
                   <div className="bg-gray-50 rounded-lg p-3 text-sm">
                     <p className="font-medium text-gray-700 mb-1">Pre-configured with:</p>
                     <ul className="text-gray-600 space-y-1">
                       <li>• Site: {guestPostSite}</li>
-                      <li>• Keywords: {keywords.replace(/\n/g, ', ').replace(/\s+/g, ' ').trim().substring(0, 100)}{keywords.length > 100 ? '...' : ''}</li>
+                      {selectedKeywords.length > 0 ? (
+                        <li>
+                          • Keywords: {selectedKeywords.slice(0, KEYWORD_LIMIT).join(', ').substring(0, 100)}
+                          {selectedKeywords.slice(0, KEYWORD_LIMIT).join(', ').length > 100 ? '...' : ''}
+                          {selectedKeywords.length > KEYWORD_LIMIT && (
+                            <span className="text-red-600 font-medium"> (limited to first {KEYWORD_LIMIT})</span>
+                          )}
+                        </li>
+                      ) : (
+                        <li>• Keywords: {keywords.replace(/\n/g, ', ').replace(/\s+/g, ' ').trim().substring(0, 100)}{keywords.length > 100 ? '...' : ''}</li>
+                      )}
                     </ul>
                   </div>
                 )}
