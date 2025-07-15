@@ -78,20 +78,21 @@ Keywords: ${keywords}
 Description: ${description}`;
 }).join('\n')}
 
-3. Return a JSON response with:
+3. Return ONLY a valid JSON object (no markdown, no extra text) with this exact structure:
 {
   "siteAnalysis": "Detailed summary of what ${guestPostSite} is about based on your web search findings",
   "rankedUrls": [
     {
       "url": "the target URL",
-      "relevanceScore": 95, // 0-100 score based on actual site content
+      "relevanceScore": 95,
       "reasoning": "Specific reasoning based on actual site content you found",
-      "topicalOverlap": ["topic1", "topic2"], // Actual topics from the site
-      "confidenceLevel": "high" // high/medium/low based on search results
+      "topicalOverlap": ["topic1", "topic2"],
+      "confidenceLevel": "high"
     }
-    // ... rank ALL URLs from most to least relevant
   ]
 }
+
+CRITICAL: Return ONLY the JSON object, no markdown code blocks, no explanations before or after.
 
 Your relevance scores should be based on:
 - 80-100: Strong topical match with content frequently published on the site
@@ -116,11 +117,6 @@ Be specific in your reasoning and reference actual content/topics you found on t
           instructions: instructions,
           input: userInput,
           temperature: 0.3,
-          text: {
-            format: {
-              type: "json_object"
-            }
-          },
           tools: [
             {
               type: "web_search" // OpenAI's built-in web search tool
@@ -182,11 +178,43 @@ Be specific in your reasoning and reference actual content/topics you found on t
           throw new Error('No response content from AI');
         }
         
-        const result = JSON.parse(textContent.text);
+        // Clean up the output in case it has markdown or extra text
+        let cleanedOutput = textContent.text.trim();
+        
+        // Remove markdown code blocks if present
+        if (cleanedOutput.startsWith('```json')) {
+          cleanedOutput = cleanedOutput.replace(/^```json\s*/, '').replace(/\s*```$/, '');
+        } else if (cleanedOutput.startsWith('```')) {
+          cleanedOutput = cleanedOutput.replace(/^```\s*/, '').replace(/\s*```$/, '');
+        }
+        
+        // Find the JSON object (starts with { and ends with })
+        const jsonMatch = cleanedOutput.match(/\{[\s\S]*\}/);
+        if (jsonMatch) {
+          cleanedOutput = jsonMatch[0];
+        }
+        
+        const result = JSON.parse(cleanedOutput);
         return this.processResults(result, topCount, startTime);
       }
 
-      const result = JSON.parse(outputText);
+      // Clean up the output in case it has markdown or extra text
+      let cleanedOutput = outputText.trim();
+      
+      // Remove markdown code blocks if present
+      if (cleanedOutput.startsWith('```json')) {
+        cleanedOutput = cleanedOutput.replace(/^```json\s*/, '').replace(/\s*```$/, '');
+      } else if (cleanedOutput.startsWith('```')) {
+        cleanedOutput = cleanedOutput.replace(/^```\s*/, '').replace(/\s*```$/, '');
+      }
+      
+      // Find the JSON object (starts with { and ends with })
+      const jsonMatch = cleanedOutput.match(/\{[\s\S]*\}/);
+      if (jsonMatch) {
+        cleanedOutput = jsonMatch[0];
+      }
+      
+      const result = JSON.parse(cleanedOutput);
       return this.processResults(result, topCount, startTime);
 
     } catch (error) {
