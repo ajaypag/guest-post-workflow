@@ -19,24 +19,24 @@ export const MarkdownPreview = ({ content, className = '' }: MarkdownPreviewProp
 
   // Preprocess content to fix common markdown formatting issues
   const preprocessContent = (text: string): string => {
-    // Convert pseudo-bullet lists to proper markdown lists
+    // Fix numbered lists with bold formatting FIRST before any line splitting
+    // This handles cases like **1. Title text** where the bold wraps the number
     let processed = text
+      // Fix **1. Title** format - move the ** after the number
+      .replace(/^\*\*(\d+)\.\s+([^*]+)\*\*$/gm, '$1. **$2**')
+      // Fix **1. Title text** with text after the bold
+      .replace(/^\*\*(\d+)\.\s+([^*]+)\*\*\s*(.+)$/gm, '$1. **$2** $3');
+    
+    // Now do the other conversions
+    processed = processed
       // First, fix inline bullet points by ensuring they're on new lines
       .replace(/([^\n])\s*[•·▸▹►]/g, '$1\n\n•')
       // Fix multiple bullet points on same line
       .replace(/([•·▸▹►]\s*[^•\n]+)([•·▸▹►])/g, '$1\n$2')
       // Ensure there's a blank line before first bullet after text
       .replace(/([^\n])(\n[•·▸▹►])/g, '$1\n$2')
-      // Fix numbered lists that might be inline
-      .replace(/([^\n])\s*(\d+[.)]\s)/g, '$1\n\n$2');
-    
-    // Fix numbered lists with bold formatting at the start
-    // This handles cases like **1. Title text** where the bold wraps the number
-    processed = processed
-      // Fix **1. Title** format - move the ** after the number
-      .replace(/^\*\*(\d+)\.\s+([^*]+)\*\*$/gm, '$1. **$2**')
-      // Fix **1. Title text** with text after the bold
-      .replace(/^\*\*(\d+)\.\s+([^*]+)\*\*\s*(.+)$/gm, '$1. **$2** $3');
+      // Fix numbered lists that might be inline (but skip those starting with bold)
+      .replace(/([^\n])\s*(?<!\*\*)(\d+[.)]\s)/g, '$1\n\n$2');
     
     // Convert bullet characters to proper markdown list syntax
     processed = processed
