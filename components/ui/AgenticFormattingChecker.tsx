@@ -2,6 +2,7 @@
 
 import React, { useState, useEffect, useRef } from 'react';
 import { Bot, CheckCircle, AlertCircle, XCircle, Clock, FileText, AlertTriangle, Copy } from 'lucide-react';
+import { MarkdownPreview } from './MarkdownPreview';
 
 interface AgenticFormattingCheckerProps {
   workflowId: string;
@@ -514,12 +515,30 @@ export function AgenticFormattingChecker({ workflowId, onComplete }: AgenticForm
             </div>
           )}
 
-          {/* Article Preview */}
-          <div className="border border-gray-200 rounded-lg p-4 max-h-96 overflow-y-auto">
-            <div className="prose prose-sm max-w-none">
-              <div className="whitespace-pre-wrap text-gray-700 leading-relaxed">
-                {cleanedArticle}
-              </div>
+          {/* Article Preview with Dual View */}
+          <div className="space-y-4">
+            {/* Raw Markdown View */}
+            <div className="space-y-2">
+              <label className="block text-sm font-medium text-gray-700">
+                Cleaned Article (Markdown)
+              </label>
+              <textarea
+                value={cleanedArticle}
+                readOnly
+                className="w-full h-64 p-3 border border-gray-300 rounded-lg bg-gray-50 text-sm font-mono resize-none"
+                placeholder="The cleaned article will appear here..."
+              />
+            </div>
+            
+            {/* Rendered Preview */}
+            <div className="space-y-2">
+              <label className="block text-sm font-medium text-gray-700">
+                Formatted Preview
+              </label>
+              <MarkdownPreview 
+                content={cleanedArticle}
+                className="border border-gray-300 rounded-lg"
+              />
             </div>
           </div>
         </div>
