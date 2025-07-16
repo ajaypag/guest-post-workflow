@@ -79,25 +79,26 @@ export async function POST() {
     `);
     console.log('polish_sections result:', sectionsResult);
 
-    // Verify tables were created
+    // Add a small delay to ensure tables are committed
+    await new Promise(resolve => setTimeout(resolve, 1000));
+    
+    // Verify tables were created - try a different approach
     const finalCheckSessions = await db.execute(sql`
-      SELECT EXISTS (
-        SELECT FROM information_schema.tables 
-        WHERE table_schema = 'public' 
-        AND table_name = 'polish_sessions'
-      ) as exists
+      SELECT table_name 
+      FROM information_schema.tables 
+      WHERE table_schema = 'public' 
+      AND table_name = 'polish_sessions'
     `);
     
     const finalCheckSections = await db.execute(sql`
-      SELECT EXISTS (
-        SELECT FROM information_schema.tables 
-        WHERE table_schema = 'public' 
-        AND table_name = 'polish_sections'
-      ) as exists
+      SELECT table_name 
+      FROM information_schema.tables 
+      WHERE table_schema = 'public' 
+      AND table_name = 'polish_sections'
     `);
 
-    const finalSessionsExists = (finalCheckSessions as any)[0]?.exists === true;
-    const finalSectionsExists = (finalCheckSections as any)[0]?.exists === true;
+    const finalSessionsExists = (finalCheckSessions as any).length > 0;
+    const finalSectionsExists = (finalCheckSections as any).length > 0;
     
     console.log('Post-migration verification:', { finalSessionsExists, finalSectionsExists });
 
