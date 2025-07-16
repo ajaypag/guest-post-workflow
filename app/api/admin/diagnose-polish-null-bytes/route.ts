@@ -67,7 +67,7 @@ export async function GET(request: NextRequest) {
       return acc;
     }, {});
 
-    // Check for null bytes in polish_metadata
+    // Check for null bytes in polish_metadata - use bytea conversion to avoid UTF8 errors
     const nullByteCheck = await db.execute(sql`
       SELECT 
         id,
@@ -75,8 +75,12 @@ export async function GET(request: NextRequest) {
         version,
         status,
         LENGTH(polish_metadata::text) as metadata_length,
-        POSITION(E'\\x00' IN polish_metadata::text) as null_byte_position,
-        LEFT(polish_metadata::text, 200) as sample_data
+        POSITION('\\x00'::bytea IN CAST(polish_metadata::text AS bytea)) as null_byte_position,
+        CASE 
+          WHEN POSITION('\\x00'::bytea IN CAST(polish_metadata::text AS bytea)) > 0 
+          THEN 'Contains null bytes - cannot display'
+          ELSE LEFT(polish_metadata::text, 200)
+        END as sample_data
       FROM polish_sessions
       WHERE polish_metadata IS NOT NULL
     `);
@@ -96,7 +100,7 @@ export async function GET(request: NextRequest) {
       }
     }
 
-    // Check polish_sections for similar issues
+    // Check polish_sections for similar issues - use bytea conversion to avoid UTF8 errors
     const sectionsCheck = await db.execute(sql`
       SELECT 
         id,
@@ -105,8 +109,8 @@ export async function GET(request: NextRequest) {
         title,
         LENGTH(original_content) as original_length,
         LENGTH(polished_content) as polished_length,
-        POSITION(E'\\x00' IN COALESCE(original_content, '')) as orig_null_pos,
-        POSITION(E'\\x00' IN COALESCE(polished_content, '')) as polish_null_pos
+        POSITION('\\x00'::bytea IN CAST(COALESCE(original_content, '') AS bytea)) as orig_null_pos,
+        POSITION('\\x00'::bytea IN CAST(COALESCE(polished_content, '') AS bytea)) as polish_null_pos
       FROM polish_sections
       WHERE original_content IS NOT NULL OR polished_content IS NOT NULL
     `);
@@ -128,12 +132,20 @@ export async function GET(request: NextRequest) {
       diagnostics.nullByteAnalysis.affectedSessions.length + 
       diagnostics.nullByteAnalysis.affectedSections.length;
 
-    // Check for other problematic control characters
+    // Check for other problematic control characters - safer query
     const controlCharCheck = await db.execute(sql`
       SELECT 
         id,
-        regexp_replace(polish_metadata::text, '[\x00-\x1F]', '<CTRL>', 'g') as cleaned_sample,
-        LENGTH(polish_metadata::text) - LENGTH(regexp_replace(polish_metadata::text, '[\x00-\x1F]', '', 'g')) as control_char_count
+        CASE 
+          WHEN POSITION('\\x00'::bytea IN CAST(polish_metadata::text AS bytea)) > 0
+          THEN 'Contains null bytes - cannot process'
+          ELSE regexp_replace(polish_metadata::text, '[\x01-\x1F]', '<CTRL>', 'g')
+        END as cleaned_sample,
+        CASE
+          WHEN POSITION('\\x00'::bytea IN CAST(polish_metadata::text AS bytea)) > 0
+          THEN -1
+          ELSE LENGTH(polish_metadata::text) - LENGTH(regexp_replace(polish_metadata::text, '[\x01-\x1F]', '', 'g'))
+        END as control_char_count
       FROM polish_sessions
       WHERE polish_metadata IS NOT NULL
       LIMIT 5
@@ -192,30 +204,14 @@ export async function GET(request: NextRequest) {
       }
     }
 
-    // Get sample of problematic data
+    // Get sample of problematic data - skip this since we can't safely read null byte data
     if (diagnostics.nullByteAnalysis.affectedSessions.length > 0) {
-      const sampleSession = await db.execute(sql`
-        SELECT 
-          id,
-          polish_metadata::text as raw_metadata
-        FROM polish_sessions
-        WHERE id = ${diagnostics.nullByteAnalysis.affectedSessions[0].sessionId}
-        LIMIT 1
-      `);
-
-      if (sampleSession.rows.length > 0) {
-        const rawData = sampleSession.rows[0].raw_metadata as string;
-        // Find the specific problematic part
-        const nullByteIndex = rawData.indexOf('\u0000');
-        if (nullByteIndex > -1) {
-          diagnostics.nullByteAnalysis.sampleProblematicData.push({
-            sessionId: sampleSession.rows[0].id as string,
-            contextBefore: rawData.substring(Math.max(0, nullByteIndex - 50), nullByteIndex),
-            contextAfter: rawData.substring(nullByteIndex + 1, Math.min(rawData.length, nullByteIndex + 51)),
-            characterCodes: rawData.substring(nullByteIndex - 10, nullByteIndex + 10).split('').map(c => c.charCodeAt(0))
-          });
-        }
-      }
+      diagnostics.nullByteAnalysis.sampleProblematicData.push({
+        sessionId: diagnostics.nullByteAnalysis.affectedSessions[0].sessionId,
+        contextBefore: 'Cannot safely extract context',
+        contextAfter: 'Data contains null bytes',
+        characterCodes: [0] // Null byte
+      });
     }
 
     // Generate recommendations
@@ -256,30 +252,47 @@ export async function POST(request: NextRequest) {
     const { action } = await request.json();
 
     if (action === 'fix-null-bytes') {
-      // Fix polish_sessions
+      // Fix polish_sessions - use convert_from to handle encoding issues
       const sessionsFix = await db.execute(sql`
         UPDATE polish_sessions
-        SET polish_metadata = jsonb(regexp_replace(polish_metadata::text, E'[\\x00-\\x08\\x0B\\x0C\\x0E-\\x1F]', '', 'g')::json),
+        SET polish_metadata = jsonb(
+              regexp_replace(
+                convert_from(CAST(polish_metadata::text AS bytea), 'UTF8'), 
+                E'[\\x00-\\x08\\x0B\\x0C\\x0E-\\x1F]', 
+                '', 
+                'g'
+              )::json
+            ),
             updated_at = NOW()
-        WHERE POSITION(E'\\x00' IN polish_metadata::text) > 0
+        WHERE POSITION('\\x00'::bytea IN CAST(polish_metadata::text AS bytea)) > 0
         RETURNING id
       `);
 
       // Fix polish_sections original_content
       const sectionsOrigFix = await db.execute(sql`
         UPDATE polish_sections
-        SET original_content = regexp_replace(original_content, E'[\\x00-\\x08\\x0B\\x0C\\x0E-\\x1F]', '', 'g'),
+        SET original_content = regexp_replace(
+              convert_from(CAST(original_content AS bytea), 'UTF8'),
+              E'[\\x00-\\x08\\x0B\\x0C\\x0E-\\x1F]', 
+              '', 
+              'g'
+            ),
             updated_at = NOW()
-        WHERE POSITION(E'\\x00' IN COALESCE(original_content, '')) > 0
+        WHERE POSITION('\\x00'::bytea IN CAST(COALESCE(original_content, '') AS bytea)) > 0
         RETURNING id
       `);
 
       // Fix polish_sections polished_content
       const sectionsPolishFix = await db.execute(sql`
         UPDATE polish_sections
-        SET polished_content = regexp_replace(polished_content, E'[\\x00-\\x08\\x0B\\x0C\\x0E-\\x1F]', '', 'g'),
+        SET polished_content = regexp_replace(
+              convert_from(CAST(polished_content AS bytea), 'UTF8'),
+              E'[\\x00-\\x08\\x0B\\x0C\\x0E-\\x1F]', 
+              '', 
+              'g'
+            ),
             updated_at = NOW()
-        WHERE POSITION(E'\\x00' IN COALESCE(polished_content, '')) > 0
+        WHERE POSITION('\\x00'::bytea IN CAST(COALESCE(polished_content, '') AS bytea)) > 0
         RETURNING id
       `);
 
