@@ -208,6 +208,8 @@ export const formattingQaSessions = pgTable('formatting_qa_sessions', {
   passedChecks: integer('passed_checks').default(0),
   failedChecks: integer('failed_checks').default(0),
   originalArticle: text('original_article'), // Article being checked
+  cleanedArticle: text('cleaned_article'), // AI-cleaned version of the article
+  fixesApplied: jsonb('fixes_applied'), // Track which fixes were applied
   qaMetadata: jsonb('qa_metadata'), // Stores check configuration, context, etc
   errorMessage: text('error_message'),
   startedAt: timestamp('started_at'),

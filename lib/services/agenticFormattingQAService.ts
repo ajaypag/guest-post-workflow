@@ -1,5 +1,5 @@
 import { Agent, tool, Runner } from '@openai/agents';
-import { OpenAIProvider, fileSearchTool } from '@openai/agents-openai';
+import { OpenAIProvider, fileSearchTool, webSearchTool } from '@openai/agents-openai';
 import { z } from 'zod';
 import { db } from '@/lib/db/connection';
 import { 
@@ -151,21 +151,26 @@ export class AgenticFormattingQAService {
       });
 
       // Initial prompt
-      const initialPrompt = `You are performing an automated formatting and quality check on this article:
+      const initialPrompt = `You are performing an automated formatting quality check and cleanup on this article:
 
 ${session.originalArticle}
 
-You need to check the following formatting and quality aspects:
+You need to check and fix the following formatting and quality aspects:
 1. Header hierarchy (H2s and H3s use proper heading styles, not just bold)
 2. Line breaks (exactly one blank line between paragraphs, no orphan breaks)
 3. Section completeness (Intro, body sections, FAQ intro, Conclusion all present)
 4. List consistency (bullets/numbers don't change mid-section)
-5. Bold cleanup (remove random/unnecessary bolding)
+5. Bold cleanup (remove emphasis bolding on keywords/terms, keep only strategic formatting bolding)
 6. FAQ formatting (questions bold sentence-case, answers plain text)
-7. Citation placement (single citation near top, no extras)
+7. Citation placement (single citation near top, use web search for stats/data sources)
 8. UTM cleanup (remove source=chatgpt UTM parameters)
 
-Begin your analysis by systematically checking each aspect. For each check, identify specific issues if any exist, note their locations, and provide fix suggestions.`;
+WORKFLOW:
+1. Use analyze_formatting_check tool for each of the 8 check types
+2. Use web_search tool when you find statistics/data that need citations
+3. After all checks are complete, use generate_cleaned_article tool to create the final cleaned version
+
+Begin your systematic analysis and fixing process now.`;
 
       messages.push({ role: 'user', content: initialPrompt });
 
@@ -249,7 +254,7 @@ Begin your analysis by systematically checking each aspect. For each check, iden
           }
         }
 
-        // Check if conversation should continue based on checks completed
+        // Check if conversation should continue based on checks completed and cleaned article generation
         const currentSession = await db.query.formattingQaSessions.findFirst({
           where: eq(formattingQaSessions.id, sessionId)
         });
@@ -260,17 +265,29 @@ Begin your analysis by systematically checking each aspect. For each check, iden
         });
         
         checkNumber = completedChecksCount.length;
-        conversationActive = checkNumber < checkTypes.length;
+        const checksComplete = checkNumber >= checkTypes.length;
+        const cleanedArticleGenerated = currentSession?.cleanedArticle != null;
+        
+        conversationActive = !checksComplete || !cleanedArticleGenerated;
 
-        // Continue if checks remain
-        if (checkNumber < checkTypes.length && conversationActive) {
-          // Add continuation prompt if needed
-          messages.push({
-            role: 'user',
-            content: 'YOU MUST CONTINUE THE AUTOMATED WORKFLOW. Please proceed with the remaining formatting checks.'
-          });
+        // Continue if checks remain or cleaned article not generated
+        if (conversationActive) {
+          let continuationPrompt = '';
           
-          await new Promise(resolve => setTimeout(resolve, 200));
+          if (!checksComplete) {
+            continuationPrompt = 'YOU MUST CONTINUE THE AUTOMATED WORKFLOW. Please proceed with the remaining formatting checks.';
+          } else if (!cleanedArticleGenerated) {
+            continuationPrompt = 'All formatting checks are complete. Now use the generate_cleaned_article tool to create the final cleaned version of the article with all fixes applied.';
+          }
+          
+          if (continuationPrompt) {
+            messages.push({
+              role: 'user',
+              content: continuationPrompt
+            });
+            
+            await new Promise(resolve => setTimeout(resolve, 200));
+          }
         }
       }
 
@@ -281,6 +298,11 @@ Begin your analysis by systematically checking each aspect. For each check, iden
 
       const passedCount = completedChecks.filter(c => c.status === 'passed').length;
       const failedCount = completedChecks.filter(c => c.status === 'failed').length;
+
+      // Get final session state with cleaned article
+      const finalSession = await db.query.formattingQaSessions.findFirst({
+        where: eq(formattingQaSessions.id, sessionId)
+      });
 
       await db.update(formattingQaSessions)
         .set({ 
@@ -297,7 +319,9 @@ Begin your analysis by systematically checking each aspect. For each check, iden
         totalChecks: checkTypes.length,
         passedChecks: passedCount,
         failedChecks: failedCount,
-        message: `QA checks completed. ${passedCount} passed, ${failedCount} failed.`
+        cleanedArticle: finalSession?.cleanedArticle,
+        fixesApplied: finalSession?.fixesApplied,
+        message: `QA checks completed. ${passedCount} passed, ${failedCount} failed. Cleaned article generated.`
       });
 
     } catch (error) {
@@ -331,7 +355,7 @@ Begin your analysis by systematically checking each aspect. For each check, iden
       conversationActive: true
     };
 
-    // Tool for analyzing formatting checks
+    // Tool for analyzing and fixing formatting checks
     const analyzeFormattingCheckTool = tool({
       name: 'analyze_formatting_check',
       description: 'Analyze a specific formatting or quality aspect of the article',
@@ -411,36 +435,85 @@ Begin your analysis by systematically checking each aspect. For each check, iden
       }
     });
 
+    // Tool for generating cleaned article after all checks are complete
+    const generateCleanedArticleTool = tool({
+      name: 'generate_cleaned_article',
+      description: 'Generate a cleaned version of the article by applying all formatting fixes',
+      parameters: z.object({
+        cleaned_article: z.string().describe('The cleaned article with all formatting issues fixed'),
+        fixes_applied: z.array(z.string()).describe('List of fixes that were applied to the article'),
+        summary: z.string().describe('Brief summary of the cleaning process')
+      }),
+      execute: async (args) => {
+        if (!context.sessionId || !context.workflowId) {
+          throw new Error('Missing session context');
+        }
+
+        try {
+          // Update session with cleaned article and fixes
+          await db.update(formattingQaSessions)
+            .set({
+              cleanedArticle: args.cleaned_article,
+              fixesApplied: args.fixes_applied,
+              updatedAt: new Date()
+            })
+            .where(eq(formattingQaSessions.id, context.sessionId));
+
+          // Send SSE update with cleaned article
+          sseUpdate(context.sessionId, {
+            type: 'cleaned_article_generated',
+            cleanedArticle: args.cleaned_article,
+            fixesApplied: args.fixes_applied,
+            summary: args.summary
+          });
+
+          console.log(`Generated cleaned article for session ${context.sessionId}`);
+          return `Cleaned article generated successfully. Applied ${args.fixes_applied.length} fixes: ${args.fixes_applied.join(', ')}`;
+
+        } catch (error) {
+          console.error('Error generating cleaned article:', error);
+          throw error;
+        }
+      }
+    });
+
+    // Web search tool for citation placement
+    const webSearch = webSearchTool();
+
     // Create the agent
     const agent = new Agent({
       name: 'FormattingQASpecialist',
       model: 'o3-2025-04-16',
-      instructions: `You are an expert formatting and quality assurance specialist for guest post articles. Your job is to systematically check articles against specific formatting standards and quality requirements.
+      instructions: `You are an expert formatting and quality assurance specialist for guest post articles. Your job is to systematically check articles against specific formatting standards, fix issues, and generate a cleaned version.
 
 CORE RESPONSIBILITY:
-Perform thorough, automated formatting and quality checks on articles, identifying specific issues and their locations.
+1. Perform thorough formatting and quality checks on articles
+2. Fix all identified issues in the article
+3. Generate a cleaned version of the article with all fixes applied
 
-FORMATTING STANDARDS TO CHECK:
+FORMATTING STANDARDS TO CHECK AND FIX:
 1. Header Hierarchy: H2s and H3s must use proper heading styles (not just bold text)
 2. Line Breaks: Exactly one blank line between paragraphs, no orphan line breaks
 3. Section Completeness: Must have Intro, body sections, FAQ intro, and Conclusion
 4. List Consistency: Bullet/number styles must not change within sections
-5. Bold Cleanup: Remove unnecessary or random bolding (keep only purposeful bold)
+5. Bold Cleanup: Remove unnecessary or random bolding - ONLY keep strategic formatting bolding, NOT emphasis bolding for keywords/terms
 6. FAQ Formatting: Questions in bold sentence-case, answers in plain text
-7. Citation Placement: Single citation near the top (intro or first section), remove extras
+7. Citation Placement: Single citation near the top (intro or first section), use web search to find sources for stats/data
 8. UTM Cleanup: Remove any "source=chatgpt" UTM parameters from URLs
 
-THIS IS AN AUTOMATED WORKFLOW - continue checking all aspects without asking for permission.
+CRITICAL CONSTRAINTS:
+- DO NOT rewrite or simplify text - preserve all original content and meaning
+- ONLY fix formatting issues, not content or style
+- For bold cleanup: Remove emphasis bolding on keywords/terms, keep only strategic formatting bolding
+- For citations: Use web search to find sources for statistics/data mentioned in intro
 
-For each check:
-- Analyze the entire article for that specific aspect
-- Identify ALL instances of issues (be thorough)
-- Note specific locations (section names, paragraph numbers, or quote snippets)
-- Provide confidence score (1-10) in your analysis
-- Suggest specific fixes for any issues found
+WORKFLOW:
+1. Use analyze_formatting_check tool for each of the 8 check types
+2. Use web_search tool when you need to find sources for statistics or data
+3. After all checks are complete, use generate_cleaned_article tool to create the final cleaned version
 
-Be precise about locations - use section headings, paragraph numbers, or quote the specific text where issues occur.`,
-      tools: [analyzeFormattingCheckTool]
+THIS IS AN AUTOMATED WORKFLOW - continue until all checks are complete and cleaned article is generated.`,
+      tools: [analyzeFormattingCheckTool, generateCleanedArticleTool, webSearch]
     });
 
     return agent;

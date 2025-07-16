@@ -506,7 +506,30 @@ const runner = new Runner({
 
 **🚨 CRITICAL ISSUE**: When implementing agentic features, vague database errors waste 4-6 hours of back-and-forth debugging. This protocol prevents that.
 
-### MANDATORY STEPS: Create These 4 Diagnostic Tools BEFORE Building Any Agentic Feature
+### 🚨 CRITICAL: WHEN TO USE THIS DIAGNOSTIC PROTOCOL
+
+**USE DIAGNOSTICS FOR:**
+- ✅ **Debugging implementation issues** after building agentic features
+- ✅ **Verifying database integration** when errors occur
+- ✅ **Troubleshooting vague database errors** in any agentic feature
+- ✅ **Ensuring correct implementation** after development is complete
+
+**PROPER WORKFLOW:**
+```
+1. Build the agentic feature implementation
+2. Test the implementation
+3. IF errors occur → USE DIAGNOSTICS to identify root cause
+4. Fix issues based on diagnostic results
+5. Deploy working implementation
+```
+
+**WHY THIS APPROACH:**
+- Diagnostics are **debugging tools**, not planning tools
+- You need a working implementation first to diagnose issues
+- Build first, then troubleshoot with diagnostics if needed
+- Diagnostics help fix problems, not prevent them upfront
+
+### DIAGNOSTIC TOOLS: Create These When Debugging Agentic Features
 
 #### 1. Comprehensive Database Diagnostics (`/admin/diagnostics`)
 **Purpose**: Understand the ACTUAL database structure vs. what the code expects

@@ -22,6 +22,8 @@ export async function POST() {
           "passed_checks" integer DEFAULT 0,
           "failed_checks" integer DEFAULT 0,
           "original_article" text,
+          "cleaned_article" text,
+          "fixes_applied" jsonb,
           "qa_metadata" jsonb,
           "error_message" text,
           "started_at" timestamp,

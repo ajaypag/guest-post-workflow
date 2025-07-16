@@ -25,6 +25,8 @@ export function AgenticFormattingChecker({ workflowId, onComplete }: AgenticForm
   const [currentMessage, setCurrentMessage] = useState<string>('');
   const [overallStats, setOverallStats] = useState({ total: 0, passed: 0, failed: 0 });
   const [error, setError] = useState<string | null>(null);
+  const [cleanedArticle, setCleanedArticle] = useState<string | null>(null);
+  const [fixesApplied, setFixesApplied] = useState<string[]>([]);
   const eventSourceRef = useRef<EventSource | null>(null);
   const [copySuccess, setCopySuccess] = useState<Record<string, boolean>>({});
 
@@ -119,6 +121,12 @@ export function AgenticFormattingChecker({ workflowId, onComplete }: AgenticForm
         }));
         break;
 
+      case 'cleaned_article_generated':
+        setCleanedArticle(data.cleanedArticle);
+        setFixesApplied(data.fixesApplied || []);
+        setCurrentMessage('Cleaned article generated successfully!');
+        break;
+
       case 'completed':
         setStatus('completed');
         setIsRunning(false);
@@ -128,6 +136,14 @@ export function AgenticFormattingChecker({ workflowId, onComplete }: AgenticForm
           failed: data.failedChecks
         });
         setCurrentMessage(data.message);
+        
+        // Set cleaned article if provided
+        if (data.cleanedArticle) {
+          setCleanedArticle(data.cleanedArticle);
+        }
+        if (data.fixesApplied) {
+          setFixesApplied(data.fixesApplied);
+        }
         
         // Fetch full results
         if (sessionId) {
@@ -354,14 +370,73 @@ export function AgenticFormattingChecker({ workflowId, onComplete }: AgenticForm
               <>
                 <AlertTriangle className="w-8 h-8 text-yellow-600" />
                 <div>
-                  <h3 className="text-lg font-semibold text-yellow-800">Review Required</h3>
+                  <h3 className="text-lg font-semibold text-yellow-800">Issues Fixed</h3>
                   <p className="text-sm text-yellow-700">
-                    {overallStats.failed} issue{overallStats.failed !== 1 ? 's' : ''} found. 
-                    Please review the suggestions above.
+                    {overallStats.failed} issue{overallStats.failed !== 1 ? 's' : ''} found and fixed. 
+                    Cleaned article generated below.
                   </p>
                 </div>
               </>
             )}
+          </div>
+        </div>
+      )}
+
+      {/* Cleaned Article Output */}
+      {cleanedArticle && (
+        <div className="bg-white rounded-lg border border-gray-200 p-6">
+          <div className="flex items-center justify-between mb-4">
+            <div className="flex items-center space-x-3">
+              <FileText className="w-6 h-6 text-blue-600" />
+              <div>
+                <h3 className="text-lg font-semibold text-gray-900">Cleaned Article</h3>
+                <p className="text-sm text-gray-600">
+                  AI-fixed version with all formatting issues resolved
+                </p>
+              </div>
+            </div>
+            <button
+              onClick={() => copyToClipboard(cleanedArticle, 'cleaned_article')}
+              className="flex items-center px-3 py-2 text-sm bg-blue-600 text-white rounded-md hover:bg-blue-700"
+            >
+              {copySuccess.cleaned_article ? (
+                <>
+                  <CheckCircle className="w-4 h-4 mr-2" />
+                  Copied!
+                </>
+              ) : (
+                <>
+                  <Copy className="w-4 h-4 mr-2" />
+                  Copy Article
+                </>
+              )}
+            </button>
+          </div>
+
+          {/* Fixes Applied */}
+          {fixesApplied.length > 0 && (
+            <div className="mb-4">
+              <h4 className="text-sm font-medium text-gray-700 mb-2">Fixes Applied:</h4>
+              <div className="flex flex-wrap gap-2">
+                {fixesApplied.map((fix, index) => (
+                  <span
+                    key={index}
+                    className="px-2 py-1 bg-blue-100 text-blue-800 text-xs rounded-full"
+                  >
+                    {fix}
+                  </span>
+                ))}
+              </div>
+            </div>
+          )}
+
+          {/* Article Preview */}
+          <div className="border border-gray-200 rounded-lg p-4 max-h-96 overflow-y-auto">
+            <div className="prose prose-sm max-w-none">
+              <div className="whitespace-pre-wrap text-gray-700 leading-relaxed">
+                {cleanedArticle}
+              </div>
+            </div>
           </div>
         </div>
       )}
