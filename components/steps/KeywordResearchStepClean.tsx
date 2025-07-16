@@ -753,6 +753,83 @@ export const KeywordResearchStepClean = ({ step, workflow, onChange }: KeywordRe
                 </div>
               )}
 
+              {/* Add Selected URLs Button - Always visible when pages are selected */}
+              {selectedTargetPages.length > 0 && (
+                <div className={`p-3 rounded-lg transition-all ${
+                  showGroupedView 
+                    ? 'bg-gradient-to-r from-purple-500 to-purple-600 shadow-lg animate-pulse' 
+                    : 'bg-purple-50 border border-purple-200'
+                }`}>
+                  <div className="flex items-center justify-between">
+                    <div>
+                      <p className={`text-sm font-medium ${
+                        showGroupedView ? 'text-white' : 'text-purple-900'
+                      }`}>
+                        {selectedTargetPages.length} page{selectedTargetPages.length !== 1 ? 's' : ''} selected
+                      </p>
+                      <p className={`text-xs ${
+                        showGroupedView ? 'text-purple-100' : 'text-purple-700'
+                      }`}>
+                        {showGroupedView ? 'Click to add all selected pages to your workflow' : 'Will add keywords and descriptions to your workflow'}
+                      </p>
+                    </div>
+                    <button
+                      onClick={() => {
+                        // Get data from selected pages (from all pages, not just filtered)
+                        const selectedPages = allActiveTargetPages.filter((page: any) => 
+                          selectedTargetPages.includes(page.id)
+                        );
+                        
+                        // Collect keywords from pages that have them
+                        const existingKeywords = keywords ? keywords.split(',').map((k: string) => k.trim()).filter((k: string) => k) : [];
+                        const newKeywords: string[] = [];
+                        
+                        selectedPages.forEach((page: any) => {
+                          if (page.keywords && page.keywords.trim() !== '') {
+                            const pageKeywords = page.keywords.split(',').map((k: string) => k.trim()).filter((k: string) => k);
+                            newKeywords.push(...pageKeywords);
+                          }
+                        });
+                        
+                        // Deduplicate keywords (case-insensitive)
+                        const allKeywords = [...existingKeywords, ...newKeywords];
+                        const uniqueKeywords = allKeywords.filter((keyword, index) => {
+                          const lowerKeyword = keyword.toLowerCase();
+                          return allKeywords.findIndex((k: string) => k.toLowerCase() === lowerKeyword) === index;
+                        });
+
+                        // Collect URLs and descriptions
+                        const pagesWithDescriptions = selectedPages.filter((page: any) => 
+                          page.description && page.description.trim() !== ''
+                        );
+                        const urls = pagesWithDescriptions.map((page: any) => page.url).join('\n');
+                        const descriptions = pagesWithDescriptions.map((page: any) => 
+                          `${page.url}\n${page.description}`
+                        ).join('\n\n');
+                        
+                        // Update both keywords and descriptions
+                        const updateData: any = {};
+                        if (uniqueKeywords.length > 0) {
+                          updateData.keywords = uniqueKeywords.join(', ');
+                        }
+                        if (urls) {
+                          updateData.clientUrls = urls;
+                          updateData.urlSummaries = descriptions;
+                        }
+                        
+                        onChange(updateData);
+                        
+                        // Clear selection
+                        setSelectedTargetPages([]);
+                      }}
+                      className="px-4 py-2 text-sm font-medium rounded-md bg-purple-600 text-white hover:bg-purple-700 transition-colors"
+                    >
+                      Add Selected URLs to Workflow
+                    </button>
+                  </div>
+                </div>
+              )}
+
               {/* Client Target URLs - Regular List View */}
               {!showGroupedView && activeTargetPages.length > 0 && (
                 <div className="bg-purple-50 border border-purple-200 rounded-lg p-4">
@@ -980,83 +1057,6 @@ export const KeywordResearchStepClean = ({ step, workflow, onChange }: KeywordRe
                     </div>
                   )}
 
-                  {/* Add Selected URLs Button - More prominent when grouped view is active */}
-                  {selectedTargetPages.length > 0 && (
-                    <div className={`mt-4 p-3 rounded-lg transition-all ${
-                      showGroupedView 
-                        ? 'bg-gradient-to-r from-purple-500 to-purple-600 shadow-lg animate-pulse' 
-                        : 'bg-purple-50 border border-purple-200'
-                    }`}>
-                      <div className="flex items-center justify-between">
-                        <div>
-                          <p className={`text-sm font-medium ${
-                            showGroupedView ? 'text-white' : 'text-purple-900'
-                          }`}>
-                            {selectedTargetPages.length} page{selectedTargetPages.length !== 1 ? 's' : ''} selected
-                          </p>
-                          <p className={`text-xs ${
-                            showGroupedView ? 'text-purple-100' : 'text-purple-700'
-                          }`}>
-                            {showGroupedView ? 'Click to add all selected pages to your workflow' : 'Will add keywords and descriptions to your workflow'}
-                          </p>
-                        </div>
-                        <button
-                          onClick={() => {
-                            // Get data from selected pages (from all pages, not just filtered)
-                            const selectedPages = allActiveTargetPages.filter((page: any) => 
-                              selectedTargetPages.includes(page.id)
-                            );
-                            
-                            // Collect keywords from pages that have them
-                            const existingKeywords = keywords ? keywords.split(',').map((k: string) => k.trim()).filter((k: string) => k) : [];
-                            const newKeywords: string[] = [];
-                            
-                            selectedPages.forEach((page: any) => {
-                              if (page.keywords && page.keywords.trim() !== '') {
-                                const pageKeywords = page.keywords.split(',').map((k: string) => k.trim()).filter((k: string) => k);
-                                newKeywords.push(...pageKeywords);
-                              }
-                            });
-                            
-                            // Deduplicate keywords (case-insensitive)
-                            const allKeywords = [...existingKeywords, ...newKeywords];
-                            const uniqueKeywords = allKeywords.filter((keyword, index) => {
-                              const lowerKeyword = keyword.toLowerCase();
-                              return allKeywords.findIndex((k: string) => k.toLowerCase() === lowerKeyword) === index;
-                            });
-
-                            // Collect URLs and descriptions
-                            const pagesWithDescriptions = selectedPages.filter((page: any) => 
-                              page.description && page.description.trim() !== ''
-                            );
-                            const urls = pagesWithDescriptions.map((page: any) => page.url).join('\n');
-                            const descriptions = pagesWithDescriptions.map((page: any) => 
-                              `${page.url}\n${page.description}`
-                            ).join('\n\n');
-                            
-                            // Update both keywords and descriptions
-                            const updateData: any = {};
-                            if (uniqueKeywords.length > 0) {
-                              updateData.keywords = uniqueKeywords.join(', ');
-                            }
-                            if (urls) {
-                              updateData.clientUrls = urls;
-                              updateData.urlSummaries = descriptions;
-                            }
-                            
-                            onChange(updateData);
-                            
-                            // Clear selection
-                            setSelectedTargetPages([]);
-                          }}
-                          className="px-4 py-2 text-sm font-medium rounded-md bg-purple-600 text-white hover:bg-purple-700 transition-colors"
-                        >
-                          Add Selected URLs to Workflow
-                        </button>
-                      </div>
-                    </div>
-                  )}
-                  
                   {!showAllTargetUrls && activeTargetPages.length > 5 && (
                     <p className="text-xs text-purple-600 mt-2 text-center">
                       ...and {activeTargetPages.length - 5} more URLs
