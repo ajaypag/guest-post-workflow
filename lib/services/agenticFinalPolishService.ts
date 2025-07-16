@@ -115,7 +115,7 @@ export class AgenticFinalPolishService {
       polishSSEPush(sessionId, { type: 'status', status: 'polishing', message: 'Starting final polish...' });
 
       // Create initial prompt for article parsing and first section polish
-      const initialPrompt = `I'm providing you with an SEO-optimized article that needs final polish. Your job is to gauge how well it follows the guides, give it strengths and weaknesses, and update each section with improvements.
+      const initialPrompt = `I'm providing you with an SEO-optimized article that needs final polish. Your job is to gauge how well it follows the guides, give it strengths and weaknesses, and update each section with improvements. Acceptable changes: tighten phrasing, fix passive voice, clarify facts, strengthen internal anchors. Do not inject new ideas or restructure.
 
 ARTICLE TO POLISH:
 ${session.originalArticle}
@@ -124,18 +124,17 @@ RESEARCH CONTEXT:
 ${session.researchContext || 'No additional research context provided'}
 
 FINAL POLISH INSTRUCTIONS:
-You have access to a file search tool containing brand guidelines and writing style guides. Use this knowledge base to understand both brand engagement requirements and semantic directness principles.
+You have access to a file search tool containing brand guideline semantic seo guide, writing style guides and words not to use. Use this knowledge base to understand both the approach we take to writing and seo directness principles.
 
 YOUR CORE CHALLENGE:
-Often times, the brand guide and semantic principals might conflict - where the semantic guide wants you to be very to the point and the brand guide wants you to keep the reader engaged - it's your job to thread that needle effectively.
+Often times, the brand guide and semantic principals might conflict - where the semantic guide wants you to be very to the point and the brand guide wants you to keep the reader engaged - it's your job to thread that needle effectively. Often times, the first sentence in a section or paragraph should need the semantic goals whereas subsequent sentences or paragraphs should have some more brand guide type elements to keep the article feeling engaging.
 
 POLISH REQUIREMENTS:
-- Gauge how well each section follows the guides (both brand and semantic)
-- Give it strengths and weaknesses analysis
-- Update the section with some improvements that thread the needle between brand engagement and semantic directness
-- When conflicts arise between brand guide (reader engagement) and semantic guide (being to the point), resolve them effectively
-- Score each section on engagement (1-10) and clarity (1-10)
-- Track your polish approach to ensure variety across sections
+- Ensure adherence to both the brand voice and semantic SEO guidelines
+- Improve phrasing: tighten language, eliminate passive voice, clarify factual statements, and strengthen internal anchor links. Do not inject new ideas or restructure the article
+- Typically, the first sentence in a section or paragraph should focus on semantic goals, while subsequent sentences can lean more into brand voice for engagement. This is a guideline—not a hard rule. Use your judgment to decide when it applies
+- Use a different polish approach from previous sections to maintain variety
+- Score and report improvements in engagement and clarity
 
 PARSING INSTRUCTIONS:
 When you parse the article, break it into manageable polish chunks. If a section is very long or contains multiple distinct topics/subsections, break it down:
@@ -145,11 +144,11 @@ When you parse the article, break it into manageable polish chunks. If a section
 - Maintain logical content groupings and hierarchical structure
 
 REQUIRED ACTIONS:
-1. FIRST: Use file search to review brand guidelines, semantic seo, writing style and words to not use from the knowledge base
+1. FIRST: Use file search to review brand guidelines, semantic seo guide, writing style and do not use words list from the vector knowledge base
 2. THEN: Parse the article into manageable polish chunks using the parse_polish_article function
 3. FINALLY: Begin polishing the first section with the polish_section function
 
-Start by searching the knowledge base for brand guidelines and writing style guides.`;
+Start by searching the knowledge base for brand guide, semantic seo, writing style and words not to use guides.`;
 
       // Create tools for the polish process
       const parsePolishTool = tool({
