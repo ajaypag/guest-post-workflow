@@ -9,7 +9,8 @@ import { clientStorage, sessionStorage } from '@/lib/userStorage';
 import { Client, TargetPage } from '@/types/user';
 import { 
   ArrowLeft, Plus, Trash2, CheckCircle, XCircle, Clock, 
-  Edit, Globe, ExternalLink, Check, Settings 
+  Edit, Globe, ExternalLink, Check, Settings, ChevronDown, ChevronUp,
+  FileText, Target, AlertCircle
 } from 'lucide-react';
 import { KeywordPreferencesSelector } from '@/components/ui/KeywordPreferencesSelector';
 import { getClientKeywordPreferences, setClientKeywordPreferences, KeywordPreferences } from '@/types/keywordPreferences';
@@ -17,6 +18,7 @@ import { KeywordGenerationButton } from '@/components/ui/KeywordGenerationButton
 import { KeywordDisplay } from '@/components/ui/KeywordDisplay';
 import { DescriptionGenerationButton } from '@/components/ui/DescriptionGenerationButton';
 import { DescriptionDisplay } from '@/components/ui/DescriptionDisplay';
+import { parseUrlsFromText, matchUrlsToPages, getMatchingStats, UrlMatchResult } from '@/lib/utils/urlMatcher';
 
 export default function ClientDetailPage() {
   const params = useParams();
@@ -33,6 +35,13 @@ export default function ClientDetailPage() {
   const [showKeywordPrompt, setShowKeywordPrompt] = useState(false);
   const [newlyAddedPages, setNewlyAddedPages] = useState<any[]>([]);
   const [bulkKeywordProgress, setBulkKeywordProgress] = useState({ current: 0, total: 0 });
+  
+  // Bulk URL Update states
+  const [showBulkUrlUpdate, setShowBulkUrlUpdate] = useState(false);
+  const [bulkUrlText, setBulkUrlText] = useState('');
+  const [bulkUrlStatus, setBulkUrlStatus] = useState<'active' | 'inactive' | 'completed'>('inactive');
+  const [urlMatchResults, setUrlMatchResults] = useState<UrlMatchResult[]>([]);
+  const [isBulkUrlProcessing, setIsBulkUrlProcessing] = useState(false);
 
   useEffect(() => {
     loadClient();
@@ -470,6 +479,65 @@ export default function ClientDetailPage() {
     completed: pages.filter((p: any) => p.status === 'completed').length,
   };
 
+  // Bulk URL Update Functions
+  const handleBulkUrlTextChange = (text: string) => {
+    setBulkUrlText(text);
+    
+    if (text.trim()) {
+      const inputUrls = parseUrlsFromText(text);
+      const targetPages = (client as any)?.targetPages || [];
+      const results = matchUrlsToPages(inputUrls, targetPages);
+      setUrlMatchResults(results);
+    } else {
+      setUrlMatchResults([]);
+    }
+  };
+
+  const applyBulkUrlStatusUpdate = async () => {
+    if (!client || urlMatchResults.length === 0) return;
+
+    const matchedPageIds = urlMatchResults
+      .filter(result => result.matchedPageId)
+      .map(result => result.matchedPageId!);
+
+    if (matchedPageIds.length === 0) {
+      alert('No matching pages found to update.');
+      return;
+    }
+
+    const confirmMessage = `Update ${matchedPageIds.length} pages to "${bulkUrlStatus}" status?`;
+    if (!confirm(confirmMessage)) return;
+
+    setIsBulkUrlProcessing(true);
+
+    try {
+      const response = await fetch(`/api/clients/${client.id}/target-pages`, {
+        method: 'PUT',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          pageIds: matchedPageIds,
+          status: bulkUrlStatus
+        })
+      });
+
+      if (response.ok) {
+        await loadClient();
+        setSelectedPages([]);
+        setUrlMatchResults([]);
+        setBulkUrlText('');
+        setShowBulkUrlUpdate(false);
+        alert(`✅ Successfully updated ${matchedPageIds.length} pages to "${bulkUrlStatus}" status!`);
+      } else {
+        alert('Failed to update page statuses. Please try again.');
+      }
+    } catch (error) {
+      console.error('Error updating page statuses:', error);
+      alert('Error updating page statuses. Please try again.');
+    } finally {
+      setIsBulkUrlProcessing(false);
+    }
+  };
+
   return (
     <AuthWrapper>
       <div className="min-h-screen bg-gray-50">
@@ -848,6 +916,152 @@ export default function ClientDetailPage() {
                 </div>
               )}
             </div>
+
+            {/* Advanced Bulk Operations Section */}
+            <div className="mt-8 border-t border-gray-200 pt-6">
+              <div className="bg-gray-50 border border-gray-200 rounded-lg">
+                <button
+                  onClick={() => setShowBulkUrlUpdate(!showBulkUrlUpdate)}
+                  className="w-full px-4 py-3 text-left flex items-center justify-between hover:bg-gray-100 transition-colors"
+                >
+                  <div className="flex items-center space-x-2">
+                    <Target className="w-5 h-5 text-gray-600" />
+                    <span className="font-medium text-gray-900">Advanced: Bulk URL Status Update</span>
+                    <span className="text-xs text-gray-500 bg-gray-200 px-2 py-1 rounded">Rarely Used</span>
+                  </div>
+                  {showBulkUrlUpdate ? (
+                    <ChevronUp className="w-5 h-5 text-gray-600" />
+                  ) : (
+                    <ChevronDown className="w-5 h-5 text-gray-600" />
+                  )}
+                </button>
+
+                {showBulkUrlUpdate && (
+                  <div className="border-t border-gray-200 p-4 space-y-4">
+                    <div className="bg-blue-50 border border-blue-200 rounded-lg p-3">
+                      <div className="flex items-start space-x-2">
+                        <AlertCircle className="w-4 h-4 text-blue-600 mt-0.5 flex-shrink-0" />
+                        <div className="text-xs text-blue-700">
+                          <p className="font-medium mb-1">How this works:</p>
+                          <p>1. Paste a list of URLs (one per line) in the textarea below</p>
+                          <p>2. Select the target status you want to apply</p>
+                          <p>3. Preview which pages will be updated</p>
+                          <p>4. Apply the changes to all matched pages at once</p>
+                        </div>
+                      </div>
+                    </div>
+
+                    <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+                      {/* Input Section */}
+                      <div className="space-y-4">
+                        <div>
+                          <label className="block text-sm font-medium text-gray-700 mb-2">
+                            Paste URLs to Update
+                          </label>
+                          <textarea
+                            value={bulkUrlText}
+                            onChange={(e) => handleBulkUrlTextChange(e.target.value)}
+                            placeholder="https://example.com/page1&#10;https://example.com/page2&#10;https://example.com/page3&#10;&#10;# Comments starting with # are ignored"
+                            className="w-full h-32 px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 font-mono text-sm"
+                          />
+                          <p className="text-xs text-gray-500 mt-1">
+                            {bulkUrlText ? `${parseUrlsFromText(bulkUrlText).length} URLs detected` : 'One URL per line'}
+                          </p>
+                        </div>
+
+                        <div>
+                          <label className="block text-sm font-medium text-gray-700 mb-2">
+                            Target Status
+                          </label>
+                          <select
+                            value={bulkUrlStatus}
+                            onChange={(e) => setBulkUrlStatus(e.target.value as 'active' | 'inactive' | 'completed')}
+                            className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
+                          >
+                            <option value="inactive">Inactive</option>
+                            <option value="active">Active</option>
+                            <option value="completed">Completed</option>
+                          </select>
+                        </div>
+                      </div>
+
+                      {/* Preview Section */}
+                      <div>
+                        <label className="block text-sm font-medium text-gray-700 mb-2">
+                          Preview & Results
+                        </label>
+                        <div className="border border-gray-300 rounded-lg h-64 overflow-y-auto bg-white">
+                          {urlMatchResults.length > 0 ? (
+                            <div className="p-3 space-y-2">
+                              {/* Statistics */}
+                              <div className="bg-gray-50 rounded p-2 text-xs">
+                                {(() => {
+                                  const stats = getMatchingStats(urlMatchResults);
+                                  return (
+                                    <div className="grid grid-cols-2 gap-2">
+                                      <div>Total: {stats.total}</div>
+                                      <div className="text-green-600">Matched: {stats.matched}</div>
+                                      <div className="text-red-600">Not Found: {stats.notFound}</div>
+                                      <div className="text-blue-600">Will Update: {stats.matched}</div>
+                                    </div>
+                                  );
+                                })()}
+                              </div>
+
+                              {/* Results List */}
+                              {urlMatchResults.map((result, index) => (
+                                <div key={index} className={`text-xs p-2 rounded border-l-4 ${
+                                  result.matchedPageId 
+                                    ? 'border-green-400 bg-green-50' 
+                                    : 'border-red-400 bg-red-50'
+                                }`}>
+                                  <div className="font-mono text-gray-600 truncate">
+                                    {result.inputUrl}
+                                  </div>
+                                  {result.matchedPageId ? (
+                                    <div className="text-green-700 mt-1">
+                                      ✓ Matched: {result.matchedPageUrl}
+                                      {result.status === 'normalized' && (
+                                        <span className="text-blue-600 ml-1">(normalized)</span>
+                                      )}
+                                    </div>
+                                  ) : (
+                                    <div className="text-red-700 mt-1">✗ No match found</div>
+                                  )}
+                                </div>
+                              ))}
+                            </div>
+                          ) : (
+                            <div className="h-full flex items-center justify-center text-gray-500 text-sm">
+                              {bulkUrlText ? 'Processing URLs...' : 'Enter URLs above to see preview'}
+                            </div>
+                          )}
+                        </div>
+
+                        {/* Action Button */}
+                        {urlMatchResults.length > 0 && (
+                          <button
+                            onClick={applyBulkUrlStatusUpdate}
+                            disabled={isBulkUrlProcessing || urlMatchResults.filter(r => r.matchedPageId).length === 0}
+                            className="mt-3 w-full px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
+                          >
+                            {isBulkUrlProcessing ? (
+                              <span className="flex items-center justify-center space-x-2">
+                                <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-white"></div>
+                                <span>Updating...</span>
+                              </span>
+                            ) : (
+                              `Update ${urlMatchResults.filter(r => r.matchedPageId).length} Pages to ${bulkUrlStatus.charAt(0).toUpperCase() + bulkUrlStatus.slice(1)}`
+                            )}
+                          </button>
+                        )}
+                      </div>
+                    </div>
+                  </div>
+                )}
+              </div>
+            </div>
+
           </div>
         </div>
       </div>
