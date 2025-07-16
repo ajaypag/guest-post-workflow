@@ -50,6 +50,7 @@ function polishSSEPush(sessionId: string, payload: any) {
     stream.write(`data: ${JSON.stringify(payload)}\n\n`);
   } catch (error) {
     console.error('Polish SSE push failed:', error);
+    activePolishStreams.delete(sessionId);
   }
 }
 
@@ -64,14 +65,16 @@ export class AgenticFinalPolishService {
 
   async startPolishSession(workflowId: string, originalArticle: string, researchContext?: string): Promise<string> {
     try {
-      // Get next version number for this workflow
-      const existingSessions = await db.select()
-        .from(polishSessions)
-        .where(eq(polishSessions.workflowId, workflowId))
-        .orderBy(sql`${polishSessions.version} DESC`)
-        .limit(1);
-
-      const nextVersion = existingSessions.length > 0 ? existingSessions[0].version + 1 : 1;
+      // Get the next version number for this workflow's polish sessions
+      const maxVersionResult = await db.select({
+        maxVersion: sql<number>`COALESCE(MAX(${polishSessions.version}), 0)`.as('maxVersion')
+      })
+      .from(polishSessions)
+      .where(eq(polishSessions.workflowId, workflowId));
+      
+      const nextVersion = (maxVersionResult[0]?.maxVersion || 0) + 1;
+      
+      console.log(`Starting polish session v${nextVersion} for workflow ${workflowId}`);
 
       // Create polish session record
       const sessionId = uuidv4();
@@ -379,24 +382,31 @@ THIS IS AN AUTOMATED WORKFLOW - continue until completion without asking for per
         tracingDisabled: true
       });
 
+      // Maintain conversation history
       const messages: any[] = [
         { role: 'user', content: initialPrompt }
       ];
-
-      const result = await runner.run(agent, messages, {
-        stream: true,
-        maxTurns: 50  // Override default 10-turn limit for polish workflow
-      });
+      
       let conversationActive = true;
-
-      // Process agent responses and tool calls
-      for await (const event of result.toStream()) {
-        // Stream text deltas for UI
-        if (event.type === 'raw_model_stream_event') {
-          if (event.data.type === 'output_text_delta' && event.data.delta) {
-            polishSSEPush(sessionId, { type: 'text', content: event.data.delta });
+      let sectionCount = 0;
+      
+      while (conversationActive) {
+        console.log(`Starting polish turn ${messages.length} with ${sectionCount} sections polished`);
+        
+        // Run the agent with full message history
+        const result = await runner.run(agent, messages, {
+          stream: true,
+          maxTurns: 50  // Override default 10-turn limit for polish workflow
+        });
+        
+        // Process the streaming result
+        for await (const event of result.toStream()) {
+          // Stream text deltas for UI
+          if (event.type === 'raw_model_stream_event') {
+            if (event.data.type === 'output_text_delta' && event.data.delta) {
+              polishSSEPush(sessionId, { type: 'text', content: event.data.delta });
+            }
           }
-        }
         
         if (event.type === 'run_item_stream_event') {
           // Handle tool calls
@@ -404,64 +414,89 @@ THIS IS AN AUTOMATED WORKFLOW - continue until completion without asking for per
             const toolCall = event.item as any;
             console.log('Polish tool called:', toolCall.name, toolCall.id);
             
+            // Special logging for file search usage
+            if (toolCall.name === 'file_search') {
+              console.log('🔍 BRAND GUIDELINE FILE SEARCH:', JSON.stringify(toolCall.args, null, 2));
+              polishSSEPush(sessionId, { type: 'tool_call', name: 'file_search', query: toolCall.args?.query });
+            }
+            
+            // Construct assistant message with tool call
             messages.push({
               role: 'assistant',
+              content: null,
               tool_calls: [{
                 id: toolCall.id,
                 type: 'function',
                 function: {
                   name: toolCall.name,
-                  arguments: JSON.stringify(toolCall.input)
+                  arguments: toolCall.args ? JSON.stringify(toolCall.args) : '{}'
                 }
               }]
             });
+            
+            polishSSEPush(sessionId, { type: 'tool_call', name: toolCall.name });
+            
+            // Track completion
+            if (toolCall.name === 'polish_section' && toolCall.args.is_last === true) {
+              conversationActive = false;
+              console.log('Polish completed - is_last was true');
+            }
+            
+            if (toolCall.name === 'polish_section') {
+              sectionCount++;
+            }
           }
 
+          // Handle tool outputs
           if (event.name === 'tool_output') {
             const toolOutput = event.item as any;
-            console.log('Polish tool output:', toolOutput.toolName, toolOutput.output?.substring(0, 100));
+            console.log('Polish tool output received:', toolOutput.output);
             
             messages.push({
               role: 'tool',
-              content: toolOutput.output,
-              tool_call_id: toolOutput.toolCallId
+              content: JSON.stringify({ output: toolOutput.output }),
+              tool_call_id: toolOutput.tool_call_id
             });
-
-            // Continue the conversation if we're still processing
-            if (conversationActive) {
-              messages.push({
-                role: 'user',
-                content: 'YOU MUST CONTINUE THE AUTOMATED WORKFLOW. Continue with the next section polish or complete the process.'
-              });
-            }
+            
+            polishSSEPush(sessionId, { type: 'tool_output', content: toolOutput.output });
           }
 
+          // Handle complete assistant messages
           if (event.name === 'message_output_created') {
-            // Handle regular assistant messages
-            const message = event.item as any;
-            if (message.content) {
+            const messageItem = event.item as any;
+            
+            if (!messageItem.tool_calls?.length) {
               messages.push({
-                role: 'assistant', 
-                content: message.content
+                role: 'assistant',
+                content: messageItem.content
               });
+              polishSSEPush(sessionId, { type: 'assistant', content: messageItem.content });
+              
+              // Guard rail for continuation
+              if (conversationActive) {
+                messages.push({ 
+                  role: 'user', 
+                  content: 'YOU MUST CONTINUE THE AUTOMATED POLISH WORKFLOW. Do not wait for permission. Execute the required actions immediately: 1) Use file search tool 2) Continue polishing sections using polish_section function. DO NOT STOP OR ASK FOR CONFIRMATION.' 
+                });
+              }
             }
           }
         }
-
-        // Safety limits to prevent infinite loops
-        if (messages.length > 100) {
+        } // End of for await loop
+        
+        // Safety limits
+        if (messages.length > 100 || sectionCount > 20) {
+          console.log('Polish safety limit reached');
           conversationActive = false;
-          console.log('⚠️ Conversation limit reached, stopping polish automation');
-          break;
         }
-
-        // Check if polish is complete
-        const currentSession = await this.getPolishSession(sessionId);
-        if (currentSession?.status === 'completed') {
-          conversationActive = false;
-          break;
+        
+        // Small delay between turns
+        if (conversationActive) {
+          await new Promise(resolve => setTimeout(resolve, 200));
         }
       }
+
+      console.log('Polish conversation loop completed');
 
     } catch (error: any) {
       console.error('Final polish error:', error);
