@@ -398,7 +398,14 @@ export const KeywordResearchStepClean = ({ step, workflow, onChange }: KeywordRe
               {/* Tools & Controls Panel */}
               {allActiveTargetPages.length > 0 && (
                 <div className="bg-gray-50 border border-gray-200 rounded-lg p-4 space-y-4">
-                  <h5 className="font-medium text-gray-900 mb-3">🔧 Tools & Controls</h5>
+                  <div className="flex items-center justify-between">
+                    <h5 className="font-medium text-gray-900">🔧 Tools & Controls</h5>
+                    {selectedTargetPages.length > 0 && (
+                      <div className="bg-purple-100 text-purple-800 px-3 py-1 rounded-full text-sm font-medium">
+                        {selectedTargetPages.length} page{selectedTargetPages.length === 1 ? '' : 's'} selected
+                      </div>
+                    )}
+                  </div>
                   
                   <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
                     {/* Search & Filter */}
@@ -813,115 +820,6 @@ export const KeywordResearchStepClean = ({ step, workflow, onChange }: KeywordRe
                       )}
                     </div>
                   </div>
-                  {/* AI Analysis Section */}
-                  {guestPostSite && activeTargetPages.length > 0 && (
-                    <div className="bg-gradient-to-r from-purple-50 to-blue-50 border border-purple-200 rounded-lg p-4 mb-4">
-                      <div className="flex items-start justify-between">
-                        <div className="flex-1">
-                          <div className="flex items-center mb-2">
-                            <Brain className="w-5 h-5 text-purple-600 mr-2" />
-                            <h4 className="font-medium text-purple-900">AI-Powered URL Selection</h4>
-                            <Sparkles className="w-4 h-4 text-purple-500 ml-2" />
-                          </div>
-                          <p className="text-sm text-purple-700 mb-3">
-                            Let AI search and analyze {guestPostSite} to automatically select the most relevant target URLs based on their actual content, topical authority, and compatibility with your client pages.
-                          </p>
-                          {!showAiAnalysis && !isAnalyzing && (
-                            <button
-                              onClick={() => runAiAnalysis(20)}
-                              className="px-4 py-2 bg-purple-600 text-white rounded-lg hover:bg-purple-700 transition-colors flex items-center space-x-2"
-                            >
-                              <Brain className="w-4 h-4" />
-                              <span>Analyze & Select Top 20 URLs</span>
-                            </button>
-                          )}
-
-                          {/* Loading State */}
-                          {isAnalyzing && (
-                            <div className="bg-white border border-purple-200 rounded-lg p-4">
-                              <div className="flex items-center space-x-3 mb-3">
-                                <Loader2 className="w-5 h-5 animate-spin text-purple-600" />
-                                <span className="font-medium text-purple-900">Analyzing {guestPostSite}...</span>
-                              </div>
-                              <div className="space-y-2 text-sm text-gray-600">
-                                <p>🔍 Searching the web to understand site content...</p>
-                                <p>🧠 AI is analyzing {activeTargetPages.length} target URLs for relevance...</p>
-                                <p>⏱️ This may take 30-60 seconds...</p>
-                              </div>
-                            </div>
-                          )}
-                        </div>
-                      </div>
-
-                      {/* AI Results Display */}
-                      {showAiAnalysis && aiResults && (
-                        <div className="mt-4 space-y-3">
-                          <div className="bg-white border border-purple-200 rounded-lg p-3">
-                            <h5 className="font-medium text-purple-900 mb-2">Site Analysis</h5>
-                            <p className="text-sm text-gray-700">{aiResults.siteAnalysis}</p>
-                          </div>
-
-                          <div className="bg-white border border-purple-200 rounded-lg p-3">
-                            <div className="flex items-center justify-between mb-2">
-                              <h5 className="font-medium text-purple-900">Top {aiResults.rankedUrls?.length || 0} Recommended URLs</h5>
-                              <span className="text-xs text-purple-600">Auto-selected below</span>
-                            </div>
-                            
-                            <div className="space-y-2 max-h-48 overflow-y-auto">
-                              {aiResults.rankedUrls?.map((result: any, index: number) => (
-                                <div key={index} className="border-l-4 border-purple-400 pl-3 py-2">
-                                  <div className="flex items-start justify-between">
-                                    <div className="flex-1">
-                                      <p className="text-sm font-medium text-gray-900">
-                                        {index + 1}. {result.url}
-                                      </p>
-                                      <p className="text-xs text-gray-600 mt-1">{result.reasoning}</p>
-                                      {result.topicalOverlap?.length > 0 && (
-                                        <div className="mt-1">
-                                          <span className="text-xs text-purple-600">
-                                            Topics: {result.topicalOverlap.join(', ')}
-                                          </span>
-                                        </div>
-                                      )}
-                                    </div>
-                                    <span className={`px-2 py-1 text-xs rounded-full ${
-                                      result.confidenceLevel === 'high' ? 'bg-green-100 text-green-800' :
-                                      result.confidenceLevel === 'medium' ? 'bg-yellow-100 text-yellow-800' :
-                                      'bg-red-100 text-red-800'
-                                    }`}>
-                                      {result.confidenceLevel}
-                                    </span>
-                                  </div>
-                                </div>
-                              ))}
-                            </div>
-                          </div>
-
-                          <div className="flex items-center justify-between">
-                            <p className="text-sm text-purple-700">
-                              Analyzed in {(aiResults.processingTime / 1000).toFixed(1)}s
-                            </p>
-                            <button
-                              onClick={() => {
-                                setShowAiAnalysis(false);
-                                setAiResults(null);
-                              }}
-                              className="text-sm text-purple-600 hover:text-purple-800"
-                            >
-                              Hide Analysis
-                            </button>
-                          </div>
-                        </div>
-                      )}
-
-                      {/* AI Error Display */}
-                      {aiError && (
-                        <div className="mt-3 bg-red-50 border border-red-200 rounded-lg p-3">
-                          <p className="text-sm text-red-700">{aiError}</p>
-                        </div>
-                      )}
-                    </div>
-                  )}
 
                   {/* Keyword Limit Warning */}
                   {keywordCount > KEYWORD_LIMIT && (
@@ -929,10 +827,10 @@ export const KeywordResearchStepClean = ({ step, workflow, onChange }: KeywordRe
                       <div className="flex items-center space-x-2">
                         <AlertCircle className="w-4 h-4 text-red-500" />
                         <div>
-                          <p className="text-sm font-medium text-red-800">Too many keywords selected!</p>
+                          <p className="text-sm font-medium text-red-800">Large keyword set detected</p>
                           <p className="text-xs text-red-700">
-                            You have {keywordCount} keywords selected. Ahrefs URLs may not work with more than {KEYWORD_LIMIT} keywords. 
-                            Please deselect some pages or we'll automatically limit to the first {KEYWORD_LIMIT} keywords.
+                            You have {keywordCount} keywords selected. With more than {KEYWORD_LIMIT} keywords, 
+                            we'll create multiple Ahrefs buttons (one for each batch of {KEYWORD_LIMIT} keywords) to ensure all URLs work properly.
                           </p>
                         </div>
                       </div>
@@ -1151,11 +1049,7 @@ export const KeywordResearchStepClean = ({ step, workflow, onChange }: KeywordRe
                             // Clear selection
                             setSelectedTargetPages([]);
                           }}
-                          className={`px-4 py-2 text-sm font-medium rounded-md transition-all ${
-                            showGroupedView 
-                              ? 'bg-white text-purple-600 hover:bg-purple-50 shadow-md' 
-                              : 'bg-purple-600 text-white hover:bg-purple-700'
-                          }`}
+                          className="px-4 py-2 text-sm font-medium rounded-md bg-purple-600 text-white hover:bg-purple-700 transition-colors"
                         >
                           Add Selected URLs to Workflow
                         </button>
