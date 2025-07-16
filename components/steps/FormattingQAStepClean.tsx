@@ -20,13 +20,16 @@ export const FormattingQAStepClean = ({ step, workflow, onChange }: FormattingQA
   const googleDocUrl = articleDraftStep?.outputs?.googleDocUrl || '';
 
   const handleAgenticComplete = (qaReport: any) => {
-    // Save the QA report results
-    onChange({
-      ...step.outputs,
-      agenticQACompleted: true,
-      agenticQAReport: qaReport,
-      lastQASessionId: qaReport.id
-    });
+    // Only update if the session ID has changed to prevent loops
+    if (qaReport.sessionId && qaReport.sessionId !== step.outputs?.lastQASessionId) {
+      // Save the QA report results
+      onChange({
+        ...step.outputs,
+        agenticQACompleted: true,
+        agenticQAReport: qaReport,
+        lastQASessionId: qaReport.sessionId
+      });
+    }
   };
 
   return (

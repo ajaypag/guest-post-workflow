@@ -32,8 +32,13 @@ export function AgenticFormattingChecker({ workflowId, onComplete }: AgenticForm
   const [copySuccess, setCopySuccess] = useState<Record<string, boolean>>({});
   const [isLoading, setIsLoading] = useState(true);
 
+  const [hasLoadedSession, setHasLoadedSession] = useState(false);
+
   // Load existing QA session on component mount
   useEffect(() => {
+    // Only load once on mount
+    if (hasLoadedSession) return;
+    
     const loadExistingSession = async () => {
       try {
         setIsLoading(true);
@@ -99,11 +104,25 @@ export function AgenticFormattingChecker({ workflowId, onComplete }: AgenticForm
         // Don't show error for missing sessions - this is expected for new workflows
       } finally {
         setIsLoading(false);
+        setHasLoadedSession(true);
       }
     };
     
     loadExistingSession();
-  }, [workflowId, onComplete]);
+  }, [workflowId]); // Remove onComplete from dependencies
+
+  // Call onComplete when session status changes to completed
+  useEffect(() => {
+    if (status === 'completed' && sessionId && onComplete && cleanedArticle) {
+      onComplete({
+        sessionId: sessionId,
+        status: status,
+        checks: checks,
+        cleanedArticle: cleanedArticle,
+        fixesApplied: fixesApplied
+      });
+    }
+  }, [status]); // Only trigger when status changes
 
   // Check type display names
   const checkTypeNames: Record<string, string> = {
