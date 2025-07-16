@@ -906,6 +906,7 @@ export default function DatabaseMigrationPage() {
                 <ul className="text-sm text-gray-600 space-y-1">
                   <li>• <a href="/api/admin/check-polish-tables-direct" target="_blank" className="text-blue-600 hover:underline">Check Tables Directly</a> - Detailed table and column info</li>
                   <li>• <button onClick={() => fetch('/api/admin/test-polish-insert-real', { method: 'POST' }).then(r => r.json()).then(d => alert(JSON.stringify(d, null, 2)))} className="text-blue-600 hover:underline">Test Database Insert</button> - Test if tables work correctly</li>
+                  <li>• <button onClick={() => fetch('/api/admin/migrate-polish-drizzle', { method: 'POST' }).then(r => r.json()).then(d => {alert(JSON.stringify(d, null, 2)); if(d.success) window.location.reload();})} className="text-blue-600 hover:underline font-semibold">Alternative Migration (Drizzle)</button> - Try this if regular migration fails</li>
                 </ul>
               </div>
               <button

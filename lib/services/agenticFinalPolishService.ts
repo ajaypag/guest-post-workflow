@@ -259,6 +259,7 @@ FINAL POLISH PRINCIPLES:
                 polishedLength: args.polished_content.length,
                 timestamp: now.toISOString()
               },
+              errorMessage: null, // Explicitly set to null
               createdAt: now,
               updatedAt: now
             };
