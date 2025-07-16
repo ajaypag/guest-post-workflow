@@ -735,18 +735,115 @@ errorMessage: null, // fails if column is NOT NULL
 errorMessage: '', // works for NOT NULL TEXT columns
 ```
 
-### DIAGNOSTIC TOOLS LOCATIONS
+### MANDATORY ADMIN UI PAGES FOR AGENTIC FEATURES
 
-After implementing agentic features, these tools must be available:
+After implementing any agentic feature, these admin pages MUST be created/updated:
 
-1. **`/admin/diagnostics`** → Database structure analysis
-2. **`/admin/varchar-limits`** → Column size verification and fixing
-3. **`/admin/test-database-inserts`** → PostgreSQL error capture
-4. **`/admin/database-migration`** → Migration verification
+#### 1. Database Migration Management (`/admin/database-migration`)
+**REQUIRED UI ELEMENTS:**
+- **Check Button**: Verify if tables exist and are properly structured
+- **Create Button**: Run database migration to create tables
+- **Remove Button**: Rollback migration (drop tables)
+- **Status Display**: Show current migration state for each feature
+
+**Example for formatting QA:**
+```
+Formatting QA Tables:
+[✅ Check] [🔧 Create] [🗑️ Remove]
+Status: Tables exist and properly configured
+```
+
+#### 2. Diagnostic Tools Frontend Pages
+**REQUIRED PAGES:**
+- **`/admin/diagnostics`** → Comprehensive database structure analysis
+- **`/admin/varchar-limits`** → Column size verification and auto-fixing
+- **`/admin/fix-formatting-qa`** → Feature-specific diagnostic tools
+- **`/admin/column-check`** → General column analysis across all tables
+
+**Each diagnostic page MUST have:**
+- **Run Analysis Button**: Execute diagnostic checks
+- **Auto-Fix Button**: Apply recommended fixes automatically
+- **Status Display**: Show current issues and their severity
+- **Detailed Results**: Table schemas, column sizes, error details
+
+#### 3. Feature-Specific Diagnostic Pages
+**For each agentic feature (e.g., formatting QA), create:**
+- **`/admin/fix-[feature-name]`** → Feature-specific diagnostic tools
+- **Check Functions**: Analyze tables specific to that feature
+- **Fix Functions**: Auto-repair column sizes, constraints, etc.
+- **Test Functions**: Verify the feature works with real data
+
+**Example Structure:**
+```
+/admin/fix-formatting-qa
+├── Check Tables → Verify formatting_qa_sessions, formatting_qa_checks exist
+├── Fix Columns → Auto-expand VARCHAR to TEXT where needed
+├── Test Insert → Verify real data insertion works
+└── Migration Status → Show current state and recommend actions
+```
+
+#### 4. Admin Navigation Integration
+**Update `/admin` navigation to include:**
+- **Database Migration** → Central migration management
+- **Diagnostics** → Comprehensive system analysis
+- **Column Check** → VARCHAR size verification
+- **Feature Diagnostics** → Links to each feature-specific diagnostic page
+
+#### 5. Required API Endpoints for UI Pages
+**For each admin page, ensure these endpoints exist:**
+- **GET** → Retrieve current status and analysis
+- **POST** → Execute fixes and migrations
+- **DELETE** → Rollback migrations when needed
+
+**Example API structure:**
+```
+/api/admin/migrate-[feature] → GET/POST/DELETE
+/api/admin/fix-[feature]-columns → GET/POST  
+/api/admin/check-[feature]-tables → GET
+/api/admin/test-[feature]-insert → POST
+```
+
+### MANDATORY WORKFLOW: ADMIN UI CREATION
+
+**When implementing ANY agentic feature, follow this workflow:**
+
+#### Phase 1: API Endpoints (Backend)
+1. **Create migration endpoint**: `/api/admin/migrate-[feature]` (GET/POST/DELETE)
+2. **Create diagnostic endpoint**: `/api/admin/fix-[feature]-columns` (GET/POST)
+3. **Create table check endpoint**: `/api/admin/check-[feature]-tables` (GET)
+4. **Create test endpoint**: `/api/admin/test-[feature]-insert` (POST)
+
+#### Phase 2: Frontend Pages (UI)
+1. **Update `/admin/database-migration`**: Add new feature section with Check/Create/Remove buttons
+2. **Create `/admin/fix-[feature]`**: Feature-specific diagnostic page
+3. **Update `/admin/diagnostics`**: Include new feature in comprehensive analysis
+4. **Update admin navigation**: Add links to new diagnostic pages
+
+#### Phase 3: Integration Testing
+1. **Test migration flow**: Check → Create → Remove → Create again
+2. **Test diagnostic flow**: Analyze → Fix → Verify
+3. **Test with real data**: Ensure feature works end-to-end
+4. **Document in CLAUDE.md**: Update this file with new admin pages
+
+### ADMIN PAGE REQUIREMENTS CHECKLIST
+
+**For every new agentic feature, verify these admin pages exist:**
+
+- [ ] **`/admin/database-migration`** → Feature included with Check/Create/Remove buttons
+- [ ] **`/admin/fix-[feature]`** → Feature-specific diagnostic page created
+- [ ] **`/admin/diagnostics`** → Feature included in comprehensive analysis
+- [ ] **`/admin/varchar-limits`** → Feature tables included in VARCHAR analysis
+- [ ] **`/admin/column-check`** → Feature tables included in column analysis
+
+**Each page must have:**
+- [ ] **Status indicators** → Show current state (✅ Working, ❌ Issues, ⚠️ Warnings)
+- [ ] **Action buttons** → Check, Fix, Test, Create, Remove
+- [ ] **Detailed results** → Table schemas, column info, error messages
+- [ ] **Auto-fix capability** → One-click resolution for common issues
 
 ### PREVENTION RULES
 
-1. **Always build diagnostics FIRST** → Don't debug blindly
+1. **Always build admin UI pages** → Don't leave diagnostics as API-only
 2. **Test with real AI-generated content** → Don't use short test strings
 3. **Capture exact PostgreSQL errors** → Don't settle for vague messages
 4. **Use TEXT for AI content** → Don't risk VARCHAR limits
@@ -760,6 +857,33 @@ After implementing agentic features, these tools must be available:
 - **Prevention built-in** → Issues caught before deployment
 
 This protocol prevents the expensive debugging cycles that occurred with the formatting QA feature implementation.
+
+### FORMATTING QA IMPLEMENTATION EXAMPLE
+
+**The formatting QA feature demonstrates proper admin UI implementation:**
+
+#### Admin Pages Created:
+- **`/admin/database-migration`** → Includes formatting QA section with Check/Create/Remove buttons
+- **`/admin/fix-formatting-qa`** → Feature-specific diagnostics for formatting QA tables
+- **`/admin/diagnostics`** → Includes formatting QA in comprehensive analysis
+- **`/admin/varchar-limits`** → Includes formatting_qa_sessions and formatting_qa_checks tables
+- **`/admin/column-check`** → Analyzes all formatting QA columns
+
+#### API Endpoints Created:
+- **`/api/admin/migrate-formatting-qa`** → GET/POST/DELETE for table management
+- **`/api/admin/fix-formatting-qa-columns`** → GET/POST for column size fixes
+- **`/api/admin/check-formatting-qa-tables`** → GET for table existence verification
+- **`/api/admin/test-formatting-qa-insert`** → POST for real data testing
+- **`/api/admin/diagnose-formatting-qa-enhancement`** → GET for enhancement analysis
+
+#### UI Features Available:
+- **Migration Status**: Shows if tables exist and are properly configured
+- **Auto-Fix Columns**: One-click fix for VARCHAR → TEXT conversions
+- **Test Data Insertion**: Verify real AI-generated content works
+- **Comprehensive Analysis**: Full diagnostic report with specific recommendations
+- **Error Capture**: Exact PostgreSQL error messages with solutions
+
+**This serves as the template for all future agentic feature implementations.**
 
 ## Contact
 Created for OutreachLabs by Claude with Ajay
