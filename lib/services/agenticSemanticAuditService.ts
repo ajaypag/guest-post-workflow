@@ -142,6 +142,7 @@ When you parse the article, break it into manageable audit chunks. If a section 
 - Subsections should be H3 level (level: "subsection", headerLevel: "h3", parentSection: "Main Section Title")
 - Each chunk should be auditable independently but not too granular
 - Maintain logical content groupings and hierarchical structure
+- When the article is a listicle, be sure to parse each list component out into its own section
 
 REQUIRED ACTIONS:
 1. FIRST: Use file search to review "Semantic SEO" best practices from the knowledge base

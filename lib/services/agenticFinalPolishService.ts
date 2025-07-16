@@ -145,7 +145,7 @@ When you parse the article, break it into manageable polish chunks. If a section
 - Maintain logical content groupings and hierarchical structure
 
 REQUIRED ACTIONS:
-1. FIRST: Use file search to review brand guidelines and writing style from the knowledge base
+1. FIRST: Use file search to review brand guidelines, semantic seo, writing style and words to not use from the knowledge base
 2. THEN: Parse the article into manageable polish chunks using the parse_polish_article function
 3. FINALLY: Begin polishing the first section with the polish_section function
 

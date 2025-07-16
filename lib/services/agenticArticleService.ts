@@ -390,7 +390,7 @@ CONTENT INTEGRATION APPROACH: These are themes to organically incorporate, not a
 IMMEDIATE NEXT ACTIONS (execute these now):
 1. FIRST: Use read_previous_sections to understand the article's flow and tone so far
 2. THEN: Use file search tool to refresh on "Brand kit, Writing Guidelines" and "Semantic SEO"
-3. THEN: Observe the original data from the original outline given in the first prompt, which contains competitor research, news, section briefing. Think about what elements from the whole you could add to your section to make it feel like you are a writer that's going beyond the basic effort.
+3. THEN: Observe the original data from the original outline given in the first prompt, which contains competitor research, news, section briefing. Think about what elements from the whole you could add to your section to make it feel like you are a writer that's going beyond the basic effort. For sections that seem thin on context or for sections that are explanations of a list item, you will get extra brownie points if you utilize web search to further enhance the information you have available about this list item as it pertains to the particular topic.
 4. FINALLY: Write "${nextSection?.title || 'next section'}" focusing on flow and coherence over checklist completion
 
 START WRITING THE NEXT SECTION NOW - DO NOT ASK FOR PERMISSION OR CONFIRMATION.`;
