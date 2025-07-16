@@ -18,7 +18,10 @@ export async function POST() {
         AND column_name = 'cleaned_article'
       `);
       
-      if ((cleanedArticleCheck as any).rows?.length === 0 || !cleanedArticleCheck.length) {
+      const cleanedArticleRows = (cleanedArticleCheck as any).rows || cleanedArticleCheck;
+      const cleanedArticleExists = Array.isArray(cleanedArticleRows) && cleanedArticleRows.length > 0;
+      
+      if (!cleanedArticleExists) {
         console.log('Adding cleaned_article column...');
         await db.execute(sql`
           ALTER TABLE "formatting_qa_sessions" 
@@ -36,7 +39,10 @@ export async function POST() {
         AND column_name = 'fixes_applied'
       `);
       
-      if ((fixesAppliedCheck as any).rows?.length === 0 || !fixesAppliedCheck.length) {
+      const fixesAppliedRows = (fixesAppliedCheck as any).rows || fixesAppliedCheck;
+      const fixesAppliedExists = Array.isArray(fixesAppliedRows) && fixesAppliedRows.length > 0;
+      
+      if (!fixesAppliedExists) {
         console.log('Adding fixes_applied column...');
         await db.execute(sql`
           ALTER TABLE "formatting_qa_sessions" 
@@ -85,14 +91,15 @@ export async function GET() {
     `);
     
     const columns = (columnCheck as any).rows || columnCheck;
-    const hasCleanedArticle = columns.some((col: any) => col.column_name === 'cleaned_article');
-    const hasFixesApplied = columns.some((col: any) => col.column_name === 'fixes_applied');
+    const columnsArray = Array.isArray(columns) ? columns : [];
+    const hasCleanedArticle = columnsArray.some((col: any) => col.column_name === 'cleaned_article');
+    const hasFixesApplied = columnsArray.some((col: any) => col.column_name === 'fixes_applied');
     
     const status = {
       cleaned_article_exists: hasCleanedArticle,
       fixes_applied_exists: hasFixesApplied,
       migration_needed: !hasCleanedArticle || !hasFixesApplied,
-      columns_found: columns.map((col: any) => col.column_name)
+      columns_found: columnsArray.map((col: any) => col.column_name)
     };
     
     return NextResponse.json({
