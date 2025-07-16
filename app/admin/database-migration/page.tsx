@@ -545,6 +545,88 @@ export default function DatabaseMigrationPage() {
     setIsLoading(false);
   };
 
+  const checkFormattingQaV2Status = async () => {
+    setIsLoading(true);
+    setMessage('');
+    
+    try {
+      const response = await fetch('/api/admin/migrate-formatting-qa-v2');
+      const data = await response.json();
+      
+      if (data.success) {
+        if (data.status.migration_needed) {
+          setMessage(`ℹ️ Migration needed - Missing columns: ${data.status.columns_found.length === 0 ? 'cleaned_article, fixes_applied' : data.status.columns_found.join(', ')}`);
+          setMessageType('info');
+        } else {
+          setMessage('✅ All formatting QA v2 columns exist (cleaned_article, fixes_applied)');
+          setMessageType('success');
+        }
+      } else {
+        setMessage(`❌ Error checking v2 status: ${data.error}`);
+        setMessageType('error');
+      }
+    } catch (error) {
+      setMessage(`❌ Error: ${error instanceof Error ? error.message : 'Unknown error'}`);
+      setMessageType('error');
+    }
+    
+    setIsLoading(false);
+  };
+
+  const runFormattingQaV2Migration = async () => {
+    setIsLoading(true);
+    setMessage('');
+    
+    try {
+      const response = await fetch('/api/admin/migrate-formatting-qa-v2', {
+        method: 'POST'
+      });
+      const data = await response.json();
+      
+      if (data.success) {
+        setMessage('✅ Formatting QA v2 migration completed successfully!');
+        setMessageType('success');
+      } else {
+        setMessage(`❌ Migration failed: ${data.error}`);
+        setMessageType('error');
+      }
+    } catch (error) {
+      setMessage(`❌ Error: ${error instanceof Error ? error.message : 'Unknown error'}`);
+      setMessageType('error');
+    }
+    
+    setIsLoading(false);
+  };
+
+  const runFormattingQaV2Rollback = async () => {
+    if (!confirm('Are you sure you want to remove the v2 columns? This will delete cleaned_article and fixes_applied data.')) {
+      return;
+    }
+    
+    setIsLoading(true);
+    setMessage('');
+    
+    try {
+      const response = await fetch('/api/admin/migrate-formatting-qa-v2', {
+        method: 'DELETE'
+      });
+      const data = await response.json();
+      
+      if (data.success) {
+        setMessage('✅ Formatting QA v2 rollback completed successfully!');
+        setMessageType('success');
+      } else {
+        setMessage(`❌ Rollback failed: ${data.error}`);
+        setMessageType('error');
+      }
+    } catch (error) {
+      setMessage(`❌ Error: ${error instanceof Error ? error.message : 'Unknown error'}`);
+      setMessageType('error');
+    }
+    
+    setIsLoading(false);
+  };
+
   return (
     <div className="min-h-screen bg-gray-50 py-8">
       <div className="max-w-4xl mx-auto px-4 sm:px-6 lg:px-8">
@@ -1086,6 +1168,82 @@ export default function DatabaseMigrationPage() {
               >
                 <RotateCcw className="w-4 h-4 mr-2" />
                 {isLoading ? 'Rolling Back...' : 'Remove Formatting QA Tables'}
+              </button>
+            </div>
+          </div>
+
+          {/* Formatting QA v2 Migration Section */}
+          <div className="mt-12 mb-8">
+            <h2 className="text-lg font-semibold text-gray-900 mb-4">Formatting QA v2 Migration</h2>
+            <p className="text-gray-600 mb-4">
+              This migration adds the missing <code className="bg-gray-100 px-2 py-1 rounded">cleaned_article</code> and{' '}
+              <code className="bg-gray-100 px-2 py-1 rounded">fixes_applied</code> columns to the existing{' '}
+              <code className="bg-gray-100 px-2 py-1 rounded">formatting_qa_sessions</code> table.
+            </p>
+            
+            <div className="bg-orange-50 border border-orange-200 rounded-lg p-4 mb-6">
+              <div className="flex items-start space-x-3">
+                <AlertTriangle className="w-5 h-5 text-orange-600 mt-0.5" />
+                <div>
+                  <h3 className="text-sm font-semibold text-orange-800">Enhanced Formatting QA Features:</h3>
+                  <ul className="text-sm text-orange-700 mt-2 space-y-1">
+                    <li>• <strong>cleaned_article:</strong> Stores the AI-fixed version of the article</li>
+                    <li>• <strong>fixes_applied:</strong> Tracks which specific fixes were applied</li>
+                    <li>• Enables the "Generate Cleaned Article" functionality</li>
+                    <li>• Required for the enhanced formatting QA workflow</li>
+                    <li>• Safe migration - only adds columns to existing table</li>
+                  </ul>
+                </div>
+              </div>
+            </div>
+          </div>
+
+          <div className="space-y-4 mb-8">
+            {/* Check Formatting QA v2 Status */}
+            <div className="border border-gray-200 rounded-lg p-4">
+              <h3 className="font-semibold text-gray-900 mb-2">Check Formatting QA v2 Status</h3>
+              <p className="text-gray-600 text-sm mb-3">
+                Check if the enhanced formatting QA columns exist in your database.
+              </p>
+              <button
+                onClick={checkFormattingQaV2Status}
+                disabled={isLoading}
+                className="inline-flex items-center px-4 py-2 bg-blue-600 text-white text-sm font-medium rounded-md hover:bg-blue-700 disabled:opacity-50 disabled:cursor-not-allowed"
+              >
+                <Database className="w-4 h-4 mr-2" />
+                {isLoading ? 'Checking...' : 'Check v2 Status'}
+              </button>
+            </div>
+
+            {/* Run Formatting QA v2 Migration */}
+            <div className="border border-green-200 rounded-lg p-4">
+              <h3 className="font-semibold text-gray-900 mb-2">Add Enhanced Columns (v2 Migration)</h3>
+              <p className="text-gray-600 text-sm mb-3">
+                Add the cleaned_article and fixes_applied columns to enable enhanced formatting QA features.
+              </p>
+              <button
+                onClick={runFormattingQaV2Migration}
+                disabled={isLoading}
+                className="inline-flex items-center px-4 py-2 bg-green-600 text-white text-sm font-medium rounded-md hover:bg-green-700 disabled:opacity-50 disabled:cursor-not-allowed"
+              >
+                <Play className="w-4 h-4 mr-2" />
+                {isLoading ? 'Running Migration...' : 'Add Enhanced Columns'}
+              </button>
+            </div>
+
+            {/* Formatting QA v2 Rollback */}
+            <div className="border border-red-200 rounded-lg p-4">
+              <h3 className="font-semibold text-gray-900 mb-2">Remove Enhanced Columns (v2 Rollback)</h3>
+              <p className="text-gray-600 text-sm mb-3">
+                Remove the cleaned_article and fixes_applied columns. This will delete all cleaned article data.
+              </p>
+              <button
+                onClick={runFormattingQaV2Rollback}
+                disabled={isLoading}
+                className="inline-flex items-center px-4 py-2 bg-red-600 text-white text-sm font-medium rounded-md hover:bg-red-700 disabled:opacity-50 disabled:cursor-not-allowed"
+              >
+                <RotateCcw className="w-4 h-4 mr-2" />
+                {isLoading ? 'Rolling Back...' : 'Remove Enhanced Columns'}
               </button>
             </div>
           </div>
