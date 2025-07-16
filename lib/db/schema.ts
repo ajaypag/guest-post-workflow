@@ -181,13 +181,13 @@ export const polishSections = pgTable('polish_sections', {
   workflowId: uuid('workflow_id').notNull().references(() => workflows.id, { onDelete: 'cascade' }),
   version: integer('version').notNull().default(1),
   sectionNumber: integer('section_number').notNull(),
-  title: varchar('title', { length: 255 }).notNull(),
+  title: varchar('title', { length: 500 }).notNull(),
   originalContent: text('original_content'), // SEO-optimized section content
   polishedContent: text('polished_content'), // Final polished content
   strengths: text('strengths'), // Brand adherence strengths
   weaknesses: text('weaknesses'), // Areas for improvement
   brandConflicts: text('brand_conflicts'), // Specific brand vs semantic conflicts identified
-  polishApproach: varchar('polish_approach', { length: 100 }), // 'engagement-focused', 'clarity-focused', 'balanced', etc.
+  polishApproach: varchar('polish_approach', { length: 255 }), // 'engagement-focused', 'clarity-focused', 'balanced', etc.
   engagementScore: integer('engagement_score'), // 1-10 engagement level
   clarityScore: integer('clarity_score'), // 1-10 clarity/directness level
   status: varchar('status', { length: 50 }).notNull().default('pending'),
