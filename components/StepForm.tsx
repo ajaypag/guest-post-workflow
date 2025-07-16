@@ -61,6 +61,9 @@ const stepForms: Record<string, React.FC<{ step: WorkflowStep; workflow: GuestPo
 export default function StepForm({ step, stepIndex, workflow, onSave, onWorkflowChange }: StepFormProps) {
   const [localInputs, setLocalInputs] = useState(step.inputs || {});
   const [localOutputs, setLocalOutputs] = useState(step.outputs || {});
+  const [autoSaveTimer, setAutoSaveTimer] = useState<NodeJS.Timeout | null>(null);
+  const [isSaving, setIsSaving] = useState(false);
+  const [lastSaved, setLastSaved] = useState<Date | null>(null);
 
   useEffect(() => {
     console.log('Step data changed, updating local state:', { inputs: step.inputs, outputs: step.outputs });
@@ -68,9 +71,51 @@ export default function StepForm({ step, stepIndex, workflow, onSave, onWorkflow
     setLocalOutputs(step.outputs || {});
   }, [step.inputs, step.outputs]);
 
-  const handleSave = () => {
+  // Auto-save functionality with debouncing
+  const triggerAutoSave = () => {
+    // Clear existing timer
+    if (autoSaveTimer) {
+      clearTimeout(autoSaveTimer);
+    }
+
+    // Set new timer for auto-save after 2 seconds of no changes
+    const timer = setTimeout(() => {
+      console.log('⏱️ Auto-saving after 2 seconds of inactivity');
+      handleSave();
+    }, 2000);
+
+    setAutoSaveTimer(timer);
+  };
+
+  // Special handling for Polish step completion
+  useEffect(() => {
+    if (step.id === 'final-polish' && localOutputs.finalArticle && 
+        (!step.outputs?.finalArticle || step.outputs.finalArticle !== localOutputs.finalArticle)) {
+      console.log('🚀 Polish step completed - triggering immediate auto-save');
+      // Clear any pending auto-save timer
+      if (autoSaveTimer) {
+        clearTimeout(autoSaveTimer);
+      }
+      // Save immediately
+      handleSave();
+    }
+  }, [localOutputs.finalArticle, step.id]);
+
+  // Cleanup timer on unmount
+  useEffect(() => {
+    return () => {
+      if (autoSaveTimer) {
+        clearTimeout(autoSaveTimer);
+      }
+    };
+  }, [autoSaveTimer]);
+
+  const handleSave = async () => {
     console.log('🟢 handleSave called:', { localInputs, localOutputs });
-    onSave(localInputs, localOutputs);
+    setIsSaving(true);
+    await onSave(localInputs, localOutputs);
+    setIsSaving(false);
+    setLastSaved(new Date());
   };
 
   const handleInputChange = (field: string, value: any) => {
@@ -83,6 +128,17 @@ export default function StepForm({ step, stepIndex, workflow, onSave, onWorkflow
   const handleOutputChange = (data: any) => {
     console.log('🟡 FormComponent onChange called:', data);
     setLocalOutputs(data);
+    
+    // Trigger auto-save for critical fields
+    const criticalFields = ['finalArticle', 'fullArticle', 'seoOptimizedArticle', 'googleDocUrl'];
+    const hasChangedCriticalField = criticalFields.some(field => 
+      data[field] && data[field] !== localOutputs[field]
+    );
+    
+    if (hasChangedCriticalField) {
+      console.log('🔄 Critical field changed, triggering auto-save');
+      triggerAutoSave();
+    }
   };
 
   const StepComponent = stepForms[step.id];
@@ -153,13 +209,32 @@ export default function StepForm({ step, stepIndex, workflow, onSave, onWorkflow
       </div>
 
       <div className="mt-6 pt-4 border-t">
-        <button
-          onClick={handleSave}
-          className="inline-flex items-center px-4 py-2 bg-green-600 text-white text-sm font-medium rounded-md hover:bg-green-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-green-500"
-        >
-          <Save className="w-4 h-4 mr-2" />
-          {stepIndex === workflow.steps.length - 1 ? 'Save & Complete' : 'Save & Next Step'}
-        </button>
+        <div className="flex items-center justify-between">
+          <button
+            onClick={handleSave}
+            disabled={isSaving}
+            className="inline-flex items-center px-4 py-2 bg-green-600 text-white text-sm font-medium rounded-md hover:bg-green-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-green-500 disabled:opacity-50"
+          >
+            {isSaving ? (
+              <>
+                <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-white mr-2"></div>
+                Saving...
+              </>
+            ) : (
+              <>
+                <Save className="w-4 h-4 mr-2" />
+                {stepIndex === workflow.steps.length - 1 ? 'Save & Complete' : 'Save & Next Step'}
+              </>
+            )}
+          </button>
+          
+          {/* Auto-save indicator */}
+          {lastSaved && (
+            <div className="text-sm text-gray-500">
+              Auto-saved {new Date(lastSaved).toLocaleTimeString()}
+            </div>
+          )}
+        </div>
       </div>
     </div>
   );
