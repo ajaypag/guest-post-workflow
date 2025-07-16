@@ -496,16 +496,16 @@ FORMATTING STANDARDS TO CHECK AND FIX:
 2. Line Breaks: Exactly one blank line between paragraphs, no orphan line breaks
 3. Section Completeness: Must have Intro, body sections, FAQ intro, and Conclusion
 4. List Consistency: Bullet/number styles must not change within sections
-5. Bold Cleanup: Remove unnecessary or random bolding - ONLY keep strategic formatting bolding, NOT emphasis bolding for keywords/terms
+5. Bold Cleanup: Remove unnecessary or random bolding (e.g., 5 words into a sentence randomly bolded). KEEP intentional bolding like bullet point intros where the name/title is bolded. Remove emphasis bolding on keywords/terms, keep only strategic formatting bolding.
 6. FAQ Formatting: Questions in bold sentence-case, answers in plain text
-7. Citation Placement: Single citation near the top (intro or first section), use web search to find sources for stats/data
+7. Citation Placement: For statistics/data mentioned in the article, use web search to find sources and add inline hyperlinks directly to the relevant text. DO NOT use numbered citations like [1] with references at the bottom. Instead, turn the relevant text into a hyperlink using markdown format: [text](URL).
 8. UTM Cleanup: Remove any "source=chatgpt" UTM parameters from URLs
 
 CRITICAL CONSTRAINTS:
 - DO NOT rewrite or simplify text - preserve all original content and meaning
 - ONLY fix formatting issues, not content or style
-- For bold cleanup: Remove emphasis bolding on keywords/terms, keep only strategic formatting bolding
-- For citations: Use web search to find sources for statistics/data mentioned in intro
+- For bold cleanup: Remove random bolding (e.g., 5 words into a sentence), but KEEP intentional bolding like bullet point intros where the name/title is bolded
+- For citations: Use web search to find sources for statistics/data and add inline hyperlinks directly to the text. DO NOT create numbered citations or reference lists
 
 WORKFLOW:
 1. Use analyze_formatting_check tool for each of the 8 check types
@@ -525,9 +525,9 @@ THIS IS AN AUTOMATED WORKFLOW - continue until all checks are complete and clean
       line_breaks: 'Check for exactly one blank line between paragraphs, no orphan breaks',
       section_completeness: 'Ensure all required sections exist: Intro, body, FAQ intro, Conclusion',
       list_consistency: 'Verify bullet/number styles don\'t change within sections',
-      bold_cleanup: 'Remove unnecessary or random bolding, keep only purposeful bold',
+      bold_cleanup: 'Remove random bolding (e.g., 5 words into sentence), keep bullet point intros where name/title is bolded',
       faq_formatting: 'Check FAQ questions are bold sentence-case, answers are plain text',
-      citation_placement: 'Verify single citation near top, remove any extras',
+      citation_placement: 'Add inline hyperlinks to statistics/data using web search, no numbered citations',
       utm_cleanup: 'Remove source=chatgpt UTM parameters from all URLs'
     };
     return descriptions[checkType];
