@@ -116,7 +116,7 @@ export default function FixPolishPage() {
             <span>Run Diagnostics</span>
           </button>
           
-          {diagnostics?.nullByteAnalysis?.totalAffectedRecords > 0 && (
+          {diagnostics && diagnostics.nullByteAnalysis && diagnostics.nullByteAnalysis.totalAffectedRecords > 0 && (
             <button
               onClick={fixNullBytes}
               disabled={loading}

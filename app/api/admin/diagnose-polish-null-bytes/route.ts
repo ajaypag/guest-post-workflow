@@ -39,7 +39,7 @@ export async function GET(request: NextRequest) {
       ) as exists
     `);
     
-    diagnostics.databaseInfo.tableExists = tableCheck.rows[0].exists;
+    diagnostics.databaseInfo.tableExists = tableCheck.rows[0].exists as boolean;
 
     if (!diagnostics.databaseInfo.tableExists) {
       diagnostics.recommendations.push('Polish tables do not exist. Run migration first.');
@@ -83,15 +83,15 @@ export async function GET(request: NextRequest) {
 
     // Analyze results
     for (const row of nullByteCheck.rows) {
-      if (row.null_byte_position > 0) {
+      if ((row.null_byte_position as number) > 0) {
         diagnostics.nullByteAnalysis.affectedSessions.push({
-          sessionId: row.id,
-          workflowId: row.workflow_id,
-          version: row.version,
-          status: row.status,
-          nullBytePosition: row.null_byte_position,
-          metadataLength: row.metadata_length,
-          sampleData: row.sample_data
+          sessionId: row.id as string,
+          workflowId: row.workflow_id as string,
+          version: row.version as number,
+          status: row.status as string,
+          nullBytePosition: row.null_byte_position as number,
+          metadataLength: row.metadata_length as number,
+          sampleData: row.sample_data as string
         });
       }
     }
@@ -112,14 +112,14 @@ export async function GET(request: NextRequest) {
     `);
 
     for (const row of sectionsCheck.rows) {
-      if (row.orig_null_pos > 0 || row.polish_null_pos > 0) {
+      if ((row.orig_null_pos as number) > 0 || (row.polish_null_pos as number) > 0) {
         diagnostics.nullByteAnalysis.affectedSections.push({
-          sectionId: row.id,
-          sessionId: row.polish_session_id,
-          sectionNumber: row.section_number,
-          title: row.title,
-          hasNullInOriginal: row.orig_null_pos > 0,
-          hasNullInPolished: row.polish_null_pos > 0
+          sectionId: row.id as string,
+          sessionId: row.polish_session_id as string,
+          sectionNumber: row.section_number as number,
+          title: row.title as string,
+          hasNullInOriginal: (row.orig_null_pos as number) > 0,
+          hasNullInPolished: (row.polish_null_pos as number) > 0
         });
       }
     }
@@ -140,9 +140,9 @@ export async function GET(request: NextRequest) {
     `);
 
     diagnostics.characterAnalysis.controlCharacters = controlCharCheck.rows.map((row: any) => ({
-      sessionId: row.id,
-      controlCharCount: row.control_char_count,
-      cleanedSample: row.cleaned_sample.substring(0, 100)
+      sessionId: row.id as string,
+      controlCharCount: row.control_char_count as number,
+      cleanedSample: (row.cleaned_sample as string).substring(0, 100)
     }));
 
     // Test if we can insert clean data
@@ -204,12 +204,12 @@ export async function GET(request: NextRequest) {
       `);
 
       if (sampleSession.rows.length > 0) {
-        const rawData = sampleSession.rows[0].raw_metadata;
+        const rawData = sampleSession.rows[0].raw_metadata as string;
         // Find the specific problematic part
         const nullByteIndex = rawData.indexOf('\u0000');
         if (nullByteIndex > -1) {
           diagnostics.nullByteAnalysis.sampleProblematicData.push({
-            sessionId: sampleSession.rows[0].id,
+            sessionId: sampleSession.rows[0].id as string,
             contextBefore: rawData.substring(Math.max(0, nullByteIndex - 50), nullByteIndex),
             contextAfter: rawData.substring(nullByteIndex + 1, Math.min(rawData.length, nullByteIndex + 51)),
             characterCodes: rawData.substring(nullByteIndex - 10, nullByteIndex + 10).split('').map(c => c.charCodeAt(0))
