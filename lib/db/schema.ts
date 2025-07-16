@@ -197,6 +197,45 @@ export const polishSections = pgTable('polish_sections', {
   updatedAt: timestamp('updated_at').notNull(),
 });
 
+// Formatting QA sessions for tracking automated formatting checks
+export const formattingQaSessions = pgTable('formatting_qa_sessions', {
+  id: uuid('id').primaryKey(),
+  workflowId: uuid('workflow_id').notNull().references(() => workflows.id, { onDelete: 'cascade' }),
+  version: integer('version').notNull().default(1), // Version number for each QA run
+  stepId: varchar('step_id', { length: 100 }).notNull().default('formatting-qa'),
+  status: varchar('status', { length: 50 }).notNull().default('pending'), // 'pending' | 'checking' | 'completed' | 'error'
+  totalChecks: integer('total_checks').default(0),
+  passedChecks: integer('passed_checks').default(0),
+  failedChecks: integer('failed_checks').default(0),
+  originalArticle: text('original_article'), // Article being checked
+  qaMetadata: jsonb('qa_metadata'), // Stores check configuration, context, etc
+  errorMessage: text('error_message'),
+  startedAt: timestamp('started_at'),
+  completedAt: timestamp('completed_at'),
+  createdAt: timestamp('created_at').notNull(),
+  updatedAt: timestamp('updated_at').notNull(),
+});
+
+// Individual formatting checks for detailed QA results
+export const formattingQaChecks = pgTable('formatting_qa_checks', {
+  id: uuid('id').primaryKey(),
+  qaSessionId: uuid('qa_session_id').notNull().references(() => formattingQaSessions.id, { onDelete: 'cascade' }),
+  workflowId: uuid('workflow_id').notNull().references(() => workflows.id, { onDelete: 'cascade' }),
+  version: integer('version').notNull().default(1),
+  checkNumber: integer('check_number').notNull(),
+  checkType: varchar('check_type', { length: 255 }).notNull(), // 'header_hierarchy', 'line_breaks', etc.
+  checkDescription: text('check_description'), // What this check validates
+  status: varchar('status', { length: 50 }).notNull().default('pending'), // 'pending' | 'passed' | 'failed' | 'warning'
+  issuesFound: text('issues_found'), // Detailed issues description
+  locationDetails: text('location_details'), // Where in article issues occur
+  confidenceScore: integer('confidence_score'), // 1-10 confidence in check result
+  fixSuggestions: text('fix_suggestions'), // How to fix the issues
+  checkMetadata: jsonb('check_metadata'), // Check-specific data
+  errorMessage: text('error_message'),
+  createdAt: timestamp('created_at').notNull(),
+  updatedAt: timestamp('updated_at').notNull(),
+});
+
 // Relations
 export const usersRelations = relations(users, ({ many }) => ({
   clients: many(clients),
@@ -246,6 +285,10 @@ export const workflowsRelations = relations(workflows, ({ one, many }) => ({
   agentSessions: many(agentSessions),
   auditSessions: many(auditSessions),
   auditSections: many(auditSections),
+  polishSessions: many(polishSessions),
+  polishSections: many(polishSections),
+  formattingQaSessions: many(formattingQaSessions),
+  formattingQaChecks: many(formattingQaChecks),
 }));
 
 export const workflowStepsRelations = relations(workflowSteps, ({ one }) => ({
@@ -288,6 +331,44 @@ export const auditSectionsRelations = relations(auditSections, ({ one }) => ({
   }),
 }));
 
+export const polishSessionsRelations = relations(polishSessions, ({ one, many }) => ({
+  workflow: one(workflows, {
+    fields: [polishSessions.workflowId],
+    references: [workflows.id],
+  }),
+  polishSections: many(polishSections),
+}));
+
+export const polishSectionsRelations = relations(polishSections, ({ one }) => ({
+  polishSession: one(polishSessions, {
+    fields: [polishSections.polishSessionId],
+    references: [polishSessions.id],
+  }),
+  workflow: one(workflows, {
+    fields: [polishSections.workflowId],
+    references: [workflows.id],
+  }),
+}));
+
+export const formattingQaSessionsRelations = relations(formattingQaSessions, ({ one, many }) => ({
+  workflow: one(workflows, {
+    fields: [formattingQaSessions.workflowId],
+    references: [workflows.id],
+  }),
+  formattingQaChecks: many(formattingQaChecks),
+}));
+
+export const formattingQaChecksRelations = relations(formattingQaChecks, ({ one }) => ({
+  qaSession: one(formattingQaSessions, {
+    fields: [formattingQaChecks.qaSessionId],
+    references: [formattingQaSessions.id],
+  }),
+  workflow: one(workflows, {
+    fields: [formattingQaChecks.workflowId],
+    references: [workflows.id],
+  }),
+}));
+
 // Type exports
 export type User = typeof users.$inferSelect;
 export type NewUser = typeof users.$inferInsert;
@@ -307,3 +388,11 @@ export type AuditSession = typeof auditSessions.$inferSelect;
 export type NewAuditSession = typeof auditSessions.$inferInsert;
 export type AuditSection = typeof auditSections.$inferSelect;
 export type NewAuditSection = typeof auditSections.$inferInsert;
+export type PolishSession = typeof polishSessions.$inferSelect;
+export type NewPolishSession = typeof polishSessions.$inferInsert;
+export type PolishSection = typeof polishSections.$inferSelect;
+export type NewPolishSection = typeof polishSections.$inferInsert;
+export type FormattingQaSession = typeof formattingQaSessions.$inferSelect;
+export type NewFormattingQaSession = typeof formattingQaSessions.$inferInsert;
+export type FormattingQaCheck = typeof formattingQaChecks.$inferSelect;
+export type NewFormattingQaCheck = typeof formattingQaChecks.$inferInsert;
