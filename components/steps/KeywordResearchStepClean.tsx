@@ -757,7 +757,7 @@ export const KeywordResearchStepClean = ({ step, workflow, onChange }: KeywordRe
               {selectedTargetPages.length > 0 && (
                 <div className={`p-3 rounded-lg transition-all ${
                   showGroupedView 
-                    ? 'bg-gradient-to-r from-purple-500 to-purple-600 shadow-lg animate-pulse' 
+                    ? 'bg-gradient-to-r from-purple-500 to-purple-600 shadow-lg' 
                     : 'bg-purple-50 border border-purple-200'
                 }`}>
                   <div className="flex items-center justify-between">
