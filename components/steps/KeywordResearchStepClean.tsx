@@ -395,70 +395,188 @@ export const KeywordResearchStepClean = ({ step, workflow, onChange }: KeywordRe
                 </p>
               </div>
 
-              {/* Search Box */}
+              {/* Tools & Controls Panel */}
               {allActiveTargetPages.length > 0 && (
-                <div className="mb-4">
-                  <div className="relative">
-                    <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400 w-4 h-4" />
-                    <input
-                      type="text"
-                      placeholder="Filter URLs, keywords, or descriptions..."
-                      value={searchQuery}
-                      onChange={(e) => setSearchQuery(e.target.value)}
-                      className="w-full pl-10 pr-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-purple-500 focus:border-purple-500"
-                    />
-                    {searchQuery && (
-                      <button
-                        onClick={() => setSearchQuery('')}
-                        className="absolute right-3 top-1/2 transform -translate-y-1/2 text-gray-400 hover:text-gray-600"
-                      >
-                        <X className="w-4 h-4" />
-                      </button>
+                <div className="bg-gray-50 border border-gray-200 rounded-lg p-4 space-y-4">
+                  <h5 className="font-medium text-gray-900 mb-3">🔧 Tools & Controls</h5>
+                  
+                  <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
+                    {/* Search & Filter */}
+                    <div>
+                      <label className="block text-sm font-medium text-gray-700 mb-2">Search & Filter</label>
+                      <div className="relative">
+                        <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400 w-4 h-4" />
+                        <input
+                          type="text"
+                          placeholder="Filter URLs, keywords, or descriptions..."
+                          value={searchQuery}
+                          onChange={(e) => setSearchQuery(e.target.value)}
+                          className="w-full pl-10 pr-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-purple-500 focus:border-purple-500"
+                        />
+                        {searchQuery && (
+                          <button
+                            onClick={() => setSearchQuery('')}
+                            className="absolute right-3 top-1/2 transform -translate-y-1/2 text-gray-400 hover:text-gray-600"
+                          >
+                            <X className="w-4 h-4" />
+                          </button>
+                        )}
+                      </div>
+                      {searchQuery && (
+                        <p className="text-xs text-gray-600 mt-1">
+                          Showing {activeTargetPages.length} of {allActiveTargetPages.length} URLs
+                        </p>
+                      )}
+                    </div>
+
+                    {/* AI Analysis Tool */}
+                    {guestPostSite && (
+                      <div>
+                        <label className="block text-sm font-medium text-gray-700 mb-2">AI Analysis Tool</label>
+                        <div className="bg-gradient-to-r from-purple-50 to-blue-50 border border-purple-200 rounded-lg p-3">
+                          <div className="flex items-center mb-2">
+                            <Brain className="w-4 h-4 text-purple-600 mr-2" />
+                            <span className="text-sm font-medium text-purple-900">Smart Selection</span>
+                            <Sparkles className="w-3 h-3 text-purple-500 ml-2" />
+                          </div>
+                          <p className="text-xs text-purple-700 mb-3">
+                            Analyzes {guestPostSite} content to recommend most relevant URLs
+                          </p>
+                          {!showAiAnalysis && !isAnalyzing && (
+                            <button
+                              onClick={() => runAiAnalysis(20)}
+                              className="w-full px-3 py-2 bg-purple-600 text-white rounded-lg hover:bg-purple-700 transition-colors flex items-center justify-center space-x-2 text-sm"
+                            >
+                              <Brain className="w-4 h-4" />
+                              <span>Analyze & Select Top 20</span>
+                            </button>
+                          )}
+                          {isAnalyzing && (
+                            <div className="bg-white border border-purple-200 rounded-lg p-3">
+                              <div className="flex items-center space-x-3 mb-2">
+                                <Loader2 className="w-4 h-4 animate-spin text-purple-600" />
+                                <span className="text-sm font-medium text-purple-900">Analyzing {guestPostSite}...</span>
+                              </div>
+                              <div className="space-y-1 text-xs text-gray-600">
+                                <p>🔍 Searching web for site content...</p>
+                                <p>🧠 Analyzing {allActiveTargetPages.length} target URLs...</p>
+                                <p>⏱️ This may take 30-60 seconds...</p>
+                              </div>
+                            </div>
+                          )}
+                        </div>
+                      </div>
                     )}
                   </div>
-                  {searchQuery && (
-                    <p className="text-sm text-gray-600 mt-2">
-                      Showing {activeTargetPages.length} of {allActiveTargetPages.length} URLs
-                    </p>
+
+                  {/* Grouping Controls */}
+                  {allActiveTargetPages.length > 5 && (
+                    <div className="border-t border-gray-200 pt-3">
+                      <div className="flex items-center justify-between">
+                        <div className="flex items-center space-x-4">
+                          <label className="flex items-center space-x-2">
+                            <input
+                              type="checkbox"
+                              checked={showGroupedView}
+                              onChange={(e) => setShowGroupedView(e.target.checked)}
+                              className="w-4 h-4 text-purple-600 focus:ring-purple-500 border-gray-300 rounded"
+                            />
+                            <span className="text-sm font-medium text-gray-700">Group View</span>
+                          </label>
+                          
+                          {showGroupedView && (
+                            <div className="flex items-center space-x-2">
+                              <span className="text-sm text-gray-600">Group by:</span>
+                              <select
+                                value={groupBy}
+                                onChange={(e) => setGroupBy(e.target.value as 'path' | 'keywords')}
+                                className="text-sm border border-gray-300 rounded px-2 py-1 focus:ring-2 focus:ring-purple-500 focus:border-purple-500"
+                              >
+                                <option value="path">URL Path</option>
+                                <option value="keywords">Keyword Themes</option>
+                              </select>
+                            </div>
+                          )}
+                        </div>
+                        
+                        {showGroupedView && groupedPages && (
+                          <div className="text-sm text-gray-600">
+                            {Object.keys(groupedPages).length} groups
+                          </div>
+                        )}
+                      </div>
+                    </div>
                   )}
                 </div>
               )}
 
-              {/* Group Toggle Controls */}
-              {allActiveTargetPages.length > 5 && (
-                <div className="mb-4 bg-gray-50 border border-gray-200 rounded-lg p-3">
-                  <div className="flex items-center justify-between">
-                    <div className="flex items-center space-x-4">
-                      <label className="flex items-center space-x-2">
-                        <input
-                          type="checkbox"
-                          checked={showGroupedView}
-                          onChange={(e) => setShowGroupedView(e.target.checked)}
-                          className="w-4 h-4 text-purple-600 focus:ring-purple-500 border-gray-300 rounded"
-                        />
-                        <span className="text-sm font-medium text-gray-700">Show Grouped View</span>
-                      </label>
-                      
-                      {showGroupedView && (
-                        <div className="flex items-center space-x-2">
-                          <span className="text-sm text-gray-600">Group by:</span>
-                          <select
-                            value={groupBy}
-                            onChange={(e) => setGroupBy(e.target.value as 'path' | 'keywords')}
-                            className="text-sm border border-gray-300 rounded px-2 py-1 focus:ring-2 focus:ring-purple-500 focus:border-purple-500"
-                          >
-                            <option value="path">URL Path</option>
-                            <option value="keywords">Keyword Themes</option>
-                          </select>
-                        </div>
-                      )}
+              {/* AI Analysis Results */}
+              {showAiAnalysis && aiResults && (
+                <div className="bg-gradient-to-r from-purple-50 to-blue-50 border border-purple-200 rounded-lg p-4">
+                  <div className="flex items-center justify-between mb-3">
+                    <div className="flex items-center">
+                      <Brain className="w-5 h-5 text-purple-600 mr-2" />
+                      <h4 className="font-medium text-purple-900">AI Analysis Results</h4>
+                      <Sparkles className="w-4 h-4 text-purple-500 ml-2" />
                     </div>
-                    
-                    {showGroupedView && groupedPages && (
-                      <div className="text-sm text-gray-600">
-                        {Object.keys(groupedPages).length} groups
+                    <button
+                      onClick={() => {
+                        setShowAiAnalysis(false);
+                        setAiResults(null);
+                      }}
+                      className="text-sm text-purple-600 hover:text-purple-800"
+                    >
+                      Hide Results
+                    </button>
+                  </div>
+
+                  <div className="space-y-3">
+                    <div className="bg-white border border-purple-200 rounded-lg p-3">
+                      <h5 className="font-medium text-purple-900 mb-2">Site Analysis</h5>
+                      <p className="text-sm text-gray-700">{aiResults.siteAnalysis}</p>
+                    </div>
+
+                    <div className="bg-white border border-purple-200 rounded-lg p-3">
+                      <div className="flex items-center justify-between mb-2">
+                        <h5 className="font-medium text-purple-900">Recommended URLs ({aiResults.rankedUrls?.length || 0})</h5>
+                        <span className="text-xs text-purple-600">Auto-selected below</span>
                       </div>
-                    )}
+                      
+                      <div className="space-y-2 max-h-48 overflow-y-auto">
+                        {aiResults.rankedUrls?.map((result: any, index: number) => (
+                          <div key={index} className="border-l-4 border-purple-400 pl-3 py-2">
+                            <div className="flex items-start justify-between">
+                              <div className="flex-1">
+                                <p className="text-sm font-medium text-gray-900">
+                                  {index + 1}. {result.url}
+                                </p>
+                                <p className="text-xs text-gray-600 mt-1">{result.reasoning}</p>
+                                {result.topicalOverlap?.length > 0 && (
+                                  <div className="mt-1">
+                                    <span className="text-xs text-purple-600">
+                                      Topics: {result.topicalOverlap.join(', ')}
+                                    </span>
+                                  </div>
+                                )}
+                              </div>
+                              <span className={`px-2 py-1 text-xs rounded-full ${
+                                result.confidenceLevel === 'high' ? 'bg-green-100 text-green-800' :
+                                result.confidenceLevel === 'medium' ? 'bg-yellow-100 text-yellow-800' :
+                                'bg-red-100 text-red-800'
+                              }`}>
+                                {result.confidenceLevel}
+                              </span>
+                            </div>
+                          </div>
+                        ))}
+                      </div>
+                    </div>
+
+                    <div className="flex items-center justify-between text-sm">
+                      <p className="text-purple-700">
+                        Analysis completed in {(aiResults.processingTime / 1000).toFixed(1)}s
+                      </p>
+                    </div>
                   </div>
                 </div>
               )}
