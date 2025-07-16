@@ -363,14 +363,15 @@ Begin your analysis by systematically checking each aspect. For each check, iden
             checkType: args.check_type,
             checkDescription: this.getCheckDescription(args.check_type),
             status: args.passed ? 'passed' as const : 'failed' as const,
-            issuesFound: args.issues_found.length > 0 ? args.issues_found.join('\n') : null,
-            locationDetails: args.locations.length > 0 ? args.locations.join('\n') : null,
-            confidenceScore: args.confidence,
-            fixSuggestions: args.fix_suggestions || null,
+            issuesFound: args.issues_found.length > 0 ? args.issues_found.join('\n') : '',
+            locationDetails: args.locations.length > 0 ? args.locations.join('\n') : '',
+            confidenceScore: Math.round(args.confidence), // Fix: Round to integer
+            fixSuggestions: args.fix_suggestions || '',
             checkMetadata: {
               analysis: args.analysis,
               issueCount: args.issues_found.length
             },
+            errorMessage: '', // Fix: Use empty string instead of null
             createdAt: now,
             updatedAt: now
           };
