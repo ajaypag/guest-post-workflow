@@ -43,7 +43,7 @@ export class AITargetUrlMatcherResponses {
     try {
       const instructions = `You are an SEO analyst helping select relevant URLs for guest posting opportunities. 
 
-Based on the domain name and your knowledge, infer what topics the guest post site likely covers.
+You have web search capabilities. Use them to research the guest post site and understand what topics they cover.
 
 Then select the 20 most relevant client URLs that would be suitable for guest posts on that site.
 
@@ -51,7 +51,9 @@ Return ONLY the URLs, one per line. Nothing else.`;
 
       const userInput = `Guest post site: ${guestPostSite}
 
-Based on this domain, select the 20 most relevant URLs from the list below that would be suitable for guest posting on ${guestPostSite}:
+First, search the web to understand what topics ${guestPostSite} covers.
+
+Then, from this list of client URLs, select the 20 most relevant ones for guest posting on ${guestPostSite}:
 
 ${targetPages.map((page) => {
   const keywords = page.keywords?.join(', ') || '';
@@ -74,7 +76,12 @@ Return ONLY the selected URLs, one per line. No explanations, no numbering, just
           model: "o3",
           instructions: instructions,
           input: userInput,
-          temperature: 0.3
+          temperature: 0.3,
+          tools: [
+            {
+              type: "web_search"
+            }
+          ]
         })
       });
 
