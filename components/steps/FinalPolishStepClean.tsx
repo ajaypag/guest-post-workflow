@@ -7,6 +7,7 @@ import { CopyButton } from '../ui/CopyButton';
 import { TutorialVideo } from '../ui/TutorialVideo';
 import { ChatInterface } from '../ui/ChatInterface';
 import { SplitPromptButton } from '../ui/SplitPromptButton';
+import { AgenticFinalPolisher } from '../ui/AgenticFinalPolisher';
 import { ExternalLink, ChevronDown, ChevronRight, Sparkles, CheckCircle, AlertCircle, Target, RefreshCw, FileText } from 'lucide-react';
 
 interface FinalPolishStepProps {
@@ -23,7 +24,7 @@ export const FinalPolishStepClean = ({ step, workflow, onChange }: FinalPolishSt
   });
 
   // Tab system state
-  const [activeTab, setActiveTab] = useState<'chatgpt' | 'builtin'>('chatgpt');
+  const [activeTab, setActiveTab] = useState<'chatgpt' | 'builtin' | 'agentic'>('chatgpt');
 
   // Chat state management
   const [conversation, setConversation] = useState<any[]>([]);
@@ -197,6 +198,19 @@ Review one of my project files for my brand guide and the Semantic SEO writing t
             }`}
           >
             Built-in Chat
+          </button>
+          <button
+            onClick={() => setActiveTab('agentic')}
+            className={`flex-1 px-6 py-4 text-sm font-medium transition-colors ${
+              activeTab === 'agentic'
+                ? 'bg-purple-50 text-purple-700 border-b-2 border-purple-500'
+                : 'text-gray-500 hover:text-gray-700 hover:bg-gray-50'
+            }`}
+          >
+            <div className="flex items-center justify-center space-x-2">
+              <Sparkles className="w-4 h-4" />
+              <span>Agentic Polish</span>
+            </div>
           </button>
         </div>
 
@@ -524,7 +538,7 @@ Review one of my project files for my brand guide and the Semantic SEO writing t
       </div>
 
             </div>
-          ) : (
+          ) : activeTab === 'builtin' ? (
             <div className="space-y-6">
               {/* Built-in Chat Interface */}
               
@@ -673,6 +687,83 @@ Review one of my project files for my brand guide and the Semantic SEO writing t
                   />
                 </div>
               </div>
+            </div>
+          ) : (
+            <div className="space-y-6">
+              {/* Agentic Final Polish Interface */}
+              <div className="bg-purple-50 border border-purple-200 rounded-lg p-4">
+                <h3 className="font-medium text-purple-900 mb-2 flex items-center space-x-2">
+                  <Sparkles className="w-5 h-5" />
+                  <span>Agentic Final Polish</span>
+                </h3>
+                <p className="text-sm text-purple-800 mb-3">
+                  Fully automated final polish using OpenAI Agents SDK. The AI will:
+                </p>
+                <ul className="text-sm text-purple-700 space-y-1 list-disc list-inside">
+                  <li><strong>Gauge guide adherence</strong> - Analyze how well each section follows brand and semantic guides</li>
+                  <li><strong>Identify conflicts</strong> - Find areas where brand engagement and semantic directness conflict</li>
+                  <li><strong>Thread the needle</strong> - Balance reader engagement with clarity and directness</li>
+                  <li><strong>Score improvements</strong> - Rate engagement (1-10) and clarity (1-10) for each section</li>
+                </ul>
+                <div className="mt-3 p-3 bg-purple-100 rounded border border-purple-300">
+                  <p className="text-xs text-purple-800 font-medium">
+                    ⚡ Automated workflow that runs unattended - perfect for consistent brand alignment across all sections
+                  </p>
+                </div>
+              </div>
+
+              {/* Dependency check */}
+              {seoOptimizedArticle ? (
+                <div className="bg-green-50 border border-green-200 rounded-lg p-4">
+                  <div className="flex items-center">
+                    <CheckCircle className="w-5 h-5 text-green-600 mr-2" />
+                    <p className="text-sm text-green-800">Using SEO-optimized article from Step 5</p>
+                  </div>
+                </div>
+              ) : originalArticle ? (
+                <div className="bg-yellow-50 border border-yellow-200 rounded-lg p-4">
+                  <div className="flex items-center">
+                    <AlertCircle className="w-5 h-5 text-yellow-500 mr-2" />
+                    <p className="text-sm text-yellow-800">Using original draft from Step 4 (complete Step 5 for SEO-optimized version)</p>
+                  </div>
+                </div>
+              ) : (
+                <div className="bg-red-50 border border-red-200 rounded-lg p-4">
+                  <div className="flex items-center">
+                    <AlertCircle className="w-5 h-5 text-red-500 mr-2" />
+                    <p className="text-sm text-red-800">Complete Step 5 (Semantic SEO) first to get the optimized article for polishing</p>
+                  </div>
+                </div>
+              )}
+
+              {/* Agentic Final Polisher Component */}
+              {fullArticle && (
+                <AgenticFinalPolisher 
+                  workflowId={workflow.id}
+                  onComplete={(polishedArticle) => {
+                    onChange({ ...step.outputs, finalArticle: polishedArticle });
+                  }}
+                />
+              )}
+
+              {/* Results Section */}
+              {step.outputs.finalArticle && (
+                <div className="bg-gray-50 border border-gray-200 rounded-lg p-4">
+                  <div className="bg-green-50 border-l-4 border-green-400 p-4 mb-4 rounded-r-lg">
+                    <h4 className="font-medium text-green-800 mb-2">✅ Agentic Polish Complete</h4>
+                    <p className="text-sm text-green-700">The AI has successfully balanced brand engagement with semantic directness across all sections.</p>
+                  </div>
+
+                  <SavedField
+                    label="Final Polished Article"
+                    value={step.outputs.finalArticle || ''}
+                    placeholder="The polished article will appear here automatically..."
+                    onChange={(value) => onChange({ ...step.outputs, finalArticle: value })}
+                    isTextarea={true}
+                    height="h-64"
+                  />
+                </div>
+              )}
             </div>
           )}
         </div>
