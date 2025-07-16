@@ -383,48 +383,68 @@ THIS IS AN AUTOMATED WORKFLOW - continue until completion without asking for per
         { role: 'user', content: initialPrompt }
       ];
 
-      const result = await runner.run(agent, { messages });
+      const result = await runner.run(agent, messages, {
+        stream: true,
+        maxTurns: 50  // Override default 10-turn limit for polish workflow
+      });
       let conversationActive = true;
 
       // Process agent responses and tool calls
       for await (const event of result.toStream()) {
-        if (event.name === 'tool_called') {
-          messages.push({
-            role: 'assistant',
-            tool_calls: [{
-              id: event.toolCallId,
-              type: 'function',
-              function: {
-                name: event.toolName,
-                arguments: JSON.stringify(event.input)
-              }
-            }]
-          });
-        }
-
-        if (event.name === 'tool_output') {
-          messages.push({
-            role: 'tool',
-            content: event.output,
-            tool_call_id: event.toolCallId
-          });
-
-          // Continue the conversation if we're still processing
-          if (conversationActive) {
-            messages.push({
-              role: 'user',
-              content: 'YOU MUST CONTINUE THE AUTOMATED WORKFLOW. Continue with the next section polish or complete the process.'
-            });
+        // Stream text deltas for UI
+        if (event.type === 'raw_model_stream_event') {
+          if (event.data.type === 'output_text_delta' && event.data.delta) {
+            polishSSEPush(sessionId, { type: 'text', content: event.data.delta });
           }
         }
-
-        if (event.name === 'message') {
-          // Handle regular assistant messages
-          if (event.content) {
+        
+        if (event.type === 'run_item_stream_event') {
+          // Handle tool calls
+          if (event.name === 'tool_called') {
+            const toolCall = event.item as any;
+            console.log('Polish tool called:', toolCall.name, toolCall.id);
+            
             messages.push({
-              role: 'assistant', 
-              content: event.content
+              role: 'assistant',
+              tool_calls: [{
+                id: toolCall.id,
+                type: 'function',
+                function: {
+                  name: toolCall.name,
+                  arguments: JSON.stringify(toolCall.input)
+                }
+              }]
             });
+          }
+
+          if (event.name === 'tool_output') {
+            const toolOutput = event.item as any;
+            console.log('Polish tool output:', toolOutput.toolName, toolOutput.output?.substring(0, 100));
+            
+            messages.push({
+              role: 'tool',
+              content: toolOutput.output,
+              tool_call_id: toolOutput.toolCallId
+            });
+
+            // Continue the conversation if we're still processing
+            if (conversationActive) {
+              messages.push({
+                role: 'user',
+                content: 'YOU MUST CONTINUE THE AUTOMATED WORKFLOW. Continue with the next section polish or complete the process.'
+              });
+            }
+          }
+
+          if (event.name === 'message_output_created') {
+            // Handle regular assistant messages
+            const message = event.item as any;
+            if (message.content) {
+              messages.push({
+                role: 'assistant', 
+                content: message.content
+              });
+            }
           }
         }
 
