@@ -500,6 +500,244 @@ const runner = new Runner({
 - UI Components: `/components/ui/AgenticArticleGenerator.tsx`
 - API Endpoints: `/app/api/workflows/[id]/auto-generate/stream/route.ts`
 
+## 🔧 MANDATORY DIAGNOSTIC PROTOCOL FOR AGENTIC FEATURES
+
+### THE PROBLEM: Hours of Debugging Without Root Cause Analysis
+
+**🚨 CRITICAL ISSUE**: When implementing agentic features, vague database errors waste 4-6 hours of back-and-forth debugging. This protocol prevents that.
+
+### MANDATORY STEPS: Create These 4 Diagnostic Tools BEFORE Building Any Agentic Feature
+
+#### 1. Comprehensive Database Diagnostics (`/admin/diagnostics`)
+**Purpose**: Understand the ACTUAL database structure vs. what the code expects
+
+**Required Features**:
+- Schema analysis for all tables
+- Missing column detection
+- Data storage pattern analysis (JSON vs. separate tables)
+- Sample data structure examination
+- Primary diagnosis with specific recommendations
+
+**Code Pattern**:
+```typescript
+// /app/api/admin/comprehensive-diagnostics/route.ts
+export async function GET() {
+  const diagnostics = {
+    tableSchemas: {},
+    sampleData: {},
+    issues: [],
+    recommendations: [],
+    diagnosis: {
+      primaryIssue: 'Specific root cause',
+      likelyRoot: 'Why this is happening',
+      immediateAction: 'Exact fix needed'
+    }
+  };
+  
+  // Analyze each table structure
+  for (const tableName of requiredTables) {
+    const schema = await getTableSchema(tableName);
+    diagnostics.tableSchemas[tableName] = schema;
+    
+    // Check for missing expected columns
+    const missingColumns = expectedColumns.filter(col => !schema.columns.includes(col));
+    if (missingColumns.length > 0) {
+      diagnostics.issues.push({
+        severity: 'CRITICAL',
+        table: tableName,
+        message: `Missing expected columns: ${missingColumns.join(', ')}`,
+        recommendation: 'Update queries to read from actual data structure'
+      });
+    }
+  }
+  
+  return diagnostics;
+}
+```
+
+#### 2. VARCHAR Column Analysis (`/admin/varchar-limits`)
+**Purpose**: Prevent "Failed query: insert" errors from VARCHAR size limits
+
+**Required Features**:
+- Check all VARCHAR columns in agentic tables
+- Identify columns too small for AI-generated content
+- Auto-fix button to expand to TEXT/appropriate sizes
+- Test with sample AI-generated content
+
+**Critical Columns to Check**:
+- Any column storing AI descriptions: `VARCHAR(255)` minimum
+- Title fields: `VARCHAR(500)` minimum  
+- Long content: `TEXT` type
+- Status/type fields: `VARCHAR(50)` is sufficient
+
+**Code Pattern**:
+```typescript
+// /app/api/admin/check-varchar-limits/route.ts
+export async function POST() {
+  const fixes = [
+    { column: 'check_description', type: 'TEXT' },
+    { column: 'issues_found', type: 'TEXT' },
+    { column: 'fix_suggestions', type: 'TEXT' }
+  ];
+  
+  for (const fix of fixes) {
+    await db.execute(sql`
+      ALTER TABLE ${tableName} 
+      ALTER COLUMN ${fix.column} TYPE ${fix.type}
+    `);
+  }
+}
+```
+
+#### 3. PostgreSQL Error Capture (`/admin/test-database-inserts`)
+**Purpose**: Capture EXACT PostgreSQL error details, not vague "database error" messages
+
+**Required Features**:
+- Test exact failing INSERT with real data
+- Capture detailed PostgreSQL error codes and messages
+- Identify specific data type mismatches
+- Test fixes with same data
+
+**Critical Error Patterns**:
+- `invalid input syntax for type integer: "8.5"` → Use `Math.round()` for integers
+- `null value in column violates not-null constraint` → Use empty string `''` instead of `null`
+- `value too long for type character varying(N)` → Increase VARCHAR size
+
+**Code Pattern**:
+```typescript
+// /app/api/admin/test-database-inserts/route.ts
+export async function POST() {
+  const testData = { /* exact failing data */ };
+  
+  try {
+    await db.execute(sql`INSERT INTO table_name VALUES (...)`);
+  } catch (error) {
+    return {
+      postgresError: {
+        code: error.code,
+        detail: error.detail,
+        hint: error.hint,
+        message: error.message,
+        severity: error.severity
+      },
+      diagnosis: analyzeError(error)
+    };
+  }
+}
+```
+
+#### 4. Database Migration Verification (`/admin/database-migration`)
+**Purpose**: Ensure all required tables exist with correct structure
+
+**Required Features**:
+- Check table existence for each agentic feature
+- Verify column types match expectations
+- Migration buttons for each feature
+- Rollback capability
+
+### WORKFLOW: Systematic Troubleshooting Process
+
+#### Phase 1: Database Structure Analysis (5 minutes)
+1. **Run comprehensive diagnostics** → `/admin/diagnostics`
+2. **Identify schema mismatches** → Look for missing columns, wrong data storage patterns
+3. **Check actual vs. expected structure** → Fix queries to match reality
+
+#### Phase 2: Column Size Verification (3 minutes)
+1. **Run VARCHAR analysis** → `/admin/varchar-limits`
+2. **Fix any columns < 255 chars** → Auto-fix to TEXT/appropriate sizes
+3. **Verify agent-generated content fits** → Test with sample data
+
+#### Phase 3: Error Root Cause Analysis (2 minutes)
+1. **Capture exact PostgreSQL errors** → `/admin/test-database-inserts`
+2. **Identify specific data type issues** → Integer vs. decimal, null constraints
+3. **Test fixes with same data** → Verify fixes work
+
+#### Phase 4: Migration Verification (2 minutes)
+1. **Verify all tables exist** → `/admin/database-migration`
+2. **Check column types** → Ensure they match code expectations
+3. **Run any missing migrations** → Fix schema issues
+
+### COMMON FAILURE PATTERNS & FIXES
+
+#### 1. Schema Assumption Failures
+**Symptom**: "column does not exist" errors
+**Root Cause**: Code assumes `workflow_steps` table but data is in `workflows.content.steps` JSON
+**Fix**: Update queries to read from actual data structure
+```typescript
+// ❌ Wrong assumption
+const workflow = await db.query.workflows.findFirst({
+  with: { steps: true } // This table might not exist
+});
+
+// ✅ Correct approach
+const workflow = await db.query.workflows.findFirst({
+  where: eq(workflows.id, workflowId)
+});
+const steps = workflow.content?.steps || [];
+```
+
+#### 2. VARCHAR Size Failures
+**Symptom**: "Failed query: insert" with no clear error
+**Root Cause**: AI-generated content exceeds VARCHAR limits
+**Fix**: Use TEXT for AI content, VARCHAR(255+) for descriptions
+```sql
+-- ❌ Too small for AI content
+ALTER TABLE formatting_qa_checks ALTER COLUMN check_description TYPE VARCHAR(100);
+
+-- ✅ Safe for AI content
+ALTER TABLE formatting_qa_checks ALTER COLUMN check_description TYPE TEXT;
+```
+
+#### 3. Data Type Mismatches
+**Symptom**: "invalid input syntax for type integer"
+**Root Cause**: Sending decimals to integer columns
+**Fix**: Round/convert data before insert
+```typescript
+// ❌ Sending decimal to integer column
+confidenceScore: args.confidence, // 8.5 → fails
+
+// ✅ Round to integer
+confidenceScore: Math.round(args.confidence), // 8.5 → 9
+```
+
+#### 4. NULL Constraint Violations
+**Symptom**: "null value in column violates not-null constraint"
+**Root Cause**: Sending null to NOT NULL columns
+**Fix**: Use empty string or appropriate defaults
+```typescript
+// ❌ Sending null to NOT NULL column
+errorMessage: null, // fails if column is NOT NULL
+
+// ✅ Use empty string
+errorMessage: '', // works for NOT NULL TEXT columns
+```
+
+### DIAGNOSTIC TOOLS LOCATIONS
+
+After implementing agentic features, these tools must be available:
+
+1. **`/admin/diagnostics`** → Database structure analysis
+2. **`/admin/varchar-limits`** → Column size verification and fixing
+3. **`/admin/test-database-inserts`** → PostgreSQL error capture
+4. **`/admin/database-migration`** → Migration verification
+
+### PREVENTION RULES
+
+1. **Always build diagnostics FIRST** → Don't debug blindly
+2. **Test with real AI-generated content** → Don't use short test strings
+3. **Capture exact PostgreSQL errors** → Don't settle for vague messages
+4. **Use TEXT for AI content** → Don't risk VARCHAR limits
+5. **Verify schema matches code** → Don't assume table structure
+
+### SUCCESS CRITERIA
+
+- **10 minutes to diagnose any issue** → Down from 4-6 hours
+- **Specific error messages** → No more guessing
+- **Automated fixes** → One-click solutions
+- **Prevention built-in** → Issues caught before deployment
+
+This protocol prevents the expensive debugging cycles that occurred with the formatting QA feature implementation.
+
 ## Contact
 Created for OutreachLabs by Claude with Ajay
 Repository: https://github.com/ajaypag/guest-post-workflow
