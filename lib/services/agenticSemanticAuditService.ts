@@ -7,6 +7,13 @@ import { eq, and, sql } from 'drizzle-orm';
 import { v4 as uuidv4 } from 'uuid';
 import { z } from 'zod';
 
+// Helper function to sanitize strings by removing null bytes and control characters
+function sanitizeForPostgres(str: string): string {
+  if (!str) return str;
+  // Remove null bytes and other control characters (0x00-0x1F except tab, newline, carriage return)
+  return str.replace(/[\x00-\x08\x0B\x0C\x0E-\x1F]/g, '');
+}
+
 // Zod schemas for audit tool parameters - keeping the advanced features but fixing OpenAI compatibility
 const parseArticleSchema = z.object({
   sections: z.array(z.object({
@@ -87,8 +94,8 @@ export class AgenticSemanticAuditService {
         version: nextVersion,
         stepId: 'content-audit',
         status: 'pending',
-        originalArticle,
-        researchOutline,
+        originalArticle: sanitizeForPostgres(originalArticle),
+        researchOutline: sanitizeForPostgres(researchOutline),
         auditMetadata: {
           startedAt: now.toISOString(),
           version: nextVersion,
@@ -229,12 +236,12 @@ Begin the audit now.`;
             workflowId: currentSession.workflowId,
             version: currentSession.version,
             sectionNumber: ordinal,
-            title: section_title,
-            originalContent: originalSection?.content || '',
-            auditedContent: optimized_content,
-            strengths: strengths,
-            weaknesses: weaknesses,
-            editingPattern: editing_pattern,
+            title: sanitizeForPostgres(section_title),
+            originalContent: sanitizeForPostgres(originalSection?.content || ''),
+            auditedContent: sanitizeForPostgres(optimized_content),
+            strengths: sanitizeForPostgres(strengths),
+            weaknesses: sanitizeForPostgres(weaknesses),
+            editingPattern: sanitizeForPostgres(editing_pattern),
             citationsAdded: citations_added,
             status: 'completed',
             auditMetadata: {

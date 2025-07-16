@@ -7,6 +7,13 @@ import { eq, and, sql } from 'drizzle-orm';
 import { v4 as uuidv4 } from 'uuid';
 import { z } from 'zod';
 
+// Helper function to sanitize strings by removing null bytes and control characters
+function sanitizeForPostgres(str: string): string {
+  if (!str) return str;
+  // Remove null bytes and other control characters (0x00-0x1F except tab, newline, carriage return)
+  return str.replace(/[\x00-\x08\x0B\x0C\x0E-\x1F]/g, '');
+}
+
 // Zod schemas for tool parameters
 const planArticleSchema = z.object({
   headline: z.string().describe('Article headline'),
@@ -106,7 +113,7 @@ export class AgenticArticleService {
         version: nextVersion,
         stepId: 'article-draft',
         status: 'planning',
-        outline,
+        outline: sanitizeForPostgres(outline),
         sessionMetadata: {
           styleRules: WRITING_STYLE_RULES,
           startedAt: now.toISOString(),
@@ -248,8 +255,8 @@ This is an automated workflow - execute these steps without asking for permissio
             workflowId: currentSession!.workflowId,
             version: currentSession!.version,
             sectionNumber: ordinal,
-            title: section_title,
-            content: markdown,
+            title: sanitizeForPostgres(section_title),
+            content: sanitizeForPostgres(markdown),
             wordCount: markdown.split(/\s+/).length,
             status: 'completed',
             createdAt: new Date(),

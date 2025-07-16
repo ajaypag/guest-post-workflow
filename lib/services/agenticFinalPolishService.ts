@@ -7,6 +7,13 @@ import { eq, and, sql } from 'drizzle-orm';
 import { v4 as uuidv4 } from 'uuid';
 import { z } from 'zod';
 
+// Helper function to sanitize strings by removing null bytes and control characters
+function sanitizeForPostgres(str: string): string {
+  if (!str) return str;
+  // Remove null bytes and other control characters (0x00-0x1F except tab, newline, carriage return)
+  return str.replace(/[\x00-\x08\x0B\x0C\x0E-\x1F]/g, '');
+}
+
 // Zod schemas for polish tool parameters
 const parsePolishSchema = z.object({
   sections: z.array(z.object({
@@ -86,8 +93,8 @@ export class AgenticFinalPolishService {
         version: nextVersion,
         stepId: 'final-polish',
         status: 'pending',
-        originalArticle,
-        researchContext,
+        originalArticle: sanitizeForPostgres(originalArticle),
+        researchContext: sanitizeForPostgres(researchContext || ''),
         polishMetadata: {
           startedAt: now.toISOString(),
           version: nextVersion,
@@ -163,7 +170,11 @@ Start by searching the knowledge base for brand guide, semantic seo, writing sty
             totalSections: args.totalSections,
             polishMetadata: {
               ...(session.polishMetadata || {}),
-              parsedSections: args.sections,
+              parsedSections: args.sections.map(s => ({
+                ...s,
+                title: sanitizeForPostgres(s.title),
+                content: sanitizeForPostgres(s.content)
+              })),
               polishApproaches: [],
               conflictsResolved: 0
             }
@@ -244,13 +255,13 @@ FINAL POLISH PRINCIPLES:
               workflowId: currentSession.workflowId,
               version: currentSession.version,
               sectionNumber: ordinal,
-              title: args.section_title,
-              originalContent: parsedSections[ordinal - 1]?.content || '',
-              polishedContent: args.polished_content,
-              strengths: args.strengths,
-              weaknesses: args.weaknesses,
-              brandConflicts: args.brand_conflicts,
-              polishApproach: args.polish_approach,
+              title: sanitizeForPostgres(args.section_title),
+              originalContent: sanitizeForPostgres(parsedSections[ordinal - 1]?.content || ''),
+              polishedContent: sanitizeForPostgres(args.polished_content),
+              strengths: sanitizeForPostgres(args.strengths),
+              weaknesses: sanitizeForPostgres(args.weaknesses),
+              brandConflicts: sanitizeForPostgres(args.brand_conflicts),
+              polishApproach: sanitizeForPostgres(args.polish_approach),
               engagementScore: args.engagement_score,
               clarityScore: args.clarity_score,
               status: 'completed',
