@@ -29,6 +29,80 @@ export function AgenticFormattingChecker({ workflowId, onComplete }: AgenticForm
   const [fixesApplied, setFixesApplied] = useState<string[]>([]);
   const eventSourceRef = useRef<EventSource | null>(null);
   const [copySuccess, setCopySuccess] = useState<Record<string, boolean>>({});
+  const [isLoading, setIsLoading] = useState(true);
+
+  // Load existing QA session on component mount
+  useEffect(() => {
+    const loadExistingSession = async () => {
+      try {
+        setIsLoading(true);
+        const response = await fetch(`/api/workflows/${workflowId}/formatting-qa/latest`);
+        
+        if (!response.ok) {
+          throw new Error('Failed to load existing QA session');
+        }
+        
+        const data = await response.json();
+        
+        if (data.success && data.session) {
+          const session = data.session;
+          console.log('Loading existing QA session:', session.id);
+          
+          // Set session state
+          setSessionId(session.id);
+          setStatus(session.status);
+          
+          // Load cleaned article and fixes if available
+          if (session.cleanedArticle) {
+            setCleanedArticle(session.cleanedArticle);
+          }
+          if (session.fixesApplied) {
+            setFixesApplied(Array.isArray(session.fixesApplied) ? session.fixesApplied : []);
+          }
+          
+          // Load checks from the session
+          if (session.checks && session.checks.length > 0) {
+            const formattedChecks = session.checks.map((check: any) => ({
+              checkType: check.checkType,
+              status: check.status,
+              issuesFound: check.issuesFound ? check.issuesFound.split('\n').filter(Boolean) : [],
+              confidence: check.confidenceScore,
+              fixSuggestions: check.fixSuggestions,
+              checkNumber: check.checkNumber
+            }));
+            setChecks(formattedChecks);
+          }
+          
+          // Set overall stats
+          if (session.totalChecks) {
+            setOverallStats({
+              total: session.totalChecks,
+              passed: session.passedChecks || 0,
+              failed: session.failedChecks || 0
+            });
+          }
+          
+          // If session is completed, trigger onComplete callback
+          if (session.status === 'completed' && onComplete) {
+            onComplete({
+              sessionId: session.id,
+              status: session.status,
+              checks: session.checks,
+              cleanedArticle: session.cleanedArticle,
+              fixesApplied: session.fixesApplied
+            });
+          }
+        }
+      } catch (error) {
+        console.error('Error loading existing QA session:', error);
+        // Don't show error for missing sessions - this is expected for new workflows
+      } finally {
+        setIsLoading(false);
+      }
+    };
+    
+    loadExistingSession();
+  }, [workflowId, onComplete]);
 
   // Check type display names
   const checkTypeNames: Record<string, string> = {
@@ -215,6 +289,16 @@ export function AgenticFormattingChecker({ workflowId, onComplete }: AgenticForm
 
   return (
     <div className="space-y-6">
+      {/* Loading indicator */}
+      {isLoading && (
+        <div className="bg-blue-50 border border-blue-200 rounded-lg p-4">
+          <div className="flex items-center space-x-2">
+            <Clock className="w-5 h-5 text-blue-600 animate-spin" />
+            <span className="text-blue-700">Loading existing QA session...</span>
+          </div>
+        </div>
+      )}
+      
       {/* Header */}
       <div className="bg-gradient-to-r from-purple-50 to-blue-50 rounded-lg p-6 border border-purple-200">
         <div className="flex items-center justify-between mb-4">
@@ -228,19 +312,19 @@ export function AgenticFormattingChecker({ workflowId, onComplete }: AgenticForm
             </div>
           </div>
           
-          {!isRunning && status !== 'completed' && (
+          {!isRunning && !isLoading && (
             <button
               onClick={startQACheck}
               className="bg-purple-600 hover:bg-purple-700 text-white px-4 py-2 rounded-md flex items-center"
             >
               <Bot className="w-4 h-4 mr-2" />
-              Start QA Check
+              {sessionId ? 'Run Again' : 'Start QA Check'}
             </button>
           )}
         </div>
 
         {/* Progress Stats */}
-        {(isRunning || status === 'completed') && (
+        {(isRunning || status === 'completed' || (sessionId && !isLoading)) && (
           <div className="grid grid-cols-3 gap-4 mt-4">
             <div className="bg-white rounded-lg p-3 text-center">
               <div className="text-2xl font-bold text-gray-900">{overallStats.total}</div>
