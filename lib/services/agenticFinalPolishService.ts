@@ -238,6 +238,7 @@ FINAL POLISH PRINCIPLES:
             // Prepare the data for insertion
             const sectionId = uuidv4();
             const now = new Date();
+            
             const insertData = {
               id: sectionId,
               polishSessionId: sessionId,
@@ -278,18 +279,31 @@ FINAL POLISH PRINCIPLES:
               console.log('Successfully inserted polish section:', sectionId);
             } catch (dbError: any) {
               console.error('Database insert failed:', dbError);
+              console.error('Full database error object:', JSON.stringify(dbError, null, 2));
               console.error('Error details:', {
                 message: dbError.message,
                 code: dbError.code,
                 detail: dbError.detail,
-                stack: dbError.stack
+                hint: dbError.hint,
+                stack: dbError.stack,
+                table: dbError.table,
+                column: dbError.column,
+                constraint: dbError.constraint,
+                routine: dbError.routine
               });
+              
+              // Log the actual data we tried to insert
+              console.error('Failed insert data:', JSON.stringify(insertData, null, 2));
               
               // Return a more informative error message
               return `I encountered a database error while trying to save the polished section. The section has been successfully polished but could not be saved to the database.
 
 Database Error: ${dbError.message || 'Unknown database error'}
+${dbError.code ? `Code: ${dbError.code}` : ''}
 ${dbError.detail ? `Detail: ${dbError.detail}` : ''}
+${dbError.hint ? `Hint: ${dbError.hint}` : ''}
+${dbError.column ? `Column: ${dbError.column}` : ''}
+${dbError.constraint ? `Constraint: ${dbError.constraint}` : ''}
 
 Here is the polished content for "${args.section_title}":
 
@@ -356,16 +370,18 @@ Please save this manually or check the database configuration.`;
               ))
               .orderBy(polishSections.sectionNumber);
             
-            const finalPolishedArticle = finalSections.map(section => {
-              // Get section metadata to determine header level
-              const sessionMetadata = currentSession?.polishMetadata as any;
-              const parsedSections = sessionMetadata?.parsedSections || [];
-              const originalSection = parsedSections.find((s: any) => s.order === section.sectionNumber);
-              
-              // Use appropriate header level (H2 for sections, H3 for subsections)
-              const headerLevel = originalSection?.headerLevel === 'h3' ? '###' : '##';
-              return `${headerLevel} ${section.title}\n\n${section.polishedContent}`;
-            }).join('\n\n');
+            const finalPolishedArticle = finalSections && finalSections.length > 0 
+              ? finalSections.map(section => {
+                  // Get section metadata to determine header level
+                  const sessionMetadata = currentSession?.polishMetadata as any;
+                  const parsedSections = sessionMetadata?.parsedSections || [];
+                  const originalSection = parsedSections.find((s: any) => s.order === section.sectionNumber);
+                  
+                  // Use appropriate header level (H2 for sections, H3 for subsections)
+                  const headerLevel = originalSection?.headerLevel === 'h3' ? '###' : '##';
+                  return `${headerLevel} ${section.title}\n\n${section.polishedContent}`;
+                }).join('\n\n')
+              : '';
             
             // Calculate average scores
             const avgEngagementScore = finalSections.reduce((sum, s) => sum + (s.engagementScore || 0), 0) / finalSections.length;
