@@ -468,6 +468,83 @@ export default function DatabaseMigrationPage() {
     setIsLoading(false);
   };
 
+  const checkFormattingQaTablesExist = async () => {
+    setIsLoading(true);
+    setMessage('');
+    
+    try {
+      const response = await fetch('/api/admin/check-formatting-qa-tables');
+      const data = await response.json();
+      
+      if (data.exists) {
+        setMessage('✅ Formatting QA tables (formatting_qa_sessions, formatting_qa_checks) exist');
+        setMessageType('success');
+      } else {
+        setMessage(`ℹ️ ${data.message || 'Formatting QA tables do not exist'}`);
+        setMessageType('info');
+      }
+    } catch (error) {
+      setMessage(`❌ Error checking formatting QA tables: ${error instanceof Error ? error.message : 'Unknown error'}`);
+      setMessageType('error');
+    }
+    
+    setIsLoading(false);
+  };
+
+  const runFormattingQaMigration = async () => {
+    setIsLoading(true);
+    setMessage('');
+    
+    try {
+      const response = await fetch('/api/admin/migrate-formatting-qa', {
+        method: 'POST'
+      });
+      const data = await response.json();
+      
+      if (data.success) {
+        setMessage('✅ Formatting QA tables migration completed successfully!');
+        setMessageType('success');
+      } else {
+        setMessage(`❌ Migration failed: ${data.error}`);
+        setMessageType('error');
+      }
+    } catch (error) {
+      setMessage(`❌ Error: ${error instanceof Error ? error.message : 'Unknown error'}`);
+      setMessageType('error');
+    }
+    
+    setIsLoading(false);
+  };
+
+  const runFormattingQaRollback = async () => {
+    if (!confirm('Are you sure you want to remove the formatting QA tables? This will delete all AI QA sessions and results.')) {
+      return;
+    }
+    
+    setIsLoading(true);
+    setMessage('');
+    
+    try {
+      const response = await fetch('/api/admin/migrate-formatting-qa', {
+        method: 'DELETE'
+      });
+      const data = await response.json();
+      
+      if (data.success) {
+        setMessage('✅ Formatting QA tables rollback completed successfully!');
+        setMessageType('success');
+      } else {
+        setMessage(`❌ Rollback failed: ${data.error}`);
+        setMessageType('error');
+      }
+    } catch (error) {
+      setMessage(`❌ Error: ${error instanceof Error ? error.message : 'Unknown error'}`);
+      setMessageType('error');
+    }
+    
+    setIsLoading(false);
+  };
+
   return (
     <div className="min-h-screen bg-gray-50 py-8">
       <div className="max-w-4xl mx-auto px-4 sm:px-6 lg:px-8">
@@ -933,6 +1010,82 @@ export default function DatabaseMigrationPage() {
               >
                 <RotateCcw className="w-4 h-4 mr-2" />
                 {isLoading ? 'Rolling Back...' : 'Remove Polish Tables'}
+              </button>
+            </div>
+          </div>
+
+          {/* Formatting QA Tables Migration Section */}
+          <div className="mt-12 mb-8">
+            <h2 className="text-lg font-semibold text-gray-900 mb-4">Formatting QA Tables Migration</h2>
+            <p className="text-gray-600 mb-4">
+              This migration creates the <code className="bg-gray-100 px-2 py-1 rounded">formatting_qa_sessions</code> and{' '}
+              <code className="bg-gray-100 px-2 py-1 rounded">formatting_qa_checks</code> tables required for the new 
+              AI-powered formatting and quality assurance workflow in Step 7 (Formatting & QA).
+            </p>
+            
+            <div className="bg-indigo-50 border border-indigo-200 rounded-lg p-4 mb-6">
+              <div className="flex items-start space-x-3">
+                <AlertTriangle className="w-5 h-5 text-indigo-600 mt-0.5" />
+                <div>
+                  <h3 className="text-sm font-semibold text-indigo-800">Agentic Formatting QA Features:</h3>
+                  <ul className="text-sm text-indigo-700 mt-2 space-y-1">
+                    <li>• Automated validation of header hierarchy and formatting</li>
+                    <li>• Checks paragraph spacing and line break consistency</li>
+                    <li>• Verifies section completeness and structure</li>
+                    <li>• Validates citation placement and UTM cleanup</li>
+                    <li>• Provides detailed fix suggestions with confidence scores</li>
+                  </ul>
+                </div>
+              </div>
+            </div>
+          </div>
+
+          <div className="space-y-4 mb-8">
+            {/* Check Formatting QA Tables Status */}
+            <div className="border border-gray-200 rounded-lg p-4">
+              <h3 className="font-semibold text-gray-900 mb-2">Check Formatting QA Tables Status</h3>
+              <p className="text-gray-600 text-sm mb-3">
+                Check if the formatting QA tables already exist in your database.
+              </p>
+              <button
+                onClick={checkFormattingQaTablesExist}
+                disabled={isLoading}
+                className="inline-flex items-center px-4 py-2 bg-blue-600 text-white text-sm font-medium rounded-md hover:bg-blue-700 disabled:opacity-50 disabled:cursor-not-allowed"
+              >
+                <Database className="w-4 h-4 mr-2" />
+                {isLoading ? 'Checking...' : 'Check Formatting QA Tables Status'}
+              </button>
+            </div>
+
+            {/* Run Formatting QA Migration */}
+            <div className="border border-green-200 rounded-lg p-4">
+              <h3 className="font-semibold text-gray-900 mb-2">Create Formatting QA Tables</h3>
+              <p className="text-gray-600 text-sm mb-3">
+                Create the formatting_qa_sessions and formatting_qa_checks tables to enable AI-powered formatting checks.
+              </p>
+              <button
+                onClick={runFormattingQaMigration}
+                disabled={isLoading}
+                className="inline-flex items-center px-4 py-2 bg-green-600 text-white text-sm font-medium rounded-md hover:bg-green-700 disabled:opacity-50 disabled:cursor-not-allowed"
+              >
+                <Play className="w-4 h-4 mr-2" />
+                {isLoading ? 'Running Migration...' : 'Create Formatting QA Tables'}
+              </button>
+            </div>
+
+            {/* Formatting QA Rollback */}
+            <div className="border border-red-200 rounded-lg p-4">
+              <h3 className="font-semibold text-gray-900 mb-2">Remove Formatting QA Tables (Rollback)</h3>
+              <p className="text-gray-600 text-sm mb-3">
+                Remove the formatting QA tables and all stored QA sessions and results. This action cannot be undone.
+              </p>
+              <button
+                onClick={runFormattingQaRollback}
+                disabled={isLoading}
+                className="inline-flex items-center px-4 py-2 bg-red-600 text-white text-sm font-medium rounded-md hover:bg-red-700 disabled:opacity-50 disabled:cursor-not-allowed"
+              >
+                <RotateCcw className="w-4 h-4 mr-2" />
+                {isLoading ? 'Rolling Back...' : 'Remove Formatting QA Tables'}
               </button>
             </div>
           </div>

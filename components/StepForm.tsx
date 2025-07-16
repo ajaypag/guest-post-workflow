@@ -29,6 +29,7 @@ import { DeepResearchStepClean } from './steps/DeepResearchStepClean';
 import { ArticleDraftStepClean } from './steps/ArticleDraftStepClean';
 import { ContentAuditStepClean } from './steps/ContentAuditStepClean';
 import { FinalPolishStepClean } from './steps/FinalPolishStepClean';
+import { FormattingQAStepClean } from './steps/FormattingQAStepClean';
 
 interface StepFormProps {
   step: WorkflowStep;
@@ -46,7 +47,7 @@ const stepForms: Record<string, React.FC<{ step: WorkflowStep; workflow: GuestPo
   'article-draft': ArticleDraftStepClean,
   'content-audit': ContentAuditStepClean,
   'final-polish': FinalPolishStepClean,
-  'formatting-qa': FormattingQAStep,
+  'formatting-qa': FormattingQAStepClean,
   'internal-links': InternalLinksStep,
   'external-links': ExternalLinksStep,
   'client-mention': ClientMentionStep,
