@@ -125,6 +125,80 @@ const stepForms = {
 - `ContentAuditStep.tsx` ❌ DO NOT EDIT (deprecated)
 - `FinalPolishStep.tsx` ❌ DO NOT EDIT (deprecated)
 
+## ⚠️ CRITICAL: Database VARCHAR Column Sizes for Agentic Features
+
+### The Hidden Killer: VARCHAR Size Limits
+
+**🚨 THIS WILL WASTE HOURS OF DEBUGGING TIME IF NOT ADDRESSED 🚨**
+
+When creating agentic features that save to PostgreSQL, **VARCHAR COLUMN SIZES ARE CRITICAL**. The agent will fail silently with vague "database error" messages if text exceeds column limits.
+
+#### Real-World Failures That Occurred:
+
+1. **polish_sections.polish_approach: varchar(100) → FAILED**
+   - Agent generated: "engagement-focused-with-semantic-clarity-balanced-approach"
+   - Error: Vague "Failed query" message, no indication it was length issue
+   - Fix: Must be `varchar(255)` minimum
+
+2. **polish_sections.title: varchar(255) → RISKY**
+   - Long titles with special characters exceed 255
+   - Fix: Use `varchar(500)` for safety
+
+3. **audit_sections.editing_pattern: varchar(100) → FAILED**
+   - Similar descriptive patterns as polish_approach
+   - Fix: Must be `varchar(255)` minimum
+
+#### When Creating ANY Agentic Table:
+
+```sql
+-- ❌ WRONG - Will cause silent failures
+CREATE TABLE agent_outputs (
+  approach VARCHAR(100),      -- TOO SMALL!
+  description VARCHAR(100),   -- TOO SMALL!
+  title VARCHAR(255)         -- RISKY!
+);
+
+-- ✅ CORRECT - Allows agent flexibility
+CREATE TABLE agent_outputs (
+  approach VARCHAR(255),      -- Safe for agent descriptions
+  description TEXT,          -- Use TEXT for long content
+  title VARCHAR(500),        -- Extra safe for titles
+  status VARCHAR(50)         -- OK for fixed values
+);
+```
+
+#### How to Debug VARCHAR Issues:
+
+1. **Symptoms:**
+   - Agent says "I encountered a database error"
+   - Server logs show "Failed query: insert into..."
+   - No clear error about column size
+
+2. **Diagnosis:**
+   - Go to `/admin/column-check` to see all column sizes
+   - Look for "❌ TOO SMALL" indicators
+   - Check if agent-generated content exceeds limits
+
+3. **Quick Fix:**
+   ```sql
+   ALTER TABLE table_name ALTER COLUMN column_name TYPE varchar(255);
+   ```
+
+#### Prevention Rules:
+
+1. **For agent-generated descriptions**: Use `VARCHAR(255)` minimum
+2. **For titles**: Use `VARCHAR(500)` 
+3. **For long content**: Use `TEXT` not VARCHAR
+4. **For status/type fields**: `VARCHAR(50)` is sufficient
+5. **When in doubt**: Use `TEXT` - better safe than sorry
+
+#### Testing New Agentic Features:
+
+Always create `/api/admin/check-column-sizes` endpoint to verify:
+- All VARCHAR columns in new tables
+- Compare against expected agent output lengths
+- Add "Fix Column Sizes" button in migration UI
+
 ### Teams Workspace Button Added
 All three active step components now include the Teams Workspace button:
 - URL: https://chatgpt.com/g/g-p-686ea60485908191a5ac7a73ebf3a945/project?model=o3
