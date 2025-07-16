@@ -61,32 +61,90 @@ ${targetPages.map((page) => {
 
 Return ONLY the selected URLs, one per line. No explanations, no numbering, just the URLs.`;
 
-      console.log(`🤖 Starting AI analysis of ${guestPostSite} against ${targetPages.length} target URLs...`);
+      console.log(`🤖 Starting AI analysis of ${guestPostSite} against ${targetPages.length} target URLs using Responses API...`);
 
-      const openai = this.getOpenAI();
-      const completion = await openai.chat.completions.create({
-        model: "gpt-4-turbo-preview",
-        messages: [
-          {
-            role: "system",
-            content: instructions
-          },
-          {
-            role: "user",
-            content: userInput
-          }
-        ],
-        temperature: 0.3,
-        max_tokens: 1000
+      // Make a direct HTTP request to the Responses API
+      const apiResponse = await fetch('https://api.openai.com/v1/responses', {
+        method: 'POST',
+        headers: {
+          'Authorization': `Bearer ${process.env.OPENAI_API_KEY}`,
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+          model: "o3",
+          instructions: instructions,
+          input: userInput,
+          temperature: 0.3
+        })
       });
 
-      const responseContent = completion.choices[0]?.message?.content;
-      if (!responseContent) {
-        throw new Error('No response content from AI');
+      if (!apiResponse.ok) {
+        const errorText = await apiResponse.text();
+        console.error('OpenAI API error response:', errorText);
+        throw new Error(`OpenAI API error: ${errorText}`);
       }
 
-      // Extract the URL list from the response
-      const urlList = responseContent.trim();
+      const responseText = await apiResponse.text();
+      console.log('Raw API response:', responseText.substring(0, 200) + '...');
+      
+      let response;
+      try {
+        response = JSON.parse(responseText);
+      } catch (e) {
+        throw new Error(`API returned non-JSON response: ${responseText.substring(0, 100)}...`);
+      }
+
+      // Wait for the response to complete if needed
+      let finalResponse = response;
+      
+      // Check if we need to poll for completion
+      if (response.status === 'in_progress' || response.status === 'queued') {
+        // Poll for completion
+        const maxAttempts = 60; // 60 seconds max
+        let attempts = 0;
+        
+        while ((finalResponse.status === 'in_progress' || finalResponse.status === 'queued') && attempts < maxAttempts) {
+          await new Promise(resolve => setTimeout(resolve, 1000)); // Wait 1 second
+          
+          // Get the updated response via direct HTTP request
+          const pollResponse = await fetch(`https://api.openai.com/v1/responses/${response.id}`, {
+            method: 'GET',
+            headers: {
+              'Authorization': `Bearer ${process.env.OPENAI_API_KEY}`,
+              'Content-Type': 'application/json',
+            }
+          });
+          
+          if (!pollResponse.ok) {
+            throw new Error(`Failed to poll response: ${await pollResponse.text()}`);
+          }
+          
+          finalResponse = await pollResponse.json();
+          attempts++;
+        }
+        
+        if (finalResponse.status !== 'completed') {
+          throw new Error(`Response did not complete in time. Status: ${finalResponse.status}`);
+        }
+      }
+
+      // Extract the content from the response
+      const outputText = finalResponse.output_text;
+      let urlList: string;
+      
+      if (!outputText) {
+        // Fallback to checking output array
+        const messageOutput = finalResponse.output?.find((item: any) => item.type === 'message');
+        const textContent = messageOutput?.content?.find((c: any) => c.type === 'output_text');
+        
+        if (!textContent?.text) {
+          throw new Error('No response content from AI');
+        }
+        
+        urlList = textContent.text.trim();
+      } else {
+        urlList = outputText.trim();
+      }
 
       // Parse the URL list
       const selectedUrls = urlList.split('\n')
