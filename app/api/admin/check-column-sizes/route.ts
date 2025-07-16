@@ -17,7 +17,7 @@ export async function GET() {
         column_default
       FROM information_schema.columns
       WHERE table_schema = 'public'
-      AND table_name IN ('polish_sessions', 'polish_sections', 'audit_sessions', 'audit_sections')
+      AND table_name IN ('polish_sessions', 'polish_sections', 'audit_sessions', 'audit_sections', 'formatting_qa_sessions', 'formatting_qa_checks', 'article_sections', 'agent_sessions')
       AND (data_type = 'character varying' OR data_type LIKE 'varchar%')
       ORDER BY table_name, ordinal_position
     `);
