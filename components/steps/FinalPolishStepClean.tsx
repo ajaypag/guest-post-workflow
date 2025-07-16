@@ -8,6 +8,7 @@ import { TutorialVideo } from '../ui/TutorialVideo';
 import { ChatInterface } from '../ui/ChatInterface';
 import { SplitPromptButton } from '../ui/SplitPromptButton';
 import { AgenticFinalPolisher } from '../ui/AgenticFinalPolisher';
+import { MarkdownPreview } from '../ui/MarkdownPreview';
 import { ExternalLink, ChevronDown, ChevronRight, Sparkles, CheckCircle, AlertCircle, Target, RefreshCw, FileText } from 'lucide-react';
 
 interface FinalPolishStepProps {
@@ -523,14 +524,21 @@ Review one of my project files for my brand guide and the Semantic SEO writing t
               />
 
               {step.outputs.finalArticle && (
-                <div className="bg-green-50 border border-green-200 rounded-lg p-4">
-                  <div className="flex items-center">
-                    <CheckCircle className="w-5 h-5 text-green-600 mr-2" />
-                    <p className="text-sm text-green-800">
-                      Polish complete! Article is ready for formatting, QA, and link insertion.
-                    </p>
+                <>
+                  <div className="bg-green-50 border border-green-200 rounded-lg p-4">
+                    <div className="flex items-center">
+                      <CheckCircle className="w-5 h-5 text-green-600 mr-2" />
+                      <p className="text-sm text-green-800">
+                        Polish complete! Article is ready for formatting, QA, and link insertion.
+                      </p>
+                    </div>
                   </div>
-                </div>
+                  
+                  <MarkdownPreview 
+                    content={step.outputs.finalArticle}
+                    className="mt-4"
+                  />
+                </>
               )}
             </div>
           </div>
@@ -685,6 +693,13 @@ Review one of my project files for my brand guide and the Semantic SEO writing t
                     isTextarea={true}
                     height="h-64"
                   />
+                  
+                  {step.outputs.finalArticle && (
+                    <MarkdownPreview 
+                      content={step.outputs.finalArticle}
+                      className="mt-4"
+                    />
+                  )}
                 </div>
               </div>
             </div>
@@ -761,6 +776,11 @@ Review one of my project files for my brand guide and the Semantic SEO writing t
                     onChange={(value) => onChange({ ...step.outputs, finalArticle: value })}
                     isTextarea={true}
                     height="h-64"
+                  />
+                  
+                  <MarkdownPreview 
+                    content={step.outputs.finalArticle}
+                    className="mt-4"
                   />
                 </div>
               )}
