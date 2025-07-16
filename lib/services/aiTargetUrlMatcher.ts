@@ -76,7 +76,6 @@ Return ONLY the selected URLs, one per line. No explanations, no numbering, just
           model: "o3",
           instructions: instructions,
           input: userInput,
-          temperature: 0.3,
           tools: [
             {
               type: "web_search"
