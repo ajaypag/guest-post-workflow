@@ -159,7 +159,7 @@ export async function GET(request: NextRequest) {
         totalRows: workflowStepsCount.rows[0].count
       };
 
-      if (parseInt(workflowStepsCount.rows[0].count) > 0) {
+      if (parseInt(String(workflowStepsCount.rows[0].count)) > 0) {
         const sampleStep = await db.execute(sql`
           SELECT * FROM workflow_steps LIMIT 1
         `);
