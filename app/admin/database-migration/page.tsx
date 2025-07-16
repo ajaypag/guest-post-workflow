@@ -901,6 +901,13 @@ export default function DatabaseMigrationPage() {
               <p className="text-gray-600 text-sm mb-3">
                 Create the polish_sessions and polish_sections tables to enable AI-powered final polish.
               </p>
+              <div className="bg-gray-50 border border-gray-300 rounded p-3 mb-3">
+                <p className="text-sm font-medium text-gray-700 mb-2">Troubleshooting Tools:</p>
+                <ul className="text-sm text-gray-600 space-y-1">
+                  <li>• <a href="/api/admin/check-polish-tables-direct" target="_blank" className="text-blue-600 hover:underline">Check Tables Directly</a> - Detailed table and column info</li>
+                  <li>• <button onClick={() => fetch('/api/admin/test-polish-insert-real', { method: 'POST' }).then(r => r.json()).then(d => alert(JSON.stringify(d, null, 2)))} className="text-blue-600 hover:underline">Test Database Insert</button> - Test if tables work correctly</li>
+                </ul>
+              </div>
               <button
                 onClick={runPolishMigration}
                 disabled={isLoading}

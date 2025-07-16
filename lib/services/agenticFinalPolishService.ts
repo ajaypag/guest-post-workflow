@@ -208,43 +208,110 @@ FINAL POLISH PRINCIPLES:
         execute: async (args) => {
           console.log('Polish section tool executed:', args);
 
-          // Get current session and metadata
-          const currentSession = await this.getPolishSession(sessionId);
-          if (!currentSession) throw new Error('Session not found');
+          try {
+            // Get current session and metadata
+            const currentSession = await this.getPolishSession(sessionId);
+            if (!currentSession) {
+              console.error('Polish section failed: Session not found for ID:', sessionId);
+              throw new Error('Session not found');
+            }
 
-          const sessionMetadata = currentSession.polishMetadata as any;
-          const parsedSections = sessionMetadata?.parsedSections || [];
-          const ordinal = parsedSections.findIndex((s: any) => s.title === args.section_title) + 1;
+            const sessionMetadata = currentSession.polishMetadata as any;
+            const parsedSections = sessionMetadata?.parsedSections || [];
+            const ordinal = parsedSections.findIndex((s: any) => s.title === args.section_title) + 1;
+            
+            console.log(`Saving polish for section "${args.section_title}" (ordinal: ${ordinal})`);
+            console.log('Current session metadata:', {
+              sessionId: currentSession.id,
+              workflowId: currentSession.workflowId,
+              version: currentSession.version,
+              status: currentSession.status,
+              parsedSectionsCount: parsedSections.length
+            });
 
-          // Store the polished section in database
-          await db.insert(polishSections).values({
-            id: uuidv4(),
-            polishSessionId: sessionId,
-            workflowId: currentSession.workflowId,
-            version: currentSession.version,
-            sectionNumber: ordinal,
-            title: args.section_title,
-            originalContent: parsedSections[ordinal - 1]?.content || '',
-            polishedContent: args.polished_content,
-            strengths: args.strengths,
-            weaknesses: args.weaknesses,
-            brandConflicts: args.brand_conflicts,
-            polishApproach: args.polish_approach,
-            engagementScore: args.engagement_score,
-            clarityScore: args.clarity_score,
-            status: 'completed',
-            polishMetadata: {
-              originalLength: parsedSections[ordinal - 1]?.content?.length || 0,
-              polishedLength: args.polished_content.length,
-              timestamp: new Date().toISOString()
-            },
-            createdAt: new Date(),
-            updatedAt: new Date()
-          });
+            if (ordinal === 0) {
+              console.error(`Section "${args.section_title}" not found in parsed sections`);
+              console.log('Available sections:', parsedSections.map((s: any) => s.title));
+              throw new Error(`Section "${args.section_title}" not found in parsed sections`);
+            }
 
-          // Update session progress and metadata
-          const newConflictsTotal = (currentSession.brandConflictsFound || 0) + (args.brand_conflicts ? 1 : 0);
-          const newPolishApproaches = [...(sessionMetadata?.polishApproaches || []), args.polish_approach];
+            // Prepare the data for insertion
+            const sectionId = uuidv4();
+            const now = new Date();
+            const insertData = {
+              id: sectionId,
+              polishSessionId: sessionId,
+              workflowId: currentSession.workflowId,
+              version: currentSession.version,
+              sectionNumber: ordinal,
+              title: args.section_title,
+              originalContent: parsedSections[ordinal - 1]?.content || '',
+              polishedContent: args.polished_content,
+              strengths: args.strengths,
+              weaknesses: args.weaknesses,
+              brandConflicts: args.brand_conflicts,
+              polishApproach: args.polish_approach,
+              engagementScore: args.engagement_score,
+              clarityScore: args.clarity_score,
+              status: 'completed',
+              polishMetadata: {
+                originalLength: parsedSections[ordinal - 1]?.content?.length || 0,
+                polishedLength: args.polished_content.length,
+                timestamp: now.toISOString()
+              },
+              createdAt: now,
+              updatedAt: now
+            };
+
+            console.log('Attempting to insert polish section with data:', {
+              id: sectionId,
+              sessionId: sessionId,
+              workflowId: currentSession.workflowId,
+              sectionNumber: ordinal,
+              title: args.section_title
+            });
+
+            // Store the polished section in database
+            try {
+              await db.insert(polishSections).values(insertData);
+              console.log('Successfully inserted polish section:', sectionId);
+            } catch (dbError: any) {
+              console.error('Database insert failed:', dbError);
+              console.error('Error details:', {
+                message: dbError.message,
+                code: dbError.code,
+                detail: dbError.detail,
+                stack: dbError.stack
+              });
+              
+              // Return a more informative error message
+              return `I encountered a database error while trying to save the polished section. The section has been successfully polished but could not be saved to the database.
+
+Database Error: ${dbError.message || 'Unknown database error'}
+${dbError.detail ? `Detail: ${dbError.detail}` : ''}
+
+Here is the polished content for "${args.section_title}":
+
+**Strengths:** ${args.strengths}
+
+**Weaknesses:** ${args.weaknesses}
+
+**Brand Conflicts:** ${args.brand_conflicts}
+
+**Polish Approach:** ${args.polish_approach}
+
+**Engagement Score:** ${args.engagement_score}/10
+**Clarity Score:** ${args.clarity_score}/10
+
+**Polished Content:**
+${args.polished_content}
+
+Please save this manually or check the database configuration.`;
+            }
+
+            // Update session progress and metadata
+            const newConflictsTotal = (currentSession.brandConflictsFound || 0) + (args.brand_conflicts ? 1 : 0);
+            const newPolishApproaches = [...(sessionMetadata?.polishApproaches || []), args.polish_approach];
           
           await this.updatePolishSession(sessionId, {
             completedSections: ordinal,
@@ -352,6 +419,10 @@ FINAL POLISH PRINCIPLES:
 - Thread the needle between brand engagement and semantic directness
 - Each section should balance both requirements effectively
 - Vary your polish approaches to maintain content quality`;
+          }
+          } catch (error: any) {
+            console.error('Polish section tool execution failed:', error);
+            return `Error processing section: ${error.message}. Please check the logs for details.`;
           }
         }
       });
