@@ -130,6 +130,302 @@ All three active step components now include the Teams Workspace button:
 - URL: https://chatgpt.com/g/g-p-686ea60485908191a5ac7a73ebf3a945/project?model=o3
 - Added alongside the three OpenAI account buttons
 
+## 🤖 AGENTIC AUTOMATION BEST PRACTICES
+
+### Overview
+This section documents proven patterns for building robust, production-ready AI agents using OpenAI Agents SDK. Based on successful implementations in `agenticArticleService.ts` and `agenticSemanticAuditService.ts`.
+
+### Core Architecture Pattern
+
+#### 1. Agent Service Class Structure
+```typescript
+export class AgenticServiceName {
+  private openaiProvider: OpenAIProvider;
+  
+  constructor() {
+    this.openaiProvider = new OpenAIProvider({
+      apiKey: process.env.OPENAI_API_KEY
+    });
+  }
+  
+  async startSession(params): Promise<string> { /* Session initialization */ }
+  async performTask(sessionId: string): Promise<void> { /* Main automation */ }
+  async getSession(sessionId: string) { /* Session retrieval */ }
+}
+```
+
+#### 2. Database Schema for Agent Sessions
+```sql
+-- Session tracking with versioning
+agent_sessions (
+  id, workflow_id, version, step_id, status,
+  total_sections, completed_sections, session_metadata,
+  started_at, completed_at, created_at, updated_at
+)
+
+-- Generated content by section/chunk
+content_sections (
+  id, session_id, section_number, title, content,
+  word_count, status, created_at, updated_at
+)
+```
+
+### Essential Agent Configuration
+
+#### 1. Agent Initialization Pattern
+```typescript
+const agent = new Agent({
+  name: 'AgentName',
+  instructions: 'Expert role description + AUTOMATED WORKFLOW continuation directive',
+  model: 'o3-2025-04-16', // Proven model for complex tasks
+  tools: [fileSearch, customTool1, customTool2] // Strategic tool selection
+});
+```
+
+**Key Instructions Elements:**
+- **Role Definition**: Clear expertise area and purpose
+- **Automation Directive**: "This is an AUTOMATED WORKFLOW - continue until completion without asking for permission"
+- **Output Guidelines**: Specific formatting and quality requirements
+- **Context Preservation**: Instructions for maintaining conversation flow
+
+#### 2. Tool Design Patterns
+
+**Zod Schema Validation (Required):**
+```typescript
+const toolSchema = z.object({
+  parameter: z.string().describe('Clear parameter description'),
+  count: z.number().describe('Specific numeric constraints'),
+  is_last: z.boolean().describe('Workflow continuation logic')
+});
+
+const customTool = tool({
+  name: "tool_name",
+  description: "Clear, specific tool purpose",
+  parameters: toolSchema,
+  execute: async (args) => {
+    // 1. Validation and data processing
+    // 2. Database operations
+    // 3. SSE progress updates
+    // 4. Return continuation context
+  }
+});
+```
+
+**Tool Categories:**
+- **Planning Tools**: Structure and analyze before execution
+- **Content Generation Tools**: Section-by-section creation with context
+- **Progress Tracking Tools**: Session state management
+- **Knowledge Tools**: File search integration for guidelines
+
+### Real-Time Streaming Architecture
+
+#### 1. Server-Sent Events (SSE) Pattern
+```typescript
+// Connection Management
+const activeStreams = new Map<string, any>();
+
+export function addSSEConnection(sessionId: string, res: any) {
+  activeStreams.set(sessionId, res);
+}
+
+export function removeSSEConnection(sessionId: string) {
+  activeStreams.delete(sessionId);
+}
+
+function sseUpdate(sessionId: string, payload: any) {
+  const stream = activeStreams.get(sessionId);
+  if (!stream) return;
+  try {
+    stream.write(`data: ${JSON.stringify(payload)}\n\n`);
+  } catch (error) {
+    console.error('SSE push failed:', error);
+  }
+}
+```
+
+#### 2. Progress Update Events
+```typescript
+// Event Types for UI Updates
+sseUpdate(sessionId, { type: 'status', status: 'planning', message: 'Analyzing outline...' });
+sseUpdate(sessionId, { type: 'section_completed', section_title, content, word_count });
+sseUpdate(sessionId, { type: 'completed', final_content, total_sections });
+```
+
+### Conversation Management
+
+#### 1. Message Flow Pattern
+```typescript
+const messages: any[] = [
+  { role: 'user', content: initialPrompt }
+];
+
+// Process agent responses systematically
+for await (const event of result.toStream()) {
+  if (event.name === 'tool_called') {
+    messages.push({
+      role: 'assistant',
+      tool_calls: [{ /* tool call data */ }]
+    });
+  }
+  
+  if (event.name === 'tool_output') {
+    messages.push({
+      role: 'tool',
+      content: toolOutput.output,
+      tool_call_id: toolOutput.tool_call_id
+    });
+  }
+}
+```
+
+#### 2. Automation Continuation Guards
+```typescript
+// Prevent agent from stopping mid-workflow
+if (conversationActive) {
+  messages.push({
+    role: 'user',
+    content: 'YOU MUST CONTINUE THE AUTOMATED WORKFLOW. DO NOT WAIT FOR PERMISSION.'
+  });
+}
+
+// Safety limits to prevent infinite loops
+if (messages.length > 100 || sectionCount > 20) {
+  conversationActive = false;
+  // Graceful workflow termination
+}
+```
+
+### Knowledge Base Integration
+
+#### 1. File Search Implementation
+```typescript
+// Vector store integration for guidelines and best practices
+const fileSearch = fileSearchTool(['vs_68710d7858ec8191b829a50012da7707']);
+
+// Usage in prompts
+const prompt = `
+REQUIRED ACTIONS:
+1. FIRST: Use file search to review relevant guidelines from knowledge base
+2. THEN: Apply guidelines to current task
+3. FINALLY: Execute task with learned context
+`;
+```
+
+#### 2. Knowledge Categories
+- **Style Guidelines**: Writing tone, format requirements
+- **SEO Best Practices**: Technical optimization rules
+- **Brand Guidelines**: Voice, terminology, constraints
+- **Quality Standards**: Output validation criteria
+
+### Error Handling & Recovery
+
+#### 1. Graceful Degradation
+```typescript
+try {
+  await performAgentTask(sessionId);
+} catch (error) {
+  console.error('Agent task failed:', error);
+  
+  // Update session status
+  await updateSession(sessionId, { 
+    status: 'failed', 
+    errorMessage: error.message 
+  });
+  
+  // Notify UI
+  sseUpdate(sessionId, { 
+    type: 'error', 
+    message: 'Agent encountered an error',
+    canRetry: true 
+  });
+}
+```
+
+#### 2. Session Recovery
+```typescript
+// Resume interrupted sessions
+async resumeSession(sessionId: string) {
+  const session = await getSession(sessionId);
+  if (session.status === 'failed' || session.status === 'interrupted') {
+    const lastCompletedSection = session.completedSections || 0;
+    // Continue from last successful point
+    return this.performTask(sessionId, { resumeFrom: lastCompletedSection });
+  }
+}
+```
+
+### Production Deployment Considerations
+
+#### 1. Environment Configuration
+```env
+OPENAI_API_KEY=sk-...           # Primary API key
+OPENAI_API_KEY_BACKUP=sk-...    # Backup for rate limiting
+VECTOR_STORE_ID=vs_...          # Knowledge base ID
+AGENT_TIMEOUT_MS=300000         # 5 minute timeout
+```
+
+#### 2. Monitoring & Logging
+```typescript
+// Detailed logging for production debugging
+console.log(`🤖 Agent session ${sessionId}: Starting ${taskName}`);
+console.log(`📊 Progress: ${completed}/${total} sections completed`);
+console.log(`⏱️ Processing time: ${duration}ms`);
+console.log(`💰 Token usage: ${inputTokens}/${outputTokens}`);
+```
+
+### Performance Optimization
+
+#### 1. Chunking Strategy
+- **Section-by-Section Processing**: Prevents token limit issues
+- **Context Preservation**: Maintain previous sections for flow
+- **Parallel Processing**: Multiple agents for independent tasks
+
+#### 2. Rate Limiting
+```typescript
+// Implement delays between API calls
+await new Promise(resolve => setTimeout(resolve, 1000));
+
+// Use multiple API keys for higher throughput
+const apiKey = this.getAvailableApiKey();
+```
+
+### Proven Models & Settings
+
+#### 1. Model Selection
+- **Primary**: `o3-2025-04-16` - Best for complex reasoning and tool usage
+- **Fallback**: `gpt-4-turbo` - Reliable performance for simpler tasks
+- **Avoid**: `gpt-3.5-turbo` - Insufficient for complex agentic workflows
+
+#### 2. Runner Configuration
+```typescript
+const runner = new Runner({
+  modelProvider: this.openaiProvider,
+  tracingDisabled: true,    // Performance optimization
+  maxRetries: 3,           // Error resilience
+  timeout: 300000          // 5 minute timeout
+});
+```
+
+### Success Metrics
+
+#### 1. Quality Indicators
+- **Completion Rate**: % of sessions that finish successfully
+- **Content Quality**: Human evaluation scores
+- **Automation Level**: % reduction in manual intervention
+- **Processing Time**: Average time per section/task
+
+#### 2. Technical Metrics
+- **Token Efficiency**: Tokens per output unit
+- **Error Rate**: Failed sessions per total attempts
+- **Recovery Rate**: Successfully resumed sessions
+- **User Satisfaction**: Feedback scores
+
+**Reference Implementations:**
+- Article Generation: `/lib/services/agenticArticleService.ts`
+- Semantic SEO Audit: `/lib/services/agenticSemanticAuditService.ts`
+- UI Components: `/components/ui/AgenticArticleGenerator.tsx`
+- API Endpoints: `/app/api/workflows/[id]/auto-generate/stream/route.ts`
+
 ## Contact
 Created for OutreachLabs by Claude with Ajay
 Repository: https://github.com/ajaypag/guest-post-workflow
