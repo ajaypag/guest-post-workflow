@@ -154,6 +154,49 @@ export const auditSections = pgTable('audit_sections', {
   updatedAt: timestamp('updated_at').notNull(),
 });
 
+// Polish sessions for tracking final polish workflows
+export const polishSessions = pgTable('polish_sessions', {
+  id: uuid('id').primaryKey(),
+  workflowId: uuid('workflow_id').notNull().references(() => workflows.id, { onDelete: 'cascade' }),
+  version: integer('version').notNull().default(1), // Version number for each polish run
+  stepId: varchar('step_id', { length: 100 }).notNull().default('final-polish'),
+  status: varchar('status', { length: 50 }).notNull().default('pending'), // 'pending' | 'polishing' | 'completed' | 'error'
+  totalSections: integer('total_sections').default(0),
+  completedSections: integer('completed_sections').default(0),
+  originalArticle: text('original_article'), // SEO-optimized article input
+  researchContext: text('research_context'), // Research data for context
+  brandConflictsFound: integer('brand_conflicts_found').default(0), // Track brand vs semantic conflicts
+  polishMetadata: jsonb('polish_metadata'), // Stores brand insights, patterns, etc
+  errorMessage: text('error_message'),
+  startedAt: timestamp('started_at'),
+  completedAt: timestamp('completed_at'),
+  createdAt: timestamp('created_at').notNull(),
+  updatedAt: timestamp('updated_at').notNull(),
+});
+
+// Polish sections for tracking section-by-section final polish
+export const polishSections = pgTable('polish_sections', {
+  id: uuid('id').primaryKey(),
+  polishSessionId: uuid('polish_session_id').notNull().references(() => polishSessions.id, { onDelete: 'cascade' }),
+  workflowId: uuid('workflow_id').notNull().references(() => workflows.id, { onDelete: 'cascade' }),
+  version: integer('version').notNull().default(1),
+  sectionNumber: integer('section_number').notNull(),
+  title: varchar('title', { length: 255 }).notNull(),
+  originalContent: text('original_content'), // SEO-optimized section content
+  polishedContent: text('polished_content'), // Final polished content
+  strengths: text('strengths'), // Brand adherence strengths
+  weaknesses: text('weaknesses'), // Areas for improvement
+  brandConflicts: text('brand_conflicts'), // Specific brand vs semantic conflicts identified
+  polishApproach: varchar('polish_approach', { length: 100 }), // 'engagement-focused', 'clarity-focused', 'balanced', etc.
+  engagementScore: integer('engagement_score'), // 1-10 engagement level
+  clarityScore: integer('clarity_score'), // 1-10 clarity/directness level
+  status: varchar('status', { length: 50 }).notNull().default('pending'),
+  polishMetadata: jsonb('polish_metadata'), // Section-specific context
+  errorMessage: text('error_message'),
+  createdAt: timestamp('created_at').notNull(),
+  updatedAt: timestamp('updated_at').notNull(),
+});
+
 // Relations
 export const usersRelations = relations(users, ({ many }) => ({
   clients: many(clients),

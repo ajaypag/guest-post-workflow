@@ -391,6 +391,83 @@ export default function DatabaseMigrationPage() {
     setIsLoading(false);
   };
 
+  const checkPolishTablesExist = async () => {
+    setIsLoading(true);
+    setMessage('');
+    
+    try {
+      const response = await fetch('/api/admin/check-polish-tables');
+      const data = await response.json();
+      
+      if (data.exists) {
+        setMessage('✅ Polish tables (polish_sessions, polish_sections) exist');
+        setMessageType('success');
+      } else {
+        setMessage(`ℹ️ ${data.message || 'Polish tables do not exist'}`);
+        setMessageType('info');
+      }
+    } catch (error) {
+      setMessage(`❌ Error checking polish tables: ${error instanceof Error ? error.message : 'Unknown error'}`);
+      setMessageType('error');
+    }
+    
+    setIsLoading(false);
+  };
+
+  const runPolishMigration = async () => {
+    setIsLoading(true);
+    setMessage('');
+    
+    try {
+      const response = await fetch('/api/admin/migrate-polish', {
+        method: 'POST'
+      });
+      const data = await response.json();
+      
+      if (data.success) {
+        setMessage('✅ Polish tables migration completed successfully!');
+        setMessageType('success');
+      } else {
+        setMessage(`❌ Migration failed: ${data.error}`);
+        setMessageType('error');
+      }
+    } catch (error) {
+      setMessage(`❌ Error: ${error instanceof Error ? error.message : 'Unknown error'}`);
+      setMessageType('error');
+    }
+    
+    setIsLoading(false);
+  };
+
+  const runPolishRollback = async () => {
+    if (!confirm('Are you sure you want to remove the polish tables? This will delete all AI polish sessions and results.')) {
+      return;
+    }
+    
+    setIsLoading(true);
+    setMessage('');
+    
+    try {
+      const response = await fetch('/api/admin/migrate-polish', {
+        method: 'DELETE'
+      });
+      const data = await response.json();
+      
+      if (data.success) {
+        setMessage('✅ Polish tables rollback completed successfully!');
+        setMessageType('success');
+      } else {
+        setMessage(`❌ Rollback failed: ${data.error}`);
+        setMessageType('error');
+      }
+    } catch (error) {
+      setMessage(`❌ Error: ${error instanceof Error ? error.message : 'Unknown error'}`);
+      setMessageType('error');
+    }
+    
+    setIsLoading(false);
+  };
+
   return (
     <div className="min-h-screen bg-gray-50 py-8">
       <div className="max-w-4xl mx-auto px-4 sm:px-6 lg:px-8">
@@ -771,6 +848,82 @@ export default function DatabaseMigrationPage() {
               >
                 <RotateCcw className="w-4 h-4 mr-2" />
                 {isLoading ? 'Rolling Back...' : 'Remove Semantic Audit Tables'}
+              </button>
+            </div>
+          </div>
+
+          {/* Polish Tables Migration Section */}
+          <div className="mt-12 mb-8">
+            <h2 className="text-lg font-semibold text-gray-900 mb-4">Polish Tables Migration</h2>
+            <p className="text-gray-600 mb-4">
+              This migration creates the <code className="bg-gray-100 px-2 py-1 rounded">polish_sessions</code> and{' '}
+              <code className="bg-gray-100 px-2 py-1 rounded">polish_sections</code> tables required for the new 
+              AI-powered final polish workflow in Step 6 (Final Polish).
+            </p>
+            
+            <div className="bg-purple-50 border border-purple-200 rounded-lg p-4 mb-6">
+              <div className="flex items-start space-x-3">
+                <AlertTriangle className="w-5 h-5 text-purple-600 mt-0.5" />
+                <div>
+                  <h3 className="text-sm font-semibold text-purple-800">Agentic Final Polish Features:</h3>
+                  <ul className="text-sm text-purple-700 mt-2 space-y-1">
+                    <li>• Enables automated final polish balancing brand engagement with semantic directness</li>
+                    <li>• Stores polish sessions, section analysis, and engagement/clarity scores</li>
+                    <li>• Tracks brand vs semantic conflicts and resolution approaches</li>
+                    <li>• Required for the "🤖 Agentic Polish" tab in Final Polish step</li>
+                    <li>• Safe migration - creates new tables without affecting existing data</li>
+                  </ul>
+                </div>
+              </div>
+            </div>
+          </div>
+
+          <div className="space-y-4 mb-8">
+            {/* Check Polish Tables Status */}
+            <div className="border border-gray-200 rounded-lg p-4">
+              <h3 className="font-semibold text-gray-900 mb-2">Check Polish Tables Status</h3>
+              <p className="text-gray-600 text-sm mb-3">
+                Check if the polish tables already exist in your database.
+              </p>
+              <button
+                onClick={checkPolishTablesExist}
+                disabled={isLoading}
+                className="inline-flex items-center px-4 py-2 bg-blue-600 text-white text-sm font-medium rounded-md hover:bg-blue-700 disabled:opacity-50 disabled:cursor-not-allowed"
+              >
+                <Database className="w-4 h-4 mr-2" />
+                {isLoading ? 'Checking...' : 'Check Polish Tables Status'}
+              </button>
+            </div>
+
+            {/* Run Polish Migration */}
+            <div className="border border-green-200 rounded-lg p-4">
+              <h3 className="font-semibold text-gray-900 mb-2">Create Polish Tables</h3>
+              <p className="text-gray-600 text-sm mb-3">
+                Create the polish_sessions and polish_sections tables to enable AI-powered final polish.
+              </p>
+              <button
+                onClick={runPolishMigration}
+                disabled={isLoading}
+                className="inline-flex items-center px-4 py-2 bg-green-600 text-white text-sm font-medium rounded-md hover:bg-green-700 disabled:opacity-50 disabled:cursor-not-allowed"
+              >
+                <Play className="w-4 h-4 mr-2" />
+                {isLoading ? 'Running Migration...' : 'Create Polish Tables'}
+              </button>
+            </div>
+
+            {/* Polish Rollback */}
+            <div className="border border-red-200 rounded-lg p-4">
+              <h3 className="font-semibold text-gray-900 mb-2">Remove Polish Tables (Rollback)</h3>
+              <p className="text-gray-600 text-sm mb-3">
+                Remove the polish tables and all stored polish sessions and results. This action cannot be undone.
+              </p>
+              <button
+                onClick={runPolishRollback}
+                disabled={isLoading}
+                className="inline-flex items-center px-4 py-2 bg-red-600 text-white text-sm font-medium rounded-md hover:bg-red-700 disabled:opacity-50 disabled:cursor-not-allowed"
+              >
+                <RotateCcw className="w-4 h-4 mr-2" />
+                {isLoading ? 'Rolling Back...' : 'Remove Polish Tables'}
               </button>
             </div>
           </div>
