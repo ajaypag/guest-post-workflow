@@ -63,18 +63,17 @@ export class AgenticFormattingQAService {
     try {
       // Get workflow data including the final article
       const workflow = await db.query.workflows.findFirst({
-        where: eq(workflows.id, workflowId),
-        with: {
-          steps: true
-        }
+        where: eq(workflows.id, workflowId)
       });
 
       if (!workflow) {
         throw new Error('Workflow not found');
       }
 
-      // Get the final polished article from Step 6
-      const finalPolishStep = workflow.steps?.find(s => s.stepNumber === 6);
+      // Get the final polished article from Step 6 - stored in workflows.content.steps
+      const workflowContent = workflow.content as any;
+      const steps = workflowContent?.steps || [];
+      const finalPolishStep = steps.find((s: any) => s.id === 'final-polish');
       const finalArticle = (finalPolishStep?.outputs as any)?.finalArticle || '';
 
       if (!finalArticle) {
