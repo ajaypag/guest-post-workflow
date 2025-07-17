@@ -47,9 +47,9 @@ export async function POST(
       outlinePrompt
     );
 
-    console.log(`✅ Outline generation completed:`, {
+    console.log(`✅ Outline generation started:`, {
       sessionId: result.sessionId,
-      outlineLength: result.outline?.length || 0
+      needsClarification: result.needsClarification
     });
 
     return NextResponse.json({
