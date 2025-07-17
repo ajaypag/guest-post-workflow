@@ -139,11 +139,15 @@ You must conduct thorough web research before creating the outline. Follow these
 Begin your research now.`;
 
       // Start the background response generation
+      // Note: o3-deep-research model requires at least one tool to be specified
       const response = await this.getClient().responses.create({
         model: 'o3-deep-research',
         input: enhancedPrompt,
         background: true,
         store: true, // Required for background mode
+        tools: [
+          { type: 'web_search_preview' } // Required for o3-deep-research model
+        ]
       });
 
       console.log(`🚀 Background response created with ID: ${response.id}`);
