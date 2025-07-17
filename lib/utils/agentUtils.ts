@@ -42,6 +42,20 @@ export const ARTICLE_PLANNING_RETRY_NUDGE =
   'Do NOT output progress updates.';
 
 /**
+ * Formatting QA check specific retry nudge
+ */
+export const FORMATTING_QA_CHECK_RETRY_NUDGE =
+  '🚨 FORMAT INVALID – respond ONLY by calling the analyze_formatting_check function. ' +
+  'Do NOT output progress updates.';
+
+/**
+ * Formatting QA article generation specific retry nudge
+ */
+export const FORMATTING_QA_GENERATE_RETRY_NUDGE =
+  '🚨 FORMAT INVALID – respond ONLY by calling the generate_cleaned_article function. ' +
+  'Do NOT output progress updates.';
+
+/**
  * General purpose retry nudge factory
  */
 export function createRetryNudge(expectedTool: string): string {

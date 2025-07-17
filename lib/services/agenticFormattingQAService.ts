@@ -2,6 +2,7 @@ import { Agent, tool, Runner } from '@openai/agents';
 import { OpenAIProvider, fileSearchTool, webSearchTool } from '@openai/agents-openai';
 import { z } from 'zod';
 import { db } from '@/lib/db/connection';
+import { assistantSentPlainText, FORMATTING_QA_CHECK_RETRY_NUDGE, FORMATTING_QA_GENERATE_RETRY_NUDGE } from '@/lib/utils/agentUtils';
 import { 
   formattingQaSessions, 
   formattingQaChecks,
@@ -182,6 +183,8 @@ Begin your systematic analysis and fixing process now.`;
       
       // Track check progress
       let checkNumber = 0;
+      let retries = 0;
+      const MAX_RETRIES = 3;
       
       while (conversationActive) {
         console.log(`Starting QA check turn ${messages.length} with ${checkNumber}/${checkTypes.length} checks completed`);
@@ -192,6 +195,21 @@ Begin your systematic analysis and fixing process now.`;
         });
 
         for await (const event of result.toStream()) {
+          // ✨ NEW: Immediate detection and retry for plain text responses
+          if (assistantSentPlainText(event)) {
+            // Determine expected tool based on workflow phase
+            const checksComplete = checkNumber >= checkTypes.length;
+            const retryNudge = checksComplete ? FORMATTING_QA_GENERATE_RETRY_NUDGE : FORMATTING_QA_CHECK_RETRY_NUDGE;
+            
+            // Don't record the bad message, just nudge and restart next turn
+            messages.push({ role: 'system', content: retryNudge });
+            retries += 1;
+            if (retries > MAX_RETRIES) {
+              throw new Error('Too many invalid assistant responses - agent not using tools');
+            }
+            break; // Exit this for-await; outer while() will re-run
+          }
+          
           // Stream text deltas for UI updates
           if (event.type === 'raw_model_stream_event') {
             if (event.data.type === 'output_text_delta' && event.data.delta) {
@@ -235,20 +253,13 @@ Begin your systematic analysis and fixing process now.`;
               });
             }
             
-            // Handle message_output_created for proper message tracking
+            // Handle complete assistant messages (only tool calls reach here now)
             if (event.name === 'message_output_created') {
               const messageItem = event.item as any;
               
-              if (!messageItem.tool_calls?.length) {
-                messages.push({
-                  role: 'assistant',
-                  content: messageItem.content
-                });
-                
-                sseUpdate(sessionId, { 
-                  type: 'assistant', 
-                  content: messageItem.content 
-                });
+              // Only handle tool call messages - plain text is caught above
+              if (messageItem.tool_calls?.length) {
+                retries = 0; // Reset retry counter on successful tool usage
               }
             }
           }
