@@ -12,19 +12,21 @@ export async function POST() {
         id UUID PRIMARY KEY,
         workflow_id UUID NOT NULL REFERENCES workflows(id) ON DELETE CASCADE,
         version INTEGER NOT NULL DEFAULT 1,
+        step_id VARCHAR(100) NOT NULL DEFAULT 'deep-research',
         status VARCHAR(50) NOT NULL DEFAULT 'pending',
         outline_prompt TEXT,
         clarification_questions JSONB,
         clarification_answers TEXT,
         agent_state JSONB,
+        research_instructions TEXT,
         final_outline TEXT,
         citations JSONB,
-        error_message TEXT,
         session_metadata JSONB,
-        started_at TIMESTAMP WITH TIME ZONE,
+        error_message TEXT,
+        started_at TIMESTAMP WITH TIME ZONE NOT NULL,
         completed_at TIMESTAMP WITH TIME ZONE,
-        created_at TIMESTAMP WITH TIME ZONE DEFAULT CURRENT_TIMESTAMP,
-        updated_at TIMESTAMP WITH TIME ZONE DEFAULT CURRENT_TIMESTAMP
+        created_at TIMESTAMP WITH TIME ZONE NOT NULL DEFAULT CURRENT_TIMESTAMP,
+        updated_at TIMESTAMP WITH TIME ZONE NOT NULL DEFAULT CURRENT_TIMESTAMP
       )
     `);
 

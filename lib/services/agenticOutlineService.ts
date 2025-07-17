@@ -158,6 +158,7 @@ export class AgenticOutlineService {
         id: sessionId,
         workflowId,
         version: nextVersion,
+        stepId: 'deep-research',
         status: 'triaging',
         outlinePrompt: sanitizeForPostgres(outlinePrompt),
         sessionMetadata: metadata,
