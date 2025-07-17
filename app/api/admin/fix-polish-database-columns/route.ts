@@ -153,7 +153,7 @@ export async function GET() {
 
     // Analyze if fixes are needed
     const issues = [];
-    for (const col of currentCols) {
+    for (const col of currentCols.rows || currentCols) {
       const row = col as any;
       if (row.column_name === 'polish_approach' && row.data_type === 'character varying' && row.character_maximum_length < 255) {
         issues.push(`${row.column_name}: ${row.data_type}(${row.character_maximum_length}) - TOO SMALL for AI content`);
