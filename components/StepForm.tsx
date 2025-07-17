@@ -35,7 +35,7 @@ interface StepFormProps {
   step: WorkflowStep;
   stepIndex: number;
   workflow: GuestPostWorkflow;
-  onSave: (inputs: Record<string, any>, outputs: Record<string, any>) => void;
+  onSave: (inputs: Record<string, any>, outputs: Record<string, any>, isManualSave?: boolean) => void;
   onWorkflowChange?: (workflow: GuestPostWorkflow) => void;
 }
 
@@ -81,7 +81,7 @@ export default function StepForm({ step, stepIndex, workflow, onSave, onWorkflow
     // Set new timer for auto-save after 2 seconds of no changes
     const timer = setTimeout(() => {
       console.log('⏱️ Auto-saving after 2 seconds of inactivity');
-      handleSave();
+      handleSave(false); // Pass false to indicate auto-save, not manual save
     }, 2000);
 
     setAutoSaveTimer(timer);
@@ -96,8 +96,8 @@ export default function StepForm({ step, stepIndex, workflow, onSave, onWorkflow
       if (autoSaveTimer) {
         clearTimeout(autoSaveTimer);
       }
-      // Save immediately
-      handleSave();
+      // Save immediately (but don't navigate - pass false for auto-save)
+      handleSave(false);
     }
   }, [localOutputs.finalArticle, step.id]);
 
@@ -110,10 +110,10 @@ export default function StepForm({ step, stepIndex, workflow, onSave, onWorkflow
     };
   }, [autoSaveTimer]);
 
-  const handleSave = async () => {
-    console.log('🟢 handleSave called:', { localInputs, localOutputs });
+  const handleSave = async (isManualSave: boolean = false) => {
+    console.log('🟢 handleSave called:', { localInputs, localOutputs, isManualSave });
     setIsSaving(true);
-    await onSave(localInputs, localOutputs);
+    await onSave(localInputs, localOutputs, isManualSave);
     setIsSaving(false);
     setLastSaved(new Date());
   };
@@ -211,7 +211,7 @@ export default function StepForm({ step, stepIndex, workflow, onSave, onWorkflow
       <div className="mt-6 pt-4 border-t">
         <div className="flex items-center justify-between">
           <button
-            onClick={handleSave}
+            onClick={() => handleSave(true)}
             disabled={isSaving}
             className="inline-flex items-center px-4 py-2 bg-green-600 text-white text-sm font-medium rounded-md hover:bg-green-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-green-500 disabled:opacity-50"
           >
