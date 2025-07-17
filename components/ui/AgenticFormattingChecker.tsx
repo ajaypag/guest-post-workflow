@@ -71,7 +71,9 @@ export function AgenticFormattingChecker({ workflowId, onComplete }: AgenticForm
             const formattedChecks = session.checks.map((check: any) => ({
               checkType: check.checkType,
               status: check.status,
-              issuesFound: check.issuesFound ? check.issuesFound.split('\n').filter(Boolean) : [],
+              issuesFound: check.issuesFound && typeof check.issuesFound === 'string' 
+                ? check.issuesFound.split('\n').filter(Boolean) 
+                : [],
               confidence: check.confidenceScore,
               fixSuggestions: check.fixSuggestions,
               checkNumber: check.checkNumber

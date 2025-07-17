@@ -108,16 +108,18 @@ export const AgenticArticleGenerator = ({ workflowId, outline, onComplete }: Age
             if (data.session.status === 'planning') {
               addLog('AI is planning article structure...');
             } else if (data.session.status === 'writing') {
-              const currentSection = data.sections.find((s: Section) => s.status === 'generating');
-              if (currentSection) {
-                addLog(`Writing section ${currentSection.sectionNumber}: "${currentSection.title}"`);
-              }
-              
-              const completedSection = data.sections.find((s: Section) => 
-                s.status === 'completed' && s.sectionNumber === data.session.completedSections
-              );
-              if (completedSection) {
-                addLog(`✅ Completed "${completedSection.title}" (${completedSection.wordCount} words)`);
+              if (data.sections && Array.isArray(data.sections)) {
+                const currentSection = data.sections.find((s: Section) => s.status === 'generating');
+                if (currentSection) {
+                  addLog(`Writing section ${currentSection.sectionNumber}: "${currentSection.title}"`);
+                }
+                
+                const completedSection = data.sections.find((s: Section) => 
+                  s.status === 'completed' && s.sectionNumber === data.session.completedSections
+                );
+                if (completedSection) {
+                  addLog(`✅ Completed "${completedSection.title}" (${completedSection.wordCount} words)`);
+                }
               }
             }
             break;
@@ -258,7 +260,8 @@ export const AgenticArticleGenerator = ({ workflowId, outline, onComplete }: Age
             <div className="space-y-2">
               <h4 className="font-medium text-gray-900">Article Sections</h4>
               <div className="space-y-2 max-h-60 overflow-y-auto">
-                {progress.sections.map((section) => (
+                {progress?.sections && Array.isArray(progress.sections) 
+                  ? progress.sections.map((section) => (
                   <div key={section.id} className="flex items-center justify-between p-3 bg-gray-50 rounded-lg">
                     <div className="flex items-center space-x-3">
                       {getStatusIcon(section.status)}
@@ -271,7 +274,8 @@ export const AgenticArticleGenerator = ({ workflowId, outline, onComplete }: Age
                     </div>
                     <span className="text-xs text-gray-500 capitalize">{section.status}</span>
                   </div>
-                ))}
+                  ))
+                  : null}
               </div>
             </div>
           )}

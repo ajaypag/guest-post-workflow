@@ -43,7 +43,7 @@ export class AgentDiagnostics {
       if (event.name === 'message_output_created') {
         diagnostic.hasToolCalls = !!(event.item?.tool_calls?.length);
         diagnostic.toolCallsCount = event.item?.tool_calls?.length || 0;
-        diagnostic.toolCallNames = event.item?.tool_calls?.map((tc: any) => tc.function?.name) || [];
+        diagnostic.toolCallNames = event.item?.tool_calls ? event.item.tool_calls.map((tc: any) => tc.function?.name) : [];
         diagnostic.hasContent = !!(event.item?.content);
         diagnostic.contentPreview = event.item?.content?.substring(0, 200);
       } else if (event.name === 'tool_called') {
@@ -63,7 +63,7 @@ export class AgentDiagnostics {
         const message = event.data.response?.choices?.[0]?.message;
         diagnostic.hasToolCalls = !!(message?.tool_calls?.length);
         diagnostic.toolCallsCount = message?.tool_calls?.length || 0;
-        diagnostic.toolCallNames = message?.tool_calls?.map((tc: any) => tc.function?.name) || [];
+        diagnostic.toolCallNames = message?.tool_calls ? message.tool_calls.map((tc: any) => tc.function?.name) : [];
         diagnostic.hasContent = !!(message?.content);
         diagnostic.contentPreview = message?.content?.substring(0, 200);
       }
@@ -180,13 +180,26 @@ export function assistantSentPlainTextEnhanced(event: any, diagnostics: AgentDia
   // Log every event for analysis
   diagnostics.logEvent(event);
 
-  // Check 1: message_output_created without tool calls
+  // Check 1: message_output_created without tool calls (including empty responses)
   if (event.type === 'run_item_stream_event' && 
       event.name === 'message_output_created' &&
-      !event.item.tool_calls?.length) {
-    console.log('🚨 DETECTED TEXT-ONLY RESPONSE (message_output_created):', {
-      content: event.item.content?.substring(0, 200) + '...',
-      hasToolCalls: false,
+      (!event.item.tool_calls?.length ||   // no tool calls
+       !event.item.content ||              // null / undefined  
+       (Array.isArray(event.item.content) && event.item.content.every((c: any) =>       // or every chunk is empty / whitespace
+         c.type === 'output_text' && !c.text?.trim()))
+      )) {
+    
+    // Analyze content for logging
+    const content = event.item.content;
+    const contentText = Array.isArray(content) 
+      ? content.map((c: any) => c.text || '').join('').trim()
+      : (content || '').toString().trim();
+    
+    console.log('🚨 DETECTED NON-TOOL RESPONSE (message_output_created):', {
+      content: contentText.substring(0, 200) + '...',
+      isEmpty: contentText.length === 0,
+      hasToolCalls: !!event.item.tool_calls?.length,
+      contentStructure: Array.isArray(content) ? content.map((c: any) => ({ type: c.type, hasText: !!c.text?.trim() })) : 'not_array',
       timestamp: Date.now()
     });
     return true;
