@@ -358,7 +358,7 @@ AUDIT REQUIREMENTS:
 - Apply different editing patterns to avoid repetition when appropriate. Although you don't always have to switch it up, obvious patterns over and over are clear signs that you are not a human but just an AI and we dont want that signal`;
             }
 
-            return `Great work on "${section_title}"! Section ${ordinal} audit complete.${nextSectionContext}
+            return `Great work on "${section_title}"! Section ${ordinal} audit complete. ${ordinal} of ${parsedSections.length} sections complete. ${parsedSections.length - ordinal} sections remaining. MUST CONTINUE WITH TOOLS ONLY.${nextSectionContext}
 
 YOU MUST CONTINUE AUTOMATICALLY - DO NOT WAIT FOR PERMISSION. Also, dont tell me that you are continuing or processing - just provide the outputs i need otherwise you will break my workflow. This is an automated audit workflow.
 
@@ -373,7 +373,7 @@ IMMEDIATE NEXT ACTIONS (execute these now):
 1. FIRST: Use file search to refresh semantic SEO knowledge
 2. THEN: Audit "${nextSection?.title || 'next section'}" using audit_section function
 
-START AUDITING THE NEXT SECTION NOW - DO NOT ASK FOR PERMISSION OR CONFIRMATION.`;
+START AUDITING THE NEXT SECTION NOW - DO NOT ASK FOR PERMISSION OR CONFIRMATION. DO NOT GIVE A PROGRESS UPDATE. IF YOU DO THAT, YOU'LL BREAK THE WORKFLOW. USE THE audit_section TOOL NOW. DO NOT RESPOND WITH TEXT.`;
           }
         }
       });
@@ -381,7 +381,7 @@ START AUDITING THE NEXT SECTION NOW - DO NOT ASK FOR PERMISSION OR CONFIRMATION.
       // Create Agent with tools
       const agent = new Agent({
         name: 'SemanticSEOAuditor',
-        instructions: 'You are an expert semantic SEO auditor who reviews and optimizes content for search performance while maintaining quality and readability. You work systematically section by section, providing detailed analysis and optimized content. This is an AUTOMATED WORKFLOW - continue until completion without asking for permission.',
+        instructions: 'You are an expert semantic SEO auditor who reviews and optimizes content for search performance while maintaining quality and readability. You work systematically section by section, providing detailed analysis and optimized content. This is an AUTOMATED WORKFLOW - continue until completion without asking for permission. CRITICAL: Never provide text-only progress updates during the workflow. Only use tools. Text responses will break the automation.',
         model: 'o3-2025-04-16',
         tools: [
           semanticSEOFileSearch,
@@ -490,7 +490,7 @@ START AUDITING THE NEXT SECTION NOW - DO NOT ASK FOR PERMISSION OR CONFIRMATION.
                 if (conversationActive) {
                   messages.push({ 
                     role: 'user', 
-                    content: 'YOU MUST CONTINUE THE AUTOMATED AUDIT WORKFLOW. Do not wait for permission. Execute the required actions immediately: 1) Use file search tool 2) Continue auditing sections using audit_section function. DO NOT STOP OR ASK FOR CONFIRMATION. DO NOT PROVIDE TEXT BASED UPDATES ABOUT YOUR PROGRESS OR WHAT YOU\'LL DO. THAT WILL BREAK MY WORKFLOW.' 
+                    content: 'YOU MUST CONTINUE THE AUTOMATED AUDIT WORKFLOW. Do not wait for permission. Execute the required actions immediately: 1) Use file search tool 2) Continue auditing sections using audit_section function. DO NOT STOP OR ASK FOR CONFIRMATION. DO NOT PROVIDE TEXT BASED UPDATES ABOUT YOUR PROGRESS OR WHAT YOU\'LL DO. THAT WILL BREAK MY WORKFLOW. DO NOT GIVE A PROGRESS UPDATE. IF YOU DO THAT, YOU\'LL BREAK THE WORKFLOW.' 
                   });
                 }
               }
