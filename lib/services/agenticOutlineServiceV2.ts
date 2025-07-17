@@ -45,12 +45,15 @@ function ssePush(sessionId: string, payload: any) {
 }
 
 export class AgenticOutlineServiceV2 {
-  private client: OpenAI;
+  private client: OpenAI | null = null;
   
-  constructor() {
-    this.client = new OpenAI({
-      apiKey: process.env.OPENAI_API_KEY
-    });
+  private getClient(): OpenAI {
+    if (!this.client) {
+      this.client = new OpenAI({
+        apiKey: process.env.OPENAI_API_KEY
+      });
+    }
+    return this.client;
   }
 
   async startOutlineGeneration(workflowId: string, outlinePrompt: string): Promise<{
@@ -136,7 +139,7 @@ You must conduct thorough web research before creating the outline. Follow these
 Begin your research now.`;
 
       // Start the background response generation
-      const response = await this.client.responses.create({
+      const response = await this.getClient().responses.create({
         model: 'o3-deep-research',
         input: enhancedPrompt,
         background: true,
@@ -219,7 +222,7 @@ Begin your research now.`;
       }
 
       // Poll the OpenAI API for status
-      const response = await this.client.responses.retrieve(session.backgroundResponseId);
+      const response = await this.getClient().responses.retrieve(session.backgroundResponseId);
       
       console.log(`📊 Polling response ${response.id}: status=${response.status}`);
 
@@ -316,8 +319,8 @@ Begin your research now.`;
 
         default:
           return { 
-            status: response.status, 
-            progress: `Status: ${response.status}` 
+            status: response.status || 'unknown', 
+            progress: `Status: ${response.status || 'unknown'}` 
           };
       }
 
@@ -350,7 +353,7 @@ Begin your research now.`;
       }
 
       // Cancel the OpenAI background response
-      await this.client.responses.cancel(session.backgroundResponseId);
+      await this.getClient().responses.cancel(session.backgroundResponseId);
 
       // Update database and mark as inactive
       await db.update(outlineSessions)
