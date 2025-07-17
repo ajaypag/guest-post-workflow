@@ -153,6 +153,7 @@ When you parse the article, break it into manageable audit chunks. If a section 
 - When the article is a listicle, be sure to parse each list component out into its own section
 
 REQUIRED ACTIONS:
+**YOU MUST USE TOOLS, NOT TEXT RESPONSES:**
 1. FIRST: Use file search to review "Semantic SEO" best practices from the knowledge base
 2. THEN: Parse the article into manageable audit chunks using the parse_article function
 3. FINALLY: Begin auditing the first section with the audit_section function
@@ -211,6 +212,7 @@ AUDIT PHILOSOPHY:
 - Focus on semantic relevance, contextual terms, and user intent
 
 IMMEDIATE NEXT ACTIONS (execute automatically):
+**YOU MUST USE TOOLS, NOT TEXT RESPONSES:**
 1. FIRST: Use file search to review semantic SEO best practices
 2. THEN: Audit the first section using the audit_section function
 3. CONTINUE: Proceed systematically through each section
@@ -367,6 +369,7 @@ SEMANTIC SEO AUDIT PRINCIPLES:
 - Sometimes threading the needle between adhering to our brand guide and adhering to our semantic SEO and writing style guide can have conflicts. One good tactic I can suggest is to try to nail the semantic SEO within the first sentence of a new paragraph or section, because those are most important. Try to keep the brand kit conversation flowing within the meat of the paragraph. That duality can help you thread the needle for both.
 
 IMMEDIATE NEXT ACTIONS (execute these now):
+**YOU MUST USE TOOLS, NOT TEXT RESPONSES:**
 1. FIRST: Use file search to refresh semantic SEO knowledge
 2. THEN: Audit "${nextSection?.title || 'next section'}" using audit_section function
 
