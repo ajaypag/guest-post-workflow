@@ -1,11 +1,6 @@
 'use client';
 
 import { useState } from 'react';
-import { Button } from '@/components/ui/button';
-import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
-import { Badge } from '@/components/ui/badge';
-import { AlertCircle, CheckCircle, XCircle, Loader2, Info } from 'lucide-react';
-import { Alert, AlertDescription, AlertTitle } from '@/components/ui/alert';
 
 export default function OutlineGenerationDiagnosticsPage() {
   const [diagnostics, setDiagnostics] = useState<any>(null);
@@ -70,291 +65,180 @@ export default function OutlineGenerationDiagnosticsPage() {
   };
 
   return (
-    <div className="container mx-auto px-4 py-8">
-      <h1 className="text-3xl font-bold mb-8">Outline Generation Diagnostics</h1>
+    <div className="min-h-screen bg-gray-50 py-8">
+      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+        <div className="bg-white rounded-lg shadow p-6">
+          <h1 className="text-3xl font-bold mb-8">Outline Generation Diagnostics</h1>
 
-      <div className="mb-6">
-        <Alert>
-          <Info className="h-4 w-4" />
-          <AlertTitle>Diagnostic Tools</AlertTitle>
-          <AlertDescription>
-            Use these tools to diagnose agent handoff issues and type mismatches in the outline generation pipeline.
-          </AlertDescription>
-        </Alert>
-      </div>
-
-      <div className="grid gap-4 mb-8">
-        <Card>
-          <CardHeader>
-            <CardTitle>Test Controls</CardTitle>
-          </CardHeader>
-          <CardContent className="space-y-4">
-            <div>
-              <label className="block text-sm font-medium mb-2">Test Prompt</label>
-              <textarea
-                value={testPrompt}
-                onChange={(e) => setTestPrompt(e.target.value)}
-                className="w-full p-2 border rounded-md"
-                rows={3}
-                placeholder="Enter a test prompt for the outline generation"
-              />
+          <div className="mb-6 bg-blue-50 border border-blue-200 rounded-lg p-4">
+            <div className="flex items-start space-x-3">
+              <div className="w-5 h-5 text-blue-600 mt-0.5">ℹ</div>
+              <div>
+                <h3 className="text-sm font-semibold text-blue-800">Diagnostic Tools</h3>
+                <p className="text-sm text-blue-700 mt-1">
+                  Use these tools to diagnose agent handoff issues and type mismatches in the outline generation pipeline.
+                </p>
+              </div>
             </div>
-            
-            <div className="flex gap-4">
-              <Button 
-                onClick={runDiagnostics} 
-                disabled={loading}
-                className="flex items-center gap-2"
-              >
-                {loading ? <Loader2 className="animate-spin h-4 w-4" /> : <CheckCircle className="h-4 w-4" />}
-                Run Live Diagnostics
-              </Button>
+          </div>
+
+          <div className="bg-white border rounded-lg p-6 mb-8">
+            <h2 className="text-xl font-semibold mb-4">Test Controls</h2>
+            <div className="space-y-4">
+              <div>
+                <label className="block text-sm font-medium mb-2">Test Prompt</label>
+                <textarea
+                  value={testPrompt}
+                  onChange={(e) => setTestPrompt(e.target.value)}
+                  className="w-full p-3 border border-gray-300 rounded-md focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
+                  rows={3}
+                  placeholder="Enter a test prompt for the outline generation"
+                />
+              </div>
               
-              <Button 
-                onClick={runErrorDiagnostics} 
-                disabled={loading}
-                variant="secondary"
-                className="flex items-center gap-2"
-              >
-                {loading ? <Loader2 className="animate-spin h-4 w-4" /> : <AlertCircle className="h-4 w-4" />}
-                Analyze Error Pattern
-              </Button>
+              <div className="flex gap-4">
+                <button 
+                  onClick={runDiagnostics} 
+                  disabled={loading}
+                  className="flex items-center gap-2 bg-blue-600 text-white px-4 py-2 rounded-md hover:bg-blue-700 disabled:opacity-50 disabled:cursor-not-allowed"
+                >
+                  {loading ? (
+                    <div className="animate-spin h-4 w-4 border-2 border-white border-t-transparent rounded-full"></div>
+                  ) : (
+                    <span>✓</span>
+                  )}
+                  Run Live Diagnostics
+                </button>
+                
+                <button 
+                  onClick={runErrorDiagnostics} 
+                  disabled={loading}
+                  className="flex items-center gap-2 bg-gray-600 text-white px-4 py-2 rounded-md hover:bg-gray-700 disabled:opacity-50 disabled:cursor-not-allowed"
+                >
+                  {loading ? (
+                    <div className="animate-spin h-4 w-4 border-2 border-white border-t-transparent rounded-full"></div>
+                  ) : (
+                    <span>⚠</span>
+                  )}
+                  Analyze Error Pattern
+                </button>
+              </div>
             </div>
-          </CardContent>
-        </Card>
-      </div>
+          </div>
 
-      {error && (
-        <Alert variant="destructive" className="mb-6">
-          <XCircle className="h-4 w-4" />
-          <AlertTitle>Error</AlertTitle>
-          <AlertDescription>{error}</AlertDescription>
-        </Alert>
-      )}
-
-      {diagnostics && (
-        <div className="space-y-6">
-          {/* Agent Creation Analysis */}
-          <Card>
-            <CardHeader>
-              <CardTitle>Agent Creation Analysis</CardTitle>
-            </CardHeader>
-            <CardContent>
-              <div className="space-y-4">
-                {Object.entries(diagnostics.agentCreation || {}).map(([agent, info]: [string, any]) => (
-                  <div key={agent} className="border-l-4 border-blue-500 pl-4">
-                    <h4 className="font-semibold">{agent}</h4>
-                    {typeof info === 'object' && (
-                      <div className="text-sm text-gray-600 space-y-1">
-                        {info.outputType && <p>Output Type: <code className="bg-gray-100 px-1">{info.outputType}</code></p>}
-                        {info.inputType && <p>Input Type: <code className="bg-gray-100 px-1">{info.inputType}</code></p>}
-                        {info.handoffs && <p>Handoffs: <code className="bg-gray-100 px-1">{Array.isArray(info.handoffs) ? info.handoffs.join(', ') : info.handoffs}</code></p>}
-                      </div>
-                    )}
-                  </div>
-                ))}
-              </div>
-            </CardContent>
-          </Card>
-
-          {/* Agent Handoff Compatibility */}
-          <Card>
-            <CardHeader>
-              <CardTitle>Agent Handoff Compatibility</CardTitle>
-            </CardHeader>
-            <CardContent>
-              <div className="space-y-4">
-                {Object.entries(diagnostics.agentHandoffs || {}).map(([handoff, analysis]: [string, any]) => (
-                  <div key={handoff} className={`p-4 rounded-lg ${analysis.compatible ? 'bg-green-50' : 'bg-red-50'}`}>
-                    <div className="flex items-start justify-between">
-                      <div>
-                        <h4 className="font-semibold flex items-center gap-2">
-                          {handoff}
-                          {analysis.compatible ? 
-                            <Badge variant="default" className="bg-green-600">Compatible</Badge> : 
-                            <Badge variant="destructive">Incompatible</Badge>
-                          }
-                        </h4>
-                        <p className="text-sm text-gray-600 mt-1">{analysis.source} → {analysis.target}</p>
-                        {analysis.issue && (
-                          <Alert className="mt-2" variant="destructive">
-                            <AlertCircle className="h-4 w-4" />
-                            <AlertDescription>{analysis.issue}</AlertDescription>
-                          </Alert>
-                        )}
-                        {analysis.currentHandling && (
-                          <p className="text-sm mt-2 text-blue-600">Current handling: {analysis.currentHandling}</p>
-                        )}
-                      </div>
-                    </div>
-                  </div>
-                ))}
-              </div>
-            </CardContent>
-          </Card>
-
-          {/* Runtime Behavior */}
-          {diagnostics.runtimeBehavior && (
-            <Card>
-              <CardHeader>
-                <CardTitle>Runtime Behavior</CardTitle>
-              </CardHeader>
-              <CardContent>
-                {diagnostics.runtimeBehavior.error ? (
-                  <div className="space-y-4">
-                    <Alert variant="destructive">
-                      <XCircle className="h-4 w-4" />
-                      <AlertTitle>Runtime Error Detected</AlertTitle>
-                      <AlertDescription>
-                        <p className="font-mono text-sm mt-2">{diagnostics.runtimeBehavior.error}</p>
-                        {diagnostics.runtimeBehavior.errorType && (
-                          <Badge variant="destructive" className="mt-2">{diagnostics.runtimeBehavior.errorType}</Badge>
-                        )}
-                      </AlertDescription>
-                    </Alert>
-                    {diagnostics.runtimeBehavior.agentWarnings && (
-                      <div>
-                        <h4 className="font-semibold mb-2">Agent Warnings:</h4>
-                        {diagnostics.runtimeBehavior.agentWarnings.map((warning: string, i: number) => (
-                          <Alert key={i} className="mb-2">
-                            <AlertCircle className="h-4 w-4" />
-                            <AlertDescription>{warning}</AlertDescription>
-                          </Alert>
-                        ))}
-                      </div>
-                    )}
-                  </div>
-                ) : (
-                  <Alert>
-                    <CheckCircle className="h-4 w-4 text-green-600" />
-                    <AlertTitle>Success</AlertTitle>
-                    <AlertDescription>
-                      Runtime test completed successfully. Output type: {diagnostics.runtimeBehavior.outputType}
-                    </AlertDescription>
-                  </Alert>
-                )}
-              </CardContent>
-            </Card>
-          )}
-
-          {/* Type Analysis */}
-          {diagnostics.typeAnalysis && (
-            <Card>
-              <CardHeader>
-                <CardTitle>Type Analysis & Sanitization Tests</CardTitle>
-              </CardHeader>
-              <CardContent>
-                <div className="space-y-6">
-                  {diagnostics.typeAnalysis.clarificationSchemaOutput && (
-                    <div>
-                      <h4 className="font-semibold mb-2">Clarification Schema Output</h4>
-                      <div className="bg-gray-50 p-4 rounded-lg">
-                        <pre className="text-sm">{JSON.stringify(diagnostics.typeAnalysis.clarificationSchemaOutput, null, 2)}</pre>
-                      </div>
-                    </div>
-                  )}
-                  
-                  {diagnostics.typeAnalysis.sanitizationTests && (
-                    <div>
-                      <h4 className="font-semibold mb-2">Sanitization Function Tests</h4>
-                      <div className="space-y-2">
-                        {diagnostics.typeAnalysis.sanitizationTests.map((test: any, i: number) => (
-                          <div key={i} className={`p-3 rounded-lg ${test.wouldError ? 'bg-red-50' : 'bg-green-50'}`}>
-                            <div className="flex justify-between items-center">
-                              <span className="font-mono text-sm">
-                                Input: {JSON.stringify(test.input)} ({test.inputType})
-                              </span>
-                              {test.wouldError ? 
-                                <Badge variant="destructive">Would Error</Badge> : 
-                                <Badge variant="default" className="bg-green-600">Safe</Badge>
-                              }
-                            </div>
-                          </div>
-                        ))}
-                      </div>
-                    </div>
-                  )}
+          {error && (
+            <div className="mb-6 bg-red-50 border border-red-200 rounded-lg p-4">
+              <div className="flex items-start space-x-3">
+                <span className="w-5 h-5 text-red-600 mt-0.5">✕</span>
+                <div>
+                  <h3 className="text-sm font-semibold text-red-800">Error</h3>
+                  <p className="text-sm text-red-700 mt-1">{error}</p>
                 </div>
-              </CardContent>
-            </Card>
+              </div>
+            </div>
           )}
 
-          {/* Recommendations */}
-          {diagnostics.recommendations && diagnostics.recommendations.length > 0 && (
-            <Card>
-              <CardHeader>
-                <CardTitle>Recommendations</CardTitle>
-              </CardHeader>
-              <CardContent>
+          {diagnostics && (
+            <div className="space-y-6">
+              {/* Agent Creation Analysis */}
+              <div className="bg-white border rounded-lg p-6">
+                <h2 className="text-xl font-semibold mb-4">Agent Creation Analysis</h2>
                 <div className="space-y-4">
-                  {diagnostics.recommendations.map((rec: any, i: number) => (
-                    <Alert key={i} variant={rec.priority === 'CRITICAL' ? 'destructive' : 'default'}>
-                      <AlertCircle className="h-4 w-4" />
-                      <AlertTitle className="flex items-center gap-2">
-                        {rec.issue}
-                        <Badge variant={rec.priority === 'CRITICAL' ? 'destructive' : 'secondary'}>
-                          {rec.priority}
-                        </Badge>
-                      </AlertTitle>
-                      <AlertDescription>
-                        <p className="mt-2">{rec.solution}</p>
-                        {rec.code && (
-                          <pre className="mt-2 p-2 bg-gray-100 rounded text-xs overflow-x-auto">{rec.code}</pre>
-                        )}
-                        {rec.implementation && (
-                          <p className="mt-2 text-sm text-green-600">{rec.implementation}</p>
-                        )}
-                      </AlertDescription>
-                    </Alert>
+                  {Object.entries(diagnostics.agentCreation || {}).map(([agent, info]: [string, any]) => (
+                    <div key={agent} className="border-l-4 border-blue-500 pl-4">
+                      <h4 className="font-semibold">{agent}</h4>
+                      {typeof info === 'object' && (
+                        <div className="text-sm text-gray-600 space-y-1">
+                          {info.outputType && <p>Output Type: <code className="bg-gray-100 px-1 rounded">{info.outputType}</code></p>}
+                          {info.inputType && <p>Input Type: <code className="bg-gray-100 px-1 rounded">{info.inputType}</code></p>}
+                          {info.handoffs && <p>Handoffs: <code className="bg-gray-100 px-1 rounded">{Array.isArray(info.handoffs) ? info.handoffs.join(', ') : info.handoffs}</code></p>}
+                        </div>
+                      )}
+                    </div>
                   ))}
                 </div>
-              </CardContent>
-            </Card>
-          )}
+              </div>
 
-          {/* Database Schema */}
-          {diagnostics.databaseSchema && (
-            <Card>
-              <CardHeader>
-                <CardTitle>Database Schema Analysis</CardTitle>
-              </CardHeader>
-              <CardContent>
-                {diagnostics.databaseSchema.varcharSizes && (
-                  <div>
-                    <h4 className="font-semibold mb-2">VARCHAR Column Sizes</h4>
-                    <div className="space-y-2">
-                      {diagnostics.databaseSchema.varcharSizes.map((col: any, i: number) => (
-                        <div key={i} className={`flex justify-between items-center p-2 rounded ${col.adequate ? 'bg-green-50' : 'bg-yellow-50'}`}>
-                          <span className="font-mono text-sm">{col.column}</span>
-                          <div className="flex items-center gap-2">
-                            <span className="text-sm">Max: {col.maxLength}</span>
-                            {col.adequate ? 
-                              <CheckCircle className="h-4 w-4 text-green-600" /> : 
-                              <AlertCircle className="h-4 w-4 text-yellow-600" />
-                            }
-                          </div>
+              {/* Agent Handoff Compatibility */}
+              <div className="bg-white border rounded-lg p-6">
+                <h2 className="text-xl font-semibold mb-4">Agent Handoff Compatibility</h2>
+                <div className="space-y-4">
+                  {Object.entries(diagnostics.agentHandoffs || {}).map(([handoff, analysis]: [string, any]) => (
+                    <div key={handoff} className={`p-4 rounded-lg border ${analysis.compatible ? 'bg-green-50 border-green-200' : 'bg-red-50 border-red-200'}`}>
+                      <div className="flex items-start justify-between">
+                        <div>
+                          <h4 className="font-semibold flex items-center gap-2">
+                            {handoff}
+                            <span className={`px-2 py-1 text-xs font-medium rounded ${
+                              analysis.compatible ? 'bg-green-600 text-white' : 'bg-red-600 text-white'
+                            }`}>
+                              {analysis.compatible ? 'Compatible' : 'Incompatible'}
+                            </span>
+                          </h4>
+                          <p className="text-sm text-gray-600 mt-1">{analysis.source} → {analysis.target}</p>
+                          {analysis.issue && (
+                            <div className="mt-2 bg-red-50 border border-red-200 rounded p-2">
+                              <p className="text-sm text-red-700">{analysis.issue}</p>
+                            </div>
+                          )}
+                          {analysis.currentHandling && (
+                            <p className="text-sm mt-2 text-blue-600">Current handling: {analysis.currentHandling}</p>
+                          )}
                         </div>
-                      ))}
+                      </div>
                     </div>
-                  </div>
-                )}
-              </CardContent>
-            </Card>
-          )}
+                  ))}
+                </div>
+              </div>
 
-          {/* Raw Diagnostics */}
-          <Card>
-            <CardHeader>
-              <CardTitle>Raw Diagnostic Data</CardTitle>
-            </CardHeader>
-            <CardContent>
-              <pre className="text-xs overflow-x-auto bg-gray-50 p-4 rounded-lg">
-                {JSON.stringify(diagnostics, null, 2)}
-              </pre>
-            </CardContent>
-          </Card>
+              {/* Runtime Behavior */}
+              {diagnostics.runtimeBehavior && (
+                <div className="bg-white border rounded-lg p-6">
+                  <h2 className="text-xl font-semibold mb-4">Runtime Behavior</h2>
+                  {diagnostics.runtimeBehavior.error ? (
+                    <div className="space-y-4">
+                      <div className="bg-red-50 border border-red-200 rounded p-4">
+                        <h3 className="text-red-800 font-semibold">Runtime Error Detected</h3>
+                        <p className="font-mono text-sm mt-2 text-red-700">{diagnostics.runtimeBehavior.error}</p>
+                        {diagnostics.runtimeBehavior.errorType && (
+                          <span className="inline-block mt-2 px-2 py-1 text-xs font-medium bg-red-600 text-white rounded">
+                            {diagnostics.runtimeBehavior.errorType}
+                          </span>
+                        )}
+                      </div>
+                      {diagnostics.runtimeBehavior.agentWarnings && (
+                        <div>
+                          <h4 className="font-semibold mb-2">Agent Warnings:</h4>
+                          {diagnostics.runtimeBehavior.agentWarnings.map((warning: string, i: number) => (
+                            <div key={i} className="mb-2 bg-yellow-50 border border-yellow-200 rounded p-2">
+                              <p className="text-yellow-700 text-sm">{warning}</p>
+                            </div>
+                          ))}
+                        </div>
+                      )}
+                    </div>
+                  ) : (
+                    <div className="bg-green-50 border border-green-200 rounded p-4">
+                      <h3 className="text-green-800 font-semibold">Success</h3>
+                      <p className="text-green-700 text-sm mt-1">
+                        Runtime test completed successfully. Output type: {diagnostics.runtimeBehavior.outputType}
+                      </p>
+                    </div>
+                  )}
+                </div>
+              )}
+
+              {/* Raw Diagnostics */}
+              <div className="bg-white border rounded-lg p-6">
+                <h2 className="text-xl font-semibold mb-4">Raw Diagnostic Data</h2>
+                <pre className="text-xs overflow-x-auto bg-gray-50 p-4 rounded-lg whitespace-pre-wrap">
+                  {JSON.stringify(diagnostics, null, 2)}
+                </pre>
+              </div>
+            </div>
+          )}
         </div>
-      )}
+      </div>
     </div>
   );
 }

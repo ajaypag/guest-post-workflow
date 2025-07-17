@@ -182,27 +182,24 @@ Create a comprehensive research outline based on the instructions provided.`;
           });
 
           // Capture what happens during run
-          const mockRun = await runner.run(triageAgent, testPrompt).catch(error => {
-            return { error: error.message, stack: error.stack };
-          });
-
-          if (mockRun.error) {
-            diagnostics.runtimeBehavior.error = mockRun.error;
-            diagnostics.runtimeBehavior.errorType = mockRun.error.includes('e.replace is not a function') 
+          try {
+            const mockRun = await runner.run(triageAgent, testPrompt);
+            diagnostics.runtimeBehavior.success = true;
+            diagnostics.runtimeBehavior.outputType = typeof mockRun.output;
+            diagnostics.runtimeBehavior.output = mockRun.output;
+          } catch (error: any) {
+            diagnostics.runtimeBehavior.error = error.message;
+            diagnostics.runtimeBehavior.errorType = error.message.includes('e.replace is not a function') 
               ? 'TYPE_MISMATCH_ERROR' 
               : 'OTHER_ERROR';
             
             // Extract agent warnings if present
-            const warningMatches = mockRun.error.match(/\[Agent\] Warning: ([^\n]+)/g);
+            const warningMatches = error.message.match(/\[Agent\] Warning: ([^\n]+)/g);
             if (warningMatches) {
               diagnostics.runtimeBehavior.agentWarnings = warningMatches.map((w: string) => 
                 w.replace('[Agent] Warning: ', '')
               );
             }
-          } else {
-            diagnostics.runtimeBehavior.success = true;
-            diagnostics.runtimeBehavior.outputType = typeof mockRun.output;
-            diagnostics.runtimeBehavior.output = mockRun.output;
           }
         } catch (error: any) {
           diagnostics.runtimeBehavior.catchError = error.message;
