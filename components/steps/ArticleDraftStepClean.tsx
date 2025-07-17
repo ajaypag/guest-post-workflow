@@ -205,7 +205,7 @@ ${outlineContent || '((((Complete Step 3: Deep Research first to get outline con
                 : 'text-gray-500 hover:text-gray-700 hover:bg-gray-50'
             }`}
           >
-            🤖 AI Agent Beta - Do Not Use
+            🤖 AI Agent Beta
           </button>
         </div>
 
