@@ -4,13 +4,27 @@
 
 /**
  * Detects when an assistant sends plain text instead of using tools
+ * Enhanced to catch complete text-only responses more reliably
  */
 export function assistantSentPlainText(event: any): boolean {
-  return (
-    event.type === 'run_item_stream_event' &&
-    event.name === 'message_output_created' &&
-    !event.item.tool_calls?.length            // => no function call
-  );
+  // Primary check: message_output_created without tool calls
+  if (event.type === 'run_item_stream_event' && 
+      event.name === 'message_output_created' &&
+      !event.item.tool_calls?.length) {
+    console.log('🚨 DETECTED TEXT-ONLY RESPONSE:', event.item.content);
+    return true;
+  }
+  
+  // Secondary check: response_done with text content but no tool calls
+  if (event.type === 'raw_model_stream_event' &&
+      event.data.type === 'response_done' &&
+      event.data.response?.choices?.[0]?.message?.content &&
+      !event.data.response?.choices?.[0]?.message?.tool_calls?.length) {
+    console.log('🚨 DETECTED COMPLETE TEXT RESPONSE:', event.data.response.choices[0].message.content.substring(0, 100) + '...');
+    return true;
+  }
+  
+  return false;
 }
 
 /**
@@ -21,9 +35,13 @@ export const RETRY_NUDGE =
   'Do NOT output progress updates or explanatory text.';
 
 /**
- * Semantic SEO specific retry nudge
+ * Semantic SEO specific retry nudges for different phases
  */
-export const SEMANTIC_AUDIT_RETRY_NUDGE =
+export const SEMANTIC_AUDIT_PARSE_RETRY_NUDGE =
+  '🚨 FORMAT INVALID – respond ONLY by calling the parse_article function. ' +
+  'Do NOT output progress updates.';
+
+export const SEMANTIC_AUDIT_SECTION_RETRY_NUDGE =
   '🚨 FORMAT INVALID – respond ONLY by calling the audit_section function. ' +
   'Do NOT output progress updates.';
 

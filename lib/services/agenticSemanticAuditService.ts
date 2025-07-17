@@ -6,7 +6,7 @@ import { auditSessions, auditSections, workflows } from '@/lib/db/schema';
 import { eq, and, sql } from 'drizzle-orm';
 import { v4 as uuidv4 } from 'uuid';
 import { z } from 'zod';
-import { assistantSentPlainText, SEMANTIC_AUDIT_RETRY_NUDGE } from '@/lib/utils/agentUtils';
+import { assistantSentPlainText, SEMANTIC_AUDIT_PARSE_RETRY_NUDGE, SEMANTIC_AUDIT_SECTION_RETRY_NUDGE } from '@/lib/utils/agentUtils';
 
 // Helper function to sanitize strings by removing null bytes and control characters
 function sanitizeForPostgres(str: string): string {
@@ -420,8 +420,15 @@ START AUDITING THE NEXT SECTION NOW - DO NOT ASK FOR PERMISSION OR CONFIRMATION.
         for await (const event of result.toStream()) {
           // ✨ NEW: Immediate detection and retry for plain text responses
           if (assistantSentPlainText(event)) {
+            // Determine expected tool based on workflow phase
+            const currentSession = await this.getAuditSession(sessionId);
+            const sessionMetadata = currentSession?.auditMetadata as any;
+            const parsedSections = sessionMetadata?.parsedSections || [];
+            const hasParsedSections = parsedSections.length > 0;
+            const retryNudge = hasParsedSections ? SEMANTIC_AUDIT_SECTION_RETRY_NUDGE : SEMANTIC_AUDIT_PARSE_RETRY_NUDGE;
+            
             // Don't record the bad message, just nudge and restart next turn
-            messages.push({ role: 'system', content: SEMANTIC_AUDIT_RETRY_NUDGE });
+            messages.push({ role: 'system', content: retryNudge });
             retries += 1;
             if (retries > MAX_RETRIES) {
               throw new Error('Too many invalid assistant responses - agent not using tools');
@@ -463,6 +470,9 @@ START AUDITING THE NEXT SECTION NOW - DO NOT ASK FOR PERMISSION OR CONFIRMATION.
               });
               
               auditSSEPush(sessionId, { type: 'tool_call', name: toolCall.name });
+              
+              // Reset retry counter on successful tool usage
+              retries = 0;
               
               // Track completion
               if (toolCall.name === 'audit_section' && toolCall.args.is_last === true) {
