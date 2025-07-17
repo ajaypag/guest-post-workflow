@@ -27,42 +27,33 @@ export async function POST(request: NextRequest) {
       const models = await openai.models.list();
       console.log('✅ API access verified');
 
-      // Now test the actual o3-deep-research call
-      console.log('Testing o3-deep-research API call...');
+      // IMPORTANT: Not making actual API call to save credits
+      console.log('⚠️ Skipping actual o3-deep-research API call to save credits');
       
       result.apiCallDetails = {
         model: 'o3-deep-research',
         background: true,
         store: true,
         tools: [{ type: 'web_search_preview' }],
-        inputLength: testPrompt.length
+        inputLength: testPrompt.length,
+        NOTE: 'ACTUAL API CALL SKIPPED TO SAVE CREDITS'
       };
 
-      const response = await openai.responses.create({
-        model: 'o3-deep-research',
-        input: testPrompt,
-        background: true,
-        store: true,
-        tools: [
-          { type: 'web_search_preview' }
-        ]
-      });
-
+      // Simulate what the call would look like
       result.response = {
-        id: response.id,
-        status: response.status || 'unknown',
-        // Only include these if they exist
-        ...((response as any).created && { created: (response as any).created }),
-        ...((response as any).output && { outputPreview: String((response as any).output).substring(0, 200) + '...' })
+        simulatedCall: true,
+        wouldHaveCalled: {
+          model: 'o3-deep-research',
+          input: testPrompt.substring(0, 50) + '...',
+          background: true,
+          store: true,
+          tools: [{ type: 'web_search_preview' }]
+        },
+        note: 'This is a configuration check only. No actual API call was made to save credits.'
       };
       result.success = true;
 
-      console.log('✅ O3 API call successful:', response.id);
-
-      // If it's a background task, we would need to poll for results
-      if (response.status === 'queued' || response.status === 'in_progress') {
-        result.response.note = 'Background task created successfully. Would need to poll for results.';
-      }
+      console.log('✅ Configuration check complete (no API call made)');
 
     } catch (apiError: any) {
       console.error('❌ O3 API call failed:', apiError);

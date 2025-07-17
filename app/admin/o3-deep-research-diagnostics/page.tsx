@@ -350,11 +350,11 @@ export default function O3DeepResearchDiagnosticsPage() {
                 )}
               </div>
 
-              {/* Test API Call */}
+              {/* Test API Configuration */}
               <div className="bg-white border rounded-lg p-6">
-                <h2 className="text-xl font-semibold mb-4">Test O3 API Call</h2>
+                <h2 className="text-xl font-semibold mb-4">Test API Configuration</h2>
                 <p className="text-sm text-gray-600 mb-4">
-                  Test the O3 deep research API call with proper tools configuration
+                  Verify API configuration without making actual o3-deep-research calls (saves credits)
                 </p>
                 
                 <button
@@ -367,7 +367,7 @@ export default function O3DeepResearchDiagnosticsPage() {
                   ) : (
                     <Zap className="w-4 h-4" />
                   )}
-                  Test API Call
+                  Check Configuration (No Credits Used)
                 </button>
 
                 {testResult && (
