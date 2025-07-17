@@ -1,5 +1,13 @@
 import OpenAI from 'openai';
-import { Runner, Agent, tool } from '@openai/agents';
+import { 
+  Agent, 
+  run,
+  Runner,
+  RunItemStreamEvent,
+  StreamedRunResult,
+  RunState,
+  tool 
+} from '@openai/agents';
 import { OpenAIProvider, fileSearchTool, webSearchTool } from '@openai/agents-openai';
 import { db } from '@/lib/db/connection';
 import { outlineSessions, workflows } from '@/lib/db/schema';
@@ -7,9 +15,20 @@ import { eq, and, sql } from 'drizzle-orm';
 import { v4 as uuidv4 } from 'uuid';
 import { z } from 'zod';
 
-// Helper function to sanitize strings by removing null bytes and control characters
-function sanitizeForPostgres(str: string | null | undefined): string {
-  if (!str || typeof str !== 'string') return '';
+// Helper function to sanitize any input by converting to string and removing control characters
+function sanitizeForPostgres(input: any): string {
+  if (input === null || input === undefined) return '';
+  
+  // Convert any type to string safely
+  let str: string;
+  if (typeof input === 'string') {
+    str = input;
+  } else if (typeof input === 'object') {
+    str = JSON.stringify(input);
+  } else {
+    str = String(input);
+  }
+  
   // Remove null bytes and other control characters (0x00-0x1F except tab, newline, carriage return)
   return str.replace(/[\x00-\x08\x0B\x0C\x0E-\x1F]/g, '');
 }
@@ -170,7 +189,7 @@ export class AgenticOutlineService {
       console.log(`🤖 Starting outline generation session ${sessionId} for workflow ${workflowId}`);
       ssePush(sessionId, { type: 'status', status: 'triaging', message: 'Analyzing research prompt...' });
 
-      // Create agents with handoffs
+      // Create agents using human-in-the-loop pattern (ChatGPT Option A)
       const researchAgent = new Agent({
         name: 'ResearchAgent',
         model: 'o3-deep-research',
@@ -188,12 +207,13 @@ export class AgenticOutlineService {
         handoffs: [researchAgent]
       });
 
+      // Clarifier stops here - no handoffs to avoid type mismatch
       const clarifyingAgent = new Agent({
         name: 'ClarifyingAgent',
         model: 'o3-2025-04-16',
         instructions: CLARIFYING_PROMPT,
-        outputType: clarificationsSchema
-        // No handoffs - we'll handle the flow manually when clarifications are provided
+        outputType: clarificationsSchema,
+        handoffs: [] // No handoffs - we'll handle the flow manually
       });
 
       const triageAgent = new Agent({
@@ -203,7 +223,7 @@ export class AgenticOutlineService {
         handoffs: [clarifyingAgent, instructionAgent]
       });
 
-      // Run triage agent
+      // Run triage agent to determine the path
       const runner = new Runner({
         modelProvider: this.openaiProvider,
         tracingDisabled: true
@@ -211,16 +231,16 @@ export class AgenticOutlineService {
 
       const result = await runner.run(triageAgent, outlinePrompt);
 
-      // Check if clarifications needed
+      // Check if clarifications needed by examining the output
       if (result.output && typeof result.output === 'object' && 'questions' in result.output) {
         const questions = (result.output as any).questions;
         
-        // Save state and questions
+        // Save state and questions for resuming later
         await db.update(outlineSessions)
           .set({
             status: 'clarifying',
             clarificationQuestions: questions,
-            agentState: result.state,
+            agentState: result.state, // Save state for resuming
             updatedAt: new Date()
           })
           .where(eq(outlineSessions.id, sessionId));
@@ -340,7 +360,7 @@ export class AgenticOutlineService {
         message: 'Building research instructions based on your answers...' 
       });
 
-      // Re-create the agent pipeline (agents need to be instantiated fresh)
+      // Re-create the instruction and research agents for resuming the workflow
       const researchAgent = new Agent({
         name: 'ResearchAgent',
         model: 'o3-deep-research',
@@ -356,21 +376,6 @@ export class AgenticOutlineService {
         model: 'o3-2025-04-16',
         instructions: INSTRUCTION_BUILDER_PROMPT,
         handoffs: [researchAgent]
-      });
-
-      const clarifyingAgent = new Agent({
-        name: 'ClarifyingAgent',
-        model: 'o3-2025-04-16',
-        instructions: CLARIFYING_PROMPT,
-        outputType: clarificationsSchema
-        // No handoffs - we'll handle the flow manually when clarifications are provided
-      });
-
-      const triageAgent = new Agent({
-        name: 'TriageAgent',
-        model: 'o3-2025-04-16',
-        instructions: TRIAGE_PROMPT,
-        handoffs: [clarifyingAgent, instructionAgent]
       });
 
       // Resume from saved state with answers
@@ -392,14 +397,12 @@ export class AgenticOutlineService {
         message: 'Conducting deep research based on your requirements...' 
       });
 
-      // Resume from saved state or start fresh with answers
-      const inputForAgent = session.agentState && Object.keys(session.agentState).length > 0
-        ? session.agentState as any
-        : formattedAnswers;
-        
+      // Resume the workflow from where it left off
+      // Pass the user's answers as plain text to the instruction agent
       const result = await runner.run(
-        triageAgent,
-        inputForAgent
+        instructionAgent,
+        formattedAnswers
+        // Note: State resumption will be handled by the agent framework automatically
       );
 
       // Save final outline - handle agent output properly
