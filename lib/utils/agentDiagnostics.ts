@@ -184,7 +184,7 @@ export function assistantSentPlainTextEnhanced(event: any, diagnostics: AgentDia
       }
     } catch (error) {
       console.log('🚨 DETECTED MALFORMED TOOL CALL:', {
-        error: error.message,
+        error: error instanceof Error ? error.message : 'Unknown error',
         toolCalls: event.item.tool_calls,
         timestamp: Date.now()
       });

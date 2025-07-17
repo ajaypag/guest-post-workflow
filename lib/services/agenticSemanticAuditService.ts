@@ -408,9 +408,12 @@ START AUDITING THE NEXT SECTION NOW - DO NOT ASK FOR PERMISSION OR CONFIRMATION.
       let retries = 0;
       const MAX_RETRIES = 3;
       
-      // Initialize diagnostics
-      const diagnostics = new AgentDiagnostics(sessionId);
+      // Initialize diagnostics (declare at top level for catch block access)
+      let diagnostics: AgentDiagnostics | undefined;
       let lastSuccessfulTool: string | null = null;
+      
+      // Initialize diagnostics after scope declaration
+      diagnostics = new AgentDiagnostics(sessionId);
       
       while (conversationActive) {
         console.log(`Starting audit turn ${messages.length} with ${sectionCount} sections audited`);
@@ -485,7 +488,7 @@ START AUDITING THE NEXT SECTION NOW - DO NOT ASK FOR PERMISSION OR CONFIRMATION.
               } catch (error) {
                 console.error('🚨 MALFORMED TOOL CALL ARGS:', {
                   toolName: toolCall.name,
-                  error: error.message,
+                  error: error instanceof Error ? error.message : 'Unknown error',
                   args: toolCall.args
                 });
                 // Treat as text response and retry
@@ -593,7 +596,7 @@ START AUDITING THE NEXT SECTION NOW - DO NOT ASK FOR PERMISSION OR CONFIRMATION.
       console.error('Semantic audit failed:', error);
       
       // Save diagnostics report even on error
-      if (typeof diagnostics !== 'undefined') {
+      if (diagnostics) {
         console.log('💥 SAVING DIAGNOSTICS ON ERROR');
         diagnostics.saveReport();
       }
