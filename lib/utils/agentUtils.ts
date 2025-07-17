@@ -35,6 +35,13 @@ export const ARTICLE_WRITING_RETRY_NUDGE =
   'Do NOT output progress updates.';
 
 /**
+ * Article planning specific retry nudge
+ */
+export const ARTICLE_PLANNING_RETRY_NUDGE =
+  '🚨 FORMAT INVALID – respond ONLY by calling the plan_article function. ' +
+  'Do NOT output progress updates.';
+
+/**
  * General purpose retry nudge factory
  */
 export function createRetryNudge(expectedTool: string): string {

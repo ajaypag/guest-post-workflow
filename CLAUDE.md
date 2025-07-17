@@ -885,6 +885,174 @@ This protocol prevents the expensive debugging cycles that occurred with the for
 
 **This serves as the template for all future agentic feature implementations.**
 
+## 🔧 AGENTIC WORKFLOW FIX: Agent Text Response Retry Logic
+
+### The Problem: Agents Output Text Instead of Tools
+
+**🚨 CRITICAL ISSUE**: OpenAI Agents SDK allows agents to output explanatory text instead of using required tools, causing workflow failures.
+
+**Symptoms:**
+- "Cannot read properties of null" errors
+- Agents output progress updates instead of using tools
+- Workflow gets stuck waiting for tool calls that never come
+- Verbose guard rail messages accumulate in conversation history
+
+**Root Cause:**
+```typescript
+// ❌ PROBLEMATIC CODE: Adds agent text responses to message history
+if (event.name === 'message_output_created') {
+  const messageItem = event.item as any;
+  
+  if (!messageItem.tool_calls?.length) {
+    messages.push({
+      role: 'assistant',
+      content: messageItem.content  // Teaches agent text is acceptable
+    });
+  }
+}
+```
+
+### The Solution: ChatGPT's Retry Fix Pattern
+
+**✅ PROVEN FIX**: Immediate detection and clean retry, preventing message history pollution.
+
+#### 1. Create Utility Functions (`/lib/utils/agentUtils.ts`)
+
+```typescript
+/**
+ * Detects when an assistant sends plain text instead of using tools
+ */
+export function assistantSentPlainText(event: any): boolean {
+  return (
+    event.type === 'run_item_stream_event' &&
+    event.name === 'message_output_created' &&
+    !event.item.tool_calls?.length
+  );
+}
+
+/**
+ * Service-specific retry nudges
+ */
+export const SEMANTIC_AUDIT_RETRY_NUDGE =
+  '🚨 FORMAT INVALID – respond ONLY by calling the audit_section function. ' +
+  'Do NOT output progress updates.';
+
+export const ARTICLE_WRITING_RETRY_NUDGE =
+  '🚨 FORMAT INVALID – respond ONLY by calling the write_section function. ' +
+  'Do NOT output progress updates.';
+
+export function createRetryNudge(expectedTool: string): string {
+  return `🚨 FORMAT INVALID – respond ONLY by calling the ${expectedTool} function. ` +
+         'Do NOT output progress updates.';
+}
+```
+
+#### 2. Apply Fix Pattern to Agentic Services
+
+**STEP 1: Add Import**
+```typescript
+import { assistantSentPlainText, SEMANTIC_AUDIT_RETRY_NUDGE } from '@/lib/utils/agentUtils';
+```
+
+**STEP 2: Add Retry Variables**
+```typescript
+let conversationActive = true;
+let sectionCount = 0;
+let retries = 0;
+const MAX_RETRIES = 3;
+
+while (conversationActive) {
+```
+
+**STEP 3: Add Immediate Detection in Stream Loop**
+```typescript
+// Process the streaming result
+for await (const event of result.toStream()) {
+  // ✨ NEW: Immediate detection and retry for plain text responses
+  if (assistantSentPlainText(event)) {
+    // Don't record the bad message, just nudge and restart next turn
+    messages.push({ role: 'system', content: SEMANTIC_AUDIT_RETRY_NUDGE });
+    retries += 1;
+    if (retries > MAX_RETRIES) {
+      throw new Error('Too many invalid assistant responses - agent not using tools');
+    }
+    break; // Exit this for-await; outer while() will re-run
+  }
+  
+  // ... rest of event handling
+```
+
+**STEP 4: Replace Problematic Message Handler**
+```typescript
+// REMOVE old problematic handler:
+if (event.name === 'message_output_created') {
+  const messageItem = event.item as any;
+  
+  if (!messageItem.tool_calls?.length) {
+    messages.push({  // ❌ This pollutes conversation history
+      role: 'assistant',
+      content: messageItem.content
+    });
+    // ... verbose guard rail logic
+  }
+}
+
+// ✅ REPLACE with clean handler:
+if (event.name === 'message_output_created') {
+  const messageItem = event.item as any;
+  
+  // Only handle tool call messages - plain text is caught above
+  if (messageItem.tool_calls?.length) {
+    retries = 0; // Reset retry counter on successful tool usage
+  }
+}
+```
+
+### Implementation Checklist
+
+**For each agentic service:**
+
+- [ ] **Import agentUtils**: Add import statement
+- [ ] **Add retry variables**: `retries`, `MAX_RETRIES = 3`
+- [ ] **Add detection logic**: `assistantSentPlainText()` check at top of stream loop
+- [ ] **Remove old handler**: Delete problematic `message_output_created` logic
+- [ ] **Add clean handler**: Reset retries on successful tool usage
+- [ ] **Test thoroughly**: Verify retry logic works, no regressions
+
+### Services Successfully Fixed
+
+✅ **agenticSemanticAuditService.ts** - Fixed and working excellently  
+🔄 **agenticArticleService.ts** - In progress  
+⏳ **agenticFormattingQAService.ts** - Planned  
+⏳ **agenticFinalPolishService.ts** - Planned  
+
+### Key Benefits
+
+1. **🚫 Prevents History Pollution**: Bad messages never enter conversation
+2. **⚡ Immediate Restart**: `break` triggers outer `while()` to retry
+3. **💪 System Authority**: System messages carry more weight than user messages
+4. **🛡️ Safety Limits**: Maximum 3 retries prevent infinite loops
+5. **🎯 Targeted Nudges**: Service-specific retry messages
+
+### Testing Strategy
+
+**Required Tests for Each Service:**
+1. **Normal flow**: Complete workflow without text responses
+2. **Text response recovery**: Agent outputs text, retry logic fixes it
+3. **Mid-workflow retry**: Agent stops mid-process, successfully recovers
+4. **Retry limit**: Workflow fails gracefully after 3 attempts
+5. **Data consistency**: Database state preserved through retries
+
+**Success Metrics:**
+- ✅ Completion rate: Workflows finish without manual intervention
+- ✅ Retry effectiveness: Text responses recovered within 3 attempts  
+- ✅ Data consistency: Session state remains accurate through retries
+- ✅ No regression: Existing functionality continues working
+
+### Reference Implementation
+
+See `agenticSemanticAuditService.ts` for complete working example of this fix pattern applied successfully.
+
 ## Contact
 Created for OutreachLabs by Claude with Ajay
 Repository: https://github.com/ajaypag/guest-post-workflow
