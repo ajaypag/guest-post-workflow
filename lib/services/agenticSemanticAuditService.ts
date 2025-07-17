@@ -492,10 +492,33 @@ NEVER output text like "I will now audit..." or "Let me continue..." - ALWAYS us
                 
                 // Guard rail for continuation
                 if (conversationActive) {
-                  console.warn('⚠️ Agent outputted text instead of using tools. Forcing tool usage.');
-                  messages.push({ 
-                    role: 'user', 
-                    content: `CRITICAL ERROR: You outputted text instead of using the audit_section function.
+                  // Check if this is a completion message
+                  const messageText = messageItem.content?.toLowerCase() || '';
+                  const isCompletionMessage = 
+                    messageText.includes('audit finished') ||
+                    messageText.includes('audit completed') ||
+                    messageText.includes('all sections have been optimized') ||
+                    messageText.includes('semantic seo audit finished');
+                  
+                  if (isCompletionMessage) {
+                    console.log('🎉 Agent indicated audit completion via text message');
+                    conversationActive = false;
+                    
+                    // Mark session as completed since agent is done
+                    if (sectionCount > 0) {
+                      // We'll handle the final completion after the loop ends
+                      // For now, just mark that we should complete
+                      auditSSEPush(sessionId, { 
+                        type: 'status', 
+                        status: 'finalizing',
+                        message: 'Agent indicated completion, finalizing audit...'
+                      });
+                    }
+                  } else {
+                    console.warn('⚠️ Agent outputted text instead of using tools. Forcing tool usage.');
+                    messages.push({ 
+                      role: 'user', 
+                      content: `CRITICAL ERROR: You outputted text instead of using the audit_section function.
 
 YOU MUST USE THE audit_section FUNCTION IMMEDIATELY. DO NOT OUTPUT ANY TEXT.
 
@@ -509,7 +532,8 @@ The audit_section function is MANDATORY for every section. You must call it with
 - is_last: Whether this is the last section
 
 USE THE FUNCTION NOW. DO NOT DESCRIBE WHAT YOU WILL DO.` 
-                  });
+                    });
+                  }
                 }
               }
             }
@@ -529,6 +553,41 @@ USE THE FUNCTION NOW. DO NOT DESCRIBE WHAT YOU WILL DO.`
       }
 
       console.log('Semantic audit conversation loop completed');
+      
+      // If we have completed sections but didn't get a proper is_last=true, finalize anyway
+      if (sectionCount > 0 && session.status !== 'completed') {
+        console.log('Finalizing audit with', sectionCount, 'sections completed');
+        
+        // Update workflow with audited article
+        await this.updateWorkflowWithAuditedArticle(session.workflowId);
+        await this.updateAuditSession(sessionId, {
+          status: 'completed',
+          completedAt: new Date()
+        });
+        
+        // Get final assembled article
+        const finalSections = await db.select()
+          .from(auditSections)
+          .where(and(
+            eq(auditSections.auditSessionId, sessionId),
+            eq(auditSections.status, 'completed')
+          ))
+          .orderBy(auditSections.sectionNumber);
+        
+        const finalAuditedArticle = finalSections.map(section => {
+          const metadata = section.auditMetadata as any;
+          const headerLevel = metadata?.headerLevel === 'h3' ? '###' : '##';
+          return `${headerLevel} ${section.title}\n\n${section.auditedContent}`;
+        }).join('\n\n');
+        
+        auditSSEPush(sessionId, { 
+          type: 'completed', 
+          finalAuditedArticle,
+          totalSections: finalSections.length,
+          totalCitationsUsed: session.totalCitationsUsed || 0,
+          editingPatterns: (session.auditMetadata as any)?.editingPatterns || []
+        });
+      }
 
     } catch (error) {
       console.error('Semantic audit failed:', error);

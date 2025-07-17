@@ -652,7 +652,8 @@ Now I realize this is a lot, so i want your first output to only be an audit of 
                 originalArticle={fullArticle}
                 researchOutline={outlineContent}
                 existingAuditedArticle={step.outputs?.seoOptimizedArticle || ''}
-                onComplete={(auditedArticle) => {
+                onComplete={async (auditedArticle) => {
+                  // Update the step outputs
                   onChange({ 
                     ...step.outputs, 
                     seoOptimizedArticle: auditedArticle,
