@@ -75,7 +75,7 @@ export default function WorkflowDetail() {
     }, 100);
   };
 
-  const handleStepSave = async (inputs: Record<string, any>, outputs: Record<string, any>) => {
+  const handleStepSave = async (inputs: Record<string, any>, outputs: Record<string, any>, isManualSave: boolean = false) => {
     if (!workflow) return;
 
     try {
@@ -100,9 +100,12 @@ export default function WorkflowDetail() {
       setWorkflow(updatedWorkflow);
       await storage.saveWorkflow(updatedWorkflow);
       
-      // Auto-advance to next step if not at the last step
-      if (activeStep < workflow.steps.length - 1) {
+      // Only auto-advance on manual save (user clicking save button), not on auto-save
+      if (isManualSave && activeStep < workflow.steps.length - 1) {
+        console.log('📍 Auto-advancing to next step after manual save');
         changeActiveStep(activeStep + 1);
+      } else if (!isManualSave) {
+        console.log('💾 Auto-save completed - staying on current step');
       }
     } catch (error) {
       console.error('Error saving step:', error);
