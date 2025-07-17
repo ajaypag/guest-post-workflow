@@ -122,11 +122,16 @@ export class AgenticOutlineService {
         tracingDisabled: true
       });
       
-      // Run the research directly
+      // Run the research with progress updates
+      ssePush(sessionId, { type: 'status', status: 'researching', message: 'Agent starting research...' });
+      
       const result = await runner.run(research_agent, outlinePrompt);
       
       console.log(`🎯 Research completed with result type:`, typeof result.output);
       console.log(`📊 Research result:`, result.output);
+      
+      // Send progress update
+      ssePush(sessionId, { type: 'status', status: 'processing', message: 'Processing research results...' });
 
       // Simple approach - research is complete, save the result
       console.log(`✅ Research completed for session ${sessionId}`);

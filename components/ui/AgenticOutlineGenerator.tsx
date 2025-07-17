@@ -9,7 +9,7 @@ interface AgenticOutlineGeneratorProps {
   onComplete?: (outline: string) => void;
 }
 
-type Phase = 'idle' | 'triaging' | 'clarifying' | 'researching' | 'completed' | 'error';
+type Phase = 'idle' | 'researching' | 'completed' | 'error';
 
 interface ClarificationQuestion {
   question: string;
@@ -56,9 +56,8 @@ export function AgenticOutlineGenerator({ workflowId, onComplete }: AgenticOutli
             if (onComplete) {
               onComplete(session.outline);
             }
-          } else if (session.status === 'clarifying' && session.questions) {
-            setPhase('clarifying');
-            setQuestions(session.questions);
+          } else if (session.status === 'researching') {
+            setPhase('researching');
           } else if (session.status === 'researching') {
             // Resume watching the research
             setPhase('researching');
@@ -77,9 +76,9 @@ export function AgenticOutlineGenerator({ workflowId, onComplete }: AgenticOutli
 
   const startGeneration = async () => {
     try {
-      setPhase('triaging');
+      setPhase('researching');
       setError('');
-      setStatusMessage('Analyzing your research prompt...');
+      setStatusMessage('Starting deep research...');
 
       const response = await fetch(`/api/workflows/${workflowId}/outline-generation/start`, {
         method: 'POST',
@@ -93,12 +92,10 @@ export function AgenticOutlineGenerator({ workflowId, onComplete }: AgenticOutli
       const data = await response.json();
       setSessionId(data.sessionId);
 
-      if (data.needsClarification) {
-        setPhase('clarifying');
-        setQuestions(data.questions);
-        setAnswers(new Array(data.questions.length).fill(''));
-      } else {
-        setPhase('researching');
+      // Simplified flow - direct to research, complete when done
+      if (data.outline) {
+        // Research completed immediately
+        setPhase('completed');
         setOutline(data.outline);
         if (data.citations) {
           setCitations(data.citations);
@@ -106,6 +103,10 @@ export function AgenticOutlineGenerator({ workflowId, onComplete }: AgenticOutli
         if (onComplete && data.outline) {
           onComplete(data.outline);
         }
+      } else {
+        // Research in progress
+        setPhase('researching');
+        setStatusMessage('Deep research in progress...');
       }
 
       // Connect to SSE for updates
@@ -150,12 +151,7 @@ export function AgenticOutlineGenerator({ workflowId, onComplete }: AgenticOutli
         setStatusMessage(data.message || '');
         break;
 
-      case 'clarification_needed':
-        setPhase('clarifying');
-        setQuestions(data.questions);
-        setAnswers(new Array(data.questions.length).fill(''));
-        setStatusMessage(data.message || '');
-        break;
+      // Removed clarification_needed case - simplified flow
 
       case 'completed':
         setPhase('completed');
@@ -165,6 +161,10 @@ export function AgenticOutlineGenerator({ workflowId, onComplete }: AgenticOutli
         if (onComplete && data.outline) {
           onComplete(data.outline);
         }
+        break;
+
+      case 'search_progress':
+        setStatusMessage(data.message || `Searching: ${data.query}`);
         break;
 
       case 'error':
@@ -182,16 +182,6 @@ export function AgenticOutlineGenerator({ workflowId, onComplete }: AgenticOutli
         // Handle progress updates
         if (data.status) {
           switch (data.status) {
-            case 'triaging':
-              setPhase('triaging');
-              break;
-            case 'clarifying':
-              setPhase('clarifying');
-              if (data.questions) {
-                setQuestions(data.questions);
-                setAnswers(new Array(data.questions.length).fill(''));
-              }
-              break;
             case 'researching':
               setPhase('researching');
               break;
@@ -279,10 +269,6 @@ export function AgenticOutlineGenerator({ workflowId, onComplete }: AgenticOutli
 
   const getPhaseIcon = () => {
     switch (phase) {
-      case 'triaging':
-        return <Clock className="w-6 h-6 text-blue-600 animate-spin" />;
-      case 'clarifying':
-        return <MessageCircle className="w-6 h-6 text-purple-600" />;
       case 'researching':
         return <Bot className="w-6 h-6 text-blue-600 animate-pulse" />;
       case 'completed':
@@ -349,8 +335,8 @@ export function AgenticOutlineGenerator({ workflowId, onComplete }: AgenticOutli
         </div>
       )}
 
-      {/* Clarification Questions */}
-      {phase === 'clarifying' && questions.length > 0 && (
+      {/* Clarification Questions - Removed in simplified flow */}
+      {false && (
         <div className="bg-white border border-purple-200 rounded-lg p-6">
           <div className="mb-4">
             <h4 className="font-semibold text-purple-900 flex items-center">
