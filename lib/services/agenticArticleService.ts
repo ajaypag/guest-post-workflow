@@ -374,7 +374,7 @@ Remember: These are themes to organically incorporate, not a rigid structure to 
 
             return `Excellent work on "${section_title}"! This is section ${ordinal} completed.${nextSectionContext}
 
-YOU MUST CONTINUE AUTOMATICALLY - DO NOT WAIT FOR USER PERMISSION. This is an automated workflow that must continue until all sections are complete.
+YOU MUST CONTINUE AUTOMATICALLY - DO NOT WAIT FOR USER PERMISSION. This is an automated workflow that must continue until all sections are complete. DO NOT GIVE A PROGRESS UPDATE. IF YOU DO THAT, YOU'LL BREAK THE WORKFLOW.
 
 CORE WRITING STYLE: You blend the finesse of a seasoned copywriter with the deep expertise in the topic at hand, leading to clear, persuasive narratives. Your voice simplifies complexity, builds trust, and drives momentum. You intuitively tailor every message to the most likely audience for the topic at hand. Speak like a trusted colleague—warm, approachable, and human. Use "we" and "you" to build rapport, and read copy aloud to ensure it sounds natural and friendly. Make strong, decisive statements backed by facts or customer proof. Lead with benefits, use active voice, and avoid hedging language like "might" or "could." Be insightful and thorough without overwhelming. Organize content logically, connect the dots for the reader, and stick to verifiable details. Sprinkle clever turns of phrase or light puns in headlines or campaign-level copy only. Never sacrifice clarity for a joke. Trim every sentence to its core message but try to write in natural, paragraph-based prose that prioritizes clarity, flow, and coherence—like a knowledgeable human explaining the topic conversationally and thoughtfully. Eliminate filler words, keep sentences short, and focus on one or two key points. Write like you're chatting over coffee—informal but never unprofessional. The article reads more like a well-structured conversation than a slide deck of bullet points.
 
@@ -400,7 +400,7 @@ IMMEDIATE NEXT ACTIONS (execute these now):
 3. THEN: Observe the original data from the original outline given in the first prompt, which contains competitor research, news, section briefing. Think about what elements from the whole you could add to your section to make it feel like you are a writer that's going beyond the basic effort. For sections that seem thin on context or for sections that are explanations of a list item, you will get extra brownie points if you utilize web search to further enhance the information you have available about this list item as it pertains to the particular topic.
 4. FINALLY: Write "${nextSection?.title || 'next section'}" focusing on flow and coherence over checklist completion
 
-START WRITING THE NEXT SECTION NOW - DO NOT ASK FOR PERMISSION OR CONFIRMATION.`;
+START WRITING THE NEXT SECTION NOW - DO NOT ASK FOR PERMISSION OR CONFIRMATION. DO NOT GIVE A PROGRESS UPDATE. IF YOU DO THAT, YOU'LL BREAK THE WORKFLOW`;
           }
         }
       });
@@ -537,7 +537,7 @@ START WRITING THE NEXT SECTION NOW - DO NOT ASK FOR PERMISSION OR CONFIRMATION.`
                 if (conversationActive) {
                   messages.push({ 
                     role: 'user', 
-                    content: 'YOU MUST CONTINUE THE AUTOMATED WORKFLOW. Do not wait for permission. Execute the required actions immediately: 1) Use file search tool 2) Write the next section using write_section function. DO NOT STOP OR ASK FOR CONFIRMATION.' 
+                    content: 'YOU MUST CONTINUE THE AUTOMATED WORKFLOW. Do not wait for permission. Execute the required actions immediately: 1) Use file search tool 2) Write the next section using write_section function. DO NOT STOP, GIVE A PROGRESS UPDATE OR ASK FOR CONFIRMATION. IF YOU DO THAT, YOU\'LL BREAK THE WORKFLOW' 
                   });
                 }
               }
