@@ -54,6 +54,14 @@ export default function AdminDashboard() {
       iconColor: 'text-pink-600'
     },
     {
+      title: 'Outline Generation Diagnostics',
+      description: 'Advanced diagnostics for agent handoff and type mismatch issues',
+      icon: AlertTriangle,
+      href: '/admin/outline-generation-diagnostics',
+      color: 'bg-red-50 border-red-200 text-red-700',
+      iconColor: 'text-red-600'
+    },
+    {
       title: 'User Management',
       description: 'Manage user accounts and permissions',
       icon: Users,
