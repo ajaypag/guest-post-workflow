@@ -1,9 +1,9 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { 
-  agenticOutlineService, 
+  agenticOutlineServiceV3, 
   addSSEConnection, 
   removeSSEConnection 
-} from '@/lib/services/agenticOutlineService';
+} from '@/lib/services/agenticOutlineServiceV3';
 
 export async function GET(
   request: NextRequest,
@@ -45,53 +45,53 @@ export async function GET(
       })}\n\n`;
       controller.enqueue(encoder.encode(connectMessage));
 
-      // Set up periodic progress checks
-      const pollInterval = setInterval(async () => {
+      // Get last sequence number from client for resumable connections
+      const lastSequenceNumber = parseInt(searchParams.get('lastSequence') || '0');
+
+      // Get current status and send any missed updates
+      agenticOutlineServiceV3.getStreamStatus(sessionId, lastSequenceNumber)
+        .then((status) => {
+          if (status.hasNewContent) {
+            const statusMessage = `data: ${JSON.stringify({
+              type: 'status_update',
+              status: status.status,
+              partialContent: status.partialContent,
+              sequenceNumber: status.sequenceNumber,
+              connectionStatus: status.connectionStatus,
+              error: status.error
+            })}\n\n`;
+            controller.enqueue(encoder.encode(statusMessage));
+          }
+        })
+        .catch((error) => {
+          console.error('Error getting initial status:', error);
+          const errorMessage = `data: ${JSON.stringify({
+            type: 'error',
+            error: 'Failed to get initial status'
+          })}\n\n`;
+          controller.enqueue(encoder.encode(errorMessage));
+        });
+
+      // Keep connection alive with heartbeat
+      const heartbeatInterval = setInterval(() => {
         try {
-          const progress = await agenticOutlineService.getSessionProgress(sessionId);
-          
-          if (progress.error) {
-            const errorMessage = `data: ${JSON.stringify({ 
-              type: 'error', 
-              error: progress.error 
-            })}\n\n`;
-            controller.enqueue(encoder.encode(errorMessage));
-            clearInterval(pollInterval);
-            removeSSEConnection(sessionId);
-            controller.close();
-            return;
-          }
-
-          // Send progress update
-          const progressMessage = `data: ${JSON.stringify(progress)}\n\n`;
-          controller.enqueue(encoder.encode(progressMessage));
-
-          // Close stream when completed or errored
-          if (progress.status === 'completed' || progress.status === 'error') {
-            clearInterval(pollInterval);
-            removeSSEConnection(sessionId);
-            
-            // Send final event
-            const doneMessage = `data: ${JSON.stringify({ 
-              type: 'done',
-              status: progress.status
-            })}\n\n`;
-            controller.enqueue(encoder.encode(doneMessage));
-            
-            controller.close();
-          }
+          const heartbeatMessage = `data: ${JSON.stringify({
+            type: 'heartbeat',
+            timestamp: new Date().toISOString()
+          })}\n\n`;
+          controller.enqueue(encoder.encode(heartbeatMessage));
         } catch (error) {
-          console.error('Error polling session progress:', error);
-          clearInterval(pollInterval);
+          console.error('❌ Heartbeat failed:', error);
+          clearInterval(heartbeatInterval);
           removeSSEConnection(sessionId);
           controller.close();
         }
-      }, 2000); // Poll every 2 seconds
+      }, 30000); // Every 30 seconds
 
       // Clean up on disconnect
       request.signal.addEventListener('abort', () => {
         console.log(`🔌 SSE connection closed for session ${sessionId}`);
-        clearInterval(pollInterval);
+        clearInterval(heartbeatInterval);
         removeSSEConnection(sessionId);
         controller.close();
       });
@@ -103,6 +103,73 @@ export async function GET(
       'Content-Type': 'text/event-stream',
       'Cache-Control': 'no-cache',
       'Connection': 'keep-alive',
+      'Access-Control-Allow-Origin': '*',
+      'Access-Control-Allow-Methods': 'GET',
+      'Access-Control-Allow-Headers': 'Cache-Control'
     },
   });
+}
+
+export async function POST(
+  request: NextRequest,
+  { params }: { params: Promise<{ id: string }> }
+) {
+  try {
+    const resolvedParams = await params;
+    const workflowId = resolvedParams.id;
+    const { outlinePrompt } = await request.json();
+
+    if (!outlinePrompt) {
+      return NextResponse.json(
+        { error: 'Missing outlinePrompt in request body' },
+        { status: 400 }
+      );
+    }
+
+    console.log(`🚀 Starting streaming outline generation for workflow ${workflowId}`);
+
+    const result = await agenticOutlineServiceV3.startOutlineGeneration(
+      workflowId,
+      outlinePrompt
+    );
+
+    return NextResponse.json(result);
+
+  } catch (error: any) {
+    console.error('❌ Error starting streaming outline generation:', error);
+    return NextResponse.json(
+      { error: 'Failed to start outline generation', details: error.message },
+      { status: 500 }
+    );
+  }
+}
+
+export async function DELETE(
+  request: NextRequest,
+  { params }: { params: Promise<{ id: string }> }
+) {
+  try {
+    const { searchParams } = new URL(request.url);
+    const sessionId = searchParams.get('sessionId');
+
+    if (!sessionId) {
+      return NextResponse.json(
+        { error: 'Missing sessionId parameter' },
+        { status: 400 }
+      );
+    }
+
+    console.log(`🛑 Cancelling streaming outline generation for session ${sessionId}`);
+
+    const result = await agenticOutlineServiceV3.cancelOutlineGeneration(sessionId);
+
+    return NextResponse.json(result);
+
+  } catch (error: any) {
+    console.error('❌ Error cancelling outline generation:', error);
+    return NextResponse.json(
+      { error: 'Failed to cancel outline generation', details: error.message },
+      { status: 500 }
+    );
+  }
 }

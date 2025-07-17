@@ -141,6 +141,7 @@ AUDIT REQUIREMENTS:
 - Track editing patterns to ensure variety (don't repeat the same approach)
 - Limit citations to maximum 3 total across the entire article
 - Maintain conversational prose style, not bullet-heavy content
+- You blend the finesse of a seasoned copywriter with the deep expertise of the topic into clear, persuasive narratives. Your voice simplifies complexity, builds trust and drives momentum. You intuitively tailor every message to the most likely audience type.
 - Focus on semantic relevance, contextual terms, and user intent
 
 PARSING INSTRUCTIONS:
@@ -194,7 +195,9 @@ AUDIT FORMAT REQUIRED:
 - Weaknesses: What needs improvement for better semantic SEO
 - Optimized Content: Your improved version with better semantic SEO
 
-Remember: This is conversational prose optimization, not checklist-driven editing. Focus on semantic relevance and user intent.` : '';
+Remember: This is conversational prose optimization, not checklist-driven editing.
+- Focus on search intent and semantic relevance while taking into account nuances and maintaining brand voice
+- Sometimes threading the needle between adhering to our brand guide and adhering to our semantic SEO and writing style guide can have conflicts. One good tactic I can suggest is to try to nail the semantic SEO within the first sentence of a new paragraph or section, because those are most important. Try to keep the brand kit conversation flowing within the meat of the paragraph. That duality can help you thread the needle for both.` : '';
 
           return `Article parsed successfully! I found ${args.totalSections} audit chunks (sections and subsections) to process. Now I'll start the semantic SEO audit process.${firstSectionContext}
 
@@ -203,6 +206,9 @@ AUDIT PHILOSOPHY:
 - Vary your editing approaches to avoid repetitive patterns
 - Maintain conversational flow while improving SEO signals
 - Use citations sparingly (max 3 total) and only when they add genuine value
+- Maintain conversational prose style, not bullet-heavy content. When you oversimplify everything into a list, it looks like clear AI content. Anyone can create a bullet point or numbered list. The true expert can get even better than that
+- You blend the finesse of a seasoned copywriter with the deep expertise of the topic into clear, persuasive narratives. Your voice simplifies complexity, builds trust and drives momentum. You intuitively tailor every message to the most likely audience type.
+- Focus on semantic relevance, contextual terms, and user intent
 
 IMMEDIATE NEXT ACTIONS (execute automatically):
 1. FIRST: Use file search to review semantic SEO best practices
@@ -344,9 +350,10 @@ PATTERN AWARENESS:
 - Try to vary your approach from recent patterns
 
 AUDIT REQUIREMENTS:
-- Maintain semantic SEO focus while ensuring content variety
+- Focus on search intent and semantic relevance while taking into account nuances and maintaining brand voice
+- Sometimes threading the needle between adhering to our brand guide and adhering to our semantic SEO and writing style guide can have conflicts. One good tactic I can suggest is to try to nail the semantic SEO within the first sentence of a new paragraph or section, because those are most important. Try to keep the brand kit conversation flowing within the meat of the paragraph. That duality can help you thread the needle for both.
 - Consider how this section flows from the previous optimized content
-- Apply different editing patterns to avoid repetition`;
+- Apply different editing patterns to avoid repetition when appropriate. Although you don't always have to switch it up, obvious patterns over and over are clear signs that you are not a human but just an AI and we dont want that signal`;
             }
 
             return `Great work on "${section_title}"! Section ${ordinal} audit complete.${nextSectionContext}
@@ -354,10 +361,10 @@ AUDIT REQUIREMENTS:
 YOU MUST CONTINUE AUTOMATICALLY - DO NOT WAIT FOR PERMISSION. Also, dont tell me that you are continuing or processing - just provide the outputs i need otherwise you will break my workflow. This is an automated audit workflow.
 
 SEMANTIC SEO AUDIT PRINCIPLES:
-- Focus on search intent and semantic relevance
-- Vary editing approaches (you've used: ${newEditingPatterns.join(', ')})
+- Focus on search intent and semantic relevance while taking into account nuances and maintaining brand voice
+- Vary editing patterns and approaches when appropriate. Although you don't always have to switch it up, obvious patterns over and over are clear signs that you are not a human but just an AI and we dont want that signal (you've used: ${newEditingPatterns.join(', ')})
 - Citations used: ${newCitationsTotal}/3 - use remaining ${Math.max(0, 3 - newCitationsTotal)} strategically
-- Maintain conversational prose while optimizing for search
+- Sometimes threading the needle between adhering to our brand guide and adhering to our semantic SEO and writing style guide can have conflicts. One good tactic I can suggest is to try to nail the semantic SEO within the first sentence of a new paragraph or section, because those are most important. Try to keep the brand kit conversation flowing within the meat of the paragraph. That duality can help you thread the needle for both.
 
 IMMEDIATE NEXT ACTIONS (execute these now):
 1. FIRST: Use file search to refresh semantic SEO knowledge
