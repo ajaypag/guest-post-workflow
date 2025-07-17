@@ -84,9 +84,14 @@ export default function OutlineGenerationDiagnosticsPage() {
 
           <div className="bg-white border rounded-lg p-6 mb-8">
             <h2 className="text-xl font-semibold mb-4">Test Controls</h2>
+            <div className="bg-yellow-50 border border-yellow-200 rounded-lg p-3 mb-4">
+              <p className="text-sm text-yellow-800">
+                ⚠️ <strong>Note:</strong> Diagnostics analyze agent configuration only. No actual API calls are made (no credits used).
+              </p>
+            </div>
             <div className="space-y-4">
               <div>
-                <label className="block text-sm font-medium mb-2">Test Prompt</label>
+                <label className="block text-sm font-medium mb-2">Test Prompt (for analysis only)</label>
                 <textarea
                   value={testPrompt}
                   onChange={(e) => setTestPrompt(e.target.value)}
@@ -107,7 +112,7 @@ export default function OutlineGenerationDiagnosticsPage() {
                   ) : (
                     <span>✓</span>
                   )}
-                  Run Live Diagnostics
+                  Run Configuration Analysis (No Credits Used)
                 </button>
                 
                 <button 

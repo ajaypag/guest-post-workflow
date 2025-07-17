@@ -175,40 +175,20 @@ Create a comprehensive research outline based on the instructions provided.`;
         }
       };
 
-      // Test runtime behavior with a simple prompt
-      if (testPrompt) {
-        diagnostics.runtimeBehavior.testStart = new Date().toISOString();
-        
-        try {
-          const runner = new Runner({
-            modelProvider: openaiProvider,
-            tracingDisabled: true
-          });
-
-          // Capture what happens during run
-          try {
-            const mockRun = await runner.run(triageAgent, testPrompt);
-            diagnostics.runtimeBehavior.success = true;
-            diagnostics.runtimeBehavior.outputType = typeof mockRun.output;
-            diagnostics.runtimeBehavior.output = mockRun.output;
-          } catch (error: any) {
-            diagnostics.runtimeBehavior.error = error.message;
-            diagnostics.runtimeBehavior.errorType = error.message.includes('e.replace is not a function') 
-              ? 'TYPE_MISMATCH_ERROR' 
-              : 'OTHER_ERROR';
-            
-            // Extract agent warnings if present
-            const warningMatches = error.message.match(/\[Agent\] Warning: ([^\n]+)/g);
-            if (warningMatches) {
-              diagnostics.runtimeBehavior.agentWarnings = warningMatches.map((w: string) => 
-                w.replace('[Agent] Warning: ', '')
-              );
-            }
-          }
-        } catch (error: any) {
-          diagnostics.runtimeBehavior.catchError = error.message;
-        }
-      }
+      // SKIP runtime behavior test to save credits
+      diagnostics.runtimeBehavior.skipped = true;
+      diagnostics.runtimeBehavior.reason = 'Actual API calls disabled to save credits';
+      diagnostics.runtimeBehavior.note = 'Agent configuration can be analyzed without making actual calls';
+      
+      // Instead, just analyze the configuration statically
+      diagnostics.runtimeBehavior.staticAnalysis = {
+        triageAgent: 'Would route to clarifying or instruction based on prompt clarity',
+        clarifyingAgent: 'Would output structured questions (Zod schema)',
+        instructionAgent: 'Would build research instructions',
+        researchAgent: 'Would use o3-deep-research model with web search',
+        potentialIssue: 'Type mismatch between clarifyingAgent output and instructionAgent input',
+        expectedError: 'e.replace is not a function when structured output passed to text-expecting agent'
+      };
 
       // Type analysis
       diagnostics.typeAnalysis = {
