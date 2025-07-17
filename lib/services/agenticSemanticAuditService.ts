@@ -151,12 +151,12 @@ When you parse the article, break it into manageable audit chunks. If a section 
 - Maintain logical content groupings and hierarchical structure
 - When the article is a listicle, be sure to parse each list component out into its own section
 
-REQUIRED ACTIONS:
-1. FIRST: Use file search to review "Semantic SEO" best practices from the knowledge base
-2. THEN: Parse the article into manageable audit chunks using the parse_article function
-3. FINALLY: Begin auditing the first section with the audit_section function
+REQUIRED ACTIONS (YOU MUST USE TOOLS - DO NOT OUTPUT TEXT):
+1. FIRST: Use the file_search tool to review "Semantic SEO" best practices from the knowledge base
+2. THEN: Use the parse_article function to break down the article into audit chunks
+3. FINALLY: Use the audit_section function for the first section
 
-Start by searching the knowledge base for semantic SEO guidelines.`;
+CRITICAL: You MUST use these tools. Do NOT output text descriptions of what you will do. Start by using the file_search tool NOW.`;
 
       // Create tools for the audit process
       const parseArticleTool = tool({
@@ -204,12 +204,10 @@ AUDIT PHILOSOPHY:
 - Maintain conversational flow while improving SEO signals
 - Use citations sparingly (max 3 total) and only when they add genuine value
 
-IMMEDIATE NEXT ACTIONS (execute automatically):
-1. FIRST: Use file search to review semantic SEO best practices
-2. THEN: Audit the first section using the audit_section function
-3. CONTINUE: Proceed systematically through each section
+MANDATORY NEXT ACTION:
+USE THE audit_section FUNCTION NOW for the first section. DO NOT OUTPUT TEXT.
 
-Begin the audit now.`;
+You MUST call audit_section with all required parameters. Do not describe what you will do - USE THE FUNCTION.`;
         }
       });
 
@@ -351,7 +349,9 @@ AUDIT REQUIREMENTS:
 
             return `Great work on "${section_title}"! Section ${ordinal} audit complete.${nextSectionContext}
 
-YOU MUST CONTINUE AUTOMATICALLY - DO NOT WAIT FOR PERMISSION. This is an automated audit workflow.
+YOU MUST CONTINUE AUTOMATICALLY - DO NOT OUTPUT TEXT DESCRIPTIONS.
+
+CRITICAL: You MUST use the audit_section function NOW. Do not output any text about what you will do.
 
 SEMANTIC SEO AUDIT PRINCIPLES:
 - Focus on search intent and semantic relevance
@@ -359,11 +359,11 @@ SEMANTIC SEO AUDIT PRINCIPLES:
 - Citations used: ${newCitationsTotal}/3 - use remaining ${Math.max(0, 3 - newCitationsTotal)} strategically
 - Maintain conversational prose while optimizing for search
 
-IMMEDIATE NEXT ACTIONS (execute these now):
-1. FIRST: Use file search to refresh semantic SEO knowledge
-2. THEN: Audit "${nextSection?.title || 'next section'}" using audit_section function
+MANDATORY ACTIONS (USE TOOLS, DO NOT DESCRIBE):
+1. Use the audit_section function immediately for "${nextSection?.title || 'next section'}"
+2. Include all required parameters: section_title, strengths, weaknesses, optimized_content, editing_pattern, citations_added, is_last
 
-START AUDITING THE NEXT SECTION NOW - DO NOT ASK FOR PERMISSION OR CONFIRMATION.`;
+DO NOT OUTPUT TEXT - USE THE AUDIT_SECTION FUNCTION NOW.`;
           }
         }
       });
@@ -371,7 +371,21 @@ START AUDITING THE NEXT SECTION NOW - DO NOT ASK FOR PERMISSION OR CONFIRMATION.
       // Create Agent with tools
       const agent = new Agent({
         name: 'SemanticSEOAuditor',
-        instructions: 'You are an expert semantic SEO auditor who reviews and optimizes content for search performance while maintaining quality and readability. You work systematically section by section, providing detailed analysis and optimized content. This is an AUTOMATED WORKFLOW - continue until completion without asking for permission.',
+        instructions: `You are an expert semantic SEO auditor who reviews and optimizes content for search performance while maintaining quality and readability. You work systematically section by section, providing detailed analysis and optimized content.
+
+CRITICAL REQUIREMENTS:
+1. You MUST use the provided tools to complete your work
+2. You MUST NOT output plain text descriptions of what you will do
+3. You MUST use the audit_section function for EVERY section audit
+4. This is an AUTOMATED WORKFLOW - continue until completion without asking for permission
+
+WORKFLOW PATTERN:
+- Use file_search to review SEO guidelines
+- Use parse_article to break down the content (only once at the beginning)
+- Use audit_section for EACH section - this is MANDATORY
+- Continue automatically until all sections are complete
+
+NEVER output text like "I will now audit..." or "Let me continue..." - ALWAYS use the audit_section function instead.`,
         model: 'o3-2025-04-16',
         tools: [
           semanticSEOFileSearch,
@@ -478,9 +492,23 @@ START AUDITING THE NEXT SECTION NOW - DO NOT ASK FOR PERMISSION OR CONFIRMATION.
                 
                 // Guard rail for continuation
                 if (conversationActive) {
+                  console.warn('⚠️ Agent outputted text instead of using tools. Forcing tool usage.');
                   messages.push({ 
                     role: 'user', 
-                    content: 'YOU MUST CONTINUE THE AUTOMATED AUDIT WORKFLOW. Do not wait for permission. Execute the required actions immediately: 1) Use file search tool 2) Continue auditing sections using audit_section function. DO NOT STOP OR ASK FOR CONFIRMATION.' 
+                    content: `CRITICAL ERROR: You outputted text instead of using the audit_section function.
+
+YOU MUST USE THE audit_section FUNCTION IMMEDIATELY. DO NOT OUTPUT ANY TEXT.
+
+The audit_section function is MANDATORY for every section. You must call it with these parameters:
+- section_title: The title of the section you're auditing
+- strengths: Identified strengths
+- weaknesses: Areas for improvement
+- optimized_content: Your optimized version
+- editing_pattern: The pattern you're using
+- citations_added: Number of citations added
+- is_last: Whether this is the last section
+
+USE THE FUNCTION NOW. DO NOT DESCRIBE WHAT YOU WILL DO.` 
                   });
                 }
               }
@@ -590,24 +618,60 @@ START AUDITING THE NEXT SECTION NOW - DO NOT ASK FOR PERMISSION OR CONFIRMATION.
 
   // Public method to get real-time audit progress
   async getAuditProgress(sessionId: string) {
-    const session = await this.getAuditSession(sessionId);
-    if (!session) return null;
+    try {
+      const session = await this.getAuditSession(sessionId);
+      if (!session) return null;
 
-    const sections = await db.select()
-      .from(auditSections)
-      .where(eq(auditSections.auditSessionId, sessionId))
-      .orderBy(auditSections.sectionNumber);
+      const sections = await db.select()
+        .from(auditSections)
+        .where(eq(auditSections.auditSessionId, sessionId))
+        .orderBy(auditSections.sectionNumber)
+        .catch(error => {
+          console.error('Error fetching audit sections:', error);
+          return []; // Return empty array on error
+        });
 
-    return {
-      session,
-      sections: sections || [], // Ensure sections is always an array
-      progress: {
-        total: session.totalSections || 0,
-        completed: session.completedSections || 0,
-        citationsUsed: session.totalCitationsUsed || 0,
-        citationsRemaining: Math.max(0, 3 - (session.totalCitationsUsed || 0))
-      }
-    };
+      // Ensure sections is always an array, even if DB query fails
+      const safeSections = sections || [];
+
+      return {
+        session: {
+          id: session.id,
+          status: session.status || 'pending',
+          totalSections: session.totalSections || 0,
+          completedSections: session.completedSections || 0,
+          totalCitationsUsed: session.totalCitationsUsed || 0,
+          errorMessage: session.errorMessage
+        },
+        sections: safeSections, // Always return an array
+        progress: {
+          total: session.totalSections || 0,
+          completed: session.completedSections || 0,
+          citationsUsed: session.totalCitationsUsed || 0,
+          citationsRemaining: Math.max(0, 3 - (session.totalCitationsUsed || 0))
+        }
+      };
+    } catch (error) {
+      console.error('Error getting audit progress:', error);
+      // Return a safe default structure on error
+      return {
+        session: {
+          id: sessionId,
+          status: 'error',
+          totalSections: 0,
+          completedSections: 0,
+          totalCitationsUsed: 0,
+          errorMessage: error instanceof Error ? error.message : 'Failed to get progress'
+        },
+        sections: [], // Always return an array
+        progress: {
+          total: 0,
+          completed: 0,
+          citationsUsed: 0,
+          citationsRemaining: 3
+        }
+      };
+    }
   }
 }
 
