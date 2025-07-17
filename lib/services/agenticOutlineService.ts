@@ -73,10 +73,10 @@ Examine the prompt for:
 5. Any ambiguous terms or concepts
 
 Based on your analysis:
-• If the prompt is clear and complete → call transfer_to_research_instruction_agent
-• If clarification would improve the research → call transfer_to_clarifying_questions_agent
+• If the prompt is clear and complete → transfer to InstructionBuilder agent
+• If clarification would improve the research → transfer to ClarifyingAgent
 
-Return exactly ONE function-call.`;
+CRITICAL: You MUST transfer to another agent. Do not provide final output yourself.`;
 
 const CLARIFYING_PROMPT = `You are a clarifying agent for a deep research outline generation system.
 
@@ -98,16 +98,37 @@ Return 2-3 questions maximum.`;
 
 const INSTRUCTION_BUILDER_PROMPT = `You are an instruction builder for a deep research outline generation system.
 
-Your job is to take the original research prompt and any clarification answers, then create precise instructions for the research agent.
+Your job is to take the original research prompt and create detailed, specific instructions for the research agent to follow.
 
-Transform the enriched context into specific research directives:
-1. Maximize specificity and clarity
-2. Include all relevant constraints and requirements
-3. Specify expected structure and depth
-4. Highlight key areas to investigate
-5. Define success criteria for the research
+CRITICAL: You must ALWAYS hand off to the research agent. Do not just output a score or summary.
 
-Create instructions that will guide the research agent to produce a comprehensive, well-structured outline.`;
+Process the user's request and create comprehensive research instructions that include:
+
+1. RESEARCH SCOPE:
+   - Specific search queries to perform
+   - Target sources and websites to investigate
+   - Time frame for research (recent studies, current trends)
+   - Geographic focus if relevant
+
+2. CONTENT REQUIREMENTS:
+   - Exact deliverables expected
+   - Structure and format specifications
+   - Word count or depth requirements
+   - Tone and style guidelines
+
+3. KEY INVESTIGATIONS:
+   - Competitor analysis requirements
+   - Data points to collect
+   - Expert sources to find
+   - Trending topics to explore
+
+4. OUTPUT SPECIFICATIONS:
+   - Detailed outline structure
+   - Required sections and subsections
+   - Citation and source requirements
+   - Visual elements or data tables needed
+
+IMPORTANT: After creating these instructions, you MUST transfer to the research agent to execute the research. Never stop at just creating instructions.`;
 
 const RESEARCH_AGENT_PROMPT = `You are a deep research specialist creating comprehensive outlines for guest post articles.
 
@@ -257,13 +278,25 @@ export class AgenticOutlineService {
         tracingDisabled: true
       });
 
-      console.log(`🚀 Starting agent pipeline with prompt: ${outlinePrompt.substring(0, 100)}...`);
-      ssePush(sessionId, { type: 'status', status: 'analyzing', message: 'Starting agent analysis...' });
+      console.log(`🚀 Starting research directly with prompt: ${outlinePrompt.substring(0, 100)}...`);
+      ssePush(sessionId, { type: 'status', status: 'researching', message: 'Starting deep research...' });
 
-      const result = await runner.run(triageAgent, outlinePrompt);
+      // Skip triage/instruction agents - go directly to research for faster, more reliable results
+      const enhancedPrompt = `${outlinePrompt}
+
+RESEARCH INSTRUCTIONS:
+You must conduct thorough web research before creating the outline. Follow these steps:
+1. Search for current information about the topic
+2. Analyze competitor content and gaps
+3. Find recent studies, statistics, and expert insights
+4. Create a comprehensive research-based outline
+
+Begin your research now.`;
+
+      const result = await runner.run(researchAgent, enhancedPrompt);
       
-      console.log(`🎯 Agent pipeline completed. Result type:`, typeof result.output);
-      console.log(`📊 Agent result:`, JSON.stringify(result, null, 2));
+      console.log(`🎯 Research completed. Result type:`, typeof result.output);
+      console.log(`📊 Research result:`, JSON.stringify(result, null, 2));
 
       // Check if clarifications needed by examining the output
       if (result.output && typeof result.output === 'object' && 'questions' in result.output) {
