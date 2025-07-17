@@ -111,24 +111,52 @@ Create instructions that will guide the research agent to produce a comprehensiv
 
 const RESEARCH_AGENT_PROMPT = `You are a deep research specialist creating comprehensive outlines for guest post articles.
 
-Your job is to conduct thorough research and create a detailed outline based on the instructions provided.
+CRITICAL: You MUST conduct actual web research using your tools before creating any outline. Do not proceed without research.
+
+MANDATORY PROCESS:
+1. FIRST: Use web search to find at least 5-10 authoritative sources about the topic
+2. THEN: Analyze current trends, statistics, and expert insights
+3. FINALLY: Create a detailed outline based on your research findings
 
 Research Requirements:
-1. Search for authoritative sources and current information
-2. Identify key themes, trends, and insights
-3. Structure findings into a logical outline
-4. Include specific data points, statistics, and examples
-5. Note potential client link integration opportunities
-6. Suggest compelling angles and unique perspectives
+- Search for recent articles, studies, and expert opinions (last 2 years preferred)
+- Find specific data points, statistics, and case studies
+- Identify current industry trends and challenges
+- Look for unique angles and perspectives not commonly covered
+- Find potential opportunities for client link integration
 
-Outline Structure:
-- Clear hierarchy with main sections and subsections
-- Detailed bullet points for each section
-- Specific research findings and data
-- Source citations for key information
-- Content recommendations for each section
+Output Format - Comprehensive Research Outline:
+# [Article Title]
 
-Deliver a comprehensive outline that serves as a complete blueprint for article creation.`;
+## Research Summary
+- [List key sources found and their credibility]
+- [Current trends identified]
+- [Key statistics discovered]
+
+## Article Outline
+
+### 1. Introduction
+- Hook: [Specific statistic or trend from research]
+- Problem statement: [Based on research findings]
+- Article promise: [What readers will learn]
+
+### 2. [Main Section Title]
+- Key points: [Based on research]
+- Supporting data: [Specific statistics/studies]
+- Expert insights: [Quotes or findings from authorities]
+- Examples: [Real-world cases from research]
+
+[Continue with detailed sections...]
+
+## Conclusion
+- Summary of key insights
+- Call to action
+- Future outlook based on research
+
+## Sources
+[List all sources found during research with URLs]
+
+IMPORTANT: Your outline must be substantive (minimum 1000+ words when written) and based on actual research, not generic knowledge.`;
 
 export class AgenticOutlineService {
   private openaiProvider: OpenAIProvider;
@@ -220,7 +248,7 @@ export class AgenticOutlineService {
         name: 'TriageAgent',
         model: 'o3-2025-04-16',
         instructions: TRIAGE_PROMPT,
-        handoffs: [clarifyingAgent, instructionAgent]
+        handoffs: [instructionAgent] // Only handoff to instruction agent - clarifying handled manually
       });
 
       // Run triage agent to determine the path
@@ -229,7 +257,13 @@ export class AgenticOutlineService {
         tracingDisabled: true
       });
 
+      console.log(`🚀 Starting agent pipeline with prompt: ${outlinePrompt.substring(0, 100)}...`);
+      ssePush(sessionId, { type: 'status', status: 'analyzing', message: 'Starting agent analysis...' });
+
       const result = await runner.run(triageAgent, outlinePrompt);
+      
+      console.log(`🎯 Agent pipeline completed. Result type:`, typeof result.output);
+      console.log(`📊 Agent result:`, JSON.stringify(result, null, 2));
 
       // Check if clarifications needed by examining the output
       if (result.output && typeof result.output === 'object' && 'questions' in result.output) {
@@ -259,35 +293,53 @@ export class AgenticOutlineService {
       // The agents will handoff: Triage → Instruction → Research
       console.log(`✅ No clarification needed, research completed for session ${sessionId}`);
       
-      // Save final outline - handle agent output properly
+      // Save final outline - extract text from agent output
       let finalOutline = '';
-      if (Array.isArray(result.output) && result.output.length > 0) {
-        // Find message outputs or completion outputs
-        const messageOutputs = result.output.filter(item => 
-          item.type === 'message' || !item.type // Some outputs might not have a type
-        );
-        
-        if (messageOutputs.length > 0) {
-          // Get the last message output
-          const lastMessage = messageOutputs[messageOutputs.length - 1];
-          // Try different possible field names
-          const textContent = (lastMessage as any).message || 
-                            (lastMessage as any).text || 
-                            (lastMessage as any).content || 
-                            (lastMessage as any).output ||
-                            JSON.stringify(lastMessage);
-          finalOutline = sanitizeForPostgres(textContent);
-        } else {
-          // If no message outputs, just stringify the last item
-          const lastOutput = result.output[result.output.length - 1];
-          finalOutline = sanitizeForPostgres(JSON.stringify(lastOutput));
-        }
-      } else if (typeof result.output === 'string') {
+      
+      console.log(`🔍 Processing agent output:`, JSON.stringify(result.output, null, 2));
+      
+      // Handle different output formats from o3 agents
+      if (typeof result.output === 'string') {
+        // Direct string output
         finalOutline = sanitizeForPostgres(result.output);
+      } else if (Array.isArray(result.output)) {
+        // Array of output items - look for text content
+        const textItems = result.output
+          .filter((item: any) => item.type === 'output_text' || item.text)
+          .map((item: any) => item.text || item.content || '')
+          .filter((text: string) => text && text.length > 10); // Filter out short/meaningless text
+        
+        if (textItems.length > 0) {
+          // Join all meaningful text content
+          finalOutline = sanitizeForPostgres(textItems.join('\n\n'));
+        } else {
+          // Fallback: look for any text in the output
+          const allText = result.output
+            .map((item: any) => {
+              if (typeof item === 'string') return item;
+              if (item.text) return item.text;
+              if (item.content) return item.content;
+              if (item.message) return item.message;
+              return '';
+            })
+            .filter((text: string) => text && text.length > 5)
+            .join('\n\n');
+          
+          finalOutline = sanitizeForPostgres(allText || 'No content generated');
+        }
+      } else if (result.output && typeof result.output === 'object') {
+        // Object output - extract text fields
+        const textContent = (result.output as any).text || 
+                           (result.output as any).content || 
+                           (result.output as any).message ||
+                           JSON.stringify(result.output);
+        finalOutline = sanitizeForPostgres(textContent);
       } else {
-        // Handle any other case
-        finalOutline = sanitizeForPostgres(JSON.stringify(result.output || ''));
+        // Fallback
+        finalOutline = sanitizeForPostgres('No valid outline content generated');
       }
+      
+      console.log(`📝 Extracted outline (${finalOutline.length} chars):`, finalOutline.substring(0, 200) + '...');
       
       const citations = this.extractCitations(finalOutline);
 
@@ -405,35 +457,53 @@ export class AgenticOutlineService {
         // Note: State resumption will be handled by the agent framework automatically
       );
 
-      // Save final outline - handle agent output properly
+      // Save final outline - extract text from agent output
       let finalOutline = '';
-      if (Array.isArray(result.output) && result.output.length > 0) {
-        // Find message outputs or completion outputs
-        const messageOutputs = result.output.filter(item => 
-          item.type === 'message' || !item.type // Some outputs might not have a type
-        );
-        
-        if (messageOutputs.length > 0) {
-          // Get the last message output
-          const lastMessage = messageOutputs[messageOutputs.length - 1];
-          // Try different possible field names
-          const textContent = (lastMessage as any).message || 
-                            (lastMessage as any).text || 
-                            (lastMessage as any).content || 
-                            (lastMessage as any).output ||
-                            JSON.stringify(lastMessage);
-          finalOutline = sanitizeForPostgres(textContent);
-        } else {
-          // If no message outputs, just stringify the last item
-          const lastOutput = result.output[result.output.length - 1];
-          finalOutline = sanitizeForPostgres(JSON.stringify(lastOutput));
-        }
-      } else if (typeof result.output === 'string') {
+      
+      console.log(`🔍 Processing agent output:`, JSON.stringify(result.output, null, 2));
+      
+      // Handle different output formats from o3 agents
+      if (typeof result.output === 'string') {
+        // Direct string output
         finalOutline = sanitizeForPostgres(result.output);
+      } else if (Array.isArray(result.output)) {
+        // Array of output items - look for text content
+        const textItems = result.output
+          .filter((item: any) => item.type === 'output_text' || item.text)
+          .map((item: any) => item.text || item.content || '')
+          .filter((text: string) => text && text.length > 10); // Filter out short/meaningless text
+        
+        if (textItems.length > 0) {
+          // Join all meaningful text content
+          finalOutline = sanitizeForPostgres(textItems.join('\n\n'));
+        } else {
+          // Fallback: look for any text in the output
+          const allText = result.output
+            .map((item: any) => {
+              if (typeof item === 'string') return item;
+              if (item.text) return item.text;
+              if (item.content) return item.content;
+              if (item.message) return item.message;
+              return '';
+            })
+            .filter((text: string) => text && text.length > 5)
+            .join('\n\n');
+          
+          finalOutline = sanitizeForPostgres(allText || 'No content generated');
+        }
+      } else if (result.output && typeof result.output === 'object') {
+        // Object output - extract text fields
+        const textContent = (result.output as any).text || 
+                           (result.output as any).content || 
+                           (result.output as any).message ||
+                           JSON.stringify(result.output);
+        finalOutline = sanitizeForPostgres(textContent);
       } else {
-        // Handle any other case
-        finalOutline = sanitizeForPostgres(JSON.stringify(result.output || ''));
+        // Fallback
+        finalOutline = sanitizeForPostgres('No valid outline content generated');
       }
+      
+      console.log(`📝 Extracted outline (${finalOutline.length} chars):`, finalOutline.substring(0, 200) + '...');
       
       const citations = this.extractCitations(finalOutline);
 
