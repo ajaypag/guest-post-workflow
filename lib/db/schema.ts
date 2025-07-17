@@ -387,6 +387,10 @@ export const outlineSessions = pgTable('outline_sessions', {
   finalOutline: text('final_outline'), // Complete research outline
   citations: jsonb('citations'), // Extracted citations/sources
   sessionMetadata: jsonb('session_metadata'), // Additional context like keyword, title, etc.
+  backgroundResponseId: varchar('background_response_id', { length: 255 }), // OpenAI background response ID
+  pollingAttempts: integer('polling_attempts').default(0), // Number of times we've polled
+  lastPolledAt: timestamp('last_polled_at'), // Last time we checked the status
+  isActive: boolean('is_active').default(false), // Track if this session is currently active
   errorMessage: text('error_message'),
   startedAt: timestamp('started_at').notNull(),
   completedAt: timestamp('completed_at'),
