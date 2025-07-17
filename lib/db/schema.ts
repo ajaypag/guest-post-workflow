@@ -291,6 +291,7 @@ export const workflowsRelations = relations(workflows, ({ one, many }) => ({
   polishSections: many(polishSections),
   formattingQaSessions: many(formattingQaSessions),
   formattingQaChecks: many(formattingQaChecks),
+  outlineSessions: many(outlineSessions),
 }));
 
 export const workflowStepsRelations = relations(workflowSteps, ({ one }) => ({
@@ -371,6 +372,35 @@ export const formattingQaChecksRelations = relations(formattingQaChecks, ({ one 
   }),
 }));
 
+// Outline sessions for tracking deep research outline generation with clarifications
+export const outlineSessions = pgTable('outline_sessions', {
+  id: uuid('id').primaryKey(),
+  workflowId: uuid('workflow_id').notNull().references(() => workflows.id, { onDelete: 'cascade' }),
+  version: integer('version').notNull().default(1), // Version number for each outline generation
+  stepId: varchar('step_id', { length: 100 }).notNull().default('deep-research'),
+  status: varchar('status', { length: 50 }).notNull().default('pending'), // 'pending' | 'triaging' | 'clarifying' | 'building' | 'researching' | 'completed' | 'error'
+  outlinePrompt: text('outline_prompt'), // Initial prompt from topic generation
+  clarificationQuestions: jsonb('clarification_questions'), // Questions from clarifying agent
+  clarificationAnswers: text('clarification_answers'), // User's answers
+  agentState: jsonb('agent_state'), // Serialized agent state for resumption
+  researchInstructions: text('research_instructions'), // Instructions built by instruction agent
+  finalOutline: text('final_outline'), // Complete research outline
+  citations: jsonb('citations'), // Extracted citations/sources
+  sessionMetadata: jsonb('session_metadata'), // Additional context like keyword, title, etc.
+  errorMessage: text('error_message'),
+  startedAt: timestamp('started_at').notNull(),
+  completedAt: timestamp('completed_at'),
+  createdAt: timestamp('created_at').notNull(),
+  updatedAt: timestamp('updated_at').notNull(),
+});
+
+export const outlineSessionsRelations = relations(outlineSessions, ({ one }) => ({
+  workflow: one(workflows, {
+    fields: [outlineSessions.workflowId],
+    references: [workflows.id],
+  }),
+}));
+
 // Type exports
 export type User = typeof users.$inferSelect;
 export type NewUser = typeof users.$inferInsert;
@@ -398,3 +428,5 @@ export type FormattingQaSession = typeof formattingQaSessions.$inferSelect;
 export type NewFormattingQaSession = typeof formattingQaSessions.$inferInsert;
 export type FormattingQaCheck = typeof formattingQaChecks.$inferSelect;
 export type NewFormattingQaCheck = typeof formattingQaChecks.$inferInsert;
+export type OutlineSession = typeof outlineSessions.$inferSelect;
+export type NewOutlineSession = typeof outlineSessions.$inferInsert;

@@ -5,7 +5,8 @@ import { WorkflowStep, GuestPostWorkflow } from '@/types/workflow';
 import { SavedField } from '../SavedField';
 import { CopyButton } from '../ui/CopyButton';
 import { TutorialVideo } from '../ui/TutorialVideo';
-import { ExternalLink, ChevronDown, ChevronRight, FileText, CheckCircle, AlertCircle, Target, ExternalLinkIcon } from 'lucide-react';
+import { AgenticOutlineGenerator } from '../ui/AgenticOutlineGenerator';
+import { ExternalLink, ChevronDown, ChevronRight, FileText, CheckCircle, AlertCircle, Target, ExternalLinkIcon, Bot, CheckSquare } from 'lucide-react';
 
 interface DeepResearchStepProps {
   step: WorkflowStep;
@@ -18,6 +19,7 @@ export const DeepResearchStepClean = ({ step, workflow, onChange }: DeepResearch
     'research': true,
     'results': false
   });
+  const [activeTab, setActiveTab] = useState<'manual' | 'agentic'>('manual');
 
   // Get the deep research prompt from Step 2j
   const topicGenerationStep = workflow.steps.find(s => s.id === 'topic-generation');
@@ -62,7 +64,42 @@ export const DeepResearchStepClean = ({ step, workflow, onChange }: DeepResearch
         description="Learn how to create detailed research outlines using GPT-o3 Deep Research"
       />
       
-      {/* Research Process */}
+      {/* Tab Navigation */}
+      <div className="bg-white border border-gray-200 rounded-lg overflow-hidden">
+        <div className="flex border-b border-gray-200">
+          <button
+            onClick={() => setActiveTab('manual')}
+            className={`flex-1 py-3 px-4 text-center font-medium transition-colors ${
+              activeTab === 'manual'
+                ? 'text-blue-600 border-b-2 border-blue-600 bg-blue-50'
+                : 'text-gray-600 hover:text-gray-800 hover:bg-gray-50'
+            }`}
+          >
+            <div className="flex items-center justify-center space-x-2">
+              <ExternalLink className="w-4 h-4" />
+              <span>Manual Research</span>
+            </div>
+          </button>
+          <button
+            onClick={() => setActiveTab('agentic')}
+            className={`flex-1 py-3 px-4 text-center font-medium transition-colors ${
+              activeTab === 'agentic'
+                ? 'text-purple-600 border-b-2 border-purple-600 bg-purple-50'
+                : 'text-gray-600 hover:text-gray-800 hover:bg-gray-50'
+            }`}
+          >
+            <div className="flex items-center justify-center space-x-2">
+              <Bot className="w-4 h-4" />
+              <span>AI Research (Beta)</span>
+            </div>
+          </button>
+        </div>
+      </div>
+
+      {/* Tab Content */}
+      {activeTab === 'manual' ? (
+        <>
+          {/* Research Process */}
       <div className="bg-white border border-gray-200 rounded-xl overflow-hidden">
         <button
           onClick={() => toggleSection('research')}
@@ -247,6 +284,24 @@ export const DeepResearchStepClean = ({ step, workflow, onChange }: DeepResearch
           </div>
         )}
       </div>
+        </>
+      ) : (
+        /* AI Research Tab */
+        <div className="space-y-6">
+          <AgenticOutlineGenerator 
+            workflowId={workflow.id}
+            onComplete={(outline) => {
+              // Update the step outputs with the generated outline
+              onChange({
+                ...step.outputs,
+                outlineContent: outline,
+                researchStatus: 'completed',
+                agenticGeneration: true
+              });
+            }}
+          />
+        </div>
+      )}
     </div>
   );
 };

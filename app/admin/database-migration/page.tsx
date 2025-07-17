@@ -627,6 +627,86 @@ export default function DatabaseMigrationPage() {
     setIsLoading(false);
   };
 
+  // Outline Sessions functions
+  const checkOutlineSessionsStatus = async () => {
+    setIsLoading(true);
+    setMessage('');
+    
+    try {
+      const response = await fetch('/api/admin/check-outline-generation-health', {
+        method: 'POST'
+      });
+      const data = await response.json();
+      
+      if (data.database?.tableExists) {
+        setMessage('✅ Outline sessions table exists and is properly configured');
+        setMessageType('success');
+      } else {
+        setMessage('ℹ️ Outline sessions table does not exist');
+        setMessageType('info');
+      }
+    } catch (error) {
+      setMessage(`❌ Error checking table: ${error instanceof Error ? error.message : 'Unknown error'}`);
+      setMessageType('error');
+    }
+    
+    setIsLoading(false);
+  };
+
+  const runOutlineSessionsMigration = async () => {
+    setIsLoading(true);
+    setMessage('');
+    
+    try {
+      const response = await fetch('/api/admin/migrate-outline-sessions', {
+        method: 'POST'
+      });
+      const data = await response.json();
+      
+      if (data.success) {
+        setMessage('✅ Outline sessions table created successfully!');
+        setMessageType('success');
+      } else {
+        setMessage(`❌ Migration failed: ${data.error}`);
+        setMessageType('error');
+      }
+    } catch (error) {
+      setMessage(`❌ Error: ${error instanceof Error ? error.message : 'Unknown error'}`);
+      setMessageType('error');
+    }
+    
+    setIsLoading(false);
+  };
+
+  const runOutlineSessionsRollback = async () => {
+    if (!confirm('Are you sure you want to remove the outline_sessions table? This will delete all AI-generated outlines and session data.')) {
+      return;
+    }
+    
+    setIsLoading(true);
+    setMessage('');
+    
+    try {
+      const response = await fetch('/api/admin/migrate-outline-sessions', {
+        method: 'DELETE'
+      });
+      const data = await response.json();
+      
+      if (data.success) {
+        setMessage('✅ Outline sessions table removed successfully!');
+        setMessageType('success');
+      } else {
+        setMessage(`❌ Rollback failed: ${data.error}`);
+        setMessageType('error');
+      }
+    } catch (error) {
+      setMessage(`❌ Error: ${error instanceof Error ? error.message : 'Unknown error'}`);
+      setMessageType('error');
+    }
+    
+    setIsLoading(false);
+  };
+
   return (
     <div className="min-h-screen bg-gray-50 py-8">
       <div className="max-w-4xl mx-auto px-4 sm:px-6 lg:px-8">
@@ -1244,6 +1324,81 @@ export default function DatabaseMigrationPage() {
               >
                 <RotateCcw className="w-4 h-4 mr-2" />
                 {isLoading ? 'Rolling Back...' : 'Remove Enhanced Columns'}
+              </button>
+            </div>
+          </div>
+
+          {/* Outline Generation Migration */}
+          <div className="mb-8">
+            <h2 className="text-lg font-semibold text-gray-900 mb-4">AI Outline Generation Tables</h2>
+            <p className="text-gray-600 mb-4">
+              This migration creates the <code className="bg-gray-100 px-2 py-1 rounded">outline_sessions</code> table
+              to support AI-powered outline generation with the 4-agent deep research pipeline.
+            </p>
+            
+            <div className="bg-purple-50 border border-purple-200 rounded-lg p-4 mb-6">
+              <div className="flex items-start space-x-3">
+                <AlertTriangle className="w-5 h-5 text-purple-600 mt-0.5" />
+                <div>
+                  <h3 className="text-sm font-semibold text-purple-800">AI Outline Generation Features:</h3>
+                  <ul className="text-sm text-purple-700 mt-2 space-y-1">
+                    <li>• <strong>4-Agent Pipeline:</strong> Triage → Clarifying → Instruction → Research</li>
+                    <li>• <strong>Deep Research Model:</strong> Uses o3-deep-research for comprehensive outlines</li>
+                    <li>• <strong>Clarification Support:</strong> Interactive Q&A for better results</li>
+                    <li>• <strong>State Persistence:</strong> Resume sessions after clarification</li>
+                    <li>• <strong>Version Control:</strong> Multiple outline versions per workflow</li>
+                  </ul>
+                </div>
+              </div>
+            </div>
+          </div>
+
+          <div className="space-y-4 mb-8">
+            {/* Check Outline Sessions Status */}
+            <div className="border border-gray-200 rounded-lg p-4">
+              <h3 className="font-semibold text-gray-900 mb-2">Check Outline Generation Status</h3>
+              <p className="text-gray-600 text-sm mb-3">
+                Check if the outline_sessions table exists in your database.
+              </p>
+              <button
+                onClick={checkOutlineSessionsStatus}
+                disabled={isLoading}
+                className="inline-flex items-center px-4 py-2 bg-blue-600 text-white text-sm font-medium rounded-md hover:bg-blue-700 disabled:opacity-50 disabled:cursor-not-allowed"
+              >
+                <Database className="w-4 h-4 mr-2" />
+                {isLoading ? 'Checking...' : 'Check Table Status'}
+              </button>
+            </div>
+
+            {/* Run Outline Sessions Migration */}
+            <div className="border border-green-200 rounded-lg p-4">
+              <h3 className="font-semibold text-gray-900 mb-2">Create Outline Sessions Table</h3>
+              <p className="text-gray-600 text-sm mb-3">
+                Create the outline_sessions table to enable AI-powered outline generation.
+              </p>
+              <button
+                onClick={runOutlineSessionsMigration}
+                disabled={isLoading}
+                className="inline-flex items-center px-4 py-2 bg-green-600 text-white text-sm font-medium rounded-md hover:bg-green-700 disabled:opacity-50 disabled:cursor-not-allowed"
+              >
+                <Play className="w-4 h-4 mr-2" />
+                {isLoading ? 'Running Migration...' : 'Create Table'}
+              </button>
+            </div>
+
+            {/* Outline Sessions Rollback */}
+            <div className="border border-red-200 rounded-lg p-4">
+              <h3 className="font-semibold text-gray-900 mb-2">Remove Outline Sessions Table (Rollback)</h3>
+              <p className="text-gray-600 text-sm mb-3">
+                Remove the outline_sessions table. This will delete all AI-generated outlines and session data.
+              </p>
+              <button
+                onClick={runOutlineSessionsRollback}
+                disabled={isLoading}
+                className="inline-flex items-center px-4 py-2 bg-red-600 text-white text-sm font-medium rounded-md hover:bg-red-700 disabled:opacity-50 disabled:cursor-not-allowed"
+              >
+                <RotateCcw className="w-4 h-4 mr-2" />
+                {isLoading ? 'Rolling Back...' : 'Remove Table'}
               </button>
             </div>
           </div>
