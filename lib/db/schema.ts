@@ -187,9 +187,9 @@ export const polishSections = pgTable('polish_sections', {
   strengths: text('strengths'), // Brand adherence strengths
   weaknesses: text('weaknesses'), // Areas for improvement
   brandConflicts: text('brand_conflicts'), // Specific brand vs semantic conflicts identified
-  polishApproach: varchar('polish_approach', { length: 255 }), // 'engagement-focused', 'clarity-focused', 'balanced', etc.
-  engagementScore: integer('engagement_score'), // 1-10 engagement level
-  clarityScore: integer('clarity_score'), // 1-10 clarity/directness level
+  polishApproach: text('polish_approach'), // 'engagement-focused', 'clarity-focused', 'balanced', etc. - Changed to TEXT for AI content
+  engagementScore: real('engagement_score'), // 1-10 engagement level (decimal allowed)
+  clarityScore: real('clarity_score'), // 1-10 clarity/directness level (decimal allowed)
   status: varchar('status', { length: 50 }).notNull().default('pending'),
   polishMetadata: jsonb('polish_metadata'), // Section-specific context
   errorMessage: text('error_message'),
