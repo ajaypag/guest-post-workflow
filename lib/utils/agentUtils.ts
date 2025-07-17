@@ -74,6 +74,21 @@ export const FORMATTING_QA_GENERATE_RETRY_NUDGE =
   'Do NOT output progress updates.';
 
 /**
+ * Polish service specific retry nudges
+ */
+export const POLISH_AFTER_FILESEARCH_RETRY_NUDGE =
+  '🚨 FORMAT INVALID – You just searched the knowledge base. Now respond ONLY by calling the parse_polish_article function. ' +
+  'Do NOT summarize what you found. Do NOT discuss the guidelines. IMMEDIATELY parse the article.';
+
+export const POLISH_PARSE_RETRY_NUDGE =
+  '🚨 FORMAT INVALID – respond ONLY by calling the parse_polish_article function. ' +
+  'Do NOT output progress updates or summaries.';
+
+export const POLISH_SECTION_RETRY_NUDGE =
+  '🚨 FORMAT INVALID – respond ONLY by calling the polish_section function. ' +
+  'Do NOT output progress updates. Continue polishing sections.';
+
+/**
  * General purpose retry nudge factory
  */
 export function createRetryNudge(expectedTool: string): string {

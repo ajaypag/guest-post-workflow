@@ -6,7 +6,7 @@ import { polishSessions, polishSections, workflows } from '@/lib/db/schema';
 import { eq, and, sql } from 'drizzle-orm';
 import { v4 as uuidv4 } from 'uuid';
 import { z } from 'zod';
-import { assistantSentPlainText, createRetryNudge } from '@/lib/utils/agentUtils';
+import { assistantSentPlainText, createRetryNudge, POLISH_AFTER_FILESEARCH_RETRY_NUDGE, POLISH_PARSE_RETRY_NUDGE, POLISH_SECTION_RETRY_NUDGE } from '@/lib/utils/agentUtils';
 import { AgentDiagnostics, assistantSentPlainTextEnhanced } from '@/lib/utils/agentDiagnostics';
 import { DiagnosticStorageService } from '@/lib/services/diagnosticStorageService';
 
@@ -161,8 +161,11 @@ When you parse the article, break it into manageable polish chunks. If a section
 
 REQUIRED ACTIONS:
 1. FIRST: Use file search to review brand guidelines, semantic seo guide, writing style and do not use words list from the vector knowledge base
-2. THEN: Parse the article into manageable polish chunks using the parse_polish_article function
+2. THEN: **IMMEDIATELY** after file search completes, call the parse_polish_article function. DO NOT summarize or discuss what you found in the knowledge base.
 3. FINALLY: Begin polishing the first section with the polish_section function
+
+**CRITICAL**: After using file_search, you MUST immediately call parse_polish_article. Do NOT output any text about what you found. The workflow is:
+- file_search → parse_polish_article → polish_section (repeat for each section)
 
 Start by searching the knowledge base for brand guide, semantic seo, writing style and words not to use guides.`;
 
@@ -212,11 +215,15 @@ POLISH REQUIREMENTS:
 
 YOU MUST CONTINUE AUTOMATICALLY - DO NOT WAIT FOR PERMISSION. This is an automated polish workflow.
 
+**IMMEDIATE NEXT ACTION**: Call the polish_section function NOW to polish the first section. Do NOT provide any commentary or progress updates.
+
 FINAL POLISH PRINCIPLES:
 - Thread the needle between brand engagement and semantic directness
 - Resolve conflicts by finding balanced solutions that satisfy both requirements
 - Gauge adherence to guides before making improvements
-- Always explain your reasoning for how you balanced competing requirements`;
+- Always explain your reasoning for how you balanced competing requirements
+
+RESPOND ONLY BY CALLING THE polish_section FUNCTION. NO TEXT RESPONSES.`;
         }
       });
 
@@ -451,10 +458,14 @@ POLISH REQUIREMENTS:
 
 YOU MUST CONTINUE AUTOMATICALLY - DO NOT WAIT FOR PERMISSION. This is an automated polish workflow.
 
+**IMMEDIATE NEXT ACTION**: Call the polish_section function NOW to polish the next section. Do NOT provide any commentary, progress updates, or summaries.
+
 FINAL POLISH PRINCIPLES:
 - Thread the needle between brand engagement and semantic directness
 - Each section should balance both requirements effectively
-- Vary your polish approaches to maintain content quality`;
+- Vary your polish approaches to maintain content quality
+
+RESPOND ONLY BY CALLING THE polish_section FUNCTION. NO TEXT RESPONSES.`;
           }
           } catch (error: any) {
             console.error('Polish section tool execution failed:', error);
@@ -474,11 +485,14 @@ FINAL POLISH PRINCIPLES:
 CORE CHALLENGE:
 Often times, the brand guide and semantic principals might conflict - where the semantic guide wants you to be very to the point and the brand guide wants you to keep the reader engaged - it's your job to thread that needle effectively.
 
-THIS IS AN AUTOMATED WORKFLOW - continue until completion without asking for permission.`,
+THIS IS AN AUTOMATED WORKFLOW - continue until completion without asking for permission.
+
+CRITICAL TOOL USAGE RULES:
+1. After using file_search, IMMEDIATELY call parse_polish_article - NO text summaries
+2. After parsing, IMMEDIATELY call polish_section - NO progress updates
+3. Continue calling polish_section for each section - NO commentary between sections
+4. NEVER output text explanations during the workflow - ONLY use tools`,
         model: 'o3-2025-04-16',
-        modelSettings: { 
-          toolChoice: 'required'  // Force the agent to use tools - no text responses
-        },
         tools: [
           brandGuidelineSearch,
           parsePolishTool,
@@ -519,11 +533,24 @@ THIS IS AN AUTOMATED WORKFLOW - continue until completion without asking for per
         for await (const event of result.toStream()) {
           // ✨ ENHANCED: Comprehensive detection with diagnostics
           if (assistantSentPlainTextEnhanced(event, diagnostics)) {
-            // Use in-memory phase detection
-            const expectedTool = lastSuccessfulTool === 'parse_polish_article' 
-              ? 'polish_section' 
-              : 'parse_polish_article';
-            const retryNudge = createRetryNudge(expectedTool);
+            // Use in-memory phase detection with specific nudges
+            let retryNudge = POLISH_PARSE_RETRY_NUDGE;  // Default
+            
+            if (lastSuccessfulTool === 'file_search') {
+              // Just completed file search - need to parse article next
+              retryNudge = POLISH_AFTER_FILESEARCH_RETRY_NUDGE;
+            } else if (lastSuccessfulTool === 'parse_polish_article') {
+              // Parsed article - need to polish sections
+              retryNudge = POLISH_SECTION_RETRY_NUDGE;
+            } else if (lastSuccessfulTool === 'polish_section') {
+              // Polished a section - continue with next section
+              retryNudge = POLISH_SECTION_RETRY_NUDGE;
+            }
+            
+            // Determine expected tool for logging
+            const expectedTool = lastSuccessfulTool === 'file_search' ? 'parse_polish_article' :
+                                lastSuccessfulTool === 'parse_polish_article' ? 'polish_section' :
+                                'polish_section';
             
             console.log('🔄 RETRY ATTEMPT:', {
               sessionId,
@@ -531,7 +558,8 @@ THIS IS AN AUTOMATED WORKFLOW - continue until completion without asking for per
               maxRetries: MAX_RETRIES,
               lastSuccessfulTool,
               expectedTool,
-              messageCount: messages.length
+              messageCount: messages.length,
+              nudgeType: lastSuccessfulTool === 'file_search' ? 'after_filesearch' : 'standard'
             });
             
             // Log retry attempt to diagnostics
@@ -572,6 +600,9 @@ THIS IS AN AUTOMATED WORKFLOW - continue until completion without asking for per
             if (toolCall.name === 'file_search') {
               console.log('🔍 BRAND GUIDELINE FILE SEARCH:', JSON.stringify(toolCall.args, null, 2));
               polishSSEPush(sessionId, { type: 'tool_call', name: 'file_search', query: toolCall.args?.query });
+              // Track file_search as the last successful tool for retry logic
+              lastSuccessfulTool = 'file_search';
+              console.log('📚 File search completed - expecting parse_polish_article next');
             }
             
             // Construct assistant message with tool call
