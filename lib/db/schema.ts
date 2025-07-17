@@ -36,12 +36,17 @@ export const clientAssignments = pgTable('client_assignments', {
 // Target pages for clients
 export const targetPages = pgTable('target_pages', {
   id: uuid('id').primaryKey(), // Remove defaultRandom() to handle in application code
-  clientId: uuid('client_id').notNull().references(() => clients.id, { onDelete: 'cascade' }),
+  clientId: uuid('client_id').references(() => clients.id, { onDelete: 'cascade' }), // Now nullable for orphan URLs
   url: varchar('url', { length: 500 }).notNull(),
   domain: varchar('domain', { length: 255 }).notNull(),
   status: varchar('status', { length: 50 }).notNull().default('active'), // 'active' | 'completed' | 'inactive'
   keywords: text('keywords'), // Comma-separated list of AI-generated keywords
   description: text('description'), // AI-generated description of the URL content
+  ownerUserId: uuid('owner_user_id').references(() => users.id), // For orphan URLs
+  workflowId: uuid('workflow_id').references(() => workflows.id), // For workflow-scoped URLs
+  sourceType: varchar('source_type', { length: 50 }).default('client_managed'), // 'client_managed' | 'workflow_temporary' | 'bulk_import' | 'user_orphan'
+  createdInWorkflow: boolean('created_in_workflow').default(false),
+  expiresAt: timestamp('expires_at'), // For automatic cleanup
   addedAt: timestamp('added_at').notNull(), // Remove defaultNow() to handle in application code
   completedAt: timestamp('completed_at'),
 });
@@ -378,7 +383,7 @@ export const outlineSessions = pgTable('outline_sessions', {
   workflowId: uuid('workflow_id').notNull().references(() => workflows.id, { onDelete: 'cascade' }),
   version: integer('version').notNull().default(1), // Version number for each outline generation
   stepId: varchar('step_id', { length: 100 }).notNull().default('deep-research'),
-  status: varchar('status', { length: 50 }).notNull().default('pending'), // 'pending' | 'triaging' | 'clarifying' | 'building' | 'researching' | 'completed' | 'error'
+  status: varchar('status', { length: 50 }).notNull().default('pending'), // 'pending' | 'triaging' | 'clarifying' | 'building' | 'researching' | 'streaming_started' | 'completed' | 'error'
   outlinePrompt: text('outline_prompt'), // Initial prompt from topic generation
   clarificationQuestions: jsonb('clarification_questions'), // Questions from clarifying agent
   clarificationAnswers: text('clarification_answers'), // User's answers
@@ -391,6 +396,11 @@ export const outlineSessions = pgTable('outline_sessions', {
   pollingAttempts: integer('polling_attempts').default(0), // Number of times we've polled
   lastPolledAt: timestamp('last_polled_at'), // Last time we checked the status
   isActive: boolean('is_active').default(false), // Track if this session is currently active
+  // Streaming support columns
+  lastSequenceNumber: integer('last_sequence_number').default(0), // Track streaming sequence for resumable connections
+  connectionStatus: varchar('connection_status', { length: 50 }), // 'preparing' | 'connected' | 'disconnected' | 'failed' | 'completed' | 'cancelled'
+  streamStartedAt: timestamp('stream_started_at'), // When streaming began
+  partialContent: text('partial_content'), // Store streaming content as it arrives
   errorMessage: text('error_message'),
   startedAt: timestamp('started_at').notNull(),
   completedAt: timestamp('completed_at'),
