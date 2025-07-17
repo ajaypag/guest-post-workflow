@@ -351,7 +351,7 @@ AUDIT REQUIREMENTS:
 
             return `Great work on "${section_title}"! Section ${ordinal} audit complete.${nextSectionContext}
 
-YOU MUST CONTINUE AUTOMATICALLY - DO NOT WAIT FOR PERMISSION. This is an automated audit workflow.
+YOU MUST CONTINUE AUTOMATICALLY - DO NOT WAIT FOR PERMISSION. Also, dont tell me that you are continuing or processing - just provide the outputs i need otherwise you will break my workflow. This is an automated audit workflow.
 
 SEMANTIC SEO AUDIT PRINCIPLES:
 - Focus on search intent and semantic relevance
@@ -480,7 +480,7 @@ START AUDITING THE NEXT SECTION NOW - DO NOT ASK FOR PERMISSION OR CONFIRMATION.
                 if (conversationActive) {
                   messages.push({ 
                     role: 'user', 
-                    content: 'YOU MUST CONTINUE THE AUTOMATED AUDIT WORKFLOW. Do not wait for permission. Execute the required actions immediately: 1) Use file search tool 2) Continue auditing sections using audit_section function. DO NOT STOP OR ASK FOR CONFIRMATION.' 
+                    content: 'YOU MUST CONTINUE THE AUTOMATED AUDIT WORKFLOW. Do not wait for permission. Execute the required actions immediately: 1) Use file search tool 2) Continue auditing sections using audit_section function. DO NOT STOP OR ASK FOR CONFIRMATION. DO NOT PROVIDE TEXT BASED UPDATES ABOUT YOUR PROGRESS OR WHAT YOU\'LL DO. THAT WILL BREAK MY WORKFLOW.' 
                   });
                 }
               }
