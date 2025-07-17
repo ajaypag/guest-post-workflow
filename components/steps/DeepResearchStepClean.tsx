@@ -6,6 +6,7 @@ import { SavedField } from '../SavedField';
 import { CopyButton } from '../ui/CopyButton';
 import { TutorialVideo } from '../ui/TutorialVideo';
 import { AgenticOutlineGenerator } from '../ui/AgenticOutlineGenerator';
+import { AgenticOutlineGeneratorV2 } from '../ui/AgenticOutlineGeneratorV2';
 import { ExternalLink, ChevronDown, ChevronRight, FileText, CheckCircle, AlertCircle, Target, ExternalLinkIcon, Bot, CheckSquare } from 'lucide-react';
 
 interface DeepResearchStepProps {
@@ -288,7 +289,7 @@ export const DeepResearchStepClean = ({ step, workflow, onChange }: DeepResearch
       ) : (
         /* AI Research Tab */
         <div className="space-y-6">
-          <AgenticOutlineGenerator 
+          <AgenticOutlineGeneratorV2 
             workflowId={workflow.id}
             onComplete={(outline) => {
               // Update the step outputs with the generated outline

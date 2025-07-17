@@ -627,6 +627,84 @@ export default function DatabaseMigrationPage() {
     setIsLoading(false);
   };
 
+  // Outline Background Mode functions
+  const checkOutlineBackgroundStatus = async () => {
+    setIsLoading(true);
+    setMessage('');
+    
+    try {
+      const response = await fetch('/api/admin/migrate-outline-background');
+      const data = await response.json();
+      
+      if (data.columnsExist) {
+        setMessage('✅ Background mode columns exist in outline_sessions table');
+        setMessageType('success');
+      } else {
+        setMessage(`ℹ️ Background mode columns missing: ${data.missingColumns?.join(', ')}`);
+        setMessageType('info');
+      }
+    } catch (error) {
+      setMessage(`❌ Error checking columns: ${error instanceof Error ? error.message : 'Unknown error'}`);
+      setMessageType('error');
+    }
+    
+    setIsLoading(false);
+  };
+
+  const runOutlineBackgroundMigration = async () => {
+    setIsLoading(true);
+    setMessage('');
+    
+    try {
+      const response = await fetch('/api/admin/migrate-outline-background', {
+        method: 'POST'
+      });
+      const data = await response.json();
+      
+      if (data.success) {
+        setMessage('✅ Background mode columns added successfully!');
+        setMessageType('success');
+      } else {
+        setMessage(`❌ Migration failed: ${data.error}`);
+        setMessageType('error');
+      }
+    } catch (error) {
+      setMessage(`❌ Error: ${error instanceof Error ? error.message : 'Unknown error'}`);
+      setMessageType('error');
+    }
+    
+    setIsLoading(false);
+  };
+
+  const runOutlineBackgroundRollback = async () => {
+    if (!confirm('Are you sure you want to remove the background mode columns?')) {
+      return;
+    }
+    
+    setIsLoading(true);
+    setMessage('');
+    
+    try {
+      const response = await fetch('/api/admin/migrate-outline-background', {
+        method: 'DELETE'
+      });
+      const data = await response.json();
+      
+      if (data.success) {
+        setMessage('✅ Background mode columns removed successfully!');
+        setMessageType('success');
+      } else {
+        setMessage(`❌ Rollback failed: ${data.error}`);
+        setMessageType('error');
+      }
+    } catch (error) {
+      setMessage(`❌ Error: ${error instanceof Error ? error.message : 'Unknown error'}`);
+      setMessageType('error');
+    }
+    
+    setIsLoading(false);
+  };
+
   // Outline Sessions functions
   const checkOutlineSessionsStatus = async () => {
     setIsLoading(true);
@@ -1399,6 +1477,79 @@ export default function DatabaseMigrationPage() {
               >
                 <RotateCcw className="w-4 h-4 mr-2" />
                 {isLoading ? 'Rolling Back...' : 'Remove Table'}
+              </button>
+            </div>
+          </div>
+
+          {/* Outline Background Mode Migration */}
+          <div className="mb-8">
+            <h2 className="text-lg font-semibold text-gray-900 mb-4">Outline Generation Background Mode</h2>
+            <p className="text-gray-600 mb-4">
+              This migration adds columns to support OpenAI background mode for long-running o3 deep research tasks.
+            </p>
+            
+            <div className="bg-blue-50 border border-blue-200 rounded-lg p-4 mb-4">
+              <div className="flex space-x-3">
+                <AlertTriangle className="w-5 h-5 text-blue-600 mt-0.5" />
+                <div>
+                  <h3 className="text-sm font-semibold text-blue-800">Background Mode Features:</h3>
+                  <ul className="text-sm text-blue-700 mt-2 space-y-1">
+                    <li>• <strong>Async Processing:</strong> Handle 15+ minute research tasks without timeouts</li>
+                    <li>• <strong>Response Polling:</strong> Check status of long-running operations</li>
+                    <li>• <strong>Progress Tracking:</strong> Monitor polling attempts and last check time</li>
+                    <li>• <strong>Reliability:</strong> Resume polling after disconnections</li>
+                  </ul>
+                </div>
+              </div>
+            </div>
+          </div>
+
+          <div className="space-y-4 mb-8">
+            {/* Check Background Mode Status */}
+            <div className="border border-gray-200 rounded-lg p-4">
+              <h3 className="font-semibold text-gray-900 mb-2">Check Background Mode Status</h3>
+              <p className="text-gray-600 text-sm mb-3">
+                Check if the background mode columns exist in outline_sessions table.
+              </p>
+              <button
+                onClick={checkOutlineBackgroundStatus}
+                disabled={isLoading}
+                className="inline-flex items-center px-4 py-2 bg-blue-600 text-white text-sm font-medium rounded-md hover:bg-blue-700 disabled:opacity-50 disabled:cursor-not-allowed"
+              >
+                <Play className="w-4 h-4 mr-2" />
+                {isLoading ? 'Checking...' : 'Check Status'}
+              </button>
+            </div>
+
+            {/* Run Background Mode Migration */}
+            <div className="border border-green-200 rounded-lg p-4">
+              <h3 className="font-semibold text-gray-900 mb-2">Add Background Mode Columns</h3>
+              <p className="text-gray-600 text-sm mb-3">
+                Add background_response_id, polling_attempts, and last_polled_at columns.
+              </p>
+              <button
+                onClick={runOutlineBackgroundMigration}
+                disabled={isLoading}
+                className="inline-flex items-center px-4 py-2 bg-green-600 text-white text-sm font-medium rounded-md hover:bg-green-700 disabled:opacity-50 disabled:cursor-not-allowed"
+              >
+                <Database className="w-4 h-4 mr-2" />
+                {isLoading ? 'Adding Columns...' : 'Add Columns'}
+              </button>
+            </div>
+
+            {/* Background Mode Rollback */}
+            <div className="border border-red-200 rounded-lg p-4">
+              <h3 className="font-semibold text-gray-900 mb-2">Remove Background Mode Columns (Rollback)</h3>
+              <p className="text-gray-600 text-sm mb-3">
+                Remove the background mode columns from outline_sessions table.
+              </p>
+              <button
+                onClick={runOutlineBackgroundRollback}
+                disabled={isLoading}
+                className="inline-flex items-center px-4 py-2 bg-red-600 text-white text-sm font-medium rounded-md hover:bg-red-700 disabled:opacity-50 disabled:cursor-not-allowed"
+              >
+                <RotateCcw className="w-4 h-4 mr-2" />
+                {isLoading ? 'Rolling Back...' : 'Remove Columns'}
               </button>
             </div>
           </div>
