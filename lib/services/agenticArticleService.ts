@@ -197,6 +197,7 @@ WRITING PHILOSOPHY - YOUR GUIDING PRINCIPLES:
 - Target around ${firstSection?.est_words || 'the planned'} words, but let the content guide length
 
 IMMEDIATE ACTIONS (execute these automatically):
+**YOU MUST USE TOOLS, NOT TEXT RESPONSES:**
 1. FIRST: Use file search to review "Writing Guidelines" and "Semantic SEO" for style guidance
 2. THEN: Absorb the original research data above - this contains your facts, statistics, and insights
 3. FINALLY: Write "${firstSection?.title || 'your introduction'}" using the write_section function, focusing on engaging narrative over rigid structure
@@ -395,6 +396,7 @@ WRITING PHILOSOPHY - THIS IS YOUR NORTH STAR:
 CONTENT INTEGRATION APPROACH: These are themes to organically incorporate, not a rigid structure to follow. Content requirements should be woven naturally into your explanations, not presented as a checklist.
 
 IMMEDIATE NEXT ACTIONS (execute these now):
+**YOU MUST USE TOOLS, NOT TEXT RESPONSES:**
 1. FIRST: Use read_previous_sections to understand the article's flow and tone so far
 2. THEN: Use file search tool to refresh on "Brand kit, Writing Guidelines" and "Semantic SEO"
 3. THEN: Observe the original data from the original outline given in the first prompt, which contains competitor research, news, section briefing. Think about what elements from the whole you could add to your section to make it feel like you are a writer that's going beyond the basic effort. For sections that seem thin on context or for sections that are explanations of a list item, you will get extra brownie points if you utilize web search to further enhance the information you have available about this list item as it pertains to the particular topic.
