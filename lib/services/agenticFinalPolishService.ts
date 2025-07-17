@@ -7,6 +7,8 @@ import { eq, and, sql } from 'drizzle-orm';
 import { v4 as uuidv4 } from 'uuid';
 import { z } from 'zod';
 import { assistantSentPlainText, createRetryNudge } from '@/lib/utils/agentUtils';
+import { AgentDiagnostics, assistantSentPlainTextEnhanced } from '@/lib/utils/agentDiagnostics';
+import { DiagnosticStorageService } from '@/lib/services/diagnosticStorageService';
 
 // Helper function to sanitize strings by removing null bytes and control characters
 function sanitizeForPostgres(str: string): string {
@@ -115,12 +117,18 @@ export class AgenticFinalPolishService {
   }
 
   async performFinalPolish(sessionId: string): Promise<void> {
+    // Initialize diagnostics outside try block for catch block access
+    let diagnostics: AgentDiagnostics | undefined;
+    
     try {
       const session = await this.getPolishSession(sessionId);
       if (!session) throw new Error('Polish session not found');
 
       await this.updatePolishSession(sessionId, { status: 'polishing' });
       polishSSEPush(sessionId, { type: 'status', status: 'polishing', message: 'Starting final polish...' });
+      
+      // Initialize diagnostic session
+      DiagnosticStorageService.createSession(sessionId, session.workflowId, 'final_polish');
 
       // Create initial prompt for article parsing and first section polish
       const initialPrompt = `I'm providing you with an SEO-optimized article that needs final polish. Your job is to gauge how well it follows the guides, give it strengths and weaknesses, and update each section with improvements. Acceptable changes: tighten phrasing, fix passive voice, clarify facts, strengthen internal anchors. Do not inject new ideas or restructure.
@@ -468,6 +476,9 @@ Often times, the brand guide and semantic principals might conflict - where the 
 
 THIS IS AN AUTOMATED WORKFLOW - continue until completion without asking for permission.`,
         model: 'o3-2025-04-16',
+        modelSettings: { 
+          toolChoice: 'required'  // Force the agent to use tools - no text responses
+        },
         tools: [
           brandGuidelineSearch,
           parsePolishTool,
@@ -490,6 +501,10 @@ THIS IS AN AUTOMATED WORKFLOW - continue until completion without asking for per
       let sectionCount = 0;
       let retries = 0;
       const MAX_RETRIES = 3;
+      let lastSuccessfulTool: string | null = null;
+      
+      // Initialize diagnostics now that it's declared at function level
+      diagnostics = new AgentDiagnostics(sessionId);
       
       while (conversationActive) {
         console.log(`Starting polish turn ${messages.length} with ${sectionCount} sections polished`);
@@ -502,21 +517,40 @@ THIS IS AN AUTOMATED WORKFLOW - continue until completion without asking for per
         
         // Process the streaming result
         for await (const event of result.toStream()) {
-          // ✨ NEW: Immediate detection and retry for plain text responses
-          if (assistantSentPlainText(event)) {
-            // Determine expected tool based on workflow phase
-            const currentSession = await this.getPolishSession(sessionId);
-            const sessionMetadata = currentSession?.polishMetadata as any;
-            const parsedSections = sessionMetadata?.parsedSections || [];
-            const hasParsedSections = parsedSections.length > 0;
-            const expectedTool = hasParsedSections ? 'polish_section' : 'parse_polish_article';
+          // ✨ ENHANCED: Comprehensive detection with diagnostics
+          if (assistantSentPlainTextEnhanced(event, diagnostics)) {
+            // Use in-memory phase detection
+            const expectedTool = lastSuccessfulTool === 'parse_polish_article' 
+              ? 'polish_section' 
+              : 'parse_polish_article';
             const retryNudge = createRetryNudge(expectedTool);
+            
+            console.log('🔄 RETRY ATTEMPT:', {
+              sessionId,
+              attempt: retries + 1,
+              maxRetries: MAX_RETRIES,
+              lastSuccessfulTool,
+              expectedTool,
+              messageCount: messages.length
+            });
+            
+            // Log retry attempt to diagnostics
+            diagnostics.logRetryAttempt(retries + 1, MAX_RETRIES, expectedTool);
             
             // Don't record the bad message, just nudge and restart next turn
             messages.push({ role: 'system', content: retryNudge });
             retries += 1;
             if (retries > MAX_RETRIES) {
-              throw new Error('Too many invalid assistant responses - agent not using tools');
+              console.error('❌ MAX RETRIES EXCEEDED:', {
+                sessionId,
+                retries,
+                lastSuccessfulTool,
+                messageCount: messages.length
+              });
+              
+              // Save diagnostics before throwing
+              diagnostics.saveReport('final_polish');
+              throw new Error(`Too many invalid assistant responses - agent not using tools after ${MAX_RETRIES} attempts`);
             }
             break; // Exit this for-await; outer while() will re-run
           }
@@ -556,8 +590,16 @@ THIS IS AN AUTOMATED WORKFLOW - continue until completion without asking for per
             
             polishSSEPush(sessionId, { type: 'tool_call', name: toolCall.name });
             
-            // Reset retry counter on successful tool usage
+            // Reset retry counter and track successful tool
             retries = 0;
+            lastSuccessfulTool = toolCall.name;
+            
+            console.log('✅ SUCCESSFUL TOOL CALL:', {
+              toolName: toolCall.name,
+              lastSuccessfulTool,
+              sectionCount,
+              messageCount: messages.length
+            });
             
             // Track completion
             if (toolCall.name === 'polish_section' && toolCall.args.is_last === true) {
@@ -609,9 +651,32 @@ THIS IS AN AUTOMATED WORKFLOW - continue until completion without asking for per
       }
 
       console.log('Polish conversation loop completed');
+      
+      // Save diagnostics report for analysis
+      diagnostics.saveReport('final_polish');
+      
+      // Update diagnostic session status
+      DiagnosticStorageService.updateSessionStatus(sessionId, 'completed');
+      
+      console.log('🎉 FINAL POLISH COMPLETED SUCCESSFULLY:', {
+        sessionId,
+        totalMessages: messages.length,
+        sectionsCompleted: sectionCount,
+        finalRetryCount: retries,
+        lastSuccessfulTool
+      });
 
     } catch (error: any) {
       console.error('Final polish error:', error);
+      
+      // Save diagnostics report even on error
+      if (diagnostics) {
+        console.log('💥 SAVING DIAGNOSTICS ON ERROR');
+        diagnostics.saveReport('final_polish');
+      }
+      
+      // Update diagnostic session status
+      DiagnosticStorageService.updateSessionStatus(sessionId, 'error');
       
       await this.updatePolishSession(sessionId, {
         status: 'error',
