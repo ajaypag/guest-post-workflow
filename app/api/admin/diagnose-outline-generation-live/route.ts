@@ -98,8 +98,8 @@ Create a comprehensive research outline based on the instructions provided.`;
         model: 'o3-deep-research', // Correct model for complex research
         instructions: RESEARCH_AGENT_PROMPT,
         tools: [
-          webSearchTool(),
-          fileSearchTool(['vs_68710d7858ec8191b829a50012da7707'])
+          webSearchTool()
+          // Note: fileSearchTool not supported with o3-deep-research model
         ]
       });
       diagnostics.agentCreation.researchAgent = { 

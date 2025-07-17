@@ -195,8 +195,8 @@ export class AgenticOutlineService {
         model: 'o3-deep-research',
         instructions: RESEARCH_AGENT_PROMPT,
         tools: [
-          webSearchTool(),
-          fileSearchTool(['vs_68710d7858ec8191b829a50012da7707']) // Knowledge base for guidelines
+          webSearchTool()
+          // Note: fileSearchTool not supported with o3-deep-research model
         ]
       });
 
@@ -366,8 +366,8 @@ export class AgenticOutlineService {
         model: 'o3-deep-research',
         instructions: RESEARCH_AGENT_PROMPT,
         tools: [
-          webSearchTool(),
-          fileSearchTool(['vs_68710d7858ec8191b829a50012da7707'])
+          webSearchTool()
+          // Note: fileSearchTool not supported with o3-deep-research model
         ]
       });
 
