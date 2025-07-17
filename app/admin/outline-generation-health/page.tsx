@@ -32,6 +32,29 @@ export default function OutlineGenerationHealthPage() {
     }
   };
 
+  const fixSchema = async () => {
+    setLoading(true);
+    setError('');
+
+    try {
+      const response = await fetch('/api/admin/fix-outline-sessions-schema', {
+        method: 'POST',
+      });
+
+      const data = await response.json();
+      
+      if (!response.ok) {
+        throw new Error(data.error || 'Failed to fix schema');
+      }
+
+      // Re-run diagnostics to show updated state
+      await runDiagnostics();
+    } catch (err: any) {
+      setError(err.message);
+      setLoading(false);
+    }
+  };
+
   const renderStatus = (status: boolean) => {
     return status ? (
       <CheckCircle className="w-5 h-5 text-green-600" />
@@ -53,23 +76,45 @@ export default function OutlineGenerationHealthPage() {
             including database tables, API endpoints, and integration status.
           </p>
           
-          <button
-            onClick={runDiagnostics}
-            disabled={loading}
-            className="bg-purple-600 text-white px-6 py-2 rounded-md hover:bg-purple-700 disabled:bg-gray-400 flex items-center"
-          >
-            {loading ? (
-              <>
-                <Clock className="w-4 h-4 mr-2 animate-spin" />
-                Running Diagnostics...
-              </>
-            ) : (
-              <>
-                <Bot className="w-4 h-4 mr-2" />
-                Run Health Check
-              </>
+          <div className="flex space-x-4">
+            <button
+              onClick={runDiagnostics}
+              disabled={loading}
+              className="bg-purple-600 text-white px-6 py-2 rounded-md hover:bg-purple-700 disabled:bg-gray-400 flex items-center"
+            >
+              {loading ? (
+                <>
+                  <Clock className="w-4 h-4 mr-2 animate-spin" />
+                  Running Diagnostics...
+                </>
+              ) : (
+                <>
+                  <Bot className="w-4 h-4 mr-2" />
+                  Run Health Check
+                </>
+              )}
+            </button>
+            
+            {results && !results.database?.schemaValid && (
+              <button
+                onClick={fixSchema}
+                disabled={loading}
+                className="bg-orange-600 text-white px-6 py-2 rounded-md hover:bg-orange-700 disabled:bg-gray-400 flex items-center"
+              >
+                {loading ? (
+                  <>
+                    <Clock className="w-4 h-4 mr-2 animate-spin" />
+                    Fixing Schema...
+                  </>
+                ) : (
+                  <>
+                    <Database className="w-4 h-4 mr-2" />
+                    Fix Schema Issues
+                  </>
+                )}
+              </button>
             )}
-          </button>
+          </div>
         </div>
 
         {error && (
