@@ -1,12 +1,16 @@
 import { NextRequest, NextResponse } from 'next/server';
+import { getServerSession } from 'next-auth';
+import { authOptions } from '@/app/api/auth/[...nextauth]/route';
 import { db } from '@/lib/db/connection';
 import { sql } from 'drizzle-orm';
 import { runMigration } from '@/lib/db/migrate';
 
 export async function POST(request: NextRequest) {
   try {
-    // Note: This is an admin-only endpoint for database migration
-    // In a production environment, you would add proper authentication here
+    const session = await getServerSession(authOptions);
+    if (!session?.user?.role || session.user.role !== 'admin') {
+      return NextResponse.json({ error: 'Admin access required' }, { status: 403 });
+    }
 
     console.log('🔧 Manually applying bulk URL migration...');
 

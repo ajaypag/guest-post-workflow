@@ -1,4 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server';
+import { getServerSession } from 'next-auth';
+import { authOptions } from '@/app/api/auth/[...nextauth]/route';
 import { db } from '@/lib/db/connection';
 import { targetPages, clients } from '@/lib/db/schema';
 import { eq, inArray, and, or, isNull } from 'drizzle-orm';
@@ -85,11 +87,12 @@ export async function POST(
   { params }: { params: { id: string } }
 ) {
   try {
-    const { urls, autoMatch = true, userId } = await request.json();
-    
-    if (!userId) {
-      return NextResponse.json({ error: 'User ID is required' }, { status: 400 });
+    const session = await getServerSession(authOptions);
+    if (!session?.user?.id) {
+      return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
     }
+
+    const { urls, autoMatch = true } = await request.json();
 
     if (!urls || !Array.isArray(urls) || urls.length === 0) {
       return NextResponse.json({ error: 'No URLs provided' }, { status: 400 });
@@ -121,7 +124,7 @@ export async function POST(
         inArray(targetPages.url, validUrls),
         and(
           inArray(targetPages.url, validUrls),
-          eq(targetPages.ownerUserId, userId),
+          eq(targetPages.ownerUserId, session.user.id),
           isNull(targetPages.clientId)
         )
       ),
@@ -160,7 +163,7 @@ export async function POST(
         }
         
         // New URL - find matching client if autoMatch is enabled
-        const matchedClient = autoMatch ? await findMatchingClient(url, userId) : null;
+        const matchedClient = autoMatch ? await findMatchingClient(url, session.user.id) : null;
         
         return {
           url,
