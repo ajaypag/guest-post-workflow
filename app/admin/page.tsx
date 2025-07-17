@@ -38,6 +38,22 @@ export default function AdminDashboard() {
       iconColor: 'text-orange-600'
     },
     {
+      title: 'Outline Generation Health',
+      description: 'Check AI outline generation system health and status',
+      icon: Activity,
+      href: '/admin/outline-generation-health',
+      color: 'bg-purple-50 border-purple-200 text-purple-700',
+      iconColor: 'text-purple-600'
+    },
+    {
+      title: 'Fix Outline Generation',
+      description: 'Diagnose and fix outline generation issues',
+      icon: Wrench,
+      href: '/admin/fix-outline-generation',
+      color: 'bg-pink-50 border-pink-200 text-pink-700',
+      iconColor: 'text-pink-600'
+    },
+    {
       title: 'User Management',
       description: 'Manage user accounts and permissions',
       icon: Users,
