@@ -6,6 +6,7 @@ import { polishSessions, polishSections, workflows } from '@/lib/db/schema';
 import { eq, and, sql } from 'drizzle-orm';
 import { v4 as uuidv4 } from 'uuid';
 import { z } from 'zod';
+import { assistantSentPlainText, createRetryNudge } from '@/lib/utils/agentUtils';
 
 // Helper function to sanitize strings by removing null bytes and control characters
 function sanitizeForPostgres(str: string): string {
@@ -487,6 +488,8 @@ THIS IS AN AUTOMATED WORKFLOW - continue until completion without asking for per
       
       let conversationActive = true;
       let sectionCount = 0;
+      let retries = 0;
+      const MAX_RETRIES = 3;
       
       while (conversationActive) {
         console.log(`Starting polish turn ${messages.length} with ${sectionCount} sections polished`);
@@ -494,11 +497,30 @@ THIS IS AN AUTOMATED WORKFLOW - continue until completion without asking for per
         // Run the agent with full message history
         const result = await runner.run(agent, messages, {
           stream: true,
-          maxTurns: 50  // Override default 10-turn limit for polish workflow
+          maxTurns: 150  // Increased for complex polish workflows
         });
         
         // Process the streaming result
         for await (const event of result.toStream()) {
+          // ✨ NEW: Immediate detection and retry for plain text responses
+          if (assistantSentPlainText(event)) {
+            // Determine expected tool based on workflow phase
+            const currentSession = await this.getPolishSession(sessionId);
+            const sessionMetadata = currentSession?.polishMetadata as any;
+            const parsedSections = sessionMetadata?.parsedSections || [];
+            const hasParsedSections = parsedSections.length > 0;
+            const expectedTool = hasParsedSections ? 'polish_section' : 'parse_polish_article';
+            const retryNudge = createRetryNudge(expectedTool);
+            
+            // Don't record the bad message, just nudge and restart next turn
+            messages.push({ role: 'system', content: retryNudge });
+            retries += 1;
+            if (retries > MAX_RETRIES) {
+              throw new Error('Too many invalid assistant responses - agent not using tools');
+            }
+            break; // Exit this for-await; outer while() will re-run
+          }
+          
           // Stream text deltas for UI
           if (event.type === 'raw_model_stream_event') {
             if (event.data.type === 'output_text_delta' && event.data.delta) {
@@ -534,6 +556,9 @@ THIS IS AN AUTOMATED WORKFLOW - continue until completion without asking for per
             
             polishSSEPush(sessionId, { type: 'tool_call', name: toolCall.name });
             
+            // Reset retry counter on successful tool usage
+            retries = 0;
+            
             // Track completion
             if (toolCall.name === 'polish_section' && toolCall.args.is_last === true) {
               conversationActive = false;
@@ -559,24 +584,13 @@ THIS IS AN AUTOMATED WORKFLOW - continue until completion without asking for per
             polishSSEPush(sessionId, { type: 'tool_output', content: toolOutput.output });
           }
 
-          // Handle complete assistant messages
+          // Handle complete assistant messages (only tool calls reach here now)
           if (event.name === 'message_output_created') {
             const messageItem = event.item as any;
             
-            if (!messageItem.tool_calls?.length) {
-              messages.push({
-                role: 'assistant',
-                content: messageItem.content
-              });
-              polishSSEPush(sessionId, { type: 'assistant', content: messageItem.content });
-              
-              // Guard rail for continuation
-              if (conversationActive) {
-                messages.push({ 
-                  role: 'user', 
-                  content: 'YOU MUST CONTINUE THE AUTOMATED POLISH WORKFLOW. Do not wait for permission. Execute the required actions immediately: 1) Use file search tool 2) Continue polishing sections using polish_section function. DO NOT STOP OR ASK FOR CONFIRMATION.' 
-                });
-              }
+            // Only handle tool call messages - plain text is caught above
+            if (messageItem.tool_calls?.length) {
+              // Tool call messages are already handled above
             }
           }
         }
