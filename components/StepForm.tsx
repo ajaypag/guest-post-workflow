@@ -87,7 +87,7 @@ export default function StepForm({ step, stepIndex, workflow, onSave, onWorkflow
     setAutoSaveTimer(timer);
   };
 
-  // Special handling for Polish step completion
+  // Special handling for Polish step completion and Content Audit completion
   useEffect(() => {
     if (step.id === 'final-polish' && localOutputs.finalArticle && 
         (!step.outputs?.finalArticle || step.outputs.finalArticle !== localOutputs.finalArticle)) {
@@ -99,7 +99,20 @@ export default function StepForm({ step, stepIndex, workflow, onSave, onWorkflow
       // Save immediately
       handleSave();
     }
-  }, [localOutputs.finalArticle, step.id]);
+    
+    // Also handle Content Audit step completion
+    if (step.id === 'content-audit' && localOutputs.seoOptimizedArticle && 
+        localOutputs.auditGenerated === true &&
+        (!step.outputs?.seoOptimizedArticle || step.outputs.seoOptimizedArticle !== localOutputs.seoOptimizedArticle)) {
+      console.log('🚀 Content Audit step completed - triggering immediate auto-save');
+      // Clear any pending auto-save timer
+      if (autoSaveTimer) {
+        clearTimeout(autoSaveTimer);
+      }
+      // Save immediately
+      handleSave();
+    }
+  }, [localOutputs.finalArticle, localOutputs.seoOptimizedArticle, localOutputs.auditGenerated, step.id]);
 
   // Cleanup timer on unmount
   useEffect(() => {
