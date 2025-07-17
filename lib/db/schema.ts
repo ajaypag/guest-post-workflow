@@ -391,11 +391,6 @@ export const outlineSessions = pgTable('outline_sessions', {
   pollingAttempts: integer('polling_attempts').default(0), // Number of times we've polled
   lastPolledAt: timestamp('last_polled_at'), // Last time we checked the status
   isActive: boolean('is_active').default(false), // Track if this session is currently active
-  // Streaming support fields
-  lastSequenceNumber: integer('last_sequence_number').default(0), // Track streaming sequence for resume
-  connectionStatus: varchar('connection_status', { length: 50 }), // 'preparing' | 'connected' | 'disconnected' | 'completed' | 'failed'
-  streamStartedAt: timestamp('stream_started_at'), // When streaming began
-  partialContent: text('partial_content'), // Accumulated streaming content
   errorMessage: text('error_message'),
   startedAt: timestamp('started_at').notNull(),
   completedAt: timestamp('completed_at'),

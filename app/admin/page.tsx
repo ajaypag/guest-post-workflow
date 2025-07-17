@@ -70,22 +70,6 @@ export default function AdminDashboard() {
       iconColor: 'text-red-600'
     },
     {
-      title: 'Streaming Migration',
-      description: 'Manage database schema migration for streaming outline generation',
-      icon: Database,
-      href: '/admin/streaming-migration',
-      color: 'bg-cyan-50 border-cyan-200 text-cyan-700',
-      iconColor: 'text-cyan-600'
-    },
-    {
-      title: 'Streaming Diagnostics',
-      description: 'Monitor real-time streaming health and performance metrics',
-      icon: Activity,
-      href: '/admin/streaming-diagnostics',
-      color: 'bg-emerald-50 border-emerald-200 text-emerald-700',
-      iconColor: 'text-emerald-600'
-    },
-    {
       title: 'User Management',
       description: 'Manage user accounts and permissions',
       icon: Users,
