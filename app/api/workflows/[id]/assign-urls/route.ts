@@ -1,4 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server';
+import { getServerSession } from 'next-auth';
+import { authOptions } from '@/app/api/auth/[...nextauth]/route';
 import { db } from '@/lib/db/connection';
 import { targetPages, clients } from '@/lib/db/schema';
 import { eq } from 'drizzle-orm';
@@ -22,12 +24,13 @@ export async function POST(
   { params }: { params: { id: string } }
 ) {
   try {
-    const workflowId = params.id;
-    const { assignments, userId } = await request.json();
-    
-    if (!userId) {
-      return NextResponse.json({ error: 'User ID is required' }, { status: 400 });
+    const session = await getServerSession(authOptions);
+    if (!session?.user?.id) {
+      return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
     }
+
+    const workflowId = params.id;
+    const { assignments } = await request.json();
 
     if (!assignments || !Array.isArray(assignments)) {
       return NextResponse.json({ error: 'Invalid assignments data' }, { status: 400 });
@@ -91,7 +94,7 @@ export async function POST(
             name: assignment.newClientData.name,
             website: assignment.newClientData.website,
             description: assignment.newClientData.description || '',
-            createdBy: userId,
+            createdBy: session.user.id,
             createdAt: new Date(),
             updatedAt: new Date(),
           });
@@ -144,7 +147,7 @@ export async function POST(
                 status: 'active' as const,
                 keywords: keywords.keywords.join(', '),
                 description: description.description,
-                ownerUserId: userId,
+                ownerUserId: session.user.id,
                 workflowId: workflowId,
                 sourceType: 'workflow_temporary' as const,
                 createdInWorkflow: true,
