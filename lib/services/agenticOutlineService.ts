@@ -8,8 +8,8 @@ import { v4 as uuidv4 } from 'uuid';
 import { z } from 'zod';
 
 // Helper function to sanitize strings by removing null bytes and control characters
-function sanitizeForPostgres(str: string): string {
-  if (!str) return str;
+function sanitizeForPostgres(str: string | null | undefined): string {
+  if (!str || typeof str !== 'string') return '';
   // Remove null bytes and other control characters (0x00-0x1F except tab, newline, carriage return)
   return str.replace(/[\x00-\x08\x0B\x0C\x0E-\x1F]/g, '');
 }
@@ -192,8 +192,8 @@ export class AgenticOutlineService {
         name: 'ClarifyingAgent',
         model: 'o3-2025-04-16',
         instructions: CLARIFYING_PROMPT,
-        outputType: clarificationsSchema,
-        handoffs: [instructionAgent]
+        outputType: clarificationsSchema
+        // No handoffs - we'll handle the flow manually when clarifications are provided
       });
 
       const triageAgent = new Agent({
@@ -362,8 +362,8 @@ export class AgenticOutlineService {
         name: 'ClarifyingAgent',
         model: 'o3-2025-04-16',
         instructions: CLARIFYING_PROMPT,
-        outputType: clarificationsSchema,
-        handoffs: [instructionAgent]
+        outputType: clarificationsSchema
+        // No handoffs - we'll handle the flow manually when clarifications are provided
       });
 
       const triageAgent = new Agent({
