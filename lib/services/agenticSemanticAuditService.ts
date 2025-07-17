@@ -410,7 +410,7 @@ START AUDITING THE NEXT SECTION NOW - DO NOT ASK FOR PERMISSION OR CONFIRMATION.
         // Run the agent with full message history
         const result = await runner.run(agent, messages, {
           stream: true,
-          maxTurns: 50
+          maxTurns: 150
         });
         
         // Process the streaming result
