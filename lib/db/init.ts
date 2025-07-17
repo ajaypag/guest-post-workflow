@@ -1,6 +1,5 @@
 import { testConnection } from './connection';
 import { UserService } from './userService';
-import { runMigrations } from './migrate';
 
 export async function initializeDatabase() {
   console.log('🗄️ Initializing database...');
@@ -11,9 +10,6 @@ export async function initializeDatabase() {
     if (!connected) {
       throw new Error('Failed to connect to database');
     }
-    
-    // Run database migrations
-    await runMigrations();
     
     // Initialize admin user
     await UserService.initializeAdmin();
