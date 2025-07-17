@@ -7,6 +7,8 @@ import { eq, and, sql } from 'drizzle-orm';
 import { v4 as uuidv4 } from 'uuid';
 import { z } from 'zod';
 import { assistantSentPlainText, SEMANTIC_AUDIT_PARSE_RETRY_NUDGE, SEMANTIC_AUDIT_SECTION_RETRY_NUDGE } from '@/lib/utils/agentUtils';
+import { AgentDiagnostics, assistantSentPlainTextEnhanced } from '@/lib/utils/agentDiagnostics';
+import { DiagnosticStorageService } from '@/lib/services/diagnosticStorageService';
 
 // Helper function to sanitize strings by removing null bytes and control characters
 function sanitizeForPostgres(str: string): string {
@@ -116,12 +118,18 @@ export class AgenticSemanticAuditService {
   }
 
   async performSemanticAudit(sessionId: string): Promise<void> {
+    // Initialize diagnostics outside try block for catch block access
+    let diagnostics: AgentDiagnostics | undefined;
+    
     try {
       const session = await this.getAuditSession(sessionId);
       if (!session) throw new Error('Audit session not found');
 
       await this.updateAuditSession(sessionId, { status: 'auditing' });
       auditSSEPush(sessionId, { type: 'status', status: 'auditing', message: 'Starting semantic SEO audit...' });
+      
+      // Initialize diagnostic session
+      DiagnosticStorageService.createSession(sessionId, session.workflowId, 'semantic_audit');
 
       // Create initial prompt for article parsing and first section audit
       const initialPrompt = `I'm providing you with an article that needs semantic SEO optimization. Your job is to audit it section by section, providing strengths, weaknesses, and optimized content.
@@ -406,6 +414,10 @@ START AUDITING THE NEXT SECTION NOW - DO NOT ASK FOR PERMISSION OR CONFIRMATION.
       let sectionCount = 0;
       let retries = 0;
       const MAX_RETRIES = 3;
+      let lastSuccessfulTool: string | null = null;
+      
+      // Initialize diagnostics now that it's declared at function level
+      diagnostics = new AgentDiagnostics(sessionId);
       
       while (conversationActive) {
         console.log(`Starting audit turn ${messages.length} with ${sectionCount} sections audited`);
@@ -418,20 +430,43 @@ START AUDITING THE NEXT SECTION NOW - DO NOT ASK FOR PERMISSION OR CONFIRMATION.
         
         // Process the streaming result
         for await (const event of result.toStream()) {
-          // ✨ NEW: Immediate detection and retry for plain text responses
-          if (assistantSentPlainText(event)) {
-            // Determine expected tool based on workflow phase
-            const currentSession = await this.getAuditSession(sessionId);
-            const sessionMetadata = currentSession?.auditMetadata as any;
-            const parsedSections = sessionMetadata?.parsedSections || [];
-            const hasParsedSections = parsedSections.length > 0;
-            const retryNudge = hasParsedSections ? SEMANTIC_AUDIT_SECTION_RETRY_NUDGE : SEMANTIC_AUDIT_PARSE_RETRY_NUDGE;
+          // ✨ ENHANCED: Comprehensive detection with diagnostics
+          if (assistantSentPlainTextEnhanced(event, diagnostics)) {
+            // Use in-memory phase detection (ChatGPT suggestion)
+            const retryNudge = lastSuccessfulTool === 'parse_article' 
+              ? SEMANTIC_AUDIT_SECTION_RETRY_NUDGE 
+              : SEMANTIC_AUDIT_PARSE_RETRY_NUDGE;
+            
+            console.log('🔄 RETRY ATTEMPT:', {
+              sessionId,
+              attempt: retries + 1,
+              maxRetries: MAX_RETRIES,
+              lastSuccessfulTool,
+              nudgeType: lastSuccessfulTool === 'parse_article' ? 'section' : 'parse',
+              messageCount: messages.length
+            });
+            
+            // Log retry attempt to diagnostics
+            diagnostics.logRetryAttempt(
+              retries + 1, 
+              MAX_RETRIES, 
+              lastSuccessfulTool === 'parse_article' ? 'audit_section' : 'parse_article'
+            );
             
             // Don't record the bad message, just nudge and restart next turn
             messages.push({ role: 'system', content: retryNudge });
             retries += 1;
             if (retries > MAX_RETRIES) {
-              throw new Error('Too many invalid assistant responses - agent not using tools');
+              console.error('❌ MAX RETRIES EXCEEDED:', {
+                sessionId,
+                retries,
+                lastSuccessfulTool,
+                messageCount: messages.length
+              });
+              
+              // Save diagnostics before throwing
+              diagnostics.saveReport('semantic_audit');
+              throw new Error(`Too many invalid assistant responses - agent not using tools after ${MAX_RETRIES} attempts`);
             }
             break; // Exit this for-await; outer while() will re-run
           }
@@ -455,7 +490,31 @@ START AUDITING THE NEXT SECTION NOW - DO NOT ASK FOR PERMISSION OR CONFIRMATION.
                 auditSSEPush(sessionId, { type: 'tool_call', name: 'file_search', query: toolCall.args?.query });
               }
               
-              // Construct assistant message with tool call
+              // Validate and construct assistant message with tool call
+              let toolCallArgs = '{}';
+              try {
+                toolCallArgs = toolCall.args ? JSON.stringify(toolCall.args) : '{}';
+                // Test parse to ensure validity
+                JSON.parse(toolCallArgs);
+              } catch (error) {
+                console.error('🚨 MALFORMED TOOL CALL ARGS:', {
+                  toolName: toolCall.name,
+                  error: error instanceof Error ? error.message : 'Unknown error',
+                  args: toolCall.args
+                });
+                // Treat as text response and retry
+                const retryNudge = lastSuccessfulTool === 'parse_article' 
+                  ? SEMANTIC_AUDIT_SECTION_RETRY_NUDGE 
+                  : SEMANTIC_AUDIT_PARSE_RETRY_NUDGE;
+                messages.push({ role: 'system', content: retryNudge });
+                retries += 1;
+                if (retries > MAX_RETRIES) {
+                  diagnostics.saveReport('semantic_audit');
+                  throw new Error('Too many malformed tool calls');
+                }
+                break;
+              }
+              
               messages.push({
                 role: 'assistant',
                 content: null,
@@ -464,15 +523,23 @@ START AUDITING THE NEXT SECTION NOW - DO NOT ASK FOR PERMISSION OR CONFIRMATION.
                   type: 'function',
                   function: {
                     name: toolCall.name,
-                    arguments: toolCall.args ? JSON.stringify(toolCall.args) : '{}'
+                    arguments: toolCallArgs
                   }
                 }]
               });
               
               auditSSEPush(sessionId, { type: 'tool_call', name: toolCall.name });
               
-              // Reset retry counter on successful tool usage
+              // Reset retry counter and track successful tool
               retries = 0;
+              lastSuccessfulTool = toolCall.name;
+              
+              console.log('✅ SUCCESSFUL TOOL CALL:', {
+                toolName: toolCall.name,
+                lastSuccessfulTool,
+                sectionCount,
+                messageCount: messages.length
+              });
               
               // Track completion
               if (toolCall.name === 'audit_section' && toolCall.args.is_last === true) {
@@ -524,9 +591,33 @@ START AUDITING THE NEXT SECTION NOW - DO NOT ASK FOR PERMISSION OR CONFIRMATION.
       }
 
       console.log('Semantic audit conversation loop completed');
+      
+      // Save diagnostics report for analysis
+      diagnostics.saveReport('semantic_audit');
+      
+      // Update diagnostic session status
+      DiagnosticStorageService.updateSessionStatus(sessionId, 'completed');
+      
+      console.log('🎉 SEMANTIC AUDIT COMPLETED SUCCESSFULLY:', {
+        sessionId,
+        totalMessages: messages.length,
+        sectionsCompleted: sectionCount,
+        finalRetryCount: retries,
+        lastSuccessfulTool
+      });
 
     } catch (error) {
       console.error('Semantic audit failed:', error);
+      
+      // Save diagnostics report even on error
+      if (diagnostics) {
+        console.log('💥 SAVING DIAGNOSTICS ON ERROR');
+        diagnostics.saveReport('semantic_audit');
+      }
+      
+      // Update diagnostic session status
+      DiagnosticStorageService.updateSessionStatus(sessionId, 'error');
+      
       await this.updateAuditSession(sessionId, {
         status: 'error',
         errorMessage: error instanceof Error ? error.message : 'Unknown error'
