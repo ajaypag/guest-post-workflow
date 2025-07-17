@@ -62,6 +62,14 @@ export default function AdminDashboard() {
       iconColor: 'text-red-600'
     },
     {
+      title: 'O3 Deep Research Diagnostics',
+      description: 'Diagnose o3-deep-research API issues and manage failed sessions',
+      icon: AlertTriangle,
+      href: '/admin/o3-deep-research-diagnostics',
+      color: 'bg-red-50 border-red-200 text-red-700',
+      iconColor: 'text-red-600'
+    },
+    {
       title: 'User Management',
       description: 'Manage user accounts and permissions',
       icon: Users,
