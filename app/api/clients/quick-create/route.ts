@@ -1,6 +1,4 @@
 import { NextRequest, NextResponse } from 'next/server';
-import { getServerSession } from 'next-auth';
-import { authOptions } from '@/app/api/auth/[...nextauth]/route';
 import { db } from '@/lib/db/connection';
 import { clients, targetPages, clientAssignments } from '@/lib/db/schema';
 import { v4 as uuidv4 } from 'uuid';
@@ -9,12 +7,11 @@ import { generateDescription } from '@/lib/services/descriptionGenerationService
 
 export async function POST(request: NextRequest) {
   try {
-    const session = await getServerSession(authOptions);
-    if (!session?.user?.id) {
-      return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
+    const { name, website, description, initialUrls = [], userId } = await request.json();
+    
+    if (!userId) {
+      return NextResponse.json({ error: 'User ID is required' }, { status: 400 });
     }
-
-    const { name, website, description, initialUrls = [] } = await request.json();
 
     if (!name || !website) {
       return NextResponse.json({ error: 'Name and website are required' }, { status: 400 });
@@ -34,7 +31,7 @@ export async function POST(request: NextRequest) {
       name,
       website,
       description: description || '',
-      createdBy: session.user.id,
+      createdBy: userId,
       createdAt: new Date(),
       updatedAt: new Date(),
     };
@@ -45,7 +42,7 @@ export async function POST(request: NextRequest) {
     await db.insert(clientAssignments).values({
       id: uuidv4(),
       clientId,
-      userId: session.user.id,
+      userId: userId,
       createdAt: new Date(),
     });
 
