@@ -1,5 +1,5 @@
 import { NextRequest, NextResponse } from 'next/server';
-import { agenticOutlineService } from '@/lib/services/agenticOutlineService';
+import { agenticOutlineService } from '@/lib/services/agenticOutlineServiceUnified';
 import { db } from '@/lib/db/connection';
 import { workflows } from '@/lib/db/schema';
 import { eq } from 'drizzle-orm';
@@ -49,7 +49,8 @@ export async function POST(
 
     console.log(`✅ Outline generation started:`, {
       sessionId: result.sessionId,
-      needsClarification: result.needsClarification
+      status: result.status,
+      implementation: result.implementation
     });
 
     return NextResponse.json({

@@ -1,5 +1,5 @@
 import { NextRequest, NextResponse } from 'next/server';
-import { agenticOutlineServiceV2 } from '@/lib/services/agenticOutlineServiceV2';
+import { agenticOutlineService } from '@/lib/services/agenticOutlineServiceUnified';
 
 export async function GET(
   request: NextRequest,
@@ -7,6 +7,8 @@ export async function GET(
 ) {
   const searchParams = request.nextUrl.searchParams;
   const sessionId = searchParams.get('sessionId');
+  const clientSequenceNumber = searchParams.get('sequenceNumber') ? 
+    parseInt(searchParams.get('sequenceNumber')!) : undefined;
 
   if (!sessionId) {
     return NextResponse.json(
@@ -16,7 +18,7 @@ export async function GET(
   }
 
   try {
-    const result = await agenticOutlineServiceV2.checkOutlineStatus(sessionId);
+    const result = await agenticOutlineService.checkOutlineStatus(sessionId, clientSequenceNumber);
     return NextResponse.json(result);
   } catch (error: any) {
     console.error('Error checking outline status:', error);

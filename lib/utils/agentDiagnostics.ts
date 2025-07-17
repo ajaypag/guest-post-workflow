@@ -123,6 +123,8 @@ export class AgentDiagnostics {
       (diagnostic.hasContent && !diagnostic.hasToolCalls) ||
       // Tool calls with content (mixed output)
       (diagnostic.hasContent && diagnostic.hasToolCalls) ||
+      // Empty responses without tool calls (new failure mode)
+      (!diagnostic.hasContent && !diagnostic.hasToolCalls && diagnostic.eventName === 'message_output_created') ||
       // Response done events
       (diagnostic.eventType === 'raw_model_stream_event' && diagnostic.rawEvent?.data?.type === 'response_done')
     );
@@ -132,6 +134,7 @@ export class AgentDiagnostics {
     const textOnlyEvents = this.events.filter(e => e.hasContent && !e.hasToolCalls);
     const mixedEvents = this.events.filter(e => e.hasContent && e.hasToolCalls);
     const toolOnlyEvents = this.events.filter(e => e.hasToolCalls && !e.hasContent);
+    const emptyEvents = this.events.filter(e => !e.hasContent && !e.hasToolCalls && e.eventName === 'message_output_created');
 
     return {
       sessionId: this.sessionId,
@@ -140,7 +143,8 @@ export class AgentDiagnostics {
       summary: {
         textOnlyEvents: textOnlyEvents.length,
         mixedEvents: mixedEvents.length,
-        toolOnlyEvents: toolOnlyEvents.length
+        toolOnlyEvents: toolOnlyEvents.length,
+        emptyEvents: emptyEvents.length
       },
       problematicEvents: {
         textOnly: textOnlyEvents.map(e => ({
@@ -155,6 +159,12 @@ export class AgentDiagnostics {
           name: e.eventName,
           content: e.contentPreview,
           toolCalls: e.toolCallNames
+        })),
+        empty: emptyEvents.map(e => ({
+          timestamp: e.timestamp,
+          type: e.eventType,
+          name: e.eventName,
+          content: 'EMPTY_RESPONSE'
         }))
       },
       retryAttempts: this.retryAttempts,

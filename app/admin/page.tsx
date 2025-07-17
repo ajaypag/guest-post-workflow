@@ -78,6 +78,14 @@ export default function AdminDashboard() {
       iconColor: 'text-red-600'
     },
     {
+      title: 'Streaming Diagnostics',
+      description: 'Monitor streaming outline generation health and performance',
+      icon: Activity,
+      href: '/admin/streaming-diagnostics',
+      color: 'bg-cyan-50 border-cyan-200 text-cyan-700',
+      iconColor: 'text-cyan-600'
+    },
+    {
       title: 'User Management',
       description: 'Manage user accounts and permissions',
       icon: Users,
