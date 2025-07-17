@@ -32,6 +32,7 @@ export default function O3DeepResearchDiagnosticsPage() {
   const [error, setError] = useState<string | null>(null);
   const [testInProgress, setTestInProgress] = useState(false);
   const [testResult, setTestResult] = useState<any>(null);
+  const [retryingSession, setRetryingSession] = useState<string | null>(null);
 
   // Auto-run diagnostics on page load
   useEffect(() => {
@@ -100,6 +101,30 @@ export default function O3DeepResearchDiagnosticsPage() {
       setTestResult({ error: err.message });
     } finally {
       setTestInProgress(false);
+    }
+  };
+
+  const retryStuckSession = async (sessionId: string) => {
+    setRetryingSession(sessionId);
+
+    try {
+      const response = await fetch('/api/admin/retry-stuck-outline-session', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ sessionId })
+      });
+
+      if (!response.ok) {
+        throw new Error('Failed to retry session');
+      }
+
+      const data = await response.json();
+      alert(`Session retry result: ${data.result.action}`);
+      runDiagnostics(); // Refresh diagnostics
+    } catch (err: any) {
+      alert(`Error: ${err.message}`);
+    } finally {
+      setRetryingSession(null);
     }
   };
 
@@ -250,16 +275,37 @@ export default function O3DeepResearchDiagnosticsPage() {
                               Workflow: {session.workflowId} | Status: {session.status}
                             </p>
                             <p className="text-xs text-gray-500">
-                              Started: {new Date(session.startedAt).toLocaleString()}
+                              Started: {new Date(session.startedAt).toLocaleString()} ({session.ageMinutes} min ago)
                             </p>
+                            {session.status === 'queued' && (
+                              <p className="text-xs text-yellow-600 mt-1">
+                                ⏳ In OpenAI queue - typical wait: 10-15 min (can be 30+ min during high demand)
+                              </p>
+                            )}
+                            {session.isStuck && (
+                              <p className="text-xs text-red-600 mt-1">
+                                ⚠️ May be stuck - consider cleanup if over 30 minutes
+                              </p>
+                            )}
                           </div>
-                          <span className={`px-2 py-1 text-xs font-medium rounded ${
-                            session.status === 'completed' ? 'bg-green-100 text-green-800' :
-                            session.status === 'error' ? 'bg-red-100 text-red-800' :
-                            'bg-yellow-100 text-yellow-800'
-                          }`}>
-                            {session.status}
-                          </span>
+                          <div className="flex items-center gap-2">
+                            <span className={`px-2 py-1 text-xs font-medium rounded ${
+                              session.status === 'completed' ? 'bg-green-100 text-green-800' :
+                              session.status === 'error' ? 'bg-red-100 text-red-800' :
+                              'bg-yellow-100 text-yellow-800'
+                            }`}>
+                              {session.status}
+                            </span>
+                            {(session.isStuck || session.status === 'queued') && (
+                              <button
+                                onClick={() => retryStuckSession(session.id)}
+                                disabled={retryingSession === session.id}
+                                className="text-xs bg-blue-600 text-white px-2 py-1 rounded hover:bg-blue-700 disabled:opacity-50"
+                              >
+                                {retryingSession === session.id ? 'Checking...' : 'Check Status'}
+                              </button>
+                            )}
+                          </div>
                         </div>
                       </div>
                     ))}
@@ -304,11 +350,11 @@ export default function O3DeepResearchDiagnosticsPage() {
                 )}
               </div>
 
-              {/* Test API Call */}
+              {/* Test API Configuration */}
               <div className="bg-white border rounded-lg p-6">
-                <h2 className="text-xl font-semibold mb-4">Test O3 API Call</h2>
+                <h2 className="text-xl font-semibold mb-4">Test API Configuration</h2>
                 <p className="text-sm text-gray-600 mb-4">
-                  Test the O3 deep research API call with proper tools configuration
+                  Verify API configuration without making actual o3-deep-research calls (saves credits)
                 </p>
                 
                 <button
@@ -321,7 +367,7 @@ export default function O3DeepResearchDiagnosticsPage() {
                   ) : (
                     <Zap className="w-4 h-4" />
                   )}
-                  Test API Call
+                  Check Configuration (No Credits Used)
                 </button>
 
                 {testResult && (

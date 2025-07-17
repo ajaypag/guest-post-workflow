@@ -74,14 +74,36 @@ export class AgenticOutlineServiceV2 {
       });
 
       if (activeSession) {
-        // Return existing active session instead of starting a new one
-        console.log(`⚠️ Active session already exists for workflow ${workflowId}: ${activeSession.id}`);
-        return {
-          sessionId: activeSession.id,
-          status: 'already_active',
-          message: 'An outline generation is already in progress for this workflow.',
-          existingSessionId: activeSession.id
-        };
+        // Check if it's a failed or stuck session
+        const thirtyMinutesAgo = new Date(Date.now() - 30 * 60 * 1000);
+        const isStuck = activeSession.startedAt < thirtyMinutesAgo && 
+                       (activeSession.status === 'queued' || activeSession.status === 'in_progress');
+        const isFailed = activeSession.status === 'error' || activeSession.status === 'failed';
+
+        if (isFailed || isStuck) {
+          // Auto-cleanup failed or stuck session
+          console.log(`🧹 Auto-cleaning ${isFailed ? 'failed' : 'stuck'} session ${activeSession.id}`);
+          await db.update(outlineSessions)
+            .set({
+              isActive: false,
+              status: isFailed ? activeSession.status : 'error',
+              errorMessage: isStuck ? 'Session timed out after 30 minutes' : activeSession.errorMessage,
+              updatedAt: new Date()
+            })
+            .where(eq(outlineSessions.id, activeSession.id));
+          
+          // Continue to create new session
+          console.log('✅ Cleaned up old session, creating new one...');
+        } else {
+          // Return existing active session if it's still valid
+          console.log(`⚠️ Active session already exists for workflow ${workflowId}: ${activeSession.id}`);
+          return {
+            sessionId: activeSession.id,
+            status: 'already_active',
+            message: 'An outline generation is already in progress for this workflow.',
+            existingSessionId: activeSession.id
+          };
+        }
       }
 
       // Get the next version number for this workflow
@@ -178,10 +200,12 @@ Begin your research now.`;
       console.error('❌ Error starting outline generation:', error);
       
       if (sessionId) {
+        // Always mark failed sessions as inactive
         await db.update(outlineSessions)
           .set({
             status: 'error',
             errorMessage: error.message,
+            isActive: false, // Important: mark as inactive on error
             updatedAt: new Date()
           })
           .where(eq(outlineSessions.id, sessionId));

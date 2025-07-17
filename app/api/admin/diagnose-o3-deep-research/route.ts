@@ -89,14 +89,23 @@ export async function GET() {
       .limit(10);
 
     diagnostics.activeSessions.count = activeSessions.length;
-    diagnostics.activeSessions.sessions = activeSessions.map(session => ({
-      id: session.id,
-      workflowId: session.workflowId,
-      status: session.status,
-      startedAt: session.startedAt,
-      pollingAttempts: session.pollingAttempts,
-      backgroundResponseId: session.backgroundResponseId
-    }));
+    diagnostics.activeSessions.sessions = activeSessions.map(session => {
+      const sessionAge = Date.now() - new Date(session.startedAt).getTime();
+      const ageMinutes = Math.floor(sessionAge / 60000);
+      
+      return {
+        id: session.id,
+        workflowId: session.workflowId,
+        status: session.status,
+        startedAt: session.startedAt,
+        ageMinutes,
+        pollingAttempts: session.pollingAttempts,
+        backgroundResponseId: session.backgroundResponseId,
+        // Flag potentially stuck sessions
+        isStuck: (session.status === 'queued' || session.status === 'in_progress') && ageMinutes > 20,
+        queuePosition: session.status === 'queued' ? 'Unknown (o3 deep research has variable queue times)' : null
+      };
+    });
 
     // Get failed sessions
     const failedSessions = await db.select()
@@ -166,6 +175,23 @@ export async function GET() {
     if (activeSessions.some(s => (s.pollingAttempts || 0) > 200)) {
       diagnostics.recommendations.push(
         'Some sessions have excessive polling attempts. Consider implementing a maximum polling limit.'
+      );
+    }
+
+    const stuckSessions = diagnostics.activeSessions.sessions.filter(s => s.isStuck);
+    if (stuckSessions.length > 0) {
+      diagnostics.recommendations.push(
+        `${stuckSessions.length} session(s) appear to be stuck in queue for over 20 minutes.`,
+        'o3-deep-research can have variable queue times (10-30+ minutes) depending on demand.',
+        'Consider using the "Clean Up Failed" button if sessions are stuck for over 30 minutes.'
+      );
+    }
+
+    const queuedSessions = diagnostics.activeSessions.sessions.filter(s => s.status === 'queued');
+    if (queuedSessions.length > 0) {
+      diagnostics.recommendations.push(
+        'o3-deep-research uses a shared queue system. Wait times vary based on OpenAI capacity.',
+        'Normal queue times: 10-15 minutes (typical), 30+ minutes (high demand)'
       );
     }
 
