@@ -6,6 +6,7 @@ import { articleSections, agentSessions, workflows } from '@/lib/db/schema';
 import { eq, and, sql } from 'drizzle-orm';
 import { v4 as uuidv4 } from 'uuid';
 import { z } from 'zod';
+import { assistantSentPlainText, ARTICLE_WRITING_RETRY_NUDGE, ARTICLE_PLANNING_RETRY_NUDGE } from '@/lib/utils/agentUtils';
 
 // Helper function to sanitize strings by removing null bytes and control characters
 function sanitizeForPostgres(str: string): string {
@@ -434,6 +435,8 @@ START WRITING THE NEXT SECTION NOW - DO NOT ASK FOR PERMISSION OR CONFIRMATION. 
       
       let conversationActive = true;
       let sectionCount = 0;
+      let retries = 0;
+      const MAX_RETRIES = 3;
       
       while (conversationActive) {
         console.log(`Starting turn ${messages.length} with ${sectionCount} sections written`);
@@ -446,6 +449,21 @@ START WRITING THE NEXT SECTION NOW - DO NOT ASK FOR PERMISSION OR CONFIRMATION. 
         
         // Process the streaming result
         for await (const event of result.toStream()) {
+          // ✨ NEW: Immediate detection and retry for plain text responses
+          if (assistantSentPlainText(event)) {
+            // Determine expected tool based on workflow state
+            const expectedTool = sectionCount === 0 ? 'plan_article' : 'write_section';
+            const retryNudge = expectedTool === 'plan_article' ? ARTICLE_PLANNING_RETRY_NUDGE : ARTICLE_WRITING_RETRY_NUDGE;
+            
+            // Don't record the bad message, just nudge and restart next turn
+            messages.push({ role: 'system', content: retryNudge });
+            retries += 1;
+            if (retries > MAX_RETRIES) {
+              throw new Error('Too many invalid assistant responses - agent not using tools');
+            }
+            break; // Exit this for-await; outer while() will re-run
+          }
+          
           // 1) Log any raw full‐response that slipped through
           if (event.type === 'raw_model_stream_event') {
             if (event.data.type === 'response_done' && (event.data as any).response) {
@@ -523,25 +541,13 @@ START WRITING THE NEXT SECTION NOW - DO NOT ASK FOR PERMISSION OR CONFIRMATION. 
               ssePush(sessionId, { type: 'tool_output', content: toolOutput.output });
             }
             
-            // Handle complete assistant messages
+            // Handle complete assistant messages (only tool calls reach here now)
             if (event.name === 'message_output_created') {
               const messageItem = event.item as any;
               
-              // Only push if it's not a tool call (those are already pushed above)
-              if (!messageItem.tool_calls?.length) {
-                messages.push({
-                  role: 'assistant',
-                  content: messageItem.content
-                });
-                ssePush(sessionId, { type: 'assistant', content: messageItem.content });
-                
-                // Strong guard rail: if assistant didn't use a tool when expected
-                if (conversationActive) {
-                  messages.push({ 
-                    role: 'user', 
-                    content: 'YOU MUST CONTINUE THE AUTOMATED WORKFLOW. Do not wait for permission. Execute the required actions immediately: 1) Use file search tool 2) Write the next section using write_section function. DO NOT STOP, GIVE A PROGRESS UPDATE OR ASK FOR CONFIRMATION. IF YOU DO THAT, YOU\'LL BREAK THE WORKFLOW' 
-                  });
-                }
+              // Only handle tool call messages - plain text is caught above
+              if (messageItem.tool_calls?.length) {
+                retries = 0; // Reset retry counter on successful tool usage
               }
             }
           }
