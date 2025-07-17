@@ -1,7 +1,7 @@
 'use client';
 
 import React from 'react';
-import { Database, Activity, Wrench, Users, BarChart3, Settings, AlertTriangle } from 'lucide-react';
+import { Database, Activity, Wrench, Users, BarChart3, Settings, AlertTriangle, Bug } from 'lucide-react';
 
 export default function AdminDashboard() {
   const adminTools = [
@@ -20,6 +20,14 @@ export default function AdminDashboard() {
       href: '/admin/diagnostics',
       color: 'bg-green-50 border-green-200 text-green-700',
       iconColor: 'text-green-600'
+    },
+    {
+      title: 'Agent Diagnostics',
+      description: 'Monitor and debug agent text response issues in real-time',
+      icon: Bug,
+      href: '/admin/agent-diagnostics',
+      color: 'bg-yellow-50 border-yellow-200 text-yellow-700',
+      iconColor: 'text-yellow-600'
     },
     {
       title: 'Column Size Checker',

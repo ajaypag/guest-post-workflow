@@ -1,3 +1,5 @@
+import { DiagnosticStorageService } from '@/lib/services/diagnosticStorageService';
+
 /**
  * Comprehensive diagnostic tool for debugging agent text response issues
  * This captures all event types and provides detailed logging
@@ -19,6 +21,8 @@ export class AgentDiagnostics {
   private events: DiagnosticEvent[] = [];
   private sessionId: string;
   private startTime: number;
+  private retryAttempts: any[] = [];
+  private successfulTools: any[] = [];
 
   constructor(sessionId: string) {
     this.sessionId = sessionId;
@@ -42,6 +46,14 @@ export class AgentDiagnostics {
         diagnostic.toolCallNames = event.item?.tool_calls?.map((tc: any) => tc.function?.name) || [];
         diagnostic.hasContent = !!(event.item?.content);
         diagnostic.contentPreview = event.item?.content?.substring(0, 200);
+      } else if (event.name === 'tool_called') {
+        // Track successful tool calls
+        const toolCall = event.item as any;
+        this.successfulTools.push({
+          timestamp: Date.now() - this.startTime,
+          name: toolCall.name,
+          args: toolCall.args
+        });
       }
     } else if (event.type === 'raw_model_stream_event') {
       if (event.data.type === 'output_text_delta') {
@@ -73,7 +85,35 @@ export class AgentDiagnostics {
         contentPreview: diagnostic.contentPreview,
         toolCalls: diagnostic.toolCallNames
       });
+
+      // Store live event for real-time monitoring
+      DiagnosticStorageService.addLiveEvent(this.sessionId, {
+        timestamp: diagnostic.timestamp,
+        type: 'TEXT_DETECTED',
+        category: 'text',
+        message: 'Agent outputted text instead of using tools',
+        details: { content: diagnostic.contentPreview }
+      });
     }
+  }
+
+  logRetryAttempt(attempt: number, maxRetries: number, nudgeType: string): void {
+    const retryEvent = {
+      timestamp: Date.now() - this.startTime,
+      attempt,
+      maxRetries,
+      nudgeType
+    };
+    this.retryAttempts.push(retryEvent);
+
+    // Store live event
+    DiagnosticStorageService.addLiveEvent(this.sessionId, {
+      timestamp: retryEvent.timestamp,
+      type: 'RETRY_ATTEMPT',
+      category: 'retry',
+      message: `Retry attempt ${attempt}/${maxRetries}`,
+      details: { nudgeType }
+    });
   }
 
   private shouldHighlightEvent(diagnostic: DiagnosticEvent): boolean {
@@ -117,13 +157,19 @@ export class AgentDiagnostics {
           toolCalls: e.toolCallNames
         }))
       },
+      retryAttempts: this.retryAttempts,
+      successfulTools: this.successfulTools,
+      retryCount: this.retryAttempts.length,
       allEvents: this.events
     };
   }
 
-  saveReport(): void {
+  saveReport(agentType: string = 'unknown'): void {
     const report = this.getReport();
     console.log('📊 AGENT DIAGNOSTICS REPORT:', JSON.stringify(report, null, 2));
+    
+    // Store the report for later retrieval
+    DiagnosticStorageService.storeDiagnosticReport(this.sessionId, report, agentType);
   }
 }
 

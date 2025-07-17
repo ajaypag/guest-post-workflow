@@ -8,6 +8,7 @@ import { v4 as uuidv4 } from 'uuid';
 import { z } from 'zod';
 import { assistantSentPlainText, SEMANTIC_AUDIT_PARSE_RETRY_NUDGE, SEMANTIC_AUDIT_SECTION_RETRY_NUDGE } from '@/lib/utils/agentUtils';
 import { AgentDiagnostics, assistantSentPlainTextEnhanced } from '@/lib/utils/agentDiagnostics';
+import { DiagnosticStorageService } from '@/lib/services/diagnosticStorageService';
 
 // Helper function to sanitize strings by removing null bytes and control characters
 function sanitizeForPostgres(str: string): string {
@@ -117,12 +118,18 @@ export class AgenticSemanticAuditService {
   }
 
   async performSemanticAudit(sessionId: string): Promise<void> {
+    // Initialize diagnostics outside try block for catch block access
+    let diagnostics: AgentDiagnostics | undefined;
+    
     try {
       const session = await this.getAuditSession(sessionId);
       if (!session) throw new Error('Audit session not found');
 
       await this.updateAuditSession(sessionId, { status: 'auditing' });
       auditSSEPush(sessionId, { type: 'status', status: 'auditing', message: 'Starting semantic SEO audit...' });
+      
+      // Initialize diagnostic session
+      DiagnosticStorageService.createSession(sessionId, session.workflowId, 'semantic_audit');
 
       // Create initial prompt for article parsing and first section audit
       const initialPrompt = `I'm providing you with an article that needs semantic SEO optimization. Your job is to audit it section by section, providing strengths, weaknesses, and optimized content.
@@ -407,12 +414,9 @@ START AUDITING THE NEXT SECTION NOW - DO NOT ASK FOR PERMISSION OR CONFIRMATION.
       let sectionCount = 0;
       let retries = 0;
       const MAX_RETRIES = 3;
-      
-      // Initialize diagnostics (declare at top level for catch block access)
-      let diagnostics: AgentDiagnostics | undefined;
       let lastSuccessfulTool: string | null = null;
       
-      // Initialize diagnostics after scope declaration
+      // Initialize diagnostics now that it's declared at function level
       diagnostics = new AgentDiagnostics(sessionId);
       
       while (conversationActive) {
@@ -442,6 +446,13 @@ START AUDITING THE NEXT SECTION NOW - DO NOT ASK FOR PERMISSION OR CONFIRMATION.
               messageCount: messages.length
             });
             
+            // Log retry attempt to diagnostics
+            diagnostics.logRetryAttempt(
+              retries + 1, 
+              MAX_RETRIES, 
+              lastSuccessfulTool === 'parse_article' ? 'audit_section' : 'parse_article'
+            );
+            
             // Don't record the bad message, just nudge and restart next turn
             messages.push({ role: 'system', content: retryNudge });
             retries += 1;
@@ -454,7 +465,7 @@ START AUDITING THE NEXT SECTION NOW - DO NOT ASK FOR PERMISSION OR CONFIRMATION.
               });
               
               // Save diagnostics before throwing
-              diagnostics.saveReport();
+              diagnostics.saveReport('semantic_audit');
               throw new Error(`Too many invalid assistant responses - agent not using tools after ${MAX_RETRIES} attempts`);
             }
             break; // Exit this for-await; outer while() will re-run
@@ -498,7 +509,7 @@ START AUDITING THE NEXT SECTION NOW - DO NOT ASK FOR PERMISSION OR CONFIRMATION.
                 messages.push({ role: 'system', content: retryNudge });
                 retries += 1;
                 if (retries > MAX_RETRIES) {
-                  diagnostics.saveReport();
+                  diagnostics.saveReport('semantic_audit');
                   throw new Error('Too many malformed tool calls');
                 }
                 break;
@@ -582,7 +593,10 @@ START AUDITING THE NEXT SECTION NOW - DO NOT ASK FOR PERMISSION OR CONFIRMATION.
       console.log('Semantic audit conversation loop completed');
       
       // Save diagnostics report for analysis
-      diagnostics.saveReport();
+      diagnostics.saveReport('semantic_audit');
+      
+      // Update diagnostic session status
+      DiagnosticStorageService.updateSessionStatus(sessionId, 'completed');
       
       console.log('🎉 SEMANTIC AUDIT COMPLETED SUCCESSFULLY:', {
         sessionId,
@@ -598,8 +612,11 @@ START AUDITING THE NEXT SECTION NOW - DO NOT ASK FOR PERMISSION OR CONFIRMATION.
       // Save diagnostics report even on error
       if (diagnostics) {
         console.log('💥 SAVING DIAGNOSTICS ON ERROR');
-        diagnostics.saveReport();
+        diagnostics.saveReport('semantic_audit');
       }
+      
+      // Update diagnostic session status
+      DiagnosticStorageService.updateSessionStatus(sessionId, 'error');
       
       await this.updateAuditSession(sessionId, {
         status: 'error',
