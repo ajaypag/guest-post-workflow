@@ -5,8 +5,10 @@ import { WorkflowStep, GuestPostWorkflow } from '@/types/workflow';
 import { SavedField } from '../SavedField';
 import { CopyButton } from '../ui/CopyButton';
 import { TutorialVideo } from '../ui/TutorialVideo';
-import { ExternalLink, ChevronDown, ChevronRight, Target, Search, FileText, CheckCircle, AlertCircle, Copy, Eye, EyeOff, X, Brain, Sparkles, Loader2 } from 'lucide-react';
+import { BulkUrlInterface } from '../ui/BulkUrlInterface';
+import { ExternalLink, ChevronDown, ChevronRight, Target, Search, FileText, CheckCircle, AlertCircle, Copy, Eye, EyeOff, X, Brain, Sparkles, Loader2, Plus, FolderOpen } from 'lucide-react';
 import { clientStorage } from '@/lib/userStorage';
+import { ClientService } from '@/lib/db/clientService';
 
 interface KeywordResearchStepProps {
   step: WorkflowStep;
@@ -24,6 +26,10 @@ export const KeywordResearchStepClean = ({ step, workflow, onChange }: KeywordRe
   const [loadingClient, setLoadingClient] = useState(false);
   const [showAllTargetUrls, setShowAllTargetUrls] = useState(false);
   const [selectedTargetPages, setSelectedTargetPages] = useState<string[]>([]);
+  
+  // Tab management for bulk URL feature
+  const [activeTab, setActiveTab] = useState<'existing' | 'bulk'>('existing');
+  const [workflowUrls, setWorkflowUrls] = useState<any[]>([]);
   
   // Keyword management
   const KEYWORD_LIMIT = 50; // Conservative limit to prevent Ahrefs URL issues
@@ -82,6 +88,27 @@ export const KeywordResearchStepClean = ({ step, workflow, onChange }: KeywordRe
 
     loadClient();
   }, [clientId, loadingClient]);
+
+  // Load workflow-specific URLs (orphan/temporary)
+  useEffect(() => {
+    const loadWorkflowUrls = async () => {
+      try {
+        const urls = await ClientService.getWorkflowUrls(workflow.id);
+        setWorkflowUrls(urls);
+      } catch (error) {
+        console.error('Error loading workflow URLs:', error);
+      }
+    };
+
+    loadWorkflowUrls();
+  }, [workflow.id]);
+
+  // Determine default tab based on available URLs
+  useEffect(() => {
+    if (allActiveTargetPages.length === 0 && workflowUrls.length === 0) {
+      setActiveTab('bulk');
+    }
+  }, [allActiveTargetPages.length, workflowUrls.length]);
   
   const toggleSection = (section: string) => {
     setExpandedSections(prev => ({
@@ -99,7 +126,14 @@ export const KeywordResearchStepClean = ({ step, workflow, onChange }: KeywordRe
     const existingKeywords = keywords ? keywords.split(',').map((k: string) => k.trim()).filter((k: string) => k) : [];
     const newKeywords: string[] = [];
     
-    selectedPages.forEach((page: any) => {
+    // Include workflow URLs in the selection
+    const selectedWorkflowPages = workflowUrls.filter((page: any) => 
+      selectedTargetPages.includes(page.id)
+    );
+    
+    const allSelectedPages = [...selectedPages, ...selectedWorkflowPages];
+    
+    allSelectedPages.forEach((page: any) => {
       if (page.keywords && page.keywords.trim() !== '') {
         const pageKeywords = page.keywords.split(',').map((k: string) => k.trim()).filter((k: string) => k);
         newKeywords.push(...pageKeywords);
@@ -114,7 +148,7 @@ export const KeywordResearchStepClean = ({ step, workflow, onChange }: KeywordRe
     });
     
     return uniqueKeywords;
-  }, [selectedTargetPages, keywords, allActiveTargetPages]);
+  }, [selectedTargetPages, keywords, allActiveTargetPages, workflowUrls]);
 
   // Group pages by URL path
   const groupPagesByPath = (pages: any[]) => {
@@ -197,7 +231,7 @@ export const KeywordResearchStepClean = ({ step, workflow, onChange }: KeywordRe
     const currentKeywords = calculateSelectedKeywords();
     setSelectedKeywords(currentKeywords);
     setKeywordCount(currentKeywords.length);
-  }, [selectedTargetPages, keywords, allActiveTargetPages, calculateSelectedKeywords]);
+  }, [selectedTargetPages, keywords, allActiveTargetPages, calculateSelectedKeywords, workflowUrls]);
 
   // Distribute keywords evenly across selected pages
   const distributeKeywords = (keywords: string[], limit: number) => {
@@ -306,7 +340,9 @@ export const KeywordResearchStepClean = ({ step, workflow, onChange }: KeywordRe
 
   // AI Analysis function
   const runAiAnalysis = async (topCount: number = 20) => {
-    if (!guestPostSite || activeTargetPages.length === 0) {
+    const combinedPages = [...activeTargetPages, ...workflowUrls];
+    
+    if (!guestPostSite || combinedPages.length === 0) {
       setAiError('Please ensure you have a guest post site selected and target URLs available.');
       return;
     }
@@ -321,7 +357,7 @@ export const KeywordResearchStepClean = ({ step, workflow, onChange }: KeywordRe
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
           guestPostSite,
-          targetPageIds: activeTargetPages.map((page: any) => page.id),
+          targetPageIds: combinedPages.map((page: any) => page.id),
           clientId,
           topCount
         })
@@ -387,13 +423,44 @@ export const KeywordResearchStepClean = ({ step, workflow, onChange }: KeywordRe
         {expandedSections['select-urls'] && (
           <div className="px-6 pb-6 border-t border-gray-100">
             <div className="space-y-4">
-              {/* Overview */}
-              <div className="bg-purple-50 rounded-lg p-4">
-                <h4 className="font-medium text-purple-900 mb-2">📌 Your Client URLs with Keywords & Descriptions</h4>
-                <p className="text-sm text-purple-800">
-                  Below are your client's target URLs with AI-generated keywords and descriptions. Select the ones you want to target in this guest post.
-                </p>
-              </div>
+              {/* Tab Navigation */}
+              {(allActiveTargetPages.length > 0 || workflowUrls.length > 0) && (
+                <div className="flex border-b border-gray-200">
+                  <button
+                    onClick={() => setActiveTab('existing')}
+                    className={`px-4 py-2 font-medium text-sm border-b-2 transition-colors ${
+                      activeTab === 'existing'
+                        ? 'border-purple-600 text-purple-600'
+                        : 'border-transparent text-gray-600 hover:text-gray-900'
+                    }`}
+                  >
+                    <FolderOpen className="w-4 h-4 inline mr-2" />
+                    Existing Client URLs ({allActiveTargetPages.length + workflowUrls.length})
+                  </button>
+                  <button
+                    onClick={() => setActiveTab('bulk')}
+                    className={`px-4 py-2 font-medium text-sm border-b-2 transition-colors ${
+                      activeTab === 'bulk'
+                        ? 'border-purple-600 text-purple-600'
+                        : 'border-transparent text-gray-600 hover:text-gray-900'
+                    }`}
+                  >
+                    <Plus className="w-4 h-4 inline mr-2" />
+                    Add New URLs
+                  </button>
+                </div>
+              )}
+              
+              {/* Tab Content */}
+              {activeTab === 'existing' ? (
+                <>
+                  {/* Overview */}
+                  <div className="bg-purple-50 rounded-lg p-4">
+                    <h4 className="font-medium text-purple-900 mb-2">📌 Your Client URLs with Keywords & Descriptions</h4>
+                    <p className="text-sm text-purple-800">
+                      Below are your client's target URLs with AI-generated keywords and descriptions. Select the ones you want to target in this guest post.
+                    </p>
+                  </div>
 
               {/* Tools & Controls Panel */}
               {allActiveTargetPages.length > 0 && (
@@ -466,7 +533,7 @@ export const KeywordResearchStepClean = ({ step, workflow, onChange }: KeywordRe
                               </div>
                               <div className="space-y-1 text-xs text-gray-600">
                                 <p>🔍 Searching web for site content...</p>
-                                <p>🧠 Analyzing {allActiveTargetPages.length} target URLs...</p>
+                                <p>🧠 Analyzing {allActiveTargetPages.length + workflowUrls.length} target URLs...</p>
                                 <p>⏱️ This may take 30-60 seconds...</p>
                               </div>
                             </div>
@@ -1120,6 +1187,24 @@ export const KeywordResearchStepClean = ({ step, workflow, onChange }: KeywordRe
                   />
                 </div>
               </div>
+                </>
+              ) : (
+                /* Bulk URL Interface Tab */
+                <BulkUrlInterface
+                  workflowId={workflow.id}
+                  onUrlsAdded={async () => {
+                    // Reload client data to show newly added URLs
+                    if (clientId) {
+                      const clientData = await clientStorage.getClient(clientId);
+                      setClient(clientData);
+                    }
+                    // Reload workflow URLs
+                    const urls = await ClientService.getWorkflowUrls(workflow.id);
+                    setWorkflowUrls(urls);
+                  }}
+                  onTabSwitch={() => setActiveTab('existing')}
+                />
+              )}
             </div>
           </div>
         )}
