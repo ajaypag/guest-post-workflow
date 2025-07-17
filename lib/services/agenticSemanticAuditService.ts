@@ -6,6 +6,7 @@ import { auditSessions, auditSections, workflows } from '@/lib/db/schema';
 import { eq, and, sql } from 'drizzle-orm';
 import { v4 as uuidv4 } from 'uuid';
 import { z } from 'zod';
+import { assistantSentPlainText, SEMANTIC_AUDIT_RETRY_NUDGE } from '@/lib/utils/agentUtils';
 
 // Helper function to sanitize strings by removing null bytes and control characters
 function sanitizeForPostgres(str: string): string {
@@ -403,6 +404,8 @@ START AUDITING THE NEXT SECTION NOW - DO NOT ASK FOR PERMISSION OR CONFIRMATION.
       
       let conversationActive = true;
       let sectionCount = 0;
+      let retries = 0;
+      const MAX_RETRIES = 3;
       
       while (conversationActive) {
         console.log(`Starting audit turn ${messages.length} with ${sectionCount} sections audited`);
@@ -415,6 +418,17 @@ START AUDITING THE NEXT SECTION NOW - DO NOT ASK FOR PERMISSION OR CONFIRMATION.
         
         // Process the streaming result
         for await (const event of result.toStream()) {
+          // ✨ NEW: Immediate detection and retry for plain text responses
+          if (assistantSentPlainText(event)) {
+            // Don't record the bad message, just nudge and restart next turn
+            messages.push({ role: 'system', content: SEMANTIC_AUDIT_RETRY_NUDGE });
+            retries += 1;
+            if (retries > MAX_RETRIES) {
+              throw new Error('Too many invalid assistant responses - agent not using tools');
+            }
+            break; // Exit this for-await; outer while() will re-run
+          }
+          
           // Stream text deltas for UI
           if (event.type === 'raw_model_stream_event') {
             if (event.data.type === 'output_text_delta' && event.data.delta) {
@@ -475,24 +489,13 @@ START AUDITING THE NEXT SECTION NOW - DO NOT ASK FOR PERMISSION OR CONFIRMATION.
               auditSSEPush(sessionId, { type: 'tool_output', content: toolOutput.output });
             }
             
-            // Handle complete assistant messages
+            // Handle complete assistant messages (only tool calls reach here now)
             if (event.name === 'message_output_created') {
               const messageItem = event.item as any;
               
-              if (!messageItem.tool_calls?.length) {
-                messages.push({
-                  role: 'assistant',
-                  content: messageItem.content
-                });
-                auditSSEPush(sessionId, { type: 'assistant', content: messageItem.content });
-                
-                // Guard rail for continuation
-                if (conversationActive) {
-                  messages.push({ 
-                    role: 'user', 
-                    content: 'YOU MUST CONTINUE THE AUTOMATED AUDIT WORKFLOW. Do not wait for permission. Execute the required actions immediately: 1) Use file search tool 2) Continue auditing sections using audit_section function. DO NOT STOP OR ASK FOR CONFIRMATION. DO NOT PROVIDE TEXT BASED UPDATES ABOUT YOUR PROGRESS OR WHAT YOU\'LL DO. THAT WILL BREAK MY WORKFLOW. DO NOT GIVE A PROGRESS UPDATE. IF YOU DO THAT, YOU\'LL BREAK THE WORKFLOW.' 
-                  });
-                }
+              // Only handle tool call messages - plain text is caught above
+              if (messageItem.tool_calls?.length) {
+                retries = 0; // Reset retry counter on successful tool usage
               }
             }
           }
