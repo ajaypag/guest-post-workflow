@@ -1,7 +1,7 @@
 'use client';
 
 import React, { useState, useEffect, useRef } from 'react';
-import { Bot, CheckCircle, AlertCircle, Clock, Loader2, Copy, XCircle } from 'lucide-react';
+import { Bot, CheckCircle, AlertCircle, Clock, Loader2, Copy, XCircle, Sparkles } from 'lucide-react';
 import { MarkdownPreview } from './MarkdownPreview';
 
 interface AgenticOutlineGeneratorV2Props {
@@ -42,13 +42,13 @@ export function AgenticOutlineGeneratorV2({ workflowId, onComplete }: AgenticOut
           
           setSessionId(session.id);
           
-          if (session.status === 'completed' && session.finalOutline) {
+          if (session.status === 'completed' && session.outline) {
             setStatus('completed');
-            setOutline(session.finalOutline);
+            setOutline(session.outline);
             setCitations(session.citations || []);
             
             if (onComplete) {
-              onComplete(session.finalOutline);
+              onComplete(session.outline);
             }
           } else if (['queued', 'in_progress'].includes(session.status)) {
             // Resume polling for in-progress sessions
@@ -293,9 +293,10 @@ export function AgenticOutlineGeneratorV2({ workflowId, onComplete }: AgenticOut
       {/* Results */}
       {status === 'completed' && outline && (
         <div className="space-y-4">
+          {/* Raw Text View */}
           <div className="bg-white border border-gray-200 rounded-lg">
             <div className="border-b border-gray-200 px-4 py-3 flex items-center justify-between">
-              <h4 className="font-medium text-gray-900">Research Outline</h4>
+              <h4 className="font-medium text-gray-900">Raw Outline (Copy this to Step 3)</h4>
               <button
                 onClick={copyToClipboard}
                 className="flex items-center space-x-1 text-sm text-gray-600 hover:text-gray-800"
@@ -303,6 +304,20 @@ export function AgenticOutlineGeneratorV2({ workflowId, onComplete }: AgenticOut
                 <Copy className="w-4 h-4" />
                 <span>{copySuccess ? 'Copied!' : 'Copy'}</span>
               </button>
+            </div>
+            <div className="p-4">
+              <textarea
+                value={outline}
+                readOnly
+                className="w-full h-64 p-3 border border-gray-300 rounded-lg bg-gray-50 text-sm font-mono resize-none"
+              />
+            </div>
+          </div>
+
+          {/* Formatted Preview */}
+          <div className="bg-white border border-gray-200 rounded-lg">
+            <div className="border-b border-gray-200 px-4 py-3">
+              <h4 className="font-medium text-gray-900">Formatted Preview</h4>
             </div>
             <div className="p-4 max-h-96 overflow-y-auto">
               <MarkdownPreview content={outline} />
@@ -329,6 +344,17 @@ export function AgenticOutlineGeneratorV2({ workflowId, onComplete }: AgenticOut
               </ul>
             </div>
           )}
+
+          {/* Regenerate Button */}
+          <div className="flex justify-center mt-6">
+            <button
+              onClick={startGeneration}
+              className="px-4 py-2 bg-gray-100 hover:bg-gray-200 text-gray-700 rounded-md flex items-center"
+            >
+              <Sparkles className="w-4 h-4 mr-2" />
+              Generate New Outline
+            </button>
+          </div>
         </div>
       )}
     </div>
