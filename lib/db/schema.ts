@@ -439,3 +439,34 @@ export type FormattingQaCheck = typeof formattingQaChecks.$inferSelect;
 export type NewFormattingQaCheck = typeof formattingQaChecks.$inferInsert;
 export type OutlineSession = typeof outlineSessions.$inferSelect;
 export type NewOutlineSession = typeof outlineSessions.$inferInsert;
+
+// V2 Agent Sessions for LLM Orchestration
+export const v2AgentSessions = pgTable('v2_agent_sessions', {
+  id: uuid('id').primaryKey(),
+  workflowId: uuid('workflow_id').notNull(),
+  version: integer('version').notNull(),
+  stepId: varchar('step_id', { length: 50 }).notNull(),
+  status: varchar('status', { length: 50 }).notNull(), // initializing | orchestrating | writing | completed | failed
+  outline: text('outline'), // Use TEXT for long content (learning from CLAUDE.md)
+  totalSections: integer('total_sections'),
+  completedSections: integer('completed_sections'),
+  currentWordCount: integer('current_word_count'),
+  totalWordCount: integer('total_word_count'),
+  finalArticle: text('final_article'), // TEXT for AI-generated content
+  sessionMetadata: jsonb('session_metadata'),
+  errorMessage: text('error_message'), // TEXT for error messages
+  startedAt: timestamp('started_at').notNull(),
+  completedAt: timestamp('completed_at'),
+  createdAt: timestamp('created_at').notNull(),
+  updatedAt: timestamp('updated_at').notNull(),
+});
+
+export const v2AgentSessionsRelations = relations(v2AgentSessions, ({ one }) => ({
+  workflow: one(workflows, {
+    fields: [v2AgentSessions.workflowId],
+    references: [workflows.id],
+  }),
+}));
+
+export type V2AgentSession = typeof v2AgentSessions.$inferSelect;
+export type NewV2AgentSession = typeof v2AgentSessions.$inferInsert;
