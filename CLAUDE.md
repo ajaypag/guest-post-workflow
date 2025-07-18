@@ -1053,6 +1053,243 @@ if (event.name === 'message_output_created') {
 
 See `agenticSemanticAuditService.ts` for complete working example of this fix pattern applied successfully.
 
+## 🚀 V2 ARTICLE GENERATION: TRUE LLM ORCHESTRATION
+
+### Overview
+V2 represents a fundamental shift from code-driven orchestration to true LLM orchestration. Instead of complex agent-as-tool patterns, V2 implements a single conversation thread where the LLM naturally progresses through the article generation process using database prompts.
+
+**Key Innovation**: The "magic" of manual ChatGPT.com workflows is recreated by maintaining full conversation context and using exact prompts from the database, allowing the LLM to drive the process naturally.
+
+### Architecture Pattern
+
+#### 1. Single Agent, Single Conversation
+```typescript
+// One agent with minimal configuration
+export const writerAgentV2 = new Agent({
+  name: 'ArticleWriterV2',
+  instructions: '', // CRITICAL: Empty instructions - all guidance comes from prompts
+  model: 'o3-2025-04-16',
+  tools: [fileSearch], // Only vector store access, no custom tools
+});
+
+// One runner, one continuous conversation
+const writerRunner = new Runner({
+  modelProvider: this.openaiProvider,
+  tracingDisabled: true
+});
+```
+
+#### 2. Database-Driven Prompts
+```typescript
+// Three exact prompts from database fields
+const PLANNING_PROMPT = `Okay, I'm about to give you a lot of information...`;
+const TITLE_INTRO_PROMPT = `Yes, remember we're going to be creating this article section by section...`;
+const LOOPING_PROMPT = `Proceed to the next section...`;
+```
+
+#### 3. Natural Progression Pattern
+```typescript
+// Phase 1: Planning
+conversationHistory = [{ role: 'user', content: `${PLANNING_PROMPT}\n\n${outline}` }];
+let result = await writerRunner.run(agent, conversationHistory, { stream: true });
+
+// Phase 2: Title/Intro
+conversationHistory.push({ role: 'user', content: TITLE_INTRO_PROMPT });
+result = await writerRunner.run(agent, conversationHistory, { stream: true });
+
+// Phase 3: Looping sections
+while (!articleComplete) {
+  conversationHistory.push({ role: 'user', content: LOOPING_PROMPT });
+  result = await writerRunner.run(agent, conversationHistory, { stream: true });
+}
+```
+
+### Critical Bug Fixes & Lessons Learned
+
+#### 1. Message-Reasoning Pair Integrity
+**Problem**: "400 Item was provided without its required 'reasoning' item"
+**Root Cause**: Manually building messages breaks the SDK's message-reasoning pairing
+**Solution**: Always use SDK's complete history
+```typescript
+// ❌ WRONG: Manual message building
+messages.push({ role: 'assistant', content: response });
+
+// ✅ CORRECT: Use SDK history after run completes
+await result.finalOutput; // CRITICAL: Wait for completion
+conversationHistory = (result as any).history; // Includes reasoning pairs
+```
+
+#### 2. Content Type Compatibility
+**Problem**: "No planning response extracted" 
+**Root Cause**: SDK uses 'output_text' for streamed runs, not 'text'
+**Solution**: Handle both content types
+```typescript
+// ✅ CORRECT: Accept both formats
+.filter((item: any) => 
+  item.type === 'text' || item.type === 'output_text'
+)
+```
+
+#### 3. History Timing Issue
+**Problem**: "Assistant message missing reasoning pair"
+**Root Cause**: Copying history before run completes
+**Solution**: Proper sequencing
+```typescript
+// ✅ CORRECT ORDER:
+// 1. Start the run
+let result = await writerRunner.run(agent, conversationHistory, { stream: true });
+
+// 2. Consume the stream
+for await (const event of result.toStream()) { /* ... */ }
+
+// 3. Wait for completion
+await result.finalOutput;
+
+// 4. NOW copy history
+conversationHistory = (result as any).history;
+```
+
+#### 4. Streaming Without Disruption
+**Pattern**: Stream content while preserving SDK integrity
+```typescript
+for await (const event of result.toStream()) {
+  if (event.type === 'raw_model_stream_event' && 
+      event.data.type === 'output_text_delta') {
+    sseUpdate(sessionId, { type: 'text', content: event.data.delta });
+  }
+}
+```
+
+### Implementation Checklist
+
+#### Database Schema
+```sql
+-- V2 uses TEXT columns for AI content (learning from VARCHAR failures)
+CREATE TABLE v2_agent_sessions (
+  id UUID PRIMARY KEY,
+  outline TEXT,              -- Long research content
+  final_article TEXT,        -- Complete article
+  error_message TEXT,        -- Error details
+  session_metadata JSONB     -- Flexible metadata
+);
+```
+
+#### Service Structure
+```typescript
+export class AgenticArticleV2Service {
+  async startSession(workflowId: string, outline: string): Promise<string>
+  async performArticleGeneration(sessionId: string): Promise<void>
+  private async saveArticleToWorkflow(workflowId: string, article: string)
+  private async getSession(sessionId: string)
+  private async updateSession(sessionId: string, updates: Partial<any>)
+}
+```
+
+#### Error Handling
+```typescript
+try {
+  // Main generation logic
+} catch (error: any) {
+  console.error('❌ V2 article generation failed:', error);
+  await this.updateSession(sessionId, {
+    status: 'failed',
+    errorMessage: error.message
+  });
+  sseUpdate(sessionId, { type: 'error', error: error.message });
+  throw error;
+}
+```
+
+### V2 Best Practices
+
+#### 1. Maintain Conversation Integrity
+- Never manually construct assistant messages
+- Always use SDK's complete history
+- Wait for `finalOutput` before copying history
+- Preserve message-reasoning pairs
+
+#### 2. Handle Content Formats
+- Support both 'text' and 'output_text' types
+- Extract content safely from arrays
+- Handle string content as fallback
+- Clean end markers from output
+
+#### 3. Natural Flow Control
+- Use explicit end markers (`<<END_OF_ARTICLE>>`)
+- Safety limits (20 sections max)
+- Track progress with writerOutputs array
+- Skip planning output from final article
+
+#### 4. Database Design
+- Use TEXT columns for all AI content
+- Avoid VARCHAR constraints
+- Store complete conversation in session
+- Track version numbers for iterations
+
+#### 5. Streaming Architecture
+- Stream deltas to frontend via SSE
+- Don't store streaming fragments
+- Extract final content from SDK history
+- Maintain active connection registry
+
+### Migration from V1 to V2
+
+#### Key Differences
+1. **No Orchestrator**: Single agent handles everything
+2. **No Custom Tools**: Pure conversation flow
+3. **Database Prompts**: Exact prompts from UI fields
+4. **Full Context**: Maintains conversation throughout
+5. **Natural Progression**: LLM decides when complete
+
+#### UI Integration
+```typescript
+// Article Draft Step Clean - Add V2 Toggle
+const [useV2, setUseV2] = useState(false);
+
+// Conditional generation
+if (useV2) {
+  await generateArticleV2(workflowId, researchData);
+} else {
+  await generateArticle(workflowId, researchData);
+}
+```
+
+### Testing V2 Implementation
+
+#### 1. Diagnostic Tools
+- `/admin/fix-article-v2` - V2-specific diagnostics
+- `/api/admin/diagnose-article-v2` - System analysis
+- Message format validation
+- Session status tracking
+
+#### 2. Common Issues & Solutions
+- **Empty response**: Check content type filters
+- **Missing history**: Ensure `await finalOutput`
+- **Reasoning errors**: Use SDK history, not manual
+- **No output**: Verify prompts match database
+
+#### 3. Success Metrics
+- Natural, conversational output
+- Consistent quality across sections
+- Proper citation integration
+- Maintains brand voice throughout
+
+### Reference Implementation
+- **Service**: `/lib/services/agenticArticleV2Service.ts`
+- **Agent**: `/lib/agents/articleWriterV2.ts`
+- **API**: `/app/api/workflows/[id]/auto-generate-v2/`
+- **UI**: `ArticleDraftStepClean.tsx` with V2 toggle
+
+### Key Takeaways
+
+1. **Simplicity Wins**: Removing complexity (orchestrator, tools) improved quality
+2. **Trust the LLM**: Let it drive the conversation naturally
+3. **SDK Integrity**: Never break message-reasoning pairs
+4. **Content Flexibility**: Handle all SDK content formats
+5. **Database First**: TEXT columns prevent AI content truncation
+
+The V2 approach proves that true LLM orchestration - where the model drives the process through natural conversation - produces superior results compared to complex code-driven orchestration.
+
 ## Contact
 Created for OutreachLabs by Claude with Ajay
 Repository: https://github.com/ajaypag/guest-post-workflow
