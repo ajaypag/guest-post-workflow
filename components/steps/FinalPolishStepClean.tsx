@@ -25,7 +25,7 @@ export const FinalPolishStepClean = ({ step, workflow, onChange }: FinalPolishSt
   });
 
   // Tab system state
-  const [activeTab, setActiveTab] = useState<'chatgpt' | 'builtin' | 'agentic'>('chatgpt');
+  const [activeTab, setActiveTab] = useState<'chatgpt' | 'builtin' | 'agentic'>('agentic');
 
   // Chat state management
   const [conversation, setConversation] = useState<any[]>([]);
@@ -181,6 +181,19 @@ Review one of my project files for my brand guide and the Semantic SEO writing t
       <div className="bg-white border border-gray-200 rounded-xl overflow-hidden">
         <div className="flex border-b border-gray-200">
           <button
+            onClick={() => setActiveTab('agentic')}
+            className={`flex-1 px-6 py-4 text-sm font-medium transition-colors ${
+              activeTab === 'agentic'
+                ? 'bg-purple-50 text-purple-700 border-b-2 border-purple-500'
+                : 'text-gray-500 hover:text-gray-700 hover:bg-gray-50'
+            }`}
+          >
+            <div className="flex items-center justify-center space-x-2">
+              <Sparkles className="w-4 h-4" />
+              <span>Agentic Polish</span>
+            </div>
+          </button>
+          <button
             onClick={() => setActiveTab('chatgpt')}
             className={`flex-1 px-6 py-4 text-sm font-medium transition-colors ${
               activeTab === 'chatgpt'
@@ -199,19 +212,6 @@ Review one of my project files for my brand guide and the Semantic SEO writing t
             }`}
           >
             Built-in Chat
-          </button>
-          <button
-            onClick={() => setActiveTab('agentic')}
-            className={`flex-1 px-6 py-4 text-sm font-medium transition-colors ${
-              activeTab === 'agentic'
-                ? 'bg-purple-50 text-purple-700 border-b-2 border-purple-500'
-                : 'text-gray-500 hover:text-gray-700 hover:bg-gray-50'
-            }`}
-          >
-            <div className="flex items-center justify-center space-x-2">
-              <Sparkles className="w-4 h-4" />
-              <span>Agentic Polish</span>
-            </div>
           </button>
         </div>
 

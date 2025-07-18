@@ -24,7 +24,7 @@ export const ContentAuditStepClean = ({ step, workflow, onChange }: ContentAudit
   });
 
   // Tab system state
-  const [activeTab, setActiveTab] = useState<'chatgpt' | 'builtin' | 'agent'>('chatgpt');
+  const [activeTab, setActiveTab] = useState<'chatgpt' | 'builtin' | 'agent'>('agent');
 
   // Chat state management
   const [conversation, setConversation] = useState<any[]>([]);
@@ -173,6 +173,16 @@ Now I realize this is a lot, so i want your first output to only be an audit of 
       <div className="bg-white border border-gray-200 rounded-xl overflow-hidden">
         <div className="flex border-b border-gray-200">
           <button
+            onClick={() => setActiveTab('agent')}
+            className={`flex-1 px-6 py-4 text-sm font-medium transition-colors ${
+              activeTab === 'agent'
+                ? 'bg-green-50 text-green-700 border-b-2 border-green-500'
+                : 'text-gray-500 hover:text-gray-700 hover:bg-gray-50'
+            }`}
+          >
+            🤖 AI Agent (Auto)
+          </button>
+          <button
             onClick={() => setActiveTab('chatgpt')}
             className={`flex-1 px-6 py-4 text-sm font-medium transition-colors ${
               activeTab === 'chatgpt'
@@ -191,16 +201,6 @@ Now I realize this is a lot, so i want your first output to only be an audit of 
             }`}
           >
             Built-in Chat
-          </button>
-          <button
-            onClick={() => setActiveTab('agent')}
-            className={`flex-1 px-6 py-4 text-sm font-medium transition-colors ${
-              activeTab === 'agent'
-                ? 'bg-green-50 text-green-700 border-b-2 border-green-500'
-                : 'text-gray-500 hover:text-gray-700 hover:bg-gray-50'
-            }`}
-          >
-            🤖 AI Agent (Auto)
           </button>
         </div>
 
