@@ -899,13 +899,6 @@ export const KeywordResearchStepClean = ({ step, workflow, onChange }: KeywordRe
                       </div>
                       
                       <button
-                        onClick={() => window.open(`/clients/${clientId}`, '_blank')}
-                        className="text-xs px-3 py-1 text-purple-600 border border-purple-300 rounded-lg hover:bg-purple-100 transition-colors flex items-center space-x-1"
-                      >
-                        <Target className="w-3 h-3" />
-                        <span>Add More</span>
-                      </button>
-                      <button
                         onClick={() => {
                           const allUrls = activeTargetPages.map((page: any) => page.url).join('\n');
                           navigator.clipboard.writeText(allUrls);
