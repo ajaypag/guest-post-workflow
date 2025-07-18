@@ -1290,6 +1290,91 @@ if (useV2) {
 
 The V2 approach proves that true LLM orchestration - where the model drives the process through natural conversation - produces superior results compared to complex code-driven orchestration.
 
+### ArticleEndCritic: Intelligent Completion Detection
+
+#### The Problem
+The V2 writer doesn't naturally know when to stop writing - it can continue to the 20-section limit without recognizing a proper conclusion has been reached.
+
+#### The Solution: ArticleEndCritic Pattern
+A separate critic agent that evaluates whether the article has reached its natural conclusion.
+
+#### Implementation
+
+**1. Factory Function for Dynamic Outline**
+```typescript
+export const createArticleEndCritic = (outline: string) => new Agent({
+  name: 'ArticleEndCritic',
+  model: 'o2-mini-2025-06-10',  // Fast, efficient model for binary classification
+  instructions: `You are an END-OF-ARTICLE detector.
+
+Reply YES only when ALL of these conditions are met:
+1. The draft contains a clear, final "Conclusion / CTA" section
+2. This conclusion fulfills the last outline item
+3. The conclusion provides proper closure (summary, next steps, or call-to-action)
+4. All major outline sections appear to be covered
+
+Otherwise reply NO.`,
+  preamble: `Outline:\n${outline.trim()}`,
+  outputType: z.enum(['YES', 'NO']),
+});
+```
+
+**2. Dynamic CHECK_START Calculation**
+```typescript
+// Estimate sections from outline
+const outlineLines = (session.outline || '').split('\n');
+const numberedItems = outlineLines.filter(line => /^\d+\./.test(line.trim())).length;
+const expectedSections = Math.max(5, numberedItems);
+const CHECK_START = Math.max(5, Math.floor(expectedSections * 0.6)); // 60% completion
+```
+
+**3. Integration in Main Loop**
+```typescript
+// Use ArticleEndCritic after CHECK_START sections
+if (!articleComplete && sectionCount >= CHECK_START) {
+  console.log(`🔍 Checking if article is complete (section ${sectionCount})...`);
+  
+  try {
+    // Prepare the draft so far (skip planning, include all writing)
+    const draftSoFar = writerOutputs.slice(1).join('\n\n');
+    
+    const criticRun = await writerRunner.run(articleEndCritic, [
+      { role: 'user', content: draftSoFar }
+    ]);
+    
+    const verdict = await criticRun.finalOutput;
+    
+    if (verdict === 'YES') {
+      articleComplete = true;
+      console.log(`✅ Article complete - critic confirmed after ${sectionCount} sections`);
+    }
+  } catch (error) {
+    console.error('❌ Critic evaluation failed:', error);
+    // Continue writing on critic failure - don't break the flow
+    sseUpdate(sessionId, { 
+      type: 'warning', 
+      message: 'Article completion check failed, continuing to write...' 
+    });
+  }
+}
+```
+
+#### Key Benefits
+1. **Separation of Concerns**: Writer focuses on writing, critic on evaluation
+2. **Context-Aware**: Critic sees full outline and draft
+3. **Efficient**: Uses lightweight o2-mini model for quick decisions
+4. **Graceful Failure**: Continues writing if critic fails
+5. **Dynamic Timing**: Adjusts CHECK_START based on outline length
+
+#### Best Practices
+- Pass the outline dynamically to the critic factory
+- Start checking at 60% expected completion
+- Handle critic failures gracefully
+- Use a fast model (o2-mini) for efficiency
+- Keep critic instructions focused and specific
+
+This pattern elegantly solves the article completion detection problem without disrupting the natural flow of the V2 writer agent.
+
 ## Contact
 Created for OutreachLabs by Claude with Ajay
 Repository: https://github.com/ajaypag/guest-post-workflow

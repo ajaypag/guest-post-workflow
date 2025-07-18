@@ -334,6 +334,47 @@ export class AgenticArticleV2Service {
           message: `Section ${sectionCount} completed`
         });
         
+        // Use ArticleEndCritic after CHECK_START sections
+        if (!articleComplete && sectionCount >= CHECK_START) {
+          console.log(`🔍 Checking if article is complete (section ${sectionCount} >= CHECK_START ${CHECK_START})...`);
+          sseUpdate(sessionId, { 
+            type: 'phase', 
+            phase: 'checking_completion', 
+            message: `Evaluating if article is complete after ${sectionCount} sections...` 
+          });
+          
+          try {
+            // Prepare the draft so far (skip planning, include all writing)
+            const draftSoFar = writerOutputs.slice(1).join('\n\n');
+            
+            const criticRun = await writerRunner.run(articleEndCritic, [
+              { role: 'user', content: draftSoFar }
+            ]);
+            
+            const verdict = await criticRun.finalOutput;
+            console.log(`🎯 ArticleEndCritic verdict: ${verdict}`);
+            
+            if (verdict === 'YES') {
+              articleComplete = true;
+              console.log(`✅ Article complete - critic confirmed after ${sectionCount} sections`);
+              sseUpdate(sessionId, { 
+                type: 'phase', 
+                phase: 'completed', 
+                message: `Article complete - proper conclusion detected after ${sectionCount} sections` 
+              });
+            } else {
+              console.log(`⏩ Article not complete yet - continuing...`);
+            }
+          } catch (error) {
+            console.error('❌ Critic evaluation failed:', error);
+            // Continue writing on critic failure - don't break the flow
+            sseUpdate(sessionId, { 
+              type: 'warning', 
+              message: 'Article completion check failed, continuing to write...' 
+            });
+          }
+        }
+        
         // Warn if approaching the hard limit
         if (sectionCount >= 18 && !articleComplete) {
           console.log(`⚠️ Approaching section limit (${sectionCount}/${maxSections})`);
