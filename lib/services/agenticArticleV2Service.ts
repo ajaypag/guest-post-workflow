@@ -1,6 +1,6 @@
 import { Runner } from '@openai/agents';
 import { OpenAIProvider } from '@openai/agents-openai';
-import { writerAgentV2 } from '@/lib/agents/articleWriterV2';
+import { writerAgentV2, createArticleEndCritic } from '@/lib/agents/articleWriterV2';
 import { db } from '@/lib/db/connection';
 import { workflows, v2AgentSessions } from '@/lib/db/schema';
 import { eq, sql } from 'drizzle-orm';
@@ -118,6 +118,18 @@ export class AgenticArticleV2Service {
       
       // Track article completion status
       let articleComplete = false;
+      
+      // Create ArticleEndCritic with the outline
+      const articleEndCritic = createArticleEndCritic(session.outline || '');
+      
+      // Calculate dynamic CHECK_START based on outline
+      // Estimate sections from outline (rough count of numbered items)
+      const outlineLines = (session.outline || '').split('\n');
+      const numberedItems = outlineLines.filter(line => /^\d+\./.test(line.trim())).length;
+      const expectedSections = Math.max(5, numberedItems); // At least 5 sections
+      const CHECK_START = Math.max(5, Math.floor(expectedSections * 0.6)); // Start checking at 60% completion
+      
+      console.log(`📊 Outline analysis: ${numberedItems} numbered items found, CHECK_START set to ${CHECK_START}`);
 
       // Phase 1: Send planning prompt to writer
       console.log(`📝 Sending planning prompt to writer...`);
@@ -351,7 +363,8 @@ export class AgenticArticleV2Service {
               { role: 'user', content: draftSoFar }
             ]);
             
-            const verdict = await criticRun.finalOutput;
+            const verdictResult = await criticRun.finalOutput;
+            const verdict = verdictResult?.verdict;
             console.log(`🎯 ArticleEndCritic verdict: ${verdict}`);
             
             if (verdict === 'YES') {

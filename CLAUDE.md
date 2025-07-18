@@ -1307,6 +1307,9 @@ export const createArticleEndCritic = (outline: string) => new Agent({
   model: 'o2-mini-2025-06-10',  // Fast, efficient model for binary classification
   instructions: `You are an END-OF-ARTICLE detector.
 
+Here is the article outline:
+${outline.trim()}
+
 Reply YES only when ALL of these conditions are met:
 1. The draft contains a clear, final "Conclusion / CTA" section
 2. This conclusion fulfills the last outline item
@@ -1314,8 +1317,9 @@ Reply YES only when ALL of these conditions are met:
 4. All major outline sections appear to be covered
 
 Otherwise reply NO.`,
-  preamble: `Outline:\n${outline.trim()}`,
-  outputType: z.enum(['YES', 'NO']),
+  outputType: z.object({
+    verdict: z.enum(['YES', 'NO']).describe('Whether the article is complete')
+  }),
 });
 ```
 
@@ -1342,7 +1346,8 @@ if (!articleComplete && sectionCount >= CHECK_START) {
       { role: 'user', content: draftSoFar }
     ]);
     
-    const verdict = await criticRun.finalOutput;
+    const verdictResult = await criticRun.finalOutput;
+    const verdict = verdictResult?.verdict;
     
     if (verdict === 'YES') {
       articleComplete = true;

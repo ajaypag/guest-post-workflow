@@ -20,6 +20,9 @@ export const createArticleEndCritic = (outline: string) => new Agent({
   model: 'o2-mini-2025-06-10',
   instructions: `You are an END-OF-ARTICLE detector.
 
+Here is the article outline:
+${outline.trim()}
+
 Reply YES only when ALL of these conditions are met:
 1. The draft contains a clear, final "Conclusion / CTA" section
 2. This conclusion fulfills the last outline item
@@ -29,8 +32,9 @@ Reply YES only when ALL of these conditions are met:
 Otherwise reply NO.
 
 IMPORTANT: You must reply with exactly 'YES' or 'NO' - nothing else.`,
-  preamble: `Outline:\n${outline.trim()}`,
-  outputType: z.enum(['YES', 'NO']),
+  outputType: z.object({
+    verdict: z.enum(['YES', 'NO']).describe('Whether the article is complete')
+  }),
 });
 
 // Export for compatibility but not used in simplified approach
