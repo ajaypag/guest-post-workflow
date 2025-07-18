@@ -5,7 +5,8 @@ import { WorkflowStep, GuestPostWorkflow } from '@/types/workflow';
 import { SavedField } from '../SavedField';
 import { CopyButton } from '../ui/CopyButton';
 import { TutorialVideo } from '../ui/TutorialVideo';
-import { ExternalLink, ChevronDown, ChevronRight, Target, Search, FileText, CheckCircle, AlertCircle, Copy, Eye, EyeOff, X, Brain, Sparkles, Loader2 } from 'lucide-react';
+import { AddTargetUrlsModal } from '../ui/AddTargetUrlsModal';
+import { ExternalLink, ChevronDown, ChevronRight, Target, Search, FileText, CheckCircle, AlertCircle, Copy, Eye, EyeOff, X, Brain, Sparkles, Loader2, Plus } from 'lucide-react';
 import { clientStorage } from '@/lib/userStorage';
 
 interface KeywordResearchStepProps {
@@ -43,6 +44,9 @@ export const KeywordResearchStepClean = ({ step, workflow, onChange }: KeywordRe
   const [isAnalyzing, setIsAnalyzing] = useState(false);
   const [aiResults, setAiResults] = useState<any>(null);
   const [aiError, setAiError] = useState<string | null>(null);
+  
+  // Add Target URLs Modal
+  const [showAddUrlsModal, setShowAddUrlsModal] = useState(false);
 
   const domainSelectionStep = workflow.steps.find(s => s.id === 'domain-selection');
   const guestPostSite = domainSelectionStep?.outputs?.domain || '';
@@ -65,29 +69,66 @@ export const KeywordResearchStepClean = ({ step, workflow, onChange }: KeywordRe
     return urlMatch || keywordMatch || descriptionMatch || notesMatch;
   });
   
+  // Define loadClient outside useEffect so it can be reused
+  const loadClient = useCallback(async () => {
+    if (!clientId) return;
+    
+    setLoadingClient(true);
+    try {
+      const clientData = await clientStorage.getClient(clientId);
+      setClient(clientData);
+    } catch (error) {
+      console.error('Error loading client:', error);
+    } finally {
+      setLoadingClient(false);
+    }
+  }, [clientId]);
+  
   useEffect(() => {
-    const loadClient = async () => {
-      if (!clientId || loadingClient) return;
-      
-      setLoadingClient(true);
-      try {
-        const clientData = await clientStorage.getClient(clientId);
-        setClient(clientData);
-      } catch (error) {
-        console.error('Error loading client:', error);
-      } finally {
-        setLoadingClient(false);
-      }
-    };
-
     loadClient();
-  }, [clientId, loadingClient]);
+  }, [loadClient]);
   
   const toggleSection = (section: string) => {
     setExpandedSections(prev => ({
       ...prev,
       [section]: !prev[section]
     }));
+  };
+
+  // Handle URLs added from modal
+  const handleUrlsAdded = async (urls: string[], addedToClient: boolean) => {
+    if (addedToClient && clientId) {
+      // Reload client to get the new URLs
+      await loadClient();
+      
+      // Find the newly added pages and auto-select them
+      const updatedClient = await clientStorage.getClient(clientId);
+      const newPages = updatedClient?.targetPages?.filter((page: any) => 
+        urls.includes(page.url) && 
+        ((page.keywords && page.keywords.trim() !== '') || 
+         (page.description && page.description.trim() !== ''))
+      ) || [];
+      
+      const newPageIds = newPages.map((page: any) => page.id);
+      setSelectedTargetPages(prev => [...prev, ...newPageIds]);
+      
+      // Show success message
+      if (newPageIds.length > 0) {
+        alert(`${newPageIds.length} URLs added and enhanced successfully! They've been automatically selected for you.`);
+      }
+    } else {
+      // Orphan URLs - just store in workflow
+      const existingUrls = step.outputs.orphanUrls || [];
+      onChange({ 
+        ...step.outputs, 
+        orphanUrls: [...existingUrls, ...urls] 
+      });
+    }
+  };
+
+  const handleEnrichmentComplete = async () => {
+    // Reload client data to get enriched URLs
+    await loadClient();
   };
 
   // Calculate keywords from selected pages
@@ -838,6 +879,14 @@ export const KeywordResearchStepClean = ({ step, workflow, onChange }: KeywordRe
                       📌 Your Client's Target URLs ({activeTargetPages.length})
                     </h4>
                     <div className="flex items-center space-x-2">
+                      {/* Add URLs button */}
+                      <button
+                        onClick={() => setShowAddUrlsModal(true)}
+                        className="text-sm px-3 py-1 text-purple-600 border border-purple-300 rounded-lg hover:bg-purple-100 transition-colors flex items-center space-x-1"
+                      >
+                        <Plus className="w-3 h-3" />
+                        <span>Add More</span>
+                      </button>
                       {/* Keyword Counter */}
                       <div className={`text-xs px-3 py-1 rounded-lg font-medium ${
                         keywordCount > KEYWORD_LIMIT 
@@ -1065,6 +1114,28 @@ export const KeywordResearchStepClean = ({ step, workflow, onChange }: KeywordRe
                 </div>
               )}
 
+              {/* Encourage adding target URLs when no client */}
+              {!clientId && !loadingClient && (
+                <div className="bg-gray-50 border border-gray-200 rounded-lg p-4">
+                  <div className="flex items-center justify-between mb-3">
+                    <div className="flex items-center space-x-2">
+                      <AlertCircle className="w-4 h-4 text-gray-600" />
+                      <h4 className="font-medium text-gray-800">No Client Selected</h4>
+                    </div>
+                    <button
+                      onClick={() => setShowAddUrlsModal(true)}
+                      className="px-4 py-2 bg-gray-600 text-white text-sm rounded-lg hover:bg-gray-700 transition-colors flex items-center space-x-2"
+                    >
+                      <Plus className="w-4 h-4" />
+                      <span>Add URLs for This Workflow</span>
+                    </button>
+                  </div>
+                  <p className="text-sm text-gray-600">
+                    You can still add target URLs for this workflow without selecting a client. These URLs will only be used for this session.
+                  </p>
+                </div>
+              )}
+
               {/* Encourage adding target URLs when none exist */}
               {activeTargetPages.length === 0 && clientId && !loadingClient && (
                 <div className="bg-amber-50 border border-amber-200 rounded-lg p-4">
@@ -1073,14 +1144,22 @@ export const KeywordResearchStepClean = ({ step, workflow, onChange }: KeywordRe
                       <Target className="w-4 h-4 text-amber-600" />
                       <h4 className="font-medium text-amber-800">💡 Add Target URLs First</h4>
                     </div>
-                    <button
-                      onClick={() => window.open(`/clients/${clientId}`, '_blank')}
-                      className="px-4 py-2 bg-amber-600 text-white text-sm rounded-lg hover:bg-amber-700 transition-colors flex items-center space-x-2"
-                    >
-                      <Target className="w-4 h-4" />
-                      <span>Add Target URLs</span>
-                      <ExternalLink className="w-4 h-4" />
-                    </button>
+                    <div className="flex space-x-2">
+                      <button
+                        onClick={() => setShowAddUrlsModal(true)}
+                        className="px-4 py-2 bg-amber-600 text-white text-sm rounded-lg hover:bg-amber-700 transition-colors flex items-center space-x-2"
+                      >
+                        <Plus className="w-4 h-4" />
+                        <span>Add URLs Now</span>
+                      </button>
+                      <button
+                        onClick={() => window.open(`/clients/${clientId}`, '_blank')}
+                        className="px-4 py-2 border border-amber-600 text-amber-700 text-sm rounded-lg hover:bg-amber-50 transition-colors flex items-center space-x-2"
+                      >
+                        <span>Manage in Client</span>
+                        <ExternalLink className="w-4 h-4" />
+                      </button>
+                    </div>
                   </div>
                   <p className="text-sm text-amber-700">
                     Add target URLs to this client to access pre-generated keywords and descriptions for efficient workflow creation.
@@ -1191,8 +1270,8 @@ export const KeywordResearchStepClean = ({ step, workflow, onChange }: KeywordRe
                             : 'Open Ahrefs (pre-filled with your keywords):'
                           }
                         </h4>
-                        {!hasMultipleBatches && (
-                          <CopyButton text={dynamicAhrefsUrl} label="Copy URL" />
+                        {!hasMultipleBatches && ahrefsUrls[0] && (
+                          <CopyButton text={ahrefsUrls[0].url} label="Copy URL" />
                         )}
                       </div>
                       
@@ -1293,6 +1372,16 @@ export const KeywordResearchStepClean = ({ step, workflow, onChange }: KeywordRe
           </div>
         )}
       </div>
+      
+      {/* Add Target URLs Modal */}
+      <AddTargetUrlsModal
+        isOpen={showAddUrlsModal}
+        onClose={() => setShowAddUrlsModal(false)}
+        clientId={clientId}
+        clientName={client?.name}
+        onUrlsAdded={handleUrlsAdded}
+        onEnrichmentComplete={handleEnrichmentComplete}
+      />
     </div>
   );
 };
