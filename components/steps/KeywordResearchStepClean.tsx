@@ -1159,6 +1159,7 @@ export const KeywordResearchStepClean = ({ step, workflow, onChange }: KeywordRe
                         <span>Manage in Client</span>
                         <ExternalLink className="w-4 h-4" />
                       </button>
+                    </div>
                   </div>
                   <p className="text-sm text-amber-700">
                     Add target URLs to this client to access pre-generated keywords and descriptions for efficient workflow creation.
@@ -1269,8 +1270,8 @@ export const KeywordResearchStepClean = ({ step, workflow, onChange }: KeywordRe
                             : 'Open Ahrefs (pre-filled with your keywords):'
                           }
                         </h4>
-                        {!hasMultipleBatches && (
-                          <CopyButton text={dynamicAhrefsUrl} label="Copy URL" />
+                        {!hasMultipleBatches && ahrefsUrls[0] && (
+                          <CopyButton text={ahrefsUrls[0].url} label="Copy URL" />
                         )}
                       </div>
                       

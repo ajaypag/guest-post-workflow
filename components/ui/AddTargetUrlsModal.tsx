@@ -185,14 +185,15 @@ export function AddTargetUrlsModal({
     });
 
     // Process each URL
-    for (let i = 0; i < urlAnalysis.new.length; i++) {
-      const url = urlAnalysis.new[i];
+    const urlsToProcess = urlAnalysis?.new || [];
+    for (let i = 0; i < urlsToProcess.length; i++) {
+      const url = urlsToProcess[i];
       const pageId = urlToPageId.get(url);
       
-      if (!pageId) continue;
+      if (!pageId || !url) continue;
 
       setEnrichmentStatus(prev => ({ ...prev, [url]: 'processing' }));
-      setEnrichmentProgress({ current: i + 1, total: urlAnalysis.new.length });
+      setEnrichmentProgress({ current: i + 1, total: urlsToProcess.length });
 
       try {
         // Generate keywords and description in parallel
@@ -225,7 +226,7 @@ export function AddTargetUrlsModal({
       if (onEnrichmentComplete) {
         onEnrichmentComplete();
       }
-      onUrlsAdded(urlAnalysis.new, true);
+      onUrlsAdded(urlAnalysis?.new || [], true);
       handleClose();
     }, 1000);
   };
