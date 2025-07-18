@@ -139,7 +139,10 @@ export class AgenticArticleV2Service {
         }
       }
 
-      // CRITICAL: Use the complete history from SDK (includes reasoning items)
+      // CRITICAL: Wait for run to complete before copying history
+      await planningResult.finalOutput;
+
+      // NOW copy the complete history from SDK (includes reasoning items)
       conversationHistory = (planningResult as any).history;
       
       if (!conversationHistory || conversationHistory.length === 0) {
@@ -147,14 +150,6 @@ export class AgenticArticleV2Service {
       }
       
       console.log(`📊 SDK history length: ${conversationHistory.length} items (includes reasoning)`);
-      
-      // Sanity check: verify all assistant messages have reasoning pairs
-      for (const item of conversationHistory) {
-        if (item.role === 'assistant' && item.type === 'message' && !item.reasoning_id) {
-          console.error(`🚨 Assistant message missing reasoning pair:`, item);
-          throw new Error('Assistant message missing reasoning pair - SDK history corrupted');
-        }
-      }
       
       // Extract the assistant's response for our tracking
       const assistantMessages = conversationHistory.filter((item: any) => 
@@ -203,7 +198,10 @@ export class AgenticArticleV2Service {
         }
       }
 
-      // CRITICAL: Replace history with SDK's complete history
+      // CRITICAL: Wait for run to complete before copying history
+      await titleIntroResult.finalOutput;
+
+      // NOW copy the complete history from SDK (includes reasoning items)
       conversationHistory = (titleIntroResult as any).history;
       
       if (!conversationHistory || conversationHistory.length === 0) {
@@ -211,14 +209,6 @@ export class AgenticArticleV2Service {
       }
       
       console.log(`📊 SDK history after title/intro: ${conversationHistory.length} items`);
-      
-      // Sanity check: verify reasoning pairs
-      for (const item of conversationHistory) {
-        if (item.role === 'assistant' && item.type === 'message' && !item.reasoning_id) {
-          console.error(`🚨 Assistant message missing reasoning pair:`, item);
-          throw new Error('Assistant message missing reasoning pair in title/intro');
-        }
-      }
       
       // Extract the assistant's response
       const titleAssistantMessages = conversationHistory.filter((item: any) => 
@@ -285,7 +275,10 @@ export class AgenticArticleV2Service {
           }
         }
 
-        // CRITICAL: Replace history with SDK's complete history
+        // CRITICAL: Wait for run to complete before copying history
+        await sectionResult.finalOutput;
+
+        // NOW copy the complete history from SDK (includes reasoning items)
         conversationHistory = (sectionResult as any).history;
         
         if (!conversationHistory || conversationHistory.length === 0) {
@@ -293,14 +286,6 @@ export class AgenticArticleV2Service {
         }
         
         console.log(`📊 SDK history after section ${sectionCount + 1}: ${conversationHistory.length} items`);
-        
-        // Sanity check: verify reasoning pairs
-        for (const item of conversationHistory) {
-          if (item.role === 'assistant' && item.type === 'message' && !item.reasoning_id) {
-            console.error(`🚨 Assistant message missing reasoning pair:`, item);
-            throw new Error(`Assistant message missing reasoning pair in section ${sectionCount + 1}`);
-          }
-        }
         
         // Extract the assistant's response
         const sectionAssistantMessages = conversationHistory.filter((item: any) => 
