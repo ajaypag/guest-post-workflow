@@ -118,6 +118,9 @@ export class AgenticArticleV2Service {
 
       // Collect all writer outputs
       const writerOutputs: string[] = [];
+      
+      // Track article completion status
+      let articleComplete = false;
 
       // Phase 1: Send planning prompt to writer
       console.log(`📝 Sending planning prompt to writer...`);
@@ -159,6 +162,12 @@ export class AgenticArticleV2Service {
         }
       }
 
+      // Check for end marker and clean it
+      if (titleIntroResponse.includes('<<END_OF_ARTICLE>>')) {
+        titleIntroResponse = titleIntroResponse.replace('<<END_OF_ARTICLE>>', '').trim();
+        articleComplete = true;
+      }
+      
       writerMessages.push({ role: 'assistant', content: titleIntroResponse });
       writerOutputs.push(titleIntroResponse);
 
@@ -171,9 +180,8 @@ export class AgenticArticleV2Service {
       });
 
       // Phase 3: Loop with the looping prompt until article is complete
-      let articleComplete = false;
       let sectionCount = 1;
-      const maxSections = 20; // Safety limit
+      const maxSections = 20; // Safety limit raised to 20 sections
 
       while (!articleComplete && sectionCount < maxSections) {
         console.log(`📝 Sending looping prompt for section ${sectionCount + 1}...`);
@@ -198,6 +206,13 @@ export class AgenticArticleV2Service {
           }
         }
 
+        // Check for end marker and clean it
+        if (sectionResponse.includes('<<END_OF_ARTICLE>>')) {
+          sectionResponse = sectionResponse.replace('<<END_OF_ARTICLE>>', '').trim();
+          articleComplete = true;
+          console.log(`✅ Article complete - writer signaled END_OF_ARTICLE after ${sectionCount + 1} sections`);
+        }
+        
         writerMessages.push({ role: 'assistant', content: sectionResponse });
         writerOutputs.push(sectionResponse);
         sectionCount++;
@@ -209,17 +224,10 @@ export class AgenticArticleV2Service {
           content: sectionResponse,
           message: `Section ${sectionCount} completed`
         });
-
-        // Check if article is complete (look for conclusion signals)
-        const lowerResponse = sectionResponse.toLowerCase();
-        if (lowerResponse.includes('conclusion') || 
-            lowerResponse.includes('in summary') || 
-            lowerResponse.includes('to wrap up') ||
-            lowerResponse.includes('final thoughts') ||
-            sectionResponse.includes('---') || // Sometimes writers signal end with dividers
-            sectionCount >= 10) { // Or if we've written many sections
-          articleComplete = true;
-          console.log(`✅ Article appears complete after ${sectionCount} sections`);
+        
+        // Warn if approaching the hard limit
+        if (sectionCount >= 18 && !articleComplete) {
+          console.log(`⚠️ Approaching section limit (${sectionCount}/${maxSections})`);
         }
       }
 
