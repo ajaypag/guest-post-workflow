@@ -867,6 +867,40 @@ export default function DatabaseMigrationPage() {
             </div>
           </div>
 
+          {/* Bulk URL Migration Section */}
+          <div className="mt-12 mb-8">
+            <h2 className="text-lg font-semibold text-gray-900 mb-4">Bulk URL Management Migration</h2>
+            <p className="text-gray-600 mb-4">
+              This migration enables the bulk URL management feature by making <code className="bg-gray-100 px-2 py-1 rounded">clientId</code> nullable 
+              and adding columns for orphan URL support in the target_pages table.
+            </p>
+            
+            <div className="bg-indigo-50 border border-indigo-200 rounded-lg p-4 mb-6">
+              <div className="flex items-start space-x-3">
+                <AlertTriangle className="w-5 h-5 text-indigo-600 mt-0.5" />
+                <div>
+                  <h3 className="text-sm font-semibold text-indigo-800">Bulk URL Features:</h3>
+                  <ul className="text-sm text-indigo-700 mt-2 space-y-1">
+                    <li>• Paste URLs directly in site qualification workflow</li>
+                    <li>• Smart client matching by domain</li>
+                    <li>• Create new clients inline during workflow</li>
+                    <li>• Temporary URLs for one-time campaigns (30-day expiration)</li>
+                    <li>• No pre-population of client URLs required</li>
+                  </ul>
+                </div>
+              </div>
+            </div>
+            
+            <div className="bg-blue-100 border border-blue-300 rounded-lg p-4">
+              <p className="text-sm text-blue-800 font-medium">
+                ✨ For a dedicated migration interface with detailed status checks, visit the{' '}
+                <a href="/admin/bulk-url-migration" className="underline font-semibold">
+                  Bulk URL Migration Page
+                </a>
+              </p>
+            </div>
+          </div>
+
           {/* Description Column Migration Section */}
           <div className="mt-12 mb-8">
             <h2 className="text-lg font-semibold text-gray-900 mb-4">Description Column Migration</h2>

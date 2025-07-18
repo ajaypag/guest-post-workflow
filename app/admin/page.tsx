@@ -1,7 +1,7 @@
 'use client';
 
 import React from 'react';
-import { Database, Activity, Wrench, Users, BarChart3, Settings, AlertTriangle, Bug } from 'lucide-react';
+import { Database, Activity, Wrench, Users, BarChart3, Settings, AlertTriangle, Bug, FileSearch } from 'lucide-react';
 
 export default function AdminDashboard() {
   const adminTools = [
@@ -12,6 +12,14 @@ export default function AdminDashboard() {
       href: '/admin/database-migration',
       color: 'bg-blue-50 border-blue-200 text-blue-700',
       iconColor: 'text-blue-600'
+    },
+    {
+      title: 'Bulk URL Migration',
+      description: 'Manage orphan URL support for bulk URL management feature',
+      icon: Database,
+      href: '/admin/bulk-url-migration',
+      color: 'bg-indigo-50 border-indigo-200 text-indigo-700',
+      iconColor: 'text-indigo-600'
     },
     {
       title: 'Diagnostics',
@@ -100,6 +108,14 @@ export default function AdminDashboard() {
       href: '/admin/analytics',
       color: 'bg-teal-50 border-teal-200 text-teal-700',
       iconColor: 'text-teal-600'
+    },
+    {
+      title: 'o3 Response Analyzer',
+      description: 'Analyze o3-deep-research responses to fix parsing issues',
+      icon: FileSearch,
+      href: '/admin/o3-response-analyzer',
+      color: 'bg-purple-50 border-purple-200 text-purple-700',
+      iconColor: 'text-purple-600'
     }
   ];
 
