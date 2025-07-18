@@ -14,7 +14,7 @@ interface FormattingQAStepProps {
 }
 
 export const FormattingQAStepClean = ({ step, workflow, onChange }: FormattingQAStepProps) => {
-  const [activeTab, setActiveTab] = useState<'manual' | 'agentic'>('manual');
+  const [activeTab, setActiveTab] = useState<'manual' | 'agentic'>('agentic');
   
   const articleDraftStep = workflow.steps.find(s => s.id === 'article-draft');
   const googleDocUrl = articleDraftStep?.outputs?.googleDocUrl || '';
@@ -58,17 +58,6 @@ export const FormattingQAStepClean = ({ step, workflow, onChange }: FormattingQA
       {/* Tab Navigation */}
       <div className="flex space-x-1 p-1 bg-gray-100 rounded-lg">
         <button
-          onClick={() => setActiveTab('manual')}
-          className={`flex-1 flex items-center justify-center px-4 py-2 rounded-md text-sm font-medium transition-colors ${
-            activeTab === 'manual'
-              ? 'bg-white text-gray-900 shadow-sm'
-              : 'text-gray-600 hover:text-gray-900'
-          }`}
-        >
-          <CheckSquare className="w-4 h-4 mr-2" />
-          Manual Checklist
-        </button>
-        <button
           onClick={() => setActiveTab('agentic')}
           className={`flex-1 flex items-center justify-center px-4 py-2 rounded-md text-sm font-medium transition-colors ${
             activeTab === 'agentic'
@@ -78,6 +67,17 @@ export const FormattingQAStepClean = ({ step, workflow, onChange }: FormattingQA
         >
           <Bot className="w-4 h-4 mr-2" />
           AI QA Checker
+        </button>
+        <button
+          onClick={() => setActiveTab('manual')}
+          className={`flex-1 flex items-center justify-center px-4 py-2 rounded-md text-sm font-medium transition-colors ${
+            activeTab === 'manual'
+              ? 'bg-white text-gray-900 shadow-sm'
+              : 'text-gray-600 hover:text-gray-900'
+          }`}
+        >
+          <CheckSquare className="w-4 h-4 mr-2" />
+          Manual Checklist
         </button>
       </div>
 
