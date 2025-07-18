@@ -91,7 +91,7 @@ export const DeepResearchStepClean = ({ step, workflow, onChange }: DeepResearch
           >
             <div className="flex items-center justify-center space-x-2">
               <Bot className="w-4 h-4" />
-              <span>AI Research (⚠️ DO NOT USE - EXPENSIVE)</span>
+              <span>AI Agent (Use ChatGPT first - $$$)</span>
             </div>
           </button>
         </div>

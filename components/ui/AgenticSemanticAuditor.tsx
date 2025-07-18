@@ -3,6 +3,7 @@
 import React, { useState, useEffect, useRef } from 'react';
 import { Play, Pause, CheckCircle, AlertCircle, Clock, Search, Zap, Target } from 'lucide-react';
 import { MarkdownPreview } from './MarkdownPreview';
+import { CostConfirmationDialog } from './CostConfirmationDialog';
 
 interface AgenticSemanticAuditorProps {
   workflowId: string;
@@ -70,6 +71,8 @@ export const AgenticSemanticAuditor = ({
     citationsAdded: number;
   }>>([]);
   const [finalAuditedArticle, setFinalAuditedArticle] = useState<string>(existingAuditedArticle);
+  const [showCostDialog, setShowCostDialog] = useState(false);
+  const [isButtonDisabled, setIsButtonDisabled] = useState(false);
   const eventSourceRef = useRef<EventSource | null>(null);
 
   const addLog = (message: string) => {
@@ -81,7 +84,7 @@ export const AgenticSemanticAuditor = ({
     setFinalAuditedArticle(existingAuditedArticle);
   }, [existingAuditedArticle]);
 
-  const startAudit = async () => {
+  const handleStartClick = () => {
     if (!originalArticle.trim()) {
       setError('Original article is required. Please complete Article Draft step first.');
       return;
@@ -91,7 +94,16 @@ export const AgenticSemanticAuditor = ({
       setError('Research outline is required. Please complete Deep Research step first.');
       return;
     }
+    
+    // Disable button immediately to prevent double-clicks
+    setIsButtonDisabled(true);
+    
+    // Show cost confirmation dialog
+    setShowCostDialog(true);
+  };
 
+  const startAudit = async () => {
+    setShowCostDialog(false);
     setIsAuditing(true);
     setError(null);
     setLogs([]);
@@ -125,6 +137,7 @@ export const AgenticSemanticAuditor = ({
     } catch (err: any) {
       setError(err.message);
       setIsAuditing(false);
+      setIsButtonDisabled(false);
       addLog(`Error: ${err.message}`);
     }
   };
@@ -274,9 +287,9 @@ export const AgenticSemanticAuditor = ({
         
         {!isAuditing ? (
           <button
-            onClick={startAudit}
-            disabled={!originalArticle.trim() || !researchOutline.trim()}
-            className="flex items-center space-x-2 px-4 py-2 bg-green-600 text-white rounded-lg hover:bg-green-700 disabled:opacity-50 disabled:cursor-not-allowed"
+            onClick={handleStartClick}
+            disabled={!originalArticle.trim() || !researchOutline.trim() || isButtonDisabled}
+            className="flex items-center space-x-2 px-4 py-2 bg-green-600 text-white rounded-lg hover:bg-green-700 disabled:opacity-50 disabled:cursor-not-allowed transition-all"
           >
             <Play className="w-4 h-4" />
             <span>Start Audit</span>
@@ -455,6 +468,20 @@ export const AgenticSemanticAuditor = ({
           </ol>
         </div>
       )}
+
+      {/* Cost Confirmation Dialog */}
+      <CostConfirmationDialog
+        isOpen={showCostDialog}
+        onClose={() => {
+          setShowCostDialog(false);
+          setIsButtonDisabled(false);
+        }}
+        onConfirm={startAudit}
+        title="Start Semantic SEO Audit"
+        description="This will use OpenAI's advanced agents to analyze and optimize your article for semantic SEO section by section."
+        estimatedCost="$0.30 - $1.00"
+        warningMessage="The audit will use up to 3 citations maximum and provide detailed analysis for each section."
+      />
     </div>
   );
 };
