@@ -18,6 +18,12 @@ interface DiagnosticResult {
   sampleData: {
     latestSessions: any[];
     statusDistribution: any[];
+    failedSessions: any[];
+  };
+  messageFormatAnalysis: {
+    enabled: boolean;
+    failedSessionDetails: any[];
+    commonErrors: any[];
   };
   recommendations: string[];
   diagnosis: {
@@ -258,6 +264,40 @@ export default function FixArticleV2Page() {
                         <span className="text-sm text-gray-600">{item.count} sessions</span>
                       </div>
                     ))}
+                  </div>
+                </div>
+              )}
+
+              {/* Message Format Analysis */}
+              {diagnostics.messageFormatAnalysis && diagnostics.messageFormatAnalysis.commonErrors.length > 0 && (
+                <div className="border border-red-200 bg-red-50 rounded-lg p-4">
+                  <h3 className="font-semibold text-red-900 mb-3">Message Format Analysis</h3>
+                  <div className="space-y-3">
+                    <div>
+                      <h4 className="text-sm font-medium text-red-800 mb-2">Common Error Patterns:</h4>
+                      <div className="space-y-1">
+                        {diagnostics.messageFormatAnalysis.commonErrors.map((error: any, idx: number) => (
+                          <div key={idx} className="flex justify-between text-sm">
+                            <span className="text-red-700">{error.error}</span>
+                            <span className="text-red-600 font-medium">{error.count} ({error.percentage}%)</span>
+                          </div>
+                        ))}
+                      </div>
+                    </div>
+                    
+                    {diagnostics.messageFormatAnalysis.failedSessionDetails.length > 0 && (
+                      <div>
+                        <h4 className="text-sm font-medium text-red-800 mb-2">Failed Sessions with content.map Error:</h4>
+                        <div className="space-y-2">
+                          {diagnostics.messageFormatAnalysis.failedSessionDetails.map((session: any, idx: number) => (
+                            <div key={idx} className="text-xs bg-white p-2 rounded border border-red-200">
+                              <div className="font-mono text-red-600">Session: {session.sessionId.substring(0, 8)}...</div>
+                              <div className="text-gray-600 mt-1">Error: {session.errorSnippet}</div>
+                            </div>
+                          ))}
+                        </div>
+                      </div>
+                    )}
                   </div>
                 </div>
               )}

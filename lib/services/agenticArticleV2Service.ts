@@ -1,13 +1,10 @@
 import { Runner } from '@openai/agents';
 import { OpenAIProvider } from '@openai/agents-openai';
 import { writerAgentV2 } from '@/lib/agents/articleWriterV2';
-import { orchestratorAgentV2 } from '@/lib/agents/orchestratorV2';
 import { db } from '@/lib/db/connection';
 import { workflows, v2AgentSessions } from '@/lib/db/schema';
 import { eq, sql } from 'drizzle-orm';
 import { v4 as uuidv4 } from 'uuid';
-import { tool } from '@openai/agents';
-import { z } from 'zod';
 
 // Helper function to sanitize strings for PostgreSQL
 function sanitizeForPostgres(str: string): string {
@@ -116,6 +113,28 @@ export class AgenticArticleV2Service {
         }
       ];
 
+      // Message validation function
+      const validateMessage = (msg: any, context: string) => {
+        if (!msg || typeof msg !== 'object') {
+          console.error(`🚨 Invalid message structure at ${context}:`, msg);
+          throw new Error(`Invalid message structure at ${context}`);
+        }
+        if (typeof msg.content !== 'string') {
+          console.error(`🚨 Non-string content at ${context}:`, {
+            role: msg.role,
+            contentType: typeof msg.content,
+            content: msg.content
+          });
+          throw new Error(`Non-string message content at ${context}`);
+        }
+        return true;
+      };
+
+      // Validate initial messages
+      for (const msg of writerMessages) {
+        validateMessage(msg, 'initial setup');
+      }
+
       // Collect all writer outputs
       const writerOutputs: string[] = [];
       
@@ -124,6 +143,7 @@ export class AgenticArticleV2Service {
 
       // Phase 1: Send planning prompt to writer
       console.log(`📝 Sending planning prompt to writer...`);
+      console.log(`📊 Initial message count: ${writerMessages.length}`);
       sseUpdate(sessionId, { type: 'phase', phase: 'planning', message: 'Writer analyzing research and planning article...' });
 
       let planningResult = await writerRunner.run(writerAgentV2, writerMessages, {
@@ -133,6 +153,11 @@ export class AgenticArticleV2Service {
 
       let planningResponse = '';
       for await (const event of planningResult.toStream()) {
+        // Log event types for debugging
+        if (event.type !== 'raw_model_stream_event') {
+          console.log(`📌 Non-raw event in planning: ${event.type}`, event);
+        }
+        
         if (event.type === 'raw_model_stream_event' && event.data.type === 'output_text_delta') {
           planningResponse += event.data.delta || '';
           sseUpdate(sessionId, { type: 'text', content: event.data.delta });
@@ -140,15 +165,21 @@ export class AgenticArticleV2Service {
       }
 
       // Add writer's planning response to conversation
-      writerMessages.push({ role: 'assistant', content: planningResponse });
+      const planningMessage = { role: 'assistant', content: planningResponse };
+      validateMessage(planningMessage, 'planning response');
+      writerMessages.push(planningMessage);
       writerOutputs.push(planningResponse);
+      console.log(`✅ Planning response added. Message count: ${writerMessages.length}`);
 
       // Phase 2: Send title/intro prompt
       console.log(`📝 Sending title/intro prompt to writer...`);
       sseUpdate(sessionId, { type: 'phase', phase: 'title_intro', message: 'Writer creating title and introduction...' });
 
-      writerMessages.push({ role: 'user', content: TITLE_INTRO_PROMPT });
+      const titlePromptMessage = { role: 'user', content: TITLE_INTRO_PROMPT };
+      validateMessage(titlePromptMessage, 'title/intro prompt');
+      writerMessages.push(titlePromptMessage);
 
+      console.log(`📊 Messages before title/intro run: ${writerMessages.length}`);
       let titleIntroResult = await writerRunner.run(writerAgentV2, writerMessages, {
         stream: true,
         maxTurns: 1
@@ -168,8 +199,11 @@ export class AgenticArticleV2Service {
         articleComplete = true;
       }
       
-      writerMessages.push({ role: 'assistant', content: titleIntroResponse });
+      const titleIntroMessage = { role: 'assistant', content: titleIntroResponse };
+      validateMessage(titleIntroMessage, 'title/intro response');
+      writerMessages.push(titleIntroMessage);
       writerOutputs.push(titleIntroResponse);
+      console.log(`✅ Title/intro response added. Message count: ${writerMessages.length}`);
 
       await this.updateSession(sessionId, { completedSections: 1 });
       sseUpdate(sessionId, { 
@@ -191,8 +225,11 @@ export class AgenticArticleV2Service {
           message: `Writer working on section ${sectionCount + 1}...` 
         });
 
-        writerMessages.push({ role: 'user', content: LOOPING_PROMPT });
+        const loopingMessage = { role: 'user', content: LOOPING_PROMPT };
+        validateMessage(loopingMessage, `looping prompt ${sectionCount + 1}`);
+        writerMessages.push(loopingMessage);
 
+        console.log(`📊 Messages before section ${sectionCount + 1} run: ${writerMessages.length}`);
         let sectionResult = await writerRunner.run(writerAgentV2, writerMessages, {
           stream: true,
           maxTurns: 1
@@ -213,9 +250,12 @@ export class AgenticArticleV2Service {
           console.log(`✅ Article complete - writer signaled END_OF_ARTICLE after ${sectionCount + 1} sections`);
         }
         
-        writerMessages.push({ role: 'assistant', content: sectionResponse });
+        const sectionMessage = { role: 'assistant', content: sectionResponse };
+        validateMessage(sectionMessage, `section ${sectionCount + 1} response`);
+        writerMessages.push(sectionMessage);
         writerOutputs.push(sectionResponse);
         sectionCount++;
+        console.log(`✅ Section ${sectionCount} response added. Message count: ${writerMessages.length}`);
 
         await this.updateSession(sessionId, { completedSections: sectionCount });
         sseUpdate(sessionId, { 
