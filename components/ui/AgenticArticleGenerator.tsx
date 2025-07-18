@@ -2,6 +2,7 @@
 
 import React, { useState, useEffect, useRef } from 'react';
 import { Play, Pause, CheckCircle, AlertCircle, Clock, FileText, Zap } from 'lucide-react';
+import { CostConfirmationDialog } from './CostConfirmationDialog';
 
 interface AgenticArticleGeneratorProps {
   workflowId: string;
@@ -44,18 +45,29 @@ export const AgenticArticleGenerator = ({ workflowId, outline, onComplete }: Age
   const [progress, setProgress] = useState<SessionProgress | null>(null);
   const [error, setError] = useState<string | null>(null);
   const [logs, setLogs] = useState<string[]>([]);
+  const [showCostDialog, setShowCostDialog] = useState(false);
+  const [isButtonDisabled, setIsButtonDisabled] = useState(false);
   const eventSourceRef = useRef<EventSource | null>(null);
 
   const addLog = (message: string) => {
     setLogs(prev => [...prev, `${new Date().toLocaleTimeString()}: ${message}`]);
   };
 
-  const startGeneration = async () => {
+  const handleStartClick = () => {
     if (!outline.trim()) {
       setError('Please complete Deep Research step first to get the outline.');
       return;
     }
+    
+    // Disable button immediately to prevent double-clicks
+    setIsButtonDisabled(true);
+    
+    // Show cost confirmation dialog
+    setShowCostDialog(true);
+  };
 
+  const startGeneration = async () => {
+    setShowCostDialog(false);
     setIsGenerating(true);
     setError(null);
     setLogs([]);
@@ -84,6 +96,7 @@ export const AgenticArticleGenerator = ({ workflowId, outline, onComplete }: Age
     } catch (err: any) {
       setError(err.message);
       setIsGenerating(false);
+      setIsButtonDisabled(false);
       addLog(`Error: ${err.message}`);
     }
   };
@@ -204,9 +217,9 @@ export const AgenticArticleGenerator = ({ workflowId, outline, onComplete }: Age
         
         {!isGenerating ? (
           <button
-            onClick={startGeneration}
-            disabled={!outline.trim()}
-            className="flex items-center space-x-2 px-4 py-2 bg-purple-600 text-white rounded-lg hover:bg-purple-700 disabled:opacity-50 disabled:cursor-not-allowed"
+            onClick={handleStartClick}
+            disabled={!outline.trim() || isButtonDisabled}
+            className="flex items-center space-x-2 px-4 py-2 bg-purple-600 text-white rounded-lg hover:bg-purple-700 disabled:opacity-50 disabled:cursor-not-allowed transition-all"
           >
             <Play className="w-4 h-4" />
             <span>Start Generation</span>
@@ -307,6 +320,20 @@ export const AgenticArticleGenerator = ({ workflowId, outline, onComplete }: Age
           </ol>
         </div>
       )}
+
+      {/* Cost Confirmation Dialog */}
+      <CostConfirmationDialog
+        isOpen={showCostDialog}
+        onClose={() => {
+          setShowCostDialog(false);
+          setIsButtonDisabled(false);
+        }}
+        onConfirm={startGeneration}
+        title="Start AI Article Generation"
+        description="This will use OpenAI's advanced agents to automatically write your entire article based on the research outline."
+        estimatedCost="$0.50 - $2.00"
+        warningMessage="The cost depends on article length (typically 1500-2500 words). You can stop the generation at any time."
+      />
     </div>
   );
 };
