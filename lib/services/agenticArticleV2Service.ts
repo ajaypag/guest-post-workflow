@@ -148,6 +148,14 @@ export class AgenticArticleV2Service {
       
       console.log(`📊 SDK history length: ${conversationHistory.length} items (includes reasoning)`);
       
+      // Sanity check: verify all assistant messages have reasoning pairs
+      for (const item of conversationHistory) {
+        if (item.role === 'assistant' && item.type === 'message' && !item.reasoning_id) {
+          console.error(`🚨 Assistant message missing reasoning pair:`, item);
+          throw new Error('Assistant message missing reasoning pair - SDK history corrupted');
+        }
+      }
+      
       // Extract the assistant's response for our tracking
       const assistantMessages = conversationHistory.filter((item: any) => 
         item.role === 'assistant' && item.type === 'message'
@@ -204,6 +212,14 @@ export class AgenticArticleV2Service {
       
       console.log(`📊 SDK history after title/intro: ${conversationHistory.length} items`);
       
+      // Sanity check: verify reasoning pairs
+      for (const item of conversationHistory) {
+        if (item.role === 'assistant' && item.type === 'message' && !item.reasoning_id) {
+          console.error(`🚨 Assistant message missing reasoning pair:`, item);
+          throw new Error('Assistant message missing reasoning pair in title/intro');
+        }
+      }
+      
       // Extract the assistant's response
       const titleAssistantMessages = conversationHistory.filter((item: any) => 
         item.role === 'assistant' && item.type === 'message'
@@ -230,7 +246,7 @@ export class AgenticArticleV2Service {
       }
       
       writerOutputs.push(titleIntroResponse);
-      console.log(`✅ Title/intro response added. Message count: ${writerMessages.length}`);
+      console.log(`✅ Title/intro response extracted: ${titleIntroResponse.length} chars`);
 
       await this.updateSession(sessionId, { completedSections: 1 });
       sseUpdate(sessionId, { 
@@ -278,6 +294,14 @@ export class AgenticArticleV2Service {
         
         console.log(`📊 SDK history after section ${sectionCount + 1}: ${conversationHistory.length} items`);
         
+        // Sanity check: verify reasoning pairs
+        for (const item of conversationHistory) {
+          if (item.role === 'assistant' && item.type === 'message' && !item.reasoning_id) {
+            console.error(`🚨 Assistant message missing reasoning pair:`, item);
+            throw new Error(`Assistant message missing reasoning pair in section ${sectionCount + 1}`);
+          }
+        }
+        
         // Extract the assistant's response
         const sectionAssistantMessages = conversationHistory.filter((item: any) => 
           item.role === 'assistant' && item.type === 'message'
@@ -306,7 +330,7 @@ export class AgenticArticleV2Service {
         
         writerOutputs.push(sectionResponse);
         sectionCount++;
-        console.log(`✅ Section ${sectionCount} response added. Message count: ${writerMessages.length}`);
+        console.log(`✅ Section ${sectionCount} response extracted: ${sectionResponse.length} chars`);
 
         await this.updateSession(sessionId, { completedSections: sectionCount });
         sseUpdate(sessionId, { 
