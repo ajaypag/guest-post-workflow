@@ -7,6 +7,7 @@ import { CopyButton } from '../ui/CopyButton';
 import { TutorialVideo } from '../ui/TutorialVideo';
 import { ChatInterface } from '../ui/ChatInterface';
 import { AgenticArticleGenerator } from '../ui/AgenticArticleGenerator';
+import { AgenticArticleGeneratorV2 } from '../ui/AgenticArticleGeneratorV2';
 import { SplitPromptButton } from '../ui/SplitPromptButton';
 import { MarkdownPreview } from '../ui/MarkdownPreview';
 import { ExternalLink, ChevronDown, ChevronRight, FileText, CheckCircle, AlertCircle, Target, RefreshCw, BookOpen } from 'lucide-react';
@@ -26,7 +27,7 @@ export const ArticleDraftStepClean = ({ step, workflow, onChange }: ArticleDraft
   });
 
   // Tab system state
-  const [activeTab, setActiveTab] = useState<'chatgpt' | 'builtin' | 'agentic'>('agentic');
+  const [activeTab, setActiveTab] = useState<'chatgpt' | 'builtin' | 'agentic' | 'agenticV2'>('agentic');
 
   // Chat state management for builtin
   const [conversation, setConversation] = useState<any[]>([]);
@@ -186,6 +187,16 @@ ${outlineContent || '((((Complete Step 3: Deep Research first to get outline con
             }`}
           >
             🤖 AI Agent Beta
+          </button>
+          <button
+            onClick={() => setActiveTab('agenticV2')}
+            className={`flex-1 px-6 py-4 text-sm font-medium transition-colors ${
+              activeTab === 'agenticV2'
+                ? 'bg-gradient-to-r from-purple-50 to-blue-50 text-purple-700 border-b-2 border-purple-500'
+                : 'text-gray-500 hover:text-gray-700 hover:bg-gray-50'
+            }`}
+          >
+            🧠 AI Agent V2
           </button>
           <button
             onClick={() => setActiveTab('chatgpt')}
@@ -554,6 +565,54 @@ ${outlineContent || '((((Complete Step 3: Deep Research first to get outline con
                   </div>
                 )}
               </div>
+            </div>
+          ) : activeTab === 'agenticV2' ? (
+            <div className="space-y-6">
+              {/* V2 Agentic Article Generator */}
+              <AgenticArticleGeneratorV2
+                workflowId={workflow.id}
+                outline={outlineContent}
+                onComplete={(article) => {
+                  onChange({ 
+                    ...step.outputs, 
+                    fullArticle: article,
+                    agentGenerated: true,
+                    agentVersion: 'v2',
+                    draftStatus: 'completed'
+                  });
+                }}
+              />
+
+              {/* Generated Article Display */}
+              {step.outputs.fullArticle && step.outputs.agentGenerated && step.outputs.agentVersion === 'v2' && (
+                <div className="bg-gradient-to-br from-purple-50 to-blue-50 border border-purple-200 rounded-lg p-6">
+                  <div className="flex items-center justify-between mb-4">
+                    <h3 className="font-medium text-gray-900">Generated Article (V2)</h3>
+                    <span className="text-xs text-purple-600 bg-purple-100 px-2 py-1 rounded">
+                      AI V2 Generated
+                    </span>
+                  </div>
+                  
+                  <SavedField
+                    label="Final Article"
+                    value={step.outputs.fullArticle || ''}
+                    placeholder="Generated article will appear here"
+                    onChange={(value) => onChange({ ...step.outputs, fullArticle: value })}
+                    isTextarea
+                    height="500px"
+                  />
+                  
+                  <div className="flex items-center justify-between mt-4">
+                    <span className="text-sm text-gray-600">
+                      Word count: {step.outputs.fullArticle.split(/\s+/).filter(Boolean).length}
+                    </span>
+                    <CopyButton 
+                      text={step.outputs.fullArticle} 
+                      label="Copy Article"
+                    />
+                  </div>
+                </div>
+              )}
             </div>
           ) : activeTab === 'builtin' ? (
             <div className="space-y-6">

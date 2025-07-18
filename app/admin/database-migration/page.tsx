@@ -785,6 +785,83 @@ export default function DatabaseMigrationPage() {
     setIsLoading(false);
   };
 
+  const checkArticleV2Status = async () => {
+    setIsLoading(true);
+    setMessage('');
+    
+    try {
+      const response = await fetch('/api/admin/migrate-article-v2');
+      const data = await response.json();
+      
+      if (data.exists) {
+        setMessage(`✅ V2 Agent Sessions table exists (${data.rowCount || 0} sessions)`);
+        setMessageType('success');
+      } else {
+        setMessage('ℹ️ V2 Agent Sessions table does not exist');
+        setMessageType('info');
+      }
+    } catch (error) {
+      setMessage(`❌ Error checking V2 tables: ${error instanceof Error ? error.message : 'Unknown error'}`);
+      setMessageType('error');
+    }
+    
+    setIsLoading(false);
+  };
+
+  const runArticleV2Migration = async () => {
+    setIsLoading(true);
+    setMessage('');
+    
+    try {
+      const response = await fetch('/api/admin/migrate-article-v2', {
+        method: 'POST'
+      });
+      const data = await response.json();
+      
+      if (data.success) {
+        setMessage('✅ V2 Agent Sessions table created successfully! LLM orchestration is now enabled.');
+        setMessageType('success');
+      } else {
+        setMessage(`❌ Migration failed: ${data.error}`);
+        setMessageType('error');
+      }
+    } catch (error) {
+      setMessage(`❌ Error: ${error instanceof Error ? error.message : 'Unknown error'}`);
+      setMessageType('error');
+    }
+    
+    setIsLoading(false);
+  };
+
+  const runArticleV2Rollback = async () => {
+    if (!confirm('Are you sure you want to remove the V2 tables? This will delete all V2 article generation sessions.')) {
+      return;
+    }
+    
+    setIsLoading(true);
+    setMessage('');
+    
+    try {
+      const response = await fetch('/api/admin/migrate-article-v2?confirm=true', {
+        method: 'DELETE'
+      });
+      const data = await response.json();
+      
+      if (data.success) {
+        setMessage('✅ V2 Agent Sessions table removed successfully!');
+        setMessageType('success');
+      } else {
+        setMessage(`❌ Rollback failed: ${data.error}`);
+        setMessageType('error');
+      }
+    } catch (error) {
+      setMessage(`❌ Error: ${error instanceof Error ? error.message : 'Unknown error'}`);
+      setMessageType('error');
+    }
+    
+    setIsLoading(false);
+  };
+
   return (
     <div className="min-h-screen bg-gray-50 py-8">
       <div className="max-w-4xl mx-auto px-4 sm:px-6 lg:px-8">
@@ -1584,6 +1661,81 @@ export default function DatabaseMigrationPage() {
               >
                 <RotateCcw className="w-4 h-4 mr-2" />
                 {isLoading ? 'Rolling Back...' : 'Remove Columns'}
+              </button>
+            </div>
+          </div>
+
+          {/* Article V2 LLM Orchestration Migration */}
+          <div className="mb-8">
+            <h2 className="text-lg font-semibold text-gray-900 mb-4">Article V2 - LLM Orchestration Tables</h2>
+            <p className="text-gray-600 mb-4">
+              This migration creates the <code className="bg-gray-100 px-2 py-1 rounded">v2_agent_sessions</code> table
+              for the new V2 article generation system that uses true LLM orchestration.
+            </p>
+            
+            <div className="bg-violet-50 border border-violet-200 rounded-lg p-4 mb-6">
+              <div className="flex items-start space-x-3">
+                <AlertTriangle className="w-5 h-5 text-violet-600 mt-0.5" />
+                <div>
+                  <h3 className="text-sm font-semibold text-violet-800">V2 LLM Orchestration Features:</h3>
+                  <ul className="text-sm text-violet-700 mt-2 space-y-1">
+                    <li>• <strong>True LLM Orchestration:</strong> Orchestrator agent manages writer agent</li>
+                    <li>• <strong>Agent-as-Tool Pattern:</strong> Writer exposed as tool to orchestrator</li>
+                    <li>• <strong>Natural Flow:</strong> Preserves ChatGPT.com conversational magic</li>
+                    <li>• <strong>Minimal Structure:</strong> No rigid tools, just natural writing</li>
+                    <li>• <strong>Vector Store Access:</strong> Same files as manual workflow</li>
+                  </ul>
+                </div>
+              </div>
+            </div>
+          </div>
+
+          <div className="space-y-4 mb-8">
+            {/* Check V2 Tables Status */}
+            <div className="border border-gray-200 rounded-lg p-4">
+              <h3 className="font-semibold text-gray-900 mb-2">Check Article V2 Tables Status</h3>
+              <p className="text-gray-600 text-sm mb-3">
+                Check if the v2_agent_sessions table exists in your database.
+              </p>
+              <button
+                onClick={checkArticleV2Status}
+                disabled={isLoading}
+                className="inline-flex items-center px-4 py-2 bg-blue-600 text-white text-sm font-medium rounded-md hover:bg-blue-700 disabled:opacity-50 disabled:cursor-not-allowed"
+              >
+                <Database className="w-4 h-4 mr-2" />
+                {isLoading ? 'Checking...' : 'Check V2 Tables Status'}
+              </button>
+            </div>
+
+            {/* Create V2 Tables */}
+            <div className="border border-green-200 rounded-lg p-4">
+              <h3 className="font-semibold text-gray-900 mb-2">Create Article V2 Tables</h3>
+              <p className="text-gray-600 text-sm mb-3">
+                Create the v2_agent_sessions table to enable the new LLM orchestration article generation.
+              </p>
+              <button
+                onClick={runArticleV2Migration}
+                disabled={isLoading}
+                className="inline-flex items-center px-4 py-2 bg-green-600 text-white text-sm font-medium rounded-md hover:bg-green-700 disabled:opacity-50 disabled:cursor-not-allowed"
+              >
+                <Play className="w-4 h-4 mr-2" />
+                {isLoading ? 'Creating Tables...' : 'Create V2 Tables'}
+              </button>
+            </div>
+
+            {/* V2 Rollback */}
+            <div className="border border-red-200 rounded-lg p-4">
+              <h3 className="font-semibold text-gray-900 mb-2">Remove Article V2 Tables (Rollback)</h3>
+              <p className="text-gray-600 text-sm mb-3">
+                Remove the v2_agent_sessions table and all V2 generation data. This action cannot be undone.
+              </p>
+              <button
+                onClick={runArticleV2Rollback}
+                disabled={isLoading}
+                className="inline-flex items-center px-4 py-2 bg-red-600 text-white text-sm font-medium rounded-md hover:bg-red-700 disabled:opacity-50 disabled:cursor-not-allowed"
+              >
+                <RotateCcw className="w-4 h-4 mr-2" />
+                {isLoading ? 'Rolling Back...' : 'Remove V2 Tables'}
               </button>
             </div>
           </div>
