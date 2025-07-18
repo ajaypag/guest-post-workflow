@@ -105,16 +105,15 @@ export class AgenticArticleV2Service {
         tracingDisabled: true
       });
 
-      // Initialize writer conversation with planning prompt + outline
-      const writerMessages: any[] = [
+      // Initialize conversation history - will be replaced by SDK history
+      let conversationHistory: any[] = [
         { 
           role: 'user', 
           content: `${PLANNING_PROMPT}\n\n${session.outline}` 
         }
       ];
 
-
-      // Collect all writer outputs
+      // Collect all writer outputs for our use
       const writerOutputs: string[] = [];
       
       // Track article completion status
@@ -122,29 +121,17 @@ export class AgenticArticleV2Service {
 
       // Phase 1: Send planning prompt to writer
       console.log(`📝 Sending planning prompt to writer...`);
-      console.log(`📊 Initial message count: ${writerMessages.length}`);
+      console.log(`📊 Initial message count: ${conversationHistory.length}`);
       sseUpdate(sessionId, { type: 'phase', phase: 'planning', message: 'Writer analyzing research and planning article...' });
 
-      let planningResult = await writerRunner.run(writerAgentV2, writerMessages, {
+      let planningResult = await writerRunner.run(writerAgentV2, conversationHistory, {
         stream: true,
         maxTurns: 1
       });
 
       let planningResponse = '';
-      let assistantMessage: any = null;
       
       for await (const event of planningResult.toStream()) {
-        // Log event types for debugging
-        if (event.type !== 'raw_model_stream_event') {
-          console.log(`📌 Non-raw event in planning: ${event.type}`, event);
-        }
-        
-        // Handle message created events
-        if (event.type === 'run_item_stream_event' && event.name === 'message_output_created') {
-          console.log(`📝 Message output created:`, JSON.stringify(event.item, null, 2));
-          assistantMessage = event.item;
-        }
-        
         // Handle text streaming
         if (event.type === 'raw_model_stream_event' && event.data.type === 'output_text_delta') {
           planningResponse += event.data.delta || '';
@@ -152,65 +139,58 @@ export class AgenticArticleV2Service {
         }
       }
 
-      // Use the result.history from SDK or fallback to collected response
-      const resultHistory = (planningResult as any).history;
+      // CRITICAL: Use the complete history from SDK (includes reasoning items)
+      conversationHistory = (planningResult as any).history;
       
-      if (resultHistory && resultHistory.length > 0) {
-        // Use the SDK's properly formatted history
-        const lastMessage = resultHistory[resultHistory.length - 1];
-        console.log(`📊 Using SDK history - last message role: ${lastMessage.role}`);
-        
-        // Only add assistant messages
-        if (lastMessage.role === 'assistant') {
-          // Validate content format before pushing
-          if (typeof lastMessage.content === 'string' || Array.isArray(lastMessage.content)) {
-            writerMessages.push(lastMessage);
-            
-            // Extract text for our outputs
-            if (typeof lastMessage.content === 'string') {
-              planningResponse = lastMessage.content;
-            } else if (Array.isArray(lastMessage.content)) {
-              planningResponse = lastMessage.content
-                .filter((item: any) => item.type === 'text')
-                .map((item: any) => item.text || '')
-                .join('');
-            }
-          } else {
-            console.error(`🚨 Invalid content format in history:`, lastMessage);
-            throw new Error('Invalid message content format in SDK history');
-          }
+      if (!conversationHistory || conversationHistory.length === 0) {
+        throw new Error('No history returned from SDK');
+      }
+      
+      console.log(`📊 SDK history length: ${conversationHistory.length} items (includes reasoning)`);
+      
+      // Sanity check: verify all assistant messages have reasoning pairs
+      for (const item of conversationHistory) {
+        if (item.role === 'assistant' && item.type === 'message' && !item.reasoning_id) {
+          console.error(`🚨 Assistant message missing reasoning pair:`, item);
+          throw new Error('Assistant message missing reasoning pair - SDK history corrupted');
         }
-      } else if (planningResponse) {
-        // Fallback: use collected streaming response as plain string
-        console.log(`📊 Using streamed response: ${planningResponse.length} chars`);
-        writerMessages.push({
-          role: 'assistant',
-          content: planningResponse  // Plain string format
-        });
-      } else {
-        throw new Error('No response received from assistant');
+      }
+      
+      // Extract the assistant's response for our tracking
+      const assistantMessages = conversationHistory.filter((item: any) => 
+        item.role === 'assistant' && item.type === 'message'
+      );
+      
+      if (assistantMessages.length > 0) {
+        const lastAssistant = assistantMessages[assistantMessages.length - 1];
+        
+        // Extract text content
+        if (typeof lastAssistant.content === 'string') {
+          planningResponse = lastAssistant.content;
+        } else if (Array.isArray(lastAssistant.content)) {
+          planningResponse = lastAssistant.content
+            .filter((item: any) => item.type === 'text')
+            .map((item: any) => item.text || '')
+            .join('');
+        }
+      }
+      
+      if (!planningResponse) {
+        throw new Error('No planning response extracted');
       }
       
       writerOutputs.push(planningResponse);
-      console.log(`✅ Planning response added. Message count: ${writerMessages.length}`);
-      
-      // Validate all messages before next run
-      for (let i = 0; i < writerMessages.length; i++) {
-        const msg = writerMessages[i];
-        if (!(typeof msg.content === 'string' || Array.isArray(msg.content))) {
-          console.error(`🚨 Invalid message at index ${i}:`, msg);
-          throw new Error(`Invalid message content at index ${i}`);
-        }
-      }
+      console.log(`✅ Planning response extracted: ${planningResponse.length} chars`);
 
       // Phase 2: Send title/intro prompt
       console.log(`📝 Sending title/intro prompt to writer...`);
       sseUpdate(sessionId, { type: 'phase', phase: 'title_intro', message: 'Writer creating title and introduction...' });
 
-      writerMessages.push({ role: 'user', content: TITLE_INTRO_PROMPT });
+      // Add the title/intro prompt to history
+      conversationHistory.push({ role: 'user', content: TITLE_INTRO_PROMPT });
 
-      console.log(`📊 Messages before title/intro run: ${writerMessages.length}`);
-      let titleIntroResult = await writerRunner.run(writerAgentV2, writerMessages, {
+      console.log(`📊 History before title/intro run: ${conversationHistory.length} items`);
+      let titleIntroResult = await writerRunner.run(writerAgentV2, conversationHistory, {
         stream: true,
         maxTurns: 1
       });
@@ -223,29 +203,40 @@ export class AgenticArticleV2Service {
         }
       }
 
-      // Use SDK history or fallback
-      const titleHistory = (titleIntroResult as any).history;
+      // CRITICAL: Replace history with SDK's complete history
+      conversationHistory = (titleIntroResult as any).history;
       
-      if (titleHistory && titleHistory.length > 0) {
-        const lastMessage = titleHistory[titleHistory.length - 1];
-        if (lastMessage.role === 'assistant' && (typeof lastMessage.content === 'string' || Array.isArray(lastMessage.content))) {
-          writerMessages.push(lastMessage);
-          
-          // Extract text
-          if (typeof lastMessage.content === 'string') {
-            titleIntroResponse = lastMessage.content;
-          } else if (Array.isArray(lastMessage.content)) {
-            titleIntroResponse = lastMessage.content
-              .filter((item: any) => item.type === 'text')
-              .map((item: any) => item.text || '')
-              .join('');
-          }
+      if (!conversationHistory || conversationHistory.length === 0) {
+        throw new Error('No history returned from SDK for title/intro');
+      }
+      
+      console.log(`📊 SDK history after title/intro: ${conversationHistory.length} items`);
+      
+      // Sanity check: verify reasoning pairs
+      for (const item of conversationHistory) {
+        if (item.role === 'assistant' && item.type === 'message' && !item.reasoning_id) {
+          console.error(`🚨 Assistant message missing reasoning pair:`, item);
+          throw new Error('Assistant message missing reasoning pair in title/intro');
         }
-      } else if (titleIntroResponse) {
-        writerMessages.push({
-          role: 'assistant',
-          content: titleIntroResponse
-        });
+      }
+      
+      // Extract the assistant's response
+      const titleAssistantMessages = conversationHistory.filter((item: any) => 
+        item.role === 'assistant' && item.type === 'message'
+      );
+      
+      if (titleAssistantMessages.length > 0) {
+        const lastAssistant = titleAssistantMessages[titleAssistantMessages.length - 1];
+        
+        // Extract text content
+        if (typeof lastAssistant.content === 'string') {
+          titleIntroResponse = lastAssistant.content;
+        } else if (Array.isArray(lastAssistant.content)) {
+          titleIntroResponse = lastAssistant.content
+            .filter((item: any) => item.type === 'text')
+            .map((item: any) => item.text || '')
+            .join('');
+        }
       }
 
       // Check for end marker and clean it
@@ -255,7 +246,7 @@ export class AgenticArticleV2Service {
       }
       
       writerOutputs.push(titleIntroResponse);
-      console.log(`✅ Title/intro response added. Message count: ${writerMessages.length}`);
+      console.log(`✅ Title/intro response extracted: ${titleIntroResponse.length} chars`);
 
       await this.updateSession(sessionId, { completedSections: 1 });
       sseUpdate(sessionId, { 
@@ -277,10 +268,11 @@ export class AgenticArticleV2Service {
           message: `Writer working on section ${sectionCount + 1}...` 
         });
 
-        writerMessages.push({ role: 'user', content: LOOPING_PROMPT });
+        // Add the looping prompt to history
+        conversationHistory.push({ role: 'user', content: LOOPING_PROMPT });
 
-        console.log(`📊 Messages before section ${sectionCount + 1} run: ${writerMessages.length}`);
-        let sectionResult = await writerRunner.run(writerAgentV2, writerMessages, {
+        console.log(`📊 History before section ${sectionCount + 1} run: ${conversationHistory.length} items`);
+        let sectionResult = await writerRunner.run(writerAgentV2, conversationHistory, {
           stream: true,
           maxTurns: 1
         });
@@ -293,29 +285,40 @@ export class AgenticArticleV2Service {
           }
         }
 
-        // Use SDK history or fallback
-        const sectionHistory = (sectionResult as any).history;
+        // CRITICAL: Replace history with SDK's complete history
+        conversationHistory = (sectionResult as any).history;
         
-        if (sectionHistory && sectionHistory.length > 0) {
-          const lastMessage = sectionHistory[sectionHistory.length - 1];
-          if (lastMessage.role === 'assistant' && (typeof lastMessage.content === 'string' || Array.isArray(lastMessage.content))) {
-            writerMessages.push(lastMessage);
-            
-            // Extract text
-            if (typeof lastMessage.content === 'string') {
-              sectionResponse = lastMessage.content;
-            } else if (Array.isArray(lastMessage.content)) {
-              sectionResponse = lastMessage.content
-                .filter((item: any) => item.type === 'text')
-                .map((item: any) => item.text || '')
-                .join('');
-            }
+        if (!conversationHistory || conversationHistory.length === 0) {
+          throw new Error('No history returned from SDK for section');
+        }
+        
+        console.log(`📊 SDK history after section ${sectionCount + 1}: ${conversationHistory.length} items`);
+        
+        // Sanity check: verify reasoning pairs
+        for (const item of conversationHistory) {
+          if (item.role === 'assistant' && item.type === 'message' && !item.reasoning_id) {
+            console.error(`🚨 Assistant message missing reasoning pair:`, item);
+            throw new Error(`Assistant message missing reasoning pair in section ${sectionCount + 1}`);
           }
-        } else if (sectionResponse) {
-          writerMessages.push({
-            role: 'assistant',
-            content: sectionResponse
-          });
+        }
+        
+        // Extract the assistant's response
+        const sectionAssistantMessages = conversationHistory.filter((item: any) => 
+          item.role === 'assistant' && item.type === 'message'
+        );
+        
+        if (sectionAssistantMessages.length > 0) {
+          const lastAssistant = sectionAssistantMessages[sectionAssistantMessages.length - 1];
+          
+          // Extract text content
+          if (typeof lastAssistant.content === 'string') {
+            sectionResponse = lastAssistant.content;
+          } else if (Array.isArray(lastAssistant.content)) {
+            sectionResponse = lastAssistant.content
+              .filter((item: any) => item.type === 'text')
+              .map((item: any) => item.text || '')
+              .join('');
+          }
         }
 
         // Check for end marker and clean it
@@ -327,7 +330,7 @@ export class AgenticArticleV2Service {
         
         writerOutputs.push(sectionResponse);
         sectionCount++;
-        console.log(`✅ Section ${sectionCount} response added. Message count: ${writerMessages.length}`);
+        console.log(`✅ Section ${sectionCount} response extracted: ${sectionResponse.length} chars`);
 
         await this.updateSession(sessionId, { completedSections: sectionCount });
         sseUpdate(sessionId, { 
