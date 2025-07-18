@@ -1,6 +1,6 @@
 import { Runner } from '@openai/agents';
 import { OpenAIProvider } from '@openai/agents-openai';
-import { writerAgentV2 } from '@/lib/agents/articleWriterV2';
+import { writerAgentV2, createArticleEndCritic } from '@/lib/agents/articleWriterV2';
 import { db } from '@/lib/db/connection';
 import { workflows, v2AgentSessions } from '@/lib/db/schema';
 import { eq, sql } from 'drizzle-orm';
@@ -118,6 +118,18 @@ export class AgenticArticleV2Service {
       
       // Track article completion status
       let articleComplete = false;
+      
+      // Create ArticleEndCritic with the outline
+      const articleEndCritic = createArticleEndCritic(session.outline || '');
+      
+      // Calculate dynamic CHECK_START based on outline
+      // Estimate sections from outline (rough count of numbered items)
+      const outlineLines = (session.outline || '').split('\n');
+      const numberedItems = outlineLines.filter(line => /^\d+\./.test(line.trim())).length;
+      const expectedSections = Math.max(5, numberedItems); // At least 5 sections
+      const CHECK_START = Math.max(5, Math.floor(expectedSections * 0.6)); // Start checking at 60% completion
+      
+      console.log(`📊 Outline analysis: ${numberedItems} numbered items found, CHECK_START set to ${CHECK_START}`);
 
       // Phase 1: Send planning prompt to writer
       console.log(`📝 Sending planning prompt to writer...`);
@@ -333,6 +345,48 @@ export class AgenticArticleV2Service {
           content: sectionResponse,
           message: `Section ${sectionCount} completed`
         });
+        
+        // Use ArticleEndCritic after CHECK_START sections
+        if (!articleComplete && sectionCount >= CHECK_START) {
+          console.log(`🔍 Checking if article is complete (section ${sectionCount} >= CHECK_START ${CHECK_START})...`);
+          sseUpdate(sessionId, { 
+            type: 'phase', 
+            phase: 'checking_completion', 
+            message: `Evaluating if article is complete after ${sectionCount} sections...` 
+          });
+          
+          try {
+            // Prepare the draft so far (skip planning, include all writing)
+            const draftSoFar = writerOutputs.slice(1).join('\n\n');
+            
+            const criticRun = await writerRunner.run(articleEndCritic, [
+              { role: 'user', content: draftSoFar }
+            ]);
+            
+            const verdictResult = await criticRun.finalOutput;
+            const verdict = verdictResult?.verdict;
+            console.log(`🎯 ArticleEndCritic verdict: ${verdict}`);
+            
+            if (verdict === 'YES') {
+              articleComplete = true;
+              console.log(`✅ Article complete - critic confirmed after ${sectionCount} sections`);
+              sseUpdate(sessionId, { 
+                type: 'phase', 
+                phase: 'completed', 
+                message: `Article complete - proper conclusion detected after ${sectionCount} sections` 
+              });
+            } else {
+              console.log(`⏩ Article not complete yet - continuing...`);
+            }
+          } catch (error) {
+            console.error('❌ Critic evaluation failed:', error);
+            // Continue writing on critic failure - don't break the flow
+            sseUpdate(sessionId, { 
+              type: 'warning', 
+              message: 'Article completion check failed, continuing to write...' 
+            });
+          }
+        }
         
         // Warn if approaching the hard limit
         if (sectionCount >= 18 && !articleComplete) {
