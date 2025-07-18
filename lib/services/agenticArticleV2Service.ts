@@ -164,7 +164,10 @@ export class AgenticArticleV2Service {
           planningResponse = lastAssistant.content;
         } else if (Array.isArray(lastAssistant.content)) {
           planningResponse = lastAssistant.content
-            .filter((item: any) => item.type === 'text')
+            .filter((item: any) => 
+              // Accept both shapes the SDK emits
+              item.type === 'text' || item.type === 'output_text'
+            )
             .map((item: any) => item.text || '')
             .join('');
         }
@@ -223,7 +226,10 @@ export class AgenticArticleV2Service {
           titleIntroResponse = lastAssistant.content;
         } else if (Array.isArray(lastAssistant.content)) {
           titleIntroResponse = lastAssistant.content
-            .filter((item: any) => item.type === 'text')
+            .filter((item: any) => 
+              // Accept both shapes the SDK emits
+              item.type === 'text' || item.type === 'output_text'
+            )
             .map((item: any) => item.text || '')
             .join('');
         }
@@ -300,7 +306,10 @@ export class AgenticArticleV2Service {
             sectionResponse = lastAssistant.content;
           } else if (Array.isArray(lastAssistant.content)) {
             sectionResponse = lastAssistant.content
-              .filter((item: any) => item.type === 'text')
+              .filter((item: any) => 
+                // Accept both shapes the SDK emits
+                item.type === 'text' || item.type === 'output_text'
+              )
               .map((item: any) => item.text || '')
               .join('');
           }
