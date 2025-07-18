@@ -283,20 +283,15 @@ Begin your research now.`;
           return { status: 'in_progress', progress: 'Conducting deep research...' };
 
         case 'completed':
-          // Extract the output
+          // Extract the output using our specialized parser
           const output = response.output;
-          let finalOutline = '';
+          console.log('🔍 Parsing o3-deep-research response...');
           
-          if (typeof output === 'string') {
-            finalOutline = sanitizeForPostgres(output);
-          } else if (output && typeof output === 'object') {
-            // Handle structured output
-            const textContent = (output as any).text || 
-                               (output as any).content || 
-                               (output as any).output_text ||
-                               JSON.stringify(output);
-            finalOutline = sanitizeForPostgres(textContent);
-          }
+          // Use the new parsing method for o3-deep-research responses
+          const parsedOutline = this.parseO3DeepResearchResponse(output);
+          const finalOutline = sanitizeForPostgres(parsedOutline);
+          
+          console.log(`✅ Successfully parsed outline (${finalOutline.length} chars)`);
 
           const citations = this.extractCitations(finalOutline);
 
@@ -399,6 +394,56 @@ Begin your research now.`;
     } catch (error: any) {
       console.error('Error cancelling outline generation:', error);
       throw error;
+    }
+  }
+
+  private parseO3DeepResearchResponse(output: any): string {
+    try {
+      // If output is already a string, return it
+      if (typeof output === 'string') {
+        return output;
+      }
+
+      // If output is an array (the format we're expecting from o3-deep-research)
+      if (Array.isArray(output)) {
+        // Find the assistant message
+        const assistantMsg = output.find((msg: any) => msg.role === 'assistant');
+        
+        if (assistantMsg && Array.isArray(assistantMsg.content)) {
+          // Filter and extract text from content items
+          const textItems = assistantMsg.content
+            .filter((item: any) => 
+              typeof item === 'string' || 
+              (item.type !== 'reasoning' && item.type !== 'web_search_call')
+            )
+            .map((item: any) => {
+              if (typeof item === 'string') return item;
+              return item.text || item.output_text || '';
+            })
+            .filter((text: string) => text.length > 0);
+          
+          // Return the last text item (usually the complete outline)
+          if (textItems.length > 0) {
+            return textItems[textItems.length - 1];
+          }
+        }
+      }
+
+      // If output is an object with specific properties
+      if (output && typeof output === 'object') {
+        // Try common property names
+        return output.text || 
+               output.content || 
+               output.output_text ||
+               output.outline ||
+               JSON.stringify(output);
+      }
+
+      // Fallback to stringifying the output
+      return JSON.stringify(output);
+    } catch (error) {
+      console.error('Error parsing o3-deep-research response:', error);
+      return JSON.stringify(output);
     }
   }
 
