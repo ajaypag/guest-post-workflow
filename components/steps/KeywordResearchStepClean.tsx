@@ -47,6 +47,9 @@ export const KeywordResearchStepClean = ({ step, workflow, onChange }: KeywordRe
   
   // Add Target URLs Modal
   const [showAddUrlsModal, setShowAddUrlsModal] = useState(false);
+  
+  // Ahrefs Position Range Selection
+  const [selectedPositionRange, setSelectedPositionRange] = useState('1-50');
 
   const domainSelectionStep = workflow.steps.find(s => s.id === 'domain-selection');
   const guestPostSite = domainSelectionStep?.outputs?.domain || '';
@@ -294,7 +297,8 @@ export const KeywordResearchStepClean = ({ step, workflow, onChange }: KeywordRe
                        (keywords.trim() ? keywords.split(',').map((k: string) => k.trim()).filter((k: string) => k) : []);
     
     if (allKeywords.length === 0) {
-      const baseUrl = `https://app.ahrefs.com/v2-site-explorer/organic-keywords?brandedMode=all&chartGranularity=daily&chartInterval=year5&compareDate=dontCompare&country=us&currentDate=today&dataMode=text&hiddenColumns=&intentsAttrs=&keywordRules=&limit=100&localMode=all&mainOnly=0&mode=subdomains&multipleUrlsOnly=0&offset=0&performanceChartTopPosition=top11_20%7C%7Ctop21_50%7C%7Ctop3%7C%7Ctop4_10%7C%7Ctop51&positionChanges=&serpFeatures=&sort=OrganicTrafficInitial&sortDirection=desc&target=${encodeURIComponent(targetUrl)}&urlRules=&volume_type=average`;
+      const positionsParam = selectedPositionRange !== '1-100' ? `&positions=${selectedPositionRange}` : '';
+      const baseUrl = `https://app.ahrefs.com/v2-site-explorer/organic-keywords?brandedMode=all&chartGranularity=daily&chartInterval=year5&compareDate=dontCompare&country=us&currentDate=today&dataMode=text&hiddenColumns=&intentsAttrs=&keywordRules=&limit=100&localMode=all&mainOnly=0&mode=subdomains&multipleUrlsOnly=0&offset=0&performanceChartTopPosition=top11_20%7C%7Ctop21_50%7C%7Ctop3%7C%7Ctop4_10%7C%7Ctop51&positionChanges=${positionsParam}&serpFeatures=&sort=OrganicTrafficInitial&sortDirection=desc&target=${encodeURIComponent(targetUrl)}&urlRules=&volume_type=average`;
       return [{ url: baseUrl, batch: 1, keywords: [] }];
     }
     
@@ -308,9 +312,10 @@ export const KeywordResearchStepClean = ({ step, workflow, onChange }: KeywordRe
       const keywordRulesArray = [["contains","all"], cleanKeywords, "any"];
       const keywordRulesEncoded = encodeURIComponent(JSON.stringify(keywordRulesArray));
       
+      const positionsParam = selectedPositionRange !== '1-100' ? `&positions=${selectedPositionRange}` : '';
       let url = `https://app.ahrefs.com/v2-site-explorer/organic-keywords?brandedMode=all&chartGranularity=daily&chartInterval=year5&compareDate=dontCompare&country=us&currentDate=today&dataMode=text&hiddenColumns=&intentsAttrs=`;
       url += `&keywordRules=${keywordRulesEncoded}`;
-      url += `&limit=100&localMode=all&mainOnly=0&mode=subdomains&multipleUrlsOnly=0&offset=0&performanceChartTopPosition=top11_20%7C%7Ctop21_50%7C%7Ctop3%7C%7Ctop4_10%7C%7Ctop51&positionChanges=&serpFeatures=&sort=OrganicTrafficInitial&sortDirection=desc`;
+      url += `&limit=100&localMode=all&mainOnly=0&mode=subdomains&multipleUrlsOnly=0&offset=0&performanceChartTopPosition=top11_20%7C%7Ctop21_50%7C%7Ctop3%7C%7Ctop4_10%7C%7Ctop51&positionChanges=${positionsParam}&serpFeatures=&sort=OrganicTrafficInitial&sortDirection=desc`;
       url += `&target=${encodeURIComponent(targetUrl)}`;
       url += `&urlRules=&volume_type=average`;
       
@@ -1246,6 +1251,74 @@ export const KeywordResearchStepClean = ({ step, workflow, onChange }: KeywordRe
                 <p className="text-sm text-blue-800">
                   Use Ahrefs to check if the guest post site has ranking history for topics related to your selected client URLs. This confirms the site has topical authority.
                 </p>
+              </div>
+
+              {/* Position Range Selector */}
+              <div className="bg-white border border-gray-200 rounded-lg p-4">
+                <div className="flex items-center justify-between mb-3">
+                  <h4 className="font-medium text-gray-900">Search Ranking Position Range</h4>
+                  <span className="text-sm text-gray-500">Current: {selectedPositionRange}</span>
+                </div>
+                
+                <div className="space-y-3">
+                  <div className="grid grid-cols-3 gap-2">
+                    {[
+                      { value: '1-20', label: '1-20', description: 'Highly relevant, easy to rank' },
+                      { value: '1-30', label: '1-30', description: 'Very relevant, good rankability' },
+                      { value: '1-40', label: '1-40', description: 'Relevant, decent rankability' },
+                      { value: '1-50', label: '1-50', description: 'Moderately relevant (default)' },
+                      { value: '1-60', label: '1-60', description: 'Some relevance' },
+                      { value: '1-70', label: '1-70', description: 'Lower relevance' },
+                      { value: '1-80', label: '1-80', description: 'Minimal relevance' },
+                      { value: '1-90', label: '1-90', description: 'Very low relevance' },
+                      { value: '1-100', label: '1-100', description: 'All rankings (hardest to rank)' }
+                    ].map((option) => (
+                      <button
+                        key={option.value}
+                        onClick={() => setSelectedPositionRange(option.value)}
+                        className={`px-3 py-2 text-sm rounded-lg border transition-colors ${
+                          selectedPositionRange === option.value
+                            ? 'bg-orange-600 text-white border-orange-600'
+                            : 'bg-white text-gray-700 border-gray-300 hover:border-orange-300 hover:bg-orange-50'
+                        }`}
+                        title={option.description}
+                      >
+                        {option.label}
+                      </button>
+                    ))}
+                  </div>
+                  
+                  <div className="bg-amber-50 border border-amber-200 rounded-lg p-3">
+                    <div className="flex items-start space-x-2">
+                      <Target className="w-4 h-4 text-amber-600 mt-0.5 flex-shrink-0" />
+                      <div className="text-sm">
+                        <p className="font-medium text-amber-800 mb-1">
+                          {selectedPositionRange === '1-20' && 'Positions 1-20: Highest Relevance & Best Rankability'}
+                          {selectedPositionRange === '1-30' && 'Positions 1-30: High Relevance & Good Rankability'}
+                          {selectedPositionRange === '1-40' && 'Positions 1-40: Good Relevance & Decent Rankability'}
+                          {selectedPositionRange === '1-50' && 'Positions 1-50: Moderate Relevance (Recommended Default)'}
+                          {selectedPositionRange === '1-60' && 'Positions 1-60: Some Relevance & Rankability'}
+                          {selectedPositionRange === '1-70' && 'Positions 1-70: Lower Relevance & Rankability'}
+                          {selectedPositionRange === '1-80' && 'Positions 1-80: Minimal Relevance & Rankability'}
+                          {selectedPositionRange === '1-90' && 'Positions 1-90: Very Low Relevance & Rankability'}
+                          {selectedPositionRange === '1-100' && 'Positions 1-100: All Rankings (Lowest Average Rankability)'}
+                        </p>
+                        <p className="text-amber-700">
+                          {(selectedPositionRange === '1-20' || selectedPositionRange === '1-30') && 
+                            'Sites ranking in these positions show strong topical authority and keyword relevance. Your content has the best chance to rank well.'}
+                          {(selectedPositionRange === '1-40' || selectedPositionRange === '1-50') && 
+                            'Good balance between relevance and broader keyword coverage. These sites have proven ranking ability for your topics.'}
+                          {(selectedPositionRange === '1-60' || selectedPositionRange === '1-70' || selectedPositionRange === '1-80') && 
+                            'Expanding range reduces average relevance but may reveal additional opportunities. Ranking difficulty increases.'}
+                          {selectedPositionRange === '1-90' && 
+                            'Very broad range with lower average relevance. Most keywords will be harder to rank for.'}
+                          {selectedPositionRange === '1-100' && 
+                            'Maximum coverage but lowest average relevance and rankability. Use for comprehensive research only.'}
+                        </p>
+                      </div>
+                    </div>
+                  </div>
+                </div>
               </div>
 
               {/* Ahrefs links */}
