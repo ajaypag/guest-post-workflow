@@ -26,7 +26,7 @@ export const ArticleDraftStepClean = ({ step, workflow, onChange }: ArticleDraft
   });
 
   // Tab system state
-  const [activeTab, setActiveTab] = useState<'chatgpt' | 'builtin' | 'agentic'>('chatgpt');
+  const [activeTab, setActiveTab] = useState<'chatgpt' | 'builtin' | 'agentic'>('agentic');
 
   // Chat state management for builtin
   const [conversation, setConversation] = useState<any[]>([]);
@@ -178,6 +178,16 @@ ${outlineContent || '((((Complete Step 3: Deep Research first to get outline con
       <div className="bg-white border border-gray-200 rounded-xl overflow-hidden">
         <div className="flex border-b border-gray-200">
           <button
+            onClick={() => setActiveTab('agentic')}
+            className={`flex-1 px-6 py-4 text-sm font-medium transition-colors ${
+              activeTab === 'agentic'
+                ? 'bg-purple-50 text-purple-700 border-b-2 border-purple-500'
+                : 'text-gray-500 hover:text-gray-700 hover:bg-gray-50'
+            }`}
+          >
+            🤖 AI Agent Beta
+          </button>
+          <button
             onClick={() => setActiveTab('chatgpt')}
             className={`flex-1 px-6 py-4 text-sm font-medium transition-colors ${
               activeTab === 'chatgpt'
@@ -196,16 +206,6 @@ ${outlineContent || '((((Complete Step 3: Deep Research first to get outline con
             }`}
           >
             Built-in Chat
-          </button>
-          <button
-            onClick={() => setActiveTab('agentic')}
-            className={`flex-1 px-6 py-4 text-sm font-medium transition-colors ${
-              activeTab === 'agentic'
-                ? 'bg-purple-50 text-purple-700 border-b-2 border-purple-500'
-                : 'text-gray-500 hover:text-gray-700 hover:bg-gray-50'
-            }`}
-          >
-            🤖 AI Agent Beta
           </button>
         </div>
 
