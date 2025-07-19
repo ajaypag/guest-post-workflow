@@ -8,6 +8,7 @@ import { TutorialVideo } from '../ui/TutorialVideo';
 import { ChatInterface } from '../ui/ChatInterface';
 import { SplitPromptButton } from '../ui/SplitPromptButton';
 import { AgenticSemanticAuditor } from '../ui/AgenticSemanticAuditor';
+import { AgenticSemanticAuditorV2 } from '../ui/AgenticSemanticAuditorV2';
 import { ExternalLink, ChevronDown, ChevronRight, Search, CheckCircle, AlertCircle, Target, FileText, BarChart3 } from 'lucide-react';
 
 interface ContentAuditStepProps {
@@ -24,7 +25,7 @@ export const ContentAuditStepClean = ({ step, workflow, onChange }: ContentAudit
   });
 
   // Tab system state
-  const [activeTab, setActiveTab] = useState<'chatgpt' | 'builtin' | 'agent'>('agent');
+  const [activeTab, setActiveTab] = useState<'chatgpt' | 'builtin' | 'agent' | 'agentv2'>('agentv2');
 
   // Chat state management
   const [conversation, setConversation] = useState<any[]>([]);
@@ -172,6 +173,16 @@ Now I realize this is a lot, so i want your first output to only be an audit of 
       {/* Tab Navigation */}
       <div className="bg-white border border-gray-200 rounded-xl overflow-hidden">
         <div className="flex border-b border-gray-200">
+          <button
+            onClick={() => setActiveTab('agentv2')}
+            className={`flex-1 px-6 py-4 text-sm font-medium transition-colors ${
+              activeTab === 'agentv2'
+                ? 'bg-purple-50 text-purple-700 border-b-2 border-purple-500'
+                : 'text-gray-500 hover:text-gray-700 hover:bg-gray-50'
+            }`}
+          >
+            🚀 AI Agent V2
+          </button>
           <button
             onClick={() => setActiveTab('agent')}
             className={`flex-1 px-6 py-4 text-sm font-medium transition-colors ${
@@ -658,6 +669,24 @@ Now I realize this is a lot, so i want your first output to only be an audit of 
                     seoOptimizedArticle: auditedArticle,
                     auditGenerated: true,
                     auditedAt: new Date().toISOString()
+                  });
+                }}
+              />
+            </div>
+          ) : activeTab === 'agentv2' ? (
+            <div className="space-y-6">
+              {/* AI Agent V2 Semantic Audit */}
+              <AgenticSemanticAuditorV2
+                workflowId={workflow.id}
+                originalArticle={fullArticle}
+                researchOutline={outlineContent}
+                onComplete={(auditedArticle) => {
+                  onChange({ 
+                    ...step.outputs, 
+                    seoOptimizedArticle: auditedArticle,
+                    auditGenerated: true,
+                    auditedAt: new Date().toISOString(),
+                    auditVersion: 'v2'
                   });
                 }}
               />
