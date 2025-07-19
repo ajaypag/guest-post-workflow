@@ -9,6 +9,7 @@ interface AgenticSemanticAuditorV2Props {
   workflowId: string;
   originalArticle: string;
   researchOutline: string;
+  existingAuditedArticle?: string;
   onComplete: (auditedArticle: string) => void;
 }
 
@@ -29,6 +30,7 @@ export const AgenticSemanticAuditorV2 = ({
   workflowId, 
   originalArticle, 
   researchOutline,
+  existingAuditedArticle,
   onComplete 
 }: AgenticSemanticAuditorV2Props) => {
   const [isAuditing, setIsAuditing] = useState(false);
@@ -39,9 +41,10 @@ export const AgenticSemanticAuditorV2 = ({
   const [showCostDialog, setShowCostDialog] = useState(false);
   const [isButtonDisabled, setIsButtonDisabled] = useState(false);
   const [intermediaryContent, setIntermediaryContent] = useState(''); // Streaming markdown content
-  const [finalArticle, setFinalArticle] = useState(''); // Clean parsed article
+  const [finalArticle, setFinalArticle] = useState(existingAuditedArticle || ''); // Clean parsed article
   const [showRendered, setShowRendered] = useState(false);
   const [showIntermediaryView, setShowIntermediaryView] = useState(false); // Toggle between final and analysis view
+  const [hasExistingAudit, setHasExistingAudit] = useState(!!existingAuditedArticle);
   const eventSourceRef = useRef<EventSource | null>(null);
 
   const addLog = (message: string) => {
@@ -151,6 +154,7 @@ export const AgenticSemanticAuditorV2 = ({
                 const wordCount = data.finalArticle.split(/\s+/).filter((w: string) => w).length;
                 addLog(`📊 Final audited article: ${wordCount} words`);
                 setFinalArticle(data.finalArticle);
+                setHasExistingAudit(true); // Mark as completed
                 onComplete(data.finalArticle); // Pass clean article to parent
               } else {
                 addLog('⚠️ Warning: No audited article received from server');
@@ -220,7 +224,9 @@ export const AgenticSemanticAuditorV2 = ({
           </div>
           <div>
             <h3 className="text-lg font-semibold text-gray-900">AI Agent V2 - Semantic SEO Audit</h3>
-            <p className="text-sm text-gray-600">Natural audit flow using LLM orchestration</p>
+            <p className="text-sm text-gray-600">
+              {hasExistingAudit ? 'Previously audited - run again to update' : 'Natural audit flow using LLM orchestration'}
+            </p>
           </div>
         </div>
         
@@ -231,7 +237,7 @@ export const AgenticSemanticAuditorV2 = ({
             className="flex items-center space-x-2 px-4 py-2 bg-gradient-to-r from-blue-600 to-purple-600 text-white rounded-lg hover:from-blue-700 hover:to-purple-700 disabled:opacity-50 disabled:cursor-not-allowed transition-all shadow-md"
           >
             <Play className="w-4 h-4" />
-            <span>Start V2 Audit</span>
+            <span>{hasExistingAudit ? 'Re-run V2 Audit' : 'Start V2 Audit'}</span>
           </button>
         ) : (
           <button
@@ -243,6 +249,19 @@ export const AgenticSemanticAuditorV2 = ({
           </button>
         )}
       </div>
+
+      {/* Existing Audit Status */}
+      {hasExistingAudit && !isAuditing && !progress && (
+        <div className="bg-green-50 border border-green-200 rounded-lg p-4">
+          <div className="flex items-center space-x-2">
+            <CheckCircle className="w-5 h-5 text-green-600" />
+            <div className="flex-1">
+              <p className="text-green-800 font-medium">Previous audit completed</p>
+              <p className="text-green-700 text-sm">The article below was audited and optimized. Click "Re-run V2 Audit" to update.</p>
+            </div>
+          </div>
+        </div>
+      )}
 
       {/* Error Display */}
       {error && (
