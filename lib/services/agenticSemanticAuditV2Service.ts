@@ -322,11 +322,11 @@ In cases where a section has many subsections, output just the subsection. While
       // Update workflow with clean audited article
       await this.updateWorkflowWithAuditedArticle(session.workflowId, cleanSuggestedArticle);
       
-      // Send completion event
+      // Send completion event with clean article
       auditV2SSEPush(sessionId, { 
         type: 'complete',
         status: 'completed',
-        auditedArticle: accumulatedAuditContent,
+        auditedArticle: cleanSuggestedArticle,  // Send parsed clean article
         sectionsCompleted,
         message: 'V2 semantic audit completed successfully!'
       });
