@@ -1,5 +1,5 @@
 import { NextRequest, NextResponse } from 'next/server';
-import { db } from '@/lib/db';
+import { db } from '@/lib/db/connection';
 import { workflowSteps } from '@/lib/db/schema';
 import { eq, and } from 'drizzle-orm';
 
@@ -11,7 +11,7 @@ export async function POST(request: NextRequest) {
     const step = await db.query.workflowSteps.findFirst({
       where: and(
         eq(workflowSteps.workflowId, workflowId),
-        eq(workflowSteps.inputs.stepType, stepId)
+        eq((workflowSteps.inputs as any).stepType, stepId)
       )
     });
 
@@ -24,7 +24,7 @@ export async function POST(request: NextRequest) {
 
     // Test updating the step with V2 data
     const updatedInputs = {
-      ...step.inputs,
+      ...(step.inputs || {}),
       [`${stepId}V2_test`]: testData,
       lastTestUpdate: new Date().toISOString()
     };
@@ -41,7 +41,8 @@ export async function POST(request: NextRequest) {
       where: eq(workflowSteps.id, step.id)
     });
 
-    if (verifyStep?.inputs?.[`${stepId}V2_test`]) {
+    const testFieldName = `${stepId}V2_test`;
+    if (verifyStep?.inputs && (verifyStep.inputs as any)[testFieldName]) {
       return NextResponse.json({ 
         success: true, 
         message: 'Test data saved successfully',

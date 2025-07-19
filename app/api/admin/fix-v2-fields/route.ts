@@ -1,5 +1,5 @@
 import { NextRequest, NextResponse } from 'next/server';
-import { db } from '@/lib/db';
+import { db } from '@/lib/db/connection';
 import { workflowSteps } from '@/lib/db/schema';
 import { eq, and } from 'drizzle-orm';
 
@@ -18,16 +18,16 @@ export async function POST(request: NextRequest) {
       const semanticStep = await db.query.workflowSteps.findFirst({
         where: and(
           eq(workflowSteps.workflowId, workflowId),
-          eq(workflowSteps.inputs.stepType, 'semantic-seo')
+          eq((workflowSteps.inputs as any).stepType, 'semantic-seo')
         )
       });
 
-      if (semanticStep && semanticStep.outputs?.seoOptimizedArticle && semanticStep.outputs?.auditVersion === 'v2') {
+      if (semanticStep && (semanticStep.outputs as any)?.seoOptimizedArticle && (semanticStep.outputs as any)?.auditVersion === 'v2') {
         try {
           // Move V2 data from outputs to inputs
           const updatedInputs = {
-            ...semanticStep.inputs,
-            semanticAuditedArticleV2: semanticStep.outputs.seoOptimizedArticle
+            ...(semanticStep.inputs || {}),
+            semanticAuditedArticleV2: (semanticStep.outputs as any).seoOptimizedArticle
           };
 
           await db.update(workflowSteps)
@@ -49,16 +49,16 @@ export async function POST(request: NextRequest) {
       const articleStep = await db.query.workflowSteps.findFirst({
         where: and(
           eq(workflowSteps.workflowId, workflowId),
-          eq(workflowSteps.inputs.stepType, 'article-draft')
+          eq((workflowSteps.inputs as any).stepType, 'article-draft')
         )
       });
 
-      if (articleStep && articleStep.outputs?.fullArticle && articleStep.outputs?.agentVersion === 'v2') {
+      if (articleStep && (articleStep.outputs as any)?.fullArticle && (articleStep.outputs as any)?.agentVersion === 'v2') {
         try {
           // Move V2 data from outputs to inputs
           const updatedInputs = {
-            ...articleStep.inputs,
-            articleDraftV2: articleStep.outputs.fullArticle
+            ...(articleStep.inputs || {}),
+            articleDraftV2: (articleStep.outputs as any).fullArticle
           };
 
           await db.update(workflowSteps)

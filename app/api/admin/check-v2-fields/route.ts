@@ -1,5 +1,5 @@
 import { NextRequest, NextResponse } from 'next/server';
-import { db } from '@/lib/db';
+import { db } from '@/lib/db/connection';
 import { workflowSteps } from '@/lib/db/schema';
 import { eq } from 'drizzle-orm';
 
@@ -21,40 +21,40 @@ export async function POST(request: NextRequest) {
     };
 
     // Find semantic SEO step
-    const semanticStep = steps.find(s => s.inputs?.stepType === 'semantic-seo');
+    const semanticStep = steps.find(s => (s.inputs as any)?.stepType === 'semantic-seo');
     if (semanticStep) {
       fieldAnalysis.semanticSeoStep = {
         stepId: semanticStep.id,
-        hasV1Field: !!semanticStep.outputs?.seoOptimizedArticle,
-        hasV2Field: !!semanticStep.inputs?.semanticAuditedArticleV2,
-        v1FieldLength: semanticStep.outputs?.seoOptimizedArticle?.length || 0,
-        v2FieldLength: semanticStep.inputs?.semanticAuditedArticleV2?.length || 0,
+        hasV1Field: !!(semanticStep.outputs as any)?.seoOptimizedArticle,
+        hasV2Field: !!(semanticStep.inputs as any)?.semanticAuditedArticleV2,
+        v1FieldLength: (semanticStep.outputs as any)?.seoOptimizedArticle?.length || 0,
+        v2FieldLength: (semanticStep.inputs as any)?.semanticAuditedArticleV2?.length || 0,
         outputs: Object.keys(semanticStep.outputs || {}),
         inputs: Object.keys(semanticStep.inputs || {})
       };
 
       // Check field issues
-      if (semanticStep.outputs?.seoOptimizedArticle && !semanticStep.inputs?.semanticAuditedArticleV2) {
+      if ((semanticStep.outputs as any)?.seoOptimizedArticle && !(semanticStep.inputs as any)?.semanticAuditedArticleV2) {
         fieldAnalysis.issues.push('Semantic SEO V2 is saving to V1 field (outputs.seoOptimizedArticle) instead of V2 field (inputs.semanticAuditedArticleV2)');
         fieldAnalysis.recommendations.push('Update ContentAuditStepClean to save V2 data to inputs.semanticAuditedArticleV2');
       }
     }
 
     // Find article draft step
-    const articleStep = steps.find(s => s.inputs?.stepType === 'article-draft');
+    const articleStep = steps.find(s => (s.inputs as any)?.stepType === 'article-draft');
     if (articleStep) {
       fieldAnalysis.articleDraftStep = {
         stepId: articleStep.id,
-        hasV1Field: !!articleStep.outputs?.fullArticle,
-        hasV2Field: !!articleStep.inputs?.articleDraftV2,
-        v1FieldLength: articleStep.outputs?.fullArticle?.length || 0,
-        v2FieldLength: articleStep.inputs?.articleDraftV2?.length || 0,
+        hasV1Field: !!(articleStep.outputs as any)?.fullArticle,
+        hasV2Field: !!(articleStep.inputs as any)?.articleDraftV2,
+        v1FieldLength: (articleStep.outputs as any)?.fullArticle?.length || 0,
+        v2FieldLength: (articleStep.inputs as any)?.articleDraftV2?.length || 0,
         outputs: Object.keys(articleStep.outputs || {}),
         inputs: Object.keys(articleStep.inputs || {})
       };
 
       // Check field issues
-      if (articleStep.outputs?.fullArticle && articleStep.outputs?.agentVersion === 'v2' && !articleStep.inputs?.articleDraftV2) {
+      if ((articleStep.outputs as any)?.fullArticle && (articleStep.outputs as any)?.agentVersion === 'v2' && !(articleStep.inputs as any)?.articleDraftV2) {
         fieldAnalysis.issues.push('Article Draft V2 is saving to V1 field (outputs.fullArticle) instead of V2 field (inputs.articleDraftV2)');
         fieldAnalysis.recommendations.push('Update ArticleDraftStepClean to save V2 data to inputs.articleDraftV2');
       }
