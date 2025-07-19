@@ -1053,12 +1053,21 @@ if (event.name === 'message_output_created') {
 
 See `agenticSemanticAuditService.ts` for complete working example of this fix pattern applied successfully.
 
-## 🚀 V2 ARTICLE GENERATION: TRUE LLM ORCHESTRATION
+## 🚀 V2 ARTICLE GENERATION: TRUE LLM ORCHESTRATION (PRODUCTION READY)
 
 ### Overview
 V2 represents a fundamental shift from code-driven orchestration to true LLM orchestration. Instead of complex agent-as-tool patterns, V2 implements a single conversation thread where the LLM naturally progresses through the article generation process using database prompts.
 
 **Key Innovation**: The "magic" of manual ChatGPT.com workflows is recreated by maintaining full conversation context and using exact prompts from the database, allowing the LLM to drive the process naturally.
+
+**Production Status**: ✅ FULLY WORKING with ArticleEndCritic for intelligent completion detection
+
+**Latest Enhancements (2025-01-19)**:
+- ✅ Dynamic outline-based completion detection using writer's generated outline
+- ✅ Increased section limit from 20 to 40 sections
+- ✅ Fixed progress display to avoid confusing 100%, 200% percentages
+- ✅ ArticleEndCritic using o4-mini model for robust detection
+- ✅ Improved prompt for better completion criteria
 
 ### Architecture Pattern
 
@@ -1149,7 +1158,29 @@ await result.finalOutput;
 conversationHistory = (result as any).history;
 ```
 
-#### 4. Streaming Without Disruption
+#### 4. Model Selection for ArticleEndCritic
+**Problem**: "We tried to use O2 mini for the Judge Agent. That doesn't work."
+**Evolution**: 
+- ❌ o2-mini → Model doesn't exist
+- ✅ gpt-4.1-nano → Worked but suboptimal
+- ✅ o4-mini → Final choice, best performance
+
+#### 5. Dynamic Outline Usage
+**Problem**: "the ai just guesses" when using initial outline
+**Solution**: Use writer's generated outline from planning phase
+```typescript
+// NOW create ArticleEndCritic with the writer's generated outline
+articleEndCritic = createArticleEndCritic(planningResponse);
+console.log(`🎯 Created ArticleEndCritic with writer's generated outline`);
+
+// Recalculate CHECK_START based on the writer's outline
+const planningLines = planningResponse.split('\n');
+const plannedSections = planningLines.filter(line => /^\d+\./.test(line.trim())).length;
+const expectedSections = Math.max(5, plannedSections);
+CHECK_START = Math.max(5, Math.floor(expectedSections * 0.6));
+```
+
+#### 6. Streaming Without Disruption
 **Pattern**: Stream content while preserving SDK integrity
 ```typescript
 for await (const event of result.toStream()) {
@@ -1158,6 +1189,22 @@ for await (const event of result.toStream()) {
     sseUpdate(sessionId, { type: 'text', content: event.data.delta });
   }
 }
+```
+
+#### 7. Progress Display Fix
+**Problem**: "100%, then 200% etc" when sections unknown
+**Solution**: Show section count instead of percentage when total unknown
+```typescript
+// Don't calculate percentage when we don't know total sections
+const hasKnownTotal = progress?.session.totalSections && progress.session.totalSections > 0;
+const progressPercentage = hasKnownTotal
+  ? Math.round((progress.session.completedSections / progress.session.totalSections) * 100) 
+  : 0;
+
+// Display logic
+hasKnownTotal 
+  ? `${progressPercentage}% Complete`
+  : `${progress.session.completedSections} sections completed`
 ```
 
 ### Implementation Checklist
@@ -1215,10 +1262,11 @@ try {
 - Clean end markers from output
 
 #### 3. Natural Flow Control
-- Use explicit end markers (`<<END_OF_ARTICLE>>`)
-- Safety limits (20 sections max)
+- ArticleEndCritic for intelligent completion detection
+- Safety limits (40 sections max - increased from 20)
 - Track progress with writerOutputs array
 - Skip planning output from final article
+- Dynamic CHECK_START based on outline analysis
 
 #### 4. Database Design
 - Use TEXT columns for all AI content
@@ -1293,46 +1341,68 @@ The V2 approach proves that true LLM orchestration - where the model drives the 
 ### ArticleEndCritic: Intelligent Completion Detection
 
 #### The Problem
-The V2 writer doesn't naturally know when to stop writing - it can continue to the 20-section limit without recognizing a proper conclusion has been reached.
+The V2 writer doesn't naturally know when to stop writing - it can continue to the section limit without recognizing a proper conclusion has been reached.
 
 #### The Solution: ArticleEndCritic Pattern
-A separate critic agent that evaluates whether the article has reached its natural conclusion.
+A separate critic agent that evaluates whether the article has reached its natural conclusion, using the writer's own generated outline.
 
-#### Implementation
+#### Implementation Evolution
 
-**1. Factory Function for Dynamic Outline**
+**1. Initial Approach (Failed)**
+- Tried using `<<END_OF_ARTICLE>>` marker in prompts
+- Result: AI ended articles prematurely after 2-3 sections
+- Learning: Direct instructions interfere with natural flow
+
+**2. Final Implementation**
 ```typescript
-export const createArticleEndCritic = (outline: string) => new Agent({
+export const createArticleEndCritic = (writerPlanningResponse: string) => new Agent({
   name: 'ArticleEndCritic',
-  model: 'o2-mini-2025-06-10',  // Fast, efficient model for binary classification
+  model: 'o4-mini',  // Final model choice after testing
   instructions: `You are an END-OF-ARTICLE detector.
 
-Here is the article outline:
-${outline.trim()}
+You will receive the entire draft after each new section.  
+Using your own judgment, answer **YES** only when BOTH are true:
 
-Reply YES only when ALL of these conditions are met:
-1. The draft contains a clear, final "Conclusion / CTA" section
-2. This conclusion fulfills the last outline item
-3. The conclusion provides proper closure (summary, next steps, or call-to-action)
-4. All major outline sections appear to be covered
+1.   The draft has covered every major section from the writer's planned outline below.
+2.   The draft ends with a paragraph or short section that clearly concludes
+     the piece— it summarises or reflects on the article's main points AND
+     provides a sense of closure (e.g. a call-to-action or a forward-looking
+     remark).
 
-Otherwise reply NO.`,
+If either condition is missing, reply **NO**.
+
+Return a single word: YES or NO.  Do not critique style or correctness.
+
+Here is the writer's planning response and outline:
+${writerPlanningResponse.trim()}`,
   outputType: z.object({
     verdict: z.enum(['YES', 'NO']).describe('Whether the article is complete')
   }),
 });
 ```
 
-**2. Dynamic CHECK_START Calculation**
+**3. Dynamic Timing Based on Writer's Outline**
 ```typescript
-// Estimate sections from outline
-const outlineLines = (session.outline || '').split('\n');
-const numberedItems = outlineLines.filter(line => /^\d+\./.test(line.trim())).length;
-const expectedSections = Math.max(5, numberedItems);
-const CHECK_START = Math.max(5, Math.floor(expectedSections * 0.6)); // 60% completion
+// Create critic AFTER planning phase with writer's outline
+let planningResult = await writerRunner.run(writerAgentV2, conversationHistory, {
+  stream: true,
+  maxTurns: 1
+});
+
+// Extract planning response...
+await planningResult.finalOutput;
+
+// NOW create ArticleEndCritic with the writer's generated outline
+articleEndCritic = createArticleEndCritic(planningResponse);
+
+// Recalculate CHECK_START based on the writer's outline
+const planningLines = planningResponse.split('\n');
+const plannedSections = planningLines.filter(line => /^\d+\./.test(line.trim())).length;
+const expectedSections = Math.max(5, plannedSections);
+CHECK_START = Math.max(5, Math.floor(expectedSections * 0.6)); // Check at 60%
 ```
 
-**3. Integration in Main Loop**
+**4. Integration with Verdict Extraction**
 ```typescript
 // Use ArticleEndCritic after CHECK_START sections
 if (!articleComplete && sectionCount >= CHECK_START) {
@@ -1347,7 +1417,8 @@ if (!articleComplete && sectionCount >= CHECK_START) {
     ]);
     
     const verdictResult = await criticRun.finalOutput;
-    const verdict = verdictResult?.verdict;
+    // Extract verdict from the structured output object
+    const verdict = verdictResult?.verdict || (typeof verdictResult === 'string' ? verdictResult : 'NO');
     
     if (verdict === 'YES') {
       articleComplete = true;
@@ -1366,19 +1437,193 @@ if (!articleComplete && sectionCount >= CHECK_START) {
 
 #### Key Benefits
 1. **Separation of Concerns**: Writer focuses on writing, critic on evaluation
-2. **Context-Aware**: Critic sees full outline and draft
-3. **Efficient**: Uses lightweight o2-mini model for quick decisions
+2. **Context-Aware**: Critic sees writer's own generated outline (not initial research)
+3. **Efficient**: Uses lightweight o4-mini model for quick decisions
 4. **Graceful Failure**: Continues writing if critic fails
-5. **Dynamic Timing**: Adjusts CHECK_START based on outline length
+5. **Dynamic Timing**: Adjusts CHECK_START based on writer's actual plan
+6. **Natural Flow**: No interference with writer's creative process
 
 #### Best Practices
-- Pass the outline dynamically to the critic factory
+- Create critic AFTER planning phase with writer's generated outline
 - Start checking at 60% expected completion
-- Handle critic failures gracefully
-- Use a fast model (o2-mini) for efficiency
-- Keep critic instructions focused and specific
+- Handle critic failures gracefully without breaking flow
+- Use a fast model (o4-mini) for efficiency
+- Keep critic instructions focused on structure, not style
+- Extract verdict properly from structured output
+
+#### Critical Learning
+The key insight was using the writer's own generated outline rather than the initial research outline. This ensures the critic evaluates based on what the writer actually planned to write, not what we initially thought it should write.
 
 This pattern elegantly solves the article completion detection problem without disrupting the natural flow of the V2 writer agent.
+
+### V2 Technical Implementation Details for Future Agents
+
+#### Core Implementation Pattern
+```typescript
+// 1. ALWAYS store prompts in database fields, NOT in code
+const PLANNING_PROMPT = workflowStep.inputs.planningPrompt; // From DB
+const TITLE_INTRO_PROMPT = workflowStep.inputs.titleIntroPrompt; // From DB
+const LOOPING_PROMPT = workflowStep.inputs.loopingPrompt; // From DB
+
+// 2. Single agent with EMPTY instructions
+export const writerAgentV2 = new Agent({
+  name: 'ArticleWriterV2',
+  instructions: '', // CRITICAL: Empty - all guidance from conversation
+  model: 'o3-2025-04-16',
+  tools: [fileSearch], // Only vector store, NO custom tools
+});
+
+// 3. Maintain full conversation history
+let conversationHistory = [{ role: 'user', content: `${PLANNING_PROMPT}\n\n${outline}` }];
+```
+
+#### Critical Message Handling Pattern
+```typescript
+// NEVER do this - breaks message-reasoning pairs
+messages.push({ role: 'assistant', content: response }); // ❌ WRONG
+
+// ALWAYS do this - preserves SDK integrity
+await result.finalOutput; // MUST await before accessing history
+conversationHistory = (result as any).history; // ✅ CORRECT
+```
+
+#### Content Extraction Pattern
+```typescript
+// Handle BOTH content types from SDK
+.filter((item: any) => 
+  item.type === 'text' || item.type === 'output_text' // SDK uses both
+)
+.map((item: any) => item.text || '') // Extract text field
+.join('');
+```
+
+#### ArticleEndCritic Implementation Pattern
+```typescript
+// 1. Create AFTER writer's planning phase
+let articleEndCritic = null;
+let CHECK_START = 5; // Default
+
+// After planning response received:
+articleEndCritic = createArticleEndCritic(planningResponse); // Writer's outline
+
+// 2. Factory function with writer's outline
+export const createArticleEndCritic = (writerPlanningResponse: string) => new Agent({
+  name: 'ArticleEndCritic',
+  model: 'o4-mini', // Fast model for binary decision
+  instructions: `[EXACT PROMPT WITH ${writerPlanningResponse}]`,
+  outputType: z.object({ // NOT z.enum - must be object
+    verdict: z.enum(['YES', 'NO']).describe('Whether the article is complete')
+  }),
+});
+
+// 3. Extract verdict properly
+const verdictResult = await criticRun.finalOutput;
+const verdict = verdictResult?.verdict || 'NO'; // From object property
+```
+
+#### Session Management Pattern
+```typescript
+// Database schema - ALWAYS use TEXT for AI content
+export const v2AgentSessions = pgTable('v2_agent_sessions', {
+  id: uuid('id').primaryKey(),
+  workflowId: uuid('workflow_id').notNull(),
+  version: integer('version').notNull(), // Track iterations
+  stepId: varchar('step_id', { length: 50 }).notNull(), // 'article-draft-v2'
+  status: varchar('status', { length: 50 }).notNull(), // States below
+  outline: text('outline'), // TEXT not VARCHAR
+  finalArticle: text('final_article'), // TEXT not VARCHAR
+  errorMessage: text('error_message'), // TEXT not VARCHAR
+  sessionMetadata: jsonb('session_metadata'), // Flexible data
+  // ... timestamps
+});
+
+// Status progression
+'initializing' → 'orchestrating' → 'writing' → 'completed' | 'failed'
+```
+
+#### Streaming Pattern Without Breaking SDK
+```typescript
+// Stream to frontend while preserving SDK integrity
+for await (const event of result.toStream()) {
+  if (event.type === 'raw_model_stream_event' && 
+      event.data.type === 'output_text_delta') {
+    sseUpdate(sessionId, { type: 'text', content: event.data.delta });
+  }
+}
+// THEN await finalOutput and copy history
+```
+
+#### Progress Tracking Without Known Total
+```typescript
+// Don't show confusing percentages
+const hasKnownTotal = progress?.session.totalSections && progress.session.totalSections > 0;
+
+// Display logic
+hasKnownTotal 
+  ? `${Math.round((completed / total) * 100)}% Complete`
+  : `${completed} sections completed` // Just count
+```
+
+#### Key Implementation Rules
+
+**1. Message History Management**
+- NEVER manually create assistant messages
+- ALWAYS await result.finalOutput before copying history
+- ALWAYS use (result as any).history for full SDK history
+- Message-reasoning pairs are sacred - don't break them
+
+**2. Content Handling**
+- Support both 'text' and 'output_text' types
+- Handle string OR array content formats
+- Extract planning response from first assistant message
+- Skip planning (index 0) when assembling final article
+
+**3. Critic Pattern**
+- Create critic AFTER writer generates outline
+- Pass writer's planning response, not initial research
+- Use structured output with z.object, not z.enum
+- Calculate CHECK_START dynamically from writer's outline
+- Gracefully continue on critic failure
+
+**4. Database Design**
+- ALWAYS use TEXT for AI-generated content
+- NEVER use VARCHAR for anything AI writes
+- Track version numbers for multiple attempts
+- Store complete outline and final article
+
+**5. Section Management**
+```typescript
+const maxSections = 40; // Raised from 20
+const CHECK_START = Math.max(5, Math.floor(expectedSections * 0.6));
+const writerOutputs: string[] = []; // Track all outputs
+const finalArticle = writerOutputs.slice(1).join('\n\n'); // Skip planning
+```
+
+#### Common Pitfalls to Avoid
+1. **Don't add instructions to prompts** - Breaks natural flow
+2. **Don't use END_OF_ARTICLE markers** - Causes premature ending
+3. **Don't break message-reasoning pairs** - Causes 400 errors
+4. **Don't assume content type** - SDK varies output format
+5. **Don't use initial outline for critic** - Use writer's interpretation
+
+#### API Endpoint Pattern
+```typescript
+// POST /api/workflows/[id]/auto-generate-v2
+const { outline } = await req.json();
+const sessionId = await agenticArticleV2Service.startSession(workflowId, outline);
+return Response.json({ success: true, sessionId });
+
+// GET /api/workflows/[id]/auto-generate-v2/stream
+res.writeHead(200, {
+  'Content-Type': 'text/event-stream',
+  'Cache-Control': 'no-cache',
+  'Connection': 'keep-alive',
+});
+addSSEConnection(sessionId, res);
+agenticArticleV2Service.performArticleGeneration(sessionId);
+```
+
+This technical pattern creates natural LLM orchestration by maintaining full conversation context and letting the model drive the process through database prompts.
 
 ## Contact
 Created for OutreachLabs by Claude with Ajay
