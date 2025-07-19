@@ -680,14 +680,21 @@ Now I realize this is a lot, so i want your first output to only be an audit of 
                 workflowId={workflow.id}
                 originalArticle={fullArticle}
                 researchOutline={outlineContent}
+                existingAuditedArticle={step.outputs?.seoOptimizedArticle || ''}
                 onComplete={(auditedArticle) => {
-                  onChange({ 
+                  console.log('🎯 V2 Audit onComplete called with article length:', auditedArticle.length);
+                  console.log('📝 Current outputs before change:', step.outputs);
+                  
+                  const updatedOutputs = { 
                     ...step.outputs, 
                     seoOptimizedArticle: auditedArticle,
                     auditGenerated: true,
                     auditedAt: new Date().toISOString(),
                     auditVersion: 'v2'
-                  });
+                  };
+                  
+                  console.log('📤 Calling onChange with updated outputs:', updatedOutputs);
+                  onChange(updatedOutputs);
                 }}
               />
             </div>

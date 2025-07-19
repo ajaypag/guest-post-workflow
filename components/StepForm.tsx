@@ -127,17 +127,30 @@ export default function StepForm({ step, stepIndex, workflow, onSave, onWorkflow
 
   const handleOutputChange = (data: any) => {
     console.log('🟡 FormComponent onChange called:', data);
+    console.log('🔍 Previous localOutputs:', localOutputs);
+    console.log('🆕 New data has seoOptimizedArticle:', !!data.seoOptimizedArticle);
+    console.log('📏 seoOptimizedArticle length:', data.seoOptimizedArticle?.length || 0);
+    
     setLocalOutputs(data);
     
     // Trigger auto-save for critical fields
     const criticalFields = ['finalArticle', 'fullArticle', 'seoOptimizedArticle', 'googleDocUrl'];
-    const hasChangedCriticalField = criticalFields.some(field => 
-      data[field] && data[field] !== localOutputs[field]
-    );
+    const hasChangedCriticalField = criticalFields.some(field => {
+      const hasChanged = data[field] && data[field] !== localOutputs[field];
+      if (field === 'seoOptimizedArticle' && data[field]) {
+        console.log(`🔎 Checking ${field}: new length=${data[field].length}, old length=${localOutputs[field]?.length || 0}`);
+      }
+      if (hasChanged) {
+        console.log(`✅ Critical field "${field}" has changed`);
+      }
+      return hasChanged;
+    });
     
     if (hasChangedCriticalField) {
       console.log('🔄 Critical field changed, triggering auto-save');
       triggerAutoSave();
+    } else {
+      console.log('⚠️ No critical field changes detected, not triggering auto-save');
     }
   };
 
