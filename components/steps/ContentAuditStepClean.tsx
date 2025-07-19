@@ -25,7 +25,7 @@ export const ContentAuditStepClean = ({ step, workflow, onChange }: ContentAudit
   });
 
   // Tab system state
-  const [activeTab, setActiveTab] = useState<'chatgpt' | 'builtin' | 'agent' | 'agentv2'>('agentv2');
+  const [activeTab, setActiveTab] = useState<'chatgpt' | 'builtin' | 'agent' | 'agentv2'>('chatgpt');
 
   // Chat state management
   const [conversation, setConversation] = useState<any[]>([]);

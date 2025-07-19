@@ -39,6 +39,20 @@ export const semanticAuditorAgentV2 = new Agent({
 });
 
 export class AgenticSemanticAuditV2Service {
+  // Helper to extract text content from various message formats
+  private extractTextContent(content: any): string {
+    if (typeof content === 'string') {
+      return content;
+    } else if (Array.isArray(content)) {
+      return content
+        .filter((item: any) => 
+          item.type === 'text' || item.type === 'output_text'
+        )
+        .map((item: any) => item.text || item.output || '')
+        .join('');
+    }
+    return '';
+  }
   private openaiProvider: OpenAIProvider;
   
   constructor() {
@@ -175,15 +189,18 @@ When you reach <!-- END_OF_ARTICLE -->, you can conclude your audit.`;
           .pop();
         
         if (lastAssistantMessage) {
+          // Extract text content properly
+          const textContent = this.extractTextContent(lastAssistantMessage.content);
+          
           // Accumulate audit content
-          accumulatedAuditContent += lastAssistantMessage.content + '\n\n';
+          accumulatedAuditContent += textContent + '\n\n';
           
           // Check if audit is complete
-          const lowerContent = lastAssistantMessage.content.toLowerCase();
+          const lowerContent = textContent.toLowerCase();
           if (lowerContent.includes('end of article') ||
               lowerContent.includes('audit complete') ||
               lowerContent.includes('conclud') ||
-              lastAssistantMessage.content.includes(END_MARKER)) {
+              textContent.includes(END_MARKER)) {
             console.log('✅ Audit completion detected in message');
             auditActive = false;
           } else {
