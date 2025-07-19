@@ -6,6 +6,7 @@ export type PrimaryKeywordFocus =
   | 'informational'            // How-to, guides, educational
   | 'transactional'           // Buying intent, purchase-focused
   | 'mixed'                   // Balanced approach
+  | 'local'                   // Location-based keywords
   | 'custom';                 // Advanced custom configuration
 
 // Guest post topic preferences for targeting specific content types
@@ -50,6 +51,11 @@ export const KEYWORD_PREFERENCE_TEMPLATES: Record<PrimaryKeywordFocus, Partial<K
   
   'custom': {
     primaryFocus: 'custom'
+  },
+  
+  'local': {
+    primaryFocus: 'local',
+    customInstructions: 'Focus on location-based topics, related to the client area'
   }
 };
 
@@ -80,6 +86,11 @@ export const KEYWORD_DESCRIPTIONS = {
       title: 'Custom Configuration',
       description: 'Define your own keyword preference instructions.',
       examples: 'Fully customizable based on specific requirements'
+    },
+    'local': {
+      title: 'Local/Location-Based',
+      description: 'Geographic and location-specific keywords for local businesses and area-based services.',
+      examples: '"plumber in Denver", "best restaurants near me", "San Francisco SEO agency"'
     }
   }
 };
