@@ -272,7 +272,7 @@ export class AgenticArticleV2Service {
 
       // Phase 3: Loop with the looping prompt until article is complete
       let sectionCount = 1;
-      const maxSections = 20; // Safety limit raised to 20 sections
+      const maxSections = 40; // Safety limit raised to 40 sections
 
       while (!articleComplete && sectionCount < maxSections) {
         console.log(`📝 Sending looping prompt for section ${sectionCount + 1}...`);
@@ -396,7 +396,7 @@ export class AgenticArticleV2Service {
         }
         
         // Warn if approaching the hard limit
-        if (sectionCount >= 18 && !articleComplete) {
+        if (sectionCount >= 35 && !articleComplete) {
           console.log(`⚠️ Approaching section limit (${sectionCount}/${maxSections})`);
         }
       }
