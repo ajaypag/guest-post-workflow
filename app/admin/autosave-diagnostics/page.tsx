@@ -115,10 +115,15 @@ export default function AutoSaveDiagnosticsPage() {
             status: s.status,
             inputs: { 
               stepType: s.stepType,
-              semanticAuditedArticleV2: s.hasSemanticV2 ? 'Has data' : undefined,
-              articleDraftV2: s.hasArticleV2 ? 'Has data' : undefined
+              semanticAuditedArticleV2: s.hasSemanticV2 ? `Has V2 data (${s.semanticV2Length} chars)` : undefined,
+              articleDraftV2: s.hasArticleV2 ? `Has V2 data (${s.articleV2Length} chars)` : undefined
             },
-            outputs: {},
+            outputs: {
+              seoOptimizedArticle: s.hasV1SemanticData ? 'Has V1 data' : undefined,
+              fullArticle: s.hasV1ArticleData ? 'Has V1 data' : undefined,
+              auditVersion: s.auditVersion,
+              agentVersion: s.agentVersion
+            },
             updatedAt: new Date()
           })),
           v2Sessions: [],
