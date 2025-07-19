@@ -1,5 +1,5 @@
 import { NextRequest, NextResponse } from 'next/server';
-import { db } from '@/lib/db';
+import { db } from '@/lib/db/connection';
 import { workflows, workflowSteps, v2AgentSessions } from '@/lib/db/schema';
 import { eq, and, desc } from 'drizzle-orm';
 
@@ -33,20 +33,20 @@ export async function POST(request: NextRequest) {
     const recommendations: string[] = [];
 
     // Check for V2 data in steps
-    const semanticStep = steps.find(s => s.inputs?.stepType === 'semantic-seo');
-    const articleStep = steps.find(s => s.inputs?.stepType === 'article-draft');
+    const semanticStep = steps.find(s => (s.inputs as any)?.stepType === 'semantic-seo');
+    const articleStep = steps.find(s => (s.inputs as any)?.stepType === 'article-draft');
 
     if (semanticStep) {
-      if (!semanticStep.inputs?.semanticAuditedArticleV2) {
+      if (!(semanticStep.inputs as any)?.semanticAuditedArticleV2) {
         issues.push('Semantic SEO V2: No V2 data found in workflow step despite V2 session completion');
       }
-      if (semanticStep.inputs?.semanticAuditedArticle && !semanticStep.inputs?.semanticAuditedArticleV2) {
+      if ((semanticStep.inputs as any)?.semanticAuditedArticle && !(semanticStep.inputs as any)?.semanticAuditedArticleV2) {
         issues.push('Semantic SEO: Has V1 data but missing V2 data');
       }
     }
 
     if (articleStep) {
-      if (!articleStep.inputs?.articleDraftV2 && v2Sessions.some(s => s.stepId === 'article-draft-v2' && s.status === 'completed')) {
+      if (!(articleStep.inputs as any)?.articleDraftV2 && v2Sessions.some(s => s.stepId === 'article-draft-v2' && s.status === 'completed')) {
         issues.push('Article Draft V2: Completed session exists but no data in workflow step');
       }
     }
@@ -55,13 +55,13 @@ export async function POST(request: NextRequest) {
     for (const session of v2Sessions) {
       if (session.status === 'completed' && session.finalArticle) {
         const stepType = session.stepId.replace('-v2', '');
-        const step = steps.find(s => s.inputs?.stepType === stepType);
+        const step = steps.find(s => (s.inputs as any)?.stepType === stepType);
         
         if (!step) {
           issues.push(`Missing workflow step for completed V2 session: ${session.stepId}`);
         } else {
           const v2Field = session.stepId === 'semantic-audit-v2' ? 'semanticAuditedArticleV2' : 'articleDraftV2';
-          if (!step.inputs?.[v2Field]) {
+          if (!(step.inputs as any)?.[v2Field]) {
             issues.push(`V2 session ${session.id} completed but data not saved to step ${stepType}`);
           }
         }
@@ -69,8 +69,8 @@ export async function POST(request: NextRequest) {
     }
 
     // Check for timing issues
-    if (workflow.content?.steps) {
-      const contentSteps = workflow.content.steps;
+    if ((workflow.content as any)?.steps) {
+      const contentSteps = (workflow.content as any).steps;
       for (const step of steps) {
         const contentStep = contentSteps.find((cs: any) => cs.id === step.id);
         if (contentStep && JSON.stringify(contentStep) !== JSON.stringify(step)) {
