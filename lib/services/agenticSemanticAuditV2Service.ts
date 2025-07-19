@@ -156,6 +156,45 @@ When you reach <!-- END_OF_ARTICLE -->, you can conclude your audit.`;
       while (auditActive) {
         console.log(`🔄 V2 Audit turn ${messages.length} with ${sectionsCompleted} sections completed`);
         
+        // Deduplicate messages before each run to prevent duplicate ID errors
+        // This handles both msg_* and rs_* (reasoning) items
+        const seen = new Set<string>();
+        const deduplicatedMessages: any[] = [];
+        const duplicateIds: string[] = [];
+        
+        for (const message of messages) {
+          // Skip null/undefined messages
+          if (!message) {
+            console.log(`⚠️ Skipping null/undefined message`);
+            continue;
+          }
+          
+          const id = (message as any).id;
+          
+          // If no ID, it's safe to include (likely a user message)
+          if (!id) {
+            deduplicatedMessages.push(message);
+            continue;
+          }
+          
+          // Skip if we've already seen this ID
+          if (seen.has(id)) {
+            duplicateIds.push(id);
+            console.log(`⚠️ Filtering duplicate message with id: ${id}, role: ${message.role}`);
+            continue;
+          }
+          
+          seen.add(id);
+          deduplicatedMessages.push(message);
+        }
+        
+        messages = deduplicatedMessages;
+        console.log(`📊 Deduplicated message count: ${messages.length}, removed ${duplicateIds.length} duplicates`);
+        
+        if (duplicateIds.length > 0) {
+          console.log(`🔍 Duplicate IDs found: ${duplicateIds.join(', ')}`);
+        }
+        
         // Run the agent with full message history
         const result = await runner.run(semanticAuditorAgentV2, messages, {
           stream: true,
@@ -204,8 +243,11 @@ When you reach <!-- END_OF_ARTICLE -->, you can conclude your audit.`;
             console.log('✅ Audit completion detected in message');
             auditActive = false;
           } else {
-            // Continue with next section
-            messages.push(...conversationHistory);
+            // CRITICAL: Use the SDK's complete history which includes message-reasoning pairs
+            // Don't manually construct messages - let the SDK manage the conversation
+            messages = [...conversationHistory];
+            
+            // Add the user prompt - this is safe as it doesn't have an ID yet
             messages.push({ role: 'user', content: loopingPrompt });
             sectionsCompleted++;
             
