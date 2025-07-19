@@ -2,6 +2,7 @@
 
 import { useState, useEffect } from 'react';
 import Link from 'next/link';
+import { useRouter } from 'next/navigation';
 import AuthWrapper from '@/components/AuthWrapper';
 import Header from '@/components/Header';
 import { clientStorage, sessionStorage } from '@/lib/userStorage';
@@ -9,6 +10,7 @@ import { Client } from '@/types/user';
 import { Building2, Plus, Users, Globe, CheckCircle, XCircle, Clock, Edit, Trash2, X } from 'lucide-react';
 
 export default function ClientsPage() {
+  const router = useRouter();
   const [clients, setClients] = useState<Client[]>([]);
   const [showNewClientForm, setShowNewClientForm] = useState(false);
   const [editingClient, setEditingClient] = useState<Client | null>(null);
@@ -65,7 +67,13 @@ export default function ClientsPage() {
 
       setNewClient({ name: '', website: '', targetPages: '' });
       setShowNewClientForm(false);
-      await loadClients();
+      
+      // If target pages were added, redirect to client page with prompt flag
+      if (urls.length > 0) {
+        router.push(`/clients/${client.id}?promptKeywords=true`);
+      } else {
+        await loadClients();
+      }
     } catch (error: any) {
       alert('Error creating client: ' + error.message);
     }

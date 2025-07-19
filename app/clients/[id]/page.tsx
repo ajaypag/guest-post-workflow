@@ -1,7 +1,7 @@
 'use client';
 
 import { useState, useEffect } from 'react';
-import { useParams, useRouter } from 'next/navigation';
+import { useParams, useRouter, useSearchParams } from 'next/navigation';
 import Link from 'next/link';
 import AuthWrapper from '@/components/AuthWrapper';
 import Header from '@/components/Header';
@@ -23,6 +23,7 @@ import { parseUrlsFromText, matchUrlsToPages, getMatchingStats, UrlMatchResult }
 export default function ClientDetailPage() {
   const params = useParams();
   const router = useRouter();
+  const searchParams = useSearchParams();
   const [client, setClient] = useState<Client | null>(null);
   const [selectedPages, setSelectedPages] = useState<string[]>([]);
   const [showAddForm, setShowAddForm] = useState(false);
@@ -46,6 +47,22 @@ export default function ClientDetailPage() {
   useEffect(() => {
     loadClient();
   }, [params.id]);
+
+  useEffect(() => {
+    // Check if we should prompt for keyword generation (from client creation flow)
+    if (searchParams.get('promptKeywords') === 'true' && client) {
+      const targetPages = (client as any)?.targetPages || [];
+      if (targetPages.length > 0) {
+        setNewlyAddedPages(targetPages.map((page: any) => ({ url: page.url })));
+        setShowKeywordPrompt(true);
+        
+        // Clear the query parameter to prevent re-triggering on refresh
+        const url = new URL(window.location.href);
+        url.searchParams.delete('promptKeywords');
+        window.history.replaceState({}, '', url.pathname);
+      }
+    }
+  }, [client, searchParams]);
 
   const loadClient = async () => {
     try {
@@ -713,9 +730,12 @@ export default function ClientDetailPage() {
           {/* Keyword Generation Prompt */}
           {showKeywordPrompt && (
             <div className="bg-white rounded-lg shadow p-6 mb-6 border-l-4 border-purple-500">
-              <h3 className="text-lg font-medium mb-4 text-purple-800">Generate Keywords & Descriptions for New Pages?</h3>
+              <h3 className="text-lg font-medium mb-4 text-purple-800">Generate Keywords & Descriptions for Target Pages?</h3>
               <p className="text-sm text-gray-600 mb-4">
-                You just added {newlyAddedPages.length} new target page(s). Would you like to automatically generate keywords AND descriptions for all of them using AI?
+                {searchParams.get('promptKeywords') === 'true' 
+                  ? `Great! You've created ${client.name} with ${newlyAddedPages.length} target page(s). Would you like to automatically generate keywords AND descriptions for all of them using AI?`
+                  : `You just added ${newlyAddedPages.length} new target page(s). Would you like to automatically generate keywords AND descriptions for all of them using AI?`
+                }
               </p>
               <div className="bg-purple-50 p-3 rounded-md mb-4">
                 <p className="text-xs text-purple-700">
