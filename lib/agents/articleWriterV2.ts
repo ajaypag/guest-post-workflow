@@ -17,7 +17,7 @@ export const writerAgentV2 = new Agent({
 // Factory function to create ArticleEndCritic with dynamic outline
 export const createArticleEndCritic = (writerPlanningResponse: string) => new Agent({
   name: 'ArticleEndCritic',
-  model: 'gpt-4.1-nano',
+  model: 'o4-mini',
   instructions: `You are an END-OF-ARTICLE detector.
 
 You will receive the entire draft after each new section.  
