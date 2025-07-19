@@ -4,6 +4,7 @@ import { db } from '@/lib/db/connection';
 import { v2AgentSessions, workflows } from '@/lib/db/schema';
 import { eq, and, sql } from 'drizzle-orm';
 import { v4 as uuidv4 } from 'uuid';
+import { extractSuggestedArticle, extractAuditFeedback } from '@/lib/utils/auditParser';
 
 // Store active SSE connections for real-time updates
 const activeAuditV2Streams = new Map<string, any>();
@@ -131,12 +132,29 @@ If you look at your knowledge base, you'll see that I've added some instructions
 
 ${researchOutline}
 
-Now I realize this is a lot, so i want your first output to only be an audit of the first section. the format i want is to show the strengths, weaknesses, and the updated section that has your full fixes. start with the first section if cases where a section has many subsections, output just the subsection.
+Now I realize this is a lot, so i want your first output to only be an audit of the first section. For each section you audit, organize your response with these three markdown headings:
+
+### Strengths
+(list the strengths here)
+
+### Weaknesses  
+(list the weaknesses here)
+
+### Suggested Version
+(put your improved version of the section here)
+
+Start with the first section. In cases where a section has many subsections, output just the subsection.
 
 When you reach <!-- END_OF_ARTICLE -->, you can conclude your audit.`;
 
       // Exact looping prompt from user
-      const loopingPrompt = `Okay, now I want you to proceed your audit with the next section. As a reminder, the format i want is to show the strengths, weaknesses, and the updated section that has your full fixes. start with the first section. in cases where a section has many subsections, output just the subsection. While auditing, keep in mind we are creating a "primarily narrative" article so bullet points can appear but only very sporadically.`;
+      const loopingPrompt = `Okay, now I want you to proceed your audit with the next section. Remember to organize your response with these three markdown headings:
+
+### Strengths
+### Weaknesses  
+### Suggested Version
+
+In cases where a section has many subsections, output just the subsection. While auditing, keep in mind we are creating a "primarily narrative" article so bullet points can appear but only very sporadically.`;
 
       // Initialize conversation
       let messages: any[] = [
@@ -278,21 +296,31 @@ When you reach <!-- END_OF_ARTICLE -->, you can conclude your audit.`;
       
       console.log('🏁 V2 semantic audit conversation loop completed');
       
-      // Save final audited article
+      // Extract clean suggested article from the accumulated audit content
+      const cleanSuggestedArticle = extractSuggestedArticle(accumulatedAuditContent);
+      console.log(`📝 Extracted ${cleanSuggestedArticle.split('\n\n').length} suggested sections`);
+      
+      // Also extract audit feedback for logging
+      const auditFeedback = extractAuditFeedback(accumulatedAuditContent);
+      console.log(`📊 Collected feedback for ${auditFeedback.length} sections`);
+      
+      // Save final audited article (clean version)
       await this.updateAuditSession(sessionId, {
         status: 'completed',
-        finalArticle: accumulatedAuditContent,
+        finalArticle: cleanSuggestedArticle,  // Store clean article
         completedSections: sectionsCompleted,
         completedAt: new Date(),
         sessionMetadata: {
           ...(session.sessionMetadata as any),
           completedAt: new Date().toISOString(),
-          totalMessages: messages.length
+          totalMessages: messages.length,
+          fullAuditContent: accumulatedAuditContent,  // Store full audit in metadata
+          auditFeedback: auditFeedback  // Store feedback for analysis
         }
       });
       
-      // Update workflow with audited article
-      await this.updateWorkflowWithAuditedArticle(session.workflowId, accumulatedAuditContent);
+      // Update workflow with clean audited article
+      await this.updateWorkflowWithAuditedArticle(session.workflowId, cleanSuggestedArticle);
       
       // Send completion event
       auditV2SSEPush(sessionId, { 
