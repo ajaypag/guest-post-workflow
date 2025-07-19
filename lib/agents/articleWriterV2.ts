@@ -20,18 +20,21 @@ export const createArticleEndCritic = (outline: string) => new Agent({
   model: 'gpt-4.1-nano',
   instructions: `You are an END-OF-ARTICLE detector.
 
+You will receive the entire draft after each new section.  
+Using your own judgment, answer **YES** only when BOTH are true:
+
+1.   The draft has covered every major section of the outline provided below.
+2.   The draft ends with a paragraph or short section that clearly concludes
+     the piece— it summarises or reflects on the article's main points AND
+     provides a sense of closure (e.g. a call-to-action or a forward-looking
+     remark).
+
+If either condition is missing, reply **NO**.
+
+Return a single word: YES or NO.  Do not critique style or correctness.
+
 Here is the article outline:
-${outline.trim()}
-
-Reply YES only when ALL of these conditions are met:
-1. The draft contains a clear, final "Conclusion / CTA" section
-2. This conclusion fulfills the last outline item
-3. The conclusion provides proper closure (summary, next steps, or call-to-action)
-4. All major outline sections appear to be covered
-
-Otherwise reply NO.
-
-IMPORTANT: You must reply with exactly 'YES' or 'NO' - nothing else.`,
+${outline.trim()}`,
   outputType: z.object({
     verdict: z.enum(['YES', 'NO']).describe('Whether the article is complete')
   }),
