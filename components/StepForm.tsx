@@ -127,17 +127,51 @@ export default function StepForm({ step, stepIndex, workflow, onSave, onWorkflow
 
   const handleOutputChange = (data: any) => {
     console.log('🟡 FormComponent onChange called:', data);
+    console.log('🔍 Previous localOutputs:', localOutputs);
+    console.log('🆕 New data has seoOptimizedArticle:', !!data.seoOptimizedArticle);
+    console.log('📏 seoOptimizedArticle length:', data.seoOptimizedArticle?.length || 0);
+    
+    // IMPORTANT: Check for changes BEFORE updating state to avoid closure issues
+    const criticalFields = ['finalArticle', 'fullArticle', 'seoOptimizedArticle', 'googleDocUrl'];
+    const hasChangedCriticalField = criticalFields.some(field => {
+      // For seoOptimizedArticle, do a more thorough check
+      if (field === 'seoOptimizedArticle' && data[field]) {
+        const oldValue = localOutputs[field] || '';
+        const newValue = data[field] || '';
+        
+        // Check if content actually changed (not just whitespace)
+        const hasChanged = oldValue.trim() !== newValue.trim();
+        
+        console.log(`🔎 Checking ${field}:`);
+        console.log(`   Old length: ${oldValue.length}, trimmed: ${oldValue.trim().length}`);
+        console.log(`   New length: ${newValue.length}, trimmed: ${newValue.trim().length}`);
+        console.log(`   Content changed: ${hasChanged}`);
+        
+        // Also check if V2 is overwriting V1 content (based on version metadata)
+        if (hasChanged && data.auditVersion === 'v2' && oldValue.length > 0) {
+          console.log(`🔄 V2 audit replacing existing content`);
+        }
+        
+        return hasChanged;
+      }
+      
+      // For other fields, simple comparison
+      const hasChanged = data[field] && data[field] !== localOutputs[field];
+      if (hasChanged) {
+        console.log(`✅ Critical field "${field}" has changed`);
+      }
+      return hasChanged;
+    });
+    
+    // Update state
     setLocalOutputs(data);
     
-    // Trigger auto-save for critical fields
-    const criticalFields = ['finalArticle', 'fullArticle', 'seoOptimizedArticle', 'googleDocUrl'];
-    const hasChangedCriticalField = criticalFields.some(field => 
-      data[field] && data[field] !== localOutputs[field]
-    );
-    
+    // Trigger auto-save if critical fields changed
     if (hasChangedCriticalField) {
       console.log('🔄 Critical field changed, triggering auto-save');
       triggerAutoSave();
+    } else {
+      console.log('⚠️ No critical field changes detected, not triggering auto-save');
     }
   };
 
