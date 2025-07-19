@@ -714,12 +714,12 @@ Target URL: ${clientTargetUrl}`;
                     <div className="flex items-center justify-between mb-2">
                       <p className="text-sm font-medium text-indigo-800">🎯 Ranking Likelihood Analysis Prompt:</p>
                       <CopyButton 
-                        text="Okay for each of these finalists, review again the keyword rankings of the target site, identify which overlapping keyword rankings there are that share terms and give the average rankings of those terms and based on that, rank the topic most likely to rank if I were to publish an article about it"
+                        text="Okay for each of these finalists, review again the keyword rankings of the target site, identify which overlapping keyword rankings there are that share terms and give the average rankings of those terms and based on that, rank the topic most likely to rank if I were to publish an article about it. as part of your topic ranking, you also need to consider which one of these topics is most relevant or beneficial to the client if it ends up ranking. Clear keyword overlap: High, Clear topic overlap: Medium  . That combination of rankability and beneficiality is where the magic happens."
                         label="Copy Prompt"
                       />
                     </div>
                     <div className="text-xs text-indigo-700 bg-indigo-50 border border-indigo-200 rounded p-2">
-                      <strong>Copy this prompt</strong> and send it in the same ChatGPT conversation to get ranking likelihood analysis for your finalist keywords.
+                      <strong>Copy this prompt</strong> and send it in the same ChatGPT conversation to get ranking likelihood analysis that balances both rankability and client benefit.
                     </div>
                   </div>
 
