@@ -862,6 +862,83 @@ export default function DatabaseMigrationPage() {
     setIsLoading(false);
   };
 
+  const checkSemanticAuditV2Status = async () => {
+    setIsLoading(true);
+    setMessage('');
+    
+    try {
+      const response = await fetch('/api/admin/migrate-semantic-audit-v2');
+      const data = await response.json();
+      
+      if (data.exists) {
+        setMessage(`✅ V2 Agent Sessions table exists (${data.sessionCount || 0} semantic audit sessions)`);
+        setMessageType('success');
+      } else {
+        setMessage('ℹ️ V2 Agent Sessions table does not exist');
+        setMessageType('info');
+      }
+    } catch (error) {
+      setMessage(`❌ Error checking V2 tables: ${error instanceof Error ? error.message : 'Unknown error'}`);
+      setMessageType('error');
+    }
+    
+    setIsLoading(false);
+  };
+
+  const runSemanticAuditV2Migration = async () => {
+    setIsLoading(true);
+    setMessage('');
+    
+    try {
+      const response = await fetch('/api/admin/migrate-semantic-audit-v2', {
+        method: 'POST'
+      });
+      const data = await response.json();
+      
+      if (data.success) {
+        setMessage('✅ V2 Semantic Audit ready! Using shared v2_agent_sessions table.');
+        setMessageType('success');
+      } else {
+        setMessage(`❌ Migration failed: ${data.error}`);
+        setMessageType('error');
+      }
+    } catch (error) {
+      setMessage(`❌ Error: ${error instanceof Error ? error.message : 'Unknown error'}`);
+      setMessageType('error');
+    }
+    
+    setIsLoading(false);
+  };
+
+  const runSemanticAuditV2Rollback = async () => {
+    if (!confirm('Are you sure you want to remove the V2 semantic audit sessions? This will only delete semantic audit sessions, not article V2 sessions.')) {
+      return;
+    }
+    
+    setIsLoading(true);
+    setMessage('');
+    
+    try {
+      const response = await fetch('/api/admin/migrate-semantic-audit-v2', {
+        method: 'DELETE'
+      });
+      const data = await response.json();
+      
+      if (data.success) {
+        setMessage('✅ V2 Semantic Audit sessions removed successfully!');
+        setMessageType('success');
+      } else {
+        setMessage(`❌ Rollback failed: ${data.error}`);
+        setMessageType('error');
+      }
+    } catch (error) {
+      setMessage(`❌ Error: ${error instanceof Error ? error.message : 'Unknown error'}`);
+      setMessageType('error');
+    }
+    
+    setIsLoading(false);
+  };
+
   return (
     <div className="min-h-screen bg-gray-50 py-8">
       <div className="max-w-4xl mx-auto px-4 sm:px-6 lg:px-8">
@@ -1737,6 +1814,91 @@ export default function DatabaseMigrationPage() {
                 <RotateCcw className="w-4 h-4 mr-2" />
                 {isLoading ? 'Rolling Back...' : 'Remove V2 Tables'}
               </button>
+            </div>
+          </div>
+
+          {/* Semantic Audit V2 LLM Orchestration Migration */}
+          <div className="mb-8">
+            <h2 className="text-lg font-semibold text-gray-900 mb-4">Semantic Audit V2 - LLM Orchestration</h2>
+            <p className="text-gray-600 mb-4">
+              This enables V2 semantic SEO audit using the same <code className="bg-gray-100 px-2 py-1 rounded">v2_agent_sessions</code> table
+              as Article V2, but with <code className="bg-gray-100 px-2 py-1 rounded">step_id='content-audit'</code>.
+            </p>
+            
+            <div className="bg-blue-50 border border-blue-200 rounded-lg p-4 mb-6">
+              <div className="flex items-start space-x-3">
+                <AlertTriangle className="w-5 h-5 text-blue-600 mt-0.5" />
+                <div>
+                  <h3 className="text-sm font-semibold text-blue-800">V2 Semantic Audit Features:</h3>
+                  <ul className="text-sm text-blue-700 mt-2 space-y-1">
+                    <li>• <strong>Simple Flow:</strong> Direct audit without complex orchestration</li>
+                    <li>• <strong>End Marker Pattern:</strong> Uses &lt;!-- END_OF_ARTICLE --&gt; for completion</li>
+                    <li>• <strong>Natural Conversation:</strong> Follows ChatGPT.com tab experience</li>
+                    <li>• <strong>Shared Infrastructure:</strong> Uses same v2_agent_sessions table</li>
+                    <li>• <strong>Section-by-Section:</strong> Audits systematically with looping prompts</li>
+                  </ul>
+                </div>
+              </div>
+            </div>
+          </div>
+
+          <div className="space-y-4 mb-8">
+            {/* Check Semantic Audit V2 Status */}
+            <div className="border border-gray-200 rounded-lg p-4">
+              <h3 className="font-semibold text-gray-900 mb-2">Check Semantic Audit V2 Status</h3>
+              <p className="text-gray-600 text-sm mb-3">
+                Check if V2 table exists and count semantic audit sessions.
+              </p>
+              <button
+                onClick={checkSemanticAuditV2Status}
+                disabled={isLoading}
+                className="inline-flex items-center px-4 py-2 bg-blue-600 text-white text-sm font-medium rounded-md hover:bg-blue-700 disabled:opacity-50 disabled:cursor-not-allowed"
+              >
+                <Database className="w-4 h-4 mr-2" />
+                {isLoading ? 'Checking...' : 'Check V2 Audit Status'}
+              </button>
+            </div>
+
+            {/* Enable Semantic Audit V2 */}
+            <div className="border border-green-200 rounded-lg p-4">
+              <h3 className="font-semibold text-gray-900 mb-2">Enable Semantic Audit V2</h3>
+              <p className="text-gray-600 text-sm mb-3">
+                Ensure v2_agent_sessions table exists for semantic audit V2 functionality.
+              </p>
+              <button
+                onClick={runSemanticAuditV2Migration}
+                disabled={isLoading}
+                className="inline-flex items-center px-4 py-2 bg-green-600 text-white text-sm font-medium rounded-md hover:bg-green-700 disabled:opacity-50 disabled:cursor-not-allowed"
+              >
+                <Play className="w-4 h-4 mr-2" />
+                {isLoading ? 'Enabling...' : 'Enable V2 Audit'}
+              </button>
+            </div>
+
+            {/* Remove Semantic Audit V2 Sessions */}
+            <div className="border border-red-200 rounded-lg p-4">
+              <h3 className="font-semibold text-gray-900 mb-2">Remove Semantic Audit V2 Sessions</h3>
+              <p className="text-gray-600 text-sm mb-3">
+                Remove only semantic audit V2 sessions (step_id='content-audit'). Article V2 sessions remain.
+              </p>
+              <button
+                onClick={runSemanticAuditV2Rollback}
+                disabled={isLoading}
+                className="inline-flex items-center px-4 py-2 bg-red-600 text-white text-sm font-medium rounded-md hover:bg-red-700 disabled:opacity-50 disabled:cursor-not-allowed"
+              >
+                <RotateCcw className="w-4 h-4 mr-2" />
+                {isLoading ? 'Removing...' : 'Remove V2 Audit Sessions'}
+              </button>
+            </div>
+
+            {/* Link to Diagnostics */}
+            <div className="bg-purple-100 border border-purple-300 rounded-lg p-4">
+              <p className="text-sm text-purple-800 font-medium">
+                🔍 For detailed diagnostics and troubleshooting, visit the{' '}
+                <a href="/admin/fix-semantic-audit-v2" className="underline font-semibold">
+                  Semantic Audit V2 Diagnostics Page
+                </a>
+              </p>
             </div>
           </div>
 
