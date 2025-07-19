@@ -206,8 +206,10 @@ export const AgenticArticleGeneratorV2 = ({ workflowId, outline, onComplete }: A
     }
   };
 
-  const progressPercentage = progress 
-    ? Math.round((progress.session.completedSections / Math.max(1, progress.session.totalSections)) * 100) 
+  // Don't calculate percentage when we don't know total sections
+  const hasKnownTotal = progress?.session.totalSections && progress.session.totalSections > 0;
+  const progressPercentage = hasKnownTotal
+    ? Math.round((progress.session.completedSections / progress.session.totalSections) * 100) 
     : 0;
 
   return (
@@ -265,30 +267,38 @@ export const AgenticArticleGeneratorV2 = ({ workflowId, outline, onComplete }: A
                 <span className="font-medium text-gray-900 capitalize">{progress.session.status}</span>
               </div>
               <span className="text-sm text-gray-600">
-                {progressPercentage}% Complete
+                {hasKnownTotal 
+                  ? `${progressPercentage}% Complete`
+                  : `${progress.session.completedSections} sections completed`
+                }
               </span>
             </div>
             
-            {/* Progress Bar */}
-            <div className="w-full bg-gray-200 rounded-full h-2 mb-3 overflow-hidden">
-              <div 
-                className="bg-gradient-to-r from-purple-600 to-blue-600 h-2 rounded-full transition-all duration-500"
-                style={{ width: `${progressPercentage}%` }}
-              />
-            </div>
+            {/* Progress Bar - only show when we know the total */}
+            {hasKnownTotal && (
+              <div className="w-full bg-gray-200 rounded-full h-2 mb-3 overflow-hidden">
+                <div 
+                  className="bg-gradient-to-r from-purple-600 to-blue-600 h-2 rounded-full transition-all duration-500"
+                  style={{ width: `${progressPercentage}%` }}
+                />
+              </div>
+            )}
             
             {/* Stats */}
             <div className="grid grid-cols-2 gap-4 text-sm">
               <div>
                 <span className="text-gray-500">Sections:</span>
                 <span className="ml-2 font-medium">
-                  {progress.session.completedSections} / {progress.session.totalSections || '?'}
+                  {hasKnownTotal 
+                    ? `${progress.session.completedSections} / ${progress.session.totalSections}`
+                    : `${progress.session.completedSections} completed`
+                  }
                 </span>
               </div>
               <div>
                 <span className="text-gray-500">Words:</span>
                 <span className="ml-2 font-medium">
-                  {progress.session.currentWordCount} / {progress.session.totalWordCount || '?'}
+                  {progress.session.currentWordCount || 0} words
                 </span>
               </div>
             </div>
