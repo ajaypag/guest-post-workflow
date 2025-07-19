@@ -119,17 +119,9 @@ export class AgenticArticleV2Service {
       // Track article completion status
       let articleComplete = false;
       
-      // Create ArticleEndCritic with the outline
-      const articleEndCritic = createArticleEndCritic(session.outline || '');
-      
-      // Calculate dynamic CHECK_START based on outline
-      // Estimate sections from outline (rough count of numbered items)
-      const outlineLines = (session.outline || '').split('\n');
-      const numberedItems = outlineLines.filter(line => /^\d+\./.test(line.trim())).length;
-      const expectedSections = Math.max(5, numberedItems); // At least 5 sections
-      const CHECK_START = Math.max(5, Math.floor(expectedSections * 0.6)); // Start checking at 60% completion
-      
-      console.log(`📊 Outline analysis: ${numberedItems} numbered items found, CHECK_START set to ${CHECK_START}`);
+      // We'll create the ArticleEndCritic AFTER we get the planning response
+      let articleEndCritic: any = null;
+      let CHECK_START = 5; // Default value, will be recalculated after planning
 
       // Phase 1: Send planning prompt to writer
       console.log(`📝 Sending planning prompt to writer...`);
@@ -191,6 +183,20 @@ export class AgenticArticleV2Service {
       
       writerOutputs.push(planningResponse);
       console.log(`✅ Planning response extracted: ${planningResponse.length} chars`);
+      
+      // Log first 1000 chars of planning response to see outline
+      console.log(`📋 Planning response preview:\n${planningResponse.slice(0, 1000)}`);
+      
+      // NOW create ArticleEndCritic with the writer's generated outline
+      articleEndCritic = createArticleEndCritic(planningResponse);
+      console.log(`🎯 Created ArticleEndCritic with writer's generated outline`);
+      
+      // Recalculate CHECK_START based on the writer's outline
+      const planningLines = planningResponse.split('\n');
+      const plannedSections = planningLines.filter(line => /^\d+\./.test(line.trim())).length;
+      const expectedSections = Math.max(5, plannedSections);
+      CHECK_START = Math.max(5, Math.floor(expectedSections * 0.6));
+      console.log(`📊 Writer's outline analysis: ${plannedSections} sections found, CHECK_START set to ${CHECK_START}`);
 
       // Phase 2: Send title/intro prompt
       console.log(`📝 Sending title/intro prompt to writer...`);
@@ -364,7 +370,8 @@ export class AgenticArticleV2Service {
             ]);
             
             const verdictResult = await criticRun.finalOutput;
-            const verdict = verdictResult?.verdict;
+            // Extract verdict from the structured output object
+            const verdict = verdictResult?.verdict || (typeof verdictResult === 'string' ? verdictResult : 'NO');
             console.log(`🎯 ArticleEndCritic verdict: ${verdict}`);
             
             if (verdict === 'YES') {
