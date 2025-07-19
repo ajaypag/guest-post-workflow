@@ -573,12 +573,28 @@ ${outlineContent || '((((Complete Step 3: Deep Research first to get outline con
                 workflowId={workflow.id}
                 outline={outlineContent}
                 onComplete={(article) => {
-                  onChange({ 
+                  console.log('🎯 V2 Article onComplete called with article length:', article.length);
+                  console.log('📝 Current step data before change:', { inputs: step.inputs, outputs: step.outputs });
+                  
+                  // Save V2 data to the correct field (inputs.articleDraftV2)
+                  const updatedInputs = { 
+                    ...step.inputs,
+                    articleDraftV2: article
+                  };
+                  
+                  const updatedOutputs = { 
                     ...step.outputs, 
-                    fullArticle: article,
+                    fullArticle: article, // Keep V1 field for backward compatibility
                     agentGenerated: true,
                     agentVersion: 'v2',
                     draftStatus: 'completed'
+                  };
+                  
+                  console.log('📤 Calling onChange with V2 data in inputs.articleDraftV2');
+                  onChange({ 
+                    ...step,
+                    inputs: updatedInputs,
+                    outputs: updatedOutputs
                   });
                 }}
               />
