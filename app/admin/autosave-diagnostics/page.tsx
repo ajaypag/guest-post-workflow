@@ -96,27 +96,65 @@ export default function AutoSaveDiagnosticsPage() {
 
     setLoading(true);
     try {
-      // Run main diagnostics
-      const response = await fetch('/api/admin/diagnose-autosave', {
+      // Use the simple query endpoint that works
+      const simpleResponse = await fetch('/api/admin/test-simple-workflow-query', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ workflowId })
       });
 
-      const data = await response.json();
-      setResults(data);
-
-      // Also check V2 field issues
-      const v2Response = await fetch('/api/admin/check-v2-fields', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ workflowId })
-      });
-
-      const v2Data = await v2Response.json();
-      setV2Analysis(v2Data.fieldAnalysis);
+      const simpleData = await simpleResponse.json();
+      
+      if (simpleData.success) {
+        // Convert simple data to expected format
+        const mockResults = {
+          workflowSteps: simpleData.steps.map((s: any, idx: number) => ({
+            id: s.id,
+            stepNumber: idx,
+            title: s.title,
+            status: s.status,
+            inputs: { 
+              stepType: s.stepType,
+              semanticAuditedArticleV2: s.hasSemanticV2 ? 'Has data' : undefined,
+              articleDraftV2: s.hasArticleV2 ? 'Has data' : undefined
+            },
+            outputs: {},
+            updatedAt: new Date()
+          })),
+          v2Sessions: [],
+          recentAutoSaves: [],
+          stepData: {},
+          issues: simpleData.analysis.issues,
+          recommendations: simpleData.analysis.recommendations
+        };
+        
+        setResults(mockResults);
+        
+        // Set V2 analysis from simple data
+        if (simpleData.analysis.semanticStep || simpleData.analysis.articleStep) {
+          setV2Analysis({
+            semanticSeoStep: simpleData.analysis.semanticStep ? {
+              hasV1Field: simpleData.analysis.semanticStep.hasV1SemanticData,
+              hasV2Field: simpleData.analysis.semanticStep.hasSemanticV2,
+              v1FieldLength: 0,
+              v2FieldLength: simpleData.analysis.semanticStep.semanticV2Length
+            } : null,
+            articleDraftStep: simpleData.analysis.articleStep ? {
+              hasV1Field: simpleData.analysis.articleStep.hasV1ArticleData,
+              hasV2Field: simpleData.analysis.articleStep.hasArticleV2,
+              v1FieldLength: 0,
+              v2FieldLength: simpleData.analysis.articleStep.articleV2Length
+            } : null,
+            issues: simpleData.analysis.issues,
+            recommendations: simpleData.analysis.recommendations
+          });
+        }
+      } else {
+        alert('Diagnostic failed: ' + simpleData.error);
+      }
     } catch (error) {
       console.error('Diagnostic error:', error);
+      alert('Diagnostic failed - check console for details');
     } finally {
       setLoading(false);
     }
@@ -231,6 +269,55 @@ export default function AutoSaveDiagnosticsPage() {
           >
             {monitoring ? 'Stop Monitoring' : 'Start Monitoring'}
           </button>
+        </div>
+        
+        {/* Database Column Check */}
+        <div className="mt-4 pt-4 border-t">
+          <div className="flex items-center space-x-4">
+            <button
+              onClick={async () => {
+                try {
+                  const response = await fetch('/api/admin/check-actual-columns');
+                  const data = await response.json();
+                  console.log('Column check:', data);
+                  alert(`Database Columns:\n${JSON.stringify(data.columnNames, null, 2)}\n\nDiagnosis: ${data.diagnosis.stepNumberIssue}`);
+                } catch (error) {
+                  alert('Failed to check columns: ' + error);
+                }
+              }}
+              className="px-4 py-2 bg-gray-600 text-white rounded-lg hover:bg-gray-700"
+            >
+              Check Database Columns
+            </button>
+            
+            <button
+              onClick={async () => {
+                try {
+                  // First check if migration is needed
+                  const checkResponse = await fetch('/api/admin/add-step-number-column');
+                  const checkData = await checkResponse.json();
+                  
+                  if (!checkData.needsMigration) {
+                    alert('Migration not needed: ' + checkData.message);
+                    return;
+                  }
+                  
+                  if (confirm('Add step_number column to workflow_steps table?')) {
+                    const response = await fetch('/api/admin/add-step-number-column', {
+                      method: 'POST'
+                    });
+                    const data = await response.json();
+                    alert(data.message || data.error);
+                  }
+                } catch (error) {
+                  alert('Migration failed: ' + error);
+                }
+              }}
+              className="px-4 py-2 bg-yellow-600 text-white rounded-lg hover:bg-yellow-700"
+            >
+              Add step_number Column
+            </button>
+          </div>
         </div>
       </div>
 
