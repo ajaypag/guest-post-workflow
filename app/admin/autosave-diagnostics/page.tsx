@@ -37,6 +37,21 @@ export default function AutoSaveDiagnosticsPage() {
   const [workflowId, setWorkflowId] = useState('');
   const [monitoring, setMonitoring] = useState(false);
   const [liveEvents, setLiveEvents] = useState<AutoSaveEvent[]>([]);
+  const [recentWorkflows, setRecentWorkflows] = useState<any[]>([]);
+
+  // Fetch recent workflows on mount
+  useEffect(() => {
+    const fetchRecentWorkflows = async () => {
+      try {
+        const response = await fetch('/api/workflows?limit=10&orderBy=createdAt&order=desc');
+        const data = await response.json();
+        setRecentWorkflows(data.workflows || []);
+      } catch (error) {
+        console.error('Failed to fetch recent workflows:', error);
+      }
+    };
+    fetchRecentWorkflows();
+  }, []);
 
   // Listen for auto-save events
   useEffect(() => {
@@ -157,6 +172,37 @@ export default function AutoSaveDiagnosticsPage() {
   return (
     <div className="p-8 max-w-6xl mx-auto">
       <h1 className="text-3xl font-bold mb-8">Auto-Save Diagnostics</h1>
+
+      {/* Recent Workflows */}
+      <div className="bg-gray-50 rounded-lg shadow p-6 mb-6">
+        <h2 className="text-lg font-semibold mb-4">Recent Workflows</h2>
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
+          {recentWorkflows.length === 0 ? (
+            <div className="text-gray-500">Loading workflows...</div>
+          ) : (
+            recentWorkflows.map((workflow) => (
+              <div key={workflow.id} className="flex items-center justify-between bg-white rounded-lg p-3 border">
+                <div className="flex-1 min-w-0">
+                  <div className="font-medium text-sm truncate">{workflow.title || 'Untitled Workflow'}</div>
+                  <div className="text-xs text-gray-500">
+                    {new Date(workflow.createdAt).toLocaleDateString()} • ID: {workflow.id.substring(0, 8)}...
+                  </div>
+                </div>
+                <button
+                  onClick={() => {
+                    setWorkflowId(workflow.id);
+                    navigator.clipboard.writeText(workflow.id);
+                  }}
+                  className="ml-2 px-3 py-1 bg-blue-100 text-blue-700 hover:bg-blue-200 rounded text-xs font-medium"
+                  title="Click to use this workflow ID"
+                >
+                  Use ID
+                </button>
+              </div>
+            ))
+          )}
+        </div>
+      </div>
 
       {/* Input Section */}
       <div className="bg-white rounded-lg shadow p-6 mb-6">

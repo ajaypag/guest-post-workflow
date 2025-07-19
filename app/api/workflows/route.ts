@@ -7,6 +7,9 @@ export async function GET(request: NextRequest) {
   try {
     const { searchParams } = new URL(request.url);
     const userId = searchParams.get('userId');
+    const limit = searchParams.get('limit');
+    const orderBy = searchParams.get('orderBy');
+    const order = searchParams.get('order');
     
     let workflows;
     if (userId) {
@@ -17,6 +20,23 @@ export async function GET(request: NextRequest) {
       workflows = allWorkflows.map(workflow => 
         WorkflowService.databaseToGuestPostWorkflow(workflow)
       );
+    }
+
+    // Apply sorting if requested
+    if (orderBy === 'createdAt' && order === 'desc') {
+      workflows.sort((a, b) => {
+        const dateA = new Date(a.createdAt || 0).getTime();
+        const dateB = new Date(b.createdAt || 0).getTime();
+        return dateB - dateA;
+      });
+    }
+
+    // Apply limit if requested
+    if (limit) {
+      const limitNum = parseInt(limit, 10);
+      if (!isNaN(limitNum) && limitNum > 0) {
+        workflows = workflows.slice(0, limitNum);
+      }
     }
 
     return NextResponse.json({ workflows });
