@@ -370,7 +370,8 @@ export class AgenticArticleV2Service {
             ]);
             
             const verdictResult = await criticRun.finalOutput;
-            const verdict = verdictResult?.verdict;
+            // Extract verdict from the structured output object
+            const verdict = verdictResult?.verdict || (typeof verdictResult === 'string' ? verdictResult : 'NO');
             console.log(`🎯 ArticleEndCritic verdict: ${verdict}`);
             
             if (verdict === 'YES') {
