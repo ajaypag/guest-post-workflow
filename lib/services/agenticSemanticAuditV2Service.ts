@@ -139,7 +139,7 @@ When you reach <!-- END_OF_ARTICLE -->, you can conclude your audit.`;
       const loopingPrompt = `Okay, now I want you to proceed your audit with the next section. As a reminder, the format i want is to show the strengths, weaknesses, and the updated section that has your full fixes. start with the first section. in cases where a section has many subsections, output just the subsection. While auditing, keep in mind we are creating a "primarily narrative" article so bullet points can appear but only very sporadically.`;
 
       // Initialize conversation
-      const messages: any[] = [
+      let messages: any[] = [
         { role: 'user', content: initialPrompt }
       ];
       
