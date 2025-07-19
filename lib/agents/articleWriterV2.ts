@@ -15,7 +15,7 @@ export const writerAgentV2 = new Agent({
 });
 
 // Factory function to create ArticleEndCritic with dynamic outline
-export const createArticleEndCritic = (outline: string) => new Agent({
+export const createArticleEndCritic = (writerPlanningResponse: string) => new Agent({
   name: 'ArticleEndCritic',
   model: 'gpt-4.1-nano',
   instructions: `You are an END-OF-ARTICLE detector.
@@ -23,7 +23,7 @@ export const createArticleEndCritic = (outline: string) => new Agent({
 You will receive the entire draft after each new section.  
 Using your own judgment, answer **YES** only when BOTH are true:
 
-1.   The draft has covered every major section of the outline provided below.
+1.   The draft has covered every major section from the writer's planned outline below.
 2.   The draft ends with a paragraph or short section that clearly concludes
      the piece— it summarises or reflects on the article's main points AND
      provides a sense of closure (e.g. a call-to-action or a forward-looking
@@ -33,8 +33,8 @@ If either condition is missing, reply **NO**.
 
 Return a single word: YES or NO.  Do not critique style or correctness.
 
-Here is the article outline:
-${outline.trim()}`,
+Here is the writer's planning response and outline:
+${writerPlanningResponse.trim()}`,
   outputType: z.object({
     verdict: z.enum(['YES', 'NO']).describe('Whether the article is complete')
   }),
