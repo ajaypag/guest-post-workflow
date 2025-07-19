@@ -162,8 +162,10 @@ export default function ClientDetailPage() {
 
   const handleKeywordSuccess = (keywords: string[]) => {
     setKeywordMessage(`✅ Generated ${keywords.length} keywords successfully!`);
-    // Refresh client data to show updated keywords
-    loadClient();
+    // Add a small delay before refreshing to ensure database transaction is complete
+    setTimeout(() => {
+      loadClient();
+    }, 500);
     // Clear message after 5 seconds
     setTimeout(() => setKeywordMessage(''), 5000);
   };
@@ -176,16 +178,20 @@ export default function ClientDetailPage() {
 
   const handleKeywordsUpdate = (keywords: string[]) => {
     setKeywordMessage(`✅ Keywords updated! Now showing ${keywords.length} keywords.`);
-    // Refresh client data to show updated keywords
-    loadClient();
+    // Add a small delay before refreshing to ensure database transaction is complete
+    setTimeout(() => {
+      loadClient();
+    }, 500);
     // Clear message after 5 seconds
     setTimeout(() => setKeywordMessage(''), 5000);
   };
 
   const handleDescriptionSuccess = (description: string) => {
     setDescriptionMessage(`✅ Generated description successfully! (${description.length} characters)`);
-    // Refresh client data to show updated description
-    loadClient();
+    // Add a small delay before refreshing to ensure database transaction is complete
+    setTimeout(() => {
+      loadClient();
+    }, 500);
     // Clear message after 5 seconds
     setTimeout(() => setDescriptionMessage(''), 5000);
   };
@@ -198,8 +204,10 @@ export default function ClientDetailPage() {
 
   const handleDescriptionUpdate = (description: string) => {
     setDescriptionMessage(`✅ Description updated! (${description.length} characters)`);
-    // Refresh client data to show updated description
-    loadClient();
+    // Add a small delay before refreshing to ensure database transaction is complete
+    setTimeout(() => {
+      loadClient();
+    }, 500);
     // Clear message after 5 seconds
     setTimeout(() => setDescriptionMessage(''), 5000);
   };
