@@ -38,8 +38,10 @@ export const AgenticSemanticAuditorV2 = ({
   const [logs, setLogs] = useState<string[]>([]);
   const [showCostDialog, setShowCostDialog] = useState(false);
   const [isButtonDisabled, setIsButtonDisabled] = useState(false);
-  const [auditContent, setAuditContent] = useState('');
+  const [intermediaryContent, setIntermediaryContent] = useState(''); // Streaming markdown content
+  const [finalArticle, setFinalArticle] = useState(''); // Clean parsed article
   const [showRendered, setShowRendered] = useState(false);
+  const [showIntermediaryView, setShowIntermediaryView] = useState(false); // Toggle between final and analysis view
   const eventSourceRef = useRef<EventSource | null>(null);
 
   const addLog = (message: string) => {
@@ -64,7 +66,8 @@ export const AgenticSemanticAuditorV2 = ({
     setIsAuditing(true);
     setError(null);
     setLogs([]);
-    setAuditContent('');
+    setIntermediaryContent(''); // Clear streaming content
+    setFinalArticle(''); // Clear final article
     addLog('🚀 Starting V2 semantic SEO audit...');
 
     try {
@@ -113,8 +116,8 @@ export const AgenticSemanticAuditorV2 = ({
             break;
             
           case 'text':
-            // Accumulate audit content
-            setAuditContent(prev => prev + data.content);
+            // Accumulate intermediary content (with markdown headers)
+            setIntermediaryContent(prev => prev + data.content);
             break;
             
           case 'section_completed':
@@ -139,14 +142,16 @@ export const AgenticSemanticAuditorV2 = ({
             if (data.status === 'completed') {
               addLog('🎉 V2 semantic audit completed successfully!');
               
-              if (data.auditedArticle) {
-                const wordCount = data.auditedArticle.split(/\s+/).filter((w: string) => w).length;
-                addLog(`📊 Audited article: ${wordCount} words`);
-                setAuditContent(data.auditedArticle);
-                onComplete(data.auditedArticle);
-              } else if (auditContent) {
-                // Use accumulated content if not in completion message
-                onComplete(auditContent);
+              // Handle both intermediary and final content
+              if (data.intermediaryContent) {
+                setIntermediaryContent(data.intermediaryContent);
+              }
+              
+              if (data.finalArticle) {
+                const wordCount = data.finalArticle.split(/\s+/).filter((w: string) => w).length;
+                addLog(`📊 Final audited article: ${wordCount} words`);
+                setFinalArticle(data.finalArticle);
+                onComplete(data.finalArticle); // Pass clean article to parent
               } else {
                 addLog('⚠️ Warning: No audited article received from server');
                 setError('No audited article received from server');
@@ -268,25 +273,39 @@ export const AgenticSemanticAuditorV2 = ({
       )}
 
       {/* Audit Content Display */}
-      {auditContent && (
+      {(intermediaryContent || finalArticle) && (
         <div className="space-y-2">
           <div className="flex items-center justify-between">
-            <h4 className="font-medium text-gray-900">Audit Output</h4>
-            <button
-              onClick={() => setShowRendered(!showRendered)}
-              className="text-sm text-blue-600 hover:text-blue-700"
-            >
-              {showRendered ? 'Show Raw' : 'Show Rendered'}
-            </button>
+            <h4 className="font-medium text-gray-900">
+              {finalArticle ? 'Final Audited Article' : 'Audit Progress (Live)'}
+            </h4>
+            <div className="flex items-center space-x-2">
+              {finalArticle && intermediaryContent && (
+                <button
+                  onClick={() => setShowIntermediaryView(!showIntermediaryView)}
+                  className="text-sm text-purple-600 hover:text-purple-700"
+                >
+                  {showIntermediaryView ? 'Show Final' : 'Show Analysis'}
+                </button>
+              )}
+              <button
+                onClick={() => setShowRendered(!showRendered)}
+                className="text-sm text-blue-600 hover:text-blue-700"
+              >
+                {showRendered ? 'Show Raw' : 'Show Rendered'}
+              </button>
+            </div>
           </div>
           <div className="bg-white/60 backdrop-blur border border-blue-200 rounded-lg p-4 max-h-96 overflow-y-auto">
             {showRendered ? (
               <div className="prose prose-sm max-w-none">
-                <ReactMarkdown>{auditContent}</ReactMarkdown>
+                <ReactMarkdown>
+                  {showIntermediaryView ? intermediaryContent : (finalArticle || intermediaryContent)}
+                </ReactMarkdown>
               </div>
             ) : (
               <pre className="text-xs text-gray-800 whitespace-pre-wrap font-mono">
-                {auditContent}
+                {showIntermediaryView ? intermediaryContent : (finalArticle || intermediaryContent)}
               </pre>
             )}
           </div>
