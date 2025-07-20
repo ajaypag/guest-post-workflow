@@ -1,16 +1,19 @@
 import { Agent } from '@openai/agents';
-import { fileSearchTool } from '@openai/agents-openai';
+import { fileSearchTool, webSearchTool } from '@openai/agents-openai';
 import { z } from 'zod';
 
 // File search tool with your vector store - same one used in current implementation
 const fileSearch = fileSearchTool(['vs_68710d7858ec8191b829a50012da7707']);
+
+// Web search tool for fact-checking and current information
+const webSearch = webSearchTool();
 
 // The writer agent with minimal instructions - just the vector store access
 export const writerAgentV2 = new Agent({
   name: 'ArticleWriterV2',
   instructions: '', // Empty instructions - all prompts come from the conversation
   model: 'o3-2025-04-16',
-  tools: [fileSearch],
+  tools: [fileSearch, webSearch],
   // No output schema - agent returns plain text responses
 });
 
