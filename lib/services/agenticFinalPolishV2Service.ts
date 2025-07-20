@@ -53,7 +53,9 @@ Output ONLY the three markdown sections below. Do not include any introductory t
 ### Updated Section
 (put your polished version of the section here - ready to copy-paste)
 
-Start with the first section.`;
+Start with the first section.
+
+When you reach <!-- END_OF_ARTICLE -->, you can conclude your polish.`;
 
 const PROCEED_PROMPT = `Okay that is good. Now, proceed to the next section. Re-review my project files for my brand guide and the Semantic SEO writing tips. Gauge how well it follows the brand guide and semantic seo tips.
 
@@ -156,6 +158,10 @@ export class AgenticFinalPolishV2Service {
 
       await this.updateSession(sessionId, { status: 'polishing' });
       sseUpdate(sessionId, { type: 'status', status: 'polishing', message: 'Starting brand alignment polish...' });
+      
+      // Add end marker to article to prevent infinite loops
+      const END_MARKER = '<!-- END_OF_ARTICLE -->';
+      const articleWithEndMarker = fullArticle + '\n\n' + END_MARKER;
 
       // Create a SINGLE conversation thread with the polisher
       const polisherRunner = new Runner({
@@ -167,14 +173,15 @@ export class AgenticFinalPolishV2Service {
       let conversationHistory: any[] = [
         { 
           role: 'user', 
-          content: KICKOFF_PROMPT.replace('{ARTICLE}', fullArticle)
+          content: KICKOFF_PROMPT.replace('{ARTICLE}', articleWithEndMarker)
         }
       ];
 
       // Collect all polish content with markdown headers for parsing
       let accumulatedPolishContent = '';
       let sectionCount = 0;
-      const maxSections = 40; // Safety limit
+      const maxSections = 30; // Reduced safety limit to prevent infinite loops
+      let continuePolishing = true; // Declare here before using in streaming
 
       // Phase 1: Send kickoff prompt
       console.log(`📝 Sending kickoff prompt for first section...`);
@@ -191,6 +198,12 @@ export class AgenticFinalPolishV2Service {
         if (event.type === 'raw_model_stream_event' && event.data.type === 'output_text_delta') {
           kickoffResponse += event.data.delta || '';
           sseUpdate(sessionId, { type: 'text', content: event.data.delta });
+          
+          // Check for END_MARKER in stream
+          if (event.data.delta && event.data.delta.includes(END_MARKER)) {
+            console.log('🎯 END_MARKER detected in first section stream');
+            continuePolishing = false;
+          }
         }
       }
 
@@ -241,7 +254,7 @@ export class AgenticFinalPolishV2Service {
       });
 
       // Phase 3: Loop through remaining sections with two-prompt pattern
-      let continuePolishing = true;
+      // continuePolishing already declared above
       
       while (continuePolishing && sectionCount < maxSections) {
         // Step 1: Proceed to next section
@@ -264,6 +277,12 @@ export class AgenticFinalPolishV2Service {
           if (event.type === 'raw_model_stream_event' && event.data.type === 'output_text_delta') {
             proceedResponse += event.data.delta || '';
             sseUpdate(sessionId, { type: 'text', content: event.data.delta });
+            
+            // Check for END_MARKER in stream
+            if (event.data.delta && event.data.delta.includes(END_MARKER)) {
+              console.log('🎯 END_MARKER detected in proceed stream');
+              continuePolishing = false;
+            }
           }
         }
 
@@ -276,6 +295,13 @@ export class AgenticFinalPolishV2Service {
         // Check if we've reached the end (AI might indicate no more sections)
         if (this.checkIfComplete(sectionAnalysis)) {
           console.log(`✅ Polish complete - AI indicated no more sections after ${sectionCount} sections`);
+          continuePolishing = false;
+          break;
+        }
+        
+        // Also check if the response contains the END_MARKER
+        if (sectionAnalysis.includes(END_MARKER)) {
+          console.log(`🎯 END_MARKER detected in section analysis after ${sectionCount} sections`);
           continuePolishing = false;
           break;
         }
@@ -323,8 +349,14 @@ export class AgenticFinalPolishV2Service {
         });
 
         // Safety check for section limit
-        if (sectionCount >= 35) {
+        if (sectionCount >= maxSections - 5) {
           console.log(`⚠️ Approaching section limit (${sectionCount}/${maxSections})`);
+        }
+        
+        // Hard stop at max sections
+        if (sectionCount >= maxSections) {
+          console.log(`🛑 Maximum section limit reached (${sectionCount}/${maxSections})`);
+          continuePolishing = false;
         }
       }
 
@@ -406,7 +438,10 @@ export class AgenticFinalPolishV2Service {
       lowerResponse.includes('final section') ||
       lowerResponse.includes('last section') ||
       lowerResponse.includes('article is complete') ||
-      lowerResponse.includes('polish is complete')
+      lowerResponse.includes('polish is complete') ||
+      lowerResponse.includes('end of article') ||
+      lowerResponse.includes('conclud') ||
+      response.includes('<!-- END_OF_ARTICLE -->') // Check for exact marker
     );
   }
 
