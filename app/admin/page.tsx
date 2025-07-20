@@ -1,7 +1,7 @@
 'use client';
 
 import React from 'react';
-import { Database, Activity, Wrench, Users, BarChart3, Settings, AlertTriangle, Bug, FileSearch, Save } from 'lucide-react';
+import { Database, Activity, Wrench, Users, BarChart3, Settings, AlertTriangle, Bug, FileSearch } from 'lucide-react';
 
 export default function AdminDashboard() {
   const adminTools = [
@@ -116,14 +116,6 @@ export default function AdminDashboard() {
       href: '/admin/o3-response-analyzer',
       color: 'bg-purple-50 border-purple-200 text-purple-700',
       iconColor: 'text-purple-600'
-    },
-    {
-      title: 'Auto-Save Diagnostics',
-      description: 'Monitor and debug auto-save issues for V2 features',
-      icon: Save,
-      href: '/admin/autosave-diagnostics',
-      color: 'bg-red-50 border-red-200 text-red-700',
-      iconColor: 'text-red-600'
     }
   ];
 
