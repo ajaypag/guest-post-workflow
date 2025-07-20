@@ -4,7 +4,6 @@ import React, { useState, useEffect } from 'react';
 import { WorkflowStep, GuestPostWorkflow } from '@/types/workflow';
 import { Save } from 'lucide-react';
 import { SavedField } from './SavedField';
-import { autoSaveMonitor } from '@/lib/utils/autoSaveMonitor';
 import {
   DomainSelectionStep,
   KeywordResearchStep,
@@ -74,32 +73,14 @@ export default function StepForm({ step, stepIndex, workflow, onSave, onWorkflow
 
   // Auto-save functionality with debouncing
   const triggerAutoSave = () => {
-    // Log debounce start
-    autoSaveMonitor.logEvent('debounce-start', {
-      workflowId: workflow?.id,
-      stepId: step.id,
-      stepType: localInputs.stepType || step.id
-    });
-
     // Clear existing timer
     if (autoSaveTimer) {
       clearTimeout(autoSaveTimer);
-      autoSaveMonitor.logEvent('debounce-reset', {
-        workflowId: workflow?.id,
-        stepId: step.id,
-        stepType: localInputs.stepType || step.id
-      });
     }
 
     // Set new timer for auto-save after 2 seconds of no changes
     const timer = setTimeout(() => {
       console.log('⏱️ Auto-saving after 2 seconds of inactivity');
-      autoSaveMonitor.logEvent('save-triggered', {
-        workflowId: workflow?.id,
-        stepId: step.id,
-        stepType: localInputs.stepType || step.id,
-        isAutoSave: true
-      });
       handleSave(false); // Pass false to indicate auto-save, not manual save
     }, 2000);
 
@@ -133,11 +114,6 @@ export default function StepForm({ step, stepIndex, workflow, onSave, onWorkflow
   useEffect(() => {
     const handler = () => {
       console.log('🚀 Force-save event received, saving immediately');
-      autoSaveMonitor.logEvent('force-save', {
-        workflowId: workflow?.id,
-        stepId: step.id,
-        stepType: localInputs.stepType || step.id
-      });
       handleSave(false);
     };
     window.addEventListener('force-step-save', handler);
@@ -147,37 +123,9 @@ export default function StepForm({ step, stepIndex, workflow, onSave, onWorkflow
   const handleSave = async (isManualSave: boolean = false) => {
     console.log('🟢 handleSave called:', { localInputs, localOutputs, isManualSave });
     setIsSaving(true);
-    
-    try {
-      await onSave(localInputs, localOutputs, isManualSave);
-      
-      // Log success
-      autoSaveMonitor.logEvent('save-success', {
-        workflowId: workflow?.id,
-        stepId: step.id,
-        stepType: localInputs.stepType || step.id,
-        isManualSave,
-        dataSize: {
-          inputs: JSON.stringify(localInputs).length,
-          outputs: JSON.stringify(localOutputs).length
-        }
-      });
-      
-      setLastSaved(new Date());
-    } catch (error: any) {
-      // Log error
-      autoSaveMonitor.logEvent('save-error', {
-        workflowId: workflow?.id,
-        stepId: step.id,
-        stepType: localInputs.stepType || step.id,
-        isManualSave,
-        error: error.message || 'Unknown error'
-      });
-      
-      console.error('Save failed:', error);
-    } finally {
-      setIsSaving(false);
-    }
+    await onSave(localInputs, localOutputs, isManualSave);
+    setIsSaving(false);
+    setLastSaved(new Date());
   };
 
   const handleInputChange = (field: string, value: any) => {
