@@ -159,17 +159,7 @@ export const AgenticSemanticAuditorV2 = ({
                 
                 // Force immediate save to bypass debounce timer reset issue
                 setTimeout(() => {
-                  console.log('🚀 Dispatching force-step-save event');
                   window.dispatchEvent(new CustomEvent('force-step-save'));
-                  // Also dispatch auto-save monitoring event
-                  window.dispatchEvent(new CustomEvent('autosave-triggered', {
-                    detail: {
-                      stepId: 'semantic-seo-v2',
-                      workflowId,
-                      type: 'save-triggered',
-                      data: { articleLength: data.finalArticle.length }
-                    }
-                  }));
                 }, 50);
               } else {
                 addLog('⚠️ Warning: No audited article received from server');

@@ -680,31 +680,21 @@ Now I realize this is a lot, so i want your first output to only be an audit of 
                 workflowId={workflow.id}
                 originalArticle={fullArticle}
                 researchOutline={outlineContent}
-                existingAuditedArticle={step.inputs?.semanticAuditedArticleV2 || step.outputs?.seoOptimizedArticle || ''}
+                existingAuditedArticle={step.outputs?.seoOptimizedArticle || ''}
                 onComplete={(auditedArticle) => {
                   console.log('🎯 V2 Audit onComplete called with article length:', auditedArticle.length);
-                  console.log('📝 Current step data before change:', { inputs: step.inputs, outputs: step.outputs });
-                  
-                  // Save V2 data to the correct field (inputs.semanticAuditedArticleV2)
-                  const updatedInputs = { 
-                    ...step.inputs,
-                    semanticAuditedArticleV2: auditedArticle
-                  };
+                  console.log('📝 Current outputs before change:', step.outputs);
                   
                   const updatedOutputs = { 
                     ...step.outputs, 
-                    seoOptimizedArticle: auditedArticle, // Keep V1 field for backward compatibility
+                    seoOptimizedArticle: auditedArticle,
                     auditGenerated: true,
                     auditedAt: new Date().toISOString(),
                     auditVersion: 'v2'
                   };
                   
-                  console.log('📤 Calling onChange with V2 data in inputs.semanticAuditedArticleV2');
-                  onChange({ 
-                    ...step,
-                    inputs: updatedInputs,
-                    outputs: updatedOutputs
-                  });
+                  console.log('📤 Calling onChange with updated outputs:', updatedOutputs);
+                  onChange(updatedOutputs);
                 }}
               />
             </div>
