@@ -156,11 +156,6 @@ export const AgenticSemanticAuditorV2 = ({
                 setFinalArticle(data.finalArticle);
                 setHasExistingAudit(true); // Mark as completed
                 onComplete(data.finalArticle); // Pass clean article to parent
-                
-                // Force immediate save to bypass debounce timer reset issue
-                setTimeout(() => {
-                  window.dispatchEvent(new CustomEvent('force-step-save'));
-                }, 50);
               } else {
                 addLog('⚠️ Warning: No audited article received from server');
                 setError('No audited article received from server');

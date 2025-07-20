@@ -110,16 +110,6 @@ export default function StepForm({ step, stepIndex, workflow, onSave, onWorkflow
     };
   }, [autoSaveTimer]);
 
-  // Listen for force-save events to bypass debounce timer
-  useEffect(() => {
-    const handler = () => {
-      console.log('🚀 Force-save event received, saving immediately');
-      handleSave(false);
-    };
-    window.addEventListener('force-step-save', handler);
-    return () => window.removeEventListener('force-step-save', handler);
-  }, []);
-
   const handleSave = async (isManualSave: boolean = false) => {
     console.log('🟢 handleSave called:', { localInputs, localOutputs, isManualSave });
     setIsSaving(true);
