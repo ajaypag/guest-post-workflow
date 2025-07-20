@@ -10,6 +10,7 @@ Comprehensive technical documentation for the Guest Post Workflow system.
 
 ### Building Features
 - [Agent Building Blocks](agents/BUILDING_BLOCKS.md) - Create AI agents
+- [Auto-Save Pattern](agents/AUTO_SAVE_PATTERN.md) - Fix race condition for AI content
 - [Retry Pattern](agents/RETRY_PATTERN.md) - Handle agent text responses
 - [V2 Pattern](agents/V2_PATTERN.md) - LLM orchestration approach
 

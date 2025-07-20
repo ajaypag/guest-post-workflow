@@ -17,6 +17,7 @@ Production-ready workflow system with PostgreSQL, multi-user auth, and AI agent 
 - ✅ Agent retry pattern for text response fix
 - ✅ Dynamic outline-based completion detection
 - ✅ Increased section limit to 40
+- ✅ Auto-save race condition fix for AI agents (2025-01-20)
 - ⚠️ Auto-save diagnostics removed (reverted)
 
 ## 🔧 Quick Reference
@@ -27,6 +28,7 @@ Production-ready workflow system with PostgreSQL, multi-user auth, and AI agent 
 | **Deploy to Coolify** | [docs/setup/COOLIFY_DEPLOY.md](docs/setup/COOLIFY_DEPLOY.md) |
 | **Database Schema** | [docs/architecture/DATABASE.md](docs/architecture/DATABASE.md) |
 | **Build AI Agents** | [docs/agents/BUILDING_BLOCKS.md](docs/agents/BUILDING_BLOCKS.md) |
+| **Auto-Save Fix** | [docs/agents/AUTO_SAVE_PATTERN.md](docs/agents/AUTO_SAVE_PATTERN.md) |
 | **Debug Issues** | [docs/admin/DIAGNOSTICS.md](docs/admin/DIAGNOSTICS.md) |
 | **All Documentation** | [docs/DEVELOPER_GUIDE.md](docs/DEVELOPER_GUIDE.md) |
 
@@ -62,6 +64,19 @@ approach VARCHAR(100)  -- AI text gets truncated
 approach TEXT         -- Safe for AI content
 ```
 Run `/admin/varchar-limits` to check all columns.
+
+### Auto-Save Race Condition (AI Agents)
+**Problem**: AI generates content → Auto-save shows success → But saves empty data!  
+**Cause**: React setState race condition - auto-save reads old state  
+**Solution**: Pass immediate data to `triggerAutoSave(data)`
+```typescript
+// ❌ WRONG - Race condition
+onChange(newData);  // setState is async, auto-save reads old state
+
+// ✅ CORRECT - Immediate data
+onChange(newData);  // triggerAutoSave gets data directly
+```
+[Full guide: docs/agents/AUTO_SAVE_PATTERN.md](docs/agents/AUTO_SAVE_PATTERN.md)
 
 ## 🤖 AI Agent Development
 
