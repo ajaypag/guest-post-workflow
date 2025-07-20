@@ -132,7 +132,7 @@ export class AgenticFinalPolishV2Service {
         sessionMetadata: {
           startedAt: now.toISOString(),
           version: nextVersion,
-          model: 'gpt-4o-mini',
+          model: 'o3-2025-04-16',
           usingSeoDraft: !!seoOptimizedArticle
         },
         startedAt: now,
@@ -257,6 +257,52 @@ export class AgenticFinalPolishV2Service {
       // continuePolishing already declared above
       
       while (continuePolishing && sectionCount < maxSections) {
+        // Check if session has been cancelled
+        const currentSession = await this.getSession(sessionId);
+        if (currentSession?.status === 'cancelled') {
+          console.log('🛑 Session cancelled by user');
+          break;
+        }
+        
+        // Deduplicate messages before each run to prevent duplicate ID errors
+        // This handles both msg_* and rs_* (reasoning) items
+        const seen = new Set<string>();
+        const deduplicatedHistory: any[] = [];
+        const duplicateIds: string[] = [];
+        
+        for (const message of conversationHistory) {
+          // Skip null/undefined messages
+          if (!message) {
+            console.log(`⚠️ Skipping null/undefined message`);
+            continue;
+          }
+          
+          const id = (message as any).id;
+          
+          // If no ID, it's safe to include (likely a user message)
+          if (!id) {
+            deduplicatedHistory.push(message);
+            continue;
+          }
+          
+          // Skip if we've already seen this ID
+          if (seen.has(id)) {
+            duplicateIds.push(id);
+            console.log(`⚠️ Filtering duplicate message with id: ${id}, role: ${message.role}`);
+            continue;
+          }
+          
+          seen.add(id);
+          deduplicatedHistory.push(message);
+        }
+        
+        conversationHistory = deduplicatedHistory;
+        console.log(`📊 Deduplicated message count: ${conversationHistory.length}, removed ${duplicateIds.length} duplicates`);
+        
+        if (duplicateIds.length > 0) {
+          console.log(`🔍 Duplicate IDs found: ${duplicateIds.join(', ')}`);
+        }
+        
         // Step 1: Proceed to next section
         console.log(`📝 Sending proceed prompt for section ${sectionCount + 1}...`);
         sseUpdate(sessionId, { 
@@ -306,6 +352,13 @@ export class AgenticFinalPolishV2Service {
           break;
         }
 
+        // Check again before cleanup phase
+        const checkSession = await this.getSession(sessionId);
+        if (checkSession?.status === 'cancelled') {
+          console.log('🛑 Session cancelled by user');
+          break;
+        }
+        
         // Step 2: Cleanup this section
         console.log(`🧹 Sending cleanup prompt for section ${sectionCount + 1}...`);
         sseUpdate(sessionId, { 
@@ -495,6 +548,24 @@ export class AgenticFinalPolishV2Service {
         errorMessage: session.errorMessage
       }
     };
+  }
+  
+  async cancelSession(sessionId: string): Promise<void> {
+    await this.updateSession(sessionId, {
+      status: 'cancelled',
+      errorMessage: 'Cancelled by user'
+    });
+    
+    // Send cancellation notice via SSE
+    sseUpdate(sessionId, {
+      type: 'cancelled',
+      message: 'Polish operation cancelled by user'
+    });
+    
+    // Clean up SSE connection
+    removeSSEConnection(sessionId);
+    
+    console.log(`🛑 Polish session ${sessionId} cancelled by user`);
   }
 }
 
