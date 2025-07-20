@@ -8,6 +8,7 @@ import { TutorialVideo } from '../ui/TutorialVideo';
 import { ChatInterface } from '../ui/ChatInterface';
 import { SplitPromptButton } from '../ui/SplitPromptButton';
 import { AgenticFinalPolisher } from '../ui/AgenticFinalPolisher';
+import { AgenticFinalPolisherV2 } from '../ui/AgenticFinalPolisherV2';
 import { MarkdownPreview } from '../ui/MarkdownPreview';
 import { ExternalLink, ChevronDown, ChevronRight, Sparkles, CheckCircle, AlertCircle, Target, RefreshCw, FileText } from 'lucide-react';
 
@@ -25,7 +26,7 @@ export const FinalPolishStepClean = ({ step, workflow, onChange }: FinalPolishSt
   });
 
   // Tab system state
-  const [activeTab, setActiveTab] = useState<'chatgpt' | 'builtin' | 'agentic'>('agentic');
+  const [activeTab, setActiveTab] = useState<'chatgpt' | 'builtin' | 'agentic' | 'agenticv2'>('agenticv2');
 
   // Chat state management
   const [conversation, setConversation] = useState<any[]>([]);
@@ -181,6 +182,19 @@ Review one of my project files for my brand guide and the Semantic SEO writing t
       <div className="bg-white border border-gray-200 rounded-xl overflow-hidden">
         <div className="flex border-b border-gray-200">
           <button
+            onClick={() => setActiveTab('agenticv2')}
+            className={`flex-1 px-6 py-4 text-sm font-medium transition-colors ${
+              activeTab === 'agenticv2'
+                ? 'bg-purple-50 text-purple-700 border-b-2 border-purple-500'
+                : 'text-gray-500 hover:text-gray-700 hover:bg-gray-50'
+            }`}
+          >
+            <div className="flex items-center justify-center space-x-2">
+              <Sparkles className="w-4 h-4" />
+              <span>Agentic V2</span>
+            </div>
+          </button>
+          <button
             onClick={() => setActiveTab('agentic')}
             className={`flex-1 px-6 py-4 text-sm font-medium transition-colors ${
               activeTab === 'agentic'
@@ -190,7 +204,7 @@ Review one of my project files for my brand guide and the Semantic SEO writing t
           >
             <div className="flex items-center justify-center space-x-2">
               <Sparkles className="w-4 h-4" />
-              <span>Agentic Polish</span>
+              <span>Agentic V1</span>
             </div>
           </button>
           <button
@@ -216,7 +230,95 @@ Review one of my project files for my brand guide and the Semantic SEO writing t
         </div>
 
         <div className="p-6">
-          {activeTab === 'chatgpt' ? (
+          {activeTab === 'agenticv2' ? (
+            <div className="space-y-6">
+              {/* Agentic V2 Polish Interface */}
+              <div className="bg-purple-50 border border-purple-200 rounded-lg p-4">
+                <h3 className="font-medium text-purple-900 mb-2 flex items-center space-x-2">
+                  <Sparkles className="w-5 h-5" />
+                  <span>Agentic Polish V2 - Two-Prompt Loop</span>
+                </h3>
+                <p className="text-sm text-purple-800 mb-3">
+                  Fully automated polish using the same two-prompt loop pattern as ChatGPT tab:
+                </p>
+                <ul className="text-sm text-purple-700 space-y-1 list-disc list-inside">
+                  <li><strong>Kickoff</strong> - Reviews first section for brand guide compliance</li>
+                  <li><strong>Proceed → Cleanup Loop</strong> - For each section: analyze then refine</li>
+                  <li><strong>Brand alignment</strong> - Balances engagement with semantic clarity</li>
+                  <li><strong>Automatic progression</strong> - No manual copying between prompts</li>
+                </ul>
+                <div className="mt-3 p-3 bg-purple-100 rounded border border-purple-300">
+                  <p className="text-xs text-purple-800 font-medium">
+                    🚀 V2 Pattern: LLM-driven orchestration with natural conversation flow
+                  </p>
+                </div>
+              </div>
+
+              {/* Dependency check */}
+              {seoOptimizedArticle ? (
+                <div className="bg-green-50 border border-green-200 rounded-lg p-4">
+                  <div className="flex items-center">
+                    <CheckCircle className="w-5 h-5 text-green-600 mr-2" />
+                    <p className="text-sm text-green-800">Using SEO-optimized article from Step 5</p>
+                  </div>
+                </div>
+              ) : originalArticle ? (
+                <div className="bg-yellow-50 border border-yellow-200 rounded-lg p-4">
+                  <div className="flex items-center">
+                    <AlertCircle className="w-5 h-5 text-yellow-500 mr-2" />
+                    <p className="text-sm text-yellow-800">Using original draft from Step 4 (complete Step 5 for SEO-optimized version)</p>
+                  </div>
+                </div>
+              ) : (
+                <div className="bg-red-50 border border-red-200 rounded-lg p-4">
+                  <div className="flex items-center">
+                    <AlertCircle className="w-5 h-5 text-red-500 mr-2" />
+                    <p className="text-sm text-red-800">Complete Step 5 (Semantic SEO) first to get the optimized article for polishing</p>
+                  </div>
+                </div>
+              )}
+
+              {/* Agentic Final Polisher V2 Component */}
+              {fullArticle && (
+                <AgenticFinalPolisherV2 
+                  workflowId={workflow.id}
+                  onComplete={(polishedArticle) => {
+                    onChange({ 
+                      ...step.outputs, 
+                      finalArticle: polishedArticle,
+                      polishProgress: '100',
+                      tab3Created: 'yes',
+                      agentV2Generated: true
+                    });
+                  }}
+                />
+              )}
+
+              {/* Results Section */}
+              {step.outputs.finalArticle && step.outputs.agentV2Generated && (
+                <div className="bg-gray-50 border border-gray-200 rounded-lg p-4">
+                  <div className="bg-green-50 border-l-4 border-green-400 p-4 mb-4 rounded-r-lg">
+                    <h4 className="font-medium text-green-800 mb-2">✅ V2 Polish Complete</h4>
+                    <p className="text-sm text-green-700">The AI has successfully applied the two-prompt loop pattern to balance brand voice with semantic directness.</p>
+                  </div>
+
+                  <SavedField
+                    label="Final Polished Article"
+                    value={step.outputs.finalArticle || ''}
+                    placeholder="The polished article will appear here automatically..."
+                    onChange={(value) => onChange({ ...step.outputs, finalArticle: value })}
+                    isTextarea={true}
+                    height="h-64"
+                  />
+                  
+                  <MarkdownPreview 
+                    content={step.outputs.finalArticle}
+                    className="mt-4"
+                  />
+                </div>
+              )}
+            </div>
+          ) : activeTab === 'chatgpt' ? (
             <div className="space-y-6">
               {/* Original ChatGPT.com workflow */}
       
