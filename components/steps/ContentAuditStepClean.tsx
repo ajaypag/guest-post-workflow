@@ -9,15 +9,17 @@ import { ChatInterface } from '../ui/ChatInterface';
 import { SplitPromptButton } from '../ui/SplitPromptButton';
 import { AgenticSemanticAuditor } from '../ui/AgenticSemanticAuditor';
 import { AgenticSemanticAuditorV2 } from '../ui/AgenticSemanticAuditorV2';
+import { AgenticSemanticAuditorV2Mock } from '../ui/AgenticSemanticAuditorV2Mock';
 import { ExternalLink, ChevronDown, ChevronRight, Search, CheckCircle, AlertCircle, Target, FileText, BarChart3 } from 'lucide-react';
 
 interface ContentAuditStepProps {
   step: WorkflowStep;
   workflow: GuestPostWorkflow;
   onChange: (data: any) => void;
+  onUnsavedContentChange?: (hasUnsavedContent: boolean) => void;
 }
 
-export const ContentAuditStepClean = ({ step, workflow, onChange }: ContentAuditStepProps) => {
+export const ContentAuditStepClean = ({ step, workflow, onChange, onUnsavedContentChange }: ContentAuditStepProps) => {
   const [expandedSections, setExpandedSections] = useState<{ [key: string]: boolean }>({
     'setup': true,
     'audit': false,
@@ -26,6 +28,9 @@ export const ContentAuditStepClean = ({ step, workflow, onChange }: ContentAudit
 
   // Tab system state
   const [activeTab, setActiveTab] = useState<'chatgpt' | 'builtin' | 'agent' | 'agentv2'>('chatgpt');
+  
+  // Mock mode toggle (for V2 testing)
+  const [mockMode, setMockMode] = useState(false);
 
   // Chat state management
   const [conversation, setConversation] = useState<any[]>([]);
@@ -664,19 +669,63 @@ Now I realize this is a lot, so i want your first output to only be an audit of 
                 researchOutline={outlineContent}
                 existingAuditedArticle={step.outputs?.seoOptimizedArticle || ''}
                 onComplete={(auditedArticle) => {
-                  onChange({ 
+                  console.log('🎯 V1 Audit onComplete called with article length:', auditedArticle.length);
+                  const updatedOutputs = { 
                     ...step.outputs, 
                     seoOptimizedArticle: auditedArticle,
                     auditGenerated: true,
-                    auditedAt: new Date().toISOString()
-                  });
+                    auditedAt: new Date().toISOString(),
+                    auditVersion: 'v1'
+                  };
+                  console.log('📤 V1 Calling onChange with updated outputs:', updatedOutputs);
+                  onChange(updatedOutputs);
+                  console.log('✅ V1 onChange completed - auto-save will handle persistence');
                 }}
               />
             </div>
           ) : activeTab === 'agentv2' ? (
             <div className="space-y-6">
+              {/* Mock Mode Toggle for V2 Testing */}
+              <div className="flex items-center justify-between bg-blue-50 border border-blue-200 rounded-lg p-4">
+                <div>
+                  <h4 className="font-medium text-blue-900">V2 Testing Mode</h4>
+                  <p className="text-sm text-blue-700">Enable mock mode to test auto-save functionality without API calls</p>
+                </div>
+                <button
+                  onClick={() => setMockMode(!mockMode)}
+                  className={`px-4 py-2 rounded-lg text-sm font-medium transition-colors ${
+                    mockMode 
+                      ? 'bg-yellow-100 text-yellow-800 border border-yellow-300' 
+                      : 'bg-blue-100 text-blue-800 border border-blue-300'
+                  }`}
+                >
+                  {mockMode ? '🧪 Mock Mode ON' : '🚀 Real V2 Mode'}
+                </button>
+              </div>
+
               {/* AI Agent V2 Semantic Audit */}
-              <AgenticSemanticAuditorV2
+              {mockMode ? (
+                <AgenticSemanticAuditorV2Mock
+                  workflowId={workflow.id}
+                  originalArticle={fullArticle}
+                  researchOutline={outlineContent}
+                  existingAuditedArticle={step.outputs?.seoOptimizedArticle || ''}
+                  onComplete={(auditedArticle) => {
+                    console.log('🎯 V2 Mock onComplete called with article length:', auditedArticle.length);
+                    const updatedOutputs = { 
+                      ...step.outputs, 
+                      seoOptimizedArticle: auditedArticle,
+                      auditGenerated: true,
+                      auditedAt: new Date().toISOString(),
+                      auditVersion: 'v2-mock'
+                    };
+                    console.log('📤 V2 Mock Calling onChange with updated outputs:', updatedOutputs);
+                    onChange(updatedOutputs);
+                    console.log('✅ V2 Mock onChange completed - auto-save will handle persistence');
+                  }}
+                />
+              ) : (
+                <AgenticSemanticAuditorV2
                 workflowId={workflow.id}
                 originalArticle={fullArticle}
                 researchOutline={outlineContent}
@@ -693,10 +742,12 @@ Now I realize this is a lot, so i want your first output to only be an audit of 
                     auditVersion: 'v2'
                   };
                   
-                  console.log('📤 Calling onChange with updated outputs:', updatedOutputs);
+                  console.log('📤 V2 Calling onChange with updated outputs:', updatedOutputs);
                   onChange(updatedOutputs);
+                  console.log('✅ V2 onChange completed - auto-save will handle persistence');
                 }}
               />
+              )}
             </div>
           ) : null}
         </div>
