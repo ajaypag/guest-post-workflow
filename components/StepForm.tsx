@@ -78,12 +78,21 @@ export default function StepForm({ step, stepIndex, workflow, onSave, onWorkflow
 
   // Handle save function must be defined before performVerifiedSave
   const handleSave = useCallback(async (isManualSave: boolean = false) => {
-    console.log('🟢 handleSave called:', { localInputs, localOutputs, isManualSave });
+    console.log('🟢 handleSave called:', { isManualSave });
+    console.log('📦 Data to save:', {
+      localInputs,
+      localOutputs,
+      fullArticleLength: localOutputs.fullArticle?.length || 0,
+      agentVersion: localOutputs.agentVersion,
+      agentGenerated: localOutputs.agentGenerated
+    });
     setIsSaving(true);
     setActiveOperations(prev => ({ ...prev, autoSaveInProgress: true }));
     
     try {
+      console.log('🚀 Calling onSave prop...');
       await onSave(localInputs, localOutputs, isManualSave);
+      console.log('✅ onSave completed successfully');
       setLastSaved(new Date());
       
       // Update active operations on successful save
@@ -94,11 +103,12 @@ export default function StepForm({ step, stepIndex, workflow, onSave, onWorkflow
         lastSaveTimestamp: Date.now()
       }));
     } catch (error) {
-      console.error('Save failed:', error);
+      console.error('❌ Save failed:', error);
       toast.error('Failed to save changes');
       setActiveOperations(prev => ({ ...prev, autoSaveInProgress: false }));
     } finally {
       setIsSaving(false);
+      console.log('🏁 handleSave completed');
     }
   }, [localInputs, localOutputs, onSave]);
 
@@ -216,6 +226,10 @@ export default function StepForm({ step, stepIndex, workflow, onSave, onWorkflow
     console.log('🔍 Previous localOutputs:', localOutputs);
     console.log('🆕 New data has seoOptimizedArticle:', !!data.seoOptimizedArticle);
     console.log('📏 seoOptimizedArticle length:', data.seoOptimizedArticle?.length || 0);
+    console.log('🆕 New data has fullArticle:', !!data.fullArticle);
+    console.log('📏 fullArticle length:', data.fullArticle?.length || 0);
+    console.log('🏷️ Agent version:', data.agentVersion);
+    console.log('🤖 Agent generated:', data.agentGenerated);
     
     // IMPORTANT: Check for changes BEFORE updating state to avoid closure issues
     const criticalFields = ['finalArticle', 'fullArticle', 'seoOptimizedArticle', 'googleDocUrl'];
@@ -241,6 +255,24 @@ export default function StepForm({ step, stepIndex, workflow, onSave, onWorkflow
         return hasChanged;
       }
       
+      // For fullArticle field specifically, check more thoroughly
+      if (field === 'fullArticle' && data[field]) {
+        const oldValue = localOutputs[field] || '';
+        const newValue = data[field] || '';
+        const hasChanged = oldValue !== newValue;
+        
+        console.log(`🔎 Checking ${field}:`);
+        console.log(`   Old exists: ${!!oldValue}, length: ${oldValue.length}`);
+        console.log(`   New exists: ${!!newValue}, length: ${newValue.length}`);
+        console.log(`   Content changed: ${hasChanged}`);
+        
+        if (hasChanged) {
+          console.log(`✅ Critical field "${field}" has changed`);
+          console.log(`   Agent version: ${data.agentVersion}, Generated: ${data.agentGenerated}`);
+        }
+        return hasChanged;
+      }
+      
       // For other fields, simple comparison
       const hasChanged = data[field] && data[field] !== localOutputs[field];
       if (hasChanged) {
@@ -250,9 +282,11 @@ export default function StepForm({ step, stepIndex, workflow, onSave, onWorkflow
     });
     
     // Update state
+    console.log('📝 Updating localOutputs state');
     setLocalOutputs(data);
     
     // Mark as having unsaved changes
+    console.log('🚩 Marking as having unsaved changes');
     setActiveOperations(prev => ({ ...prev, hasUnsavedChanges: true }));
     
     // Trigger auto-save if critical fields changed

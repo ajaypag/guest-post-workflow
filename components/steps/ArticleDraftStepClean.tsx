@@ -8,9 +8,10 @@ import { TutorialVideo } from '../ui/TutorialVideo';
 import { ChatInterface } from '../ui/ChatInterface';
 import { AgenticArticleGenerator } from '../ui/AgenticArticleGenerator';
 import { AgenticArticleGeneratorV2 } from '../ui/AgenticArticleGeneratorV2';
+import { AgenticArticleGeneratorV2Mock } from '../ui/AgenticArticleGeneratorV2Mock';
 import { SplitPromptButton } from '../ui/SplitPromptButton';
 import { MarkdownPreview } from '../ui/MarkdownPreview';
-import { ExternalLink, ChevronDown, ChevronRight, FileText, CheckCircle, AlertCircle, Target, RefreshCw, BookOpen } from 'lucide-react';
+import { ExternalLink, ChevronDown, ChevronRight, FileText, CheckCircle, AlertCircle, Target, RefreshCw, BookOpen, Bug } from 'lucide-react';
 
 interface ArticleDraftStepProps {
   step: WorkflowStep;
@@ -40,6 +41,9 @@ export const ArticleDraftStepClean = ({ step, workflow, onChange, onAgentStateCh
   // Track if an AI agent is running
   const [agentRunning, setAgentRunning] = useState(false);
   const [hasUnsavedContent, setHasUnsavedContent] = useState(false);
+  
+  // Mock mode for testing
+  const [mockMode, setMockMode] = useState(false);
 
   // Get the outline content from the Deep Research step
   const deepResearchStep = workflow.steps.find(s => s.id === 'deep-research');
@@ -602,24 +606,71 @@ ${outlineContent || '((((Complete Step 3: Deep Research first to get outline con
             </div>
           ) : activeTab === 'agenticV2' ? (
             <div className="space-y-6">
+              {/* Mock Mode Toggle */}
+              <div className="bg-yellow-50 border border-yellow-200 rounded-lg p-4">
+                <div className="flex items-center justify-between">
+                  <div className="flex items-center space-x-2">
+                    <Bug className="w-5 h-5 text-yellow-600" />
+                    <div>
+                      <h4 className="font-medium text-yellow-900">Test Mode</h4>
+                      <p className="text-sm text-yellow-700">Enable mock mode to test save functionality without API calls</p>
+                    </div>
+                  </div>
+                  <label className="relative inline-flex items-center cursor-pointer">
+                    <input 
+                      type="checkbox" 
+                      checked={mockMode}
+                      onChange={(e) => setMockMode(e.target.checked)}
+                      className="sr-only peer"
+                    />
+                    <div className="w-11 h-6 bg-gray-200 peer-focus:outline-none rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-yellow-600"></div>
+                  </label>
+                </div>
+              </div>
+
               {/* V2 Agentic Article Generator */}
-              <AgenticArticleGeneratorV2
-                workflowId={workflow.id}
-                outline={outlineContent}
-                onComplete={(article) => {
-                  onChange({ 
-                    ...step.outputs, 
-                    fullArticle: article,
-                    agentGenerated: true,
-                    agentVersion: 'v2',
-                    draftStatus: 'completed'
-                  });
-                }}
-                onGeneratingStateChange={(isGenerating) => {
-                  setAgentRunning(isGenerating);
-                  onAgentStateChange?.(isGenerating);
-                }}
-              />
+              {mockMode ? (
+                <AgenticArticleGeneratorV2Mock
+                  workflowId={workflow.id}
+                  outline={outlineContent}
+                  onComplete={(article) => {
+                    console.log('[ArticleDraftStepClean] Mock onComplete called with article length:', article.length);
+                    const updatedOutputs = { 
+                      ...step.outputs, 
+                      fullArticle: article,
+                      agentGenerated: true,
+                      agentVersion: 'v2-mock',
+                      draftStatus: 'completed'
+                    };
+                    console.log('[ArticleDraftStepClean] Calling onChange with updated outputs');
+                    onChange(updatedOutputs);
+                    // Note: Auto-save doesn't work for AI content, user must click "Save in Next Step"
+                    console.log('[ArticleDraftStepClean] onChange completed - user must manually save');
+                  }}
+                  onGeneratingStateChange={(isGenerating) => {
+                    setAgentRunning(isGenerating);
+                    onAgentStateChange?.(isGenerating);
+                  }}
+                />
+              ) : (
+                <AgenticArticleGeneratorV2
+                  workflowId={workflow.id}
+                  outline={outlineContent}
+                  onComplete={(article) => {
+                    onChange({ 
+                      ...step.outputs, 
+                      fullArticle: article,
+                      agentGenerated: true,
+                      agentVersion: 'v2',
+                      draftStatus: 'completed'
+                    });
+                  }}
+                  onGeneratingStateChange={(isGenerating) => {
+                    setAgentRunning(isGenerating);
+                    onAgentStateChange?.(isGenerating);
+                  }}
+                />
+              )}
 
               {/* Generated Article Display */}
               {step.outputs.fullArticle && step.outputs.agentGenerated && step.outputs.agentVersion === 'v2' && (
