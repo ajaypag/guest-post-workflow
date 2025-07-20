@@ -18,9 +18,10 @@ interface ArticleDraftStepProps {
   workflow: GuestPostWorkflow;
   onChange: (data: any) => void;
   onAgentStateChange?: (agentRunning: boolean) => void;
+  onUnsavedContentChange?: (hasUnsavedContent: boolean) => void;
 }
 
-export const ArticleDraftStepClean = ({ step, workflow, onChange, onAgentStateChange }: ArticleDraftStepProps) => {
+export const ArticleDraftStepClean = ({ step, workflow, onChange, onAgentStateChange, onUnsavedContentChange }: ArticleDraftStepProps) => {
   const [expandedSections, setExpandedSections] = useState<{ [key: string]: boolean }>({
     'planning': true,
     'setup': false,
@@ -90,6 +91,7 @@ ${outlineContent || '((((Complete Step 3: Deep Research first to get outline con
     // Clear any running agent state
     setAgentRunning(false);
     setHasUnsavedContent(false);
+    onUnsavedContentChange?.(false);
     
     // Switch tab
     setActiveTab(newTab);
@@ -644,8 +646,9 @@ ${outlineContent || '((((Complete Step 3: Deep Research first to get outline con
                     };
                     console.log('[ArticleDraftStepClean] Calling onChange with updated outputs');
                     onChange(updatedOutputs);
-                    // Note: Auto-save doesn't work for AI content, user must click "Save in Next Step"
-                    console.log('[ArticleDraftStepClean] onChange completed - user must manually save');
+                    setHasUnsavedContent(true);
+                    onUnsavedContentChange?.(true);
+                    console.log('[ArticleDraftStepClean] onChange completed, hasUnsavedContent set to true - user must manually save');
                   }}
                   onGeneratingStateChange={(isGenerating) => {
                     setAgentRunning(isGenerating);
