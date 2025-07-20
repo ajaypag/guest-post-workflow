@@ -1,0 +1,60 @@
+name: Coolify Preview Deployments
+
+on:
+  pull_request:
+    types: [opened, synchronize, reopened]
+    branches: [main]
+
+jobs:
+  deploy-preview:
+    runs-on: ubuntu-latest
+    if: github.event.pull_request.head.repo.full_name == github.repository
+    
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+        with:
+          ref: ${{ github.event.pull_request.head.sha }}
+
+      - name: Deploy Preview to Coolify
+        run: |
+          echo "Triggering preview deployment for PR #${{ github.event.number }}"
+          echo "Branch: ${{ github.event.pull_request.head.ref }}"
+          echo "Commit: ${{ github.event.pull_request.head.sha }}"
+          
+          # Update the git commit SHA for the preview deployment
+          curl -X PATCH \
+            "${{ secrets.COOLIFY_URL }}/api/v1/applications/${{ secrets.COOLIFY_APP_UUID }}" \
+            -H "Authorization: Bearer ${{ secrets.COOLIFY_TOKEN }}" \
+            -H "Content-Type: application/json" \
+            -d '{
+              "git_commit_sha": "${{ github.event.pull_request.head.sha }}",
+              "git_branch": "${{ github.event.pull_request.head.ref }}"
+            }'
+          
+          # Trigger the deployment
+          curl -X GET \
+            "${{ secrets.COOLIFY_URL }}/api/v1/deploy?uuid=${{ secrets.COOLIFY_APP_UUID }}&force=false" \
+            -H "Authorization: Bearer ${{ secrets.COOLIFY_TOKEN }}"
+          
+          echo "Preview deployment triggered! Check Coolify dashboard for progress."
+          echo "Preview URL will be: https://${{ github.event.number }}.postflow.outreachlabs.net"
+
+      - name: Comment on PR
+        uses: actions/github-script@v7
+        with:
+          script: |
+            const prNumber = context.payload.pull_request.number;
+            const previewUrl = `https://${prNumber}.postflow.outreachlabs.net`;
+            
+            github.rest.issues.createComment({
+              issue_number: prNumber,
+              owner: context.repo.owner,
+              repo: context.repo.repo,
+              body: `🚀 **Preview Deployment Triggered**
+              
+              Preview will be available at: ${previewUrl}
+              
+              Please wait a few minutes for the deployment to complete.
+              Check the [Coolify dashboard](https://www.outreachlabs.net) for deployment progress.`
+            });
