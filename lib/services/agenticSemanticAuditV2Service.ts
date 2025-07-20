@@ -1,5 +1,5 @@
 import { Runner, Agent } from '@openai/agents';
-import { OpenAIProvider, fileSearchTool } from '@openai/agents-openai';
+import { OpenAIProvider, fileSearchTool, webSearchTool } from '@openai/agents-openai';
 import { db } from '@/lib/db/connection';
 import { v2AgentSessions, workflows } from '@/lib/db/schema';
 import { eq, and, sql } from 'drizzle-orm';
@@ -31,12 +31,15 @@ function auditV2SSEPush(sessionId: string, payload: any) {
 // Create file search tool for semantic SEO knowledge base
 const semanticSEOFileSearch = fileSearchTool(['vs_68710d7858ec8191b829a50012da7707']);
 
+// Web search tool for fact-checking and current information
+const webSearch = webSearchTool();
+
 // Create semantic auditor agent V2 - empty instructions pattern
 export const semanticAuditorAgentV2 = new Agent({
   name: 'SemanticAuditorV2',
   instructions: '', // CRITICAL: Empty - all guidance from prompts
   model: 'o3-2025-04-16',
-  tools: [semanticSEOFileSearch], // Only vector store for semantic SEO knowledge
+  tools: [semanticSEOFileSearch, webSearch], // Vector store and web search
 });
 
 export class AgenticSemanticAuditV2Service {
