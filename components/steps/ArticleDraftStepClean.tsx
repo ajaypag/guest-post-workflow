@@ -41,7 +41,6 @@ export const ArticleDraftStepClean = ({ step, workflow, onChange, onAgentStateCh
 
   // Track if an AI agent is running
   const [agentRunning, setAgentRunning] = useState(false);
-  const [hasUnsavedContent, setHasUnsavedContent] = useState(false);
   
   // Mock mode for testing
   const [mockMode, setMockMode] = useState(false);
@@ -80,18 +79,10 @@ ${outlineContent || '((((Complete Step 3: Deep Research first to get outline con
       }
     }
 
-    // Check for unsaved content in current tab
-    if (hasUnsavedContent) {
-      const message = `You have unsaved content in the ${activeTab} tab. Switching tabs may lose this content. Continue?`;
-      if (!window.confirm(message)) {
-        return;
-      }
-    }
+    // No need to check for unsaved content - auto-save handles it
 
     // Clear any running agent state
     setAgentRunning(false);
-    setHasUnsavedContent(false);
-    onUnsavedContentChange?.(false);
     
     // Switch tab
     setActiveTab(newTab);
@@ -646,9 +637,7 @@ ${outlineContent || '((((Complete Step 3: Deep Research first to get outline con
                     };
                     console.log('[ArticleDraftStepClean] Calling onChange with updated outputs');
                     onChange(updatedOutputs);
-                    setHasUnsavedContent(true);
-                    onUnsavedContentChange?.(true);
-                    console.log('[ArticleDraftStepClean] onChange completed, hasUnsavedContent set to true - user must manually save');
+                    console.log('[ArticleDraftStepClean] onChange completed - auto-save will handle persistence');
                   }}
                   onGeneratingStateChange={(isGenerating) => {
                     setAgentRunning(isGenerating);
