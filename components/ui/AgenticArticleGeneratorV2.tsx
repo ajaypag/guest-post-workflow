@@ -8,6 +8,7 @@ interface AgenticArticleGeneratorV2Props {
   workflowId: string;
   outline: string;
   onComplete: (article: string) => void;
+  onGeneratingStateChange?: (isGenerating: boolean) => void;
 }
 
 interface SessionProgress {
@@ -31,7 +32,7 @@ interface SessionProgress {
   };
 }
 
-export const AgenticArticleGeneratorV2 = ({ workflowId, outline, onComplete }: AgenticArticleGeneratorV2Props) => {
+export const AgenticArticleGeneratorV2 = ({ workflowId, outline, onComplete, onGeneratingStateChange }: AgenticArticleGeneratorV2Props) => {
   const [isGenerating, setIsGenerating] = useState(false);
   const [sessionId, setSessionId] = useState<string | null>(null);
   const [progress, setProgress] = useState<SessionProgress | null>(null);
@@ -44,6 +45,11 @@ export const AgenticArticleGeneratorV2 = ({ workflowId, outline, onComplete }: A
   const addLog = (message: string) => {
     setLogs(prev => [...prev, `${new Date().toLocaleTimeString()}: ${message}`]);
   };
+
+  // Report generating state changes to parent
+  useEffect(() => {
+    onGeneratingStateChange?.(isGenerating);
+  }, [isGenerating, onGeneratingStateChange]);
 
   const handleStartClick = () => {
     if (!outline.trim()) {
