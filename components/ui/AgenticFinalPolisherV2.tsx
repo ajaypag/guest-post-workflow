@@ -32,6 +32,8 @@ export const AgenticFinalPolisherV2: React.FC<AgenticFinalPolisherV2Props> = ({
   const [sessionId, setSessionId] = useState<string>('');
   const [completedSections, setCompletedSections] = useState(0);
   const [currentPhase, setCurrentPhase] = useState<string>('');
+  const [streamingText, setStreamingText] = useState<string>('');
+  const [isStreaming, setIsStreaming] = useState(false);
 
   // Start the V2 polish process
   const startPolish = async () => {
@@ -42,6 +44,8 @@ export const AgenticFinalPolisherV2: React.FC<AgenticFinalPolisherV2Props> = ({
       setFinalArticle('');
       setCompletedSections(0);
       setCurrentPhase('');
+      setStreamingText('');
+      setIsStreaming(false);
 
       console.log('🎨 Starting V2 polish process...');
 
@@ -115,12 +119,16 @@ export const AgenticFinalPolisherV2: React.FC<AgenticFinalPolisherV2Props> = ({
         break;
 
       case 'text':
-        // Text streaming - could show partial output if desired
+        // Text streaming - append to current streaming text
+        setIsStreaming(true);
+        setStreamingText(prev => prev + (data.content || ''));
         break;
 
       case 'section_completed':
         console.log(`✅ Section ${data.sectionNumber} completed`);
         setCompletedSections(data.sectionNumber || 0);
+        setStreamingText(''); // Clear streaming text after section completes
+        setIsStreaming(false);
         break;
 
       case 'completed':
@@ -200,6 +208,15 @@ export const AgenticFinalPolisherV2: React.FC<AgenticFinalPolisherV2Props> = ({
               <strong>Two-Prompt Loop:</strong> Proceed → Cleanup → Proceed → Cleanup...
             </p>
           </div>
+          
+          {/* Streaming Text Display */}
+          {isStreaming && streamingText && (
+            <div className="bg-gray-50 border border-gray-200 rounded-lg p-4 max-h-96 overflow-y-auto">
+              <div className="text-sm font-mono whitespace-pre-wrap text-gray-700">
+                {streamingText}
+              </div>
+            </div>
+          )}
         </div>
       )}
 
