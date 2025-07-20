@@ -3,7 +3,7 @@ import { agenticFinalPolishV2Service, addSSEConnection, removeSSEConnection } fr
 
 export async function GET(
   request: NextRequest,
-  { params }: { params: { id: string } }
+  { params }: { params: Promise<{ id: string }> }
 ) {
   const sessionId = request.nextUrl.searchParams.get('sessionId');
   
