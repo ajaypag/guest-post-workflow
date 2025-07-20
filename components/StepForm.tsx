@@ -41,7 +41,7 @@ interface StepFormProps {
   onWorkflowChange?: (workflow: GuestPostWorkflow) => void;
 }
 
-const stepForms: Record<string, React.FC<{ step: WorkflowStep; workflow: GuestPostWorkflow; onChange: (data: any) => void; onWorkflowChange?: (workflow: GuestPostWorkflow) => void; onAgentStateChange?: (agentRunning: boolean) => void }>> = {
+const stepForms: Record<string, React.FC<{ step: WorkflowStep; workflow: GuestPostWorkflow; onChange: (data: any) => void; onWorkflowChange?: (workflow: GuestPostWorkflow) => void; onAgentStateChange?: (agentRunning: boolean) => void; onUnsavedContentChange?: (hasUnsavedContent: boolean) => void }>> = {
   'domain-selection': DomainSelectionStepClean,
   'keyword-research': KeywordResearchStepClean,
   'topic-generation': TopicGenerationImproved, // IMPROVED: Better visual hierarchy. To revert: change to TopicGenerationStepClean
@@ -345,6 +345,9 @@ export default function StepForm({ step, stepIndex, workflow, onSave, onWorkflow
           onWorkflowChange={onWorkflowChange}
           onAgentStateChange={(agentRunning) => {
             setActiveOperations(prev => ({ ...prev, agentRunning }));
+          }}
+          onUnsavedContentChange={(hasUnsavedContent) => {
+            setActiveOperations(prev => ({ ...prev, hasUnsavedChanges: hasUnsavedContent }));
           }}
         />
 
