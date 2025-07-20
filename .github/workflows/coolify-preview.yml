@@ -37,9 +37,9 @@ jobs:
               "git_branch": "${{ github.event.pull_request.head.ref }}"
             }'
           
-          # Trigger the deployment
+          # Trigger PREVIEW deployment using pr parameter
           curl -X GET \
-            "${{ secrets.COOLIFY_URL }}/api/v1/deploy?uuid=${{ secrets.COOLIFY_APP_UUID }}&force=false" \
+            "${{ secrets.COOLIFY_URL }}/api/v1/deploy?uuid=${{ secrets.COOLIFY_APP_UUID }}&pr=${{ github.event.number }}" \
             -H "Authorization: Bearer ${{ secrets.COOLIFY_TOKEN }}"
           
           echo "Preview deployment triggered! Check Coolify dashboard for progress."
