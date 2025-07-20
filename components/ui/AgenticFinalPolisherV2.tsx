@@ -194,7 +194,7 @@ export const AgenticFinalPolisherV2: React.FC<AgenticFinalPolisherV2Props> = ({
           <div>
             <h3 className="font-semibold text-purple-900">Agentic Polish V2</h3>
             <p className="text-sm text-purple-700">
-              Two-prompt loop pattern for brand alignment
+              Single-prompt pattern for brand alignment
             </p>
           </div>
         </div>
@@ -251,7 +251,7 @@ export const AgenticFinalPolisherV2: React.FC<AgenticFinalPolisherV2Props> = ({
           
           <div className="bg-white border border-purple-200 rounded-lg p-3">
             <p className="text-xs text-gray-600">
-              <strong>Two-Prompt Loop:</strong> Proceed → Cleanup → Proceed → Cleanup...
+              <strong>Single-Prompt Loop:</strong> Analyze & Polish → Next Section → Analyze & Polish...
             </p>
           </div>
           
@@ -322,7 +322,7 @@ export const AgenticFinalPolisherV2: React.FC<AgenticFinalPolisherV2Props> = ({
             Ready to polish your SEO-optimized article
           </p>
           <p className="text-xs text-gray-500">
-            V2 uses conversation flow: Kickoff → (Proceed → Cleanup) loop
+            V2 uses conversation flow: Kickoff → Single-prompt loop per section
           </p>
         </div>
       )}

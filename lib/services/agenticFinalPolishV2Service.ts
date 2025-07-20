@@ -57,28 +57,17 @@ Start with the first section.
 
 When you reach <!-- END_OF_ARTICLE -->, you can conclude your polish.`;
 
-const PROCEED_PROMPT = `Okay that is good. Now, proceed to the next section. Re-review my project files for my brand guide and the Semantic SEO writing tips. Gauge how well it follows the brand guide and semantic seo tips.
-
-Output ONLY the three markdown sections below with no additional text:
-
-### Strengths
-### Weaknesses  
-### Updated Section
-
-Be sure to reference the conclusions you made during your thinking process when writing the updating article. Don't use em-dashes.`;
-
-const CLEANUP_PROMPT = `Before you proceed to the next section, review your previous output. Compare it to the brand kit and the words to not use document. Based on that, make any potential updates.
+const PROCEED_PROMPT = `Okay that is good. Now, proceed to the next section. Analyze how well it follows the brand guide and content writing and semantic SEO guide, then provide your refined version.
 
 Output ONLY the three markdown sections below with no additional text or explanation:
 
 ### Strengths
-(refined strengths here)
-
 ### Weaknesses  
-(refined weaknesses here)
-
 ### Updated Section
-(refined section content here - ready to copy-paste)`;
+
+Make sure your updated section avoids words from the "words to not use" document. Don't use em-dashes. 
+
+When you reach the end of the article or see <!-- END_OF_ARTICLE -->, simply state "No more sections to polish" in your response.`;
 
 export class AgenticFinalPolishV2Service {
   private openaiProvider: OpenAIProvider;
@@ -217,43 +206,18 @@ export class AgenticFinalPolishV2Service {
       // Extract the response (strengths, weaknesses, updated section)
       const firstSectionAnalysis = this.extractAssistantResponse(conversationHistory);
       accumulatedPolishContent += firstSectionAnalysis + '\n\n';
-      console.log(`✅ First section analysis complete: ${firstSectionAnalysis.length} chars`);
-
-      // Phase 2: Cleanup the first section
-      console.log(`🧹 Sending cleanup prompt for first section...`);
-      sseUpdate(sessionId, { type: 'phase', phase: 'cleanup', message: 'Refining first section based on brand kit...' });
-
-      conversationHistory.push({ role: 'user', content: CLEANUP_PROMPT });
-
-      let cleanupResult = await polisherRunner.run(polisherAgentV2, conversationHistory, {
-        stream: true,
-        maxTurns: 1
-      });
-
-      let cleanupResponse = '';
-      for await (const event of cleanupResult.toStream()) {
-        if (event.type === 'raw_model_stream_event' && event.data.type === 'output_text_delta') {
-          cleanupResponse += event.data.delta || '';
-          sseUpdate(sessionId, { type: 'text', content: event.data.delta });
-        }
-      }
-
-      await cleanupResult.finalOutput;
-      conversationHistory = (cleanupResult as any).history;
-
-      const firstSectionPolished = this.extractAssistantResponse(conversationHistory);
-      accumulatedPolishContent = accumulatedPolishContent.slice(0, -2) + firstSectionPolished + '\n\n'; // Replace analysis with cleanup
+      console.log(`✅ First section polished: ${firstSectionAnalysis.length} chars`);
       sectionCount = 1;
 
       await this.updateSession(sessionId, { completedSections: sectionCount });
       sseUpdate(sessionId, { 
         type: 'section_completed', 
         sectionNumber: sectionCount, 
-        content: firstSectionPolished,
+        content: firstSectionAnalysis,
         message: 'First section polished'
       });
 
-      // Phase 3: Loop through remaining sections with two-prompt pattern
+      // Phase 2: Loop through remaining sections with single prompt pattern
       // continuePolishing already declared above
       
       while (continuePolishing && sectionCount < maxSections) {
@@ -304,11 +268,11 @@ export class AgenticFinalPolishV2Service {
         }
         
         // Step 1: Proceed to next section
-        console.log(`📝 Sending proceed prompt for section ${sectionCount + 1}...`);
+        console.log(`📝 Processing section ${sectionCount + 1}...`);
         sseUpdate(sessionId, { 
           type: 'phase', 
-          phase: 'analyzing', 
-          message: `Analyzing section ${sectionCount + 1} for brand alignment...` 
+          phase: 'processing', 
+          message: `Polishing section ${sectionCount + 1}...` 
         });
 
         conversationHistory.push({ role: 'user', content: PROCEED_PROMPT });
@@ -352,52 +316,14 @@ export class AgenticFinalPolishV2Service {
           break;
         }
 
-        // Check again before cleanup phase
-        const checkSession = await this.getSession(sessionId);
-        if (checkSession?.status === 'cancelled') {
-          console.log('🛑 Session cancelled by user');
-          break;
-        }
-        
-        // Step 2: Cleanup this section
-        console.log(`🧹 Sending cleanup prompt for section ${sectionCount + 1}...`);
-        sseUpdate(sessionId, { 
-          type: 'phase', 
-          phase: 'cleanup', 
-          message: `Refining section ${sectionCount + 1} based on brand kit...` 
-        });
-
-        conversationHistory.push({ role: 'user', content: CLEANUP_PROMPT });
-
-        let cleanupResult2 = await polisherRunner.run(polisherAgentV2, conversationHistory, {
-          stream: true,
-          maxTurns: 1
-        });
-
-        let cleanupResponse2 = '';
-        for await (const event of cleanupResult2.toStream()) {
-          if (event.type === 'raw_model_stream_event' && event.data.type === 'output_text_delta') {
-            cleanupResponse2 += event.data.delta || '';
-            sseUpdate(sessionId, { type: 'text', content: event.data.delta });
-          }
-        }
-
-        await cleanupResult2.finalOutput;
-        conversationHistory = (cleanupResult2 as any).history;
-
-        const sectionPolished = this.extractAssistantResponse(conversationHistory);
-        // Replace the analysis with the cleaned up version
-        const lastAnalysisStart = accumulatedPolishContent.lastIndexOf('### Strengths');
-        if (lastAnalysisStart !== -1) {
-          accumulatedPolishContent = accumulatedPolishContent.slice(0, lastAnalysisStart) + sectionPolished + '\n\n';
-        }
+        // Increment section count after processing
         sectionCount++;
 
         await this.updateSession(sessionId, { completedSections: sectionCount });
         sseUpdate(sessionId, { 
           type: 'section_completed', 
           sectionNumber: sectionCount, 
-          content: sectionPolished,
+          content: sectionAnalysis,
           message: `Section ${sectionCount} polished`
         });
 
@@ -494,6 +420,7 @@ export class AgenticFinalPolishV2Service {
       lowerResponse.includes('polish is complete') ||
       lowerResponse.includes('end of article') ||
       lowerResponse.includes('conclud') ||
+      lowerResponse.includes('no more sections to polish') || // Added to match prompt
       response.includes('<!-- END_OF_ARTICLE -->') // Check for exact marker
     );
   }

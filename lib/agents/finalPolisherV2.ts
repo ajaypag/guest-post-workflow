@@ -16,4 +16,4 @@ export const polisherAgentV2 = new Agent({
 });
 
 // V2 approach: Let the LLM naturally balance brand voice with semantic clarity
-// through the two-prompt loop pattern (proceed → cleanup)
+// through a single-prompt pattern that combines analysis and polish
