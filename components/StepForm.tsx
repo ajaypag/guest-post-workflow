@@ -159,12 +159,12 @@ export default function StepForm({ step, stepIndex, workflow, onSave, onWorkflow
     }
   }, [workflow.id, localOutputs, handleSave]);
 
-  // Initialize navigation guard
-  const { generateHash } = useNavigationGuard({
-    activeOperations,
-    onSaveRequest: performVerifiedSave,
-    workflowId: workflow.id
-  });
+  // Navigation guard disabled - auto-save handles persistence
+  // const { generateHash } = useNavigationGuard({
+  //   activeOperations,
+  //   onSaveRequest: performVerifiedSave,
+  //   workflowId: workflow.id
+  // });
 
   useEffect(() => {
     console.log('Step data changed, updating local state:', { inputs: step.inputs, outputs: step.outputs });
@@ -385,9 +385,7 @@ export default function StepForm({ step, stepIndex, workflow, onSave, onWorkflow
           onAgentStateChange={(agentRunning) => {
             setActiveOperations(prev => ({ ...prev, agentRunning }));
           }}
-          onUnsavedContentChange={(hasUnsavedContent) => {
-            setActiveOperations(prev => ({ ...prev, hasUnsavedChanges: hasUnsavedContent }));
-          }}
+          // onUnsavedContentChange not needed - auto-save handles persistence
         />
 
         {/* Outputs Section */}
