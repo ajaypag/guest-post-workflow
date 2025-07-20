@@ -37,6 +37,7 @@
     "react-markdown": "^10.1.0",
     "rehype-raw": "^7.0.0",
     "remark-gfm": "^4.0.1",
+    "sonner": "^2.0.6",
     "tsx": "^4.20.3",
     "uuid": "^11.1.0",
     "zod": "^3.25.67"

@@ -1,9 +1,11 @@
 'use client';
 
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useCallback } from 'react';
 import { WorkflowStep, GuestPostWorkflow } from '@/types/workflow';
 import { Save } from 'lucide-react';
 import { SavedField } from './SavedField';
+import { useNavigationGuard } from '@/hooks/useNavigationGuard';
+import { toast } from 'sonner';
 import {
   DomainSelectionStep,
   KeywordResearchStep,
@@ -39,7 +41,7 @@ interface StepFormProps {
   onWorkflowChange?: (workflow: GuestPostWorkflow) => void;
 }
 
-const stepForms: Record<string, React.FC<{ step: WorkflowStep; workflow: GuestPostWorkflow; onChange: (data: any) => void; onWorkflowChange?: (workflow: GuestPostWorkflow) => void }>> = {
+const stepForms: Record<string, React.FC<{ step: WorkflowStep; workflow: GuestPostWorkflow; onChange: (data: any) => void; onWorkflowChange?: (workflow: GuestPostWorkflow) => void; onAgentStateChange?: (agentRunning: boolean) => void }>> = {
   'domain-selection': DomainSelectionStepClean,
   'keyword-research': KeywordResearchStepClean,
   'topic-generation': TopicGenerationImproved, // IMPROVED: Better visual hierarchy. To revert: change to TopicGenerationStepClean
@@ -64,6 +66,95 @@ export default function StepForm({ step, stepIndex, workflow, onSave, onWorkflow
   const [autoSaveTimer, setAutoSaveTimer] = useState<NodeJS.Timeout | null>(null);
   const [isSaving, setIsSaving] = useState(false);
   const [lastSaved, setLastSaved] = useState<Date | null>(null);
+  
+  // Track active operations for navigation guard
+  const [activeOperations, setActiveOperations] = useState({
+    agentRunning: false,
+    autoSaveInProgress: false,
+    hasUnsavedChanges: false,
+    lastSaveTimestamp: null as number | null,
+    lastSaveHash: null as string | null
+  });
+
+  // Handle save function must be defined before performVerifiedSave
+  const handleSave = useCallback(async (isManualSave: boolean = false) => {
+    console.log('🟢 handleSave called:', { localInputs, localOutputs, isManualSave });
+    setIsSaving(true);
+    setActiveOperations(prev => ({ ...prev, autoSaveInProgress: true }));
+    
+    try {
+      await onSave(localInputs, localOutputs, isManualSave);
+      setLastSaved(new Date());
+      
+      // Update active operations on successful save
+      setActiveOperations(prev => ({
+        ...prev,
+        autoSaveInProgress: false,
+        hasUnsavedChanges: false,
+        lastSaveTimestamp: Date.now()
+      }));
+    } catch (error) {
+      console.error('Save failed:', error);
+      toast.error('Failed to save changes');
+      setActiveOperations(prev => ({ ...prev, autoSaveInProgress: false }));
+    } finally {
+      setIsSaving(false);
+    }
+  }, [localInputs, localOutputs, onSave]);
+
+  // Verified save function for navigation guard
+  const performVerifiedSave = useCallback(async (): Promise<boolean> => {
+    try {
+      // Set saving state
+      setActiveOperations(prev => ({ ...prev, autoSaveInProgress: true }));
+      
+      // Perform the save
+      await handleSave(false);
+      
+      // Wait for database propagation
+      await new Promise(resolve => setTimeout(resolve, 500));
+      
+      // Verify the save by checking database directly
+      const verifyResponse = await fetch(`/api/workflows/${workflow.id}/verify`);
+      if (!verifyResponse.ok) {
+        throw new Error('Failed to verify save');
+      }
+      
+      const verifyData = await verifyResponse.json();
+      const savedStep = verifyData.step;
+      
+      // Compare saved data with local data
+      const localDataStr = JSON.stringify(localOutputs);
+      const savedDataStr = JSON.stringify(savedStep?.outputs || {});
+      
+      if (localDataStr !== savedDataStr) {
+        console.error('Save verification failed - data mismatch');
+        return false;
+      }
+      
+      // Update tracking
+      setActiveOperations(prev => ({
+        ...prev,
+        autoSaveInProgress: false,
+        hasUnsavedChanges: false,
+        lastSaveTimestamp: Date.now(),
+        lastSaveHash: verifyData.contentHash
+      }));
+      
+      return true;
+    } catch (error) {
+      console.error('Verified save failed:', error);
+      setActiveOperations(prev => ({ ...prev, autoSaveInProgress: false }));
+      return false;
+    }
+  }, [workflow.id, localOutputs, handleSave]);
+
+  // Initialize navigation guard
+  const { generateHash } = useNavigationGuard({
+    activeOperations,
+    onSaveRequest: performVerifiedSave,
+    workflowId: workflow.id
+  });
 
   useEffect(() => {
     console.log('Step data changed, updating local state:', { inputs: step.inputs, outputs: step.outputs });
@@ -110,19 +201,14 @@ export default function StepForm({ step, stepIndex, workflow, onSave, onWorkflow
     };
   }, [autoSaveTimer]);
 
-  const handleSave = async (isManualSave: boolean = false) => {
-    console.log('🟢 handleSave called:', { localInputs, localOutputs, isManualSave });
-    setIsSaving(true);
-    await onSave(localInputs, localOutputs, isManualSave);
-    setIsSaving(false);
-    setLastSaved(new Date());
-  };
 
   const handleInputChange = (field: string, value: any) => {
     setLocalInputs(prev => ({
       ...prev,
       [field]: value
     }));
+    // Mark as having unsaved changes
+    setActiveOperations(prev => ({ ...prev, hasUnsavedChanges: true }));
   };
 
   const handleOutputChange = (data: any) => {
@@ -165,6 +251,9 @@ export default function StepForm({ step, stepIndex, workflow, onSave, onWorkflow
     
     // Update state
     setLocalOutputs(data);
+    
+    // Mark as having unsaved changes
+    setActiveOperations(prev => ({ ...prev, hasUnsavedChanges: true }));
     
     // Trigger auto-save if critical fields changed
     if (hasChangedCriticalField) {
@@ -220,6 +309,9 @@ export default function StepForm({ step, stepIndex, workflow, onSave, onWorkflow
           workflow={workflow}
           onChange={handleOutputChange}
           onWorkflowChange={onWorkflowChange}
+          onAgentStateChange={(agentRunning) => {
+            setActiveOperations(prev => ({ ...prev, agentRunning }));
+          }}
         />
 
         {/* Outputs Section */}

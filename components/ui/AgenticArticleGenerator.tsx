@@ -8,6 +8,7 @@ interface AgenticArticleGeneratorProps {
   workflowId: string;
   outline: string;
   onComplete: (article: string) => void;
+  onGeneratingStateChange?: (isGenerating: boolean) => void;
 }
 
 interface Section {
@@ -39,7 +40,7 @@ interface SessionProgress {
   };
 }
 
-export const AgenticArticleGenerator = ({ workflowId, outline, onComplete }: AgenticArticleGeneratorProps) => {
+export const AgenticArticleGenerator = ({ workflowId, outline, onComplete, onGeneratingStateChange }: AgenticArticleGeneratorProps) => {
   const [isGenerating, setIsGenerating] = useState(false);
   const [sessionId, setSessionId] = useState<string | null>(null);
   const [progress, setProgress] = useState<SessionProgress | null>(null);
@@ -48,6 +49,11 @@ export const AgenticArticleGenerator = ({ workflowId, outline, onComplete }: Age
   const [showCostDialog, setShowCostDialog] = useState(false);
   const [isButtonDisabled, setIsButtonDisabled] = useState(false);
   const eventSourceRef = useRef<EventSource | null>(null);
+
+  // Report generating state changes to parent
+  useEffect(() => {
+    onGeneratingStateChange?.(isGenerating);
+  }, [isGenerating, onGeneratingStateChange]);
 
   const addLog = (message: string) => {
     setLogs(prev => [...prev, `${new Date().toLocaleTimeString()}: ${message}`]);

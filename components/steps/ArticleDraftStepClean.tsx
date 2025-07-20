@@ -16,9 +16,10 @@ interface ArticleDraftStepProps {
   step: WorkflowStep;
   workflow: GuestPostWorkflow;
   onChange: (data: any) => void;
+  onAgentStateChange?: (agentRunning: boolean) => void;
 }
 
-export const ArticleDraftStepClean = ({ step, workflow, onChange }: ArticleDraftStepProps) => {
+export const ArticleDraftStepClean = ({ step, workflow, onChange, onAgentStateChange }: ArticleDraftStepProps) => {
   const [expandedSections, setExpandedSections] = useState<{ [key: string]: boolean }>({
     'planning': true,
     'setup': false,
@@ -35,6 +36,10 @@ export const ArticleDraftStepClean = ({ step, workflow, onChange }: ArticleDraft
   const [isLoading, setIsLoading] = useState(false);
   const [chatHeight, setChatHeight] = useState(600);
   const [prefilledInput, setPrefilledInput] = useState('');
+
+  // Track if an AI agent is running
+  const [agentRunning, setAgentRunning] = useState(false);
+  const [hasUnsavedContent, setHasUnsavedContent] = useState(false);
 
   // Get the outline content from the Deep Research step
   const deepResearchStep = workflow.steps.find(s => s.id === 'deep-research');
@@ -55,6 +60,35 @@ ${outlineContent || '((((Complete Step 3: Deep Research first to get outline con
       ...prev,
       [section]: !prev[section]
     }));
+  };
+
+  // Handle tab switching with warnings
+  const handleTabSwitch = (newTab: 'chatgpt' | 'builtin' | 'agentic' | 'agenticV2') => {
+    // Don't switch if same tab
+    if (newTab === activeTab) return;
+
+    // Check if agent is running
+    if (agentRunning) {
+      const message = `An AI agent is currently generating content in the ${activeTab} tab. Switching tabs will stop the generation. Continue?`;
+      if (!window.confirm(message)) {
+        return;
+      }
+    }
+
+    // Check for unsaved content in current tab
+    if (hasUnsavedContent) {
+      const message = `You have unsaved content in the ${activeTab} tab. Switching tabs may lose this content. Continue?`;
+      if (!window.confirm(message)) {
+        return;
+      }
+    }
+
+    // Clear any running agent state
+    setAgentRunning(false);
+    setHasUnsavedContent(false);
+    
+    // Switch tab
+    setActiveTab(newTab);
   };
 
   // Status indicators
@@ -179,7 +213,7 @@ ${outlineContent || '((((Complete Step 3: Deep Research first to get outline con
       <div className="bg-white border border-gray-200 rounded-xl overflow-hidden">
         <div className="flex border-b border-gray-200">
           <button
-            onClick={() => setActiveTab('agentic')}
+            onClick={() => handleTabSwitch('agentic')}
             className={`flex-1 px-6 py-4 text-sm font-medium transition-colors ${
               activeTab === 'agentic'
                 ? 'bg-purple-50 text-purple-700 border-b-2 border-purple-500'
@@ -189,7 +223,7 @@ ${outlineContent || '((((Complete Step 3: Deep Research first to get outline con
             🤖 AI Agent Beta
           </button>
           <button
-            onClick={() => setActiveTab('agenticV2')}
+            onClick={() => handleTabSwitch('agenticV2')}
             className={`flex-1 px-6 py-4 text-sm font-medium transition-colors ${
               activeTab === 'agenticV2'
                 ? 'bg-gradient-to-r from-purple-50 to-blue-50 text-purple-700 border-b-2 border-purple-500'
@@ -199,7 +233,7 @@ ${outlineContent || '((((Complete Step 3: Deep Research first to get outline con
             🧠 AI Agent V2
           </button>
           <button
-            onClick={() => setActiveTab('chatgpt')}
+            onClick={() => handleTabSwitch('chatgpt')}
             className={`flex-1 px-6 py-4 text-sm font-medium transition-colors ${
               activeTab === 'chatgpt'
                 ? 'bg-blue-50 text-blue-700 border-b-2 border-blue-500'
@@ -209,7 +243,7 @@ ${outlineContent || '((((Complete Step 3: Deep Research first to get outline con
             ChatGPT.com
           </button>
           <button
-            onClick={() => setActiveTab('builtin')}
+            onClick={() => handleTabSwitch('builtin')}
             className={`flex-1 px-6 py-4 text-sm font-medium transition-colors ${
               activeTab === 'builtin'
                 ? 'bg-blue-50 text-blue-700 border-b-2 border-blue-500'
@@ -581,6 +615,10 @@ ${outlineContent || '((((Complete Step 3: Deep Research first to get outline con
                     draftStatus: 'completed'
                   });
                 }}
+                onGeneratingStateChange={(isGenerating) => {
+                  setAgentRunning(isGenerating);
+                  onAgentStateChange?.(isGenerating);
+                }}
               />
 
               {/* Generated Article Display */}
@@ -802,6 +840,10 @@ ${outlineContent || '((((Complete Step 3: Deep Research first to get outline con
                     agentGenerated: true,
                     draftStatus: 'completed'
                   });
+                }}
+                onGeneratingStateChange={(isGenerating) => {
+                  setAgentRunning(isGenerating);
+                  onAgentStateChange?.(isGenerating);
                 }}
               />
 
