@@ -7,14 +7,11 @@ export async function POST(request: NextRequest) {
   try {
     const { workflowId } = await request.json();
 
-    // Get all workflow steps - use select syntax to avoid column naming issues  
-    const steps = await db
-      .select()
-      .from(workflowSteps)
-      .where(eq(workflowSteps.workflowId, workflowId));
-    
-    // Sort by stepNumber in memory
-    steps.sort((a, b) => a.stepNumber - b.stepNumber);
+    // Get all workflow steps
+    const steps = await db.query.workflowSteps.findMany({
+      where: eq(workflowSteps.workflowId, workflowId),
+      orderBy: workflowSteps.stepNumber
+    });
 
     const fieldAnalysis = {
       semanticSeoStep: null as any,
