@@ -644,8 +644,8 @@ ${outlineContent || '((((Complete Step 3: Deep Research first to get outline con
                     };
                     console.log('[ArticleDraftStepClean] Calling onChange with updated outputs');
                     onChange(updatedOutputs);
-                    // Note: Auto-save doesn't work for AI content, user must click "Save in Next Step"
-                    console.log('[ArticleDraftStepClean] onChange completed - user must manually save');
+                    setHasUnsavedContent(true);
+                    console.log('[ArticleDraftStepClean] onChange completed, hasUnsavedContent set to true - user must manually save');
                   }}
                   onGeneratingStateChange={(isGenerating) => {
                     setAgentRunning(isGenerating);
