@@ -42,7 +42,7 @@ const KICKOFF_PROMPT = `Okay, here's my article.
 
 Review one of my project files for my brand guide and the Semantic SEO writing tips. I want you to review my article section by section, starting with the first section. Gauge how well it follows the brand guide and semantic seo tips.
 
-For each section you polish, organize your response with these three markdown headings:
+Output ONLY the three markdown sections below. Do not include any introductory text like "Here's my analysis" or "Here's the refined version":
 
 ### Strengths
 (list the strengths here)
@@ -51,27 +51,32 @@ For each section you polish, organize your response with these three markdown he
 (list the weaknesses here)
 
 ### Updated Section
-(put your polished version of the section here)
+(put your polished version of the section here - ready to copy-paste)
 
-Start with the first section. The updated section output should be ready to copy-paste back into my article.`;
+Start with the first section.`;
 
 const PROCEED_PROMPT = `Okay that is good. Now, proceed to the next section. Re-review my project files for my brand guide and the Semantic SEO writing tips. Gauge how well it follows the brand guide and semantic seo tips.
 
-Remember to organize your response with these three markdown headings:
+Output ONLY the three markdown sections below with no additional text:
 
 ### Strengths
 ### Weaknesses  
 ### Updated Section
 
-Be sure to reference the conclusions you made during your thinking process when writing the updating article. Don't use em-dashes. The updated section output should be ready to copy-paste back into my article.`;
+Be sure to reference the conclusions you made during your thinking process when writing the updating article. Don't use em-dashes.`;
 
-const CLEANUP_PROMPT = `Before you proceed to the next section, review your previous output. Compare it to the brand kit and the words to not use document. Based on that, make any potential updates. 
+const CLEANUP_PROMPT = `Before you proceed to the next section, review your previous output. Compare it to the brand kit and the words to not use document. Based on that, make any potential updates.
 
-Please provide the final refined version of the section with the same format:
+Output ONLY the three markdown sections below with no additional text or explanation:
 
 ### Strengths
+(refined strengths here)
+
 ### Weaknesses  
-### Updated Section`;
+(refined weaknesses here)
+
+### Updated Section
+(refined section content here - ready to copy-paste)`;
 
 export class AgenticFinalPolishV2Service {
   private openaiProvider: OpenAIProvider;
