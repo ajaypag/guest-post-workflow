@@ -173,7 +173,7 @@ export default function StepForm({ step, stepIndex, workflow, onSave, onWorkflow
   }, [step.inputs, step.outputs]);
 
   // Auto-save functionality with debouncing
-  const triggerAutoSave = () => {
+  const triggerAutoSave = (immediateData?: any) => {
     // Clear existing timer
     if (autoSaveTimer) {
       clearTimeout(autoSaveTimer);
@@ -182,7 +182,46 @@ export default function StepForm({ step, stepIndex, workflow, onSave, onWorkflow
     // Set new timer for auto-save after 2 seconds of no changes
     const timer = setTimeout(() => {
       console.log('⏱️ Auto-saving after 2 seconds of inactivity');
-      handleSave(false); // Pass false to indicate auto-save, not manual save
+      if (immediateData) {
+        console.log('🚀 Using immediate data for auto-save to avoid state race condition');
+        // Use the immediate data to avoid state race condition
+        const immediateHandleSave = async () => {
+          console.log('🟢 immediateHandleSave called');
+          console.log('📦 Immediate data to save:', {
+            localInputs,
+            immediateOutputs: immediateData,
+            fullArticleLength: immediateData.fullArticle?.length || 0,
+            agentVersion: immediateData.agentVersion,
+            agentGenerated: immediateData.agentGenerated
+          });
+          setIsSaving(true);
+          setActiveOperations(prev => ({ ...prev, autoSaveInProgress: true }));
+          
+          try {
+            console.log('🚀 Calling onSave prop with immediate data...');
+            await onSave(localInputs, immediateData, false);
+            console.log('✅ onSave with immediate data completed successfully');
+            setLastSaved(new Date());
+            
+            setActiveOperations(prev => ({
+              ...prev,
+              autoSaveInProgress: false,
+              hasUnsavedChanges: false,
+              lastSaveTimestamp: Date.now()
+            }));
+          } catch (error) {
+            console.error('❌ Immediate save failed:', error);
+            toast.error('Failed to save changes');
+            setActiveOperations(prev => ({ ...prev, autoSaveInProgress: false }));
+          } finally {
+            setIsSaving(false);
+            console.log('🏁 immediateHandleSave completed');
+          }
+        };
+        immediateHandleSave();
+      } else {
+        handleSave(false); // Fallback to normal save
+      }
     }, 2000);
 
     setAutoSaveTimer(timer);
@@ -291,8 +330,8 @@ export default function StepForm({ step, stepIndex, workflow, onSave, onWorkflow
     
     // Trigger auto-save if critical fields changed
     if (hasChangedCriticalField) {
-      console.log('🔄 Critical field changed, triggering auto-save');
-      triggerAutoSave();
+      console.log('🔄 Critical field changed, triggering auto-save with immediate data');
+      triggerAutoSave(data); // Pass the immediate data to avoid race condition
     } else {
       console.log('⚠️ No critical field changes detected, not triggering auto-save');
     }
