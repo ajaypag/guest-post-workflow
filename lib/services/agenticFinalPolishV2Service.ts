@@ -5,6 +5,7 @@ import { db } from '@/lib/db/connection';
 import { workflows, v2AgentSessions } from '@/lib/db/schema';
 import { eq, sql } from 'drizzle-orm';
 import { v4 as uuidv4 } from 'uuid';
+import { extractPolishedArticle, extractPolishFeedback } from '@/lib/utils/polishParser';
 
 // Helper function to sanitize strings for PostgreSQL
 function sanitizeForPostgres(str: string): string {
@@ -39,11 +40,38 @@ const KICKOFF_PROMPT = `Okay, here's my article.
 
 {ARTICLE}
 
-Review one of my project files for my brand guide and the Semantic SEO writing tips. I want you to review my article section by section, starting with the first section. Gauge how well it follows the brand guide and semantic seo tips and give it a strengths and weaknesses and update the section with some updates.`;
+Review one of my project files for my brand guide and the Semantic SEO writing tips. I want you to review my article section by section, starting with the first section. Gauge how well it follows the brand guide and semantic seo tips.
 
-const PROCEED_PROMPT = `Okay that is good. Now, proceed to the next section. Re-review my project files for my brand guide and the Semantic SEO writing tips. Gauge how well it follows the brand guide and semantic seo tips and give it a strengths and weaknesses and update the section with some updates. Be sure to reference the conclusions you made during your thinking process when writing the updating article. Don't use em-dashes. The updated section output should be ready to copy-paste back into my article.`;
+For each section you polish, organize your response with these three markdown headings:
 
-const CLEANUP_PROMPT = `Before you proceed to the next section, review your previous output. Compare it to the brand kit and the words to not use document. Based on that, make any potential updates`;
+### Strengths
+(list the strengths here)
+
+### Weaknesses  
+(list the weaknesses here)
+
+### Updated Section
+(put your polished version of the section here)
+
+Start with the first section. The updated section output should be ready to copy-paste back into my article.`;
+
+const PROCEED_PROMPT = `Okay that is good. Now, proceed to the next section. Re-review my project files for my brand guide and the Semantic SEO writing tips. Gauge how well it follows the brand guide and semantic seo tips.
+
+Remember to organize your response with these three markdown headings:
+
+### Strengths
+### Weaknesses  
+### Updated Section
+
+Be sure to reference the conclusions you made during your thinking process when writing the updating article. Don't use em-dashes. The updated section output should be ready to copy-paste back into my article.`;
+
+const CLEANUP_PROMPT = `Before you proceed to the next section, review your previous output. Compare it to the brand kit and the words to not use document. Based on that, make any potential updates. 
+
+Please provide the final refined version of the section with the same format:
+
+### Strengths
+### Weaknesses  
+### Updated Section`;
 
 export class AgenticFinalPolishV2Service {
   private openaiProvider: OpenAIProvider;
@@ -138,8 +166,8 @@ export class AgenticFinalPolishV2Service {
         }
       ];
 
-      // Collect all polished sections
-      const polishedSections: string[] = [];
+      // Collect all polish content with markdown headers for parsing
+      let accumulatedPolishContent = '';
       let sectionCount = 0;
       const maxSections = 40; // Safety limit
 
@@ -170,6 +198,7 @@ export class AgenticFinalPolishV2Service {
 
       // Extract the response (strengths, weaknesses, updated section)
       const firstSectionAnalysis = this.extractAssistantResponse(conversationHistory);
+      accumulatedPolishContent += firstSectionAnalysis + '\n\n';
       console.log(`✅ First section analysis complete: ${firstSectionAnalysis.length} chars`);
 
       // Phase 2: Cleanup the first section
@@ -195,7 +224,7 @@ export class AgenticFinalPolishV2Service {
       conversationHistory = (cleanupResult as any).history;
 
       const firstSectionPolished = this.extractAssistantResponse(conversationHistory);
-      polishedSections.push(firstSectionPolished);
+      accumulatedPolishContent = accumulatedPolishContent.slice(0, -2) + firstSectionPolished + '\n\n'; // Replace analysis with cleanup
       sectionCount = 1;
 
       await this.updateSession(sessionId, { completedSections: sectionCount });
@@ -237,6 +266,7 @@ export class AgenticFinalPolishV2Service {
         conversationHistory = (proceedResult as any).history;
 
         const sectionAnalysis = this.extractAssistantResponse(conversationHistory);
+        accumulatedPolishContent += sectionAnalysis + '\n\n';
         
         // Check if we've reached the end (AI might indicate no more sections)
         if (this.checkIfComplete(sectionAnalysis)) {
@@ -272,7 +302,11 @@ export class AgenticFinalPolishV2Service {
         conversationHistory = (cleanupResult2 as any).history;
 
         const sectionPolished = this.extractAssistantResponse(conversationHistory);
-        polishedSections.push(sectionPolished);
+        // Replace the analysis with the cleaned up version
+        const lastAnalysisStart = accumulatedPolishContent.lastIndexOf('### Strengths');
+        if (lastAnalysisStart !== -1) {
+          accumulatedPolishContent = accumulatedPolishContent.slice(0, lastAnalysisStart) + sectionPolished + '\n\n';
+        }
         sectionCount++;
 
         await this.updateSession(sessionId, { completedSections: sectionCount });
@@ -289,9 +323,14 @@ export class AgenticFinalPolishV2Service {
         }
       }
 
-      // Assemble final polished article
-      const finalPolishedArticle = polishedSections.join('\n\n');
+      // Extract clean polished article from the accumulated content
+      console.log('🔍 Extracting clean polished article from accumulated content...');
+      const finalPolishedArticle = extractPolishedArticle(accumulatedPolishContent);
       const wordCount = finalPolishedArticle.split(/\s+/).filter(Boolean).length;
+      
+      // Also extract polish feedback for logging
+      const polishFeedback = extractPolishFeedback(accumulatedPolishContent);
+      console.log(`📊 Collected feedback for ${polishFeedback.length} sections`);
 
       console.log(`✅ Polish completed: ${wordCount} words, ${sectionCount} sections`);
 
@@ -303,12 +342,19 @@ export class AgenticFinalPolishV2Service {
         finalArticle: sanitizeForPostgres(finalPolishedArticle),
         totalWordCount: wordCount,
         totalSections: sectionCount,
-        completedAt: new Date()
+        completedAt: new Date(),
+        sessionMetadata: {
+          ...(session.sessionMetadata as any),
+          completedAt: new Date().toISOString(),
+          fullPolishContent: accumulatedPolishContent, // Store full polish in metadata
+          polishFeedback: polishFeedback // Store feedback for analysis
+        }
       });
       
       sseUpdate(sessionId, {
         type: 'completed',
-        finalPolishedArticle: finalPolishedArticle,
+        intermediaryContent: accumulatedPolishContent, // Full polish with markdown headers
+        finalPolishedArticle: finalPolishedArticle, // Clean article only
         wordCount: wordCount,
         totalSections: sectionCount,
         message: 'Polish completed successfully!'
