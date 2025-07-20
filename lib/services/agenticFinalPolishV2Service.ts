@@ -180,7 +180,7 @@ export class AgenticFinalPolishV2Service {
       // Collect all polish content with markdown headers for parsing
       let accumulatedPolishContent = '';
       let sectionCount = 0;
-      const maxSections = 30; // Reduced safety limit to prevent infinite loops
+      const maxSections = 40; // Safety limit to prevent infinite loops
       let continuePolishing = true; // Declare here before using in streaming
 
       // Phase 1: Send kickoff prompt
