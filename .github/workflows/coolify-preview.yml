@@ -5,6 +5,11 @@ on:
     types: [opened, synchronize, reopened]
     branches: [main]
 
+permissions:
+  contents: read
+  pull-requests: write
+  issues: write
+
 jobs:
   deploy-preview:
     runs-on: ubuntu-latest
@@ -56,5 +61,7 @@ jobs:
               Preview will be available at: ${previewUrl}
               
               Please wait a few minutes for the deployment to complete.
-              Check the [Coolify dashboard](https://www.outreachlabs.net) for deployment progress.`
+              Check the [Coolify dashboard](https://www.outreachlabs.net) for deployment progress.
+              
+              Note: If the build fails due to code issues, fix the errors and push to this branch to trigger a new deployment.`
             });
