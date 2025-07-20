@@ -1,7 +1,7 @@
 'use client';
 
 import React, { useState, useEffect } from 'react';
-import { Sparkles, Loader2, CheckCircle, AlertTriangle, RefreshCw, FileText } from 'lucide-react';
+import { Sparkles, Loader2, CheckCircle, AlertTriangle, RefreshCw, FileText, StopCircle } from 'lucide-react';
 
 interface AgenticFinalPolisherV2Props {
   workflowId: string;
@@ -34,6 +34,7 @@ export const AgenticFinalPolisherV2: React.FC<AgenticFinalPolisherV2Props> = ({
   const [currentPhase, setCurrentPhase] = useState<string>('');
   const [streamingText, setStreamingText] = useState<string>('');
   const [isStreaming, setIsStreaming] = useState(false);
+  const [isCancelling, setIsCancelling] = useState(false);
 
   // Start the V2 polish process
   const startPolish = async () => {
@@ -71,6 +72,34 @@ export const AgenticFinalPolisherV2: React.FC<AgenticFinalPolisherV2Props> = ({
       console.error('❌ Error starting V2 polish:', error);
       setError(error.message || 'Failed to start polish process');
       setIsRunning(false);
+    }
+  };
+
+  // Cancel the polish process
+  const cancelPolish = async () => {
+    if (!sessionId) return;
+    
+    setIsCancelling(true);
+    
+    try {
+      const response = await fetch(`/api/workflows/${workflowId}/polish-v2/cancel`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ sessionId })
+      });
+      
+      if (!response.ok) {
+        throw new Error('Failed to cancel polish');
+      }
+      
+      console.log('🛑 Polish cancelled successfully');
+      setIsRunning(false);
+      setError('Polish operation cancelled by user');
+    } catch (error) {
+      console.error('Error cancelling polish:', error);
+      setError('Failed to cancel polish operation');
+    } finally {
+      setIsCancelling(false);
     }
   };
 
@@ -146,6 +175,12 @@ export const AgenticFinalPolisherV2: React.FC<AgenticFinalPolisherV2Props> = ({
         setError(data.error || 'An error occurred during polish');
         setIsRunning(false);
         break;
+        
+      case 'cancelled':
+        console.log('🛑 Polish cancelled:', data.message);
+        setIsRunning(false);
+        setError(data.message || 'Operation cancelled');
+        break;
     }
   };
 
@@ -159,7 +194,7 @@ export const AgenticFinalPolisherV2: React.FC<AgenticFinalPolisherV2Props> = ({
           <div>
             <h3 className="font-semibold text-purple-900">Agentic Polish V2</h3>
             <p className="text-sm text-purple-700">
-              Two-prompt loop pattern for brand alignment
+              Single-prompt pattern for brand alignment
             </p>
           </div>
         </div>
@@ -171,6 +206,17 @@ export const AgenticFinalPolisherV2: React.FC<AgenticFinalPolisherV2Props> = ({
           >
             <RefreshCw className="w-4 h-4" />
             <span>Start Polish V2</span>
+          </button>
+        )}
+        
+        {isRunning && (
+          <button
+            onClick={cancelPolish}
+            disabled={isCancelling}
+            className="px-4 py-2 bg-red-600 text-white rounded-lg hover:bg-red-700 transition-colors flex items-center space-x-2 disabled:opacity-50 disabled:cursor-not-allowed"
+          >
+            <StopCircle className="w-4 h-4" />
+            <span>{isCancelling ? 'Cancelling...' : 'Emergency Stop'}</span>
           </button>
         )}
       </div>
@@ -205,7 +251,7 @@ export const AgenticFinalPolisherV2: React.FC<AgenticFinalPolisherV2Props> = ({
           
           <div className="bg-white border border-purple-200 rounded-lg p-3">
             <p className="text-xs text-gray-600">
-              <strong>Two-Prompt Loop:</strong> Proceed → Cleanup → Proceed → Cleanup...
+              <strong>Single-Prompt Loop:</strong> Analyze & Polish → Next Section → Analyze & Polish...
             </p>
           </div>
           
@@ -276,7 +322,7 @@ export const AgenticFinalPolisherV2: React.FC<AgenticFinalPolisherV2Props> = ({
             Ready to polish your SEO-optimized article
           </p>
           <p className="text-xs text-gray-500">
-            V2 uses conversation flow: Kickoff → (Proceed → Cleanup) loop
+            V2 uses conversation flow: Kickoff → Single-prompt loop per section
           </p>
         </div>
       )}

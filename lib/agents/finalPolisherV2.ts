@@ -11,9 +11,9 @@ const webSearch = webSearchTool();
 export const polisherAgentV2 = new Agent({
   name: 'FinalPolisherV2',
   instructions: '', // CRITICAL: Empty - guidance comes from conversation prompts
-  model: 'gpt-4o-mini',
+  model: 'o3-2025-04-16',
   tools: [fileSearch, webSearch], // Access to brand guide, semantic SEO knowledge base, and web search
 });
 
 // V2 approach: Let the LLM naturally balance brand voice with semantic clarity
-// through the two-prompt loop pattern (proceed → cleanup)
+// through a single-prompt pattern that combines analysis and polish
