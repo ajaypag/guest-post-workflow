@@ -3,10 +3,10 @@ import { agenticFinalPolishV2Service } from '@/lib/services/agenticFinalPolishV2
 
 export async function POST(
   request: NextRequest,
-  { params }: { params: { id: string } }
+  { params }: { params: Promise<{ id: string }> }
 ) {
   try {
-    const workflowId = params.id;
+    const { id: workflowId } = await params;
     console.log(`📝 Starting V2 polish session for workflow ${workflowId}`);
     
     // Start the session
