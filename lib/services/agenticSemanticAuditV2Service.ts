@@ -210,9 +210,7 @@ Important:
 - When you identify weaknesses related to lack of numbers or data, DO NOT make up data. Instead, use the web search tool to find accurate, factual data to support your improvements
 - Introduction sections should NOT include H2 headers. They appear at the start of the article before any section headings
 
-Start with the first section. In cases where a section has many subsections, output just the subsection.
-
-When you reach <!-- END_OF_ARTICLE -->, output exactly: ===AUDIT_COMPLETE===`;
+Start with the first section. In cases where a section has many subsections, output just the subsection.`;
 
       // Exact looping prompt from user
       const loopingPrompt = `Okay, now I want you to proceed your audit with the next section. Output your analysis in this EXACT format:
