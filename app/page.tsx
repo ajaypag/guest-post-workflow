@@ -17,6 +17,13 @@ export default function Home() {
               <p className="text-lg text-gray-600 max-w-2xl mx-auto">
                 Streamline your guest posting workflow from site selection to publication.
               </p>
+              {/* DEBUG: Check if new routes exist */}
+              <div className="mt-4 p-4 bg-yellow-100 border border-yellow-300 rounded">
+                <p className="text-sm font-bold">DEBUG - Test Links:</p>
+                <a href="/bulk-qualification" className="text-blue-600 underline mr-4">Bulk Qualification</a>
+                <a href="/debug-route" className="text-blue-600 underline mr-4">Debug Route</a>
+                <a href="/bulk-test" className="text-blue-600 underline">Bulk Test</a>
+              </div>
             </div>
           </div>
           
