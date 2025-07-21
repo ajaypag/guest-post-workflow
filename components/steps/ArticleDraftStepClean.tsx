@@ -608,13 +608,6 @@ ${outlineContent || '((((Complete Step 3: Deep Research first to get outline con
                 />
 
               {/* Generated Article Display */}
-              {console.log('🔍 Checking article display conditions:', {
-                hasArticle: !!step.outputs.fullArticle,
-                articleLength: step.outputs.fullArticle?.length || 0,
-                agentGenerated: step.outputs.agentGenerated,
-                agentVersion: step.outputs.agentVersion,
-                shouldDisplay: !!(step.outputs.fullArticle && step.outputs.agentGenerated && step.outputs.agentVersion === 'v2')
-              })}
               {step.outputs.fullArticle && step.outputs.agentGenerated && step.outputs.agentVersion === 'v2' && (
                 <div className="bg-gradient-to-br from-purple-50 to-blue-50 border border-purple-200 rounded-lg p-6">
                   <div className="flex items-center justify-between mb-4">
