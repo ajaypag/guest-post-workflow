@@ -607,41 +607,45 @@ ${outlineContent || '((((Complete Step 3: Deep Research first to get outline con
                   }}
                 />
 
-              {/* Generated Article Display */}
-              {step.outputs.fullArticle && step.outputs.agentGenerated && step.outputs.agentVersion === 'v2' && (
-                <div className="bg-gradient-to-br from-purple-50 to-blue-50 border border-purple-200 rounded-lg p-6">
-                  <div className="flex items-center justify-between mb-4">
-                    <h3 className="font-medium text-gray-900">Generated Article (V2)</h3>
+              {/* Generated Article Display - Always visible */}
+              <div className="bg-gradient-to-br from-purple-50 to-blue-50 border border-purple-200 rounded-lg p-6">
+                <div className="flex items-center justify-between mb-4">
+                  <h3 className="font-medium text-gray-900">Generated Article (V2)</h3>
+                  {step.outputs.fullArticle && step.outputs.agentGenerated && step.outputs.agentVersion === 'v2' && (
                     <span className="text-xs text-purple-600 bg-purple-100 px-2 py-1 rounded">
                       AI V2 Generated
                     </span>
-                  </div>
-                  
-                  <SavedField
-                    label="Final Article"
-                    value={step.outputs.fullArticle || ''}
-                    placeholder="Generated article will appear here"
-                    onChange={(value) => onChange({ ...step.outputs, fullArticle: value })}
-                    isTextarea
-                    height="h-96"
-                  />
-                  
-                  <div className="flex items-center justify-between mt-4">
-                    <span className="text-sm text-gray-600">
-                      Word count: {step.outputs.fullArticle.split(/\s+/).filter(Boolean).length}
-                    </span>
-                    <CopyButton 
-                      text={step.outputs.fullArticle} 
-                      label="Copy Article"
-                    />
-                  </div>
-                  
-                  <MarkdownPreview 
-                    content={step.outputs.fullArticle}
-                    className="mt-4"
-                  />
+                  )}
                 </div>
-              )}
+                
+                <SavedField
+                  label="Final Article"
+                  value={step.outputs.fullArticle || ''}
+                  placeholder="Generated article will appear here after V2 generation completes"
+                  onChange={(value) => onChange({ ...step.outputs, fullArticle: value })}
+                  isTextarea
+                  height="h-96"
+                />
+                
+                {step.outputs.fullArticle && (
+                  <>
+                    <div className="flex items-center justify-between mt-4">
+                      <span className="text-sm text-gray-600">
+                        Word count: {step.outputs.fullArticle.split(/\s+/).filter(Boolean).length}
+                      </span>
+                      <CopyButton 
+                        text={step.outputs.fullArticle} 
+                        label="Copy Article"
+                      />
+                    </div>
+                    
+                    <MarkdownPreview 
+                      content={step.outputs.fullArticle}
+                      className="mt-4"
+                    />
+                  </>
+                )}
+              </div>
             </div>
           ) : activeTab === 'builtin' ? (
             <div className="space-y-6">

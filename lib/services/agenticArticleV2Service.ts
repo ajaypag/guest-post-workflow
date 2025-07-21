@@ -545,6 +545,7 @@ export class AgenticArticleV2Service {
       
       sseUpdate(sessionId, {
         type: 'completed',
+        status: 'completed',
         finalArticle: finalArticle,
         wordCount: wordCount,
         totalSections: sectionCount,
@@ -573,6 +574,8 @@ export class AgenticArticleV2Service {
           ...articleStep.outputs,
           fullArticle: article,
           wordCount: article.split(/\s+/).length,
+          agentGenerated: true,
+          agentVersion: 'v2',
           agentV2Generated: true,
           generatedAt: new Date().toISOString(),
           draftStatus: 'completed'
