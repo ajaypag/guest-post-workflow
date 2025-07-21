@@ -149,10 +149,9 @@ export const AgenticArticleGeneratorV2 = ({ workflowId, outline, onComplete, onG
           case 'complete':
           case 'completed':
             setIsGenerating(false);
-            setIsButtonDisabled(false);
             eventSource.close();
             
-            if (data.status === 'completed' || data.type === 'complete') {
+            if (data.status === 'completed') {
               addLog('🎉 V2 article generation completed successfully!');
               
               if (data.finalArticle) {
@@ -172,7 +171,6 @@ export const AgenticArticleGeneratorV2 = ({ workflowId, outline, onComplete, onG
           case 'error':
             setError(data.message);
             setIsGenerating(false);
-            setIsButtonDisabled(false);
             eventSource.close();
             addLog(`❌ Error: ${data.message}`);
             break;
