@@ -291,12 +291,11 @@ export const AgenticArticleGeneratorV2 = ({ workflowId, outline, onComplete, onG
                 {getStatusIcon(progress.session.status)}
                 <span className="font-medium text-gray-900 capitalize">{progress.session.status}</span>
               </div>
-              <span className="text-sm text-gray-600">
-                {hasKnownTotal 
-                  ? `${progressPercentage}% Complete`
-                  : `${progress.session.completedSections} sections completed`
-                }
-              </span>
+              {hasKnownTotal && (
+                <span className="text-sm text-gray-600">
+                  {progressPercentage}% Complete
+                </span>
+              )}
             </div>
             
             {/* Progress Bar - only show when we know the total */}
