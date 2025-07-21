@@ -5,7 +5,7 @@ import { db } from '@/lib/db/connection';
 import { workflows, v2AgentSessions } from '@/lib/db/schema';
 import { eq, sql } from 'drizzle-orm';
 import { v4 as uuidv4 } from 'uuid';
-// Removed polishParser imports - now using JSON parsing
+// Using delimiter-based parsing for consistency
 
 // Helper function to sanitize strings for PostgreSQL
 function sanitizeForPostgres(str: string): string {
@@ -42,34 +42,61 @@ const KICKOFF_PROMPT = `Okay, here's my article.
 
 Review one of my project files for my brand guide and the Semantic SEO writing tips. I want you to review my article section by section, starting with the first section. Gauge how well it follows the brand guide and semantic seo tips.
 
-Output your analysis as valid JSON with exactly these three fields:
-{
-  "strengths": ["strength 1", "strength 2", ...],
-  "weaknesses": ["weakness 1", "weakness 2", ...],
-  "updatedSection": "Your polished version of the section here - ready to copy-paste"
-}
+Output your analysis in this EXACT format:
+
+===STRENGTHS_START===
+strength 1
+strength 2
+(more strengths if applicable)
+===STRENGTHS_END===
+
+===WEAKNESSES_START===
+weakness 1
+weakness 2
+(more weaknesses if applicable)
+===WEAKNESSES_END===
+
+===UPDATED_SECTION_START===
+Your polished version of the section here - ready to copy-paste
+===UPDATED_SECTION_END===
 
 Important:
-- Output ONLY the JSON object, no other text
-- Ensure the JSON is valid and properly escaped
-- The updatedSection should be a single string with proper line breaks as \n
+- Use EXACTLY these delimiters, don't modify them
+- Each strength/weakness should be on its own line
+- The updatedSection should preserve markdown formatting (headings, lists, bold, italics, etc.)
 
 Start with the first section.
 
-When you reach <!-- END_OF_ARTICLE -->, output: {"status": "complete"}`;
+When you reach <!-- END_OF_ARTICLE -->, output exactly: ===POLISH_COMPLETE===`;
 
 const PROCEED_PROMPT = `Okay that is good. Now, proceed to the next section. Analyze how well it follows the brand guide and content writing and semantic SEO guide, then provide your refined version.
 
-Output your analysis as valid JSON with exactly these three fields:
-{
-  "strengths": ["strength 1", "strength 2", ...],
-  "weaknesses": ["weakness 1", "weakness 2", ...],
-  "updatedSection": "Your polished version of the section here"
-}
+Output your analysis in this EXACT format:
+
+===STRENGTHS_START===
+strength 1
+strength 2
+(more strengths if applicable)
+===STRENGTHS_END===
+
+===WEAKNESSES_START===
+weakness 1
+weakness 2
+(more weaknesses if applicable)
+===WEAKNESSES_END===
+
+===UPDATED_SECTION_START===
+Your polished version of the section here
+===UPDATED_SECTION_END===
 
 Make sure your updated section avoids words from the "words to not use" document. Don't use em-dashes.
 
-When you reach the end of the article or see <!-- END_OF_ARTICLE -->, output: {"status": "complete"}`;
+Important:
+- Use EXACTLY these delimiters, don't modify them
+- Each strength/weakness should be on its own line
+- The updatedSection should preserve markdown formatting (headings, lists, bold, italics, etc.)
+
+When you reach the end of the article or see <!-- END_OF_ARTICLE -->, output exactly: ===POLISH_COMPLETE===`;
 
 export class AgenticFinalPolishV2Service {
   private openaiProvider: OpenAIProvider;
@@ -209,9 +236,9 @@ export class AgenticFinalPolishV2Service {
         throw new Error('No history returned from SDK');
       }
 
-      // Extract and parse the JSON response
+      // Extract and parse the delimiter response
       const firstSectionResponse = this.extractAssistantResponse(conversationHistory);
-      const firstSectionData = this.parsePolishJSON(firstSectionResponse);
+      const firstSectionData = this.parsePolishResponse(firstSectionResponse);
       
       if (firstSectionData.status === 'complete') {
         console.log('✅ Article complete - no sections to polish');
@@ -317,7 +344,7 @@ export class AgenticFinalPolishV2Service {
         conversationHistory = (proceedResult as any).history;
 
         const sectionResponse = this.extractAssistantResponse(conversationHistory);
-        const sectionData = this.parsePolishJSON(sectionResponse);
+        const sectionData = this.parsePolishResponse(sectionResponse);
         
         // Check if we've reached the end
         if (sectionData.status === 'complete') {
@@ -353,7 +380,7 @@ export class AgenticFinalPolishV2Service {
         }
       }
 
-      // Assemble the final polished article from JSON data
+      // Assemble the final polished article from delimiter-parsed data
       console.log('🔍 Assembling polished article from structured data...');
       const finalPolishedArticle = polishedSections
         .map(section => section.updatedSection)
@@ -422,7 +449,7 @@ export class AgenticFinalPolishV2Service {
     return '';
   }
 
-  private parsePolishJSON(response: string): {
+  private parsePolishResponse(response: string): {
     status?: 'complete';
     parsed?: {
       strengths: string[];
@@ -431,36 +458,43 @@ export class AgenticFinalPolishV2Service {
     };
   } {
     try {
-      // Try to extract JSON from the response
-      // Sometimes AI might include extra text, so we look for JSON boundaries
-      const jsonMatch = response.match(/\{[\s\S]*\}/);
-      if (!jsonMatch) {
-        console.error('No JSON found in response:', response);
-        return {};
-      }
-      
-      const parsed = JSON.parse(jsonMatch[0]);
-      
       // Check if it's the completion status
-      if (parsed.status === 'complete') {
+      if (response.includes('===POLISH_COMPLETE===')) {
         return { status: 'complete' };
       }
       
-      // Validate the structure
-      if (parsed.strengths && parsed.weaknesses && parsed.updatedSection) {
-        return {
-          parsed: {
-            strengths: Array.isArray(parsed.strengths) ? parsed.strengths : [parsed.strengths],
-            weaknesses: Array.isArray(parsed.weaknesses) ? parsed.weaknesses : [parsed.weaknesses],
-            updatedSection: parsed.updatedSection
-          }
-        };
+      // Extract strengths
+      const strengthsMatch = response.match(/===STRENGTHS_START===\s*([\s\S]*?)\s*===STRENGTHS_END===/);
+      const weaknessesMatch = response.match(/===WEAKNESSES_START===\s*([\s\S]*?)\s*===WEAKNESSES_END===/);
+      const updatedMatch = response.match(/===UPDATED_SECTION_START===\s*([\s\S]*?)\s*===UPDATED_SECTION_END===/);
+      
+      if (!strengthsMatch || !weaknessesMatch || !updatedMatch) {
+        console.error('Missing required delimiters in response:', response.substring(0, 200));
+        return {};
       }
       
-      console.error('Invalid JSON structure:', parsed);
-      return {};
+      // Parse strengths and weaknesses as arrays (one per line)
+      const strengths = strengthsMatch[1]
+        .split('\n')
+        .map(s => s.trim())
+        .filter(s => s.length > 0 && !s.includes('(more strengths'));
+        
+      const weaknesses = weaknessesMatch[1]
+        .split('\n')
+        .map(w => w.trim())
+        .filter(w => w.length > 0 && !w.includes('(more weaknesses'));
+        
+      const updatedSection = updatedMatch[1].trim();
+      
+      return {
+        parsed: {
+          strengths,
+          weaknesses,
+          updatedSection
+        }
+      };
     } catch (error) {
-      console.error('Failed to parse JSON:', error, 'Response:', response);
+      console.error('Failed to parse delimiter response:', error, 'Response:', response.substring(0, 200));
       return {};
     }
   }
