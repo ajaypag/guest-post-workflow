@@ -7,7 +7,7 @@ import AuthWrapper from '@/components/AuthWrapper';
 import Header from '@/components/Header';
 import { clientStorage, sessionStorage } from '@/lib/userStorage';
 import { Client } from '@/types/user';
-import { Building2, Plus, Users, Globe, CheckCircle, XCircle, Clock, Edit, Trash2, X } from 'lucide-react';
+import { Building2, Plus, Users, Globe, CheckCircle, XCircle, Clock, Edit, Trash2, X, Search, TrendingUp } from 'lucide-react';
 
 export default function ClientsPage() {
   const router = useRouter();
@@ -361,13 +361,47 @@ export default function ClientsPage() {
                       </div>
                     </div>
 
-                    <div className="mt-4 pt-4 border-t">
+                    <div className="mt-4 pt-4 border-t space-y-2">
                       <Link
                         href={`/clients/${client.id}`}
                         className="w-full inline-flex justify-center items-center px-4 py-2 bg-blue-600 text-white text-sm font-medium rounded-md hover:bg-blue-700"
                       >
                         Manage Target Pages
                       </Link>
+                      
+                      {/* Mock Bulk Qualification Section */}
+                      <div className="bg-gray-50 rounded-md p-3">
+                        <div className="flex items-center justify-between mb-2">
+                          <h4 className="text-sm font-medium text-gray-700 flex items-center">
+                            <Search className="w-4 h-4 mr-1" />
+                            Bulk Qualification
+                          </h4>
+                          <span className="text-xs bg-yellow-100 text-yellow-800 px-2 py-1 rounded">Beta</span>
+                        </div>
+                        <div className="text-xs text-gray-600 mb-3">
+                          Qualify multiple sites at once based on your target pages
+                        </div>
+                        <div className="flex space-x-2">
+                          <button
+                            onClick={() => alert(`Bulk qualification for ${client.name} - Feature coming soon!`)}
+                            className="flex-1 inline-flex justify-center items-center px-3 py-1.5 bg-green-600 text-white text-xs font-medium rounded hover:bg-green-700"
+                          >
+                            <TrendingUp className="w-3 h-3 mr-1" />
+                            Start New Job
+                          </button>
+                          <button
+                            onClick={() => alert(`View qualification history for ${client.name} - Feature coming soon!`)}
+                            className="flex-1 inline-flex justify-center items-center px-3 py-1.5 bg-gray-200 text-gray-700 text-xs font-medium rounded hover:bg-gray-300"
+                          >
+                            View History
+                          </button>
+                        </div>
+                        {stats.total === 0 && (
+                          <div className="mt-2 text-xs text-orange-600">
+                            ⚠️ Add target pages first to enable bulk qualification
+                          </div>
+                        )}
+                      </div>
                     </div>
                   </div>
                 </div>
