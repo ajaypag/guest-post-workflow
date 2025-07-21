@@ -40,11 +40,16 @@ export const AgenticSemanticAuditorV2 = ({
   const [logs, setLogs] = useState<string[]>([]);
   const [showCostDialog, setShowCostDialog] = useState(false);
   const [isButtonDisabled, setIsButtonDisabled] = useState(false);
-  const [intermediaryContent, setIntermediaryContent] = useState(''); // Streaming markdown content
+  const [intermediaryContent, setIntermediaryContent] = useState(''); // Streaming content
   const [finalArticle, setFinalArticle] = useState(existingAuditedArticle || ''); // Clean parsed article
   const [showRendered, setShowRendered] = useState(false);
-  const [showIntermediaryView, setShowIntermediaryView] = useState(false); // Toggle between final and analysis view
+  const [showAnalysisView, setShowAnalysisView] = useState(false); // Toggle between final and analysis view
   const [hasExistingAudit, setHasExistingAudit] = useState(!!existingAuditedArticle);
+  const [auditedSections, setAuditedSections] = useState<Array<{
+    strengths: string[];
+    weaknesses: string[];
+    suggestedVersion: string;
+  }>>([]);
   const eventSourceRef = useRef<EventSource | null>(null);
 
   const addLog = (message: string) => {
@@ -125,6 +130,9 @@ export const AgenticSemanticAuditorV2 = ({
             
           case 'section_completed':
             addLog(`✅ Completed section ${data.sectionsCompleted}`);
+            if (data.content && typeof data.content === 'object' && 'strengths' in data.content) {
+              setAuditedSections(prev => [...prev, data.content as any]);
+            }
             break;
             
           case 'progress':
@@ -145,9 +153,9 @@ export const AgenticSemanticAuditorV2 = ({
             if (data.status === 'completed') {
               addLog('🎉 V2 semantic audit completed successfully!');
               
-              // Handle both intermediary and final content
-              if (data.intermediaryContent) {
-                setIntermediaryContent(data.intermediaryContent);
+              // Handle structured audit data
+              if (data.auditedSections) {
+                setAuditedSections(data.auditedSections);
               }
               
               if (data.finalArticle) {
@@ -299,12 +307,12 @@ export const AgenticSemanticAuditorV2 = ({
               {finalArticle ? 'Final Audited Article' : 'Audit Progress (Live)'}
             </h4>
             <div className="flex items-center space-x-2">
-              {finalArticle && intermediaryContent && (
+              {finalArticle && auditedSections.length > 0 && (
                 <button
-                  onClick={() => setShowIntermediaryView(!showIntermediaryView)}
+                  onClick={() => setShowAnalysisView(!showAnalysisView)}
                   className="text-sm text-purple-600 hover:text-purple-700"
                 >
-                  {showIntermediaryView ? 'Show Final' : 'Show Analysis'}
+                  {showAnalysisView ? 'Show Final' : 'Show Analysis'}
                 </button>
               )}
               <button
@@ -316,16 +324,67 @@ export const AgenticSemanticAuditorV2 = ({
             </div>
           </div>
           <div className="bg-white/60 backdrop-blur border border-blue-200 rounded-lg p-4 max-h-96 overflow-y-auto">
-            {showRendered ? (
-              <div className="prose prose-sm max-w-none">
-                <ReactMarkdown>
-                  {showIntermediaryView ? intermediaryContent : (finalArticle || intermediaryContent)}
-                </ReactMarkdown>
+            {showAnalysisView ? (
+              // Show analysis view with structured data
+              <div className="space-y-4">
+                {auditedSections.map((section, idx) => (
+                  <div key={idx} className="border-b border-gray-200 pb-4 last:border-0">
+                    <h5 className="font-medium text-gray-900 mb-2">Section {idx + 1}</h5>
+                    
+                    {section.strengths.length > 0 && (
+                      <div className="mb-2">
+                        <p className="text-sm font-medium text-green-700">Strengths:</p>
+                        <ul className="list-disc pl-5 text-sm text-green-600">
+                          {section.strengths.map((strength, i) => (
+                            <li key={i}>{strength}</li>
+                          ))}
+                        </ul>
+                      </div>
+                    )}
+                    
+                    {section.weaknesses.length > 0 && (
+                      <div className="mb-2">
+                        <p className="text-sm font-medium text-red-700">Weaknesses:</p>
+                        <ul className="list-disc pl-5 text-sm text-red-600">
+                          {section.weaknesses.map((weakness, i) => (
+                            <li key={i}>{weakness}</li>
+                          ))}
+                        </ul>
+                      </div>
+                    )}
+                    
+                    <div className="mt-2">
+                      <p className="text-sm font-medium text-blue-700 mb-1">Suggested Version:</p>
+                      <div className="bg-gray-50 p-2 rounded text-sm">
+                        {showRendered ? (
+                          <div className="prose prose-sm max-w-none">
+                            <ReactMarkdown>
+                              {section.suggestedVersion}
+                            </ReactMarkdown>
+                          </div>
+                        ) : (
+                          <pre className="whitespace-pre-wrap font-mono text-xs">
+                            {section.suggestedVersion}
+                          </pre>
+                        )}
+                      </div>
+                    </div>
+                  </div>
+                ))}
               </div>
             ) : (
-              <pre className="text-xs text-gray-800 whitespace-pre-wrap font-mono">
-                {showIntermediaryView ? intermediaryContent : (finalArticle || intermediaryContent)}
-              </pre>
+              // Show final article
+              showRendered ? (
+                <div className="prose prose-sm max-w-none">
+                  <ReactMarkdown>
+                    {finalArticle || intermediaryContent}
+                  </ReactMarkdown>
+                </div>
+              ) : (
+                <pre className="text-xs text-gray-800 whitespace-pre-wrap font-mono">
+                  {finalArticle || intermediaryContent}
+                </pre>
+              )
             )}
           </div>
         </div>

@@ -37,9 +37,36 @@ function sseUpdate(sessionId: string, payload: any) {
 // The three prompts from the UI
 const PLANNING_PROMPT = `Okay, I'm about to give you a lot of information. Here is a data dump of a deep research we did that's going to lead to an article that you will write for me. I don't want you to start writing. I want you to first just take everything in, analyze it, and start preparing.After that, you're going to start thinking about the outline and flushing it out. I'm not necessarily writing yet, but taking the outline and flushing it out - you're deciding what goes where, you're picking a 3 citations only  and planning where they go. Let's just say total initial planning so that the article can flow through. Determine a word count as well. An acceptable range is 1500-2500.`;
 
-const TITLE_INTRO_PROMPT = `Yes, remember we're going to be creating this article section by section. And the format should be primarily narrative, which means its piece is built on flowing prose--full sentences and connected paragraphs that guide the reader smoothly from one idea to the next. They should be short, punchy paragraphs--rarely more than 2-to-3 lines each--so the eye never hits an intimidating wall of text. Frequent line breaks to create natural breathing room and improve scannability.Lists can appear, but only sparingly and only when they truly clarify complex details or highlight a quick sequence the reader might otherwise struggle to absorb. You blend the finesse of a seasoned copywriter with the deep expertise in the topic at hand, leading to clear, persuasive narratives. Your voice simplifies complexity, builds trust, and drives momentum. You intuitively tailor every message to the most likely audience for the topic at hand. Speak like a trusted colleague—warm, approachable, and human. Use "we" and "you" to build rapport, and read copy aloud to ensure it sounds natural and friendly. Make strong, decisive statements backed by facts or customer proof. Lead with benefits, use active voice, and avoid hedging language like "might" or "could." Be insightful and thorough without overwhelming. Organize content logically, connect the dots for the reader, and stick to verifiable details. Sprinkle clever turns of phrase or light puns in headlines or campaign-level copy only. Never sacrifice clarity for a joke. Trim every sentence to its core message. Eliminate filler words, keep sentences short, and focus on one or two key points. Write like you're chatting over coffee—informal but never unprofessional. The article reads more like a well-structured conversation than a slide deck of bullet points. Start with the title and introduction. Be sure to consult the project documents on Writing Guidelines and Semantic SEO before each section to remind yourself of the best practices that we want to follow. Avoid using Em-dashes. the section you create must follow that of the original outline provided. Remember to keep total word count of article in mind and how you decided to divy up the words per section so you can allocate appropriate word count for this section.`;
+const TITLE_INTRO_PROMPT = `Yes, remember we're going to be creating this article section by section. And the format should be primarily narrative, which means its piece is built on flowing prose--full sentences and connected paragraphs that guide the reader smoothly from one idea to the next. They should be short, punchy paragraphs--rarely more than 2-to-3 lines each--so the eye never hits an intimidating wall of text. Frequent line breaks to create natural breathing room and improve scannability.Lists can appear, but only sparingly and only when they truly clarify complex details or highlight a quick sequence the reader might otherwise struggle to absorb. You blend the finesse of a seasoned copywriter with the deep expertise in the topic at hand, leading to clear, persuasive narratives. Your voice simplifies complexity, builds trust, and drives momentum. You intuitively tailor every message to the most likely audience for the topic at hand. Speak like a trusted colleague—warm, approachable, and human. Use "we" and "you" to build rapport, and read copy aloud to ensure it sounds natural and friendly. Make strong, decisive statements backed by facts or customer proof. Lead with benefits, use active voice, and avoid hedging language like "might" or "could." Be insightful and thorough without overwhelming. Organize content logically, connect the dots for the reader, and stick to verifiable details. Sprinkle clever turns of phrase or light puns in headlines or campaign-level copy only. Never sacrifice clarity for a joke. Trim every sentence to its core message. Eliminate filler words, keep sentences short, and focus on one or two key points. Write like you're chatting over coffee—informal but never unprofessional. The article reads more like a well-structured conversation than a slide deck of bullet points. Start with the title and introduction. Be sure to consult the project documents on Writing Guidelines and Semantic SEO before each section to remind yourself of the best practices that we want to follow. Avoid using Em-dashes. the section you create must follow that of the original outline provided. Remember to keep total word count of article in mind and how you decided to divy up the words per section so you can allocate appropriate word count for this section.
 
-const LOOPING_PROMPT = `Proceed to the next section. Remember, the format should be primarily narrative, which means its piece is built on flowing prose--full sentences and connected paragraphs that guide the reader smoothly from one idea to the next. They should be short, punchy paragraphs--rarely more than 2-to-3 lines each--so the eye never hits an intimidating wall of text. Frequent line breaks to create natural breathing room and improve scannability.Lists can appear, but only sparingly and only when they truly clarify complex details or highlight a quick sequence the reader might otherwise struggle to absorb. You blend the finesse of a seasoned copywriter with the deep expertise in the topic at hand, leading to clear, persuasive narratives. Your voice simplifies complexity, builds trust, and drives momentum. You intuitively tailor every message to the most likely audience for the topic at hand. Speak like a trusted colleague—warm, approachable, and human. Use "we" and "you" to build rapport, and read copy aloud to ensure it sounds natural and friendly. Make strong, decisive statements backed by facts or customer proof. Lead with benefits, use active voice, and avoid hedging language like "might" or "could." Be insightful and thorough without overwhelming. Organize content logically, connect the dots for the reader, and stick to verifiable details. Sprinkle clever turns of phrase or light puns in headlines or campaign-level copy only. Never sacrifice clarity for a joke. Trim every sentence to its core message. Eliminate filler words, keep sentences short, and focus on one or two key points. Write like you're chatting over coffee—informal but never unprofessional. The article reads more like a well-structured conversation than a slide deck of bullet points. Be sure to consult the project documents on Writing Guidelines and Semantic SEO before each section to remind yourself of the best practices that we want to follow. Also be sure to reference my original prompt that contains the article information that should feed your context. I've already done the research and given it to you there - so that's what you need to reference each time. Avoid using Em-dashes. If it's the section that is the "meat" of the article, you must further break your output down into subsections and only output the first subsection so as not to over simplify each component. Note: defining what a subsection means is important. We're not doing sub-subsections, so if the section of the article is already apparently a subsection, then that entire section should be included in your output even if there are apparently sub-subsections within. Note 2: the section you create must follow that of the original outline provided. Remember to keep total word count of article in mind and how you decided to divy up the words per section so you can allocate appropriate word count for this section.`;
+Output your response as valid JSON with these fields:
+{
+  "sectionType": "title_intro",
+  "title": "The article title",
+  "content": "The introduction content in markdown format",
+  "wordCount": 150
+}
+
+Important:
+- Output ONLY the JSON object, no other text
+- The content should preserve markdown formatting
+- If this completes the entire article, add: "status": "complete"`;
+
+const LOOPING_PROMPT = `Proceed to the next section. Remember, the format should be primarily narrative, which means its piece is built on flowing prose--full sentences and connected paragraphs that guide the reader smoothly from one idea to the next. They should be short, punchy paragraphs--rarely more than 2-to-3 lines each--so the eye never hits an intimidating wall of text. Frequent line breaks to create natural breathing room and improve scannability.Lists can appear, but only sparingly and only when they truly clarify complex details or highlight a quick sequence the reader might otherwise struggle to absorb. You blend the finesse of a seasoned copywriter with the deep expertise in the topic at hand, leading to clear, persuasive narratives. Your voice simplifies complexity, builds trust, and drives momentum. You intuitively tailor every message to the most likely audience for the topic at hand. Speak like a trusted colleague—warm, approachable, and human. Use "we" and "you" to build rapport, and read copy aloud to ensure it sounds natural and friendly. Make strong, decisive statements backed by facts or customer proof. Lead with benefits, use active voice, and avoid hedging language like "might" or "could." Be insightful and thorough without overwhelming. Organize content logically, connect the dots for the reader, and stick to verifiable details. Sprinkle clever turns of phrase or light puns in headlines or campaign-level copy only. Never sacrifice clarity for a joke. Trim every sentence to its core message. Eliminate filler words, keep sentences short, and focus on one or two key points. Write like you're chatting over coffee—informal but never unprofessional. The article reads more like a well-structured conversation than a slide deck of bullet points. Be sure to consult the project documents on Writing Guidelines and Semantic SEO before each section to remind yourself of the best practices that we want to follow. Also be sure to reference my original prompt that contains the article information that should feed your context. I've already done the research and given it to you there - so that's what you need to reference each time. Avoid using Em-dashes. If it's the section that is the "meat" of the article, you must further break your output down into subsections and only output the first subsection so as not to over simplify each component. Note: defining what a subsection means is important. We're not doing sub-subsections, so if the section of the article is already apparently a subsection, then that entire section should be included in your output even if there are apparently sub-subsections within. Note 2: the section you create must follow that of the original outline provided. Remember to keep total word count of article in mind and how you decided to divy up the words per section so you can allocate appropriate word count for this section.
+
+Output your response as valid JSON with these fields:
+{
+  "sectionType": "body",
+  "heading": "The section heading",
+  "content": "The section content in markdown format",
+  "wordCount": 250,
+  "isSubsection": false
+}
+
+Important:
+- Output ONLY the JSON object, no other text
+- The content should preserve markdown formatting
+- If this completes the entire article, output: {"status": "complete"} or include "status": "complete" in your response`;
 
 export class AgenticArticleV2Service {
   private openaiProvider: OpenAIProvider;
@@ -48,6 +75,75 @@ export class AgenticArticleV2Service {
     this.openaiProvider = new OpenAIProvider({
       apiKey: process.env.OPENAI_API_KEY
     });
+  }
+
+  // Parse JSON response from article generation
+  private parseArticleJSON(response: string): {
+    status?: 'complete';
+    planning?: {
+      outline: string;
+      plannedWordCount: number;
+      plannedSections: number;
+      citations: string[];
+      approach: string;
+    };
+    section?: {
+      sectionType: 'title_intro' | 'body' | 'conclusion';
+      title?: string;
+      heading?: string;
+      content: string;
+      wordCount: number;
+      isSubsection?: boolean;
+    };
+  } {
+    try {
+      // Try to extract JSON from the response
+      const jsonMatch = response.match(/\{[\s\S]*\}/);
+      if (!jsonMatch) {
+        console.error('No JSON found in response:', response.substring(0, 200));
+        return {};
+      }
+      
+      const parsed = JSON.parse(jsonMatch[0]);
+      
+      // Check if it's the completion status
+      if (parsed.status === 'complete') {
+        return { status: 'complete' };
+      }
+      
+      // Check if it's a planning response
+      if (parsed.outline && parsed.plannedWordCount) {
+        return {
+          planning: {
+            outline: parsed.outline,
+            plannedWordCount: parsed.plannedWordCount || 2000,
+            plannedSections: parsed.plannedSections || 8,
+            citations: parsed.citations || [],
+            approach: parsed.approach || ''
+          }
+        };
+      }
+      
+      // Check if it's a section response
+      if (parsed.content && (parsed.sectionType || parsed.title || parsed.heading)) {
+        return {
+          section: {
+            sectionType: parsed.sectionType || 'body',
+            title: parsed.title,
+            heading: parsed.heading,
+            content: parsed.content,
+            wordCount: parsed.wordCount || parsed.content.split(/\s+/).filter(Boolean).length,
+            isSubsection: parsed.isSubsection || false
+          }
+        };
+      }
+      
+      console.error('Invalid JSON structure:', parsed);
+      return {};
+    } catch (error) {
+      console.error('Failed to parse JSON:', error, 'Response:', response.substring(0, 200));
+      return {};
+    }
   }
 
   async startSession(workflowId: string, outline: string): Promise<string> {
@@ -113,8 +209,16 @@ export class AgenticArticleV2Service {
         }
       ];
 
-      // Collect all writer outputs for our use
-      const writerOutputs: string[] = [];
+      // Collect article sections with structured data
+      const articleSections: Array<{
+        sectionType: 'title_intro' | 'body' | 'conclusion';
+        title?: string;
+        heading?: string;
+        content: string;
+        wordCount: number;
+        isSubsection?: boolean;
+      }> = [];
+      
       
       // Track article completion status
       let articleComplete = false;
@@ -181,7 +285,6 @@ export class AgenticArticleV2Service {
         throw new Error('No planning response extracted');
       }
       
-      writerOutputs.push(planningResponse);
       console.log(`✅ Planning response extracted: ${planningResponse.length} chars`);
       
       // Log first 1000 chars of planning response to see outline
@@ -253,22 +356,43 @@ export class AgenticArticleV2Service {
         }
       }
 
-      // Check for end marker and clean it
-      if (titleIntroResponse.includes('<<END_OF_ARTICLE>>')) {
-        titleIntroResponse = titleIntroResponse.replace('<<END_OF_ARTICLE>>', '').trim();
-        articleComplete = true;
-      }
-      
-      writerOutputs.push(titleIntroResponse);
       console.log(`✅ Title/intro response extracted: ${titleIntroResponse.length} chars`);
-
-      await this.updateSession(sessionId, { completedSections: 1 });
-      sseUpdate(sessionId, { 
-        type: 'section_completed', 
-        sectionNumber: 1, 
-        content: titleIntroResponse,
-        message: 'Title and introduction completed'
-      });
+      
+      // Parse title/intro JSON
+      const titleIntroResult = this.parseArticleJSON(titleIntroResponse);
+      
+      if (titleIntroResult.status === 'complete') {
+        articleComplete = true;
+        console.log('✅ Article marked as complete in title/intro');
+      } else if (titleIntroResult.section) {
+        // Add to sections array
+        articleSections.push(titleIntroResult.section);
+        console.log(`✅ Title/intro parsed: "${titleIntroResult.section.title}", ${titleIntroResult.section.wordCount} words`);
+        
+        await this.updateSession(sessionId, { completedSections: 1 });
+        sseUpdate(sessionId, { 
+          type: 'section_completed', 
+          sectionNumber: 1, 
+          sectionData: titleIntroResult.section,
+          message: 'Title and introduction completed'
+        });
+      } else {
+        // Fallback: treat as plain text if JSON parsing fails
+        console.warn('Failed to parse title/intro JSON, using text fallback');
+        articleSections.push({
+          sectionType: 'title_intro',
+          content: titleIntroResponse,
+          wordCount: titleIntroResponse.split(/\s+/).filter(Boolean).length
+        });
+        
+        await this.updateSession(sessionId, { completedSections: 1 });
+        sseUpdate(sessionId, { 
+          type: 'section_completed', 
+          sectionNumber: 1, 
+          content: titleIntroResponse,
+          message: 'Title and introduction completed'
+        });
+      }
 
       // Phase 3: Loop with the looping prompt until article is complete
       let sectionCount = 1;
@@ -333,24 +457,45 @@ export class AgenticArticleV2Service {
           }
         }
 
-        // Check for end marker and clean it
-        if (sectionResponse.includes('<<END_OF_ARTICLE>>')) {
-          sectionResponse = sectionResponse.replace('<<END_OF_ARTICLE>>', '').trim();
-          articleComplete = true;
-          console.log(`✅ Article complete - writer signaled END_OF_ARTICLE after ${sectionCount + 1} sections`);
-        }
+        console.log(`✅ Section response extracted: ${sectionResponse.length} chars`);
         
-        writerOutputs.push(sectionResponse);
-        sectionCount++;
-        console.log(`✅ Section ${sectionCount} response extracted: ${sectionResponse.length} chars`);
-
-        await this.updateSession(sessionId, { completedSections: sectionCount });
-        sseUpdate(sessionId, { 
-          type: 'section_completed', 
-          sectionNumber: sectionCount, 
-          content: sectionResponse,
-          message: `Section ${sectionCount} completed`
-        });
+        // Parse section JSON
+        const sectionResult = this.parseArticleJSON(sectionResponse);
+        
+        if (sectionResult.status === 'complete') {
+          articleComplete = true;
+          console.log(`✅ Article complete - writer signaled completion after ${sectionCount + 1} sections`);
+        } else if (sectionResult.section) {
+          // Add to sections array
+          articleSections.push(sectionResult.section);
+          sectionCount++;
+          console.log(`✅ Section ${sectionCount} parsed: "${sectionResult.section.heading}", ${sectionResult.section.wordCount} words`);
+          
+          await this.updateSession(sessionId, { completedSections: sectionCount });
+          sseUpdate(sessionId, { 
+            type: 'section_completed', 
+            sectionNumber: sectionCount, 
+            sectionData: sectionResult.section,
+            message: `Section ${sectionCount} completed`
+          });
+        } else {
+          // Fallback: treat as plain text if JSON parsing fails
+          console.warn('Failed to parse section JSON, using text fallback');
+          articleSections.push({
+            sectionType: 'body',
+            content: sectionResponse,
+            wordCount: sectionResponse.split(/\s+/).filter(Boolean).length
+          });
+          sectionCount++;
+          
+          await this.updateSession(sessionId, { completedSections: sectionCount });
+          sseUpdate(sessionId, { 
+            type: 'section_completed', 
+            sectionNumber: sectionCount, 
+            content: sectionResponse,
+            message: `Section ${sectionCount} completed`
+          });
+        }
         
         // Use ArticleEndCritic after CHECK_START sections
         if (!articleComplete && sectionCount >= CHECK_START) {
@@ -362,8 +507,8 @@ export class AgenticArticleV2Service {
           });
           
           try {
-            // Prepare the draft so far (skip planning, include all writing)
-            const draftSoFar = writerOutputs.slice(1).join('\n\n');
+            // Prepare the draft so far from structured sections
+            const draftSoFar = articleSections.map(s => s.content).join('\n\n');
             
             const criticRun = await writerRunner.run(articleEndCritic, [
               { role: 'user', content: draftSoFar }
@@ -401,8 +546,8 @@ export class AgenticArticleV2Service {
         }
       }
 
-      // Assemble final article (skip planning response, include all writing)
-      const finalArticle = writerOutputs.slice(1).join('\n\n');
+      // Assemble final article from structured sections
+      const finalArticle = articleSections.map(s => s.content).join('\n\n');
       const wordCount = finalArticle.split(/\s+/).filter(Boolean).length;
 
       console.log(`✅ Article completed: ${wordCount} words, ${sectionCount} sections`);
@@ -415,12 +560,18 @@ export class AgenticArticleV2Service {
         finalArticle: sanitizeForPostgres(finalArticle),
         totalWordCount: wordCount,
         totalSections: sectionCount,
-        completedAt: new Date()
+        completedAt: new Date(),
+        sessionMetadata: {
+          ...(session.sessionMetadata as any),
+          articleSections: articleSections, // Store structured section data
+          completedAt: new Date().toISOString()
+        }
       });
       
       sseUpdate(sessionId, {
         type: 'completed',
         finalArticle: finalArticle,
+        articleSections: articleSections, // Send structured data
         wordCount: wordCount,
         totalSections: sectionCount,
         message: 'Article generation completed successfully!'

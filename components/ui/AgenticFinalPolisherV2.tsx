@@ -13,9 +13,18 @@ interface PolishProgress {
   status?: string;
   message?: string;
   phase?: string;
-  content?: string;
+  content?: string | {
+    strengths: string[];
+    weaknesses: string[];
+    updatedSection: string;
+  };
   sectionNumber?: number;
   finalPolishedArticle?: string;
+  polishedSections?: Array<{
+    strengths: string[];
+    weaknesses: string[];
+    updatedSection: string;
+  }>;
   wordCount?: number;
   totalSections?: number;
   error?: string;
@@ -35,6 +44,11 @@ export const AgenticFinalPolisherV2: React.FC<AgenticFinalPolisherV2Props> = ({
   const [streamingText, setStreamingText] = useState<string>('');
   const [isStreaming, setIsStreaming] = useState(false);
   const [isCancelling, setIsCancelling] = useState(false);
+  const [polishedSections, setPolishedSections] = useState<Array<{
+    strengths: string[];
+    weaknesses: string[];
+    updatedSection: string;
+  }>>([]);
 
   // Start the V2 polish process
   const startPolish = async () => {
@@ -47,6 +61,7 @@ export const AgenticFinalPolisherV2: React.FC<AgenticFinalPolisherV2Props> = ({
       setCurrentPhase('');
       setStreamingText('');
       setIsStreaming(false);
+      setPolishedSections([]);
 
       console.log('🎨 Starting V2 polish process...');
 
@@ -158,12 +173,22 @@ export const AgenticFinalPolisherV2: React.FC<AgenticFinalPolisherV2Props> = ({
         setCompletedSections(data.sectionNumber || 0);
         setStreamingText(''); // Clear streaming text after section completes
         setIsStreaming(false);
+        
+        // Add the section data to our polished sections array
+        if (data.content && typeof data.content === 'object' && 'strengths' in data.content) {
+          setPolishedSections(prev => [...prev, data.content as any]);
+        }
         break;
 
       case 'completed':
         console.log('🎉 V2 Polish completed!');
         setFinalArticle(data.finalPolishedArticle || '');
         setIsRunning(false);
+        
+        // Update polished sections if provided
+        if (data.polishedSections) {
+          setPolishedSections(data.polishedSections);
+        }
         
         if (onComplete && data.finalPolishedArticle) {
           onComplete(data.finalPolishedArticle);
@@ -291,6 +316,30 @@ export const AgenticFinalPolisherV2: React.FC<AgenticFinalPolisherV2Props> = ({
               )}
             </p>
           </div>
+          
+          {/* Polish Analysis Summary */}
+          {polishedSections.length > 0 && (
+            <div className="bg-purple-50 border border-purple-200 rounded-lg p-4 max-h-64 overflow-y-auto">
+              <h5 className="font-medium text-purple-900 mb-2">Polish Analysis Summary</h5>
+              <div className="space-y-3 text-sm">
+                {polishedSections.map((section, idx) => (
+                  <div key={idx} className="border-b border-purple-100 pb-2 last:border-0">
+                    <p className="font-medium text-purple-800 mb-1">Section {idx + 1}</p>
+                    {section.strengths.length > 0 && (
+                      <div className="text-green-700 text-xs mb-1">
+                        ✓ {section.strengths.join(', ')}
+                      </div>
+                    )}
+                    {section.weaknesses.length > 0 && (
+                      <div className="text-red-700 text-xs">
+                        ✗ {section.weaknesses.join(', ')}
+                      </div>
+                    )}
+                  </div>
+                ))}
+              </div>
+            </div>
+          )}
           
           <div className="bg-white border border-purple-200 rounded-lg p-4">
             <div className="flex items-center justify-between mb-3">

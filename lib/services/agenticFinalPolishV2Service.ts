@@ -5,7 +5,7 @@ import { db } from '@/lib/db/connection';
 import { workflows, v2AgentSessions } from '@/lib/db/schema';
 import { eq, sql } from 'drizzle-orm';
 import { v4 as uuidv4 } from 'uuid';
-import { extractPolishedArticle, extractPolishFeedback } from '@/lib/utils/polishParser';
+// Removed polishParser imports - now using JSON parsing
 
 // Helper function to sanitize strings for PostgreSQL
 function sanitizeForPostgres(str: string): string {
@@ -42,32 +42,34 @@ const KICKOFF_PROMPT = `Okay, here's my article.
 
 Review one of my project files for my brand guide and the Semantic SEO writing tips. I want you to review my article section by section, starting with the first section. Gauge how well it follows the brand guide and semantic seo tips.
 
-Output ONLY the three markdown sections below. Do not include any introductory text like "Here's my analysis" or "Here's the refined version":
+Output your analysis as valid JSON with exactly these three fields:
+{
+  "strengths": ["strength 1", "strength 2", ...],
+  "weaknesses": ["weakness 1", "weakness 2", ...],
+  "updatedSection": "Your polished version of the section here - ready to copy-paste"
+}
 
-### Strengths
-(list the strengths here)
-
-### Weaknesses  
-(list the weaknesses here)
-
-### Updated Section
-(put your polished version of the section here - ready to copy-paste)
+Important:
+- Output ONLY the JSON object, no other text
+- Ensure the JSON is valid and properly escaped
+- The updatedSection should be a single string with proper line breaks as \n
 
 Start with the first section.
 
-When you reach <!-- END_OF_ARTICLE -->, you can conclude your polish.`;
+When you reach <!-- END_OF_ARTICLE -->, output: {"status": "complete"}`;
 
 const PROCEED_PROMPT = `Okay that is good. Now, proceed to the next section. Analyze how well it follows the brand guide and content writing and semantic SEO guide, then provide your refined version.
 
-Output ONLY the three markdown sections below with no additional text or explanation:
+Output your analysis as valid JSON with exactly these three fields:
+{
+  "strengths": ["strength 1", "strength 2", ...],
+  "weaknesses": ["weakness 1", "weakness 2", ...],
+  "updatedSection": "Your polished version of the section here"
+}
 
-### Strengths
-### Weaknesses  
-### Updated Section
+Make sure your updated section avoids words from the "words to not use" document. Don't use em-dashes.
 
-Make sure your updated section avoids words from the "words to not use" document. Don't use em-dashes. 
-
-When you reach the end of the article or see <!-- END_OF_ARTICLE -->, simply state "No more sections to polish" in your response.`;
+When you reach the end of the article or see <!-- END_OF_ARTICLE -->, output: {"status": "complete"}`;
 
 export class AgenticFinalPolishV2Service {
   private openaiProvider: OpenAIProvider;
@@ -166,8 +168,12 @@ export class AgenticFinalPolishV2Service {
         }
       ];
 
-      // Collect all polish content with markdown headers for parsing
-      let accumulatedPolishContent = '';
+      // Collect all polish content as structured data
+      let polishedSections: Array<{
+        strengths: string[];
+        weaknesses: string[];
+        updatedSection: string;
+      }> = [];
       let sectionCount = 0;
       const maxSections = 40; // Safety limit to prevent infinite loops
       let continuePolishing = true; // Declare here before using in streaming
@@ -203,19 +209,30 @@ export class AgenticFinalPolishV2Service {
         throw new Error('No history returned from SDK');
       }
 
-      // Extract the response (strengths, weaknesses, updated section)
-      const firstSectionAnalysis = this.extractAssistantResponse(conversationHistory);
-      accumulatedPolishContent += firstSectionAnalysis + '\n\n';
-      console.log(`✅ First section polished: ${firstSectionAnalysis.length} chars`);
-      sectionCount = 1;
+      // Extract and parse the JSON response
+      const firstSectionResponse = this.extractAssistantResponse(conversationHistory);
+      const firstSectionData = this.parsePolishJSON(firstSectionResponse);
+      
+      if (firstSectionData.status === 'complete') {
+        console.log('✅ Article complete - no sections to polish');
+        continuePolishing = false;
+      } else if (firstSectionData.parsed) {
+        polishedSections.push(firstSectionData.parsed);
+        console.log(`✅ First section polished`);
+        sectionCount = 1;
+      } else {
+        throw new Error('Failed to parse first section response');
+      }
 
-      await this.updateSession(sessionId, { completedSections: sectionCount });
-      sseUpdate(sessionId, { 
-        type: 'section_completed', 
-        sectionNumber: sectionCount, 
-        content: firstSectionAnalysis,
-        message: 'First section polished'
-      });
+      if (sectionCount > 0) {
+        await this.updateSession(sessionId, { completedSections: sectionCount });
+        sseUpdate(sessionId, { 
+          type: 'section_completed', 
+          sectionNumber: sectionCount, 
+          content: firstSectionData.parsed,
+          message: 'First section polished'
+        });
+      }
 
       // Phase 2: Loop through remaining sections with single prompt pattern
       // continuePolishing already declared above
@@ -299,33 +316,30 @@ export class AgenticFinalPolishV2Service {
         await proceedResult.finalOutput;
         conversationHistory = (proceedResult as any).history;
 
-        const sectionAnalysis = this.extractAssistantResponse(conversationHistory);
-        accumulatedPolishContent += sectionAnalysis + '\n\n';
+        const sectionResponse = this.extractAssistantResponse(conversationHistory);
+        const sectionData = this.parsePolishJSON(sectionResponse);
         
-        // Check if we've reached the end (AI might indicate no more sections)
-        if (this.checkIfComplete(sectionAnalysis)) {
+        // Check if we've reached the end
+        if (sectionData.status === 'complete') {
           console.log(`✅ Polish complete - AI indicated no more sections after ${sectionCount} sections`);
           continuePolishing = false;
           break;
+        } else if (sectionData.parsed) {
+          polishedSections.push(sectionData.parsed);
+          sectionCount++;
+          
+          await this.updateSession(sessionId, { completedSections: sectionCount });
+          sseUpdate(sessionId, { 
+            type: 'section_completed', 
+            sectionNumber: sectionCount, 
+            content: sectionData.parsed,
+            message: `Section ${sectionCount} polished`
+          });
+        } else {
+          console.error('Failed to parse section response:', sectionResponse);
+          // Continue anyway to avoid getting stuck
+          sectionCount++;
         }
-        
-        // Also check if the response contains the END_MARKER
-        if (sectionAnalysis.includes(END_MARKER)) {
-          console.log(`🎯 END_MARKER detected in section analysis after ${sectionCount} sections`);
-          continuePolishing = false;
-          break;
-        }
-
-        // Increment section count after processing
-        sectionCount++;
-
-        await this.updateSession(sessionId, { completedSections: sectionCount });
-        sseUpdate(sessionId, { 
-          type: 'section_completed', 
-          sectionNumber: sectionCount, 
-          content: sectionAnalysis,
-          message: `Section ${sectionCount} polished`
-        });
 
         // Safety check for section limit
         if (sectionCount >= maxSections - 5) {
@@ -339,14 +353,14 @@ export class AgenticFinalPolishV2Service {
         }
       }
 
-      // Extract clean polished article from the accumulated content
-      console.log('🔍 Extracting clean polished article from accumulated content...');
-      const finalPolishedArticle = extractPolishedArticle(accumulatedPolishContent);
-      const wordCount = finalPolishedArticle.split(/\s+/).filter(Boolean).length;
+      // Assemble the final polished article from JSON data
+      console.log('🔍 Assembling polished article from structured data...');
+      const finalPolishedArticle = polishedSections
+        .map(section => section.updatedSection)
+        .join('\n\n');
       
-      // Also extract polish feedback for logging
-      const polishFeedback = extractPolishFeedback(accumulatedPolishContent);
-      console.log(`📊 Collected feedback for ${polishFeedback.length} sections`);
+      const wordCount = finalPolishedArticle.split(/\s+/).filter(Boolean).length;
+      console.log(`📊 Collected polish data for ${polishedSections.length} sections`);
 
       console.log(`✅ Polish completed: ${wordCount} words, ${sectionCount} sections`);
 
@@ -362,14 +376,14 @@ export class AgenticFinalPolishV2Service {
         sessionMetadata: {
           ...(session.sessionMetadata as any),
           completedAt: new Date().toISOString(),
-          fullPolishContent: accumulatedPolishContent, // Store full polish in metadata
-          polishFeedback: polishFeedback // Store feedback for analysis
+          polishedSections: polishedSections, // Store structured polish data
+          totalSectionsPolished: polishedSections.length
         }
       });
       
       sseUpdate(sessionId, {
         type: 'completed',
-        intermediaryContent: accumulatedPolishContent, // Full polish with markdown headers
+        polishedSections: polishedSections, // Structured polish data
         finalPolishedArticle: finalPolishedArticle, // Clean article only
         wordCount: wordCount,
         totalSections: sectionCount,
@@ -408,21 +422,47 @@ export class AgenticFinalPolishV2Service {
     return '';
   }
 
-  private checkIfComplete(response: string): boolean {
-    // Check for common indicators that there are no more sections
-    const lowerResponse = response.toLowerCase();
-    return (
-      lowerResponse.includes('no more sections') ||
-      lowerResponse.includes('all sections have been') ||
-      lowerResponse.includes('final section') ||
-      lowerResponse.includes('last section') ||
-      lowerResponse.includes('article is complete') ||
-      lowerResponse.includes('polish is complete') ||
-      lowerResponse.includes('end of article') ||
-      lowerResponse.includes('conclud') ||
-      lowerResponse.includes('no more sections to polish') || // Added to match prompt
-      response.includes('<!-- END_OF_ARTICLE -->') // Check for exact marker
-    );
+  private parsePolishJSON(response: string): {
+    status?: 'complete';
+    parsed?: {
+      strengths: string[];
+      weaknesses: string[];
+      updatedSection: string;
+    };
+  } {
+    try {
+      // Try to extract JSON from the response
+      // Sometimes AI might include extra text, so we look for JSON boundaries
+      const jsonMatch = response.match(/\{[\s\S]*\}/);
+      if (!jsonMatch) {
+        console.error('No JSON found in response:', response);
+        return {};
+      }
+      
+      const parsed = JSON.parse(jsonMatch[0]);
+      
+      // Check if it's the completion status
+      if (parsed.status === 'complete') {
+        return { status: 'complete' };
+      }
+      
+      // Validate the structure
+      if (parsed.strengths && parsed.weaknesses && parsed.updatedSection) {
+        return {
+          parsed: {
+            strengths: Array.isArray(parsed.strengths) ? parsed.strengths : [parsed.strengths],
+            weaknesses: Array.isArray(parsed.weaknesses) ? parsed.weaknesses : [parsed.weaknesses],
+            updatedSection: parsed.updatedSection
+          }
+        };
+      }
+      
+      console.error('Invalid JSON structure:', parsed);
+      return {};
+    } catch (error) {
+      console.error('Failed to parse JSON:', error, 'Response:', response);
+      return {};
+    }
   }
 
   private async savePolishedArticleToWorkflow(workflowId: string, polishedArticle: string): Promise<void> {
