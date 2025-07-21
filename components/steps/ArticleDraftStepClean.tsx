@@ -6,7 +6,6 @@ import { SavedField } from '../SavedField';
 import { CopyButton } from '../ui/CopyButton';
 import { TutorialVideo } from '../ui/TutorialVideo';
 import { ChatInterface } from '../ui/ChatInterface';
-import { AgenticArticleGenerator } from '../ui/AgenticArticleGenerator';
 import { AgenticArticleGeneratorV2 } from '../ui/AgenticArticleGeneratorV2';
 import { SplitPromptButton } from '../ui/SplitPromptButton';
 import { MarkdownPreview } from '../ui/MarkdownPreview';
@@ -205,16 +204,6 @@ ${outlineContent || '((((Complete Step 3: Deep Research first to get outline con
       {/* Tab Navigation */}
       <div className="bg-white border border-gray-200 rounded-xl overflow-hidden">
         <div className="flex border-b border-gray-200">
-          <button
-            onClick={() => handleTabSwitch('agentic')}
-            className={`flex-1 px-6 py-4 text-sm font-medium transition-colors ${
-              activeTab === 'agentic'
-                ? 'bg-purple-50 text-purple-700 border-b-2 border-purple-500'
-                : 'text-gray-500 hover:text-gray-700 hover:bg-gray-50'
-            }`}
-          >
-            🤖 AI Agent Beta
-          </button>
           <button
             onClick={() => handleTabSwitch('agenticV2')}
             className={`flex-1 px-6 py-4 text-sm font-medium transition-colors ${
@@ -819,58 +808,6 @@ ${outlineContent || '((((Complete Step 3: Deep Research first to get outline con
                   )}
                 </div>
               </div>
-            </div>
-          ) : activeTab === 'agentic' ? (
-            <div className="space-y-6">
-              {/* Agentic Article Generator */}
-              <AgenticArticleGenerator
-                workflowId={workflow.id}
-                outline={outlineContent}
-                onComplete={(article) => {
-                  onChange({ 
-                    ...step.outputs, 
-                    fullArticle: article,
-                    agentGenerated: true,
-                    draftStatus: 'completed'
-                  });
-                }}
-                onGeneratingStateChange={(isGenerating) => {
-                  setAgentRunning(isGenerating);
-                  onAgentStateChange?.(isGenerating);
-                }}
-              />
-
-              {/* Generated Article Display */}
-              {step.outputs.fullArticle && step.outputs.agentGenerated && (
-                <div className="bg-white border border-gray-200 rounded-lg p-6">
-                  <div className="flex items-center justify-between mb-4">
-                    <h3 className="font-medium text-gray-900">Generated Article</h3>
-                    <span className="text-xs text-green-600 bg-green-100 px-2 py-1 rounded">
-                      AI Generated
-                    </span>
-                  </div>
-                  
-                  <SavedField
-                    label="Final Article"
-                    value={step.outputs.fullArticle || ''}
-                    placeholder="Generated article will appear here"
-                    onChange={(value) => onChange({ ...step.outputs, fullArticle: value })}
-                    isTextarea={true}
-                    height="h-64"
-                  />
-                  
-                  {step.outputs.wordCount && (
-                    <p className="text-sm text-gray-600 mt-2">
-                      Word count: {step.outputs.wordCount}
-                    </p>
-                  )}
-                  
-                  <MarkdownPreview 
-                    content={step.outputs.fullArticle}
-                    className="mt-4"
-                  />
-                </div>
-              )}
             </div>
           ) : null}
         </div>
