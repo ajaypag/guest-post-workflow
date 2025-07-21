@@ -240,18 +240,12 @@ export class AgenticFinalPolishV2Service {
       const firstSectionResponse = this.extractAssistantResponse(conversationHistory);
       const firstSectionData = this.parsePolishResponse(firstSectionResponse);
       
-      if (firstSectionData.status === 'complete') {
-        console.log('✅ Article complete - no sections to polish');
-        continuePolishing = false;
-      } else if (firstSectionData.parsed) {
+      // FIRST: Process any parsed section content (even if it comes with completion marker)
+      if (firstSectionData.parsed) {
         polishedSections.push(firstSectionData.parsed);
         console.log(`✅ First section polished`);
         sectionCount = 1;
-      } else {
-        throw new Error('Failed to parse first section response');
-      }
-
-      if (sectionCount > 0) {
+        
         await this.updateSession(sessionId, { completedSections: sectionCount });
         sseUpdate(sessionId, { 
           type: 'section_completed', 
@@ -259,6 +253,15 @@ export class AgenticFinalPolishV2Service {
           content: firstSectionData.parsed,
           message: 'First section polished'
         });
+      }
+      
+      // THEN: Check if we're already done (after processing any content)
+      if (firstSectionData.status === 'complete') {
+        console.log('✅ Article complete - ' + (sectionCount > 0 ? 'only one section to polish' : 'no sections to polish'));
+        continuePolishing = false;
+      } else if (!firstSectionData.parsed) {
+        // Only throw if we didn't get section content AND it's not a completion marker
+        throw new Error('Failed to parse first section response');
       }
 
       // Phase 2: Loop through remaining sections with single prompt pattern
@@ -346,12 +349,8 @@ export class AgenticFinalPolishV2Service {
         const sectionResponse = this.extractAssistantResponse(conversationHistory);
         const sectionData = this.parsePolishResponse(sectionResponse);
         
-        // Check if we've reached the end
-        if (sectionData.status === 'complete') {
-          console.log(`✅ Polish complete - AI indicated no more sections after ${sectionCount} sections`);
-          continuePolishing = false;
-          break;
-        } else if (sectionData.parsed) {
+        // FIRST: Process any parsed section content (including last section with completion marker)
+        if (sectionData.parsed) {
           polishedSections.push(sectionData.parsed);
           sectionCount++;
           
@@ -362,10 +361,18 @@ export class AgenticFinalPolishV2Service {
             content: sectionData.parsed,
             message: `Section ${sectionCount} polished`
           });
-        } else {
+        } else if (!sectionData.status) {
+          // Only log error if we didn't get section content AND it's not a completion marker
           console.error('Failed to parse section response:', sectionResponse);
           // Continue anyway to avoid getting stuck
           sectionCount++;
+        }
+        
+        // THEN: Check if we've reached the end (after processing any content)
+        if (sectionData.status === 'complete') {
+          console.log(`✅ Polish complete - AI indicated no more sections after ${sectionCount} sections`);
+          continuePolishing = false;
+          break;
         }
 
         // Safety check for section limit
@@ -458,41 +465,43 @@ export class AgenticFinalPolishV2Service {
     };
   } {
     try {
-      // Check if it's the completion status
-      if (response.includes('===POLISH_COMPLETE===')) {
-        return { status: 'complete' };
-      }
+      const result: any = {};
       
-      // Extract strengths
+      // FIRST: Try to extract section content (before checking completion status)
       const strengthsMatch = response.match(/===STRENGTHS_START===\s*([\s\S]*?)\s*===STRENGTHS_END===/);
       const weaknessesMatch = response.match(/===WEAKNESSES_START===\s*([\s\S]*?)\s*===WEAKNESSES_END===/);
       const updatedMatch = response.match(/===UPDATED_SECTION_START===\s*([\s\S]*?)\s*===UPDATED_SECTION_END===/);
       
-      if (!strengthsMatch || !weaknessesMatch || !updatedMatch) {
-        console.error('Missing required delimiters in response:', response.substring(0, 200));
-        return {};
-      }
-      
-      // Parse strengths and weaknesses as arrays (one per line)
-      const strengths = strengthsMatch[1]
-        .split('\n')
-        .map(s => s.trim())
-        .filter(s => s.length > 0 && !s.includes('(more strengths'));
+      if (strengthsMatch && weaknessesMatch && updatedMatch) {
+        // Parse strengths and weaknesses as arrays (one per line)
+        const strengths = strengthsMatch[1]
+          .split('\n')
+          .map(s => s.trim())
+          .filter(s => s.length > 0 && !s.includes('(more strengths'));
+          
+        const weaknesses = weaknessesMatch[1]
+          .split('\n')
+          .map(w => w.trim())
+          .filter(w => w.length > 0 && !w.includes('(more weaknesses'));
+          
+        const updatedSection = updatedMatch[1].trim();
         
-      const weaknesses = weaknessesMatch[1]
-        .split('\n')
-        .map(w => w.trim())
-        .filter(w => w.length > 0 && !w.includes('(more weaknesses'));
-        
-      const updatedSection = updatedMatch[1].trim();
-      
-      return {
-        parsed: {
+        result.parsed = {
           strengths,
           weaknesses,
           updatedSection
-        }
-      };
+        };
+        
+        console.log(`📦 Parsed section content with ${strengths.length} strengths, ${weaknesses.length} weaknesses`);
+      }
+      
+      // SECOND: Check if it's the completion status (after extracting any content)
+      if (response.includes('===POLISH_COMPLETE===')) {
+        result.status = 'complete';
+        console.log('🏁 Found POLISH_COMPLETE marker' + (result.parsed ? ' (with section content)' : ''));
+      }
+      
+      return result;
     } catch (error) {
       console.error('Failed to parse delimiter response:', error, 'Response:', response.substring(0, 200));
       return {};
