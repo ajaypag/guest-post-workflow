@@ -28,7 +28,7 @@ export const ArticleDraftStepClean = ({ step, workflow, onChange, onAgentStateCh
   });
 
   // Tab system state
-  const [activeTab, setActiveTab] = useState<'chatgpt' | 'builtin' | 'agentic' | 'agenticV2'>('agentic');
+  const [activeTab, setActiveTab] = useState<'chatgpt' | 'builtin' | 'agenticV2'>('agenticV2');
 
   // Chat state management for builtin
   const [conversation, setConversation] = useState<any[]>([]);
@@ -62,7 +62,7 @@ ${outlineContent || '((((Complete Step 3: Deep Research first to get outline con
   };
 
   // Handle tab switching with warnings
-  const handleTabSwitch = (newTab: 'chatgpt' | 'builtin' | 'agentic' | 'agenticV2') => {
+  const handleTabSwitch = (newTab: 'chatgpt' | 'builtin' | 'agenticV2') => {
     // Don't switch if same tab
     if (newTab === activeTab) return;
 
@@ -589,6 +589,9 @@ ${outlineContent || '((((Complete Step 3: Deep Research first to get outline con
                   workflowId={workflow.id}
                   outline={outlineContent}
                   onComplete={(article) => {
+                    console.log('🎉 V2 Article generation complete, updating state...');
+                    console.log('📝 Article length:', article.length);
+                    console.log('🔄 Calling onChange with new article data...');
                     onChange({ 
                       ...step.outputs, 
                       fullArticle: article,
@@ -596,6 +599,7 @@ ${outlineContent || '((((Complete Step 3: Deep Research first to get outline con
                       agentVersion: 'v2',
                       draftStatus: 'completed'
                     });
+                    console.log('✅ onChange called, article should now display');
                   }}
                   onGeneratingStateChange={(isGenerating) => {
                     setAgentRunning(isGenerating);
@@ -604,6 +608,13 @@ ${outlineContent || '((((Complete Step 3: Deep Research first to get outline con
                 />
 
               {/* Generated Article Display */}
+              {console.log('🔍 Checking article display conditions:', {
+                hasArticle: !!step.outputs.fullArticle,
+                articleLength: step.outputs.fullArticle?.length || 0,
+                agentGenerated: step.outputs.agentGenerated,
+                agentVersion: step.outputs.agentVersion,
+                shouldDisplay: !!(step.outputs.fullArticle && step.outputs.agentGenerated && step.outputs.agentVersion === 'v2')
+              })}
               {step.outputs.fullArticle && step.outputs.agentGenerated && step.outputs.agentVersion === 'v2' && (
                 <div className="bg-gradient-to-br from-purple-50 to-blue-50 border border-purple-200 rounded-lg p-6">
                   <div className="flex items-center justify-between mb-4">
@@ -619,7 +630,7 @@ ${outlineContent || '((((Complete Step 3: Deep Research first to get outline con
                     placeholder="Generated article will appear here"
                     onChange={(value) => onChange({ ...step.outputs, fullArticle: value })}
                     isTextarea
-                    height="500px"
+                    height="h-96"
                   />
                   
                   <div className="flex items-center justify-between mt-4">
@@ -631,6 +642,11 @@ ${outlineContent || '((((Complete Step 3: Deep Research first to get outline con
                       label="Copy Article"
                     />
                   </div>
+                  
+                  <MarkdownPreview 
+                    content={step.outputs.fullArticle}
+                    className="mt-4"
+                  />
                 </div>
               )}
             </div>
