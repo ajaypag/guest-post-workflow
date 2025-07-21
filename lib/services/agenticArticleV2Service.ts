@@ -121,7 +121,7 @@ export class AgenticArticleV2Service {
     }
   }
 
-  async startSession(workflowId: string, outline: string): Promise<string> {
+  async startSession(workflowId: string, outline: string, mockMode: boolean = false): Promise<string> {
     try {
       // Get the next version number for this workflow
       const maxVersionResult = await db.select({
@@ -147,7 +147,8 @@ export class AgenticArticleV2Service {
         sessionMetadata: {
           startedAt: now.toISOString(),
           version: nextVersion,
-          model: 'o3-2025-04-16'
+          model: 'o3-2025-04-16',
+          mockMode: mockMode
         },
         startedAt: now,
         createdAt: now,
