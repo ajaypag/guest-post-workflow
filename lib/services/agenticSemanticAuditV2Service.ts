@@ -4,7 +4,6 @@ import { db } from '@/lib/db/connection';
 import { v2AgentSessions, workflows } from '@/lib/db/schema';
 import { eq, and, sql } from 'drizzle-orm';
 import { v4 as uuidv4 } from 'uuid';
-import { extractSuggestedArticle, extractAuditFeedback } from '@/lib/utils/auditParser';
 
 // Store active SSE connections for real-time updates
 const activeAuditV2Streams = new Map<string, any>();
@@ -56,6 +55,50 @@ export class AgenticSemanticAuditV2Service {
         .join('');
     }
     return '';
+  }
+  
+  // Parse JSON response from audit
+  private parseAuditJSON(response: string): {
+    status?: 'complete';
+    parsed?: {
+      strengths: string[];
+      weaknesses: string[];
+      suggestedVersion: string;
+    };
+  } {
+    try {
+      // Try to extract JSON from the response
+      // Sometimes AI might include extra text, so we look for JSON boundaries
+      const jsonMatch = response.match(/\{[\s\S]*\}/);
+      if (!jsonMatch) {
+        console.error('No JSON found in response:', response.substring(0, 200));
+        return {};
+      }
+      
+      const parsed = JSON.parse(jsonMatch[0]);
+      
+      // Check if it's the completion status
+      if (parsed.status === 'complete') {
+        return { status: 'complete' };
+      }
+      
+      // Validate the structure
+      if (parsed.strengths && parsed.weaknesses && parsed.suggestedVersion) {
+        return {
+          parsed: {
+            strengths: Array.isArray(parsed.strengths) ? parsed.strengths : [parsed.strengths],
+            weaknesses: Array.isArray(parsed.weaknesses) ? parsed.weaknesses : [parsed.weaknesses],
+            suggestedVersion: parsed.suggestedVersion
+          }
+        };
+      }
+      
+      console.error('Invalid JSON structure:', parsed);
+      return {};
+    } catch (error) {
+      console.error('Failed to parse JSON:', error, 'Response:', response.substring(0, 200));
+      return {};
+    }
   }
   private openaiProvider: OpenAIProvider;
   
@@ -135,29 +178,38 @@ If you look at your knowledge base, you'll see that I've added some instructions
 
 ${researchOutline}
 
-Now I realize this is a lot, so i want your first output to only be an audit of the first section. For each section you audit, organize your response with these three markdown headings:
+Now I realize this is a lot, so i want your first output to only be an audit of the first section. For each section you audit, output your analysis as valid JSON with exactly these three fields:
 
-### Strengths
-(list the strengths here)
+{
+  "strengths": ["strength 1", "strength 2", ...],
+  "weaknesses": ["weakness 1", "weakness 2", ...],
+  "suggestedVersion": "Your improved version of the section here"
+}
 
-### Weaknesses  
-(list the weaknesses here)
-
-### Suggested Version
-(put your improved version of the section here)
+Important:
+- Output ONLY the JSON object, no other text
+- Ensure the JSON is valid and properly escaped
+- The suggestedVersion should be a single string with proper line breaks as \n
+- The suggestedVersion should preserve markdown formatting (headings, lists, bold, italics, etc.)
 
 Start with the first section. In cases where a section has many subsections, output just the subsection.
 
-When you reach <!-- END_OF_ARTICLE -->, you can conclude your audit.`;
+When you reach <!-- END_OF_ARTICLE -->, output: {"status": "complete"}`;
 
       // Exact looping prompt from user
-      const loopingPrompt = `Okay, now I want you to proceed your audit with the next section. Remember to organize your response with these three markdown headings:
+      const loopingPrompt = `Okay, now I want you to proceed your audit with the next section. Output your analysis as valid JSON with exactly these three fields:
 
-### Strengths
-### Weaknesses  
-### Suggested Version
+{
+  "strengths": ["strength 1", "strength 2", ...],
+  "weaknesses": ["weakness 1", "weakness 2", ...],
+  "suggestedVersion": "Your improved version of the section here"
+}
 
-In cases where a section has many subsections, output just the subsection. While auditing, keep in mind we are creating a "primarily narrative" article so bullet points can appear but only very sporadically.`;
+In cases where a section has many subsections, output just the subsection. While auditing, keep in mind we are creating a "primarily narrative" article so bullet points can appear but only very sporadically.
+
+Important: The suggestedVersion should preserve markdown formatting (headings, lists, bold, italics, etc.).
+
+When you reach the end of the article or see <!-- END_OF_ARTICLE -->, output: {"status": "complete"}`;
 
       // Initialize conversation
       let messages: any[] = [
@@ -172,7 +224,11 @@ In cases where a section has many subsections, output just the subsection. While
       
       let auditActive = true;
       let sectionsCompleted = 0;
-      let accumulatedAuditContent = '';
+      let auditedSections: Array<{
+        strengths: string[];
+        weaknesses: string[];
+        suggestedVersion: string;
+      }> = [];
       
       while (auditActive) {
         console.log(`🔄 V2 Audit turn ${messages.length} with ${sectionsCompleted} sections completed`);
@@ -252,25 +308,41 @@ In cases where a section has many subsections, output just the subsection. While
           // Extract text content properly
           const textContent = this.extractTextContent(lastAssistantMessage.content);
           
-          // Accumulate audit content
-          accumulatedAuditContent += textContent + '\n\n';
+          // Parse JSON response
+          const sectionData = this.parseAuditJSON(textContent);
           
           // Check if audit is complete
-          const lowerContent = textContent.toLowerCase();
-          if (lowerContent.includes('end of article') ||
-              lowerContent.includes('audit complete') ||
-              lowerContent.includes('conclud') ||
-              textContent.includes(END_MARKER)) {
-            console.log('✅ Audit completion detected in message');
+          if (sectionData.status === 'complete') {
+            console.log('✅ Audit completion detected - status: complete');
             auditActive = false;
+          } else if (sectionData.parsed) {
+            // Add to audited sections
+            auditedSections.push(sectionData.parsed);
+            sectionsCompleted++;
+            console.log(`✅ Section ${sectionsCompleted} audited`);
           } else {
+            console.error('Failed to parse section response:', textContent);
+            // Check for completion indicators in plain text as fallback
+            const lowerContent = textContent.toLowerCase();
+            if (lowerContent.includes('end of article') ||
+                lowerContent.includes('audit complete') ||
+                lowerContent.includes('conclud') ||
+                textContent.includes(END_MARKER)) {
+              console.log('✅ Audit completion detected in text');
+              auditActive = false;
+            } else {
+              // Continue anyway
+              sectionsCompleted++;
+            }
+          }
+          
+          if (auditActive) {
             // CRITICAL: Use the SDK's complete history which includes message-reasoning pairs
             // Don't manually construct messages - let the SDK manage the conversation
             messages = [...conversationHistory];
             
             // Add the user prompt - this is safe as it doesn't have an ID yet
             messages.push({ role: 'user', content: loopingPrompt });
-            sectionsCompleted++;
             
             // Update progress
             await this.updateAuditSession(sessionId, {
@@ -285,6 +357,7 @@ In cases where a section has many subsections, output just the subsection. While
             auditV2SSEPush(sessionId, { 
               type: 'section_completed',
               sectionsCompleted,
+              content: sectionData.parsed,
               message: `Completed section ${sectionsCompleted}`
             });
           }
@@ -299,13 +372,20 @@ In cases where a section has many subsections, output just the subsection. While
       
       console.log('🏁 V2 semantic audit conversation loop completed');
       
-      // Extract clean suggested article from the accumulated audit content
-      const cleanSuggestedArticle = extractSuggestedArticle(accumulatedAuditContent);
-      console.log(`📝 Extracted ${cleanSuggestedArticle.split('\n\n').length} suggested sections`);
+      // Assemble the final audited article from JSON data
+      console.log('🔍 Assembling audited article from structured data...');
+      const cleanSuggestedArticle = auditedSections
+        .map(section => section.suggestedVersion)
+        .join('\n\n');
       
-      // Also extract audit feedback for logging
-      const auditFeedback = extractAuditFeedback(accumulatedAuditContent);
-      console.log(`📊 Collected feedback for ${auditFeedback.length} sections`);
+      const wordCount = cleanSuggestedArticle.split(/\s+/).filter(Boolean).length;
+      console.log(`📊 Collected audit data for ${auditedSections.length} sections, ${wordCount} words`);
+      
+      // Prepare audit feedback for metadata
+      const auditFeedback = auditedSections.map(section => ({
+        strengths: section.strengths,
+        weaknesses: section.weaknesses
+      }));
       
       // Save final audited article (clean version)
       await this.updateAuditSession(sessionId, {
@@ -317,7 +397,7 @@ In cases where a section has many subsections, output just the subsection. While
           ...(session.sessionMetadata as any),
           completedAt: new Date().toISOString(),
           totalMessages: messages.length,
-          fullAuditContent: accumulatedAuditContent,  // Store full audit in metadata
+          auditedSections: auditedSections,  // Store structured audit data
           auditFeedback: auditFeedback  // Store feedback for analysis
         }
       });
@@ -325,12 +405,12 @@ In cases where a section has many subsections, output just the subsection. While
       // Update workflow with clean audited article
       await this.updateWorkflowWithAuditedArticle(session.workflowId, cleanSuggestedArticle);
       
-      // Send completion event with both intermediary and final content
+      // Send completion event with structured data
       auditV2SSEPush(sessionId, { 
         type: 'complete',
         status: 'completed',
-        intermediaryContent: accumulatedAuditContent,  // Full audit with markdown headers
-        finalArticle: cleanSuggestedArticle,  // Parsed clean article only
+        auditedSections: auditedSections,  // Structured audit data
+        finalArticle: cleanSuggestedArticle,  // Clean article only
         sectionsCompleted,
         message: 'V2 semantic audit completed successfully!'
       });
