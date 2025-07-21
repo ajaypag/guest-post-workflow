@@ -9,6 +9,7 @@ import { ChatInterface } from '../ui/ChatInterface';
 import { SplitPromptButton } from '../ui/SplitPromptButton';
 import { AgenticSemanticAuditor } from '../ui/AgenticSemanticAuditor';
 import { AgenticSemanticAuditorV2 } from '../ui/AgenticSemanticAuditorV2';
+import { MarkdownPreview } from '../ui/MarkdownPreview';
 import { ExternalLink, ChevronDown, ChevronRight, Search, CheckCircle, AlertCircle, Target, FileText, BarChart3 } from 'lucide-react';
 
 interface ContentAuditStepProps {
@@ -26,7 +27,7 @@ export const ContentAuditStepClean = ({ step, workflow, onChange, onUnsavedConte
   });
 
   // Tab system state
-  const [activeTab, setActiveTab] = useState<'chatgpt' | 'builtin' | 'agent' | 'agentv2'>('chatgpt');
+  const [activeTab, setActiveTab] = useState<'chatgpt' | 'builtin' | 'agentv2'>('agentv2');
 
   // Chat state management
   const [conversation, setConversation] = useState<any[]>([]);
@@ -183,16 +184,6 @@ Now I realize this is a lot, so i want your first output to only be an audit of 
             }`}
           >
             🚀 AI Agent V2
-          </button>
-          <button
-            onClick={() => setActiveTab('agent')}
-            className={`flex-1 px-6 py-4 text-sm font-medium transition-colors ${
-              activeTab === 'agent'
-                ? 'bg-green-50 text-green-700 border-b-2 border-green-500'
-                : 'text-gray-500 hover:text-gray-700 hover:bg-gray-50'
-            }`}
-          >
-            🤖 AI Agent (Auto)
           </button>
           <button
             onClick={() => setActiveTab('chatgpt')}
@@ -656,29 +647,6 @@ Now I realize this is a lot, so i want your first output to only be an audit of 
                 </div>
               </div>
             </div>
-          ) : activeTab === 'agent' ? (
-            <div className="space-y-6">
-              {/* AI Agent Semantic Audit */}
-              <AgenticSemanticAuditor
-                workflowId={workflow.id}
-                originalArticle={fullArticle}
-                researchOutline={outlineContent}
-                existingAuditedArticle={step.outputs?.seoOptimizedArticle || ''}
-                onComplete={(auditedArticle) => {
-                  console.log('🎯 V1 Audit onComplete called with article length:', auditedArticle.length);
-                  const updatedOutputs = { 
-                    ...step.outputs, 
-                    seoOptimizedArticle: auditedArticle,
-                    auditGenerated: true,
-                    auditedAt: new Date().toISOString(),
-                    auditVersion: 'v1'
-                  };
-                  console.log('📤 V1 Calling onChange with updated outputs:', updatedOutputs);
-                  onChange(updatedOutputs);
-                  console.log('✅ V1 onChange completed - auto-save will handle persistence');
-                }}
-              />
-            </div>
           ) : activeTab === 'agentv2' ? (
             <div className="space-y-6">
               {/* AI Agent V2 Semantic Audit */}
@@ -704,6 +672,42 @@ Now I realize this is a lot, so i want your first output to only be an audit of 
                   console.log('✅ V2 onChange completed - auto-save will handle persistence');
                 }}
               />
+
+              {/* Generated Article Display */}
+              {step.outputs.seoOptimizedArticle && step.outputs.auditGenerated && step.outputs.auditVersion === 'v2' && (
+                <div className="bg-gradient-to-br from-green-50 to-blue-50 border border-green-200 rounded-lg p-6">
+                  <div className="flex items-center justify-between mb-4">
+                    <h3 className="font-medium text-gray-900">Generated SEO-Optimized Article (V2)</h3>
+                    <span className="text-xs text-green-600 bg-green-100 px-2 py-1 rounded">
+                      AI V2 Generated
+                    </span>
+                  </div>
+                  
+                  <SavedField
+                    label="SEO-Optimized Article"
+                    value={step.outputs.seoOptimizedArticle || ''}
+                    placeholder="Generated article will appear here"
+                    onChange={(value) => onChange({ ...step.outputs, seoOptimizedArticle: value })}
+                    isTextarea
+                    height="h-96"
+                  />
+                  
+                  <div className="flex items-center justify-between mt-4">
+                    <span className="text-sm text-gray-600">
+                      Word count: {step.outputs.seoOptimizedArticle.split(/\s+/).filter(Boolean).length}
+                    </span>
+                    <CopyButton 
+                      text={step.outputs.seoOptimizedArticle} 
+                      label="Copy Article"
+                    />
+                  </div>
+                  
+                  <MarkdownPreview 
+                    content={step.outputs.seoOptimizedArticle}
+                    className="mt-4"
+                  />
+                </div>
+              )}
             </div>
           ) : null}
         </div>
