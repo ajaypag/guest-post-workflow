@@ -359,21 +359,21 @@ export class AgenticArticleV2Service {
       console.log(`✅ Title/intro response extracted: ${titleIntroResponse.length} chars`);
       
       // Parse title/intro JSON
-      const titleIntroResult = this.parseArticleJSON(titleIntroResponse);
+      const titleIntroParsed = this.parseArticleJSON(titleIntroResponse);
       
-      if (titleIntroResult.status === 'complete') {
+      if (titleIntroParsed.status === 'complete') {
         articleComplete = true;
         console.log('✅ Article marked as complete in title/intro');
-      } else if (titleIntroResult.section) {
+      } else if (titleIntroParsed.section) {
         // Add to sections array
-        articleSections.push(titleIntroResult.section);
-        console.log(`✅ Title/intro parsed: "${titleIntroResult.section.title}", ${titleIntroResult.section.wordCount} words`);
+        articleSections.push(titleIntroParsed.section);
+        console.log(`✅ Title/intro parsed: "${titleIntroParsed.section.title}", ${titleIntroParsed.section.wordCount} words`);
         
         await this.updateSession(sessionId, { completedSections: 1 });
         sseUpdate(sessionId, { 
           type: 'section_completed', 
           sectionNumber: 1, 
-          sectionData: titleIntroResult.section,
+          sectionData: titleIntroParsed.section,
           message: 'Title and introduction completed'
         });
       } else {
@@ -460,22 +460,22 @@ export class AgenticArticleV2Service {
         console.log(`✅ Section response extracted: ${sectionResponse.length} chars`);
         
         // Parse section JSON
-        const sectionResult = this.parseArticleJSON(sectionResponse);
+        const sectionParsed = this.parseArticleJSON(sectionResponse);
         
-        if (sectionResult.status === 'complete') {
+        if (sectionParsed.status === 'complete') {
           articleComplete = true;
           console.log(`✅ Article complete - writer signaled completion after ${sectionCount + 1} sections`);
-        } else if (sectionResult.section) {
+        } else if (sectionParsed.section) {
           // Add to sections array
-          articleSections.push(sectionResult.section);
+          articleSections.push(sectionParsed.section);
           sectionCount++;
-          console.log(`✅ Section ${sectionCount} parsed: "${sectionResult.section.heading}", ${sectionResult.section.wordCount} words`);
+          console.log(`✅ Section ${sectionCount} parsed: "${sectionParsed.section.heading}", ${sectionParsed.section.wordCount} words`);
           
           await this.updateSession(sessionId, { completedSections: sectionCount });
           sseUpdate(sessionId, { 
             type: 'section_completed', 
             sectionNumber: sectionCount, 
-            sectionData: sectionResult.section,
+            sectionData: sectionParsed.section,
             message: `Section ${sectionCount} completed`
           });
         } else {
