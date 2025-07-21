@@ -260,6 +260,3 @@ export default function BulkQualificationPage() {
     </div>
   );
 }
-
-// Force static export
-export const dynamic = 'force-dynamic';
