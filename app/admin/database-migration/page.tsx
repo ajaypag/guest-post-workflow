@@ -1902,6 +1902,104 @@ export default function DatabaseMigrationPage() {
             </div>
           </div>
 
+          <div className="mb-8">
+            <h2 className="text-lg font-semibold text-gray-900 mb-4">Bulk Site Qualification</h2>
+            <p className="text-gray-600 mb-4">
+              This migration creates the <code className="bg-gray-100 px-2 py-1 rounded">qualification_jobs</code>,{' '}
+              <code className="bg-gray-100 px-2 py-1 rounded">qualification_sites</code>, and{' '}
+              <code className="bg-gray-100 px-2 py-1 rounded">site_rankings</code> tables required for the bulk site 
+              qualification feature that uses DataForSEO API to analyze guest posting opportunities.
+            </p>
+            
+            <div className="bg-blue-50 border border-blue-200 rounded-lg p-4 mb-6">
+              <div className="flex items-start space-x-3">
+                <AlertTriangle className="w-5 h-5 text-blue-600 mt-0.5" />
+                <div>
+                  <h3 className="text-sm font-semibold text-blue-800">Bulk Qualification Features:</h3>
+                  <ul className="text-sm text-blue-700 mt-2 space-y-1">
+                    <li>• Analyze multiple sites for guest posting opportunities</li>
+                    <li>• Collect ranking data using DataForSEO API</li>
+                    <li>• Track job progress and API usage</li>
+                    <li>• Store detailed ranking information for each site</li>
+                    <li>• Support for topic-based keyword filtering</li>
+                  </ul>
+                </div>
+              </div>
+            </div>
+          </div>
+
+          <div className="space-y-4 mb-8">
+            {/* Check Bulk Qualification Tables Status */}
+            <div className="border border-gray-200 rounded-lg p-4">
+              <h3 className="font-semibold text-gray-900 mb-2">Check Current Status</h3>
+              <p className="text-gray-600 text-sm mb-3">
+                Check if the bulk qualification tables exist in your database.
+              </p>
+              <button
+                onClick={async () => {
+                  setIsLoading(true);
+                  setMessage('');
+                  try {
+                    const response = await fetch('/api/admin/check-bulk-qualification');
+                    const data = await response.json();
+                    if (data.exists) {
+                      setMessage(`✅ All bulk qualification tables exist\n• qualification_jobs\n• qualification_sites\n• site_rankings`);
+                      setMessageType('success');
+                    } else {
+                      setMessage(`ℹ️ Missing tables: ${data.missingTables.join(', ')}`);
+                      setMessageType('info');
+                    }
+                  } catch (error) {
+                    setMessage(`❌ Error checking tables: ${error instanceof Error ? error.message : 'Unknown error'}`);
+                    setMessageType('error');
+                  }
+                  setIsLoading(false);
+                }}
+                disabled={isLoading}
+                className="inline-flex items-center px-4 py-2 bg-blue-600 text-white text-sm font-medium rounded-md hover:bg-blue-700 disabled:opacity-50 disabled:cursor-not-allowed"
+              >
+                <Database className="w-4 h-4 mr-2" />
+                {isLoading ? 'Checking...' : 'Check Tables Status'}
+              </button>
+            </div>
+
+            {/* Run Migration */}
+            <div className="border border-green-200 rounded-lg p-4">
+              <h3 className="font-semibold text-gray-900 mb-2">Create Bulk Qualification Tables</h3>
+              <p className="text-gray-600 text-sm mb-3">
+                Create all required tables for the bulk site qualification feature.
+              </p>
+              <button
+                onClick={async () => {
+                  setIsLoading(true);
+                  setMessage('');
+                  try {
+                    const response = await fetch('/api/admin/migrate-bulk-qualification', {
+                      method: 'POST'
+                    });
+                    const data = await response.json();
+                    if (data.success) {
+                      setMessage('✅ Bulk qualification tables created successfully!\n• qualification_jobs\n• qualification_sites\n• site_rankings\n• All indexes created');
+                      setMessageType('success');
+                    } else {
+                      setMessage(`❌ Migration failed: ${data.error}\n${data.details || ''}`);
+                      setMessageType('error');
+                    }
+                  } catch (error) {
+                    setMessage(`❌ Error: ${error instanceof Error ? error.message : 'Unknown error'}`);
+                    setMessageType('error');
+                  }
+                  setIsLoading(false);
+                }}
+                disabled={isLoading}
+                className="inline-flex items-center px-4 py-2 bg-green-600 text-white text-sm font-medium rounded-md hover:bg-green-700 disabled:opacity-50 disabled:cursor-not-allowed"
+              >
+                <Play className="w-4 h-4 mr-2" />
+                {isLoading ? 'Creating Tables...' : 'Create Tables'}
+              </button>
+            </div>
+          </div>
+
           {/* Message Display */}
           {message && (
             <div className={`mt-6 p-4 rounded-lg border ${
