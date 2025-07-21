@@ -535,6 +535,7 @@ export class AgenticArticleV2Service {
         status: 'completed',
         finalArticle: sanitizeForPostgres(finalArticle),
         totalWordCount: wordCount,
+        currentWordCount: wordCount,
         totalSections: sectionCount,
         completedAt: new Date(),
         sessionMetadata: {
@@ -544,7 +545,8 @@ export class AgenticArticleV2Service {
       });
       
       sseUpdate(sessionId, {
-        type: 'completed',
+        type: 'complete',
+        status: 'completed',
         finalArticle: finalArticle,
         wordCount: wordCount,
         totalSections: sectionCount,

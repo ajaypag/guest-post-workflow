@@ -1,7 +1,7 @@
 'use client';
 
 import React, { useState, useEffect, useRef } from 'react';
-import { Play, Pause, CheckCircle, AlertCircle, Clock, FileText, Brain } from 'lucide-react';
+import { Play, Pause, CheckCircle, AlertCircle, Clock, FileText, Brain, RefreshCw } from 'lucide-react';
 import { CostConfirmationDialog } from './CostConfirmationDialog';
 
 interface AgenticArticleGeneratorV2Props {
@@ -149,9 +149,10 @@ export const AgenticArticleGeneratorV2 = ({ workflowId, outline, onComplete, onG
           case 'complete':
           case 'completed':
             setIsGenerating(false);
+            setIsButtonDisabled(false);
             eventSource.close();
             
-            if (data.status === 'completed') {
+            if (data.status === 'completed' || data.type === 'complete') {
               addLog('🎉 V2 article generation completed successfully!');
               
               if (data.finalArticle) {
@@ -171,6 +172,7 @@ export const AgenticArticleGeneratorV2 = ({ workflowId, outline, onComplete, onG
           case 'error':
             setError(data.message);
             setIsGenerating(false);
+            setIsButtonDisabled(false);
             eventSource.close();
             addLog(`❌ Error: ${data.message}`);
             break;
@@ -259,9 +261,24 @@ export const AgenticArticleGeneratorV2 = ({ workflowId, outline, onComplete, onG
       {/* Error Display */}
       {error && (
         <div className="bg-red-50 border border-red-200 rounded-lg p-4">
-          <div className="flex items-center space-x-2">
-            <AlertCircle className="w-5 h-5 text-red-500" />
-            <p className="text-red-800">{error}</p>
+          <div className="flex items-center justify-between">
+            <div className="flex items-center space-x-2">
+              <AlertCircle className="w-5 h-5 text-red-500" />
+              <div>
+                <p className="text-red-800">{error}</p>
+                <p className="text-xs text-red-600 mt-1">
+                  Note: If the article generated successfully in the logs, this may be a false error. Try refreshing.
+                </p>
+              </div>
+            </div>
+            <button
+              onClick={() => window.location.reload()}
+              className="flex items-center space-x-1 px-3 py-1 text-sm bg-red-100 hover:bg-red-200 text-red-700 rounded-lg transition-colors"
+              title="Refresh page"
+            >
+              <RefreshCw className="w-4 h-4" />
+              <span>Refresh</span>
+            </button>
           </div>
         </div>
       )}
@@ -295,22 +312,14 @@ export const AgenticArticleGeneratorV2 = ({ workflowId, outline, onComplete, onG
             )}
             
             {/* Stats */}
-            <div className="grid grid-cols-2 gap-4 text-sm">
-              <div>
-                <span className="text-gray-500">Sections:</span>
-                <span className="ml-2 font-medium">
-                  {hasKnownTotal 
-                    ? `${progress.session.completedSections} / ${progress.session.totalSections}`
-                    : `${progress.session.completedSections} completed`
-                  }
-                </span>
-              </div>
-              <div>
-                <span className="text-gray-500">Words:</span>
-                <span className="ml-2 font-medium">
-                  {progress.session.currentWordCount || 0} words
-                </span>
-              </div>
+            <div className="text-sm">
+              <span className="text-gray-500">Sections:</span>
+              <span className="ml-2 font-medium">
+                {hasKnownTotal 
+                  ? `${progress.session.completedSections} / ${progress.session.totalSections}`
+                  : `${progress.session.completedSections} completed`
+                }
+              </span>
             </div>
           </div>
 
