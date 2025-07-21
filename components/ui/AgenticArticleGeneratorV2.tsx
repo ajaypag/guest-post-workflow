@@ -321,16 +321,18 @@ export const AgenticArticleGeneratorV2 = ({ workflowId, outline, onComplete, onG
               </div>
             )}
             
-            {/* Stats */}
-            <div className="text-sm">
-              <span className="text-gray-500">Sections:</span>
-              <span className="ml-2 font-medium">
-                {hasKnownTotal 
-                  ? `${progress.session.completedSections} / ${progress.session.totalSections}`
-                  : `${progress.session.completedSections} completed`
-                }
-              </span>
-            </div>
+            {/* Stats - only show when we have sections */}
+            {(progress.session.completedSections > 0 || hasKnownTotal) && (
+              <div className="text-sm">
+                <span className="text-gray-500">Sections:</span>
+                <span className="ml-2 font-medium">
+                  {hasKnownTotal 
+                    ? `${progress.session.completedSections} / ${progress.session.totalSections}`
+                    : `${progress.session.completedSections} completed`
+                  }
+                </span>
+              </div>
+            )}
           </div>
 
           {/* Current Activity */}
