@@ -57,8 +57,8 @@ export class AgenticSemanticAuditV2Service {
     return '';
   }
   
-  // Parse delimiter-based response from audit
-  private parseAuditResponse(response: string): {
+  // Parse JSON response from audit
+  private parseAuditJSON(response: string): {
     status?: 'complete';
     parsed?: {
       strengths: string[];
@@ -67,43 +67,36 @@ export class AgenticSemanticAuditV2Service {
     };
   } {
     try {
-      // Check if it's the completion status
-      if (response.includes('===AUDIT_COMPLETE===')) {
-        return { status: 'complete' };
-      }
-      
-      // Extract strengths
-      const strengthsMatch = response.match(/===STRENGTHS_START===\s*([\s\S]*?)\s*===STRENGTHS_END===/);
-      const weaknessesMatch = response.match(/===WEAKNESSES_START===\s*([\s\S]*?)\s*===WEAKNESSES_END===/);
-      const suggestedMatch = response.match(/===SUGGESTED_VERSION_START===\s*([\s\S]*?)\s*===SUGGESTED_VERSION_END===/);
-      
-      if (!strengthsMatch || !weaknessesMatch || !suggestedMatch) {
-        console.error('Missing required delimiters in response:', response.substring(0, 200));
+      // Try to extract JSON from the response
+      // Sometimes AI might include extra text, so we look for JSON boundaries
+      const jsonMatch = response.match(/\{[\s\S]*\}/);
+      if (!jsonMatch) {
+        console.error('No JSON found in response:', response.substring(0, 200));
         return {};
       }
       
-      // Parse strengths and weaknesses as arrays (one per line)
-      const strengths = strengthsMatch[1]
-        .split('\n')
-        .map(s => s.trim())
-        .filter(s => s.length > 0 && !s.includes('(more strengths'));
-        
-      const weaknesses = weaknessesMatch[1]
-        .split('\n')
-        .map(w => w.trim())
-        .filter(w => w.length > 0 && !w.includes('(more weaknesses'));
-        
-      const suggestedVersion = suggestedMatch[1].trim();
+      const parsed = JSON.parse(jsonMatch[0]);
       
-      return {
-        parsed: {
-          strengths,
-          weaknesses,
-          suggestedVersion
-        }
-      };
+      // Check if it's the completion status
+      if (parsed.status === 'complete') {
+        return { status: 'complete' };
+      }
+      
+      // Validate the structure
+      if (parsed.strengths && parsed.weaknesses && parsed.suggestedVersion) {
+        return {
+          parsed: {
+            strengths: Array.isArray(parsed.strengths) ? parsed.strengths : [parsed.strengths],
+            weaknesses: Array.isArray(parsed.weaknesses) ? parsed.weaknesses : [parsed.weaknesses],
+            suggestedVersion: parsed.suggestedVersion
+          }
+        };
+      }
+      
+      console.error('Invalid JSON structure:', parsed);
+      return {};
     } catch (error) {
-      console.error('Failed to parse delimiter response:', error, 'Response:', response.substring(0, 200));
+      console.error('Failed to parse JSON:', error, 'Response:', response.substring(0, 200));
       return {};
     }
   }
@@ -185,61 +178,38 @@ If you look at your knowledge base, you'll see that I've added some instructions
 
 ${researchOutline}
 
-Now I realize this is a lot, so i want your first output to only be an audit of the first section. For each section you audit, output your analysis in this EXACT format:
+Now I realize this is a lot, so i want your first output to only be an audit of the first section. For each section you audit, output your analysis as valid JSON with exactly these three fields:
 
-===STRENGTHS_START===
-strength 1
-strength 2
-(more strengths if applicable)
-===STRENGTHS_END===
-
-===WEAKNESSES_START===
-weakness 1
-weakness 2
-(more weaknesses if applicable)
-===WEAKNESSES_END===
-
-===SUGGESTED_VERSION_START===
-Your improved version of the section here
-===SUGGESTED_VERSION_END===
+{
+  "strengths": ["strength 1", "strength 2", ...],
+  "weaknesses": ["weakness 1", "weakness 2", ...],
+  "suggestedVersion": "Your improved version of the section here"
+}
 
 Important:
-- Use EXACTLY these delimiters, don't modify them
-- Each strength/weakness should be on its own line
+- Output ONLY the JSON object, no other text
+- Ensure the JSON is valid and properly escaped
+- The suggestedVersion should be a single string with proper line breaks as \n
 - The suggestedVersion should preserve markdown formatting (headings, lists, bold, italics, etc.)
-- When you identify weaknesses related to lack of numbers or data, DO NOT make up data. Instead, use the web search tool to find accurate, factual data to support your improvements
-- Introduction sections should NOT include H2 headers. They appear at the start of the article before any section headings
 
-Start with the first section. In cases where a section has many subsections, output just the subsection.`;
+Start with the first section. In cases where a section has many subsections, output just the subsection.
+
+When you reach <!-- END_OF_ARTICLE -->, output: {"status": "complete"}`;
 
       // Exact looping prompt from user
-      const loopingPrompt = `Okay, now I want you to proceed your audit with the next section. Output your analysis in this EXACT format:
+      const loopingPrompt = `Okay, now I want you to proceed your audit with the next section. Output your analysis as valid JSON with exactly these three fields:
 
-===STRENGTHS_START===
-strength 1
-strength 2
-(more strengths if applicable)
-===STRENGTHS_END===
-
-===WEAKNESSES_START===
-weakness 1
-weakness 2
-(more weaknesses if applicable)
-===WEAKNESSES_END===
-
-===SUGGESTED_VERSION_START===
-Your improved version of the section here
-===SUGGESTED_VERSION_END===
+{
+  "strengths": ["strength 1", "strength 2", ...],
+  "weaknesses": ["weakness 1", "weakness 2", ...],
+  "suggestedVersion": "Your improved version of the section here"
+}
 
 In cases where a section has many subsections, output just the subsection. While auditing, keep in mind we are creating a "primarily narrative" article so bullet points can appear but only very sporadically.
 
-Important: 
-- Use EXACTLY these delimiters, don't modify them
-- Each strength/weakness should be on its own line
-- The suggestedVersion should preserve markdown formatting (headings, lists, bold, italics, etc.)
-- When you identify weaknesses related to lack of numbers or data, DO NOT make up data. Instead, use the web search tool to find accurate, factual data to support your improvements
+Important: The suggestedVersion should preserve markdown formatting (headings, lists, bold, italics, etc.).
 
-When you reach the end of the article or see <!-- END_OF_ARTICLE -->, output exactly: ===AUDIT_COMPLETE===`;
+When you reach the end of the article or see <!-- END_OF_ARTICLE -->, output: {"status": "complete"}`;
 
       // Initialize conversation
       let messages: any[] = [
@@ -338,8 +308,8 @@ When you reach the end of the article or see <!-- END_OF_ARTICLE -->, output exa
           // Extract text content properly
           const textContent = this.extractTextContent(lastAssistantMessage.content);
           
-          // Parse delimiter-based response
-          const sectionData = this.parseAuditResponse(textContent);
+          // Parse JSON response
+          const sectionData = this.parseAuditJSON(textContent);
           
           // Check if audit is complete
           if (sectionData.status === 'complete') {
@@ -356,10 +326,8 @@ When you reach the end of the article or see <!-- END_OF_ARTICLE -->, output exa
             const lowerContent = textContent.toLowerCase();
             if (lowerContent.includes('end of article') ||
                 lowerContent.includes('audit complete') ||
-                lowerContent.includes('audit_complete') ||
                 lowerContent.includes('conclud') ||
-                textContent.includes(END_MARKER) ||
-                textContent.includes('===AUDIT_COMPLETE===')) {
+                textContent.includes(END_MARKER)) {
               console.log('✅ Audit completion detected in text');
               auditActive = false;
             } else {
