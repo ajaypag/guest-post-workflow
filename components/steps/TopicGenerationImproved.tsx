@@ -724,6 +724,20 @@ Target URL: ${clientTargetUrl}`;
                     </div>
                   </div>
 
+                  {/* Competitive Keyword Clarification Prompt */}
+                  <div className="bg-white border border-purple-300 rounded-lg p-3 mb-4">
+                    <div className="flex items-center justify-between mb-2">
+                      <p className="text-sm font-medium text-purple-800">🔍 Clarification for Competitive Keywords:</p>
+                      <CopyButton 
+                        text="For clarification, if you're not sure. [keyword] is good. what niches does the target site rank really well for? because [keyword] is very competitive."
+                        label="Copy Template"
+                      />
+                    </div>
+                    <div className="text-xs text-purple-700 bg-purple-50 border border-purple-200 rounded p-2">
+                      <strong>Use this follow-up</strong> when a keyword seems too competitive. Replace [keyword] with your specific term (e.g., "cloud security compliance checklist"). This helps the AI identify less competitive niches where the site has stronger authority.
+                    </div>
+                  </div>
+
                   <div className="mt-4">
                     <SavedField
                       label="Ranking Likelihood Analysis (Optional)"
