@@ -17,6 +17,7 @@ interface PolishProgress {
     strengths: string[];
     weaknesses: string[];
     updatedSection: string;
+    keyImprovements: string[];
   };
   sectionNumber?: number;
   finalPolishedArticle?: string;
@@ -24,6 +25,7 @@ interface PolishProgress {
     strengths: string[];
     weaknesses: string[];
     updatedSection: string;
+    keyImprovements: string[];
   }>;
   wordCount?: number;
   totalSections?: number;
@@ -48,6 +50,7 @@ export const AgenticFinalPolisherV2: React.FC<AgenticFinalPolisherV2Props> = ({
     strengths: string[];
     weaknesses: string[];
     updatedSection: string;
+    keyImprovements: string[];
   }>>([]);
 
   // Start the V2 polish process
@@ -331,8 +334,13 @@ export const AgenticFinalPolisherV2: React.FC<AgenticFinalPolisherV2Props> = ({
                       </div>
                     )}
                     {section.weaknesses.length > 0 && (
-                      <div className="text-red-700 text-xs">
+                      <div className="text-red-700 text-xs mb-1">
                         ✗ {section.weaknesses.join(', ')}
+                      </div>
+                    )}
+                    {section.keyImprovements && section.keyImprovements.length > 0 && (
+                      <div className="text-blue-700 text-xs mt-1">
+                        ➜ {section.keyImprovements.join(', ')}
                       </div>
                     )}
                   </div>
