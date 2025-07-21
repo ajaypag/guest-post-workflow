@@ -42,12 +42,11 @@ const KICKOFF_PROMPT = `Okay, here's my article.
 
 Review one of my project files for my brand guide and the Semantic SEO writing tips. I want you to review my article section by section, starting with the first section. Gauge how well it follows the brand guide and semantic seo tips.
 
-Output your analysis as valid JSON with exactly these four fields:
+Output your analysis as valid JSON with exactly these three fields:
 {
   "strengths": ["strength 1", "strength 2", ...],
   "weaknesses": ["weakness 1", "weakness 2", ...],
-  "updatedSection": "Your polished version of the section here - ready to copy-paste",
-  "keyImprovements": ["improvement 1", "improvement 2", ...]
+  "updatedSection": "Your polished version of the section here - ready to copy-paste"
 }
 
 Important:
@@ -61,12 +60,11 @@ When you reach <!-- END_OF_ARTICLE -->, output: {"status": "complete"}`;
 
 const PROCEED_PROMPT = `Okay that is good. Now, proceed to the next section. Analyze how well it follows the brand guide and content writing and semantic SEO guide, then provide your refined version.
 
-Output your analysis as valid JSON with exactly these four fields:
+Output your analysis as valid JSON with exactly these three fields:
 {
   "strengths": ["strength 1", "strength 2", ...],
   "weaknesses": ["weakness 1", "weakness 2", ...],
-  "updatedSection": "Your polished version of the section here",
-  "keyImprovements": ["improvement 1", "improvement 2", ...]
+  "updatedSection": "Your polished version of the section here"
 }
 
 Make sure your updated section avoids words from the "words to not use" document. Don't use em-dashes.
@@ -175,7 +173,6 @@ export class AgenticFinalPolishV2Service {
         strengths: string[];
         weaknesses: string[];
         updatedSection: string;
-        keyImprovements: string[];
       }> = [];
       let sectionCount = 0;
       const maxSections = 40; // Safety limit to prevent infinite loops
@@ -431,7 +428,6 @@ export class AgenticFinalPolishV2Service {
       strengths: string[];
       weaknesses: string[];
       updatedSection: string;
-      keyImprovements: string[];
     };
   } {
     try {
@@ -456,8 +452,7 @@ export class AgenticFinalPolishV2Service {
           parsed: {
             strengths: Array.isArray(parsed.strengths) ? parsed.strengths : [parsed.strengths],
             weaknesses: Array.isArray(parsed.weaknesses) ? parsed.weaknesses : [parsed.weaknesses],
-            updatedSection: parsed.updatedSection,
-            keyImprovements: Array.isArray(parsed.keyImprovements) ? parsed.keyImprovements : (parsed.keyImprovements ? [parsed.keyImprovements] : [])
+            updatedSection: parsed.updatedSection
           }
         };
       }
