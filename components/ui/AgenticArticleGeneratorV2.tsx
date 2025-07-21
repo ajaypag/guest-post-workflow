@@ -40,6 +40,15 @@ export const AgenticArticleGeneratorV2 = ({ workflowId, outline, onComplete, onG
   const [logs, setLogs] = useState<string[]>([]);
   const [showCostDialog, setShowCostDialog] = useState(false);
   const [isButtonDisabled, setIsButtonDisabled] = useState(false);
+  const [articleSections, setArticleSections] = useState<Array<{
+    sectionType: 'title_intro' | 'body' | 'conclusion';
+    title?: string;
+    heading?: string;
+    content: string;
+    wordCount: number;
+    isSubsection?: boolean;
+  }>>([]);
+  const [showAnalysisView, setShowAnalysisView] = useState(false);
   const eventSourceRef = useRef<EventSource | null>(null);
 
   const addLog = (message: string) => {
@@ -69,6 +78,8 @@ export const AgenticArticleGeneratorV2 = ({ workflowId, outline, onComplete, onG
     setIsGenerating(true);
     setError(null);
     setLogs([]);
+    setArticleSections([]); // Reset article sections
+    setShowAnalysisView(false); // Reset analysis view
     addLog('🚀 Starting V2 LLM orchestration...');
 
     try {
@@ -125,7 +136,15 @@ export const AgenticArticleGeneratorV2 = ({ workflowId, outline, onComplete, onG
             break;
             
           case 'section_completed':
-            addLog(`✅ Completed "${data.sectionTitle}" (${data.wordCount} words)`);
+            if (data.sectionData) {
+              // Handle structured section data
+              setArticleSections(prev => [...prev, data.sectionData]);
+              const heading = data.sectionData.title || data.sectionData.heading || 'Section';
+              addLog(`✅ Completed "${heading}" (${data.sectionData.wordCount} words)`);
+            } else {
+              // Fallback for old format
+              addLog(`✅ Completed section ${data.sectionNumber}`);
+            }
             break;
             
           case 'progress':
@@ -144,11 +163,17 @@ export const AgenticArticleGeneratorV2 = ({ workflowId, outline, onComplete, onG
             break;
             
           case 'complete':
+          case 'completed':
             setIsGenerating(false);
             eventSource.close();
             
             if (data.status === 'completed') {
               addLog('🎉 V2 article generation completed successfully!');
+              
+              // Handle structured sections if provided
+              if (data.articleSections) {
+                setArticleSections(data.articleSections);
+              }
               
               if (data.finalArticle) {
                 const wordCount = data.finalArticle.split(/\s+/).filter((w: string) => w).length;
@@ -324,11 +349,82 @@ export const AgenticArticleGeneratorV2 = ({ workflowId, outline, onComplete, onG
       {/* Activity Log */}
       {logs.length > 0 && (
         <div className="space-y-2">
-          <h4 className="font-medium text-gray-900">Activity Log</h4>
+          <div className="flex items-center justify-between">
+            <h4 className="font-medium text-gray-900">Activity Log</h4>
+            {articleSections.length > 0 && !isGenerating && (
+              <button
+                onClick={() => setShowAnalysisView(!showAnalysisView)}
+                className="text-sm text-purple-600 hover:text-purple-700"
+              >
+                {showAnalysisView ? 'Hide Analysis' : 'Show Analysis'}
+              </button>
+            )}
+          </div>
           <div className="bg-white/60 backdrop-blur border border-purple-200 text-gray-800 text-xs p-3 rounded-lg max-h-40 overflow-y-auto font-mono">
             {logs.map((log, index) => (
               <div key={index} className="mb-1">{log}</div>
             ))}
+          </div>
+        </div>
+      )}
+
+      {/* Structured Analysis View */}
+      {showAnalysisView && articleSections.length > 0 && (
+        <div className="space-y-2">
+          <h4 className="font-medium text-gray-900">Article Structure Analysis</h4>
+          <div className="bg-white/60 backdrop-blur border border-purple-200 rounded-lg p-4 max-h-96 overflow-y-auto">
+            <div className="space-y-4">
+              {articleSections.map((section, idx) => (
+                <div key={idx} className="border-b border-purple-100 pb-3 last:border-0">
+                  <div className="flex items-center justify-between mb-2">
+                    <div className="flex items-center space-x-2">
+                      <span className="text-xs font-medium px-2 py-1 bg-purple-100 text-purple-700 rounded">
+                        {section.sectionType}
+                      </span>
+                      {section.isSubsection && (
+                        <span className="text-xs px-2 py-1 bg-blue-100 text-blue-700 rounded">
+                          Subsection
+                        </span>
+                      )}
+                    </div>
+                    <span className="text-xs text-gray-600">{section.wordCount} words</span>
+                  </div>
+                  
+                  {section.title && (
+                    <h5 className="font-semibold text-gray-900 mb-1">{section.title}</h5>
+                  )}
+                  {section.heading && (
+                    <h6 className="font-medium text-gray-800 mb-1">{section.heading}</h6>
+                  )}
+                  
+                  <div className="text-xs text-gray-600 line-clamp-3">
+                    {section.content.substring(0, 200)}...
+                  </div>
+                </div>
+              ))}
+            </div>
+            
+            {/* Summary Stats */}
+            <div className="mt-4 pt-4 border-t border-purple-200">
+              <div className="grid grid-cols-3 gap-4 text-xs">
+                <div>
+                  <span className="text-gray-500">Total Sections:</span>
+                  <span className="ml-1 font-medium">{articleSections.length}</span>
+                </div>
+                <div>
+                  <span className="text-gray-500">Total Words:</span>
+                  <span className="ml-1 font-medium">
+                    {articleSections.reduce((sum, s) => sum + s.wordCount, 0)}
+                  </span>
+                </div>
+                <div>
+                  <span className="text-gray-500">Subsections:</span>
+                  <span className="ml-1 font-medium">
+                    {articleSections.filter(s => s.isSubsection).length}
+                  </span>
+                </div>
+              </div>
+            </div>
           </div>
         </div>
       )}
