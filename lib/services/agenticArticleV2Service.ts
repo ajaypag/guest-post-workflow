@@ -437,6 +437,7 @@ export class AgenticArticleV2Service {
         if (sectionParsed.status === 'complete') {
           articleComplete = true;
           console.log(`✅ Article complete - writer signaled completion after ${sectionCount + 1} sections`);
+          break; // Exit immediately when writer signals completion
         } else if (sectionParsed.content) {
           // Add content to sections array
           articleSections.push(sectionParsed.content);
@@ -503,6 +504,7 @@ export class AgenticArticleV2Service {
                 phase: 'completed', 
                 message: `Article complete - proper conclusion detected after ${sectionCount} sections` 
               });
+              break; // Exit the loop immediately when article is complete
             } else {
               console.log(`⏩ Article not complete yet - continuing...`);
             }
