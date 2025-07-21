@@ -3,9 +3,6 @@
 import { useState, useEffect } from 'react';
 import { useRouter } from 'next/navigation';
 import Link from 'next/link';
-import AuthWrapper from '@/components/AuthWrapper';
-import Header from '@/components/Header';
-import { AuthService } from '@/lib/auth';
 
 interface Client {
   id: string;
@@ -60,14 +57,7 @@ export default function NewBulkQualificationPage() {
 
   const loadClients = async () => {
     try {
-      // Get the current session
-      const session = AuthService.getSession();
-      const userId = session?.userId;
-      
-      // Add userId to clients API call if available
-      const clientsUrl = userId ? `/api/clients?userId=${userId}` : '/api/clients';
-      
-      const response = await fetch(clientsUrl);
+      const response = await fetch('/api/clients');
       if (response.ok) {
         const data = await response.json();
         setClients(data.clients || []);
@@ -178,18 +168,18 @@ export default function NewBulkQualificationPage() {
     }
   };
 
+  if (loading) {
+    return (
+      <div className="container mx-auto px-4 py-8">
+        <div className="flex items-center justify-center h-64">
+          <div className="text-gray-500">Loading...</div>
+        </div>
+      </div>
+    );
+  }
+
   return (
-    <AuthWrapper>
-      <div className="min-h-screen bg-gray-50">
-        <Header />
-        {loading ? (
-          <div className="container mx-auto px-4 py-8">
-            <div className="flex items-center justify-center h-64">
-              <div className="text-gray-500">Loading...</div>
-            </div>
-          </div>
-        ) : (
-          <div className="container mx-auto px-4 py-8 max-w-4xl">
+    <div className="container mx-auto px-4 py-8 max-w-4xl">
       {/* Header */}
       <div className="mb-8">
         <div className="flex items-center space-x-4 mb-4">
@@ -432,8 +422,5 @@ export default function NewBulkQualificationPage() {
         </div>
       </form>
     </div>
-        )}
-      </div>
-    </AuthWrapper>
   );
 }
