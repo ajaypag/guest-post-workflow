@@ -239,7 +239,7 @@ Important:
 - The suggestedVersion should preserve markdown formatting (headings, lists, bold, italics, etc.)
 - When you identify weaknesses related to lack of numbers or data, DO NOT make up data. Instead, use the web search tool to find accurate, factual data to support your improvements
 
-When you reach the end of the article or see <!-- END_OF_ARTICLE -->, output exactly: ===AUDIT_COMPLETE===`;
+`;
 
       // Initialize conversation
       let messages: any[] = [
