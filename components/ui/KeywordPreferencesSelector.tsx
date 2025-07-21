@@ -13,18 +13,22 @@ interface TopicPreferencesSelectorProps {
   preferences?: KeywordPreferences;
   onChange: (preferences: KeywordPreferences) => void;
   compact?: boolean;
+  isPreset?: boolean; // Whether these are preset preferences (client/workflow defaults)
 }
 
 export const KeywordPreferencesSelector = ({ 
   preferences, 
   onChange,
-  compact = false 
+  compact = false,
+  isPreset = false 
 }: TopicPreferencesSelectorProps) => {
   // Initialize with default if none provided, but properly handle undefined
   const currentPrefs: KeywordPreferences = preferences !== undefined ? preferences : {
     primaryFocus: 'mixed',
     customInstructions: KEYWORD_PREFERENCE_TEMPLATES.mixed.customInstructions
   };
+
+  const [isEditing, setIsEditing] = React.useState(false);
 
   const handlePrimaryFocusChange = (focus: PrimaryKeywordFocus) => {
     const template = KEYWORD_PREFERENCE_TEMPLATES[focus];
@@ -37,12 +41,65 @@ export const KeywordPreferencesSelector = ({
   };
 
   if (compact) {
+    // If preferences are preset and we're not editing, show a cleaner view
+    if (isPreset && preferences && !isEditing) {
+      return (
+        <div className="space-y-3">
+          <div className="bg-gray-50 border border-gray-200 rounded-lg p-3">
+            <div className="flex items-center justify-between mb-2">
+              <div className="text-sm">
+                <span className="font-medium text-gray-700">Current Focus: </span>
+                <span className="text-gray-900">{KEYWORD_DESCRIPTIONS.primaryFocus[currentPrefs.primaryFocus]?.title}</span>
+              </div>
+              <button
+                onClick={() => setIsEditing(true)}
+                className="text-xs text-blue-600 hover:text-blue-700 underline"
+              >
+                Change for this workflow
+              </button>
+            </div>
+            <p className="text-xs text-gray-600">
+              {KEYWORD_DESCRIPTIONS.primaryFocus[currentPrefs.primaryFocus]?.description}
+            </p>
+            {currentPrefs.customInstructions && currentPrefs.primaryFocus === 'custom' && (
+              <div className="mt-2 pt-2 border-t border-gray-200">
+                <p className="text-xs text-gray-500">Custom instructions:</p>
+                <p className="text-xs text-gray-700 mt-1">{currentPrefs.customInstructions}</p>
+              </div>
+            )}
+          </div>
+        </div>
+      );
+    }
+
+    // Show the full editor if not preset or if editing
     return (
       <div className="space-y-3">
+        {isEditing && (
+          <div className="flex items-center justify-between">
+            <label className="block text-sm font-medium text-gray-700">
+              Override Topic Focus
+            </label>
+            <button
+              onClick={() => {
+                setIsEditing(false);
+                // Reset to original preferences if canceling
+                if (isPreset && preferences) {
+                  onChange(preferences);
+                }
+              }}
+              className="text-xs text-gray-500 hover:text-gray-700"
+            >
+              Cancel
+            </button>
+          </div>
+        )}
         <div>
-          <label className="block text-sm font-medium text-gray-700 mb-2">
-            Guest Post Topic Focus
-          </label>
+          {!isEditing && (
+            <label className="block text-sm font-medium text-gray-700 mb-2">
+              Guest Post Topic Focus
+            </label>
+          )}
           <select
             value={currentPrefs.primaryFocus}
             onChange={(e) => handlePrimaryFocusChange(e.target.value as PrimaryKeywordFocus)}
