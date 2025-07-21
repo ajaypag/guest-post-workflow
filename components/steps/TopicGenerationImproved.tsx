@@ -310,9 +310,10 @@ Target URL: ${clientTargetUrl}`;
                 {onWorkflowChange ? (
                   <div className="space-y-3">
                     <KeywordPreferencesSelector
-                      preferences={getWorkflowKeywordPreferences(workflow) || undefined}
+                      preferences={keywordPreferences || undefined}
                       onChange={handleKeywordPreferencesChange}
                       compact={true}
+                      isPreset={!!keywordPreferences}
                     />
                     
                     {getWorkflowKeywordPreferences(workflow) && (
