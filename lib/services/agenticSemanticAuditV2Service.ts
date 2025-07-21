@@ -67,41 +67,47 @@ export class AgenticSemanticAuditV2Service {
     };
   } {
     try {
-      // Check if it's the completion status
-      if (response.includes('===AUDIT_COMPLETE===')) {
-        return { status: 'complete' };
-      }
-      
-      // Extract strengths
+      // First try to extract audit data (before checking for completion)
       const strengthsMatch = response.match(/===STRENGTHS_START===\s*([\s\S]*?)\s*===STRENGTHS_END===/);
       const weaknessesMatch = response.match(/===WEAKNESSES_START===\s*([\s\S]*?)\s*===WEAKNESSES_END===/);
       const suggestedMatch = response.match(/===SUGGESTED_VERSION_START===\s*([\s\S]*?)\s*===SUGGESTED_VERSION_END===/);
       
-      if (!strengthsMatch || !weaknessesMatch || !suggestedMatch) {
-        console.error('Missing required delimiters in response:', response.substring(0, 200));
-        return {};
-      }
+      // Build the result object
+      let result: any = {};
       
-      // Parse strengths and weaknesses as arrays (one per line)
-      const strengths = strengthsMatch[1]
-        .split('\n')
-        .map(s => s.trim())
-        .filter(s => s.length > 0 && !s.includes('(more strengths'));
+      // If we have audit data, parse it
+      if (strengthsMatch && weaknessesMatch && suggestedMatch) {
+        // Parse strengths and weaknesses as arrays (one per line)
+        const strengths = strengthsMatch[1]
+          .split('\n')
+          .map(s => s.trim())
+          .filter(s => s.length > 0 && !s.includes('(more strengths'));
+          
+        const weaknesses = weaknessesMatch[1]
+          .split('\n')
+          .map(w => w.trim())
+          .filter(w => w.length > 0 && !w.includes('(more weaknesses'));
+          
+        const suggestedVersion = suggestedMatch[1].trim();
         
-      const weaknesses = weaknessesMatch[1]
-        .split('\n')
-        .map(w => w.trim())
-        .filter(w => w.length > 0 && !w.includes('(more weaknesses'));
-        
-      const suggestedVersion = suggestedMatch[1].trim();
-      
-      return {
-        parsed: {
+        result.parsed = {
           strengths,
           weaknesses,
           suggestedVersion
-        }
-      };
+        };
+      }
+      
+      // Now check if it also includes completion status
+      if (response.includes('===AUDIT_COMPLETE===')) {
+        result.status = 'complete';
+      }
+      
+      // If we found neither audit data nor completion, log error
+      if (!result.parsed && !result.status) {
+        console.error('Missing required delimiters in response:', response.substring(0, 200));
+      }
+      
+      return result;
     } catch (error) {
       console.error('Failed to parse delimiter response:', error, 'Response:', response.substring(0, 200));
       return {};
@@ -343,18 +349,40 @@ When you reach the end of the article or see <!-- END_OF_ARTICLE -->, output exa
           // Parse delimiter-based response
           const sectionData = this.parseAuditResponse(textContent);
           
-          // Check if audit is complete
-          if (sectionData.status === 'complete') {
-            console.log('✅ Audit completion detected - status: complete');
-            auditActive = false;
-          } else if (sectionData.parsed) {
+          // Handle parsed audit data first (if present)
+          if (sectionData.parsed) {
             // Add to audited sections
             auditedSections.push(sectionData.parsed);
             sectionsCompleted++;
             console.log(`✅ Section ${sectionsCompleted} audited`);
-          } else {
+          }
+          
+          // Send section completed event if we parsed a section
+          if (sectionData.parsed) {
+            await this.updateAuditSession(sessionId, {
+              completedSections: sectionsCompleted,
+              sessionMetadata: {
+                ...(session.sessionMetadata as any),
+                sectionsCompleted,
+                lastUpdate: new Date().toISOString()
+              }
+            });
+            
+            auditV2SSEPush(sessionId, { 
+              type: 'section_completed',
+              sectionsCompleted,
+              content: sectionData.parsed,
+              message: `Completed section ${sectionsCompleted}`
+            });
+          }
+          
+          // Then check if audit is complete
+          if (sectionData.status === 'complete') {
+            console.log('✅ Audit completion detected - status: complete');
+            auditActive = false;
+          } else if (!sectionData.parsed && !sectionData.status) {
+            // No valid data found, check for completion indicators in plain text as fallback
             console.error('Failed to parse section response:', textContent);
-            // Check for completion indicators in plain text as fallback
             const lowerContent = textContent.toLowerCase();
             if (lowerContent.includes('end of article') ||
                 lowerContent.includes('audit complete') ||
@@ -377,23 +405,6 @@ When you reach the end of the article or see <!-- END_OF_ARTICLE -->, output exa
             
             // Add the user prompt - this is safe as it doesn't have an ID yet
             messages.push({ role: 'user', content: loopingPrompt });
-            
-            // Update progress
-            await this.updateAuditSession(sessionId, {
-              completedSections: sectionsCompleted,
-              sessionMetadata: {
-                ...(session.sessionMetadata as any),
-                sectionsCompleted,
-                lastUpdate: new Date().toISOString()
-              }
-            });
-            
-            auditV2SSEPush(sessionId, { 
-              type: 'section_completed',
-              sectionsCompleted,
-              content: sectionData.parsed,
-              message: `Completed section ${sectionsCompleted}`
-            });
           }
         }
         
