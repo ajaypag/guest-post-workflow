@@ -57,13 +57,6 @@ export default function Header() {
               <Building2 className="w-4 h-4 mr-1.5" />
               Clients
             </Link>
-            <Link
-              href="/bulk-qualification"
-              className="text-gray-600 hover:text-gray-900 hover:bg-gray-50 px-3 py-2 rounded-lg text-sm font-medium transition-colors flex items-center"
-            >
-              <Search className="w-4 h-4 mr-1.5" />
-              Bulk Qualification
-            </Link>
             {session.role === 'admin' && (
               <Link
                 href="/admin/users"
