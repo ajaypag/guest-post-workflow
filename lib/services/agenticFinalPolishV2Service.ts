@@ -96,7 +96,7 @@ Important:
 - Each strength/weakness should be on its own line
 - The updatedSection should preserve markdown formatting (headings, lists, bold, italics, etc.)
 
-When you reach the end of the article or see <!-- END_OF_ARTICLE -->, output exactly: ===POLISH_COMPLETE===`;
+After outputting your polish analysis for the current section, check if that section ends with the exact text <!-- END_OF_ARTICLE -->. If the section you just polished contains this marker, output exactly: ===POLISH_COMPLETE===`;
 
 export class AgenticFinalPolishV2Service {
   private openaiProvider: OpenAIProvider;
