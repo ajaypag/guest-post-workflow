@@ -39,27 +39,31 @@ const PLANNING_PROMPT = `Okay, I'm about to give you a lot of information. Here 
 
 const TITLE_INTRO_PROMPT = `Yes, remember we're going to be creating this article section by section. And the format should be primarily narrative, which means its piece is built on flowing prose--full sentences and connected paragraphs that guide the reader smoothly from one idea to the next. They should be short, punchy paragraphs--rarely more than 2-to-3 lines each--so the eye never hits an intimidating wall of text. Frequent line breaks to create natural breathing room and improve scannability.Lists can appear, but only sparingly and only when they truly clarify complex details or highlight a quick sequence the reader might otherwise struggle to absorb. You blend the finesse of a seasoned copywriter with the deep expertise in the topic at hand, leading to clear, persuasive narratives. Your voice simplifies complexity, builds trust, and drives momentum. You intuitively tailor every message to the most likely audience for the topic at hand. Speak like a trusted colleague—warm, approachable, and human. Use "we" and "you" to build rapport, and read copy aloud to ensure it sounds natural and friendly. Make strong, decisive statements backed by facts or customer proof. Lead with benefits, use active voice, and avoid hedging language like "might" or "could." Be insightful and thorough without overwhelming. Organize content logically, connect the dots for the reader, and stick to verifiable details. Sprinkle clever turns of phrase or light puns in headlines or campaign-level copy only. Never sacrifice clarity for a joke. Trim every sentence to its core message. Eliminate filler words, keep sentences short, and focus on one or two key points. Write like you're chatting over coffee—informal but never unprofessional. The article reads more like a well-structured conversation than a slide deck of bullet points. Start with the title and introduction. Be sure to consult the project documents on Writing Guidelines and Semantic SEO before each section to remind yourself of the best practices that we want to follow. Avoid using Em-dashes. the section you create must follow that of the original outline provided. Remember to keep total word count of article in mind and how you decided to divy up the words per section so you can allocate appropriate word count for this section.
 
-Output your response as valid JSON with only the content:
-{
-  "content": "# Your Article Title\\n\\nYour introduction content here with all markdown formatting..."
-}
+Output your response with the content between these exact delimiters:
+<<<ARTICLE_CONTENT_START>>>
+# Your Article Title
+
+Your introduction content here with all markdown formatting...
+<<<ARTICLE_CONTENT_END>>>
 
 Important:
-- Output ONLY the JSON object, no other text
-- The content field should include ALL content including the title
-- Preserve all markdown formatting in the content field`;
+- Include ALL content between the delimiters including the title
+- Use the exact delimiters shown above
+- Preserve all markdown formatting`;
 
 const LOOPING_PROMPT = `Proceed to the next section. Remember, the format should be primarily narrative, which means its piece is built on flowing prose--full sentences and connected paragraphs that guide the reader smoothly from one idea to the next. They should be short, punchy paragraphs--rarely more than 2-to-3 lines each--so the eye never hits an intimidating wall of text. Frequent line breaks to create natural breathing room and improve scannability.Lists can appear, but only sparingly and only when they truly clarify complex details or highlight a quick sequence the reader might otherwise struggle to absorb. You blend the finesse of a seasoned copywriter with the deep expertise in the topic at hand, leading to clear, persuasive narratives. Your voice simplifies complexity, builds trust, and drives momentum. You intuitively tailor every message to the most likely audience for the topic at hand. Speak like a trusted colleague—warm, approachable, and human. Use "we" and "you" to build rapport, and read copy aloud to ensure it sounds natural and friendly. Make strong, decisive statements backed by facts or customer proof. Lead with benefits, use active voice, and avoid hedging language like "might" or "could." Be insightful and thorough without overwhelming. Organize content logically, connect the dots for the reader, and stick to verifiable details. Sprinkle clever turns of phrase or light puns in headlines or campaign-level copy only. Never sacrifice clarity for a joke. Trim every sentence to its core message. Eliminate filler words, keep sentences short, and focus on one or two key points. Write like you're chatting over coffee—informal but never unprofessional. The article reads more like a well-structured conversation than a slide deck of bullet points. Be sure to consult the project documents on Writing Guidelines and Semantic SEO before each section to remind yourself of the best practices that we want to follow. Also be sure to reference my original prompt that contains the article information that should feed your context. I've already done the research and given it to you there - so that's what you need to reference each time. Avoid using Em-dashes. If it's the section that is the "meat" of the article, you must further break your output down into subsections and only output the first subsection so as not to over simplify each component. Note: defining what a subsection means is important. We're not doing sub-subsections, so if the section of the article is already apparently a subsection, then that entire section should be included in your output even if there are apparently sub-subsections within. Note 2: the section you create must follow that of the original outline provided. Remember to keep total word count of article in mind and how you decided to divy up the words per section so you can allocate appropriate word count for this section.
 
-Output your response as valid JSON:
-{
-  "content": "## Section Heading\\n\\nYour section content here with all markdown formatting..."
-}
+Output your response with the content between these exact delimiters:
+<<<ARTICLE_CONTENT_START>>>
+## Section Heading
+
+Your section content here with all markdown formatting...
+<<<ARTICLE_CONTENT_END>>>
 
 Important:
-- Output ONLY the JSON object, no other text
+- Use the exact delimiters shown above
 - Include all content with proper markdown formatting
-- When you reach the end of the article, output: {"status": "complete"}`;
+- When you reach the end of the article, output only: <<<ARTICLE_COMPLETE>>>`;
 
 export class AgenticArticleV2Service {
   private openaiProvider: OpenAIProvider;
@@ -70,35 +74,49 @@ export class AgenticArticleV2Service {
     });
   }
 
-  // Parse JSON response from article generation
-  private parseArticleJSON(response: string): {
+  // Parse delimiter-based response from article generation
+  private parseArticleContent(response: string): {
     status?: 'complete';
     content?: string;
   } {
     try {
-      // Try to extract JSON from the response
-      const jsonMatch = response.match(/\{[\s\S]*\}/);
-      if (!jsonMatch) {
-        console.error('No JSON found in response:', response.substring(0, 200));
-        return {};
-      }
-      
-      const parsed = JSON.parse(jsonMatch[0]);
-      
-      // Check if it's the completion status
-      if (parsed.status === 'complete') {
+      // Check for completion marker first
+      if (response.includes('<<<ARTICLE_COMPLETE>>>')) {
+        console.log('✅ Article completion marker found');
         return { status: 'complete' };
       }
       
-      // Check if it has content
-      if (parsed.content) {
-        return { content: parsed.content };
+      // Extract content between delimiters
+      const startDelimiter = '<<<ARTICLE_CONTENT_START>>>';
+      const endDelimiter = '<<<ARTICLE_CONTENT_END>>>';
+      
+      const startIndex = response.indexOf(startDelimiter);
+      const endIndex = response.indexOf(endDelimiter);
+      
+      if (startIndex !== -1 && endIndex !== -1 && endIndex > startIndex) {
+        const content = response.substring(
+          startIndex + startDelimiter.length,
+          endIndex
+        ).trim();
+        
+        if (content) {
+          console.log(`✅ Extracted content between delimiters: ${content.length} chars`);
+          return { content };
+        }
       }
       
-      console.error('Invalid JSON structure:', parsed);
+      // Fallback: if no delimiters found, treat the whole response as content
+      // This helps handle cases where AI might not follow the format exactly
+      console.warn('No delimiters found, using fallback text extraction');
+      const trimmedResponse = response.trim();
+      if (trimmedResponse && !trimmedResponse.includes('<<<')) {
+        return { content: trimmedResponse };
+      }
+      
+      console.error('No content found in response:', response.substring(0, 200));
       return {};
     } catch (error) {
-      console.error('Failed to parse JSON:', error, 'Response:', response.substring(0, 200));
+      console.error('Failed to parse content:', error, 'Response:', response.substring(0, 200));
       return {};
     }
   }
@@ -308,8 +326,8 @@ export class AgenticArticleV2Service {
 
       console.log(`✅ Title/intro response extracted: ${titleIntroResponse.length} chars`);
       
-      // Parse title/intro JSON
-      const titleIntroParsed = this.parseArticleJSON(titleIntroResponse);
+      // Parse title/intro content
+      const titleIntroParsed = this.parseArticleContent(titleIntroResponse);
       
       if (titleIntroParsed.status === 'complete') {
         articleComplete = true;
@@ -327,8 +345,8 @@ export class AgenticArticleV2Service {
           message: 'Title and introduction completed'
         });
       } else {
-        // Fallback: treat as plain text if JSON parsing fails
-        console.warn('Failed to parse title/intro JSON, using text fallback');
+        // Fallback: treat as plain text if delimiter parsing fails
+        console.warn('Failed to parse title/intro content, using text fallback');
         articleSections.push(titleIntroResponse);
         
         await this.updateSession(sessionId, { completedSections: 1 });
@@ -405,8 +423,8 @@ export class AgenticArticleV2Service {
 
         console.log(`✅ Section response extracted: ${sectionResponse.length} chars`);
         
-        // Parse section JSON
-        const sectionParsed = this.parseArticleJSON(sectionResponse);
+        // Parse section content
+        const sectionParsed = this.parseArticleContent(sectionResponse);
         
         if (sectionParsed.status === 'complete') {
           articleComplete = true;
@@ -425,8 +443,8 @@ export class AgenticArticleV2Service {
             message: `Section ${sectionCount} completed`
           });
         } else {
-          // Fallback: treat as plain text if JSON parsing fails
-          console.warn('Failed to parse section JSON, using text fallback');
+          // Fallback: treat as plain text if delimiter parsing fails
+          console.warn('Failed to parse section content, using text fallback');
           articleSections.push(sectionResponse);
           sectionCount++;
           
