@@ -149,10 +149,9 @@ export const AgenticArticleGeneratorV2 = ({ workflowId, outline, onComplete, onG
           case 'complete':
           case 'completed':
             setIsGenerating(false);
-            setIsButtonDisabled(false);
             eventSource.close();
             
-            if (data.status === 'completed' || data.type === 'complete') {
+            if (data.status === 'completed') {
               addLog('🎉 V2 article generation completed successfully!');
               
               if (data.finalArticle) {
@@ -172,7 +171,6 @@ export const AgenticArticleGeneratorV2 = ({ workflowId, outline, onComplete, onG
           case 'error':
             setError(data.message);
             setIsGenerating(false);
-            setIsButtonDisabled(false);
             eventSource.close();
             addLog(`❌ Error: ${data.message}`);
             break;
@@ -286,6 +284,19 @@ export const AgenticArticleGeneratorV2 = ({ workflowId, outline, onComplete, onG
       {/* Progress Display */}
       {progress && (
         <div className="space-y-4">
+          {/* Known Bug Notice */}
+          <div className="bg-amber-50 border border-amber-200 rounded-lg p-3">
+            <div className="flex items-start space-x-2">
+              <AlertCircle className="w-5 h-5 text-amber-600 flex-shrink-0 mt-0.5" />
+              <div className="text-sm">
+                <p className="text-amber-800 font-medium">Known Issue</p>
+                <p className="text-amber-700 mt-1">
+                  After generation completes, you may see an error message. Simply refresh the page and your article will appear correctly.
+                </p>
+              </div>
+            </div>
+          </div>
+          
           {/* Status Card */}
           <div className="bg-white/80 backdrop-blur rounded-lg p-4 border border-purple-200">
             <div className="flex items-center justify-between mb-3">
@@ -293,12 +304,11 @@ export const AgenticArticleGeneratorV2 = ({ workflowId, outline, onComplete, onG
                 {getStatusIcon(progress.session.status)}
                 <span className="font-medium text-gray-900 capitalize">{progress.session.status}</span>
               </div>
-              <span className="text-sm text-gray-600">
-                {hasKnownTotal 
-                  ? `${progressPercentage}% Complete`
-                  : `${progress.session.completedSections} sections completed`
-                }
-              </span>
+              {hasKnownTotal && (
+                <span className="text-sm text-gray-600">
+                  {progressPercentage}% Complete
+                </span>
+              )}
             </div>
             
             {/* Progress Bar - only show when we know the total */}
