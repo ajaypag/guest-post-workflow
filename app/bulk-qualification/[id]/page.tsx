@@ -3,6 +3,8 @@
 import { useState, useEffect } from 'react';
 import { useParams } from 'next/navigation';
 import Link from 'next/link';
+import AuthWrapper from '@/components/AuthWrapper';
+import Header from '@/components/Header';
 
 interface JobDetails {
   id: string;
@@ -138,35 +140,31 @@ export default function BulkQualificationDetailsPage() {
     });
   };
 
-  if (loading) {
-    return (
-      <div className="container mx-auto px-4 py-8">
-        <div className="flex items-center justify-center h-64">
-          <div className="text-gray-500">Loading job details...</div>
-        </div>
-      </div>
-    );
-  }
-
-  if (!jobData) {
-    return (
-      <div className="container mx-auto px-4 py-8">
-        <div className="text-center py-12">
-          <div className="text-red-600 mb-4">Job not found</div>
-          <Link href="/bulk-qualification" className="text-blue-600 hover:text-blue-700">
-            ← Back to Bulk Qualification
-          </Link>
-        </div>
-      </div>
-    );
-  }
-
-  const { job, statistics, sites } = jobData;
-
   return (
-    <div className="container mx-auto px-4 py-8">
-      {/* Header */}
-      <div className="mb-8">
+    <AuthWrapper>
+      <div className="min-h-screen bg-gray-50">
+        <Header />
+        {loading ? (
+          <div className="container mx-auto px-4 py-8">
+            <div className="flex items-center justify-center h-64">
+              <div className="text-gray-500">Loading job details...</div>
+            </div>
+          </div>
+        ) : !jobData ? (
+          <div className="container mx-auto px-4 py-8">
+            <div className="text-center py-12">
+              <div className="text-red-600 mb-4">Job not found</div>
+              <Link href="/bulk-qualification" className="text-blue-600 hover:text-blue-700">
+                ← Back to Bulk Qualification
+              </Link>
+            </div>
+          </div>
+        ) : (() => {
+          const { job, statistics, sites } = jobData;
+          return (
+            <div className="container mx-auto px-4 py-8">
+              {/* Header */}
+              <div className="mb-8">
         <div className="flex items-center space-x-4 mb-4">
           <Link href="/bulk-qualification" className="text-blue-600 hover:text-blue-700">
             ← Back to Bulk Qualification
@@ -332,5 +330,9 @@ export default function BulkQualificationDetailsPage() {
         </div>
       )}
     </div>
+          );
+        })()}
+      </div>
+    </AuthWrapper>
   );
 }
