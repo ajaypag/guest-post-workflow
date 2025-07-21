@@ -284,6 +284,19 @@ export const AgenticArticleGeneratorV2 = ({ workflowId, outline, onComplete, onG
       {/* Progress Display */}
       {progress && (
         <div className="space-y-4">
+          {/* Known Bug Notice */}
+          <div className="bg-amber-50 border border-amber-200 rounded-lg p-3">
+            <div className="flex items-start space-x-2">
+              <AlertCircle className="w-5 h-5 text-amber-600 flex-shrink-0 mt-0.5" />
+              <div className="text-sm">
+                <p className="text-amber-800 font-medium">Known Issue</p>
+                <p className="text-amber-700 mt-1">
+                  After generation completes, you may see an error message. Simply refresh the page and your article will appear correctly.
+                </p>
+              </div>
+            </div>
+          </div>
+          
           {/* Status Card */}
           <div className="bg-white/80 backdrop-blur rounded-lg p-4 border border-purple-200">
             <div className="flex items-center justify-between mb-3">
