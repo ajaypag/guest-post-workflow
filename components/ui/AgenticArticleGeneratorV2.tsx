@@ -1,7 +1,7 @@
 'use client';
 
 import React, { useState, useEffect, useRef } from 'react';
-import { Play, Pause, CheckCircle, AlertCircle, Clock, FileText, Brain, RefreshCw, Bug } from 'lucide-react';
+import { Play, Pause, CheckCircle, AlertCircle, Clock, FileText, Brain, RefreshCw } from 'lucide-react';
 import { CostConfirmationDialog } from './CostConfirmationDialog';
 
 interface AgenticArticleGeneratorV2Props {
@@ -41,7 +41,6 @@ export const AgenticArticleGeneratorV2 = ({ workflowId, outline, onComplete, onG
   const [showCostDialog, setShowCostDialog] = useState(false);
   const [isButtonDisabled, setIsButtonDisabled] = useState(false);
   const [completedSections, setCompletedSections] = useState(0);
-  const [isMockMode, setIsMockMode] = useState(false);
   const eventSourceRef = useRef<EventSource | null>(null);
 
   const addLog = (message: string) => {
@@ -72,14 +71,14 @@ export const AgenticArticleGeneratorV2 = ({ workflowId, outline, onComplete, onG
     setError(null);
     setLogs([]);
     setCompletedSections(0); // Reset completed sections count
-    addLog(`🚀 Starting V2 LLM orchestration${isMockMode ? ' (MOCK MODE)' : ''}...`);
+    addLog('🚀 Starting V2 LLM orchestration...');
 
     try {
       // Start V2 generation
       const response = await fetch(`/api/workflows/${workflowId}/auto-generate-v2`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ outline, mockMode: isMockMode })
+        body: JSON.stringify({ outline })
       });
 
       const result = await response.json();
@@ -254,39 +253,6 @@ export const AgenticArticleGeneratorV2 = ({ workflowId, outline, onComplete, onG
             <Pause className="w-4 h-4" />
             <span>Stop</span>
           </button>
-        )}
-      </div>
-
-      {/* Mock Mode Toggle */}
-      <div className="bg-orange-50 border border-orange-200 rounded-lg p-4">
-        <label className="flex items-center justify-between cursor-pointer">
-          <div className="flex items-center space-x-3">
-            <Bug className="w-5 h-5 text-orange-600" />
-            <div>
-              <span className="font-medium text-gray-900">Mock Mode</span>
-              <p className="text-sm text-gray-600">Test generation flow without using API credits</p>
-            </div>
-          </div>
-          <div className="relative">
-            <input
-              type="checkbox"
-              checked={isMockMode}
-              onChange={(e) => setIsMockMode(e.target.checked)}
-              disabled={isGenerating}
-              className="sr-only"
-            />
-            <div className={`block w-14 h-8 rounded-full transition-colors ${
-              isMockMode ? 'bg-orange-600' : 'bg-gray-300'
-            } ${isGenerating ? 'opacity-50' : ''}`}></div>
-            <div className={`absolute left-1 top-1 bg-white w-6 h-6 rounded-full transition-transform ${
-              isMockMode ? 'translate-x-6' : ''
-            }`}></div>
-          </div>
-        </label>
-        {isMockMode && (
-          <div className="mt-3 text-sm text-orange-700 bg-orange-100 rounded-lg p-2">
-            <strong>Mock mode active:</strong> Will use test data to simulate article generation
-          </div>
         )}
       </div>
 

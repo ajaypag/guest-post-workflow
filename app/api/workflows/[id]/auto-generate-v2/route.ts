@@ -10,7 +10,7 @@ export async function POST(
 ) {
   try {
     const { id: workflowId } = await params;
-    const { outline, mockMode = false } = await request.json();
+    const { outline } = await request.json();
     
     if (!outline) {
       return NextResponse.json({ 
@@ -31,24 +31,15 @@ export async function POST(
       }, { status: 404 });
     }
     
-    console.log(`🚀 Starting V2 article generation for workflow ${workflowId}${mockMode ? ' (MOCK MODE)' : ''}`);
+    console.log(`🚀 Starting V2 article generation for workflow ${workflowId}`);
     
     // Start the V2 generation session
-    const sessionId = await agenticArticleV2Service.startSession(workflowId, outline, mockMode);
+    const sessionId = await agenticArticleV2Service.startSession(workflowId, outline);
     
     // Start generation in background (non-blocking)
-    if (mockMode) {
-      // Use mock service for testing
-      const { agenticArticleV2MockService } = await import('@/lib/services/agenticArticleV2MockService');
-      agenticArticleV2MockService.performMockGeneration(sessionId, workflowId, outline).catch(error => {
-        console.error('Background mock generation failed:', error);
-      });
-    } else {
-      // Use real service
-      agenticArticleV2Service.performArticleGeneration(sessionId).catch(error => {
-        console.error('Background generation failed:', error);
-      });
-    }
+    agenticArticleV2Service.performArticleGeneration(sessionId).catch(error => {
+      console.error('Background generation failed:', error);
+    });
     
     return NextResponse.json({ 
       success: true, 

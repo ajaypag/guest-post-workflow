@@ -7,6 +7,7 @@ import { CopyButton } from '../ui/CopyButton';
 import { TutorialVideo } from '../ui/TutorialVideo';
 import { ChatInterface } from '../ui/ChatInterface';
 import { AgenticArticleGeneratorV2 } from '../ui/AgenticArticleGeneratorV2';
+import { AgenticArticleGeneratorV2Mock } from '../ui/AgenticArticleGeneratorV2Mock';
 import { SplitPromptButton } from '../ui/SplitPromptButton';
 import { MarkdownPreview } from '../ui/MarkdownPreview';
 import { ExternalLink, ChevronDown, ChevronRight, FileText, CheckCircle, AlertCircle, Target, RefreshCw, BookOpen } from 'lucide-react';
@@ -28,7 +29,7 @@ export const ArticleDraftStepClean = ({ step, workflow, onChange, onAgentStateCh
   });
 
   // Tab system state
-  const [activeTab, setActiveTab] = useState<'chatgpt' | 'builtin' | 'agenticV2'>('agenticV2');
+  const [activeTab, setActiveTab] = useState<'chatgpt' | 'builtin' | 'agenticV2' | 'agenticV2Mock'>('agenticV2');
 
   // Chat state management for builtin
   const [conversation, setConversation] = useState<any[]>([]);
@@ -62,7 +63,7 @@ ${outlineContent || '((((Complete Step 3: Deep Research first to get outline con
   };
 
   // Handle tab switching with warnings
-  const handleTabSwitch = (newTab: 'chatgpt' | 'builtin' | 'agenticV2') => {
+  const handleTabSwitch = (newTab: 'chatgpt' | 'builtin' | 'agenticV2' | 'agenticV2Mock') => {
     // Don't switch if same tab
     if (newTab === activeTab) return;
 
@@ -233,6 +234,16 @@ ${outlineContent || '((((Complete Step 3: Deep Research first to get outline con
             }`}
           >
             Built-in Chat
+          </button>
+          <button
+            onClick={() => handleTabSwitch('agenticV2Mock')}
+            className={`flex-1 px-6 py-4 text-sm font-medium transition-colors ${
+              activeTab === 'agenticV2Mock'
+                ? 'bg-orange-50 text-orange-700 border-b-2 border-orange-500'
+                : 'text-gray-500 hover:text-gray-700 hover:bg-gray-50'
+            }`}
+          >
+            🧪 V2 Mock Test
           </button>
         </div>
 
@@ -824,6 +835,53 @@ ${outlineContent || '((((Complete Step 3: Deep Research first to get outline con
                   )}
                 </div>
               </div>
+            </div>
+          ) : activeTab === 'agenticV2Mock' ? (
+            <div className="space-y-6">
+              {/* V2 Mock Article Generator */}
+              <AgenticArticleGeneratorV2Mock
+                  workflowId={workflow.id}
+                  outline={outlineContent}
+                  onComplete={(article) => {
+                    console.log('🎉 V2 Mock Article generation complete, updating state...');
+                    console.log('📝 Article length:', article.length);
+                    console.log('🔄 Calling onChange with new article data...');
+                    onChange({ 
+                      ...step.outputs, 
+                      fullArticle: article,
+                      agentGenerated: true,
+                      agentVersion: 'v2-mock',
+                      draftStatus: 'completed'
+                    });
+                    console.log('✅ onChange called, article should now display');
+                  }}
+                  onGeneratingStateChange={(isGenerating) => {
+                    setAgentRunning(isGenerating);
+                    onAgentStateChange?.(isGenerating);
+                  }}
+                />
+
+              {/* Generated Article Display */}
+              {step.outputs.fullArticle && step.outputs.agentGenerated && step.outputs.agentVersion === 'v2-mock' && (
+                <div className="bg-gradient-to-br from-orange-50 to-red-50 border border-orange-200 rounded-lg p-6">
+                  <h3 className="font-semibold text-gray-900 mb-3 flex items-center">
+                    <CheckCircle className="w-5 h-5 text-green-500 mr-2" />
+                    Mock Article Generated Successfully
+                  </h3>
+                  
+                  <div className="bg-orange-100 border border-orange-300 rounded-lg p-3 mb-4">
+                    <p className="text-sm text-orange-800">
+                      <strong>Mock Mode:</strong> This is test data for debugging UI behavior. 
+                      The article was saved to test persistence and refresh functionality.
+                    </p>
+                  </div>
+                  
+                  <MarkdownPreview 
+                    content={step.outputs.fullArticle}
+                    className="mt-4"
+                  />
+                </div>
+              )}
             </div>
           ) : null}
         </div>
