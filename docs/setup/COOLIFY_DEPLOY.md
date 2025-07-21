@@ -42,6 +42,10 @@ OPENAI_API_KEY=sk-...
 OPENAI_API_KEY_BACKUP=sk-...
 VECTOR_STORE_ID=vs_...
 AGENT_TIMEOUT_MS=300000
+
+# DataForSEO API (for Bulk Qualification)
+DATAFORSEO_LOGIN=your_dataforseo_login
+DATAFORSEO_PASSWORD=your_dataforseo_password
 ```
 
 **Critical**: 
