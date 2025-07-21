@@ -347,7 +347,15 @@ export class AgenticArticleV2Service {
       } else {
         // Fallback: treat as plain text if delimiter parsing fails
         console.warn('Failed to parse title/intro content, using text fallback');
-        articleSections.push(titleIntroResponse);
+        // Strip any delimiters from the raw response before using as fallback
+        const cleanedResponse = titleIntroResponse
+          .replace(/<<<ARTICLE_CONTENT_START>>>/g, '')
+          .replace(/<<<ARTICLE_CONTENT_END>>>/g, '')
+          .replace(/<<<ARTICLE_COMPLETE>>>/g, '')
+          .trim();
+        if (cleanedResponse) {
+          articleSections.push(cleanedResponse);
+        }
         
         await this.updateSession(sessionId, { completedSections: 1 });
         sseUpdate(sessionId, { 
@@ -445,8 +453,16 @@ export class AgenticArticleV2Service {
         } else {
           // Fallback: treat as plain text if delimiter parsing fails
           console.warn('Failed to parse section content, using text fallback');
-          articleSections.push(sectionResponse);
-          sectionCount++;
+          // Strip any delimiters from the raw response before using as fallback
+          const cleanedResponse = sectionResponse
+            .replace(/<<<ARTICLE_CONTENT_START>>>/g, '')
+            .replace(/<<<ARTICLE_CONTENT_END>>>/g, '')
+            .replace(/<<<ARTICLE_COMPLETE>>>/g, '')
+            .trim();
+          if (cleanedResponse) {
+            articleSections.push(cleanedResponse);
+            sectionCount++;
+          }
           
           await this.updateSession(sessionId, { completedSections: sectionCount });
           sseUpdate(sessionId, { 
