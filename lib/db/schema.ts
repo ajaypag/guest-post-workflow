@@ -254,7 +254,7 @@ export const clientsRelations = relations(clients, ({ one, many }) => ({
   targetPages: many(targetPages),
   workflows: many(workflows),
   assignments: many(clientAssignments),
-  // bulkAnalysisDomains: many(bulkAnalysisDomains), // TODO: Uncomment after bulk analysis migration
+  bulkAnalysisDomains: many(bulkAnalysisDomains),
 }));
 
 export const clientAssignmentsRelations = relations(clientAssignments, ({ one }) => ({
