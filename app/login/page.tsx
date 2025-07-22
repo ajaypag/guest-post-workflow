@@ -4,6 +4,13 @@ import { useState, useEffect } from 'react';
 import { useRouter } from 'next/navigation';
 import { AuthService } from '@/lib/auth';
 
+// Deployment test console log
+console.log('Login page loaded - DEPLOYMENT TEST v2 -', new Date().toISOString());
+
+// Deployment version tracking
+const DEPLOYMENT_VERSION = 'v2.0';
+const LAST_UPDATED = '2025-01-22 15:45 UTC';
+
 export default function LoginPage() {
   const router = useRouter();
   const [isLogin, setIsLogin] = useState(true);
@@ -58,9 +65,16 @@ export default function LoginPage() {
   return (
     <div className="min-h-screen flex items-center justify-center bg-gray-50">
       <div className="max-w-md w-full space-y-8">
+        {/* DEPLOYMENT TEST BANNER */}
+        <div className="bg-red-600 text-white p-4 rounded-lg shadow-lg animate-pulse">
+          <h3 className="text-lg font-bold text-center">🚨 DEPLOYMENT TEST {DEPLOYMENT_VERSION} 🚨</h3>
+          <p className="text-center text-sm mt-1">Last updated: {LAST_UPDATED}</p>
+          <p className="text-center text-xs mt-2 opacity-90">This banner verifies new deployments are working</p>
+        </div>
+        
         <div>
           <h2 className="mt-6 text-center text-3xl font-extrabold text-gray-900">
-            {isLogin ? 'Sign in to your account' : 'Create new account'}
+            {isLogin ? 'Sign in to your account - TEST v2' : 'Create new account - TEST v2'}
           </h2>
           <p className="mt-2 text-center text-sm text-gray-600">
             Guest Post Workflow Manager
@@ -165,6 +179,13 @@ export default function LoginPage() {
             </div>
           )}
         </form>
+        
+        {/* Version indicator */}
+        <div className="text-center mt-6 p-2 bg-yellow-100 border border-yellow-300 rounded">
+          <p className="text-xs text-yellow-800">
+            Deployment Test Active | Version: {DEPLOYMENT_VERSION} | Build Time: {LAST_UPDATED}
+          </p>
+        </div>
       </div>
     </div>
   );
