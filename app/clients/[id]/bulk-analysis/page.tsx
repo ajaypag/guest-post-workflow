@@ -42,6 +42,10 @@ export default function BulkAnalysisPage() {
   const [message, setMessage] = useState('');
   const [existingDomains, setExistingDomains] = useState<{ domain: string; status: string }[]>([]);
   const [selectedPositionRange, setSelectedPositionRange] = useState('1-50');
+  
+  // Manual keyword input mode
+  const [keywordInputMode, setKeywordInputMode] = useState<'target-pages' | 'manual'>('target-pages');
+  const [manualKeywords, setManualKeywords] = useState('');
 
   useEffect(() => {
     loadClient();
@@ -84,9 +88,16 @@ export default function BulkAnalysisPage() {
   };
 
   const handleAnalyze = async () => {
-    if (!client || selectedTargetPages.length === 0 || !domainText.trim()) {
-      setMessage('Please select target pages and enter domains to analyze');
-      return;
+    if (keywordInputMode === 'target-pages') {
+      if (!client || selectedTargetPages.length === 0 || !domainText.trim()) {
+        setMessage('Please select target pages and enter domains to analyze');
+        return;
+      }
+    } else {
+      if (!manualKeywords.trim() || !domainText.trim()) {
+        setMessage('Please enter keywords and domains to analyze');
+        return;
+      }
     }
 
     setLoading(true);
@@ -111,23 +122,41 @@ export default function BulkAnalysisPage() {
         setExistingDomains(checkData.existing || []);
       }
 
-      // Create or update domains
-      const response = await fetch(`/api/clients/${params.id}/bulk-analysis`, {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-          domains: domainList,
-          targetPageIds: selectedTargetPages
-        })
-      });
+      // Create or update domains (only if using target pages mode)
+      if (keywordInputMode === 'target-pages') {
+        const response = await fetch(`/api/clients/${params.id}/bulk-analysis`, {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            domains: domainList,
+            targetPageIds: selectedTargetPages
+          })
+        });
 
-      if (response.ok) {
-        const data = await response.json();
-        setDomains(data.domains);
-        setDomainText('');
-        setMessage(`✅ Added ${data.domains.length} domains for analysis`);
+        if (response.ok) {
+          const data = await response.json();
+          setDomains(data.domains);
+          setDomainText('');
+          setMessage(`✅ Added ${data.domains.length} domains for analysis`);
+        } else {
+          throw new Error('Failed to create domains');
+        }
       } else {
-        throw new Error('Failed to create domains');
+        // Manual mode - create temporary domain objects for display
+        const tempDomains = domainList.map((domain, index) => ({
+          id: `temp-${index}`,
+          domain,
+          qualificationStatus: 'pending' as const,
+          keywordCount: manualKeywords.split(',').length,
+          targetPageIds: [],
+          checkedBy: undefined,
+          checkedAt: undefined,
+          notes: undefined
+        }));
+        
+        setDomains(tempDomains);
+        setDomainText('');
+        setMessage(`✅ Ready to analyze ${tempDomains.length} domains with manual keywords`);
       }
     } catch (error) {
       console.error('Error analyzing domains:', error);
@@ -232,12 +261,41 @@ export default function BulkAnalysisPage() {
             </div>
           )}
 
-          {/* Target Page Selection */}
+          {/* Keyword Source Selection */}
           <div className="bg-white rounded-lg shadow p-6 mb-6">
-            <h2 className="text-lg font-medium mb-4">1. Select Target Pages</h2>
-            <p className="text-sm text-gray-600 mb-4">
-              Choose which target pages to use for keyword analysis. Keywords from selected pages will be combined and deduplicated.
-            </p>
+            <div className="flex items-center justify-between mb-4">
+              <h2 className="text-lg font-medium">1. Choose Keyword Source</h2>
+              
+              {/* Mode Toggle */}
+              <div className="bg-gray-100 rounded-lg p-1 flex">
+                <button
+                  onClick={() => setKeywordInputMode('target-pages')}
+                  className={`px-4 py-2 text-sm rounded-md transition-colors ${
+                    keywordInputMode === 'target-pages'
+                      ? 'bg-white text-gray-900 shadow-sm'
+                      : 'text-gray-600 hover:text-gray-900'
+                  }`}
+                >
+                  Target Pages
+                </button>
+                <button
+                  onClick={() => setKeywordInputMode('manual')}
+                  className={`px-4 py-2 text-sm rounded-md transition-colors ${
+                    keywordInputMode === 'manual'
+                      ? 'bg-white text-gray-900 shadow-sm'
+                      : 'text-gray-600 hover:text-gray-900'
+                  }`}
+                >
+                  Manual Keywords
+                </button>
+              </div>
+            </div>
+            
+            {keywordInputMode === 'target-pages' ? (
+              <>
+                <p className="text-sm text-gray-600 mb-4">
+                  Choose which target pages to use for keyword analysis. Keywords from selected pages will be combined and deduplicated.
+                </p>
             
             {targetPages.length === 0 ? (
               <div className="text-center py-8 text-gray-500">
@@ -246,8 +304,35 @@ export default function BulkAnalysisPage() {
                 <p className="text-sm mt-2">Please add target pages and generate keywords first.</p>
               </div>
             ) : (
-              <div className="space-y-2 max-h-60 overflow-y-auto">
-                {targetPages.map((page) => (
+              <>
+                {/* Select All Controls */}
+                <div className="flex items-center justify-between mb-3">
+                  <p className="text-sm text-gray-600">
+                    Select target pages to use their keywords for analysis
+                  </p>
+                  <div className="flex space-x-2">
+                    <button
+                      onClick={() => {
+                        const allPageIds = targetPages
+                          .filter(page => (page as any).keywords && (page as any).keywords.trim() !== '')
+                          .map(page => page.id);
+                        setSelectedTargetPages(allPageIds);
+                      }}
+                      className="text-xs px-3 py-1 bg-indigo-600 text-white rounded hover:bg-indigo-700 transition-colors"
+                    >
+                      Select All ({targetPages.filter(page => (page as any).keywords && (page as any).keywords.trim() !== '').length})
+                    </button>
+                    <button
+                      onClick={() => setSelectedTargetPages([])}
+                      className="text-xs px-3 py-1 border border-gray-300 text-gray-700 rounded hover:bg-gray-50 transition-colors"
+                    >
+                      Clear All
+                    </button>
+                  </div>
+                </div>
+                
+                <div className="space-y-2 max-h-60 overflow-y-auto">
+                  {targetPages.map((page) => (
                   <label key={page.id} className="flex items-start space-x-3 p-3 border rounded-lg hover:bg-gray-50 cursor-pointer">
                     <input
                       type="checkbox"
@@ -268,8 +353,9 @@ export default function BulkAnalysisPage() {
                       </div>
                     </div>
                   </label>
-                ))}
-              </div>
+                  ))}
+                </div>
+              </>
             )}
             
             {selectedTargetPages.length > 0 && (
@@ -286,13 +372,52 @@ export default function BulkAnalysisPage() {
                 } (deduplicated)
               </div>
             )}
+              </>
+            ) : (
+              <>
+                <p className="text-sm text-gray-600 mb-4">
+                  Enter keywords manually for quick research without setting up target pages.
+                </p>
+                
+                <div className="space-y-4">
+                  <div>
+                    <label className="block text-sm font-medium text-gray-700 mb-2">
+                      Keywords (comma-separated)
+                    </label>
+                    <textarea
+                      value={manualKeywords}
+                      onChange={(e) => setManualKeywords(e.target.value)}
+                      placeholder="seo tools, content marketing, guest posting, link building, digital marketing"
+                      className="w-full h-24 px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-indigo-500 focus:border-transparent"
+                    />
+                    {manualKeywords && (
+                      <p className="text-xs text-gray-500 mt-1">
+                        {manualKeywords.split(',').filter(k => k.trim()).length} keywords entered
+                      </p>
+                    )}
+                  </div>
+                  
+                  <div className="bg-blue-50 border border-blue-200 rounded-lg p-3">
+                    <h4 className="text-sm font-medium text-blue-900 mb-1">💡 Quick Research Mode</h4>
+                    <p className="text-xs text-blue-800">
+                      Perfect for ad-hoc research. Enter any keywords you want to check against domains. 
+                      Results won't be saved to the database but you'll get instant Ahrefs analysis.
+                    </p>
+                  </div>
+                </div>
+              </>
+            )}
           </div>
 
           {/* Domain Input */}
           <div className="bg-white rounded-lg shadow p-6 mb-6">
             <h2 className="text-lg font-medium mb-4">2. Enter Domains to Analyze</h2>
             <p className="text-sm text-gray-600 mb-4">
-              Paste domains to analyze (one per line). Domains will be checked against keywords from selected target pages.
+              Paste domains to analyze (one per line). Domains will be checked against {
+                keywordInputMode === 'manual' 
+                  ? 'the keywords you entered above'
+                  : 'keywords from selected target pages'
+              }.
             </p>
             
             <textarea
@@ -315,7 +440,9 @@ export default function BulkAnalysisPage() {
             
             <button
               onClick={handleAnalyze}
-              disabled={loading || selectedTargetPages.length === 0 || !domainText.trim()}
+              disabled={loading || 
+                (keywordInputMode === 'target-pages' ? selectedTargetPages.length === 0 : !manualKeywords.trim()) || 
+                !domainText.trim()}
               className="mt-4 px-4 py-2 bg-indigo-600 text-white rounded-lg hover:bg-indigo-700 disabled:opacity-50 disabled:cursor-not-allowed flex items-center"
             >
               {loading ? (
@@ -377,14 +504,26 @@ export default function BulkAnalysisPage() {
               
               <div className="grid gap-4">
                 {domains.map((domain) => {
-                  // Get keywords for this domain's target pages
-                  const keywords = targetPages
-                    .filter(p => domain.targetPageIds.includes(p.id))
-                    .reduce((acc, p) => {
-                      const pageKeywords = (p as any).keywords?.split(',').map((k: string) => k.trim()) || [];
-                      pageKeywords.forEach((k: string) => acc.add(k));
-                      return acc;
-                    }, new Set<string>());
+                  // Get keywords based on mode
+                  let keywords: Set<string>;
+                  if (keywordInputMode === 'manual') {
+                    // Use manual keywords
+                    keywords = new Set(
+                      manualKeywords
+                        .split(',')
+                        .map(k => k.trim())
+                        .filter(k => k.length > 0)
+                    );
+                  } else {
+                    // Get keywords for this domain's target pages
+                    keywords = targetPages
+                      .filter(p => domain.targetPageIds.includes(p.id))
+                      .reduce((acc, p) => {
+                        const pageKeywords = (p as any).keywords?.split(',').map((k: string) => k.trim()) || [];
+                        pageKeywords.forEach((k: string) => acc.add(k));
+                        return acc;
+                      }, new Set<string>());
+                  }
                   
                   const keywordArray = Array.from(keywords);
                   const keywordBatches = [];
