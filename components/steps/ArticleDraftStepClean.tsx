@@ -584,6 +584,38 @@ ${outlineContent || '((((Complete Step 3: Deep Research first to get outline con
             </div>
           ) : activeTab === 'agenticV2' ? (
             <div className="space-y-6">
+              {/* Google Doc Setup */}
+              <div className="bg-yellow-50 border border-yellow-200 rounded-lg p-4">
+                <h4 className="font-medium text-yellow-800 mb-2">📄 Create a Google Doc for Your Article</h4>
+                <ol className="list-decimal list-inside text-sm text-yellow-700 space-y-1 mb-3">
+                  <li>1. <a href="https://docs.new" target="_blank" className="text-blue-600 hover:underline font-medium">Click here to create a new Google Doc</a></li>
+                  <li>2. Name it something descriptive (e.g., "Article - [Topic Name]")</li>
+                  <li>3. Copy the Google Doc URL and paste it below</li>
+                  <li>4. Keep this Doc open to paste generated content</li>
+                </ol>
+                <p className="text-sm text-yellow-700 mt-2">
+                  <strong>Purpose:</strong> The V2 agent will generate your article section by section. You can copy the generated content to your Google Doc for editing and organization.
+                </p>
+              </div>
+
+              <SavedField
+                label="Google Doc URL"
+                value={step.outputs.googleDocUrl || ''}
+                placeholder="https://docs.google.com/document/d/..."
+                onChange={(value) => onChange({ ...step.outputs, googleDocUrl: value })}
+              />
+
+              {step.outputs.googleDocUrl && (
+                <div className="bg-green-50 border border-green-200 rounded-lg p-3">
+                  <div className="flex items-center">
+                    <CheckCircle className="w-4 h-4 text-green-600 mr-2" />
+                    <p className="text-sm text-green-800">
+                      Google Doc ready! The AI will generate your article below.
+                    </p>
+                  </div>
+                </div>
+              )}
+
               {/* V2 Agentic Article Generator */}
               <AgenticArticleGeneratorV2
                   workflowId={workflow.id}
