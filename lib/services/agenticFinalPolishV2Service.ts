@@ -246,6 +246,11 @@ export class AgenticFinalPolishV2Service {
       const firstSectionResponse = this.extractAssistantResponse(conversationHistory);
       const firstSectionData = this.parsePolishResponse(firstSectionResponse);
       
+      // Log parsing method and confidence if available
+      if (firstSectionData.method && firstSectionData.confidence !== undefined) {
+        console.log(`📊 Parsing method: ${firstSectionData.method}, confidence: ${firstSectionData.confidence.toFixed(2)}`);
+      }
+      
       // FIRST: Process any parsed section content (even if it comes with completion marker)
       if (firstSectionData.parsed) {
         polishedSections.push(firstSectionData.parsed);
@@ -354,6 +359,11 @@ export class AgenticFinalPolishV2Service {
 
         const sectionResponse = this.extractAssistantResponse(conversationHistory);
         const sectionData = this.parsePolishResponse(sectionResponse);
+        
+        // Log parsing method and confidence if available
+        if (sectionData.method && sectionData.confidence !== undefined) {
+          console.log(`📊 Parsing method: ${sectionData.method}, confidence: ${sectionData.confidence.toFixed(2)}`);
+        }
         
         // FIRST: Process any parsed section content (including last section with completion marker)
         if (sectionData.parsed) {
@@ -469,58 +479,269 @@ export class AgenticFinalPolishV2Service {
       weaknesses: string[];
       updatedSection: string;
     };
+    confidence?: number;
+    method?: 'exact' | 'fuzzy' | 'structure' | 'fallback';
   } {
     try {
       const result: any = {};
       
-      // FIRST: Try to extract section content (before checking completion status)
-      // Make regex more flexible to handle varying numbers of equals signs (1-3)
-      const strengthsMatch = response.match(/={1,3}STRENGTHS_START={0,3}\s*([\s\S]*?)\s*={1,3}STRENGTHS_END={0,3}/);
-      const weaknessesMatch = response.match(/={1,3}WEAKNESSES_START={0,3}\s*([\s\S]*?)\s*={1,3}WEAKNESSES_END={0,3}/);
-      const updatedMatch = response.match(/={1,3}UPDATED_SECTION_START={0,3}\s*([\s\S]*?)\s*={1,3}UPDATED_SECTION_END={0,3}/);
-      
-      if (strengthsMatch && weaknessesMatch && updatedMatch) {
-        // Parse strengths and weaknesses as arrays (one per line)
-        const strengths = strengthsMatch[1]
-          .split('\n')
-          .map(s => s.trim())
-          .filter(s => s.length > 0 && !s.includes('(more strengths'));
-          
-        const weaknesses = weaknessesMatch[1]
-          .split('\n')
-          .map(w => w.trim())
-          .filter(w => w.length > 0 && !w.includes('(more weaknesses'));
-          
-        const updatedSection = updatedMatch[1].trim();
-        
-        result.parsed = {
-          strengths,
-          weaknesses,
-          updatedSection
-        };
-        
-        console.log(`📦 Parsed section content with ${strengths.length} strengths, ${weaknesses.length} weaknesses`);
-      } else {
-        // Log which patterns failed to match for debugging
-        console.log('⚠️ Delimiter parsing details:', {
-          hasStrengths: !!strengthsMatch,
-          hasWeaknesses: !!weaknessesMatch,
-          hasUpdated: !!updatedMatch
-        });
+      // Method 1: Try exact delimiter matching first (highest confidence)
+      const exactResult = this.tryExactDelimiterParsing(response);
+      if (exactResult.parsed) {
+        return { ...exactResult, confidence: 1.0, method: 'exact' };
       }
       
-      // SECOND: Check if it's the completion status (after extracting any content)
-      // Also make this more flexible
+      // Method 2: Try fuzzy delimiter matching (medium-high confidence)
+      const fuzzyResult = this.tryFuzzyDelimiterParsing(response);
+      if (fuzzyResult.parsed && fuzzyResult.confidence > 0.7) {
+        return { ...fuzzyResult, method: 'fuzzy' };
+      }
+      
+      // Method 3: Try structure-based parsing (medium confidence)
+      const structureResult = this.tryStructureBasedParsing(response);
+      if (structureResult.parsed && structureResult.confidence > 0.5) {
+        return { ...structureResult, method: 'structure' };
+      }
+      
+      // Method 4: Fallback parsing (low confidence)
+      const fallbackResult = this.tryFallbackParsing(response);
+      if (fallbackResult.parsed) {
+        console.log('⚠️ Using fallback parsing method');
+        return { ...fallbackResult, method: 'fallback' };
+      }
+      
+      // Check for completion marker regardless of parsing success
       if (response.includes('POLISH_COMPLETE') || response.includes('===POLISH_COMPLETE===')) {
         result.status = 'complete';
-        console.log('🏁 Found POLISH_COMPLETE marker' + (result.parsed ? ' (with section content)' : ''));
+        console.log('🏁 Found POLISH_COMPLETE marker (no content parsed)');
       }
       
       return result;
     } catch (error) {
-      console.error('Failed to parse delimiter response:', error, 'Response:', response.substring(0, 200));
+      console.error('Failed to parse polish response:', error);
       return {};
     }
+  }
+  
+  private tryExactDelimiterParsing(response: string): any {
+    // Original exact matching with flexible equals signs
+    const strengthsMatch = response.match(/={1,3}STRENGTHS_START={0,3}\s*([\s\S]*?)\s*={1,3}STRENGTHS_END={0,3}/);
+    const weaknessesMatch = response.match(/={1,3}WEAKNESSES_START={0,3}\s*([\s\S]*?)\s*={1,3}WEAKNESSES_END={0,3}/);
+    const updatedMatch = response.match(/={1,3}UPDATED_SECTION_START={0,3}\s*([\s\S]*?)\s*={1,3}UPDATED_SECTION_END={0,3}/);
+    
+    if (strengthsMatch && weaknessesMatch && updatedMatch) {
+      const strengths = this.parseListContent(strengthsMatch[1], 'strengths');
+      const weaknesses = this.parseListContent(weaknessesMatch[1], 'weaknesses');
+      const updatedSection = updatedMatch[1].trim();
+      
+      console.log(`✅ Exact delimiter parsing successful`);
+      return {
+        parsed: { strengths, weaknesses, updatedSection },
+        confidence: 1.0
+      };
+    }
+    
+    return {};
+  }
+  
+  private tryFuzzyDelimiterParsing(response: string): any {
+    const lines = response.split('\n');
+    const sections: any = {
+      strengths: { start: -1, end: -1, content: [] },
+      weaknesses: { start: -1, end: -1, content: [] },
+      updated: { start: -1, end: -1, content: '' }
+    };
+    
+    // Find fuzzy matches for delimiters
+    lines.forEach((line, index) => {
+      const normalized = line.toLowerCase().replace(/[^a-z]/g, '');
+      
+      // Fuzzy matching for section markers
+      if (this.isSimilarTo(normalized, 'strengthsstart') || this.isSimilarTo(normalized, 'strengthstart')) {
+        sections.strengths.start = index;
+      } else if (this.isSimilarTo(normalized, 'strengthsend') || this.isSimilarTo(normalized, 'strengthend')) {
+        sections.strengths.end = index;
+      } else if (this.isSimilarTo(normalized, 'weaknessesstart') || this.isSimilarTo(normalized, 'weaknessstart')) {
+        sections.weaknesses.start = index;
+      } else if (this.isSimilarTo(normalized, 'weaknessesend') || this.isSimilarTo(normalized, 'weaknessend')) {
+        sections.weaknesses.end = index;
+      } else if (this.isSimilarTo(normalized, 'updatedsectionstart') || normalized.includes('updatedsection')) {
+        sections.updated.start = index;
+      } else if (this.isSimilarTo(normalized, 'updatedsectionend')) {
+        sections.updated.end = index;
+      }
+    });
+    
+    // Extract content between markers
+    let confidence = 0;
+    const parsed: any = {};
+    
+    // Extract strengths
+    if (sections.strengths.start >= 0 && sections.strengths.end > sections.strengths.start) {
+      const content = lines.slice(sections.strengths.start + 1, sections.strengths.end);
+      parsed.strengths = this.parseListContent(content.join('\n'), 'strengths');
+      confidence += 0.33;
+    }
+    
+    // Extract weaknesses
+    if (sections.weaknesses.start >= 0 && sections.weaknesses.end > sections.weaknesses.start) {
+      const content = lines.slice(sections.weaknesses.start + 1, sections.weaknesses.end);
+      parsed.weaknesses = this.parseListContent(content.join('\n'), 'weaknesses');
+      confidence += 0.33;
+    }
+    
+    // Extract updated section
+    if (sections.updated.start >= 0) {
+      // If no end marker, take everything until next section or end
+      const endIndex = sections.updated.end > 0 ? sections.updated.end : 
+                       this.findNextSectionStart(lines, sections.updated.start);
+      const content = lines.slice(sections.updated.start + 1, endIndex);
+      parsed.updatedSection = content.join('\n').trim();
+      confidence += 0.34;
+    }
+    
+    if (confidence > 0.5) {
+      console.log(`🔍 Fuzzy delimiter parsing with confidence ${confidence.toFixed(2)}`);
+      return { parsed, confidence };
+    }
+    
+    return {};
+  }
+  
+  private tryStructureBasedParsing(response: string): any {
+    // Split by lines that look like delimiters (3+ equals or similar)
+    const chunks = response.split(/\n[=\-_]{3,}.*[=\-_]{0,}\n/);
+    
+    if (chunks.length < 3) {
+      return {};
+    }
+    
+    const parsed: any = {};
+    let confidence = 0;
+    
+    // Analyze each chunk to determine what it contains
+    chunks.forEach((chunk, index) => {
+      const contentType = this.identifyContentType(chunk);
+      
+      if (contentType === 'strengths' && !parsed.strengths) {
+        parsed.strengths = this.parseListContent(chunk, 'strengths');
+        confidence += 0.3;
+      } else if (contentType === 'weaknesses' && !parsed.weaknesses) {
+        parsed.weaknesses = this.parseListContent(chunk, 'weaknesses');
+        confidence += 0.3;
+      } else if (contentType === 'updated' && !parsed.updatedSection) {
+        parsed.updatedSection = chunk.trim();
+        confidence += 0.4;
+      }
+    });
+    
+    if (confidence > 0.5) {
+      console.log(`📊 Structure-based parsing with confidence ${confidence.toFixed(2)}`);
+      return { parsed, confidence };
+    }
+    
+    return {};
+  }
+  
+  private tryFallbackParsing(response: string): any {
+    // Last resort: assume order and split by empty lines or obvious transitions
+    const sections = response.split(/\n\n+/);
+    
+    if (sections.length < 3) {
+      return {};
+    }
+    
+    // Take first non-empty sections
+    const nonEmptySections = sections.filter(s => s.trim().length > 50);
+    
+    if (nonEmptySections.length >= 3) {
+      const parsed = {
+        strengths: this.parseListContent(nonEmptySections[0], 'strengths'),
+        weaknesses: this.parseListContent(nonEmptySections[1], 'weaknesses'),
+        updatedSection: nonEmptySections[2].trim()
+      };
+      
+      // Validate that we got reasonable content
+      if (parsed.strengths.length > 0 && parsed.weaknesses.length > 0 && 
+          parsed.updatedSection.length > 100) {
+        console.log(`🔧 Fallback parsing extracted content`);
+        return { parsed, confidence: 0.3 };
+      }
+    }
+    
+    return {};
+  }
+  
+  private isSimilarTo(str1: string, str2: string): boolean {
+    // Simple similarity check - could be replaced with Levenshtein distance
+    if (str1 === str2) return true;
+    
+    // Check if one contains the other
+    if (str1.includes(str2) || str2.includes(str1)) return true;
+    
+    // Check if they're very close in length and share most characters
+    if (Math.abs(str1.length - str2.length) <= 2) {
+      const commonChars = str1.split('').filter(char => str2.includes(char)).length;
+      return commonChars / Math.max(str1.length, str2.length) > 0.8;
+    }
+    
+    return false;
+  }
+  
+  private identifyContentType(text: string): 'strengths' | 'weaknesses' | 'updated' | 'unknown' {
+    const trimmed = text.trim();
+    
+    // Check for markdown headers (likely updated section)
+    if (trimmed.match(/^#{1,3}\s/m)) {
+      return 'updated';
+    }
+    
+    // Check line patterns
+    const lines = trimmed.split('\n').filter(line => line.trim());
+    if (lines.length === 0) return 'unknown';
+    
+    const avgLineLength = lines.reduce((sum, line) => sum + line.length, 0) / lines.length;
+    
+    // Short lines suggest lists (strengths/weaknesses)
+    if (avgLineLength < 100 && lines.length >= 2) {
+      // Look for positive vs negative language
+      const content = trimmed.toLowerCase();
+      const positiveWords = (content.match(/good|strong|effective|clear|well|excellent|solid/g) || []).length;
+      const negativeWords = (content.match(/lacks?|missing|exceeds?|should|could|needs?|weak|poor/g) || []).length;
+      
+      if (positiveWords > negativeWords * 2) return 'strengths';
+      if (negativeWords > positiveWords) return 'weaknesses';
+    }
+    
+    // Longer content is likely the updated section
+    if (trimmed.length > 500) return 'updated';
+    
+    return 'unknown';
+  }
+  
+  private parseListContent(content: string, type: 'strengths' | 'weaknesses'): string[] {
+    return content
+      .split('\n')
+      .map(line => line.trim())
+      .filter(line => {
+        // Remove empty lines and template instructions
+        if (!line || line.length < 3) return false;
+        if (line.includes(`(more ${type}`)) return false;
+        if (line.match(/^[=\-_]+$/)) return false; // Remove delimiter lines
+        return true;
+      });
+  }
+  
+  private findNextSectionStart(lines: string[], currentIndex: number): number {
+    // Find the next line that looks like a section delimiter
+    for (let i = currentIndex + 1; i < lines.length; i++) {
+      const normalized = lines[i].toLowerCase().replace(/[^a-z]/g, '');
+      if (normalized.includes('start') || normalized.includes('end') || 
+          lines[i].match(/^[=\-_]{3,}/)) {
+        return i;
+      }
+    }
+    return lines.length;
   }
 
   private async savePolishedArticleToWorkflow(workflowId: string, polishedArticle: string): Promise<void> {
