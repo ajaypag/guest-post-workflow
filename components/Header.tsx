@@ -5,7 +5,7 @@ import { useRouter } from 'next/navigation';
 import { sessionStorage } from '@/lib/userStorage';
 import { type AuthSession } from '@/lib/auth';
 import { useState, useEffect } from 'react';
-import { User, LogOut, Users, Building2, Zap, Search } from 'lucide-react';
+import { User, LogOut, Users, Building2, Zap, Search, BarChart2 } from 'lucide-react';
 
 export default function Header() {
   const router = useRouter();
@@ -56,6 +56,13 @@ export default function Header() {
             >
               <Building2 className="w-4 h-4 mr-1.5" />
               Clients
+            </Link>
+            <Link
+              href="/bulk-analysis"
+              className="text-gray-600 hover:text-gray-900 hover:bg-gray-50 px-3 py-2 rounded-lg text-sm font-medium transition-colors flex items-center"
+            >
+              <BarChart2 className="w-4 h-4 mr-1.5" />
+              Bulk Analysis
             </Link>
             {session.role === 'admin' && (
               <Link

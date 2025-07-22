@@ -7,7 +7,7 @@ import AuthWrapper from '@/components/AuthWrapper';
 import Header from '@/components/Header';
 import { clientStorage, sessionStorage } from '@/lib/userStorage';
 import { Client } from '@/types/user';
-import { Building2, Plus, Users, Globe, CheckCircle, XCircle, Clock, Edit, Trash2, X } from 'lucide-react';
+import { Building2, Plus, Users, Globe, CheckCircle, XCircle, Clock, Edit, Trash2, X, BarChart2 } from 'lucide-react';
 
 export default function ClientsPage() {
   const router = useRouter();
@@ -361,12 +361,19 @@ export default function ClientsPage() {
                       </div>
                     </div>
 
-                    <div className="mt-4 pt-4 border-t">
+                    <div className="mt-4 pt-4 border-t space-y-2">
                       <Link
                         href={`/clients/${client.id}`}
                         className="w-full inline-flex justify-center items-center px-4 py-2 bg-blue-600 text-white text-sm font-medium rounded-md hover:bg-blue-700"
                       >
                         Manage Target Pages
+                      </Link>
+                      <Link
+                        href={`/clients/${client.id}/bulk-analysis`}
+                        className="w-full inline-flex justify-center items-center px-4 py-2 bg-purple-600 text-white text-sm font-medium rounded-md hover:bg-purple-700"
+                      >
+                        <BarChart2 className="w-4 h-4 mr-2" />
+                        Bulk Domain Analysis
                       </Link>
                     </div>
                   </div>
