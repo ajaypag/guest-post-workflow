@@ -10,7 +10,7 @@ import { Client, TargetPage } from '@/types/user';
 import { 
   ArrowLeft, Plus, Trash2, CheckCircle, XCircle, Clock, 
   Edit, Globe, ExternalLink, Check, Settings, ChevronDown, ChevronUp,
-  FileText, Target, AlertCircle
+  FileText, Target, AlertCircle, BarChart2
 } from 'lucide-react';
 import { KeywordPreferencesSelector } from '@/components/ui/KeywordPreferencesSelector';
 import { getClientKeywordPreferences, setClientKeywordPreferences, KeywordPreferences } from '@/types/keywordPreferences';
@@ -602,6 +602,13 @@ export default function ClientDetailPage() {
                   className="inline-flex items-center px-4 py-2 bg-green-600 text-white text-sm font-medium rounded-md hover:bg-green-700"
                 >
                   Create Workflow
+                </Link>
+                <Link
+                  href={`/clients/${client.id}/bulk-analysis`}
+                  className="inline-flex items-center px-4 py-2 bg-indigo-600 text-white text-sm font-medium rounded-md hover:bg-indigo-700"
+                >
+                  <BarChart2 className="w-4 h-4 mr-2" />
+                  Bulk Analysis
                 </Link>
                 <button
                   onClick={() => setShowKeywordPrefs(true)}
