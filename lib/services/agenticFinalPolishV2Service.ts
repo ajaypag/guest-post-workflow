@@ -468,9 +468,10 @@ export class AgenticFinalPolishV2Service {
       const result: any = {};
       
       // FIRST: Try to extract section content (before checking completion status)
-      const strengthsMatch = response.match(/===STRENGTHS_START===\s*([\s\S]*?)\s*===STRENGTHS_END===/);
-      const weaknessesMatch = response.match(/===WEAKNESSES_START===\s*([\s\S]*?)\s*===WEAKNESSES_END===/);
-      const updatedMatch = response.match(/===UPDATED_SECTION_START===\s*([\s\S]*?)\s*===UPDATED_SECTION_END===/);
+      // Make regex more flexible to handle varying numbers of equals signs (1-3)
+      const strengthsMatch = response.match(/={1,3}STRENGTHS_START={0,3}\s*([\s\S]*?)\s*={1,3}STRENGTHS_END={0,3}/);
+      const weaknessesMatch = response.match(/={1,3}WEAKNESSES_START={0,3}\s*([\s\S]*?)\s*={1,3}WEAKNESSES_END={0,3}/);
+      const updatedMatch = response.match(/={1,3}UPDATED_SECTION_START={0,3}\s*([\s\S]*?)\s*={1,3}UPDATED_SECTION_END={0,3}/);
       
       if (strengthsMatch && weaknessesMatch && updatedMatch) {
         // Parse strengths and weaknesses as arrays (one per line)
@@ -493,10 +494,18 @@ export class AgenticFinalPolishV2Service {
         };
         
         console.log(`📦 Parsed section content with ${strengths.length} strengths, ${weaknesses.length} weaknesses`);
+      } else {
+        // Log which patterns failed to match for debugging
+        console.log('⚠️ Delimiter parsing details:', {
+          hasStrengths: !!strengthsMatch,
+          hasWeaknesses: !!weaknessesMatch,
+          hasUpdated: !!updatedMatch
+        });
       }
       
       // SECOND: Check if it's the completion status (after extracting any content)
-      if (response.includes('===POLISH_COMPLETE===')) {
+      // Also make this more flexible
+      if (response.includes('POLISH_COMPLETE') || response.includes('===POLISH_COMPLETE===')) {
         result.status = 'complete';
         console.log('🏁 Found POLISH_COMPLETE marker' + (result.parsed ? ' (with section content)' : ''));
       }
