@@ -1,5 +1,6 @@
 import { db } from './connection';
-import { bulkAnalysisDomains, targetPages, BulkAnalysisDomain, TargetPage } from './schema';
+import { targetPages, TargetPage } from './schema';
+import { bulkAnalysisDomains, BulkAnalysisDomain } from './bulkAnalysisSchema';
 import { eq, and, inArray, sql } from 'drizzle-orm';
 import { v4 as uuidv4 } from 'uuid';
 
