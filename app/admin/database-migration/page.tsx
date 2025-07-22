@@ -939,6 +939,83 @@ export default function DatabaseMigrationPage() {
     setIsLoading(false);
   };
 
+  const checkBulkAnalysisStatus = async () => {
+    setIsLoading(true);
+    setMessage('');
+    
+    try {
+      const response = await fetch('/api/admin/migrate-bulk-analysis');
+      const data = await response.json();
+      
+      if (data.exists) {
+        setMessage(`✅ Bulk analysis domains table exists (${data.domainCount || 0} domains)`);
+        setMessageType('success');
+      } else {
+        setMessage('ℹ️ Bulk analysis domains table does not exist');
+        setMessageType('info');
+      }
+    } catch (error) {
+      setMessage(`❌ Error checking table: ${error instanceof Error ? error.message : 'Unknown error'}`);
+      setMessageType('error');
+    }
+    
+    setIsLoading(false);
+  };
+
+  const runBulkAnalysisMigration = async () => {
+    setIsLoading(true);
+    setMessage('');
+    
+    try {
+      const response = await fetch('/api/admin/migrate-bulk-analysis', {
+        method: 'POST'
+      });
+      const data = await response.json();
+      
+      if (data.success) {
+        setMessage('✅ Bulk analysis domains table created successfully!');
+        setMessageType('success');
+      } else {
+        setMessage(`❌ Migration failed: ${data.error}`);
+        setMessageType('error');
+      }
+    } catch (error) {
+      setMessage(`❌ Error: ${error instanceof Error ? error.message : 'Unknown error'}`);
+      setMessageType('error');
+    }
+    
+    setIsLoading(false);
+  };
+
+  const runBulkAnalysisRollback = async () => {
+    if (!confirm('Are you sure you want to remove the bulk analysis domains table? This will delete all domain qualification data.')) {
+      return;
+    }
+    
+    setIsLoading(true);
+    setMessage('');
+    
+    try {
+      const response = await fetch('/api/admin/migrate-bulk-analysis?confirm=true', {
+        method: 'DELETE'
+      });
+      const data = await response.json();
+      
+      if (data.success) {
+        setMessage('✅ Bulk analysis domains table removed successfully!');
+        setMessageType('success');
+      } else {
+        setMessage(`❌ Rollback failed: ${data.error}`);
+        setMessageType('error');
+      }
+    } catch (error) {
+      setMessage(`❌ Error: ${error instanceof Error ? error.message : 'Unknown error'}`);
+      setMessageType('error');
+    }
+    
+    setIsLoading(false);
+  };
+
   return (
     <div className="min-h-screen bg-gray-50 py-8">
       <div className="max-w-4xl mx-auto px-4 sm:px-6 lg:px-8">
@@ -1813,6 +1890,81 @@ export default function DatabaseMigrationPage() {
               >
                 <RotateCcw className="w-4 h-4 mr-2" />
                 {isLoading ? 'Rolling Back...' : 'Remove V2 Tables'}
+              </button>
+            </div>
+          </div>
+
+          {/* Bulk Analysis Migration Section */}
+          <div className="mb-8">
+            <h2 className="text-lg font-semibold text-gray-900 mb-4">Bulk Domain Analysis Migration</h2>
+            <p className="text-gray-600 mb-4">
+              This migration creates the <code className="bg-gray-100 px-2 py-1 rounded">bulk_analysis_domains</code> table
+              for pre-workflow guest post site qualification. Analyze multiple domains at once against your target page keywords.
+            </p>
+            
+            <div className="bg-indigo-50 border border-indigo-200 rounded-lg p-4 mb-6">
+              <div className="flex items-start space-x-3">
+                <AlertTriangle className="w-5 h-5 text-indigo-600 mt-0.5" />
+                <div>
+                  <h3 className="text-sm font-semibold text-indigo-800">Bulk Analysis Features:</h3>
+                  <ul className="text-sm text-indigo-700 mt-2 space-y-1">
+                    <li>• Pre-qualify guest post sites before creating workflows</li>
+                    <li>• Analyze 20-30 domains at once against target keywords</li>
+                    <li>• Track qualification status (qualified/disqualified)</li>
+                    <li>• Create workflows directly from qualified domains</li>
+                    <li>• Deduplication of previously checked domains</li>
+                  </ul>
+                </div>
+              </div>
+            </div>
+          </div>
+
+          <div className="space-y-4 mb-8">
+            {/* Check Bulk Analysis Status */}
+            <div className="border border-gray-200 rounded-lg p-4">
+              <h3 className="font-semibold text-gray-900 mb-2">Check Bulk Analysis Status</h3>
+              <p className="text-gray-600 text-sm mb-3">
+                Check if the bulk_analysis_domains table exists in your database.
+              </p>
+              <button
+                onClick={checkBulkAnalysisStatus}
+                disabled={isLoading}
+                className="inline-flex items-center px-4 py-2 bg-blue-600 text-white text-sm font-medium rounded-md hover:bg-blue-700 disabled:opacity-50 disabled:cursor-not-allowed"
+              >
+                <Database className="w-4 h-4 mr-2" />
+                {isLoading ? 'Checking...' : 'Check Status'}
+              </button>
+            </div>
+
+            {/* Create Bulk Analysis Table */}
+            <div className="border border-green-200 rounded-lg p-4">
+              <h3 className="font-semibold text-gray-900 mb-2">Create Bulk Analysis Table</h3>
+              <p className="text-gray-600 text-sm mb-3">
+                Create the bulk_analysis_domains table to enable bulk domain qualification features.
+              </p>
+              <button
+                onClick={runBulkAnalysisMigration}
+                disabled={isLoading}
+                className="inline-flex items-center px-4 py-2 bg-green-600 text-white text-sm font-medium rounded-md hover:bg-green-700 disabled:opacity-50 disabled:cursor-not-allowed"
+              >
+                <Play className="w-4 h-4 mr-2" />
+                {isLoading ? 'Creating Table...' : 'Create Table'}
+              </button>
+            </div>
+
+            {/* Bulk Analysis Rollback */}
+            <div className="border border-red-200 rounded-lg p-4">
+              <h3 className="font-semibold text-gray-900 mb-2">Remove Bulk Analysis Table (Rollback)</h3>
+              <p className="text-gray-600 text-sm mb-3">
+                Remove the bulk_analysis_domains table and all qualification data. This action cannot be undone.
+              </p>
+              <button
+                onClick={runBulkAnalysisRollback}
+                disabled={isLoading}
+                className="inline-flex items-center px-4 py-2 bg-red-600 text-white text-sm font-medium rounded-md hover:bg-red-700 disabled:opacity-50 disabled:cursor-not-allowed"
+              >
+                <RotateCcw className="w-4 h-4 mr-2" />
+                {isLoading ? 'Removing...' : 'Remove Table'}
               </button>
             </div>
           </div>

@@ -1,0 +1,248 @@
+import { db } from './connection';
+import { bulkAnalysisDomains, targetPages, BulkAnalysisDomain, TargetPage } from './schema';
+import { eq, and, inArray, sql } from 'drizzle-orm';
+import { v4 as uuidv4 } from 'uuid';
+
+export interface BulkAnalysisInput {
+  clientId: string;
+  domains: string[];
+  targetPageIds: string[];
+  userId: string;
+}
+
+export interface BulkAnalysisResult extends BulkAnalysisDomain {
+  targetPages?: TargetPage[];
+  keywords?: string[];
+}
+
+export class BulkAnalysisService {
+  /**
+   * Clean and normalize domain
+   */
+  private static cleanDomain(domain: string): string {
+    return domain
+      .toLowerCase()
+      .replace(/^https?:\/\//, '')
+      .replace(/^www\./, '')
+      .replace(/\/$/, '')
+      .trim();
+  }
+
+  /**
+   * Get all bulk analysis domains for a client
+   */
+  static async getClientDomains(clientId: string): Promise<BulkAnalysisResult[]> {
+    try {
+      const domains = await db
+        .select()
+        .from(bulkAnalysisDomains)
+        .where(eq(bulkAnalysisDomains.clientId, clientId))
+        .orderBy(bulkAnalysisDomains.createdAt);
+
+      return domains;
+    } catch (error) {
+      console.error('Error fetching client domains:', error);
+      throw error;
+    }
+  }
+
+  /**
+   * Create or update bulk analysis domains
+   */
+  static async createOrUpdateDomains(input: BulkAnalysisInput): Promise<BulkAnalysisResult[]> {
+    try {
+      const { clientId, domains, targetPageIds, userId } = input;
+      
+      // Clean domains
+      const cleanedDomains = domains.map(d => this.cleanDomain(d)).filter(Boolean);
+      
+      // Get target pages and their keywords
+      const pages = await db
+        .select()
+        .from(targetPages)
+        .where(
+          and(
+            eq(targetPages.clientId, clientId),
+            inArray(targetPages.id, targetPageIds)
+          )
+        );
+
+      // Aggregate and dedupe keywords
+      const allKeywords = new Set<string>();
+      pages.forEach(page => {
+        if (page.keywords) {
+          const keywords = page.keywords.split(',').map(k => k.trim());
+          keywords.forEach(k => allKeywords.add(k));
+        }
+      });
+      const keywordCount = allKeywords.size;
+
+      // Prepare bulk insert/update data
+      const domainRecords = cleanedDomains.map(domain => ({
+        id: uuidv4(),
+        clientId,
+        domain,
+        qualificationStatus: 'pending' as const,
+        targetPageIds: targetPageIds,
+        keywordCount,
+        checkedBy: null,
+        checkedAt: null,
+        notes: null,
+        createdAt: new Date(),
+        updatedAt: new Date(),
+      }));
+
+      // Insert domains with ON CONFLICT UPDATE
+      const insertedDomains = await db
+        .insert(bulkAnalysisDomains)
+        .values(domainRecords)
+        .onConflictDoUpdate({
+          target: [bulkAnalysisDomains.clientId, bulkAnalysisDomains.domain],
+          set: {
+            targetPageIds: sql`excluded.target_page_ids`,
+            keywordCount: sql`excluded.keyword_count`,
+            updatedAt: new Date(),
+          },
+        })
+        .returning();
+
+      // Attach keywords for response
+      const results: BulkAnalysisResult[] = insertedDomains.map(domain => ({
+        ...domain,
+        targetPages: pages,
+        keywords: Array.from(allKeywords),
+      }));
+
+      return results;
+    } catch (error) {
+      console.error('Error creating/updating domains:', error);
+      throw error;
+    }
+  }
+
+  /**
+   * Update domain qualification status
+   */
+  static async updateQualificationStatus(
+    domainId: string,
+    status: 'qualified' | 'disqualified',
+    userId: string,
+    notes?: string
+  ): Promise<BulkAnalysisDomain> {
+    try {
+      const [updated] = await db
+        .update(bulkAnalysisDomains)
+        .set({
+          qualificationStatus: status,
+          checkedBy: userId,
+          checkedAt: new Date(),
+          notes: notes || null,
+          updatedAt: new Date(),
+        })
+        .where(eq(bulkAnalysisDomains.id, domainId))
+        .returning();
+
+      if (!updated) {
+        throw new Error('Domain not found');
+      }
+
+      return updated;
+    } catch (error) {
+      console.error('Error updating qualification status:', error);
+      throw error;
+    }
+  }
+
+  /**
+   * Get keywords for specific target pages
+   */
+  static async getTargetPageKeywords(targetPageIds: string[]): Promise<string[]> {
+    try {
+      const pages = await db
+        .select({ keywords: targetPages.keywords })
+        .from(targetPages)
+        .where(inArray(targetPages.id, targetPageIds));
+
+      // Aggregate and dedupe keywords
+      const allKeywords = new Set<string>();
+      pages.forEach(page => {
+        if (page.keywords) {
+          const keywords = page.keywords.split(',').map(k => k.trim());
+          keywords.forEach(k => allKeywords.add(k));
+        }
+      });
+
+      return Array.from(allKeywords);
+    } catch (error) {
+      console.error('Error fetching target page keywords:', error);
+      throw error;
+    }
+  }
+
+  /**
+   * Get qualified domains for a client
+   */
+  static async getQualifiedDomains(clientId: string): Promise<BulkAnalysisResult[]> {
+    try {
+      const domains = await db
+        .select()
+        .from(bulkAnalysisDomains)
+        .where(
+          and(
+            eq(bulkAnalysisDomains.clientId, clientId),
+            eq(bulkAnalysisDomains.qualificationStatus, 'qualified')
+          )
+        )
+        .orderBy(bulkAnalysisDomains.checkedAt);
+
+      return domains;
+    } catch (error) {
+      console.error('Error fetching qualified domains:', error);
+      throw error;
+    }
+  }
+
+  /**
+   * Delete a bulk analysis domain
+   */
+  static async deleteDomain(domainId: string): Promise<void> {
+    try {
+      await db
+        .delete(bulkAnalysisDomains)
+        .where(eq(bulkAnalysisDomains.id, domainId));
+    } catch (error) {
+      console.error('Error deleting domain:', error);
+      throw error;
+    }
+  }
+
+  /**
+   * Check if domains already exist for deduplication
+   */
+  static async getExistingDomains(
+    clientId: string,
+    domains: string[]
+  ): Promise<{ domain: string; status: string }[]> {
+    try {
+      const cleanedDomains = domains.map(d => this.cleanDomain(d));
+      
+      const existing = await db
+        .select({
+          domain: bulkAnalysisDomains.domain,
+          status: bulkAnalysisDomains.qualificationStatus,
+        })
+        .from(bulkAnalysisDomains)
+        .where(
+          and(
+            eq(bulkAnalysisDomains.clientId, clientId),
+            inArray(bulkAnalysisDomains.domain, cleanedDomains)
+          )
+        );
+
+      return existing;
+    } catch (error) {
+      console.error('Error checking existing domains:', error);
+      throw error;
+    }
+  }
+}
