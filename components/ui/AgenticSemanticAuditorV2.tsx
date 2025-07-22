@@ -299,96 +299,121 @@ export const AgenticSemanticAuditorV2 = ({
         </div>
       )}
 
-      {/* Audit Content Display */}
-      {(intermediaryContent || finalArticle) && (
-        <div className="space-y-2">
-          <div className="flex items-center justify-between">
-            <h4 className="font-medium text-gray-900">
-              {finalArticle ? 'Final Audited Article' : 'Audit Progress (Live)'}
-            </h4>
-            <div className="flex items-center space-x-2">
-              {finalArticle && auditedSections.length > 0 && (
-                <button
-                  onClick={() => setShowAnalysisView(!showAnalysisView)}
-                  className="text-sm text-purple-600 hover:text-purple-700"
-                >
-                  {showAnalysisView ? 'Show Final' : 'Show Analysis'}
-                </button>
-              )}
-              <button
-                onClick={() => setShowRendered(!showRendered)}
-                className="text-sm text-blue-600 hover:text-blue-700"
-              >
-                {showRendered ? 'Show Raw' : 'Show Rendered'}
-              </button>
-            </div>
-          </div>
-          <div className="bg-white/60 backdrop-blur border border-blue-200 rounded-lg p-4 max-h-96 overflow-y-auto">
-            {showAnalysisView ? (
-              // Show analysis view with structured data
-              <div className="space-y-4">
-                {auditedSections.map((section, idx) => (
-                  <div key={idx} className="border-b border-gray-200 pb-4 last:border-0">
-                    <h5 className="font-medium text-gray-900 mb-2">Section {idx + 1}</h5>
-                    
-                    {section.strengths.length > 0 && (
-                      <div className="mb-2">
-                        <p className="text-sm font-medium text-green-700">Strengths:</p>
-                        <ul className="list-disc pl-5 text-sm text-green-600">
-                          {section.strengths.map((strength, i) => (
-                            <li key={i}>{strength}</li>
-                          ))}
-                        </ul>
-                      </div>
-                    )}
-                    
-                    {section.weaknesses.length > 0 && (
-                      <div className="mb-2">
-                        <p className="text-sm font-medium text-red-700">Weaknesses:</p>
-                        <ul className="list-disc pl-5 text-sm text-red-600">
-                          {section.weaknesses.map((weakness, i) => (
-                            <li key={i}>{weakness}</li>
-                          ))}
-                        </ul>
-                      </div>
-                    )}
-                    
-                    <div className="mt-2">
-                      <p className="text-sm font-medium text-blue-700 mb-1">Suggested Version:</p>
-                      <div className="bg-gray-50 p-2 rounded text-sm">
-                        {showRendered ? (
-                          <div className="prose prose-sm max-w-none">
-                            <ReactMarkdown>
-                              {section.suggestedVersion}
-                            </ReactMarkdown>
-                          </div>
-                        ) : (
-                          <pre className="whitespace-pre-wrap font-mono text-xs">
-                            {section.suggestedVersion}
-                          </pre>
-                        )}
-                      </div>
-                    </div>
-                  </div>
-                ))}
-              </div>
+      {/* Final Audited Article Field - Always Visible */}
+      <div className="space-y-2">
+        <div className="flex items-center justify-between">
+          <h4 className="font-medium text-gray-900">
+            Final Audited Article
+          </h4>
+          <div className="flex items-center space-x-2">
+            {finalArticle ? (
+              <span className="text-sm text-green-600">✅ Completed</span>
             ) : (
-              // Show final article
-              showRendered ? (
-                <div className="prose prose-sm max-w-none">
-                  <ReactMarkdown>
-                    {finalArticle || intermediaryContent}
-                  </ReactMarkdown>
-                </div>
-              ) : (
-                <pre className="text-xs text-gray-800 whitespace-pre-wrap font-mono">
-                  {finalArticle || intermediaryContent}
-                </pre>
-              )
+              <span className="text-sm text-gray-500">
+                {isAuditing ? '⏳ Processing...' : 'Not started'}
+              </span>
+            )}
+            {(finalArticle || intermediaryContent) && (
+              <>
+                {finalArticle && auditedSections.length > 0 && (
+                  <button
+                    onClick={() => setShowAnalysisView(!showAnalysisView)}
+                    className="text-sm text-purple-600 hover:text-purple-700"
+                  >
+                    {showAnalysisView ? 'Show Final' : 'Show Analysis'}
+                  </button>
+                )}
+                <button
+                  onClick={() => setShowRendered(!showRendered)}
+                  className="text-sm text-blue-600 hover:text-blue-700"
+                >
+                  {showRendered ? 'Show Raw' : 'Show Rendered'}
+                </button>
+              </>
             )}
           </div>
         </div>
-      )}
+        <div className="bg-white/60 backdrop-blur border border-blue-200 rounded-lg p-4">
+          {(intermediaryContent || finalArticle) ? (
+            <div className="max-h-96 overflow-y-auto">
+              {showAnalysisView && finalArticle && auditedSections.length > 0 ? (
+                // Show analysis view with structured data
+                <div className="space-y-4">
+                  {auditedSections.map((section, idx) => (
+                    <div key={idx} className="border-b border-gray-200 pb-4 last:border-0">
+                      <h5 className="font-medium text-gray-900 mb-2">Section {idx + 1}</h5>
+                      
+                      {section.strengths.length > 0 && (
+                        <div className="mb-2">
+                          <p className="text-sm font-medium text-green-700">Strengths:</p>
+                          <ul className="list-disc pl-5 text-sm text-green-600">
+                            {section.strengths.map((strength, i) => (
+                              <li key={i}>{strength}</li>
+                            ))}
+                          </ul>
+                        </div>
+                      )}
+                      
+                      {section.weaknesses.length > 0 && (
+                        <div className="mb-2">
+                          <p className="text-sm font-medium text-red-700">Weaknesses:</p>
+                          <ul className="list-disc pl-5 text-sm text-red-600">
+                            {section.weaknesses.map((weakness, i) => (
+                              <li key={i}>{weakness}</li>
+                            ))}
+                          </ul>
+                        </div>
+                      )}
+                      
+                      <div className="mt-2">
+                        <p className="text-sm font-medium text-blue-700 mb-1">Suggested Version:</p>
+                        <div className="bg-gray-50 p-2 rounded text-sm">
+                          {showRendered ? (
+                            <div className="prose prose-sm max-w-none">
+                              <ReactMarkdown>
+                                {section.suggestedVersion}
+                              </ReactMarkdown>
+                            </div>
+                          ) : (
+                            <pre className="whitespace-pre-wrap font-mono text-xs">
+                              {section.suggestedVersion}
+                            </pre>
+                          )}
+                        </div>
+                      </div>
+                    </div>
+                  ))}
+                </div>
+              ) : (
+                // Show final article
+                showRendered ? (
+                  <div className="prose prose-sm max-w-none">
+                    <ReactMarkdown>
+                      {finalArticle || intermediaryContent}
+                    </ReactMarkdown>
+                  </div>
+                ) : (
+                  <pre className="text-xs text-gray-800 whitespace-pre-wrap font-mono">
+                    {finalArticle || intermediaryContent}
+                  </pre>
+                )
+              )}
+            </div>
+          ) : (
+            <div className="min-h-[200px] flex items-center justify-center text-gray-500">
+              <div className="text-center">
+                <FileText className="w-12 h-12 text-gray-400 mx-auto mb-3" />
+                <p className="text-sm">
+                  {isAuditing ? 'Audit in progress...' : 'The audited article will appear here'}
+                </p>
+                <p className="text-xs text-gray-400 mt-1">
+                  Click "Start V2 Audit" to begin the semantic SEO optimization
+                </p>
+              </div>
+            </div>
+          )}
+        </div>
+      </div>
 
       {/* Activity Log */}
       {logs.length > 0 && (
