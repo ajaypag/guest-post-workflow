@@ -376,7 +376,7 @@ Target URL: ${clientTargetUrl}`;
                   </h4>
                   <CopyButton 
                     text={(() => {
-                      const basePrompt = `Guest post site: ${guestPostSite}\n\n${urlSummaries}\n\nFor each of your keyword suggestions and based on your topical cluster analysis of the target site provide justification each keyword in the sense that it has potential to rank. If the keyword doesn't make sense anymore after further review, that's okay too, remove it.\n\nProper justification means you must take a keyword or list of keywords from the keywords rankings sheet that I provided you about the target site. And prove clear and direct overlap. Keep going until you find 10 justifiable keyword suggestions.\n\nAfter you generate your 10 justifiable keywords suggestions and their variations, output a final master list that lists everything in a long one per line list so I can copy paste elsewhere.`;
+                      const basePrompt = `Guest post site: ${guestPostSite}\n\n${urlSummaries}\n\nFor each of your keyword suggestions and based on your topical cluster analysis of the target site provide justification each keyword in the sense that it has potential to rank. If the keyword doesn't make sense anymore after further review, that's okay too, remove it.\n\nA critical thing to note about keywords you suggest is you have to include the shortest version of the long tail so the likelihood of your suggestions having volume is higher. For example, best grc software for hr compliance will have no volume but hr grc software will have volume - both have the same meaning but one is the shorter version of the long tail.\n\nProper justification means you must take a keyword or list of keywords from the keywords rankings sheet that I provided you about the target site. And prove clear and direct overlap. Keep going until you find 10 justifiable keyword suggestions.\n\nAfter you generate your 10 justifiable keywords suggestions and their variations, output a final master list that lists everything in a long one per line list so I can copy paste elsewhere.`;
                       
                       if (keywordPreferences) {
                         const targetUrl = step.outputs.clientTargetUrl;
@@ -400,6 +400,9 @@ Target URL: ${clientTargetUrl}`;
                       )}
                     </div>
                     <p className="mt-4 text-gray-700">For each of your keyword suggestions and based on your topical cluster analysis of the target site provide justification each keyword in the sense that it has potential to rank...</p>
+                    <p className="mt-3 p-2 bg-yellow-50 border border-yellow-200 rounded text-sm text-yellow-800">
+                      <strong>💡 Important:</strong> A critical thing to note about keywords you suggest is you have to include the shortest version of the long tail so the likelihood of your suggestions having volume is higher. For example, "best grc software for hr compliance" will have no volume but "hr grc software" will have volume - both have the same meaning but one is the shorter version of the long tail.
+                    </p>
                     
                     {keywordPreferences && (
                       <div className="mt-4 p-3 bg-green-50 border border-green-200 rounded">
@@ -437,8 +440,8 @@ Target URL: ${clientTargetUrl}`;
       <div className="bg-white border border-gray-200 rounded-xl overflow-hidden">
         <PhaseHeader
           phase="2"
-          title="Iterative AI Analysis"
-          description="AI analysis → Volume data → Refined recommendations"
+          title="Step-by-Step Keyword Refinement"
+          description="AI analysis → Volume check → Ranking analysis → Competitive check"
           status={phaseStatus.iteration ? 'completed' : phaseStatus.setup ? 'active' : 'pending'}
           icon={RefreshCw}
           isExpanded={expandedSections.iteration}
@@ -452,36 +455,48 @@ Target URL: ${clientTargetUrl}`;
               <div className="bg-purple-50 border border-purple-200 rounded-lg p-4">
                 <h4 className="font-medium text-purple-900 mb-3 flex items-center">
                   <RefreshCw className="w-5 h-5 mr-2" />
-                  Intelligent Iteration Process
+                  Required Step-by-Step Process
                 </h4>
-                <div className="grid grid-cols-1 md:grid-cols-4 gap-3">
-                  <div className="flex items-center">
-                    <span className="bg-purple-600 text-white rounded-full w-6 h-6 flex items-center justify-center text-sm font-bold mr-3">1</span>
-                    <span className="text-sm text-purple-800">AI analyzes & suggests keywords</span>
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
+                  <div className="flex items-start">
+                    <span className="bg-purple-600 text-white rounded-full w-6 h-6 flex items-center justify-center text-sm font-bold mr-3 flex-shrink-0">1</span>
+                    <div>
+                      <p className="text-sm text-purple-800 font-medium">Get Initial Keywords</p>
+                      <p className="text-xs text-purple-700">AI analyzes & suggests keywords</p>
+                    </div>
                   </div>
-                  <div className="flex items-center">
-                    <span className="bg-purple-600 text-white rounded-full w-6 h-6 flex items-center justify-center text-sm font-bold mr-3">2</span>
-                    <span className="text-sm text-purple-800">Check real search volumes</span>
+                  <div className="flex items-start">
+                    <span className="bg-purple-600 text-white rounded-full w-6 h-6 flex items-center justify-center text-sm font-bold mr-3 flex-shrink-0">2</span>
+                    <div>
+                      <p className="text-sm text-purple-800 font-medium">Check Search Volume</p>
+                      <p className="text-xs text-purple-700">Verify real search data in Ahrefs</p>
+                    </div>
                   </div>
-                  <div className="flex items-center">
-                    <span className="bg-purple-600 text-white rounded-full w-6 h-6 flex items-center justify-center text-sm font-bold mr-3">3</span>
-                    <span className="text-sm text-purple-800">AI refines with volume data</span>
+                  <div className="flex items-start">
+                    <span className="bg-purple-600 text-white rounded-full w-6 h-6 flex items-center justify-center text-sm font-bold mr-3 flex-shrink-0">3</span>
+                    <div>
+                      <p className="text-sm text-purple-800 font-medium">Ranking Likelihood</p>
+                      <p className="text-xs text-purple-700">AI analyzes which keywords can rank</p>
+                    </div>
                   </div>
-                  <div className="flex items-center">
-                    <span className="bg-purple-600 text-white rounded-full w-6 h-6 flex items-center justify-center text-sm font-bold mr-3">4</span>
-                    <span className="text-sm text-purple-800">Ranking likelihood analysis</span>
+                  <div className="flex items-start">
+                    <span className="bg-purple-600 text-white rounded-full w-6 h-6 flex items-center justify-center text-sm font-bold mr-3 flex-shrink-0">4</span>
+                    <div>
+                      <p className="text-sm text-purple-800 font-medium">Competition Check</p>
+                      <p className="text-xs text-purple-700">Ensure keyword isn't too competitive</p>
+                    </div>
                   </div>
                 </div>
               </div>
 
-              {/* Step 2e: Initial Keywords */}
+              {/* Step 1: Initial Keywords */}
               <div className="border border-gray-200 rounded-lg p-4">
                 <h4 className="font-medium mb-3 flex items-center">
                   <span className="bg-blue-600 text-white rounded-full w-6 h-6 flex items-center justify-center text-sm font-bold mr-3">1</span>
-                  Paste AI's Initial Keyword Analysis
+                  Initial Keyword Analysis
                 </h4>
                 <p className="text-sm text-gray-600 mb-3">
-                  Copy the complete keyword list from the Topic Machine GPT (one keyword per line format).
+                  After running the AI analysis template from Phase 1, paste the complete keyword list here (one keyword per line).
                 </p>
                 
                 <SavedField
@@ -494,18 +509,18 @@ Target URL: ${clientTargetUrl}`;
                 />
               </div>
 
-              {/* Step 2e2: Volume Analysis */}
-              {step.outputs.keywordVariations && (
-                <div className="border border-orange-200 rounded-lg p-4 bg-orange-50">
-                  <h4 className="font-medium mb-3 flex items-center text-orange-900">
-                    <span className="bg-orange-600 text-white rounded-full w-6 h-6 flex items-center justify-center text-sm font-bold mr-3">2</span>
-                    Volume Analysis & AI Refinement
-                  </h4>
-                  <p className="text-sm text-orange-800 mb-4">
-                    Now we'll check real search volumes and let the AI refine its recommendations based on actual market data.
-                  </p>
+              {/* Step 2: Volume Analysis - Always Visible */}
+              <div className="border border-orange-200 rounded-lg p-4 bg-orange-50">
+                <h4 className="font-medium mb-3 flex items-center text-orange-900">
+                  <span className="bg-orange-600 text-white rounded-full w-6 h-6 flex items-center justify-center text-sm font-bold mr-3">2</span>
+                  Volume Analysis & AI Refinement
+                </h4>
+                <p className="text-sm text-orange-800 mb-4">
+                  Check real search volumes and let the AI refine its recommendations based on actual market data.
+                </p>
 
-                  {/* Quick copy of keywords */}
+                {/* Quick copy of keywords if available */}
+                {step.outputs.keywordVariations && (
                   <div className="bg-white border border-orange-300 rounded p-3 mb-4">
                     <div className="flex items-center justify-between mb-2">
                       <p className="text-sm font-medium text-orange-800">📋 Your Keywords for Volume Check:</p>
@@ -520,66 +535,67 @@ Target URL: ${clientTargetUrl}`;
                       </div>
                     </div>
                   </div>
+                )}
 
-                  <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mb-4">
-                    <a href="https://app.ahrefs.com/keywords-explorer"
-                       target="_blank"
-                       className="inline-flex items-center justify-center px-4 py-3 bg-orange-600 text-white rounded-lg hover:bg-orange-700 transition-colors text-sm font-medium">
-                      <BarChart3 className="w-4 h-4 mr-2" />
-                      Check Volumes in Ahrefs
-                      <ExternalLink className="w-4 h-4 ml-2" />
-                    </a>
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mb-4">
+                  <a href="https://app.ahrefs.com/keywords-explorer"
+                     target="_blank"
+                     className="inline-flex items-center justify-center px-4 py-3 bg-orange-600 text-white rounded-lg hover:bg-orange-700 transition-colors text-sm font-medium">
+                    <BarChart3 className="w-4 h-4 mr-2" />
+                    Check Volumes in Ahrefs
+                    <ExternalLink className="w-4 h-4 ml-2" />
+                  </a>
 
-                    <div className="bg-white border border-orange-300 rounded-lg p-3">
-                      <p className="text-xs font-medium text-orange-800 mb-1">📥 After volume check:</p>
-                      <p className="text-xs text-orange-700">Select the appropriate option below based on your findings</p>
-                    </div>
+                  <div className="bg-white border border-orange-300 rounded-lg p-3">
+                    <p className="text-xs font-medium text-orange-800 mb-1">📥 After volume check:</p>
+                    <p className="text-xs text-orange-700">Select the appropriate option below</p>
                   </div>
+                </div>
 
-                  {/* Branch Selection */}
-                  <div className="bg-white border border-orange-300 rounded-lg p-4 mb-4">
-                    <p className="text-sm font-medium text-orange-800 mb-3">What did you find in your volume check?</p>
-                    <div className="grid grid-cols-1 md:grid-cols-3 gap-3">
-                      <button
-                        onClick={() => setVolumeBranch('has-volume')}
-                        className={`p-3 rounded-lg border-2 transition-all ${
-                          volumeBranch === 'has-volume' 
-                            ? 'border-orange-600 bg-orange-50 text-orange-800' 
-                            : 'border-gray-300 hover:border-orange-400'
-                        }`}
-                      >
-                        <div className="font-medium mb-1">✅ Has Volume</div>
-                        <div className="text-xs">Keywords have search volume</div>
-                      </button>
+                {/* Branch Selection - Always Visible with Has Volume as Default */}
+                <div className="bg-white border border-orange-300 rounded-lg p-4 mb-4">
+                  <p className="text-sm font-medium text-orange-800 mb-3">What did you find in your volume check?</p>
+                  <div className="grid grid-cols-1 md:grid-cols-3 gap-3">
+                    <button
+                      onClick={() => setVolumeBranch('has-volume')}
+                      className={`p-3 rounded-lg border-2 transition-all ${
+                        volumeBranch === 'has-volume' || (!volumeBranch && step.outputs.keywordVariations)
+                          ? 'border-orange-600 bg-orange-50 text-orange-800' 
+                          : 'border-gray-300 hover:border-orange-400'
+                      }`}
+                    >
+                      <div className="font-medium mb-1">✅ Has Volume</div>
+                      <div className="text-xs">Keywords have search volume</div>
+                    </button>
 
-                      <button
-                        onClick={() => setVolumeBranch('no-volume')}
-                        className={`p-3 rounded-lg border-2 transition-all ${
-                          volumeBranch === 'no-volume' 
-                            ? 'border-orange-600 bg-orange-50 text-orange-800' 
-                            : 'border-gray-300 hover:border-orange-400'
-                        }`}
-                      >
-                        <div className="font-medium mb-1">❌ No Volume</div>
-                        <div className="text-xs">Keywords have no volume</div>
-                      </button>
+                    <button
+                      onClick={() => setVolumeBranch('no-volume')}
+                      className={`p-3 rounded-lg border-2 transition-all ${
+                        volumeBranch === 'no-volume' 
+                          ? 'border-orange-600 bg-orange-50 text-orange-800' 
+                          : 'border-gray-300 hover:border-orange-400'
+                      }`}
+                    >
+                      <div className="font-medium mb-1">❌ No Volume</div>
+                      <div className="text-xs">Keywords have no volume</div>
+                    </button>
 
-                      <button
-                        onClick={() => setVolumeBranch('want-other')}
-                        className={`p-3 rounded-lg border-2 transition-all ${
-                          volumeBranch === 'want-other' 
-                            ? 'border-orange-600 bg-orange-50 text-orange-800' 
-                            : 'border-gray-300 hover:border-orange-400'
-                        }`}
-                      >
-                        <div className="font-medium mb-1">🔄 Want Other</div>
-                        <div className="text-xs">I want different keywords</div>
-                      </button>
-                    </div>
+                    <button
+                      onClick={() => setVolumeBranch('want-other')}
+                      className={`p-3 rounded-lg border-2 transition-all ${
+                        volumeBranch === 'want-other' 
+                          ? 'border-orange-600 bg-orange-50 text-orange-800' 
+                          : 'border-gray-300 hover:border-orange-400'
+                      }`}
+                    >
+                      <div className="font-medium mb-1">🔄 Want Other</div>
+                      <div className="text-xs">I want different keywords</div>
+                    </button>
                   </div>
+                </div>
 
-                  {/* Branch Content */}
-                  {volumeBranch === 'has-volume' && (
+                {/* Branch Content */}
+                {volumeBranch === 'has-volume' && (
                     <>
                       {/* GPT refinement prompt - existing flow */}
                       <div className="bg-white border border-orange-300 rounded-lg p-3">
@@ -688,27 +704,18 @@ Target URL: ${clientTargetUrl}`;
                       </div>
                     </>
                   )}
-                </div>
-              )}
+                {/* End of branch content */}
+              </div>
 
-              {/* Step 4: Ranking Likelihood Analysis (Optional Decision Support) */}
+              {/* Step 3: Ranking Likelihood Analysis (Required) */}
               {(step.outputs.volumeAnalysis || volumeBranch) && (
                 <div className="border border-indigo-200 rounded-lg p-4 bg-indigo-50">
                   <h4 className="font-medium mb-3 flex items-center text-indigo-900">
-                    <span className="bg-indigo-600 text-white rounded-full w-6 h-6 flex items-center justify-center text-sm font-bold mr-3">4</span>
-                    Ranking Likelihood Analysis (Optional)
+                    <span className="bg-indigo-600 text-white rounded-full w-6 h-6 flex items-center justify-center text-sm font-bold mr-3">3</span>
+                    Ranking Likelihood Analysis
                   </h4>
-                  <div className="bg-amber-50 border border-amber-200 rounded p-3 mb-4">
-                    <p className="text-sm text-amber-800 mb-2">
-                      <strong>💡 When to use this:</strong> You have multiple good keyword options and need help deciding which has the best ranking potential.
-                    </p>
-                    <p className="text-sm text-amber-700">
-                      This advanced analysis helps the AI evaluate which topics are most likely to rank based on the site's existing keyword authority and rankings.
-                    </p>
-                  </div>
-
                   <p className="text-sm text-indigo-800 mb-4">
-                    For deeper analysis when you have multiple strong candidates, ask the AI to evaluate ranking likelihood based on the site's existing keyword authority.
+                    Evaluate which keywords have the best ranking potential based on the site's existing keyword authority and rankings.
                   </p>
 
                   <div className="bg-white border border-indigo-300 rounded-lg p-3 mb-4">
@@ -724,25 +731,11 @@ Target URL: ${clientTargetUrl}`;
                     </div>
                   </div>
 
-                  {/* Competitive Keyword Clarification Prompt */}
-                  <div className="bg-white border border-purple-300 rounded-lg p-3 mb-4">
-                    <div className="flex items-center justify-between mb-2">
-                      <p className="text-sm font-medium text-purple-800">🔍 Clarification for Competitive Keywords:</p>
-                      <CopyButton 
-                        text="For clarification, if you're not sure. [keyword] is good. what niches does the target site rank really well for? because [keyword] is very competitive."
-                        label="Copy Template"
-                      />
-                    </div>
-                    <div className="text-xs text-purple-700 bg-purple-50 border border-purple-200 rounded p-2">
-                      <strong>Use this follow-up</strong> when a keyword seems too competitive. Replace [keyword] with your specific term (e.g., "cloud security compliance checklist"). This helps the AI identify less competitive niches where the site has stronger authority.
-                    </div>
-                  </div>
-
                   <div className="mt-4">
                     <SavedField
-                      label="Ranking Likelihood Analysis (Optional)"
+                      label="Ranking Likelihood Analysis"
                       value={step.outputs.rankingAnalysis || ''}
-                      placeholder="Paste the AI's ranking likelihood analysis if you used this advanced step"
+                      placeholder="Paste the AI's ranking likelihood analysis here"
                       onChange={(value) => onChange({ ...step.outputs, rankingAnalysis: value })}
                       isTextarea={true}
                       height="h-32"
@@ -755,6 +748,63 @@ Target URL: ${clientTargetUrl}`;
                         ✅ <strong>Enhanced Decision Support:</strong> You now have both volume data and ranking likelihood analysis to make the best keyword choice.
                       </p>
                     </div>
+                  )}
+                </div>
+              )}
+
+              {/* Step 4: Competitive Keyword Clarification */}
+              {step.outputs.rankingAnalysis && (
+                <div className="border border-purple-200 rounded-lg p-4 bg-purple-50">
+                  <h4 className="font-medium mb-3 flex items-center text-purple-900">
+                    <span className="bg-purple-600 text-white rounded-full w-6 h-6 flex items-center justify-center text-sm font-bold mr-3">4</span>
+                    Competition Check & Keyword Finalization
+                  </h4>
+                  <p className="text-sm text-purple-800 mb-4">
+                    Final step to ensure your chosen keyword isn't too competitive and to finalize your selection.
+                  </p>
+
+                  {/* Keyword Selection Field */}
+                  <div className="mb-4">
+                    <SavedField
+                      label="Selected Keyword from Analysis"
+                      value={step.outputs.selectedKeyword || ''}
+                      placeholder="Enter the keyword you're considering based on the ranking analysis"
+                      onChange={(value) => onChange({ ...step.outputs, selectedKeyword: value })}
+                    />
+                  </div>
+
+                  {step.outputs.selectedKeyword && (
+                    <>
+                      {/* Dynamic Clarification Prompt */}
+                      <div className="bg-white border border-purple-300 rounded-lg p-3 mb-4">
+                        <div className="flex items-center justify-between mb-2">
+                          <p className="text-sm font-medium text-purple-800">🔍 Competition Check Prompt:</p>
+                          <CopyButton 
+                            text={`The keyword "${step.outputs.selectedKeyword}" is good, but there's one more step before we can proceed. Can you check the SERP to see how competitive this keyword is? What we are looking for is to gauge if the majority of the rankings are from well-known, high-authority brands. If that's not the case, then this keyword on its own could be a good choice. However, if we're seeing lots of high authority brands, and you can surmise that this guest post site (${guestPostSite}) is not as authoritative in terms of authority, then we should modify the keyword to ensure it's targeting a niche that the guest post site already has authority in. Based on that analysis, just tell me that the keyword as is fine or the competition is high and some niche down keyword could be this. When you're thinking about that niche down keyword, ensure that it's still the shortest tail version of that long tail.`}
+                            label="Copy Prompt"
+                          />
+                        </div>
+                        <div className="text-xs text-purple-700 bg-purple-50 border border-purple-200 rounded p-2">
+                          <strong>This prompt includes:</strong>
+                          <ul className="mt-1 ml-4 space-y-1">
+                            <li>• Your selected keyword: <strong>"{step.outputs.selectedKeyword}"</strong></li>
+                            <li>• Guest post site: <strong>{guestPostSite}</strong></li>
+                            <li>• Instructions for competitive analysis</li>
+                          </ul>
+                        </div>
+                      </div>
+
+                      <div className="mt-4">
+                        <SavedField
+                          label="Competition Analysis & Final Keyword Decision"
+                          value={step.outputs.competitionAnalysis || ''}
+                          placeholder="Paste the AI's competition analysis and final keyword recommendation"
+                          onChange={(value) => onChange({ ...step.outputs, competitionAnalysis: value })}
+                          isTextarea={true}
+                          height="h-32"
+                        />
+                      </div>
+                    </>
                   )}
                 </div>
               )}

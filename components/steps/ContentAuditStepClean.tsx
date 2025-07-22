@@ -704,6 +704,49 @@ Now I realize this is a lot, so i want your first output to only be an audit of 
                   console.log('✅ V2 onChange completed - auto-save will handle persistence');
                 }}
               />
+              
+              {/* Google Doc Link */}
+              <div className="bg-gray-50 border border-gray-200 rounded-lg p-4">
+                <SavedField
+                  label="Google Doc URL"
+                  value={step.outputs.googleDocUrl || ''}
+                  placeholder="https://docs.google.com/document/d/..."
+                  onChange={(value) => onChange({ ...step.outputs, googleDocUrl: value })}
+                />
+              </div>
+              
+              {/* Manual Save Field for SEO-Optimized Article */}
+              <div className="bg-gray-50 border border-gray-200 rounded-lg p-4">
+                <div className="bg-green-50 border-l-4 border-green-400 p-4 mb-4 rounded-r-lg">
+                  <h4 className="font-medium text-green-800 mb-2">✅ SEO-Optimized Article Storage</h4>
+                  <p className="text-sm text-green-700">
+                    The final audited article is automatically saved when the V2 audit completes. 
+                    You can also manually edit or paste content here if needed.
+                  </p>
+                </div>
+                
+                <SavedField
+                  label="SEO-Optimized Article"
+                  value={step.outputs.seoOptimizedArticle || ''}
+                  placeholder="The audited article will appear here automatically when V2 audit completes, or paste manually..."
+                  onChange={(value) => onChange({ ...step.outputs, seoOptimizedArticle: value })}
+                  isTextarea={true}
+                  height="h-64"
+                />
+                
+                {step.outputs.seoOptimizedArticle && (
+                  <div className="mt-4 flex items-center justify-between">
+                    <div className="text-sm text-gray-600">
+                      Word count: {step.outputs.seoOptimizedArticle.split(/\s+/).filter((w: string) => w).length} words
+                    </div>
+                    {step.outputs.auditedAt && (
+                      <div className="text-sm text-gray-600">
+                        Last audited: {new Date(step.outputs.auditedAt).toLocaleString()}
+                      </div>
+                    )}
+                  </div>
+                )}
+              </div>
             </div>
           ) : null}
         </div>
