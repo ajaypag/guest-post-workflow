@@ -1,6 +1,9 @@
 # Test Dockerfile - simplified version
 FROM node:20-slim
 
+# Cache busting argument
+ARG CACHEBUST=1
+
 WORKDIR /app
 
 # Copy package files
@@ -8,6 +11,9 @@ COPY package*.json ./
 
 # Install dependencies (including devDependencies for build)
 RUN npm ci
+
+# Echo cache bust to force rebuild from here
+RUN echo "Cache bust: $CACHEBUST"
 
 # Copy application files
 COPY . .
