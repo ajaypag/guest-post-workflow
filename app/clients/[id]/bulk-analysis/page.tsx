@@ -41,6 +41,7 @@ export default function BulkAnalysisPage() {
   const [loading, setLoading] = useState(false);
   const [message, setMessage] = useState('');
   const [existingDomains, setExistingDomains] = useState<{ domain: string; status: string }[]>([]);
+  const [selectedPositionRange, setSelectedPositionRange] = useState('1-50');
 
   useEffect(() => {
     loadClient();
@@ -161,25 +162,25 @@ export default function BulkAnalysisPage() {
     const cleanDomain = domain.replace(/^https?:\/\//, '').replace(/\/$/, '');
     const targetUrl = `https://${cleanDomain}/`;
     
+    if (keywords.length === 0) {
+      const positionsParam = selectedPositionRange !== '1-100' ? `&positions=${selectedPositionRange}` : '';
+      return `https://app.ahrefs.com/v2-site-explorer/organic-keywords?brandedMode=all&chartGranularity=daily&chartInterval=year5&compareDate=dontCompare&country=us&currentDate=today&dataMode=text&hiddenColumns=&intentsAttrs=&keywordRules=&limit=100&localMode=all&mainOnly=0&mode=subdomains&multipleUrlsOnly=0&offset=0&performanceChartTopPosition=top11_20%7C%7Ctop21_50%7C%7Ctop3%7C%7Ctop4_10%7C%7Ctop51&positionChanges=${positionsParam}&serpFeatures=&sort=OrganicTrafficInitial&sortDirection=desc&target=${encodeURIComponent(targetUrl)}&urlRules=&volume_type=average`;
+    }
+    
     // Batch keywords (50 max per URL)
     const keywordBatch = keywords.slice(0, 50);
-    const keywordRules = keywordBatch
-      .map(kw => `+inurl:"${kw.replace(/"/g, '')}"`)
-      .join(' OR ');
+    const cleanKeywords = keywordBatch.join(', ');
+    const keywordRulesArray = [["contains","all"], cleanKeywords, "any"];
+    const keywordRulesEncoded = encodeURIComponent(JSON.stringify(keywordRulesArray));
     
-    const params = new URLSearchParams({
-      target: targetUrl,
-      mode: 'prefix',
-      intersect: targetUrl,
-      rules: keywordRules,
-      limit: '50',
-      output: 'json',
-      where: 'content',
-      highlight: 'title,snippet',
-      order_by: 'ahrefs_rank:desc'
-    });
+    const positionsParam = selectedPositionRange !== '1-100' ? `&positions=${selectedPositionRange}` : '';
+    let url = `https://app.ahrefs.com/v2-site-explorer/organic-keywords?brandedMode=all&chartGranularity=daily&chartInterval=year5&compareDate=dontCompare&country=us&currentDate=today&dataMode=text&hiddenColumns=&intentsAttrs=`;
+    url += `&keywordRules=${keywordRulesEncoded}`;
+    url += `&limit=100&localMode=all&mainOnly=0&mode=subdomains&multipleUrlsOnly=0&offset=0&performanceChartTopPosition=top11_20%7C%7Ctop21_50%7C%7Ctop3%7C%7Ctop4_10%7C%7Ctop51&positionChanges=${positionsParam}&serpFeatures=&sort=OrganicTrafficInitial&sortDirection=desc`;
+    url += `&target=${encodeURIComponent(targetUrl)}`;
+    url += `&urlRules=&volume_type=average`;
     
-    return `https://ahrefs.com/site-explorer/overview/v2/prefix/live?${params.toString()}`;
+    return url;
   };
 
   if (!client) {
@@ -334,7 +335,45 @@ export default function BulkAnalysisPage() {
           {/* Results Grid */}
           {domains.length > 0 && (
             <div className="bg-white rounded-lg shadow p-6">
-              <h2 className="text-lg font-medium mb-4">Analysis Results</h2>
+              <div className="flex items-center justify-between mb-6">
+                <h2 className="text-lg font-medium">Analysis Results</h2>
+                
+                {/* Position Range Selector */}
+                <div className="bg-gray-50 border border-gray-200 rounded-lg p-3">
+                  <div className="flex items-center justify-between mb-2">
+                    <h4 className="font-medium text-gray-900 text-sm">Search Position Range</h4>
+                    <span className="text-xs text-gray-500">Current: {selectedPositionRange}</span>
+                  </div>
+                  
+                  <div className="grid grid-cols-4 gap-1">
+                    {[
+                      { value: '1-10', label: '1-10' },
+                      { value: '1-20', label: '1-20' },
+                      { value: '1-50', label: '1-50' },
+                      { value: '1-100', label: '1-100' }
+                    ].map((option) => (
+                      <button
+                        key={option.value}
+                        onClick={() => setSelectedPositionRange(option.value)}
+                        className={`px-2 py-1 text-xs rounded border transition-colors ${
+                          selectedPositionRange === option.value
+                            ? 'bg-orange-600 text-white border-orange-600'
+                            : 'bg-white text-gray-700 border-gray-300 hover:border-orange-300 hover:bg-orange-50'
+                        }`}
+                      >
+                        {option.label}
+                      </button>
+                    ))}
+                  </div>
+                  
+                  <p className="text-xs text-gray-600 mt-1">
+                    {selectedPositionRange === '1-10' && 'Highest relevance & best rankability'}
+                    {selectedPositionRange === '1-20' && 'High relevance & good rankability'}
+                    {selectedPositionRange === '1-50' && 'Moderate relevance (recommended)'}
+                    {selectedPositionRange === '1-100' && 'All rankings (lowest average rankability)'}
+                  </p>
+                </div>
+              </div>
               
               <div className="grid gap-4">
                 {domains.map((domain) => {
