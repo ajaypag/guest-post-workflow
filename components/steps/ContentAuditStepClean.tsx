@@ -705,16 +705,6 @@ Now I realize this is a lot, so i want your first output to only be an audit of 
                 }}
               />
               
-              {/* Google Doc Link */}
-              <div className="bg-gray-50 border border-gray-200 rounded-lg p-4">
-                <SavedField
-                  label="Google Doc URL"
-                  value={step.outputs.googleDocUrl || ''}
-                  placeholder="https://docs.google.com/document/d/..."
-                  onChange={(value) => onChange({ ...step.outputs, googleDocUrl: value })}
-                />
-              </div>
-              
               {/* Manual Save Field for SEO-Optimized Article */}
               <div className="bg-gray-50 border border-gray-200 rounded-lg p-4">
                 <div className="bg-green-50 border-l-4 border-green-400 p-4 mb-4 rounded-r-lg">
