@@ -135,7 +135,9 @@ export function AgenticFormattingChecker({ workflowId, onComplete }: AgenticForm
     bold_cleanup: 'Bold Cleanup',
     faq_formatting: 'FAQ Formatting',
     citation_placement: 'Citation Placement',
-    utm_cleanup: 'UTM Cleanup'
+    utm_cleanup: 'UTM Cleanup',
+    article_title: 'Article Title',
+    tag_cleanup: 'Tag Cleanup'
   };
 
   const startQACheck = async () => {
@@ -144,7 +146,7 @@ export function AgenticFormattingChecker({ workflowId, onComplete }: AgenticForm
       setError(null);
       setStatus('starting');
       setChecks([]);
-      setOverallStats({ total: 8, passed: 0, failed: 0 });
+      setOverallStats({ total: 10, passed: 0, failed: 0 });
 
       // Start QA session
       const response = await fetch(`/api/workflows/${workflowId}/formatting-qa/start`, {

@@ -1,5 +1,5 @@
 import { Agent, tool, Runner } from '@openai/agents';
-import { OpenAIProvider, fileSearchTool, webSearchTool } from '@openai/agents-openai';
+import { OpenAIProvider, fileSearchTool } from '@openai/agents-openai';
 import { z } from 'zod';
 import { db } from '@/lib/db/connection';
 import { assistantSentPlainText, FORMATTING_QA_CHECK_RETRY_NUDGE, FORMATTING_QA_GENERATE_RETRY_NUDGE } from '@/lib/utils/agentUtils';
@@ -46,7 +46,9 @@ const checkTypes = [
   'bold_cleanup',
   'faq_formatting',
   'citation_placement',
-  'utm_cleanup'
+  'utm_cleanup',
+  'article_title',
+  'tag_cleanup'
 ] as const;
 
 type CheckType = typeof checkTypes[number];
@@ -81,6 +83,10 @@ export class AgenticFormattingQAService {
         throw new Error('No final article found in workflow');
       }
 
+      // Get the article title from topic planning step
+      const topicStep = steps.find((s: any) => s.id === 'topic-planning');
+      const articleTitle = (topicStep?.outputs as any)?.articleTitle || '';
+
       // Get the highest version number for this workflow's QA sessions
       const existingSessions = await db.query.formattingQaSessions.findMany({
         where: eq(formattingQaSessions.workflowId, workflowId),
@@ -107,7 +113,8 @@ export class AgenticFormattingQAService {
         originalArticle: finalArticle,
         qaMetadata: {
           checkTypes: checkTypes,
-          startTime: now.toISOString()
+          startTime: now.toISOString(),
+          articleTitle: articleTitle
         },
         startedAt: now,
         createdAt: now,
@@ -151,10 +158,15 @@ export class AgenticFormattingQAService {
         message: 'Starting automated formatting and quality checks...' 
       });
 
+      // Get article title from metadata
+      const articleTitle = (session.qaMetadata as any)?.articleTitle || '';
+
       // Initial prompt
       const initialPrompt = `You are performing an automated formatting quality check and cleanup on this article:
 
 ${session.originalArticle}
+
+${articleTitle ? `Expected article title: "${articleTitle}"` : ''}
 
 You need to check and fix the following formatting and quality aspects:
 1. Header hierarchy (H2s and H3s use proper heading styles, not just bold)
@@ -163,13 +175,14 @@ You need to check and fix the following formatting and quality aspects:
 4. List consistency (bullets/numbers don't change mid-section)
 5. Bold cleanup (remove emphasis bolding on keywords/terms, keep only strategic formatting bolding)
 6. FAQ formatting (questions bold sentence-case, answers plain text)
-7. Citation placement (single citation near top, use web search for stats/data sources)
+7. Citation placement (keep only first citation link, convert others to verbal attributions for data/stats)
 8. UTM cleanup (remove source=chatgpt UTM parameters)
+9. Article title (ensure article starts with H1 title${articleTitle ? `: "${articleTitle}"` : ''})
+10. Tag cleanup (remove internal markers like <!-- END_OF_ARTICLE -->, ===SECTION_END===, etc.)
 
 WORKFLOW:
-1. Use analyze_formatting_check tool for each of the 8 check types
-2. Use web_search tool when you find statistics/data that need citations
-3. After all checks are complete, use generate_cleaned_article tool to create the final cleaned version
+1. Use analyze_formatting_check tool for each of the 10 check types
+2. After all checks are complete, use generate_cleaned_article tool to create the final cleaned version
 
 Begin your systematic analysis and fixing process now.`;
 
@@ -488,9 +501,6 @@ Begin your systematic analysis and fixing process now.`;
       }
     });
 
-    // Web search tool for citation placement
-    const webSearch = webSearchTool();
-
     // Create the agent
     const agent = new Agent({
       name: 'FormattingQASpecialist',
@@ -509,22 +519,33 @@ FORMATTING STANDARDS TO CHECK AND FIX:
 4. List Consistency: Bullet/number styles must not change within sections
 5. Bold Cleanup: Remove unnecessary or random bolding (e.g., 5 words into a sentence randomly bolded). KEEP intentional bolding like bullet point intros where the name/title is bolded. Remove emphasis bolding on keywords/terms, keep only strategic formatting bolding.
 6. FAQ Formatting: Questions in bold sentence-case, answers in plain text
-7. Citation Placement: For statistics/data mentioned in the article, use web search to find sources and add inline hyperlinks directly to the relevant text. DO NOT use numbered citations like [1] with references at the bottom. Instead, turn the relevant text into a hyperlink using markdown format: [text](URL).
+7. Citation Cleanup: Keep ONLY the first citation link in the article using markdown format: [text](URL). For all other citation links, remove them and evaluate if verbal attribution is needed:
+   - For specific data points, statistics, or unique claims: Convert to verbal attribution (e.g., 'According to [source]...' based on the URL domain)
+   - For common knowledge, general statements, or anecdotes: Simply remove the citation without attribution
+   - DO NOT use numbered citations like [1]
 8. UTM Cleanup: Remove any "source=chatgpt" UTM parameters from URLs
+9. Article Title: Ensure the article starts with an H1 title. If missing, add it at the very beginning using # Title format
+10. Tag Cleanup: Remove all internal processing tags/markers such as:
+    - <!-- END_OF_ARTICLE -->
+    - <!-- END_OF_SECTION -->
+    - ===SECTION_END===
+    - ===POLISH_COMPLETE===
+    - Any other similar markers that are not meant for the final output
 
 CRITICAL CONSTRAINTS:
 - DO NOT rewrite or simplify text - preserve all original content and meaning
 - ONLY fix formatting issues, not content or style
 - For bold cleanup: Remove random bolding (e.g., 5 words into a sentence), but KEEP intentional bolding like bullet point intros where the name/title is bolded
-- For citations: Use web search to find sources for statistics/data and add inline hyperlinks directly to the text. DO NOT create numbered citations or reference lists
+- For citations: Keep only the first citation link. For removed citations, add verbal attribution ONLY for data/statistics/unique claims, not for common knowledge
+- Ensure article starts with H1 title - add it if missing
+- Remove ALL internal processing tags/markers that are not meant for final output
 
 WORKFLOW:
-1. Use analyze_formatting_check tool for each of the 8 check types
-2. Use web_search tool when you need to find sources for statistics or data
-3. After all checks are complete, use generate_cleaned_article tool to create the final cleaned version
+1. Use analyze_formatting_check tool for each of the 10 check types
+2. After all checks are complete, use generate_cleaned_article tool to create the final cleaned version
 
 THIS IS AN AUTOMATED WORKFLOW - continue until all checks are complete and cleaned article is generated.`,
-      tools: [analyzeFormattingCheckTool, generateCleanedArticleTool, webSearch]
+      tools: [analyzeFormattingCheckTool, generateCleanedArticleTool]
     });
 
     return agent;
@@ -538,8 +559,10 @@ THIS IS AN AUTOMATED WORKFLOW - continue until all checks are complete and clean
       list_consistency: 'Verify bullet/number styles don\'t change within sections',
       bold_cleanup: 'Remove random bolding (e.g., 5 words into sentence), keep bullet point intros where name/title is bolded',
       faq_formatting: 'Check FAQ questions are bold sentence-case, answers are plain text',
-      citation_placement: 'Add inline hyperlinks to statistics/data using web search, no numbered citations',
-      utm_cleanup: 'Remove source=chatgpt UTM parameters from all URLs'
+      citation_placement: 'Keep only first citation link, convert others to verbal attributions only when needed',
+      utm_cleanup: 'Remove source=chatgpt UTM parameters from all URLs',
+      article_title: 'Ensure article starts with H1 title',
+      tag_cleanup: 'Remove internal processing tags/markers (<!-- END_OF_ARTICLE -->, etc.)'
     };
     return descriptions[checkType];
   }
