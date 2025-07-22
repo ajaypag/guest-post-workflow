@@ -148,7 +148,7 @@ export const FormattingQAStepClean = ({ step, workflow, onChange }: FormattingQA
             <div className="bg-red-50 p-4 rounded-md">
               <h4 className="font-semibold mb-2">Citation Requirements</h4>
               <p className="text-sm mb-2">
-                <strong>Single citation near the top:</strong> One "[citation]" or "[1]" marker in intro/first section only
+                <strong>Single citation link allowed:</strong> Only 1 hyperlink citation in the entire article (preferably near top). All other sources should be mentioned without links (e.g., "According to Gartner...")
               </p>
               <p className="text-sm font-semibold text-red-700">
                 REMOVE source UTM parameter of chatgpt from any URLs
