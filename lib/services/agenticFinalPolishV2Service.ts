@@ -65,6 +65,12 @@ Important:
 - Each strength/weakness should be on its own line
 - The updatedSection should preserve markdown formatting (headings, lists, bold, italics, etc.)
 
+Focus of this exercise:
+- Your primary goal is to gauge how well each section follows the brand guide and semantic SEO documentation
+- Make targeted tweaks to bring the writing closer to our ideal standards
+- Preserve the original structure - do NOT restructure paragraphs into bullet lists or vice versa
+- Maintain the narrative flow while improving adherence to our guidelines
+
 Start with the first section.
 
 When you reach <!-- END_OF_ARTICLE -->, output exactly: ===POLISH_COMPLETE===`;
@@ -90,6 +96,8 @@ Your polished version of the section here
 ===UPDATED_SECTION_END===
 
 Make sure your updated section avoids words from the "words to not use" document. Don't use em-dashes.
+
+Remember: The focus is on polishing for brand alignment, not restructuring. If the original uses paragraphs, keep paragraphs. If it uses bullet points, keep bullet points. Your improvements should enhance the existing structure, not replace it.
 
 Important:
 - Use EXACTLY these delimiters, don't modify them
