@@ -603,6 +603,13 @@ export default function ClientDetailPage() {
                 >
                   Create Workflow
                 </Link>
+                <Link
+                  href={`/clients/${client.id}/bulk-analysis`}
+                  className="inline-flex items-center px-4 py-2 bg-indigo-600 text-white text-sm font-medium rounded-md hover:bg-indigo-700"
+                >
+                  <Target className="w-4 h-4 mr-2" />
+                  Bulk Analysis
+                </Link>
                 <button
                   onClick={() => setShowKeywordPrefs(true)}
                   className="inline-flex items-center px-4 py-2 bg-purple-600 text-white text-sm font-medium rounded-md hover:bg-purple-700"
