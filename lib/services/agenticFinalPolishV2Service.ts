@@ -71,9 +71,7 @@ Focus of this exercise:
 - Preserve the original structure - do NOT restructure paragraphs into bullet lists or vice versa
 - Maintain the narrative flow while improving adherence to our guidelines
 
-Start with the first section.
-
-When you reach <!-- END_OF_ARTICLE -->, output exactly: ===POLISH_COMPLETE===`;
+Start with the first section.`;
 
 const PROCEED_PROMPT = `Okay that is good. Now, proceed to the next section. Analyze how well it follows the brand guide and content writing and semantic SEO guide, then provide your refined version.
 
