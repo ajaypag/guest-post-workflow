@@ -19,7 +19,8 @@ import {
   FileText,
   Plus,
   Search,
-  RotateCcw
+  RotateCcw,
+  Trash2
 } from 'lucide-react';
 import DataForSeoResultsModal from '@/components/DataForSeoResultsModal';
 import { groupKeywordsByTopic, generateGroupedAhrefsUrls } from '@/lib/utils/keywordGrouping';
@@ -363,6 +364,30 @@ function BulkAnalysisPageContent() {
       router.push(`/workflow/new?clientId=${client.id}&guestPostSite=${encodeURIComponent(domain.domain)}${notesParam}`);
     } else {
       router.push(`/workflow/new?guestPostSite=${encodeURIComponent(domain.domain)}${notesParam}`);
+    }
+  };
+
+  const deleteDomain = async (domainId: string) => {
+    if (!confirm('Are you sure you want to delete this domain?')) {
+      return;
+    }
+    
+    try {
+      const clientIdToUse = client?.id || 'standalone';
+      const response = await fetch(`/api/clients/${clientIdToUse}/bulk-analysis/${domainId}`, {
+        method: 'DELETE'
+      });
+      
+      if (!response.ok) {
+        throw new Error('Failed to delete domain');
+      }
+      
+      // Remove from local state
+      setDomains(prev => prev.filter(d => d.id !== domainId));
+      setMessage('✅ Domain deleted successfully');
+    } catch (error) {
+      console.error('Error deleting domain:', error);
+      setMessage('❌ Failed to delete domain');
     }
   };
 
@@ -1125,6 +1150,15 @@ function BulkAnalysisPageContent() {
                               )}
                             </div>
                           )}
+                          
+                          {/* Delete button */}
+                          <button
+                            onClick={() => deleteDomain(domain.id)}
+                            className="mt-2 px-3 py-1.5 bg-red-500 text-white text-xs rounded hover:bg-red-600 transition-colors flex items-center justify-center w-full"
+                            title="Delete domain"
+                          >
+                            <Trash2 className="w-3 h-3" />
+                          </button>
                         </div>
                       </div>
                     </div>
