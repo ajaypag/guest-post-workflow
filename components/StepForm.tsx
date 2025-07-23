@@ -32,7 +32,6 @@ import { ArticleDraftStepClean } from './steps/ArticleDraftStepClean';
 import { ContentAuditStepClean } from './steps/ContentAuditStepClean';
 import { FinalPolishStepClean } from './steps/FinalPolishStepClean';
 import { FormattingQAStepClean } from './steps/FormattingQAStepClean';
-import LinkOrchestrationStep from './LinkOrchestrationStep';
 
 interface StepFormProps {
   step: WorkflowStep;
@@ -51,7 +50,6 @@ const stepForms: Record<string, React.FC<{ step: WorkflowStep; workflow: GuestPo
   'content-audit': ContentAuditStepClean,
   'final-polish': FinalPolishStepClean,
   'formatting-qa': FormattingQAStepClean,
-  'link-orchestration': LinkOrchestrationStep, // New unified step
   'internal-links': InternalLinksStep,
   'external-links': ExternalLinksStep,
   'client-mention': ClientMentionStep,
