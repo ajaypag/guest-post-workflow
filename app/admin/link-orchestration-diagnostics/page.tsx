@@ -202,6 +202,37 @@ export default function LinkOrchestrationDiagnosticsPage() {
     }
   };
 
+  const testPatchedInsert = async () => {
+    try {
+      const testData = {
+        article: 'Test article content',
+        targetDomain: 'example.com',
+        clientName: 'Test Client',
+        clientUrl: 'https://testclient.com',
+        anchorText: 'test anchor',
+        guestPostSite: 'testblog.com',
+        targetKeyword: 'test keyword'
+      };
+
+      const response = await fetch('/api/admin/patch-link-orchestration-service', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(testData)
+      });
+      
+      const data = await response.json();
+      
+      if (data.success) {
+        alert(`✅ Test insert successful! Session ID: ${data.sessionId}`);
+        console.log('Insert result:', data);
+      } else {
+        alert(`❌ Test insert failed: ${data.error}\n\nDetails: ${JSON.stringify(data.details, null, 2)}`);
+      }
+    } catch (error: any) {
+      alert(`❌ Error testing insert: ${error.message}`);
+    }
+  };
+
   const runTestOrchestration = async () => {
     setTestOrchestration({
       status: 'running',
@@ -490,6 +521,14 @@ SEO success requires a holistic approach that combines quality content, technica
               >
                 <Settings className="w-4 h-4" />
                 Fix Schema
+              </button>
+              
+              <button
+                onClick={testPatchedInsert}
+                className="px-4 py-2 bg-yellow-600 text-white rounded hover:bg-yellow-700 flex items-center gap-2"
+              >
+                <Zap className="w-4 h-4" />
+                Test Patched Insert
               </button>
             </div>
 

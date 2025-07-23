@@ -23,8 +23,8 @@ export async function POST(request: NextRequest) {
       useStreaming = true
     } = body;
 
-    // Create a temporary workflow ID for testing
-    const testWorkflowId = `test-${uuidv4()}`;
+    // Create a temporary workflow ID for testing - must be a valid UUID
+    const testWorkflowId = uuidv4();
     
     console.log('[Test Link Orchestration] Test parameters:', {
       testWorkflowId,
