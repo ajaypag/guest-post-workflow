@@ -18,7 +18,7 @@ export async function GET() {
       ORDER BY table_name
     `);
     
-    const tables = (tablesResult as any).map((row: any) => row.table_name);
+    const tables = (tablesResult.rows || tablesResult).map((row: any) => row.table_name);
     console.log('Existing tables:', tables);
     
     // Test if we can create a simple test table

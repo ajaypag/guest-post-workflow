@@ -58,6 +58,19 @@ export async function POST(
       // Start orchestration in background
       (async () => {
         try {
+          console.log('[Link Orchestration] Starting orchestration for workflow:', id);
+          console.log('[Link Orchestration] Input params:', {
+            workflowId: id,
+            hasArticle: !!article,
+            articleLength: article?.length,
+            targetDomain,
+            clientName,
+            clientUrl,
+            anchorText,
+            guestPostSite,
+            targetKeyword
+          });
+
           const result = await linkOrchestrationService.orchestrate({
             workflowId: id,
             article,
@@ -68,6 +81,7 @@ export async function POST(
             guestPostSite,
             targetKeyword,
             onProgress: (phase, message) => {
+              console.log(`[Link Orchestration] Progress - Phase ${phase}: ${message}`);
               // Send progress updates via SSE
               const event = JSON.stringify({
                 type: 'progress',
@@ -79,6 +93,7 @@ export async function POST(
             }
           });
 
+          console.log('[Link Orchestration] Completed successfully:', result.sessionId);
           // Send final result
           const finalEvent = JSON.stringify({
             type: 'complete',
@@ -87,6 +102,8 @@ export async function POST(
           });
           writer.write(encoder.encode(`data: ${finalEvent}\n\n`));
         } catch (error: any) {
+          console.error('[Link Orchestration] Error occurred:', error);
+          console.error('[Link Orchestration] Error stack:', error.stack);
           // Send error event
           const errorEvent = JSON.stringify({
             type: 'error',
