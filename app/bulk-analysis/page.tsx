@@ -411,10 +411,17 @@ function BulkAnalysisPageContent() {
     
     try {
       const url = `/api/clients/${client.id}/bulk-analysis/analyze-dataforseo`;
+      
+      // Include manual keywords if in manual mode
+      const manualKeywordArray = keywordInputMode === 'manual' 
+        ? manualKeywords.split(',').map(k => k.trim()).filter(k => k.length > 0)
+        : undefined;
+      
       const payload = {
         domainId: domain.id,
         locationCode: 2840, // USA
-        languageCode: 'en'
+        languageCode: 'en',
+        ...(manualKeywordArray && { manualKeywords: manualKeywordArray })
       };
       
       console.log('Sending request to:', url);

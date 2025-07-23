@@ -18,7 +18,8 @@ export async function POST(
     const { 
       domainId,
       locationCode = 2840, 
-      languageCode = 'en' 
+      languageCode = 'en',
+      manualKeywords 
     } = body;
 
     if (!domainId) {
@@ -47,10 +48,20 @@ export async function POST(
     console.log('Domain found:', domain.domain);
     console.log('Target page IDs:', domain.targetPageIds);
 
-    // Get keywords for the domain
-    const keywords = await BulkAnalysisService.getTargetPageKeywords(domain.targetPageIds as string[]);
-    console.log('Keywords found:', keywords.length);
-    console.log('First 5 keywords:', keywords.slice(0, 5));
+    // Get keywords - either manual or from target pages
+    let keywords: string[] = [];
+    
+    if (manualKeywords && Array.isArray(manualKeywords) && manualKeywords.length > 0) {
+      // Use manual keywords if provided
+      keywords = manualKeywords;
+      console.log('Using manual keywords:', keywords.length);
+    } else {
+      // Otherwise get keywords from target pages
+      keywords = await BulkAnalysisService.getTargetPageKeywords(domain.targetPageIds as string[]);
+      console.log('Using target page keywords:', keywords.length);
+    }
+    
+    console.log('Keywords to analyze:', keywords.slice(0, 5));
 
     // Check DataForSEO credentials
     console.log('DataForSEO credentials check:', {
