@@ -293,6 +293,7 @@ export const workflowsRelations = relations(workflows, ({ one, many }) => ({
   formattingQaSessions: many(formattingQaSessions),
   formattingQaChecks: many(formattingQaChecks),
   outlineSessions: many(outlineSessions),
+  linkOrchestrationSessions: many(linkOrchestrationSessions),
 }));
 
 export const workflowStepsRelations = relations(workflowSteps, ({ one }) => ({
@@ -471,3 +472,65 @@ export const v2AgentSessionsRelations = relations(v2AgentSessions, ({ one }) => 
 
 export type V2AgentSession = typeof v2AgentSessions.$inferSelect;
 export type NewV2AgentSession = typeof v2AgentSessions.$inferInsert;
+
+// Link Orchestration Sessions for Steps 8-14
+export const linkOrchestrationSessions = pgTable('link_orchestration_sessions', {
+  id: uuid('id').primaryKey(),
+  workflowId: uuid('workflow_id').notNull().references(() => workflows.id),
+  version: integer('version').notNull().default(1),
+  status: varchar('status', { length: 50 }).notNull(), // 'initializing', 'phase1', 'phase2', 'phase3', 'completed', 'failed'
+  
+  // Phase tracking
+  currentPhase: integer('current_phase').default(1),
+  phase1Start: timestamp('phase1_start'),
+  phase1Complete: timestamp('phase1_complete'),
+  phase2Start: timestamp('phase2_start'),
+  phase2Complete: timestamp('phase2_complete'),
+  phase3Start: timestamp('phase3_start'),
+  phase3Complete: timestamp('phase3_complete'),
+  
+  // Article versions
+  originalArticle: text('original_article').notNull(),
+  articleAfterPhase1: text('article_after_phase1'),
+  articleAfterPhase2: text('article_after_phase2'),
+  finalArticle: text('final_article'),
+  
+  // Phase 1 results (parallel)
+  internalLinksResult: jsonb('internal_links_result'),
+  clientMentionResult: jsonb('client_mention_result'),
+  
+  // Phase 2 results
+  clientLinkResult: jsonb('client_link_result'),
+  clientLinkConversation: jsonb('client_link_conversation'), // Store full conversation history
+  
+  // Phase 3 results (parallel)
+  imageStrategy: jsonb('image_strategy'),
+  linkRequests: text('link_requests'), // Plain text output for copy/paste
+  urlSuggestion: text('url_suggestion'),
+  
+  // Input parameters
+  targetDomain: varchar('target_domain', { length: 255 }),
+  clientName: varchar('client_name', { length: 255 }),
+  clientUrl: text('client_url'),
+  anchorText: varchar('anchor_text', { length: 255 }),
+  guestPostSite: varchar('guest_post_site', { length: 255 }),
+  targetKeyword: varchar('target_keyword', { length: 255 }),
+  
+  // Metadata and tracking
+  errorMessage: text('error_message'),
+  sessionMetadata: jsonb('session_metadata'),
+  createdAt: timestamp('created_at').notNull(),
+  updatedAt: timestamp('updated_at').notNull(),
+  startedAt: timestamp('started_at'),
+  completedAt: timestamp('completed_at')
+});
+
+export const linkOrchestrationSessionsRelations = relations(linkOrchestrationSessions, ({ one }) => ({
+  workflow: one(workflows, {
+    fields: [linkOrchestrationSessions.workflowId],
+    references: [workflows.id],
+  }),
+}));
+
+export type LinkOrchestrationSession = typeof linkOrchestrationSessions.$inferSelect;
+export type NewLinkOrchestrationSession = typeof linkOrchestrationSessions.$inferInsert;
