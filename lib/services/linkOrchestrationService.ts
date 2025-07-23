@@ -99,17 +99,19 @@ export class LinkOrchestrationService {
       await db.insert(linkOrchestrationSessions).values({
         id: sessionId,
         workflowId: input.workflowId,
+        version: 1,
         status: 'initializing',
         originalArticle: input.article,
         targetDomain: input.targetDomain,
         clientName: input.clientName,
         clientUrl: input.clientUrl,
-        anchorText: input.anchorText,
+        anchorText: input.anchorText || null,
         guestPostSite: input.guestPostSite,
         targetKeyword: input.targetKeyword,
+        currentPhase: 0,
+        startedAt: startTime,
         createdAt: startTime,
-        updatedAt: startTime,
-        startedAt: startTime
+        updatedAt: startTime
       });
 
       // Phase 1: Internal Links + Client Mentions (Parallel)
@@ -126,9 +128,11 @@ export class LinkOrchestrationService {
         .set({
           status: 'completed',
           finalArticle: phase2Result.article,
-          imageStrategy: phase3Result.imageStrategy,
-          linkRequests: phase3Result.linkRequests,
-          urlSuggestion: phase3Result.urlSuggestion,
+          phase3Results: {
+            imageStrategy: phase3Result.imageStrategy,
+            linkRequests: phase3Result.linkRequests,
+            urlSuggestion: phase3Result.urlSuggestion
+          },
           completedAt: new Date(),
           updatedAt: new Date()
         })
@@ -154,6 +158,8 @@ export class LinkOrchestrationService {
         .set({
           status: 'failed',
           errorMessage: error.message,
+          errorDetails: { stack: error.stack, message: error.message },
+          failedAt: new Date(),
           updatedAt: new Date()
         })
         .where(eq(linkOrchestrationSessions.id, sessionId));
@@ -273,8 +279,10 @@ Please add 2-3 strategic brand mentions following the provided guidelines.`
     await db.update(linkOrchestrationSessions)
       .set({
         articleAfterPhase1: modifiedArticle,
-        internalLinksResult: { internalLinks },
-        clientMentionResult: { clientMentions },
+        phase1Results: { 
+          internalLinks,
+          clientMentions 
+        },
         phase1Complete: new Date(),
         updatedAt: new Date()
       })
@@ -400,8 +408,10 @@ Please add ONE strategic client link that feels natural and valuable.`
     await db.update(linkOrchestrationSessions)
       .set({
         articleAfterPhase2: finalArticle,
-        clientLinkResult: { clientLink },
-        clientLinkConversation: conversationHistory,
+        phase2Results: { 
+          clientLink,
+          conversationHistory 
+        },
         phase2Complete: new Date(),
         updatedAt: new Date()
       })
@@ -530,9 +540,11 @@ Suggest an SEO-optimized URL for this article.`
     await db.update(linkOrchestrationSessions)
       .set({
         finalArticle,
-        imageStrategy,
-        linkRequests,
-        urlSuggestion,
+        phase3Results: {
+          imageStrategy,
+          linkRequests,
+          urlSuggestion
+        },
         phase3Complete: new Date(),
         completedAt: new Date(),
         updatedAt: new Date()
@@ -583,8 +595,8 @@ Suggest an SEO-optimized URL for this article.`
         sessionId,
         finalArticle: phase2Result.article,
         modifications: {
-          internalLinks: (session.internalLinksResult as any)?.internalLinks || [],
-          clientMentions: (session.clientMentionResult as any)?.clientMentions || [],
+          internalLinks: (session.phase1Results as any)?.internalLinks || [],
+          clientMentions: (session.phase1Results as any)?.clientMentions || [],
           clientLink: phase2Result.clientLink
         },
         imageStrategy: phase3Result.imageStrategy,
@@ -600,9 +612,9 @@ Suggest an SEO-optimized URL for this article.`
         sessionId,
         finalArticle: session.articleAfterPhase2!,
         modifications: {
-          internalLinks: (session.internalLinksResult as any)?.internalLinks || [],
-          clientMentions: (session.clientMentionResult as any)?.clientMentions || [],
-          clientLink: (session.clientLinkResult as any)?.clientLink || null
+          internalLinks: (session.phase1Results as any)?.internalLinks || [],
+          clientMentions: (session.phase1Results as any)?.clientMentions || [],
+          clientLink: (session.phase2Results as any)?.clientLink || null
         },
         imageStrategy: phase3Result.imageStrategy,
         linkRequests: phase3Result.linkRequests,
@@ -616,13 +628,13 @@ Suggest an SEO-optimized URL for this article.`
       sessionId,
       finalArticle: session.finalArticle || session.originalArticle,
       modifications: {
-        internalLinks: (session.internalLinksResult as any)?.internalLinks || [],
-        clientMentions: (session.clientMentionResult as any)?.clientMentions || [],
-        clientLink: (session.clientLinkResult as any)?.clientLink || null
+        internalLinks: (session.phase1Results as any)?.internalLinks || [],
+        clientMentions: (session.phase1Results as any)?.clientMentions || [],
+        clientLink: (session.phase2Results as any)?.clientLink || null
       },
-      imageStrategy: session.imageStrategy,
-      linkRequests: session.linkRequests || '',
-      urlSuggestion: session.urlSuggestion || '',
+      imageStrategy: (session.phase3Results as any)?.imageStrategy || null,
+      linkRequests: (session.phase3Results as any)?.linkRequests || '',
+      urlSuggestion: (session.phase3Results as any)?.urlSuggestion || '',
       success: true
     };
   }
