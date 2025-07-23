@@ -43,6 +43,7 @@ export default function LinkOrchestrationDiagnosticsPage() {
     phases: {},
     logs: []
   });
+  const [schemaCheckResult, setSchemaCheckResult] = useState<any>(null);
 
   const runDiagnostics = async () => {
     setLoading(true);
@@ -170,6 +171,35 @@ export default function LinkOrchestrationDiagnosticsPage() {
       alert(`❌ Error creating table: ${error.message}`);
     }
     setCreating(false);
+  };
+
+  const checkSchema = async () => {
+    try {
+      const response = await fetch('/api/admin/check-link-orchestration-schema');
+      const data = await response.json();
+      setSchemaCheckResult(data);
+    } catch (error: any) {
+      setSchemaCheckResult({ error: error.message });
+    }
+  };
+
+  const fixSchema = async () => {
+    try {
+      const response = await fetch('/api/admin/fix-link-orchestration-schema', {
+        method: 'POST'
+      });
+      const data = await response.json();
+      
+      if (data.success) {
+        alert(`✅ Schema fix successful: ${data.message}`);
+        // Re-check schema after fix
+        await checkSchema();
+      } else {
+        alert(`❌ Schema fix failed: ${data.error}`);
+      }
+    } catch (error: any) {
+      alert(`❌ Error fixing schema: ${error.message}`);
+    }
   };
 
   const runTestOrchestration = async () => {
@@ -435,6 +465,43 @@ SEO success requires a holistic approach that combines quality content, technica
               </div>
             </div>
           )}
+        </div>
+
+        {/* Schema Check Section */}
+        <div className="border-t pt-6">
+          <h2 className="text-xl font-semibold mb-4">Schema Health Check</h2>
+          <div className="bg-white border border-gray-200 rounded-lg p-6 mb-6">
+            <p className="text-sm text-gray-600 mb-4">
+              Check and fix the link orchestration database schema if needed.
+            </p>
+            
+            <div className="flex gap-4">
+              <button
+                onClick={checkSchema}
+                className="px-4 py-2 bg-blue-600 text-white rounded hover:bg-blue-700 flex items-center gap-2"
+              >
+                <Database className="w-4 h-4" />
+                Check Schema
+              </button>
+              
+              <button
+                onClick={fixSchema}
+                className="px-4 py-2 bg-green-600 text-white rounded hover:bg-green-700 flex items-center gap-2"
+              >
+                <Settings className="w-4 h-4" />
+                Fix Schema
+              </button>
+            </div>
+
+            {schemaCheckResult && (
+              <div className="mt-4 p-4 bg-gray-50 rounded-lg">
+                <h4 className="font-medium mb-2">Schema Check Result:</h4>
+                <pre className="text-xs overflow-x-auto">
+                  {JSON.stringify(schemaCheckResult, null, 2)}
+                </pre>
+              </div>
+            )}
+          </div>
         </div>
 
         {/* Test Orchestration Section */}
