@@ -666,7 +666,8 @@ export default function BulkAnalysisPage() {
                             {domain.targetPageIds.length} target pages
                           </p>
                           
-                          <div className="mt-3 flex flex-wrap gap-2">
+                          <div className="mt-3">
+                          <div className="flex flex-wrap gap-2">
                             {keywordBatches.map((batch, index) => (
                               <a
                                 key={index}
@@ -679,7 +680,25 @@ export default function BulkAnalysisPage() {
                                 Ahrefs {keywordBatches.length > 1 ? `(${index + 1}/${keywordBatches.length})` : ''}
                               </a>
                             ))}
+                            
+                            {/* Open All button if multiple batches */}
+                            {keywordBatches.length > 1 && (
+                              <button
+                                onClick={() => {
+                                  keywordBatches.forEach((batch, index) => {
+                                    setTimeout(() => {
+                                      window.open(buildAhrefsUrl(domain.domain, batch), '_blank');
+                                    }, index * 200); // Small delay to prevent popup blocker
+                                  });
+                                }}
+                                className="inline-flex items-center px-3 py-1 bg-purple-600 text-white text-sm rounded hover:bg-purple-700"
+                              >
+                                <ExternalLink className="w-3 h-3 mr-1" />
+                                Open All ({keywordBatches.length})
+                              </button>
+                            )}
                           </div>
+                        </div>
                         </div>
                         
                         <div className="ml-4 flex items-start space-x-4">

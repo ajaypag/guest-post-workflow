@@ -924,8 +924,9 @@ function BulkAnalysisPageContent() {
                         <div className="mt-3">
                           {/* Keyword groups */}
                           {groupedUrls.length > 0 ? (
-                            <div className="space-y-2">
-                              {groupedUrls.map((group, index) => (
+                            <div>
+                              <div className="space-y-2">
+                                {groupedUrls.map((group, index) => (
                                 <div key={index} className="flex items-center gap-2">
                                   <a
                                     href={group.url}
@@ -953,6 +954,62 @@ function BulkAnalysisPageContent() {
                                   )}
                                 </div>
                               ))}
+                              </div>
+                              
+                              {/* Open All and Open by Type buttons */}
+                              {groupedUrls.length > 1 && (
+                                <div className="mt-2 flex flex-wrap gap-2">
+                                  <button
+                                    onClick={() => {
+                                      groupedUrls.forEach((group, index) => {
+                                        setTimeout(() => {
+                                          window.open(group.url, '_blank');
+                                        }, index * 200); // Small delay to prevent popup blocker
+                                      });
+                                    }}
+                                    className="inline-flex items-center px-3 py-1 bg-purple-600 text-white text-sm rounded hover:bg-purple-700"
+                                  >
+                                    <ExternalLink className="w-3 h-3 mr-1" />
+                                    Open All ({groupedUrls.length})
+                                  </button>
+                                  
+                                  {groupedUrls.filter(g => g.relevance === 'core').length > 0 && (
+                                    <button
+                                      onClick={() => {
+                                        groupedUrls
+                                          .filter(g => g.relevance === 'core')
+                                          .forEach((group, index) => {
+                                            setTimeout(() => {
+                                              window.open(group.url, '_blank');
+                                            }, index * 200);
+                                          });
+                                      }}
+                                      className="inline-flex items-center px-3 py-1 bg-green-600 text-white text-sm rounded hover:bg-green-700"
+                                    >
+                                      <ExternalLink className="w-3 h-3 mr-1" />
+                                      Open Premium ({groupedUrls.filter(g => g.relevance === 'core').length})
+                                    </button>
+                                  )}
+                                  
+                                  {groupedUrls.filter(g => g.relevance === 'related').length > 0 && (
+                                    <button
+                                      onClick={() => {
+                                        groupedUrls
+                                          .filter(g => g.relevance === 'related')
+                                          .forEach((group, index) => {
+                                            setTimeout(() => {
+                                              window.open(group.url, '_blank');
+                                            }, index * 200);
+                                          });
+                                      }}
+                                      className="inline-flex items-center px-3 py-1 bg-blue-600 text-white text-sm rounded hover:bg-blue-700"
+                                    >
+                                      <ExternalLink className="w-3 h-3 mr-1" />
+                                      Open Good ({groupedUrls.filter(g => g.relevance === 'related').length})
+                                    </button>
+                                  )}
+                                </div>
+                              )}
                             </div>
                           ) : (
                             <span className="text-sm text-gray-500">No keywords available</span>
