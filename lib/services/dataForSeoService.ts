@@ -59,6 +59,15 @@ export class DataForSeoService {
       // Example: ["keyword_data.keyword", "like", "%lead%"] will match "lead generation", "leadership", etc.
       let filters = undefined;
       if (keywords.length > 0) {
+        console.log(`Processing ${keywords.length} keywords for filtering`);
+        
+        // Limit keywords to prevent filter errors
+        const MAX_KEYWORDS = 10; // Start with a conservative limit
+        if (keywords.length > MAX_KEYWORDS) {
+          console.warn(`Too many keywords (${keywords.length}), limiting to first ${MAX_KEYWORDS}`);
+          keywords = keywords.slice(0, MAX_KEYWORDS);
+        }
+        
         // Don't escape special characters - DataForSEO might handle this internally
         const sanitizedKeywords = keywords;
 
