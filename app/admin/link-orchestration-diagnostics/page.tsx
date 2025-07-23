@@ -257,6 +257,26 @@ export default function LinkOrchestrationDiagnosticsPage() {
     }
   };
 
+  const testWithRealWorkflow = async () => {
+    try {
+      const response = await fetch('/api/admin/test-link-orchestration-with-workflow', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' }
+      });
+      
+      const data = await response.json();
+      
+      if (data.success) {
+        alert(`✅ Test successful!\n\nSession ID: ${data.sessionId}\nWorkflow ID: ${data.workflowId}\n\n${data.message}`);
+        console.log('Test result:', data);
+      } else {
+        alert(`❌ Test failed: ${data.error}\n\n${data.hint || ''}\n\nDetails: ${JSON.stringify(data.details, null, 2)}`);
+      }
+    } catch (error: any) {
+      alert(`❌ Error running test: ${error.message}`);
+    }
+  };
+
   const runTestOrchestration = async () => {
     setTestOrchestration({
       status: 'running',
@@ -561,6 +581,14 @@ SEO success requires a holistic approach that combines quality content, technica
               >
                 <Database className="w-4 h-4" />
                 Add Missing Columns
+              </button>
+              
+              <button
+                onClick={testWithRealWorkflow}
+                className="px-4 py-2 bg-green-600 text-white rounded hover:bg-green-700 flex items-center gap-2"
+              >
+                <PlayCircle className="w-4 h-4" />
+                Test with Real Workflow
               </button>
             </div>
 
