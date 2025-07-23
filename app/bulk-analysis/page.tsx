@@ -1005,7 +1005,7 @@ function BulkAnalysisPageContent() {
                                       className="inline-flex items-center px-3 py-1 bg-blue-600 text-white text-sm rounded hover:bg-blue-700"
                                     >
                                       <ExternalLink className="w-3 h-3 mr-1" />
-                                      Open Good ({groupedUrls.filter(g => g.relevance === 'related').length})
+                                      Open Related ({groupedUrls.filter(g => g.relevance === 'related').length})
                                     </button>
                                   )}
                                 </div>
