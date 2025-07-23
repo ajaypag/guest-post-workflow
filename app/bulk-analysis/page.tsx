@@ -25,12 +25,15 @@ import { groupKeywordsByTopic, generateGroupedAhrefsUrls } from '@/lib/utils/key
 interface BulkAnalysisDomain {
   id: string;
   domain: string;
-  qualificationStatus: 'pending' | 'qualified' | 'disqualified';
+  qualificationStatus: 'pending' | 'high_quality' | 'average_quality' | 'disqualified';
   keywordCount: number;
   targetPageIds: string[];
   checkedBy?: string;
   checkedAt?: string;
   notes?: string;
+  hasWorkflow?: boolean;
+  workflowId?: string;
+  workflowCreatedAt?: string;
 }
 
 function BulkAnalysisPageContent() {
@@ -72,6 +75,11 @@ function BulkAnalysisPageContent() {
   
   // Store notes for domains
   const [domainNotes, setDomainNotes] = useState<{ [domainId: string]: string }>({});
+  
+  // Filtering options
+  const [statusFilter, setStatusFilter] = useState<'all' | 'pending' | 'high_quality' | 'average_quality' | 'disqualified'>('all');
+  const [workflowFilter, setWorkflowFilter] = useState<'all' | 'has_workflow' | 'no_workflow'>('all');
+  const [searchQuery, setSearchQuery] = useState('');
 
   // Load experimental features preference from localStorage
   useEffect(() => {
@@ -245,7 +253,7 @@ function BulkAnalysisPageContent() {
     }
   };
 
-  const updateQualificationStatus = async (domainId: string, status: 'qualified' | 'disqualified') => {
+  const updateQualificationStatus = async (domainId: string, status: 'high_quality' | 'average_quality' | 'disqualified') => {
     if (!client) return; // Can't save without client
     
     try {
@@ -296,15 +304,15 @@ function BulkAnalysisPageContent() {
     }
   };
 
-  const createWorkflow = async (domainId: string, domain: string) => {
+  const createWorkflow = async (domain: BulkAnalysisDomain) => {
     // Navigate to workflow creation with pre-filled domain and notes
-    const notes = domainNotes[domainId] || '';
+    const notes = domain.notes || domainNotes[domain.id] || '';
     const notesParam = notes ? `&notes=${encodeURIComponent(notes)}` : '';
     
     if (client) {
-      router.push(`/workflow/new?clientId=${client.id}&guestPostSite=${encodeURIComponent(domain)}${notesParam}`);
+      router.push(`/workflow/new?clientId=${client.id}&guestPostSite=${encodeURIComponent(domain.domain)}${notesParam}`);
     } else {
-      router.push(`/workflow/new?guestPostSite=${encodeURIComponent(domain)}${notesParam}`);
+      router.push(`/workflow/new?guestPostSite=${encodeURIComponent(domain.domain)}${notesParam}`);
     }
   };
 
@@ -738,8 +746,87 @@ function BulkAnalysisPageContent() {
               </div>
             </div>
             
+            {/* Filter Controls */}
+            <div className="mb-6 p-4 bg-gray-50 rounded-lg space-y-4">
+              {/* Search Bar */}
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-2">Search Domains</label>
+                <input
+                  type="text"
+                  value={searchQuery}
+                  onChange={(e) => setSearchQuery(e.target.value)}
+                  placeholder="Search by domain name..."
+                  className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-indigo-500 focus:border-transparent"
+                />
+              </div>
+
+              {/* Status Filters */}
+              <div>
+                <h4 className="font-medium text-gray-900 mb-3">Filter by Status</h4>
+                <div className="flex flex-wrap gap-2">
+                  {[
+                    { value: 'all', label: 'All Domains', count: domains.length },
+                    { value: 'pending', label: 'Pending Review', count: domains.filter(d => d.qualificationStatus === 'pending').length },
+                    { value: 'high_quality', label: 'High Quality', count: domains.filter(d => d.qualificationStatus === 'high_quality').length },
+                    { value: 'average_quality', label: 'Average Quality', count: domains.filter(d => d.qualificationStatus === 'average_quality').length },
+                    { value: 'disqualified', label: 'Disqualified', count: domains.filter(d => d.qualificationStatus === 'disqualified').length }
+                  ].map((filter) => (
+                    <button
+                      key={filter.value}
+                      onClick={() => setStatusFilter(filter.value as any)}
+                      className={`px-3 py-2 text-sm rounded-lg border transition-colors ${
+                        statusFilter === filter.value
+                          ? 'bg-indigo-600 text-white border-indigo-600'
+                          : 'bg-white text-gray-700 border-gray-300 hover:border-indigo-300 hover:bg-indigo-50'
+                      }`}
+                    >
+                      {filter.label} ({filter.count})
+                    </button>
+                  ))}
+                </div>
+              </div>
+
+              {/* Workflow Filters */}
+              <div>
+                <h4 className="font-medium text-gray-900 mb-3">Filter by Workflow Status</h4>
+                <div className="flex flex-wrap gap-2">
+                  {[
+                    { value: 'all', label: 'All', count: domains.length },
+                    { value: 'has_workflow', label: 'Has Workflow', count: domains.filter(d => d.hasWorkflow).length },
+                    { value: 'no_workflow', label: 'No Workflow', count: domains.filter(d => !d.hasWorkflow).length }
+                  ].map((filter) => (
+                    <button
+                      key={filter.value}
+                      onClick={() => setWorkflowFilter(filter.value as any)}
+                      className={`px-3 py-2 text-sm rounded-lg border transition-colors ${
+                        workflowFilter === filter.value
+                          ? 'bg-purple-600 text-white border-purple-600'
+                          : 'bg-white text-gray-700 border-gray-300 hover:border-purple-300 hover:bg-purple-50'
+                      }`}
+                    >
+                      {filter.label} ({filter.count})
+                    </button>
+                  ))}
+                </div>
+              </div>
+            </div>
+            
             <div className="grid gap-4">
-              {domains.map((domain) => {
+              {domains
+                .filter(domain => {
+                  // Status filter
+                  if (statusFilter !== 'all' && domain.qualificationStatus !== statusFilter) return false;
+                  
+                  // Workflow filter
+                  if (workflowFilter === 'has_workflow' && !domain.hasWorkflow) return false;
+                  if (workflowFilter === 'no_workflow' && domain.hasWorkflow) return false;
+                  
+                  // Search filter
+                  if (searchQuery && !domain.domain.toLowerCase().includes(searchQuery.toLowerCase())) return false;
+                  
+                  return true;
+                })
+                .map((domain) => {
                 // Get keywords based on mode
                 let keywords: Set<string>;
                 if (keywordInputMode === 'manual') {
@@ -865,44 +952,78 @@ function BulkAnalysisPageContent() {
                         </div>
                       </div>
                       
-                      <div className="ml-4 flex items-center space-x-2">
-                        {domain.qualificationStatus === 'pending' ? (
-                          <>
-                            <button
-                              onClick={() => updateQualificationStatus(domain.id, 'qualified')}
-                              className="p-2 text-green-600 hover:bg-green-50 rounded"
-                              title="Mark as Qualified"
-                            >
-                              <CheckCircle className="w-5 h-5" />
-                            </button>
-                            <button
-                              onClick={() => updateQualificationStatus(domain.id, 'disqualified')}
-                              className="p-2 text-red-600 hover:bg-red-50 rounded"
-                              title="Mark as Disqualified"
-                            >
-                              <XCircle className="w-5 h-5" />
-                            </button>
-                          </>
-                        ) : domain.qualificationStatus === 'qualified' ? (
-                          <div className="flex items-center space-x-2">
-                            <span className="inline-flex items-center px-2 py-1 bg-green-100 text-green-800 text-sm rounded">
-                              <CheckCircle className="w-4 h-4 mr-1" />
-                              Qualified
-                            </span>
-                            <button
-                              onClick={() => createWorkflow(domain.id, domain.domain)}
-                              className="inline-flex items-center px-3 py-1 bg-green-600 text-white text-sm rounded hover:bg-green-700"
-                            >
-                              <Plus className="w-3 h-3 mr-1" />
-                              Create Workflow
-                            </button>
-                          </div>
-                        ) : (
-                          <span className="inline-flex items-center px-2 py-1 bg-red-100 text-red-800 text-sm rounded">
-                            <XCircle className="w-4 h-4 mr-1" />
-                            Disqualified
-                          </span>
-                        )}
+                      <div className="ml-4">
+                        {/* Qualification buttons */}
+                        <div className="flex flex-col space-y-2">
+                          {domain.qualificationStatus === 'pending' ? (
+                            <>
+                              <button
+                                onClick={() => updateQualificationStatus(domain.id, 'high_quality')}
+                                className="px-4 py-2 bg-gradient-to-r from-green-500 to-green-600 text-white text-sm font-medium rounded hover:from-green-600 hover:to-green-700 transition-all"
+                              >
+                                🌟 High Quality Target
+                              </button>
+                              <button
+                                onClick={() => updateQualificationStatus(domain.id, 'average_quality')}
+                                className="px-4 py-2 bg-gradient-to-r from-blue-500 to-blue-600 text-white text-sm font-medium rounded hover:from-blue-600 hover:to-blue-700 transition-all"
+                              >
+                                ✓ Average Quality Target
+                              </button>
+                              <button
+                                onClick={() => updateQualificationStatus(domain.id, 'disqualified')}
+                                className="px-4 py-2 bg-gradient-to-r from-gray-400 to-gray-500 text-white text-sm font-medium rounded hover:from-gray-500 hover:to-gray-600 transition-all"
+                              >
+                                ✗ Disqualified
+                              </button>
+                            </>
+                          ) : (
+                            <div className="space-y-2">
+                              {domain.qualificationStatus === 'high_quality' && (
+                                <>
+                                  <span className="inline-flex items-center px-3 py-1 bg-gradient-to-r from-green-100 to-green-200 text-green-800 text-sm font-medium rounded">
+                                    🌟 High Quality
+                                  </span>
+                                  {!domain.hasWorkflow && (
+                                    <button
+                                      onClick={() => createWorkflow(domain)}
+                                      className="inline-flex items-center px-3 py-1 bg-green-600 text-white text-sm rounded hover:bg-green-700"
+                                    >
+                                      <Plus className="w-3 h-3 mr-1" />
+                                      Create Workflow
+                                    </button>
+                                  )}
+                                </>
+                              )}
+                              {domain.qualificationStatus === 'average_quality' && (
+                                <>
+                                  <span className="inline-flex items-center px-3 py-1 bg-gradient-to-r from-blue-100 to-blue-200 text-blue-800 text-sm font-medium rounded">
+                                    ✓ Average Quality
+                                  </span>
+                                  {!domain.hasWorkflow && (
+                                    <button
+                                      onClick={() => createWorkflow(domain)}
+                                      className="inline-flex items-center px-3 py-1 bg-blue-600 text-white text-sm rounded hover:bg-blue-700"
+                                    >
+                                      <Plus className="w-3 h-3 mr-1" />
+                                      Create Workflow
+                                    </button>
+                                  )}
+                                </>
+                              )}
+                              {domain.qualificationStatus === 'disqualified' && (
+                                <span className="inline-flex items-center px-3 py-1 bg-gray-100 text-gray-800 text-sm rounded">
+                                  ✗ Disqualified
+                                </span>
+                              )}
+                              {domain.hasWorkflow && (
+                                <span className="inline-flex items-center px-2 py-1 bg-purple-100 text-purple-800 text-xs rounded">
+                                  <FileText className="w-3 h-3 mr-1" />
+                                  Has Workflow
+                                </span>
+                              )}
+                            </div>
+                          )}
+                        </div>
                       </div>
                     </div>
                   </div>
