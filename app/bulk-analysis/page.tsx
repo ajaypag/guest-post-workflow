@@ -6,6 +6,7 @@ import Link from 'next/link';
 import AuthWrapper from '@/components/AuthWrapper';
 import Header from '@/components/Header';
 import { clientStorage } from '@/lib/userStorage';
+import { AuthService } from '@/lib/auth';
 import { Client, TargetPage } from '@/types/user';
 import { 
   ArrowLeft, 
@@ -266,6 +267,13 @@ function BulkAnalysisPageContent() {
     if (!client) return; // Can't save without client
     
     try {
+      const session = AuthService.getSession();
+      if (!session) {
+        console.error('No user session found');
+        setMessage('❌ Please log in to update domain status');
+        return;
+      }
+
       const notes = domainNotes[domainId] || '';
       const response = await fetch(`/api/clients/${client.id}/bulk-analysis/${domainId}`, {
         method: 'PUT',
@@ -273,15 +281,20 @@ function BulkAnalysisPageContent() {
         body: JSON.stringify({ 
           status,
           notes,
-          userId: 'system' // Placeholder since no auth
+          userId: session.userId
         })
       });
 
       if (response.ok) {
         await loadDomains();
+      } else {
+        const errorData = await response.json();
+        console.error('Error updating qualification status:', errorData);
+        setMessage(`❌ Error updating status: ${errorData.error || 'Unknown error'}`);
       }
     } catch (error) {
       console.error('Error updating status:', error);
+      setMessage('❌ Failed to update domain status');
     }
   };
   
@@ -292,6 +305,13 @@ function BulkAnalysisPageContent() {
     if (!domain) return;
     
     try {
+      const session = AuthService.getSession();
+      if (!session) {
+        console.error('No user session found');
+        setMessage('❌ Please log in to save notes');
+        return;
+      }
+
       const notes = domainNotes[domainId] || '';
       const response = await fetch(`/api/clients/${client.id}/bulk-analysis/${domainId}`, {
         method: 'PUT',
@@ -299,13 +319,17 @@ function BulkAnalysisPageContent() {
         body: JSON.stringify({ 
           status: domain.qualificationStatus,
           notes,
-          userId: 'system' // Placeholder since no auth
+          userId: session.userId
         })
       });
 
       if (response.ok) {
         await loadDomains();
         setMessage('✅ Notes saved successfully');
+      } else {
+        const errorData = await response.json();
+        console.error('Error saving notes:', errorData);
+        setMessage(`❌ Error saving notes: ${errorData.error || 'Unknown error'}`);
       }
     } catch (error) {
       console.error('Error saving notes:', error);
