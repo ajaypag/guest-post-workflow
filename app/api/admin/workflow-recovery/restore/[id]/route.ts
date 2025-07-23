@@ -1,6 +1,11 @@
 import { NextRequest, NextResponse } from 'next/server';
-import pool from '@/lib/db/connection';
+import { Pool } from 'pg';
 import { WORKFLOW_STEPS } from '@/types/workflow';
+
+const pool = new Pool({
+  connectionString: process.env.DATABASE_URL,
+  ssl: false
+});
 
 export async function POST(
   request: NextRequest,
