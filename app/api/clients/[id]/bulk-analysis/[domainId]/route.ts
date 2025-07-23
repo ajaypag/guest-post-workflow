@@ -7,7 +7,7 @@ export async function PUT(
 ) {
   try {
     const { domainId } = await params;
-    const { status, notes } = await request.json();
+    const { status, notes, userId } = await request.json();
 
     if (!status || !['qualified', 'disqualified'].includes(status)) {
       return NextResponse.json(
@@ -16,10 +16,17 @@ export async function PUT(
       );
     }
 
+    if (!userId) {
+      return NextResponse.json(
+        { error: 'User ID is required' },
+        { status: 400 }
+      );
+    }
+
     const updated = await BulkAnalysisService.updateQualificationStatus(
       domainId,
       status,
-      'system', // Placeholder since no auth
+      userId,
       notes
     );
 
