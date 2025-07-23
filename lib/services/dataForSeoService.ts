@@ -72,16 +72,16 @@ export class DataForSeoService {
             ["keyword_data.keyword", "like", `%${sanitizedKeywords[0]}%`]
           ];
         } else {
-          // Multiple keywords - need OR conditions
-          filters = [];
+          // Multiple keywords - need OR conditions wrapped in array
+          // DataForSEO expects filters to be wrapped: [[condition1, "or", condition2, "or", condition3]]
+          const filterConditions = [];
           for (let i = 0; i < sanitizedKeywords.length; i++) {
-            if (i === 0) {
-              filters.push(["keyword_data.keyword", "like", `%${sanitizedKeywords[i]}%`]);
-            } else {
-              filters.push("or");
-              filters.push(["keyword_data.keyword", "like", `%${sanitizedKeywords[i]}%`]);
+            if (i > 0) {
+              filterConditions.push("or");
             }
+            filterConditions.push(["keyword_data.keyword", "like", `%${sanitizedKeywords[i]}%`]);
           }
+          filters = [filterConditions];
         }
       }
 
@@ -121,6 +121,13 @@ export class DataForSeoService {
 
       const data = await response.json();
       console.log('DataForSEO API response data:', JSON.stringify(data, null, 2).substring(0, 500) + '...');
+      
+      // Check for task-level errors
+      if (data.tasks?.[0]?.status_code !== 20000) {
+        const taskError = data.tasks?.[0];
+        console.error('DataForSEO task error:', taskError);
+        throw new Error(`DataForSEO task error: ${taskError?.status_message || 'Unknown error'}`);
+      }
       
       // Parse results
       const results: DataForSeoKeywordResult[] = [];
