@@ -80,6 +80,15 @@ function BulkAnalysisPageContent() {
   const [statusFilter, setStatusFilter] = useState<'all' | 'pending' | 'high_quality' | 'average_quality' | 'disqualified'>('all');
   const [workflowFilter, setWorkflowFilter] = useState<'all' | 'has_workflow' | 'no_workflow'>('all');
   const [searchQuery, setSearchQuery] = useState('');
+  
+  // Pagination state
+  const [displayLimit, setDisplayLimit] = useState(50);
+  const ITEMS_PER_PAGE = 50;
+  
+  // Reset pagination when filters change
+  useEffect(() => {
+    setDisplayLimit(ITEMS_PER_PAGE);
+  }, [statusFilter, workflowFilter, searchQuery]);
 
   // Load experimental features preference from localStorage
   useEffect(() => {
@@ -812,8 +821,8 @@ function BulkAnalysisPageContent() {
             </div>
             
             <div className="grid gap-4">
-              {domains
-                .filter(domain => {
+              {(() => {
+                const filteredDomains = domains.filter(domain => {
                   // Status filter
                   if (statusFilter !== 'all' && domain.qualificationStatus !== statusFilter) return false;
                   
@@ -825,8 +834,14 @@ function BulkAnalysisPageContent() {
                   if (searchQuery && !domain.domain.toLowerCase().includes(searchQuery.toLowerCase())) return false;
                   
                   return true;
-                })
-                .map((domain) => {
+                });
+                
+                const paginatedDomains = filteredDomains.slice(0, displayLimit);
+                const hasMore = filteredDomains.length > displayLimit;
+                
+                return (
+                  <>
+                    {paginatedDomains.map((domain) => {
                 // Get keywords based on mode
                 let keywords: Set<string>;
                 if (keywordInputMode === 'manual') {
@@ -1029,6 +1044,27 @@ function BulkAnalysisPageContent() {
                   </div>
                 );
               })}
+                    
+                    {/* Show More Button */}
+                    {hasMore && (
+                      <div className="mt-6 text-center">
+                        <button
+                          onClick={() => setDisplayLimit(displayLimit + ITEMS_PER_PAGE)}
+                          className="inline-flex items-center px-6 py-3 bg-gray-100 hover:bg-gray-200 text-gray-800 font-medium rounded-lg transition-colors"
+                        >
+                          <Plus className="w-5 h-5 mr-2" />
+                          Show More ({filteredDomains.length - paginatedDomains.length} remaining)
+                        </button>
+                      </div>
+                    )}
+                    
+                    {/* Results Summary */}
+                    <div className="mt-4 text-center text-sm text-gray-600">
+                      Showing {paginatedDomains.length} of {filteredDomains.length} domains
+                    </div>
+                  </>
+                );
+              })()}
             </div>
           </div>
         )}
