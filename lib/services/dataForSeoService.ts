@@ -54,14 +54,42 @@ export class DataForSeoService {
         `${process.env.DATAFORSEO_LOGIN}:${process.env.DATAFORSEO_PASSWORD}`
       ).toString('base64');
 
-      // Prepare request
+      // Prepare request with proper filters using 'like' operator and % wildcards
+      // DataForSEO requires 'like' operator with % wildcards for partial matching
+      // Example: ["keyword_data.keyword", "like", "%lead%"] will match "lead generation", "leadership", etc.
+      let filters = undefined;
+      if (keywords.length > 0) {
+        // Sanitize keywords to escape special characters
+        const sanitizedKeywords = keywords.map(keyword => {
+          // Escape % and _ characters that have special meaning in LIKE patterns
+          return keyword.replace(/%/g, '\\%').replace(/_/g, '\\_');
+        });
+
+        // Create an OR condition for all keywords with partial matching
+        if (sanitizedKeywords.length === 1) {
+          // Single keyword - simple filter
+          filters = [
+            ["keyword_data.keyword", "like", `%${sanitizedKeywords[0]}%`]
+          ];
+        } else {
+          // Multiple keywords - need OR conditions
+          filters = [];
+          for (let i = 0; i < sanitizedKeywords.length; i++) {
+            if (i === 0) {
+              filters.push(["keyword_data.keyword", "like", `%${sanitizedKeywords[i]}%`]);
+            } else {
+              filters.push("or");
+              filters.push(["keyword_data.keyword", "like", `%${sanitizedKeywords[i]}%`]);
+            }
+          }
+        }
+      }
+
       const requestBody = [{
         target: domain,
         location_code: locationCode,
         language_code: languageCode,
-        filters: keywords.length > 0 ? [
-          ["keyword_data.keyword", "in", keywords]
-        ] : undefined,
+        filters: filters,
         limit: 500
       }];
       
