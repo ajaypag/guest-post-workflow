@@ -20,6 +20,17 @@ interface ArticleDraftStepProps {
 }
 
 export const ArticleDraftStepClean = ({ step, workflow, onChange, onAgentStateChange, onUnsavedContentChange }: ArticleDraftStepProps) => {
+  // Utility function to clean article content of internal control tags
+  const cleanArticleContent = (content: string): string => {
+    if (!content) return content;
+    
+    return content
+      .replace(/<<<ARTICLE_CONTENT_END>>>/g, '') // Remove end markers
+      .replace(/<<<ARTICLE_CONTENT_START>>>/g, '') // Remove start markers (if any)
+      .replace(/<<<[^>]*>>>/g, '') // Remove any other similar control tags
+      .trim(); // Clean up any extra whitespace
+  };
+
   const [expandedSections, setExpandedSections] = useState<{ [key: string]: boolean }>({
     'planning': true,
     'setup': false,
@@ -546,7 +557,7 @@ ${outlineContent || '((((Complete Step 3: Deep Research first to get outline con
                         label="Full Article Text"
                         value={step.outputs.fullArticle || ''}
                         placeholder="Paste the complete article text here from your Google Doc. This will be used in subsequent steps for auditing and optimization."
-                        onChange={(value) => onChange({ ...step.outputs, fullArticle: value })}
+                        onChange={(value) => onChange({ ...step.outputs, fullArticle: cleanArticleContent(value) })}
                         isTextarea={true}
                         height="h-64"
                       />
@@ -626,7 +637,7 @@ ${outlineContent || '((((Complete Step 3: Deep Research first to get outline con
                     console.log('🔄 Calling onChange with new article data...');
                     onChange({ 
                       ...step.outputs, 
-                      fullArticle: article,
+                      fullArticle: cleanArticleContent(article),
                       agentGenerated: true,
                       agentVersion: 'v2',
                       draftStatus: 'completed'
@@ -654,7 +665,7 @@ ${outlineContent || '((((Complete Step 3: Deep Research first to get outline con
                   label="Final Article"
                   value={step.outputs.fullArticle || ''}
                   placeholder="Generated article will appear here after V2 generation completes"
-                  onChange={(value) => onChange({ ...step.outputs, fullArticle: value })}
+                  onChange={(value) => onChange({ ...step.outputs, fullArticle: cleanArticleContent(value) })}
                   isTextarea
                   height="h-96"
                 />
@@ -829,7 +840,7 @@ ${outlineContent || '((((Complete Step 3: Deep Research first to get outline con
                     label="Full Article Text"
                     value={step.outputs.fullArticle || ''}
                     placeholder="Copy and paste your completed article here from the chat above. This will be used in subsequent workflow steps."
-                    onChange={(value) => onChange({ ...step.outputs, fullArticle: value })}
+                    onChange={(value) => onChange({ ...step.outputs, fullArticle: cleanArticleContent(value) })}
                     isTextarea={true}
                     height="h-64"
                   />
