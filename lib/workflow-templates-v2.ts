@@ -1,7 +1,8 @@
 import { WorkflowStep } from '@/types/workflow';
 
-// Original steps 0-7 remain unchanged
-export const WORKFLOW_STEPS_V2 = [
+// IMPORTANT: We're keeping ALL steps, not replacing anything
+// The link-orchestration step is OPTIONAL and works alongside individual steps
+export const WORKFLOW_STEPS_WITH_ORCHESTRATION = [
   {
     id: 'domain-selection',
     title: 'Guest Post Site Selection',
@@ -42,13 +43,49 @@ export const WORKFLOW_STEPS_V2 = [
     title: 'Formatting & QA',
     description: 'Manual formatting and citation check'
   },
-  // NEW: Unified link orchestration step replaces steps 8-14
+  // OPTIONAL: Link orchestration (users can choose this OR individual steps)
   {
     id: 'link-orchestration',
-    title: 'Link Building & Optimization',
-    description: 'Unified AI-powered step that handles: Internal Links, Client Mentions, Client Link Placement, Image Strategy, Link Requests, and URL Suggestion - all orchestrated in parallel and sequential phases for optimal efficiency.'
+    title: 'Link Building Hub (Optional)',
+    description: 'Choose between AI-powered orchestration (all at once) or individual step control. This step provides both options without replacing the individual steps below.'
   },
-  // Original final step remains
+  // Individual link building steps (kept for manual control)
+  {
+    id: 'internal-links',
+    title: 'Internal Links',
+    description: 'Add relevant internal links to other pages on the guest post site'
+  },
+  {
+    id: 'external-links',
+    title: 'External Links',
+    description: 'Add authoritative external links to support claims and add credibility'
+  },
+  {
+    id: 'client-mention',
+    title: 'Client Mention',
+    description: 'Add natural mentions of the client brand throughout the article'
+  },
+  {
+    id: 'client-link',
+    title: 'Client Link',
+    description: 'Insert one contextual link to the client website'
+  },
+  {
+    id: 'images',
+    title: 'Images',
+    description: 'Create or source relevant images for the article'
+  },
+  {
+    id: 'link-requests',
+    title: 'Link Requests',
+    description: 'Identify opportunities for internal linking from existing content'
+  },
+  {
+    id: 'url-suggestion',
+    title: 'URL Suggestion',
+    description: 'Suggest SEO-friendly URL for the guest post'
+  },
+  // Final step
   {
     id: 'email-template',
     title: 'Email Template',
@@ -56,93 +93,69 @@ export const WORKFLOW_STEPS_V2 = [
   }
 ];
 
-// Helper to convert old workflows to new format
-export function migrateWorkflowToV2(oldSteps: WorkflowStep[]): WorkflowStep[] {
+// For backward compatibility
+export const WORKFLOW_STEPS_V2 = WORKFLOW_STEPS_WITH_ORCHESTRATION;
+
+// Helper to add orchestration step to workflows that don't have it
+export function addOrchestrationStep(steps: WorkflowStep[]): WorkflowStep[] {
+  // Check if orchestration step already exists
+  if (steps.some(s => s.id === 'link-orchestration')) {
+    return steps; // Already has orchestration, no changes needed
+  }
+  
   const newSteps: WorkflowStep[] = [];
   
   // Copy steps 0-7 as-is
   for (let i = 0; i <= 7; i++) {
-    if (oldSteps[i]) {
-      newSteps.push(oldSteps[i]);
+    if (steps[i]) {
+      newSteps.push(steps[i]);
     }
   }
   
-  // Create new link orchestration step with combined data from old steps 8-14
+  // Insert the orchestration step at position 8
   const linkOrchestrationStep: WorkflowStep = {
     id: 'link-orchestration',
-    title: 'Link Building & Optimization',
-    description: 'Unified AI-powered step that handles: Internal Links, Client Mentions, Client Link Placement, Image Strategy, Link Requests, and URL Suggestion - all orchestrated in parallel and sequential phases for optimal efficiency.',
+    title: 'Link Building Hub (Optional)',
+    description: 'Choose between AI-powered orchestration (all at once) or individual step control. This step provides both options without replacing the individual steps below.',
     status: 'pending',
     inputs: {},
     outputs: {}
   };
   
-  // Check if any of the old steps 8-14 were completed
-  let hasCompletedOldSteps = false;
-  
-  for (let i = 8; i <= 14; i++) {
-    if (oldSteps[i]?.status === 'completed') {
-      hasCompletedOldSteps = true;
-      
-      // Merge relevant data from old steps
-      switch (oldSteps[i].id) {
-        case 'internal-links':
-          linkOrchestrationStep.outputs.internalLinksLegacy = oldSteps[i].outputs;
-          break;
-        case 'client-mention':
-          linkOrchestrationStep.outputs.clientMentionLegacy = oldSteps[i].outputs;
-          break;
-        case 'client-link':
-          linkOrchestrationStep.outputs.clientLinkLegacy = oldSteps[i].outputs;
-          break;
-        case 'images':
-          linkOrchestrationStep.outputs.imagesLegacy = oldSteps[i].outputs;
-          break;
-        case 'link-requests':
-          linkOrchestrationStep.outputs.linkRequestsLegacy = oldSteps[i].outputs;
-          break;
-        case 'url-suggestion':
-          linkOrchestrationStep.outputs.urlSuggestionLegacy = oldSteps[i].outputs;
-          break;
-      }
-    }
-  }
-  
-  // Mark as completed if any old steps were completed
-  if (hasCompletedOldSteps) {
-    linkOrchestrationStep.status = 'completed';
-    linkOrchestrationStep.outputs.migratedFromLegacy = true;
-  }
-  
   newSteps.push(linkOrchestrationStep);
   
-  // Add the email template step (was step 15, now step 9)
-  if (oldSteps[15]) {
-    newSteps.push(oldSteps[15]);
-  } else {
-    newSteps.push({
-      id: 'email-template',
-      title: 'Email Template',
-      description: 'Generate professional email template for sending guest post to publisher with all relevant details and links.',
-      status: 'pending',
-      inputs: {},
-      outputs: {}
-    });
+  // Copy ALL remaining steps (9-15 become 10-16)
+  for (let i = 8; i < steps.length; i++) {
+    if (steps[i]) {
+      newSteps.push(steps[i]);
+    }
   }
   
   return newSteps;
 }
 
-// Check if a workflow uses the old format
+// DEPRECATED: This old function replaced steps, which we no longer want
+export function migrateWorkflowToV2(oldSteps: WorkflowStep[]): WorkflowStep[] {
+  console.warn('migrateWorkflowToV2 is deprecated. Use addOrchestrationStep instead.');
+  // For backward compatibility, just add the orchestration step
+  return addOrchestrationStep(oldSteps);
+}
+
+// Check if a workflow needs the orchestration step added
+export function needsOrchestrationStep(steps: WorkflowStep[]): boolean {
+  // Workflow needs orchestration if it doesn't have the link-orchestration step
+  return !steps.some(s => s.id === 'link-orchestration');
+}
+
+// DEPRECATED: Old function name for backward compatibility
 export function isLegacyWorkflow(steps: WorkflowStep[]): boolean {
-  // If it has more than 10 steps and includes the old individual link steps
-  return steps.length > 10 && 
-    steps.some(s => ['internal-links', 'client-mention', 'client-link'].includes(s.id));
+  return needsOrchestrationStep(steps);
 }
 
 // Get the appropriate step index mapping
-export function getStepIndexMapping(isV2: boolean = true): Record<string, number> {
-  if (isV2) {
+export function getStepIndexMapping(hasOrchestration: boolean = true): Record<string, number> {
+  // With orchestration step, all steps are kept and orchestration is inserted at position 8
+  if (hasOrchestration) {
     return {
       'domain-selection': 0,
       'keyword-research': 1,
@@ -152,11 +165,18 @@ export function getStepIndexMapping(isV2: boolean = true): Record<string, number
       'content-audit': 5,
       'final-polish': 6,
       'formatting-qa': 7,
-      'link-orchestration': 8,
-      'email-template': 9
+      'link-orchestration': 8, // NEW: Optional orchestration hub
+      'internal-links': 9,     // Shifted from 8
+      'external-links': 10,    // Shifted from 9
+      'client-mention': 11,    // Shifted from 10
+      'client-link': 12,       // Shifted from 11
+      'images': 13,            // Shifted from 12
+      'link-requests': 14,     // Shifted from 13
+      'url-suggestion': 15,    // Shifted from 14
+      'email-template': 16     // Shifted from 15
     };
   } else {
-    // Legacy mapping
+    // Original mapping without orchestration
     return {
       'domain-selection': 0,
       'keyword-research': 1,

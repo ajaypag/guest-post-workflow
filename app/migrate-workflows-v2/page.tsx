@@ -2,7 +2,7 @@
 
 import { useState } from 'react';
 import { ArrowRight, CheckCircle2, XCircle, AlertCircle, Database } from 'lucide-react';
-import { isLegacyWorkflow, migrateWorkflowToV2 } from '@/lib/workflow-templates-v2';
+import { needsOrchestrationStep, addOrchestrationStep } from '@/lib/workflow-templates-v2';
 import { GuestPostWorkflow } from '@/types/workflow';
 
 export default function MigrateWorkflowsV2() {
@@ -42,11 +42,11 @@ export default function MigrateWorkflowsV2() {
       // Process each workflow
       for (const workflow of workflows) {
         try {
-          if (isLegacyWorkflow(workflow.steps)) {
+          if (needsOrchestrationStep(workflow.steps)) {
             migrationResults.legacy++;
             
-            // Migrate the workflow
-            const migratedSteps = migrateWorkflowToV2(workflow.steps);
+            // Add the orchestration step
+            const updatedSteps = addOrchestrationStep(workflow.steps);
             
             // Update the workflow
             const updateResponse = await fetch(`/api/workflows/${workflow.id}`, {
@@ -54,10 +54,10 @@ export default function MigrateWorkflowsV2() {
               headers: { 'Content-Type': 'application/json' },
               body: JSON.stringify({
                 ...workflow,
-                steps: migratedSteps,
+                steps: updatedSteps,
                 metadata: {
                   ...workflow.metadata,
-                  migratedToV2: new Date().toISOString()
+                  orchestrationStepAdded: new Date().toISOString()
                 }
               })
             });
@@ -68,7 +68,7 @@ export default function MigrateWorkflowsV2() {
                 id: workflow.id,
                 title: `${workflow.clientName} - ${workflow.targetDomain || 'Draft'}`,
                 status: 'migrated',
-                message: 'Successfully migrated to V2 with link orchestration'
+                message: 'Successfully added orchestration hub step'
               });
             } else {
               throw new Error(`Failed to update workflow: ${updateResponse.statusText}`);
@@ -78,7 +78,7 @@ export default function MigrateWorkflowsV2() {
               id: workflow.id,
               title: `${workflow.clientName} - ${workflow.targetDomain || 'Draft'}`,
               status: 'already-v2',
-              message: 'Already using V2 format'
+              message: 'Already has orchestration step'
             });
           }
         } catch (error: any) {
@@ -112,10 +112,10 @@ export default function MigrateWorkflowsV2() {
         <div className="p-6 border-b">
           <h1 className="text-2xl font-bold flex items-center gap-2">
             <Database className="h-6 w-6" />
-            Workflow Migration to V2
+            Add Link Orchestration Hub
           </h1>
           <p className="text-gray-600 mt-1">
-            Migrate existing workflows to use the new unified Link Orchestration step
+            Add the optional Link Orchestration Hub to existing workflows (keeps all individual steps)
           </p>
         </div>
         
@@ -125,12 +125,13 @@ export default function MigrateWorkflowsV2() {
             <div className="flex">
               <AlertCircle className="h-5 w-5 text-blue-400 mt-0.5" />
               <div className="ml-3">
-                <p className="text-sm font-medium text-blue-800">What this migration does:</p>
+                <p className="text-sm font-medium text-blue-800">What this update does:</p>
                 <ul className="mt-2 space-y-1 list-disc list-inside text-sm text-blue-700">
-                  <li>Combines steps 8-14 into a single "Link Building & Optimization" step</li>
-                  <li>Preserves all existing data from completed steps</li>
-                  <li>Reduces workflow from 16 to 10 total steps</li>
-                  <li>Enables parallel AI agent processing for faster completion</li>
+                  <li>Adds a "Link Building Hub" step at position 9</li>
+                  <li>Keeps ALL existing individual steps (they shift to positions 10-16)</li>
+                  <li>Users can choose: AI orchestration OR manual step-by-step</li>
+                  <li>No data is lost - this is purely additive</li>
+                  <li>Workflows go from 16 to 17 total steps</li>
                 </ul>
               </div>
             </div>
@@ -138,29 +139,39 @@ export default function MigrateWorkflowsV2() {
 
           {/* Migration Diagram */}
           <div className="bg-gray-50 p-4 rounded-lg">
-            <h3 className="font-medium mb-3">Migration Overview:</h3>
+            <h3 className="font-medium mb-3">What Gets Added:</h3>
             <div className="grid grid-cols-3 gap-4 text-sm">
               <div>
-                <h4 className="font-medium text-gray-700 mb-2">Old Steps (8-14):</h4>
-                <ul className="space-y-1">
-                  <li>• Internal Links</li>
-                  <li>• External Links</li>
-                  <li>• Client Mention</li>
-                  <li>• Client Link</li>
-                  <li>• Images</li>
-                  <li>• Link Requests</li>
-                  <li>• URL Suggestion</li>
+                <h4 className="font-medium text-gray-700 mb-2">Current Workflow:</h4>
+                <ul className="space-y-1 text-xs">
+                  <li>Step 1-8: Content Creation</li>
+                  <li className="font-medium">Step 9: Internal Links</li>
+                  <li className="font-medium">Step 10: External Links</li>
+                  <li className="font-medium">Step 11: Client Mention</li>
+                  <li className="font-medium">Step 12: Client Link</li>
+                  <li className="font-medium">Step 13: Images</li>
+                  <li className="font-medium">Step 14: Link Requests</li>
+                  <li className="font-medium">Step 15: URL Suggestion</li>
+                  <li>Step 16: Email Template</li>
                 </ul>
               </div>
               <div className="flex items-center justify-center">
                 <ArrowRight className="h-8 w-8 text-gray-400" />
               </div>
               <div>
-                <h4 className="font-medium text-gray-700 mb-2">New Step (8):</h4>
-                <div className="bg-blue-100 p-3 rounded">
-                  <p className="font-medium">Link Building & Optimization</p>
-                  <p className="text-xs mt-1">All 7 tasks handled by AI orchestration</p>
-                </div>
+                <h4 className="font-medium text-gray-700 mb-2">Updated Workflow:</h4>
+                <ul className="space-y-1 text-xs">
+                  <li>Step 1-8: Content Creation</li>
+                  <li className="bg-purple-100 p-1 rounded font-medium">Step 9: Link Building Hub 🆕</li>
+                  <li>Step 10: Internal Links</li>
+                  <li>Step 11: External Links</li>
+                  <li>Step 12: Client Mention</li>
+                  <li>Step 13: Client Link</li>
+                  <li>Step 14: Images</li>
+                  <li>Step 15: Link Requests</li>
+                  <li>Step 16: URL Suggestion</li>
+                  <li>Step 17: Email Template</li>
+                </ul>
               </div>
             </div>
           </div>
