@@ -278,28 +278,17 @@ Review one of my project files for my brand guide and the Semantic SEO writing t
                 </div>
               )}
 
-              {/* Article to Polish Field */}
+              {/* Article Field - Always Visible */}
               <div className="bg-gray-50 border border-gray-200 rounded-lg p-4">
-                <label className="block text-sm font-medium text-gray-700 mb-2">
-                  Article to Polish
-                  {!fullArticle && (
-                    <span className="text-xs text-gray-500 ml-2">(Complete Step 5 first)</span>
-                  )}
-                </label>
-                <div className="bg-white border border-gray-300 rounded-lg p-4 min-h-[200px] max-h-[400px] overflow-y-auto">
-                  {fullArticle ? (
-                    <div className="text-sm text-gray-700 whitespace-pre-wrap font-mono">
-                      {fullArticle}
-                    </div>
-                  ) : (
-                    <div className="text-center py-8">
-                      <FileText className="w-12 h-12 text-gray-300 mx-auto mb-3" />
-                      <p className="text-sm text-gray-500">
-                        No article available yet. Complete Step 5 (Semantic SEO) to generate the optimized article.
-                      </p>
-                    </div>
-                  )}
-                </div>
+                <SavedField
+                  label="Article to Polish"
+                  value={fullArticle || ''}
+                  placeholder="The SEO-optimized article from Step 5 will appear here automatically, or you can paste an article to polish..."
+                  onChange={() => {}} // Read-only, populated from previous steps
+                  isTextarea={true}
+                  height="h-32"
+                  readOnly={true}
+                />
               </div>
 
               {/* Agentic Final Polisher V2 Component */}
@@ -453,6 +442,19 @@ Review one of my project files for my brand guide and the Semantic SEO writing t
                   </div>
                 </div>
               )}
+
+              {/* Article Field - Always Visible */}
+              <div className="bg-gray-50 border border-gray-200 rounded-lg p-4">
+                <SavedField
+                  label="Article to Polish"
+                  value={fullArticle || ''}
+                  placeholder="The SEO-optimized article from Step 5 will appear here automatically, or you can paste an article to polish..."
+                  onChange={() => {}} // Read-only, populated from previous steps
+                  isTextarea={true}
+                  height="h-32"
+                  readOnly={true}
+                />
+              </div>
 
               {/* Kickoff prompt */}
               {fullArticle && (
@@ -717,6 +719,19 @@ Review one of my project files for my brand guide and the Semantic SEO writing t
                 </div>
               )}
 
+              {/* Article Field - Always Visible */}
+              <div className="bg-gray-50 border border-gray-200 rounded-lg p-4">
+                <SavedField
+                  label="Article to Polish"
+                  value={fullArticle || ''}
+                  placeholder="The SEO-optimized article from Step 5 will appear here automatically, or you can paste an article to polish..."
+                  onChange={() => {}} // Read-only, populated from previous steps
+                  isTextarea={true}
+                  height="h-32"
+                  readOnly={true}
+                />
+              </div>
+
               {/* Polish Prompt Buttons */}
               <div className="space-y-4">
                 <div className="bg-purple-50 border border-purple-200 rounded-lg p-4">
@@ -876,6 +891,19 @@ Review one of my project files for my brand guide and the Semantic SEO writing t
                   </div>
                 </div>
               )}
+
+              {/* Article Field - Always Visible */}
+              <div className="bg-gray-50 border border-gray-200 rounded-lg p-4">
+                <SavedField
+                  label="Article to Polish"
+                  value={fullArticle || ''}
+                  placeholder="The SEO-optimized article from Step 5 will appear here automatically, or you can paste an article to polish..."
+                  onChange={() => {}} // Read-only, populated from previous steps
+                  isTextarea={true}
+                  height="h-32"
+                  readOnly={true}
+                />
+              </div>
 
               {/* Agentic Final Polisher Component */}
               {fullArticle && (
