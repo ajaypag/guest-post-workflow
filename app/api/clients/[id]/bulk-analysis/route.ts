@@ -7,9 +7,41 @@ export async function GET(
 ) {
   try {
     const { id } = await params;
-    const domains = await BulkAnalysisService.getClientDomains(id);
+    const { searchParams } = new URL(request.url);
     
-    return NextResponse.json({ domains });
+    // Get pagination params
+    const page = parseInt(searchParams.get('page') || '1');
+    const pageSize = parseInt(searchParams.get('pageSize') || '50');
+    const sortBy = searchParams.get('sortBy') as 'createdAt' | 'domain' | 'qualificationStatus' || 'createdAt';
+    const sortOrder = searchParams.get('sortOrder') as 'asc' | 'desc' || 'desc';
+    
+    // Get filter params
+    const qualificationStatus = searchParams.get('status') as any;
+    const hasWorkflow = searchParams.get('hasWorkflow') === 'true' ? true : 
+                       searchParams.get('hasWorkflow') === 'false' ? false : undefined;
+    const search = searchParams.get('search') || undefined;
+    
+    // Support legacy endpoint without pagination for backward compatibility
+    if (!searchParams.get('page')) {
+      const domains = await BulkAnalysisService.getClientDomains(id);
+      return NextResponse.json({ domains });
+    }
+    
+    // Get paginated results
+    const result = await BulkAnalysisService.getPaginatedDomains(
+      id,
+      page,
+      pageSize,
+      {
+        qualificationStatus,
+        hasWorkflow,
+        search
+      },
+      sortBy,
+      sortOrder
+    );
+    
+    return NextResponse.json(result);
   } catch (error: any) {
     console.error('Error fetching bulk analysis domains:', error);
     return NextResponse.json(

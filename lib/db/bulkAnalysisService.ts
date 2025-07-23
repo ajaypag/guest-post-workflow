@@ -1,7 +1,7 @@
 import { db } from './connection';
 import { targetPages, TargetPage } from './schema';
 import { bulkAnalysisDomains, BulkAnalysisDomain } from './bulkAnalysisSchema';
-import { eq, and, inArray, sql } from 'drizzle-orm';
+import { eq, and, inArray, sql, ne, desc, asc, or, like } from 'drizzle-orm';
 import { v4 as uuidv4 } from 'uuid';
 
 export interface BulkAnalysisInput {
@@ -14,6 +14,20 @@ export interface BulkAnalysisInput {
 export interface BulkAnalysisResult extends BulkAnalysisDomain {
   targetPages?: TargetPage[];
   keywords?: string[];
+}
+
+export interface BulkAnalysisFilter {
+  qualificationStatus?: 'pending' | 'high_quality' | 'average_quality' | 'disqualified' | 'qualified_any';
+  hasWorkflow?: boolean;
+  search?: string;
+}
+
+export interface PaginatedResult<T> {
+  data: T[];
+  total: number;
+  page: number;
+  pageSize: number;
+  totalPages: number;
 }
 
 export class BulkAnalysisService {
@@ -126,7 +140,7 @@ export class BulkAnalysisService {
    */
   static async updateQualificationStatus(
     domainId: string,
-    status: 'qualified' | 'disqualified',
+    status: 'high_quality' | 'average_quality' | 'disqualified',
     userId: string,
     notes?: string
   ): Promise<BulkAnalysisDomain> {
@@ -243,6 +257,206 @@ export class BulkAnalysisService {
       return existing;
     } catch (error) {
       console.error('Error checking existing domains:', error);
+      throw error;
+    }
+  }
+
+  /**
+   * Get paginated domains with filtering
+   */
+  static async getPaginatedDomains(
+    clientId: string,
+    page: number = 1,
+    pageSize: number = 50,
+    filters?: BulkAnalysisFilter,
+    sortBy: 'createdAt' | 'domain' | 'qualificationStatus' = 'createdAt',
+    sortOrder: 'asc' | 'desc' = 'desc'
+  ): Promise<PaginatedResult<BulkAnalysisResult>> {
+    try {
+      const offset = (page - 1) * pageSize;
+      
+      // Build where conditions
+      const conditions = [eq(bulkAnalysisDomains.clientId, clientId)];
+      
+      if (filters?.qualificationStatus) {
+        if (filters.qualificationStatus === 'qualified_any') {
+          conditions.push(
+            or(
+              eq(bulkAnalysisDomains.qualificationStatus, 'high_quality'),
+              eq(bulkAnalysisDomains.qualificationStatus, 'average_quality')
+            )!
+          );
+        } else {
+          conditions.push(eq(bulkAnalysisDomains.qualificationStatus, filters.qualificationStatus));
+        }
+      }
+      
+      if (filters?.hasWorkflow !== undefined) {
+        conditions.push(eq(bulkAnalysisDomains.hasWorkflow, filters.hasWorkflow));
+      }
+      
+      if (filters?.search) {
+        conditions.push(like(bulkAnalysisDomains.domain, `%${filters.search}%`));
+      }
+      
+      // Get total count
+      const [{ count }] = await db
+        .select({ count: sql<number>`count(*)` })
+        .from(bulkAnalysisDomains)
+        .where(and(...conditions));
+      
+      // Get paginated data
+      const orderByColumn = 
+        sortBy === 'domain' ? bulkAnalysisDomains.domain :
+        sortBy === 'qualificationStatus' ? bulkAnalysisDomains.qualificationStatus :
+        bulkAnalysisDomains.createdAt;
+      
+      const domains = await db
+        .select()
+        .from(bulkAnalysisDomains)
+        .where(and(...conditions))
+        .orderBy(sortOrder === 'desc' ? desc(orderByColumn) : asc(orderByColumn))
+        .limit(pageSize)
+        .offset(offset);
+      
+      return {
+        data: domains,
+        total: Number(count),
+        page,
+        pageSize,
+        totalPages: Math.ceil(Number(count) / pageSize)
+      };
+    } catch (error) {
+      console.error('Error fetching paginated domains:', error);
+      throw error;
+    }
+  }
+
+  /**
+   * Bulk update qualification status
+   */
+  static async bulkUpdateStatus(
+    domainIds: string[],
+    status: 'high_quality' | 'average_quality' | 'disqualified',
+    userId: string
+  ): Promise<number> {
+    try {
+      const result = await db
+        .update(bulkAnalysisDomains)
+        .set({
+          qualificationStatus: status,
+          checkedBy: userId,
+          checkedAt: new Date(),
+          updatedAt: new Date(),
+        })
+        .where(inArray(bulkAnalysisDomains.id, domainIds));
+      
+      return domainIds.length;
+    } catch (error) {
+      console.error('Error bulk updating status:', error);
+      throw error;
+    }
+  }
+
+  /**
+   * Bulk delete domains
+   */
+  static async bulkDeleteDomains(domainIds: string[]): Promise<number> {
+    try {
+      await db
+        .delete(bulkAnalysisDomains)
+        .where(inArray(bulkAnalysisDomains.id, domainIds));
+      
+      return domainIds.length;
+    } catch (error) {
+      console.error('Error bulk deleting domains:', error);
+      throw error;
+    }
+  }
+
+  /**
+   * Update workflow tracking for a domain
+   */
+  static async updateWorkflowTracking(
+    domainId: string,
+    workflowId: string
+  ): Promise<BulkAnalysisDomain> {
+    try {
+      const [updated] = await db
+        .update(bulkAnalysisDomains)
+        .set({
+          hasWorkflow: true,
+          workflowId,
+          workflowCreatedAt: new Date(),
+          updatedAt: new Date(),
+        })
+        .where(eq(bulkAnalysisDomains.id, domainId))
+        .returning();
+
+      if (!updated) {
+        throw new Error('Domain not found');
+      }
+
+      return updated;
+    } catch (error) {
+      console.error('Error updating workflow tracking:', error);
+      throw error;
+    }
+  }
+
+  /**
+   * Export domains as CSV data
+   */
+  static async exportDomains(
+    clientId: string,
+    filters?: BulkAnalysisFilter
+  ): Promise<string> {
+    try {
+      // Build where conditions
+      const conditions = [eq(bulkAnalysisDomains.clientId, clientId)];
+      
+      if (filters?.qualificationStatus) {
+        if (filters.qualificationStatus === 'qualified_any') {
+          conditions.push(
+            or(
+              eq(bulkAnalysisDomains.qualificationStatus, 'high_quality'),
+              eq(bulkAnalysisDomains.qualificationStatus, 'average_quality')
+            )!
+          );
+        } else {
+          conditions.push(eq(bulkAnalysisDomains.qualificationStatus, filters.qualificationStatus));
+        }
+      }
+      
+      if (filters?.hasWorkflow !== undefined) {
+        conditions.push(eq(bulkAnalysisDomains.hasWorkflow, filters.hasWorkflow));
+      }
+      
+      const domains = await db
+        .select()
+        .from(bulkAnalysisDomains)
+        .where(and(...conditions))
+        .orderBy(desc(bulkAnalysisDomains.createdAt));
+      
+      // Create CSV
+      const headers = ['Domain', 'Status', 'Keywords', 'Has Workflow', 'Checked Date', 'Notes'];
+      const rows = domains.map(d => [
+        d.domain,
+        d.qualificationStatus,
+        d.keywordCount.toString(),
+        d.hasWorkflow ? 'Yes' : 'No',
+        d.checkedAt ? new Date(d.checkedAt).toLocaleDateString() : '',
+        d.notes || ''
+      ]);
+      
+      const csv = [
+        headers.join(','),
+        ...rows.map(row => row.map(cell => `"${cell}"`).join(','))
+      ].join('\n');
+      
+      return csv;
+    } catch (error) {
+      console.error('Error exporting domains:', error);
       throw error;
     }
   }

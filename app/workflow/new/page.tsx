@@ -38,16 +38,18 @@ function NewWorkflowContent() {
 
   useEffect(() => {
     loadClients();
-    
-    // Pre-select client if coming from client page - TODO: Implement with API routes
-    // const clientId = searchParams.get('clientId');
-    // if (clientId) {
-    //   const client = await clientStorage.getClient(clientId);
-    //   if (client) {
-    //     handleClientSelect(client);
-    //   }
-    // }
-  }, [searchParams]);
+  }, []);
+  
+  useEffect(() => {
+    // Pre-select client if coming from bulk analysis or client page
+    const clientId = searchParams.get('clientId');
+    if (clientId && clients.length > 0) {
+      const client = clients.find(c => c.id === clientId);
+      if (client) {
+        handleClientSelect(client);
+      }
+    }
+  }, [searchParams, clients]);
 
   const loadClients = async () => {
     const session = AuthService.getSession();
@@ -86,21 +88,28 @@ function NewWorkflowContent() {
       // Get current user session for creator information
       const session = AuthService.getSession();
       
+      // Get guest post site and notes from URL params if present
+      const guestPostSite = searchParams.get('guestPostSite') || '';
+      const notes = searchParams.get('notes') || '';
+      
       const workflow: GuestPostWorkflow = {
         id: generateUUID(),
         createdAt: new Date(),
         updatedAt: new Date(),
         clientName: formData.clientName,
         clientUrl: formData.clientUrl,
-        targetDomain: '', // Will be set in Step 1: Guest Post Site Selection
+        targetDomain: guestPostSite, // Pre-fill from URL param if available
         currentStep: 0,
         createdBy: session?.name || 'Unknown User',
         createdByEmail: session?.email,
-        steps: WORKFLOW_STEPS.map(step => ({
+        steps: WORKFLOW_STEPS.map((step, index) => ({
           ...step,
           status: 'pending' as const,
           inputs: {},
-          outputs: {},
+          outputs: index === 0 && guestPostSite ? {
+            domain: guestPostSite,
+            notes: notes
+          } : {},
           completedAt: undefined
         })),
         metadata: selectedClient ? { clientId: selectedClient.id } : {}

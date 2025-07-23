@@ -69,6 +69,9 @@ function BulkAnalysisPageContent() {
   // Store pending changes for target pages
   const [pendingTargetPages, setPendingTargetPages] = useState<string[]>([]);
   const [hasUnappliedChanges, setHasUnappliedChanges] = useState(false);
+  
+  // Store notes for domains
+  const [domainNotes, setDomainNotes] = useState<{ [domainId: string]: string }>({});
 
   // Load experimental features preference from localStorage
   useEffect(() => {
@@ -129,7 +132,17 @@ function BulkAnalysisPageContent() {
       const response = await fetch(`/api/clients/${client.id}/bulk-analysis`);
       if (response.ok) {
         const data = await response.json();
-        setDomains(data.domains || []);
+        const loadedDomains = data.domains || [];
+        setDomains(loadedDomains);
+        
+        // Initialize notes from loaded domains
+        const notesMap: { [domainId: string]: string } = {};
+        loadedDomains.forEach((domain: BulkAnalysisDomain) => {
+          if (domain.notes) {
+            notesMap[domain.id] = domain.notes;
+          }
+        });
+        setDomainNotes(notesMap);
       }
     } catch (error) {
       console.error('Error loading domains:', error);
@@ -236,10 +249,15 @@ function BulkAnalysisPageContent() {
     if (!client) return; // Can't save without client
     
     try {
+      const notes = domainNotes[domainId] || '';
       const response = await fetch(`/api/clients/${client.id}/bulk-analysis/${domainId}`, {
         method: 'PUT',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ status })
+        body: JSON.stringify({ 
+          status,
+          notes,
+          userId: 'system' // Placeholder since no auth
+        })
       });
 
       if (response.ok) {
@@ -249,13 +267,44 @@ function BulkAnalysisPageContent() {
       console.error('Error updating status:', error);
     }
   };
+  
+  const saveNotes = async (domainId: string) => {
+    if (!client) return; // Can't save without client
+    
+    const domain = domains.find(d => d.id === domainId);
+    if (!domain) return;
+    
+    try {
+      const notes = domainNotes[domainId] || '';
+      const response = await fetch(`/api/clients/${client.id}/bulk-analysis/${domainId}`, {
+        method: 'PUT',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ 
+          status: domain.qualificationStatus,
+          notes,
+          userId: 'system' // Placeholder since no auth
+        })
+      });
 
-  const createWorkflow = async (domain: string) => {
-    // Navigate to workflow creation with pre-filled domain
+      if (response.ok) {
+        await loadDomains();
+        setMessage('✅ Notes saved successfully');
+      }
+    } catch (error) {
+      console.error('Error saving notes:', error);
+      setMessage('❌ Failed to save notes');
+    }
+  };
+
+  const createWorkflow = async (domainId: string, domain: string) => {
+    // Navigate to workflow creation with pre-filled domain and notes
+    const notes = domainNotes[domainId] || '';
+    const notesParam = notes ? `&notes=${encodeURIComponent(notes)}` : '';
+    
     if (client) {
-      router.push(`/workflow/new?clientId=${client.id}&guestPostSite=${encodeURIComponent(domain)}`);
+      router.push(`/workflow/new?clientId=${client.id}&guestPostSite=${encodeURIComponent(domain)}${notesParam}`);
     } else {
-      router.push(`/workflow/new?guestPostSite=${encodeURIComponent(domain)}`);
+      router.push(`/workflow/new?guestPostSite=${encodeURIComponent(domain)}${notesParam}`);
     }
   };
 
@@ -728,6 +777,38 @@ function BulkAnalysisPageContent() {
                           {domain.targetPageIds.length} target pages
                         </p>
                         
+                        {/* Notes section */}
+                        <div className="mt-2">
+                          <label className="block text-sm font-medium text-gray-700 mb-1">Notes</label>
+                          <textarea
+                            value={domainNotes[domain.id] || ''}
+                            onChange={(e) => {
+                              setDomainNotes(prev => ({
+                                ...prev,
+                                [domain.id]: e.target.value
+                              }));
+                            }}
+                            placeholder="Add notes about why this site is good/bad..."
+                            className="w-full px-3 py-2 text-sm border border-gray-300 rounded-md focus:ring-blue-500 focus:border-blue-500"
+                            rows={2}
+                          />
+                          {domain.notes !== domainNotes[domain.id] && (
+                            <div className="flex items-center justify-between mt-1">
+                              <p className="text-xs text-amber-600">
+                                ⚠️ Unsaved changes
+                              </p>
+                              {client && (
+                                <button
+                                  onClick={() => saveNotes(domain.id)}
+                                  className="text-xs px-2 py-1 bg-blue-600 text-white rounded hover:bg-blue-700"
+                                >
+                                  Save Notes
+                                </button>
+                              )}
+                            </div>
+                          )}
+                        </div>
+                        
                         <div className="mt-3">
                           {/* Keyword groups */}
                           {groupedUrls.length > 0 ? (
@@ -809,7 +890,7 @@ function BulkAnalysisPageContent() {
                               Qualified
                             </span>
                             <button
-                              onClick={() => createWorkflow(domain.domain)}
+                              onClick={() => createWorkflow(domain.id, domain.domain)}
                               className="inline-flex items-center px-3 py-1 bg-green-600 text-white text-sm rounded hover:bg-green-700"
                             >
                               <Plus className="w-3 h-3 mr-1" />
