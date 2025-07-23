@@ -961,7 +961,8 @@ function BulkAnalysisPageContent() {
                                 <div className="mt-2 flex flex-wrap gap-2">
                                   <button
                                     onClick={() => {
-                                      groupedUrls.forEach((group, index) => {
+                                      // Reverse order so user lands on first tab
+                                      [...groupedUrls].reverse().forEach((group, index) => {
                                         setTimeout(() => {
                                           window.open(group.url, '_blank');
                                         }, index * 200); // Small delay to prevent popup blocker
@@ -976,8 +977,10 @@ function BulkAnalysisPageContent() {
                                   {groupedUrls.filter(g => g.relevance === 'core').length > 0 && (
                                     <button
                                       onClick={() => {
-                                        groupedUrls
+                                        // Reverse order so user lands on first tab
+                                        [...groupedUrls]
                                           .filter(g => g.relevance === 'core')
+                                          .reverse()
                                           .forEach((group, index) => {
                                             setTimeout(() => {
                                               window.open(group.url, '_blank');
