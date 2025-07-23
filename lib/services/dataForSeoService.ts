@@ -192,6 +192,12 @@ export class DataForSeoService {
     locationCode: number,
     languageCode: string
   ): Promise<void> {
+    // Skip database storage for temporary domains
+    if (domainId.startsWith('temp-')) {
+      console.log('Skipping database storage for temporary domain:', domainId);
+      return;
+    }
+    
     try {
       const analysisDate = new Date();
       const batchSize = 100;
@@ -223,6 +229,12 @@ export class DataForSeoService {
     status: string,
     keywordsFound: number
   ): Promise<void> {
+    // Skip database update for temporary domains
+    if (domainId.startsWith('temp-')) {
+      console.log('Skipping database update for temporary domain:', domainId);
+      return;
+    }
+    
     try {
       await db.execute(sql`
         UPDATE bulk_analysis_domains 
