@@ -1033,8 +1033,8 @@ function BulkAnalysisPageContent() {
                             <span className="text-sm text-gray-500">No keywords available</span>
                           )}
                           
-                          {/* DataForSEO button only if client is selected, not manual mode, and experimental features enabled */}
-                          {client && keywordInputMode === 'target-pages' && !hideExperimentalFeatures && (
+                          {/* DataForSEO button only if client is selected and experimental features enabled */}
+                          {client && !hideExperimentalFeatures && (
                             <button
                               onClick={() => {
                                 console.log('DataForSEO button onClick triggered');
