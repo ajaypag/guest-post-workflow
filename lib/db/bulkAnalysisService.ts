@@ -140,7 +140,7 @@ export class BulkAnalysisService {
    */
   static async updateQualificationStatus(
     domainId: string,
-    status: 'high_quality' | 'average_quality' | 'disqualified',
+    status: 'pending' | 'high_quality' | 'average_quality' | 'disqualified',
     userId: string,
     notes?: string
   ): Promise<BulkAnalysisDomain> {
@@ -337,7 +337,7 @@ export class BulkAnalysisService {
    */
   static async bulkUpdateStatus(
     domainIds: string[],
-    status: 'high_quality' | 'average_quality' | 'disqualified',
+    status: 'pending' | 'high_quality' | 'average_quality' | 'disqualified',
     userId: string
   ): Promise<number> {
     try {

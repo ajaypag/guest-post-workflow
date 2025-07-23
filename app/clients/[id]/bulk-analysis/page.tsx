@@ -8,6 +8,7 @@ import Header from '@/components/Header';
 import { clientStorage } from '@/lib/userStorage';
 import { AuthService } from '@/lib/auth';
 import { Client, TargetPage } from '@/types/user';
+import { groupKeywordsByTopic, generateGroupedAhrefsUrls } from '@/lib/utils/keywordGrouping';
 import { 
   ArrowLeft, 
   Target, 
@@ -651,10 +652,10 @@ export default function BulkAnalysisPage() {
                   }
                   
                   const keywordArray = Array.from(keywords);
-                  const keywordBatches = [];
-                  for (let i = 0; i < keywordArray.length; i += 50) {
-                    keywordBatches.push(keywordArray.slice(i, i + 50));
-                  }
+                  
+                  // Group keywords by topical relevance
+                  const keywordGroups = groupKeywordsByTopic(keywordArray);
+                  const groupedUrls = generateGroupedAhrefsUrls(domain.domain, keywordGroups, selectedPositionRange);
                   
                   return (
                     <div key={domain.id} className="border rounded-lg p-4">
@@ -667,38 +668,99 @@ export default function BulkAnalysisPage() {
                           </p>
                           
                           <div className="mt-3">
-                          <div className="flex flex-wrap gap-2">
-                            {keywordBatches.map((batch, index) => (
-                              <a
-                                key={index}
-                                href={buildAhrefsUrl(domain.domain, batch)}
-                                target="_blank"
-                                rel="noopener noreferrer"
-                                className="inline-flex items-center px-3 py-1 bg-orange-500 text-white text-sm rounded hover:bg-orange-600"
-                              >
-                                <ExternalLink className="w-3 h-3 mr-1" />
-                                Ahrefs {keywordBatches.length > 1 ? `(${index + 1}/${keywordBatches.length})` : ''}
-                              </a>
-                            ))}
-                            
-                            {/* Open All button if multiple batches */}
-                            {keywordBatches.length > 1 && (
-                              <button
-                                onClick={() => {
-                                  keywordBatches.forEach((batch, index) => {
-                                    setTimeout(() => {
-                                      window.open(buildAhrefsUrl(domain.domain, batch), '_blank');
-                                    }, index * 200); // Small delay to prevent popup blocker
-                                  });
-                                }}
-                                className="inline-flex items-center px-3 py-1 bg-purple-600 text-white text-sm rounded hover:bg-purple-700"
-                              >
-                                <ExternalLink className="w-3 h-3 mr-1" />
-                                Open All ({keywordBatches.length})
-                              </button>
+                            {/* Keyword groups */}
+                            {groupedUrls.length > 0 ? (
+                              <div>
+                                <div className="space-y-2">
+                                  {groupedUrls.map((group, index) => (
+                                    <div key={index} className="flex items-center gap-2">
+                                      <a
+                                        href={group.url}
+                                        target="_blank"
+                                        rel="noopener noreferrer"
+                                        className={`inline-flex items-center px-3 py-1 text-white text-sm rounded hover:opacity-90 transition-opacity ${
+                                          group.relevance === 'core' 
+                                            ? 'bg-green-600' 
+                                            : group.relevance === 'related'
+                                            ? 'bg-blue-600'
+                                            : 'bg-gray-600'
+                                        }`}
+                                      >
+                                        <ExternalLink className="w-3 h-3 mr-1" />
+                                        {group.name}
+                                      </a>
+                                      <span className="text-xs text-gray-500">
+                                        {group.keywordCount} keywords
+                                      </span>
+                                      {group.relevance === 'core' && (
+                                        <span className="text-xs px-2 py-0.5 bg-green-100 text-green-800 rounded">Premium</span>
+                                      )}
+                                      {group.relevance === 'related' && (
+                                        <span className="text-xs px-2 py-0.5 bg-blue-100 text-blue-800 rounded">Good</span>
+                                      )}
+                                    </div>
+                                  ))}
+                                </div>
+                                
+                                {/* Open All and Open by Type buttons */}
+                                {groupedUrls.length > 1 && (
+                                  <div className="mt-2 flex flex-wrap gap-2">
+                                    <button
+                                      onClick={() => {
+                                        groupedUrls.forEach((group, index) => {
+                                          setTimeout(() => {
+                                            window.open(group.url, '_blank');
+                                          }, index * 200); // Small delay to prevent popup blocker
+                                        });
+                                      }}
+                                      className="inline-flex items-center px-3 py-1 bg-purple-600 text-white text-sm rounded hover:bg-purple-700"
+                                    >
+                                      <ExternalLink className="w-3 h-3 mr-1" />
+                                      Open All ({groupedUrls.length})
+                                    </button>
+                                    
+                                    {groupedUrls.filter(g => g.relevance === 'core').length > 0 && (
+                                      <button
+                                        onClick={() => {
+                                          groupedUrls
+                                            .filter(g => g.relevance === 'core')
+                                            .forEach((group, index) => {
+                                              setTimeout(() => {
+                                                window.open(group.url, '_blank');
+                                              }, index * 200);
+                                            });
+                                        }}
+                                        className="inline-flex items-center px-3 py-1 bg-green-600 text-white text-sm rounded hover:bg-green-700"
+                                      >
+                                        <ExternalLink className="w-3 h-3 mr-1" />
+                                        Open Premium ({groupedUrls.filter(g => g.relevance === 'core').length})
+                                      </button>
+                                    )}
+                                    
+                                    {groupedUrls.filter(g => g.relevance === 'related').length > 0 && (
+                                      <button
+                                        onClick={() => {
+                                          groupedUrls
+                                            .filter(g => g.relevance === 'related')
+                                            .forEach((group, index) => {
+                                              setTimeout(() => {
+                                                window.open(group.url, '_blank');
+                                              }, index * 200);
+                                            });
+                                        }}
+                                        className="inline-flex items-center px-3 py-1 bg-blue-600 text-white text-sm rounded hover:bg-blue-700"
+                                      >
+                                        <ExternalLink className="w-3 h-3 mr-1" />
+                                        Open Good ({groupedUrls.filter(g => g.relevance === 'related').length})
+                                      </button>
+                                    )}
+                                  </div>
+                                )}
+                              </div>
+                            ) : (
+                              <span className="text-sm text-gray-500">No keywords available</span>
                             )}
                           </div>
-                        </div>
                         </div>
                         
                         <div className="ml-4 flex items-start space-x-4">
