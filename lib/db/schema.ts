@@ -507,13 +507,6 @@ export const linkOrchestrationSessions = pgTable('link_orchestration_sessions', 
   phase1Results: jsonb('phase1_results'),
   phase2Results: jsonb('phase2_results'),
   phase3Results: jsonb('phase3_results'),
-  internalLinksResult: jsonb('internal_links_result'),
-  clientMentionResult: jsonb('client_mention_result'),
-  clientLinkResult: jsonb('client_link_result'),
-  clientLinkConversation: jsonb('client_link_conversation'),
-  imageStrategy: jsonb('image_strategy'),
-  linkRequests: text('link_requests'),
-  urlSuggestion: text('url_suggestion'),
   
   // Error tracking
   errorMessage: text('error_message'),

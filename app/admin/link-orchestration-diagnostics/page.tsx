@@ -233,6 +233,30 @@ export default function LinkOrchestrationDiagnosticsPage() {
     }
   };
 
+  const addMissingColumns = async () => {
+    if (!confirm('This will add the missing columns to the link_orchestration_sessions table. Continue?')) {
+      return;
+    }
+    
+    try {
+      const response = await fetch('/api/admin/add-link-orchestration-columns', {
+        method: 'POST'
+      });
+      
+      const data = await response.json();
+      
+      if (data.success) {
+        alert(`✅ Columns added successfully!\n\n${data.message}`);
+        // Re-check schema after adding columns
+        await checkSchema();
+      } else {
+        alert(`❌ Failed to add columns: ${data.error}\n\nDetails: ${JSON.stringify(data.details, null, 2)}`);
+      }
+    } catch (error: any) {
+      alert(`❌ Error adding columns: ${error.message}`);
+    }
+  };
+
   const runTestOrchestration = async () => {
     setTestOrchestration({
       status: 'running',
@@ -529,6 +553,14 @@ SEO success requires a holistic approach that combines quality content, technica
               >
                 <Zap className="w-4 h-4" />
                 Test Patched Insert
+              </button>
+              
+              <button
+                onClick={addMissingColumns}
+                className="px-4 py-2 bg-red-600 text-white rounded hover:bg-red-700 flex items-center gap-2"
+              >
+                <Database className="w-4 h-4" />
+                Add Missing Columns
               </button>
             </div>
 
