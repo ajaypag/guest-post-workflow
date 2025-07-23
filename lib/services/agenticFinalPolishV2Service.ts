@@ -390,13 +390,6 @@ export class AgenticFinalPolishV2Service {
           continuePolishing = false;
           break;
         }
-        
-        // Additional check: If AI mentions the END_OF_ARTICLE marker in its response
-        if (sectionResponse.includes('<!-- END_OF_ARTICLE -->')) {
-          console.log(`✅ Polish complete - AI referenced END_OF_ARTICLE marker after ${sectionCount} sections`);
-          continuePolishing = false;
-          break;
-        }
 
         // Safety check for section limit
         if (sectionCount >= maxSections - 5) {
@@ -542,18 +535,10 @@ export class AgenticFinalPolishV2Service {
       const updatedSection = updatedMatch[1].trim();
       
       console.log(`✅ Exact delimiter parsing successful`);
-      const result: any = {
+      return {
         parsed: { strengths, weaknesses, updatedSection },
         confidence: 1.0
       };
-      
-      // Also check for completion marker in exact parsing
-      if (response.includes('POLISH_COMPLETE') || response.includes('===POLISH_COMPLETE===')) {
-        result.status = 'complete';
-        console.log('🏁 Found POLISH_COMPLETE marker with section content');
-      }
-      
-      return result;
     }
     
     return {};
