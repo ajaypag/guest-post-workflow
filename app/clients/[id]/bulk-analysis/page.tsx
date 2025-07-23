@@ -6,6 +6,7 @@ import Link from 'next/link';
 import AuthWrapper from '@/components/AuthWrapper';
 import Header from '@/components/Header';
 import { clientStorage } from '@/lib/userStorage';
+import { AuthService } from '@/lib/auth';
 import { Client, TargetPage } from '@/types/user';
 import { 
   ArrowLeft, 
@@ -168,14 +169,23 @@ export default function BulkAnalysisPage() {
 
   const updateQualificationStatus = async (domainId: string, status: 'qualified' | 'disqualified') => {
     try {
+      const session = AuthService.getSession();
+      if (!session) {
+        console.error('No user session found');
+        return;
+      }
+
       const response = await fetch(`/api/clients/${params.id}/bulk-analysis/${domainId}`, {
         method: 'PUT',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ status })
+        body: JSON.stringify({ status, userId: session.userId })
       });
 
       if (response.ok) {
         await loadDomains();
+      } else {
+        const errorData = await response.json();
+        console.error('Error updating qualification status:', errorData);
       }
     } catch (error) {
       console.error('Error updating status:', error);
