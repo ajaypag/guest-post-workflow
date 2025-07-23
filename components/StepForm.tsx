@@ -32,6 +32,7 @@ import { ArticleDraftStepClean } from './steps/ArticleDraftStepClean';
 import { ContentAuditStepClean } from './steps/ContentAuditStepClean';
 import { FinalPolishStepClean } from './steps/FinalPolishStepClean';
 import { FormattingQAStepClean } from './steps/FormattingQAStepClean';
+import LinkOrchestrationStep from './LinkOrchestrationStep';
 
 interface StepFormProps {
   step: WorkflowStep;
@@ -57,6 +58,7 @@ const stepForms: Record<string, React.FC<{ step: WorkflowStep; workflow: GuestPo
   'images': ImagesStep,
   'link-requests': LinkRequestsStep,
   'url-suggestion': UrlSuggestionStep,
+  'link-orchestration': LinkOrchestrationStep,
   'email-template': EmailTemplateStep,
 };
 
