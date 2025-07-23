@@ -443,7 +443,7 @@ export class BulkAnalysisService {
       const rows = domains.map(d => [
         d.domain,
         d.qualificationStatus,
-        d.keywordCount.toString(),
+        (d.keywordCount || 0).toString(),
         d.hasWorkflow ? 'Yes' : 'No',
         d.checkedAt ? new Date(d.checkedAt).toLocaleDateString() : '',
         d.notes || ''
