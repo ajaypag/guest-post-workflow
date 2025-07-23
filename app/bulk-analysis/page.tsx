@@ -223,42 +223,77 @@ function BulkAnalysisPageContent() {
   };
 
   const analyzeWithDataForSeo = async (domain: BulkAnalysisDomain) => {
+    console.log('DataForSEO button clicked for domain:', domain);
+    
     if (!client) {
+      console.error('No client selected');
       setMessage('❌ DataForSEO analysis requires a client to be selected');
       return;
     }
     
+    console.log('Starting DataForSEO analysis for:', {
+      domain: domain.domain,
+      domainId: domain.id,
+      clientId: client.id
+    });
+    
     setLoading(true);
-    setMessage('');
+    setMessage('🔄 Analyzing with DataForSEO...');
     
     try {
-      const response = await fetch(`/api/clients/${client.id}/bulk-analysis/analyze-dataforseo`, {
+      const url = `/api/clients/${client.id}/bulk-analysis/analyze-dataforseo`;
+      const payload = {
+        domainId: domain.id,
+        locationCode: 2840, // USA
+        languageCode: 'en'
+      };
+      
+      console.log('Sending request to:', url);
+      console.log('Request payload:', payload);
+      
+      const response = await fetch(url, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-          domainId: domain.id,
-          locationCode: 2840, // USA
-          languageCode: 'en'
-        })
+        body: JSON.stringify(payload)
       });
       
+      console.log('Response status:', response.status);
+      const responseText = await response.text();
+      console.log('Response text:', responseText);
+      
+      let data;
+      try {
+        data = JSON.parse(responseText);
+      } catch (e) {
+        console.error('Failed to parse response:', e);
+        throw new Error('Invalid response from server');
+      }
+      
       if (response.ok) {
-        const data = await response.json();
+        console.log('DataForSEO analysis successful:', data);
+        
+        if (!data.result) {
+          console.error('No result in response:', data);
+          setMessage('❌ No results returned from DataForSEO');
+          return;
+        }
+        
         setDataForSeoModal({
           isOpen: true,
           domainId: domain.id,
           domain: domain.domain,
           clientId: client.id,
-          initialResults: data.result.keywords,
-          totalFound: data.result.totalFound
+          initialResults: data.result.keywords || [],
+          totalFound: data.result.totalFound || 0
         });
+        setMessage('');
       } else {
-        const error = await response.json();
-        setMessage(`❌ DataForSEO error: ${error.details || error.error}`);
+        console.error('DataForSEO API error:', data);
+        setMessage(`❌ DataForSEO error: ${data.details || data.error || 'Unknown error'}`);
       }
     } catch (error) {
       console.error('DataForSEO analysis error:', error);
-      setMessage('❌ Failed to analyze with DataForSEO');
+      setMessage(`❌ Failed to analyze with DataForSEO: ${error instanceof Error ? error.message : 'Unknown error'}`);
     } finally {
       setLoading(false);
     }
@@ -646,13 +681,25 @@ function BulkAnalysisPageContent() {
                           {/* DataForSEO button only if client is selected and not manual mode */}
                           {client && keywordInputMode === 'target-pages' && (
                             <button
-                              onClick={() => analyzeWithDataForSeo(domain)}
+                              onClick={() => {
+                                console.log('DataForSEO button onClick triggered');
+                                analyzeWithDataForSeo(domain);
+                              }}
                               disabled={loading}
                               className="inline-flex items-center px-3 py-1 bg-blue-600 text-white text-sm rounded hover:bg-blue-700 disabled:opacity-50 disabled:cursor-not-allowed"
+                              title={`Analyze ${domain.domain} with DataForSEO`}
                             >
                               <Search className="w-3 h-3 mr-1" />
-                              DataForSEO
+                              {loading ? 'Loading...' : 'DataForSEO'}
                             </button>
+                          )}
+                          
+                          {/* Debug info */}
+                          {!client && (
+                            <span className="text-xs text-red-500">No client selected</span>
+                          )}
+                          {client && keywordInputMode !== 'target-pages' && (
+                            <span className="text-xs text-red-500">Manual mode - DataForSEO disabled</span>
                           )}
                         </div>
                       </div>

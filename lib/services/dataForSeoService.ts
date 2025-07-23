@@ -34,12 +34,22 @@ export class DataForSeoService {
     locationCode: number = 2840,
     languageCode: string = 'en'
   ): Promise<DataForSeoAnalysisResult> {
+    console.log('DataForSeoService.analyzeDomain called with:', {
+      domainId,
+      domain,
+      keywordsCount: keywords.length,
+      locationCode,
+      languageCode
+    });
+    
     try {
       // Check for API credentials
       if (!process.env.DATAFORSEO_LOGIN || !process.env.DATAFORSEO_PASSWORD) {
+        console.error('DataForSEO credentials missing');
         throw new Error('DataForSEO credentials not configured');
       }
 
+      console.log('DataForSEO credentials found');
       const auth = Buffer.from(
         `${process.env.DATAFORSEO_LOGIN}:${process.env.DATAFORSEO_PASSWORD}`
       ).toString('base64');
@@ -54,10 +64,15 @@ export class DataForSeoService {
         ] : undefined,
         limit: 500
       }];
+      
+      console.log('DataForSEO request body:', JSON.stringify(requestBody, null, 2));
 
       // Make API request
+      const apiUrl = `${this.API_BASE_URL}/dataforseo_labs/google/ranked_keywords/live`;
+      console.log('Calling DataForSEO API:', apiUrl);
+      
       const response = await fetch(
-        `${this.API_BASE_URL}/dataforseo_labs/google/ranked_keywords/live`,
+        apiUrl,
         {
           method: 'POST',
           headers: {
@@ -68,12 +83,16 @@ export class DataForSeoService {
         }
       );
 
+      console.log('DataForSEO API response status:', response.status);
+      
       if (!response.ok) {
         const errorText = await response.text();
+        console.error('DataForSEO API error response:', errorText);
         throw new Error(`DataForSEO API error: ${response.status} - ${errorText}`);
       }
 
       const data = await response.json();
+      console.log('DataForSEO API response data:', JSON.stringify(data, null, 2).substring(0, 500) + '...');
       
       // Parse results
       const results: DataForSeoKeywordResult[] = [];
