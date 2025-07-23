@@ -47,6 +47,9 @@ export default function BulkAnalysisPage() {
   // Manual keyword input mode
   const [keywordInputMode, setKeywordInputMode] = useState<'target-pages' | 'manual'>('target-pages');
   const [manualKeywords, setManualKeywords] = useState('');
+  
+  // Filtering options
+  const [statusFilter, setStatusFilter] = useState<'all' | 'pending' | 'qualified' | 'disqualified'>('all');
 
   useEffect(() => {
     loadClient();
@@ -182,7 +185,14 @@ export default function BulkAnalysisPage() {
       });
 
       if (response.ok) {
-        await loadDomains();
+        // Update local state instead of reloading from server to prevent "jumping"
+        setDomains(prevDomains => 
+          prevDomains.map(domain => 
+            domain.id === domainId 
+              ? { ...domain, qualificationStatus: status, checkedBy: session.userId, checkedAt: new Date().toISOString() }
+              : domain
+          )
+        );
       } else {
         const errorData = await response.json();
         console.error('Error updating qualification status:', errorData);
@@ -512,8 +522,35 @@ export default function BulkAnalysisPage() {
                 </div>
               </div>
               
+              {/* Status Filter Controls */}
+              <div className="mb-6 p-4 bg-gray-50 rounded-lg">
+                <h4 className="font-medium text-gray-900 mb-3">Filter by Status</h4>
+                <div className="flex flex-wrap gap-2">
+                  {[
+                    { value: 'all', label: 'All Domains', count: domains.length },
+                    { value: 'pending', label: 'Pending Review', count: domains.filter(d => d.qualificationStatus === 'pending').length },
+                    { value: 'qualified', label: 'Approved', count: domains.filter(d => d.qualificationStatus === 'qualified').length },
+                    { value: 'disqualified', label: 'Rejected', count: domains.filter(d => d.qualificationStatus === 'disqualified').length }
+                  ].map((filter) => (
+                    <button
+                      key={filter.value}
+                      onClick={() => setStatusFilter(filter.value as any)}
+                      className={`px-3 py-2 text-sm rounded-lg border transition-colors ${
+                        statusFilter === filter.value
+                          ? 'bg-indigo-600 text-white border-indigo-600'
+                          : 'bg-white text-gray-700 border-gray-300 hover:border-indigo-300 hover:bg-indigo-50'
+                      }`}
+                    >
+                      {filter.label} ({filter.count})
+                    </button>
+                  ))}
+                </div>
+              </div>
+
               <div className="grid gap-4">
-                {domains.map((domain) => {
+                {domains
+                  .filter(domain => statusFilter === 'all' || domain.qualificationStatus === statusFilter)
+                  .map((domain) => {
                   // Get keywords based on mode
                   let keywords: Set<string>;
                   if (keywordInputMode === 'manual') {
