@@ -209,6 +209,8 @@ export default function BulkAnalysisPage() {
               : domain
           )
         );
+        // Also update the notes state to reflect saved value
+        setNotes(prev => ({ ...prev, [domainId]: domainNotes }));
       } else {
         const errorData = await response.json();
         console.error('Error updating qualification status:', errorData);
@@ -679,77 +681,125 @@ export default function BulkAnalysisPage() {
                           </div>
                         </div>
                         
-                        <div className="ml-4">
-                          {/* Notes textarea */}
-                          <div className="mb-3">
-                            <textarea
-                              value={notes[domain.id] || domain.notes || ''}
-                              onChange={(e) => setNotes({ ...notes, [domain.id]: e.target.value })}
-                              placeholder="Add notes about this domain..."
-                              className="w-64 h-16 px-2 py-1 text-sm border border-gray-300 rounded focus:ring-1 focus:ring-indigo-500"
-                            />
+                        <div className="ml-4 flex items-start space-x-4">
+                          {/* Notes section - more compact */}
+                          <div className="flex-1">
+                            <div className="relative">
+                              <textarea
+                                value={notes[domain.id] || domain.notes || ''}
+                                onChange={(e) => setNotes({ ...notes, [domain.id]: e.target.value })}
+                                placeholder="Notes..."
+                                className="w-48 h-20 px-2 py-1 text-xs border border-gray-200 rounded-md focus:ring-1 focus:ring-indigo-500 focus:border-indigo-500 resize-none"
+                              />
+                              {notes[domain.id] !== domain.notes && (
+                                <button
+                                  onClick={async () => {
+                                    // Save notes without changing status
+                                    try {
+                                      const session = AuthService.getSession();
+                                      if (!session) {
+                                        console.error('No user session found');
+                                        return;
+                                      }
+
+                                      const domainNotes = notes[domain.id] || '';
+                                      const response = await fetch(`/api/clients/${params.id}/bulk-analysis/${domain.id}`, {
+                                        method: 'PUT',
+                                        headers: { 'Content-Type': 'application/json' },
+                                        body: JSON.stringify({ 
+                                          status: domain.qualificationStatus, 
+                                          userId: session.userId, 
+                                          notes: domainNotes 
+                                        })
+                                      });
+
+                                      if (response.ok) {
+                                        setDomains(prevDomains => 
+                                          prevDomains.map(d => 
+                                            d.id === domain.id 
+                                              ? { ...d, notes: domainNotes }
+                                              : d
+                                          )
+                                        );
+                                        setMessage('✅ Notes saved');
+                                      } else {
+                                        const errorData = await response.json();
+                                        console.error('Error saving notes:', errorData);
+                                        setMessage(`❌ Error saving notes: ${errorData.error || 'Unknown error'}`);
+                                      }
+                                    } catch (error) {
+                                      console.error('Error saving notes:', error);
+                                      setMessage('❌ Failed to save notes');
+                                    }
+                                  }}
+                                  className="absolute bottom-1 right-1 text-xs px-2 py-0.5 bg-blue-600 text-white rounded hover:bg-blue-700"
+                                >
+                                  Save
+                                </button>
+                              )}
+                            </div>
                           </div>
                           
-                          {/* Qualification buttons */}
-                          <div className="flex flex-col space-y-2">
+                          {/* Qualification buttons - cleaner design */}
+                          <div className="flex flex-col space-y-1.5 min-w-[140px]">
                             {domain.qualificationStatus === 'pending' ? (
                               <>
                                 <button
                                   onClick={() => updateQualificationStatus(domain.id, 'high_quality')}
-                                  className="px-4 py-2 bg-gradient-to-r from-green-500 to-green-600 text-white text-sm font-medium rounded hover:from-green-600 hover:to-green-700 transition-all"
+                                  className="px-3 py-1.5 bg-green-600 text-white text-xs font-medium rounded hover:bg-green-700 transition-colors"
                                 >
-                                  🌟 High Quality Target
+                                  High Quality
                                 </button>
                                 <button
                                   onClick={() => updateQualificationStatus(domain.id, 'average_quality')}
-                                  className="px-4 py-2 bg-gradient-to-r from-blue-500 to-blue-600 text-white text-sm font-medium rounded hover:from-blue-600 hover:to-blue-700 transition-all"
+                                  className="px-3 py-1.5 bg-blue-600 text-white text-xs font-medium rounded hover:bg-blue-700 transition-colors"
                                 >
-                                  ✓ Average Quality Target
+                                  Average
                                 </button>
                                 <button
                                   onClick={() => updateQualificationStatus(domain.id, 'disqualified')}
-                                  className="px-4 py-2 bg-gradient-to-r from-gray-400 to-gray-500 text-white text-sm font-medium rounded hover:from-gray-500 hover:to-gray-600 transition-all"
+                                  className="px-3 py-1.5 bg-gray-500 text-white text-xs font-medium rounded hover:bg-gray-600 transition-colors"
                                 >
-                                  ✗ Disqualified
+                                  Disqualify
                                 </button>
                               </>
                             ) : (
                               <div className="space-y-2">
                                 {domain.qualificationStatus === 'high_quality' && (
                                   <>
-                                    <span className="inline-flex items-center px-3 py-1 bg-gradient-to-r from-green-100 to-green-200 text-green-800 text-sm font-medium rounded">
-                                      🌟 High Quality
+                                    <span className="inline-flex items-center px-2 py-1 bg-green-100 text-green-800 text-xs font-medium rounded">
+                                      High Quality
                                     </span>
                                     {!domain.hasWorkflow && (
                                       <button
                                         onClick={() => createWorkflow(domain)}
-                                        className="inline-flex items-center px-3 py-1 bg-green-600 text-white text-sm rounded hover:bg-green-700"
+                                        className="inline-flex items-center px-2 py-1 bg-green-600 text-white text-xs rounded hover:bg-green-700"
                                       >
                                         <Plus className="w-3 h-3 mr-1" />
-                                        Create Workflow
+                                        Workflow
                                       </button>
                                     )}
                                   </>
                                 )}
                                 {domain.qualificationStatus === 'average_quality' && (
                                   <>
-                                    <span className="inline-flex items-center px-3 py-1 bg-gradient-to-r from-blue-100 to-blue-200 text-blue-800 text-sm font-medium rounded">
-                                      ✓ Average Quality
+                                    <span className="inline-flex items-center px-2 py-1 bg-blue-100 text-blue-800 text-xs font-medium rounded">
+                                      Average
                                     </span>
                                     {!domain.hasWorkflow && (
                                       <button
                                         onClick={() => createWorkflow(domain)}
-                                        className="inline-flex items-center px-3 py-1 bg-blue-600 text-white text-sm rounded hover:bg-blue-700"
+                                        className="inline-flex items-center px-2 py-1 bg-blue-600 text-white text-xs rounded hover:bg-blue-700"
                                       >
                                         <Plus className="w-3 h-3 mr-1" />
-                                        Create Workflow
+                                        Workflow
                                       </button>
                                     )}
                                   </>
                                 )}
                                 {domain.qualificationStatus === 'disqualified' && (
-                                  <span className="inline-flex items-center px-3 py-1 bg-gray-100 text-gray-800 text-sm rounded">
-                                    ✗ Disqualified
+                                  <span className="inline-flex items-center px-2 py-1 bg-gray-100 text-gray-600 text-xs rounded">
+                                    Disqualified
                                   </span>
                                 )}
                                 {domain.hasWorkflow && (

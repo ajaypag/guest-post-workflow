@@ -286,7 +286,16 @@ function BulkAnalysisPageContent() {
       });
 
       if (response.ok) {
-        await loadDomains();
+        // Update local state instead of reloading to prevent jumping
+        setDomains(prevDomains => 
+          prevDomains.map(domain => 
+            domain.id === domainId 
+              ? { ...domain, qualificationStatus: status, checkedBy: session.userId, checkedAt: new Date().toISOString(), notes }
+              : domain
+          )
+        );
+        // Update notes state to reflect saved value
+        setDomainNotes(prev => ({ ...prev, [domainId]: notes }));
       } else {
         const errorData = await response.json();
         console.error('Error updating qualification status:', errorData);
@@ -324,8 +333,15 @@ function BulkAnalysisPageContent() {
       });
 
       if (response.ok) {
-        await loadDomains();
-        setMessage('✅ Notes saved successfully');
+        // Update local state
+        setDomains(prevDomains => 
+          prevDomains.map(d => 
+            d.id === domainId 
+              ? { ...d, notes }
+              : d
+          )
+        );
+        setMessage('✅ Notes saved');
       } else {
         const errorData = await response.json();
         console.error('Error saving notes:', errorData);
@@ -903,37 +919,6 @@ function BulkAnalysisPageContent() {
                           {domain.targetPageIds.length} target pages
                         </p>
                         
-                        {/* Notes section */}
-                        <div className="mt-2">
-                          <label className="block text-sm font-medium text-gray-700 mb-1">Notes</label>
-                          <textarea
-                            value={domainNotes[domain.id] || ''}
-                            onChange={(e) => {
-                              setDomainNotes(prev => ({
-                                ...prev,
-                                [domain.id]: e.target.value
-                              }));
-                            }}
-                            placeholder="Add notes about why this site is good/bad..."
-                            className="w-full px-3 py-2 text-sm border border-gray-300 rounded-md focus:ring-blue-500 focus:border-blue-500"
-                            rows={2}
-                          />
-                          {domain.notes !== domainNotes[domain.id] && (
-                            <div className="flex items-center justify-between mt-1">
-                              <p className="text-xs text-amber-600">
-                                ⚠️ Unsaved changes
-                              </p>
-                              {client && (
-                                <button
-                                  onClick={() => saveNotes(domain.id)}
-                                  className="text-xs px-2 py-1 bg-blue-600 text-white rounded hover:bg-blue-700"
-                                >
-                                  Save Notes
-                                </button>
-                              )}
-                            </div>
-                          )}
-                        </div>
                         
                         <div className="mt-3">
                           {/* Keyword groups */}
@@ -991,67 +976,92 @@ function BulkAnalysisPageContent() {
                         </div>
                       </div>
                       
-                      <div className="ml-4">
-                        {/* Qualification buttons */}
-                        <div className="flex flex-col space-y-2">
+                      <div className="ml-4 flex items-start space-x-4">
+                        {/* Notes section - compact */}
+                        <div className="flex-1">
+                          <div className="relative">
+                            <textarea
+                              value={domainNotes[domain.id] || ''}
+                              onChange={(e) => {
+                                setDomainNotes(prev => ({
+                                  ...prev,
+                                  [domain.id]: e.target.value
+                                }));
+                              }}
+                              placeholder="Notes..."
+                              className="w-48 h-20 px-2 py-1 text-xs border border-gray-200 rounded-md focus:ring-1 focus:ring-indigo-500 focus:border-indigo-500 resize-none"
+                            />
+                            {client && domain.notes !== domainNotes[domain.id] && (
+                              <button
+                                onClick={() => saveNotes(domain.id)}
+                                className="absolute bottom-1 right-1 text-xs px-2 py-0.5 bg-blue-600 text-white rounded hover:bg-blue-700"
+                              >
+                                Save
+                              </button>
+                            )}
+                          </div>
+                        </div>
+                        
+                        {/* Qualification buttons - cleaner design */}
+                        <div className="flex flex-col space-y-1.5 min-w-[140px]">
                           {domain.qualificationStatus === 'pending' ? (
                             <>
                               <button
                                 onClick={() => updateQualificationStatus(domain.id, 'high_quality')}
-                                className="px-4 py-2 bg-gradient-to-r from-green-500 to-green-600 text-white text-sm font-medium rounded hover:from-green-600 hover:to-green-700 transition-all"
+                                className="px-3 py-1.5 bg-green-600 text-white text-xs font-medium rounded hover:bg-green-700 transition-colors"
                               >
-                                🌟 High Quality Target
+                                High Quality
                               </button>
                               <button
                                 onClick={() => updateQualificationStatus(domain.id, 'average_quality')}
-                                className="px-4 py-2 bg-gradient-to-r from-blue-500 to-blue-600 text-white text-sm font-medium rounded hover:from-blue-600 hover:to-blue-700 transition-all"
+                                className="px-3 py-1.5 bg-blue-600 text-white text-xs font-medium rounded hover:bg-blue-700 transition-colors"
                               >
-                                ✓ Average Quality Target
+                                Average
                               </button>
                               <button
                                 onClick={() => updateQualificationStatus(domain.id, 'disqualified')}
-                                className="px-4 py-2 bg-gradient-to-r from-gray-400 to-gray-500 text-white text-sm font-medium rounded hover:from-gray-500 hover:to-gray-600 transition-all"
+                                className="px-3 py-1.5 bg-gray-500 text-white text-xs font-medium rounded hover:bg-gray-600 transition-colors"
                               >
-                                ✗ Disqualified
+                                Disqualify
                               </button>
                             </>
                           ) : (
                             <div className="space-y-2">
                               {domain.qualificationStatus === 'high_quality' && (
                                 <>
-                                  <span className="inline-flex items-center px-3 py-1 bg-gradient-to-r from-green-100 to-green-200 text-green-800 text-sm font-medium rounded">
-                                    🌟 High Quality
+                                  <span className="inline-flex items-center px-2 py-1 bg-green-100 text-green-800 text-xs font-medium rounded">
+                                    High Quality
                                   </span>
                                   {!domain.hasWorkflow && (
                                     <button
                                       onClick={() => createWorkflow(domain)}
-                                      className="inline-flex items-center px-3 py-1 bg-green-600 text-white text-sm rounded hover:bg-green-700"
+                                      className="inline-flex items-center px-2 py-1 bg-green-600 text-white text-xs rounded hover:bg-green-700"
                                     >
                                       <Plus className="w-3 h-3 mr-1" />
-                                      Create Workflow
+                                      Workflow
                                     </button>
                                   )}
                                 </>
                               )}
                               {domain.qualificationStatus === 'average_quality' && (
                                 <>
-                                  <span className="inline-flex items-center px-3 py-1 bg-gradient-to-r from-blue-100 to-blue-200 text-blue-800 text-sm font-medium rounded">
-                                    ✓ Average Quality
+                                  <span className="inline-flex items-center px-2 py-1 bg-blue-100 text-blue-800 text-xs font-medium rounded">
+                                    Average
                                   </span>
                                   {!domain.hasWorkflow && (
                                     <button
                                       onClick={() => createWorkflow(domain)}
-                                      className="inline-flex items-center px-3 py-1 bg-blue-600 text-white text-sm rounded hover:bg-blue-700"
+                                      className="inline-flex items-center px-2 py-1 bg-blue-600 text-white text-xs rounded hover:bg-blue-700"
                                     >
                                       <Plus className="w-3 h-3 mr-1" />
-                                      Create Workflow
+                                      Workflow
                                     </button>
                                   )}
                                 </>
                               )}
                               {domain.qualificationStatus === 'disqualified' && (
-                                <span className="inline-flex items-center px-3 py-1 bg-gray-100 text-gray-800 text-sm rounded">
-                                  ✗ Disqualified
+                                <span className="inline-flex items-center px-2 py-1 bg-gray-100 text-gray-600 text-xs rounded">
+                                  Disqualified
                                 </span>
                               )}
                               {domain.hasWorkflow && (
