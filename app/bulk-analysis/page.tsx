@@ -20,6 +20,7 @@ import {
   Search
 } from 'lucide-react';
 import DataForSeoResultsModal from '@/components/DataForSeoResultsModal';
+import { groupKeywordsByTopic, generateGroupedAhrefsUrls } from '@/lib/utils/keywordGrouping';
 
 interface BulkAnalysisDomain {
   id: string;
@@ -61,6 +62,21 @@ function BulkAnalysisPageContent() {
     initialResults?: any[];
     totalFound: number;
   }>({ isOpen: false, domainId: '', domain: '', clientId: '', initialResults: [], totalFound: 0 });
+  
+  // Experimental features toggle - hidden by default
+  const [hideExperimentalFeatures, setHideExperimentalFeatures] = useState(true);
+  
+  // Store pending changes for target pages
+  const [pendingTargetPages, setPendingTargetPages] = useState<string[]>([]);
+  const [hasUnappliedChanges, setHasUnappliedChanges] = useState(false);
+
+  // Load experimental features preference from localStorage
+  useEffect(() => {
+    const stored = localStorage.getItem('hideExperimentalFeatures');
+    if (stored !== null) {
+      setHideExperimentalFeatures(stored === 'true');
+    }
+  }, []);
 
   useEffect(() => {
     loadClients();
@@ -77,6 +93,12 @@ function BulkAnalysisPageContent() {
       loadDomains();
     }
   }, [client]);
+  
+  // Initialize pending target pages when component mounts or selection changes
+  useEffect(() => {
+    setPendingTargetPages(selectedTargetPages);
+    setHasUnappliedChanges(false);
+  }, [keywordInputMode]); // Reset when switching modes
 
   const loadClients = async () => {
     try {
@@ -112,6 +134,21 @@ function BulkAnalysisPageContent() {
     } catch (error) {
       console.error('Error loading domains:', error);
     }
+  };
+  
+  const applyTargetPageChanges = () => {
+    setSelectedTargetPages(pendingTargetPages);
+    setHasUnappliedChanges(false);
+    setMessage('✅ Target page selection applied');
+  };
+  
+  const handleTargetPageToggle = (pageId: string, checked: boolean) => {
+    if (checked) {
+      setPendingTargetPages([...pendingTargetPages, pageId]);
+    } else {
+      setPendingTargetPages(pendingTargetPages.filter(id => id !== pageId));
+    }
+    setHasUnappliedChanges(true);
   };
 
   const handleAnalyze = async () => {
@@ -439,14 +476,18 @@ function BulkAnalysisPageContent() {
                       const allPageIds = targetPages
                         .filter(page => (page as any).keywords && (page as any).keywords.trim() !== '')
                         .map(page => page.id);
-                      setSelectedTargetPages(allPageIds);
+                      setPendingTargetPages(allPageIds);
+                      setHasUnappliedChanges(true);
                     }}
                     className="text-xs px-3 py-1 bg-indigo-600 text-white rounded hover:bg-indigo-700 transition-colors"
                   >
                     Select All ({targetPages.filter(page => (page as any).keywords && (page as any).keywords.trim() !== '').length})
                   </button>
                   <button
-                    onClick={() => setSelectedTargetPages([])}
+                    onClick={() => {
+                      setPendingTargetPages([]);
+                      setHasUnappliedChanges(true);
+                    }}
                     className="text-xs px-3 py-1 border border-gray-300 text-gray-700 rounded hover:bg-gray-50 transition-colors"
                   >
                     Clear All
@@ -459,14 +500,8 @@ function BulkAnalysisPageContent() {
                 <label key={page.id} className="flex items-start space-x-3 p-3 border rounded-lg hover:bg-gray-50 cursor-pointer">
                   <input
                     type="checkbox"
-                    checked={selectedTargetPages.includes(page.id)}
-                    onChange={(e) => {
-                      if (e.target.checked) {
-                        setSelectedTargetPages([...selectedTargetPages, page.id]);
-                      } else {
-                        setSelectedTargetPages(selectedTargetPages.filter(id => id !== page.id));
-                      }
-                    }}
+                    checked={pendingTargetPages.includes(page.id)}
+                    onChange={(e) => handleTargetPageToggle(page.id, e.target.checked)}
                     className="mt-1"
                   />
                   <div className="flex-1">
@@ -481,18 +516,30 @@ function BulkAnalysisPageContent() {
             </>
           )}
           
-          {selectedTargetPages.length > 0 && (
-            <div className="mt-4 text-sm text-gray-600">
-              Selected: {selectedTargetPages.length} pages • 
-              Total keywords: {
-                targetPages
-                  .filter(p => selectedTargetPages.includes(p.id))
-                  .reduce((acc, p) => {
-                    const keywordList = (p as any).keywords?.split(',').map((k: string) => k.trim()) || [];
-                    keywordList.forEach((k: string) => acc.add(k));
-                    return acc;
-                  }, new Set<string>()).size
-              } (deduplicated)
+          {(pendingTargetPages.length > 0 || hasUnappliedChanges) && (
+            <div className="mt-4">
+              <div className="text-sm text-gray-600">
+                {hasUnappliedChanges ? 'Pending selection' : 'Current selection'}: {pendingTargetPages.length} pages • 
+                Total keywords: {
+                  targetPages
+                    .filter(p => pendingTargetPages.includes(p.id))
+                    .reduce((acc, p) => {
+                      const keywordList = (p as any).keywords?.split(',').map((k: string) => k.trim()) || [];
+                      keywordList.forEach((k: string) => acc.add(k));
+                      return acc;
+                    }, new Set<string>()).size
+                } (deduplicated)
+              </div>
+              
+              {hasUnappliedChanges && (
+                <button
+                  onClick={applyTargetPageChanges}
+                  className="mt-3 px-4 py-2 bg-green-600 text-white rounded-lg hover:bg-green-700 flex items-center"
+                >
+                  <CheckCircle className="w-4 h-4 mr-2" />
+                  Apply Changes
+                </button>
+              )}
             </div>
           )}
             </>
@@ -588,12 +635,28 @@ function BulkAnalysisPageContent() {
             <div className="flex items-center justify-between mb-6">
               <h2 className="text-lg font-medium">Analysis Results</h2>
               
-              {/* Position Range Selector */}
-              <div className="bg-gray-50 border border-gray-200 rounded-lg p-3">
-                <div className="flex items-center justify-between mb-2">
-                  <h4 className="font-medium text-gray-900 text-sm">Search Position Range</h4>
-                  <span className="text-xs text-gray-500">Current: {selectedPositionRange}</span>
-                </div>
+              <div className="flex items-center gap-4">
+                {/* Experimental Features Toggle */}
+                <label className="flex items-center gap-2 text-sm">
+                  <input
+                    type="checkbox"
+                    checked={!hideExperimentalFeatures}
+                    onChange={(e) => {
+                      const newValue = !e.target.checked;
+                      setHideExperimentalFeatures(newValue);
+                      localStorage.setItem('hideExperimentalFeatures', String(newValue));
+                    }}
+                    className="rounded border-gray-300"
+                  />
+                  <span className="text-gray-700">Show experimental features</span>
+                </label>
+                
+                {/* Position Range Selector */}
+                <div className="bg-gray-50 border border-gray-200 rounded-lg p-3">
+                  <div className="flex items-center justify-between mb-2">
+                    <h4 className="font-medium text-gray-900 text-sm">Search Position Range</h4>
+                    <span className="text-xs text-gray-500">Current: {selectedPositionRange}</span>
+                  </div>
                 
                 <div className="grid grid-cols-4 gap-1">
                   {[
@@ -623,6 +686,7 @@ function BulkAnalysisPageContent() {
                   {selectedPositionRange === '1-100' && 'All rankings (lowest average rankability)'}
                 </p>
               </div>
+              </div>
             </div>
             
             <div className="grid gap-4">
@@ -649,10 +713,10 @@ function BulkAnalysisPageContent() {
                 }
                 
                 const keywordArray = Array.from(keywords);
-                const keywordBatches = [];
-                for (let i = 0; i < keywordArray.length; i += 50) {
-                  keywordBatches.push(keywordArray.slice(i, i + 50));
-                }
+                
+                // Group keywords by topical relevance
+                const keywordGroups = groupKeywordsByTopic(keywordArray);
+                const groupedUrls = generateGroupedAhrefsUrls(domain.domain, keywordGroups, selectedPositionRange);
                 
                 return (
                   <div key={domain.id} className="border rounded-lg p-4">
@@ -664,29 +728,52 @@ function BulkAnalysisPageContent() {
                           {domain.targetPageIds.length} target pages
                         </p>
                         
-                        <div className="mt-3 flex flex-wrap gap-2">
-                          {keywordBatches.map((batch, index) => (
-                            <a
-                              key={index}
-                              href={buildAhrefsUrl(domain.domain, batch)}
-                              target="_blank"
-                              rel="noopener noreferrer"
-                              className="inline-flex items-center px-3 py-1 bg-orange-500 text-white text-sm rounded hover:bg-orange-600"
-                            >
-                              <ExternalLink className="w-3 h-3 mr-1" />
-                              Ahrefs {keywordBatches.length > 1 ? `(${index + 1}/${keywordBatches.length})` : ''}
-                            </a>
-                          ))}
+                        <div className="mt-3">
+                          {/* Keyword groups */}
+                          {groupedUrls.length > 0 ? (
+                            <div className="space-y-2">
+                              {groupedUrls.map((group, index) => (
+                                <div key={index} className="flex items-center gap-2">
+                                  <a
+                                    href={group.url}
+                                    target="_blank"
+                                    rel="noopener noreferrer"
+                                    className={`inline-flex items-center px-3 py-1 text-white text-sm rounded hover:opacity-90 transition-opacity ${
+                                      group.relevance === 'core' 
+                                        ? 'bg-green-600' 
+                                        : group.relevance === 'related'
+                                        ? 'bg-blue-600'
+                                        : 'bg-gray-600'
+                                    }`}
+                                  >
+                                    <ExternalLink className="w-3 h-3 mr-1" />
+                                    {group.name}
+                                  </a>
+                                  <span className="text-xs text-gray-500">
+                                    {group.keywordCount} keywords
+                                  </span>
+                                  {group.relevance === 'core' && (
+                                    <span className="text-xs px-2 py-0.5 bg-green-100 text-green-800 rounded">Premium</span>
+                                  )}
+                                  {group.relevance === 'related' && (
+                                    <span className="text-xs px-2 py-0.5 bg-blue-100 text-blue-800 rounded">Good</span>
+                                  )}
+                                </div>
+                              ))}
+                            </div>
+                          ) : (
+                            <span className="text-sm text-gray-500">No keywords available</span>
+                          )}
                           
-                          {/* DataForSEO button only if client is selected and not manual mode */}
-                          {client && keywordInputMode === 'target-pages' && (
+                          {/* DataForSEO button only if client is selected, not manual mode, and experimental features enabled */}
+                          {client && keywordInputMode === 'target-pages' && !hideExperimentalFeatures && (
                             <button
                               onClick={() => {
                                 console.log('DataForSEO button onClick triggered');
                                 analyzeWithDataForSeo(domain);
                               }}
                               disabled={loading}
-                              className="inline-flex items-center px-3 py-1 bg-blue-600 text-white text-sm rounded hover:bg-blue-700 disabled:opacity-50 disabled:cursor-not-allowed"
+                              className="inline-flex items-center px-3 py-1 bg-blue-600 text-white text-sm rounded hover:bg-blue-700 disabled:opacity-50 disabled:cursor-not-allowed ml-2"
                               title={`Analyze ${domain.domain} with DataForSEO`}
                             >
                               <Search className="w-3 h-3 mr-1" />
@@ -694,13 +781,6 @@ function BulkAnalysisPageContent() {
                             </button>
                           )}
                           
-                          {/* Debug info */}
-                          {!client && (
-                            <span className="text-xs text-red-500">No client selected</span>
-                          )}
-                          {client && keywordInputMode !== 'target-pages' && (
-                            <span className="text-xs text-red-500">Manual mode - DataForSEO disabled</span>
-                          )}
                         </div>
                       </div>
                       
