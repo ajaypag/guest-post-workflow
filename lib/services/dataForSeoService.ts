@@ -72,16 +72,15 @@ export class DataForSeoService {
             ["keyword_data.keyword", "like", `%${sanitizedKeywords[0]}%`]
           ];
         } else {
-          // Multiple keywords - need OR conditions wrapped in array
-          // DataForSEO expects filters to be wrapped: [[condition1, "or", condition2, "or", condition3]]
-          const filterConditions = [];
+          // Multiple keywords - need OR conditions as flat array
+          // DataForSEO expects: [["field", "op", "value"], "or", ["field", "op", "value"]]
+          filters = [];
           for (let i = 0; i < sanitizedKeywords.length; i++) {
             if (i > 0) {
-              filterConditions.push("or");
+              filters.push("or");
             }
-            filterConditions.push(["keyword_data.keyword", "like", `%${sanitizedKeywords[i]}%`]);
+            filters.push(["keyword_data.keyword", "like", `%${sanitizedKeywords[i]}%`]);
           }
-          filters = [filterConditions];
         }
       }
 
