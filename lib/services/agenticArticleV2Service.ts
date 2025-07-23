@@ -361,7 +361,7 @@ export class AgenticArticleV2Service {
         sseUpdate(sessionId, { 
           type: 'section_completed', 
           sectionNumber: 1, 
-          content: titleIntroResponse,
+          content: cleanedResponse,
           message: 'Title and introduction completed'
         });
       }
@@ -469,7 +469,7 @@ export class AgenticArticleV2Service {
           sseUpdate(sessionId, { 
             type: 'section_completed', 
             sectionNumber: sectionCount, 
-            content: sectionResponse,
+            content: cleanedResponse,
             message: `Section ${sectionCount} completed`
           });
         }
@@ -548,7 +548,11 @@ export class AgenticArticleV2Service {
       sseUpdate(sessionId, {
         type: 'completed',
         status: 'completed',
-        finalArticle: finalArticle,
+        finalArticle: finalArticle
+          .replace(/<<<ARTICLE_CONTENT_END>>>/g, '') // Remove end markers
+          .replace(/<<<ARTICLE_CONTENT_START>>>/g, '') // Remove start markers
+          .replace(/<<<[^>]*>>>/g, '') // Remove any other control tags
+          .trim(), // Clean final article for SSE
         wordCount: wordCount,
         totalSections: sectionCount,
         message: 'Article generation completed successfully!'
@@ -566,6 +570,13 @@ export class AgenticArticleV2Service {
   }
 
   private async saveArticleToWorkflow(workflowId: string, article: string): Promise<void> {
+    // Clean article content before saving to workflow
+    const cleanedArticle = article
+      .replace(/<<<ARTICLE_CONTENT_END>>>/g, '') // Remove end markers
+      .replace(/<<<ARTICLE_CONTENT_START>>>/g, '') // Remove start markers (if any)
+      .replace(/<<<[^>]*>>>/g, '') // Remove any other similar control tags
+      .trim(); // Clean up any extra whitespace
+    
     const workflow = await db.select().from(workflows).where(eq(workflows.id, workflowId)).limit(1);
     if (workflow[0]?.content) {
       const workflowData = workflow[0].content as any;
@@ -574,8 +585,8 @@ export class AgenticArticleV2Service {
       if (articleStep) {
         articleStep.outputs = {
           ...articleStep.outputs,
-          fullArticle: article,
-          wordCount: article.split(/\s+/).length,
+          fullArticle: cleanedArticle,
+          wordCount: cleanedArticle.split(/\s+/).length,
           agentGenerated: true,
           agentVersion: 'v2',
           agentV2Generated: true,

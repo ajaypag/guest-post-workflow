@@ -33,6 +33,17 @@ interface SessionProgress {
 }
 
 export const AgenticArticleGeneratorV2 = ({ workflowId, outline, onComplete, onGeneratingStateChange }: AgenticArticleGeneratorV2Props) => {
+  // Utility function to clean article content of internal control tags
+  const cleanArticleContent = (content: string): string => {
+    if (!content) return content;
+    
+    return content
+      .replace(/<<<ARTICLE_CONTENT_END>>>/g, '') // Remove end markers
+      .replace(/<<<ARTICLE_CONTENT_START>>>/g, '') // Remove start markers (if any)
+      .replace(/<<<[^>]*>>>/g, '') // Remove any other similar control tags
+      .trim(); // Clean up any extra whitespace
+  };
+
   const [isGenerating, setIsGenerating] = useState(false);
   const [sessionId, setSessionId] = useState<string | null>(null);
   const [progress, setProgress] = useState<SessionProgress | null>(null);
@@ -155,9 +166,10 @@ export const AgenticArticleGeneratorV2 = ({ workflowId, outline, onComplete, onG
               addLog('🎉 V2 article generation completed successfully!');
               
               if (data.finalArticle) {
-                const wordCount = data.finalArticle.split(/\s+/).filter((w: string) => w).length;
+                const cleanedArticle = cleanArticleContent(data.finalArticle);
+                const wordCount = cleanedArticle.split(/\s+/).filter((w: string) => w).length;
                 addLog(`📊 Final article: ${wordCount} words`);
-                onComplete(data.finalArticle);
+                onComplete(cleanedArticle);
               } else {
                 addLog('⚠️ Warning: No final article received from server');
                 setError('No final article received from server');
