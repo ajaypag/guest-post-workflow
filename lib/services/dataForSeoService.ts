@@ -59,11 +59,8 @@ export class DataForSeoService {
       // Example: ["keyword_data.keyword", "like", "%lead%"] will match "lead generation", "leadership", etc.
       let filters = undefined;
       if (keywords.length > 0) {
-        // Sanitize keywords to escape special characters
-        const sanitizedKeywords = keywords.map(keyword => {
-          // Escape % and _ characters that have special meaning in LIKE patterns
-          return keyword.replace(/%/g, '\\%').replace(/_/g, '\\_');
-        });
+        // Don't escape special characters - DataForSEO might handle this internally
+        const sanitizedKeywords = keywords;
 
         // Create an OR condition for all keywords with partial matching
         if (sanitizedKeywords.length === 1) {
