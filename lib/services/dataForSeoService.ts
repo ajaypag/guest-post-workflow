@@ -90,8 +90,14 @@ export class DataForSeoService {
         }
       }
 
+      // Clean domain - remove protocol and trailing slash
+      const cleanDomain = domain
+        .replace(/^https?:\/\//, '')
+        .replace(/^www\./, '')
+        .replace(/\/$/, '');
+      
       const requestBody = [{
-        target: domain,
+        target: cleanDomain,
         location_code: locationCode,
         language_code: languageCode,
         filters: filters,
