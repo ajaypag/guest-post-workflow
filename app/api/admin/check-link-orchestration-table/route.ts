@@ -13,7 +13,7 @@ export async function GET() {
       ) as exists
     `);
 
-    const exists = (result.rows ? result.rows[0] : result[0]).exists;
+    const exists = (result as any).rows ? (result as any).rows[0].exists : (result as any)[0].exists;
 
     if (exists) {
       // Check the structure of the table
@@ -28,7 +28,7 @@ export async function GET() {
       return NextResponse.json({
         exists: true,
         message: 'Link orchestration table exists',
-        columns: columnsResult.rows || columnsResult
+        columns: (columnsResult as any).rows || columnsResult
       });
     } else {
       return NextResponse.json({
