@@ -16,8 +16,10 @@ import {
   Loader2,
   AlertCircle,
   FileText,
-  Plus
+  Plus,
+  Search
 } from 'lucide-react';
+import DataForSeoResultsModal from '@/components/DataForSeoResultsModal';
 
 interface BulkAnalysisDomain {
   id: string;
@@ -49,6 +51,16 @@ function BulkAnalysisPageContent() {
   // Manual keyword input mode - default to manual if no client
   const [keywordInputMode, setKeywordInputMode] = useState<'target-pages' | 'manual'>(clientId ? 'target-pages' : 'manual');
   const [manualKeywords, setManualKeywords] = useState('');
+  
+  // DataForSEO modal state
+  const [dataForSeoModal, setDataForSeoModal] = useState<{
+    isOpen: boolean;
+    domainId: string;
+    domain: string;
+    clientId: string;
+    initialResults?: any[];
+    totalFound: number;
+  }>({ isOpen: false, domainId: '', domain: '', clientId: '', initialResults: [], totalFound: 0 });
 
   useEffect(() => {
     loadClients();
@@ -207,6 +219,48 @@ function BulkAnalysisPageContent() {
       router.push(`/workflow/new?clientId=${client.id}&guestPostSite=${encodeURIComponent(domain)}`);
     } else {
       router.push(`/workflow/new?guestPostSite=${encodeURIComponent(domain)}`);
+    }
+  };
+
+  const analyzeWithDataForSeo = async (domain: BulkAnalysisDomain) => {
+    if (!client) {
+      setMessage('❌ DataForSEO analysis requires a client to be selected');
+      return;
+    }
+    
+    setLoading(true);
+    setMessage('');
+    
+    try {
+      const response = await fetch(`/api/clients/${client.id}/bulk-analysis/analyze-dataforseo`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          domainId: domain.id,
+          locationCode: 2840, // USA
+          languageCode: 'en'
+        })
+      });
+      
+      if (response.ok) {
+        const data = await response.json();
+        setDataForSeoModal({
+          isOpen: true,
+          domainId: domain.id,
+          domain: domain.domain,
+          clientId: client.id,
+          initialResults: data.result.keywords,
+          totalFound: data.result.totalFound
+        });
+      } else {
+        const error = await response.json();
+        setMessage(`❌ DataForSEO error: ${error.details || error.error}`);
+      }
+    } catch (error) {
+      console.error('DataForSEO analysis error:', error);
+      setMessage('❌ Failed to analyze with DataForSEO');
+    } finally {
+      setLoading(false);
     }
   };
 
@@ -588,6 +642,18 @@ function BulkAnalysisPageContent() {
                               Ahrefs {keywordBatches.length > 1 ? `(${index + 1}/${keywordBatches.length})` : ''}
                             </a>
                           ))}
+                          
+                          {/* DataForSEO button only if client is selected and not manual mode */}
+                          {client && keywordInputMode === 'target-pages' && (
+                            <button
+                              onClick={() => analyzeWithDataForSeo(domain)}
+                              disabled={loading}
+                              className="inline-flex items-center px-3 py-1 bg-blue-600 text-white text-sm rounded hover:bg-blue-700 disabled:opacity-50 disabled:cursor-not-allowed"
+                            >
+                              <Search className="w-3 h-3 mr-1" />
+                              DataForSEO
+                            </button>
+                          )}
                         </div>
                       </div>
                       
@@ -638,6 +704,19 @@ function BulkAnalysisPageContent() {
           </div>
         )}
       </div>
+      
+      {/* DataForSEO Results Modal */}
+      {dataForSeoModal.isOpen && (
+        <DataForSeoResultsModal
+          isOpen={dataForSeoModal.isOpen}
+          onClose={() => setDataForSeoModal({ ...dataForSeoModal, isOpen: false })}
+          domain={dataForSeoModal.domain}
+          domainId={dataForSeoModal.domainId}
+          clientId={dataForSeoModal.clientId}
+          initialResults={dataForSeoModal.initialResults}
+          totalFound={dataForSeoModal.totalFound}
+        />
+      )}
     </div>
   );
 }
