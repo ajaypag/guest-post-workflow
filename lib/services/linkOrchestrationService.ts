@@ -108,10 +108,8 @@ export class LinkOrchestrationService {
         anchorText: input.anchorText || null,
         guestPostSite: input.guestPostSite,
         targetKeyword: input.targetKeyword,
-        currentPhase: 0,
-        startedAt: startTime,
-        createdAt: startTime,
-        updatedAt: startTime
+        currentPhase: 0
+        // Remove startedAt, createdAt, updatedAt - database defaults will handle them
       });
 
       // Phase 1: Internal Links + Client Mentions (Parallel)
