@@ -17,7 +17,8 @@ import {
   Loader2,
   AlertCircle,
   FileText,
-  Plus
+  Plus,
+  RotateCcw
 } from 'lucide-react';
 
 interface BulkAnalysisDomain {
@@ -767,8 +768,11 @@ export default function BulkAnalysisPage() {
                               <div className="space-y-2">
                                 {domain.qualificationStatus === 'high_quality' && (
                                   <>
-                                    <span className="inline-flex items-center px-2 py-1 bg-green-100 text-green-800 text-xs font-medium rounded">
+                                    <span className="inline-flex items-center px-2 py-1 bg-green-100 text-green-800 text-xs font-medium rounded cursor-pointer hover:bg-green-200 group relative" 
+                                          onClick={() => updateQualificationStatus(domain.id, 'pending' as any)}
+                                          title="Click to reset to pending">
                                       High Quality
+                                      <RotateCcw className="w-3 h-3 ml-1 opacity-0 group-hover:opacity-100 transition-opacity inline" />
                                     </span>
                                     {!domain.hasWorkflow && (
                                       <button
@@ -783,8 +787,11 @@ export default function BulkAnalysisPage() {
                                 )}
                                 {domain.qualificationStatus === 'average_quality' && (
                                   <>
-                                    <span className="inline-flex items-center px-2 py-1 bg-blue-100 text-blue-800 text-xs font-medium rounded">
+                                    <span className="inline-flex items-center px-2 py-1 bg-blue-100 text-blue-800 text-xs font-medium rounded cursor-pointer hover:bg-blue-200 group relative" 
+                                          onClick={() => updateQualificationStatus(domain.id, 'pending' as any)}
+                                          title="Click to reset to pending">
                                       Average
+                                      <RotateCcw className="w-3 h-3 ml-1 opacity-0 group-hover:opacity-100 transition-opacity inline" />
                                     </span>
                                     {!domain.hasWorkflow && (
                                       <button
@@ -798,8 +805,11 @@ export default function BulkAnalysisPage() {
                                   </>
                                 )}
                                 {domain.qualificationStatus === 'disqualified' && (
-                                  <span className="inline-flex items-center px-2 py-1 bg-gray-100 text-gray-600 text-xs rounded">
+                                  <span className="inline-flex items-center px-2 py-1 bg-gray-100 text-gray-600 text-xs rounded cursor-pointer hover:bg-gray-200 group relative" 
+                                        onClick={() => updateQualificationStatus(domain.id, 'pending' as any)}
+                                        title="Click to reset to pending">
                                     Disqualified
+                                    <RotateCcw className="w-3 h-3 ml-1 opacity-0 group-hover:opacity-100 transition-opacity inline" />
                                   </span>
                                 )}
                                 {domain.hasWorkflow && (
