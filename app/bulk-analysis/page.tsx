@@ -394,35 +394,51 @@ function BulkAnalysisPageContent() {
   const analyzeWithDataForSeo = async (domain: BulkAnalysisDomain) => {
     console.log('DataForSEO button clicked for domain:', domain);
     
-    if (!client) {
-      console.error('No client selected');
-      setMessage('❌ DataForSEO analysis requires a client to be selected');
-      return;
-    }
-    
-    console.log('Starting DataForSEO analysis for:', {
-      domain: domain.domain,
-      domainId: domain.id,
-      clientId: client.id
-    });
-    
     setLoading(true);
     setMessage('🔄 Analyzing with DataForSEO...');
     
     try {
-      const url = `/api/clients/${client.id}/bulk-analysis/analyze-dataforseo`;
+      let url: string;
+      let payload: any;
       
-      // Include manual keywords if in manual mode
-      const manualKeywordArray = keywordInputMode === 'manual' 
-        ? manualKeywords.split(',').map(k => k.trim()).filter(k => k.length > 0)
-        : undefined;
-      
-      const payload = {
-        domainId: domain.id,
-        locationCode: 2840, // USA
-        languageCode: 'en',
-        ...(manualKeywordArray && { manualKeywords: manualKeywordArray })
-      };
+      if (client) {
+        // Use client-specific endpoint
+        url = `/api/clients/${client.id}/bulk-analysis/analyze-dataforseo`;
+        
+        // Include manual keywords if in manual mode
+        const manualKeywordArray = keywordInputMode === 'manual' 
+          ? manualKeywords.split(',').map(k => k.trim()).filter(k => k.length > 0)
+          : undefined;
+        
+        payload = {
+          domainId: domain.id,
+          locationCode: 2840, // USA
+          languageCode: 'en',
+          ...(manualKeywordArray && { manualKeywords: manualKeywordArray })
+        };
+      } else {
+        // Use standalone endpoint for no client selected
+        url = `/api/bulk-analysis/analyze-dataforseo`;
+        
+        // Get keywords based on mode
+        let keywords: string[] = [];
+        if (keywordInputMode === 'manual') {
+          keywords = manualKeywords.split(',').map(k => k.trim()).filter(k => k.length > 0);
+        } else {
+          // Can't use target pages without a client
+          setMessage('❌ Target pages mode requires a client to be selected');
+          setLoading(false);
+          return;
+        }
+        
+        payload = {
+          domain: domain.domain,
+          domainId: domain.id,
+          keywords: keywords,
+          locationCode: 2840, // USA
+          languageCode: 'en'
+        };
+      }
       
       console.log('Sending request to:', url);
       console.log('Request payload:', payload);
@@ -458,7 +474,7 @@ function BulkAnalysisPageContent() {
           isOpen: true,
           domainId: domain.id,
           domain: domain.domain,
-          clientId: client.id,
+          clientId: client?.id || '',
           initialResults: data.result.keywords || [],
           totalFound: data.result.totalFound || 0
         });
@@ -1033,8 +1049,8 @@ function BulkAnalysisPageContent() {
                             <span className="text-sm text-gray-500">No keywords available</span>
                           )}
                           
-                          {/* DataForSEO button only if client is selected and experimental features enabled */}
-                          {client && !hideExperimentalFeatures && (
+                          {/* DataForSEO button only if experimental features enabled */}
+                          {!hideExperimentalFeatures && (
                             <button
                               onClick={() => {
                                 console.log('DataForSEO button onClick triggered');
