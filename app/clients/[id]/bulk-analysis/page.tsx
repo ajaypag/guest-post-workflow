@@ -737,23 +737,6 @@ export default function BulkAnalysisPage() {
                                       </button>
                                     )}
                                     
-                                    {groupedUrls.filter(g => g.relevance === 'related').length > 0 && (
-                                      <button
-                                        onClick={() => {
-                                          groupedUrls
-                                            .filter(g => g.relevance === 'related')
-                                            .forEach((group, index) => {
-                                              setTimeout(() => {
-                                                window.open(group.url, '_blank');
-                                              }, index * 200);
-                                            });
-                                        }}
-                                        className="inline-flex items-center px-3 py-1 bg-blue-600 text-white text-sm rounded hover:bg-blue-700"
-                                      >
-                                        <ExternalLink className="w-3 h-3 mr-1" />
-                                        Open Related ({groupedUrls.filter(g => g.relevance === 'related').length})
-                                      </button>
-                                    )}
                                   </div>
                                 )}
                               </div>
