@@ -391,6 +391,62 @@ function BulkAnalysisPageContent() {
     }
   };
 
+  const refreshPendingDomains = async () => {
+    if (keywordInputMode !== 'target-pages') {
+      setMessage('❌ Refresh only works with target pages mode');
+      return;
+    }
+
+    if (selectedTargetPages.length === 0) {
+      setMessage('❌ Please select target pages to refresh with');
+      return;
+    }
+
+    if (!client) {
+      setMessage('❌ Please select a client first');
+      return;
+    }
+
+    const pendingCount = domains.filter(d => d.qualificationStatus === 'pending').length;
+    if (pendingCount === 0) {
+      setMessage('❌ No pending domains to refresh');
+      return;
+    }
+
+    if (!confirm(`Refresh ${pendingCount} pending domains with the selected target pages and their keywords?`)) {
+      return;
+    }
+
+    setLoading(true);
+    setMessage('🔄 Refreshing pending domains...');
+
+    try {
+      const response = await fetch(`/api/clients/${client.id}/bulk-analysis/refresh`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          targetPageIds: selectedTargetPages
+        })
+      });
+
+      if (response.ok) {
+        const data = await response.json();
+        
+        // Reload domains to get updated data
+        await loadDomains();
+        
+        setMessage(`✅ Refreshed ${data.refreshedCount} pending domains with updated keywords`);
+      } else {
+        throw new Error('Failed to refresh domains');
+      }
+    } catch (error) {
+      console.error('Error refreshing domains:', error);
+      setMessage('❌ Error refreshing domains');
+    } finally {
+      setLoading(false);
+    }
+  };
+
   const analyzeWithDataForSeo = async (domain: BulkAnalysisDomain) => {
     console.log('DataForSEO button clicked for domain:', domain);
     
@@ -744,6 +800,17 @@ function BulkAnalysisPageContent() {
                 : 'keywords from selected target pages'
             }.
           </p>
+
+          {/* Refresh Info Box */}
+          {keywordInputMode === 'target-pages' && client && domains.some(d => d.qualificationStatus === 'pending') && (
+            <div className="mb-4 p-3 bg-blue-50 border border-blue-200 rounded-lg">
+              <h4 className="text-sm font-medium text-blue-900 mb-1">💡 Tip: Update Pending Domains</h4>
+              <p className="text-xs text-blue-800">
+                Have you added new target pages or keywords? Use the "Refresh Pending" button below to update 
+                all pending domains with your latest target pages and keywords without re-adding them.
+              </p>
+            </div>
+          )}
           
           <textarea
             value={domainText}
@@ -763,25 +830,39 @@ function BulkAnalysisPageContent() {
             </div>
           )}
           
-          <button
-            onClick={handleAnalyze}
-            disabled={loading || 
-              (keywordInputMode === 'target-pages' ? selectedTargetPages.length === 0 : !manualKeywords.trim()) || 
-              !domainText.trim()}
-            className="mt-4 px-4 py-2 bg-indigo-600 text-white rounded-lg hover:bg-indigo-700 disabled:opacity-50 disabled:cursor-not-allowed flex items-center"
-          >
-            {loading ? (
-              <>
-                <Loader2 className="w-4 h-4 mr-2 animate-spin" />
-                Analyzing...
-              </>
-            ) : (
-              <>
-                <Target className="w-4 h-4 mr-2" />
-                Analyze Domains
-              </>
+          <div className="flex items-center gap-3 mt-4">
+            <button
+              onClick={handleAnalyze}
+              disabled={loading || 
+                (keywordInputMode === 'target-pages' ? selectedTargetPages.length === 0 : !manualKeywords.trim()) || 
+                !domainText.trim()}
+              className="px-4 py-2 bg-indigo-600 text-white rounded-lg hover:bg-indigo-700 disabled:opacity-50 disabled:cursor-not-allowed flex items-center"
+            >
+              {loading ? (
+                <>
+                  <Loader2 className="w-4 h-4 mr-2 animate-spin" />
+                  Analyzing...
+                </>
+              ) : (
+                <>
+                  <Target className="w-4 h-4 mr-2" />
+                  Analyze Domains
+                </>
+              )}
+            </button>
+
+            {keywordInputMode === 'target-pages' && client && domains.filter(d => d.qualificationStatus === 'pending').length > 0 && (
+              <button
+                onClick={refreshPendingDomains}
+                disabled={loading || selectedTargetPages.length === 0}
+                className="px-4 py-2 bg-green-600 text-white rounded-lg hover:bg-green-700 disabled:opacity-50 disabled:cursor-not-allowed flex items-center"
+                title="Update pending domains with new target pages and keywords"
+              >
+                <RotateCcw className="w-4 h-4 mr-2" />
+                Refresh Pending ({domains.filter(d => d.qualificationStatus === 'pending').length})
+              </button>
             )}
-          </button>
+          </div>
         </div>
 
         {/* Results Grid */}

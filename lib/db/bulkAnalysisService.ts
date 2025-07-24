@@ -405,6 +405,79 @@ export class BulkAnalysisService {
   }
 
   /**
+   * Refresh pending domains with latest target pages and keywords
+   */
+  static async refreshPendingDomains(
+    clientId: string,
+    targetPageIds: string[]
+  ): Promise<BulkAnalysisResult[]> {
+    try {
+      // Get all pending domains for this client
+      const pendingDomains = await db
+        .select()
+        .from(bulkAnalysisDomains)
+        .where(
+          and(
+            eq(bulkAnalysisDomains.clientId, clientId),
+            eq(bulkAnalysisDomains.qualificationStatus, 'pending')
+          )
+        );
+
+      if (pendingDomains.length === 0) {
+        return [];
+      }
+
+      // Get target pages and their keywords
+      const pages = await db
+        .select()
+        .from(targetPages)
+        .where(
+          and(
+            eq(targetPages.clientId, clientId),
+            inArray(targetPages.id, targetPageIds)
+          )
+        );
+
+      // Aggregate and dedupe keywords
+      const allKeywords = new Set<string>();
+      pages.forEach(page => {
+        if (page.keywords) {
+          const keywords = page.keywords.split(',').map(k => k.trim());
+          keywords.forEach(k => allKeywords.add(k));
+        }
+      });
+      const keywordCount = allKeywords.size;
+
+      // Update all pending domains with new target pages and keyword count
+      const updatedDomains = [];
+      for (const domain of pendingDomains) {
+        const [updated] = await db
+          .update(bulkAnalysisDomains)
+          .set({
+            targetPageIds: targetPageIds,
+            keywordCount,
+            updatedAt: new Date(),
+          })
+          .where(eq(bulkAnalysisDomains.id, domain.id))
+          .returning();
+        
+        if (updated) {
+          updatedDomains.push({
+            ...updated,
+            targetPages: pages,
+            keywords: Array.from(allKeywords),
+          });
+        }
+      }
+
+      return updatedDomains;
+    } catch (error) {
+      console.error('Error refreshing pending domains:', error);
+      throw error;
+    }
+  }
+
+  /**
    * Export domains as CSV data
    */
   static async exportDomains(
