@@ -23,7 +23,7 @@ import {
   Trash2
 } from 'lucide-react';
 import DataForSeoResultsModal from '@/components/DataForSeoResultsModal';
-import { groupKeywordsByTopic, generateGroupedAhrefsUrls } from '@/lib/utils/keywordGrouping';
+import { groupKeywordsByTopic, generateGroupedAhrefsUrls } from '@/lib/utils/keywordGroupingV2';
 
 interface BulkAnalysisDomain {
   id: string;

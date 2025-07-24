@@ -8,7 +8,7 @@ import Header from '@/components/Header';
 import { clientStorage } from '@/lib/userStorage';
 import { AuthService } from '@/lib/auth';
 import { Client, TargetPage } from '@/types/user';
-import { groupKeywordsByTopic, generateGroupedAhrefsUrls } from '@/lib/utils/keywordGrouping';
+import { groupKeywordsByTopic, generateGroupedAhrefsUrls } from '@/lib/utils/keywordGroupingV2';
 import DataForSeoResultsModal from '@/components/DataForSeoResultsModal';
 import { 
   ArrowLeft, 
