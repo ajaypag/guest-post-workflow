@@ -1058,65 +1058,66 @@ function BulkAnalysisPageContent() {
                               ))}
                               </div>
                               
-                              {/* Open All and Open by Type buttons */}
-                              {groupedUrls.length > 1 && (
-                                <div className="mt-2 flex flex-wrap gap-2">
-                                  <button
-                                    onClick={() => {
-                                      // Reverse order so user lands on first tab
-                                      [...groupedUrls].reverse().forEach((group, index) => {
-                                        setTimeout(() => {
-                                          window.open(group.url, '_blank');
-                                        }, index * 200); // Small delay to prevent popup blocker
-                                      });
-                                    }}
-                                    className="inline-flex items-center px-3 py-1 bg-purple-600 text-white text-sm rounded hover:bg-purple-700"
-                                  >
-                                    <ExternalLink className="w-3 h-3 mr-1" />
-                                    Open All ({groupedUrls.length})
-                                  </button>
-                                  
-                                  {groupedUrls.filter(g => g.relevance === 'core').length > 0 && (
+                              {/* Action buttons - Open All, Open Premium, DataForSEO */}
+                              <div className="mt-2 flex flex-wrap gap-2">
+                                {groupedUrls.length > 1 && (
+                                  <>
                                     <button
                                       onClick={() => {
                                         // Reverse order so user lands on first tab
-                                        [...groupedUrls]
-                                          .filter(g => g.relevance === 'core')
-                                          .reverse()
-                                          .forEach((group, index) => {
-                                            setTimeout(() => {
-                                              window.open(group.url, '_blank');
-                                            }, index * 200);
-                                          });
+                                        [...groupedUrls].reverse().forEach((group, index) => {
+                                          setTimeout(() => {
+                                            window.open(group.url, '_blank');
+                                          }, index * 200); // Small delay to prevent popup blocker
+                                        });
                                       }}
-                                      className="inline-flex items-center px-3 py-1 bg-green-600 text-white text-sm rounded hover:bg-green-700"
+                                      className="inline-flex items-center px-3 py-1 bg-purple-600 text-white text-sm rounded hover:bg-purple-700"
                                     >
                                       <ExternalLink className="w-3 h-3 mr-1" />
-                                      Open Premium ({groupedUrls.filter(g => g.relevance === 'core').length})
+                                      Open All ({groupedUrls.length})
                                     </button>
-                                  )}
-                                  
-                                </div>
-                              )}
+                                    
+                                    {groupedUrls.filter(g => g.relevance === 'core').length > 0 && (
+                                      <button
+                                        onClick={() => {
+                                          // Reverse order so user lands on first tab
+                                          [...groupedUrls]
+                                            .filter(g => g.relevance === 'core')
+                                            .reverse()
+                                            .forEach((group, index) => {
+                                              setTimeout(() => {
+                                                window.open(group.url, '_blank');
+                                              }, index * 200);
+                                            });
+                                        }}
+                                        className="inline-flex items-center px-3 py-1 bg-green-600 text-white text-sm rounded hover:bg-green-700"
+                                      >
+                                        <ExternalLink className="w-3 h-3 mr-1" />
+                                        Open Premium ({groupedUrls.filter(g => g.relevance === 'core').length})
+                                      </button>
+                                    )}
+                                  </>
+                                )}
+                                
+                                {/* DataForSEO button only if experimental features enabled */}
+                                {!hideExperimentalFeatures && (
+                                  <button
+                                    onClick={() => {
+                                      console.log('DataForSEO button onClick triggered');
+                                      analyzeWithDataForSeo(domain);
+                                    }}
+                                    disabled={loading}
+                                    className="inline-flex items-center px-3 py-1 bg-indigo-600 text-white text-sm rounded hover:bg-indigo-700 disabled:opacity-50 disabled:cursor-not-allowed"
+                                    title={`Analyze ${domain.domain} with DataForSEO`}
+                                  >
+                                    <Search className="w-3 h-3 mr-1" />
+                                    {loading ? 'Loading...' : 'DataForSEO'}
+                                  </button>
+                                )}
+                              </div>
                             </div>
                           ) : (
                             <span className="text-sm text-gray-500">No keywords available</span>
-                          )}
-                          
-                          {/* DataForSEO button only if experimental features enabled */}
-                          {!hideExperimentalFeatures && (
-                            <button
-                              onClick={() => {
-                                console.log('DataForSEO button onClick triggered');
-                                analyzeWithDataForSeo(domain);
-                              }}
-                              disabled={loading}
-                              className="inline-flex items-center px-3 py-1 bg-blue-600 text-white text-sm rounded hover:bg-blue-700 disabled:opacity-50 disabled:cursor-not-allowed ml-2"
-                              title={`Analyze ${domain.domain} with DataForSEO`}
-                            >
-                              <Search className="w-3 h-3 mr-1" />
-                              {loading ? 'Loading...' : 'DataForSEO'}
-                            </button>
                           )}
                           
                         </div>
