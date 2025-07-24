@@ -155,11 +155,11 @@ ${fullArticle || 'Complete previous steps to get article content'}`;
             <div className="bg-gray-50 p-3 rounded text-xs font-mono relative">
               <div className="absolute top-2 right-2">
                 <CopyButton 
-                  text="Does this insertion feel natural and add value to the article? Or does it feel forced and out of place? Look at the context around where you're suggesting to place the mention. Does it fit with what's being discussed?"
+                  text="again, a brand mention should not feel random or out of left field or feel like theres no reason why its being mentioned. a good brand mention is one that instantly looks like it belongs. as in, the article is saying something, and the way the brand is introduced is a natural extension of whats being said. this is deeper than just looking for the word in the article. context is key. if you cannot find existing context, then you need to think about a) what type of leadin would make sense when generating a mention to the brand, and b) what lead in can you add to the existing article to make it work."
                   label="Copy"
                 />
               </div>
-              <p className="pr-16">Does this insertion feel natural and add value to the article? Or does it feel forced and out of place? Look at the context around where you're suggesting to place the mention. Does it fit with what's being discussed?</p>
+              <p className="pr-16">again, a brand mention should not feel random or out of left field or feel like theres no reason why its being mentioned. a good brand mention is one that instantly looks like it belongs. as in, the article is saying something, and the way the brand is introduced is a natural extension of whats being said. this is deeper than just looking for the word in the article. context is key. if you cannot find existing context, then you need to think about a) what type of leadin would make sense when generating a mention to the brand, and b) what lead in can you add to the existing article to make it work.</p>
             </div>
           </div>
 
@@ -179,11 +179,11 @@ ${fullArticle || 'Complete previous steps to get article content'}`;
             <div className="bg-gray-50 p-3 rounded text-xs font-mono relative">
               <div className="absolute top-2 right-2">
                 <CopyButton 
-                  text="Revise your suggestion based on these criteria: 1) The mention should feel like a natural part of the conversation, not an advertisement, 2) It should add value or context to what's being discussed, 3) Consider if you need to add a lead-in sentence or modify surrounding text to make it fit better"
+                  text={`what makes more sense to do it is take something from the brand that is being mentioned, reference it in the guest post and then mention the brand as the source. with those constraints, you may actually manage to do something actually useful and natural. you are also allowed to create a while new paragraph if you aren't finding anything perfectly viable or add a new sentence at the beginning of a section or paragraph. do not settle for average. WHAT YOU MUST ABSOLUTELY NOT DO IS JUST ACT LIKE A "THROW IN SENTENCE IS OKAY". IF YOU ARE GOING TO CREATE A SENTENCE, THEN YOU WILL LIKELY NEED TO MODIFY THE SURROUNDED SENTENCES OR ENTIRE PARAGRAPH TO ACTUALLY JUSTIFY IT. YOU ARE TO THINK LIKE A WRITER. JUST ADDING RANDOM SENTENCES IS NOT WRITING - ITS BEING LAZY. IF YOU ARE ADDING A SENTENCE YOU ARE NOT FUCKING ALLOWED TO NOT EDIT OTHER THINGS WITHIN THE OUTPUT YOU PROVIDE. do not use em-dashes. IN YOUR EDIT, DO NOT DO SOMETHING LAME LIKE AS X EXPLAINS... THAT IS NOT WRITING. MENTIONING THE BRAND AS SOURCE IS A NATURAL WAY OF WRITING AND DOES NOT REQUIRE ADDITIONAL LEADIN LIKE SAYING AS PER XYZ, ESPECIALLY WHEN ITS A NOT A DATA POINT OR STUDY.`}
                   label="Copy"
                 />
               </div>
-              <p className="pr-16">Revise your suggestion based on these criteria: 1) The mention should feel like a natural part of the conversation, not an advertisement, 2) It should add value or context to what's being discussed, 3) Consider if you need to add a lead-in sentence or modify surrounding text to make it fit better</p>
+              <p className="pr-16">what makes more sense to do it is take something from the brand that is being mentioned, reference it in the guest post and then mention the brand as the source. with those constraints, you may actually manage to do something actually useful and natural. you are also allowed to create a while new paragraph if you aren't finding anything perfectly viable or add a new sentence at the beginning of a section or paragraph. do not settle for average. WHAT YOU MUST ABSOLUTELY NOT DO IS JUST ACT LIKE A "THROW IN SENTENCE IS OKAY". IF YOU ARE GOING TO CREATE A SENTENCE, THEN YOU WILL LIKELY NEED TO MODIFY THE SURROUNDED SENTENCES OR ENTIRE PARAGRAPH TO ACTUALLY JUSTIFY IT. YOU ARE TO THINK LIKE A WRITER. JUST ADDING RANDOM SENTENCES IS NOT WRITING - ITS BEING LAZY. IF YOU ARE ADDING A SENTENCE YOU ARE NOT FUCKING ALLOWED TO NOT EDIT OTHER THINGS WITHIN THE OUTPUT YOU PROVIDE. do not use em-dashes. IN YOUR EDIT, DO NOT DO SOMETHING LAME LIKE AS X EXPLAINS... THAT IS NOT WRITING. MENTIONING THE BRAND AS SOURCE IS A NATURAL WAY OF WRITING AND DOES NOT REQUIRE ADDITIONAL LEADIN LIKE SAYING AS PER XYZ, ESPECIALLY WHEN ITS A NOT A DATA POINT OR STUDY.</p>
             </div>
           </div>
 
