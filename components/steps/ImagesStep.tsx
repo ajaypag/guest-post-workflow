@@ -14,18 +14,21 @@ interface ImagesStepProps {
 }
 
 export const ImagesStep = ({ step, workflow, onChange }: ImagesStepProps) => {
-  // Get the final polished article from Step 6, fallback to earlier versions
+  // Get the cleaned article from Step 7 (formatting QA) as primary source
+  const formattingQAStep = workflow.steps.find(s => s.id === 'formatting-qa');
+  const cleanedArticle = formattingQAStep?.outputs?.cleanedArticle || '';
+  
+  // Fallback chain: Step 6 -> Step 5 -> Step 4
   const finalPolishStep = workflow.steps.find(s => s.id === 'final-polish');
   const finalArticle = finalPolishStep?.outputs?.finalArticle || '';
   
-  // Fallback chain if final article not available
   const contentAuditStep = workflow.steps.find(s => s.id === 'content-audit');
   const seoOptimizedArticle = contentAuditStep?.outputs?.seoOptimizedArticle || '';
   
   const articleDraftStep = workflow.steps.find(s => s.id === 'article-draft');
   const originalArticle = articleDraftStep?.outputs?.fullArticle || '';
   
-  const fullArticle = finalArticle || seoOptimizedArticle || originalArticle;
+  const fullArticle = cleanedArticle || finalArticle || seoOptimizedArticle || originalArticle;
 
   return (
     <div className="space-y-4">
@@ -63,10 +66,12 @@ export const ImagesStep = ({ step, workflow, onChange }: ImagesStepProps) => {
           </div>
         </div>
 
-        {finalArticle ? (
+        {fullArticle ? (
           <div className="bg-green-100 border border-green-300 rounded p-2 mb-4">
             <div className="flex justify-between items-center">
-              <p className="text-sm text-green-800">✅ Article ready to copy</p>
+              <p className="text-sm text-green-800">
+                ✅ {cleanedArticle ? 'Using cleaned article from Step 7' : finalArticle ? 'Using polished article from Step 6' : 'Article ready to copy'}
+              </p>
               <CopyButton 
                 text={fullArticle}
                 label="Copy Article"

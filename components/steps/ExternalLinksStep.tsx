@@ -14,18 +14,21 @@ interface ExternalLinksStepProps {
 }
 
 export const ExternalLinksStep = ({ step, workflow, onChange }: ExternalLinksStepProps) => {
-  // Get the final polished article from Step 6, fallback to earlier versions
+  // Get the cleaned article from Step 7 (formatting QA) as primary source
+  const formattingQAStep = workflow.steps.find(s => s.id === 'formatting-qa');
+  const cleanedArticle = formattingQAStep?.outputs?.cleanedArticle || '';
+  
+  // Fallback chain: Step 6 -> Step 5 -> Step 4
   const finalPolishStep = workflow.steps.find(s => s.id === 'final-polish');
   const finalArticle = finalPolishStep?.outputs?.finalArticle || '';
   
-  // Fallback chain if final article not available
   const contentAuditStep = workflow.steps.find(s => s.id === 'content-audit');
   const seoOptimizedArticle = contentAuditStep?.outputs?.seoOptimizedArticle || '';
   
   const articleDraftStep = workflow.steps.find(s => s.id === 'article-draft');
   const originalArticle = articleDraftStep?.outputs?.fullArticle || '';
   
-  const fullArticle = finalArticle || seoOptimizedArticle || originalArticle;
+  const fullArticle = cleanedArticle || finalArticle || seoOptimizedArticle || originalArticle;
   
   // Get the client backlinks from the step output
   const clientBacklinks = step.outputs.clientBacklinks || '';
@@ -109,17 +112,21 @@ ${fullArticle || 'Complete previous steps to get article content'}`;
         height="h-32"
       />
 
-      {finalArticle ? (
+      {cleanedArticle ? (
         <div className="bg-green-100 border border-green-300 rounded p-2">
-          <p className="text-sm text-green-800">✅ Using final polished article from Step 6</p>
+          <p className="text-sm text-green-800">✅ Using cleaned article from Step 7 (Formatting & QA)</p>
+        </div>
+      ) : finalArticle ? (
+        <div className="bg-blue-100 border border-blue-300 rounded p-2">
+          <p className="text-sm text-blue-800">ℹ️ Using polished article from Step 6 (complete Step 7 for cleaned version)</p>
         </div>
       ) : seoOptimizedArticle ? (
         <div className="bg-yellow-100 border border-yellow-300 rounded p-2">
-          <p className="text-sm text-yellow-800">⚠️ Using SEO-optimized article from Step 5 (complete Step 6 for final version)</p>
+          <p className="text-sm text-yellow-800">⚠️ Using SEO-optimized article from Step 5 (complete Steps 6-7 for final version)</p>
         </div>
       ) : originalArticle ? (
         <div className="bg-orange-100 border border-orange-300 rounded p-2">
-          <p className="text-sm text-orange-800">⚠️ Using original draft from Step 4 (complete Steps 5-6 for final version)</p>
+          <p className="text-sm text-orange-800">⚠️ Using original draft from Step 4 (complete Steps 5-7 for final version)</p>
         </div>
       ) : null}
 

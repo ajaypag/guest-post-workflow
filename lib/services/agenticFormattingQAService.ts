@@ -226,9 +226,16 @@ Begin your systematic analysis and fixing process now.`;
           // Stream text deltas for UI updates
           if (event.type === 'raw_model_stream_event') {
             if (event.data.type === 'output_text_delta' && event.data.delta) {
+              // Determine current phase for appropriate message
+              const checksComplete = checkNumber >= checkTypes.length;
+              const thinkingMessage = checksComplete 
+                ? 'Generating cleaned article with all fixes...' 
+                : `Analyzing formatting check ${checkNumber + 1} of ${checkTypes.length}...`;
+              
               sseUpdate(sessionId, { 
                 type: 'agent_thinking', 
-                message: 'Analyzing article formatting...' 
+                message: thinkingMessage,
+                phase: checksComplete ? 'generating' : 'checking'
               });
             }
           }
@@ -301,6 +308,15 @@ Begin your systematic analysis and fixing process now.`;
           if (!checksComplete) {
             continuationPrompt = 'YOU MUST CONTINUE THE AUTOMATED WORKFLOW. Please proceed with the remaining formatting checks.';
           } else if (!cleanedArticleGenerated) {
+            // Send SSE update to indicate phase transition
+            sseUpdate(sessionId, { 
+              type: 'phase_transition', 
+              phase: 'generating_cleaned_article',
+              message: 'All checks complete. Now generating cleaned article with all fixes applied...',
+              checksCompleted: checkNumber,
+              totalChecks: checkTypes.length
+            });
+            
             continuationPrompt = 'All formatting checks are complete. Now use the generate_cleaned_article tool to create the final cleaned version of the article with all fixes applied.';
           }
           
@@ -474,6 +490,13 @@ Begin your systematic analysis and fixing process now.`;
         }
 
         try {
+          // Send immediate update that generation is starting
+          sseUpdate(context.sessionId, {
+            type: 'generating_article_progress',
+            message: 'Applying formatting fixes to generate cleaned article...',
+            fixCount: args.fixes_applied.length
+          });
+
           // Update session with cleaned article and fixes
           await db.update(formattingQaSessions)
             .set({
