@@ -72,9 +72,7 @@ function BulkAnalysisPageContent() {
   // Experimental features toggle - hidden by default
   const [hideExperimentalFeatures, setHideExperimentalFeatures] = useState(true);
   
-  // Store pending changes for target pages
-  const [pendingTargetPages, setPendingTargetPages] = useState<string[]>([]);
-  const [hasUnappliedChanges, setHasUnappliedChanges] = useState(false);
+  // Removed pending state - changes apply immediately like client subpage
   
   // Store notes for domains
   const [domainNotes, setDomainNotes] = useState<{ [domainId: string]: string }>({});
@@ -117,11 +115,7 @@ function BulkAnalysisPageContent() {
     }
   }, [client]);
   
-  // Initialize pending target pages when component mounts or selection changes
-  useEffect(() => {
-    setPendingTargetPages(selectedTargetPages);
-    setHasUnappliedChanges(false);
-  }, [keywordInputMode]); // Reset when switching modes
+  // Removed pending state initialization
 
   const loadClients = async () => {
     try {
@@ -169,20 +163,7 @@ function BulkAnalysisPageContent() {
     }
   };
   
-  const applyTargetPageChanges = () => {
-    setSelectedTargetPages(pendingTargetPages);
-    setHasUnappliedChanges(false);
-    setMessage('✅ Target page selection applied');
-  };
-  
-  const handleTargetPageToggle = (pageId: string, checked: boolean) => {
-    if (checked) {
-      setPendingTargetPages([...pendingTargetPages, pageId]);
-    } else {
-      setPendingTargetPages(pendingTargetPages.filter(id => id !== pageId));
-    }
-    setHasUnappliedChanges(true);
-  };
+  // Removed apply changes function - now changes apply immediately
 
   const handleAnalyze = async () => {
     if (keywordInputMode === 'target-pages') {
@@ -687,8 +668,7 @@ function BulkAnalysisPageContent() {
                       const allPageIds = targetPages
                         .filter(page => (page as any).keywords && (page as any).keywords.trim() !== '')
                         .map(page => page.id);
-                      setPendingTargetPages(allPageIds);
-                      setHasUnappliedChanges(true);
+                      setSelectedTargetPages(allPageIds);
                     }}
                     className="text-xs px-3 py-1 bg-indigo-600 text-white rounded hover:bg-indigo-700 transition-colors"
                   >
@@ -696,8 +676,7 @@ function BulkAnalysisPageContent() {
                   </button>
                   <button
                     onClick={() => {
-                      setPendingTargetPages([]);
-                      setHasUnappliedChanges(true);
+                      setSelectedTargetPages([]);
                     }}
                     className="text-xs px-3 py-1 border border-gray-300 text-gray-700 rounded hover:bg-gray-50 transition-colors"
                   >
@@ -711,8 +690,14 @@ function BulkAnalysisPageContent() {
                 <label key={page.id} className="flex items-start space-x-3 p-3 border rounded-lg hover:bg-gray-50 cursor-pointer">
                   <input
                     type="checkbox"
-                    checked={pendingTargetPages.includes(page.id)}
-                    onChange={(e) => handleTargetPageToggle(page.id, e.target.checked)}
+                    checked={selectedTargetPages.includes(page.id)}
+                    onChange={(e) => {
+                      if (e.target.checked) {
+                        setSelectedTargetPages([...selectedTargetPages, page.id]);
+                      } else {
+                        setSelectedTargetPages(selectedTargetPages.filter(id => id !== page.id));
+                      }
+                    }}
                     className="mt-1"
                   />
                   <div className="flex-1">
@@ -727,30 +712,18 @@ function BulkAnalysisPageContent() {
             </>
           )}
           
-          {(pendingTargetPages.length > 0 || hasUnappliedChanges) && (
-            <div className="mt-4">
-              <div className="text-sm text-gray-600">
-                {hasUnappliedChanges ? 'Pending selection' : 'Current selection'}: {pendingTargetPages.length} pages • 
-                Total keywords: {
-                  targetPages
-                    .filter(p => pendingTargetPages.includes(p.id))
-                    .reduce((acc, p) => {
-                      const keywordList = (p as any).keywords?.split(',').map((k: string) => k.trim()) || [];
-                      keywordList.forEach((k: string) => acc.add(k));
-                      return acc;
-                    }, new Set<string>()).size
-                } (deduplicated)
-              </div>
-              
-              {hasUnappliedChanges && (
-                <button
-                  onClick={applyTargetPageChanges}
-                  className="mt-3 px-4 py-2 bg-green-600 text-white rounded-lg hover:bg-green-700 flex items-center"
-                >
-                  <CheckCircle className="w-4 h-4 mr-2" />
-                  Apply Changes
-                </button>
-              )}
+          {selectedTargetPages.length > 0 && (
+            <div className="mt-4 text-sm text-gray-600">
+              Selected: {selectedTargetPages.length} pages • 
+              Total keywords: {
+                targetPages
+                  .filter(p => selectedTargetPages.includes(p.id))
+                  .reduce((acc, p) => {
+                    const keywordList = (p as any).keywords?.split(',').map((k: string) => k.trim()) || [];
+                    keywordList.forEach((k: string) => acc.add(k));
+                    return acc;
+                  }, new Set<string>()).size
+              } (deduplicated)
             </div>
           )}
             </>
