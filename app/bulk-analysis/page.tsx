@@ -24,6 +24,7 @@ import {
 } from 'lucide-react';
 import DataForSeoResultsModal from '@/components/DataForSeoResultsModal';
 import { groupKeywordsByTopic, generateGroupedAhrefsUrls } from '@/lib/utils/keywordGroupingV2';
+import BulkAnalysisTutorial from '@/components/BulkAnalysisTutorial';
 
 interface BulkAnalysisDomain {
   id: string;
@@ -579,6 +580,9 @@ function BulkAnalysisPageContent() {
             </div>
           </div>
         </div>
+
+        {/* Tutorial Video */}
+        <BulkAnalysisTutorial />
 
         {/* Client Selector for standalone mode */}
         {!clientId && (

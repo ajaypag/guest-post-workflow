@@ -1,6 +1,6 @@
 'use client';
 
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { WorkflowStep, GuestPostWorkflow } from '@/types/workflow';
 import { SavedField } from '../SavedField';
 import { CopyButton } from '../ui/CopyButton';
@@ -26,11 +26,10 @@ export const ClientLinkStep = ({ step, workflow, onChange }: ClientLinkStepProps
   const clientUrl = step.outputs.clientUrl || plannedClientUrl || workflow.clientUrl;
   const anchorText = step.outputs.anchorText || plannedAnchorText || '';
   
-  // Get the cleaned article from Step 7 (formatting QA) as primary source
+  // Get articles from different steps
   const formattingQAStep = workflow.steps.find(s => s.id === 'formatting-qa');
   const cleanedArticle = formattingQAStep?.outputs?.cleanedArticle || '';
   
-  // Fallback chain: Step 6 -> Step 5 -> Step 4
   const finalPolishStep = workflow.steps.find(s => s.id === 'final-polish');
   const finalArticle = finalPolishStep?.outputs?.finalArticle || '';
   
@@ -40,7 +39,47 @@ export const ClientLinkStep = ({ step, workflow, onChange }: ClientLinkStepProps
   const articleDraftStep = workflow.steps.find(s => s.id === 'article-draft');
   const originalArticle = articleDraftStep?.outputs?.fullArticle || '';
   
-  const fullArticle = cleanedArticle || finalArticle || seoOptimizedArticle || originalArticle;
+  // Determine available article sources
+  const availableSources = [];
+  if (cleanedArticle) availableSources.push({ value: 'step7', label: 'Step 7: Cleaned Article (Formatting & QA)', article: cleanedArticle });
+  if (finalArticle) availableSources.push({ value: 'step6', label: 'Step 6: Final Article (Polish)', article: finalArticle });
+  if (seoOptimizedArticle) availableSources.push({ value: 'step5', label: 'Step 5: SEO Optimized Article', article: seoOptimizedArticle });
+  if (originalArticle) availableSources.push({ value: 'step4', label: 'Step 4: Original Article Draft', article: originalArticle });
+  
+  // Get the saved article source preference or use default
+  const [articleSource, setArticleSource] = useState(step.outputs.articleSource || 'auto');
+  
+  // Determine which article to use based on selection
+  let fullArticle = '';
+  let currentSourceLabel = '';
+  
+  if (articleSource === 'auto') {
+    // Use the default fallback chain
+    fullArticle = cleanedArticle || finalArticle || seoOptimizedArticle || originalArticle;
+    if (cleanedArticle) currentSourceLabel = 'Step 7: Cleaned Article';
+    else if (finalArticle) currentSourceLabel = 'Step 6: Final Article';
+    else if (seoOptimizedArticle) currentSourceLabel = 'Step 5: SEO Optimized Article';
+    else if (originalArticle) currentSourceLabel = 'Step 4: Original Article Draft';
+  } else {
+    // Use the manually selected source
+    const selectedSource = availableSources.find(s => s.value === articleSource);
+    if (selectedSource) {
+      fullArticle = selectedSource.article;
+      currentSourceLabel = selectedSource.label;
+    }
+  }
+  
+  // Update the workflow when article source changes
+  const updateArticleSource = (value: string) => {
+    setArticleSource(value);
+    onChange({ ...step.outputs, articleSource: value });
+  };
+  
+  useEffect(() => {
+    if (showAlert !== step.outputs.alertDismissed) {
+      onChange({ ...step.outputs, alertDismissed: !showAlert });
+    }
+  }, [showAlert]);
   
   // Build complete prompt for GPT
   const completePrompt = `Client URL to Link: ${clientUrl}
@@ -122,6 +161,35 @@ ${fullArticle || 'Complete previous steps to get article content'}`;
             <p className="text-sm text-yellow-800">⚠️ No client URL set in Step 2i. Using default: {workflow.clientUrl}</p>
           </div>
         )}
+
+        {/* Article Source Selector */}
+        <div className="bg-white p-3 rounded border border-blue-200 mb-3">
+          <div className="flex items-start space-x-3">
+            <AlertCircle className="w-5 h-5 text-blue-600 mt-0.5 flex-shrink-0" />
+            <div className="flex-1">
+              <p className="text-sm font-semibold text-blue-800 mb-2">Article Source Selection</p>
+              <div className="space-y-2">
+                <select
+                  value={articleSource}
+                  onChange={(e) => updateArticleSource(e.target.value)}
+                  className="w-full px-3 py-2 border rounded-md text-sm"
+                >
+                  <option value="auto">Automatic (Latest Available)</option>
+                  {availableSources.map(source => (
+                    <option key={source.value} value={source.value}>
+                      {source.label}
+                    </option>
+                  ))}
+                </select>
+                {articleSource === 'auto' && currentSourceLabel && (
+                  <p className="text-xs text-gray-600 italic">
+                    Currently using: {currentSourceLabel}
+                  </p>
+                )}
+              </div>
+            </div>
+          </div>
+        </div>
       </div>
 
       <div className="bg-gray-100 p-4 rounded">

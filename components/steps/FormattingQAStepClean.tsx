@@ -28,7 +28,7 @@ export const FormattingQAStepClean = ({ step, workflow, onChange }: FormattingQA
         agenticQACompleted: true,
         agenticQAReport: qaReport,
         lastQASessionId: qaReport.sessionId,
-        cleanedArticle: qaReport.cleanedArticle || null
+        cleanedArticle: qaReport.cleanedArticle || step.outputs.cleanedArticle || ''
       });
     }
   };
@@ -213,6 +213,18 @@ export const FormattingQAStepClean = ({ step, workflow, onChange }: FormattingQA
             )}
           </div>
         )}
+      </div>
+
+      {/* Cleaned Article Field - Always visible regardless of tab */}
+      <div className="mt-6">
+        <SavedField
+          label="Cleaned Article (After QA)"
+          value={step.outputs.cleanedArticle || ''}
+          placeholder="The cleaned article will appear here after QA check, or you can paste your cleaned article manually"
+          onChange={(value) => onChange({ ...step.outputs, cleanedArticle: value })}
+          isTextarea={true}
+          height="h-64"
+        />
       </div>
     </div>
   );
