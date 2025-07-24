@@ -119,6 +119,56 @@ export default function Step7DiagnosticsPage() {
                 </div>
               </div>
 
+              {/* Step 6 Status */}
+              <div className="bg-white rounded-lg shadow p-6">
+                <h2 className="text-lg font-semibold mb-4 flex items-center">
+                  Step 6 (Final Polish) Status
+                  {diagnostics.step6?.exists && getStatusIcon(diagnostics.step6.hasFinalArticle)}
+                </h2>
+                
+                <div className="space-y-3">
+                  <div className="flex items-center justify-between">
+                    <span className="text-gray-600">Step exists in workflow:</span>
+                    <div className="flex items-center">
+                      {getStatusIcon(diagnostics.step6?.exists || false)}
+                      <span className="ml-2">{diagnostics.step6?.exists ? 'Yes' : 'No'}</span>
+                    </div>
+                  </div>
+                  
+                  <div className="flex items-center justify-between">
+                    <span className="text-gray-600">Step marked as completed:</span>
+                    <div className="flex items-center">
+                      {getStatusIcon(diagnostics.step6?.completed || false)}
+                      <span className="ml-2">{diagnostics.step6?.completed ? 'Yes' : 'No'}</span>
+                    </div>
+                  </div>
+                  
+                  <div className="flex items-center justify-between">
+                    <span className="text-gray-600">Has finalArticle output:</span>
+                    <div className="flex items-center">
+                      {getStatusIcon(diagnostics.step6?.hasFinalArticle || false)}
+                      <span className="ml-2">{diagnostics.step6?.hasFinalArticle ? 'Yes' : 'No'}</span>
+                    </div>
+                  </div>
+                  
+                  {diagnostics.step6?.finalArticleLength > 0 && (
+                    <div className="flex items-center justify-between">
+                      <span className="text-gray-600">Final article length:</span>
+                      <span>{diagnostics.step6.finalArticleLength} characters</span>
+                    </div>
+                  )}
+                  
+                  {diagnostics.step6?.outputKeys && diagnostics.step6.outputKeys.length > 0 && (
+                    <div className="mt-4">
+                      <p className="text-gray-600 mb-2">Output keys found:</p>
+                      <div className="bg-gray-50 p-3 rounded text-sm font-mono">
+                        {diagnostics.step6.outputKeys.join(', ')}
+                      </div>
+                    </div>
+                  )}
+                </div>
+              </div>
+
               {/* Step 7 Status */}
               <div className="bg-white rounded-lg shadow p-6">
                 <h2 className="text-lg font-semibold mb-4 flex items-center">
@@ -212,6 +262,30 @@ export default function Step7DiagnosticsPage() {
                 </div>
               </div>
 
+              {/* All Steps in Workflow */}
+              <div className="bg-white rounded-lg shadow p-6">
+                <h2 className="text-lg font-semibold mb-4">All Steps in Workflow</h2>
+                {diagnostics.debug?.allStepTypes && diagnostics.debug.allStepTypes.length > 0 ? (
+                  <div className="space-y-2">
+                    {diagnostics.debug.allStepTypes.map((step: any, index: number) => (
+                      <div key={index} className="flex items-center justify-between p-2 bg-gray-50 rounded">
+                        <span className="font-medium">{index + 1}. {step.type}</span>
+                        <div className="flex items-center gap-4 text-sm">
+                          <span className={step.completed ? 'text-green-600' : 'text-gray-500'}>
+                            {step.completed ? '✓ Completed' : '○ Not completed'}
+                          </span>
+                          <span className={step.hasOutputs ? 'text-blue-600' : 'text-gray-500'}>
+                            {step.hasOutputs ? `Has outputs (${step.outputKeys?.join(', ')})` : 'No outputs'}
+                          </span>
+                        </div>
+                      </div>
+                    ))}
+                  </div>
+                ) : (
+                  <p className="text-gray-500">No steps found in workflow</p>
+                )}
+              </div>
+
               {/* Database Check */}
               <div className="bg-white rounded-lg shadow p-6">
                 <h2 className="text-lg font-semibold mb-4">Database Integrity Check</h2>
@@ -237,6 +311,15 @@ export default function Step7DiagnosticsPage() {
                     <span className="text-gray-600">Total steps in workflow:</span>
                     <span>{diagnostics.database.totalSteps}</span>
                   </div>
+                  
+                  {diagnostics.database.stepsData && (
+                    <div className="mt-4">
+                      <p className="text-gray-600 mb-2">Raw steps data preview:</p>
+                      <div className="bg-gray-50 p-3 rounded text-xs font-mono overflow-x-auto">
+                        {diagnostics.database.stepsData}
+                      </div>
+                    </div>
+                  )}
                 </div>
               </div>
 

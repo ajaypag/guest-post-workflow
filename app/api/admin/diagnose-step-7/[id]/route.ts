@@ -42,9 +42,22 @@ export async function GET(
       stepsValid = false;
     }
 
-    // Find Step 7 (formatting-qa)
+    // Find Step 6 (final-polish) and Step 7 (formatting-qa)
+    const step6 = steps.find((step: any) => step.type === 'final-polish');
+    const step6Index = steps.findIndex((step: any) => step.type === 'final-polish');
     const step7 = steps.find((step: any) => step.type === 'formatting-qa');
     const step7Index = steps.findIndex((step: any) => step.type === 'formatting-qa');
+
+    // Check Step 6 details
+    const step6Diagnostics = {
+      exists: !!step6,
+      index: step6Index,
+      completed: step6?.completed || false,
+      hasFinalArticle: !!(step6?.outputs?.finalArticle),
+      finalArticleLength: step6?.outputs?.finalArticle?.length || 0,
+      outputKeys: step6?.outputs ? Object.keys(step6.outputs) : [],
+      lastModified: step6?.lastModified || null
+    };
 
     // Check Step 7 details
     const step7Diagnostics = {
@@ -129,18 +142,26 @@ export async function GET(
         createdAt: workflow.created_at,
         updatedAt: workflow.updated_at
       },
+      step6: step6Diagnostics,
       step7: step7Diagnostics,
       step8Perspective,
       step12Perspective,
       database: {
         workflowExists: true,
         stepsValid,
-        totalSteps: steps.length
+        totalSteps: steps.length,
+        stepsData: workflow.steps ? `${workflow.steps.substring(0, 100)}...` : 'null'
       },
       recommendations,
       debug: {
+        step6Raw: step6,
         step7Raw: step7,
-        allStepTypes: steps.map((s: any) => ({ type: s.type, completed: s.completed, hasOutputs: !!s.outputs }))
+        allStepTypes: steps.map((s: any) => ({ 
+          type: s.type, 
+          completed: s.completed, 
+          hasOutputs: !!s.outputs,
+          outputKeys: s.outputs ? Object.keys(s.outputs) : []
+        }))
       }
     });
 
