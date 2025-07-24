@@ -1,4 +1,3 @@
-import { Suspense } from 'react';
 import BulkAnalysisPage from '@/components/BulkAnalysisPage';
 
 export default async function ClientBulkAnalysis({ 
@@ -9,9 +8,5 @@ export default async function ClientBulkAnalysis({
   const { id } = await params;
   
   // Pass the client ID from route params
-  return (
-    <Suspense fallback={<div>Loading...</div>}>
-      <BulkAnalysisPage initialClientId={id} />
-    </Suspense>
-  );
+  return <BulkAnalysisPage initialClientId={id} />;
 }

@@ -8,7 +8,7 @@ import Header from '@/components/Header';
 import { clientStorage } from '@/lib/userStorage';
 import { AuthService } from '@/lib/auth';
 import { Client, TargetPage } from '@/types/user';
-import DataForSeoResultsModal from '@/components/DataForSeoResultsModal';
+import { DataForSeoResultsModal } from '@/components/DataForSeoResultsModal';
 import { groupKeywordsByTopic, generateGroupedAhrefsUrls } from '@/lib/utils/keywordGrouping';
 import { 
   ArrowLeft, 
@@ -100,36 +100,55 @@ export default function BulkAnalysisPage({ initialClientId }: BulkAnalysisPagePr
 
   // Load all clients on mount
   useEffect(() => {
-    const loadClients = async () => {
-      const allClients = await clientStorage.getAllClients();
-      setClients(allClients);
-    };
-    loadClients();
+    const allClients = clientStorage.getAllClients();
+    setClients(allClients);
   }, []);
 
   // Handle client selection and loading
   useEffect(() => {
-    const handleClientSelection = async () => {
-      if (selectedClientId && selectedClientId !== 'standalone') {
-        const selectedClient = await clientStorage.getClient(selectedClientId);
-        if (selectedClient) {
-          setClient(selectedClient);
-          // Update URL if needed
-          if (!initialClientId) {
-            router.push(`/bulk-analysis?clientId=${selectedClientId}`);
-          }
-        } else {
-          setClient(null);
-          setSelectedClientId(null);
+    if (selectedClientId && selectedClientId !== 'standalone') {
+      const selectedClient = clientStorage.getClient(selectedClientId);
+      if (selectedClient) {
+        setClient(selectedClient);
+        // Update URL if needed
+        if (!initialClientId) {
+          router.push(`/bulk-analysis?clientId=${selectedClientId}`);
         }
       } else {
         setClient(null);
+        setSelectedClientId(null);
       }
-    };
-    handleClientSelection();
+    } else {
+      setClient(null);
+    }
   }, [selectedClientId, initialClientId, router]);
 
-  const fetchDomains = useCallback(async () => {
+  // Fetch domains when client changes or filters change
+  useEffect(() => {
+    if (selectedClientId && selectedClientId !== 'standalone') {
+      fetchDomains();
+    } else {
+      setDomains([]);
+      setTargetPages([]);
+    }
+  }, [selectedClientId, statusFilter, workflowFilter, searchQuery, page]);
+
+  // Load target pages when client is selected
+  useEffect(() => {
+    if (client) {
+      const pages = client.targetPages.filter(page => 
+        page.status === 'active' && 
+        page.keywords && 
+        page.keywords.length > 0
+      );
+      setTargetPages(pages);
+    } else {
+      setTargetPages([]);
+      setSelectedTargetPages([]);
+    }
+  }, [client]);
+
+  const fetchDomains = async () => {
     if (!selectedClientId || selectedClientId === 'standalone') return;
     
     setLoading(true);
@@ -160,33 +179,7 @@ export default function BulkAnalysisPage({ initialClientId }: BulkAnalysisPagePr
     } finally {
       setLoading(false);
     }
-  }, [selectedClientId, page, pageSize, statusFilter, workflowFilter, searchQuery]);
-
-  // Fetch domains when client changes or filters change
-  useEffect(() => {
-    if (selectedClientId && selectedClientId !== 'standalone') {
-      fetchDomains();
-    } else {
-      setDomains([]);
-      setTargetPages([]);
-    }
-  }, [selectedClientId, statusFilter, workflowFilter, searchQuery, page, fetchDomains]);
-
-  // Load target pages when client is selected
-  useEffect(() => {
-    if (client) {
-      const pages = client.targetPages.filter(page => 
-        page.status === 'active' && 
-        page.keywords && 
-        page.keywords.length > 0
-      );
-      setTargetPages(pages);
-    } else {
-      setTargetPages([]);
-      setSelectedTargetPages([]);
-    }
-  }, [client]);
-
+  };
 
   const handleAnalyze = async () => {
     if (keywordInputMode === 'target-pages') {
