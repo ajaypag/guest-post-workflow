@@ -10,6 +10,7 @@ import { AuthService } from '@/lib/auth';
 import { Client, TargetPage } from '@/types/user';
 import { groupKeywordsByTopic, generateGroupedAhrefsUrls } from '@/lib/utils/keywordGroupingV2';
 import DataForSeoResultsModal from '@/components/DataForSeoResultsModal';
+import BulkAnalysisTutorial from '@/components/BulkAnalysisTutorial';
 import { 
   ArrowLeft, 
   Target, 
@@ -459,6 +460,9 @@ export default function BulkAnalysisPage() {
               </div>
             </div>
           </div>
+
+          {/* Tutorial Video */}
+          <BulkAnalysisTutorial />
 
           {message && (
             <div className={`mb-6 p-4 rounded-lg ${
