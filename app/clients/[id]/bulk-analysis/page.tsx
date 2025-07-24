@@ -9,6 +9,7 @@ import { clientStorage } from '@/lib/userStorage';
 import { AuthService } from '@/lib/auth';
 import { Client, TargetPage } from '@/types/user';
 import { groupKeywordsByTopic, generateGroupedAhrefsUrls } from '@/lib/utils/keywordGrouping';
+import DataForSeoResultsModal from '@/components/DataForSeoResultsModal';
 import { 
   ArrowLeft, 
   Target, 
@@ -20,7 +21,8 @@ import {
   FileText,
   Plus,
   RotateCcw,
-  Trash2
+  Trash2,
+  Search
 } from 'lucide-react';
 
 interface BulkAnalysisDomain {
@@ -64,10 +66,31 @@ export default function BulkAnalysisPage() {
   const [displayLimit, setDisplayLimit] = useState(50);
   const ITEMS_PER_PAGE = 50;
   
+  // DataForSEO modal state
+  const [dataForSeoModal, setDataForSeoModal] = useState<{
+    isOpen: boolean;
+    domainId: string;
+    domain: string;
+    clientId: string;
+    initialResults?: any[];
+    totalFound: number;
+  }>({ isOpen: false, domainId: '', domain: '', clientId: '', initialResults: [], totalFound: 0 });
+  
+  // Experimental features toggle - hidden by default
+  const [hideExperimentalFeatures, setHideExperimentalFeatures] = useState(true);
+  
   // Reset pagination when filters change
   useEffect(() => {
     setDisplayLimit(ITEMS_PER_PAGE);
   }, [statusFilter, workflowFilter, searchQuery]);
+
+  // Load experimental features preference from localStorage
+  useEffect(() => {
+    const stored = localStorage.getItem('hideExperimentalFeatures');
+    if (stored !== null) {
+      setHideExperimentalFeatures(stored === 'true');
+    }
+  }, []);
 
   useEffect(() => {
     loadClient();
@@ -249,6 +272,76 @@ export default function BulkAnalysisPage() {
     } catch (error) {
       console.error('Error deleting domain:', error);
       setMessage('❌ Failed to delete domain');
+    }
+  };
+
+  const analyzeWithDataForSeo = async (domain: BulkAnalysisDomain) => {
+    console.log('DataForSEO button clicked for domain:', domain);
+    
+    setLoading(true);
+    setMessage('🔄 Analyzing with DataForSEO...');
+    
+    try {
+      // Include manual keywords if in manual mode
+      const manualKeywordArray = keywordInputMode === 'manual' 
+        ? manualKeywords.split(',').map(k => k.trim()).filter(k => k.length > 0)
+        : undefined;
+      
+      const payload = {
+        domainId: domain.id,
+        locationCode: 2840, // USA
+        languageCode: 'en',
+        ...(manualKeywordArray && { manualKeywords: manualKeywordArray })
+      };
+      
+      console.log('Sending request to:', `/api/clients/${params.id}/bulk-analysis/analyze-dataforseo`);
+      console.log('Request payload:', payload);
+      
+      const response = await fetch(`/api/clients/${params.id}/bulk-analysis/analyze-dataforseo`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(payload)
+      });
+      
+      console.log('Response status:', response.status);
+      const responseText = await response.text();
+      console.log('Response text:', responseText);
+      
+      let data;
+      try {
+        data = JSON.parse(responseText);
+      } catch (e) {
+        console.error('Failed to parse response:', e);
+        throw new Error('Invalid response from server');
+      }
+      
+      if (response.ok) {
+        console.log('DataForSEO analysis successful:', data);
+        
+        if (!data.result) {
+          console.error('No result in response:', data);
+          setMessage('❌ No results returned from DataForSEO');
+          return;
+        }
+        
+        setDataForSeoModal({
+          isOpen: true,
+          domainId: domain.id,
+          domain: domain.domain,
+          clientId: params.id as string,
+          initialResults: data.result.keywords || [],
+          totalFound: data.result.totalFound || 0
+        });
+        setMessage('');
+      } else {
+        console.error('DataForSEO API error:', data);
+        setMessage(`❌ DataForSEO error: ${data.details || data.error || 'Unknown error'}`);
+      }
+    } catch (error) {
+      console.error('DataForSEO analysis error:', error);
+      setMessage(`❌ Failed to analyze with DataForSEO: ${error instanceof Error ? error.message : 'Unknown error'}`);
+    } finally {
+      setLoading(false);
     }
   };
 
@@ -581,6 +674,28 @@ export default function BulkAnalysisPage() {
                   />
                 </div>
 
+                {/* Experimental Features Toggle */}
+                <div className="flex items-center gap-4">
+                  <label className="flex items-center gap-2 text-sm">
+                    <input
+                      type="checkbox"
+                      checked={!hideExperimentalFeatures}
+                      onChange={(e) => {
+                        const hide = !e.target.checked;
+                        setHideExperimentalFeatures(hide);
+                        localStorage.setItem('hideExperimentalFeatures', hide.toString());
+                      }}
+                      className="rounded border-gray-300 text-indigo-600 focus:ring-indigo-500"
+                    />
+                    <span className="font-medium">Show Experimental Features</span>
+                  </label>
+                  {!hideExperimentalFeatures && (
+                    <span className="text-xs text-gray-500">
+                      Enables DataForSEO keyword analysis
+                    </span>
+                  )}
+                </div>
+
                 {/* Status Filters */}
                 <div>
                   <h4 className="font-medium text-gray-900 mb-3">Filter by Status</h4>
@@ -770,6 +885,22 @@ export default function BulkAnalysisPage() {
                             ) : (
                               <span className="text-sm text-gray-500">No keywords available</span>
                             )}
+                            
+                            {/* DataForSEO button only if experimental features enabled */}
+                            {!hideExperimentalFeatures && (
+                              <button
+                                onClick={() => {
+                                  console.log('DataForSEO button onClick triggered');
+                                  analyzeWithDataForSeo(domain);
+                                }}
+                                disabled={loading}
+                                className="inline-flex items-center px-3 py-1 bg-blue-600 text-white text-sm rounded hover:bg-blue-700 disabled:opacity-50 disabled:cursor-not-allowed ml-2"
+                                title={`Analyze ${domain.domain} with DataForSEO`}
+                              >
+                                <Search className="w-3 h-3 mr-1" />
+                                {loading ? 'Loading...' : 'DataForSEO'}
+                              </button>
+                            )}
                           </div>
                         </div>
                         
@@ -952,6 +1083,19 @@ export default function BulkAnalysisPage() {
           )}
         </div>
       </div>
+      
+      {/* DataForSEO Results Modal */}
+      {dataForSeoModal.isOpen && (
+        <DataForSeoResultsModal
+          isOpen={dataForSeoModal.isOpen}
+          onClose={() => setDataForSeoModal({ isOpen: false, domainId: '', domain: '', clientId: '', initialResults: [], totalFound: 0 })}
+          domainId={dataForSeoModal.domainId}
+          domain={dataForSeoModal.domain}
+          clientId={dataForSeoModal.clientId}
+          initialResults={dataForSeoModal.initialResults}
+          totalFound={dataForSeoModal.totalFound}
+        />
+      )}
     </AuthWrapper>
   );
 }
