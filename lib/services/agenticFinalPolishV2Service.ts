@@ -102,7 +102,9 @@ Important:
 - Each strength/weakness should be on its own line
 - The updatedSection should preserve markdown formatting (headings, lists, bold, italics, etc.)
 
-After outputting your polish analysis for the current section, check if that section ends with the exact text <!-- END_OF_ARTICLE -->. If the section you just polished contains this marker, output exactly: ===POLISH_COMPLETE===`;
+After outputting your polish analysis for the current section, check if that section ends with the exact text <!-- END_OF_ARTICLE -->. If the section you just polished contains this marker, output ONLY: ===POLISH_COMPLETE===
+
+Do not provide any additional text, suggestions, or explanations after the ===POLISH_COMPLETE=== marker. This should be your final output.`;
 
 export class AgenticFinalPolishV2Service {
   private openaiProvider: OpenAIProvider;
@@ -485,35 +487,51 @@ export class AgenticFinalPolishV2Service {
     try {
       const result: any = {};
       
+      // FIRST: Check for completion marker and strip everything after it
+      const polishCompleteIndex = response.indexOf('===POLISH_COMPLETE===');
+      if (polishCompleteIndex !== -1) {
+        result.status = 'complete';
+        console.log('🏁 Found POLISH_COMPLETE marker, stripping text after it');
+        
+        // Strip everything after the marker for parsing
+        response = response.substring(0, polishCompleteIndex).trim();
+        
+        // If there's no content before the marker, just return complete status
+        if (!response) {
+          console.log('🏁 POLISH_COMPLETE marker found with no content to parse');
+          return result;
+        }
+      }
+      
       // Method 1: Try exact delimiter matching first (highest confidence)
       const exactResult = this.tryExactDelimiterParsing(response);
       if (exactResult.parsed) {
-        return { ...exactResult, confidence: 1.0, method: 'exact' };
+        return { ...exactResult, confidence: 1.0, method: 'exact', ...(result.status && { status: result.status }) };
       }
       
       // Method 2: Try fuzzy delimiter matching (medium-high confidence)
       const fuzzyResult = this.tryFuzzyDelimiterParsing(response);
       if (fuzzyResult.parsed && fuzzyResult.confidence > 0.7) {
-        return { ...fuzzyResult, method: 'fuzzy' };
+        return { ...fuzzyResult, method: 'fuzzy', ...(result.status && { status: result.status }) };
       }
       
       // Method 3: Try structure-based parsing (medium confidence)
       const structureResult = this.tryStructureBasedParsing(response);
       if (structureResult.parsed && structureResult.confidence > 0.5) {
-        return { ...structureResult, method: 'structure' };
+        return { ...structureResult, method: 'structure', ...(result.status && { status: result.status }) };
       }
       
       // Method 4: Fallback parsing (low confidence)
       const fallbackResult = this.tryFallbackParsing(response);
       if (fallbackResult.parsed) {
         console.log('⚠️ Using fallback parsing method');
-        return { ...fallbackResult, method: 'fallback' };
+        return { ...fallbackResult, method: 'fallback', ...(result.status && { status: result.status }) };
       }
       
-      // Check for completion marker regardless of parsing success
-      if (response.includes('POLISH_COMPLETE') || response.includes('===POLISH_COMPLETE===')) {
+      // Additional check for completion marker (in case it wasn't caught above)
+      if (response.includes('POLISH_COMPLETE')) {
         result.status = 'complete';
-        console.log('🏁 Found POLISH_COMPLETE marker (no content parsed)');
+        console.log('🏁 Found POLISH_COMPLETE marker variant');
       }
       
       return result;
