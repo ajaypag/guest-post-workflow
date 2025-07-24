@@ -134,28 +134,91 @@ ${fullArticle || 'Complete previous steps to get article content'}`;
       </select>
     </div>
 
-    <SavedField
-      label="Client Mention Suggestion"
-      value={step.outputs.clientMentionSuggestion || ''}
-      placeholder="Paste GPT's suggestion for how to mention the client"
-      onChange={(value) => onChange({ ...step.outputs, clientMentionSuggestion: value })}
-      isTextarea={true}
-      height="h-32"
-    />
+      <div className="bg-green-50 p-4 rounded border border-green-200">
+        <h4 className="font-semibold text-green-800 mb-2">📋 If Using GPT: Follow-up Prompts</h4>
+        <p className="text-sm text-gray-700 mb-3">Use these prompts in sequence to refine the mention placement:</p>
+        
+        <div className="space-y-4">
+          <div>
+            <SavedField
+              label="Initial GPT Suggestion"
+              value={step.outputs.initialSuggestion || ''}
+              placeholder="Paste the initial suggestion from GPT"
+              onChange={(value) => onChange({ ...step.outputs, initialSuggestion: value })}
+              isTextarea={true}
+              height="h-20"
+            />
+          </div>
 
-    <div>
-      <label className="block text-sm font-medium mb-1">Client Mention Added?</label>
-      <select
-        value={step.outputs.clientMentionAdded || ''}
-        onChange={(e) => onChange({ ...step.outputs, clientMentionAdded: e.target.value })}
-        className="w-full px-3 py-2 border rounded-md"
-      >
-        <option value="">Select status...</option>
-        <option value="yes">Client mention added to article</option>
-        <option value="no">No suitable placement found</option>
-        <option value="modified">Modified GPT suggestion before adding</option>
-      </select>
+          <div className="bg-white p-3 rounded border">
+            <h5 className="font-semibold mb-2">Follow-up Prompt #1:</h5>
+            <div className="bg-gray-50 p-3 rounded text-xs font-mono relative">
+              <div className="absolute top-2 right-2">
+                <CopyButton 
+                  text="Does this insertion feel natural and add value to the article? Or does it feel forced and out of place? Look at the context around where you're suggesting to place the mention. Does it fit with what's being discussed?"
+                  label="Copy"
+                />
+              </div>
+              <p className="pr-16">Does this insertion feel natural and add value to the article? Or does it feel forced and out of place? Look at the context around where you're suggesting to place the mention. Does it fit with what's being discussed?</p>
+            </div>
+          </div>
+
+          <div>
+            <SavedField
+              label="Second GPT Response"
+              value={step.outputs.secondResponse || ''}
+              placeholder="Paste GPT's response to first follow-up"
+              onChange={(value) => onChange({ ...step.outputs, secondResponse: value })}
+              isTextarea={true}
+              height="h-20"
+            />
+          </div>
+
+          <div className="bg-white p-3 rounded border">
+            <h5 className="font-semibold mb-2">Follow-up Prompt #2:</h5>
+            <div className="bg-gray-50 p-3 rounded text-xs font-mono relative">
+              <div className="absolute top-2 right-2">
+                <CopyButton 
+                  text="Revise your suggestion based on these criteria: 1) The mention should feel like a natural part of the conversation, not an advertisement, 2) It should add value or context to what's being discussed, 3) Consider if you need to add a lead-in sentence or modify surrounding text to make it fit better"
+                  label="Copy"
+                />
+              </div>
+              <p className="pr-16">Revise your suggestion based on these criteria: 1) The mention should feel like a natural part of the conversation, not an advertisement, 2) It should add value or context to what's being discussed, 3) Consider if you need to add a lead-in sentence or modify surrounding text to make it fit better</p>
+            </div>
+          </div>
+
+          <div>
+            <SavedField
+              label="Final GPT Suggestion"
+              value={step.outputs.finalSuggestion || ''}
+              placeholder="Paste the final, refined suggestion after follow-up prompts"
+              onChange={(value) => onChange({ ...step.outputs, finalSuggestion: value })}
+              isTextarea={true}
+              height="h-24"
+            />
+          </div>
+        </div>
+      </div>
+
+      <div className="bg-purple-50 p-4 rounded border border-purple-200">
+        <h4 className="font-semibold text-purple-800 mb-2">✅ Final Step: Mark Mention Status</h4>
+        <p className="text-sm text-gray-700 mb-3">Whether you used the GPT or placed the mention manually:</p>
+        
+        <div>
+          <label className="block text-sm font-medium mb-1">Client Mention Added?</label>
+          <select
+            value={step.outputs.clientMentionAdded || ''}
+            onChange={(e) => onChange({ ...step.outputs, clientMentionAdded: e.target.value })}
+            className="w-full px-3 py-2 border rounded-md"
+          >
+            <option value="">Select status...</option>
+            <option value="yes">Client mention added to article</option>
+            <option value="modified">Modified GPT suggestion before adding</option>
+            <option value="manual">Added mention manually (skipped GPT)</option>
+            <option value="no">No suitable placement found</option>
+          </select>
+        </div>
+      </div>
     </div>
-  </div>
-);
+  );
 };
