@@ -8,6 +8,8 @@ import Header from '@/components/Header';
 import { clientStorage } from '@/lib/userStorage';
 import { AuthService } from '@/lib/auth';
 import { Client, TargetPage } from '@/types/user';
+import { groupKeywordsByTopic, generateGroupedAhrefsUrls } from '@/lib/utils/keywordGroupingV2';
+import DataForSeoResultsModal from '@/components/DataForSeoResultsModal';
 import { 
   ArrowLeft, 
   Target, 
@@ -17,18 +19,24 @@ import {
   Loader2,
   AlertCircle,
   FileText,
-  Plus
+  Plus,
+  RotateCcw,
+  Trash2,
+  Search
 } from 'lucide-react';
 
 interface BulkAnalysisDomain {
   id: string;
   domain: string;
-  qualificationStatus: 'pending' | 'qualified' | 'disqualified';
+  qualificationStatus: 'pending' | 'high_quality' | 'average_quality' | 'disqualified';
   keywordCount: number;
   targetPageIds: string[];
   checkedBy?: string;
   checkedAt?: string;
   notes?: string;
+  hasWorkflow?: boolean;
+  workflowId?: string;
+  workflowCreatedAt?: string;
 }
 
 export default function BulkAnalysisPage() {
@@ -49,7 +57,40 @@ export default function BulkAnalysisPage() {
   const [manualKeywords, setManualKeywords] = useState('');
   
   // Filtering options
-  const [statusFilter, setStatusFilter] = useState<'all' | 'pending' | 'qualified' | 'disqualified'>('all');
+  const [statusFilter, setStatusFilter] = useState<'all' | 'pending' | 'high_quality' | 'average_quality' | 'disqualified'>('all');
+  const [workflowFilter, setWorkflowFilter] = useState<'all' | 'has_workflow' | 'no_workflow'>('all');
+  const [searchQuery, setSearchQuery] = useState('');
+  const [notes, setNotes] = useState<{ [key: string]: string }>({});
+  
+  // Pagination state
+  const [displayLimit, setDisplayLimit] = useState(50);
+  const ITEMS_PER_PAGE = 50;
+  
+  // DataForSEO modal state
+  const [dataForSeoModal, setDataForSeoModal] = useState<{
+    isOpen: boolean;
+    domainId: string;
+    domain: string;
+    clientId: string;
+    initialResults?: any[];
+    totalFound: number;
+  }>({ isOpen: false, domainId: '', domain: '', clientId: '', initialResults: [], totalFound: 0 });
+  
+  // Experimental features toggle - hidden by default
+  const [hideExperimentalFeatures, setHideExperimentalFeatures] = useState(true);
+  
+  // Reset pagination when filters change
+  useEffect(() => {
+    setDisplayLimit(ITEMS_PER_PAGE);
+  }, [statusFilter, workflowFilter, searchQuery]);
+
+  // Load experimental features preference from localStorage
+  useEffect(() => {
+    const stored = localStorage.getItem('hideExperimentalFeatures');
+    if (stored !== null) {
+      setHideExperimentalFeatures(stored === 'true');
+    }
+  }, []);
 
   useEffect(() => {
     loadClient();
@@ -170,7 +211,7 @@ export default function BulkAnalysisPage() {
     }
   };
 
-  const updateQualificationStatus = async (domainId: string, status: 'qualified' | 'disqualified') => {
+  const updateQualificationStatus = async (domainId: string, status: 'high_quality' | 'average_quality' | 'disqualified') => {
     try {
       const session = AuthService.getSession();
       if (!session) {
@@ -178,10 +219,11 @@ export default function BulkAnalysisPage() {
         return;
       }
 
+      const domainNotes = notes[domainId] || '';
       const response = await fetch(`/api/clients/${params.id}/bulk-analysis/${domainId}`, {
         method: 'PUT',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ status, userId: session.userId })
+        body: JSON.stringify({ status, userId: session.userId, notes: domainNotes })
       });
 
       if (response.ok) {
@@ -189,10 +231,12 @@ export default function BulkAnalysisPage() {
         setDomains(prevDomains => 
           prevDomains.map(domain => 
             domain.id === domainId 
-              ? { ...domain, qualificationStatus: status, checkedBy: session.userId, checkedAt: new Date().toISOString() }
+              ? { ...domain, qualificationStatus: status, checkedBy: session.userId, checkedAt: new Date().toISOString(), notes: domainNotes }
               : domain
           )
         );
+        // Also update the notes state to reflect saved value
+        setNotes(prev => ({ ...prev, [domainId]: domainNotes }));
       } else {
         const errorData = await response.json();
         console.error('Error updating qualification status:', errorData);
@@ -202,9 +246,154 @@ export default function BulkAnalysisPage() {
     }
   };
 
-  const createWorkflow = async (domain: string) => {
-    // Navigate to workflow creation with pre-filled domain
-    router.push(`/workflow/new?clientId=${client?.id}&guestPostSite=${encodeURIComponent(domain)}`);
+  const createWorkflow = async (domain: BulkAnalysisDomain) => {
+    // Navigate to workflow creation with pre-filled domain and notes
+    const domainNotes = domain.notes || notes[domain.id] || '';
+    router.push(`/workflow/new?clientId=${client?.id}&guestPostSite=${encodeURIComponent(domain.domain)}&notes=${encodeURIComponent(domainNotes)}`);
+  };
+
+  const deleteDomain = async (domainId: string) => {
+    if (!confirm('Are you sure you want to delete this domain?')) {
+      return;
+    }
+    
+    try {
+      const response = await fetch(`/api/clients/${params.id}/bulk-analysis/${domainId}`, {
+        method: 'DELETE'
+      });
+      
+      if (!response.ok) {
+        throw new Error('Failed to delete domain');
+      }
+      
+      // Remove from local state
+      setDomains(prev => prev.filter(d => d.id !== domainId));
+      setMessage('✅ Domain deleted successfully');
+    } catch (error) {
+      console.error('Error deleting domain:', error);
+      setMessage('❌ Failed to delete domain');
+    }
+  };
+
+  const refreshPendingDomains = async () => {
+    if (keywordInputMode !== 'target-pages') {
+      setMessage('❌ Refresh only works with target pages mode');
+      return;
+    }
+
+    if (selectedTargetPages.length === 0) {
+      setMessage('❌ Please select target pages to refresh with');
+      return;
+    }
+
+    const pendingCount = domains.filter(d => d.qualificationStatus === 'pending').length;
+    if (pendingCount === 0) {
+      setMessage('❌ No pending domains to refresh');
+      return;
+    }
+
+    if (!confirm(`Refresh ${pendingCount} pending domains with the selected target pages and their keywords?`)) {
+      return;
+    }
+
+    setLoading(true);
+    setMessage('🔄 Refreshing pending domains...');
+
+    try {
+      const response = await fetch(`/api/clients/${params.id}/bulk-analysis/refresh`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          targetPageIds: selectedTargetPages
+        })
+      });
+
+      if (response.ok) {
+        const data = await response.json();
+        
+        // Reload domains to get updated data
+        await loadDomains();
+        
+        setMessage(`✅ Refreshed ${data.refreshedCount} pending domains with updated keywords`);
+      } else {
+        throw new Error('Failed to refresh domains');
+      }
+    } catch (error) {
+      console.error('Error refreshing domains:', error);
+      setMessage('❌ Error refreshing domains');
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const analyzeWithDataForSeo = async (domain: BulkAnalysisDomain) => {
+    console.log('DataForSEO button clicked for domain:', domain);
+    
+    setLoading(true);
+    setMessage('🔄 Analyzing with DataForSEO...');
+    
+    try {
+      // Include manual keywords if in manual mode
+      const manualKeywordArray = keywordInputMode === 'manual' 
+        ? manualKeywords.split(',').map(k => k.trim()).filter(k => k.length > 0)
+        : undefined;
+      
+      const payload = {
+        domainId: domain.id,
+        locationCode: 2840, // USA
+        languageCode: 'en',
+        ...(manualKeywordArray && { manualKeywords: manualKeywordArray })
+      };
+      
+      console.log('Sending request to:', `/api/clients/${params.id}/bulk-analysis/analyze-dataforseo`);
+      console.log('Request payload:', payload);
+      
+      const response = await fetch(`/api/clients/${params.id}/bulk-analysis/analyze-dataforseo`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(payload)
+      });
+      
+      console.log('Response status:', response.status);
+      const responseText = await response.text();
+      console.log('Response text:', responseText);
+      
+      let data;
+      try {
+        data = JSON.parse(responseText);
+      } catch (e) {
+        console.error('Failed to parse response:', e);
+        throw new Error('Invalid response from server');
+      }
+      
+      if (response.ok) {
+        console.log('DataForSEO analysis successful:', data);
+        
+        if (!data.result) {
+          console.error('No result in response:', data);
+          setMessage('❌ No results returned from DataForSEO');
+          return;
+        }
+        
+        setDataForSeoModal({
+          isOpen: true,
+          domainId: domain.id,
+          domain: domain.domain,
+          clientId: params.id as string,
+          initialResults: data.result.keywords || [],
+          totalFound: data.result.totalFound || 0
+        });
+        setMessage('');
+      } else {
+        console.error('DataForSEO API error:', data);
+        setMessage(`❌ DataForSEO error: ${data.details || data.error || 'Unknown error'}`);
+      }
+    } catch (error) {
+      console.error('DataForSEO analysis error:', error);
+      setMessage(`❌ Failed to analyze with DataForSEO: ${error instanceof Error ? error.message : 'Unknown error'}`);
+    } finally {
+      setLoading(false);
+    }
   };
 
   const buildAhrefsUrl = (domain: string, keywords: string[]) => {
@@ -439,6 +628,17 @@ export default function BulkAnalysisPage() {
                   : 'keywords from selected target pages'
               }.
             </p>
+
+            {/* Refresh Info Box */}
+            {keywordInputMode === 'target-pages' && domains.some(d => d.qualificationStatus === 'pending') && (
+              <div className="mb-4 p-3 bg-blue-50 border border-blue-200 rounded-lg">
+                <h4 className="text-sm font-medium text-blue-900 mb-1">💡 Tip: Update Pending Domains</h4>
+                <p className="text-xs text-blue-800">
+                  Have you added new target pages or keywords? Use the "Refresh Pending" button below to update 
+                  all pending domains with your latest target pages and keywords without re-adding them.
+                </p>
+              </div>
+            )}
             
             <textarea
               value={domainText}
@@ -458,25 +658,39 @@ export default function BulkAnalysisPage() {
               </div>
             )}
             
-            <button
-              onClick={handleAnalyze}
-              disabled={loading || 
-                (keywordInputMode === 'target-pages' ? selectedTargetPages.length === 0 : !manualKeywords.trim()) || 
-                !domainText.trim()}
-              className="mt-4 px-4 py-2 bg-indigo-600 text-white rounded-lg hover:bg-indigo-700 disabled:opacity-50 disabled:cursor-not-allowed flex items-center"
-            >
-              {loading ? (
-                <>
-                  <Loader2 className="w-4 h-4 mr-2 animate-spin" />
-                  Analyzing...
-                </>
-              ) : (
-                <>
-                  <Target className="w-4 h-4 mr-2" />
-                  Analyze Domains
-                </>
+            <div className="flex items-center gap-3 mt-4">
+              <button
+                onClick={handleAnalyze}
+                disabled={loading || 
+                  (keywordInputMode === 'target-pages' ? selectedTargetPages.length === 0 : !manualKeywords.trim()) || 
+                  !domainText.trim()}
+                className="px-4 py-2 bg-indigo-600 text-white rounded-lg hover:bg-indigo-700 disabled:opacity-50 disabled:cursor-not-allowed flex items-center"
+              >
+                {loading ? (
+                  <>
+                    <Loader2 className="w-4 h-4 mr-2 animate-spin" />
+                    Analyzing...
+                  </>
+                ) : (
+                  <>
+                    <Target className="w-4 h-4 mr-2" />
+                    Analyze Domains
+                  </>
+                )}
+              </button>
+
+              {keywordInputMode === 'target-pages' && domains.filter(d => d.qualificationStatus === 'pending').length > 0 && (
+                <button
+                  onClick={refreshPendingDomains}
+                  disabled={loading || selectedTargetPages.length === 0}
+                  className="px-4 py-2 bg-green-600 text-white rounded-lg hover:bg-green-700 disabled:opacity-50 disabled:cursor-not-allowed flex items-center"
+                  title="Update pending domains with new target pages and keywords"
+                >
+                  <RotateCcw className="w-4 h-4 mr-2" />
+                  Refresh Pending ({domains.filter(d => d.qualificationStatus === 'pending').length})
+                </button>
               )}
-            </button>
+            </div>
           </div>
 
           {/* Results Grid */}
@@ -522,35 +736,115 @@ export default function BulkAnalysisPage() {
                 </div>
               </div>
               
-              {/* Status Filter Controls */}
-              <div className="mb-6 p-4 bg-gray-50 rounded-lg">
-                <h4 className="font-medium text-gray-900 mb-3">Filter by Status</h4>
-                <div className="flex flex-wrap gap-2">
-                  {[
-                    { value: 'all', label: 'All Domains', count: domains.length },
-                    { value: 'pending', label: 'Pending Review', count: domains.filter(d => d.qualificationStatus === 'pending').length },
-                    { value: 'qualified', label: 'Approved', count: domains.filter(d => d.qualificationStatus === 'qualified').length },
-                    { value: 'disqualified', label: 'Rejected', count: domains.filter(d => d.qualificationStatus === 'disqualified').length }
-                  ].map((filter) => (
-                    <button
-                      key={filter.value}
-                      onClick={() => setStatusFilter(filter.value as any)}
-                      className={`px-3 py-2 text-sm rounded-lg border transition-colors ${
-                        statusFilter === filter.value
-                          ? 'bg-indigo-600 text-white border-indigo-600'
-                          : 'bg-white text-gray-700 border-gray-300 hover:border-indigo-300 hover:bg-indigo-50'
-                      }`}
-                    >
-                      {filter.label} ({filter.count})
-                    </button>
-                  ))}
+              {/* Filter Controls */}
+              <div className="mb-6 p-4 bg-gray-50 rounded-lg space-y-4">
+                {/* Search Bar */}
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-2">Search Domains</label>
+                  <input
+                    type="text"
+                    value={searchQuery}
+                    onChange={(e) => setSearchQuery(e.target.value)}
+                    placeholder="Search by domain name..."
+                    className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-indigo-500 focus:border-transparent"
+                  />
+                </div>
+
+                {/* Experimental Features Toggle */}
+                <div className="flex items-center gap-4">
+                  <label className="flex items-center gap-2 text-sm">
+                    <input
+                      type="checkbox"
+                      checked={!hideExperimentalFeatures}
+                      onChange={(e) => {
+                        const hide = !e.target.checked;
+                        setHideExperimentalFeatures(hide);
+                        localStorage.setItem('hideExperimentalFeatures', hide.toString());
+                      }}
+                      className="rounded border-gray-300 text-indigo-600 focus:ring-indigo-500"
+                    />
+                    <span className="font-medium">Show Experimental Features</span>
+                  </label>
+                  {!hideExperimentalFeatures && (
+                    <span className="text-xs text-gray-500">
+                      Enables DataForSEO keyword analysis
+                    </span>
+                  )}
+                </div>
+
+                {/* Status Filters */}
+                <div>
+                  <h4 className="font-medium text-gray-900 mb-3">Filter by Status</h4>
+                  <div className="flex flex-wrap gap-2">
+                    {[
+                      { value: 'all', label: 'All Domains', count: domains.length },
+                      { value: 'pending', label: 'Pending Review', count: domains.filter(d => d.qualificationStatus === 'pending').length },
+                      { value: 'high_quality', label: 'High Quality', count: domains.filter(d => d.qualificationStatus === 'high_quality').length },
+                      { value: 'average_quality', label: 'Average Quality', count: domains.filter(d => d.qualificationStatus === 'average_quality').length },
+                      { value: 'disqualified', label: 'Disqualified', count: domains.filter(d => d.qualificationStatus === 'disqualified').length }
+                    ].map((filter) => (
+                      <button
+                        key={filter.value}
+                        onClick={() => setStatusFilter(filter.value as any)}
+                        className={`px-3 py-2 text-sm rounded-lg border transition-colors ${
+                          statusFilter === filter.value
+                            ? 'bg-indigo-600 text-white border-indigo-600'
+                            : 'bg-white text-gray-700 border-gray-300 hover:border-indigo-300 hover:bg-indigo-50'
+                        }`}
+                      >
+                        {filter.label} ({filter.count})
+                      </button>
+                    ))}
+                  </div>
+                </div>
+
+                {/* Workflow Filters */}
+                <div>
+                  <h4 className="font-medium text-gray-900 mb-3">Filter by Workflow Status</h4>
+                  <div className="flex flex-wrap gap-2">
+                    {[
+                      { value: 'all', label: 'All', count: domains.length },
+                      { value: 'has_workflow', label: 'Has Workflow', count: domains.filter(d => d.hasWorkflow).length },
+                      { value: 'no_workflow', label: 'No Workflow', count: domains.filter(d => !d.hasWorkflow).length }
+                    ].map((filter) => (
+                      <button
+                        key={filter.value}
+                        onClick={() => setWorkflowFilter(filter.value as any)}
+                        className={`px-3 py-2 text-sm rounded-lg border transition-colors ${
+                          workflowFilter === filter.value
+                            ? 'bg-purple-600 text-white border-purple-600'
+                            : 'bg-white text-gray-700 border-gray-300 hover:border-purple-300 hover:bg-purple-50'
+                        }`}
+                      >
+                        {filter.label} ({filter.count})
+                      </button>
+                    ))}
+                  </div>
                 </div>
               </div>
 
               <div className="grid gap-4">
-                {domains
-                  .filter(domain => statusFilter === 'all' || domain.qualificationStatus === statusFilter)
-                  .map((domain) => {
+                {(() => {
+                  const filteredDomains = domains.filter(domain => {
+                    // Status filter
+                    if (statusFilter !== 'all' && domain.qualificationStatus !== statusFilter) return false;
+                    
+                    // Workflow filter
+                    if (workflowFilter === 'has_workflow' && !domain.hasWorkflow) return false;
+                    if (workflowFilter === 'no_workflow' && domain.hasWorkflow) return false;
+                    
+                    // Search filter
+                    if (searchQuery && !domain.domain.toLowerCase().includes(searchQuery.toLowerCase())) return false;
+                    
+                    return true;
+                  });
+                  
+                  const paginatedDomains = filteredDomains.slice(0, displayLimit);
+                  const hasMore = filteredDomains.length > displayLimit;
+                  
+                  return (
+                    <>
+                      {paginatedDomains.map((domain) => {
                   // Get keywords based on mode
                   let keywords: Set<string>;
                   if (keywordInputMode === 'manual') {
@@ -573,10 +867,10 @@ export default function BulkAnalysisPage() {
                   }
                   
                   const keywordArray = Array.from(keywords);
-                  const keywordBatches = [];
-                  for (let i = 0; i < keywordArray.length; i += 50) {
-                    keywordBatches.push(keywordArray.slice(i, i + 50));
-                  }
+                  
+                  // Group keywords by topical relevance
+                  const keywordGroups = groupKeywordsByTopic(keywordArray);
+                  const groupedUrls = generateGroupedAhrefsUrls(domain.domain, keywordGroups, selectedPositionRange);
                   
                   return (
                     <div key={domain.id} className="border rounded-lg p-4">
@@ -588,70 +882,297 @@ export default function BulkAnalysisPage() {
                             {domain.targetPageIds.length} target pages
                           </p>
                           
-                          <div className="mt-3 flex flex-wrap gap-2">
-                            {keywordBatches.map((batch, index) => (
-                              <a
-                                key={index}
-                                href={buildAhrefsUrl(domain.domain, batch)}
-                                target="_blank"
-                                rel="noopener noreferrer"
-                                className="inline-flex items-center px-3 py-1 bg-orange-500 text-white text-sm rounded hover:bg-orange-600"
-                              >
-                                <ExternalLink className="w-3 h-3 mr-1" />
-                                Ahrefs {keywordBatches.length > 1 ? `(${index + 1}/${keywordBatches.length})` : ''}
-                              </a>
-                            ))}
+                          <div className="mt-3">
+                            {/* Keyword groups */}
+                            {groupedUrls.length > 0 ? (
+                              <div>
+                                <div className="space-y-2">
+                                  {groupedUrls.map((group, index) => (
+                                    <div key={index} className="flex items-center gap-2">
+                                      <a
+                                        href={group.url}
+                                        target="_blank"
+                                        rel="noopener noreferrer"
+                                        className={`inline-flex items-center px-3 py-1 text-white text-sm rounded hover:opacity-90 transition-opacity ${
+                                          group.relevance === 'core' 
+                                            ? 'bg-green-600' 
+                                            : group.relevance === 'related'
+                                            ? 'bg-blue-600'
+                                            : 'bg-gray-600'
+                                        }`}
+                                      >
+                                        <ExternalLink className="w-3 h-3 mr-1" />
+                                        {group.name}
+                                      </a>
+                                      <span className="text-xs text-gray-500">
+                                        {group.keywordCount} keywords
+                                      </span>
+                                      {group.relevance === 'core' && (
+                                        <span className="text-xs px-2 py-0.5 bg-green-100 text-green-800 rounded">Premium</span>
+                                      )}
+                                      {group.relevance === 'related' && (
+                                        <span className="text-xs px-2 py-0.5 bg-blue-100 text-blue-800 rounded">Good</span>
+                                      )}
+                                    </div>
+                                  ))}
+                                </div>
+                                
+                                {/* Action buttons - Open All, Open Premium, DataForSEO */}
+                                <div className="mt-2 flex flex-wrap gap-2">
+                                  {groupedUrls.length > 1 && (
+                                    <>
+                                      <button
+                                        onClick={() => {
+                                          // Reverse order so user lands on first tab
+                                          [...groupedUrls].reverse().forEach((group, index) => {
+                                            setTimeout(() => {
+                                              window.open(group.url, '_blank');
+                                            }, index * 200); // Small delay to prevent popup blocker
+                                          });
+                                        }}
+                                        className="inline-flex items-center px-3 py-1 bg-purple-600 text-white text-sm rounded hover:bg-purple-700"
+                                      >
+                                        <ExternalLink className="w-3 h-3 mr-1" />
+                                        Open All ({groupedUrls.length})
+                                      </button>
+                                      
+                                      {groupedUrls.filter(g => g.relevance === 'core').length > 0 && (
+                                        <button
+                                          onClick={() => {
+                                            // Reverse order so user lands on first tab
+                                            [...groupedUrls]
+                                              .filter(g => g.relevance === 'core')
+                                              .reverse()
+                                              .forEach((group, index) => {
+                                                setTimeout(() => {
+                                                  window.open(group.url, '_blank');
+                                                }, index * 200);
+                                              });
+                                          }}
+                                          className="inline-flex items-center px-3 py-1 bg-green-600 text-white text-sm rounded hover:bg-green-700"
+                                        >
+                                          <ExternalLink className="w-3 h-3 mr-1" />
+                                          Open Premium ({groupedUrls.filter(g => g.relevance === 'core').length})
+                                        </button>
+                                      )}
+                                    </>
+                                  )}
+                                  
+                                  {/* DataForSEO button only if experimental features enabled */}
+                                  {!hideExperimentalFeatures && (
+                                    <button
+                                      onClick={() => {
+                                        console.log('DataForSEO button onClick triggered');
+                                        analyzeWithDataForSeo(domain);
+                                      }}
+                                      disabled={loading}
+                                      className="inline-flex items-center px-3 py-1 bg-indigo-600 text-white text-sm rounded hover:bg-indigo-700 disabled:opacity-50 disabled:cursor-not-allowed"
+                                      title={`Analyze ${domain.domain} with DataForSEO`}
+                                    >
+                                      <Search className="w-3 h-3 mr-1" />
+                                      {loading ? 'Loading...' : 'DataForSEO'}
+                                    </button>
+                                  )}
+                                </div>
+                              </div>
+                            ) : (
+                              <span className="text-sm text-gray-500">No keywords available</span>
+                            )}
                           </div>
                         </div>
                         
-                        <div className="ml-4 flex items-center space-x-2">
-                          {domain.qualificationStatus === 'pending' ? (
-                            <>
-                              <button
-                                onClick={() => updateQualificationStatus(domain.id, 'qualified')}
-                                className="p-2 text-green-600 hover:bg-green-50 rounded"
-                                title="Mark as Qualified"
-                              >
-                                <CheckCircle className="w-5 h-5" />
-                              </button>
-                              <button
-                                onClick={() => updateQualificationStatus(domain.id, 'disqualified')}
-                                className="p-2 text-red-600 hover:bg-red-50 rounded"
-                                title="Mark as Disqualified"
-                              >
-                                <XCircle className="w-5 h-5" />
-                              </button>
-                            </>
-                          ) : domain.qualificationStatus === 'qualified' ? (
-                            <div className="flex items-center space-x-2">
-                              <span className="inline-flex items-center px-2 py-1 bg-green-100 text-green-800 text-sm rounded">
-                                <CheckCircle className="w-4 h-4 mr-1" />
-                                Qualified
-                              </span>
-                              <button
-                                onClick={() => createWorkflow(domain.domain)}
-                                className="inline-flex items-center px-3 py-1 bg-green-600 text-white text-sm rounded hover:bg-green-700"
-                              >
-                                <Plus className="w-3 h-3 mr-1" />
-                                Create Workflow
-                              </button>
+                        <div className="ml-4 flex items-start space-x-4">
+                          {/* Notes section - more compact */}
+                          <div className="flex-1">
+                            <div className="relative">
+                              <textarea
+                                value={notes[domain.id] || domain.notes || ''}
+                                onChange={(e) => setNotes({ ...notes, [domain.id]: e.target.value })}
+                                placeholder="Notes..."
+                                className="w-48 h-20 px-2 py-1 text-xs border border-gray-200 rounded-md focus:ring-1 focus:ring-indigo-500 focus:border-indigo-500 resize-none"
+                              />
+                              {notes[domain.id] !== domain.notes && (
+                                <button
+                                  onClick={async () => {
+                                    // Save notes without changing status
+                                    try {
+                                      const session = AuthService.getSession();
+                                      if (!session) {
+                                        console.error('No user session found');
+                                        return;
+                                      }
+
+                                      const domainNotes = notes[domain.id] || '';
+                                      const response = await fetch(`/api/clients/${params.id}/bulk-analysis/${domain.id}`, {
+                                        method: 'PUT',
+                                        headers: { 'Content-Type': 'application/json' },
+                                        body: JSON.stringify({ 
+                                          status: domain.qualificationStatus, 
+                                          userId: session.userId, 
+                                          notes: domainNotes 
+                                        })
+                                      });
+
+                                      if (response.ok) {
+                                        setDomains(prevDomains => 
+                                          prevDomains.map(d => 
+                                            d.id === domain.id 
+                                              ? { ...d, notes: domainNotes }
+                                              : d
+                                          )
+                                        );
+                                        setMessage('✅ Notes saved');
+                                      } else {
+                                        const errorData = await response.json();
+                                        console.error('Error saving notes:', errorData);
+                                        setMessage(`❌ Error saving notes: ${errorData.error || 'Unknown error'}`);
+                                      }
+                                    } catch (error) {
+                                      console.error('Error saving notes:', error);
+                                      setMessage('❌ Failed to save notes');
+                                    }
+                                  }}
+                                  className="absolute bottom-1 right-1 text-xs px-2 py-0.5 bg-blue-600 text-white rounded hover:bg-blue-700"
+                                >
+                                  Save
+                                </button>
+                              )}
                             </div>
-                          ) : (
-                            <span className="inline-flex items-center px-2 py-1 bg-red-100 text-red-800 text-sm rounded">
-                              <XCircle className="w-4 h-4 mr-1" />
-                              Disqualified
-                            </span>
-                          )}
+                          </div>
+                          
+                          {/* Qualification buttons - cleaner design */}
+                          <div className="flex flex-col space-y-1.5 min-w-[140px]">
+                            {domain.qualificationStatus === 'pending' ? (
+                              <>
+                                <button
+                                  onClick={() => updateQualificationStatus(domain.id, 'high_quality')}
+                                  className="px-3 py-1.5 bg-green-600 text-white text-xs font-medium rounded hover:bg-green-700 transition-colors"
+                                >
+                                  High Quality
+                                </button>
+                                <button
+                                  onClick={() => updateQualificationStatus(domain.id, 'average_quality')}
+                                  className="px-3 py-1.5 bg-blue-600 text-white text-xs font-medium rounded hover:bg-blue-700 transition-colors"
+                                >
+                                  Average
+                                </button>
+                                <button
+                                  onClick={() => updateQualificationStatus(domain.id, 'disqualified')}
+                                  className="px-3 py-1.5 bg-gray-500 text-white text-xs font-medium rounded hover:bg-gray-600 transition-colors"
+                                >
+                                  Disqualify
+                                </button>
+                              </>
+                            ) : (
+                              <div className="space-y-2">
+                                {domain.qualificationStatus === 'high_quality' && (
+                                  <>
+                                    <span className="inline-flex items-center px-2 py-1 bg-green-100 text-green-800 text-xs font-medium rounded cursor-pointer hover:bg-green-200 group relative" 
+                                          onClick={() => updateQualificationStatus(domain.id, 'pending' as any)}
+                                          title="Click to reset to pending">
+                                      High Quality
+                                      <RotateCcw className="w-3 h-3 ml-1 opacity-0 group-hover:opacity-100 transition-opacity inline" />
+                                    </span>
+                                    {!domain.hasWorkflow && (
+                                      <button
+                                        onClick={() => createWorkflow(domain)}
+                                        className="inline-flex items-center px-2 py-1 bg-green-600 text-white text-xs rounded hover:bg-green-700"
+                                      >
+                                        <Plus className="w-3 h-3 mr-1" />
+                                        Workflow
+                                      </button>
+                                    )}
+                                  </>
+                                )}
+                                {domain.qualificationStatus === 'average_quality' && (
+                                  <>
+                                    <span className="inline-flex items-center px-2 py-1 bg-blue-100 text-blue-800 text-xs font-medium rounded cursor-pointer hover:bg-blue-200 group relative" 
+                                          onClick={() => updateQualificationStatus(domain.id, 'pending' as any)}
+                                          title="Click to reset to pending">
+                                      Average
+                                      <RotateCcw className="w-3 h-3 ml-1 opacity-0 group-hover:opacity-100 transition-opacity inline" />
+                                    </span>
+                                    {!domain.hasWorkflow && (
+                                      <button
+                                        onClick={() => createWorkflow(domain)}
+                                        className="inline-flex items-center px-2 py-1 bg-blue-600 text-white text-xs rounded hover:bg-blue-700"
+                                      >
+                                        <Plus className="w-3 h-3 mr-1" />
+                                        Workflow
+                                      </button>
+                                    )}
+                                  </>
+                                )}
+                                {domain.qualificationStatus === 'disqualified' && (
+                                  <span className="inline-flex items-center px-2 py-1 bg-gray-100 text-gray-600 text-xs rounded cursor-pointer hover:bg-gray-200 group relative" 
+                                        onClick={() => updateQualificationStatus(domain.id, 'pending' as any)}
+                                        title="Click to reset to pending">
+                                    Disqualified
+                                    <RotateCcw className="w-3 h-3 ml-1 opacity-0 group-hover:opacity-100 transition-opacity inline" />
+                                  </span>
+                                )}
+                                {domain.hasWorkflow && (
+                                  <span className="inline-flex items-center px-2 py-1 bg-purple-100 text-purple-800 text-xs rounded">
+                                    <FileText className="w-3 h-3 mr-1" />
+                                    Has Workflow
+                                  </span>
+                                )}
+                              </div>
+                            )}
+                            
+                            {/* Delete button */}
+                            <button
+                              onClick={() => deleteDomain(domain.id)}
+                              className="mt-2 px-3 py-1.5 bg-red-500 text-white text-xs rounded hover:bg-red-600 transition-colors flex items-center justify-center w-full"
+                              title="Delete domain"
+                            >
+                              <Trash2 className="w-3 h-3" />
+                            </button>
+                          </div>
                         </div>
                       </div>
                     </div>
                   );
                 })}
+                      
+                      {/* Show More Button */}
+                      {hasMore && (
+                        <div className="mt-6 text-center">
+                          <button
+                            onClick={() => setDisplayLimit(displayLimit + ITEMS_PER_PAGE)}
+                            className="inline-flex items-center px-6 py-3 bg-gray-100 hover:bg-gray-200 text-gray-800 font-medium rounded-lg transition-colors"
+                          >
+                            <Plus className="w-5 h-5 mr-2" />
+                            Show More ({filteredDomains.length - paginatedDomains.length} remaining)
+                          </button>
+                        </div>
+                      )}
+                      
+                      {/* Results Summary */}
+                      <div className="mt-4 text-center text-sm text-gray-600">
+                        Showing {paginatedDomains.length} of {filteredDomains.length} domains
+                      </div>
+                    </>
+                  );
+                })()}
               </div>
             </div>
           )}
         </div>
       </div>
+      
+      {/* DataForSEO Results Modal */}
+      {dataForSeoModal.isOpen && (
+        <DataForSeoResultsModal
+          isOpen={dataForSeoModal.isOpen}
+          onClose={() => setDataForSeoModal({ isOpen: false, domainId: '', domain: '', clientId: '', initialResults: [], totalFound: 0 })}
+          domainId={dataForSeoModal.domainId}
+          domain={dataForSeoModal.domain}
+          clientId={dataForSeoModal.clientId}
+          initialResults={dataForSeoModal.initialResults}
+          totalFound={dataForSeoModal.totalFound}
+        />
+      )}
     </AuthWrapper>
   );
 }

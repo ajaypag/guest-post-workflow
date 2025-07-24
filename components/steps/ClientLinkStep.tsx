@@ -26,18 +26,21 @@ export const ClientLinkStep = ({ step, workflow, onChange }: ClientLinkStepProps
   const clientUrl = step.outputs.clientUrl || plannedClientUrl || workflow.clientUrl;
   const anchorText = step.outputs.anchorText || plannedAnchorText || '';
   
-  // Get the final polished article from Step 6, fallback to earlier versions
+  // Get the cleaned article from Step 7 (formatting QA) as primary source
+  const formattingQAStep = workflow.steps.find(s => s.id === 'formatting-qa');
+  const cleanedArticle = formattingQAStep?.outputs?.cleanedArticle || '';
+  
+  // Fallback chain: Step 6 -> Step 5 -> Step 4
   const finalPolishStep = workflow.steps.find(s => s.id === 'final-polish');
   const finalArticle = finalPolishStep?.outputs?.finalArticle || '';
   
-  // Fallback chain if final article not available
   const contentAuditStep = workflow.steps.find(s => s.id === 'content-audit');
   const seoOptimizedArticle = contentAuditStep?.outputs?.seoOptimizedArticle || '';
   
   const articleDraftStep = workflow.steps.find(s => s.id === 'article-draft');
   const originalArticle = articleDraftStep?.outputs?.fullArticle || '';
   
-  const fullArticle = finalArticle || seoOptimizedArticle || originalArticle;
+  const fullArticle = cleanedArticle || finalArticle || seoOptimizedArticle || originalArticle;
   
   // Build complete prompt for GPT
   const completePrompt = `Client URL to Link: ${clientUrl}
@@ -84,9 +87,9 @@ ${fullArticle || 'Complete previous steps to get article content'}`;
           You've completed Steps 8-10 (Internal Links, Tier 2 Links, Client Mention) and likely made changes to your article. 
         </p>
         <div className="bg-white p-3 rounded border border-blue-200">
-          <p className="text-sm font-semibold text-blue-800 mb-2">📝 Recommended: Update Step 6 first</p>
+          <p className="text-sm font-semibold text-blue-800 mb-2">📝 Recommended: Update Step 7 first</p>
           <p className="text-sm text-gray-700 mb-2">
-            Go back to <strong>Step 6: Polish & Finalize</strong> and update the "Final Polished Article" field with your current version that includes:
+            Go back to <strong>Step 7: Formatting & QA</strong> and update the "Cleaned Article" field with your current version that includes:
           </p>
           <ul className="text-sm text-gray-700 ml-4 space-y-1">
             <li>• Internal links to the guest post site</li>

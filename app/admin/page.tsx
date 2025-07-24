@@ -1,7 +1,7 @@
 'use client';
 
 import React from 'react';
-import { Database, Activity, Wrench, Users, BarChart3, Settings, AlertTriangle, Bug, FileSearch } from 'lucide-react';
+import { Database, Activity, Wrench, Users, BarChart3, Settings, AlertTriangle, Bug, FileSearch, Search } from 'lucide-react';
 
 export default function AdminDashboard() {
   const adminTools = [
@@ -20,6 +20,14 @@ export default function AdminDashboard() {
       href: '/admin/bulk-url-migration',
       color: 'bg-indigo-50 border-indigo-200 text-indigo-700',
       iconColor: 'text-indigo-600'
+    },
+    {
+      title: 'DataForSEO Migration',
+      description: 'Manage database migration for DataForSEO integration and keyword analysis',
+      icon: Search,
+      href: '/admin/dataforseo-migration',
+      color: 'bg-blue-50 border-blue-200 text-blue-700',
+      iconColor: 'text-blue-600'
     },
     {
       title: 'Diagnostics',

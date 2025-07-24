@@ -22,12 +22,13 @@ export const FormattingQAStepClean = ({ step, workflow, onChange }: FormattingQA
   const handleAgenticComplete = (qaReport: any) => {
     // Only update if the session ID has changed to prevent loops
     if (qaReport.sessionId && qaReport.sessionId !== step.outputs?.lastQASessionId) {
-      // Save the QA report results
+      // Save the QA report results including the cleaned article
       onChange({
         ...step.outputs,
         agenticQACompleted: true,
         agenticQAReport: qaReport,
-        lastQASessionId: qaReport.sessionId
+        lastQASessionId: qaReport.sessionId,
+        cleanedArticle: qaReport.cleanedArticle || null
       });
     }
   };

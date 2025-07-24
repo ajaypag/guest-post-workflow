@@ -31,6 +31,7 @@ export function AgenticFormattingChecker({ workflowId, onComplete }: AgenticForm
   const eventSourceRef = useRef<EventSource | null>(null);
   const [copySuccess, setCopySuccess] = useState<Record<string, boolean>>({});
   const [isLoading, setIsLoading] = useState(true);
+  const [editedArticle, setEditedArticle] = useState<string | null>(null);
 
   const [hasLoadedSession, setHasLoadedSession] = useState(false);
 
@@ -61,6 +62,7 @@ export function AgenticFormattingChecker({ workflowId, onComplete }: AgenticForm
           // Load cleaned article and fixes if available
           if (session.cleanedArticle) {
             setCleanedArticle(session.cleanedArticle);
+            setEditedArticle(session.cleanedArticle);
           }
           if (session.fixesApplied) {
             setFixesApplied(Array.isArray(session.fixesApplied) ? session.fixesApplied : []);
@@ -113,18 +115,18 @@ export function AgenticFormattingChecker({ workflowId, onComplete }: AgenticForm
     loadExistingSession();
   }, [workflowId]); // Remove onComplete from dependencies
 
-  // Call onComplete when session status changes to completed
+  // Call onComplete when session status changes to completed or article is edited
   useEffect(() => {
-    if (status === 'completed' && sessionId && onComplete && cleanedArticle) {
+    if (sessionId && onComplete && (cleanedArticle || editedArticle)) {
       onComplete({
         sessionId: sessionId,
         status: status,
         checks: checks,
-        cleanedArticle: cleanedArticle,
+        cleanedArticle: editedArticle || cleanedArticle,
         fixesApplied: fixesApplied
       });
     }
-  }, [status]); // Only trigger when status changes
+  }, [status, editedArticle]); // Trigger when status or editedArticle changes
 
   // Check type display names
   const checkTypeNames: Record<string, string> = {
@@ -199,6 +201,15 @@ export function AgenticFormattingChecker({ workflowId, onComplete }: AgenticForm
         setCurrentMessage(data.message);
         break;
 
+      case 'phase_transition':
+        setStatus('generating_article');
+        setCurrentMessage(data.message);
+        break;
+
+      case 'generating_article_progress':
+        setCurrentMessage(data.message);
+        break;
+
       case 'check_completed':
         const newCheck: QACheck = {
           checkType: data.checkType,
@@ -221,6 +232,7 @@ export function AgenticFormattingChecker({ workflowId, onComplete }: AgenticForm
 
       case 'cleaned_article_generated':
         setCleanedArticle(data.cleanedArticle);
+        setEditedArticle(data.cleanedArticle);
         setFixesApplied(data.fixesApplied || []);
         setCurrentMessage('Cleaned article generated successfully!');
         break;
@@ -349,29 +361,72 @@ export function AgenticFormattingChecker({ workflowId, onComplete }: AgenticForm
 
         {/* Progress Stats */}
         {(isRunning || status === 'completed' || (sessionId && !isLoading)) && (
-          <div className="grid grid-cols-3 gap-4 mt-4">
-            <div className="bg-white rounded-lg p-3 text-center">
-              <div className="text-2xl font-bold text-gray-900">{overallStats.total}</div>
-              <div className="text-xs text-gray-600">Total Checks</div>
+          <>
+            <div className="grid grid-cols-3 gap-4 mt-4">
+              <div className="bg-white rounded-lg p-3 text-center">
+                <div className="text-2xl font-bold text-gray-900">{overallStats.total}</div>
+                <div className="text-xs text-gray-600">Total Checks</div>
+              </div>
+              <div className="bg-white rounded-lg p-3 text-center">
+                <div className="text-2xl font-bold text-green-600">{overallStats.passed}</div>
+                <div className="text-xs text-gray-600">Passed</div>
+              </div>
+              <div className="bg-white rounded-lg p-3 text-center">
+                <div className="text-2xl font-bold text-red-600">{overallStats.failed}</div>
+                <div className="text-xs text-gray-600">Failed</div>
+              </div>
             </div>
-            <div className="bg-white rounded-lg p-3 text-center">
-              <div className="text-2xl font-bold text-green-600">{overallStats.passed}</div>
-              <div className="text-xs text-gray-600">Passed</div>
-            </div>
-            <div className="bg-white rounded-lg p-3 text-center">
-              <div className="text-2xl font-bold text-red-600">{overallStats.failed}</div>
-              <div className="text-xs text-gray-600">Failed</div>
-            </div>
-          </div>
+            
+            {/* Phase Progress Indicator */}
+            {isRunning && (
+              <div className="mt-4 bg-white rounded-lg p-3">
+                <div className="flex items-center justify-between text-xs text-gray-600 mb-2">
+                  <span className={`flex items-center ${checks.length < overallStats.total ? 'font-bold text-gray-900' : ''}`}>
+                    <CheckCircle className="w-4 h-4 mr-1" />
+                    Checking Formatting
+                  </span>
+                  <span className={`flex items-center ${status === 'generating_article' ? 'font-bold text-purple-700' : ''}`}>
+                    <FileText className="w-4 h-4 mr-1" />
+                    Generating Clean Article
+                  </span>
+                </div>
+                <div className="w-full bg-gray-200 rounded-full h-2">
+                  <div 
+                    className={`h-2 rounded-full transition-all duration-500 ${
+                      status === 'generating_article' ? 'bg-purple-600' : 'bg-blue-600'
+                    }`}
+                    style={{ 
+                      width: status === 'generating_article' 
+                        ? '90%' 
+                        : `${(checks.length / overallStats.total) * 50}%` 
+                    }}
+                  />
+                </div>
+              </div>
+            )}
+          </>
         )}
       </div>
 
       {/* Current Status */}
       {isRunning && currentMessage && (
-        <div className="bg-blue-50 border border-blue-200 rounded-lg p-4">
+        <div className={`border rounded-lg p-4 ${
+          status === 'generating_article' 
+            ? 'bg-purple-50 border-purple-200' 
+            : 'bg-blue-50 border-blue-200'
+        }`}>
           <div className="flex items-center space-x-2">
-            <Clock className="w-4 h-4 text-blue-600 animate-spin" />
-            <span className="text-sm text-blue-800">{currentMessage}</span>
+            {status === 'generating_article' ? (
+              <>
+                <FileText className="w-4 h-4 text-purple-600 animate-pulse" />
+                <span className="text-sm text-purple-800 font-medium">{currentMessage}</span>
+              </>
+            ) : (
+              <>
+                <Clock className="w-4 h-4 text-blue-600 animate-spin" />
+                <span className="text-sm text-blue-800">{currentMessage}</span>
+              </>
+            )}
           </div>
         </div>
       )}
@@ -546,9 +601,9 @@ export function AgenticFormattingChecker({ workflowId, onComplete }: AgenticForm
                 Cleaned Article (Markdown)
               </label>
               <textarea
-                value={cleanedArticle}
-                readOnly
-                className="w-full h-64 p-3 border border-gray-300 rounded-lg bg-gray-50 text-sm font-mono resize-none"
+                value={editedArticle || cleanedArticle || ''}
+                onChange={(e) => setEditedArticle(e.target.value)}
+                className="w-full h-64 p-3 border border-gray-300 rounded-lg text-sm font-mono resize-none"
                 placeholder="The cleaned article will appear here..."
               />
             </div>
@@ -559,7 +614,7 @@ export function AgenticFormattingChecker({ workflowId, onComplete }: AgenticForm
                 Formatted Preview
               </label>
               <MarkdownPreview 
-                content={cleanedArticle}
+                content={editedArticle || cleanedArticle || ''}
                 className="border border-gray-300 rounded-lg"
               />
             </div>

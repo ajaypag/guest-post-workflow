@@ -26,6 +26,8 @@ export interface TargetPage {
   domain: string;
   status: 'active' | 'inactive' | 'completed';
   notes?: string;
+  keywords?: string; // Comma-separated list of AI-generated keywords
+  description?: string; // AI-generated description
   addedAt: Date;
   completedAt?: Date;
 }

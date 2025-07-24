@@ -1016,6 +1016,83 @@ export default function DatabaseMigrationPage() {
     setIsLoading(false);
   };
 
+  const checkBulkAnalysisImprovements = async () => {
+    setIsLoading(true);
+    setMessage('');
+    
+    try {
+      const response = await fetch('/api/admin/check-bulk-analysis-improvements');
+      const data = await response.json();
+      
+      if (data.status.migration_needed) {
+        setMessage(`ℹ️ Migration needed - Missing columns: ${data.status.missing_columns.join(', ')}`);
+        setMessageType('info');
+      } else {
+        setMessage('✅ All bulk analysis improvement columns exist (has_workflow, workflow_id, workflow_created_at)');
+        setMessageType('success');
+      }
+    } catch (error) {
+      setMessage(`❌ Error checking status: ${error instanceof Error ? error.message : 'Unknown error'}`);
+      setMessageType('error');
+    }
+    
+    setIsLoading(false);
+  };
+
+  const runBulkAnalysisImprovementsMigration = async () => {
+    setIsLoading(true);
+    setMessage('');
+    
+    try {
+      const response = await fetch('/api/admin/migrate-bulk-analysis-improvements', {
+        method: 'POST'
+      });
+      const data = await response.json();
+      
+      if (data.success) {
+        setMessage('✅ Bulk analysis improvements migration completed successfully! Multi-tier qualification and workflow tracking enabled.');
+        setMessageType('success');
+      } else {
+        setMessage(`❌ Migration failed: ${data.error}`);
+        setMessageType('error');
+      }
+    } catch (error) {
+      setMessage(`❌ Error: ${error instanceof Error ? error.message : 'Unknown error'}`);
+      setMessageType('error');
+    }
+    
+    setIsLoading(false);
+  };
+
+  const runBulkAnalysisImprovementsRollback = async () => {
+    if (!confirm('Are you sure you want to remove the bulk analysis improvements? This will remove workflow tracking columns and indexes.')) {
+      return;
+    }
+    
+    setIsLoading(true);
+    setMessage('');
+    
+    try {
+      const response = await fetch('/api/admin/migrate-bulk-analysis-improvements-rollback', {
+        method: 'POST'
+      });
+      const data = await response.json();
+      
+      if (data.success) {
+        setMessage('✅ Bulk analysis improvements rolled back successfully!');
+        setMessageType('success');
+      } else {
+        setMessage(`❌ Rollback failed: ${data.error}`);
+        setMessageType('error');
+      }
+    } catch (error) {
+      setMessage(`❌ Error: ${error instanceof Error ? error.message : 'Unknown error'}`);
+      setMessageType('error');
+    }
+    
+    setIsLoading(false);
+  };
+
   return (
     <div className="min-h-screen bg-gray-50 py-8">
       <div className="max-w-4xl mx-auto px-4 sm:px-6 lg:px-8">
@@ -2050,6 +2127,82 @@ export default function DatabaseMigrationPage() {
               >
                 <RotateCcw className="w-4 h-4 mr-2" />
                 {isLoading ? 'Removing Table...' : 'Remove Table'}
+              </button>
+            </div>
+          </div>
+
+          {/* Bulk Analysis Improvements Migration Section */}
+          <div className="mt-12 mb-8">
+            <h2 className="text-lg font-semibold text-gray-900 mb-4">Bulk Analysis Improvements Migration</h2>
+            <p className="text-gray-600 mb-4">
+              This migration adds workflow tracking and performance improvements to the{' '}
+              <code className="bg-gray-100 px-2 py-1 rounded">bulk_analysis_domains</code> table. It enables multi-tier 
+              qualification (high quality, average quality, disqualified) and tracks when workflows are created from qualified domains.
+            </p>
+            
+            <div className="bg-indigo-50 border border-indigo-200 rounded-lg p-4 mb-6">
+              <div className="flex items-start space-x-3">
+                <AlertTriangle className="w-5 h-5 text-indigo-600 mt-0.5" />
+                <div>
+                  <h3 className="text-sm font-semibold text-indigo-800">New Features Enabled:</h3>
+                  <ul className="text-sm text-indigo-700 mt-2 space-y-1">
+                    <li>• Multi-tier qualification (high quality vs average quality targets)</li>
+                    <li>• Workflow tracking (has_workflow, workflow_id, workflow_created_at)</li>
+                    <li>• Performance indexes for pagination and filtering</li>
+                    <li>• Notes field for documenting qualification decisions</li>
+                    <li>• Bulk operations support (export, bulk qualify, bulk delete)</li>
+                  </ul>
+                </div>
+              </div>
+            </div>
+          </div>
+
+          <div className="space-y-4 mb-8">
+            {/* Check Bulk Analysis Improvements Status */}
+            <div className="border border-gray-200 rounded-lg p-4">
+              <h3 className="font-semibold text-gray-900 mb-2">Check Migration Status</h3>
+              <p className="text-gray-600 text-sm mb-3">
+                Check if the bulk analysis improvement columns and indexes exist.
+              </p>
+              <button
+                onClick={checkBulkAnalysisImprovements}
+                disabled={isLoading}
+                className="inline-flex items-center px-4 py-2 bg-blue-600 text-white text-sm font-medium rounded-md hover:bg-blue-700 disabled:opacity-50 disabled:cursor-not-allowed"
+              >
+                <Database className="w-4 h-4 mr-2" />
+                {isLoading ? 'Checking...' : 'Check Status'}
+              </button>
+            </div>
+
+            {/* Run Bulk Analysis Improvements Migration */}
+            <div className="border border-green-200 rounded-lg p-4">
+              <h3 className="font-semibold text-gray-900 mb-2">Run Migration</h3>
+              <p className="text-gray-600 text-sm mb-3">
+                Add workflow tracking columns and performance indexes to enable bulk analysis improvements.
+              </p>
+              <button
+                onClick={runBulkAnalysisImprovementsMigration}
+                disabled={isLoading}
+                className="inline-flex items-center px-4 py-2 bg-green-600 text-white text-sm font-medium rounded-md hover:bg-green-700 disabled:opacity-50 disabled:cursor-not-allowed"
+              >
+                <Play className="w-4 h-4 mr-2" />
+                {isLoading ? 'Running Migration...' : 'Run Migration'}
+              </button>
+            </div>
+
+            {/* Rollback Bulk Analysis Improvements */}
+            <div className="border border-red-200 rounded-lg p-4">
+              <h3 className="font-semibold text-gray-900 mb-2">Rollback Migration</h3>
+              <p className="text-gray-600 text-sm mb-3">
+                Remove workflow tracking columns and indexes. This will not affect existing bulk analysis data.
+              </p>
+              <button
+                onClick={runBulkAnalysisImprovementsRollback}
+                disabled={isLoading}
+                className="inline-flex items-center px-4 py-2 bg-red-600 text-white text-sm font-medium rounded-md hover:bg-red-700 disabled:opacity-50 disabled:cursor-not-allowed"
+              >
+                <RotateCcw className="w-4 h-4 mr-2" />
+                {isLoading ? 'Rolling Back...' : 'Rollback Migration'}
               </button>
             </div>
           </div>

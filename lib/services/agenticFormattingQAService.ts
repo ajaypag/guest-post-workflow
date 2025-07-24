@@ -174,7 +174,7 @@ You need to check and fix the following formatting and quality aspects:
 3. Section completeness (Intro, body sections, FAQ intro, Conclusion all present)
 4. List consistency (bullets/numbers don't change mid-section)
 5. Bold cleanup (remove emphasis bolding on keywords/terms, keep only strategic formatting bolding)
-6. FAQ formatting (questions bold sentence-case, answers plain text)
+6. FAQ formatting (if FAQs exist: questions bold sentence-case, answers plain text - do not add FAQs if none exist)
 7. Citation placement (keep only first citation link, convert others to verbal attributions for data/stats)
 8. UTM cleanup (remove source=chatgpt UTM parameters)
 9. Article title (ensure article starts with H1 title${articleTitle ? `: "${articleTitle}"` : ''})
@@ -226,9 +226,16 @@ Begin your systematic analysis and fixing process now.`;
           // Stream text deltas for UI updates
           if (event.type === 'raw_model_stream_event') {
             if (event.data.type === 'output_text_delta' && event.data.delta) {
+              // Determine current phase for appropriate message
+              const checksComplete = checkNumber >= checkTypes.length;
+              const thinkingMessage = checksComplete 
+                ? 'Generating cleaned article with all fixes...' 
+                : `Analyzing formatting check ${checkNumber + 1} of ${checkTypes.length}...`;
+              
               sseUpdate(sessionId, { 
                 type: 'agent_thinking', 
-                message: 'Analyzing article formatting...' 
+                message: thinkingMessage,
+                phase: checksComplete ? 'generating' : 'checking'
               });
             }
           }
@@ -301,6 +308,15 @@ Begin your systematic analysis and fixing process now.`;
           if (!checksComplete) {
             continuationPrompt = 'YOU MUST CONTINUE THE AUTOMATED WORKFLOW. Please proceed with the remaining formatting checks.';
           } else if (!cleanedArticleGenerated) {
+            // Send SSE update to indicate phase transition
+            sseUpdate(sessionId, { 
+              type: 'phase_transition', 
+              phase: 'generating_cleaned_article',
+              message: 'All checks complete. Now generating cleaned article with all fixes applied...',
+              checksCompleted: checkNumber,
+              totalChecks: checkTypes.length
+            });
+            
             continuationPrompt = 'All formatting checks are complete. Now use the generate_cleaned_article tool to create the final cleaned version of the article with all fixes applied.';
           }
           
@@ -474,6 +490,13 @@ Begin your systematic analysis and fixing process now.`;
         }
 
         try {
+          // Send immediate update that generation is starting
+          sseUpdate(context.sessionId, {
+            type: 'generating_article_progress',
+            message: 'Applying formatting fixes to generate cleaned article...',
+            fixCount: args.fixes_applied.length
+          });
+
           // Update session with cleaned article and fixes
           await db.update(formattingQaSessions)
             .set({
@@ -518,7 +541,7 @@ FORMATTING STANDARDS TO CHECK AND FIX:
 3. Section Completeness: Must have Intro, body sections, FAQ intro, and Conclusion
 4. List Consistency: Bullet/number styles must not change within sections
 5. Bold Cleanup: Remove unnecessary or random bolding (e.g., 5 words into a sentence randomly bolded). KEEP intentional bolding like bullet point intros where the name/title is bolded. Remove emphasis bolding on keywords/terms, keep only strategic formatting bolding.
-6. FAQ Formatting: Questions in bold sentence-case, answers in plain text
+6. FAQ Formatting: If FAQs exist in the article, format questions in bold sentence-case and answers in plain text (DO NOT add FAQs if none exist)
 7. Citation Cleanup: Keep ONLY the first citation link in the article using markdown format: [text](URL). For all other citation links, remove them and evaluate if verbal attribution is needed:
    - For specific data points, statistics, or unique claims: Convert to verbal attribution (e.g., 'According to [source]...' based on the URL domain)
    - For common knowledge, general statements, or anecdotes: Simply remove the citation without attribution
@@ -535,6 +558,7 @@ FORMATTING STANDARDS TO CHECK AND FIX:
 CRITICAL CONSTRAINTS:
 - DO NOT rewrite or simplify text - preserve all original content and meaning
 - ONLY fix formatting issues, not content or style
+- For FAQ formatting: ONLY format existing FAQs - DO NOT add FAQs if the article doesn't have any
 - For bold cleanup: Remove random bolding (e.g., 5 words into a sentence), but KEEP intentional bolding like bullet point intros where the name/title is bolded
 - For citations: Keep only the first citation link. For removed citations, add verbal attribution ONLY for data/statistics/unique claims, not for common knowledge
 - Ensure article starts with H1 title - add it if missing
@@ -558,7 +582,7 @@ THIS IS AN AUTOMATED WORKFLOW - continue until all checks are complete and clean
       section_completeness: 'Ensure all required sections exist: Intro, body, FAQ intro, Conclusion',
       list_consistency: 'Verify bullet/number styles don\'t change within sections',
       bold_cleanup: 'Remove random bolding (e.g., 5 words into sentence), keep bullet point intros where name/title is bolded',
-      faq_formatting: 'Check FAQ questions are bold sentence-case, answers are plain text',
+      faq_formatting: 'If FAQs exist, check questions are bold sentence-case and answers are plain text (do not add FAQs)',
       citation_placement: 'Keep only first citation link, convert others to verbal attributions only when needed',
       utm_cleanup: 'Remove source=chatgpt UTM parameters from all URLs',
       article_title: 'Ensure article starts with H1 title',
