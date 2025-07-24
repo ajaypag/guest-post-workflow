@@ -346,7 +346,7 @@ function isStopWord(word: string): boolean {
 
 /**
  * Generate Ahrefs URLs for keyword groups
- * Uses 50 keyword limit per URL for Ahrefs
+ * Splits groups larger than 50 keywords into multiple URLs
  */
 export function generateGroupedAhrefsUrls(
   domain: string, 
@@ -355,27 +355,62 @@ export function generateGroupedAhrefsUrls(
 ): Array<{ name: string; url: string; relevance: string; keywordCount: number }> {
   const cleanDomain = domain.replace(/^https?:\/\//, '').replace(/\/$/, '');
   const targetUrl = `https://${cleanDomain}/`;
+  const results: Array<{ name: string; url: string; relevance: string; keywordCount: number }> = [];
   
-  return groups.map(group => {
-    // Ensure we don't exceed Ahrefs limit
-    const keywords = group.keywords.slice(0, MAX_KEYWORDS_PER_GROUP);
-    const cleanKeywords = keywords.join(', ');
-    const keywordRulesArray = [["contains","all"], cleanKeywords, "any"];
-    const keywordRulesEncoded = encodeURIComponent(JSON.stringify(keywordRulesArray));
-    
-    const positionsParam = positionRange !== '1-100' ? `&positions=${positionRange}` : '';
-    
-    let url = `https://app.ahrefs.com/v2-site-explorer/organic-keywords?brandedMode=all&chartGranularity=daily&chartInterval=year5&compareDate=dontCompare&country=us&currentDate=today&dataMode=text&hiddenColumns=&intentsAttrs=`;
-    url += `&keywordRules=${keywordRulesEncoded}`;
-    url += `&limit=100&localMode=all&mainOnly=0&mode=subdomains&multipleUrlsOnly=0&offset=0&performanceChartTopPosition=top11_20%7C%7Ctop21_50%7C%7Ctop3%7C%7Ctop4_10%7C%7Ctop51&positionChanges=${positionsParam}&serpFeatures=&sort=OrganicTrafficInitial&sortDirection=desc`;
-    url += `&target=${encodeURIComponent(targetUrl)}`;
-    url += `&urlRules=&volume_type=average`;
-    
-    return {
-      name: `${group.name}\n${keywords.length} keywords`,
-      url,
-      relevance: group.relevance,
-      keywordCount: keywords.length
-    };
+  groups.forEach(group => {
+    // If group has more than 50 keywords, split it into multiple URLs
+    if (group.keywords.length > MAX_KEYWORDS_PER_GROUP) {
+      const chunks = Math.ceil(group.keywords.length / MAX_KEYWORDS_PER_GROUP);
+      
+      for (let i = 0; i < chunks; i++) {
+        const start = i * MAX_KEYWORDS_PER_GROUP;
+        const end = Math.min(start + MAX_KEYWORDS_PER_GROUP, group.keywords.length);
+        const chunkKeywords = group.keywords.slice(start, end);
+        const cleanKeywords = chunkKeywords.join(', ');
+        const keywordRulesArray = [["contains","all"], cleanKeywords, "any"];
+        const keywordRulesEncoded = encodeURIComponent(JSON.stringify(keywordRulesArray));
+        
+        const positionsParam = positionRange !== '1-100' ? `&positions=${positionRange}` : '';
+        
+        let url = `https://app.ahrefs.com/v2-site-explorer/organic-keywords?brandedMode=all&chartGranularity=daily&chartInterval=year5&compareDate=dontCompare&country=us&currentDate=today&dataMode=text&hiddenColumns=&intentsAttrs=`;
+        url += `&keywordRules=${keywordRulesEncoded}`;
+        url += `&limit=100&localMode=all&mainOnly=0&mode=subdomains&multipleUrlsOnly=0&offset=0&performanceChartTopPosition=top11_20%7C%7Ctop21_50%7C%7Ctop3%7C%7Ctop4_10%7C%7Ctop51&positionChanges=${positionsParam}&serpFeatures=&sort=OrganicTrafficInitial&sortDirection=desc`;
+        url += `&target=${encodeURIComponent(targetUrl)}`;
+        url += `&urlRules=&volume_type=average`;
+        
+        const buttonName = chunks > 1 
+          ? `${group.name} (Part ${i + 1})\n${chunkKeywords.length} keywords`
+          : `${group.name}\n${chunkKeywords.length} keywords`;
+        
+        results.push({
+          name: buttonName,
+          url,
+          relevance: group.relevance,
+          keywordCount: chunkKeywords.length
+        });
+      }
+    } else {
+      // Group is small enough to fit in one URL
+      const cleanKeywords = group.keywords.join(', ');
+      const keywordRulesArray = [["contains","all"], cleanKeywords, "any"];
+      const keywordRulesEncoded = encodeURIComponent(JSON.stringify(keywordRulesArray));
+      
+      const positionsParam = positionRange !== '1-100' ? `&positions=${positionRange}` : '';
+      
+      let url = `https://app.ahrefs.com/v2-site-explorer/organic-keywords?brandedMode=all&chartGranularity=daily&chartInterval=year5&compareDate=dontCompare&country=us&currentDate=today&dataMode=text&hiddenColumns=&intentsAttrs=`;
+      url += `&keywordRules=${keywordRulesEncoded}`;
+      url += `&limit=100&localMode=all&mainOnly=0&mode=subdomains&multipleUrlsOnly=0&offset=0&performanceChartTopPosition=top11_20%7C%7Ctop21_50%7C%7Ctop3%7C%7Ctop4_10%7C%7Ctop51&positionChanges=${positionsParam}&serpFeatures=&sort=OrganicTrafficInitial&sortDirection=desc`;
+      url += `&target=${encodeURIComponent(targetUrl)}`;
+      url += `&urlRules=&volume_type=average`;
+      
+      results.push({
+        name: `${group.name}\n${group.keywords.length} keywords`,
+        url,
+        relevance: group.relevance,
+        keywordCount: group.keywords.length
+      });
+    }
   });
+  
+  return results;
 }
