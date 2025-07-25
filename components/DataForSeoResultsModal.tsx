@@ -153,7 +153,7 @@ export default function DataForSeoResultsModal({
           r.position,
           r.searchVolume || '',
           `"${r.url}"`,
-          r.cpc || '',
+          r.cpc ? r.cpc.toFixed(2) : '',
           r.competition || '',
         ].join(',')
       ),
@@ -358,7 +358,7 @@ export default function DataForSeoResultsModal({
                       {result.cpc ? (
                         <div className="flex items-center">
                           <DollarSign className="w-4 h-4 mr-1 text-gray-400" />
-                          <span className="text-sm text-gray-900">${result.cpc}</span>
+                          <span className="text-sm text-gray-900">${result.cpc.toFixed(2)}</span>
                         </div>
                       ) : (
                         <span className="text-sm text-gray-400">-</span>
