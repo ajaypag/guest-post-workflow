@@ -99,18 +99,57 @@ export async function GET(request: Request) {
         // Try to extract keyword count from metadata or data
         let keywordCount = 0;
         let filterInfo = null;
+        let taskStatus = 'Unknown';
+        let resultCount = 0;
 
         try {
+          // Parse the data field which contains the request payload
           if (task.data) {
             const taskData = typeof task.data === 'string' ? JSON.parse(task.data) : task.data;
-            if (taskData[0]?.filters) {
-              // Count keywords in filters
-              const filters = taskData[0].filters;
-              if (Array.isArray(filters)) {
-                keywordCount = filters.filter((f: any) => Array.isArray(f) && f[0] === 'keyword_data.keyword').length;
-                filterInfo = filters;
+            if (taskData && taskData[0]) {
+              // Extract filters
+              if (taskData[0].filters) {
+                filterInfo = taskData[0].filters;
+                // Count keyword filters more accurately
+                if (Array.isArray(filterInfo)) {
+                  // Count all keyword-related filters (including "or" separated ones)
+                  const countKeywordFilters = (filters: any[]): number => {
+                    let count = 0;
+                    for (const filter of filters) {
+                      if (Array.isArray(filter) && filter[0] === 'keyword_data.keyword') {
+                        count++;
+                      }
+                    }
+                    return count;
+                  };
+                  keywordCount = countKeywordFilters(filterInfo);
+                }
+              }
+              
+              // Check if there's a limit specified
+              if (taskData[0].limit) {
+                // This is likely a ranked keywords request
               }
             }
+          }
+
+          // Check the result for actual data
+          if (task.result && Array.isArray(task.result) && task.result[0]) {
+            if (task.result[0].items) {
+              resultCount = task.result[0].items.length;
+            }
+            if (task.result[0].total_count !== undefined) {
+              // Use total_count if available
+            }
+          }
+
+          // Determine task status
+          if (task.status_code === 20000) {
+            taskStatus = 'Success';
+          } else if (task.status_code === 40000) {
+            taskStatus = 'Error';
+          } else {
+            taskStatus = `Status ${task.status_code}`;
           }
         } catch (e) {
           console.error('Error parsing task data:', e);
@@ -120,7 +159,9 @@ export async function GET(request: Request) {
           ...task,
           keyword_count: keywordCount,
           filter_info: filterInfo,
-          datetime_posted_formatted: new Date(task.datetime_posted).toLocaleString(),
+          task_status: taskStatus,
+          result_count: resultCount,
+          datetime_posted_formatted: task.datetime_posted ? new Date(task.datetime_posted).toLocaleString() : 'Invalid Date',
           datetime_done_formatted: task.datetime_done ? new Date(task.datetime_done).toLocaleString() : null,
           execution_time: task.time ? `${task.time}s` : null,
           cost_formatted: task.cost ? `$${task.cost.toFixed(4)}` : null

@@ -39,6 +39,8 @@ export default function DataForSeoMonitoringPage() {
   const [expandedTask, setExpandedTask] = useState<string | null>(null);
   const [filterKeywordCount, setFilterKeywordCount] = useState<string>('all');
   const [searchTerm, setSearchTerm] = useState('');
+  const [taskDetails, setTaskDetails] = useState<{ [key: string]: any }>({});
+  const [loadingTaskDetails, setLoadingTaskDetails] = useState<{ [key: string]: boolean }>({});
   
   // Debug state
   const [debugDomain, setDebugDomain] = useState('');
@@ -75,8 +77,12 @@ export default function DataForSeoMonitoringPage() {
 
   const fetchTaskDetails = async (taskId: string) => {
     try {
-      const response = await fetch(`/api/admin/dataforseo-monitoring?action=task_details&task_id=${taskId}`);
+      const response = await fetch(`/api/admin/dataforseo-task-details?task_id=${taskId}`);
       const data = await response.json();
+      
+      if (data.status === 'success') {
+        setTaskDetails(prev => ({ ...prev, [taskId]: data.task_details }));
+      }
       return data;
     } catch (error) {
       console.error('Failed to fetch task details:', error);
@@ -401,6 +407,48 @@ export default function DataForSeoMonitoringPage() {
                       
                       {expandedTask === task.id && (
                         <div className="mt-4 ml-7 space-y-3">
+                          {/* Enhanced Task Details */}
+                          {taskDetails[task.id] && (
+                            <div className="bg-blue-50 p-3 rounded border border-blue-200">
+                              <h4 className="font-semibold text-sm mb-2 text-blue-800">📊 Task Analysis:</h4>
+                              {taskDetails[task.id].error ? (
+                                <p className="text-sm text-red-600">{taskDetails[task.id].error}</p>
+                              ) : (
+                                <div className="space-y-2">
+                                  <div className="grid grid-cols-2 gap-2 text-sm">
+                                    <div>
+                                      <span className="font-medium">Endpoint:</span> {taskDetails[task.id].endpoint_type}
+                                    </div>
+                                    <div>
+                                      <span className="font-medium">Status:</span> {taskDetails[task.id].status}
+                                    </div>
+                                    <div>
+                                      <span className="font-medium">Results:</span> {taskDetails[task.id].result_count} / {taskDetails[task.id].total_count}
+                                    </div>
+                                    <div>
+                                      <span className="font-medium">Execution Time:</span> {taskDetails[task.id].execution_time}s
+                                    </div>
+                                  </div>
+                                  
+                                  {taskDetails[task.id].results_summary?.sample_results?.length > 0 && (
+                                    <div className="mt-3">
+                                      <p className="text-xs font-medium mb-1">Sample Keywords:</p>
+                                      <div className="space-y-1">
+                                        {taskDetails[task.id].results_summary.sample_results.map((item: any, idx: number) => (
+                                          <div key={idx} className="bg-white p-2 rounded text-xs">
+                                            <span className="font-medium">{item.keyword}</span>
+                                            {item.search_volume && <span className="ml-2 text-gray-600">Vol: {item.search_volume}</span>}
+                                            {item.position && <span className="ml-2 text-green-600">Pos: {item.position}</span>}
+                                          </div>
+                                        ))}
+                                      </div>
+                                    </div>
+                                  )}
+                                </div>
+                              )}
+                            </div>
+                          )}
+                          
                           {/* Filter Info */}
                           {task.filter_info && (
                             <div className="bg-gray-50 p-3 rounded">
@@ -418,33 +466,6 @@ export default function DataForSeoMonitoringPage() {
                               <pre className="text-xs overflow-x-auto bg-white p-2 rounded border max-h-48">
                                 {JSON.stringify(task.data, null, 2)}
                               </pre>
-                            </div>
-                          )}
-                          
-                          {/* Results Summary */}
-                          {task.result && (
-                            <div className="bg-gray-50 p-3 rounded">
-                              <h4 className="font-semibold text-sm mb-2">Results:</h4>
-                              <p className="text-sm">
-                                Total items: {task.result[0]?.items?.length || 0}
-                              </p>
-                              {task.result[0]?.items?.length > 0 && (
-                                <div className="mt-2">
-                                  <p className="text-xs text-gray-600 mb-1">Sample keywords found:</p>
-                                  <div className="flex flex-wrap gap-1">
-                                    {task.result[0].items.slice(0, 10).map((item: any, idx: number) => (
-                                      <span key={idx} className="px-2 py-1 bg-white text-xs rounded border">
-                                        {item.keyword_data?.keyword}
-                                      </span>
-                                    ))}
-                                    {task.result[0].items.length > 10 && (
-                                      <span className="px-2 py-1 text-xs text-gray-500">
-                                        +{task.result[0].items.length - 10} more
-                                      </span>
-                                    )}
-                                  </div>
-                                </div>
-                              )}
                             </div>
                           )}
                         </div>
