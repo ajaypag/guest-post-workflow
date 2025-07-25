@@ -184,11 +184,14 @@ export default function DataForSeoResultsModal({
           <div>
             <h2 className="text-xl font-semibold">DataForSEO Analysis Results</h2>
             <p className="text-sm text-gray-600 mt-1">
-              {domain} • {totalFound} keywords found
+              {domain} • {totalFound} ranking{totalFound !== 1 ? 's' : ''} found
             </p>
             {cacheInfo && (
               <div className="mt-2">
                 <div className="flex items-center gap-4 text-xs text-gray-500">
+                  <span className="font-medium text-gray-700">
+                    {(cacheInfo.newKeywords + cacheInfo.cachedKeywords)} keywords analyzed:
+                  </span>
                   {cacheInfo.cachedKeywords > 0 && (
                     <span className="flex items-center">
                       <Database className="w-3 h-3 mr-1" />
@@ -198,23 +201,23 @@ export default function DataForSeoResultsModal({
                   {cacheInfo.newKeywords > 0 && (
                     <span className="flex items-center">
                       <RefreshCw className="w-3 h-3 mr-1" />
-                      {cacheInfo.newKeywords} new keywords checked
+                      {cacheInfo.newKeywords} new
                     </span>
                   )}
                   {cacheInfo.apiCallsSaved > 0 && (
                     <span className="text-green-600">
-                      {cacheInfo.apiCallsSaved} API call{cacheInfo.apiCallsSaved > 1 ? 's' : ''} saved
+                      • {cacheInfo.apiCallsSaved} API call{cacheInfo.apiCallsSaved > 1 ? 's' : ''} saved
                     </span>
                   )}
                 </div>
-                {cacheInfo.newKeywords > 0 && totalFound === 0 && (
+                {totalFound === 0 && (
                   <p className="text-xs text-amber-600 mt-1">
-                    ⚠️ No rankings found for the {cacheInfo.newKeywords} new keywords analyzed
+                    ⚠️ This domain doesn't rank in top 100 for any of the {cacheInfo.newKeywords + cacheInfo.cachedKeywords} keywords analyzed
                   </p>
                 )}
-                {cacheInfo.cachedKeywords > 0 && totalFound === 0 && cacheInfo.newKeywords === 0 && (
+                {totalFound > 0 && (
                   <p className="text-xs text-gray-500 mt-1">
-                    These keywords were previously checked and had no rankings. No API call was made.
+                    Found rankings for {totalFound} out of {cacheInfo.newKeywords + cacheInfo.cachedKeywords} keywords analyzed
                   </p>
                 )}
               </div>
@@ -270,14 +273,25 @@ export default function DataForSeoResultsModal({
         <div className="flex-1 overflow-auto">
           {filteredResults.length === 0 ? (
             <div className="flex flex-col items-center justify-center h-64 text-gray-500">
-              <div className="text-lg mb-2">No results found</div>
-              {cacheInfo && cacheInfo.newKeywords > 0 && totalFound === 0 && (
-                <div className="text-sm text-center max-w-md">
-                  <p className="mb-2">
-                    DataForSEO checked {cacheInfo.newKeywords} keywords but found no rankings for this domain.
-                  </p>
-                  <p className="text-xs text-gray-400">
-                    This means the domain doesn't currently rank in the top 100 for these keywords.
+              {totalFound === 0 ? (
+                <div className="text-center max-w-md">
+                  <div className="text-lg mb-2">No Rankings Found</div>
+                  {cacheInfo && (
+                    <div className="text-sm">
+                      <p className="mb-2">
+                        Analyzed {cacheInfo.newKeywords + cacheInfo.cachedKeywords} keywords
+                      </p>
+                      <p className="text-xs text-gray-400">
+                        This domain doesn't rank in Google's top 100 results for any of these keywords
+                      </p>
+                    </div>
+                  )}
+                </div>
+              ) : (
+                <div className="text-center">
+                  <div className="text-lg mb-2">No matches found</div>
+                  <p className="text-sm text-gray-400">
+                    Try adjusting your filters
                   </p>
                 </div>
               )}
@@ -400,10 +414,10 @@ export default function DataForSeoResultsModal({
         <div className="p-4 border-t bg-gray-50">
           <div className="flex justify-between items-center text-sm">
             <span className="text-gray-600">
-              Showing {filteredResults.length} of {results.length} loaded ({totalFound} total)
-              {cacheInfo && cacheInfo.cachedKeywords > 0 && (
-                <span className="ml-2 text-xs">
-                  ({results.filter(r => r.isFromCache).length} cached, {results.filter(r => !r.isFromCache).length} fresh)
+              Showing {filteredResults.length} of {totalFound} ranking{totalFound !== 1 ? 's' : ''}
+              {results.length < totalFound && (
+                <span className="ml-1 text-xs">
+                  ({results.length} loaded)
                 </span>
               )}
             </span>
