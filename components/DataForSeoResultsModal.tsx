@@ -23,6 +23,7 @@ interface KeywordResult {
   url: string;
   cpc: number | null;
   competition: string | null;
+  isFromCache?: boolean;
 }
 
 interface DataForSeoResultsModalProps {
@@ -186,23 +187,30 @@ export default function DataForSeoResultsModal({
               {domain} • {totalFound} keywords found
             </p>
             {cacheInfo && (
-              <div className="flex items-center gap-4 mt-2 text-xs text-gray-500">
-                {cacheInfo.cachedKeywords > 0 && (
-                  <span className="flex items-center">
-                    <Database className="w-3 h-3 mr-1" />
-                    {cacheInfo.cachedKeywords} cached
-                  </span>
-                )}
-                {cacheInfo.newKeywords > 0 && (
-                  <span className="flex items-center">
-                    <RefreshCw className="w-3 h-3 mr-1" />
-                    {cacheInfo.newKeywords} new
-                  </span>
-                )}
-                {cacheInfo.apiCallsSaved > 0 && (
-                  <span className="text-green-600">
-                    {cacheInfo.apiCallsSaved} API call{cacheInfo.apiCallsSaved > 1 ? 's' : ''} saved
-                  </span>
+              <div className="mt-2">
+                <div className="flex items-center gap-4 text-xs text-gray-500">
+                  {cacheInfo.cachedKeywords > 0 && (
+                    <span className="flex items-center">
+                      <Database className="w-3 h-3 mr-1" />
+                      {cacheInfo.cachedKeywords} from cache
+                    </span>
+                  )}
+                  {cacheInfo.newKeywords > 0 && (
+                    <span className="flex items-center">
+                      <RefreshCw className="w-3 h-3 mr-1" />
+                      {cacheInfo.newKeywords} new keywords checked
+                    </span>
+                  )}
+                  {cacheInfo.apiCallsSaved > 0 && (
+                    <span className="text-green-600">
+                      {cacheInfo.apiCallsSaved} API call{cacheInfo.apiCallsSaved > 1 ? 's' : ''} saved
+                    </span>
+                  )}
+                </div>
+                {cacheInfo.newKeywords > 0 && totalFound === 0 && (
+                  <p className="text-xs text-amber-600 mt-1">
+                    ⚠️ No rankings found for the {cacheInfo.newKeywords} new keywords analyzed
+                  </p>
                 )}
               </div>
             )}
@@ -256,8 +264,18 @@ export default function DataForSeoResultsModal({
         {/* Results Table */}
         <div className="flex-1 overflow-auto">
           {filteredResults.length === 0 ? (
-            <div className="flex items-center justify-center h-64 text-gray-500">
-              No results found
+            <div className="flex flex-col items-center justify-center h-64 text-gray-500">
+              <div className="text-lg mb-2">No results found</div>
+              {cacheInfo && cacheInfo.newKeywords > 0 && totalFound === 0 && (
+                <div className="text-sm text-center max-w-md">
+                  <p className="mb-2">
+                    DataForSEO checked {cacheInfo.newKeywords} keywords but found no rankings for this domain.
+                  </p>
+                  <p className="text-xs text-gray-400">
+                    This means the domain doesn't currently rank in the top 100 for these keywords.
+                  </p>
+                </div>
+              )}
             </div>
           ) : (
             <table className="w-full">
@@ -280,6 +298,9 @@ export default function DataForSeoResultsModal({
                   </th>
                   <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
                     URL
+                  </th>
+                  <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                    Source
                   </th>
                 </tr>
               </thead>
@@ -331,6 +352,19 @@ export default function DataForSeoResultsModal({
                         <ExternalLink className="w-3 h-3 ml-1 flex-shrink-0" />
                       </a>
                     </td>
+                    <td className="px-4 py-3 whitespace-nowrap">
+                      {result.isFromCache ? (
+                        <span className="inline-flex items-center px-2 py-1 text-xs bg-gray-100 text-gray-700 rounded">
+                          <Database className="w-3 h-3 mr-1" />
+                          Cached
+                        </span>
+                      ) : (
+                        <span className="inline-flex items-center px-2 py-1 text-xs bg-blue-100 text-blue-700 rounded">
+                          <RefreshCw className="w-3 h-3 mr-1" />
+                          Fresh
+                        </span>
+                      )}
+                    </td>
                   </tr>
                 ))}
               </tbody>
@@ -362,6 +396,11 @@ export default function DataForSeoResultsModal({
           <div className="flex justify-between items-center text-sm">
             <span className="text-gray-600">
               Showing {filteredResults.length} of {results.length} loaded ({totalFound} total)
+              {cacheInfo && cacheInfo.cachedKeywords > 0 && (
+                <span className="ml-2 text-xs">
+                  ({results.filter(r => r.isFromCache).length} cached, {results.filter(r => !r.isFromCache).length} fresh)
+                </span>
+              )}
             </span>
             <div className="flex gap-4 text-gray-600">
               <span>Avg Position: {

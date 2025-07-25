@@ -11,6 +11,7 @@ export interface DataForSeoKeywordResult {
   url: string;
   cpc: number | null;
   competition: string | null;
+  isFromCache?: boolean;
 }
 
 export interface DataForSeoAnalysisResult {
@@ -92,13 +93,14 @@ export class DataForSeoService {
       // Merge results: cached + new
       if (!cacheAnalysis.shouldRefreshAll && cacheAnalysis.existingResults.length > 0) {
         // Convert cached results to the expected format
-        const cachedResults: DataForSeoKeywordResult[] = cacheAnalysis.existingResults.map(r => ({
+        const cachedResults: DataForSeoKeywordResult[] = cacheAnalysis.existingResults.map((r: any) => ({
           keyword: r.keyword,
           position: r.position,
           searchVolume: r.searchVolume,
           url: r.url,
           cpc: r.cpc,
           competition: r.competition,
+          isFromCache: true,
         }));
         
         allResults = [...cachedResults, ...newResults];
