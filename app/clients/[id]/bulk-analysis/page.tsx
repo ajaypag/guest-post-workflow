@@ -10,6 +10,7 @@ import { AuthService } from '@/lib/auth';
 import { Client, TargetPage } from '@/types/user';
 import { groupKeywordsByTopic, generateGroupedAhrefsUrls } from '@/lib/utils/keywordGroupingV2';
 import DataForSeoResultsModal from '@/components/DataForSeoResultsModal';
+import BulkAnalysisResultsModal from '@/components/BulkAnalysisResultsModal';
 import BulkAnalysisTutorial from '@/components/BulkAnalysisTutorial';
 import { 
   ArrowLeft, 
@@ -23,7 +24,8 @@ import {
   Plus,
   RotateCcw,
   Trash2,
-  Search
+  Search,
+  Download
 } from 'lucide-react';
 
 interface BulkAnalysisDomain {
@@ -81,6 +83,16 @@ export default function BulkAnalysisPage() {
   // Experimental features toggle - hidden by default
   const [hideExperimentalFeatures, setHideExperimentalFeatures] = useState(true);
   
+  // Multi-select state for bulk operations
+  const [selectedDomains, setSelectedDomains] = useState<Set<string>>(new Set());
+  const [bulkAnalysisRunning, setBulkAnalysisRunning] = useState(false);
+  const [bulkProgress, setBulkProgress] = useState({ current: 0, total: 0 });
+  const [bulkResultsModal, setBulkResultsModal] = useState<{
+    isOpen: boolean;
+    jobId: string;
+    analyzedDomains: Array<{ id: string; domain: string }>;
+  }>({ isOpen: false, jobId: '', analyzedDomains: [] });
+  
   // Reset pagination when filters change
   useEffect(() => {
     setDisplayLimit(ITEMS_PER_PAGE);
@@ -132,6 +144,25 @@ export default function BulkAnalysisPage() {
     } catch (error) {
       console.error('Error loading domains:', error);
     }
+  };
+
+  // Selection helpers
+  const toggleDomainSelection = (domainId: string) => {
+    const newSelection = new Set(selectedDomains);
+    if (newSelection.has(domainId)) {
+      newSelection.delete(domainId);
+    } else {
+      newSelection.add(domainId);
+    }
+    setSelectedDomains(newSelection);
+  };
+
+  const selectAll = (domainIds: string[]) => {
+    setSelectedDomains(new Set(domainIds));
+  };
+
+  const clearSelection = () => {
+    setSelectedDomains(new Set());
   };
 
   const handleAnalyze = async () => {
@@ -309,6 +340,112 @@ export default function BulkAnalysisPage() {
     } finally {
       setLoading(false);
     }
+  };
+
+  const startBulkDataForSeoAnalysis = async () => {
+    if (selectedDomains.size === 0) {
+      setMessage('Please select domains to analyze');
+      return;
+    }
+
+    setBulkAnalysisRunning(true);
+    setBulkProgress({ current: 0, total: selectedDomains.size });
+    setMessage(`🚀 Starting bulk analysis for ${selectedDomains.size} domains...`);
+
+    try {
+      // Get keywords based on current mode
+      let keywords: string[] = [];
+      if (keywordInputMode === 'manual' && manualKeywords.trim()) {
+        keywords = manualKeywords
+          .split(',')
+          .map(k => k.trim())
+          .filter(k => k.length > 0);
+      }
+
+      const response = await fetch(`/api/clients/${params.id}/bulk-analysis/dataforseo/batch`, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+          domainIds: Array.from(selectedDomains),
+          keywords: keywords.length > 0 ? keywords : undefined,
+        }),
+      });
+
+      if (!response.ok) {
+        const error = await response.json();
+        throw new Error(error.error || 'Failed to start bulk analysis');
+      }
+
+      const { jobId, totalDomains } = await response.json();
+      
+      setMessage(`✅ Bulk analysis started for ${totalDomains} domains`);
+      
+      // Start polling for job status
+      pollJobStatus(jobId);
+      
+    } catch (error: any) {
+      console.error('Bulk analysis error:', error);
+      setMessage(`❌ Bulk analysis failed: ${error.message}`);
+    } finally {
+      setBulkAnalysisRunning(false);
+    }
+  };
+
+  const pollJobStatus = async (jobId: string) => {
+    const pollInterval = setInterval(async () => {
+      try {
+        const response = await fetch(
+          `/api/clients/${params.id}/bulk-analysis/dataforseo/batch?jobId=${jobId}`
+        );
+        
+        if (!response.ok) {
+          throw new Error('Failed to fetch job status');
+        }
+
+        const data = await response.json();
+        const { job, items } = data;
+
+        // Update progress
+        setBulkProgress({
+          current: job.processedDomains,
+          total: job.totalDomains
+        });
+
+        // Update message
+        if (job.status === 'processing') {
+          setMessage(`⏳ Processing: ${job.processedDomains}/${job.totalDomains} domains analyzed`);
+        } else if (job.status === 'completed') {
+          clearInterval(pollInterval);
+          setMessage(
+            `✅ Analysis complete! Analyzed ${job.totalKeywordsAnalyzed} keywords, found ${job.totalRankingsFound} rankings`
+          );
+          setBulkAnalysisRunning(false);
+          
+          // Store analyzed domains before clearing selection
+          const analyzedDomains = domains.filter(d => selectedDomains.has(d.id)).map(d => ({ id: d.id, domain: d.domain }));
+          clearSelection();
+          
+          // Store job ID and domains for viewing results
+          setBulkResultsModal({ isOpen: true, jobId, analyzedDomains });
+          
+          // Reload domains to show updated data
+          loadDomains();
+        } else if (job.status === 'failed') {
+          clearInterval(pollInterval);
+          setMessage(`❌ Bulk analysis failed`);
+          setBulkAnalysisRunning(false);
+        }
+      } catch (error: any) {
+        console.error('Error polling job status:', error);
+        clearInterval(pollInterval);
+        setBulkAnalysisRunning(false);
+      }
+    }, 2000); // Poll every 2 seconds
+
+    // Store interval ID for cleanup
+    return () => clearInterval(pollInterval);
   };
 
   const analyzeWithDataForSeo = async (domain: BulkAnalysisDomain) => {
@@ -646,6 +783,34 @@ export default function BulkAnalysisPage() {
                 </ul>
               </div>
             )}
+
+            {/* Message Display */}
+            {message && (
+              <div className={`mt-3 p-3 rounded-lg ${
+                message.startsWith('❌') ? 'bg-red-50 border border-red-200 text-red-800' :
+                message.startsWith('✅') ? 'bg-green-50 border border-green-200 text-green-800' :
+                message.startsWith('⏳') || message.startsWith('🔄') || message.startsWith('🚀') ? 'bg-blue-50 border border-blue-200 text-blue-800' :
+                'bg-gray-50 border border-gray-200 text-gray-800'
+              }`}>
+                <p className="text-sm">{message}</p>
+                
+                {/* Progress Bar for Bulk Analysis */}
+                {bulkAnalysisRunning && bulkProgress.total > 0 && (
+                  <div className="mt-2">
+                    <div className="flex justify-between text-xs mb-1">
+                      <span>Progress</span>
+                      <span>{bulkProgress.current} / {bulkProgress.total}</span>
+                    </div>
+                    <div className="w-full bg-gray-200 rounded-full h-2">
+                      <div 
+                        className="bg-indigo-600 h-2 rounded-full transition-all duration-300"
+                        style={{ width: `${(bulkProgress.current / bulkProgress.total) * 100}%` }}
+                      />
+                    </div>
+                  </div>
+                )}
+              </div>
+            )}
             
             <div className="flex items-center gap-3 mt-4">
               <button
@@ -686,7 +851,39 @@ export default function BulkAnalysisPage() {
           {domains.length > 0 && (
             <div className="bg-white rounded-lg shadow p-6">
               <div className="flex items-center justify-between mb-6">
-                <h2 className="text-lg font-medium">Analysis Results</h2>
+                <div className="flex items-center gap-4">
+                  <h2 className="text-lg font-medium">Analysis Results</h2>
+                  {/* Select All Checkbox */}
+                  {(() => {
+                    const filteredDomains = domains.filter(domain => {
+                      if (statusFilter !== 'all' && domain.qualificationStatus !== statusFilter) return false;
+                      if (workflowFilter === 'has_workflow' && !domain.hasWorkflow) return false;
+                      if (workflowFilter === 'no_workflow' && domain.hasWorkflow) return false;
+                      if (searchQuery && !domain.domain.toLowerCase().includes(searchQuery.toLowerCase())) return false;
+                      return true;
+                    });
+                    const allSelected = filteredDomains.length > 0 && 
+                      filteredDomains.every(d => selectedDomains.has(d.id));
+                    
+                    return filteredDomains.length > 0 ? (
+                      <label className="flex items-center gap-2 text-sm text-gray-600 cursor-pointer">
+                        <input
+                          type="checkbox"
+                          checked={allSelected}
+                          onChange={() => {
+                            if (allSelected) {
+                              clearSelection();
+                            } else {
+                              selectAll(filteredDomains.map(d => d.id));
+                            }
+                          }}
+                          className="w-4 h-4 text-indigo-600 rounded border-gray-300 focus:ring-indigo-500"
+                        />
+                        Select all {filteredDomains.length} domains
+                      </label>
+                    ) : null;
+                  })()}
+                </div>
                 
                 {/* Position Range Selector */}
                 <div className="bg-gray-50 border border-gray-200 rounded-lg p-3">
@@ -812,6 +1009,47 @@ export default function BulkAnalysisPage() {
                 </div>
               </div>
 
+              {/* Bulk Actions Bar */}
+              {selectedDomains.size > 0 && (
+                <div className="mb-4 p-4 bg-indigo-50 border border-indigo-200 rounded-lg">
+                  <div className="flex items-center justify-between">
+                    <div className="flex items-center gap-4">
+                      <span className="text-sm font-medium text-indigo-900">
+                        {selectedDomains.size} domain{selectedDomains.size > 1 ? 's' : ''} selected
+                      </span>
+                      <button
+                        onClick={clearSelection}
+                        className="text-sm text-indigo-600 hover:text-indigo-800 underline"
+                      >
+                        Clear selection
+                      </button>
+                    </div>
+                    <div className="flex items-center gap-2">
+                      {!hideExperimentalFeatures && (
+                        <button
+                          onClick={startBulkDataForSeoAnalysis}
+                          disabled={bulkAnalysisRunning}
+                          className="inline-flex items-center px-4 py-2 bg-indigo-600 text-white text-sm rounded-lg hover:bg-indigo-700 disabled:opacity-50 disabled:cursor-not-allowed"
+                        >
+                          <Search className="w-4 h-4 mr-2" />
+                          {bulkAnalysisRunning ? 'Analyzing...' : 'Analyze Selected with DataForSEO'}
+                        </button>
+                      )}
+                      <button
+                        onClick={() => {
+                          // TODO: Export selected domains
+                          setMessage('🚧 Export selected domains coming soon!');
+                        }}
+                        className="inline-flex items-center px-4 py-2 bg-gray-600 text-white text-sm rounded-lg hover:bg-gray-700"
+                      >
+                        <Download className="w-4 h-4 mr-2" />
+                        Export Selected
+                      </button>
+                    </div>
+                  </div>
+                </div>
+              )}
+
               <div className="grid gap-4">
                 {(() => {
                   const filteredDomains = domains.filter(domain => {
@@ -864,8 +1102,15 @@ export default function BulkAnalysisPage() {
                   return (
                     <div key={domain.id} className="border rounded-lg p-4">
                       <div className="flex items-start justify-between">
-                        <div className="flex-1">
-                          <h3 className="font-medium text-lg">{domain.domain}</h3>
+                        <div className="flex items-start gap-3">
+                          <input
+                            type="checkbox"
+                            checked={selectedDomains.has(domain.id)}
+                            onChange={() => toggleDomainSelection(domain.id)}
+                            className="mt-1 w-4 h-4 text-indigo-600 rounded border-gray-300 focus:ring-indigo-500"
+                          />
+                          <div className="flex-1">
+                            <h3 className="font-medium text-lg">{domain.domain}</h3>
                           <p className="text-sm text-gray-500 mt-1">
                             {domain.keywordCount} keywords • 
                             {domain.targetPageIds.length} target pages
@@ -967,6 +1212,7 @@ export default function BulkAnalysisPage() {
                             ) : (
                               <span className="text-sm text-gray-500">No keywords available</span>
                             )}
+                          </div>
                           </div>
                         </div>
                         
@@ -1161,6 +1407,16 @@ export default function BulkAnalysisPage() {
           initialResults={dataForSeoModal.initialResults}
           totalFound={dataForSeoModal.totalFound}
           cacheInfo={dataForSeoModal.cacheInfo}
+        />
+      )}
+      
+      {/* Bulk Analysis Results Modal */}
+      {bulkResultsModal.isOpen && (
+        <BulkAnalysisResultsModal
+          isOpen={bulkResultsModal.isOpen}
+          onClose={() => setBulkResultsModal({ isOpen: false, jobId: '', analyzedDomains: [] })}
+          jobId={bulkResultsModal.jobId}
+          domains={bulkResultsModal.analyzedDomains}
         />
       )}
     </AuthWrapper>
