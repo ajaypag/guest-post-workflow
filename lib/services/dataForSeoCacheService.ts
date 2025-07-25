@@ -77,7 +77,7 @@ export class DataForSeoCacheService {
           WHERE bulk_analysis_domain_id = ${domainId}::uuid
             AND location_code = ${locationCode}
             AND language_code = ${languageCode}
-            AND keyword = ANY(${requestedKeywords}::text[])
+            AND keyword = ANY(ARRAY[${sql.join(requestedKeywords.map(k => sql`${k}`), sql`, `)}]::text[])
         `);
       } catch (error: any) {
         console.warn('keyword_search_history table might not exist yet:', error.message);
@@ -255,7 +255,7 @@ export class DataForSeoCacheService {
           is_incremental
         FROM keyword_analysis_results
         WHERE bulk_analysis_domain_id = ${domainId}::uuid
-          AND keyword = ANY(${keywords}::text[])
+          AND keyword = ANY(ARRAY[${sql.join(keywords.map(k => sql`${k}`), sql`, `)}]::text[])
         ORDER BY keyword, analysis_date DESC
       `);
 
@@ -318,19 +318,28 @@ export class DataForSeoCacheService {
         updateData.dataforseo_incremental_api_calls = incrementalApiCalls + 1;
       }
 
-      // Use raw SQL for update
-      await db.execute(sql`
-        UPDATE bulk_analysis_domains
-        SET 
-          dataforseo_searched_keywords = ${updatedKeywords}::text[],
-          dataforseo_total_api_calls = ${updateData.dataforseo_total_api_calls},
-          ${isFullAnalysis 
-            ? sql`dataforseo_last_full_analysis_at = ${updateData.dataforseo_last_full_analysis_at},`
-            : sql`dataforseo_incremental_api_calls = ${updateData.dataforseo_incremental_api_calls},`
-          }
-          updated_at = ${updateData.updated_at}
-        WHERE id = ${domainId}::uuid
-      `);
+      // Use raw SQL for update with proper array syntax
+      if (isFullAnalysis) {
+        await db.execute(sql`
+          UPDATE bulk_analysis_domains
+          SET 
+            dataforseo_searched_keywords = ARRAY[${sql.join(updatedKeywords.map(k => sql`${k}`), sql`, `)}]::text[],
+            dataforseo_total_api_calls = ${updateData.dataforseo_total_api_calls},
+            dataforseo_last_full_analysis_at = ${updateData.dataforseo_last_full_analysis_at},
+            updated_at = ${updateData.updated_at}
+          WHERE id = ${domainId}::uuid
+        `);
+      } else {
+        await db.execute(sql`
+          UPDATE bulk_analysis_domains
+          SET 
+            dataforseo_searched_keywords = ARRAY[${sql.join(updatedKeywords.map(k => sql`${k}`), sql`, `)}]::text[],
+            dataforseo_total_api_calls = ${updateData.dataforseo_total_api_calls},
+            dataforseo_incremental_api_calls = ${updateData.dataforseo_incremental_api_calls},
+            updated_at = ${updateData.updated_at}
+          WHERE id = ${domainId}::uuid
+        `);
+      }
     } catch (error) {
       console.error('Error updating searched keywords:', error);
     }
