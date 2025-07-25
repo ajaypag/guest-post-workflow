@@ -12,6 +12,8 @@ import {
   ChevronLeft,
   ChevronRight,
   Loader2,
+  Database,
+  RefreshCw,
 } from 'lucide-react';
 
 interface KeywordResult {
@@ -31,6 +33,12 @@ interface DataForSeoResultsModalProps {
   clientId: string;
   initialResults?: KeywordResult[];
   totalFound: number;
+  cacheInfo?: {
+    newKeywords: number;
+    cachedKeywords: number;
+    apiCallsSaved: number;
+    daysSinceLastAnalysis: number | null;
+  };
 }
 
 export default function DataForSeoResultsModal({
@@ -41,6 +49,7 @@ export default function DataForSeoResultsModal({
   clientId,
   initialResults = [],
   totalFound,
+  cacheInfo,
 }: DataForSeoResultsModalProps) {
   const [results, setResults] = useState<KeywordResult[]>(initialResults);
   const [loading, setLoading] = useState(false);
@@ -176,6 +185,27 @@ export default function DataForSeoResultsModal({
             <p className="text-sm text-gray-600 mt-1">
               {domain} • {totalFound} keywords found
             </p>
+            {cacheInfo && (
+              <div className="flex items-center gap-4 mt-2 text-xs text-gray-500">
+                {cacheInfo.cachedKeywords > 0 && (
+                  <span className="flex items-center">
+                    <Database className="w-3 h-3 mr-1" />
+                    {cacheInfo.cachedKeywords} cached
+                  </span>
+                )}
+                {cacheInfo.newKeywords > 0 && (
+                  <span className="flex items-center">
+                    <RefreshCw className="w-3 h-3 mr-1" />
+                    {cacheInfo.newKeywords} new
+                  </span>
+                )}
+                {cacheInfo.apiCallsSaved > 0 && (
+                  <span className="text-green-600">
+                    {cacheInfo.apiCallsSaved} API call{cacheInfo.apiCallsSaved > 1 ? 's' : ''} saved
+                  </span>
+                )}
+              </div>
+            )}
           </div>
           <button
             onClick={onClose}

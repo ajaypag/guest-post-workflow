@@ -2,6 +2,7 @@ import { db } from '@/lib/db/connection';
 import { bulkAnalysisDomains } from '@/lib/db/bulkAnalysisSchema';
 import { eq } from 'drizzle-orm';
 import { sql } from 'drizzle-orm';
+import { DataForSeoCacheService } from './dataForSeoCacheService';
 
 export interface DataForSeoKeywordResult {
   keyword: string;
@@ -25,14 +26,127 @@ export class DataForSeoService {
   private static readonly API_BASE_URL = 'https://api.dataforseo.com/v3';
   
   /**
-   * Analyze a single domain for keywords
+   * Analyze domain with smart caching - checks existing data first
+   */
+  static async analyzeDomainWithCache(
+    domainId: string,
+    domain: string,
+    keywords: string[],
+    locationCode: number = 2840,
+    languageCode: string = 'en'
+  ): Promise<DataForSeoAnalysisResult & { cacheInfo?: any }> {
+    console.log('DataForSeoService.analyzeDomainWithCache called with:', {
+      domainId,
+      domain,
+      keywordsCount: keywords.length,
+    });
+
+    try {
+      // Check cache first
+      const cacheAnalysis = await DataForSeoCacheService.analyzeKeywordCache(
+        domainId,
+        keywords
+      );
+
+      console.log('Cache analysis result:', {
+        newKeywords: cacheAnalysis.newKeywords.length,
+        existingKeywords: cacheAnalysis.existingKeywords.length,
+        shouldRefreshAll: cacheAnalysis.shouldRefreshAll,
+        apiCallsSaved: cacheAnalysis.apiCallsSaved,
+      });
+
+      let allResults: DataForSeoKeywordResult[] = [];
+      let newResults: DataForSeoKeywordResult[] = [];
+      let status: 'success' | 'error' = 'success';
+      let error: string | undefined;
+
+      // If we need to analyze new keywords
+      if (cacheAnalysis.newKeywords.length > 0 || cacheAnalysis.shouldRefreshAll) {
+        const keywordsToAnalyze = cacheAnalysis.shouldRefreshAll 
+          ? keywords 
+          : cacheAnalysis.newKeywords;
+
+        const analysisResult = await this.analyzeDomain(
+          domainId,
+          domain,
+          keywordsToAnalyze,
+          locationCode,
+          languageCode,
+          true // isIncremental
+        );
+
+        newResults = analysisResult.keywords;
+        status = analysisResult.status;
+        error = analysisResult.error;
+
+        // Update searched keywords
+        if (status === 'success') {
+          await DataForSeoCacheService.updateSearchedKeywords(
+            domainId,
+            keywordsToAnalyze,
+            cacheAnalysis.shouldRefreshAll
+          );
+        }
+      }
+
+      // Merge results: cached + new
+      if (!cacheAnalysis.shouldRefreshAll && cacheAnalysis.existingResults.length > 0) {
+        // Convert cached results to the expected format
+        const cachedResults: DataForSeoKeywordResult[] = cacheAnalysis.existingResults.map(r => ({
+          keyword: r.keyword,
+          position: r.position,
+          searchVolume: r.searchVolume,
+          url: r.url,
+          cpc: r.cpc,
+          competition: r.competition,
+        }));
+        
+        allResults = [...cachedResults, ...newResults];
+      } else {
+        allResults = newResults;
+      }
+
+      // Sort by position
+      allResults.sort((a, b) => a.position - b.position);
+
+      return {
+        domainId,
+        domain,
+        keywords: allResults.slice(0, 50), // Return first 50 for initial display
+        totalFound: allResults.length,
+        status,
+        error,
+        cacheInfo: {
+          newKeywords: cacheAnalysis.newKeywords.length,
+          cachedKeywords: cacheAnalysis.existingKeywords.length,
+          apiCallsSaved: cacheAnalysis.apiCallsSaved,
+          daysSinceLastAnalysis: cacheAnalysis.daysSinceLastAnalysis,
+        },
+      };
+    } catch (error: any) {
+      console.error('DataForSEO analysis with cache error:', error);
+      
+      return {
+        domainId,
+        domain,
+        keywords: [],
+        totalFound: 0,
+        status: 'error',
+        error: error.message,
+      };
+    }
+  }
+
+  /**
+   * Analyze a single domain for keywords (original method)
    */
   static async analyzeDomain(
     domainId: string,
     domain: string,
     keywords: string[],
     locationCode: number = 2840,
-    languageCode: string = 'en'
+    languageCode: string = 'en',
+    isIncremental: boolean = false
   ): Promise<DataForSeoAnalysisResult> {
     console.log('DataForSeoService.analyzeDomain called with:', {
       domainId,
@@ -159,7 +273,8 @@ export class DataForSeoService {
 
       // Store results in the database for pagination
       if (results.length > 0) {
-        await this.storeResults(domainId, results, locationCode, languageCode);
+        const batchId = isIncremental ? DataForSeoCacheService.generateBatchId() : null;
+        await this.storeResults(domainId, results, locationCode, languageCode, batchId, isIncremental);
       }
 
       // Update domain status
@@ -196,7 +311,9 @@ export class DataForSeoService {
     domainId: string,
     results: DataForSeoKeywordResult[],
     locationCode: number,
-    languageCode: string
+    languageCode: string,
+    batchId: string | null = null,
+    isIncremental: boolean = false
   ): Promise<void> {
     // Skip database storage for temporary domains
     if (domainId.startsWith('temp-')) {
@@ -211,13 +328,14 @@ export class DataForSeoService {
       // Insert in batches to avoid query size limits
       for (let i = 0; i < results.length; i += batchSize) {
         const batch = results.slice(i, i + batchSize);
-        const values = batch.map(r => 
-          `(gen_random_uuid(), '${domainId}'::uuid, '${r.keyword.replace(/'/g, "''")}', ${r.position}, ${r.searchVolume || 'NULL'}, '${r.url.replace(/'/g, "''")}', NULL, ${r.cpc || 'NULL'}, '${r.competition || 'UNKNOWN'}', ${locationCode}, '${languageCode}', '${analysisDate.toISOString()}', NOW())`
-        ).join(',');
+        const values = batch.map(r => {
+          const batchIdValue = batchId ? `'${batchId}'::uuid` : 'NULL';
+          return `(gen_random_uuid(), '${domainId}'::uuid, '${r.keyword.replace(/'/g, "''")}', ${r.position}, ${r.searchVolume || 'NULL'}, '${r.url.replace(/'/g, "''")}', NULL, ${r.cpc || 'NULL'}, '${r.competition || 'UNKNOWN'}', ${locationCode}, '${languageCode}', '${analysisDate.toISOString()}', NOW(), ${batchIdValue}, ${isIncremental})`;
+        }).join(',');
         
         await db.execute(sql.raw(`
           INSERT INTO keyword_analysis_results 
-          (id, bulk_analysis_domain_id, keyword, position, search_volume, url, keyword_difficulty, cpc, competition, location_code, language_code, analysis_date, created_at)
+          (id, bulk_analysis_domain_id, keyword, position, search_volume, url, keyword_difficulty, cpc, competition, location_code, language_code, analysis_date, created_at, analysis_batch_id, is_incremental)
           VALUES ${values}
         `));
       }
