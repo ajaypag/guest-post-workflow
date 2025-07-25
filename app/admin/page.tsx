@@ -30,6 +30,14 @@ export default function AdminDashboard() {
       iconColor: 'text-blue-600'
     },
     {
+      title: 'DataForSEO Cache Migrations',
+      description: 'Run migrations for smart caching system (fixes cache not working)',
+      icon: Database,
+      href: '/admin/dataforseo-migrations',
+      color: 'bg-cyan-50 border-cyan-200 text-cyan-700',
+      iconColor: 'text-cyan-600'
+    },
+    {
       title: 'Diagnostics',
       description: 'Run comprehensive system diagnostics and health checks',
       icon: Activity,
