@@ -62,6 +62,9 @@ export default function DataForSeoResultsModal({
 
   // Store all fetched results for export
   const [allResults, setAllResults] = useState<KeywordResult[]>(initialResults);
+  
+  // Track the actual total from database
+  const [actualTotal, setActualTotal] = useState(totalFound);
 
   useEffect(() => {
     if (isOpen && results.length === 0) {
@@ -82,11 +85,15 @@ export default function DataForSeoResultsModal({
         if (page === 1) {
           setResults(data.results);
           setAllResults(data.results);
+          // Update actual total from database
+          if (data.total !== undefined) {
+            setActualTotal(data.total);
+          }
         } else {
           setResults(prev => [...prev, ...data.results]);
           setAllResults(prev => [...prev, ...data.results]);
         }
-        setHasMore(data.results.length === pageSize);
+        setHasMore(data.hasMore);
         setCurrentPage(page);
       }
     } catch (error) {
@@ -184,7 +191,7 @@ export default function DataForSeoResultsModal({
           <div>
             <h2 className="text-xl font-semibold">DataForSEO Analysis Results</h2>
             <p className="text-sm text-gray-600 mt-1">
-              {domain} • {totalFound} ranking{totalFound !== 1 ? 's' : ''} found
+              {domain} • {actualTotal} ranking{actualTotal !== 1 ? 's' : ''} found
             </p>
             {cacheInfo && (
               <div className="mt-2">
@@ -210,14 +217,14 @@ export default function DataForSeoResultsModal({
                     </span>
                   )}
                 </div>
-                {totalFound === 0 && (
+                {actualTotal === 0 && (
                   <p className="text-xs text-amber-600 mt-1">
                     ⚠️ This domain doesn't rank in top 100 for any of the {cacheInfo.newKeywords + cacheInfo.cachedKeywords} keywords analyzed
                   </p>
                 )}
-                {totalFound > 0 && (
+                {actualTotal > 0 && (
                   <p className="text-xs text-gray-500 mt-1">
-                    Found rankings for {totalFound} out of {cacheInfo.newKeywords + cacheInfo.cachedKeywords} keywords analyzed
+                    Found rankings for {actualTotal} out of {cacheInfo.newKeywords + cacheInfo.cachedKeywords} keywords analyzed
                   </p>
                 )}
               </div>
@@ -273,7 +280,7 @@ export default function DataForSeoResultsModal({
         <div className="flex-1 overflow-auto">
           {filteredResults.length === 0 ? (
             <div className="flex flex-col items-center justify-center h-64 text-gray-500">
-              {totalFound === 0 ? (
+              {actualTotal === 0 ? (
                 <div className="text-center max-w-md">
                   <div className="text-lg mb-2">No Rankings Found</div>
                   {cacheInfo && (
@@ -414,8 +421,8 @@ export default function DataForSeoResultsModal({
         <div className="p-4 border-t bg-gray-50">
           <div className="flex justify-between items-center text-sm">
             <span className="text-gray-600">
-              Showing {filteredResults.length} of {totalFound} ranking{totalFound !== 1 ? 's' : ''}
-              {results.length < totalFound && (
+              Showing {filteredResults.length} of {actualTotal} ranking{actualTotal !== 1 ? 's' : ''}
+              {results.length < actualTotal && (
                 <span className="ml-1 text-xs">
                   ({results.length} loaded)
                 </span>
