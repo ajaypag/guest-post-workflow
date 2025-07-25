@@ -17,15 +17,62 @@ export class DataForSeoCacheService {
   private static readonly MIN_REFRESH_HOURS = 24; // Don't refresh if analyzed within 24 hours
 
   /**
+   * Track keyword search in history (including zero-result searches)
+   */
+  static async trackKeywordSearch(
+    domainId: string,
+    keywords: string[],
+    hasResults: boolean,
+    locationCode: number = 2840,
+    languageCode: string = 'en'
+  ): Promise<void> {
+    try {
+      // Insert keywords into search history
+      for (const keyword of keywords) {
+        await db.execute(sql`
+          INSERT INTO keyword_search_history 
+          (bulk_analysis_domain_id, keyword, location_code, language_code, has_results, searched_at)
+          VALUES (${domainId}::uuid, ${keyword}, ${locationCode}, ${languageCode}, ${hasResults}, NOW())
+          ON CONFLICT (bulk_analysis_domain_id, keyword, location_code, language_code) 
+          DO UPDATE SET 
+            has_results = CASE WHEN keyword_search_history.has_results THEN keyword_search_history.has_results ELSE ${hasResults} END,
+            searched_at = NOW()
+        `);
+      }
+    } catch (error) {
+      console.error('Error tracking keyword search:', error);
+    }
+  }
+
+  /**
    * Check which keywords need to be analyzed vs which can use cached data
    */
   static async analyzeKeywordCache(
     domainId: string,
-    requestedKeywords: string[]
+    requestedKeywords: string[],
+    locationCode: number = 2840,
+    languageCode: string = 'en'
   ): Promise<CacheAnalysisResult> {
     try {
+      // First check keyword search history to see which keywords have been searched before
+      const searchHistoryResult = await db.execute(sql`
+        SELECT keyword, has_results, searched_at
+        FROM keyword_search_history
+        WHERE bulk_analysis_domain_id = ${domainId}::uuid
+          AND location_code = ${locationCode}
+          AND language_code = ${languageCode}
+          AND keyword = ANY(${requestedKeywords}::text[])
+      `);
+      
+      const searchedKeywordsMap = new Map<string, { hasResults: boolean; searchedAt: Date }>();
+      searchHistoryResult.rows.forEach((row: any) => {
+        searchedKeywordsMap.set(row.keyword, {
+          hasResults: row.has_results,
+          searchedAt: new Date(row.searched_at)
+        });
+      });
+
       // Get domain info including searched keywords
-      // For now, use raw SQL query until schema is updated
       const domainResult = await db.execute(sql`
         SELECT 
           dataforseo_searched_keywords as "searchedKeywords",
@@ -100,9 +147,32 @@ export class DataForSeoCacheService {
         };
       }
 
-      // Determine which keywords are new vs existing
-      const newKeywords = requestedKeywords.filter(k => !searchedKeywords.includes(k));
-      const existingKeywords = requestedKeywords.filter(k => searchedKeywords.includes(k));
+      // Determine which keywords are new vs existing using search history
+      const newKeywords: string[] = [];
+      const existingKeywords: string[] = [];
+      
+      for (const keyword of requestedKeywords) {
+        const searchHistory = searchedKeywordsMap.get(keyword);
+        
+        if (!searchHistory) {
+          // Never searched before
+          newKeywords.push(keyword);
+        } else {
+          // Check if the search is recent enough
+          const hoursSinceSearch = (Date.now() - searchHistory.searchedAt.getTime()) / (1000 * 60 * 60);
+          
+          if (hoursSinceSearch < this.MIN_REFRESH_HOURS) {
+            // Recently searched, use cached data (even if no results)
+            existingKeywords.push(keyword);
+          } else if (daysSinceLastAnalysis && daysSinceLastAnalysis > this.CACHE_EXPIRY_DAYS) {
+            // Data is stale, need to refresh
+            newKeywords.push(keyword);
+          } else {
+            // Use cached data
+            existingKeywords.push(keyword);
+          }
+        }
+      }
 
       // Get existing results for keywords we already have
       const existingResults = existingKeywords.length > 0 

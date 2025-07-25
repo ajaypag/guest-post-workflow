@@ -212,6 +212,11 @@ export default function DataForSeoResultsModal({
                     ⚠️ No rankings found for the {cacheInfo.newKeywords} new keywords analyzed
                   </p>
                 )}
+                {cacheInfo.cachedKeywords > 0 && totalFound === 0 && cacheInfo.newKeywords === 0 && (
+                  <p className="text-xs text-gray-500 mt-1">
+                    These keywords were previously checked and had no rankings. No API call was made.
+                  </p>
+                )}
               </div>
             )}
           </div>

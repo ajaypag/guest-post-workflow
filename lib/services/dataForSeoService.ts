@@ -80,8 +80,20 @@ export class DataForSeoService {
         status = analysisResult.status;
         error = analysisResult.error;
 
-        // Update searched keywords
+        // Always track keyword searches, even if no results found
+        // This prevents re-checking keywords that return zero results
         if (status === 'success') {
+          // Track the search in history
+          const hasResults = newResults.length > 0;
+          await DataForSeoCacheService.trackKeywordSearch(
+            domainId,
+            keywordsToAnalyze,
+            hasResults,
+            locationCode,
+            languageCode
+          );
+          
+          // Update the main searched keywords list
           await DataForSeoCacheService.updateSearchedKeywords(
             domainId,
             keywordsToAnalyze,
