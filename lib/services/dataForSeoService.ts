@@ -182,40 +182,14 @@ export class DataForSeoService {
         `${process.env.DATAFORSEO_LOGIN}:${process.env.DATAFORSEO_PASSWORD}`
       ).toString('base64');
 
-      // Prepare request with proper filters using 'like' operator and % wildcards
-      // DataForSEO requires 'like' operator with % wildcards for partial matching
-      // Example: ["keyword_data.keyword", "like", "%lead%"] will match "lead generation", "leadership", etc.
+      // Prepare request - we'll analyze the domain without keyword filters
+      // Instead of using filters, we'll fetch all domain keywords and filter locally
+      // This avoids the "Invalid Field: 'filters'" error with complex filters
       let filters = undefined;
+      
+      // Log what we're searching for (for debugging)
       if (keywords.length > 0) {
-        console.log(`Processing ${keywords.length} keywords for filtering`);
-        
-        // Limit keywords to prevent filter errors
-        const MAX_KEYWORDS = 10; // Start with a conservative limit
-        if (keywords.length > MAX_KEYWORDS) {
-          console.warn(`Too many keywords (${keywords.length}), limiting to first ${MAX_KEYWORDS}`);
-          keywords = keywords.slice(0, MAX_KEYWORDS);
-        }
-        
-        // Don't escape special characters - DataForSEO might handle this internally
-        const sanitizedKeywords = keywords;
-
-        // Create an OR condition for all keywords with partial matching
-        if (sanitizedKeywords.length === 1) {
-          // Single keyword - simple filter
-          filters = [
-            ["keyword_data.keyword", "like", `%${sanitizedKeywords[0]}%`]
-          ];
-        } else {
-          // Multiple keywords - need OR conditions as flat array
-          // DataForSEO expects: [["field", "op", "value"], "or", ["field", "op", "value"]]
-          filters = [];
-          for (let i = 0; i < sanitizedKeywords.length; i++) {
-            if (i > 0) {
-              filters.push("or");
-            }
-            filters.push(["keyword_data.keyword", "like", `%${sanitizedKeywords[i]}%`]);
-          }
-        }
+        console.log(`Will search for ${keywords.length} keywords in results after fetching`);
       }
 
       // Clean domain - remove protocol and trailing slash
@@ -272,9 +246,27 @@ export class DataForSeoService {
       const results: DataForSeoKeywordResult[] = [];
       
       if (data.tasks?.[0]?.result?.[0]?.items) {
+        // Create a set of lowercase keywords for efficient matching
+        const keywordSet = new Set(keywords.map(k => k.toLowerCase()));
+        
         for (const item of data.tasks[0].result[0].items) {
+          const resultKeyword = item.keyword_data.keyword;
+          
+          // If we have specific keywords, filter to only include matches
+          if (keywords.length > 0) {
+            // Check if any of our keywords are contained in the result keyword
+            const resultKeywordLower = resultKeyword.toLowerCase();
+            const matches = [...keywordSet].some(searchKeyword => 
+              resultKeywordLower.includes(searchKeyword)
+            );
+            
+            if (!matches) {
+              continue; // Skip this result
+            }
+          }
+          
           results.push({
-            keyword: item.keyword_data.keyword,
+            keyword: resultKeyword,
             position: item.ranked_serp_element.serp_item.rank_absolute || 0,
             searchVolume: item.keyword_data.keyword_info?.search_volume || null,
             url: item.ranked_serp_element.serp_item.url || 
@@ -283,6 +275,8 @@ export class DataForSeoService {
             competition: this.mapCompetition(item.keyword_data.keyword_info?.competition),
           });
         }
+        
+        console.log(`Filtered ${results.length} matching keywords from ${data.tasks[0].result[0].items.length} total results`);
       }
 
       // Store results in the database for pagination

@@ -27,6 +27,20 @@ export class DataForSeoCacheService {
     languageCode: string = 'en'
   ): Promise<void> {
     try {
+      // First ensure the table exists
+      await db.execute(sql`
+        CREATE TABLE IF NOT EXISTS keyword_search_history (
+          id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+          bulk_analysis_domain_id UUID NOT NULL REFERENCES bulk_analysis_domains(id) ON DELETE CASCADE,
+          keyword TEXT NOT NULL,
+          location_code INTEGER NOT NULL DEFAULT 2840,
+          language_code VARCHAR(10) NOT NULL DEFAULT 'en',
+          has_results BOOLEAN NOT NULL DEFAULT FALSE,
+          searched_at TIMESTAMP NOT NULL DEFAULT NOW(),
+          UNIQUE(bulk_analysis_domain_id, keyword, location_code, language_code)
+        )
+      `);
+      
       // Insert keywords into search history
       for (const keyword of keywords) {
         await db.execute(sql`
@@ -55,14 +69,20 @@ export class DataForSeoCacheService {
   ): Promise<CacheAnalysisResult> {
     try {
       // First check keyword search history to see which keywords have been searched before
-      const searchHistoryResult = await db.execute(sql`
-        SELECT keyword, has_results, searched_at
-        FROM keyword_search_history
-        WHERE bulk_analysis_domain_id = ${domainId}::uuid
-          AND location_code = ${locationCode}
-          AND language_code = ${languageCode}
-          AND keyword = ANY(${requestedKeywords}::text[])
-      `);
+      let searchHistoryResult: any = { rows: [] };
+      try {
+        searchHistoryResult = await db.execute(sql`
+          SELECT keyword, has_results, searched_at
+          FROM keyword_search_history
+          WHERE bulk_analysis_domain_id = ${domainId}::uuid
+            AND location_code = ${locationCode}
+            AND language_code = ${languageCode}
+            AND keyword = ANY(${requestedKeywords}::text[])
+        `);
+      } catch (error: any) {
+        console.warn('keyword_search_history table might not exist yet:', error.message);
+        // Continue without search history
+      }
       
       const searchedKeywordsMap = new Map<string, { hasResults: boolean; searchedAt: Date }>();
       searchHistoryResult.rows.forEach((row: any) => {
@@ -73,15 +93,29 @@ export class DataForSeoCacheService {
       });
 
       // Get domain info including searched keywords
-      const domainResult = await db.execute(sql`
-        SELECT 
-          dataforseo_searched_keywords as "searchedKeywords",
-          dataforseo_last_full_analysis_at as "lastFullAnalysis",
-          dataforseo_total_api_calls as "totalApiCalls"
-        FROM bulk_analysis_domains
-        WHERE id = ${domainId}::uuid
-        LIMIT 1
-      `);
+      let domainResult: any = { rows: [] };
+      try {
+        // First ensure columns exist
+        await db.execute(sql`
+          ALTER TABLE bulk_analysis_domains
+          ADD COLUMN IF NOT EXISTS dataforseo_searched_keywords TEXT[] DEFAULT '{}',
+          ADD COLUMN IF NOT EXISTS dataforseo_last_full_analysis_at TIMESTAMP,
+          ADD COLUMN IF NOT EXISTS dataforseo_total_api_calls INTEGER DEFAULT 0,
+          ADD COLUMN IF NOT EXISTS dataforseo_incremental_api_calls INTEGER DEFAULT 0
+        `);
+        
+        domainResult = await db.execute(sql`
+          SELECT 
+            dataforseo_searched_keywords as "searchedKeywords",
+            dataforseo_last_full_analysis_at as "lastFullAnalysis",
+            dataforseo_total_api_calls as "totalApiCalls"
+          FROM bulk_analysis_domains
+          WHERE id = ${domainId}::uuid
+          LIMIT 1
+        `);
+      } catch (error: any) {
+        console.warn('Error getting domain info:', error.message);
+      }
 
       if (!domainResult.rows || !domainResult.rows.length) {
         // Domain not found, analyze all keywords
