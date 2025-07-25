@@ -10,10 +10,12 @@ interface MigrationResult {
   migrations?: string[];
   error?: string;
   details?: string;
+  verifications?: string[];
 }
 
 export default function DataForSeoMigrationsPage() {
   const [running, setRunning] = useState(false);
+  const [checking, setChecking] = useState(false);
   const [result, setResult] = useState<MigrationResult | null>(null);
 
   const runMigrations = async () => {
@@ -32,6 +34,25 @@ export default function DataForSeoMigrationsPage() {
       });
     } finally {
       setRunning(false);
+    }
+  };
+
+  const checkStatus = async () => {
+    setChecking(true);
+    setResult(null);
+    
+    try {
+      const response = await fetch('/api/admin/run-migrations?check=true');
+      const data = await response.json();
+      setResult(data);
+    } catch (error: any) {
+      setResult({
+        success: false,
+        error: 'Failed to check status',
+        details: error.message
+      });
+    } finally {
+      setChecking(false);
     }
   };
 
@@ -65,10 +86,10 @@ export default function DataForSeoMigrationsPage() {
             </ul>
           </div>
 
-          <div className="border-t pt-6">
+          <div className="border-t pt-6 flex gap-4">
             <button
               onClick={runMigrations}
-              disabled={running}
+              disabled={running || checking}
               className="inline-flex items-center px-4 py-2 bg-indigo-600 text-white rounded-lg hover:bg-indigo-700 disabled:opacity-50 disabled:cursor-not-allowed"
             >
               {running ? (
@@ -80,6 +101,24 @@ export default function DataForSeoMigrationsPage() {
                 <>
                   <Database className="w-4 h-4 mr-2" />
                   Run Migrations
+                </>
+              )}
+            </button>
+            
+            <button
+              onClick={checkStatus}
+              disabled={running || checking}
+              className="inline-flex items-center px-4 py-2 bg-gray-600 text-white rounded-lg hover:bg-gray-700 disabled:opacity-50 disabled:cursor-not-allowed"
+            >
+              {checking ? (
+                <>
+                  <Loader2 className="w-4 h-4 mr-2 animate-spin" />
+                  Checking...
+                </>
+              ) : (
+                <>
+                  <CheckCircle className="w-4 h-4 mr-2" />
+                  Check Status
                 </>
               )}
             </button>
@@ -118,6 +157,20 @@ export default function DataForSeoMigrationsPage() {
                           <li key={index} className="flex items-start">
                             <CheckCircle className="w-3 h-3 text-green-600 mr-1.5 flex-shrink-0 mt-0.5" />
                             {migration}
+                          </li>
+                        ))}
+                      </ul>
+                    </div>
+                  )}
+                  {result.verifications && result.verifications.length > 0 && (
+                    <div className="mt-3">
+                      <p className="text-sm font-medium text-gray-900">Verification results:</p>
+                      <ul className="mt-1 text-sm text-gray-700 space-y-0.5">
+                        {result.verifications.map((verification, index) => (
+                          <li key={index} className="flex items-start">
+                            <span className={verification.includes('✓') ? 'text-green-600' : 'text-red-600'}>
+                              {verification}
+                            </span>
                           </li>
                         ))}
                       </ul>
