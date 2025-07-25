@@ -152,7 +152,7 @@ export default function BulkAnalysisResultsModal({
                 <span className="text-sm">Avg CPC</span>
               </div>
               <p className="text-2xl font-bold text-gray-900">
-                ${(totalMetrics.avgCpc / (filteredResults.length || 1)).toFixed(2)}
+                ${filteredResults.length > 0 ? (totalMetrics.avgCpc / filteredResults.length).toFixed(2) : '0.00'}
               </p>
             </div>
           </div>
@@ -212,9 +212,9 @@ export default function BulkAnalysisResultsModal({
                       <div className="flex gap-6 mt-2 text-sm text-gray-600">
                         <span>Keywords: {result.keywordsAnalyzed}</span>
                         <span>Rankings: {result.rankingsFound}</span>
-                        <span>Avg Position: {result.avgPosition.toFixed(1)}</span>
-                        <span>Total Volume: {result.totalSearchVolume.toLocaleString()}</span>
-                        <span>Avg CPC: ${result.avgCpc.toFixed(2)}</span>
+                        <span>Avg Position: {result.avgPosition?.toFixed(1) || '0.0'}</span>
+                        <span>Total Volume: {result.totalSearchVolume?.toLocaleString() || '0'}</span>
+                        <span>Avg CPC: ${result.avgCpc != null ? result.avgCpc.toFixed(2) : '0.00'}</span>
                       </div>
                     </div>
                   </div>

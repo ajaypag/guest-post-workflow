@@ -92,6 +92,7 @@ export default function BulkAnalysisPage() {
     jobId: string;
     analyzedDomains: Array<{ id: string; domain: string }>;
   }>({ isOpen: false, jobId: '', analyzedDomains: [] });
+  const [completedJobId, setCompletedJobId] = useState<string | null>(null);
   
   // Reset pagination when filters change
   useEffect(() => {
@@ -418,17 +419,19 @@ export default function BulkAnalysisPage() {
           setMessage(`⏳ Processing: ${job.processedDomains}/${job.totalDomains} domains analyzed`);
         } else if (job.status === 'completed') {
           clearInterval(pollInterval);
-          setMessage(
-            `✅ Analysis complete! Analyzed ${job.totalKeywordsAnalyzed} keywords, found ${job.totalRankingsFound} rankings`
-          );
-          setBulkAnalysisRunning(false);
           
           // Store analyzed domains before clearing selection
           const analyzedDomains = domains.filter(d => selectedDomains.has(d.id)).map(d => ({ id: d.id, domain: d.domain }));
-          clearSelection();
           
-          // Store job ID and domains for viewing results
-          setBulkResultsModal({ isOpen: true, jobId, analyzedDomains });
+          setMessage(
+            `✅ Analysis complete! Analyzed ${job.totalKeywordsAnalyzed} keywords, found ${job.totalRankingsFound} rankings.`
+          );
+          setBulkAnalysisRunning(false);
+          setCompletedJobId(jobId);
+          
+          // Store job ID and domains for later viewing (but don't open modal automatically)
+          setBulkResultsModal({ isOpen: false, jobId, analyzedDomains });
+          clearSelection();
           
           // Reload domains to show updated data
           loadDomains();
@@ -808,6 +811,19 @@ export default function BulkAnalysisPage() {
                       />
                     </div>
                   </div>
+                )}
+                
+                {/* View Results Button */}
+                {completedJobId && message.includes('Analysis complete') && (
+                  <button
+                    onClick={() => {
+                      setBulkResultsModal({ ...bulkResultsModal, isOpen: true });
+                      setCompletedJobId(null);
+                    }}
+                    className="mt-3 px-4 py-2 bg-indigo-600 text-white rounded-md hover:bg-indigo-700 transition-colors text-sm font-medium"
+                  >
+                    View Results
+                  </button>
                 )}
               </div>
             )}

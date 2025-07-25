@@ -38,8 +38,8 @@ export async function GET(
         `"${row.keyword.replace(/"/g, '""')}"`,
         row.position,
         row.search_volume || '',
-        `"${row.url.replace(/"/g, '""')}"`,
-        row.cpc ? row.cpc.toFixed(2) : '',
+        `"${row.url ? row.url.replace(/"/g, '""') : ''}"`,
+        row.cpc != null ? row.cpc.toFixed(2) : '',
         row.competition || '',
         new Date(row.analysis_date).toISOString().split('T')[0]
       ];

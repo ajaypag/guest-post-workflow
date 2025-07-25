@@ -50,19 +50,19 @@ export async function GET(
       let totalPosition = 0;
       
       const topKeywords = keywordResults.rows.map((k: any) => {
-        if (k.search_volume) totalSearchVolume += k.search_volume;
-        if (k.cpc) {
-          totalCpc += k.cpc;
+        if (k.search_volume != null) totalSearchVolume += k.search_volume;
+        if (k.cpc != null) {
+          totalCpc += parseFloat(k.cpc);
           cpcCount++;
         }
-        totalPosition += k.position;
+        totalPosition += k.position || 0;
         
         return {
           keyword: k.keyword,
-          position: k.position,
-          searchVolume: k.search_volume,
-          cpc: k.cpc,
-          url: k.url
+          position: k.position || 0,
+          searchVolume: k.search_volume || 0,
+          cpc: k.cpc != null ? parseFloat(k.cpc) : null,
+          url: k.url || ''
         };
       });
 
