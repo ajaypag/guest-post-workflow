@@ -9,6 +9,7 @@ export interface BulkAnalysisInput {
   domains: string[];
   targetPageIds: string[];
   userId: string;
+  manualKeywords?: string;
 }
 
 export interface BulkAnalysisResult extends BulkAnalysisDomain {
@@ -66,30 +67,39 @@ export class BulkAnalysisService {
    */
   static async createOrUpdateDomains(input: BulkAnalysisInput): Promise<BulkAnalysisResult[]> {
     try {
-      const { clientId, domains, targetPageIds, userId } = input;
+      const { clientId, domains, targetPageIds, userId, manualKeywords } = input;
       
       // Clean domains
       const cleanedDomains = domains.map(d => this.cleanDomain(d)).filter(Boolean);
       
-      // Get target pages and their keywords
-      const pages = await db
-        .select()
-        .from(targetPages)
-        .where(
-          and(
-            eq(targetPages.clientId, clientId),
-            inArray(targetPages.id, targetPageIds)
-          )
-        );
+      let allKeywords = new Set<string>();
+      let pages: TargetPage[] = [];
+      
+      if (manualKeywords) {
+        // Use manual keywords if provided
+        const keywords = manualKeywords.split(',').map(k => k.trim()).filter(Boolean);
+        keywords.forEach(k => allKeywords.add(k));
+      } else if (targetPageIds && targetPageIds.length > 0) {
+        // Otherwise get keywords from target pages
+        pages = await db
+          .select()
+          .from(targetPages)
+          .where(
+            and(
+              eq(targetPages.clientId, clientId),
+              inArray(targetPages.id, targetPageIds)
+            )
+          );
 
-      // Aggregate and dedupe keywords
-      const allKeywords = new Set<string>();
-      pages.forEach(page => {
-        if (page.keywords) {
-          const keywords = page.keywords.split(',').map(k => k.trim());
-          keywords.forEach(k => allKeywords.add(k));
-        }
-      });
+        // Aggregate and dedupe keywords
+        pages.forEach(page => {
+          if (page.keywords) {
+            const keywords = page.keywords.split(',').map(k => k.trim());
+            keywords.forEach(k => allKeywords.add(k));
+          }
+        });
+      }
+      
       const keywordCount = allKeywords.size;
 
       // Prepare bulk insert/update data
@@ -409,7 +419,8 @@ export class BulkAnalysisService {
    */
   static async refreshPendingDomains(
     clientId: string,
-    targetPageIds: string[]
+    targetPageIds: string[],
+    manualKeywords?: string
   ): Promise<BulkAnalysisResult[]> {
     try {
       // Get all pending domains for this client
@@ -427,25 +438,34 @@ export class BulkAnalysisService {
         return [];
       }
 
-      // Get target pages and their keywords
-      const pages = await db
-        .select()
-        .from(targetPages)
-        .where(
-          and(
-            eq(targetPages.clientId, clientId),
-            inArray(targetPages.id, targetPageIds)
-          )
-        );
+      let allKeywords = new Set<string>();
+      let pages: TargetPage[] = [];
+      
+      if (manualKeywords) {
+        // Use manual keywords if provided
+        const keywords = manualKeywords.split(',').map(k => k.trim()).filter(Boolean);
+        keywords.forEach(k => allKeywords.add(k));
+      } else if (targetPageIds && targetPageIds.length > 0) {
+        // Otherwise get keywords from target pages
+        pages = await db
+          .select()
+          .from(targetPages)
+          .where(
+            and(
+              eq(targetPages.clientId, clientId),
+              inArray(targetPages.id, targetPageIds)
+            )
+          );
 
-      // Aggregate and dedupe keywords
-      const allKeywords = new Set<string>();
-      pages.forEach(page => {
-        if (page.keywords) {
-          const keywords = page.keywords.split(',').map(k => k.trim());
-          keywords.forEach(k => allKeywords.add(k));
-        }
-      });
+        // Aggregate and dedupe keywords
+        pages.forEach(page => {
+          if (page.keywords) {
+            const keywords = page.keywords.split(',').map(k => k.trim());
+            keywords.forEach(k => allKeywords.add(k));
+          }
+        });
+      }
+      
       const keywordCount = allKeywords.size;
 
       // Update all pending domains with new target pages and keyword count

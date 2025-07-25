@@ -168,41 +168,24 @@ export default function BulkAnalysisPage() {
         setExistingDomains(checkData.existing || []);
       }
 
-      // Create or update domains (only if using target pages mode)
-      if (keywordInputMode === 'target-pages') {
-        const response = await fetch(`/api/clients/${params.id}/bulk-analysis`, {
-          method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({
-            domains: domainList,
-            targetPageIds: selectedTargetPages
-          })
-        });
+      // Create or update domains
+      const response = await fetch(`/api/clients/${params.id}/bulk-analysis`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          domains: domainList,
+          targetPageIds: keywordInputMode === 'target-pages' ? selectedTargetPages : [],
+          manualKeywords: keywordInputMode === 'manual' ? manualKeywords : undefined
+        })
+      });
 
-        if (response.ok) {
-          const data = await response.json();
-          setDomains(data.domains);
-          setDomainText('');
-          setMessage(`✅ Added ${data.domains.length} domains for analysis`);
-        } else {
-          throw new Error('Failed to create domains');
-        }
-      } else {
-        // Manual mode - create temporary domain objects for display
-        const tempDomains = domainList.map((domain, index) => ({
-          id: `temp-${index}`,
-          domain,
-          qualificationStatus: 'pending' as const,
-          keywordCount: manualKeywords.split(',').length,
-          targetPageIds: [],
-          checkedBy: undefined,
-          checkedAt: undefined,
-          notes: undefined
-        }));
-        
-        setDomains(tempDomains);
+      if (response.ok) {
+        const data = await response.json();
+        setDomains(data.domains);
         setDomainText('');
-        setMessage(`✅ Ready to analyze ${tempDomains.length} domains with manual keywords`);
+        setMessage(`✅ Added ${data.domains.length} domains for analysis`);
+      } else {
+        throw new Error('Failed to create domains');
       }
     } catch (error) {
       console.error('Error analyzing domains:', error);

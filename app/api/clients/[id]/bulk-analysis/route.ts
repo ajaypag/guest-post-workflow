@@ -57,7 +57,7 @@ export async function POST(
 ) {
   try {
     const { id } = await params;
-    const { domains, targetPageIds } = await request.json();
+    const { domains, targetPageIds, manualKeywords } = await request.json();
 
     if (!domains || !Array.isArray(domains) || domains.length === 0) {
       return NextResponse.json(
@@ -66,9 +66,18 @@ export async function POST(
       );
     }
 
-    if (!targetPageIds || !Array.isArray(targetPageIds) || targetPageIds.length === 0) {
+    // Allow empty targetPageIds array when using manual keywords
+    if (!targetPageIds || !Array.isArray(targetPageIds)) {
       return NextResponse.json(
-        { error: 'No target pages selected' },
+        { error: 'Invalid target pages' },
+        { status: 400 }
+      );
+    }
+
+    // Require either targetPageIds or manualKeywords
+    if (targetPageIds.length === 0 && !manualKeywords) {
+      return NextResponse.json(
+        { error: 'Either target pages or manual keywords must be provided' },
         { status: 400 }
       );
     }
@@ -77,6 +86,7 @@ export async function POST(
       clientId: id,
       domains,
       targetPageIds,
+      manualKeywords,
       userId: 'system' // Placeholder since no auth
     });
 

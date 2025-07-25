@@ -124,6 +124,30 @@ export default function AdminDashboard() {
       href: '/admin/o3-response-analyzer',
       color: 'bg-purple-50 border-purple-200 text-purple-700',
       iconColor: 'text-purple-600'
+    },
+    {
+      title: 'DataForSEO Monitoring',
+      description: 'Monitor API calls, analyze keyword filtering patterns, and debug issues',
+      icon: Search,
+      href: '/admin/dataforseo-monitoring',
+      color: 'bg-orange-50 border-orange-200 text-orange-700',
+      iconColor: 'text-orange-600'
+    },
+    {
+      title: 'Bulk Analysis Debug',
+      description: 'Debug manual keywords domain persistence issues',
+      icon: Bug,
+      href: '/api/admin/bulk-analysis-debug?clientId=test',
+      color: 'bg-red-50 border-red-200 text-red-700',
+      iconColor: 'text-red-600'
+    },
+    {
+      title: 'Bulk Analysis Test',
+      description: 'Test manual keywords domain creation fix',
+      icon: Activity,
+      href: '/admin/bulk-analysis-test',
+      color: 'bg-green-50 border-green-200 text-green-700',
+      iconColor: 'text-green-600'
     }
   ];
 
