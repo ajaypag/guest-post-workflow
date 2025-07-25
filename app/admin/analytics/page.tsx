@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useCallback } from 'react';
 import { useRouter } from 'next/navigation';
 import Link from 'next/link';
 import { ArrowLeft, TrendingUp, Calendar, Clock, Target, Award, Activity, Users, FileText, CheckCircle } from 'lucide-react';
@@ -38,19 +38,7 @@ export default function Analytics() {
   const [loading, setLoading] = useState(true);
   const [selectedUser, setSelectedUser] = useState<string>('me'); // 'me', 'all', or specific userId
 
-  useEffect(() => {
-    const session = sessionStorage.getSession();
-    setCurrentSession(session);
-    
-    if (!session || session.role !== 'admin') {
-      router.push('/');
-      return;
-    }
-    
-    calculateAnalytics();
-  }, [router, timeRange, selectedUser]);
-
-  const calculateAnalytics = async () => {
+  const calculateAnalytics = useCallback(async () => {
     try {
       const users = await userStorage.getAllUsers();
       const workflows = await storage.getAllWorkflows();
@@ -150,7 +138,19 @@ export default function Analytics() {
     } finally {
       setLoading(false);
     }
-  };
+  }, [currentSession?.email, selectedUser, timeRange]);
+
+  useEffect(() => {
+    const session = sessionStorage.getSession();
+    setCurrentSession(session);
+    
+    if (!session || session.role !== 'admin') {
+      router.push('/');
+      return;
+    }
+    
+    calculateAnalytics();
+  }, [router, calculateAnalytics]);
 
   const calculateStreak = (workflows: any[]) => {
     if (workflows.length === 0) return 0;
