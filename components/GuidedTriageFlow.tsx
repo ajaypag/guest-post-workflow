@@ -82,6 +82,24 @@ export default function GuidedTriageFlow(props: GuidedTriageFlowProps) {
   const reviewDomains = props.domains;
   const currentDomain = reviewDomains[currentIndex];
   const progress = ((currentIndex + 1) / reviewDomains.length) * 100;
+  
+  // Build Ahrefs URL for checking rankings
+  const buildAhrefsUrl = (domain: string, keywords: string[]) => {
+    const cleanDomain = domain.replace(/^https?:\/\//, '').replace(/\/$/, '');
+    const targetUrl = `https://${cleanDomain}/`;
+    
+    if (keywords.length === 0) {
+      return `https://app.ahrefs.com/v2-site-explorer/organic-keywords?target=${encodeURIComponent(targetUrl)}`;
+    }
+    
+    // Build keyword rules for up to 50 keywords
+    const keywordBatch = keywords.slice(0, 50);
+    const cleanKeywords = keywordBatch.join(', ');
+    const keywordRules = encodeURIComponent(`[{"rule":"include_if_keywords_contain_any_of","keywords":"${cleanKeywords}"}]`);
+    const keywordRulesEncoded = keywordRules.replace(/%/g, '%25');
+    
+    return `https://app.ahrefs.com/v2-site-explorer/organic-keywords?keywordRules=${keywordRulesEncoded}&target=${encodeURIComponent(targetUrl)}`;
+  };
 
   // Preload data for current and next domains
   useEffect(() => {
@@ -558,17 +576,34 @@ export default function GuidedTriageFlow(props: GuidedTriageFlowProps) {
                       {/* Smart Filters - Clickable Keywords */}
                       {data.keywords.length > 0 && (
                         <div className="mt-2">
-                          <div className="flex items-center gap-2 mb-1">
-                            <span className="text-xs text-gray-500">Keywords analyzed:</span>
-                            <span className="text-xs text-gray-400">({data.keywords.length} total)</span>
+                          <div className="flex items-center justify-between mb-1">
+                            <div className="flex items-center gap-2">
+                              <span className="text-xs text-gray-500">Keywords analyzed:</span>
+                              <span className="text-xs text-gray-400">({data.keywords.length} total)</span>
+                            </div>
+                            {/* Subtle Ahrefs button when DataForSEO results exist */}
+                            <a
+                              href={buildAhrefsUrl(currentDomain.domain, data.keywords)}
+                              target="_blank"
+                              rel="noopener noreferrer"
+                              className="inline-flex items-center px-2 py-1 text-xs bg-gray-100 text-gray-600 hover:bg-gray-200 rounded-md transition-colors"
+                              title="Check rankings in Ahrefs"
+                            >
+                              <ExternalLink className="w-3 h-3 mr-1" />
+                              Ahrefs
+                            </a>
                           </div>
                           <div className="flex flex-wrap gap-1 max-h-20 overflow-y-auto">
                             {data.keywords.map((keyword, idx) => (
                               <button
                                 key={idx}
-                                onClick={() => setKeywordSearch(keyword)}
-                                className="px-2 py-1 text-xs bg-indigo-50 hover:bg-indigo-100 text-indigo-700 rounded-md transition-colors"
-                                title="Click to filter DataForSEO results"
+                                onClick={() => setKeywordSearch(keywordSearch === keyword ? '' : keyword)}
+                                className={`px-2 py-1 text-xs rounded-md transition-colors ${
+                                  keywordSearch === keyword 
+                                    ? 'bg-indigo-600 text-white hover:bg-indigo-700' 
+                                    : 'bg-indigo-50 hover:bg-indigo-100 text-indigo-700'
+                                }`}
+                                title={keywordSearch === keyword ? 'Click to clear filter' : 'Click to filter DataForSEO results'}
                               >
                                 {keyword}
                               </button>
@@ -659,26 +694,39 @@ export default function GuidedTriageFlow(props: GuidedTriageFlowProps) {
                                 </span>
                               )}
                             </p>
-                            {/* Optional re-analyze button for edge cases */}
-                            {props.onAnalyzeWithDataForSeo && (
-                              <button
-                                onClick={runDataForSeoAnalysis}
-                                disabled={loadingDataForSeo}
-                                className="mt-4 inline-flex items-center px-4 py-2 bg-gray-200 text-gray-700 text-sm rounded-lg hover:bg-gray-300 disabled:opacity-50"
+                            <div className="flex items-center gap-3 mt-4">
+                              {/* Prominent Ahrefs button when no results found */}
+                              <a
+                                href={buildAhrefsUrl(currentDomain.domain, data.keywords)}
+                                target="_blank"
+                                rel="noopener noreferrer"
+                                className="inline-flex items-center px-4 py-2 bg-indigo-600 text-white text-sm rounded-lg hover:bg-indigo-700"
+                                title="Check rankings in Ahrefs (no API credits used)"
                               >
-                                {loadingDataForSeo ? (
-                                  <>
-                                    <Loader2 className="w-4 h-4 mr-2 animate-spin" />
-                                    Re-analyzing...
-                                  </>
-                                ) : (
-                                  <>
-                                    <RefreshCw className="w-4 h-4 mr-2" />
-                                    Re-analyze
-                                  </>
-                                )}
-                              </button>
-                            )}
+                                <ExternalLink className="w-4 h-4 mr-2" />
+                                Check in Ahrefs
+                              </a>
+                              {/* Optional re-analyze button for edge cases */}
+                              {props.onAnalyzeWithDataForSeo && (
+                                <button
+                                  onClick={runDataForSeoAnalysis}
+                                  disabled={loadingDataForSeo}
+                                  className="inline-flex items-center px-4 py-2 bg-gray-200 text-gray-700 text-sm rounded-lg hover:bg-gray-300 disabled:opacity-50"
+                                >
+                                  {loadingDataForSeo ? (
+                                    <>
+                                      <Loader2 className="w-4 h-4 mr-2 animate-spin" />
+                                      Re-analyzing...
+                                    </>
+                                  ) : (
+                                    <>
+                                      <RefreshCw className="w-4 h-4 mr-2" />
+                                      Re-analyze
+                                    </>
+                                  )}
+                                </button>
+                              )}
+                            </div>
                           </>
                         ) : (
                           <>
@@ -690,25 +738,62 @@ export default function GuidedTriageFlow(props: GuidedTriageFlowProps) {
                                 : 'No keywords selected for analysis'
                               }
                             </p>
-                            {props.onAnalyzeWithDataForSeo && data.keywords.length > 0 && (
-                              <button
-                                onClick={runDataForSeoAnalysis}
-                                disabled={loadingDataForSeo}
-                                className="inline-flex items-center px-6 py-3 bg-indigo-600 text-white rounded-lg hover:bg-indigo-700 disabled:opacity-50"
-                              >
-                                {loadingDataForSeo ? (
-                                  <>
-                                    <Loader2 className="w-5 h-5 mr-2 animate-spin" />
-                                    Analyzing...
-                                  </>
-                                ) : (
-                                  <>
-                                    <TrendingUp className="w-5 h-5 mr-2" />
-                                    Analyze Keywords
-                                  </>
-                                )}
-                              </button>
-                            )}
+                            <div className="flex flex-col items-center gap-3">
+                              {data.keywords.length > 0 ? (
+                                <>
+                                  {props.onAnalyzeWithDataForSeo && (
+                                    <button
+                                      onClick={runDataForSeoAnalysis}
+                                      disabled={loadingDataForSeo}
+                                      className="inline-flex items-center px-6 py-3 bg-indigo-600 text-white rounded-lg hover:bg-indigo-700 disabled:opacity-50"
+                                    >
+                                      {loadingDataForSeo ? (
+                                        <>
+                                          <Loader2 className="w-5 h-5 mr-2 animate-spin" />
+                                          Analyzing...
+                                        </>
+                                      ) : (
+                                        <>
+                                          <TrendingUp className="w-5 h-5 mr-2" />
+                                          Analyze Keywords
+                                        </>
+                                      )}
+                                    </button>
+                                  )}
+                                  {/* Prominent Ahrefs button when no DataForSEO data */}
+                                  <a
+                                    href={buildAhrefsUrl(currentDomain.domain, data.keywords)}
+                                    target="_blank"
+                                    rel="noopener noreferrer"
+                                    className="inline-flex items-center px-5 py-2.5 bg-gray-800 text-white text-sm rounded-lg hover:bg-gray-900"
+                                    title="Check rankings in Ahrefs (no API credits used)"
+                                  >
+                                    <ExternalLink className="w-4 h-4 mr-2" />
+                                    Check in Ahrefs Instead
+                                  </a>
+                                  <p className="text-xs text-gray-500">
+                                    Ahrefs doesn't use your API credits
+                                  </p>
+                                </>
+                              ) : (
+                                <>
+                                  {/* Ahrefs button for domain-level analysis when no keywords selected */}
+                                  <a
+                                    href={buildAhrefsUrl(currentDomain.domain, [])}
+                                    target="_blank"
+                                    rel="noopener noreferrer"
+                                    className="inline-flex items-center px-6 py-3 bg-gray-800 text-white rounded-lg hover:bg-gray-900"
+                                    title="Check all rankings for this domain in Ahrefs"
+                                  >
+                                    <ExternalLink className="w-5 h-5 mr-2" />
+                                    Check Domain Rankings in Ahrefs
+                                  </a>
+                                  <p className="text-xs text-gray-500">
+                                    Analyze all keywords this domain ranks for
+                                  </p>
+                                </>
+                              )}
+                            </div>
                           </>
                         )}
                       </div>
@@ -833,7 +918,7 @@ export default function GuidedTriageFlow(props: GuidedTriageFlowProps) {
               className="inline-flex items-center px-6 py-3 bg-gray-100 text-gray-700 font-medium rounded-lg hover:bg-gray-200 disabled:opacity-50"
             >
               <XCircle className="w-5 h-5 mr-2" />
-              Disqualified
+              {currentDomain.qualificationStatus === 'disqualified' ? 'Confirm Disqualified' : 'Disqualified'}
             </button>
             <button
               onClick={() => handleQualify('average_quality')}
@@ -841,7 +926,7 @@ export default function GuidedTriageFlow(props: GuidedTriageFlowProps) {
               className="inline-flex items-center px-6 py-3 bg-blue-600 text-white font-medium rounded-lg hover:bg-blue-700 disabled:opacity-50"
             >
               <AlertCircle className="w-5 h-5 mr-2" />
-              Average Quality
+              {currentDomain.qualificationStatus === 'average_quality' ? 'Confirm Average' : 'Average Quality'}
             </button>
             <button
               onClick={() => handleQualify('high_quality')}
@@ -849,7 +934,7 @@ export default function GuidedTriageFlow(props: GuidedTriageFlowProps) {
               className="inline-flex items-center px-6 py-3 bg-green-600 text-white font-medium rounded-lg hover:bg-green-700 disabled:opacity-50"
             >
               <Check className="w-5 h-5 mr-2" />
-              High Quality
+              {currentDomain.qualificationStatus === 'high_quality' ? 'Confirm High Quality' : 'High Quality'}
             </button>
           </div>
         </div>
