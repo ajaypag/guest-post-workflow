@@ -1108,17 +1108,38 @@ export default function BulkAnalysisPage() {
               </div>
               
               {/* Filter Controls */}
-              <div className="mb-6 p-4 bg-gray-50 rounded-lg space-y-4">
+              <div className="mb-6 p-6 bg-white border border-gray-200 rounded-lg shadow-sm space-y-4">
+                <div className="flex items-center justify-between mb-4">
+                  <h3 className="text-lg font-semibold text-gray-900 flex items-center">
+                    <Search className="w-5 h-5 mr-2 text-gray-500" />
+                    Search & Filter Domains
+                  </h3>
+                  {(searchQuery || statusFilter !== 'all' || workflowFilter !== 'all') && (
+                    <button
+                      onClick={() => {
+                        setSearchQuery('');
+                        setStatusFilter('all');
+                        setWorkflowFilter('all');
+                      }}
+                      className="text-sm text-indigo-600 hover:text-indigo-800 font-medium"
+                    >
+                      Clear all filters
+                    </button>
+                  )}
+                </div>
+                
                 {/* Search Bar */}
                 <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-2">Search Domains</label>
-                  <input
-                    type="text"
-                    value={searchQuery}
-                    onChange={(e) => setSearchQuery(e.target.value)}
-                    placeholder="Search by domain name..."
-                    className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-indigo-500 focus:border-transparent"
-                  />
+                  <div className="relative">
+                    <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 w-4 h-4 text-gray-400" />
+                    <input
+                      type="text"
+                      value={searchQuery}
+                      onChange={(e) => setSearchQuery(e.target.value)}
+                      placeholder="Search by domain name..."
+                      className="w-full pl-10 pr-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-indigo-500 focus:border-transparent"
+                    />
+                  </div>
                 </div>
 
                 {/* Experimental Features Toggle */}
@@ -1143,53 +1164,75 @@ export default function BulkAnalysisPage() {
                   )}
                 </div>
 
-                {/* Status Filters */}
-                <div>
-                  <h4 className="font-medium text-gray-900 mb-3">Filter by Status</h4>
-                  <div className="flex flex-wrap gap-2">
-                    {[
-                      { value: 'all', label: 'All Domains', count: domains.length },
-                      { value: 'pending', label: 'Pending Review', count: domains.filter(d => d.qualificationStatus === 'pending').length },
-                      { value: 'high_quality', label: 'High Quality', count: domains.filter(d => d.qualificationStatus === 'high_quality').length },
-                      { value: 'average_quality', label: 'Average Quality', count: domains.filter(d => d.qualificationStatus === 'average_quality').length },
-                      { value: 'disqualified', label: 'Disqualified', count: domains.filter(d => d.qualificationStatus === 'disqualified').length }
-                    ].map((filter) => (
-                      <button
-                        key={filter.value}
-                        onClick={() => setStatusFilter(filter.value as any)}
-                        className={`px-3 py-2 text-sm rounded-lg border transition-colors ${
-                          statusFilter === filter.value
-                            ? 'bg-indigo-600 text-white border-indigo-600'
-                            : 'bg-white text-gray-700 border-gray-300 hover:border-indigo-300 hover:bg-indigo-50'
-                        }`}
-                      >
-                        {filter.label} ({filter.count})
-                      </button>
-                    ))}
+                {/* Filter Sections */}
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                  {/* Status Filters */}
+                  <div>
+                    <h4 className="font-medium text-gray-900 mb-3 flex items-center">
+                      <Target className="w-4 h-4 mr-2 text-gray-500" />
+                      Filter by Qualification Status
+                    </h4>
+                    <div className="flex flex-wrap gap-2">
+                      {[
+                        { value: 'all', label: 'All Domains', count: domains.length, color: 'gray' },
+                        { value: 'pending', label: 'Pending Review', count: domains.filter(d => d.qualificationStatus === 'pending').length, color: 'gray' },
+                        { value: 'high_quality', label: 'High Quality', count: domains.filter(d => d.qualificationStatus === 'high_quality').length, color: 'green' },
+                        { value: 'average_quality', label: 'Average Quality', count: domains.filter(d => d.qualificationStatus === 'average_quality').length, color: 'yellow' },
+                        { value: 'disqualified', label: 'Disqualified', count: domains.filter(d => d.qualificationStatus === 'disqualified').length, color: 'red' }
+                      ].map((filter) => (
+                        <button
+                          key={filter.value}
+                          onClick={() => setStatusFilter(filter.value as any)}
+                          className={`px-3 py-2 text-sm rounded-lg border transition-all ${
+                            statusFilter === filter.value
+                              ? filter.color === 'green' ? 'bg-green-600 text-white border-green-600' :
+                                filter.color === 'yellow' ? 'bg-yellow-600 text-white border-yellow-600' :
+                                filter.color === 'red' ? 'bg-red-600 text-white border-red-600' :
+                                'bg-indigo-600 text-white border-indigo-600'
+                              : 'bg-white text-gray-700 border-gray-300 hover:border-gray-400 hover:shadow-sm'
+                          }`}
+                        >
+                          {filter.label} 
+                          <span className={`ml-1 ${statusFilter === filter.value ? 'text-white/80' : 'text-gray-500'}`}>
+                            ({filter.count})
+                          </span>
+                        </button>
+                      ))}
+                    </div>
                   </div>
-                </div>
 
-                {/* Workflow Filters */}
-                <div>
-                  <h4 className="font-medium text-gray-900 mb-3">Filter by Workflow Status</h4>
-                  <div className="flex flex-wrap gap-2">
-                    {[
-                      { value: 'all', label: 'All', count: domains.length },
-                      { value: 'has_workflow', label: 'Has Workflow', count: domains.filter(d => d.hasWorkflow).length },
-                      { value: 'no_workflow', label: 'No Workflow', count: domains.filter(d => !d.hasWorkflow).length }
-                    ].map((filter) => (
-                      <button
-                        key={filter.value}
-                        onClick={() => setWorkflowFilter(filter.value as any)}
-                        className={`px-3 py-2 text-sm rounded-lg border transition-colors ${
-                          workflowFilter === filter.value
-                            ? 'bg-purple-600 text-white border-purple-600'
-                            : 'bg-white text-gray-700 border-gray-300 hover:border-purple-300 hover:bg-purple-50'
-                        }`}
-                      >
-                        {filter.label} ({filter.count})
-                      </button>
-                    ))}
+                  {/* Workflow Filters */}
+                  <div>
+                    <h4 className="font-medium text-gray-900 mb-3 flex items-center">
+                      <FileText className="w-4 h-4 mr-2 text-gray-500" />
+                      Filter by Workflow Status
+                    </h4>
+                    <div className="flex flex-wrap gap-2">
+                      {[
+                        { value: 'all', label: 'All', count: domains.length, icon: null },
+                        { value: 'has_workflow', label: 'Has Workflow', count: domains.filter(d => d.hasWorkflow).length, icon: CheckCircle },
+                        { value: 'no_workflow', label: 'No Workflow', count: domains.filter(d => !d.hasWorkflow).length, icon: XCircle }
+                      ].map((filter) => {
+                        const Icon = filter.icon;
+                        return (
+                          <button
+                            key={filter.value}
+                            onClick={() => setWorkflowFilter(filter.value as any)}
+                            className={`px-3 py-2 text-sm rounded-lg border transition-all flex items-center ${
+                              workflowFilter === filter.value
+                                ? 'bg-purple-600 text-white border-purple-600'
+                                : 'bg-white text-gray-700 border-gray-300 hover:border-gray-400 hover:shadow-sm'
+                            }`}
+                          >
+                            {Icon && <Icon className={`w-4 h-4 mr-1 ${workflowFilter === filter.value ? 'text-white' : 'text-gray-500'}`} />}
+                            {filter.label} 
+                            <span className={`ml-1 ${workflowFilter === filter.value ? 'text-white/80' : 'text-gray-500'}`}>
+                              ({filter.count})
+                            </span>
+                          </button>
+                        );
+                      })}
+                    </div>
                   </div>
                 </div>
               </div>
@@ -1455,8 +1498,37 @@ export default function BulkAnalysisPage() {
                     )}
                     
                     {/* Results Summary */}
-                    <div className="mt-4 text-center text-sm text-gray-600">
-                      Showing {paginatedDomains.length} of {filteredDomains.length} domains
+                    <div className="mt-4 text-center">
+                      <div className="text-sm text-gray-600">
+                        Showing {paginatedDomains.length} of {filteredDomains.length} domains
+                        {filteredDomains.length < domains.length && (
+                          <span className="text-indigo-600 ml-1">
+                            (filtered from {domains.length} total)
+                          </span>
+                        )}
+                      </div>
+                      
+                      {/* Active Filters Summary */}
+                      {(searchQuery || statusFilter !== 'all' || workflowFilter !== 'all') && (
+                        <div className="mt-2 flex items-center justify-center gap-2 text-xs">
+                          <span className="text-gray-500">Active filters:</span>
+                          {searchQuery && (
+                            <span className="px-2 py-1 bg-gray-100 text-gray-700 rounded">
+                              Search: "{searchQuery}"
+                            </span>
+                          )}
+                          {statusFilter !== 'all' && (
+                            <span className="px-2 py-1 bg-indigo-100 text-indigo-700 rounded">
+                              Status: {statusFilter.replace('_', ' ')}
+                            </span>
+                          )}
+                          {workflowFilter !== 'all' && (
+                            <span className="px-2 py-1 bg-purple-100 text-purple-700 rounded">
+                              {workflowFilter === 'has_workflow' ? 'Has workflow' : 'No workflow'}
+                            </span>
+                          )}
+                        </div>
+                      )}
                     </div>
                   </>
                 );
