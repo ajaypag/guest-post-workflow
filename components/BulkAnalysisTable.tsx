@@ -1081,7 +1081,9 @@ export default function BulkAnalysisTable(props: BulkAnalysisTableProps) {
                                   {domain.aiQualificationReasoning && (
                                     <div className="flex items-center gap-2">
                                       <span className="text-xs text-gray-500">
-                                        {domain.wasManuallyQualified ? '👤 Human Modified' : '🤖 AI Qualified'}
+                                        {domain.wasManuallyQualified ? '👤 Human Modified' : 
+                                         domain.wasHumanVerified ? '✅ Human Verified' : 
+                                         '🤖 AI Qualified'}
                                       </span>
                                       <select
                                         value={domain.qualificationStatus}

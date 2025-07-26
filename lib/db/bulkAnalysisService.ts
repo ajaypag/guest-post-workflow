@@ -174,6 +174,17 @@ export class BulkAnalysisService {
     isManual?: boolean
   ): Promise<BulkAnalysisDomain> {
     try {
+      // First, get the current domain to check if it has AI reasoning
+      const [currentDomain] = await db
+        .select()
+        .from(bulkAnalysisDomains)
+        .where(eq(bulkAnalysisDomains.id, domainId))
+        .limit(1);
+      
+      if (!currentDomain) {
+        throw new Error('Domain not found');
+      }
+
       const updateData: any = {
         qualificationStatus: status,
         checkedBy: userId,
@@ -182,11 +193,20 @@ export class BulkAnalysisService {
         updatedAt: new Date(),
       };
 
-      // If this is a manual qualification change, track it
-      if (isManual) {
-        updateData.wasManuallyQualified = true;
-        updateData.manuallyQualifiedBy = userId;
-        updateData.manuallyQualifiedAt = new Date();
+      // If this is a manual change to an AI qualification
+      if (isManual && currentDomain.aiQualificationReasoning) {
+        // Check if the status is being changed from the AI's original decision
+        if (currentDomain.qualificationStatus !== status) {
+          // Human modified the AI's decision
+          updateData.wasManuallyQualified = true;
+          updateData.manuallyQualifiedBy = userId;
+          updateData.manuallyQualifiedAt = new Date();
+        } else {
+          // Human verified/agreed with the AI's decision
+          updateData.wasHumanVerified = true;
+          updateData.humanVerifiedBy = userId;
+          updateData.humanVerifiedAt = new Date();
+        }
       }
 
       const [updated] = await db

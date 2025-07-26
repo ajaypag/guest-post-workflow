@@ -24,6 +24,10 @@ export const bulkAnalysisDomains = pgTable('bulk_analysis_domains', {
   wasManuallyQualified: boolean('was_manually_qualified').default(false),
   manuallyQualifiedBy: uuid('manually_qualified_by').references(() => users.id),
   manuallyQualifiedAt: timestamp('manually_qualified_at'),
+  // Human verification tracking
+  wasHumanVerified: boolean('was_human_verified').default(false),
+  humanVerifiedBy: uuid('human_verified_by').references(() => users.id),
+  humanVerifiedAt: timestamp('human_verified_at'),
   createdAt: timestamp('created_at').notNull(),
   updatedAt: timestamp('updated_at').notNull(),
 });

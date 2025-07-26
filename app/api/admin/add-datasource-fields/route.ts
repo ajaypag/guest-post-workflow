@@ -15,7 +15,10 @@ export async function POST() {
       ADD COLUMN IF NOT EXISTS ai_qualified_at TIMESTAMP,
       ADD COLUMN IF NOT EXISTS was_manually_qualified BOOLEAN DEFAULT false,
       ADD COLUMN IF NOT EXISTS manually_qualified_by UUID REFERENCES users(id),
-      ADD COLUMN IF NOT EXISTS manually_qualified_at TIMESTAMP
+      ADD COLUMN IF NOT EXISTS manually_qualified_at TIMESTAMP,
+      ADD COLUMN IF NOT EXISTS was_human_verified BOOLEAN DEFAULT false,
+      ADD COLUMN IF NOT EXISTS human_verified_by UUID REFERENCES users(id),
+      ADD COLUMN IF NOT EXISTS human_verified_at TIMESTAMP
     `);
 
     console.log('Fields added successfully');
@@ -56,7 +59,10 @@ export async function DELETE() {
       DROP COLUMN IF EXISTS ai_qualified_at,
       DROP COLUMN IF EXISTS was_manually_qualified,
       DROP COLUMN IF EXISTS manually_qualified_by,
-      DROP COLUMN IF EXISTS manually_qualified_at
+      DROP COLUMN IF EXISTS manually_qualified_at,
+      DROP COLUMN IF EXISTS was_human_verified,
+      DROP COLUMN IF EXISTS human_verified_by,
+      DROP COLUMN IF EXISTS human_verified_at
     `);
 
     console.log('Data source tracking fields removed successfully');

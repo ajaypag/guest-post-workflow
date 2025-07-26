@@ -18,5 +18,8 @@ export interface BulkAnalysisDomain {
   wasManuallyQualified?: boolean;
   manuallyQualifiedBy?: string;
   manuallyQualifiedAt?: string;
+  wasHumanVerified?: boolean;
+  humanVerifiedBy?: string;
+  humanVerifiedAt?: string;
   selectedTargetPageId?: string;
 }

@@ -19,7 +19,10 @@ export async function GET() {
           'ai_qualified_at',
           'was_manually_qualified',
           'manually_qualified_by',
-          'manually_qualified_at'
+          'manually_qualified_at',
+          'was_human_verified',
+          'human_verified_by',
+          'human_verified_at'
         )
     `);
 
@@ -31,7 +34,10 @@ export async function GET() {
       'ai_qualified_at',
       'was_manually_qualified',
       'manually_qualified_by',
-      'manually_qualified_at'
+      'manually_qualified_at',
+      'was_human_verified',
+      'human_verified_by',
+      'human_verified_at'
     ];
     
     const missingColumns = expectedColumns.filter(col => !existingColumns.includes(col));
