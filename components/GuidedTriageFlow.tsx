@@ -19,7 +19,8 @@ import {
   Target,
   Brain,
   User,
-  Clock
+  Clock,
+  RefreshCw
 } from 'lucide-react';
 import { BulkAnalysisDomain } from '@/types/bulk-analysis';
 import { TargetPage } from '@/types/user';
@@ -57,6 +58,7 @@ interface DomainData {
     }>;
     hasMore: boolean;
   };
+  wasAnalyzedButNoResults?: boolean;
   aiQualification?: {
     status: string;
     reasoning: string;
@@ -113,6 +115,8 @@ export default function GuidedTriageFlow(props: GuidedTriageFlowProps) {
       
       // Always check for existing DataForSEO results
       let dataForSeoResults: DomainData['dataForSeoResults'] | undefined;
+      let wasAnalyzedButNoResults = false;
+      
       try {
         // Always fetch to see if there's existing data
         const response = await fetch(`/api/clients/${domain.clientId}/bulk-analysis/dataforseo/results?domainId=${domain.id}&limit=1000`);
@@ -137,6 +141,9 @@ export default function GuidedTriageFlow(props: GuidedTriageFlowProps) {
             if (!domain.hasDataForSeoResults) {
               domain.hasDataForSeoResults = true;
             }
+          } else if (domain.dataForSeoLastAnalyzed) {
+            // Keywords were analyzed but no results found
+            wasAnalyzedButNoResults = true;
           }
         }
       } catch (error) {
@@ -181,6 +188,7 @@ export default function GuidedTriageFlow(props: GuidedTriageFlowProps) {
           keywords,
           keywordGroups,
           dataForSeoResults,
+          wasAnalyzedButNoResults,
           aiQualification,
           targetPages: domainTargetPages
         }
@@ -636,32 +644,72 @@ export default function GuidedTriageFlow(props: GuidedTriageFlowProps) {
                     </div>
                     <div className="flex-1 flex items-center justify-center">
                       <div className="text-center py-12">
-                        <Search className="w-16 h-16 text-gray-300 mx-auto mb-4" />
-                        <p className="text-gray-500 mb-2">No keyword ranking data found</p>
-                        <p className="text-sm text-gray-400 mb-6">
-                          {data.keywords.length > 0 
-                            ? `Analyze ${data.keywords.length} keywords to see rankings`
-                            : 'No keywords selected for analysis'
-                          }
-                        </p>
-                        {props.onAnalyzeWithDataForSeo && data.keywords.length > 0 && (
-                          <button
-                            onClick={runDataForSeoAnalysis}
-                            disabled={loadingDataForSeo}
-                            className="inline-flex items-center px-6 py-3 bg-indigo-600 text-white rounded-lg hover:bg-indigo-700 disabled:opacity-50"
-                          >
-                            {loadingDataForSeo ? (
-                              <>
-                                <Loader2 className="w-5 h-5 mr-2 animate-spin" />
-                                Analyzing...
-                              </>
-                            ) : (
-                              <>
-                                <TrendingUp className="w-5 h-5 mr-2" />
-                                Analyze Keywords
-                              </>
+                        {data.wasAnalyzedButNoResults ? (
+                          <>
+                            <XCircle className="w-16 h-16 text-gray-300 mx-auto mb-4" />
+                            <p className="text-gray-600 font-medium mb-2">No rankings found</p>
+                            <p className="text-sm text-gray-500 mb-2">
+                              Analyzed {data.keywords.length} keywords
+                            </p>
+                            <p className="text-xs text-gray-400 max-w-md mx-auto">
+                              This domain doesn't rank in Google's top 100 results for any of the analyzed keywords.
+                              {data.domain.dataForSeoLastAnalyzed && (
+                                <span className="block mt-1">
+                                  Last checked: {new Date(data.domain.dataForSeoLastAnalyzed).toLocaleDateString()}
+                                </span>
+                              )}
+                            </p>
+                            {/* Optional re-analyze button for edge cases */}
+                            {props.onAnalyzeWithDataForSeo && (
+                              <button
+                                onClick={runDataForSeoAnalysis}
+                                disabled={loadingDataForSeo}
+                                className="mt-4 inline-flex items-center px-4 py-2 bg-gray-200 text-gray-700 text-sm rounded-lg hover:bg-gray-300 disabled:opacity-50"
+                              >
+                                {loadingDataForSeo ? (
+                                  <>
+                                    <Loader2 className="w-4 h-4 mr-2 animate-spin" />
+                                    Re-analyzing...
+                                  </>
+                                ) : (
+                                  <>
+                                    <RefreshCw className="w-4 h-4 mr-2" />
+                                    Re-analyze
+                                  </>
+                                )}
+                              </button>
                             )}
-                          </button>
+                          </>
+                        ) : (
+                          <>
+                            <Search className="w-16 h-16 text-gray-300 mx-auto mb-4" />
+                            <p className="text-gray-500 mb-2">No keyword data available</p>
+                            <p className="text-sm text-gray-400 mb-6">
+                              {data.keywords.length > 0 
+                                ? `Analyze ${data.keywords.length} keywords to see rankings`
+                                : 'No keywords selected for analysis'
+                              }
+                            </p>
+                            {props.onAnalyzeWithDataForSeo && data.keywords.length > 0 && (
+                              <button
+                                onClick={runDataForSeoAnalysis}
+                                disabled={loadingDataForSeo}
+                                className="inline-flex items-center px-6 py-3 bg-indigo-600 text-white rounded-lg hover:bg-indigo-700 disabled:opacity-50"
+                              >
+                                {loadingDataForSeo ? (
+                                  <>
+                                    <Loader2 className="w-5 h-5 mr-2 animate-spin" />
+                                    Analyzing...
+                                  </>
+                                ) : (
+                                  <>
+                                    <TrendingUp className="w-5 h-5 mr-2" />
+                                    Analyze Keywords
+                                  </>
+                                )}
+                              </button>
+                            )}
+                          </>
                         )}
                       </div>
                     </div>
