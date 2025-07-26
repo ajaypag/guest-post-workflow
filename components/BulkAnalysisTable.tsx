@@ -17,7 +17,8 @@ import {
   Target,
   TrendingUp,
   Globe,
-  Zap
+  Zap,
+  Loader2
 } from 'lucide-react';
 import { BulkAnalysisDomain } from '@/types/bulk-analysis';
 import { TargetPage } from '@/types/user';
@@ -40,6 +41,8 @@ interface BulkAnalysisTableProps {
   manualKeywords?: string;
   triageMode?: boolean;
   onToggleTriageMode?: () => void;
+  onBulkCreateWorkflows?: (domainIds: string[]) => void;
+  bulkWorkflowCreating?: boolean;
 }
 
 interface ExpandedRowData {
@@ -316,6 +319,13 @@ export default function BulkAnalysisTable(props: BulkAnalysisTableProps) {
     }
   };
 
+  // Get qualified domains for bulk operations
+  const qualifiedDomains = props.domains.filter(d => 
+    props.selectedDomains.has(d.id) && 
+    (d.qualificationStatus === 'high_quality' || d.qualificationStatus === 'average_quality') &&
+    !d.hasWorkflow
+  );
+
   return (
     <div className="w-full">
       {/* Triage Mode Toggle */}
@@ -340,6 +350,56 @@ export default function BulkAnalysisTable(props: BulkAnalysisTableProps) {
           >
             {props.triageMode ? 'Exit Triage' : 'Enable Triage'}
           </button>
+        </div>
+      )}
+
+      {/* Bulk Actions Bar */}
+      {props.selectedDomains.size > 0 && (
+        <div className="mb-4 bg-indigo-50 border border-indigo-200 rounded-lg p-4">
+          <div className="flex items-center justify-between">
+            <div className="flex items-center gap-3">
+              <div className="flex items-center gap-2">
+                <CheckCircle className="w-5 h-5 text-indigo-600" />
+                <span className="text-sm font-medium text-indigo-900">
+                  {props.selectedDomains.size} domain{props.selectedDomains.size > 1 ? 's' : ''} selected
+                </span>
+              </div>
+              {qualifiedDomains.length > 0 && (
+                <span className="text-xs text-indigo-700">
+                  {qualifiedDomains.length} qualified without workflows
+                </span>
+              )}
+            </div>
+            <div className="flex items-center gap-2">
+              {qualifiedDomains.length > 0 && props.onBulkCreateWorkflows && (
+                <button
+                  onClick={() => props.onBulkCreateWorkflows!(qualifiedDomains.map(d => d.id))}
+                  disabled={props.bulkWorkflowCreating}
+                  className="inline-flex items-center px-4 py-2 bg-green-600 text-white text-sm font-medium rounded-lg hover:bg-green-700 disabled:opacity-50 disabled:cursor-not-allowed"
+                >
+                  {props.bulkWorkflowCreating ? (
+                    <>
+                      <Loader2 className="w-4 h-4 mr-2 animate-spin" />
+                      Creating Workflows...
+                    </>
+                  ) : (
+                    <>
+                      <Plus className="w-4 h-4 mr-2" />
+                      Create {qualifiedDomains.length} Workflow{qualifiedDomains.length > 1 ? 's' : ''}
+                    </>
+                  )}
+                </button>
+              )}
+              <button
+                onClick={() => {
+                  props.selectedDomains.forEach(id => props.onToggleSelection(id));
+                }}
+                className="px-3 py-2 text-sm text-gray-600 hover:text-gray-900 border border-gray-300 rounded-lg hover:bg-gray-50"
+              >
+                Clear Selection
+              </button>
+            </div>
+          </div>
         </div>
       )}
 

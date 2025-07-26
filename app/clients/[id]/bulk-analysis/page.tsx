@@ -104,6 +104,10 @@ export default function BulkAnalysisPage() {
   // Triage mode state
   const [triageMode, setTriageMode] = useState(false);
   
+  // Bulk workflow creation state
+  const [bulkWorkflowCreating, setBulkWorkflowCreating] = useState(false);
+  const [bulkWorkflowProgress, setBulkWorkflowProgress] = useState({ current: 0, total: 0 });
+  
   // Reset pagination when filters change
   useEffect(() => {
     setDisplayLimit(ITEMS_PER_PAGE);
@@ -298,6 +302,93 @@ export default function BulkAnalysisPage() {
     // Navigate to workflow creation with pre-filled domain and notes
     const domainNotes = domain.notes || notes[domain.id] || '';
     router.push(`/workflow/new?clientId=${client?.id}&guestPostSite=${encodeURIComponent(domain.domain)}&notes=${encodeURIComponent(domainNotes)}`);
+  };
+
+  const bulkCreateWorkflows = async (domainIds: string[]) => {
+    if (!client) return;
+    
+    setBulkWorkflowCreating(true);
+    setBulkWorkflowProgress({ current: 0, total: domainIds.length });
+    
+    let successCount = 0;
+    let failureCount = 0;
+    
+    try {
+      for (let i = 0; i < domainIds.length; i++) {
+        const domainId = domainIds[i];
+        const domain = domains.find(d => d.id === domainId);
+        if (!domain) continue;
+        
+        setBulkWorkflowProgress({ current: i + 1, total: domainIds.length });
+        
+        try {
+          // Create workflow via API
+          const domainNotes = domain.notes || notes[domain.id] || '';
+          
+          const response = await fetch('/api/workflows', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({
+              clientId: client.id,
+              title: `Guest Post - ${domain.domain}`,
+              description: `Auto-generated workflow for ${domain.domain}${domainNotes ? `\n\nNotes: ${domainNotes}` : ''}`,
+              status: 'draft',
+              guestPostSite: domain.domain,
+              steps: []
+            })
+          });
+          
+          if (response.ok) {
+            const workflow = await response.json();
+            
+            // Update domain to mark as having workflow
+            await fetch(`/api/clients/${params.id}/bulk-analysis/${domainId}`, {
+              method: 'PUT',
+              headers: { 'Content-Type': 'application/json' },
+              body: JSON.stringify({ 
+                status: domain.qualificationStatus,
+                userId: AuthService.getSession()?.userId,
+                workflowId: workflow.id,
+                hasWorkflow: true
+              })
+            });
+            
+            successCount++;
+          } else {
+            throw new Error('Failed to create workflow');
+          }
+        } catch (error) {
+          console.error(`Failed to create workflow for ${domain.domain}:`, error);
+          failureCount++;
+        }
+      }
+      
+      // Update local state
+      setDomains(prevDomains => 
+        prevDomains.map(d => {
+          if (domainIds.includes(d.id)) {
+            return { ...d, hasWorkflow: true };
+          }
+          return d;
+        })
+      );
+      
+      // Clear selection
+      setSelectedDomains(new Set());
+      
+      if (failureCount === 0) {
+        setMessage(`✅ Successfully created ${successCount} workflows`);
+      } else {
+        setMessage(`⚠️ Created ${successCount} workflows, ${failureCount} failed`);
+      }
+      
+    } catch (error) {
+      console.error('Bulk workflow creation error:', error);
+      setMessage('❌ Failed to create workflows');
+    } finally {
+      setBulkWorkflowCreating(false);
+      setBulkWorkflowProgress({ current: 0, total: 0 });
+    }
   };
 
   const deleteDomain = async (domainId: string) => {
@@ -1342,6 +1433,8 @@ export default function BulkAnalysisPage() {
                       manualKeywords={manualKeywords}
                       triageMode={triageMode}
                       onToggleTriageMode={() => setTriageMode(!triageMode)}
+                      onBulkCreateWorkflows={bulkCreateWorkflows}
+                      bulkWorkflowCreating={bulkWorkflowCreating}
                     />
                     
                     {/* Show More Button */}
