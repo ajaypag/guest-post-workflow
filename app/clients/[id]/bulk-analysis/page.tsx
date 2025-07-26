@@ -475,6 +475,10 @@ export default function BulkAnalysisPage() {
   };
 
   const startBulkDataForSeoAnalysis = async () => {
+    console.log('startBulkDataForSeoAnalysis called');
+    console.log('selectedDomains.size:', selectedDomains.size);
+    console.log('keywordInputMode:', keywordInputMode);
+
     if (selectedDomains.size === 0) {
       setMessage('Please select domains to analyze');
       return;
@@ -487,21 +491,40 @@ export default function BulkAnalysisPage() {
         .split(',')
         .map(k => k.trim())
         .filter(k => k.length > 0);
+      console.log('Manual keywords found:', keywords);
     } else if (keywordInputMode === 'target-pages') {
-      // Collect all keywords from selected target pages
-      const selectedPages = targetPages.filter(p => selectedTargetPages.includes(p.id));
+      // Get keywords from domains' target pages
+      const selectedDomainsList = domains.filter(d => selectedDomains.has(d.id));
       const keywordSet = new Set<string>();
       
-      selectedPages.forEach(page => {
-        const pageKeywords = (page as any).keywords?.split(',').map((k: string) => k.trim()) || [];
-        pageKeywords.forEach((k: string) => keywordSet.add(k));
+      // Collect keywords from each domain's target pages
+      selectedDomainsList.forEach(domain => {
+        if (domain.targetPageIds && domain.targetPageIds.length > 0) {
+          // Get keywords from this domain's target pages
+          const domainTargetPages = targetPages.filter(p => domain.targetPageIds.includes(p.id));
+          domainTargetPages.forEach(page => {
+            const pageKeywords = (page as any).keywords?.split(',').map((k: string) => k.trim()) || [];
+            pageKeywords.forEach((k: string) => keywordSet.add(k));
+          });
+        }
       });
       
+      // If no keywords found from domains' target pages, use all target pages' keywords
+      if (keywordSet.size === 0 && targetPages.length > 0) {
+        console.log('No keywords from domain target pages, using all target pages');
+        targetPages.forEach(page => {
+          const pageKeywords = (page as any).keywords?.split(',').map((k: string) => k.trim()) || [];
+          pageKeywords.forEach((k: string) => keywordSet.add(k));
+        });
+      }
+      
       keywords = Array.from(keywordSet);
+      console.log('Target page keywords found:', keywords);
     }
 
     if (keywords.length === 0) {
-      setMessage('No keywords found. Please select target pages with keywords or enter manual keywords.');
+      console.log('No keywords found!');
+      setMessage('No keywords found. Please ensure target pages have keywords or enter manual keywords.');
       return;
     }
 
@@ -512,6 +535,7 @@ export default function BulkAnalysisPage() {
       selected: true // Default all clusters to selected
     }));
     
+    console.log('Keyword clusters:', clustersWithSelection);
     setKeywordClusters(clustersWithSelection);
     setShowKeywordClusters(true);
     setMessage(`Found ${keywords.length} keywords grouped into ${groups.length} clusters`);
