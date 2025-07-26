@@ -66,13 +66,17 @@ export async function POST(request: Request) {
     console.log('Testing manual keyword domain creation...');
     console.log('Input:', { testDomains, manualKeywords });
 
+    // First create a test project
+    const testProjectId = 'test-project-' + Date.now();
+    
     // Call the service method
     const result = await BulkAnalysisService.createOrUpdateDomains({
       clientId: testClientId,
       domains: testDomains,
       targetPageIds: [], // Empty array for manual keywords mode
       manualKeywords: manualKeywords,
-      userId: 'test-user'
+      userId: 'test-user',
+      projectId: testProjectId
     });
 
     console.log('Service result:', result);

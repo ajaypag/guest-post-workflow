@@ -20,13 +20,11 @@ export async function GET(
     const hasWorkflow = searchParams.get('hasWorkflow') === 'true' ? true : 
                        searchParams.get('hasWorkflow') === 'false' ? false : undefined;
     const search = searchParams.get('search') || undefined;
-    const projectId = searchParams.get('projectId');
-    // Special handling for 'null' string to find orphaned domains
-    const projectFilter = projectId === 'null' ? null : projectId || undefined;
+    const projectId = searchParams.get('projectId') || undefined;
     
     // Support legacy endpoint without pagination for backward compatibility
     if (!searchParams.get('page')) {
-      const domains = await BulkAnalysisService.getClientDomains(id, projectFilter);
+      const domains = await BulkAnalysisService.getClientDomains(id, projectId);
       return NextResponse.json({ domains });
     }
     
@@ -39,7 +37,7 @@ export async function GET(
         qualificationStatus,
         hasWorkflow,
         search,
-        projectId: projectFilter
+        projectId
       },
       sortBy,
       sortOrder
@@ -82,6 +80,14 @@ export async function POST(
     if (targetPageIds.length === 0 && !manualKeywords) {
       return NextResponse.json(
         { error: 'Either target pages or manual keywords must be provided' },
+        { status: 400 }
+      );
+    }
+
+    // Require projectId for new domains
+    if (!projectId) {
+      return NextResponse.json(
+        { error: 'Project ID is required. Please select a project for your domains.' },
         { status: 400 }
       );
     }

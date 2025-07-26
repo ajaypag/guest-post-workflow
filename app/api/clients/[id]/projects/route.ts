@@ -1,7 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { db } from '@/lib/db/connection';
 import { bulkAnalysisProjects, bulkAnalysisDomains } from '@/lib/db/bulkAnalysisSchema';
-import { eq, and, sql, desc, isNull } from 'drizzle-orm';
+import { eq, and, sql, desc } from 'drizzle-orm';
 import { randomUUID } from 'crypto';
 
 // GET /api/clients/[id]/projects - List all projects for a client
@@ -48,22 +48,16 @@ export async function GET(
       .where(eq(bulkAnalysisProjects.clientId, clientId))
       .orderBy(desc(bulkAnalysisProjects.updatedAt));
 
-    // Also get orphaned domains count (domains without a project)
-    const [orphanStats] = await db
-      .select({
-        count: sql<number>`COUNT(*)`.as('count')
-      })
-      .from(bulkAnalysisDomains)
-      .where(
-        and(
-          eq(bulkAnalysisDomains.clientId, clientId),
-          isNull(bulkAnalysisDomains.projectId)
-        )
-      );
+    // Check if client has any projects, create default if not
+    if (projects.length === 0) {
+      const defaultProject = await createDefaultProject(clientId);
+      if (defaultProject) {
+        projects.push(defaultProject);
+      }
+    }
 
     return NextResponse.json({ 
-      projects,
-      orphanedDomainsCount: orphanStats?.count || 0
+      projects
     });
 
   } catch (error: any) {
@@ -142,5 +136,37 @@ export async function POST(
       { error: 'Failed to create project', details: error.message },
       { status: 500 }
     );
+  }
+}
+
+// Helper function to create default project
+async function createDefaultProject(clientId: string) {
+  try {
+    const projectId = randomUUID();
+    const [defaultProject] = await db
+      .insert(bulkAnalysisProjects)
+      .values({
+        id: projectId,
+        clientId,
+        name: 'My First Project',
+        description: 'Default project for organizing your domains',
+        color: '#6366f1',
+        icon: '🚀',
+        autoApplyKeywords: [],
+        tags: [],
+        createdAt: new Date(),
+        updatedAt: new Date()
+      })
+      .returning();
+
+    // Add the computed fields that are expected in the response
+    return {
+      ...defaultProject,
+      analyzedCount: 0,
+      pendingCount: 0
+    };
+  } catch (error) {
+    console.error('Error creating default project:', error);
+    return null;
   }
 }

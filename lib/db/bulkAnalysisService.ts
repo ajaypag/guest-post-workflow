@@ -1,7 +1,7 @@
 import { db } from './connection';
 import { targetPages, TargetPage } from './schema';
 import { bulkAnalysisDomains, BulkAnalysisDomain } from './bulkAnalysisSchema';
-import { eq, and, inArray, sql, ne, desc, asc, or, like, isNull } from 'drizzle-orm';
+import { eq, and, inArray, sql, ne, desc, asc, or, like } from 'drizzle-orm';
 import { v4 as uuidv4 } from 'uuid';
 
 export interface BulkAnalysisInput {
@@ -10,7 +10,7 @@ export interface BulkAnalysisInput {
   targetPageIds: string[];
   userId: string;
   manualKeywords?: string;
-  projectId?: string;
+  projectId: string;
 }
 
 export interface BulkAnalysisResult extends BulkAnalysisDomain {
@@ -22,7 +22,7 @@ export interface BulkAnalysisFilter {
   qualificationStatus?: 'pending' | 'high_quality' | 'average_quality' | 'disqualified' | 'qualified_any';
   hasWorkflow?: boolean;
   search?: string;
-  projectId?: string | null;
+  projectId?: string;
 }
 
 export interface PaginatedResult<T> {
@@ -49,16 +49,12 @@ export class BulkAnalysisService {
   /**
    * Get all bulk analysis domains for a client
    */
-  static async getClientDomains(clientId: string, projectId?: string | null): Promise<BulkAnalysisResult[]> {
+  static async getClientDomains(clientId: string, projectId?: string): Promise<BulkAnalysisResult[]> {
     try {
       const conditions = [eq(bulkAnalysisDomains.clientId, clientId)];
       
       if (projectId !== undefined) {
-        if (projectId === null) {
-          conditions.push(isNull(bulkAnalysisDomains.projectId));
-        } else {
-          conditions.push(eq(bulkAnalysisDomains.projectId, projectId));
-        }
+        conditions.push(eq(bulkAnalysisDomains.projectId, projectId));
       }
       
       const domains = await db
@@ -143,8 +139,8 @@ export class BulkAnalysisService {
         checkedBy: null,
         checkedAt: null,
         notes: null,
-        projectId: projectId || null,
-        projectAddedAt: projectId ? new Date() : null,
+        projectId: projectId,
+        projectAddedAt: new Date(),
         createdAt: new Date(),
         updatedAt: new Date(),
       }));
@@ -351,11 +347,7 @@ export class BulkAnalysisService {
       const conditions = [eq(bulkAnalysisDomains.clientId, clientId)];
       
       if (filters?.projectId !== undefined) {
-        if (filters.projectId === null) {
-          conditions.push(isNull(bulkAnalysisDomains.projectId));
-        } else {
-          conditions.push(eq(bulkAnalysisDomains.projectId, filters.projectId));
-        }
+        conditions.push(eq(bulkAnalysisDomains.projectId, filters.projectId));
       }
       
       if (filters?.qualificationStatus) {

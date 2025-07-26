@@ -47,7 +47,6 @@ export default function BulkAnalysisPage() {
   const [domainText, setDomainText] = useState('');
   const [domains, setDomains] = useState<BulkAnalysisDomain[]>([]);
   const [projects, setProjects] = useState<BulkAnalysisProject[]>([]);
-  const [orphanedDomainsCount, setOrphanedDomainsCount] = useState(0);
   const [showProjectForm, setShowProjectForm] = useState(false);
   const [newProjectName, setNewProjectName] = useState('');
   const [newProjectDescription, setNewProjectDescription] = useState('');
@@ -171,7 +170,6 @@ export default function BulkAnalysisPage() {
       if (response.ok) {
         const data = await response.json();
         setProjects(data.projects || []);
-        setOrphanedDomainsCount(data.orphanedDomainsCount || 0);
       }
     } catch (error) {
       console.error('Error loading projects:', error);
@@ -1048,30 +1046,6 @@ export default function BulkAnalysisPage() {
               </div>
             )}
 
-            {/* Orphaned Domains Notice */}
-            {orphanedDomainsCount > 0 && (
-              <div className="mt-6 p-4 bg-yellow-50 border border-yellow-200 rounded-lg">
-                <div className="flex items-center justify-between">
-                  <div>
-                    <p className="text-sm font-medium text-yellow-800">
-                      {orphanedDomainsCount} domains without a project
-                    </p>
-                    <p className="text-xs text-yellow-700 mt-1">
-                      These domains were added before the project system. Assign them to a project to organize your analysis.
-                    </p>
-                  </div>
-                  <button
-                    onClick={() => {
-                      // Navigate to a special view for orphaned domains
-                      router.push(`/clients/${params.id}/bulk-analysis/orphaned`);
-                    }}
-                    className="px-3 py-2 bg-yellow-600 text-white text-sm rounded hover:bg-yellow-700"
-                  >
-                    View Orphaned
-                  </button>
-                </div>
-              </div>
-            )}
           </div>
               {/* Keyword Source Selection */}
               <div className="bg-white rounded-lg shadow p-6 mb-6">
