@@ -11,6 +11,7 @@ import { Client, TargetPage } from '@/types/user';
 import { groupKeywordsByTopic, generateGroupedAhrefsUrls } from '@/lib/utils/keywordGroupingV2';
 import DataForSeoResultsModal from '@/components/DataForSeoResultsModal';
 import BulkAnalysisResultsModal from '@/components/BulkAnalysisResultsModal';
+import AIQualificationModal from '@/components/AIQualificationModal';
 import BulkAnalysisTutorial from '@/components/BulkAnalysisTutorial';
 import { 
   ArrowLeft, 
@@ -107,6 +108,10 @@ export default function BulkAnalysisPage() {
     selected: boolean;
   }>>([]);
   
+  // AI Qualification state
+  const [showAIQualification, setShowAIQualification] = useState(false);
+  const [aiQualificationDomains, setAIQualificationDomains] = useState<Array<{ id: string; domain: string }>>([]);
+  
   // Reset pagination when filters change
   useEffect(() => {
     setDisplayLimit(ITEMS_PER_PAGE);
@@ -176,6 +181,22 @@ export default function BulkAnalysisPage() {
   };
 
   const clearSelection = () => {
+    setSelectedDomains(new Set());
+  };
+
+  const startAIQualification = () => {
+    const selectedDomainList = domains
+      .filter(d => selectedDomains.has(d.id))
+      .map(d => ({ id: d.id, domain: d.domain }));
+    
+    setAIQualificationDomains(selectedDomainList);
+    setShowAIQualification(true);
+  };
+
+  const handleAIQualificationComplete = async (results: any[]) => {
+    // Reload domains to get updated qualifications
+    await loadDomains();
+    setMessage(`✅ AI qualification applied to ${results.length} domains`);
     setSelectedDomains(new Set());
   };
 
@@ -1101,14 +1122,26 @@ export default function BulkAnalysisPage() {
                     </div>
                     <div className="flex items-center gap-2">
                       {!hideExperimentalFeatures && (
-                        <button
-                          onClick={startBulkDataForSeoAnalysis}
-                          disabled={bulkAnalysisRunning}
-                          className="inline-flex items-center px-4 py-2 bg-indigo-600 text-white text-sm rounded-lg hover:bg-indigo-700 disabled:opacity-50 disabled:cursor-not-allowed"
-                        >
-                          <Search className="w-4 h-4 mr-2" />
-                          {bulkAnalysisRunning ? 'Analyzing...' : 'Analyze Selected with DataForSEO'}
-                        </button>
+                        <>
+                          <button
+                            onClick={startBulkDataForSeoAnalysis}
+                            disabled={bulkAnalysisRunning}
+                            className="inline-flex items-center px-4 py-2 bg-indigo-600 text-white text-sm rounded-lg hover:bg-indigo-700 disabled:opacity-50 disabled:cursor-not-allowed"
+                          >
+                            <Search className="w-4 h-4 mr-2" />
+                            {bulkAnalysisRunning ? 'Analyzing...' : 'Analyze Selected with DataForSEO'}
+                          </button>
+                          <button
+                            onClick={startAIQualification}
+                            disabled={bulkAnalysisRunning}
+                            className="inline-flex items-center px-4 py-2 bg-purple-600 text-white text-sm rounded-lg hover:bg-purple-700 disabled:opacity-50 disabled:cursor-not-allowed"
+                          >
+                            <svg className="w-4 h-4 mr-2" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13 10V3L4 14h7v7l9-11h-7z" />
+                            </svg>
+                            AI Qualify Selected
+                          </button>
+                        </>
                       )}
                       <button
                         onClick={() => {
@@ -1601,6 +1634,17 @@ export default function BulkAnalysisPage() {
           onClose={() => setBulkResultsModal({ isOpen: false, jobId: '', analyzedDomains: [] })}
           jobId={bulkResultsModal.jobId}
           domains={bulkResultsModal.analyzedDomains}
+        />
+      )}
+
+      {/* AI Qualification Modal */}
+      {showAIQualification && (
+        <AIQualificationModal
+          isOpen={showAIQualification}
+          onClose={() => setShowAIQualification(false)}
+          clientId={params.id as string}
+          domains={aiQualificationDomains}
+          onComplete={handleAIQualificationComplete}
         />
       )}
     </AuthWrapper>
