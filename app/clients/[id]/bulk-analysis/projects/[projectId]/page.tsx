@@ -28,6 +28,7 @@ import {
   Plus,
   RotateCcw,
   Trash2,
+  ChevronDown,
   Search,
   Download,
   Folder,
@@ -113,6 +114,9 @@ export default function ProjectDetailPage() {
   // Bulk workflow creation state
   const [bulkWorkflowCreating, setBulkWorkflowCreating] = useState(false);
   const [bulkWorkflowProgress, setBulkWorkflowProgress] = useState({ current: 0, total: 0 });
+  
+  // Bulk status update state
+  const [showBulkStatusMenu, setShowBulkStatusMenu] = useState(false);
   
   // Reset pagination when filters change
   useEffect(() => {
@@ -769,6 +773,55 @@ export default function ProjectDetailPage() {
     }
   };
 
+  const handleBulkStatusUpdate = async (status: 'high_quality' | 'average_quality' | 'disqualified') => {
+    try {
+      setShowBulkStatusMenu(false);
+      setLoading(true);
+      
+      const domainIds = Array.from(selectedDomains);
+      
+      const response = await fetch(`/api/clients/${params.id}/bulk-analysis/bulk`, {
+        method: 'PUT',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          domainIds,
+          status,
+          action: 'updateStatus'
+        })
+      });
+
+      if (!response.ok) {
+        throw new Error('Failed to update domains');
+      }
+
+      const result = await response.json();
+      
+      // Update local state
+      setDomains(prev => prev.map(domain => {
+        if (selectedDomains.has(domain.id)) {
+          return {
+            ...domain,
+            qualificationStatus: status,
+            checkedBy: 'system',
+            checkedAt: new Date().toISOString()
+          };
+        }
+        return domain;
+      }));
+      
+      setMessage(`✅ Updated ${result.updated} domains to ${status.replace('_', ' ')}`);
+      clearSelection();
+      
+      // Reload project stats
+      loadProject();
+    } catch (error) {
+      console.error('Error updating domains:', error);
+      setMessage('❌ Failed to update domain status');
+    } finally {
+      setLoading(false);
+    }
+  };
+
   if (!client || !project) {
     return (
       <AuthWrapper>
@@ -1325,6 +1378,44 @@ anotherdomain.com"
                         <Download className="w-4 h-4 mr-2" />
                         Export Selected
                       </button>
+                      
+                      {/* Bulk Status Update Dropdown */}
+                      <div className="relative">
+                        <button
+                          onClick={() => setShowBulkStatusMenu(!showBulkStatusMenu)}
+                          className="inline-flex items-center px-4 py-2 bg-blue-600 text-white text-sm rounded-lg hover:bg-blue-700"
+                        >
+                          <CheckCircle className="w-4 h-4 mr-2" />
+                          Update Status
+                          <ChevronDown className="w-4 h-4 ml-2" />
+                        </button>
+                        
+                        {showBulkStatusMenu && (
+                          <div className="absolute right-0 mt-2 w-48 bg-white rounded-lg shadow-lg border border-gray-200 z-10">
+                            <button
+                              onClick={() => handleBulkStatusUpdate('high_quality')}
+                              className="w-full text-left px-4 py-2 text-sm hover:bg-gray-50 flex items-center gap-2"
+                            >
+                              <CheckCircle className="w-4 h-4 text-green-600" />
+                              High Quality
+                            </button>
+                            <button
+                              onClick={() => handleBulkStatusUpdate('average_quality')}
+                              className="w-full text-left px-4 py-2 text-sm hover:bg-gray-50 flex items-center gap-2"
+                            >
+                              <AlertCircle className="w-4 h-4 text-yellow-600" />
+                              Average Quality
+                            </button>
+                            <button
+                              onClick={() => handleBulkStatusUpdate('disqualified')}
+                              className="w-full text-left px-4 py-2 text-sm hover:bg-gray-50 flex items-center gap-2 border-t"
+                            >
+                              <XCircle className="w-4 h-4 text-red-600" />
+                              Disqualified
+                            </button>
+                          </div>
+                        )}
+                      </div>
                     </div>
                   </div>
                 </div>
