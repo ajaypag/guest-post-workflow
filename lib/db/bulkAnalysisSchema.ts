@@ -21,6 +21,9 @@ export const bulkAnalysisDomains = pgTable('bulk_analysis_domains', {
   dataForSeoLastAnalyzed: timestamp('dataforseo_last_analyzed'),
   aiQualificationReasoning: text('ai_qualification_reasoning'),
   aiQualifiedAt: timestamp('ai_qualified_at'),
+  wasManuallyQualified: boolean('was_manually_qualified').default(false),
+  manuallyQualifiedBy: uuid('manually_qualified_by').references(() => users.id),
+  manuallyQualifiedAt: timestamp('manually_qualified_at'),
   createdAt: timestamp('created_at').notNull(),
   updatedAt: timestamp('updated_at').notNull(),
 });

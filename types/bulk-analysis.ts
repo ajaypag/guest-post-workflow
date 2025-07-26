@@ -15,5 +15,8 @@ export interface BulkAnalysisDomain {
   dataForSeoLastAnalyzed?: string;
   aiQualificationReasoning?: string;
   aiQualifiedAt?: string;
+  wasManuallyQualified?: boolean;
+  manuallyQualifiedBy?: string;
+  manuallyQualifiedAt?: string;
   selectedTargetPageId?: string;
 }

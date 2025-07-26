@@ -264,7 +264,7 @@ export default function BulkAnalysisPage() {
     }
   };
 
-  const updateQualificationStatus = async (domainId: string, status: 'high_quality' | 'average_quality' | 'disqualified') => {
+  const updateQualificationStatus = async (domainId: string, status: 'high_quality' | 'average_quality' | 'disqualified', isManual?: boolean) => {
     try {
       const session = AuthService.getSession();
       if (!session) {
@@ -276,7 +276,7 @@ export default function BulkAnalysisPage() {
       const response = await fetch(`/api/clients/${params.id}/bulk-analysis/${domainId}`, {
         method: 'PUT',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ status, userId: session.userId, notes: domainNotes })
+        body: JSON.stringify({ status, userId: session.userId, notes: domainNotes, isManual })
       });
 
       if (response.ok) {
@@ -284,7 +284,16 @@ export default function BulkAnalysisPage() {
         setDomains(prevDomains => 
           prevDomains.map(domain => 
             domain.id === domainId 
-              ? { ...domain, qualificationStatus: status, checkedBy: session.userId, checkedAt: new Date().toISOString(), notes: domainNotes }
+              ? { 
+                  ...domain, 
+                  qualificationStatus: status, 
+                  checkedBy: session.userId, 
+                  checkedAt: new Date().toISOString(), 
+                  notes: domainNotes,
+                  wasManuallyQualified: isManual || false,
+                  manuallyQualifiedBy: isManual ? session.userId : domain.manuallyQualifiedBy,
+                  manuallyQualifiedAt: isManual ? new Date().toISOString() : domain.manuallyQualifiedAt
+                }
               : domain
           )
         );

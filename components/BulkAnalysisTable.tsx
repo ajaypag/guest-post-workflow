@@ -34,7 +34,7 @@ interface BulkAnalysisTableProps {
   onToggleSelection: (domainId: string) => void;
   onSelectAll: (domainIds: string[]) => void;
   onClearSelection: () => void;
-  onUpdateStatus: (domainId: string, status: 'high_quality' | 'average_quality' | 'disqualified') => void;
+  onUpdateStatus: (domainId: string, status: 'high_quality' | 'average_quality' | 'disqualified', isManual?: boolean) => void;
   onCreateWorkflow: (domain: BulkAnalysisDomain) => void;
   onDeleteDomain: (domainId: string) => void;
   onAnalyzeWithDataForSeo: (domain: BulkAnalysisDomain) => void;
@@ -1067,16 +1067,38 @@ export default function BulkAnalysisTable(props: BulkAnalysisTableProps) {
                           <div className="flex items-center justify-between pt-4 border-t">
                             <div className="flex items-center gap-2">
                               {domain.qualificationStatus !== 'pending' && (
-                                <button
-                                  onClick={(e) => {
-                                    e.stopPropagation();
-                                    props.onUpdateStatus(domain.id, 'pending' as any);
-                                  }}
-                                  className="inline-flex items-center px-4 py-2 bg-gray-600 text-white text-sm rounded-lg hover:bg-gray-700"
-                                >
-                                  <RotateCcw className="w-4 h-4 mr-2" />
-                                  Reset to Pending
-                                </button>
+                                <>
+                                  <button
+                                    onClick={(e) => {
+                                      e.stopPropagation();
+                                      props.onUpdateStatus(domain.id, 'pending' as any);
+                                    }}
+                                    className="inline-flex items-center px-4 py-2 bg-gray-600 text-white text-sm rounded-lg hover:bg-gray-700"
+                                  >
+                                    <RotateCcw className="w-4 h-4 mr-2" />
+                                    Reset to Pending
+                                  </button>
+                                  {domain.aiQualificationReasoning && (
+                                    <div className="flex items-center gap-2">
+                                      <span className="text-xs text-gray-500">
+                                        {domain.wasManuallyQualified ? '👤 Human Modified' : '🤖 AI Qualified'}
+                                      </span>
+                                      <select
+                                        value={domain.qualificationStatus}
+                                        onChange={(e) => {
+                                          e.stopPropagation();
+                                          props.onUpdateStatus(domain.id, e.target.value as any, true);
+                                        }}
+                                        onClick={(e) => e.stopPropagation()}
+                                        className="px-3 py-1 text-sm border border-gray-300 rounded-lg focus:ring-2 focus:ring-indigo-500 focus:border-transparent"
+                                      >
+                                        <option value="high_quality">High Quality</option>
+                                        <option value="average_quality">Average Quality</option>
+                                        <option value="disqualified">Disqualified</option>
+                                      </select>
+                                    </div>
+                                  )}
+                                </>
                               )}
                             </div>
                             <div className="text-xs text-gray-500">

@@ -170,18 +170,28 @@ export class BulkAnalysisService {
     domainId: string,
     status: 'pending' | 'high_quality' | 'average_quality' | 'disqualified',
     userId: string,
-    notes?: string
+    notes?: string,
+    isManual?: boolean
   ): Promise<BulkAnalysisDomain> {
     try {
+      const updateData: any = {
+        qualificationStatus: status,
+        checkedBy: userId,
+        checkedAt: new Date(),
+        notes: notes || null,
+        updatedAt: new Date(),
+      };
+
+      // If this is a manual qualification change, track it
+      if (isManual) {
+        updateData.wasManuallyQualified = true;
+        updateData.manuallyQualifiedBy = userId;
+        updateData.manuallyQualifiedAt = new Date();
+      }
+
       const [updated] = await db
         .update(bulkAnalysisDomains)
-        .set({
-          qualificationStatus: status,
-          checkedBy: userId,
-          checkedAt: new Date(),
-          notes: notes || null,
-          updatedAt: new Date(),
-        })
+        .set(updateData)
         .where(eq(bulkAnalysisDomains.id, domainId))
         .returning();
 

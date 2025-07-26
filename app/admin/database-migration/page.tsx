@@ -2304,6 +2304,9 @@ export default function DatabaseMigrationPage() {
                     <li>• <code>dataForSeoLastAnalyzed</code> - Timestamp of last DataForSEO analysis</li>
                     <li>• <code>aiQualificationReasoning</code> - Stores AI qualification reasoning text</li>
                     <li>• <code>aiQualifiedAt</code> - Timestamp of AI qualification</li>
+                    <li>• <code>wasManuallyQualified</code> - Boolean tracking if qualification was manually edited</li>
+                    <li>• <code>manuallyQualifiedBy</code> - User ID of who manually edited the qualification</li>
+                    <li>• <code>manuallyQualifiedAt</code> - Timestamp of manual qualification edit</li>
                     <li>• Shows "DataForSEO" and "AI" badges in the datasources column</li>
                   </ul>
                 </div>
