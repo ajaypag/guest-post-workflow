@@ -13,6 +13,7 @@ import DataForSeoResultsModal from '@/components/DataForSeoResultsModal';
 import BulkAnalysisResultsModal from '@/components/BulkAnalysisResultsModal';
 import AIQualificationModal from '@/components/AIQualificationModal';
 import BulkAnalysisTutorial from '@/components/BulkAnalysisTutorial';
+import BulkAnalysisTable from '@/components/BulkAnalysisTable';
 import { 
   ArrowLeft, 
   Target, 
@@ -29,19 +30,7 @@ import {
   Download
 } from 'lucide-react';
 
-interface BulkAnalysisDomain {
-  id: string;
-  domain: string;
-  qualificationStatus: 'pending' | 'high_quality' | 'average_quality' | 'disqualified';
-  keywordCount: number;
-  targetPageIds: string[];
-  checkedBy?: string;
-  checkedAt?: string;
-  notes?: string;
-  hasWorkflow?: boolean;
-  workflowId?: string;
-  workflowCreatedAt?: string;
-}
+import { BulkAnalysisDomain } from '@/types/bulk-analysis';
 
 export default function BulkAnalysisPage() {
   const params = useParams();
@@ -158,7 +147,12 @@ export default function BulkAnalysisPage() {
       const response = await fetch(`/api/clients/${params.id}/bulk-analysis`);
       if (response.ok) {
         const data = await response.json();
-        setDomains(data.domains || []);
+        // Add clientId to each domain
+        const domainsWithClientId = (data.domains || []).map((d: any) => ({
+          ...d,
+          clientId: params.id
+        }));
+        setDomains(domainsWithClientId);
       }
     } catch (error) {
       console.error('Error loading domains:', error);
@@ -1267,347 +1261,105 @@ export default function BulkAnalysisPage() {
                 </div>
               )}
 
-              <div className="grid gap-4">
-                {(() => {
-                  const filteredDomains = domains.filter(domain => {
-                    // Status filter
-                    if (statusFilter !== 'all' && domain.qualificationStatus !== statusFilter) return false;
-                    
-                    // Workflow filter
-                    if (workflowFilter === 'has_workflow' && !domain.hasWorkflow) return false;
-                    if (workflowFilter === 'no_workflow' && domain.hasWorkflow) return false;
-                    
-                    // Search filter
-                    if (searchQuery && !domain.domain.toLowerCase().includes(searchQuery.toLowerCase())) return false;
-                    
-                    return true;
-                  });
+              {/* Domain Table */}
+              {(() => {
+                const filteredDomains = domains.filter(domain => {
+                  // Status filter
+                  if (statusFilter !== 'all' && domain.qualificationStatus !== statusFilter) return false;
                   
-                  const paginatedDomains = filteredDomains.slice(0, displayLimit);
-                  const hasMore = filteredDomains.length > displayLimit;
+                  // Workflow filter
+                  if (workflowFilter === 'has_workflow' && !domain.hasWorkflow) return false;
+                  if (workflowFilter === 'no_workflow' && domain.hasWorkflow) return false;
                   
-                  return (
-                    <>
-                      {paginatedDomains.map((domain) => {
-                  // Get keywords based on mode
-                  let keywords: Set<string>;
-                  if (keywordInputMode === 'manual') {
-                    // Use manual keywords
-                    keywords = new Set(
-                      manualKeywords
-                        .split(',')
-                        .map(k => k.trim())
-                        .filter(k => k.length > 0)
-                    );
-                  } else {
-                    // Get keywords for this domain's target pages
-                    keywords = targetPages
-                      .filter(p => domain.targetPageIds.includes(p.id))
-                      .reduce((acc, p) => {
-                        const pageKeywords = (p as any).keywords?.split(',').map((k: string) => k.trim()) || [];
-                        pageKeywords.forEach((k: string) => acc.add(k));
-                        return acc;
-                      }, new Set<string>());
-                  }
+                  // Search filter
+                  if (searchQuery && !domain.domain.toLowerCase().includes(searchQuery.toLowerCase())) return false;
                   
-                  const keywordArray = Array.from(keywords);
-                  
-                  // Group keywords by topical relevance
-                  const keywordGroups = groupKeywordsByTopic(keywordArray);
-                  const groupedUrls = generateGroupedAhrefsUrls(domain.domain, keywordGroups, selectedPositionRange);
-                  
-                  return (
-                    <div key={domain.id} className="border rounded-lg p-4">
-                      <div className="flex items-start justify-between">
-                        <div className="flex items-start gap-3">
-                          <input
-                            type="checkbox"
-                            checked={selectedDomains.has(domain.id)}
-                            onChange={() => toggleDomainSelection(domain.id)}
-                            className="mt-1 w-4 h-4 text-indigo-600 rounded border-gray-300 focus:ring-indigo-500"
-                          />
-                          <div className="flex-1">
-                            <h3 className="font-medium text-lg">{domain.domain}</h3>
-                          <p className="text-sm text-gray-500 mt-1">
-                            {domain.keywordCount} keywords • 
-                            {domain.targetPageIds.length} target pages
-                          </p>
-                          
-                          <div className="mt-3">
-                            {/* Keyword groups */}
-                            {groupedUrls.length > 0 ? (
-                              <div>
-                                <div className="space-y-2">
-                                  {groupedUrls.map((group, index) => (
-                                    <div key={index} className="flex items-center gap-2">
-                                      <a
-                                        href={group.url}
-                                        target="_blank"
-                                        rel="noopener noreferrer"
-                                        className={`inline-flex items-center px-3 py-1 text-white text-sm rounded hover:opacity-90 transition-opacity ${
-                                          group.relevance === 'core' 
-                                            ? 'bg-green-600' 
-                                            : group.relevance === 'related'
-                                            ? 'bg-blue-600'
-                                            : 'bg-gray-600'
-                                        }`}
-                                      >
-                                        <ExternalLink className="w-3 h-3 mr-1" />
-                                        {group.name}
-                                      </a>
-                                      <span className="text-xs text-gray-500">
-                                        {group.keywordCount} keywords
-                                      </span>
-                                      {group.relevance === 'core' && (
-                                        <span className="text-xs px-2 py-0.5 bg-green-100 text-green-800 rounded">Premium</span>
-                                      )}
-                                      {group.relevance === 'related' && (
-                                        <span className="text-xs px-2 py-0.5 bg-blue-100 text-blue-800 rounded">Good</span>
-                                      )}
-                                    </div>
-                                  ))}
-                                </div>
-                                
-                                {/* Action buttons - Open All, Open Premium, DataForSEO */}
-                                <div className="mt-2 flex flex-wrap gap-2">
-                                  {groupedUrls.length > 1 && (
-                                    <>
-                                      <button
-                                        onClick={() => {
-                                          // Reverse order so user lands on first tab
-                                          [...groupedUrls].reverse().forEach((group, index) => {
-                                            setTimeout(() => {
-                                              window.open(group.url, '_blank');
-                                            }, index * 200); // Small delay to prevent popup blocker
-                                          });
-                                        }}
-                                        className="inline-flex items-center px-3 py-1 bg-purple-600 text-white text-sm rounded hover:bg-purple-700"
-                                      >
-                                        <ExternalLink className="w-3 h-3 mr-1" />
-                                        Open All ({groupedUrls.length})
-                                      </button>
-                                      
-                                      {groupedUrls.filter(g => g.relevance === 'core').length > 0 && (
-                                        <button
-                                          onClick={() => {
-                                            // Reverse order so user lands on first tab
-                                            [...groupedUrls]
-                                              .filter(g => g.relevance === 'core')
-                                              .reverse()
-                                              .forEach((group, index) => {
-                                                setTimeout(() => {
-                                                  window.open(group.url, '_blank');
-                                                }, index * 200);
-                                              });
-                                          }}
-                                          className="inline-flex items-center px-3 py-1 bg-green-600 text-white text-sm rounded hover:bg-green-700"
-                                        >
-                                          <ExternalLink className="w-3 h-3 mr-1" />
-                                          Open Premium ({groupedUrls.filter(g => g.relevance === 'core').length})
-                                        </button>
-                                      )}
-                                    </>
-                                  )}
-                                  
-                                  {/* DataForSEO button only if experimental features enabled */}
-                                  {!hideExperimentalFeatures && (
-                                    <button
-                                      onClick={() => {
-                                        console.log('DataForSEO button onClick triggered');
-                                        analyzeWithDataForSeo(domain);
-                                      }}
-                                      disabled={loading}
-                                      className="inline-flex items-center px-3 py-1 bg-indigo-600 text-white text-sm rounded hover:bg-indigo-700 disabled:opacity-50 disabled:cursor-not-allowed"
-                                      title={`Analyze ${domain.domain} with DataForSEO`}
-                                    >
-                                      <Search className="w-3 h-3 mr-1" />
-                                      {loading ? 'Loading...' : 'DataForSEO'}
-                                    </button>
-                                  )}
-                                </div>
-                              </div>
-                            ) : (
-                              <span className="text-sm text-gray-500">No keywords available</span>
-                            )}
-                          </div>
-                          </div>
-                        </div>
-                        
-                        <div className="ml-4 flex items-start space-x-4">
-                          {/* Notes section - more compact */}
-                          <div className="flex-1">
-                            <div className="relative">
-                              <textarea
-                                value={notes[domain.id] || domain.notes || ''}
-                                onChange={(e) => setNotes({ ...notes, [domain.id]: e.target.value })}
-                                placeholder="Notes..."
-                                className="w-48 h-20 px-2 py-1 text-xs border border-gray-200 rounded-md focus:ring-1 focus:ring-indigo-500 focus:border-indigo-500 resize-none"
-                              />
-                              {notes[domain.id] !== domain.notes && (
-                                <button
-                                  onClick={async () => {
-                                    // Save notes without changing status
-                                    try {
-                                      const session = AuthService.getSession();
-                                      if (!session) {
-                                        console.error('No user session found');
-                                        return;
-                                      }
+                  return true;
+                });
+                
+                const paginatedDomains = filteredDomains.slice(0, displayLimit);
+                const hasMore = filteredDomains.length > displayLimit;
+                
+                return (
+                  <>
+                    <BulkAnalysisTable
+                      domains={paginatedDomains}
+                      targetPages={targetPages}
+                      selectedDomains={selectedDomains}
+                      onToggleSelection={toggleDomainSelection}
+                      onUpdateStatus={updateQualificationStatus}
+                      onCreateWorkflow={createWorkflow}
+                      onDeleteDomain={deleteDomain}
+                      onAnalyzeWithDataForSeo={analyzeWithDataForSeo}
+                      onUpdateNotes={async (domainId, notes) => {
+                        // Save notes
+                        try {
+                          const session = AuthService.getSession();
+                          if (!session) {
+                            console.error('No user session found');
+                            return;
+                          }
 
-                                      const domainNotes = notes[domain.id] || '';
-                                      const response = await fetch(`/api/clients/${params.id}/bulk-analysis/${domain.id}`, {
-                                        method: 'PUT',
-                                        headers: { 'Content-Type': 'application/json' },
-                                        body: JSON.stringify({ 
-                                          status: domain.qualificationStatus, 
-                                          userId: session.userId, 
-                                          notes: domainNotes 
-                                        })
-                                      });
+                          const domain = domains.find(d => d.id === domainId);
+                          if (!domain) return;
 
-                                      if (response.ok) {
-                                        setDomains(prevDomains => 
-                                          prevDomains.map(d => 
-                                            d.id === domain.id 
-                                              ? { ...d, notes: domainNotes }
-                                              : d
-                                          )
-                                        );
-                                        setMessage('✅ Notes saved');
-                                      } else {
-                                        const errorData = await response.json();
-                                        console.error('Error saving notes:', errorData);
-                                        setMessage(`❌ Error saving notes: ${errorData.error || 'Unknown error'}`);
-                                      }
-                                    } catch (error) {
-                                      console.error('Error saving notes:', error);
-                                      setMessage('❌ Failed to save notes');
-                                    }
-                                  }}
-                                  className="absolute bottom-1 right-1 text-xs px-2 py-0.5 bg-blue-600 text-white rounded hover:bg-blue-700"
-                                >
-                                  Save
-                                </button>
-                              )}
-                            </div>
-                          </div>
-                          
-                          {/* Qualification buttons - cleaner design */}
-                          <div className="flex flex-col space-y-1.5 min-w-[140px]">
-                            {domain.qualificationStatus === 'pending' ? (
-                              <>
-                                <button
-                                  onClick={() => updateQualificationStatus(domain.id, 'high_quality')}
-                                  className="px-3 py-1.5 bg-green-600 text-white text-xs font-medium rounded hover:bg-green-700 transition-colors"
-                                >
-                                  High Quality
-                                </button>
-                                <button
-                                  onClick={() => updateQualificationStatus(domain.id, 'average_quality')}
-                                  className="px-3 py-1.5 bg-blue-600 text-white text-xs font-medium rounded hover:bg-blue-700 transition-colors"
-                                >
-                                  Average
-                                </button>
-                                <button
-                                  onClick={() => updateQualificationStatus(domain.id, 'disqualified')}
-                                  className="px-3 py-1.5 bg-gray-500 text-white text-xs font-medium rounded hover:bg-gray-600 transition-colors"
-                                >
-                                  Disqualify
-                                </button>
-                              </>
-                            ) : (
-                              <div className="space-y-2">
-                                {domain.qualificationStatus === 'high_quality' && (
-                                  <>
-                                    <span className="inline-flex items-center px-2 py-1 bg-green-100 text-green-800 text-xs font-medium rounded cursor-pointer hover:bg-green-200 group relative" 
-                                          onClick={() => updateQualificationStatus(domain.id, 'pending' as any)}
-                                          title="Click to reset to pending">
-                                      High Quality
-                                      <RotateCcw className="w-3 h-3 ml-1 opacity-0 group-hover:opacity-100 transition-opacity inline" />
-                                    </span>
-                                    {!domain.hasWorkflow && (
-                                      <button
-                                        onClick={() => createWorkflow(domain)}
-                                        className="inline-flex items-center px-2 py-1 bg-green-600 text-white text-xs rounded hover:bg-green-700"
-                                      >
-                                        <Plus className="w-3 h-3 mr-1" />
-                                        Workflow
-                                      </button>
-                                    )}
-                                  </>
-                                )}
-                                {domain.qualificationStatus === 'average_quality' && (
-                                  <>
-                                    <span className="inline-flex items-center px-2 py-1 bg-blue-100 text-blue-800 text-xs font-medium rounded cursor-pointer hover:bg-blue-200 group relative" 
-                                          onClick={() => updateQualificationStatus(domain.id, 'pending' as any)}
-                                          title="Click to reset to pending">
-                                      Average
-                                      <RotateCcw className="w-3 h-3 ml-1 opacity-0 group-hover:opacity-100 transition-opacity inline" />
-                                    </span>
-                                    {!domain.hasWorkflow && (
-                                      <button
-                                        onClick={() => createWorkflow(domain)}
-                                        className="inline-flex items-center px-2 py-1 bg-blue-600 text-white text-xs rounded hover:bg-blue-700"
-                                      >
-                                        <Plus className="w-3 h-3 mr-1" />
-                                        Workflow
-                                      </button>
-                                    )}
-                                  </>
-                                )}
-                                {domain.qualificationStatus === 'disqualified' && (
-                                  <span className="inline-flex items-center px-2 py-1 bg-gray-100 text-gray-600 text-xs rounded cursor-pointer hover:bg-gray-200 group relative" 
-                                        onClick={() => updateQualificationStatus(domain.id, 'pending' as any)}
-                                        title="Click to reset to pending">
-                                    Disqualified
-                                    <RotateCcw className="w-3 h-3 ml-1 opacity-0 group-hover:opacity-100 transition-opacity inline" />
-                                  </span>
-                                )}
-                                {domain.hasWorkflow && (
-                                  <span className="inline-flex items-center px-2 py-1 bg-purple-100 text-purple-800 text-xs rounded">
-                                    <FileText className="w-3 h-3 mr-1" />
-                                    Has Workflow
-                                  </span>
-                                )}
-                              </div>
-                            )}
-                            
-                            {/* Delete button */}
-                            <button
-                              onClick={() => deleteDomain(domain.id)}
-                              className="mt-2 px-3 py-1.5 bg-red-500 text-white text-xs rounded hover:bg-red-600 transition-colors flex items-center justify-center w-full"
-                              title="Delete domain"
-                            >
-                              <Trash2 className="w-3 h-3" />
-                            </button>
-                          </div>
-                        </div>
+                          const response = await fetch(`/api/clients/${params.id}/bulk-analysis/${domainId}`, {
+                            method: 'PUT',
+                            headers: { 'Content-Type': 'application/json' },
+                            body: JSON.stringify({ 
+                              status: domain.qualificationStatus, 
+                              userId: session.userId, 
+                              notes: notes 
+                            })
+                          });
+
+                          if (response.ok) {
+                            setDomains(prevDomains => 
+                              prevDomains.map(d => 
+                                d.id === domainId 
+                                  ? { ...d, notes }
+                                  : d
+                              )
+                            );
+                            setMessage('✅ Notes saved');
+                          } else {
+                            const errorData = await response.json();
+                            console.error('Error saving notes:', errorData);
+                            setMessage(`❌ Error saving notes: ${errorData.error || 'Unknown error'}`);
+                          }
+                        } catch (error) {
+                          console.error('Error saving notes:', error);
+                          setMessage('❌ Failed to save notes');
+                        }
+                      }}
+                      selectedPositionRange={selectedPositionRange}
+                      hideExperimentalFeatures={hideExperimentalFeatures}
+                      loading={loading}
+                      keywordInputMode={keywordInputMode}
+                      manualKeywords={manualKeywords}
+                    />
+                    
+                    {/* Show More Button */}
+                    {hasMore && (
+                      <div className="mt-6 text-center">
+                        <button
+                          onClick={() => setDisplayLimit(displayLimit + ITEMS_PER_PAGE)}
+                          className="inline-flex items-center px-6 py-3 bg-gray-100 hover:bg-gray-200 text-gray-800 font-medium rounded-lg transition-colors"
+                        >
+                          <Plus className="w-5 h-5 mr-2" />
+                          Show More ({filteredDomains.length - paginatedDomains.length} remaining)
+                        </button>
                       </div>
+                    )}
+                    
+                    {/* Results Summary */}
+                    <div className="mt-4 text-center text-sm text-gray-600">
+                      Showing {paginatedDomains.length} of {filteredDomains.length} domains
                     </div>
-                  );
-                })}
-                      
-                      {/* Show More Button */}
-                      {hasMore && (
-                        <div className="mt-6 text-center">
-                          <button
-                            onClick={() => setDisplayLimit(displayLimit + ITEMS_PER_PAGE)}
-                            className="inline-flex items-center px-6 py-3 bg-gray-100 hover:bg-gray-200 text-gray-800 font-medium rounded-lg transition-colors"
-                          >
-                            <Plus className="w-5 h-5 mr-2" />
-                            Show More ({filteredDomains.length - paginatedDomains.length} remaining)
-                          </button>
-                        </div>
-                      )}
-                      
-                      {/* Results Summary */}
-                      <div className="mt-4 text-center text-sm text-gray-600">
-                        Showing {paginatedDomains.length} of {filteredDomains.length} domains
-                      </div>
-                    </>
-                  );
-                })()}
-              </div>
+                  </>
+                );
+              })()}
+
             </div>
           )}
         </div>
