@@ -32,4 +32,7 @@ export interface BulkAnalysisDomain {
     color?: string | null;
     icon?: string | null;
   };
+  // Timestamps
+  createdAt?: string;
+  updatedAt?: string;
 }

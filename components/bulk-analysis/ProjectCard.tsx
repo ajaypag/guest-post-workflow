@@ -3,15 +3,7 @@
 import { useState } from 'react';
 import Link from 'next/link';
 import { formatDistanceToNow } from 'date-fns';
-import { 
-  DropdownMenu, 
-  DropdownMenuContent, 
-  DropdownMenuItem, 
-  DropdownMenuSeparator,
-  DropdownMenuTrigger 
-} from '@/components/ui/dropdown-menu';
-import { Button } from '@/components/ui/button';
-import { Badge } from '@/components/ui/badge';
+// Remove unused imports - will use regular HTML/Tailwind instead
 import { 
   MoreVertical, 
   Edit, 
@@ -50,7 +42,12 @@ export function ProjectCard({
   const handleDelete = async () => {
     if (!onDelete) return;
     
-    if (confirm(`Are you sure you want to delete "${project.name}"? This will also delete all domains in this project.`)) {
+    const domainCount = project.domainCount || 0;
+    const warningMessage = domainCount > 0 
+      ? `Are you sure you want to delete "${project.name}"?\n\n⚠️ WARNING: This will permanently delete ${domainCount} domain${domainCount > 1 ? 's' : ''} and all associated data.\n\nThis action cannot be undone.`
+      : `Are you sure you want to delete "${project.name}"?`;
+    
+    if (confirm(warningMessage)) {
       setIsDeleting(true);
       try {
         await onDelete(project.id);
@@ -101,37 +98,62 @@ export function ProjectCard({
               </div>
             </div>
             <div className="flex items-center space-x-2" onClick={(e) => e.preventDefault()}>
-              <Badge className={getStatusColor(project.status)}>
+              <span className={`px-2 py-1 text-xs font-medium rounded-full ${getStatusColor(project.status)}`}>
                 {project.status}
-              </Badge>
-              <DropdownMenu>
-                <DropdownMenuTrigger asChild>
-                  <Button variant="ghost" size="sm" className="h-8 w-8 p-0">
-                    <MoreVertical className="h-4 w-4" />
-                  </Button>
-                </DropdownMenuTrigger>
-                <DropdownMenuContent align="end">
-                  <DropdownMenuItem onClick={() => onEdit?.(project)}>
+              </span>
+              <div className="relative">
+                <button 
+                  className="h-8 w-8 p-0 hover:bg-gray-100 rounded transition-colors"
+                  onClick={(e) => {
+                    e.preventDefault();
+                    const menu = e.currentTarget.nextElementSibling;
+                    if (menu) {
+                      menu.classList.toggle('hidden');
+                    }
+                  }}
+                >
+                  <MoreVertical className="h-4 w-4 mx-auto" />
+                </button>
+                <div className="hidden absolute right-0 mt-2 w-48 bg-white rounded-md shadow-lg z-10 border border-gray-200">
+                  <button
+                    onClick={(e) => {
+                      e.preventDefault();
+                      e.currentTarget.parentElement?.classList.add('hidden');
+                      onEdit?.(project);
+                    }}
+                    className="flex items-center w-full px-4 py-2 text-sm text-gray-700 hover:bg-gray-100"
+                  >
                     <Edit className="mr-2 h-4 w-4" />
                     Edit Project
-                  </DropdownMenuItem>
+                  </button>
                   {project.status !== 'archived' && (
-                    <DropdownMenuItem onClick={() => onArchive?.(project.id)}>
+                    <button
+                      onClick={(e) => {
+                        e.preventDefault();
+                        e.currentTarget.parentElement?.classList.add('hidden');
+                        onArchive?.(project.id);
+                      }}
+                      className="flex items-center w-full px-4 py-2 text-sm text-gray-700 hover:bg-gray-100"
+                    >
                       <Archive className="mr-2 h-4 w-4" />
                       Archive Project
-                    </DropdownMenuItem>
+                    </button>
                   )}
-                  <DropdownMenuSeparator />
-                  <DropdownMenuItem 
-                    onClick={handleDelete}
-                    className="text-red-600"
+                  <div className="border-t border-gray-200 my-1"></div>
+                  <button
+                    onClick={(e) => {
+                      e.preventDefault();
+                      e.currentTarget.parentElement?.classList.add('hidden');
+                      handleDelete();
+                    }}
+                    className="flex items-center w-full px-4 py-2 text-sm text-red-600 hover:bg-red-50"
                     disabled={isDeleting}
                   >
                     <Trash2 className="mr-2 h-4 w-4" />
                     {isDeleting ? 'Deleting...' : 'Delete Project'}
-                  </DropdownMenuItem>
-                </DropdownMenuContent>
-              </DropdownMenu>
+                  </button>
+                </div>
+              </div>
             </div>
           </div>
 
@@ -188,9 +210,9 @@ export function ProjectCard({
           {project.tags && project.tags.length > 0 && (
             <div className="flex flex-wrap gap-2 mb-4">
               {project.tags.map((tag, index) => (
-                <Badge key={index} variant="secondary" className="text-xs">
+                <span key={index} className="px-2 py-1 text-xs bg-gray-100 text-gray-700 rounded">
                   {tag}
-                </Badge>
+                </span>
               ))}
             </div>
           )}

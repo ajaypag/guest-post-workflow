@@ -20,11 +20,13 @@ export async function GET(
     const hasWorkflow = searchParams.get('hasWorkflow') === 'true' ? true : 
                        searchParams.get('hasWorkflow') === 'false' ? false : undefined;
     const search = searchParams.get('search') || undefined;
-    const projectId = searchParams.get('projectId') || undefined;
+    const projectId = searchParams.get('projectId');
+    // Special handling for 'null' string to find orphaned domains
+    const projectFilter = projectId === 'null' ? null : projectId || undefined;
     
     // Support legacy endpoint without pagination for backward compatibility
     if (!searchParams.get('page')) {
-      const domains = await BulkAnalysisService.getClientDomains(id, projectId);
+      const domains = await BulkAnalysisService.getClientDomains(id, projectFilter);
       return NextResponse.json({ domains });
     }
     
@@ -37,7 +39,7 @@ export async function GET(
         qualificationStatus,
         hasWorkflow,
         search,
-        projectId
+        projectId: projectFilter
       },
       sortBy,
       sortOrder

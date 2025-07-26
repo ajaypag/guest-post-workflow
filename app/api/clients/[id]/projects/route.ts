@@ -7,10 +7,10 @@ import { randomUUID } from 'crypto';
 // GET /api/clients/[id]/projects - List all projects for a client
 export async function GET(
   request: NextRequest,
-  { params }: { params: { id: string } }
+  { params }: { params: Promise<{ id: string }> }
 ) {
   try {
-    const clientId = params.id;
+    const { id: clientId } = await params;
     // TODO: Add authentication check when available
     
     // Get all projects with stats
@@ -78,10 +78,10 @@ export async function GET(
 // POST /api/clients/[id]/projects - Create a new project
 export async function POST(
   request: NextRequest,
-  { params }: { params: { id: string } }
+  { params }: { params: Promise<{ id: string }> }
 ) {
   try {
-    const clientId = params.id;
+    const { id: clientId } = await params;
     // TODO: Add authentication check when available
     
     const body = await request.json();

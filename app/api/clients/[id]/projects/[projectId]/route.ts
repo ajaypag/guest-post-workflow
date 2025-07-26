@@ -6,10 +6,10 @@ import { eq, and } from 'drizzle-orm';
 // GET /api/clients/[id]/projects/[projectId] - Get project details
 export async function GET(
   request: NextRequest,
-  { params }: { params: { id: string; projectId: string } }
+  { params }: { params: Promise<{ id: string; projectId: string }> }
 ) {
   try {
-    const { id: clientId, projectId } = params;
+    const { id: clientId, projectId } = await params;
     // TODO: Add auth when available
 
     const [project] = await db
@@ -41,10 +41,10 @@ export async function GET(
 // PATCH /api/clients/[id]/projects/[projectId] - Update project
 export async function PATCH(
   request: NextRequest,
-  { params }: { params: { id: string; projectId: string } }
+  { params }: { params: Promise<{ id: string; projectId: string }> }
 ) {
   try {
-    const { id: clientId, projectId } = params;
+    const { id: clientId, projectId } = await params;
     // TODO: Add auth when available
 
     const body = await request.json();
@@ -129,10 +129,10 @@ export async function PATCH(
 // DELETE /api/clients/[id]/projects/[projectId] - Delete project
 export async function DELETE(
   request: NextRequest,
-  { params }: { params: { id: string; projectId: string } }
+  { params }: { params: Promise<{ id: string; projectId: string }> }
 ) {
   try {
-    const { id: clientId, projectId } = params;
+    const { id: clientId, projectId } = await params;
     // TODO: Add auth when available
 
     // Check project exists

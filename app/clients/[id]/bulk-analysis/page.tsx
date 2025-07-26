@@ -284,8 +284,8 @@ export default function BulkAnalysisPage() {
   };
 
   const handleAIQualificationComplete = async (results: any[]) => {
-    // Reload domains to get updated qualifications
-    await loadDomains();
+    // Reload projects to get updated stats
+    await loadProjects();
     setMessage(`✅ AI qualification applied to ${results.length} domains`);
     setSelectedDomains(new Set());
   };
@@ -558,8 +558,8 @@ export default function BulkAnalysisPage() {
       );
     } catch (error) {
       console.error('Error updating analyzed domains:', error);
-      // Fallback to full reload if update fails
-      loadDomains();
+      // Projects page doesn't need to reload domains
+      // loadDomains();
     }
   };
 
@@ -599,8 +599,8 @@ export default function BulkAnalysisPage() {
       if (response.ok) {
         const data = await response.json();
         
-        // Reload domains to get updated data
-        await loadDomains();
+        // Projects page doesn't reload domains
+        // await loadDomains();
         
         setMessage(`✅ Refreshed ${data.refreshedCount} pending domains with updated keywords`);
       } else {
@@ -1073,10 +1073,6 @@ export default function BulkAnalysisPage() {
               </div>
             )}
           </div>
-
-          {/* Legacy Domain Addition Section - Hidden by default */}
-          {false && (
-            <>
               {/* Keyword Source Selection */}
               <div className="bg-white rounded-lg shadow p-6 mb-6">
                 <div className="flex items-center justify-between mb-4">
@@ -1340,8 +1336,6 @@ export default function BulkAnalysisPage() {
               )}
             </div>
           </div>
-            </>
-          )}
 
           {/* Legacy Results Grid - Hidden */}
           {false && domains.length > 0 && (
@@ -1891,7 +1885,8 @@ export default function BulkAnalysisPage() {
           targetPages={targetPages}
           onClose={() => {
             setShowGuidedTriage(false);
-            loadDomains(); // Reload to see updates
+            // Projects page doesn't reload domains
+            // loadDomains(); // Reload to see updates
           }}
           onUpdateStatus={updateQualificationStatus}
           onAnalyzeWithDataForSeo={analyzeWithDataForSeo}
