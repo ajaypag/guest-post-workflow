@@ -830,7 +830,7 @@ export default function BulkAnalysisTable(props: BulkAnalysisTableProps) {
                                 )}
                                 
                                 {/* Stats Grid */}
-                                <div className="grid grid-cols-3 gap-4 mb-4">
+                                <div className="grid grid-cols-2 gap-4 mb-4">
                                   <div>
                                     <p className="text-sm text-gray-500">Total Rankings</p>
                                     <p className="text-2xl font-semibold text-gray-900">
@@ -847,28 +847,6 @@ export default function BulkAnalysisTable(props: BulkAnalysisTableProps) {
                                     <p className="text-2xl font-semibold text-gray-900">
                                       {data.dataForSeoResults.totalRankings > 0 ? data.dataForSeoResults.avgPosition.toFixed(1) : '-'}
                                     </p>
-                                  </div>
-                                  <div>
-                                    <div className="flex items-center mt-1">
-                                      {data.dataForSeoResults.totalRankings === 0 ? (
-                                        <span className="text-lg font-semibold text-gray-400">None</span>
-                                      ) : data.dataForSeoResults.avgPosition <= 20 ? (
-                                        <>
-                                          <TrendingUp className="w-5 h-5 text-green-600 mr-1" />
-                                          <span className="text-lg font-semibold text-green-600">Strong</span>
-                                        </>
-                                      ) : data.dataForSeoResults.avgPosition <= 50 ? (
-                                        <>
-                                          <TrendingUp className="w-5 h-5 text-blue-600 mr-1" />
-                                          <span className="text-lg font-semibold text-blue-600">Moderate</span>
-                                        </>
-                                      ) : (
-                                        <>
-                                          <TrendingUp className="w-5 h-5 text-gray-600 mr-1" />
-                                          <span className="text-lg font-semibold text-gray-600">Developing</span>
-                                        </>
-                                      )}
-                                    </div>
                                   </div>
                                 </div>
                                 
