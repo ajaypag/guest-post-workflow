@@ -18,7 +18,9 @@ import {
   TrendingUp,
   Globe,
   Zap,
-  Loader2
+  Loader2,
+  Database,
+  RefreshCw
 } from 'lucide-react';
 import { BulkAnalysisDomain } from '@/types/bulk-analysis';
 import { TargetPage } from '@/types/user';
@@ -61,12 +63,23 @@ interface ExpandedRowData {
   dataForSeoResults?: {
     totalRankings: number;
     avgPosition: number;
-    topKeywords: Array<{
+    allKeywords: Array<{
       keyword: string;
       position: number;
-      searchVolume: number;
+      searchVolume: number | null;
       url: string;
+      cpc: number | null;
+      competition: string | null;
+      isFromCache?: boolean;
     }>;
+    cacheInfo?: {
+      newKeywords: number;
+      cachedKeywords: number;
+      apiCallsSaved: number;
+      daysSinceLastAnalysis: number | null;
+    };
+    analyzedKeywords: number;
+    lastAnalyzed: string;
   };
   aiQualification?: {
     status: 'high_quality' | 'average_quality' | 'disqualified';
@@ -86,6 +99,10 @@ export default function BulkAnalysisTable(props: BulkAnalysisTableProps) {
   const [localNotes, setLocalNotes] = useState<Record<string, string>>({});
   const [focusedDomainId, setFocusedDomainId] = useState<string | null>(null);
   const [loadingDataForSeo, setLoadingDataForSeo] = useState<Record<string, boolean>>({});
+  
+  // DataForSEO search and filter states
+  const [dataForSeoSearchTerms, setDataForSeoSearchTerms] = useState<Record<string, string>>({});
+  const [dataForSeoPositionFilters, setDataForSeoPositionFilters] = useState<Record<string, string>>({});
 
   // Initialize local notes from domain data
   useEffect(() => {
@@ -199,30 +216,31 @@ export default function BulkAnalysisTable(props: BulkAnalysisTableProps) {
     }));
 
     // Load DataForSEO results if available
-    let dataForSeoResults: {
-      totalRankings: number;
-      avgPosition: number;
-      topKeywords: Array<{
-        keyword: string;
-        position: number;
-        searchVolume: number;
-        url: string;
-      }>;
-    } | undefined;
-    if (domain.hasDataForSeoResults) {
+    let dataForSeoResults: ExpandedRowData['dataForSeoResults'] | undefined;
+    if (domain.hasDataForSeoResults && rowData[domainId]?.dataForSeoResults) {
+      // Use existing data if already loaded
+      dataForSeoResults = rowData[domainId].dataForSeoResults;
+    } else if (domain.hasDataForSeoResults) {
+      // Load data if not already in rowData
       try {
-        const response = await fetch(`/api/clients/${domain.clientId}/bulk-analysis/dataforseo/results?domainId=${domainId}`);
+        const response = await fetch(`/api/clients/${domain.clientId}/bulk-analysis/dataforseo/results?domainId=${domainId}&limit=1000`);
         if (response.ok) {
           const data = await response.json();
           dataForSeoResults = {
-            totalRankings: data.results.length,
+            totalRankings: data.total || data.results.length,
             avgPosition: data.results.length > 0 ? data.results.reduce((acc: number, r: any) => acc + r.position, 0) / data.results.length : 0,
-            topKeywords: data.results.map((r: any) => ({
+            allKeywords: data.results.map((r: any) => ({
               keyword: r.keyword,
               position: r.position,
               searchVolume: r.searchVolume,
-              url: r.url
-            }))
+              url: r.url,
+              cpc: r.cpc,
+              competition: r.competition,
+              isFromCache: r.isFromCache
+            })),
+            cacheInfo: undefined, // Will be populated when fresh analysis is run
+            analyzedKeywords: 0, // Will be populated when fresh analysis is run
+            lastAnalyzed: domain.dataForSeoLastAnalyzed || new Date().toISOString()
           };
         }
       } catch (error) {
@@ -289,18 +307,22 @@ export default function BulkAnalysisTable(props: BulkAnalysisTableProps) {
     setLoadingDataForSeo(prev => ({ ...prev, [domainId]: true }));
     
     try {
-      // Call the analyze API
+      // Get keywords for analysis
+      const keywords = props.keywordInputMode === 'manual' && props.manualKeywords
+        ? props.manualKeywords.split(',').map(k => k.trim()).filter(k => k.length > 0)
+        : props.targetPages
+            .filter(p => domain.targetPageIds.includes(p.id))
+            .flatMap(page => (page as any).keywords?.split(',').map((k: string) => k.trim()) || []);
+      
+      // Call the analyze API with caching enabled
       const response = await fetch(`/api/clients/${domain.clientId}/bulk-analysis/analyze-dataforseo`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
           domainId,
           domain: domain.domain,
-          keywords: props.keywordInputMode === 'manual' && props.manualKeywords
-            ? props.manualKeywords.split(',').map(k => k.trim()).filter(k => k.length > 0)
-            : props.targetPages
-                .filter(p => domain.targetPageIds.includes(p.id))
-                .flatMap(page => (page as any).keywords?.split(',').map((k: string) => k.trim()) || [])
+          keywords,
+          useCache: true // Enable caching to use existing data
         })
       });
       
@@ -308,25 +330,27 @@ export default function BulkAnalysisTable(props: BulkAnalysisTableProps) {
         throw new Error('Failed to run DataForSEO analysis');
       }
       
-      // Wait a moment for the analysis to complete
-      await new Promise(resolve => setTimeout(resolve, 3000));
+      const analysisResult = await response.json();
       
-      // Fetch the results
-      const resultsResponse = await fetch(`/api/clients/${domain.clientId}/bulk-analysis/dataforseo/results?domainId=${domainId}`);
+      // Wait a moment for the analysis to complete if new keywords were analyzed
+      if (analysisResult.result?.cacheInfo?.newKeywords > 0) {
+        await new Promise(resolve => setTimeout(resolve, 3000));
+      }
+      
+      // Fetch all results (not just first page)
+      const resultsResponse = await fetch(`/api/clients/${domain.clientId}/bulk-analysis/dataforseo/results?domainId=${domainId}&limit=1000`);
       
       if (resultsResponse.ok) {
         const data = await resultsResponse.json();
         
-        // Update the row data with the results
+        // Store full results with cache info
         const dataForSeoResults = {
-          totalRankings: data.results.length,
+          totalRankings: data.total || data.results.length,
           avgPosition: data.results.length > 0 ? data.results.reduce((acc: number, r: any) => acc + r.position, 0) / data.results.length : 0,
-          topKeywords: data.results.map((r: any) => ({
-            keyword: r.keyword,
-            position: r.position,
-            searchVolume: r.searchVolume,
-            url: r.url
-          }))
+          allKeywords: data.results, // Store all results
+          cacheInfo: analysisResult.result?.cacheInfo,
+          analyzedKeywords: keywords.length,
+          lastAnalyzed: new Date().toISOString()
         };
         
         setRowData(prev => ({
@@ -764,28 +788,73 @@ export default function BulkAnalysisTable(props: BulkAnalysisTableProps) {
                           {/* DataForSEO Results */}
                           {data.dataForSeoResults ? (
                             <div>
-                              <h4 className="font-medium text-gray-900 mb-3 flex items-center">
-                                <Search className="w-4 h-4 mr-2" />
-                                DataForSEO Results ({data.dataForSeoResults.totalRankings} keywords)
+                              <h4 className="font-medium text-gray-900 mb-3 flex items-center justify-between">
+                                <div className="flex items-center">
+                                  <Search className="w-4 h-4 mr-2" />
+                                  DataForSEO Results
+                                </div>
+                                {data.dataForSeoResults.lastAnalyzed && (
+                                  <span className="text-xs text-gray-500">
+                                    Last updated: {new Date(data.dataForSeoResults.lastAnalyzed).toLocaleTimeString()}
+                                  </span>
+                                )}
                               </h4>
                               <div className="bg-white rounded-lg border border-gray-200 p-4">
+                                {/* Cache Info */}
+                                {data.dataForSeoResults.cacheInfo && (
+                                  <div className="mb-4 p-3 bg-blue-50 border border-blue-200 rounded-lg">
+                                    <div className="flex items-center justify-between text-sm">
+                                      <div className="flex items-center gap-4">
+                                        <span className="font-medium text-blue-900">
+                                          {data.dataForSeoResults.analyzedKeywords} keywords analyzed
+                                        </span>
+                                        {data.dataForSeoResults.cacheInfo.cachedKeywords > 0 && (
+                                          <span className="flex items-center text-blue-700">
+                                            <Database className="w-3 h-3 mr-1" />
+                                            {data.dataForSeoResults.cacheInfo.cachedKeywords} from cache
+                                          </span>
+                                        )}
+                                        {data.dataForSeoResults.cacheInfo.newKeywords > 0 && (
+                                          <span className="flex items-center text-blue-700">
+                                            <RefreshCw className="w-3 h-3 mr-1" />
+                                            {data.dataForSeoResults.cacheInfo.newKeywords} new
+                                          </span>
+                                        )}
+                                      </div>
+                                      {data.dataForSeoResults.cacheInfo.apiCallsSaved > 0 && (
+                                        <span className="text-green-600 text-xs">
+                                          ✨ {data.dataForSeoResults.cacheInfo.apiCallsSaved} API call{data.dataForSeoResults.cacheInfo.apiCallsSaved > 1 ? 's' : ''} saved
+                                        </span>
+                                      )}
+                                    </div>
+                                  </div>
+                                )}
+                                
+                                {/* Stats Grid */}
                                 <div className="grid grid-cols-3 gap-4 mb-4">
                                   <div>
                                     <p className="text-sm text-gray-500">Total Rankings</p>
                                     <p className="text-2xl font-semibold text-gray-900">
                                       {data.dataForSeoResults.totalRankings}
                                     </p>
+                                    {data.dataForSeoResults.totalRankings === 0 && data.dataForSeoResults.analyzedKeywords > 0 && (
+                                      <p className="text-xs text-amber-600 mt-1">
+                                        Not ranking for analyzed keywords
+                                      </p>
+                                    )}
                                   </div>
                                   <div>
                                     <p className="text-sm text-gray-500">Avg Position</p>
                                     <p className="text-2xl font-semibold text-gray-900">
-                                      {data.dataForSeoResults.avgPosition.toFixed(1)}
+                                      {data.dataForSeoResults.totalRankings > 0 ? data.dataForSeoResults.avgPosition.toFixed(1) : '-'}
                                     </p>
                                   </div>
                                   <div>
                                     <p className="text-sm text-gray-500">Topical Authority</p>
                                     <div className="flex items-center mt-1">
-                                      {data.dataForSeoResults.avgPosition <= 20 ? (
+                                      {data.dataForSeoResults.totalRankings === 0 ? (
+                                        <span className="text-lg font-semibold text-gray-400">None</span>
+                                      ) : data.dataForSeoResults.avgPosition <= 20 ? (
                                         <>
                                           <TrendingUp className="w-5 h-5 text-green-600 mr-1" />
                                           <span className="text-lg font-semibold text-green-600">Strong</span>
@@ -804,42 +873,108 @@ export default function BulkAnalysisTable(props: BulkAnalysisTableProps) {
                                     </div>
                                   </div>
                                 </div>
-                                <div>
-                                  <h5 className="text-sm font-medium text-gray-700 mb-2">All Keyword Rankings</h5>
-                                  <div className="max-h-64 overflow-y-auto border rounded-lg">
-                                    <table className="min-w-full divide-y divide-gray-200">
-                                      <thead className="bg-gray-50 sticky top-0">
-                                        <tr>
-                                          <th className="px-3 py-2 text-left text-xs font-medium text-gray-500 uppercase">Keyword</th>
-                                          <th className="px-3 py-2 text-center text-xs font-medium text-gray-500 uppercase">Pos</th>
-                                          <th className="px-3 py-2 text-center text-xs font-medium text-gray-500 uppercase">Volume</th>
-                                          <th className="px-3 py-2 text-left text-xs font-medium text-gray-500 uppercase">URL</th>
-                                        </tr>
-                                      </thead>
-                                      <tbody className="bg-white divide-y divide-gray-200">
-                                        {data.dataForSeoResults.topKeywords.map((kw, idx) => (
-                                          <tr key={idx} className="hover:bg-gray-50">
-                                            <td className="px-3 py-2 text-sm text-gray-900">{kw.keyword}</td>
-                                            <td className="px-3 py-2 text-sm text-center">
-                                              <span className={`inline-flex items-center px-2 py-0.5 rounded text-xs font-medium ${
-                                                kw.position <= 3 ? 'bg-green-100 text-green-800' :
-                                                kw.position <= 10 ? 'bg-blue-100 text-blue-800' :
-                                                kw.position <= 20 ? 'bg-yellow-100 text-yellow-800' :
-                                                'bg-gray-100 text-gray-800'
-                                              }`}>
-                                                {kw.position}
-                                              </span>
-                                            </td>
-                                            <td className="px-3 py-2 text-sm text-center text-gray-500">{kw.searchVolume}</td>
-                                            <td className="px-3 py-2 text-sm text-gray-600 truncate max-w-xs" title={kw.url}>
-                                              {kw.url}
-                                            </td>
+                                
+                                {/* Keyword Results with Search */}
+                                {data.dataForSeoResults.totalRankings > 0 && (
+                                  <div>
+                                    <div className="flex items-center justify-between mb-2">
+                                      <h5 className="text-sm font-medium text-gray-700">All Keyword Rankings</h5>
+                                      <div className="flex items-center gap-2">
+                                        <input
+                                          type="text"
+                                          placeholder="Search keywords..."
+                                          value={dataForSeoSearchTerms[domain.id] || ''}
+                                          onChange={(e) => setDataForSeoSearchTerms(prev => ({ ...prev, [domain.id]: e.target.value }))}
+                                          className="text-xs px-2 py-1 border rounded focus:ring-1 focus:ring-indigo-500"
+                                        />
+                                        <select
+                                          value={dataForSeoPositionFilters[domain.id] || 'all'}
+                                          onChange={(e) => setDataForSeoPositionFilters(prev => ({ ...prev, [domain.id]: e.target.value }))}
+                                          className="text-xs px-2 py-1 border rounded focus:ring-1 focus:ring-indigo-500"
+                                        >
+                                          <option value="all">All Positions</option>
+                                          <option value="1-10">Top 10</option>
+                                          <option value="11-20">11-20</option>
+                                          <option value="21-50">21-50</option>
+                                          <option value="50+">50+</option>
+                                        </select>
+                                      </div>
+                                    </div>
+                                    <div className="max-h-64 overflow-y-auto border rounded-lg">
+                                      <table className="min-w-full divide-y divide-gray-200">
+                                        <thead className="bg-gray-50 sticky top-0">
+                                          <tr>
+                                            <th className="px-3 py-2 text-left text-xs font-medium text-gray-500 uppercase">Keyword</th>
+                                            <th className="px-3 py-2 text-center text-xs font-medium text-gray-500 uppercase">Pos</th>
+                                            <th className="px-3 py-2 text-center text-xs font-medium text-gray-500 uppercase">Volume</th>
+                                            <th className="px-3 py-2 text-center text-xs font-medium text-gray-500 uppercase">CPC</th>
+                                            <th className="px-3 py-2 text-left text-xs font-medium text-gray-500 uppercase">URL</th>
+                                            <th className="px-3 py-2 text-center text-xs font-medium text-gray-500 uppercase">Source</th>
                                           </tr>
-                                        ))}
-                                      </tbody>
-                                    </table>
+                                        </thead>
+                                        <tbody className="bg-white divide-y divide-gray-200">
+                                          {(() => {
+                                            const searchTerm = dataForSeoSearchTerms[domain.id] || '';
+                                            const positionFilter = dataForSeoPositionFilters[domain.id] || 'all';
+                                            
+                                            const filteredKeywords = (data.dataForSeoResults.allKeywords || []).filter(kw => {
+                                              // Search filter
+                                              if (searchTerm && !kw.keyword.toLowerCase().includes(searchTerm.toLowerCase())) {
+                                                return false;
+                                              }
+                                              
+                                              // Position filter
+                                              if (positionFilter !== 'all') {
+                                                if (positionFilter === '1-10' && kw.position > 10) return false;
+                                                if (positionFilter === '11-20' && (kw.position < 11 || kw.position > 20)) return false;
+                                                if (positionFilter === '21-50' && (kw.position < 21 || kw.position > 50)) return false;
+                                                if (positionFilter === '50+' && kw.position <= 50) return false;
+                                              }
+                                              
+                                              return true;
+                                            });
+                                            
+                                            return filteredKeywords.map((kw, idx) => (
+                                              <tr key={idx} className="hover:bg-gray-50">
+                                                <td className="px-3 py-2 text-sm text-gray-900">{kw.keyword}</td>
+                                                <td className="px-3 py-2 text-sm text-center">
+                                                  <span className={`inline-flex items-center px-2 py-0.5 rounded text-xs font-medium ${
+                                                    kw.position <= 3 ? 'bg-green-100 text-green-800' :
+                                                    kw.position <= 10 ? 'bg-blue-100 text-blue-800' :
+                                                    kw.position <= 20 ? 'bg-yellow-100 text-yellow-800' :
+                                                    'bg-gray-100 text-gray-800'
+                                                  }`}>
+                                                    {kw.position}
+                                                  </span>
+                                                </td>
+                                                <td className="px-3 py-2 text-sm text-center text-gray-500">
+                                                  {kw.searchVolume !== null ? kw.searchVolume.toLocaleString() : '-'}
+                                                </td>
+                                                <td className="px-3 py-2 text-sm text-center text-gray-500">
+                                                  {kw.cpc ? `$${kw.cpc.toFixed(2)}` : '-'}
+                                                </td>
+                                                <td className="px-3 py-2 text-sm text-gray-600 truncate max-w-xs" title={kw.url}>
+                                                  {kw.url}
+                                                </td>
+                                                <td className="px-3 py-2 text-sm text-center">
+                                                  {kw.isFromCache ? (
+                                                    <span className="inline-flex items-center px-1.5 py-0.5 text-xs bg-gray-100 text-gray-700 rounded">
+                                                      <Database className="w-3 h-3" />
+                                                    </span>
+                                                  ) : (
+                                                    <span className="inline-flex items-center px-1.5 py-0.5 text-xs bg-blue-100 text-blue-700 rounded">
+                                                      <RefreshCw className="w-3 h-3" />
+                                                    </span>
+                                                  )}
+                                                </td>
+                                              </tr>
+                                            ));
+                                          })()}
+                                        </tbody>
+                                      </table>
+                                    </div>
                                   </div>
-                                </div>
+                                )}
                               </div>
                             </div>
                           ) : (
