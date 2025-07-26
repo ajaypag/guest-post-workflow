@@ -28,6 +28,7 @@ interface ProjectCardProps {
   onEdit?: (project: BulkAnalysisProject) => void;
   onDelete?: (projectId: string) => void;
   onArchive?: (projectId: string) => void;
+  onUnarchive?: (projectId: string) => void;
 }
 
 export function ProjectCard({ 
@@ -35,7 +36,8 @@ export function ProjectCard({
   clientId,
   onEdit,
   onDelete,
-  onArchive
+  onArchive,
+  onUnarchive
 }: ProjectCardProps) {
   const [isDeleting, setIsDeleting] = useState(false);
 
@@ -126,7 +128,7 @@ export function ProjectCard({
                     <Edit className="mr-2 h-4 w-4" />
                     Edit Project
                   </button>
-                  {project.status !== 'archived' && (
+                  {project.status !== 'archived' ? (
                     <button
                       onClick={(e) => {
                         e.preventDefault();
@@ -137,6 +139,18 @@ export function ProjectCard({
                     >
                       <Archive className="mr-2 h-4 w-4" />
                       Archive Project
+                    </button>
+                  ) : (
+                    <button
+                      onClick={(e) => {
+                        e.preventDefault();
+                        e.currentTarget.parentElement?.classList.add('hidden');
+                        onUnarchive?.(project.id);
+                      }}
+                      className="flex items-center w-full px-4 py-2 text-sm text-gray-700 hover:bg-gray-100"
+                    >
+                      <Archive className="mr-2 h-4 w-4" />
+                      Restore Project
                     </button>
                   )}
                   <div className="border-t border-gray-200 my-1"></div>

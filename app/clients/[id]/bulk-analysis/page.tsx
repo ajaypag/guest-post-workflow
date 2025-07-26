@@ -48,6 +48,7 @@ export default function BulkAnalysisPage() {
   const [domains, setDomains] = useState<BulkAnalysisDomain[]>([]);
   const [projects, setProjects] = useState<BulkAnalysisProject[]>([]);
   const [showProjectForm, setShowProjectForm] = useState(false);
+  const [showArchivedProjects, setShowArchivedProjects] = useState(false);
   const [newProjectName, setNewProjectName] = useState('');
   const [newProjectDescription, setNewProjectDescription] = useState('');
   const [newProjectColor, setNewProjectColor] = useState('#6366f1');
@@ -250,6 +251,27 @@ export default function BulkAnalysisPage() {
     } catch (error) {
       console.error('Error archiving project:', error);
       setMessage('❌ Failed to archive project');
+    }
+  };
+  
+  const unarchiveProject = async (projectId: string) => {
+    try {
+      const response = await fetch(`/api/clients/${params.id}/projects/${projectId}`, {
+        method: 'PATCH',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ status: 'active' })
+      });
+
+      if (response.ok) {
+        await loadProjects();
+        setMessage('✅ Project restored');
+      } else {
+        const error = await response.json();
+        setMessage(`❌ ${error.error}`);
+      }
+    } catch (error) {
+      console.error('Error unarchiving project:', error);
+      setMessage('❌ Failed to restore project');
     }
   };
 
@@ -828,7 +850,18 @@ export default function BulkAnalysisPage() {
           {/* Projects View */}
           <div className="mb-8">
             <div className="flex items-center justify-between mb-6">
-              <h2 className="text-xl font-semibold text-gray-900">Projects</h2>
+              <div className="flex items-center gap-4">
+                <h2 className="text-xl font-semibold text-gray-900">Projects</h2>
+                <label className="flex items-center text-sm text-gray-600">
+                  <input
+                    type="checkbox"
+                    checked={showArchivedProjects}
+                    onChange={(e) => setShowArchivedProjects(e.target.checked)}
+                    className="mr-2 rounded"
+                  />
+                  Show archived
+                </label>
+              </div>
               <button
                 onClick={() => setShowProjectForm(true)}
                 className="inline-flex items-center px-4 py-2 bg-indigo-600 text-white rounded-lg hover:bg-indigo-700 transition-colors"
@@ -907,27 +940,38 @@ export default function BulkAnalysisPage() {
             )}
 
             {/* Projects Grid */}
-            {projects.length > 0 ? (
-              <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-                {projects.map((project) => (
-                  <ProjectCard
-                    key={project.id}
-                    project={project}
-                    clientId={params.id as string}
-                    onEdit={(project) => {
-                      setMessage('🚧 Edit functionality coming soon');
-                    }}
-                    onDelete={deleteProject}
-                    onArchive={archiveProject}
-                  />
-                ))}
-              </div>
-            ) : (
-              <div className="text-center py-12 bg-gray-50 rounded-lg">
-                <Folder className="w-12 h-12 mx-auto mb-3 text-gray-400" />
-                <p className="text-gray-500">No projects yet. Create your first project to get started.</p>
-              </div>
-            )}
+            {(() => {
+              const filteredProjects = showArchivedProjects 
+                ? projects 
+                : projects.filter(p => p.status !== 'archived');
+              
+              return filteredProjects.length > 0 ? (
+                <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+                  {filteredProjects.map((project) => (
+                    <ProjectCard
+                      key={project.id}
+                      project={project}
+                      clientId={params.id as string}
+                      onEdit={(project) => {
+                        setMessage('🚧 Edit functionality coming soon');
+                      }}
+                      onDelete={deleteProject}
+                      onArchive={archiveProject}
+                      onUnarchive={unarchiveProject}
+                    />
+                  ))}
+                </div>
+              ) : (
+                <div className="text-center py-12 bg-gray-50 rounded-lg">
+                  <Folder className="w-12 h-12 mx-auto mb-3 text-gray-400" />
+                  <p className="text-gray-500">
+                    {showArchivedProjects && projects.length > 0 
+                      ? 'No archived projects' 
+                      : 'No projects yet. Create your first project to get started.'}
+                  </p>
+                </div>
+              );
+            })()}
 
           </div>
 
