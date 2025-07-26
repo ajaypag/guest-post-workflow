@@ -664,6 +664,12 @@ export default function BulkAnalysisTable(props: BulkAnalysisTableProps) {
                             AI Qualified
                           </span>
                         )}
+                        {domain.wasHumanVerified && (
+                          <span className="inline-flex items-center px-2 py-1 text-xs bg-emerald-100 text-emerald-800 rounded">
+                            <CheckCircle className="w-3 h-3 mr-1" />
+                            Human Verified
+                          </span>
+                        )}
                       </div>
                     )}
                   </td>

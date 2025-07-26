@@ -581,17 +581,22 @@ export default function GuidedTriageFlow(props: GuidedTriageFlowProps) {
                               <span className="text-xs text-gray-500">Keywords analyzed:</span>
                               <span className="text-xs text-gray-400">({data.keywords.length} total)</span>
                             </div>
-                            {/* Subtle Ahrefs button when DataForSEO results exist */}
-                            <a
-                              href={buildAhrefsUrl(currentDomain.domain, data.keywords)}
-                              target="_blank"
-                              rel="noopener noreferrer"
-                              className="inline-flex items-center px-2 py-1 text-xs bg-gray-100 text-gray-600 hover:bg-gray-200 rounded-md transition-colors"
-                              title="Check rankings in Ahrefs"
-                            >
-                              <ExternalLink className="w-3 h-3 mr-1" />
-                              Ahrefs
-                            </a>
+                            {/* Subtle Ahrefs buttons when DataForSEO results exist */}
+                            <div className="flex flex-wrap gap-1">
+                              {data.keywordGroups.map((group, idx) => (
+                                <a
+                                  key={idx}
+                                  href={buildAhrefsUrl(currentDomain.domain, group.keywords)}
+                                  target="_blank"
+                                  rel="noopener noreferrer"
+                                  className="inline-flex items-center px-2 py-1 text-xs bg-gray-100 text-gray-600 hover:bg-gray-200 rounded-md transition-colors"
+                                  title={`Check ${group.name} rankings in Ahrefs`}
+                                >
+                                  <ExternalLink className="w-3 h-3 mr-1" />
+                                  {group.name}
+                                </a>
+                              ))}
+                            </div>
                           </div>
                           <div className="flex flex-wrap gap-1 max-h-20 overflow-y-auto">
                             {data.keywords.map((keyword, idx) => (
@@ -694,18 +699,23 @@ export default function GuidedTriageFlow(props: GuidedTriageFlowProps) {
                                 </span>
                               )}
                             </p>
-                            <div className="flex items-center gap-3 mt-4">
-                              {/* Prominent Ahrefs button when no results found */}
-                              <a
-                                href={buildAhrefsUrl(currentDomain.domain, data.keywords)}
-                                target="_blank"
-                                rel="noopener noreferrer"
-                                className="inline-flex items-center px-4 py-2 bg-indigo-600 text-white text-sm rounded-lg hover:bg-indigo-700"
-                                title="Check rankings in Ahrefs (no API credits used)"
-                              >
-                                <ExternalLink className="w-4 h-4 mr-2" />
-                                Check in Ahrefs
-                              </a>
+                            <div className="flex flex-col items-center gap-3 mt-4">
+                              {/* Prominent Ahrefs buttons when no results found */}
+                              <div className="flex flex-wrap justify-center gap-2">
+                                {data.keywordGroups.map((group, idx) => (
+                                  <a
+                                    key={idx}
+                                    href={buildAhrefsUrl(currentDomain.domain, group.keywords)}
+                                    target="_blank"
+                                    rel="noopener noreferrer"
+                                    className="inline-flex items-center px-4 py-2 bg-indigo-600 text-white text-sm rounded-lg hover:bg-indigo-700"
+                                    title={`Check ${group.name} keywords in Ahrefs (no API credits used)`}
+                                  >
+                                    <ExternalLink className="w-4 h-4 mr-2" />
+                                    {group.name} in Ahrefs
+                                  </a>
+                                ))}
+                              </div>
                               {/* Optional re-analyze button for edge cases */}
                               {props.onAnalyzeWithDataForSeo && (
                                 <button
@@ -736,17 +746,22 @@ export default function GuidedTriageFlow(props: GuidedTriageFlowProps) {
                               Analyzed {data.keywords.length} keywords but this domain doesn't rank in top 100 for any of them
                             </p>
                             <div className="flex flex-col items-center gap-3">
-                              {/* Prominent Ahrefs button when no results found */}
-                              <a
-                                href={buildAhrefsUrl(currentDomain.domain, data.keywords)}
-                                target="_blank"
-                                rel="noopener noreferrer"
-                                className="inline-flex items-center px-4 py-2 bg-indigo-600 text-white text-sm rounded-lg hover:bg-indigo-700"
-                                title="Check rankings in Ahrefs (no API credits used)"
-                              >
-                                <ExternalLink className="w-4 h-4 mr-2" />
-                                Check in Ahrefs
-                              </a>
+                              {/* Show multiple Ahrefs buttons - one per keyword group */}
+                              <div className="flex flex-wrap justify-center gap-2">
+                                {data.keywordGroups.map((group, idx) => (
+                                  <a
+                                    key={idx}
+                                    href={buildAhrefsUrl(currentDomain.domain, group.keywords)}
+                                    target="_blank"
+                                    rel="noopener noreferrer"
+                                    className="inline-flex items-center px-3 py-2 bg-orange-600 text-white text-sm rounded-lg hover:bg-orange-700"
+                                    title={`Check ${group.name} keywords in Ahrefs`}
+                                  >
+                                    <ExternalLink className="w-4 h-4 mr-2" />
+                                    {group.name} in Ahrefs
+                                  </a>
+                                ))}
+                              </div>
                               {/* Optional re-analyze button for edge cases */}
                               {props.onAnalyzeWithDataForSeo && (
                                 <button
@@ -801,17 +816,22 @@ export default function GuidedTriageFlow(props: GuidedTriageFlowProps) {
                                       )}
                                     </button>
                                   )}
-                                  {/* Prominent Ahrefs button when no DataForSEO data */}
-                                  <a
-                                    href={buildAhrefsUrl(currentDomain.domain, data.keywords)}
-                                    target="_blank"
-                                    rel="noopener noreferrer"
-                                    className="inline-flex items-center px-5 py-2.5 bg-orange-600 text-white text-sm rounded-lg hover:bg-orange-700"
-                                    title="Check rankings in Ahrefs (no API credits used)"
-                                  >
-                                    <ExternalLink className="w-4 h-4 mr-2" />
-                                    Check in Ahrefs Instead
-                                  </a>
+                                  {/* Prominent Ahrefs buttons when no DataForSEO data */}
+                                  <div className="flex flex-wrap justify-center gap-2">
+                                    {data.keywordGroups.map((group, idx) => (
+                                      <a
+                                        key={idx}
+                                        href={buildAhrefsUrl(currentDomain.domain, group.keywords)}
+                                        target="_blank"
+                                        rel="noopener noreferrer"
+                                        className="inline-flex items-center px-5 py-2.5 bg-orange-600 text-white text-sm rounded-lg hover:bg-orange-700"
+                                        title={`Check ${group.name} keywords in Ahrefs (no API credits used)`}
+                                      >
+                                        <ExternalLink className="w-4 h-4 mr-2" />
+                                        {group.name} in Ahrefs
+                                      </a>
+                                    ))}
+                                  </div>
                                   <p className="text-xs text-gray-500">
                                     Ahrefs doesn't use your API credits
                                   </p>
