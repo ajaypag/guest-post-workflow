@@ -62,7 +62,7 @@ export async function POST(
         url,
         cpc
       FROM keyword_analysis_results
-      WHERE bulk_analysis_domain_id = ANY(${domainIds})
+      WHERE bulk_analysis_domain_id = ANY(${sql`ARRAY[${sql.join(domainIds, sql`, `)}]::uuid[]`})
       ORDER BY position ASC, search_volume DESC
     `);
 
