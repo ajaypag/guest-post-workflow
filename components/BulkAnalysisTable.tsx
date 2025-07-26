@@ -629,12 +629,12 @@ export default function BulkAnalysisTable(props: BulkAnalysisTableProps) {
                     <td className="px-3 py-4 text-sm text-gray-500">
                       <div className="flex flex-col">
                         <span>{domain.keywordCount} keywords</span>
-                        {domain.hasDataForSeoResults && data?.dataForSeoResults && (
+                        {domain.hasDataForSeoResults && (
                           <span className="text-xs mt-0.5">
-                            {data.dataForSeoResults.wasAnalyzedWithNoResults ? (
+                            {domain.dataForSeoResultsCount === 0 ? (
                               <span className="text-amber-600">0 rankings found</span>
-                            ) : data.dataForSeoResults.totalRankings > 0 ? (
-                              <span className="text-green-600">{data.dataForSeoResults.totalRankings} rankings found</span>
+                            ) : domain.dataForSeoResultsCount && domain.dataForSeoResultsCount > 0 ? (
+                              <span className="text-green-600">{domain.dataForSeoResultsCount} rankings found</span>
                             ) : (
                               <span className="text-gray-400">analyzing...</span>
                             )}
@@ -650,12 +650,12 @@ export default function BulkAnalysisTable(props: BulkAnalysisTableProps) {
                           <Target className="w-3 h-3 text-gray-400" />
                           <span className="text-gray-600">
                             {domain.keywordCount}
-                            {domain.hasDataForSeoResults && data?.dataForSeoResults && (
+                            {domain.hasDataForSeoResults && (
                               <span className="ml-1">
-                                ({data.dataForSeoResults.wasAnalyzedWithNoResults ? 
+                                ({domain.dataForSeoResultsCount === 0 ? 
                                   <span className="text-amber-600">0</span> : 
-                                  data.dataForSeoResults.totalRankings > 0 ? 
-                                  <span className="text-green-600">{data.dataForSeoResults.totalRankings}</span> : 
+                                  domain.dataForSeoResultsCount && domain.dataForSeoResultsCount > 0 ? 
+                                  <span className="text-green-600">{domain.dataForSeoResultsCount}</span> : 
                                   <span className="text-gray-400">...</span>
                                 })
                               </span>

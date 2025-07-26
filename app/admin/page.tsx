@@ -38,6 +38,14 @@ export default function AdminDashboard() {
       iconColor: 'text-cyan-600'
     },
     {
+      title: 'DataForSEO Count Migration',
+      description: 'Add results count column for immediate display in bulk analysis table',
+      icon: Database,
+      href: '/admin/dataforseo-count-migration',
+      color: 'bg-purple-50 border-purple-200 text-purple-700',
+      iconColor: 'text-purple-600'
+    },
+    {
       title: 'Diagnostics',
       description: 'Run comprehensive system diagnostics and health checks',
       icon: Activity,

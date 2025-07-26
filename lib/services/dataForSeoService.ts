@@ -374,6 +374,9 @@ export class DataForSeoService {
           dataforseo_status = ${status},
           dataforseo_keywords_found = ${keywordsFound},
           dataforseo_analyzed_at = NOW(),
+          dataforseo_results_count = ${keywordsFound},
+          has_dataforseo_results = ${keywordsFound > 0},
+          dataforseo_last_analyzed = NOW(),
           updated_at = NOW()
         WHERE id = ${domainId}::uuid
       `);

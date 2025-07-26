@@ -19,6 +19,7 @@ export const bulkAnalysisDomains = pgTable('bulk_analysis_domains', {
   // Data source tracking
   hasDataForSeoResults: boolean('has_dataforseo_results').default(false),
   dataForSeoLastAnalyzed: timestamp('dataforseo_last_analyzed'),
+  dataForSeoResultsCount: integer('dataforseo_results_count').default(0),
   aiQualificationReasoning: text('ai_qualification_reasoning'),
   aiQualifiedAt: timestamp('ai_qualified_at'),
   wasManuallyQualified: boolean('was_manually_qualified').default(false),

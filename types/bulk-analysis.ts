@@ -13,6 +13,7 @@ export interface BulkAnalysisDomain {
   workflowCreatedAt?: string;
   hasDataForSeoResults?: boolean;
   dataForSeoLastAnalyzed?: string;
+  dataForSeoResultsCount?: number;
   aiQualificationReasoning?: string;
   aiQualifiedAt?: string;
   wasManuallyQualified?: boolean;
