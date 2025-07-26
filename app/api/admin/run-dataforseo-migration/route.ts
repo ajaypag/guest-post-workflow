@@ -94,17 +94,17 @@ export async function POST(request: NextRequest) {
         (SELECT COUNT(*) FROM information_schema.columns WHERE table_name = 'bulk_analysis_domains' AND column_name = 'dataforseo_status') as status_column
     `);
     
-    const verify = verifyResults.rows[0];
+    const verify = verifyResults.rows[0] as any;
     console.log('Verification results:', verify);
     
     return NextResponse.json({
       success: true,
       results,
       verification: {
-        keyword_analysis_results: verify.results_table > 0,
-        keyword_analysis_batches: verify.batches_table > 0,
-        batch_columns: verify.batch_id_column > 0,
-        dataforseo_status: verify.status_column > 0
+        keyword_analysis_results: Number(verify?.results_table || 0) > 0,
+        keyword_analysis_batches: Number(verify?.batches_table || 0) > 0,
+        batch_columns: Number(verify?.batch_id_column || 0) > 0,
+        dataforseo_status: Number(verify?.status_column || 0) > 0
       }
     });
     
