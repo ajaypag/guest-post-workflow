@@ -97,6 +97,16 @@ export default function BulkAnalysisPage() {
   const [showResultsModal, setShowResultsModal] = useState(false);
   const [resultsJobId, setResultsJobId] = useState<string | null>(null);
   
+  // Keyword clustering state
+  const [showKeywordClusters, setShowKeywordClusters] = useState(false);
+  const [keywordClusters, setKeywordClusters] = useState<Array<{
+    name: string;
+    keywords: string[];
+    relevance: 'core' | 'related' | 'wider';
+    priority: number;
+    selected: boolean;
+  }>>([]);
+  
   // Reset pagination when filters change
   useEffect(() => {
     setDisplayLimit(ITEMS_PER_PAGE);
@@ -352,20 +362,60 @@ export default function BulkAnalysisPage() {
       return;
     }
 
+    // Get keywords based on current mode
+    let keywords: string[] = [];
+    if (keywordInputMode === 'manual' && manualKeywords.trim()) {
+      keywords = manualKeywords
+        .split(',')
+        .map(k => k.trim())
+        .filter(k => k.length > 0);
+    } else if (keywordInputMode === 'target-pages') {
+      // Collect all keywords from selected target pages
+      const selectedPages = targetPages.filter(p => selectedTargetPages.includes(p.id));
+      const keywordSet = new Set<string>();
+      
+      selectedPages.forEach(page => {
+        const pageKeywords = (page as any).keywords?.split(',').map((k: string) => k.trim()) || [];
+        pageKeywords.forEach((k: string) => keywordSet.add(k));
+      });
+      
+      keywords = Array.from(keywordSet);
+    }
+
+    if (keywords.length === 0) {
+      setMessage('No keywords found. Please select target pages with keywords or enter manual keywords.');
+      return;
+    }
+
+    // Group keywords by topic
+    const groups = groupKeywordsByTopic(keywords);
+    const clustersWithSelection = groups.map(group => ({
+      ...group,
+      selected: true // Default all clusters to selected
+    }));
+    
+    setKeywordClusters(clustersWithSelection);
+    setShowKeywordClusters(true);
+    setMessage(`Found ${keywords.length} keywords grouped into ${groups.length} clusters`);
+  };
+
+  const executeDataForSeoAnalysis = async () => {
+    // Get selected keywords from clusters
+    const selectedKeywords = keywordClusters
+      .filter(cluster => cluster.selected)
+      .flatMap(cluster => cluster.keywords);
+
+    if (selectedKeywords.length === 0) {
+      setMessage('Please select at least one keyword cluster');
+      return;
+    }
+
+    setShowKeywordClusters(false);
     setBulkAnalysisRunning(true);
     setBulkProgress({ current: 0, total: selectedDomains.size });
-    setMessage(`🚀 Starting bulk analysis for ${selectedDomains.size} domains...`);
+    setMessage(`🚀 Starting analysis for ${selectedDomains.size} domains with ${selectedKeywords.length} keywords...`);
 
     try {
-      // Get keywords based on current mode
-      let keywords: string[] = [];
-      if (keywordInputMode === 'manual' && manualKeywords.trim()) {
-        keywords = manualKeywords
-          .split(',')
-          .map(k => k.trim())
-          .filter(k => k.length > 0);
-      }
-
       const response = await fetch(`/api/clients/${params.id}/bulk-analysis/dataforseo/batch`, {
         method: 'POST',
         headers: {
@@ -373,7 +423,7 @@ export default function BulkAnalysisPage() {
         },
         body: JSON.stringify({
           domainIds: Array.from(selectedDomains),
-          keywords: keywords.length > 0 ? keywords : undefined,
+          keywords: selectedKeywords,
         }),
       });
 
@@ -1070,6 +1120,115 @@ export default function BulkAnalysisPage() {
                         <Download className="w-4 h-4 mr-2" />
                         Export Selected
                       </button>
+                    </div>
+                  </div>
+                </div>
+              )}
+
+              {/* Keyword Cluster Selection Modal */}
+              {showKeywordClusters && (
+                <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4">
+                  <div className="bg-white rounded-lg max-w-4xl w-full max-h-[80vh] overflow-hidden flex flex-col">
+                    <div className="p-6 border-b">
+                      <h2 className="text-xl font-semibold">Select Keyword Clusters for Analysis</h2>
+                      <p className="text-sm text-gray-600 mt-1">
+                        Keywords have been grouped into topical clusters. Select which clusters to analyze with DataForSEO.
+                      </p>
+                    </div>
+                    
+                    <div className="flex-1 overflow-y-auto p-6">
+                      <div className="space-y-4">
+                        {/* Select All/None buttons */}
+                        <div className="flex items-center justify-between mb-4">
+                          <div className="text-sm text-gray-600">
+                            {keywordClusters.filter(c => c.selected).length} of {keywordClusters.length} clusters selected • 
+                            {' '}{keywordClusters.filter(c => c.selected).flatMap(c => c.keywords).length} keywords
+                          </div>
+                          <div className="flex gap-2">
+                            <button
+                              onClick={() => setKeywordClusters(clusters => 
+                                clusters.map(c => ({ ...c, selected: true }))
+                              )}
+                              className="text-sm px-3 py-1 bg-indigo-600 text-white rounded hover:bg-indigo-700"
+                            >
+                              Select All
+                            </button>
+                            <button
+                              onClick={() => setKeywordClusters(clusters => 
+                                clusters.map(c => ({ ...c, selected: false }))
+                              )}
+                              className="text-sm px-3 py-1 border border-gray-300 text-gray-700 rounded hover:bg-gray-50"
+                            >
+                              Clear All
+                            </button>
+                          </div>
+                        </div>
+                        
+                        {/* Cluster list */}
+                        {keywordClusters.map((cluster, index) => (
+                          <div key={index} className="border rounded-lg p-4 hover:bg-gray-50">
+                            <label className="flex items-start gap-3 cursor-pointer">
+                              <input
+                                type="checkbox"
+                                checked={cluster.selected}
+                                onChange={(e) => {
+                                  setKeywordClusters(clusters => 
+                                    clusters.map((c, i) => 
+                                      i === index ? { ...c, selected: e.target.checked } : c
+                                    )
+                                  );
+                                }}
+                                className="mt-1 w-4 h-4 text-indigo-600 rounded border-gray-300 focus:ring-indigo-500"
+                              />
+                              <div className="flex-1">
+                                <div className="flex items-center gap-2">
+                                  <h3 className="font-medium">{cluster.name}</h3>
+                                  <span className={`text-xs px-2 py-0.5 rounded ${
+                                    cluster.relevance === 'core' 
+                                      ? 'bg-green-100 text-green-800' 
+                                      : cluster.relevance === 'related'
+                                      ? 'bg-blue-100 text-blue-800'
+                                      : 'bg-gray-100 text-gray-800'
+                                  }`}>
+                                    {cluster.relevance === 'core' ? 'Premium' : 
+                                     cluster.relevance === 'related' ? 'Good' : 'Standard'}
+                                  </span>
+                                  <span className="text-sm text-gray-500">
+                                    {cluster.keywords.length} keywords
+                                  </span>
+                                </div>
+                                <div className="mt-2 text-sm text-gray-600">
+                                  <div className="line-clamp-2">
+                                    {cluster.keywords.slice(0, 5).join(', ')}
+                                    {cluster.keywords.length > 5 && ` +${cluster.keywords.length - 5} more`}
+                                  </div>
+                                </div>
+                              </div>
+                            </label>
+                          </div>
+                        ))}
+                      </div>
+                    </div>
+                    
+                    <div className="p-6 border-t bg-gray-50">
+                      <div className="flex items-center justify-between">
+                        <button
+                          onClick={() => {
+                            setShowKeywordClusters(false);
+                            setKeywordClusters([]);
+                          }}
+                          className="px-4 py-2 text-gray-700 hover:text-gray-900"
+                        >
+                          Cancel
+                        </button>
+                        <button
+                          onClick={executeDataForSeoAnalysis}
+                          disabled={!keywordClusters.some(c => c.selected)}
+                          className="px-6 py-2 bg-indigo-600 text-white rounded-lg hover:bg-indigo-700 disabled:opacity-50 disabled:cursor-not-allowed"
+                        >
+                          Analyze Selected Clusters
+                        </button>
+                      </div>
                     </div>
                   </div>
                 </div>
