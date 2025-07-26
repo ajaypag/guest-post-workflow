@@ -822,6 +822,118 @@ export default function ProjectDetailPage() {
     }
   };
 
+  const handleExportSelected = () => {
+    try {
+      // Get selected domains
+      const selectedDomainsList = domains.filter(d => selectedDomains.has(d.id));
+      
+      if (selectedDomainsList.length === 0) {
+        setMessage('❌ No domains selected for export');
+        return;
+      }
+      
+      // Create CSV content
+      const headers = ['Domain', 'Status', 'Keywords', 'Has Workflow', 'Checked Date', 'Notes', 'AI Reasoning'];
+      const rows = selectedDomainsList.map(d => [
+        d.domain,
+        d.qualificationStatus.replace('_', ' '),
+        (d.keywordCount || 0).toString(),
+        d.hasWorkflow ? 'Yes' : 'No',
+        d.checkedAt ? new Date(d.checkedAt).toLocaleDateString() : '',
+        d.notes || '',
+        d.aiQualificationReasoning || ''
+      ]);
+      
+      const csv = [
+        headers.join(','),
+        ...rows.map(row => row.map(cell => `"${cell.replace(/"/g, '""')}"`).join(','))
+      ].join('\n');
+      
+      // Create blob and download
+      const blob = new Blob([csv], { type: 'text/csv;charset=utf-8;' });
+      const link = document.createElement('a');
+      const url = URL.createObjectURL(blob);
+      
+      link.setAttribute('href', url);
+      link.setAttribute('download', `bulk-analysis-${project?.name.toLowerCase().replace(/\s+/g, '-') || 'export'}-${new Date().toISOString().split('T')[0]}.csv`);
+      link.style.visibility = 'hidden';
+      
+      document.body.appendChild(link);
+      link.click();
+      document.body.removeChild(link);
+      
+      setMessage(`✅ Exported ${selectedDomainsList.length} domains to CSV`);
+    } catch (error) {
+      console.error('Error exporting domains:', error);
+      setMessage('❌ Failed to export domains');
+    }
+  };
+
+  const handleExportAll = () => {
+    try {
+      if (domains.length === 0) {
+        setMessage('❌ No domains to export');
+        return;
+      }
+      
+      // Apply current filters to export
+      const filteredDomains = domains.filter(domain => {
+        // Status filter
+        if (statusFilter && statusFilter !== 'all') {
+          if (domain.qualificationStatus !== statusFilter) {
+            return false;
+          }
+        }
+        
+        // Workflow filter
+        if (workflowFilter === 'has_workflow' && !domain.hasWorkflow) return false;
+        if (workflowFilter === 'no_workflow' && domain.hasWorkflow) return false;
+        
+        // Search filter
+        if (searchQuery && !domain.domain.toLowerCase().includes(searchQuery.toLowerCase())) {
+          return false;
+        }
+        
+        return true;
+      });
+      
+      // Create CSV content
+      const headers = ['Domain', 'Status', 'Keywords', 'Has Workflow', 'Checked Date', 'Notes', 'AI Reasoning'];
+      const rows = filteredDomains.map(d => [
+        d.domain,
+        d.qualificationStatus.replace('_', ' '),
+        (d.keywordCount || 0).toString(),
+        d.hasWorkflow ? 'Yes' : 'No',
+        d.checkedAt ? new Date(d.checkedAt).toLocaleDateString() : '',
+        d.notes || '',
+        d.aiQualificationReasoning || ''
+      ]);
+      
+      const csv = [
+        headers.join(','),
+        ...rows.map(row => row.map(cell => `"${cell.replace(/"/g, '""')}"`).join(','))
+      ].join('\n');
+      
+      // Create blob and download
+      const blob = new Blob([csv], { type: 'text/csv;charset=utf-8;' });
+      const link = document.createElement('a');
+      const url = URL.createObjectURL(blob);
+      
+      link.setAttribute('href', url);
+      link.setAttribute('download', `bulk-analysis-all-${project?.name.toLowerCase().replace(/\s+/g, '-') || 'export'}-${new Date().toISOString().split('T')[0]}.csv`);
+      link.style.visibility = 'hidden';
+      
+      document.body.appendChild(link);
+      link.click();
+      document.body.removeChild(link);
+      
+      setMessage(`✅ Exported ${filteredDomains.length} domains to CSV`);
+    } catch (error) {
+      console.error('Error exporting all domains:', error);
+      setMessage('❌ Failed to export domains');
+    }
+  };
+
   if (!client || !project) {
     return (
       <AuthWrapper>
@@ -1161,7 +1273,17 @@ anotherdomain.com"
           {domains.length > 0 && (
             <div className="bg-white rounded-lg shadow p-6">
               <div className="flex items-center justify-between mb-6">
-                <h2 className="text-lg font-medium">Project Domains</h2>
+                <div className="flex items-center gap-4">
+                  <h2 className="text-lg font-medium">Project Domains</h2>
+                  <button
+                    onClick={handleExportAll}
+                    disabled={loading || domains.length === 0}
+                    className="inline-flex items-center px-3 py-1.5 text-sm bg-gray-100 text-gray-700 rounded-lg hover:bg-gray-200 disabled:opacity-50 disabled:cursor-not-allowed"
+                  >
+                    <Download className="w-4 h-4 mr-1.5" />
+                    Export All ({domains.length})
+                  </button>
+                </div>
                 
                 {/* Position Range Selector */}
                 <div className="bg-gray-50 border border-gray-200 rounded-lg p-3">
@@ -1369,11 +1491,9 @@ anotherdomain.com"
                         </>
                       )}
                       <button
-                        onClick={() => {
-                          // TODO: Export selected domains
-                          setMessage('🚧 Export selected domains coming soon!');
-                        }}
-                        className="inline-flex items-center px-4 py-2 bg-gray-600 text-white text-sm rounded-lg hover:bg-gray-700"
+                        onClick={handleExportSelected}
+                        disabled={loading}
+                        className="inline-flex items-center px-4 py-2 bg-gray-600 text-white text-sm rounded-lg hover:bg-gray-700 disabled:opacity-50 disabled:cursor-not-allowed"
                       >
                         <Download className="w-4 h-4 mr-2" />
                         Export Selected
