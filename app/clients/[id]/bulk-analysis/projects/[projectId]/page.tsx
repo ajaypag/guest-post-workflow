@@ -12,10 +12,10 @@ import { groupKeywordsByTopic, generateGroupedAhrefsUrls } from '@/lib/utils/key
 import DataForSeoResultsModal from '@/components/DataForSeoResultsModal';
 import BulkAnalysisResultsModal from '@/components/BulkAnalysisResultsModal';
 import AIQualificationModal from '@/components/AIQualificationModal';
-import BulkAnalysisTutorial from '@/components/BulkAnalysisTutorial';
 import BulkAnalysisTable from '@/components/BulkAnalysisTable';
 import GuidedTriageFlow from '@/components/GuidedTriageFlow';
-import { ProjectCard } from '@/components/bulk-analysis/ProjectCard';
+import { BulkAnalysisProject } from '@/types/bulk-analysis-projects';
+import { BulkAnalysisDomain } from '@/types/bulk-analysis';
 import { 
   ArrowLeft, 
   Target, 
@@ -31,29 +31,19 @@ import {
   Search,
   Download,
   Folder,
-  FolderPlus,
-  RefreshCw
+  Settings,
+  Edit
 } from 'lucide-react';
 
-import { BulkAnalysisDomain } from '@/types/bulk-analysis';
-import { BulkAnalysisProject } from '@/types/bulk-analysis-projects';
-
-export default function BulkAnalysisPage() {
+export default function ProjectDetailPage() {
   const params = useParams();
   const router = useRouter();
   const [client, setClient] = useState<Client | null>(null);
+  const [project, setProject] = useState<BulkAnalysisProject | null>(null);
   const [targetPages, setTargetPages] = useState<TargetPage[]>([]);
   const [selectedTargetPages, setSelectedTargetPages] = useState<string[]>([]);
   const [domainText, setDomainText] = useState('');
   const [domains, setDomains] = useState<BulkAnalysisDomain[]>([]);
-  const [projects, setProjects] = useState<BulkAnalysisProject[]>([]);
-  const [orphanedDomainsCount, setOrphanedDomainsCount] = useState(0);
-  const [showProjectForm, setShowProjectForm] = useState(false);
-  const [newProjectName, setNewProjectName] = useState('');
-  const [newProjectDescription, setNewProjectDescription] = useState('');
-  const [newProjectColor, setNewProjectColor] = useState('#6366f1');
-  const [newProjectIcon, setNewProjectIcon] = useState('📁');
-  const [selectedProject, setSelectedProject] = useState<string | null>(null);
   const [loading, setLoading] = useState(false);
   const [message, setMessage] = useState('');
   const [messageType, setMessageType] = useState<'info' | 'success' | 'error' | 'warning'>('info');
@@ -139,13 +129,14 @@ export default function BulkAnalysisPage() {
 
   useEffect(() => {
     loadClient();
-  }, [params.id]);
+    loadProject();
+  }, [params.id, params.projectId]);
 
   useEffect(() => {
-    if (client) {
-      loadProjects();
+    if (client && project) {
+      loadDomains();
     }
-  }, [client]);
+  }, [client, project]);
 
   const loadClient = async () => {
     try {
@@ -165,93 +156,38 @@ export default function BulkAnalysisPage() {
     }
   };
 
-  const loadProjects = async () => {
+  const loadProject = async () => {
     try {
-      const response = await fetch(`/api/clients/${params.id}/projects`);
+      const response = await fetch(`/api/clients/${params.id}/projects/${params.projectId}`);
       if (response.ok) {
         const data = await response.json();
-        setProjects(data.projects || []);
-        setOrphanedDomainsCount(data.orphanedDomainsCount || 0);
+        setProject(data.project);
+      } else if (response.status === 404) {
+        setMessage('❌ Project not found');
+        router.push(`/clients/${params.id}/bulk-analysis`);
       }
     } catch (error) {
-      console.error('Error loading projects:', error);
+      console.error('Error loading project:', error);
+      setMessage('❌ Failed to load project');
     }
   };
 
-  const createProject = async () => {
-    if (!newProjectName.trim()) {
-      setMessage('❌ Please enter a project name');
-      return;
-    }
-
+  const loadDomains = async () => {
     try {
-      const response = await fetch(`/api/clients/${params.id}/projects`, {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-          name: newProjectName,
-          description: newProjectDescription,
-          color: newProjectColor,
-          icon: newProjectIcon
-        })
-      });
-
+      const response = await fetch(
+        `/api/clients/${params.id}/bulk-analysis?projectId=${params.projectId}`
+      );
       if (response.ok) {
         const data = await response.json();
-        await loadProjects();
-        setShowProjectForm(false);
-        setNewProjectName('');
-        setNewProjectDescription('');
-        setMessage('✅ Project created successfully');
-        // Navigate to the new project
-        router.push(`/clients/${params.id}/bulk-analysis/projects/${data.project.id}`);
-      } else {
-        const error = await response.json();
-        setMessage(`❌ ${error.error}`);
+        // Add clientId to each domain
+        const domainsWithClientId = (data.domains || []).map((d: any) => ({
+          ...d,
+          clientId: params.id
+        }));
+        setDomains(domainsWithClientId);
       }
     } catch (error) {
-      console.error('Error creating project:', error);
-      setMessage('❌ Failed to create project');
-    }
-  };
-
-  const deleteProject = async (projectId: string) => {
-    try {
-      const response = await fetch(`/api/clients/${params.id}/projects/${projectId}`, {
-        method: 'DELETE'
-      });
-
-      if (response.ok) {
-        await loadProjects();
-        setMessage('✅ Project deleted successfully');
-      } else {
-        const error = await response.json();
-        setMessage(`❌ ${error.error}`);
-      }
-    } catch (error) {
-      console.error('Error deleting project:', error);
-      setMessage('❌ Failed to delete project');
-    }
-  };
-
-  const archiveProject = async (projectId: string) => {
-    try {
-      const response = await fetch(`/api/clients/${params.id}/projects/${projectId}`, {
-        method: 'PATCH',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ status: 'archived' })
-      });
-
-      if (response.ok) {
-        await loadProjects();
-        setMessage('✅ Project archived');
-      } else {
-        const error = await response.json();
-        setMessage(`❌ ${error.error}`);
-      }
-    } catch (error) {
-      console.error('Error archiving project:', error);
-      setMessage('❌ Failed to archive project');
+      console.error('Error loading domains:', error);
     }
   };
 
@@ -332,15 +268,16 @@ export default function BulkAnalysisPage() {
         body: JSON.stringify({
           domains: domainList,
           targetPageIds: keywordInputMode === 'target-pages' ? selectedTargetPages : [],
-          manualKeywords: keywordInputMode === 'manual' ? manualKeywords : undefined
+          manualKeywords: keywordInputMode === 'manual' ? manualKeywords : undefined,
+          projectId: params.projectId
         })
       });
 
       if (response.ok) {
         const data = await response.json();
-        setDomains(data.domains);
+        await loadDomains();
         setDomainText('');
-        setMessage(`✅ Added ${data.domains.length} domains for analysis`);
+        setMessage(`✅ Added ${data.domains.length} domains to project`);
       } else {
         throw new Error('Failed to create domains');
       }
@@ -615,10 +552,6 @@ export default function BulkAnalysisPage() {
   };
 
   const startBulkDataForSeoAnalysis = async () => {
-    console.log('startBulkDataForSeoAnalysis called');
-    console.log('selectedDomains.size:', selectedDomains.size);
-    console.log('keywordInputMode:', keywordInputMode);
-
     if (selectedDomains.size === 0) {
       setMessage('Please select domains to analyze');
       return;
@@ -631,7 +564,6 @@ export default function BulkAnalysisPage() {
         .split(',')
         .map(k => k.trim())
         .filter(k => k.length > 0);
-      console.log('Manual keywords found:', keywords);
     } else if (keywordInputMode === 'target-pages') {
       // Get keywords from domains' target pages
       const selectedDomainsList = domains.filter(d => selectedDomains.has(d.id));
@@ -651,7 +583,6 @@ export default function BulkAnalysisPage() {
       
       // If no keywords found from domains' target pages, use all target pages' keywords
       if (keywordSet.size === 0 && targetPages.length > 0) {
-        console.log('No keywords from domain target pages, using all target pages');
         targetPages.forEach(page => {
           const pageKeywords = (page as any).keywords?.split(',').map((k: string) => k.trim()) || [];
           pageKeywords.forEach((k: string) => keywordSet.add(k));
@@ -659,11 +590,9 @@ export default function BulkAnalysisPage() {
       }
       
       keywords = Array.from(keywordSet);
-      console.log('Target page keywords found:', keywords);
     }
 
     if (keywords.length === 0) {
-      console.log('No keywords found!');
       setMessage('No keywords found. Please ensure target pages have keywords or enter manual keywords.');
       return;
     }
@@ -675,7 +604,6 @@ export default function BulkAnalysisPage() {
       selected: true // Default all clusters to selected
     }));
     
-    console.log('Keyword clusters:', clustersWithSelection);
     setKeywordClusters(clustersWithSelection);
     setShowKeywordClusters(true);
     setMessage(`Found ${keywords.length} keywords grouped into ${groups.length} clusters`);
@@ -745,12 +673,6 @@ export default function BulkAnalysisPage() {
         const { job, items } = data;
 
         // Update progress
-        console.log('Job status update:', {
-          status: job.status,
-          processedDomains: job.processedDomains,
-          totalDomains: job.totalDomains,
-          bulkAnalysisRunning
-        });
         setBulkProgress({
           current: job.processedDomains || 0,
           total: job.totalDomains || 0
@@ -796,8 +718,6 @@ export default function BulkAnalysisPage() {
   };
 
   const analyzeWithDataForSeo = async (domain: BulkAnalysisDomain) => {
-    console.log('DataForSEO button clicked for domain:', domain);
-    
     setLoading(true);
     setMessage('🔄 Analyzing with DataForSEO...');
     
@@ -814,32 +734,16 @@ export default function BulkAnalysisPage() {
         ...(manualKeywordArray && { manualKeywords: manualKeywordArray })
       };
       
-      console.log('Sending request to:', `/api/clients/${params.id}/bulk-analysis/analyze-dataforseo`);
-      console.log('Request payload:', payload);
-      
       const response = await fetch(`/api/clients/${params.id}/bulk-analysis/analyze-dataforseo`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify(payload)
       });
       
-      console.log('Response status:', response.status);
-      const responseText = await response.text();
-      console.log('Response text:', responseText);
-      
-      let data;
-      try {
-        data = JSON.parse(responseText);
-      } catch (e) {
-        console.error('Failed to parse response:', e);
-        throw new Error('Invalid response from server');
-      }
+      const data = await response.json();
       
       if (response.ok) {
-        console.log('DataForSEO analysis successful:', data);
-        
         if (!data.result) {
-          console.error('No result in response:', data);
           setMessage('❌ No results returned from DataForSEO');
           return;
         }
@@ -855,7 +759,6 @@ export default function BulkAnalysisPage() {
         });
         setMessage('');
       } else {
-        console.error('DataForSEO API error:', data);
         setMessage(`❌ DataForSEO error: ${data.details || data.error || 'Unknown error'}`);
       }
     } catch (error) {
@@ -866,32 +769,7 @@ export default function BulkAnalysisPage() {
     }
   };
 
-  const buildAhrefsUrl = (domain: string, keywords: string[]) => {
-    const cleanDomain = domain.replace(/^https?:\/\//, '').replace(/\/$/, '');
-    const targetUrl = `https://${cleanDomain}/`;
-    
-    if (keywords.length === 0) {
-      const positionsParam = selectedPositionRange !== '1-100' ? `&positions=${selectedPositionRange}` : '';
-      return `https://app.ahrefs.com/v2-site-explorer/organic-keywords?brandedMode=all&chartGranularity=daily&chartInterval=year5&compareDate=dontCompare&country=us&currentDate=today&dataMode=text&hiddenColumns=&intentsAttrs=&keywordRules=&limit=100&localMode=all&mainOnly=0&mode=subdomains&multipleUrlsOnly=0&offset=0&performanceChartTopPosition=top11_20%7C%7Ctop21_50%7C%7Ctop3%7C%7Ctop4_10%7C%7Ctop51&positionChanges=${positionsParam}&serpFeatures=&sort=OrganicTrafficInitial&sortDirection=desc&target=${encodeURIComponent(targetUrl)}&urlRules=&volume_type=average`;
-    }
-    
-    // Batch keywords (50 max per URL)
-    const keywordBatch = keywords.slice(0, 50);
-    const cleanKeywords = keywordBatch.join(', ');
-    const keywordRulesArray = [["contains","all"], cleanKeywords, "any"];
-    const keywordRulesEncoded = encodeURIComponent(JSON.stringify(keywordRulesArray));
-    
-    const positionsParam = selectedPositionRange !== '1-100' ? `&positions=${selectedPositionRange}` : '';
-    let url = `https://app.ahrefs.com/v2-site-explorer/organic-keywords?brandedMode=all&chartGranularity=daily&chartInterval=year5&compareDate=dontCompare&country=us&currentDate=today&dataMode=text&hiddenColumns=&intentsAttrs=`;
-    url += `&keywordRules=${keywordRulesEncoded}`;
-    url += `&limit=100&localMode=all&mainOnly=0&mode=subdomains&multipleUrlsOnly=0&offset=0&performanceChartTopPosition=top11_20%7C%7Ctop21_50%7C%7Ctop3%7C%7Ctop4_10%7C%7Ctop51&positionChanges=${positionsParam}&serpFeatures=&sort=OrganicTrafficInitial&sortDirection=desc`;
-    url += `&target=${encodeURIComponent(targetUrl)}`;
-    url += `&urlRules=&volume_type=average`;
-    
-    return url;
-  };
-
-  if (!client) {
+  if (!client || !project) {
     return (
       <AuthWrapper>
         <div className="min-h-screen bg-gray-50">
@@ -914,24 +792,41 @@ export default function BulkAnalysisPage() {
           <div className="mb-8">
             <div className="flex items-center mb-4">
               <Link
-                href={`/clients/${client.id}`}
+                href={`/clients/${client.id}/bulk-analysis`}
                 className="inline-flex items-center text-gray-600 hover:text-gray-900 mr-4"
               >
                 <ArrowLeft className="w-4 h-4 mr-2" />
-                Back to {client.name}
+                Back to Projects
               </Link>
             </div>
             
             <div className="flex justify-between items-center">
-              <div>
-                <h1 className="text-2xl font-bold text-gray-900">Bulk Domain Analysis</h1>
-                <p className="text-gray-600 mt-1">Pre-qualify guest post opportunities in bulk</p>
+              <div className="flex items-center gap-4">
+                <div 
+                  className="w-12 h-12 rounded-lg flex items-center justify-center text-2xl"
+                  style={{ backgroundColor: project.color + '20' }}
+                >
+                  {project.icon || '📁'}
+                </div>
+                <div>
+                  <h1 className="text-2xl font-bold text-gray-900">{project.name}</h1>
+                  {project.description && (
+                    <p className="text-gray-600 mt-1">{project.description}</p>
+                  )}
+                </div>
               </div>
+              <button
+                onClick={() => {
+                  // TODO: Implement project settings modal
+                  setMessage('🚧 Project settings coming soon');
+                }}
+                className="inline-flex items-center px-4 py-2 border border-gray-300 rounded-lg hover:bg-gray-50"
+              >
+                <Settings className="w-4 h-4 mr-2" />
+                Settings
+              </button>
             </div>
           </div>
-
-          {/* Tutorial Video */}
-          <BulkAnalysisTutorial />
 
           {message && (
             <div className={`mb-6 p-4 rounded-lg ${
@@ -943,144 +838,10 @@ export default function BulkAnalysisPage() {
             </div>
           )}
 
-          {/* Projects View */}
-          <div className="mb-8">
-            <div className="flex items-center justify-between mb-6">
-              <h2 className="text-xl font-semibold text-gray-900">Projects</h2>
-              <button
-                onClick={() => setShowProjectForm(true)}
-                className="inline-flex items-center px-4 py-2 bg-indigo-600 text-white rounded-lg hover:bg-indigo-700 transition-colors"
-              >
-                <FolderPlus className="w-4 h-4 mr-2" />
-                New Project
-              </button>
-            </div>
-
-            {/* New Project Form */}
-            {showProjectForm && (
-              <div className="mb-6 p-6 bg-white rounded-lg shadow">
-                <h3 className="text-lg font-medium mb-4">Create New Project</h3>
-                <div className="space-y-4">
-                  <div>
-                    <label className="block text-sm font-medium text-gray-700 mb-1">Project Name *</label>
-                    <input
-                      type="text"
-                      value={newProjectName}
-                      onChange={(e) => setNewProjectName(e.target.value)}
-                      placeholder="e.g., Tech Blogs Q1 2024"
-                      className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-indigo-500 focus:border-transparent"
-                    />
-                  </div>
-                  <div>
-                    <label className="block text-sm font-medium text-gray-700 mb-1">Description</label>
-                    <textarea
-                      value={newProjectDescription}
-                      onChange={(e) => setNewProjectDescription(e.target.value)}
-                      placeholder="Add a description..."
-                      className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-indigo-500 focus:border-transparent"
-                      rows={3}
-                    />
-                  </div>
-                  <div className="grid grid-cols-2 gap-4">
-                    <div>
-                      <label className="block text-sm font-medium text-gray-700 mb-1">Icon</label>
-                      <input
-                        type="text"
-                        value={newProjectIcon}
-                        onChange={(e) => setNewProjectIcon(e.target.value)}
-                        className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-indigo-500 focus:border-transparent"
-                        maxLength={2}
-                      />
-                    </div>
-                    <div>
-                      <label className="block text-sm font-medium text-gray-700 mb-1">Color</label>
-                      <input
-                        type="color"
-                        value={newProjectColor}
-                        onChange={(e) => setNewProjectColor(e.target.value)}
-                        className="w-full h-10 border border-gray-300 rounded-lg cursor-pointer"
-                      />
-                    </div>
-                  </div>
-                  <div className="flex gap-3">
-                    <button
-                      onClick={createProject}
-                      className="px-4 py-2 bg-indigo-600 text-white rounded-lg hover:bg-indigo-700"
-                    >
-                      Create Project
-                    </button>
-                    <button
-                      onClick={() => {
-                        setShowProjectForm(false);
-                        setNewProjectName('');
-                        setNewProjectDescription('');
-                      }}
-                      className="px-4 py-2 border border-gray-300 text-gray-700 rounded-lg hover:bg-gray-50"
-                    >
-                      Cancel
-                    </button>
-                  </div>
-                </div>
-              </div>
-            )}
-
-            {/* Projects Grid */}
-            {projects.length > 0 ? (
-              <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-                {projects.map((project) => (
-                  <ProjectCard
-                    key={project.id}
-                    project={project}
-                    clientId={params.id as string}
-                    onEdit={(project) => {
-                      // TODO: Implement edit modal
-                      setMessage('🚧 Edit functionality coming soon');
-                    }}
-                    onDelete={deleteProject}
-                    onArchive={archiveProject}
-                  />
-                ))}
-              </div>
-            ) : (
-              <div className="text-center py-12 bg-gray-50 rounded-lg">
-                <Folder className="w-12 h-12 mx-auto mb-3 text-gray-400" />
-                <p className="text-gray-500">No projects yet. Create your first project to get started.</p>
-              </div>
-            )}
-
-            {/* Orphaned Domains Notice */}
-            {orphanedDomainsCount > 0 && (
-              <div className="mt-6 p-4 bg-yellow-50 border border-yellow-200 rounded-lg">
-                <div className="flex items-center justify-between">
-                  <div>
-                    <p className="text-sm font-medium text-yellow-800">
-                      {orphanedDomainsCount} domains without a project
-                    </p>
-                    <p className="text-xs text-yellow-700 mt-1">
-                      These domains were added before the project system. Assign them to a project to organize your analysis.
-                    </p>
-                  </div>
-                  <button
-                    onClick={() => {
-                      // Navigate to a special view for orphaned domains
-                      router.push(`/clients/${params.id}/bulk-analysis/orphaned`);
-                    }}
-                    className="px-3 py-2 bg-yellow-600 text-white text-sm rounded hover:bg-yellow-700"
-                  >
-                    View Orphaned
-                  </button>
-                </div>
-              </div>
-            )}
-          </div>
-
-          {/* Legacy Domain Addition Section - Hidden by default */}
-          {false && (
-            <>
-              {/* Keyword Source Selection */}
-              <div className="bg-white rounded-lg shadow p-6 mb-6">
-                <div className="flex items-center justify-between mb-4">
-                  <h2 className="text-lg font-medium">1. Choose Keyword Source</h2>
+          {/* Keyword Source Selection */}
+          <div className="bg-white rounded-lg shadow p-6 mb-6">
+            <div className="flex items-center justify-between mb-4">
+              <h2 className="text-lg font-medium">1. Choose Keyword Source</h2>
               
               {/* Mode Toggle */}
               <div className="bg-gray-100 rounded-lg p-1 flex">
@@ -1229,7 +990,7 @@ export default function BulkAnalysisPage() {
           <div className="bg-white rounded-lg shadow p-6 mb-6">
             <h2 className="text-lg font-medium mb-4">2. Enter Domains to Analyze</h2>
             <p className="text-sm text-gray-600 mb-4">
-              Paste domains to analyze (one per line). Domains will be checked against {
+              Paste domains to analyze (one per line). Domains will be added to this project and checked against {
                 keywordInputMode === 'manual' 
                   ? 'the keywords you entered above'
                   : 'keywords from selected target pages'
@@ -1250,7 +1011,9 @@ export default function BulkAnalysisPage() {
             <textarea
               value={domainText}
               onChange={(e) => setDomainText(e.target.value)}
-              placeholder="example.com\nblog.example.com\nanotherdomain.com"
+              placeholder="example.com
+blog.example.com
+anotherdomain.com"
               className="w-full h-32 px-3 py-2 border rounded-lg focus:ring-2 focus:ring-indigo-500 focus:border-transparent"
             />
             
@@ -1322,7 +1085,7 @@ export default function BulkAnalysisPage() {
                 ) : (
                   <>
                     <Target className="w-4 h-4 mr-2" />
-                    Analyze Domains
+                    Add to Project
                   </>
                 )}
               </button>
@@ -1340,14 +1103,12 @@ export default function BulkAnalysisPage() {
               )}
             </div>
           </div>
-            </>
-          )}
 
-          {/* Legacy Results Grid - Hidden */}
-          {false && domains.length > 0 && (
+          {/* Results Grid */}
+          {domains.length > 0 && (
             <div className="bg-white rounded-lg shadow p-6">
               <div className="flex items-center justify-between mb-6">
-                <h2 className="text-lg font-medium">Analysis Results</h2>
+                <h2 className="text-lg font-medium">Project Domains</h2>
                 
                 {/* Position Range Selector */}
                 <div className="bg-gray-50 border border-gray-200 rounded-lg p-3">

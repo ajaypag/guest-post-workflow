@@ -23,4 +23,13 @@ export interface BulkAnalysisDomain {
   humanVerifiedBy?: string;
   humanVerifiedAt?: string;
   selectedTargetPageId?: string;
+  // Project support
+  projectId?: string | null;
+  projectAddedAt?: string | null;
+  project?: {
+    id: string;
+    name: string;
+    color?: string | null;
+    icon?: string | null;
+  };
 }

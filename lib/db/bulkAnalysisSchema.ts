@@ -1,6 +1,37 @@
-import { pgTable, uuid, varchar, text, integer, timestamp, jsonb, boolean } from 'drizzle-orm/pg-core';
+import { pgTable, uuid, varchar, text, integer, timestamp, jsonb, boolean, index } from 'drizzle-orm/pg-core';
 import { relations } from 'drizzle-orm';
 import { clients, users } from './schema';
+
+// Bulk Analysis Projects table for organizing domains into campaigns
+export const bulkAnalysisProjects = pgTable('bulk_analysis_projects', {
+  id: uuid('id').primaryKey().defaultRandom(),
+  clientId: uuid('client_id').notNull().references(() => clients.id, { onDelete: 'cascade' }),
+  name: varchar('name', { length: 255 }).notNull(),
+  description: text('description'),
+  color: varchar('color', { length: 7 }), // For UI distinction (#FF5733)
+  icon: varchar('icon', { length: 50 }), // emoji or icon name
+  status: varchar('status', { length: 50 }).default('active'), // active, archived, completed
+  
+  // Settings
+  autoApplyKeywords: jsonb('auto_apply_keywords').default([]), // Default keywords for new domains
+  tags: jsonb('tags').default([]), // For filtering/organization
+  
+  // Quick stats (updated via code, not triggers for now)
+  domainCount: integer('domain_count').default(0),
+  qualifiedCount: integer('qualified_count').default(0), 
+  workflowCount: integer('workflow_count').default(0),
+  lastActivityAt: timestamp('last_activity_at'),
+  
+  // Metadata
+  createdBy: uuid('created_by').references(() => users.id),
+  createdAt: timestamp('created_at').notNull().defaultNow(),
+  updatedAt: timestamp('updated_at').notNull().defaultNow(),
+}, (table) => {
+  return {
+    clientIdIdx: index('idx_bulk_projects_client').on(table.clientId),
+    statusIdx: index('idx_bulk_projects_status').on(table.status),
+  };
+});
 
 // Bulk Analysis Domains table for pre-workflow guest post qualification
 export const bulkAnalysisDomains = pgTable('bulk_analysis_domains', {
@@ -29,10 +60,19 @@ export const bulkAnalysisDomains = pgTable('bulk_analysis_domains', {
   wasHumanVerified: boolean('was_human_verified').default(false),
   humanVerifiedBy: uuid('human_verified_by').references(() => users.id),
   humanVerifiedAt: timestamp('human_verified_at'),
+  // Project support - required going forward
+  projectId: uuid('project_id').references(() => bulkAnalysisProjects.id, { onDelete: 'cascade' }),
+  projectAddedAt: timestamp('project_added_at'),
   createdAt: timestamp('created_at').notNull(),
   updatedAt: timestamp('updated_at').notNull(),
+}, (table) => {
+  return {
+    projectIdIdx: index('idx_bulk_domains_project').on(table.projectId),
+    clientDomainIdx: index('idx_bulk_domains_client_domain').on(table.clientId, table.domain),
+  };
 });
 
+// Relations
 export const bulkAnalysisDomainsRelations = relations(bulkAnalysisDomains, ({ one }) => ({
   client: one(clients, {
     fields: [bulkAnalysisDomains.clientId],
@@ -42,7 +82,26 @@ export const bulkAnalysisDomainsRelations = relations(bulkAnalysisDomains, ({ on
     fields: [bulkAnalysisDomains.checkedBy],
     references: [users.id],
   }),
+  project: one(bulkAnalysisProjects, {
+    fields: [bulkAnalysisDomains.projectId],
+    references: [bulkAnalysisProjects.id],
+  }),
 }));
 
+export const bulkAnalysisProjectsRelations = relations(bulkAnalysisProjects, ({ one, many }) => ({
+  client: one(clients, {
+    fields: [bulkAnalysisProjects.clientId],
+    references: [clients.id],
+  }),
+  createdByUser: one(users, {
+    fields: [bulkAnalysisProjects.createdBy],
+    references: [users.id],
+  }),
+  domains: many(bulkAnalysisDomains),
+}));
+
+// Types
 export type BulkAnalysisDomain = typeof bulkAnalysisDomains.$inferSelect;
 export type NewBulkAnalysisDomain = typeof bulkAnalysisDomains.$inferInsert;
+export type BulkAnalysisProject = typeof bulkAnalysisProjects.$inferSelect;
+export type NewBulkAnalysisProject = typeof bulkAnalysisProjects.$inferInsert;

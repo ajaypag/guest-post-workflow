@@ -10,6 +10,7 @@ export interface BulkAnalysisInput {
   targetPageIds: string[];
   userId: string;
   manualKeywords?: string;
+  projectId?: string;
 }
 
 export interface BulkAnalysisResult extends BulkAnalysisDomain {
@@ -21,6 +22,7 @@ export interface BulkAnalysisFilter {
   qualificationStatus?: 'pending' | 'high_quality' | 'average_quality' | 'disqualified' | 'qualified_any';
   hasWorkflow?: boolean;
   search?: string;
+  projectId?: string;
 }
 
 export interface PaginatedResult<T> {
@@ -47,12 +49,18 @@ export class BulkAnalysisService {
   /**
    * Get all bulk analysis domains for a client
    */
-  static async getClientDomains(clientId: string): Promise<BulkAnalysisResult[]> {
+  static async getClientDomains(clientId: string, projectId?: string): Promise<BulkAnalysisResult[]> {
     try {
+      const conditions = [eq(bulkAnalysisDomains.clientId, clientId)];
+      
+      if (projectId) {
+        conditions.push(eq(bulkAnalysisDomains.projectId, projectId));
+      }
+      
       const domains = await db
         .select()
         .from(bulkAnalysisDomains)
-        .where(eq(bulkAnalysisDomains.clientId, clientId))
+        .where(and(...conditions))
         .orderBy(desc(bulkAnalysisDomains.createdAt));
 
       return domains;
@@ -85,7 +93,7 @@ export class BulkAnalysisService {
    */
   static async createOrUpdateDomains(input: BulkAnalysisInput): Promise<BulkAnalysisResult[]> {
     try {
-      const { clientId, domains, targetPageIds, userId, manualKeywords } = input;
+      const { clientId, domains, targetPageIds, userId, manualKeywords, projectId } = input;
       
       // Clean domains
       const cleanedDomains = domains.map(d => this.cleanDomain(d)).filter(Boolean);
@@ -131,6 +139,8 @@ export class BulkAnalysisService {
         checkedBy: null,
         checkedAt: null,
         notes: null,
+        projectId: projectId || null,
+        projectAddedAt: projectId ? new Date() : null,
         createdAt: new Date(),
         updatedAt: new Date(),
       }));
@@ -335,6 +345,10 @@ export class BulkAnalysisService {
       
       // Build where conditions
       const conditions = [eq(bulkAnalysisDomains.clientId, clientId)];
+      
+      if (filters?.projectId) {
+        conditions.push(eq(bulkAnalysisDomains.projectId, filters.projectId));
+      }
       
       if (filters?.qualificationStatus) {
         if (filters.qualificationStatus === 'qualified_any') {

@@ -20,10 +20,11 @@ export async function GET(
     const hasWorkflow = searchParams.get('hasWorkflow') === 'true' ? true : 
                        searchParams.get('hasWorkflow') === 'false' ? false : undefined;
     const search = searchParams.get('search') || undefined;
+    const projectId = searchParams.get('projectId') || undefined;
     
     // Support legacy endpoint without pagination for backward compatibility
     if (!searchParams.get('page')) {
-      const domains = await BulkAnalysisService.getClientDomains(id);
+      const domains = await BulkAnalysisService.getClientDomains(id, projectId);
       return NextResponse.json({ domains });
     }
     
@@ -35,7 +36,8 @@ export async function GET(
       {
         qualificationStatus,
         hasWorkflow,
-        search
+        search,
+        projectId
       },
       sortBy,
       sortOrder
@@ -57,7 +59,7 @@ export async function POST(
 ) {
   try {
     const { id } = await params;
-    const { domains, targetPageIds, manualKeywords } = await request.json();
+    const { domains, targetPageIds, manualKeywords, projectId } = await request.json();
 
     if (!domains || !Array.isArray(domains) || domains.length === 0) {
       return NextResponse.json(
@@ -87,6 +89,7 @@ export async function POST(
       domains,
       targetPageIds,
       manualKeywords,
+      projectId,
       userId: 'system' // Placeholder since no auth
     });
 
