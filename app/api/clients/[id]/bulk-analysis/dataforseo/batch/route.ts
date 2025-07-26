@@ -226,6 +226,16 @@ async function processBatchAsync(
               WHERE job_id = ${jobId}::uuid AND domain_id = ${domainId}::uuid
             `);
 
+            // Update domain record to mark DataForSEO analysis as complete
+            await db.execute(sql`
+              UPDATE bulk_analysis_domains
+              SET 
+                has_dataforseo_results = true,
+                dataforseo_last_analyzed = NOW(),
+                updated_at = NOW()
+              WHERE id = ${domainId}::uuid
+            `);
+
           } catch (error: any) {
             console.error(`Error processing domain ${domainId}:`, error);
             

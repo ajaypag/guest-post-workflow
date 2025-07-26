@@ -126,7 +126,8 @@ export async function POST(
         .update(bulkAnalysisDomains)
         .set({
           qualificationStatus: qual.qualification,
-          notes: qual.reasoning,
+          aiQualificationReasoning: qual.reasoning,
+          aiQualifiedAt: new Date(),
           updatedAt: new Date()
         })
         .where(eq(bulkAnalysisDomains.id, qual.domainId))

@@ -16,6 +16,11 @@ export const bulkAnalysisDomains = pgTable('bulk_analysis_domains', {
   hasWorkflow: boolean('has_workflow').default(false),
   workflowId: uuid('workflow_id'),
   workflowCreatedAt: timestamp('workflow_created_at'),
+  // Data source tracking
+  hasDataForSeoResults: boolean('has_dataforseo_results').default(false),
+  dataForSeoLastAnalyzed: timestamp('dataforseo_last_analyzed'),
+  aiQualificationReasoning: text('ai_qualification_reasoning'),
+  aiQualifiedAt: timestamp('ai_qualified_at'),
   createdAt: timestamp('created_at').notNull(),
   updatedAt: timestamp('updated_at').notNull(),
 });
