@@ -30,6 +30,7 @@ interface BulkAnalysisTableProps {
   domains: BulkAnalysisDomain[];
   targetPages: TargetPage[];
   selectedDomains: Set<string>;
+  recentlyAnalyzedDomains?: Set<string>;
   onToggleSelection: (domainId: string) => void;
   onSelectAll: (domainIds: string[]) => void;
   onClearSelection: () => void;
@@ -556,7 +557,9 @@ export default function BulkAnalysisTable(props: BulkAnalysisTableProps) {
                 <tr 
                   className={`hover:bg-gray-50 cursor-pointer transition-colors ${
                     isFocused ? 'ring-2 ring-inset ring-indigo-500' : ''
-                  } ${props.selectedDomains.has(domain.id) ? 'bg-indigo-50' : ''}`}
+                  } ${props.selectedDomains.has(domain.id) ? 'bg-indigo-50' : ''} ${
+                    props.recentlyAnalyzedDomains?.has(domain.id) ? 'bg-green-50 animate-pulse' : ''
+                  }`}
                   onClick={(e) => {
                     setFocusedDomainId(domain.id);
                     // Expand row if not clicking on a button/link/input

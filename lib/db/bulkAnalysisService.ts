@@ -63,6 +63,24 @@ export class BulkAnalysisService {
   }
 
   /**
+   * Get a single domain by ID
+   */
+  static async getDomainById(domainId: string): Promise<BulkAnalysisResult | null> {
+    try {
+      const domains = await db
+        .select()
+        .from(bulkAnalysisDomains)
+        .where(eq(bulkAnalysisDomains.id, domainId))
+        .limit(1);
+
+      return domains[0] || null;
+    } catch (error) {
+      console.error('Error fetching domain by ID:', error);
+      throw error;
+    }
+  }
+
+  /**
    * Create or update bulk analysis domains
    */
   static async createOrUpdateDomains(input: BulkAnalysisInput): Promise<BulkAnalysisResult[]> {

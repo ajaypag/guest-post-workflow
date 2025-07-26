@@ -1,6 +1,31 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { BulkAnalysisService } from '@/lib/db/bulkAnalysisService';
 
+export async function GET(
+  request: NextRequest,
+  { params }: { params: Promise<{ id: string; domainId: string }> }
+) {
+  try {
+    const { domainId } = await params;
+    const domain = await BulkAnalysisService.getDomainById(domainId);
+
+    if (!domain) {
+      return NextResponse.json(
+        { error: 'Domain not found' },
+        { status: 404 }
+      );
+    }
+
+    return NextResponse.json(domain);
+  } catch (error: any) {
+    console.error('Error fetching domain:', error);
+    return NextResponse.json(
+      { error: 'Failed to fetch domain', details: error.message },
+      { status: 500 }
+    );
+  }
+}
+
 export async function PUT(
   request: NextRequest,
   { params }: { params: Promise<{ id: string; domainId: string }> }

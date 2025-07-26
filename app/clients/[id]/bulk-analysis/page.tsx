@@ -84,6 +84,7 @@ export default function BulkAnalysisPage() {
     analyzedDomains: Array<{ id: string; domain: string }>;
   }>({ isOpen: false, jobId: '', analyzedDomains: [] });
   const [completedJobId, setCompletedJobId] = useState<string | null>(null);
+  const [recentlyAnalyzedDomains, setRecentlyAnalyzedDomains] = useState<Set<string>>(new Set());
   const [showResultsModal, setShowResultsModal] = useState(false);
   const [resultsJobId, setResultsJobId] = useState<string | null>(null);
   
@@ -423,6 +424,48 @@ export default function BulkAnalysisPage() {
     }
   };
 
+  // Update only the analyzed domains without reloading the entire list
+  const updateAnalyzedDomainsOnly = async (analyzedDomainIds: Set<string>) => {
+    try {
+      // Mark domains as recently analyzed for visual feedback
+      setRecentlyAnalyzedDomains(analyzedDomainIds);
+      
+      // Clear the visual indicator after 5 seconds
+      setTimeout(() => {
+        setRecentlyAnalyzedDomains(new Set());
+      }, 5000);
+      
+      // Fetch only the analyzed domains' updated data
+      const updatePromises = Array.from(analyzedDomainIds).map(async (domainId) => {
+        const response = await fetch(`/api/clients/${params.id}/bulk-analysis/${domainId}`);
+        if (response.ok) {
+          return await response.json();
+        }
+        return null;
+      });
+
+      const updatedDomains = await Promise.all(updatePromises);
+      
+      // Update local state with the new data while preserving order
+      setDomains(prevDomains => 
+        prevDomains.map(domain => {
+          if (analyzedDomainIds.has(domain.id)) {
+            const updated = updatedDomains.find(d => d && d.id === domain.id);
+            if (updated) {
+              // Preserve clientId
+              return { ...updated, clientId: params.id };
+            }
+          }
+          return domain;
+        })
+      );
+    } catch (error) {
+      console.error('Error updating analyzed domains:', error);
+      // Fallback to full reload if update fails
+      loadDomains();
+    }
+  };
+
   const refreshPendingDomains = async () => {
     if (keywordInputMode !== 'target-pages') {
       setMessage('❌ Refresh only works with target pages mode');
@@ -553,9 +596,9 @@ export default function BulkAnalysisPage() {
     }
 
     setShowKeywordClusters(false);
+    setMessage(`🚀 Starting analysis for ${selectedDomains.size} domains with ${selectedKeywords.length} keywords...`);
     setBulkAnalysisRunning(true);
     setBulkProgress({ current: 0, total: selectedDomains.size });
-    setMessage(`🚀 Starting analysis for ${selectedDomains.size} domains with ${selectedKeywords.length} keywords...`);
 
     try {
       const response = await fetch(`/api/clients/${params.id}/bulk-analysis/dataforseo/batch`, {
@@ -576,8 +619,9 @@ export default function BulkAnalysisPage() {
 
       const { jobId, totalDomains } = await response.json();
       
-      setBulkProgress({ current: 0, total: totalDomains });
+      // Ensure progress bar stays visible
       setMessage(`⏳ Analyzing ${totalDomains} domains...`);
+      setBulkProgress({ current: 0, total: totalDomains });
       
       // Start polling for job status
       pollJobStatus(jobId);
@@ -621,8 +665,9 @@ export default function BulkAnalysisPage() {
         } else if (job.status === 'completed') {
           clearInterval(pollInterval);
           
-          // Store analyzed domains before clearing selection
-          const analyzedDomains = domains.filter(d => selectedDomains.has(d.id)).map(d => ({ id: d.id, domain: d.domain }));
+          // Store analyzed domains BEFORE clearing selection
+          const analyzedDomainIds = new Set(Array.from(selectedDomains));
+          const analyzedDomains = domains.filter(d => analyzedDomainIds.has(d.id)).map(d => ({ id: d.id, domain: d.domain }));
           
           setMessage(
             `✅ Analysis complete! Analyzed ${job.totalKeywordsAnalyzed} keywords, found ${job.totalRankingsFound} rankings.`
@@ -634,8 +679,9 @@ export default function BulkAnalysisPage() {
           setBulkResultsModal({ isOpen: false, jobId, analyzedDomains });
           clearSelection();
           
-          // Reload domains to show updated data
-          loadDomains();
+          // Instead of reloading all domains, just update the analyzed ones
+          // This preserves the current order and prevents "jumping"
+          updateAnalyzedDomainsOnly(analyzedDomainIds);
         } else if (job.status === 'failed') {
           clearInterval(pollInterval);
           setMessage(`❌ Bulk analysis failed`);
@@ -1442,6 +1488,7 @@ export default function BulkAnalysisPage() {
                       domains={paginatedDomains}
                       targetPages={targetPages}
                       selectedDomains={selectedDomains}
+                      recentlyAnalyzedDomains={recentlyAnalyzedDomains}
                       onToggleSelection={toggleDomainSelection}
                       onSelectAll={selectAll}
                       onClearSelection={clearSelection}
