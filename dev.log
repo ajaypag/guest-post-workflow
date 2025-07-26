@@ -1,123 +1,15 @@
 
-> guest-post-workflow@0.1.0 dev
+> guest-post-workflow@1.0.0 dev
 > next dev --turbopack
 
    ▲ Next.js 15.3.4 (Turbopack)
    - Local:        http://localhost:3000
    - Network:      http://10.255.255.254:3000
+   - Environments: .env.local
 
  ✓ Starting...
- ✓ Ready in 944ms
- ○ Compiling / ...
- ✓ Compiled / in 2.4s
- GET / 200 in 2688ms
- ○ Compiling /workflow/[id] ...
- ✓ Compiled /workflow/[id] in 1035ms
- GET /workflow/a151e028-ceb8-4080-9aaf-d6955fbceefa 200 in 1518ms
- ○ Compiling /favicon.ico ...
- ✓ Compiled /favicon.ico in 615ms
- GET /favicon.ico?favicon.45db1c09.ico 200 in 881ms
- GET /favicon.ico?favicon.45db1c09.ico 200 in 250ms
- GET / 200 in 176ms
- GET /workflow/7b6e84b6-f74a-4330-be40-7ae1af0c222d 200 in 76ms
- GET /workflow/7b6e84b6-f74a-4330-be40-7ae1af0c222d?step=1 200 in 57ms
- GET /workflow/7b6e84b6-f74a-4330-be40-7ae1af0c222d?step=2 200 in -795ms
- GET /workflow/7b6e84b6-f74a-4330-be40-7ae1af0c222d?step=3 200 in 69ms
- GET /workflow/7b6e84b6-f74a-4330-be40-7ae1af0c222d?step=9 200 in 64ms
- GET /workflow/7b6e84b6-f74a-4330-be40-7ae1af0c222d?step=11 200 in 62ms
- GET /workflow/7b6e84b6-f74a-4330-be40-7ae1af0c222d?step=0 200 in 66ms
- GET /workflow/7b6e84b6-f74a-4330-be40-7ae1af0c222d?step=2 200 in 79ms
- GET /workflow/7b6e84b6-f74a-4330-be40-7ae1af0c222d?step=4 200 in 69ms
- GET /workflow/7b6e84b6-f74a-4330-be40-7ae1af0c222d?step=14 200 in 58ms
- GET /workflow/7b6e84b6-f74a-4330-be40-7ae1af0c222d?step=13 200 in 70ms
- GET /workflow/7b6e84b6-f74a-4330-be40-7ae1af0c222d?step=6 200 in 67ms
- GET /workflow/7b6e84b6-f74a-4330-be40-7ae1af0c222d?step=3 200 in 80ms
- GET / 200 in 66ms
- GET /workflow/7b6e84b6-f74a-4330-be40-7ae1af0c222d 200 in 142ms
- GET / 200 in 53ms
- GET /workflow/a151e028-ceb8-4080-9aaf-d6955fbceefa 200 in 85ms
- GET / 200 in 47ms
- GET / 200 in 57ms
- GET /workflow/a151e028-ceb8-4080-9aaf-d6955fbceefa 200 in 89ms
- GET /workflow/a151e028-ceb8-4080-9aaf-d6955fbceefa?step=9 200 in 77ms
- GET /workflow/a151e028-ceb8-4080-9aaf-d6955fbceefa?step=6 200 in 120ms
- GET /workflow/a151e028-ceb8-4080-9aaf-d6955fbceefa?step=7 200 in 105ms
- GET /workflow/a151e028-ceb8-4080-9aaf-d6955fbceefa?step=8 200 in 81ms
- GET /workflow/a151e028-ceb8-4080-9aaf-d6955fbceefa?step=7 200 in 109ms
- GET /workflow/a151e028-ceb8-4080-9aaf-d6955fbceefa?step=1 200 in 101ms
- GET /workflow/a151e028-ceb8-4080-9aaf-d6955fbceefa?step=0 200 in 101ms
- GET / 200 in 38ms
- ✓ Compiled in 120ms
- ✓ Compiled in 320ms
- ✓ Compiled in 131ms
- ✓ Compiled in 178ms
- GET /workflow/a151e028-ceb8-4080-9aaf-d6955fbceefa 200 in 249ms
- GET /workflow/a151e028-ceb8-4080-9aaf-d6955fbceefa?step=14 200 in 64ms
- GET / 200 in 165ms
- GET /workflow/7b6e84b6-f74a-4330-be40-7ae1af0c222d 200 in 55ms
- GET /workflow/7b6e84b6-f74a-4330-be40-7ae1af0c222d?step=14 200 in 61ms
- GET / 200 in 43ms
- GET /workflow/a151e028-ceb8-4080-9aaf-d6955fbceefa 200 in 65ms
- GET /workflow/a151e028-ceb8-4080-9aaf-d6955fbceefa?step=14 200 in 78ms
- GET /workflow/a151e028-ceb8-4080-9aaf-d6955fbceefa?step=14 200 in 281ms
- GET /favicon.ico?favicon.45db1c09.ico 200 in 264ms
- GET /favicon.ico?favicon.45db1c09.ico 200 in 276ms
- GET /workflow/a151e028-ceb8-4080-9aaf-d6955fbceefa?step=14 200 in 107ms
- GET /workflow/a151e028-ceb8-4080-9aaf-d6955fbceefa?step=0 200 in 146ms
- GET /workflow/a151e028-ceb8-4080-9aaf-d6955fbceefa?step=1 200 in 97ms
- GET /workflow/a151e028-ceb8-4080-9aaf-d6955fbceefa?step=2 200 in 169ms
- GET /workflow/a151e028-ceb8-4080-9aaf-d6955fbceefa?step=3 200 in 144ms
- GET /workflow/a151e028-ceb8-4080-9aaf-d6955fbceefa?step=14 200 in 79ms
- GET /workflow/a151e028-ceb8-4080-9aaf-d6955fbceefa?step=14 200 in 128ms
- GET /favicon.ico?favicon.45db1c09.ico 200 in 275ms
- GET /favicon.ico?favicon.45db1c09.ico 200 in 241ms
- GET /workflow/a151e028-ceb8-4080-9aaf-d6955fbceefa?step=14 200 in 222ms
- GET /workflow/a151e028-ceb8-4080-9aaf-d6955fbceefa?step=14 200 in 64ms
- ○ Compiling /update-workflows ...
- ✓ Compiled /update-workflows in 917ms
- GET /update-workflows 200 in 1039ms
- GET /favicon.ico?favicon.45db1c09.ico 200 in 271ms
- GET / 200 in 127ms
- GET /favicon.ico?favicon.45db1c09.ico 200 in 253ms
- GET /workflow/a151e028-ceb8-4080-9aaf-d6955fbceefa 200 in 65ms
- GET /workflow/a151e028-ceb8-4080-9aaf-d6955fbceefa?step=15 200 in 66ms
- GET /workflow/a151e028-ceb8-4080-9aaf-d6955fbceefa?step=14 200 in 94ms
- GET /workflow/a151e028-ceb8-4080-9aaf-d6955fbceefa?step=13 200 in 89ms
- GET /workflow/a151e028-ceb8-4080-9aaf-d6955fbceefa?step=15 200 in 90ms
- GET /workflow/a151e028-ceb8-4080-9aaf-d6955fbceefa?step=13 200 in 82ms
- GET /workflow/a151e028-ceb8-4080-9aaf-d6955fbceefa?step=15 200 in 85ms
- ✓ Compiled in 220ms
- ✓ Compiled in 218ms
- ✓ Compiled in 207ms
- ✓ Compiled in 238ms
- ✓ Compiled in 259ms
- ⚠ Fast Refresh had to perform a full reload due to a runtime error.
- ✓ Compiled in 306ms
- GET /workflow/a151e028-ceb8-4080-9aaf-d6955fbceefa?step=15 200 in 662ms
- GET /favicon.ico?favicon.45db1c09.ico 200 in 245ms
- GET /favicon.ico?favicon.45db1c09.ico 200 in 290ms
- ⚠ Fast Refresh had to perform a full reload due to a runtime error.
- ✓ Compiled in 265ms
- GET /workflow/a151e028-ceb8-4080-9aaf-d6955fbceefa?step=15 200 in 397ms
- GET /favicon.ico?favicon.45db1c09.ico 200 in 259ms
- GET /favicon.ico?favicon.45db1c09.ico 200 in 273ms
- ⚠ Fast Refresh had to perform a full reload due to a runtime error.
- ✓ Compiled in 355ms
- GET /workflow/a151e028-ceb8-4080-9aaf-d6955fbceefa?step=15 200 in 356ms
- GET /favicon.ico?favicon.45db1c09.ico 200 in 246ms
- GET /favicon.ico?favicon.45db1c09.ico 200 in 254ms
- ⚠ Fast Refresh had to perform a full reload due to a runtime error.
- ✓ Compiled in 310ms
- GET /workflow/a151e028-ceb8-4080-9aaf-d6955fbceefa?step=15 200 in 411ms
- GET /favicon.ico?favicon.45db1c09.ico 200 in 269ms
- GET /favicon.ico?favicon.45db1c09.ico 200 in 272ms
- GET / 200 in 154ms
- GET /favicon.ico?favicon.45db1c09.ico 200 in 279ms
- GET /favicon.ico?favicon.45db1c09.ico 200 in 280ms
- ✓ Compiled in 192ms
- ✓ Compiled in 214ms
- GET /workflow/a151e028-ceb8-4080-9aaf-d6955fbceefa 200 in 230ms
- GET /workflow/a151e028-ceb8-4080-9aaf-d6955fbceefa?step=15 200 in 88ms
- GET /workflow/a151e028-ceb8-4080-9aaf-d6955fbceefa?step=2 200 in 121ms
- ✓ Compiled in 227ms
- ✓ Compiled in 217ms
+ ✓ Ready in 1421ms
+ ⚠ Webpack is configured while Turbopack is not, which may cause problems.
+ ⚠ See instructions if you need to configure Turbopack:
+  https://nextjs.org/docs/app/api-reference/next-config-js/turbo
+

@@ -1290,24 +1290,6 @@ export default function BulkAnalysisPage() {
                 </div>
               )}
 
-              {/* Quick Actions when no domains selected */}
-              {selectedDomains.size === 0 && filteredDomains.length > 0 && !hideExperimentalFeatures && (
-                <div className="mb-4 p-3 bg-purple-50 border border-purple-200 rounded-lg">
-                  <div className="flex items-center justify-between">
-                    <p className="text-sm text-purple-800">
-                      <strong>Tip:</strong> Select domains to qualify them with AI
-                    </p>
-                    <button
-                      onClick={() => selectAll(filteredDomains.map(d => d.id))}
-                      className="inline-flex items-center px-3 py-1.5 bg-purple-600 text-white text-sm rounded hover:bg-purple-700"
-                    >
-                      <CheckCircle className="w-4 h-4 mr-1.5" />
-                      Select All {filteredDomains.length} Domains
-                    </button>
-                  </div>
-                </div>
-              )}
-
               {/* Keyword Cluster Selection Modal */}
               {showKeywordClusters && (
                 <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4">
@@ -1438,6 +1420,24 @@ export default function BulkAnalysisPage() {
                 
                 return (
                   <>
+                    {/* Quick Actions when no domains selected */}
+                    {selectedDomains.size === 0 && filteredDomains.length > 0 && !hideExperimentalFeatures && (
+                      <div className="mb-4 p-3 bg-purple-50 border border-purple-200 rounded-lg">
+                        <div className="flex items-center justify-between">
+                          <p className="text-sm text-purple-800">
+                            <strong>Tip:</strong> Select domains to qualify them with AI
+                          </p>
+                          <button
+                            onClick={() => selectAll(filteredDomains.map(d => d.id))}
+                            className="inline-flex items-center px-3 py-1.5 bg-purple-600 text-white text-sm rounded hover:bg-purple-700"
+                          >
+                            <CheckCircle className="w-4 h-4 mr-1.5" />
+                            Select All {filteredDomains.length} Domains
+                          </button>
+                        </div>
+                      </div>
+                    )}
+
                     <BulkAnalysisTable
                       domains={paginatedDomains}
                       targetPages={targetPages}
