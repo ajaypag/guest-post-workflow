@@ -52,6 +52,7 @@ export default function BulkAnalysisPage() {
   const [domains, setDomains] = useState<BulkAnalysisDomain[]>([]);
   const [loading, setLoading] = useState(false);
   const [message, setMessage] = useState('');
+  const [messageType, setMessageType] = useState<'info' | 'success' | 'error' | 'warning'>('info');
   const [existingDomains, setExistingDomains] = useState<{ domain: string; status: string }[]>([]);
   const [selectedPositionRange, setSelectedPositionRange] = useState('1-50');
   
@@ -80,8 +81,8 @@ export default function BulkAnalysisPage() {
     cacheInfo?: any;
   }>({ isOpen: false, domainId: '', domain: '', clientId: '', initialResults: [], totalFound: 0 });
   
-  // Experimental features toggle - hidden by default
-  const [hideExperimentalFeatures, setHideExperimentalFeatures] = useState(true);
+  // Experimental features toggle - shown by default
+  const [hideExperimentalFeatures, setHideExperimentalFeatures] = useState(false);
   
   // Multi-select state for bulk operations
   const [selectedDomains, setSelectedDomains] = useState<Set<string>>(new Set());
@@ -93,6 +94,8 @@ export default function BulkAnalysisPage() {
     analyzedDomains: Array<{ id: string; domain: string }>;
   }>({ isOpen: false, jobId: '', analyzedDomains: [] });
   const [completedJobId, setCompletedJobId] = useState<string | null>(null);
+  const [showResultsModal, setShowResultsModal] = useState(false);
+  const [resultsJobId, setResultsJobId] = useState<string | null>(null);
   
   // Reset pagination when filters change
   useEffect(() => {
@@ -381,7 +384,8 @@ export default function BulkAnalysisPage() {
 
       const { jobId, totalDomains } = await response.json();
       
-      setMessage(`✅ Bulk analysis started for ${totalDomains} domains`);
+      setBulkProgress({ current: 0, total: totalDomains });
+      setMessage(`⏳ Analyzing ${totalDomains} domains...`);
       
       // Start polling for job status
       pollJobStatus(jobId);
@@ -389,7 +393,6 @@ export default function BulkAnalysisPage() {
     } catch (error: any) {
       console.error('Bulk analysis error:', error);
       setMessage(`❌ Bulk analysis failed: ${error.message}`);
-    } finally {
       setBulkAnalysisRunning(false);
     }
   };
@@ -409,9 +412,15 @@ export default function BulkAnalysisPage() {
         const { job, items } = data;
 
         // Update progress
+        console.log('Job status update:', {
+          status: job.status,
+          processedDomains: job.processedDomains,
+          totalDomains: job.totalDomains,
+          bulkAnalysisRunning
+        });
         setBulkProgress({
-          current: job.processedDomains,
-          total: job.totalDomains
+          current: job.processedDomains || 0,
+          total: job.totalDomains || 0
         });
 
         // Update message
