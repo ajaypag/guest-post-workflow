@@ -47,17 +47,21 @@ interface DomainData {
   dataForSeoResults?: {
     totalRankings: number;
     avgPosition: number;
-    topKeywords: Array<{
+    allKeywords: Array<{
       keyword: string;
       position: number;
       searchVolume: number | null;
       url: string;
+      cpc: number | null;
+      competition: string | null;
     }>;
+    hasMore: boolean;
   };
   aiQualification?: {
     status: string;
     reasoning: string;
   };
+  targetPages: TargetPage[];
 }
 
 export default function GuidedTriageFlow(props: GuidedTriageFlowProps) {
@@ -103,23 +107,27 @@ export default function GuidedTriageFlow(props: GuidedTriageFlowProps) {
       // Group keywords
       const keywordGroups = groupKeywordsByTopic(keywords);
       
-      // Load DataForSEO results if available
+      // Load DataForSEO results if available - fetch ALL results
       let dataForSeoResults: DomainData['dataForSeoResults'] | undefined;
       if (domain.hasDataForSeoResults) {
         try {
-          const response = await fetch(`/api/clients/${domain.clientId}/bulk-analysis/dataforseo/results?domainId=${domain.id}&limit=20`);
+          // Fetch all results with a larger limit
+          const response = await fetch(`/api/clients/${domain.clientId}/bulk-analysis/dataforseo/results?domainId=${domain.id}&limit=1000`);
           if (response.ok) {
             const data = await response.json();
             dataForSeoResults = {
               totalRankings: data.total || data.results.length,
               avgPosition: data.results.length > 0 ? 
                 data.results.reduce((acc: number, r: any) => acc + r.position, 0) / data.results.length : 0,
-              topKeywords: data.results.slice(0, 10).map((r: any) => ({
+              allKeywords: data.results.map((r: any) => ({
                 keyword: r.keyword,
                 position: r.position,
                 searchVolume: r.searchVolume,
-                url: r.url
-              }))
+                url: r.url,
+                cpc: r.cpc || null,
+                competition: r.competition || null
+              })),
+              hasMore: data.hasMore || false
             };
           }
         } catch (error) {
@@ -136,6 +144,9 @@ export default function GuidedTriageFlow(props: GuidedTriageFlowProps) {
         };
       }
       
+      // Get target pages for this domain
+      const domainTargetPages = props.targetPages.filter(p => domain.targetPageIds.includes(p.id));
+      
       setDomainData(prev => ({
         ...prev,
         [domain.id]: {
@@ -143,7 +154,8 @@ export default function GuidedTriageFlow(props: GuidedTriageFlowProps) {
           keywords,
           keywordGroups,
           dataForSeoResults,
-          aiQualification
+          aiQualification,
+          targetPages: domainTargetPages
         }
       }));
       
@@ -202,18 +214,68 @@ export default function GuidedTriageFlow(props: GuidedTriageFlowProps) {
   };
 
   const runDataForSeoAnalysis = async () => {
-    if (!currentDomain || !props.onAnalyzeWithDataForSeo) return;
+    if (!currentDomain) return;
     
     setLoadingDataForSeo(true);
     try {
-      await props.onAnalyzeWithDataForSeo(currentDomain);
+      // Get manual keywords if in manual mode
+      const manualKeywordArray = props.keywordInputMode === 'manual' && props.manualKeywords
+        ? props.manualKeywords.split(',').map(k => k.trim()).filter(k => k.length > 0)
+        : undefined;
       
-      // Reload the data
-      const updatedDomain = { ...currentDomain, hasDataForSeoResults: true };
-      setDomainData(prev => {
-        const { [currentDomain.id]: removed, ...rest } = prev;
-        return rest;
+      const payload = {
+        domainId: currentDomain.id,
+        locationCode: 2840, // USA
+        languageCode: 'en',
+        ...(manualKeywordArray && { manualKeywords: manualKeywordArray })
+      };
+      
+      const response = await fetch(`/api/clients/${currentDomain.clientId}/bulk-analysis/analyze-dataforseo`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(payload),
       });
+      
+      if (response.ok) {
+        const result = await response.json();
+        
+        // Wait a bit for the data to be saved
+        await new Promise(resolve => setTimeout(resolve, 2000));
+        
+        // Fetch the updated results
+        const resultsResponse = await fetch(
+          `/api/clients/${currentDomain.clientId}/bulk-analysis/dataforseo/results?domainId=${currentDomain.id}&limit=1000`
+        );
+        
+        if (resultsResponse.ok) {
+          const data = await resultsResponse.json();
+          
+          // Update the domain data with the new results
+          setDomainData(prev => ({
+            ...prev,
+            [currentDomain.id]: {
+              ...prev[currentDomain.id],
+              domain: { ...currentDomain, hasDataForSeoResults: true },
+              dataForSeoResults: {
+                totalRankings: data.total || data.results.length,
+                avgPosition: data.results.length > 0 ? 
+                  data.results.reduce((acc: number, r: any) => acc + r.position, 0) / data.results.length : 0,
+                allKeywords: data.results.map((r: any) => ({
+                  keyword: r.keyword,
+                  position: r.position,
+                  searchVolume: r.searchVolume,
+                  url: r.url,
+                  cpc: r.cpc || null,
+                  competition: r.competition || null
+                })),
+                hasMore: data.hasMore || false
+              }
+            }
+          }));
+        }
+      }
+    } catch (error) {
+      console.error('DataForSEO analysis error:', error);
     } finally {
       setLoadingDataForSeo(false);
     }
@@ -384,134 +446,217 @@ export default function GuidedTriageFlow(props: GuidedTriageFlowProps) {
                     </div>
                   </div>
                 </div>
-                <a
-                  href={`https://${currentDomain.domain}`}
-                  target="_blank"
-                  rel="noopener noreferrer"
-                  className="flex items-center gap-2 px-4 py-2 text-sm border rounded-lg hover:bg-gray-50"
-                >
-                  Visit Site
-                  <ExternalLink className="w-4 h-4" />
-                </a>
+                <div className="flex items-center gap-4">
+                  {/* Current Status Display */}
+                  <div className="text-right">
+                    <p className="text-xs text-gray-500 uppercase tracking-wide">Current Status</p>
+                    <div className={`mt-1 px-4 py-2 rounded-lg text-sm font-medium ${
+                      currentDomain.qualificationStatus === 'high_quality' ? 'bg-green-100 text-green-800' :
+                      currentDomain.qualificationStatus === 'average_quality' ? 'bg-blue-100 text-blue-800' :
+                      currentDomain.qualificationStatus === 'disqualified' ? 'bg-red-100 text-red-800' :
+                      'bg-gray-100 text-gray-800'
+                    }`}>
+                      {currentDomain.qualificationStatus === 'high_quality' ? 'High Quality' :
+                       currentDomain.qualificationStatus === 'average_quality' ? 'Average Quality' :
+                       currentDomain.qualificationStatus === 'disqualified' ? 'Disqualified' :
+                       'Pending Review'}
+                    </div>
+                  </div>
+                  <a
+                    href={`https://${currentDomain.domain}`}
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    className="flex items-center gap-2 px-4 py-2 text-sm border rounded-lg hover:bg-gray-50"
+                  >
+                    Visit Site
+                    <ExternalLink className="w-4 h-4" />
+                  </a>
+                </div>
               </div>
             </div>
 
-            {/* Content Grid */}
-            <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-              {/* Keywords Section */}
-              <div className="bg-white rounded-lg p-6 shadow-sm">
-                <h3 className="text-lg font-semibold mb-4 flex items-center gap-2">
-                  <KeyRound className="w-5 h-5 text-gray-600" />
-                  Keywords Analysis
-                </h3>
-                <div className="space-y-4">
-                  {data.keywordGroups.map((group, idx) => (
-                    <div key={idx}>
-                      <div className="flex items-center justify-between mb-2">
-                        <h4 className="font-medium text-gray-700">{group.name}</h4>
-                        <span className={`text-xs px-2 py-1 rounded ${
-                          group.relevance === 'core' ? 'bg-green-100 text-green-700' :
-                          group.relevance === 'related' ? 'bg-blue-100 text-blue-700' :
-                          'bg-gray-100 text-gray-700'
-                        }`}>
-                          {group.relevance}
+            {/* Content Grid - DataForSEO Primary */}
+            <div className="space-y-6">
+              {/* DataForSEO Results - Primary Section */}
+              {data.dataForSeoResults ? (
+                <div className="bg-white rounded-lg p-6 shadow-sm">
+                  <div className="flex items-center justify-between mb-4">
+                    <h3 className="text-xl font-semibold flex items-center gap-2">
+                      <BarChart3 className="w-6 h-6 text-indigo-600" />
+                      DataForSEO Keyword Rankings
+                    </h3>
+                    <div className="flex items-center gap-4">
+                      <div className="text-sm">
+                        <span className="text-gray-500">Total Keywords:</span>
+                        <span className="ml-2 font-semibold text-indigo-600">
+                          {data.dataForSeoResults.totalRankings}
                         </span>
                       </div>
-                      <div className="flex flex-wrap gap-2">
-                        {group.keywords.slice(0, 10).map((keyword, kidx) => (
-                          <span key={kidx} className="text-sm px-2 py-1 bg-gray-100 rounded">
-                            {keyword}
-                          </span>
+                      <div className="text-sm">
+                        <span className="text-gray-500">Avg Position:</span>
+                        <span className="ml-2 font-semibold text-green-600">
+                          {data.dataForSeoResults.avgPosition.toFixed(1)}
+                        </span>
+                      </div>
+                    </div>
+                  </div>
+                  
+                  {/* Target Pages Info */}
+                  {data.targetPages.length > 0 && (
+                    <div className="mb-4 p-3 bg-blue-50 rounded-lg">
+                      <h4 className="text-sm font-medium text-blue-900 mb-2">Target Pages</h4>
+                      <div className="space-y-1">
+                        {data.targetPages.map(page => (
+                          <div key={page.id} className="text-sm text-blue-700">
+                            • {page.url}
+                          </div>
                         ))}
-                        {group.keywords.length > 10 && (
-                          <span className="text-sm text-gray-500">
-                            +{group.keywords.length - 10} more
-                          </span>
-                        )}
                       </div>
                     </div>
-                  ))}
-                </div>
-              </div>
-
-              {/* DataForSEO Results or AI Reasoning */}
-              <div className="bg-white rounded-lg p-6 shadow-sm">
-                {data.dataForSeoResults ? (
-                  <>
-                    <h3 className="text-lg font-semibold mb-4 flex items-center gap-2">
-                      <BarChart3 className="w-5 h-5 text-gray-600" />
-                      DataForSEO Results
-                    </h3>
-                    <div className="space-y-4">
-                      <div className="grid grid-cols-2 gap-4">
-                        <div className="bg-gray-50 rounded-lg p-4">
-                          <p className="text-sm text-gray-500">Total Rankings</p>
-                          <p className="text-2xl font-bold text-indigo-600">
-                            {data.dataForSeoResults.totalRankings}
-                          </p>
-                        </div>
-                        <div className="bg-gray-50 rounded-lg p-4">
-                          <p className="text-sm text-gray-500">Avg Position</p>
-                          <p className="text-2xl font-bold text-green-600">
-                            {data.dataForSeoResults.avgPosition.toFixed(1)}
-                          </p>
-                        </div>
-                      </div>
-                      
-                      {/* Top Keywords */}
-                      <div>
-                        <h4 className="font-medium text-gray-700 mb-2">Top Keywords</h4>
-                        <div className="space-y-2">
-                          {data.dataForSeoResults.topKeywords.map((kw, idx) => (
-                            <div key={idx} className="flex items-center justify-between text-sm">
-                              <span className="text-gray-600 truncate">{kw.keyword}</span>
-                              <div className="flex items-center gap-3">
-                                <span className="text-green-600 font-medium">#{kw.position}</span>
-                                {kw.searchVolume && (
-                                  <span className="text-gray-500">{kw.searchVolume} vol</span>
+                  )}
+                  
+                  {/* All Keywords Table */}
+                  <div className="overflow-hidden">
+                    <div className="max-h-96 overflow-y-auto">
+                      <table className="w-full">
+                        <thead className="sticky top-0 bg-gray-50">
+                          <tr className="text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                            <th className="px-3 py-2">Keyword</th>
+                            <th className="px-3 py-2 text-center">Position</th>
+                            <th className="px-3 py-2 text-right">Volume</th>
+                            <th className="px-3 py-2 text-right">CPC</th>
+                            <th className="px-3 py-2">Competition</th>
+                            <th className="px-3 py-2">URL</th>
+                          </tr>
+                        </thead>
+                        <tbody className="divide-y divide-gray-200">
+                          {data.dataForSeoResults.allKeywords.map((kw, idx) => (
+                            <tr key={idx} className="hover:bg-gray-50">
+                              <td className="px-3 py-2 text-sm">{kw.keyword}</td>
+                              <td className="px-3 py-2 text-sm text-center">
+                                <span className={`inline-flex items-center justify-center w-8 h-8 rounded-full text-xs font-medium ${
+                                  kw.position <= 3 ? 'bg-green-100 text-green-800' :
+                                  kw.position <= 10 ? 'bg-blue-100 text-blue-800' :
+                                  kw.position <= 20 ? 'bg-yellow-100 text-yellow-800' :
+                                  'bg-gray-100 text-gray-800'
+                                }`}>
+                                  {kw.position}
+                                </span>
+                              </td>
+                              <td className="px-3 py-2 text-sm text-right">
+                                {kw.searchVolume?.toLocaleString() || '-'}
+                              </td>
+                              <td className="px-3 py-2 text-sm text-right">
+                                {kw.cpc ? `$${kw.cpc.toFixed(2)}` : '-'}
+                              </td>
+                              <td className="px-3 py-2 text-sm">
+                                {kw.competition && (
+                                  <span className={`inline-flex px-2 py-1 text-xs rounded ${
+                                    kw.competition === 'LOW' ? 'bg-green-100 text-green-800' :
+                                    kw.competition === 'MEDIUM' ? 'bg-yellow-100 text-yellow-800' :
+                                    kw.competition === 'HIGH' ? 'bg-red-100 text-red-800' :
+                                    'bg-gray-100 text-gray-800'
+                                  }`}>
+                                    {kw.competition}
+                                  </span>
                                 )}
-                              </div>
-                            </div>
+                              </td>
+                              <td className="px-3 py-2 text-sm text-gray-500 truncate max-w-xs" title={kw.url}>
+                                {kw.url.replace(/^https?:\/\/[^\/]+/, '')}
+                              </td>
+                            </tr>
                           ))}
-                        </div>
+                        </tbody>
+                      </table>
+                    </div>
+                    {data.dataForSeoResults.hasMore && (
+                      <div className="mt-3 text-center text-sm text-gray-500">
+                        Showing {data.dataForSeoResults.allKeywords.length} of {data.dataForSeoResults.totalRankings} keywords
                       </div>
-                    </div>
-                  </>
-                ) : data.aiQualification ? (
-                  <>
-                    <h3 className="text-lg font-semibold mb-4 flex items-center gap-2">
-                      <Sparkles className="w-5 h-5 text-gray-600" />
-                      AI Analysis
-                    </h3>
-                    <div className="bg-blue-50 rounded-lg p-4">
-                      <p className="text-sm text-gray-700 whitespace-pre-wrap">
-                        {data.aiQualification.reasoning}
-                      </p>
-                    </div>
-                  </>
-                ) : (
-                  <div className="text-center py-8">
-                    <Search className="w-12 h-12 text-gray-300 mx-auto mb-3" />
-                    <p className="text-gray-500 mb-4">No analysis data available</p>
+                    )}
+                  </div>
+                </div>
+              ) : (
+                <div className="bg-white rounded-lg p-6 shadow-sm">
+                  <h3 className="text-xl font-semibold mb-4 flex items-center gap-2">
+                    <BarChart3 className="w-6 h-6 text-gray-400" />
+                    DataForSEO Analysis
+                  </h3>
+                  <div className="text-center py-12">
+                    <Search className="w-16 h-16 text-gray-300 mx-auto mb-4" />
+                    <p className="text-gray-500 mb-6">No keyword ranking data available yet</p>
                     {props.onAnalyzeWithDataForSeo && (
                       <button
                         onClick={runDataForSeoAnalysis}
                         disabled={loadingDataForSeo}
-                        className="inline-flex items-center px-4 py-2 bg-indigo-600 text-white rounded-lg hover:bg-indigo-700 disabled:opacity-50"
+                        className="inline-flex items-center px-6 py-3 bg-indigo-600 text-white rounded-lg hover:bg-indigo-700 disabled:opacity-50"
                       >
                         {loadingDataForSeo ? (
                           <>
-                            <Loader2 className="w-4 h-4 mr-2 animate-spin" />
+                            <Loader2 className="w-5 h-5 mr-2 animate-spin" />
                             Analyzing...
                           </>
                         ) : (
                           <>
-                            <TrendingUp className="w-4 h-4 mr-2" />
+                            <TrendingUp className="w-5 h-5 mr-2" />
                             Run DataForSEO Analysis
                           </>
                         )}
                       </button>
                     )}
+                  </div>
+                </div>
+              )}
+              
+              {/* Secondary Row - Keywords and AI Analysis */}
+              <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+                {/* Keywords Analysis - Secondary */}
+                <div className="bg-white rounded-lg p-6 shadow-sm">
+                  <h3 className="text-sm font-medium text-gray-500 uppercase tracking-wider mb-3">
+                    Pre-Selected Keywords
+                  </h3>
+                  <div className="space-y-3">
+                    {data.keywordGroups.slice(0, 2).map((group, idx) => (
+                      <div key={idx}>
+                        <div className="flex items-center justify-between mb-1">
+                          <h4 className="text-sm font-medium text-gray-700">{group.name}</h4>
+                          <span className={`text-xs px-2 py-0.5 rounded ${
+                            group.relevance === 'core' ? 'bg-green-100 text-green-700' :
+                            group.relevance === 'related' ? 'bg-blue-100 text-blue-700' :
+                            'bg-gray-100 text-gray-700'
+                          }`}>
+                            {group.relevance}
+                          </span>
+                        </div>
+                        <div className="flex flex-wrap gap-1">
+                          {group.keywords.slice(0, 5).map((keyword, kidx) => (
+                            <span key={kidx} className="text-xs px-2 py-1 bg-gray-100 rounded">
+                              {keyword}
+                            </span>
+                          ))}
+                          {group.keywords.length > 5 && (
+                            <span className="text-xs text-gray-500">
+                              +{group.keywords.length - 5} more
+                            </span>
+                          )}
+                        </div>
+                      </div>
+                    ))}
+                  </div>
+                </div>
+                
+                {/* AI Analysis - Secondary */}
+                {data.aiQualification && (
+                  <div className="bg-white rounded-lg p-6 shadow-sm">
+                    <h3 className="text-sm font-medium text-gray-500 uppercase tracking-wider mb-3 flex items-center gap-2">
+                      <Sparkles className="w-4 h-4" />
+                      AI Reasoning
+                    </h3>
+                    <div className="bg-blue-50 rounded-lg p-4">
+                      <p className="text-sm text-gray-700 whitespace-pre-wrap line-clamp-6">
+                        {data.aiQualification.reasoning}
+                      </p>
+                    </div>
                   </div>
                 )}
               </div>
