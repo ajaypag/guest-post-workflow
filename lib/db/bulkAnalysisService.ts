@@ -53,7 +53,7 @@ export class BulkAnalysisService {
         .select()
         .from(bulkAnalysisDomains)
         .where(eq(bulkAnalysisDomains.clientId, clientId))
-        .orderBy(bulkAnalysisDomains.createdAt);
+        .orderBy(desc(bulkAnalysisDomains.createdAt));
 
       return domains;
     } catch (error) {
@@ -218,7 +218,7 @@ export class BulkAnalysisService {
             eq(bulkAnalysisDomains.qualificationStatus, 'qualified')
           )
         )
-        .orderBy(bulkAnalysisDomains.checkedAt);
+        .orderBy(desc(bulkAnalysisDomains.createdAt));
 
       return domains;
     } catch (error) {
