@@ -1044,39 +1044,7 @@ export default function BulkAnalysisPage() {
           {domains.length > 0 && (
             <div className="bg-white rounded-lg shadow p-6">
               <div className="flex items-center justify-between mb-6">
-                <div className="flex items-center gap-4">
-                  <h2 className="text-lg font-medium">Analysis Results</h2>
-                  {/* Select All Checkbox */}
-                  {(() => {
-                    const filteredDomains = domains.filter(domain => {
-                      if (statusFilter !== 'all' && domain.qualificationStatus !== statusFilter) return false;
-                      if (workflowFilter === 'has_workflow' && !domain.hasWorkflow) return false;
-                      if (workflowFilter === 'no_workflow' && domain.hasWorkflow) return false;
-                      if (searchQuery && !domain.domain.toLowerCase().includes(searchQuery.toLowerCase())) return false;
-                      return true;
-                    });
-                    const allSelected = filteredDomains.length > 0 && 
-                      filteredDomains.every(d => selectedDomains.has(d.id));
-                    
-                    return filteredDomains.length > 0 ? (
-                      <label className="flex items-center gap-2 text-sm text-gray-600 cursor-pointer">
-                        <input
-                          type="checkbox"
-                          checked={allSelected}
-                          onChange={() => {
-                            if (allSelected) {
-                              clearSelection();
-                            } else {
-                              selectAll(filteredDomains.map(d => d.id));
-                            }
-                          }}
-                          className="w-4 h-4 text-indigo-600 rounded border-gray-300 focus:ring-indigo-500"
-                        />
-                        Select all {filteredDomains.length} domains
-                      </label>
-                    ) : null;
-                  })()}
-                </div>
+                <h2 className="text-lg font-medium">Analysis Results</h2>
                 
                 {/* Position Range Selector */}
                 <div className="bg-gray-50 border border-gray-200 rounded-lg p-3">
@@ -1390,6 +1358,8 @@ export default function BulkAnalysisPage() {
                       targetPages={targetPages}
                       selectedDomains={selectedDomains}
                       onToggleSelection={toggleDomainSelection}
+                      onSelectAll={selectAll}
+                      onClearSelection={clearSelection}
                       onUpdateStatus={updateQualificationStatus}
                       onCreateWorkflow={createWorkflow}
                       onDeleteDomain={deleteDomain}

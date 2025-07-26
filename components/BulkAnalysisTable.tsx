@@ -29,6 +29,8 @@ interface BulkAnalysisTableProps {
   targetPages: TargetPage[];
   selectedDomains: Set<string>;
   onToggleSelection: (domainId: string) => void;
+  onSelectAll: (domainIds: string[]) => void;
+  onClearSelection: () => void;
   onUpdateStatus: (domainId: string, status: 'high_quality' | 'average_quality' | 'disqualified') => void;
   onCreateWorkflow: (domain: BulkAnalysisDomain) => void;
   onDeleteDomain: (domainId: string) => void;
@@ -481,13 +483,9 @@ export default function BulkAnalysisTable(props: BulkAnalysisTableProps) {
                 checked={props.domains.length > 0 && props.domains.every(d => props.selectedDomains.has(d.id))}
                 onChange={(e) => {
                   if (e.target.checked) {
-                    props.domains.forEach(d => props.onToggleSelection(d.id));
+                    props.onSelectAll(props.domains.map(d => d.id));
                   } else {
-                    props.domains.forEach(d => {
-                      if (props.selectedDomains.has(d.id)) {
-                        props.onToggleSelection(d.id);
-                      }
-                    });
+                    props.onClearSelection();
                   }
                 }}
                 className="w-4 h-4 text-indigo-600 rounded border-gray-300 focus:ring-indigo-500"
