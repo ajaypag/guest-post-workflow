@@ -14,6 +14,7 @@ import BulkAnalysisResultsModal from '@/components/BulkAnalysisResultsModal';
 import AIQualificationModal from '@/components/AIQualificationModal';
 import BulkAnalysisTable from '@/components/BulkAnalysisTable';
 import GuidedTriageFlow from '@/components/GuidedTriageFlow';
+import MoveToProjectDialog from '@/components/bulk-analysis/MoveToProjectDialog';
 import { BulkAnalysisProject } from '@/types/bulk-analysis-projects';
 import { BulkAnalysisDomain } from '@/types/bulk-analysis';
 import { 
@@ -33,7 +34,8 @@ import {
   Download,
   Folder,
   Settings,
-  Edit
+  Edit,
+  ArrowRight
 } from 'lucide-react';
 
 export default function ProjectDetailPage() {
@@ -117,6 +119,9 @@ export default function ProjectDetailPage() {
   
   // Bulk status update state
   const [showBulkStatusMenu, setShowBulkStatusMenu] = useState(false);
+  
+  // Move to project state
+  const [showMoveDialog, setShowMoveDialog] = useState(false);
   
   // Reset pagination when filters change
   useEffect(() => {
@@ -817,6 +822,41 @@ export default function ProjectDetailPage() {
     } catch (error) {
       console.error('Error updating domains:', error);
       setMessage('❌ Failed to update domain status');
+    } finally {
+      setLoading(false);
+    }
+  };
+  
+  const handleMoveToProject = async (targetProjectId: string) => {
+    try {
+      setLoading(true);
+      
+      const domainIds = Array.from(selectedDomains);
+      
+      const response = await fetch(`/api/clients/${params.id}/bulk-analysis/move`, {
+        method: 'PUT',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          domainIds,
+          targetProjectId
+        })
+      });
+      
+      if (!response.ok) {
+        throw new Error('Failed to move domains');
+      }
+      
+      const result = await response.json();
+      
+      // Remove moved domains from current view
+      setDomains(prev => prev.filter(domain => !selectedDomains.has(domain.id)));
+      setSelectedDomains(new Set());
+      setShowMoveDialog(false);
+      
+      setMessage(`✅ Moved ${result.movedCount} domains to project`);
+    } catch (error) {
+      console.error('Error moving domains:', error);
+      setMessage('❌ Failed to move domains');
     } finally {
       setLoading(false);
     }
@@ -1536,6 +1576,15 @@ anotherdomain.com"
                           </div>
                         )}
                       </div>
+                      
+                      {/* Move to Project Button */}
+                      <button
+                        onClick={() => setShowMoveDialog(true)}
+                        className="inline-flex items-center px-4 py-2 bg-indigo-600 text-white text-sm rounded-lg hover:bg-indigo-700"
+                      >
+                        <ArrowRight className="w-4 h-4 mr-2" />
+                        Move to Project
+                      </button>
                     </div>
                   </div>
                 </div>
@@ -1870,6 +1919,18 @@ anotherdomain.com"
           keywordInputMode={keywordInputMode}
           manualKeywords={manualKeywords}
           userId={AuthService.getSession()?.userId || ''}
+        />
+      )}
+
+      {/* Move to Project Dialog */}
+      {showMoveDialog && (
+        <MoveToProjectDialog
+          isOpen={showMoveDialog}
+          onClose={() => setShowMoveDialog(false)}
+          clientId={params.id as string}
+          currentProjectId={params.projectId as string}
+          domainCount={selectedDomains.size}
+          onConfirm={handleMoveToProject}
         />
       )}
     </AuthWrapper>
