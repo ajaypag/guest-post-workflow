@@ -207,8 +207,8 @@ export default function BulkAnalysisTable(props: BulkAnalysisTableProps) {
           const data = await response.json();
           dataForSeoResults = {
             totalRankings: data.results.length,
-            avgPosition: data.results.reduce((acc: number, r: any) => acc + r.position, 0) / data.results.length,
-            topKeywords: data.results.slice(0, 5).map((r: any) => ({
+            avgPosition: data.results.length > 0 ? data.results.reduce((acc: number, r: any) => acc + r.position, 0) / data.results.length : 0,
+            topKeywords: data.results.map((r: any) => ({
               keyword: r.keyword,
               position: r.position,
               searchVolume: r.searchVolume,
@@ -556,11 +556,11 @@ export default function BulkAnalysisTable(props: BulkAnalysisTableProps) {
                           </div>
 
                           {/* DataForSEO Results */}
-                          {data.dataForSeoResults && (
+                          {data.dataForSeoResults ? (
                             <div>
                               <h4 className="font-medium text-gray-900 mb-3 flex items-center">
                                 <Search className="w-4 h-4 mr-2" />
-                                DataForSEO Results
+                                DataForSEO Results ({data.dataForSeoResults.totalRankings} keywords)
                               </h4>
                               <div className="bg-white rounded-lg border border-gray-200 p-4">
                                 <div className="grid grid-cols-3 gap-4 mb-4">
@@ -579,25 +579,84 @@ export default function BulkAnalysisTable(props: BulkAnalysisTableProps) {
                                   <div>
                                     <p className="text-sm text-gray-500">Topical Authority</p>
                                     <div className="flex items-center mt-1">
-                                      <TrendingUp className="w-5 h-5 text-green-600 mr-1" />
-                                      <span className="text-lg font-semibold text-green-600">Strong</span>
+                                      {data.dataForSeoResults.avgPosition <= 20 ? (
+                                        <>
+                                          <TrendingUp className="w-5 h-5 text-green-600 mr-1" />
+                                          <span className="text-lg font-semibold text-green-600">Strong</span>
+                                        </>
+                                      ) : data.dataForSeoResults.avgPosition <= 50 ? (
+                                        <>
+                                          <TrendingUp className="w-5 h-5 text-blue-600 mr-1" />
+                                          <span className="text-lg font-semibold text-blue-600">Moderate</span>
+                                        </>
+                                      ) : (
+                                        <>
+                                          <TrendingUp className="w-5 h-5 text-gray-600 mr-1" />
+                                          <span className="text-lg font-semibold text-gray-600">Developing</span>
+                                        </>
+                                      )}
                                     </div>
                                   </div>
                                 </div>
                                 <div>
-                                  <h5 className="text-sm font-medium text-gray-700 mb-2">Top Rankings</h5>
-                                  <div className="space-y-1">
-                                    {data.dataForSeoResults.topKeywords.map((kw, idx) => (
-                                      <div key={idx} className="flex items-center justify-between text-xs">
-                                        <span className="text-gray-600">{kw.keyword}</span>
-                                        <div className="flex items-center gap-2">
-                                          <span className="text-gray-500">Pos: {kw.position}</span>
-                                          <span className="text-gray-500">Vol: {kw.searchVolume}</span>
-                                        </div>
-                                      </div>
-                                    ))}
+                                  <h5 className="text-sm font-medium text-gray-700 mb-2">All Keyword Rankings</h5>
+                                  <div className="max-h-64 overflow-y-auto border rounded-lg">
+                                    <table className="min-w-full divide-y divide-gray-200">
+                                      <thead className="bg-gray-50 sticky top-0">
+                                        <tr>
+                                          <th className="px-3 py-2 text-left text-xs font-medium text-gray-500 uppercase">Keyword</th>
+                                          <th className="px-3 py-2 text-center text-xs font-medium text-gray-500 uppercase">Pos</th>
+                                          <th className="px-3 py-2 text-center text-xs font-medium text-gray-500 uppercase">Volume</th>
+                                          <th className="px-3 py-2 text-left text-xs font-medium text-gray-500 uppercase">URL</th>
+                                        </tr>
+                                      </thead>
+                                      <tbody className="bg-white divide-y divide-gray-200">
+                                        {data.dataForSeoResults.topKeywords.map((kw, idx) => (
+                                          <tr key={idx} className="hover:bg-gray-50">
+                                            <td className="px-3 py-2 text-sm text-gray-900">{kw.keyword}</td>
+                                            <td className="px-3 py-2 text-sm text-center">
+                                              <span className={`inline-flex items-center px-2 py-0.5 rounded text-xs font-medium ${
+                                                kw.position <= 3 ? 'bg-green-100 text-green-800' :
+                                                kw.position <= 10 ? 'bg-blue-100 text-blue-800' :
+                                                kw.position <= 20 ? 'bg-yellow-100 text-yellow-800' :
+                                                'bg-gray-100 text-gray-800'
+                                              }`}>
+                                                {kw.position}
+                                              </span>
+                                            </td>
+                                            <td className="px-3 py-2 text-sm text-center text-gray-500">{kw.searchVolume}</td>
+                                            <td className="px-3 py-2 text-sm text-gray-600 truncate max-w-xs" title={kw.url}>
+                                              {kw.url}
+                                            </td>
+                                          </tr>
+                                        ))}
+                                      </tbody>
+                                    </table>
                                   </div>
                                 </div>
+                              </div>
+                            </div>
+                          ) : (
+                            <div>
+                              <h4 className="font-medium text-gray-900 mb-3 flex items-center">
+                                <Search className="w-4 h-4 mr-2" />
+                                DataForSEO Analysis
+                              </h4>
+                              <div className="bg-gray-50 rounded-lg border border-gray-200 p-6 text-center">
+                                <p className="text-gray-600 mb-4">No DataForSEO results available yet</p>
+                                {!props.hideExperimentalFeatures && (
+                                  <button
+                                    onClick={(e) => {
+                                      e.stopPropagation();
+                                      props.onAnalyzeWithDataForSeo(domain);
+                                    }}
+                                    disabled={props.loading}
+                                    className="inline-flex items-center px-4 py-2 bg-indigo-600 text-white text-sm rounded-lg hover:bg-indigo-700 disabled:opacity-50"
+                                  >
+                                    <Search className="w-4 h-4 mr-2" />
+                                    {props.loading ? 'Analyzing...' : 'Run DataForSEO Analysis'}
+                                  </button>
+                                )}
                               </div>
                             </div>
                           )}
@@ -677,19 +736,6 @@ export default function BulkAnalysisTable(props: BulkAnalysisTableProps) {
                           {/* Quick Actions */}
                           <div className="flex items-center justify-between pt-4 border-t">
                             <div className="flex items-center gap-2">
-                              {!props.hideExperimentalFeatures && !data.dataForSeoResults && (
-                                <button
-                                  onClick={(e) => {
-                                    e.stopPropagation();
-                                    props.onAnalyzeWithDataForSeo(domain);
-                                  }}
-                                  disabled={props.loading}
-                                  className="inline-flex items-center px-4 py-2 bg-indigo-600 text-white text-sm rounded-lg hover:bg-indigo-700 disabled:opacity-50"
-                                >
-                                  <Search className="w-4 h-4 mr-2" />
-                                  Analyze with DataForSEO
-                                </button>
-                              )}
                               {domain.qualificationStatus !== 'pending' && (
                                 <button
                                   onClick={(e) => {
