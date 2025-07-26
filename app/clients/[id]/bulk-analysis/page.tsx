@@ -14,6 +14,7 @@ import BulkAnalysisResultsModal from '@/components/BulkAnalysisResultsModal';
 import AIQualificationModal from '@/components/AIQualificationModal';
 import BulkAnalysisTutorial from '@/components/BulkAnalysisTutorial';
 import BulkAnalysisTable from '@/components/BulkAnalysisTable';
+import GuidedTriageFlow from '@/components/GuidedTriageFlow';
 import { 
   ArrowLeft, 
   Target, 
@@ -104,6 +105,7 @@ export default function BulkAnalysisPage() {
   
   // Triage mode state
   const [triageMode, setTriageMode] = useState(false);
+  const [showGuidedTriage, setShowGuidedTriage] = useState(false);
   
   // Bulk workflow creation state
   const [bulkWorkflowCreating, setBulkWorkflowCreating] = useState(false);
@@ -1553,7 +1555,7 @@ export default function BulkAnalysisPage() {
                       keywordInputMode={keywordInputMode}
                       manualKeywords={manualKeywords}
                       triageMode={triageMode}
-                      onToggleTriageMode={() => setTriageMode(!triageMode)}
+                      onToggleTriageMode={() => setShowGuidedTriage(true)}
                       onBulkCreateWorkflows={bulkCreateWorkflows}
                       bulkWorkflowCreating={bulkWorkflowCreating}
                     />
@@ -1645,6 +1647,35 @@ export default function BulkAnalysisPage() {
           clientId={params.id as string}
           domains={aiQualificationDomains}
           onComplete={handleAIQualificationComplete}
+        />
+      )}
+
+      {/* Guided Triage Flow */}
+      {showGuidedTriage && (
+        <GuidedTriageFlow
+          domains={domains.filter(domain => {
+            // Status filter
+            if (statusFilter !== 'all' && domain.qualificationStatus !== statusFilter) return false;
+            
+            // Workflow filter
+            if (workflowFilter === 'has_workflow' && !domain.hasWorkflow) return false;
+            if (workflowFilter === 'no_workflow' && domain.hasWorkflow) return false;
+            
+            // Search filter
+            if (searchQuery && !domain.domain.toLowerCase().includes(searchQuery.toLowerCase())) return false;
+            
+            return true;
+          })}
+          targetPages={targetPages}
+          onClose={() => {
+            setShowGuidedTriage(false);
+            loadDomains(); // Reload to see updates
+          }}
+          onUpdateStatus={updateQualificationStatus}
+          onAnalyzeWithDataForSeo={analyzeWithDataForSeo}
+          keywordInputMode={keywordInputMode}
+          manualKeywords={manualKeywords}
+          userId={AuthService.getSession()?.userId || ''}
         />
       )}
     </AuthWrapper>

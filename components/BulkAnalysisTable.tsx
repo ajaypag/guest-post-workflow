@@ -424,27 +424,23 @@ export default function BulkAnalysisTable(props: BulkAnalysisTableProps) {
 
   return (
     <div className="w-full">
-      {/* Triage Mode Toggle */}
+      {/* Guided Triage Mode */}
       {props.onToggleTriageMode && (
-        <div className="mb-4 flex items-center justify-between bg-gray-50 rounded-lg p-4">
+        <div className="mb-4 flex items-center justify-between bg-gradient-to-r from-indigo-50 to-purple-50 rounded-lg p-4 border border-indigo-200">
           <div className="flex items-center gap-3">
             <Zap className="w-5 h-5 text-indigo-600" />
             <div>
-              <h3 className="text-sm font-medium text-gray-900">Triage Mode</h3>
+              <h3 className="text-sm font-medium text-gray-900">Guided Qualification Flow</h3>
               <p className="text-xs text-gray-500">
-                Fast qualification for large datasets - simplified view with key metrics only
+                Review domains one-by-one with all data pre-loaded for fast decisions
               </p>
             </div>
           </div>
           <button
             onClick={props.onToggleTriageMode}
-            className={`px-4 py-2 rounded-lg text-sm font-medium transition-colors ${
-              props.triageMode
-                ? 'bg-indigo-600 text-white hover:bg-indigo-700'
-                : 'bg-white text-gray-700 border border-gray-300 hover:bg-gray-50'
-            }`}
+            className="px-4 py-2 bg-indigo-600 text-white rounded-lg text-sm font-medium hover:bg-indigo-700 transition-colors"
           >
-            {props.triageMode ? 'Exit Triage' : 'Enable Triage'}
+            Start Guided Review
           </button>
         </div>
       )}
