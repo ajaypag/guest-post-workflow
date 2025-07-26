@@ -861,6 +861,51 @@ export default function ProjectDetailPage() {
       setLoading(false);
     }
   };
+  
+  const handleBulkDelete = async () => {
+    const domainIds = Array.from(selectedDomains);
+    const domainCount = domainIds.length;
+    
+    if (domainCount === 0) return;
+    
+    const message = domainCount === 1
+      ? 'Are you sure you want to delete this domain?'
+      : `Are you sure you want to delete ${domainCount} domains?`;
+    
+    if (!confirm(message + '\n\nThis action cannot be undone.')) {
+      return;
+    }
+    
+    try {
+      setLoading(true);
+      
+      const response = await fetch(`/api/clients/${params.id}/bulk-analysis/bulk`, {
+        method: 'DELETE',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ domainIds })
+      });
+      
+      if (!response.ok) {
+        throw new Error('Failed to delete domains');
+      }
+      
+      const result = await response.json();
+      
+      // Remove deleted domains from local state
+      setDomains(prev => prev.filter(domain => !selectedDomains.has(domain.id)));
+      setSelectedDomains(new Set());
+      
+      // Reload project stats
+      loadProject();
+      
+      setMessage(`✅ Deleted ${result.deleted} domain${result.deleted !== 1 ? 's' : ''}`);
+    } catch (error) {
+      console.error('Error deleting domains:', error);
+      setMessage('❌ Failed to delete domains');
+    } finally {
+      setLoading(false);
+    }
+  };
 
   const handleExportSelected = () => {
     try {
@@ -1584,6 +1629,15 @@ anotherdomain.com"
                       >
                         <ArrowRight className="w-4 h-4 mr-2" />
                         Move to Project
+                      </button>
+                      
+                      {/* Delete Button */}
+                      <button
+                        onClick={handleBulkDelete}
+                        className="inline-flex items-center px-4 py-2 bg-red-600 text-white text-sm rounded-lg hover:bg-red-700"
+                      >
+                        <Trash2 className="w-4 h-4 mr-2" />
+                        Delete Selected
                       </button>
                     </div>
                   </div>
