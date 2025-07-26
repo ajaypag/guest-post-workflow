@@ -68,10 +68,10 @@ export default function GuidedTriageFlow(props: GuidedTriageFlowProps) {
   const [notes, setNotes] = useState('');
   const [loadingDataForSeo, setLoadingDataForSeo] = useState(false);
   
-  // Filter to only pending domains
-  const pendingDomains = props.domains.filter(d => d.qualificationStatus === 'pending');
-  const currentDomain = pendingDomains[currentIndex];
-  const progress = ((currentIndex + 1) / pendingDomains.length) * 100;
+  // Use all domains passed in (already filtered by parent component)
+  const reviewDomains = props.domains;
+  const currentDomain = reviewDomains[currentIndex];
+  const progress = ((currentIndex + 1) / reviewDomains.length) * 100;
 
   // Preload data for current and next domains
   useEffect(() => {
@@ -154,10 +154,10 @@ export default function GuidedTriageFlow(props: GuidedTriageFlowProps) {
     loadDomainData(currentDomain);
     
     // Preload next domain
-    if (currentIndex + 1 < pendingDomains.length) {
-      loadDomainData(pendingDomains[currentIndex + 1]);
+    if (currentIndex + 1 < reviewDomains.length) {
+      loadDomainData(reviewDomains[currentIndex + 1]);
     }
-  }, [currentIndex, currentDomain, domainData, pendingDomains, props]);
+  }, [currentIndex, currentDomain, domainData, reviewDomains, props]);
 
   const handleQualify = async (status: 'high_quality' | 'average_quality' | 'disqualified') => {
     if (!currentDomain) return;
@@ -188,7 +188,7 @@ export default function GuidedTriageFlow(props: GuidedTriageFlowProps) {
       setNotes('');
       
       // Move to next domain
-      if (currentIndex < pendingDomains.length - 1) {
+      if (currentIndex < reviewDomains.length - 1) {
         setCurrentIndex(currentIndex + 1);
       } else {
         // All done!
@@ -246,7 +246,7 @@ export default function GuidedTriageFlow(props: GuidedTriageFlowProps) {
           break;
         case 'ArrowRight':
           e.preventDefault();
-          if (currentIndex < pendingDomains.length - 1) {
+          if (currentIndex < reviewDomains.length - 1) {
             setCurrentIndex(currentIndex + 1);
             setNotes('');
           }
@@ -260,7 +260,7 @@ export default function GuidedTriageFlow(props: GuidedTriageFlowProps) {
     
     window.addEventListener('keydown', handleKeyPress);
     return () => window.removeEventListener('keydown', handleKeyPress);
-  }, [currentIndex, pendingDomains.length, saving]);
+  }, [currentIndex, reviewDomains.length, saving]);
 
   if (!currentDomain) {
     return (
@@ -268,7 +268,7 @@ export default function GuidedTriageFlow(props: GuidedTriageFlowProps) {
         <div className="bg-white rounded-lg p-8 text-center">
           <Check className="w-16 h-16 text-green-500 mx-auto mb-4" />
           <h2 className="text-2xl font-bold mb-2">All Done!</h2>
-          <p className="text-gray-600 mb-4">You've reviewed all pending domains.</p>
+          <p className="text-gray-600 mb-4">You've reviewed all domains in your current filter.</p>
           <button
             onClick={props.onClose}
             className="px-4 py-2 bg-indigo-600 text-white rounded-lg hover:bg-indigo-700"
@@ -298,7 +298,7 @@ export default function GuidedTriageFlow(props: GuidedTriageFlowProps) {
             <div>
               <h1 className="text-xl font-semibold">Domain Qualification</h1>
               <p className="text-sm text-gray-500">
-                {currentIndex + 1} of {pendingDomains.length} domains
+                {currentIndex + 1} of {reviewDomains.length} domains
               </p>
             </div>
           </div>
@@ -327,12 +327,12 @@ export default function GuidedTriageFlow(props: GuidedTriageFlowProps) {
               </button>
               <button
                 onClick={() => {
-                  if (currentIndex < pendingDomains.length - 1) {
+                  if (currentIndex < reviewDomains.length - 1) {
                     setCurrentIndex(currentIndex + 1);
                     setNotes('');
                   }
                 }}
-                disabled={currentIndex === pendingDomains.length - 1}
+                disabled={currentIndex === reviewDomains.length - 1}
                 className="p-2 hover:bg-gray-100 rounded-lg disabled:opacity-50"
                 title="Next (→)"
               >

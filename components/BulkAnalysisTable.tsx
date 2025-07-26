@@ -432,7 +432,7 @@ export default function BulkAnalysisTable(props: BulkAnalysisTableProps) {
             <div>
               <h3 className="text-sm font-medium text-gray-900">Guided Qualification Flow</h3>
               <p className="text-xs text-gray-500">
-                Review domains one-by-one with all data pre-loaded for fast decisions
+                Review filtered domains one-by-one with all data pre-loaded for fast decisions
               </p>
             </div>
           </div>
