@@ -71,6 +71,10 @@ export default function GuidedTriageFlow(props: GuidedTriageFlowProps) {
   const [saving, setSaving] = useState(false);
   const [notes, setNotes] = useState('');
   const [loadingDataForSeo, setLoadingDataForSeo] = useState(false);
+  const [keywordSearch, setKeywordSearch] = useState('');
+  const [selectedTargetPages, setSelectedTargetPages] = useState<string[]>([]);
+  const [showFullAiReasoning, setShowFullAiReasoning] = useState(false);
+  const [smartFilters, setSmartFilters] = useState<string[]>([]);
   
   // Use all domains passed in (already filtered by parent component)
   const reviewDomains = props.domains;
@@ -147,6 +151,24 @@ export default function GuidedTriageFlow(props: GuidedTriageFlowProps) {
       // Get target pages for this domain
       const domainTargetPages = props.targetPages.filter(p => domain.targetPageIds.includes(p.id));
       
+      // Extract smart filters from keywords
+      const extractSmartFilters = (keywords: string[]) => {
+        const wordFrequency: Record<string, number> = {};
+        keywords.forEach(keyword => {
+          const words = keyword.toLowerCase().split(/\s+/);
+          words.forEach(word => {
+            if (word.length > 3 && !['with', 'from', 'that', 'this', 'what', 'when', 'where', 'which', 'your'].includes(word)) {
+              wordFrequency[word] = (wordFrequency[word] || 0) + 1;
+            }
+          });
+        });
+        // Get top 6 most common words
+        return Object.entries(wordFrequency)
+          .sort(([,a], [,b]) => b - a)
+          .slice(0, 6)
+          .map(([word]) => word);
+      };
+      
       setDomainData(prev => ({
         ...prev,
         [domain.id]: {
@@ -158,6 +180,11 @@ export default function GuidedTriageFlow(props: GuidedTriageFlowProps) {
           targetPages: domainTargetPages
         }
       }));
+      
+      // Set smart filters for this domain
+      if (keywords.length > 0) {
+        setSmartFilters(extractSmartFilters(keywords));
+      }
       
       setLoading(false);
     };
@@ -202,6 +229,10 @@ export default function GuidedTriageFlow(props: GuidedTriageFlowProps) {
       // Move to next domain
       if (currentIndex < reviewDomains.length - 1) {
         setCurrentIndex(currentIndex + 1);
+        // Reset states for new domain
+        setKeywordSearch('');
+        setSelectedTargetPages([]);
+        setShowFullAiReasoning(false);
       } else {
         // All done!
         props.onClose();
@@ -405,22 +436,22 @@ export default function GuidedTriageFlow(props: GuidedTriageFlowProps) {
         </div>
       </div>
 
-      {/* Main Content */}
-      <div className="flex-1 overflow-auto">
+      {/* Main Content - Full Width */}
+      <div className="flex-1 overflow-hidden">
         {loading || !data ? (
           <div className="flex items-center justify-center h-full">
             <Loader2 className="w-8 h-8 animate-spin text-gray-400" />
           </div>
         ) : (
-          <div className="max-w-6xl mx-auto p-6 space-y-6">
-            {/* Domain Header */}
-            <div className="bg-white rounded-lg p-6 shadow-sm">
-              <div className="flex items-center justify-between mb-4">
+          <div className="px-4 py-4 h-full flex flex-col">
+            {/* Domain Header - Compact */}
+            <div className="bg-white rounded-lg p-4 shadow-sm mb-4">
+              <div className="flex items-center justify-between">
                 <div className="flex items-center gap-3">
-                  <Globe className="w-8 h-8 text-indigo-600" />
+                  <Globe className="w-6 h-6 text-indigo-600" />
                   <div>
-                    <h2 className="text-2xl font-bold">{currentDomain.domain}</h2>
-                    <div className="flex items-center gap-4 mt-1 text-sm text-gray-500">
+                    <h2 className="text-xl font-bold">{currentDomain.domain}</h2>
+                    <div className="flex items-center gap-4 text-sm text-gray-500">
                       <span className="flex items-center gap-1">
                         <Target className="w-4 h-4" />
                         {data.keywords.length} keywords
@@ -475,66 +506,80 @@ export default function GuidedTriageFlow(props: GuidedTriageFlowProps) {
               </div>
             </div>
 
-            {/* Content Grid - DataForSEO Primary */}
-            <div className="space-y-6">
-              {/* DataForSEO Results - Primary Section */}
-              {data.dataForSeoResults ? (
-                <div className="bg-white rounded-lg p-6 shadow-sm">
-                  <div className="flex items-center justify-between mb-4">
-                    <h3 className="text-xl font-semibold flex items-center gap-2">
-                      <BarChart3 className="w-6 h-6 text-indigo-600" />
-                      DataForSEO Keyword Rankings
-                    </h3>
-                    <div className="flex items-center gap-4">
-                      <div className="text-sm">
-                        <span className="text-gray-500">Total Keywords:</span>
-                        <span className="ml-2 font-semibold text-indigo-600">
-                          {data.dataForSeoResults.totalRankings}
-                        </span>
+            {/* Two Column Layout */}
+            <div className="flex-1 flex gap-6 overflow-hidden">
+              {/* Left Column - Keywords (Primary) */}
+              <div className="flex-1 overflow-hidden">
+                {data.dataForSeoResults ? (
+                  <div className="bg-white rounded-lg shadow-sm h-full flex flex-col">
+                    <div className="p-4 border-b">
+                      <div className="flex items-center justify-between mb-3">
+                        <h3 className="text-lg font-semibold flex items-center gap-2">
+                          <BarChart3 className="w-5 h-5 text-indigo-600" />
+                          DataForSEO Keyword Rankings
+                        </h3>
+                        <div className="flex items-center gap-3 text-sm">
+                          <span className="text-gray-600">
+                            <span className="font-semibold text-indigo-600">{data.dataForSeoResults.totalRankings}</span> keywords
+                          </span>
+                          <span className="text-gray-600">
+                            Avg: <span className="font-semibold text-green-600">{data.dataForSeoResults.avgPosition.toFixed(1)}</span>
+                          </span>
+                        </div>
                       </div>
-                      <div className="text-sm">
-                        <span className="text-gray-500">Avg Position:</span>
-                        <span className="ml-2 font-semibold text-green-600">
-                          {data.dataForSeoResults.avgPosition.toFixed(1)}
-                        </span>
+                      
+                      {/* Search and Filters */}
+                      <div className="flex gap-2">
+                        <div className="flex-1 relative">
+                          <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-400" />
+                          <input
+                            type="text"
+                            placeholder="Search keywords..."
+                            value={keywordSearch}
+                            onChange={(e) => setKeywordSearch(e.target.value)}
+                            className="w-full pl-9 pr-3 py-2 text-sm border rounded-lg focus:ring-2 focus:ring-indigo-500 focus:border-transparent"
+                          />
+                        </div>
                       </div>
+                      
+                      {/* Smart Filters */}
+                      {smartFilters.length > 0 && (
+                        <div className="mt-2 flex flex-wrap gap-1">
+                          <span className="text-xs text-gray-500 mr-1">Quick filters:</span>
+                          {smartFilters.map((filter, idx) => (
+                            <button
+                              key={idx}
+                              onClick={() => setKeywordSearch(filter)}
+                              className="px-2 py-1 text-xs bg-gray-100 hover:bg-gray-200 rounded-md transition-colors"
+                            >
+                              {filter}
+                            </button>
+                          ))}
+                        </div>
+                      )}
                     </div>
-                  </div>
-                  
-                  {/* Target Pages Info */}
-                  {data.targetPages.length > 0 && (
-                    <div className="mb-4 p-3 bg-blue-50 rounded-lg">
-                      <h4 className="text-sm font-medium text-blue-900 mb-2">Target Pages</h4>
-                      <div className="space-y-1">
-                        {data.targetPages.map(page => (
-                          <div key={page.id} className="text-sm text-blue-700">
-                            • {page.url}
-                          </div>
-                        ))}
-                      </div>
-                    </div>
-                  )}
-                  
-                  {/* All Keywords Table */}
-                  <div className="overflow-hidden">
-                    <div className="max-h-96 overflow-y-auto">
+                    
+                    {/* Keywords Table */}
+                    <div className="flex-1 overflow-auto">
                       <table className="w-full">
                         <thead className="sticky top-0 bg-gray-50">
                           <tr className="text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
                             <th className="px-3 py-2">Keyword</th>
-                            <th className="px-3 py-2 text-center">Position</th>
-                            <th className="px-3 py-2 text-right">Volume</th>
+                            <th className="px-3 py-2 text-center">Pos</th>
+                            <th className="px-3 py-2 text-right">Vol</th>
                             <th className="px-3 py-2 text-right">CPC</th>
-                            <th className="px-3 py-2">Competition</th>
+                            <th className="px-3 py-2">Comp</th>
                             <th className="px-3 py-2">URL</th>
                           </tr>
                         </thead>
                         <tbody className="divide-y divide-gray-200">
-                          {data.dataForSeoResults.allKeywords.map((kw, idx) => (
+                          {data.dataForSeoResults.allKeywords
+                            .filter(kw => !keywordSearch || kw.keyword.toLowerCase().includes(keywordSearch.toLowerCase()))
+                            .map((kw, idx) => (
                             <tr key={idx} className="hover:bg-gray-50">
                               <td className="px-3 py-2 text-sm">{kw.keyword}</td>
                               <td className="px-3 py-2 text-sm text-center">
-                                <span className={`inline-flex items-center justify-center w-8 h-8 rounded-full text-xs font-medium ${
+                                <span className={`inline-flex items-center justify-center w-7 h-7 rounded-full text-xs font-medium ${
                                   kw.position <= 3 ? 'bg-green-100 text-green-800' :
                                   kw.position <= 10 ? 'bg-blue-100 text-blue-800' :
                                   kw.position <= 20 ? 'bg-yellow-100 text-yellow-800' :
@@ -569,57 +614,81 @@ export default function GuidedTriageFlow(props: GuidedTriageFlowProps) {
                         </tbody>
                       </table>
                     </div>
-                    {data.dataForSeoResults.hasMore && (
-                      <div className="mt-3 text-center text-sm text-gray-500">
-                        Showing {data.dataForSeoResults.allKeywords.length} of {data.dataForSeoResults.totalRankings} keywords
-                      </div>
-                    )}
                   </div>
-                </div>
-              ) : (
-                <div className="bg-white rounded-lg p-6 shadow-sm">
-                  <h3 className="text-xl font-semibold mb-4 flex items-center gap-2">
-                    <BarChart3 className="w-6 h-6 text-gray-400" />
-                    DataForSEO Analysis
-                  </h3>
-                  <div className="text-center py-12">
-                    <Search className="w-16 h-16 text-gray-300 mx-auto mb-4" />
-                    <p className="text-gray-500 mb-6">No keyword ranking data available yet</p>
-                    {props.onAnalyzeWithDataForSeo && (
-                      <button
-                        onClick={runDataForSeoAnalysis}
-                        disabled={loadingDataForSeo}
-                        className="inline-flex items-center px-6 py-3 bg-indigo-600 text-white rounded-lg hover:bg-indigo-700 disabled:opacity-50"
-                      >
-                        {loadingDataForSeo ? (
-                          <>
-                            <Loader2 className="w-5 h-5 mr-2 animate-spin" />
-                            Analyzing...
-                          </>
-                        ) : (
-                          <>
-                            <TrendingUp className="w-5 h-5 mr-2" />
-                            Run DataForSEO Analysis
-                          </>
-                        )}
-                      </button>
-                    )}
+                ) : (
+                  <div className="bg-white rounded-lg shadow-sm h-full flex items-center justify-center">
+                    <div className="text-center py-12">
+                      <Search className="w-16 h-16 text-gray-300 mx-auto mb-4" />
+                      <p className="text-gray-500 mb-6">No keyword ranking data available yet</p>
+                      {props.onAnalyzeWithDataForSeo && (
+                        <button
+                          onClick={runDataForSeoAnalysis}
+                          disabled={loadingDataForSeo}
+                          className="inline-flex items-center px-6 py-3 bg-indigo-600 text-white rounded-lg hover:bg-indigo-700 disabled:opacity-50"
+                        >
+                          {loadingDataForSeo ? (
+                            <>
+                              <Loader2 className="w-5 h-5 mr-2 animate-spin" />
+                              Analyzing...
+                            </>
+                          ) : (
+                            <>
+                              <TrendingUp className="w-5 h-5 mr-2" />
+                              Run DataForSEO Analysis
+                            </>
+                          )}
+                        </button>
+                      )}
+                    </div>
                   </div>
-                </div>
-              )}
+                )}
+              </div>
               
-              {/* Secondary Row - Keywords and AI Analysis */}
-              <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-                {/* Keywords Analysis - Secondary */}
-                <div className="bg-white rounded-lg p-6 shadow-sm">
+              {/* Right Column - Metadata */}
+              <div className="w-96 space-y-4 overflow-y-auto">
+                {/* Target Pages Selection */}
+                {data.targetPages.length > 0 && (
+                  <div className="bg-white rounded-lg p-4 shadow-sm">
+                    <h3 className="text-sm font-medium text-gray-500 uppercase tracking-wider mb-3">
+                      Target Pages
+                    </h3>
+                    <div className="space-y-2">
+                      {data.targetPages.map(page => (
+                        <label key={page.id} className="flex items-start gap-3 p-2 hover:bg-gray-50 rounded-lg cursor-pointer">
+                          <input
+                            type="checkbox"
+                            checked={selectedTargetPages.includes(page.id)}
+                            onChange={(e) => {
+                              if (e.target.checked) {
+                                setSelectedTargetPages([...selectedTargetPages, page.id]);
+                              } else {
+                                setSelectedTargetPages(selectedTargetPages.filter(id => id !== page.id));
+                              }
+                            }}
+                            className="mt-1 rounded border-gray-300 text-indigo-600 focus:ring-indigo-500"
+                          />
+                          <div className="flex-1">
+                            <p className="text-sm text-gray-700">{page.url}</p>
+                            {page.description && (
+                              <p className="text-xs text-gray-500 mt-1">{page.description}</p>
+                            )}
+                          </div>
+                        </label>
+                      ))}
+                    </div>
+                  </div>
+                )}
+                
+                {/* Pre-Selected Keywords */}
+                <div className="bg-white rounded-lg p-4 shadow-sm">
                   <h3 className="text-sm font-medium text-gray-500 uppercase tracking-wider mb-3">
-                    Pre-Selected Keywords
+                    Keywords Analyzed
                   </h3>
-                  <div className="space-y-3">
-                    {data.keywordGroups.slice(0, 2).map((group, idx) => (
+                  <div className="space-y-2">
+                    {data.keywordGroups.slice(0, 3).map((group, idx) => (
                       <div key={idx}>
                         <div className="flex items-center justify-between mb-1">
-                          <h4 className="text-sm font-medium text-gray-700">{group.name}</h4>
+                          <h4 className="text-xs font-medium text-gray-700">{group.name}</h4>
                           <span className={`text-xs px-2 py-0.5 rounded ${
                             group.relevance === 'core' ? 'bg-green-100 text-green-700' :
                             group.relevance === 'related' ? 'bg-blue-100 text-blue-700' :
@@ -629,14 +698,14 @@ export default function GuidedTriageFlow(props: GuidedTriageFlowProps) {
                           </span>
                         </div>
                         <div className="flex flex-wrap gap-1">
-                          {group.keywords.slice(0, 5).map((keyword, kidx) => (
+                          {group.keywords.slice(0, 4).map((keyword, kidx) => (
                             <span key={kidx} className="text-xs px-2 py-1 bg-gray-100 rounded">
                               {keyword}
                             </span>
                           ))}
-                          {group.keywords.length > 5 && (
+                          {group.keywords.length > 4 && (
                             <span className="text-xs text-gray-500">
-                              +{group.keywords.length - 5} more
+                              +{group.keywords.length - 4} more
                             </span>
                           )}
                         </div>
@@ -645,33 +714,45 @@ export default function GuidedTriageFlow(props: GuidedTriageFlowProps) {
                   </div>
                 </div>
                 
-                {/* AI Analysis - Secondary */}
+                {/* AI Analysis */}
                 {data.aiQualification && (
-                  <div className="bg-white rounded-lg p-6 shadow-sm">
-                    <h3 className="text-sm font-medium text-gray-500 uppercase tracking-wider mb-3 flex items-center gap-2">
-                      <Sparkles className="w-4 h-4" />
-                      AI Reasoning
+                  <div className="bg-white rounded-lg p-4 shadow-sm">
+                    <h3 className="text-sm font-medium text-gray-500 uppercase tracking-wider mb-3 flex items-center justify-between">
+                      <span className="flex items-center gap-2">
+                        <Sparkles className="w-4 h-4" />
+                        AI Reasoning
+                      </span>
+                      <button
+                        onClick={() => setShowFullAiReasoning(!showFullAiReasoning)}
+                        className="text-xs text-indigo-600 hover:text-indigo-700"
+                      >
+                        {showFullAiReasoning ? 'Show less' : 'Show more'}
+                      </button>
                     </h3>
-                    <div className="bg-blue-50 rounded-lg p-4">
-                      <p className="text-sm text-gray-700 whitespace-pre-wrap line-clamp-6">
+                    <div className="bg-blue-50 rounded-lg p-3">
+                      <p className={`text-sm text-gray-700 whitespace-pre-wrap ${
+                        showFullAiReasoning ? '' : 'line-clamp-4'
+                      }`}>
                         {data.aiQualification.reasoning}
                       </p>
                     </div>
                   </div>
                 )}
+                
+                {/* Notes */}
+                <div className="bg-white rounded-lg p-4 shadow-sm">
+                  <h3 className="text-sm font-medium text-gray-500 uppercase tracking-wider mb-3">
+                    Additional Notes
+                  </h3>
+                  <textarea
+                    value={notes}
+                    onChange={(e) => setNotes(e.target.value)}
+                    placeholder="Add any notes about your qualification decision..."
+                    className="w-full p-2 text-sm border rounded-lg resize-none focus:ring-2 focus:ring-indigo-500 focus:border-transparent"
+                    rows={4}
+                  />
+                </div>
               </div>
-            </div>
-
-            {/* Notes Section */}
-            <div className="bg-white rounded-lg p-6 shadow-sm">
-              <h3 className="text-lg font-semibold mb-3">Add Notes (Optional)</h3>
-              <textarea
-                value={notes}
-                onChange={(e) => setNotes(e.target.value)}
-                placeholder="Add any notes about your qualification decision..."
-                className="w-full p-3 border rounded-lg resize-none focus:ring-2 focus:ring-indigo-500 focus:border-transparent"
-                rows={3}
-              />
             </div>
           </div>
         )}
