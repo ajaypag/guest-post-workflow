@@ -28,7 +28,8 @@ export async function GET(request: Request) {
           offset,
           datetime_from: new Date(Date.now() - 7 * 24 * 60 * 60 * 1000).toISOString(), // Last 7 days
           datetime_to: new Date().toISOString(),
-          include_metadata: true
+          include_metadata: true,
+          sort: 'datetime_posted,desc' // Sort by most recent first
         }];
         break;
 
@@ -155,16 +156,46 @@ export async function GET(request: Request) {
           console.error('Error parsing task data:', e);
         }
 
+        // Convert to EST timezone
+        const toEST = (dateStr: string) => {
+          if (!dateStr) return null;
+          const date = new Date(dateStr);
+          return date.toLocaleString('en-US', { 
+            timeZone: 'America/New_York',
+            year: 'numeric',
+            month: '2-digit',
+            day: '2-digit',
+            hour: '2-digit',
+            minute: '2-digit',
+            second: '2-digit',
+            hour12: true
+          }) + ' EST';
+        };
+
+        // Try to extract domain from the task data
+        let domainInfo = 'Unknown Domain';
+        try {
+          if (task.data) {
+            const taskData = typeof task.data === 'string' ? JSON.parse(task.data) : task.data;
+            if (taskData && taskData[0] && taskData[0].target) {
+              domainInfo = taskData[0].target;
+            }
+          }
+        } catch (e) {
+          // Ignore parsing errors
+        }
+
         return {
           ...task,
           keyword_count: keywordCount,
           filter_info: filterInfo,
           task_status: taskStatus,
           result_count: resultCount,
-          datetime_posted_formatted: task.datetime_posted ? new Date(task.datetime_posted).toLocaleString() : 'Invalid Date',
-          datetime_done_formatted: task.datetime_done ? new Date(task.datetime_done).toLocaleString() : null,
+          datetime_posted_formatted: toEST(task.datetime_posted),
+          datetime_done_formatted: toEST(task.datetime_done),
           execution_time: task.time ? `${task.time}s` : null,
-          cost_formatted: task.cost ? `$${task.cost.toFixed(4)}` : null
+          cost_formatted: task.cost ? `$${task.cost.toFixed(4)}` : null,
+          domain_info: domainInfo
         };
       });
 
