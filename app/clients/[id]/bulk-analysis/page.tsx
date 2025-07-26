@@ -304,6 +304,15 @@ export default function BulkAnalysisPage() {
     router.push(`/workflow/new?clientId=${client?.id}&guestPostSite=${encodeURIComponent(domain.domain)}&notes=${encodeURIComponent(domainNotes)}`);
   };
 
+  const aiQualifySingleDomain = async (domainId: string) => {
+    const domain = domains.find(d => d.id === domainId);
+    if (!domain) return;
+    
+    // Set the domain for AI qualification
+    setAIQualificationDomains([{ id: domain.id, domain: domain.domain }]);
+    setShowAIQualification(true);
+  };
+
   const bulkCreateWorkflows = async (domainIds: string[]) => {
     if (!client) return;
     
@@ -1426,6 +1435,7 @@ export default function BulkAnalysisPage() {
                           setMessage('❌ Failed to save notes');
                         }
                       }}
+                      onAIQualifySingle={aiQualifySingleDomain}
                       selectedPositionRange={selectedPositionRange}
                       hideExperimentalFeatures={hideExperimentalFeatures}
                       loading={loading}

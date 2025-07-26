@@ -43,6 +43,7 @@ interface BulkAnalysisTableProps {
   onToggleTriageMode?: () => void;
   onBulkCreateWorkflows?: (domainIds: string[]) => void;
   bulkWorkflowCreating?: boolean;
+  onAIQualifySingle?: (domainId: string) => void;
 }
 
 interface ExpandedRowData {
@@ -82,6 +83,7 @@ export default function BulkAnalysisTable(props: BulkAnalysisTableProps) {
   const [rowData, setRowData] = useState<Record<string, ExpandedRowData>>({});
   const [localNotes, setLocalNotes] = useState<Record<string, string>>({});
   const [focusedDomainId, setFocusedDomainId] = useState<string | null>(null);
+  const [loadingDataForSeo, setLoadingDataForSeo] = useState<Record<string, boolean>>({});
 
   // Initialize local notes from domain data
   useEffect(() => {
@@ -278,6 +280,73 @@ export default function BulkAnalysisTable(props: BulkAnalysisTableProps) {
     
     const positionsParam = props.selectedPositionRange !== '1-100' ? `&positions=${props.selectedPositionRange}` : '';
     return `https://app.ahrefs.com/v2-site-explorer/organic-keywords?keywordRules=${keywordRulesEncoded}&target=${encodeURIComponent(targetUrl)}${positionsParam}`;
+  };
+
+  const runDataForSeoAnalysisInline = async (domain: BulkAnalysisDomain) => {
+    const domainId = domain.id;
+    setLoadingDataForSeo(prev => ({ ...prev, [domainId]: true }));
+    
+    try {
+      // Call the analyze API
+      const response = await fetch(`/api/clients/${domain.clientId}/bulk-analysis/analyze-dataforseo`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          domainId,
+          domain: domain.domain,
+          keywords: props.keywordInputMode === 'manual' && props.manualKeywords
+            ? props.manualKeywords.split(',').map(k => k.trim()).filter(k => k.length > 0)
+            : props.targetPages
+                .filter(p => domain.targetPageIds.includes(p.id))
+                .flatMap(page => (page as any).keywords?.split(',').map((k: string) => k.trim()) || [])
+        })
+      });
+      
+      if (!response.ok) {
+        throw new Error('Failed to run DataForSEO analysis');
+      }
+      
+      // Wait a moment for the analysis to complete
+      await new Promise(resolve => setTimeout(resolve, 3000));
+      
+      // Fetch the results
+      const resultsResponse = await fetch(`/api/clients/${domain.clientId}/bulk-analysis/dataforseo/results?domainId=${domainId}`);
+      
+      if (resultsResponse.ok) {
+        const data = await resultsResponse.json();
+        
+        // Update the row data with the results
+        const dataForSeoResults = {
+          totalRankings: data.results.length,
+          avgPosition: data.results.length > 0 ? data.results.reduce((acc: number, r: any) => acc + r.position, 0) / data.results.length : 0,
+          topKeywords: data.results.map((r: any) => ({
+            keyword: r.keyword,
+            position: r.position,
+            searchVolume: r.searchVolume,
+            url: r.url
+          }))
+        };
+        
+        setRowData(prev => ({
+          ...prev,
+          [domainId]: {
+            ...prev[domainId],
+            dataForSeoResults
+          }
+        }));
+        
+        // Update domain to mark as having results
+        props.domains.forEach(d => {
+          if (d.id === domainId) {
+            d.hasDataForSeoResults = true;
+          }
+        });
+      }
+    } catch (error) {
+      console.error('Failed to run DataForSEO analysis:', error);
+    } finally {
+      setLoadingDataForSeo(prev => ({ ...prev, [domainId]: false }));
+    }
   };
 
   const getStatusColor = (status: string) => {
@@ -564,6 +633,19 @@ export default function BulkAnalysisTable(props: BulkAnalysisTableProps) {
                     <div className={`flex items-center ${props.triageMode ? 'gap-1' : 'gap-2'}`}>
                       {domain.qualificationStatus === 'pending' ? (
                         <div className={`flex ${props.triageMode ? 'gap-1' : 'gap-1'}`}>
+                          {!domain.aiQualificationReasoning && props.onAIQualifySingle && !props.hideExperimentalFeatures && (
+                            <button
+                              onClick={(e) => {
+                                e.stopPropagation();
+                                props.onAIQualifySingle?.(domain.id);
+                              }}
+                              className={`${props.triageMode ? 'px-1.5 py-0.5 text-xs' : 'px-2 py-1 text-xs'} bg-purple-600 text-white rounded hover:bg-purple-700 inline-flex items-center`}
+                              title="AI Qualify this domain"
+                            >
+                              <Sparkles className="w-3 h-3 mr-0.5" />
+                              {!props.triageMode && 'AI'}
+                            </button>
+                          )}
                           <button
                             onClick={(e) => {
                               e.stopPropagation();
@@ -768,22 +850,32 @@ export default function BulkAnalysisTable(props: BulkAnalysisTableProps) {
                                 <Search className="w-4 h-4 mr-2" />
                                 DataForSEO Analysis
                               </h4>
-                              <div className="bg-gray-50 rounded-lg border border-gray-200 p-6 text-center">
-                                <p className="text-gray-600 mb-4">No DataForSEO results available yet</p>
-                                {!props.hideExperimentalFeatures && (
-                                  <button
-                                    onClick={(e) => {
-                                      e.stopPropagation();
-                                      props.onAnalyzeWithDataForSeo(domain);
-                                    }}
-                                    disabled={props.loading}
-                                    className="inline-flex items-center px-4 py-2 bg-indigo-600 text-white text-sm rounded-lg hover:bg-indigo-700 disabled:opacity-50"
-                                  >
-                                    <Search className="w-4 h-4 mr-2" />
-                                    {props.loading ? 'Analyzing...' : 'Run DataForSEO Analysis'}
-                                  </button>
-                                )}
-                              </div>
+                              {loadingDataForSeo[domain.id] ? (
+                                <div className="bg-white rounded-lg border border-gray-200 p-8">
+                                  <div className="flex flex-col items-center">
+                                    <Loader2 className="w-8 h-8 text-indigo-600 animate-spin mb-4" />
+                                    <p className="text-gray-600">Running DataForSEO analysis...</p>
+                                    <p className="text-sm text-gray-500 mt-2">This may take a few moments</p>
+                                  </div>
+                                </div>
+                              ) : (
+                                <div className="bg-gray-50 rounded-lg border border-gray-200 p-6 text-center">
+                                  <p className="text-gray-600 mb-4">No DataForSEO results available yet</p>
+                                  {!props.hideExperimentalFeatures && (
+                                    <button
+                                      onClick={(e) => {
+                                        e.stopPropagation();
+                                        runDataForSeoAnalysisInline(domain);
+                                      }}
+                                      disabled={props.loading}
+                                      className="inline-flex items-center px-4 py-2 bg-indigo-600 text-white text-sm rounded-lg hover:bg-indigo-700 disabled:opacity-50"
+                                    >
+                                      <Search className="w-4 h-4 mr-2" />
+                                      Run DataForSEO Analysis
+                                    </button>
+                                  )}
+                                </div>
+                              )}
                             </div>
                           )}
 
