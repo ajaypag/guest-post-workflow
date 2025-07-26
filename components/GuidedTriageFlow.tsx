@@ -728,6 +728,47 @@ export default function GuidedTriageFlow(props: GuidedTriageFlowProps) {
                               )}
                             </div>
                           </>
+                        ) : data.wasAnalyzedButNoResults ? (
+                          <>
+                            <XCircle className="w-16 h-16 text-amber-400 mx-auto mb-4" />
+                            <p className="text-amber-900 font-medium mb-2">No Rankings Found</p>
+                            <p className="text-sm text-amber-700 mb-6">
+                              Analyzed {data.keywords.length} keywords but this domain doesn't rank in top 100 for any of them
+                            </p>
+                            <div className="flex flex-col items-center gap-3">
+                              {/* Prominent Ahrefs button when no results found */}
+                              <a
+                                href={buildAhrefsUrl(currentDomain.domain, data.keywords)}
+                                target="_blank"
+                                rel="noopener noreferrer"
+                                className="inline-flex items-center px-4 py-2 bg-indigo-600 text-white text-sm rounded-lg hover:bg-indigo-700"
+                                title="Check rankings in Ahrefs (no API credits used)"
+                              >
+                                <ExternalLink className="w-4 h-4 mr-2" />
+                                Check in Ahrefs
+                              </a>
+                              {/* Optional re-analyze button for edge cases */}
+                              {props.onAnalyzeWithDataForSeo && (
+                                <button
+                                  onClick={runDataForSeoAnalysis}
+                                  disabled={loadingDataForSeo}
+                                  className="inline-flex items-center px-4 py-2 bg-gray-200 text-gray-700 text-sm rounded-lg hover:bg-gray-300 disabled:opacity-50"
+                                >
+                                  {loadingDataForSeo ? (
+                                    <>
+                                      <Loader2 className="w-4 h-4 mr-2 animate-spin" />
+                                      Re-analyzing...
+                                    </>
+                                  ) : (
+                                    <>
+                                      <RefreshCw className="w-4 h-4 mr-2" />
+                                      Re-analyze
+                                    </>
+                                  )}
+                                </button>
+                              )}
+                            </div>
+                          </>
                         ) : (
                           <>
                             <Search className="w-16 h-16 text-gray-300 mx-auto mb-4" />
@@ -765,7 +806,7 @@ export default function GuidedTriageFlow(props: GuidedTriageFlowProps) {
                                     href={buildAhrefsUrl(currentDomain.domain, data.keywords)}
                                     target="_blank"
                                     rel="noopener noreferrer"
-                                    className="inline-flex items-center px-5 py-2.5 bg-gray-800 text-white text-sm rounded-lg hover:bg-gray-900"
+                                    className="inline-flex items-center px-5 py-2.5 bg-orange-600 text-white text-sm rounded-lg hover:bg-orange-700"
                                     title="Check rankings in Ahrefs (no API credits used)"
                                   >
                                     <ExternalLink className="w-4 h-4 mr-2" />
@@ -782,7 +823,7 @@ export default function GuidedTriageFlow(props: GuidedTriageFlowProps) {
                                     href={buildAhrefsUrl(currentDomain.domain, [])}
                                     target="_blank"
                                     rel="noopener noreferrer"
-                                    className="inline-flex items-center px-6 py-3 bg-gray-800 text-white rounded-lg hover:bg-gray-900"
+                                    className="inline-flex items-center px-6 py-3 bg-orange-600 text-white rounded-lg hover:bg-orange-700"
                                     title="Check all rankings for this domain in Ahrefs"
                                   >
                                     <ExternalLink className="w-5 h-5 mr-2" />

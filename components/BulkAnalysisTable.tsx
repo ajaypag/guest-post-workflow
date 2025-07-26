@@ -81,6 +81,7 @@ interface ExpandedRowData {
     };
     analyzedKeywords: number;
     lastAnalyzed: string;
+    wasAnalyzedWithNoResults?: boolean;
   };
   aiQualification?: {
     status: 'high_quality' | 'average_quality' | 'disqualified';
@@ -218,34 +219,60 @@ export default function BulkAnalysisTable(props: BulkAnalysisTableProps) {
 
     // Load DataForSEO results if available
     let dataForSeoResults: ExpandedRowData['dataForSeoResults'] | undefined;
+    let wasAnalyzedWithNoResults = false;
+    
     if (domain.hasDataForSeoResults && rowData[domainId]?.dataForSeoResults) {
       // Use existing data if already loaded
       dataForSeoResults = rowData[domainId].dataForSeoResults;
-    } else if (domain.hasDataForSeoResults) {
-      // Load data if not already in rowData
+    } else {
+      // Check if domain was analyzed (even if no results)
       try {
-        const response = await fetch(`/api/clients/${domain.clientId}/bulk-analysis/dataforseo/results?domainId=${domainId}&limit=1000`);
-        if (response.ok) {
-          const data = await response.json();
-          dataForSeoResults = {
-            totalRankings: data.total || data.results.length,
-            avgPosition: data.results.length > 0 ? data.results.reduce((acc: number, r: any) => acc + r.position, 0) / data.results.length : 0,
-            allKeywords: data.results.map((r: any) => ({
-              keyword: r.keyword,
-              position: r.position,
-              searchVolume: r.searchVolume,
-              url: r.url,
-              cpc: r.cpc,
-              competition: r.competition,
-              isFromCache: r.isFromCache
-            })),
-            cacheInfo: undefined, // Will be populated when fresh analysis is run
-            analyzedKeywords: 0, // Will be populated when fresh analysis is run
-            lastAnalyzed: domain.dataForSeoLastAnalyzed || new Date().toISOString()
-          };
+        const analysisCheckResponse = await fetch(`/api/clients/${domain.clientId}/bulk-analysis/dataforseo/check-analyzed?domainId=${domainId}`);
+        if (analysisCheckResponse.ok) {
+          const analysisCheck = await analysisCheckResponse.json();
+          
+          if (analysisCheck.wasAnalyzed) {
+            // Keywords were analyzed
+            if (analysisCheck.keywordsWithResults > 0) {
+              // Load actual results
+              const response = await fetch(`/api/clients/${domain.clientId}/bulk-analysis/dataforseo/results?domainId=${domainId}&limit=1000`);
+              if (response.ok) {
+                const data = await response.json();
+                dataForSeoResults = {
+                  totalRankings: data.total || data.results.length,
+                  avgPosition: data.results.length > 0 ? data.results.reduce((acc: number, r: any) => acc + r.position, 0) / data.results.length : 0,
+                  allKeywords: data.results.map((r: any) => ({
+                    keyword: r.keyword,
+                    position: r.position,
+                    searchVolume: r.searchVolume,
+                    url: r.url,
+                    cpc: r.cpc,
+                    competition: r.competition,
+                    isFromCache: r.isFromCache
+                  })),
+                  cacheInfo: undefined,
+                  analyzedKeywords: analysisCheck.keywordsAnalyzed,
+                  lastAnalyzed: analysisCheck.lastAnalyzed || new Date().toISOString(),
+                  wasAnalyzedWithNoResults: false
+                };
+              }
+            } else {
+              // Analyzed but no results found
+              wasAnalyzedWithNoResults = true;
+              dataForSeoResults = {
+                totalRankings: 0,
+                avgPosition: 0,
+                allKeywords: [],
+                cacheInfo: undefined,
+                analyzedKeywords: analysisCheck.keywordsAnalyzed,
+                lastAnalyzed: analysisCheck.lastAnalyzed || new Date().toISOString(),
+                wasAnalyzedWithNoResults: true
+              };
+            }
+          }
         }
       } catch (error) {
-        console.error('Failed to load DataForSEO results:', error);
+        console.error('Failed to check/load DataForSEO results:', error);
       }
     }
 
@@ -797,6 +824,30 @@ export default function BulkAnalysisTable(props: BulkAnalysisTableProps) {
                                   </span>
                                 )}
                               </h4>
+                              {data.dataForSeoResults.wasAnalyzedWithNoResults ? (
+                                <div className="bg-amber-50 rounded-lg border border-amber-200 p-6 text-center">
+                                  <p className="text-amber-900 font-medium mb-2">No Rankings Found</p>
+                                  <p className="text-amber-700 text-sm mb-4">
+                                    Analyzed {data.dataForSeoResults.analyzedKeywords || 0} keywords but this domain doesn't rank in top 100 for any of them
+                                  </p>
+                                  <div className="flex justify-center gap-3">
+                                    {data.keywords.groups.map((group, idx) => (
+                                      <a
+                                        key={idx}
+                                        href={group.ahrefsUrl}
+                                        target="_blank"
+                                        rel="noopener noreferrer"
+                                        className="inline-flex items-center px-3 py-2 text-sm bg-orange-600 text-white hover:bg-orange-700 rounded-md transition-colors"
+                                        onClick={(e) => e.stopPropagation()}
+                                        title={`Check ${group.name} keywords in Ahrefs`}
+                                      >
+                                        <ExternalLink className="w-4 h-4 mr-2" />
+                                        {group.name} in Ahrefs
+                                      </a>
+                                    ))}
+                                  </div>
+                                </div>
+                              ) : (
                               <div className="bg-white rounded-lg border border-gray-200 p-4">
                                 {/* Cache Info */}
                                 {data.dataForSeoResults.cacheInfo && (
@@ -951,6 +1002,7 @@ export default function BulkAnalysisTable(props: BulkAnalysisTableProps) {
                                   </div>
                                 )}
                               </div>
+                              )}
                             </div>
                           ) : (
                             <div>
@@ -968,20 +1020,38 @@ export default function BulkAnalysisTable(props: BulkAnalysisTableProps) {
                                 </div>
                               ) : (
                                 <div className="bg-gray-50 rounded-lg border border-gray-200 p-6 text-center">
-                                  <p className="text-gray-600 mb-4">No DataForSEO results available yet</p>
-                                  {!props.hideExperimentalFeatures && (
-                                    <button
-                                      onClick={(e) => {
-                                        e.stopPropagation();
-                                        runDataForSeoAnalysisInline(domain);
-                                      }}
-                                      disabled={props.loading}
-                                      className="inline-flex items-center px-4 py-2 bg-indigo-600 text-white text-sm rounded-lg hover:bg-indigo-700 disabled:opacity-50"
-                                    >
-                                      <Search className="w-4 h-4 mr-2" />
-                                      Run DataForSEO Analysis
-                                    </button>
-                                  )}
+                                  <p className="text-gray-600 mb-4">
+                                    No keyword data available. Click below to analyze keywords.
+                                  </p>
+                                  <div className="flex justify-center gap-3">
+                                    {!props.hideExperimentalFeatures && (
+                                      <button
+                                        onClick={(e) => {
+                                          e.stopPropagation();
+                                          runDataForSeoAnalysisInline(domain);
+                                        }}
+                                        disabled={props.loading}
+                                        className="inline-flex items-center px-4 py-2 bg-indigo-600 text-white text-sm rounded-lg hover:bg-indigo-700 disabled:opacity-50"
+                                      >
+                                        <Search className="w-4 h-4 mr-2" />
+                                        Analyze Keywords
+                                      </button>
+                                    )}
+                                    {data.keywords.groups.map((group, idx) => (
+                                      <a
+                                        key={idx}
+                                        href={group.ahrefsUrl}
+                                        target="_blank"
+                                        rel="noopener noreferrer"
+                                        className="inline-flex items-center px-3 py-2 text-sm bg-orange-600 text-white hover:bg-orange-700 rounded-md transition-colors"
+                                        onClick={(e) => e.stopPropagation()}
+                                        title={`Check ${group.name} keywords in Ahrefs`}
+                                      >
+                                        <ExternalLink className="w-4 h-4 mr-2" />
+                                        {group.name} in Ahrefs
+                                      </a>
+                                    ))}
+                                  </div>
                                 </div>
                               )}
                             </div>
