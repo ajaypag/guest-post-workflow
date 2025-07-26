@@ -2,7 +2,7 @@ import { NextResponse } from 'next/server';
 import { db } from '@/lib/db/connection';
 import { sql } from 'drizzle-orm';
 
-export async function GET() {
+export async function POST() {
   try {
     console.log('Adding data source tracking fields to bulk_analysis_domains table...');
 
@@ -36,6 +36,35 @@ export async function GET() {
     return NextResponse.json({
       success: false,
       error: error.message
+    }, { status: 500 });
+  }
+}
+
+export async function DELETE() {
+  try {
+    console.log('Rolling back data source fields migration...');
+
+    // Remove the data source tracking columns
+    await db.execute(sql`
+      ALTER TABLE bulk_analysis_domains 
+      DROP COLUMN IF EXISTS has_dataforseo_results,
+      DROP COLUMN IF EXISTS dataforseo_last_analyzed,
+      DROP COLUMN IF EXISTS ai_qualification_reasoning,
+      DROP COLUMN IF EXISTS ai_qualified_at
+    `);
+
+    console.log('Data source tracking fields removed successfully');
+
+    return NextResponse.json({
+      success: true,
+      message: 'Data source tracking fields removed successfully'
+    });
+
+  } catch (error: any) {
+    console.error('Error removing data source fields:', error);
+    return NextResponse.json({
+      success: false,
+      error: error.message || 'Failed to remove data source fields'
     }, { status: 500 });
   }
 }
