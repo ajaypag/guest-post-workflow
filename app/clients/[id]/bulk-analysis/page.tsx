@@ -101,6 +101,9 @@ export default function BulkAnalysisPage() {
   const [showAIQualification, setShowAIQualification] = useState(false);
   const [aiQualificationDomains, setAIQualificationDomains] = useState<Array<{ id: string; domain: string }>>([]);
   
+  // Triage mode state
+  const [triageMode, setTriageMode] = useState(false);
+  
   // Reset pagination when filters change
   useEffect(() => {
     setDisplayLimit(ITEMS_PER_PAGE);
@@ -1337,6 +1340,8 @@ export default function BulkAnalysisPage() {
                       loading={loading}
                       keywordInputMode={keywordInputMode}
                       manualKeywords={manualKeywords}
+                      triageMode={triageMode}
+                      onToggleTriageMode={() => setTriageMode(!triageMode)}
                     />
                     
                     {/* Show More Button */}

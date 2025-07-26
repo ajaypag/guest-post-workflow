@@ -38,6 +38,8 @@ interface BulkAnalysisTableProps {
   loading: boolean;
   keywordInputMode: 'target-pages' | 'manual';
   manualKeywords?: string;
+  triageMode?: boolean;
+  onToggleTriageMode?: () => void;
 }
 
 interface ExpandedRowData {
@@ -316,6 +318,31 @@ export default function BulkAnalysisTable(props: BulkAnalysisTableProps) {
 
   return (
     <div className="w-full">
+      {/* Triage Mode Toggle */}
+      {props.onToggleTriageMode && (
+        <div className="mb-4 flex items-center justify-between bg-gray-50 rounded-lg p-4">
+          <div className="flex items-center gap-3">
+            <Zap className="w-5 h-5 text-indigo-600" />
+            <div>
+              <h3 className="text-sm font-medium text-gray-900">Triage Mode</h3>
+              <p className="text-xs text-gray-500">
+                Fast qualification for large datasets - simplified view with key metrics only
+              </p>
+            </div>
+          </div>
+          <button
+            onClick={props.onToggleTriageMode}
+            className={`px-4 py-2 rounded-lg text-sm font-medium transition-colors ${
+              props.triageMode
+                ? 'bg-indigo-600 text-white hover:bg-indigo-700'
+                : 'bg-white text-gray-700 border border-gray-300 hover:bg-gray-50'
+            }`}
+          >
+            {props.triageMode ? 'Exit Triage' : 'Enable Triage'}
+          </button>
+        </div>
+      )}
+
       <table className="min-w-full divide-y divide-gray-200">
         <thead className="bg-gray-50">
           <tr>
@@ -340,20 +367,30 @@ export default function BulkAnalysisTable(props: BulkAnalysisTableProps) {
             <th className="px-3 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
               Domain
             </th>
-            <th className="px-3 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-              Keywords
-            </th>
-            <th className="px-3 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-              Data Sources
-            </th>
+            {!props.triageMode && (
+              <th className="px-3 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                Keywords
+              </th>
+            )}
+            {props.triageMode ? (
+              <th className="px-3 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                Quick Stats
+              </th>
+            ) : (
+              <th className="px-3 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                Data Sources
+              </th>
+            )}
             <th className="px-3 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
               Status
             </th>
+            {!props.triageMode && (
+              <th className="px-3 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                Target Page
+              </th>
+            )}
             <th className="px-3 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-              Target Page
-            </th>
-            <th className="px-3 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-              Actions
+              {props.triageMode ? 'Quick Actions' : 'Actions'}
             </th>
           </tr>
         </thead>
@@ -382,44 +419,69 @@ export default function BulkAnalysisTable(props: BulkAnalysisTableProps) {
                   </td>
                   <td className="px-3 py-4">
                     <div className="flex items-center">
-                      <button
-                        onClick={(e) => {
-                          e.stopPropagation();
-                          toggleExpanded(domain.id);
-                        }}
-                        className="mr-2 p-1 hover:bg-gray-100 rounded"
-                      >
-                        {isExpanded ? 
-                          <ChevronDown className="w-4 h-4 text-gray-500" /> : 
-                          <ChevronRight className="w-4 h-4 text-gray-500" />
-                        }
-                      </button>
+                      {!props.triageMode && (
+                        <button
+                          onClick={(e) => {
+                            e.stopPropagation();
+                            toggleExpanded(domain.id);
+                          }}
+                          className="mr-2 p-1 hover:bg-gray-100 rounded"
+                        >
+                          {isExpanded ? 
+                            <ChevronDown className="w-4 h-4 text-gray-500" /> : 
+                            <ChevronRight className="w-4 h-4 text-gray-500" />
+                          }
+                        </button>
+                      )}
                       <div>
                         <div className="text-sm font-medium text-gray-900">{domain.domain}</div>
-                        {domain.notes && (
+                        {domain.notes && !props.triageMode && (
                           <div className="text-xs text-gray-500 mt-1">{domain.notes}</div>
                         )}
                       </div>
                     </div>
                   </td>
-                  <td className="px-3 py-4 text-sm text-gray-500">
-                    {domain.keywordCount} keywords
-                  </td>
+                  {!props.triageMode && (
+                    <td className="px-3 py-4 text-sm text-gray-500">
+                      {domain.keywordCount} keywords
+                    </td>
+                  )}
                   <td className="px-3 py-4">
-                    <div className="flex items-center gap-2">
-                      {domain.hasDataForSeoResults && (
-                        <span className="inline-flex items-center px-2 py-1 text-xs bg-indigo-100 text-indigo-800 rounded">
-                          <Search className="w-3 h-3 mr-1" />
-                          DataForSEO
-                        </span>
-                      )}
-                      {domain.aiQualificationReasoning && (
-                        <span className="inline-flex items-center px-2 py-1 text-xs bg-purple-100 text-purple-800 rounded">
-                          <Sparkles className="w-3 h-3 mr-1" />
-                          AI Qualified
-                        </span>
-                      )}
-                    </div>
+                    {props.triageMode ? (
+                      <div className="flex items-center gap-4 text-sm">
+                        <div className="flex items-center gap-1">
+                          <Target className="w-3 h-3 text-gray-400" />
+                          <span className="text-gray-600">{domain.keywordCount}</span>
+                        </div>
+                        {domain.hasDataForSeoResults && (
+                          <div className="flex items-center gap-1">
+                            <Search className="w-3 h-3 text-indigo-600" />
+                            <span className="text-indigo-600 text-xs">SEO Data</span>
+                          </div>
+                        )}
+                        {domain.aiQualificationReasoning && (
+                          <div className="flex items-center gap-1">
+                            <Sparkles className="w-3 h-3 text-purple-600" />
+                            <span className="text-purple-600 text-xs">AI Scored</span>
+                          </div>
+                        )}
+                      </div>
+                    ) : (
+                      <div className="flex items-center gap-2">
+                        {domain.hasDataForSeoResults && (
+                          <span className="inline-flex items-center px-2 py-1 text-xs bg-indigo-100 text-indigo-800 rounded">
+                            <Search className="w-3 h-3 mr-1" />
+                            DataForSEO
+                          </span>
+                        )}
+                        {domain.aiQualificationReasoning && (
+                          <span className="inline-flex items-center px-2 py-1 text-xs bg-purple-100 text-purple-800 rounded">
+                            <Sparkles className="w-3 h-3 mr-1" />
+                            AI Qualified
+                          </span>
+                        )}
+                      </div>
+                    )}
                   </td>
                   <td className="px-3 py-4">
                     <span className={`inline-flex items-center px-2.5 py-0.5 rounded text-xs font-medium ${getStatusColor(domain.qualificationStatus)}`}>
@@ -427,53 +489,55 @@ export default function BulkAnalysisTable(props: BulkAnalysisTableProps) {
                       <span className="ml-1">{getStatusLabel(domain.qualificationStatus)}</span>
                     </span>
                   </td>
-                  <td className="px-3 py-4 text-sm text-gray-500">
-                    {domain.selectedTargetPageId ? (
-                      <span className="text-indigo-600">
-                        {props.targetPages.find(p => p.id === domain.selectedTargetPageId)?.url || 'Selected'}
-                      </span>
-                    ) : (
-                      <span className="text-gray-400">Not selected</span>
-                    )}
-                  </td>
+                  {!props.triageMode && (
+                    <td className="px-3 py-4 text-sm text-gray-500">
+                      {domain.selectedTargetPageId ? (
+                        <span className="text-indigo-600">
+                          {props.targetPages.find(p => p.id === domain.selectedTargetPageId)?.url || 'Selected'}
+                        </span>
+                      ) : (
+                        <span className="text-gray-400">Not selected</span>
+                      )}
+                    </td>
+                  )}
                   <td className="px-3 py-4">
-                    <div className="flex items-center gap-2">
+                    <div className={`flex items-center ${props.triageMode ? 'gap-1' : 'gap-2'}`}>
                       {domain.qualificationStatus === 'pending' ? (
-                        <div className="flex gap-1">
+                        <div className={`flex ${props.triageMode ? 'gap-1' : 'gap-1'}`}>
                           <button
                             onClick={(e) => {
                               e.stopPropagation();
                               props.onUpdateStatus(domain.id, 'high_quality');
                             }}
-                            className="px-2 py-1 bg-green-600 text-white text-xs rounded hover:bg-green-700"
+                            className={`${props.triageMode ? 'px-1.5 py-0.5 text-xs' : 'px-2 py-1 text-xs'} bg-green-600 text-white rounded hover:bg-green-700`}
                             title="Mark as High Quality (Press 1)"
                           >
-                            High
+                            {props.triageMode ? '1' : 'High'}
                           </button>
                           <button
                             onClick={(e) => {
                               e.stopPropagation();
                               props.onUpdateStatus(domain.id, 'average_quality');
                             }}
-                            className="px-2 py-1 bg-blue-600 text-white text-xs rounded hover:bg-blue-700"
+                            className={`${props.triageMode ? 'px-1.5 py-0.5 text-xs' : 'px-2 py-1 text-xs'} bg-blue-600 text-white rounded hover:bg-blue-700`}
                             title="Mark as Average (Press 2)"
                           >
-                            Avg
+                            {props.triageMode ? '2' : 'Avg'}
                           </button>
                           <button
                             onClick={(e) => {
                               e.stopPropagation();
                               props.onUpdateStatus(domain.id, 'disqualified');
                             }}
-                            className="px-2 py-1 bg-gray-600 text-white text-xs rounded hover:bg-gray-700"
+                            className={`${props.triageMode ? 'px-1.5 py-0.5 text-xs' : 'px-2 py-1 text-xs'} bg-gray-600 text-white rounded hover:bg-gray-700`}
                             title="Disqualify (Press 3)"
                           >
-                            DQ
+                            {props.triageMode ? '3' : 'DQ'}
                           </button>
                         </div>
                       ) : (
                         <>
-                          {(domain.qualificationStatus === 'high_quality' || domain.qualificationStatus === 'average_quality') && !domain.hasWorkflow && (
+                          {!props.triageMode && (domain.qualificationStatus === 'high_quality' || domain.qualificationStatus === 'average_quality') && !domain.hasWorkflow && (
                             <button
                               onClick={(e) => {
                                 e.stopPropagation();
@@ -485,7 +549,7 @@ export default function BulkAnalysisTable(props: BulkAnalysisTableProps) {
                               Workflow
                             </button>
                           )}
-                          {domain.hasWorkflow && (
+                          {!props.triageMode && domain.hasWorkflow && (
                             <span className="inline-flex items-center px-2 py-1 bg-purple-100 text-purple-800 text-xs rounded">
                               <FileText className="w-3 h-3 mr-1" />
                               Has Workflow
@@ -493,22 +557,24 @@ export default function BulkAnalysisTable(props: BulkAnalysisTableProps) {
                           )}
                         </>
                       )}
-                      <button
-                        onClick={(e) => {
-                          e.stopPropagation();
-                          props.onDeleteDomain(domain.id);
-                        }}
-                        className="p-1 text-red-600 hover:bg-red-50 rounded"
-                        title="Delete"
-                      >
-                        <Trash2 className="w-4 h-4" />
-                      </button>
+                      {!props.triageMode && (
+                        <button
+                          onClick={(e) => {
+                            e.stopPropagation();
+                            props.onDeleteDomain(domain.id);
+                          }}
+                          className="p-1 text-red-600 hover:bg-red-50 rounded"
+                          title="Delete"
+                        >
+                          <Trash2 className="w-4 h-4" />
+                        </button>
+                      )}
                     </div>
                   </td>
                 </tr>
                 
                 {/* Expanded Row Content */}
-                {isExpanded && data && (
+                {!props.triageMode && isExpanded && data && (
                   <tr>
                     <td colSpan={7} className="px-0 py-0">
                       <div className="bg-gray-50 border-t border-b border-gray-200">
