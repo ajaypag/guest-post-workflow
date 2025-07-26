@@ -557,7 +557,14 @@ export default function BulkAnalysisTable(props: BulkAnalysisTableProps) {
                   className={`hover:bg-gray-50 cursor-pointer transition-colors ${
                     isFocused ? 'ring-2 ring-inset ring-indigo-500' : ''
                   } ${props.selectedDomains.has(domain.id) ? 'bg-indigo-50' : ''}`}
-                  onClick={() => setFocusedDomainId(domain.id)}
+                  onClick={(e) => {
+                    setFocusedDomainId(domain.id);
+                    // Expand row if not clicking on a button/link/input
+                    if (!props.triageMode && 
+                        !(e.target as HTMLElement).closest('button, a, input, select')) {
+                      toggleExpanded(domain.id);
+                    }
+                  }}
                 >
                   <td className="px-3 py-4">
                     <input
@@ -755,25 +762,17 @@ export default function BulkAnalysisTable(props: BulkAnalysisTableProps) {
                                   <div className="flex items-start justify-between mb-2">
                                     <div>
                                       <h5 className="font-medium text-sm">{group.name}</h5>
-                                      <span className={`text-xs px-2 py-0.5 rounded mt-1 inline-block ${
-                                        group.relevance === 'core' 
-                                          ? 'bg-green-100 text-green-800' 
-                                          : group.relevance === 'related'
-                                          ? 'bg-blue-100 text-blue-800'
-                                          : 'bg-gray-100 text-gray-800'
-                                      }`}>
-                                        {group.relevance === 'core' ? 'Premium' : 
-                                         group.relevance === 'related' ? 'Good' : 'Standard'}
-                                      </span>
                                     </div>
                                     <a
                                       href={group.ahrefsUrl}
                                       target="_blank"
                                       rel="noopener noreferrer"
-                                      className="text-indigo-600 hover:text-indigo-800"
+                                      className="inline-flex items-center px-2 py-1 text-xs bg-indigo-100 text-indigo-700 hover:bg-indigo-200 rounded-md transition-colors"
                                       onClick={(e) => e.stopPropagation()}
+                                      title="Open in Ahrefs Keyword Explorer to check rankings for these keywords"
                                     >
-                                      <ExternalLink className="w-4 h-4" />
+                                      <ExternalLink className="w-3 h-3 mr-1" />
+                                      Ahrefs
                                     </a>
                                   </div>
                                   <p className="text-xs text-gray-600 mt-2">
@@ -850,7 +849,6 @@ export default function BulkAnalysisTable(props: BulkAnalysisTableProps) {
                                     </p>
                                   </div>
                                   <div>
-                                    <p className="text-sm text-gray-500">Topical Authority</p>
                                     <div className="flex items-center mt-1">
                                       {data.dataForSeoResults.totalRankings === 0 ? (
                                         <span className="text-lg font-semibold text-gray-400">None</span>
