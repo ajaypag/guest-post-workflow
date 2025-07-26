@@ -33,8 +33,7 @@ interface ClientContext {
  */
 export class AIQualificationService {
   private openai: OpenAI;
-  private readonly BATCH_SIZE = 10; // Process 10 domains concurrently
-  private readonly MAX_CONCURRENT = 5; // Max 5 parallel batches (50 domains at once)
+  private readonly MAX_CONCURRENT = 10; // Process up to 10 domains in parallel
 
   constructor() {
     this.openai = new OpenAI({
@@ -53,21 +52,22 @@ export class AIQualificationService {
     console.log(`🤖 Starting AI qualification for ${domains.length} domains`);
     
     const results: QualificationResult[] = [];
-    const batches = this.createBatches(domains, this.BATCH_SIZE);
+    let completed = 0;
     
-    // Process batches with concurrency limit
-    for (let i = 0; i < batches.length; i += this.MAX_CONCURRENT) {
-      const concurrentBatches = batches.slice(i, i + this.MAX_CONCURRENT);
+    // Process domains in chunks of MAX_CONCURRENT at a time
+    for (let i = 0; i < domains.length; i += this.MAX_CONCURRENT) {
+      const chunk = domains.slice(i, i + this.MAX_CONCURRENT);
       
-      const batchPromises = concurrentBatches.map(batch => 
-        this.processBatch(batch, clientContext)
+      // Process each domain in the chunk concurrently
+      const chunkPromises = chunk.map(domain => 
+        this.processSingleDomain(domain, clientContext)
       );
       
-      const batchResults = await Promise.all(batchPromises);
-      results.push(...batchResults.flat());
+      const chunkResults = await Promise.all(chunkPromises);
+      results.push(...chunkResults);
       
       // Report progress
-      const completed = Math.min(results.length, domains.length);
+      completed += chunk.length;
       onProgress?.(completed, domains.length);
       
       console.log(`✅ Processed ${completed}/${domains.length} domains`);
@@ -77,17 +77,17 @@ export class AIQualificationService {
   }
 
   /**
-   * Process a batch of domains together
+   * Process a single domain
    */
-  private async processBatch(
-    batch: DomainData[],
+  private async processSingleDomain(
+    domain: DomainData,
     clientContext: ClientContext
-  ): Promise<QualificationResult[]> {
+  ): Promise<QualificationResult> {
     try {
-      const prompt = this.buildPrompt(batch, clientContext);
+      const prompt = this.buildPromptForSingleDomain(domain, clientContext);
       
       const response = await this.openai.chat.completions.create({
-        model: "o3-mini",
+        model: "o3-2025-04-16",
         messages: [
           {
             role: "user",
@@ -101,21 +101,32 @@ export class AIQualificationService {
       if (!content) throw new Error('No response from AI');
 
       const result = JSON.parse(content);
-      return this.validateResults(result.qualifications || [], batch);
+      
+      // Validate the single result
+      if (result.qualification && result.reasoning) {
+        return {
+          domainId: domain.domainId,
+          domain: domain.domain,
+          qualification: this.validateQualification(result.qualification),
+          reasoning: result.reasoning
+        };
+      }
+      
+      throw new Error('Invalid response format from AI');
 
     } catch (error) {
-      console.error('Batch processing error:', error);
-      // Return all as needing manual review
-      return batch.map(domain => ({
+      console.error(`Domain ${domain.domain} processing error:`, error);
+      // Return as needing manual review
+      return {
         domainId: domain.domainId,
         domain: domain.domain,
         qualification: 'average_quality' as const,
         reasoning: 'AI processing error - requires manual review'
-      }));
+      };
     }
   }
 
-  private buildPrompt(domains: DomainData[], context: ClientContext): string {
+  private buildPromptForSingleDomain(domain: DomainData, context: ClientContext): string {
     // Format client data
     const clientInfo = {
       targetPages: context.targetPages.map(page => ({
@@ -126,46 +137,39 @@ export class AIQualificationService {
       keywordThemes: this.extractKeywordThemes(context.clientKeywords)
     };
 
-    // Format domain data - only include relevant info
-    const domainData = domains.map(d => ({
-      domainId: d.domainId,
-      domain: d.domain,
-      // Only include top ranking keywords that might be relevant
-      topRankings: d.keywordRankings
-        .filter(r => r.position <= 50)
+    // Include ALL keyword rankings - no filtering or limiting
+    const domainInfo = {
+      domainId: domain.domainId,
+      domain: domain.domain,
+      totalKeywords: domain.keywordRankings.length,
+      keywordRankings: domain.keywordRankings
         .sort((a, b) => {
-          // Prioritize by position then by volume
+          // Still sort by position then volume for better readability
           if (a.position !== b.position) return a.position - b.position;
           return b.searchVolume - a.searchVolume;
         })
-        .slice(0, 20)
         .map(r => ({
           keyword: r.keyword,
           position: r.position,
-          volume: r.searchVolume
+          volume: r.searchVolume,
+          url: r.url
         }))
-    }));
+    };
 
-    return `I'm going to give you my client pages, some narrow to broad keyword topics related to it and then I'll give you sites I want to guest post on along with their keyword rankings for phrases that overlap with the clients.
+    return `I'm going to give you my client pages, some narrow to broad keyword topics related to it and then I'll give you a site I want to guest post on along with ALL their keyword rankings.
 
-Your job: reason through and determine if each guest post site is highly relevant, average or disqualified. The best site is basically a site that I can publish an article about a topic that is a long tail of my keyword and it has a great chance of ranking from existing topical authority. Average would be some justifiable overlap but not a home run.
+Your job: reason through and determine if this guest post site is highly relevant, average or disqualified. The best site is basically a site that I can publish an article about a topic that is a long tail of my keyword and it has a great chance of ranking from existing topical authority. Average would be some justifiable overlap but not a home run.
 
 Client Information:
 ${JSON.stringify(clientInfo, null, 2)}
 
-Sites to Evaluate:
-${JSON.stringify(domainData, null, 2)}
+Site to Evaluate:
+${JSON.stringify(domainInfo, null, 2)}
 
-Output your decision and justification for each site in this JSON format:
+Output your decision and justification in this JSON format:
 {
-  "qualifications": [
-    {
-      "domainId": "domain-id-here",
-      "domain": "domain.com",
-      "qualification": "high_quality" | "average_quality" | "disqualified",
-      "reasoning": "Your detailed reasoning explaining the topical overlap and ranking potential"
-    }
-  ]
+  "qualification": "high_quality" | "average_quality" | "disqualified",
+  "reasoning": "Your detailed reasoning explaining the topical overlap and ranking potential. Be specific about which keywords show topical authority relevant to the client's needs."
 }`;
   }
 
@@ -194,50 +198,6 @@ Output your decision and justification for each site in this JSON format:
     return Array.from(themes);
   }
 
-  private createBatches<T>(items: T[], batchSize: number): T[][] {
-    const batches: T[][] = [];
-    for (let i = 0; i < items.length; i += batchSize) {
-      batches.push(items.slice(i, i + batchSize));
-    }
-    return batches;
-  }
-
-  private validateResults(
-    aiResults: any[],
-    originalDomains: DomainData[]
-  ): QualificationResult[] {
-    const resultsMap = new Map<string, QualificationResult>();
-
-    // Process AI results
-    if (Array.isArray(aiResults)) {
-      aiResults.forEach(result => {
-        if (result.domainId && result.qualification && result.reasoning) {
-          resultsMap.set(result.domainId, {
-            domainId: result.domainId,
-            domain: result.domain || '',
-            qualification: this.validateQualification(result.qualification),
-            reasoning: result.reasoning
-          });
-        }
-      });
-    }
-
-    // Ensure all domains have results
-    return originalDomains.map(d => {
-      const aiResult = resultsMap.get(d.domainId);
-      if (aiResult) {
-        return { ...aiResult, domain: d.domain };
-      }
-
-      // Fallback if AI didn't return result for this domain
-      return {
-        domainId: d.domainId,
-        domain: d.domain,
-        qualification: 'average_quality' as const,
-        reasoning: 'Requires manual review - AI did not provide qualification'
-      };
-    });
-  }
 
   private validateQualification(qual: string): 'high_quality' | 'average_quality' | 'disqualified' {
     const valid = ['high_quality', 'average_quality', 'disqualified'];
