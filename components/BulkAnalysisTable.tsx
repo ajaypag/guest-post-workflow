@@ -627,7 +627,20 @@ export default function BulkAnalysisTable(props: BulkAnalysisTableProps) {
                   </td>
                   {!props.triageMode && (
                     <td className="px-3 py-4 text-sm text-gray-500">
-                      {domain.keywordCount} keywords
+                      <div className="flex flex-col">
+                        <span>{domain.keywordCount} keywords</span>
+                        {domain.hasDataForSeoResults && data?.dataForSeoResults && (
+                          <span className="text-xs mt-0.5">
+                            {data.dataForSeoResults.wasAnalyzedWithNoResults ? (
+                              <span className="text-amber-600">0 rankings found</span>
+                            ) : data.dataForSeoResults.totalRankings > 0 ? (
+                              <span className="text-green-600">{data.dataForSeoResults.totalRankings} rankings found</span>
+                            ) : (
+                              <span className="text-gray-400">analyzing...</span>
+                            )}
+                          </span>
+                        )}
+                      </div>
                     </td>
                   )}
                   <td className="px-3 py-4">
@@ -635,7 +648,19 @@ export default function BulkAnalysisTable(props: BulkAnalysisTableProps) {
                       <div className="flex items-center gap-4 text-sm">
                         <div className="flex items-center gap-1">
                           <Target className="w-3 h-3 text-gray-400" />
-                          <span className="text-gray-600">{domain.keywordCount}</span>
+                          <span className="text-gray-600">
+                            {domain.keywordCount}
+                            {domain.hasDataForSeoResults && data?.dataForSeoResults && (
+                              <span className="ml-1">
+                                ({data.dataForSeoResults.wasAnalyzedWithNoResults ? 
+                                  <span className="text-amber-600">0</span> : 
+                                  data.dataForSeoResults.totalRankings > 0 ? 
+                                  <span className="text-green-600">{data.dataForSeoResults.totalRankings}</span> : 
+                                  <span className="text-gray-400">...</span>
+                                })
+                              </span>
+                            )}
+                          </span>
                         </div>
                         {domain.hasDataForSeoResults && (
                           <div className="flex items-center gap-1">
