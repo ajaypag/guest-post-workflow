@@ -288,68 +288,6 @@ export default function BulkAnalysisPage() {
     setSelectedDomains(new Set());
   };
 
-  const handleAnalyze = async () => {
-    if (keywordInputMode === 'target-pages') {
-      if (!client || selectedTargetPages.length === 0 || !domainText.trim()) {
-        setMessage('Please select target pages and enter domains to analyze');
-        return;
-      }
-    } else {
-      if (!manualKeywords.trim() || !domainText.trim()) {
-        setMessage('Please enter keywords and domains to analyze');
-        return;
-      }
-    }
-
-    setLoading(true);
-    setMessage('');
-
-    try {
-      // Parse domains
-      const domainList = domainText
-        .split('\n')
-        .map(d => d.trim())
-        .filter(Boolean);
-
-      // Check for existing domains
-      const checkResponse = await fetch(`/api/clients/${params.id}/bulk-analysis/check`, {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ domains: domainList })
-      });
-
-      if (checkResponse.ok) {
-        const checkData = await checkResponse.json();
-        setExistingDomains(checkData.existing || []);
-      }
-
-      // Create or update domains
-      const response = await fetch(`/api/clients/${params.id}/bulk-analysis`, {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-          domains: domainList,
-          targetPageIds: keywordInputMode === 'target-pages' ? selectedTargetPages : [],
-          manualKeywords: keywordInputMode === 'manual' ? manualKeywords : undefined
-        })
-      });
-
-      if (response.ok) {
-        const data = await response.json();
-        setDomains(data.domains);
-        setDomainText('');
-        setMessage(`✅ Added ${data.domains.length} domains for analysis`);
-      } else {
-        throw new Error('Failed to create domains');
-      }
-    } catch (error) {
-      console.error('Error analyzing domains:', error);
-      setMessage('❌ Error analyzing domains');
-    } finally {
-      setLoading(false);
-    }
-  };
-
   const updateQualificationStatus = async (domainId: string, status: 'high_quality' | 'average_quality' | 'disqualified', isManual?: boolean) => {
     try {
       const session = AuthService.getSession();
@@ -556,59 +494,6 @@ export default function BulkAnalysisPage() {
       );
     } catch (error) {
       console.error('Error updating analyzed domains:', error);
-      // Projects page doesn't need to reload domains
-      // loadDomains();
-    }
-  };
-
-  const refreshPendingDomains = async () => {
-    if (keywordInputMode !== 'target-pages') {
-      setMessage('❌ Refresh only works with target pages mode');
-      return;
-    }
-
-    if (selectedTargetPages.length === 0) {
-      setMessage('❌ Please select target pages to refresh with');
-      return;
-    }
-
-    const pendingCount = domains.filter(d => d.qualificationStatus === 'pending').length;
-    if (pendingCount === 0) {
-      setMessage('❌ No pending domains to refresh');
-      return;
-    }
-
-    if (!confirm(`Refresh ${pendingCount} pending domains with the selected target pages and their keywords?`)) {
-      return;
-    }
-
-    setLoading(true);
-    setMessage('🔄 Refreshing pending domains...');
-
-    try {
-      const response = await fetch(`/api/clients/${params.id}/bulk-analysis/refresh`, {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-          targetPageIds: selectedTargetPages
-        })
-      });
-
-      if (response.ok) {
-        const data = await response.json();
-        
-        // Projects page doesn't reload domains
-        // await loadDomains();
-        
-        setMessage(`✅ Refreshed ${data.refreshedCount} pending domains with updated keywords`);
-      } else {
-        throw new Error('Failed to refresh domains');
-      }
-    } catch (error) {
-      console.error('Error refreshing domains:', error);
-      setMessage('❌ Error refreshing domains');
-    } finally {
-      setLoading(false);
     }
   };
 
@@ -770,7 +655,6 @@ export default function BulkAnalysisPage() {
           setBulkAnalysisRunning(false);
           setCompletedJobId(jobId);
           
-          // Store job ID and domains for later viewing (but don't open modal automatically)
           setBulkResultsModal({ isOpen: false, jobId, analyzedDomains });
           clearSelection();
           
@@ -1031,7 +915,6 @@ export default function BulkAnalysisPage() {
                     project={project}
                     clientId={params.id as string}
                     onEdit={(project) => {
-                      // TODO: Implement edit modal
                       setMessage('🚧 Edit functionality coming soon');
                     }}
                     onDelete={deleteProject}
@@ -1261,7 +1144,6 @@ export default function BulkAnalysisPage() {
                       )}
                       <button
                         onClick={() => {
-                          // TODO: Export selected domains
                           setMessage('🚧 Export selected domains coming soon!');
                         }}
                         className="inline-flex items-center px-4 py-2 bg-gray-600 text-white text-sm rounded-lg hover:bg-gray-700"
@@ -1596,8 +1478,6 @@ export default function BulkAnalysisPage() {
           targetPages={targetPages}
           onClose={() => {
             setShowGuidedTriage(false);
-            // Projects page doesn't reload domains
-            // loadDomains(); // Reload to see updates
           }}
           onUpdateStatus={updateQualificationStatus}
           onAnalyzeWithDataForSeo={analyzeWithDataForSeo}
