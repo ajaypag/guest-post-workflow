@@ -614,54 +614,9 @@ export default function GuidedTriageFlow(props: GuidedTriageFlowProps) {
                 </div>
               </div>
               
-              {/* Keywords Filter */}
-              {data.keywords.length > 0 && (
-                <div className="flex-1 flex flex-col min-h-0">
-                  <div className="flex items-center justify-between mb-2">
-                    <h4 className="text-xs font-medium text-gray-700 uppercase">Keywords</h4>
-                    <span className="text-xs text-gray-400">({data.keywords.length})</span>
-                  </div>
-                  <div className="space-y-1 flex-1 overflow-y-auto pr-2">
-                    {data.keywords.map((keyword, idx) => {
-                      const matchCount = data.dataForSeoResults?.allKeywords.filter(kw => 
-                        kw.keyword.toLowerCase().includes(keyword.toLowerCase())
-                      ).length || 0;
-                      
-                      if (matchCount === 0) return null;
-                      
-                      return (
-                        <button
-                          key={idx}
-                          onClick={() => {
-                            if (selectedFilters.includes(keyword)) {
-                              setSelectedFilters(selectedFilters.filter(f => f !== keyword));
-                            } else {
-                              setSelectedFilters([...selectedFilters, keyword]);
-                            }
-                          }}
-                          className={`w-full text-left px-2 py-1.5 text-xs rounded-md transition-colors flex items-center justify-between ${
-                            selectedFilters.includes(keyword) 
-                              ? 'bg-indigo-600 text-white hover:bg-indigo-700' 
-                              : 'bg-gray-50 hover:bg-gray-100 text-gray-700'
-                          }`}
-                          title={`${matchCount} matches`}
-                        >
-                          <span className="truncate">{keyword}</span>
-                          <span className={`ml-1 text-xs ${
-                            selectedFilters.includes(keyword) ? 'text-indigo-200' : 'text-gray-500'
-                          }`}>
-                            {matchCount}
-                          </span>
-                        </button>
-                      );
-                    })}
-                  </div>
-                </div>
-              )}
-              
               {/* Common Terms Filter */}
               {smartFilters.length > 0 && (
-                <div>
+                <div className="mb-4">
                   <div className="flex items-center justify-between mb-2">
                     <h4 className="text-xs font-medium text-gray-700 uppercase">Common Terms</h4>
                     <div className="flex gap-2">
@@ -707,6 +662,51 @@ export default function GuidedTriageFlow(props: GuidedTriageFlowProps) {
                           title={`${matchCount} matches`}
                         >
                           {filter} ({matchCount})
+                        </button>
+                      );
+                    })}
+                  </div>
+                </div>
+              )}
+              
+              {/* Keywords Filter */}
+              {data.keywords.length > 0 && (
+                <div className="flex-1 flex flex-col min-h-0">
+                  <div className="flex items-center justify-between mb-2">
+                    <h4 className="text-xs font-medium text-gray-700 uppercase">Keywords</h4>
+                    <span className="text-xs text-gray-400">({data.keywords.length})</span>
+                  </div>
+                  <div className="space-y-1 flex-1 overflow-y-auto pr-2">
+                    {data.keywords.map((keyword, idx) => {
+                      const matchCount = data.dataForSeoResults?.allKeywords.filter(kw => 
+                        kw.keyword.toLowerCase().includes(keyword.toLowerCase())
+                      ).length || 0;
+                      
+                      if (matchCount === 0) return null;
+                      
+                      return (
+                        <button
+                          key={idx}
+                          onClick={() => {
+                            if (selectedFilters.includes(keyword)) {
+                              setSelectedFilters(selectedFilters.filter(f => f !== keyword));
+                            } else {
+                              setSelectedFilters([...selectedFilters, keyword]);
+                            }
+                          }}
+                          className={`w-full text-left px-2 py-1.5 text-xs rounded-md transition-colors flex items-center justify-between ${
+                            selectedFilters.includes(keyword) 
+                              ? 'bg-indigo-600 text-white hover:bg-indigo-700' 
+                              : 'bg-gray-50 hover:bg-gray-100 text-gray-700'
+                          }`}
+                          title={`${matchCount} matches`}
+                        >
+                          <span className="truncate">{keyword}</span>
+                          <span className={`ml-1 text-xs ${
+                            selectedFilters.includes(keyword) ? 'text-indigo-200' : 'text-gray-500'
+                          }`}>
+                            {matchCount}
+                          </span>
                         </button>
                       );
                     })}
