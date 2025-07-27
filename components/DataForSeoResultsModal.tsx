@@ -34,6 +34,7 @@ interface DataForSeoResultsModalProps {
   clientId: string;
   initialResults?: KeywordResult[];
   totalFound: number;
+  taskId?: string;
   cacheInfo?: {
     newKeywords: number;
     cachedKeywords: number;
@@ -50,6 +51,7 @@ export default function DataForSeoResultsModal({
   clientId,
   initialResults = [],
   totalFound,
+  taskId,
   cacheInfo,
 }: DataForSeoResultsModalProps) {
   const [results, setResults] = useState<KeywordResult[]>(initialResults);
@@ -193,6 +195,11 @@ export default function DataForSeoResultsModal({
             <p className="text-sm text-gray-600 mt-1">
               {domain} • {actualTotal} ranking{actualTotal !== 1 ? 's' : ''} found
             </p>
+            {taskId && (
+              <p className="text-xs text-gray-500 mt-1 font-mono">
+                Task ID: {taskId}
+              </p>
+            )}
             {cacheInfo && (
               <div className="mt-2">
                 <div className="flex items-center gap-4 text-xs text-gray-500">

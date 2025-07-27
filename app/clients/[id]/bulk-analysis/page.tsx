@@ -82,6 +82,7 @@ export default function BulkAnalysisPage() {
     clientId: string;
     initialResults?: any[];
     totalFound: number;
+    taskId?: string;
     cacheInfo?: any;
   }>({ isOpen: false, domainId: '', domain: '', clientId: '', initialResults: [], totalFound: 0 });
   
@@ -755,6 +756,7 @@ export default function BulkAnalysisPage() {
           clientId: params.id as string,
           initialResults: data.result.keywords || [],
           totalFound: data.result.totalFound || 0,
+          taskId: data.result.taskId,
           cacheInfo: data.result.cacheInfo
         });
         setMessage('');
@@ -1478,6 +1480,7 @@ export default function BulkAnalysisPage() {
           clientId={dataForSeoModal.clientId}
           initialResults={dataForSeoModal.initialResults}
           totalFound={dataForSeoModal.totalFound}
+          taskId={dataForSeoModal.taskId}
           cacheInfo={dataForSeoModal.cacheInfo}
         />
       )}

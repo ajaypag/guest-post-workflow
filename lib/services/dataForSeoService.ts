@@ -21,6 +21,7 @@ export interface DataForSeoAnalysisResult {
   totalFound: number;
   status: 'success' | 'error';
   error?: string;
+  taskId?: string;
 }
 
 export class DataForSeoService {
@@ -60,6 +61,7 @@ export class DataForSeoService {
       let newResults: DataForSeoKeywordResult[] = [];
       let status: 'success' | 'error' = 'success';
       let error: string | undefined;
+      let taskId: string | undefined;
 
       // If we need to analyze new keywords
       if (cacheAnalysis.newKeywords.length > 0 || cacheAnalysis.shouldRefreshAll) {
@@ -79,6 +81,7 @@ export class DataForSeoService {
         newResults = analysisResult.keywords;
         status = analysisResult.status;
         error = analysisResult.error;
+        taskId = analysisResult.taskId;
 
         // Always track keyword searches, even if no results found
         // This prevents re-checking keywords that return zero results
@@ -130,6 +133,7 @@ export class DataForSeoService {
         totalFound: allResults.length,
         status,
         error,
+        taskId,
         cacheInfo: {
           newKeywords: cacheAnalysis.newKeywords.length,
           cachedKeywords: cacheAnalysis.existingKeywords.length,
@@ -235,6 +239,10 @@ export class DataForSeoService {
       const data = await response.json();
       console.log('DataForSEO API response data:', JSON.stringify(data, null, 2).substring(0, 500) + '...');
       
+      // Extract task ID for audit tracking  
+      const taskId = data.tasks?.[0]?.id;
+      console.log('DataForSEO Task ID:', taskId);
+      
       // Check for task-level errors
       if (data.tasks?.[0]?.status_code !== 20000) {
         const taskError = data.tasks?.[0];
@@ -294,6 +302,7 @@ export class DataForSeoService {
         keywords: results.slice(0, 50), // Return only first 50 for initial display
         totalFound: results.length,
         status: 'success',
+        taskId,
       };
     } catch (error: any) {
       console.error('DataForSEO analysis error:', error);
