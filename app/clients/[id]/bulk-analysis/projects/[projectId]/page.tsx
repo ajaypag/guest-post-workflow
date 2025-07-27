@@ -34,7 +34,9 @@ import {
   Folder,
   Settings,
   Edit,
-  ArrowRight
+  ArrowRight,
+  Zap,
+  Sparkles
 } from 'lucide-react';
 
 export default function ProjectDetailPage() {
@@ -124,6 +126,13 @@ export default function ProjectDetailPage() {
   
   // Move to project state
   const [showMoveDialog, setShowMoveDialog] = useState(false);
+  
+  // Master qualification state
+  const [masterQualificationRunning, setMasterQualificationRunning] = useState(false);
+  const [masterQualificationProgress, setMasterQualificationProgress] = useState({ current: 0, total: 0 });
+  
+  // Smart selection state
+  const [showSmartSelection, setShowSmartSelection] = useState(false);
   
   // Reset pagination when filters change
   useEffect(() => {
@@ -219,6 +228,104 @@ export default function ProjectDetailPage() {
 
   const clearSelection = () => {
     setSelectedDomains(new Set());
+  };
+
+  const startMasterQualification = async () => {
+    const selectedDomainList = domains
+      .filter(d => selectedDomains.has(d.id))
+      .map(d => ({ id: d.id, domain: d.domain }));
+    
+    if (selectedDomainList.length === 0) {
+      setMessage('Please select domains to qualify');
+      return;
+    }
+
+    setMasterQualificationRunning(true);
+    setMasterQualificationProgress({ current: 0, total: selectedDomainList.length });
+    setMessage(`🚀 Running complete qualification for ${selectedDomainList.length} domains...`);
+
+    // Start the qualification
+    const qualificationPromise = fetch(`/api/clients/${params.id}/bulk-analysis/master-qualify`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        domainIds: selectedDomainList.map(d => d.id),
+        locationCode: 2840,
+        languageCode: 'en'
+      })
+    });
+
+    // Start polling for progress
+    const pollInterval = setInterval(async () => {
+      try {
+        // Poll for progress updates here if we implement SSE later
+        // For now, we'll just wait for completion
+      } catch (error) {
+        console.error('Error polling progress:', error);
+      }
+    }, 1000);
+
+    try {
+      const response = await qualificationPromise;
+
+      if (!response.ok) {
+        const error = await response.json();
+        throw new Error(error.error || 'Failed to run master qualification');
+      }
+
+      const data = await response.json();
+      clearInterval(pollInterval);
+
+      // Update local domain state immediately with results
+      setDomains(prevDomains => 
+        prevDomains.map(domain => {
+          const result = data.results.find((r: any) => r.domainId === domain.id);
+          if (result && result.qualificationStatus) {
+            return {
+              ...domain,
+              qualificationStatus: result.qualificationStatus,
+              hasDataForSeoResults: result.dataForSeoStatus === 'success',
+              dataForSeoResultsCount: result.keywordsFound || 0,
+              updatedAt: new Date().toISOString()
+            };
+          }
+          return domain;
+        })
+      );
+
+      // Clear selection and show success message
+      setSelectedDomains(new Set());
+      const summary = data.summary;
+      setMessage(
+        `✅ Master qualification complete! ${summary.qualification.highQuality} high quality, ` +
+        `${summary.qualification.averageQuality} average, ${summary.qualification.disqualified} disqualified`
+      );
+      
+      // Reload domains to get updated stats
+      await loadDomains();
+      await loadProject();
+
+    } catch (error: any) {
+      console.error('Master qualification error:', error);
+      setMessage(`❌ Master qualification failed: ${error.message}`);
+      clearInterval(pollInterval);
+    } finally {
+      setMasterQualificationRunning(false);
+      setMasterQualificationProgress({ current: 0, total: 0 });
+    }
+  };
+
+  const fetchSmartFilters = async () => {
+    try {
+      const response = await fetch(`/api/clients/${params.id}/bulk-analysis/master-qualify`);
+      if (response.ok) {
+        const data = await response.json();
+        return data.filters;
+      }
+    } catch (error) {
+      console.error('Error fetching smart filters:', error);
+    }
+    return null;
   };
 
   const startAIQualification = async () => {
@@ -1404,6 +1511,22 @@ anotherdomain.com"
                   </div>
                 )}
                 
+                {/* Progress Bar for Master Qualification */}
+                {masterQualificationRunning && masterQualificationProgress.total > 0 && (
+                  <div className="mt-2">
+                    <div className="flex justify-between text-xs mb-1">
+                      <span>Master Qualification Progress</span>
+                      <span>{masterQualificationProgress.current} / {masterQualificationProgress.total}</span>
+                    </div>
+                    <div className="w-full bg-gray-200 rounded-full h-2">
+                      <div 
+                        className="bg-gradient-to-r from-indigo-600 to-purple-600 h-2 rounded-full transition-all duration-300"
+                        style={{ width: `${(masterQualificationProgress.current / masterQualificationProgress.total) * 100}%` }}
+                      />
+                    </div>
+                  </div>
+                )}
+                
                 {/* View Results Button */}
                 {completedJobId && message.includes('Analysis complete') && (
                   <button
@@ -1685,35 +1808,125 @@ anotherdomain.com"
                       >
                         Clear selection
                       </button>
+                      {/* Smart Selection Dropdown */}
+                      <div className="relative">
+                        <button
+                          onClick={() => setShowSmartSelection(!showSmartSelection)}
+                          className="text-sm text-indigo-600 hover:text-indigo-800 underline flex items-center gap-1"
+                        >
+                          Smart Select
+                          <ChevronDown className="w-3 h-3" />
+                        </button>
+                        {showSmartSelection && (
+                          <div className="absolute left-0 top-full mt-1 w-64 bg-white border border-gray-200 rounded-lg shadow-lg z-10">
+                            <div className="p-2">
+                              <button
+                                onClick={async () => {
+                                  const filters = await fetchSmartFilters();
+                                  if (filters?.allPendingDataForSeo) {
+                                    selectAll(filters.allPendingDataForSeo);
+                                    setShowSmartSelection(false);
+                                    setMessage(`Selected ${filters.allPendingDataForSeo.length} domains pending DataForSEO`);
+                                  }
+                                }}
+                                className="w-full text-left px-3 py-2 text-sm hover:bg-gray-100 rounded flex items-center justify-between"
+                              >
+                                <span>All Pending DataForSEO</span>
+                                <Search className="w-4 h-4 text-gray-400" />
+                              </button>
+                              <button
+                                onClick={async () => {
+                                  const filters = await fetchSmartFilters();
+                                  if (filters?.allPendingAI) {
+                                    selectAll(filters.allPendingAI);
+                                    setShowSmartSelection(false);
+                                    setMessage(`Selected ${filters.allPendingAI.length} domains pending AI qualification`);
+                                  }
+                                }}
+                                className="w-full text-left px-3 py-2 text-sm hover:bg-gray-100 rounded flex items-center justify-between"
+                              >
+                                <span>All Pending AI</span>
+                                <Sparkles className="w-4 h-4 text-gray-400" />
+                              </button>
+                              <button
+                                onClick={async () => {
+                                  const filters = await fetchSmartFilters();
+                                  if (filters?.allPendingBoth) {
+                                    selectAll(filters.allPendingBoth);
+                                    setShowSmartSelection(false);
+                                    setMessage(`Selected ${filters.allPendingBoth.length} domains pending both analyses`);
+                                  }
+                                }}
+                                className="w-full text-left px-3 py-2 text-sm hover:bg-gray-100 rounded flex items-center justify-between"
+                              >
+                                <span>All Pending Both</span>
+                                <Zap className="w-4 h-4 text-gray-400" />
+                              </button>
+                              <div className="border-t mt-2 pt-2">
+                                <button
+                                  onClick={() => {
+                                    selectAll(domains.filter(d => d.qualificationStatus === 'pending').map(d => d.id));
+                                    setShowSmartSelection(false);
+                                    setMessage(`Selected all ${domains.filter(d => d.qualificationStatus === 'pending').length} pending domains`);
+                                  }}
+                                  className="w-full text-left px-3 py-2 text-sm hover:bg-gray-100 rounded"
+                                >
+                                  All Pending Domains
+                                </button>
+                                <button
+                                  onClick={() => {
+                                    selectAll(domains.filter(d => !d.hasWorkflow).map(d => d.id));
+                                    setShowSmartSelection(false);
+                                    setMessage(`Selected ${domains.filter(d => !d.hasWorkflow).length} domains without workflows`);
+                                  }}
+                                  className="w-full text-left px-3 py-2 text-sm hover:bg-gray-100 rounded"
+                                >
+                                  No Workflow
+                                </button>
+                              </div>
+                            </div>
+                          </div>
+                        )}
+                      </div>
                     </div>
                     <div className="flex items-center gap-2">
                       {!hideExperimentalFeatures && (
                         <>
+                          {/* Master Qualification Button */}
                           <button
-                            onClick={startBulkDataForSeoAnalysis}
-                            disabled={bulkAnalysisRunning}
-                            className="inline-flex items-center px-4 py-2 bg-indigo-600 text-white text-sm rounded-lg hover:bg-indigo-700 disabled:opacity-50 disabled:cursor-not-allowed"
+                            onClick={startMasterQualification}
+                            disabled={bulkAnalysisRunning || loading || masterQualificationRunning}
+                            className="inline-flex items-center px-4 py-2 bg-gradient-to-r from-indigo-600 to-purple-600 text-white text-sm rounded-lg hover:from-indigo-700 hover:to-purple-700 disabled:opacity-50 disabled:cursor-not-allowed shadow-md"
                           >
-                            <Search className="w-4 h-4 mr-2" />
-                            {bulkAnalysisRunning ? 'Analyzing...' : 'Analyze Selected with DataForSEO'}
-                          </button>
-                          <button
-                            onClick={startAIQualification}
-                            disabled={bulkAnalysisRunning || loading}
-                            className="inline-flex items-center px-4 py-2 bg-purple-600 text-white text-sm rounded-lg hover:bg-purple-700 disabled:opacity-50 disabled:cursor-not-allowed"
-                          >
-                            {loading && message.includes('🤖 AI is analyzing') ? (
+                            {masterQualificationRunning ? (
                               <svg className="w-4 h-4 mr-2 animate-spin" fill="none" viewBox="0 0 24 24">
                                 <circle cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4" className="opacity-25"></circle>
                                 <path fill="currentColor" className="opacity-75" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
                               </svg>
                             ) : (
-                              <svg className="w-4 h-4 mr-2" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13 10V3L4 14h7v7l9-11h-7z" />
-                              </svg>
+                              <Zap className="w-4 h-4 mr-2" />
                             )}
-                            {loading && message.includes('🤖 AI is analyzing') ? 'AI Analyzing...' : 'AI Qualify Selected'}
+                            {masterQualificationRunning ? 'Qualifying...' : 'Auto-Qualify Selected'}
                           </button>
+                          {/* Individual buttons for manual control */}
+                          <div className="flex items-center gap-1 border-l pl-2 ml-2">
+                            <button
+                              onClick={startBulkDataForSeoAnalysis}
+                              disabled={bulkAnalysisRunning}
+                              className="inline-flex items-center px-3 py-2 bg-indigo-600 text-white text-xs rounded hover:bg-indigo-700 disabled:opacity-50 disabled:cursor-not-allowed"
+                              title="Run DataForSEO only"
+                            >
+                              <Search className="w-3 h-3" />
+                            </button>
+                            <button
+                              onClick={startAIQualification}
+                              disabled={bulkAnalysisRunning || loading}
+                              className="inline-flex items-center px-3 py-2 bg-purple-600 text-white text-xs rounded hover:bg-purple-700 disabled:opacity-50 disabled:cursor-not-allowed"
+                              title="Run AI qualification only"
+                            >
+                              <Sparkles className="w-3 h-3" />
+                            </button>
+                          </div>
                         </>
                       )}
                       <button
