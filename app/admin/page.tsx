@@ -158,6 +158,14 @@ export default function AdminDashboard() {
       iconColor: 'text-orange-600'
     },
     {
+      title: 'DataForSEO Audit',
+      description: 'Audit API task IDs, view errors, track costs and success rates',
+      icon: FileSearch,
+      href: '/admin/dataforseo-audit',
+      color: 'bg-amber-50 border-amber-200 text-amber-700',
+      iconColor: 'text-amber-600'
+    },
+    {
       title: 'Bulk Analysis Debug',
       description: 'Debug manual keywords domain persistence issues',
       icon: Bug,

@@ -3,6 +3,7 @@ import { bulkAnalysisDomains } from '@/lib/db/bulkAnalysisSchema';
 import { eq } from 'drizzle-orm';
 import { sql } from 'drizzle-orm';
 import { DataForSeoCacheService } from './dataForSeoCacheService';
+import { dataForSeoApiLogs } from '@/lib/db/dataForSeoLogsSchema';
 
 export interface DataForSeoKeywordResult {
   keyword: string;
@@ -216,6 +217,22 @@ export class DataForSeoService {
       const apiUrl = `${this.API_BASE_URL}/dataforseo_labs/google/ranked_keywords/live`;
       console.log('Calling DataForSEO API:', apiUrl);
       
+      // Log the request before making it
+      const logEntry = await db.insert(dataForSeoApiLogs).values({
+        endpoint: apiUrl,
+        requestPayload: requestBody[0],
+        domainId: domainId.startsWith('temp-') ? null : domainId,
+        domain: cleanDomain,
+        keywordCount: keywords.length,
+        locationCode,
+        languageCode,
+        requestType: isIncremental ? 'incremental' : 'full',
+      }).returning({ id: dataForSeoApiLogs.id }).catch(err => {
+        console.error('Failed to log DataForSEO request:', err);
+        return null;
+      });
+      
+      const requestStartTime = Date.now();
       const response = await fetch(
         apiUrl,
         {
@@ -233,6 +250,21 @@ export class DataForSeoService {
       if (!response.ok) {
         const errorText = await response.text();
         console.error('DataForSEO API error response:', errorText);
+        
+        // Log error
+        if (logEntry?.[0]?.id) {
+          await db.execute(sql`
+            UPDATE dataforseo_api_logs 
+            SET 
+              response_status = ${response.status},
+              error_message = ${errorText},
+              responded_at = NOW()
+            WHERE id = ${logEntry[0].id}
+          `).catch(err => {
+            console.error('Failed to update DataForSEO error log:', err);
+          });
+        }
+        
         throw new Error(`DataForSEO API error: ${response.status} - ${errorText}`);
       }
 
@@ -242,6 +274,22 @@ export class DataForSeoService {
       // Extract task ID for audit tracking  
       const taskId = data.tasks?.[0]?.id;
       console.log('DataForSEO Task ID:', taskId);
+      
+      // Update log entry with response data
+      if (logEntry?.[0]?.id) {
+        await db.execute(sql`
+          UPDATE dataforseo_api_logs 
+          SET 
+            task_id = ${taskId},
+            response_status = ${response.status},
+            response_data = ${JSON.stringify(data)}::jsonb,
+            responded_at = NOW(),
+            cost = ${data.cost || 0}
+          WHERE id = ${logEntry[0].id}
+        `).catch(err => {
+          console.error('Failed to update DataForSEO log:', err);
+        });
+      }
       
       // Check for task-level errors
       if (data.tasks?.[0]?.status_code !== 20000) {

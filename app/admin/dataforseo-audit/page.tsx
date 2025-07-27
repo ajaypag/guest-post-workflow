@@ -51,6 +51,7 @@ export default function DataForSeoAuditPage() {
   const [selectedTask, setSelectedTask] = useState<TaskDetails | null>(null);
   const [taskPayload, setTaskPayload] = useState<any>(null);
   const [loadingPayload, setLoadingPayload] = useState(false);
+  const [migrationStatus, setMigrationStatus] = useState<string | null>(null);
   const [stats, setStats] = useState({
     totalTasks: 0,
     totalErrors: 0,
@@ -137,6 +138,29 @@ export default function DataForSeoAuditPage() {
     });
   };
 
+  const runMigration = async () => {
+    if (!confirm('This will create the DataForSEO logs table. Continue?')) {
+      return;
+    }
+
+    setMigrationStatus('Running migration...');
+    try {
+      const response = await fetch('/api/admin/migrate-dataforseo-logs', {
+        method: 'POST',
+      });
+
+      const data = await response.json();
+      
+      if (response.ok) {
+        setMigrationStatus('✅ ' + data.message);
+      } else {
+        setMigrationStatus('❌ Migration failed: ' + data.error);
+      }
+    } catch (error) {
+      setMigrationStatus('❌ Migration error: ' + error);
+    }
+  };
+
   useEffect(() => {
     if (activeTab === 'tasks') {
       fetchTasks();
@@ -175,6 +199,35 @@ export default function DataForSeoAuditPage() {
         <h1 className="text-3xl font-bold text-gray-900">DataForSEO API Audit</h1>
         <p className="text-gray-600 mt-2">Review API calls, task IDs, payloads, and errors</p>
       </div>
+
+      {/* Migration Notice */}
+      {!migrationStatus && (
+        <div className="bg-yellow-50 border border-yellow-200 rounded-lg p-4 mb-6">
+          <div className="flex items-start">
+            <AlertCircle className="w-5 h-5 text-yellow-600 mr-3 mt-0.5" />
+            <div className="flex-1">
+              <h3 className="font-medium text-yellow-800">Enable Request Logging</h3>
+              <p className="text-sm text-yellow-700 mt-1">
+                To track request payloads for better auditing, you need to create the logging table first.
+              </p>
+              <button
+                onClick={runMigration}
+                className="mt-3 px-4 py-2 bg-yellow-600 text-white text-sm rounded-md hover:bg-yellow-700"
+              >
+                Create Logging Table
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {migrationStatus && (
+        <div className={`mb-6 p-4 rounded-lg ${
+          migrationStatus.includes('✅') ? 'bg-green-50 text-green-800' : 'bg-red-50 text-red-800'
+        }`}>
+          {migrationStatus}
+        </div>
+      )}
 
       {/* Stats Overview */}
       <div className="grid grid-cols-4 gap-4 mb-8">
@@ -425,12 +478,43 @@ export default function DataForSeoAuditPage() {
                   </div>
                   
                   {taskPayload && (
-                    <div className="mb-6">
-                      <h3 className="font-semibold mb-2">Request Payload</h3>
-                      <pre className="bg-gray-100 p-4 rounded-lg overflow-x-auto text-sm">
-                        {JSON.stringify(taskPayload, null, 2)}
-                      </pre>
-                    </div>
+                    <>
+                      {taskPayload.request && (
+                        <div className="mb-6">
+                          <h3 className="font-semibold mb-2">Request Payload</h3>
+                          <pre className="bg-gray-100 p-4 rounded-lg overflow-x-auto text-sm">
+                            {JSON.stringify(taskPayload.request, null, 2)}
+                          </pre>
+                        </div>
+                      )}
+                      
+                      {taskPayload.metadata && (
+                        <div className="mb-6">
+                          <h3 className="font-semibold mb-2">Request Metadata</h3>
+                          <div className="bg-gray-100 p-4 rounded-lg text-sm space-y-2">
+                            <div><strong>Domain:</strong> {taskPayload.metadata.domain}</div>
+                            <div><strong>Client:</strong> {taskPayload.metadata.client || 'N/A'}</div>
+                            <div><strong>Keywords:</strong> {taskPayload.metadata.keywordCount || 0}</div>
+                            <div><strong>Location:</strong> {taskPayload.metadata.locationCode}</div>
+                            <div><strong>Language:</strong> {taskPayload.metadata.languageCode}</div>
+                            <div><strong>Request Type:</strong> {taskPayload.metadata.requestType}</div>
+                            <div><strong>Response Status:</strong> {taskPayload.metadata.responseStatus}</div>
+                            {taskPayload.metadata.errorMessage && (
+                              <div className="text-red-600"><strong>Error:</strong> {taskPayload.metadata.errorMessage}</div>
+                            )}
+                          </div>
+                        </div>
+                      )}
+                      
+                      {taskPayload.note && (
+                        <div className="mb-6 p-4 bg-yellow-50 rounded-lg">
+                          <p className="text-sm text-yellow-800">{taskPayload.note}</p>
+                          {taskPayload.suggestion && (
+                            <p className="text-sm text-yellow-700 mt-2">{taskPayload.suggestion}</p>
+                          )}
+                        </div>
+                      )}
+                    </>
                   )}
                   
                   {selectedTask.result && (
