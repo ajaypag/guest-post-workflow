@@ -11,7 +11,6 @@ import { Client, TargetPage } from '@/types/user';
 import { groupKeywordsByTopic, generateGroupedAhrefsUrls } from '@/lib/utils/keywordGroupingV2';
 import DataForSeoResultsModal from '@/components/DataForSeoResultsModal';
 import BulkAnalysisResultsModal from '@/components/BulkAnalysisResultsModal';
-import AIQualificationModal from '@/components/AIQualificationModal';
 import BulkAnalysisTable from '@/components/BulkAnalysisTable';
 import GuidedTriageFlow from '@/components/GuidedTriageFlow';
 import MoveToProjectDialog from '@/components/bulk-analysis/MoveToProjectDialog';
@@ -110,9 +109,7 @@ export default function ProjectDetailPage() {
     selected: boolean;
   }>>([]);
   
-  // AI Qualification state
-  const [showAIQualification, setShowAIQualification] = useState(false);
-  const [aiQualificationDomains, setAIQualificationDomains] = useState<Array<{ id: string; domain: string }>>([]);
+  // AI Qualification state - removed modal, now automatic
   
   // Triage mode state
   const [triageMode, setTriageMode] = useState(false);
@@ -224,17 +221,70 @@ export default function ProjectDetailPage() {
     setSelectedDomains(new Set());
   };
 
-  const startAIQualification = () => {
+  const startAIQualification = async () => {
     const selectedDomainList = domains
       .filter(d => selectedDomains.has(d.id))
       .map(d => ({ id: d.id, domain: d.domain }));
     
-    setAIQualificationDomains(selectedDomainList);
-    setShowAIQualification(true);
+    if (selectedDomainList.length === 0) {
+      setMessage('Please select domains to qualify');
+      return;
+    }
+
+    setLoading(true);
+    setMessage(`🤖 AI is analyzing ${selectedDomainList.length} domains...`);
+
+    try {
+      const response = await fetch(`/api/clients/${params.id}/bulk-analysis/ai-qualify`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          domainIds: selectedDomainList.map(d => d.id)
+        })
+      });
+
+      if (!response.ok) {
+        const error = await response.json();
+        throw new Error(error.error || 'Failed to run AI qualification');
+      }
+
+      const data = await response.json();
+      
+      // Update local domain state immediately
+      setDomains(prevDomains => 
+        prevDomains.map(domain => {
+          const qualification = data.qualifications.find((q: any) => q.domainId === domain.id);
+          if (qualification) {
+            return {
+              ...domain,
+              qualificationStatus: qualification.qualification,
+              aiQualificationReasoning: qualification.reasoning,
+              aiQualifiedAt: new Date().toISOString(),
+              updatedAt: new Date().toISOString()
+            };
+          }
+          return domain;
+        })
+      );
+
+      // Clear selection and show success message
+      setSelectedDomains(new Set());
+      setMessage(`✅ AI qualification complete! ${data.summary.highQuality} high quality, ${data.summary.averageQuality} average quality, ${data.summary.disqualified} disqualified domains`);
+      
+      // Reload domains to get updated stats
+      await loadDomains();
+
+    } catch (error: any) {
+      console.error('AI qualification error:', error);
+      setMessage(`❌ AI qualification failed: ${error.message}`);
+    } finally {
+      setLoading(false);
+    }
   };
 
   const handleAIQualificationComplete = async (results: any[]) => {
-    // Reload domains to get updated qualifications
+    // This function is no longer used since AI qualification is automatic
+    // Keeping for backward compatibility
     await loadDomains();
     setMessage(`✅ AI qualification applied to ${results.length} domains`);
     setSelectedDomains(new Set());
@@ -357,9 +407,53 @@ export default function ProjectDetailPage() {
     const domain = domains.find(d => d.id === domainId);
     if (!domain) return;
     
-    // Set the domain for AI qualification
-    setAIQualificationDomains([{ id: domain.id, domain: domain.domain }]);
-    setShowAIQualification(true);
+    setLoading(true);
+    setMessage(`🤖 AI is analyzing ${domain.domain}...`);
+
+    try {
+      const response = await fetch(`/api/clients/${params.id}/bulk-analysis/ai-qualify`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          domainIds: [domainId]
+        })
+      });
+
+      if (!response.ok) {
+        const error = await response.json();
+        throw new Error(error.error || 'Failed to run AI qualification');
+      }
+
+      const data = await response.json();
+      
+      // Update local domain state immediately
+      setDomains(prevDomains => 
+        prevDomains.map(d => {
+          if (d.id === domainId) {
+            const qualification = data.qualifications[0];
+            return {
+              ...d,
+              qualificationStatus: qualification.qualification,
+              aiQualificationReasoning: qualification.reasoning,
+              aiQualifiedAt: new Date().toISOString(),
+              updatedAt: new Date().toISOString()
+            };
+          }
+          return d;
+        })
+      );
+
+      setMessage(`✅ ${domain.domain} qualified as ${data.qualifications[0].qualification.replace('_', ' ')}`);
+      
+      // Reload domains to get updated stats
+      await loadDomains();
+
+    } catch (error: any) {
+      console.error('AI qualification error:', error);
+      setMessage(`❌ AI qualification failed for ${domain.domain}: ${error.message}`);
+    } finally {
+      setLoading(false);
+    }
   };
 
   const bulkCreateWorkflows = async (domainIds: string[]) => {
@@ -2012,16 +2106,6 @@ anotherdomain.com"
         />
       )}
 
-      {/* AI Qualification Modal */}
-      {showAIQualification && (
-        <AIQualificationModal
-          isOpen={showAIQualification}
-          onClose={() => setShowAIQualification(false)}
-          clientId={params.id as string}
-          domains={aiQualificationDomains}
-          onComplete={handleAIQualificationComplete}
-        />
-      )}
 
       {/* Guided Triage Flow */}
       {showGuidedTriage && (
