@@ -63,6 +63,10 @@ export default function ProjectDetailPage() {
   const [searchQuery, setSearchQuery] = useState('');
   const [notes, setNotes] = useState<{ [key: string]: string }>({});
   
+  // Sorting state
+  const [sortBy, setSortBy] = useState<'createdAt' | 'domain' | 'updatedAt' | 'qualificationStatus' | 'hasDataForSeoResults' | 'hasWorkflow' | 'keywordCount'>('createdAt');
+  const [sortOrder, setSortOrder] = useState<'asc' | 'desc'>('desc');
+  
   // Pagination state
   const [displayLimit, setDisplayLimit] = useState(50);
   const ITEMS_PER_PAGE = 50;
@@ -1414,18 +1418,52 @@ anotherdomain.com"
                     <Search className="w-5 h-5 mr-2 text-gray-500" />
                     Search & Filter Domains
                   </h3>
-                  {(searchQuery || statusFilter !== 'all' || workflowFilter !== 'all') && (
-                    <button
-                      onClick={() => {
-                        setSearchQuery('');
-                        setStatusFilter('all');
-                        setWorkflowFilter('all');
-                      }}
-                      className="text-sm text-indigo-600 hover:text-indigo-800 font-medium"
-                    >
-                      Clear all filters
-                    </button>
-                  )}
+                  <div className="flex items-center gap-4">
+                    {/* Sorting Dropdown */}
+                    <div className="flex items-center gap-2">
+                      <label className="text-sm font-medium text-gray-700">Sort by:</label>
+                      <select
+                        value={sortBy}
+                        onChange={(e) => setSortBy(e.target.value as any)}
+                        className="text-sm border-gray-300 rounded-md shadow-sm focus:border-indigo-500 focus:ring-indigo-500"
+                      >
+                        <option value="createdAt">Date Added</option>
+                        <option value="updatedAt">Last Modified</option>
+                        <option value="domain">Domain Name</option>
+                        <option value="qualificationStatus">Qualification Status</option>
+                        <option value="hasDataForSeoResults">DataForSEO Analyzed</option>
+                        <option value="hasWorkflow">Has Workflow</option>
+                        <option value="keywordCount">Keyword Count</option>
+                      </select>
+                      <button
+                        onClick={() => setSortOrder(sortOrder === 'asc' ? 'desc' : 'asc')}
+                        className="p-1.5 text-gray-600 hover:text-gray-900 hover:bg-gray-100 rounded transition-colors"
+                        title={sortOrder === 'asc' ? 'Sort Ascending' : 'Sort Descending'}
+                      >
+                        {sortOrder === 'asc' ? (
+                          <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M3 4h13M3 8h9m-9 4h6m4 0l4-4m0 0l4 4m-4-4v12" />
+                          </svg>
+                        ) : (
+                          <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M3 4h13M3 8h9m-9 4h9m5-4v12m0 0l-4-4m4 4l4-4" />
+                          </svg>
+                        )}
+                      </button>
+                    </div>
+                    {(searchQuery || statusFilter !== 'all' || workflowFilter !== 'all') && (
+                      <button
+                        onClick={() => {
+                          setSearchQuery('');
+                          setStatusFilter('all');
+                          setWorkflowFilter('all');
+                        }}
+                        className="text-sm text-indigo-600 hover:text-indigo-800 font-medium"
+                      >
+                        Clear all filters
+                      </button>
+                    )}
+                  </div>
                 </div>
                 
                 {/* Search Bar */}
@@ -1769,8 +1807,43 @@ anotherdomain.com"
                   return true;
                 });
                 
-                const paginatedDomains = filteredDomains.slice(0, displayLimit);
-                const hasMore = filteredDomains.length > displayLimit;
+                // Apply sorting
+                const sortedDomains = [...filteredDomains].sort((a, b) => {
+                  let compareValue = 0;
+                  
+                  switch (sortBy) {
+                    case 'domain':
+                      compareValue = a.domain.localeCompare(b.domain);
+                      break;
+                    case 'createdAt':
+                      compareValue = new Date(a.createdAt || 0).getTime() - new Date(b.createdAt || 0).getTime();
+                      break;
+                    case 'updatedAt':
+                      compareValue = new Date(a.updatedAt || 0).getTime() - new Date(b.updatedAt || 0).getTime();
+                      break;
+                    case 'qualificationStatus':
+                      // Custom order: high_quality > average_quality > pending > disqualified
+                      const statusOrder = { 'high_quality': 0, 'average_quality': 1, 'pending': 2, 'disqualified': 3 };
+                      compareValue = (statusOrder[a.qualificationStatus] || 99) - (statusOrder[b.qualificationStatus] || 99);
+                      break;
+                    case 'hasDataForSeoResults':
+                      compareValue = (a.hasDataForSeoResults ? 0 : 1) - (b.hasDataForSeoResults ? 0 : 1);
+                      break;
+                    case 'hasWorkflow':
+                      compareValue = (a.hasWorkflow ? 0 : 1) - (b.hasWorkflow ? 0 : 1);
+                      break;
+                    case 'keywordCount':
+                      compareValue = (a.keywordCount || 0) - (b.keywordCount || 0);
+                      break;
+                    default:
+                      compareValue = 0;
+                  }
+                  
+                  return sortOrder === 'asc' ? compareValue : -compareValue;
+                });
+                
+                const paginatedDomains = sortedDomains.slice(0, displayLimit);
+                const hasMore = sortedDomains.length > displayLimit;
                 
                 return (
                   <>
@@ -1782,11 +1855,11 @@ anotherdomain.com"
                             <strong>Tip:</strong> Select domains to qualify them with AI
                           </p>
                           <button
-                            onClick={() => selectAll(filteredDomains.map(d => d.id))}
+                            onClick={() => selectAll(sortedDomains.map(d => d.id))}
                             className="inline-flex items-center px-3 py-1.5 bg-purple-600 text-white text-sm rounded hover:bg-purple-700"
                           >
                             <CheckCircle className="w-4 h-4 mr-1.5" />
-                            Select All {filteredDomains.length} Domains
+                            Select All {sortedDomains.length} Domains
                           </button>
                         </div>
                       </div>
@@ -1865,7 +1938,7 @@ anotherdomain.com"
                           className="inline-flex items-center px-6 py-3 bg-gray-100 hover:bg-gray-200 text-gray-800 font-medium rounded-lg transition-colors"
                         >
                           <Plus className="w-5 h-5 mr-2" />
-                          Show More ({filteredDomains.length - paginatedDomains.length} remaining)
+                          Show More ({sortedDomains.length - paginatedDomains.length} remaining)
                         </button>
                       </div>
                     )}
@@ -1873,8 +1946,8 @@ anotherdomain.com"
                     {/* Results Summary */}
                     <div className="mt-4 text-center">
                       <div className="text-sm text-gray-600">
-                        Showing {paginatedDomains.length} of {filteredDomains.length} domains
-                        {filteredDomains.length < domains.length && (
+                        Showing {paginatedDomains.length} of {sortedDomains.length} domains
+                        {sortedDomains.length < domains.length && (
                           <span className="text-indigo-600 ml-1">
                             (filtered from {domains.length} total)
                           </span>
