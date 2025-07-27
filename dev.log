@@ -77,3 +77,65 @@
   syscall: 'open',
   path: '/home/ajay/guest post workflow backup/guest post workflow to upload to cloud/guest-post-workflow/.next/static/development/_buildManifest.js.tmp.44foje2mwc'
 }
+ ○ Compiling /api/admin/check-dataforseo-status ...
+ ✓ Compiled /api/admin/check-dataforseo-status in 917ms
+ ⨯ [Error: ENOENT: no such file or directory, open '/home/ajay/guest post workflow backup/guest post workflow to upload to cloud/guest-post-workflow/.next/static/development/_buildManifest.js.tmp.22x8elj5z4h'] {
+  errno: -2,
+  code: 'ENOENT',
+  syscall: 'open',
+  path: '/home/ajay/guest post workflow backup/guest post workflow to upload to cloud/guest-post-workflow/.next/static/development/_buildManifest.js.tmp.22x8elj5z4h'
+}
+ ⨯ [Error: ENOENT: no such file or directory, open '/home/ajay/guest post workflow backup/guest post workflow to upload to cloud/guest-post-workflow/.next/server/pages/_app/build-manifest.json'] {
+  errno: -2,
+  code: 'ENOENT',
+  syscall: 'open',
+  path: '/home/ajay/guest post workflow backup/guest post workflow to upload to cloud/guest-post-workflow/.next/server/pages/_app/build-manifest.json'
+}
+[Error: ENOENT: no such file or directory, open '/home/ajay/guest post workflow backup/guest post workflow to upload to cloud/guest-post-workflow/.next/static/development/_buildManifest.js.tmp.22x8elj5z4h'] {
+  errno: -2,
+  code: 'ENOENT',
+  syscall: 'open',
+  path: '/home/ajay/guest post workflow backup/guest post workflow to upload to cloud/guest-post-workflow/.next/static/development/_buildManifest.js.tmp.22x8elj5z4h'
+}
+ ⨯ [Error: ENOENT: no such file or directory, open '/home/ajay/guest post workflow backup/guest post workflow to upload to cloud/guest-post-workflow/.next/server/pages/_app/build-manifest.json'] {
+  errno: -2,
+  code: 'ENOENT',
+  syscall: 'open',
+  path: '/home/ajay/guest post workflow backup/guest post workflow to upload to cloud/guest-post-workflow/.next/server/pages/_app/build-manifest.json'
+}
+[Error: ENOENT: no such file or directory, open '/home/ajay/guest post workflow backup/guest post workflow to upload to cloud/guest-post-workflow/.next/server/pages/_app/build-manifest.json'] {
+  errno: -2,
+  code: 'ENOENT',
+  syscall: 'open',
+  path: '/home/ajay/guest post workflow backup/guest post workflow to upload to cloud/guest-post-workflow/.next/server/pages/_app/build-manifest.json'
+}
+ ⨯ [Error: ENOENT: no such file or directory, open '/home/ajay/guest post workflow backup/guest post workflow to upload to cloud/guest-post-workflow/.next/static/development/_buildManifest.js.tmp.l60kedfllib'] {
+  errno: -2,
+  code: 'ENOENT',
+  syscall: 'open',
+  path: '/home/ajay/guest post workflow backup/guest post workflow to upload to cloud/guest-post-workflow/.next/static/development/_buildManifest.js.tmp.l60kedfllib'
+}
+ ⨯ [Error: ENOENT: no such file or directory, open '/home/ajay/guest post workflow backup/guest post workflow to upload to cloud/guest-post-workflow/.next/server/pages/_app/build-manifest.json'] {
+  errno: -2,
+  code: 'ENOENT',
+  syscall: 'open',
+  path: '/home/ajay/guest post workflow backup/guest post workflow to upload to cloud/guest-post-workflow/.next/server/pages/_app/build-manifest.json'
+}
+[Error: ENOENT: no such file or directory, open '/home/ajay/guest post workflow backup/guest post workflow to upload to cloud/guest-post-workflow/.next/static/development/_buildManifest.js.tmp.l60kedfllib'] {
+  errno: -2,
+  code: 'ENOENT',
+  syscall: 'open',
+  path: '/home/ajay/guest post workflow backup/guest post workflow to upload to cloud/guest-post-workflow/.next/static/development/_buildManifest.js.tmp.l60kedfllib'
+}
+ ⨯ [Error: ENOENT: no such file or directory, open '/home/ajay/guest post workflow backup/guest post workflow to upload to cloud/guest-post-workflow/.next/server/pages/_app/build-manifest.json'] {
+  errno: -2,
+  code: 'ENOENT',
+  syscall: 'open',
+  path: '/home/ajay/guest post workflow backup/guest post workflow to upload to cloud/guest-post-workflow/.next/server/pages/_app/build-manifest.json'
+}
+[Error: ENOENT: no such file or directory, open '/home/ajay/guest post workflow backup/guest post workflow to upload to cloud/guest-post-workflow/.next/server/pages/_app/build-manifest.json'] {
+  errno: -2,
+  code: 'ENOENT',
+  syscall: 'open',
+  path: '/home/ajay/guest post workflow backup/guest post workflow to upload to cloud/guest-post-workflow/.next/server/pages/_app/build-manifest.json'
+}

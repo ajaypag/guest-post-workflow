@@ -615,4 +615,28 @@ export class BulkAnalysisService {
       throw error;
     }
   }
+
+  /**
+   * Update DataForSEO analysis status for a domain
+   */
+  static async updateDomainDataForSeoStatus(
+    domainId: string,
+    hasResults: boolean
+  ): Promise<void> {
+    try {
+      await db
+        .update(bulkAnalysisDomains)
+        .set({
+          hasDataForSeoResults: hasResults,
+          dataForSeoLastAnalyzed: new Date(),
+          updatedAt: new Date(),
+        })
+        .where(eq(bulkAnalysisDomains.id, domainId));
+      
+      console.log(`Updated domain ${domainId} DataForSEO status: hasResults=${hasResults}`);
+    } catch (error) {
+      console.error('Error updating domain DataForSEO status:', error);
+      throw error;
+    }
+  }
 }

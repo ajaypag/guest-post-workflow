@@ -95,6 +95,12 @@ export async function POST(
       error: result.error
     });
 
+    // Update domain status if analysis was successful
+    if (result.status === 'success' && result.totalFound > 0) {
+      console.log('Updating domain hasDataForSeoResults status...');
+      await BulkAnalysisService.updateDomainDataForSeoStatus(domainId, true);
+    }
+
     return NextResponse.json({ 
       success: true,
       result 
