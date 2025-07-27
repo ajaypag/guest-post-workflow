@@ -27,6 +27,172 @@ export interface DataForSeoAnalysisResult {
 
 export class DataForSeoService {
   private static readonly API_BASE_URL = 'https://api.dataforseo.com/v3';
+  private static readonly REGEX_CHAR_LIMIT = 1000;
+  
+  /**
+   * Escape special regex characters in a keyword
+   */
+  private static escapeRegex(keyword: string): string {
+    return keyword.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
+  }
+  
+  /**
+   * Create keyword batches that fit within the regex character limit
+   */
+  private static createKeywordBatches(keywords: string[]): string[][] {
+    const batches: string[][] = [];
+    let currentBatch: string[] = [];
+    let currentLength = 0;
+    
+    for (const keyword of keywords) {
+      const escapedKeyword = this.escapeRegex(keyword);
+      // Add 1 for the pipe separator (except for first keyword)
+      const keywordLength = escapedKeyword.length + (currentBatch.length > 0 ? 1 : 0);
+      
+      if (currentLength + keywordLength > this.REGEX_CHAR_LIMIT) {
+        // Start a new batch
+        if (currentBatch.length > 0) {
+          batches.push(currentBatch);
+          currentBatch = [keyword];
+          currentLength = escapedKeyword.length;
+        } else {
+          // Single keyword exceeds limit - add it alone and warn
+          console.warn(`Keyword exceeds character limit: "${keyword}" (${escapedKeyword.length} chars)`);
+          batches.push([keyword]);
+          currentLength = 0;
+        }
+      } else {
+        currentBatch.push(keyword);
+        currentLength += keywordLength;
+      }
+    }
+    
+    // Add the last batch
+    if (currentBatch.length > 0) {
+      batches.push(currentBatch);
+    }
+    
+    return batches;
+  }
+  
+  /**
+   * Make a single DataForSEO API request
+   */
+  private static async makeDataForSeoRequest(
+    apiUrl: string,
+    requestBody: any[],
+    auth: string,
+    domainId: string,
+    cleanDomain: string,
+    keywordCount: number,
+    locationCode: number,
+    languageCode: string,
+    isIncremental: boolean
+  ): Promise<{ results: DataForSeoKeywordResult[]; taskId: string; cost: number }> {
+    console.log('DataForSEO request body:', JSON.stringify(requestBody, null, 2));
+    
+    // Log the request before making it
+    const logEntry = await db.insert(dataForSeoApiLogs).values({
+      endpoint: apiUrl,
+      requestPayload: requestBody[0],
+      domainId: domainId.startsWith('temp-') ? null : domainId,
+      domain: cleanDomain,
+      keywordCount,
+      locationCode,
+      languageCode,
+      requestType: isIncremental ? 'incremental' : 'full',
+    }).returning({ id: dataForSeoApiLogs.id }).catch(err => {
+      console.error('Failed to log DataForSEO request:', err);
+      return null;
+    });
+    
+    const response = await fetch(apiUrl, {
+      method: 'POST',
+      headers: {
+        'Authorization': `Basic ${auth}`,
+        'Content-Type': 'application/json',
+      },
+      body: JSON.stringify(requestBody),
+    });
+
+    console.log('DataForSEO API response status:', response.status);
+    
+    if (!response.ok) {
+      const errorText = await response.text();
+      console.error('DataForSEO API error response:', errorText);
+      
+      // Log error
+      if (logEntry?.[0]?.id) {
+        await db.execute(sql`
+          UPDATE dataforseo_api_logs 
+          SET 
+            response_status = ${response.status},
+            error_message = ${errorText},
+            responded_at = NOW()
+          WHERE id = ${logEntry[0].id}
+        `).catch(err => {
+          console.error('Failed to update DataForSEO error log:', err);
+        });
+      }
+      
+      throw new Error(`DataForSEO API error: ${response.status} - ${errorText}`);
+    }
+
+    const data = await response.json();
+    console.log('DataForSEO API response preview:', JSON.stringify(data, null, 2).substring(0, 500) + '...');
+    
+    // Extract task ID for audit tracking  
+    const taskId = data.tasks?.[0]?.id || '';
+    console.log('DataForSEO Task ID:', taskId);
+    
+    // Update log entry with response data
+    if (logEntry?.[0]?.id) {
+      await db.execute(sql`
+        UPDATE dataforseo_api_logs 
+        SET 
+          task_id = ${taskId},
+          response_status = ${response.status},
+          response_data = ${JSON.stringify(data)}::jsonb,
+          responded_at = NOW(),
+          cost = ${data.cost || 0}
+        WHERE id = ${logEntry[0].id}
+      `).catch(err => {
+        console.error('Failed to update DataForSEO log:', err);
+      });
+    }
+    
+    // Check for task-level errors
+    if (data.tasks?.[0]?.status_code !== 20000) {
+      const taskError = data.tasks?.[0];
+      console.error('DataForSEO task error:', taskError);
+      throw new Error(`DataForSEO task error: ${taskError?.status_message || 'Unknown error'}`);
+    }
+    
+    // Parse results
+    const results: DataForSeoKeywordResult[] = [];
+    
+    if (data.tasks?.[0]?.result?.[0]?.items) {
+      for (const item of data.tasks[0].result[0].items) {
+        results.push({
+          keyword: item.keyword_data.keyword,
+          position: item.ranked_serp_element.serp_item.rank_absolute || 0,
+          searchVolume: item.keyword_data.keyword_info?.search_volume || null,
+          url: item.ranked_serp_element.serp_item.url || 
+               item.ranked_serp_element.serp_item.relative_url || '',
+          cpc: item.keyword_data.keyword_info?.cpc || null,
+          competition: this.mapCompetition(item.keyword_data.keyword_info?.competition),
+        });
+      }
+      
+      console.log(`Found ${results.length} keywords in response`);
+    }
+    
+    return {
+      results,
+      taskId,
+      cost: data.cost || 0
+    };
+  }
   
   /**
    * Analyze domain with smart caching - checks existing data first
@@ -187,170 +353,108 @@ export class DataForSeoService {
         `${process.env.DATAFORSEO_LOGIN}:${process.env.DATAFORSEO_PASSWORD}`
       ).toString('base64');
 
-      // Prepare request - we'll analyze the domain without keyword filters
-      // Instead of using filters, we'll fetch all domain keywords and filter locally
-      // This avoids the "Invalid Field: 'filters'" error with complex filters
-      let filters = undefined;
-      
-      // Log what we're searching for (for debugging)
-      if (keywords.length > 0) {
-        console.log(`Will search for ${keywords.length} keywords in results after fetching`);
-      }
-
       // Clean domain - remove protocol and trailing slash
       const cleanDomain = domain
         .replace(/^https?:\/\//, '')
         .replace(/^www\./, '')
         .replace(/\/$/, '');
       
-      const requestBody = [{
-        target: cleanDomain,
-        location_code: locationCode,
-        language_code: languageCode,
-        filters: filters,
-        limit: 500
-      }];
-      
-      console.log('DataForSEO request body:', JSON.stringify(requestBody, null, 2));
-
-      // Make API request
       const apiUrl = `${this.API_BASE_URL}/dataforseo_labs/google/ranked_keywords/live`;
-      console.log('Calling DataForSEO API:', apiUrl);
-      
-      // Log the request before making it
-      const logEntry = await db.insert(dataForSeoApiLogs).values({
-        endpoint: apiUrl,
-        requestPayload: requestBody[0],
-        domainId: domainId.startsWith('temp-') ? null : domainId,
-        domain: cleanDomain,
-        keywordCount: keywords.length,
-        locationCode,
-        languageCode,
-        requestType: isIncremental ? 'incremental' : 'full',
-      }).returning({ id: dataForSeoApiLogs.id }).catch(err => {
-        console.error('Failed to log DataForSEO request:', err);
-        return null;
-      });
-      
-      const requestStartTime = Date.now();
-      const response = await fetch(
-        apiUrl,
-        {
-          method: 'POST',
-          headers: {
-            'Authorization': `Basic ${auth}`,
-            'Content-Type': 'application/json',
-          },
-          body: JSON.stringify(requestBody),
-        }
-      );
+      let allResults: DataForSeoKeywordResult[] = [];
+      let allTaskIds: string[] = [];
+      let totalCost = 0;
 
-      console.log('DataForSEO API response status:', response.status);
-      
-      if (!response.ok) {
-        const errorText = await response.text();
-        console.error('DataForSEO API error response:', errorText);
+      // If no keywords specified, fetch all domain keywords
+      if (!keywords || keywords.length === 0) {
+        console.log('No keywords specified, fetching all domain keywords');
         
-        // Log error
-        if (logEntry?.[0]?.id) {
-          await db.execute(sql`
-            UPDATE dataforseo_api_logs 
-            SET 
-              response_status = ${response.status},
-              error_message = ${errorText},
-              responded_at = NOW()
-            WHERE id = ${logEntry[0].id}
-          `).catch(err => {
-            console.error('Failed to update DataForSEO error log:', err);
-          });
-        }
+        const requestBody = [{
+          target: cleanDomain,
+          location_code: locationCode,
+          language_code: languageCode,
+          limit: 500
+        }];
         
-        throw new Error(`DataForSEO API error: ${response.status} - ${errorText}`);
-      }
-
-      const data = await response.json();
-      console.log('DataForSEO API response data:', JSON.stringify(data, null, 2).substring(0, 500) + '...');
-      
-      // Extract task ID for audit tracking  
-      const taskId = data.tasks?.[0]?.id;
-      console.log('DataForSEO Task ID:', taskId);
-      
-      // Update log entry with response data
-      if (logEntry?.[0]?.id) {
-        await db.execute(sql`
-          UPDATE dataforseo_api_logs 
-          SET 
-            task_id = ${taskId},
-            response_status = ${response.status},
-            response_data = ${JSON.stringify(data)}::jsonb,
-            responded_at = NOW(),
-            cost = ${data.cost || 0}
-          WHERE id = ${logEntry[0].id}
-        `).catch(err => {
-          console.error('Failed to update DataForSEO log:', err);
-        });
-      }
-      
-      // Check for task-level errors
-      if (data.tasks?.[0]?.status_code !== 20000) {
-        const taskError = data.tasks?.[0];
-        console.error('DataForSEO task error:', taskError);
-        throw new Error(`DataForSEO task error: ${taskError?.status_message || 'Unknown error'}`);
-      }
-      
-      // Parse results
-      const results: DataForSeoKeywordResult[] = [];
-      
-      if (data.tasks?.[0]?.result?.[0]?.items) {
-        // Create a set of lowercase keywords for efficient matching
-        const keywordSet = new Set(keywords.map(k => k.toLowerCase()));
+        const singleResult = await this.makeDataForSeoRequest(
+          apiUrl,
+          requestBody,
+          auth,
+          domainId,
+          cleanDomain,
+          0, // No keywords
+          locationCode,
+          languageCode,
+          isIncremental
+        );
         
-        for (const item of data.tasks[0].result[0].items) {
-          const resultKeyword = item.keyword_data.keyword;
+        allResults = singleResult.results;
+        allTaskIds.push(singleResult.taskId);
+        totalCost = singleResult.cost;
+      } else {
+        // Create keyword batches for regex filtering
+        const keywordBatches = this.createKeywordBatches(keywords);
+        console.log(`Created ${keywordBatches.length} keyword batches for ${keywords.length} total keywords`);
+        
+        // Make API calls for each batch
+        for (let i = 0; i < keywordBatches.length; i++) {
+          const batch = keywordBatches[i];
+          const regex = batch.map(k => this.escapeRegex(k)).join('|');
           
-          // If we have specific keywords, filter to only include matches
-          if (keywords.length > 0) {
-            // Check if any of our keywords are contained in the result keyword
-            const resultKeywordLower = resultKeyword.toLowerCase();
-            const matches = [...keywordSet].some(searchKeyword => 
-              resultKeywordLower.includes(searchKeyword)
+          console.log(`Batch ${i + 1}/${keywordBatches.length}: ${batch.length} keywords, regex length: ${regex.length}`);
+          
+          const requestBody = [{
+            target: cleanDomain,
+            location_code: locationCode,
+            language_code: languageCode,
+            filters: [
+              ["keyword_data.keyword", "regex", regex]
+            ],
+            limit: 500
+          }];
+          
+          try {
+            const batchResult = await this.makeDataForSeoRequest(
+              apiUrl,
+              requestBody,
+              auth,
+              domainId,
+              cleanDomain,
+              batch.length,
+              locationCode,
+              languageCode,
+              isIncremental
             );
             
-            if (!matches) {
-              continue; // Skip this result
-            }
+            allResults = allResults.concat(batchResult.results);
+            allTaskIds.push(batchResult.taskId);
+            totalCost += batchResult.cost;
+            
+            console.log(`Batch ${i + 1} completed: found ${batchResult.results.length} keywords`);
+          } catch (error: any) {
+            console.error(`Batch ${i + 1} failed:`, error.message);
+            // Continue with other batches even if one fails
           }
-          
-          results.push({
-            keyword: resultKeyword,
-            position: item.ranked_serp_element.serp_item.rank_absolute || 0,
-            searchVolume: item.keyword_data.keyword_info?.search_volume || null,
-            url: item.ranked_serp_element.serp_item.url || 
-                 item.ranked_serp_element.serp_item.relative_url || '',
-            cpc: item.keyword_data.keyword_info?.cpc || null,
-            competition: this.mapCompetition(item.keyword_data.keyword_info?.competition),
-          });
         }
         
-        console.log(`Filtered ${results.length} matching keywords from ${data.tasks[0].result[0].items.length} total results`);
+        console.log(`Total results from all batches: ${allResults.length}`);
       }
 
       // Store results in the database for pagination
-      if (results.length > 0) {
+      if (allResults.length > 0) {
         const batchId = isIncremental ? DataForSeoCacheService.generateBatchId() : null;
-        await this.storeResults(domainId, results, locationCode, languageCode, batchId, isIncremental);
+        await this.storeResults(domainId, allResults, locationCode, languageCode, batchId, isIncremental);
       }
 
       // Update domain status
-      await this.updateDomainAnalysisStatus(domainId, 'analyzed', results.length);
+      await this.updateDomainAnalysisStatus(domainId, 'analyzed', allResults.length);
 
       return {
         domainId,
         domain,
-        keywords: results.slice(0, 50), // Return only first 50 for initial display
-        totalFound: results.length,
+        keywords: allResults.slice(0, 50), // Return only first 50 for initial display
+        totalFound: allResults.length,
         status: 'success',
-        taskId,
+        taskId: allTaskIds.join(','), // Join multiple task IDs
       };
     } catch (error: any) {
       console.error('DataForSEO analysis error:', error);
