@@ -18,6 +18,9 @@ export interface Client {
   createdAt: Date;
   updatedAt: Date;
   createdBy: string; // User ID
+  clientType?: 'prospect' | 'client';
+  convertedFromProspectAt?: Date;
+  conversionNotes?: string;
 }
 
 export interface TargetPage {
