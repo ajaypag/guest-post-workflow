@@ -1716,6 +1716,38 @@ anotherdomain.com"
                       <option value="no_workflow">No Workflow</option>
                     </select>
 
+                    {/* Sort By Dropdown */}
+                    <div className="flex items-center gap-1 border-l pl-2">
+                      <select
+                        value={sortBy}
+                        onChange={(e) => setSortBy(e.target.value as any)}
+                        className="border border-gray-300 rounded-lg px-3 py-2 text-sm focus:ring-2 focus:ring-indigo-500"
+                      >
+                        <option value="createdAt">Date Added</option>
+                        <option value="updatedAt">Last Modified</option>
+                        <option value="domain">Domain Name</option>
+                        <option value="qualificationStatus">Qualification Status</option>
+                        <option value="hasDataForSeoResults">DataForSEO Analyzed</option>
+                        <option value="hasWorkflow">Has Workflow</option>
+                        <option value="keywordCount">Keyword Count</option>
+                      </select>
+                      <button
+                        onClick={() => setSortOrder(sortOrder === 'asc' ? 'desc' : 'asc')}
+                        className="p-2 text-gray-600 hover:text-gray-900 hover:bg-gray-100 rounded-lg transition-colors border border-gray-300"
+                        title={sortOrder === 'asc' ? 'Sort Ascending' : 'Sort Descending'}
+                      >
+                        {sortOrder === 'asc' ? (
+                          <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M3 4h13M3 8h9m-9 4h6m4 0l4-4m0 0l4 4m-4-4v12" />
+                          </svg>
+                        ) : (
+                          <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M3 4h13M3 8h9m-9 4h9m5-4v12m0 0l-4-4m4 4l4-4" />
+                          </svg>
+                        )}
+                      </button>
+                    </div>
+
                     {/* Clear Filters */}
                     {(searchQuery || statusFilter !== 'all' || workflowFilter !== 'all') && (
                       <button
@@ -1854,9 +1886,48 @@ anotherdomain.com"
                 <div className="mb-4 p-4 bg-indigo-50 border border-indigo-200 rounded-lg">
                   <div className="flex items-center justify-between">
                     <div className="flex items-center gap-4">
-                      <span className="text-sm font-medium text-indigo-900">
-                        {selectedDomains.size} domain{selectedDomains.size > 1 ? 's' : ''} selected
-                      </span>
+                      {/* Selection Count with Expandable Stats */}
+                      <div className="flex items-center gap-2">
+                        <span className="text-sm font-medium text-indigo-900">
+                          {selectedDomains.size} domain{selectedDomains.size > 1 ? 's' : ''} selected
+                        </span>
+                        {(() => {
+                          const selectedDomainsArray = Array.from(selectedDomains);
+                          const qualifiedCount = domains.filter(d => 
+                            selectedDomainsArray.includes(d.id) && 
+                            (d.qualificationStatus === 'high_quality' || d.qualificationStatus === 'average_quality') && 
+                            !d.hasWorkflow
+                          ).length;
+                          const pendingCount = domains.filter(d => 
+                            selectedDomainsArray.includes(d.id) && 
+                            d.qualificationStatus === 'pending'
+                          ).length;
+                          const disqualifiedCount = domains.filter(d => 
+                            selectedDomainsArray.includes(d.id) && 
+                            d.qualificationStatus === 'disqualified'
+                          ).length;
+                          
+                          return (
+                            <>
+                              {qualifiedCount > 0 && (
+                                <span className="text-xs px-2 py-1 bg-green-100 text-green-700 rounded-full">
+                                  {qualifiedCount} qualified
+                                </span>
+                              )}
+                              {pendingCount > 0 && (
+                                <span className="text-xs px-2 py-1 bg-yellow-100 text-yellow-700 rounded-full">
+                                  {pendingCount} pending
+                                </span>
+                              )}
+                              {disqualifiedCount > 0 && (
+                                <span className="text-xs px-2 py-1 bg-red-100 text-red-700 rounded-full">
+                                  {disqualifiedCount} disqualified
+                                </span>
+                              )}
+                            </>
+                          );
+                        })()}
+                      </div>
                       <button
                         onClick={clearSelection}
                         className="text-sm text-indigo-600 hover:text-indigo-800 underline"
@@ -1961,6 +2032,42 @@ anotherdomain.com"
                         )}
                         {masterQualificationRunning ? 'Qualifying...' : 'Auto-Qualify Selected'}
                       </button>
+
+                      {/* Create Workflows Button - Show when qualified domains are selected */}
+                      {(() => {
+                        const selectedDomainsArray = Array.from(selectedDomains);
+                        const qualifiedDomains = domains.filter(d => 
+                          selectedDomainsArray.includes(d.id) && 
+                          (d.qualificationStatus === 'high_quality' || d.qualificationStatus === 'average_quality') && 
+                          !d.hasWorkflow
+                        );
+                        
+                        if (qualifiedDomains.length > 0) {
+                          return (
+                            <button
+                              onClick={() => bulkCreateWorkflows(qualifiedDomains.map(d => d.id))}
+                              disabled={bulkWorkflowCreating}
+                              className="inline-flex items-center px-4 py-2 bg-green-600 text-white text-sm font-medium rounded-lg hover:bg-green-700 disabled:opacity-50 disabled:cursor-not-allowed shadow-md"
+                            >
+                              {bulkWorkflowCreating ? (
+                                <>
+                                  <svg className="w-4 h-4 mr-2 animate-spin" fill="none" viewBox="0 0 24 24">
+                                    <circle cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4" className="opacity-25"></circle>
+                                    <path fill="currentColor" className="opacity-75" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
+                                  </svg>
+                                  Creating...
+                                </>
+                              ) : (
+                                <>
+                                  <Plus className="w-4 h-4 mr-2" />
+                                  Create {qualifiedDomains.length} Workflow{qualifiedDomains.length > 1 ? 's' : ''}
+                                </>
+                              )}
+                            </button>
+                          );
+                        }
+                        return null;
+                      })()}
                       
                       {/* More Actions Dropdown */}
                       <div className="relative">
@@ -2263,8 +2370,8 @@ anotherdomain.com"
                       compareValue = new Date(a.updatedAt || 0).getTime() - new Date(b.updatedAt || 0).getTime();
                       break;
                     case 'qualificationStatus':
-                      // Custom order: high_quality > average_quality > pending > disqualified
-                      const statusOrder = { 'high_quality': 0, 'average_quality': 1, 'pending': 2, 'disqualified': 3 };
+                      // Custom order: high_quality > average_quality > disqualified > pending
+                      const statusOrder = { 'high_quality': 0, 'average_quality': 1, 'disqualified': 2, 'pending': 3 };
                       compareValue = (statusOrder[a.qualificationStatus] || 99) - (statusOrder[b.qualificationStatus] || 99);
                       break;
                     case 'hasDataForSeoResults':
