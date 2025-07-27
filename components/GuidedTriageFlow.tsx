@@ -74,6 +74,7 @@ export default function GuidedTriageFlow(props: GuidedTriageFlowProps) {
   const [notes, setNotes] = useState('');
   const [loadingDataForSeo, setLoadingDataForSeo] = useState(false);
   const [keywordSearch, setKeywordSearch] = useState('');
+  const [selectedFilters, setSelectedFilters] = useState<string[]>([]);
   const [selectedTargetPages, setSelectedTargetPages] = useState<string[]>([]);
   const [showFullAiReasoning, setShowFullAiReasoning] = useState(false);
   const [smartFilters, setSmartFilters] = useState<string[]>([]);
@@ -262,6 +263,7 @@ export default function GuidedTriageFlow(props: GuidedTriageFlowProps) {
         setCurrentIndex(currentIndex + 1);
         // Reset states for new domain
         setKeywordSearch('');
+        setSelectedFilters([]);
         setSelectedTargetPages([]);
         setShowFullAiReasoning(false);
       } else {
@@ -366,6 +368,8 @@ export default function GuidedTriageFlow(props: GuidedTriageFlowProps) {
           if (currentIndex > 0) {
             setCurrentIndex(currentIndex - 1);
             setNotes('');
+            setKeywordSearch('');
+            setSelectedFilters([]);
           }
           break;
         case 'ArrowRight':
@@ -373,6 +377,8 @@ export default function GuidedTriageFlow(props: GuidedTriageFlowProps) {
           if (currentIndex < reviewDomains.length - 1) {
             setCurrentIndex(currentIndex + 1);
             setNotes('');
+            setKeywordSearch('');
+            setSelectedFilters([]);
           }
           break;
         case 'Escape':
@@ -441,6 +447,8 @@ export default function GuidedTriageFlow(props: GuidedTriageFlowProps) {
                   if (currentIndex > 0) {
                     setCurrentIndex(currentIndex - 1);
                     setNotes('');
+                    setKeywordSearch('');
+                    setSelectedFilters([]);
                   }
                 }}
                 disabled={currentIndex === 0}
@@ -454,6 +462,8 @@ export default function GuidedTriageFlow(props: GuidedTriageFlowProps) {
                   if (currentIndex < reviewDomains.length - 1) {
                     setCurrentIndex(currentIndex + 1);
                     setNotes('');
+                    setKeywordSearch('');
+                    setSelectedFilters([]);
                   }
                 }}
                 disabled={currentIndex === reviewDomains.length - 1}
@@ -568,8 +578,20 @@ export default function GuidedTriageFlow(props: GuidedTriageFlowProps) {
                             placeholder="Search keywords..."
                             value={keywordSearch}
                             onChange={(e) => setKeywordSearch(e.target.value)}
-                            className="w-full pl-9 pr-3 py-2 text-sm border rounded-lg focus:ring-2 focus:ring-indigo-500 focus:border-transparent"
+                            className="w-full pl-9 pr-9 py-2 text-sm border rounded-lg focus:ring-2 focus:ring-indigo-500 focus:border-transparent"
                           />
+                          {(keywordSearch || selectedFilters.length > 0) && (
+                            <button
+                              onClick={() => {
+                                setKeywordSearch('');
+                                setSelectedFilters([]);
+                              }}
+                              className="absolute right-2 top-1/2 -translate-y-1/2 text-gray-400 hover:text-gray-600 p-1"
+                              title="Clear all filters"
+                            >
+                              <X className="w-4 h-4" />
+                            </button>
+                          )}
                         </div>
                       </div>
                       
@@ -602,13 +624,19 @@ export default function GuidedTriageFlow(props: GuidedTriageFlowProps) {
                             {data.keywords.map((keyword, idx) => (
                               <button
                                 key={idx}
-                                onClick={() => setKeywordSearch(keywordSearch === keyword ? '' : keyword)}
+                                onClick={() => {
+                                  if (selectedFilters.includes(keyword)) {
+                                    setSelectedFilters(selectedFilters.filter(f => f !== keyword));
+                                  } else {
+                                    setSelectedFilters([...selectedFilters, keyword]);
+                                  }
+                                }}
                                 className={`px-2 py-1 text-xs rounded-md transition-colors ${
-                                  keywordSearch === keyword 
+                                  selectedFilters.includes(keyword) 
                                     ? 'bg-indigo-600 text-white hover:bg-indigo-700' 
                                     : 'bg-indigo-50 hover:bg-indigo-100 text-indigo-700'
                                 }`}
-                                title={keywordSearch === keyword ? 'Click to clear filter' : 'Click to filter DataForSEO results'}
+                                title={selectedFilters.includes(keyword) ? 'Click to remove filter' : 'Click to add filter'}
                               >
                                 {keyword}
                               </button>
@@ -617,6 +645,53 @@ export default function GuidedTriageFlow(props: GuidedTriageFlowProps) {
                         </div>
                       )}
                     </div>
+                    
+                    {/* Common Terms Filter */}
+                    {smartFilters.length > 0 && (
+                      <div className="px-4 pb-3">
+                        <div className="flex items-center justify-between mb-2">
+                          <h4 className="text-sm font-medium text-gray-700">Common Terms</h4>
+                          <div className="flex gap-2">
+                            <button
+                              onClick={() => setSelectedFilters(smartFilters)}
+                              className="text-xs text-indigo-600 hover:text-indigo-700"
+                            >
+                              Select All
+                            </button>
+                            {selectedFilters.length > 0 && (
+                              <button
+                                onClick={() => setSelectedFilters([])}
+                                className="text-xs text-red-600 hover:text-red-700"
+                              >
+                                Clear All
+                              </button>
+                            )}
+                          </div>
+                        </div>
+                        <div className="flex flex-wrap gap-1">
+                          {smartFilters.map((filter, idx) => (
+                            <button
+                              key={idx}
+                              onClick={() => {
+                                if (selectedFilters.includes(filter)) {
+                                  setSelectedFilters(selectedFilters.filter(f => f !== filter));
+                                } else {
+                                  setSelectedFilters([...selectedFilters, filter]);
+                                }
+                              }}
+                              className={`px-2 py-1 text-xs rounded-md transition-colors ${
+                                selectedFilters.includes(filter)
+                                  ? 'bg-indigo-600 text-white hover:bg-indigo-700' 
+                                  : 'bg-gray-100 hover:bg-gray-200 text-gray-700'
+                              }`}
+                              title={`Toggle filter for "${filter}"`}
+                            >
+                              {filter}
+                            </button>
+                          ))}
+                        </div>
+                      </div>
+                    )}
                     
                     {/* Keywords Table */}
                     <div className="flex-1 overflow-auto">
@@ -633,7 +708,19 @@ export default function GuidedTriageFlow(props: GuidedTriageFlowProps) {
                         </thead>
                         <tbody className="divide-y divide-gray-200">
                           {data.dataForSeoResults.allKeywords
-                            .filter(kw => !keywordSearch || kw.keyword.toLowerCase().includes(keywordSearch.toLowerCase()))
+                            .filter(kw => {
+                              // Filter by search input
+                              if (keywordSearch && !kw.keyword.toLowerCase().includes(keywordSearch.toLowerCase())) {
+                                return false;
+                              }
+                              // Filter by selected filters (ANY match)
+                              if (selectedFilters.length > 0) {
+                                return selectedFilters.some(filter => 
+                                  kw.keyword.toLowerCase().includes(filter.toLowerCase())
+                                );
+                              }
+                              return true;
+                            })
                             .map((kw, idx) => (
                             <tr key={idx} className="hover:bg-gray-50">
                               <td className="px-3 py-2 text-sm">{kw.keyword}</td>
@@ -865,6 +952,31 @@ export default function GuidedTriageFlow(props: GuidedTriageFlowProps) {
               
               {/* Right Column - Metadata */}
               <div className="w-96 space-y-4 overflow-y-auto">
+                {/* AI Analysis */}
+                {data.aiQualification && (
+                  <div className="bg-white rounded-lg p-4 shadow-sm">
+                    <h3 className="text-sm font-medium text-gray-500 uppercase tracking-wider mb-3 flex items-center justify-between">
+                      <span className="flex items-center gap-2">
+                        <Sparkles className="w-4 h-4" />
+                        AI Reasoning
+                      </span>
+                      <button
+                        onClick={() => setShowFullAiReasoning(!showFullAiReasoning)}
+                        className="text-xs text-indigo-600 hover:text-indigo-700"
+                      >
+                        {showFullAiReasoning ? 'Show less' : 'Show more'}
+                      </button>
+                    </h3>
+                    <div className="bg-blue-50 rounded-lg p-4">
+                      <p className={`text-sm text-gray-700 whitespace-pre-wrap leading-relaxed ${
+                        showFullAiReasoning ? '' : 'line-clamp-6'
+                      }`}>
+                        {data.aiQualification.reasoning}
+                      </p>
+                    </div>
+                  </div>
+                )}
+                
                 {/* Target Pages Selection */}
                 {data.targetPages.length > 0 && (
                   <div className="bg-white rounded-lg p-4 shadow-sm">
@@ -889,53 +1001,6 @@ export default function GuidedTriageFlow(props: GuidedTriageFlowProps) {
                           <span className="text-sm text-gray-700">{page.url}</span>
                         </label>
                       ))}
-                    </div>
-                  </div>
-                )}
-                
-                {/* Pre-Selected Keywords */}
-                {/* Quick Filters */}
-                {smartFilters.length > 0 && (
-                  <div className="bg-white rounded-lg p-4 shadow-sm">
-                    <h3 className="text-sm font-medium text-gray-500 uppercase tracking-wider mb-3">
-                      Common Terms
-                    </h3>
-                    <div className="flex flex-wrap gap-1">
-                      {smartFilters.map((filter, idx) => (
-                        <button
-                          key={idx}
-                          onClick={() => setKeywordSearch(filter)}
-                          className="px-2 py-1 text-xs bg-gray-100 hover:bg-gray-200 rounded-md transition-colors"
-                          title={`Filter keywords containing "${filter}"`}
-                        >
-                          {filter}
-                        </button>
-                      ))}
-                    </div>
-                  </div>
-                )}
-                
-                {/* AI Analysis */}
-                {data.aiQualification && (
-                  <div className="bg-white rounded-lg p-4 shadow-sm">
-                    <h3 className="text-sm font-medium text-gray-500 uppercase tracking-wider mb-3 flex items-center justify-between">
-                      <span className="flex items-center gap-2">
-                        <Sparkles className="w-4 h-4" />
-                        AI Reasoning
-                      </span>
-                      <button
-                        onClick={() => setShowFullAiReasoning(!showFullAiReasoning)}
-                        className="text-xs text-indigo-600 hover:text-indigo-700"
-                      >
-                        {showFullAiReasoning ? 'Show less' : 'Show more'}
-                      </button>
-                    </h3>
-                    <div className="bg-blue-50 rounded-lg p-4">
-                      <p className={`text-sm text-gray-700 whitespace-pre-wrap leading-relaxed ${
-                        showFullAiReasoning ? '' : 'line-clamp-6'
-                      }`}>
-                        {data.aiQualification.reasoning}
-                      </p>
                     </div>
                   </div>
                 )}

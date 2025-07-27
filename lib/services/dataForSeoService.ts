@@ -398,7 +398,7 @@ export class DataForSeoService {
         // Make API calls for each batch
         for (let i = 0; i < keywordBatches.length; i++) {
           const batch = keywordBatches[i];
-          const regex = batch.map(k => this.escapeRegex(k)).join('|');
+          const regex = `(${batch.map(k => this.escapeRegex(k)).join('|')})`;
           
           console.log(`Batch ${i + 1}/${keywordBatches.length}: ${batch.length} keywords, regex length: ${regex.length}`);
           
