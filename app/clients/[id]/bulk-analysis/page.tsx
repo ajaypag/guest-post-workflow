@@ -309,81 +309,82 @@ export default function BulkAnalysisPage() {
     setSelectedDomains(new Set());
   };
 
-  const startMasterQualification = async () => {
-    const selectedDomainList = domains
-      .filter(d => selectedDomains.has(d.id))
-      .map(d => ({ id: d.id, domain: d.domain }));
-    
-    if (selectedDomainList.length === 0) {
-      setMessage('Please select domains to qualify');
-      return;
-    }
-
-    setLoading(true);
-    setMessage(`🚀 Running complete qualification for ${selectedDomainList.length} domains...`);
-
-    try {
-      const response = await fetch(`/api/clients/${params.id}/bulk-analysis/master-qualify`, {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-          domainIds: selectedDomainList.map(d => d.id),
-          locationCode: 2840,
-          languageCode: 'en'
-        })
-      });
-
-      if (!response.ok) {
-        const error = await response.json();
-        throw new Error(error.error || 'Failed to run master qualification');
-      }
-
-      const data = await response.json();
-      const { summary } = data;
-
-      // Update local domains with results
-      if (data.results) {
-        setDomains(prevDomains => 
-          prevDomains.map(domain => {
-            const result = data.results.find((r: any) => r.domainId === domain.id);
-            if (result) {
-              return {
-                ...domain,
-                hasDataForSeoResults: result.dataForSeoStatus === 'success',
-                dataForSeoKeywordsFound: result.keywordsFound || 0,
-                qualificationStatus: result.qualificationStatus || domain.qualificationStatus,
-                updatedAt: new Date().toISOString()
-              };
-            }
-            return domain;
-          })
-        );
-      }
-
-      // Build success message
-      const messages = [];
-      if (summary.dataForSeo.success > 0) {
-        messages.push(`${summary.dataForSeo.success} DataForSEO analyses`);
-      }
-      if (summary.ai.success > 0) {
-        messages.push(`${summary.ai.success} AI qualifications`);
-      }
-      
-      setMessage(`✅ Completed: ${messages.join(', ')}`);
-      
-      // Clear selection
-      setSelectedDomains(new Set());
-      
-      // Reload projects to update counts
-      await loadProjects();
-
-    } catch (error: any) {
-      console.error('Master qualification error:', error);
-      setMessage(`❌ Qualification failed: ${error.message}`);
-    } finally {
-      setLoading(false);
-    }
-  };
+  // Master qualification moved to project detail page - this page is retired from UI
+  // const startMasterQualification = async () => {
+  //   const selectedDomainList = domains
+  //     .filter(d => selectedDomains.has(d.id))
+  //     .map(d => ({ id: d.id, domain: d.domain }));
+  //   
+  //   if (selectedDomainList.length === 0) {
+  //     setMessage('Please select domains to qualify');
+  //     return;
+  //   }
+  //
+  //   setLoading(true);
+  //   setMessage(`🚀 Running complete qualification for ${selectedDomainList.length} domains...`);
+  //
+  //   try {
+  //     const response = await fetch(`/api/clients/${params.id}/bulk-analysis/master-qualify`, {
+  //       method: 'POST',
+  //       headers: { 'Content-Type': 'application/json' },
+  //       body: JSON.stringify({
+  //         domainIds: selectedDomainList.map(d => d.id),
+  //         locationCode: 2840,
+  //         languageCode: 'en'
+  //       })
+  //     });
+  //
+  //     if (!response.ok) {
+  //       const error = await response.json();
+  //       throw new Error(error.error || 'Failed to run master qualification');
+  //     }
+  //
+  //     const data = await response.json();
+  //     const { summary } = data;
+  //
+  //     // Update local domains with results
+  //     if (data.results) {
+  //       setDomains(prevDomains => 
+  //         prevDomains.map(domain => {
+  //           const result = data.results.find((r: any) => r.domainId === domain.id);
+  //           if (result) {
+  //             return {
+  //               ...domain,
+  //               hasDataForSeoResults: result.dataForSeoStatus === 'success',
+  //               dataForSeoKeywordsFound: result.keywordsFound || 0,
+  //               qualificationStatus: result.qualificationStatus || domain.qualificationStatus,
+  //               updatedAt: new Date().toISOString()
+  //             };
+  //           }
+  //           return domain;
+  //         })
+  //       );
+  //     }
+  //
+  //     // Build success message
+  //     const messages = [];
+  //     if (summary.dataForSeo.success > 0) {
+  //       messages.push(`${summary.dataForSeo.success} DataForSEO analyses`);
+  //     }
+  //     if (summary.ai.success > 0) {
+  //       messages.push(`${summary.ai.success} AI qualifications`);
+  //     }
+  //     
+  //     setMessage(`✅ Completed: ${messages.join(', ')}`);
+  //     
+  //     // Clear selection
+  //     setSelectedDomains(new Set());
+  //     
+  //     // Reload projects to update counts
+  //     await loadProjects();
+  //
+  //   } catch (error: any) {
+  //     console.error('Master qualification error:', error);
+  //     setMessage(`❌ Qualification failed: ${error.message}`);
+  //   } finally {
+  //     setLoading(false);
+  //   }
+  // };
 
   const startAIQualification = async () => {
     const selectedDomainList = domains
@@ -1422,26 +1423,11 @@ export default function BulkAnalysisPage() {
                       </div>
                     </div>
                     <div className="flex items-center gap-2">
+                      {/* Master qualification UI removed - moved to project detail page */}
                       {!hideExperimentalFeatures && (
                         <>
-                          {/* Master Qualification Button */}
-                          <button
-                            onClick={startMasterQualification}
-                            disabled={bulkAnalysisRunning || loading}
-                            className="inline-flex items-center px-4 py-2 bg-gradient-to-r from-indigo-600 to-purple-600 text-white text-sm rounded-lg hover:from-indigo-700 hover:to-purple-700 disabled:opacity-50 disabled:cursor-not-allowed shadow-md"
-                          >
-                            {loading ? (
-                              <svg className="w-4 h-4 mr-2 animate-spin" fill="none" viewBox="0 0 24 24">
-                                <circle cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4" className="opacity-25"></circle>
-                                <path fill="currentColor" className="opacity-75" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
-                              </svg>
-                            ) : (
-                              <Zap className="w-4 h-4 mr-2" />
-                            )}
-                            {loading ? 'Qualifying...' : 'Auto-Qualify Selected'}
-                          </button>
                           {/* Individual buttons for manual control */}
-                          <div className="flex items-center gap-1 border-l pl-2 ml-2">
+                          <div className="flex items-center gap-1">
                             <button
                               onClick={startBulkDataForSeoAnalysis}
                               disabled={bulkAnalysisRunning}
