@@ -46,6 +46,14 @@ export default function AdminDashboard() {
       iconColor: 'text-purple-600'
     },
     {
+      title: 'Client Type Migration',
+      description: 'Add prospect vs client type system for bulk analysis dashboard',
+      icon: Database,
+      href: '/admin/client-type-migration',
+      color: 'bg-emerald-50 border-emerald-200 text-emerald-700',
+      iconColor: 'text-emerald-600'
+    },
+    {
       title: 'Diagnostics',
       description: 'Run comprehensive system diagnostics and health checks',
       icon: Activity,

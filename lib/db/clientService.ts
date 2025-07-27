@@ -96,6 +96,8 @@ export class ClientService {
       const insertData = {
         id: crypto.randomUUID(),
         ...clientData,
+        // Default to 'client' type if not specified
+        clientType: clientData.clientType || 'client',
         createdAt: now,
         updatedAt: now
       };
@@ -308,6 +310,80 @@ export class ClientService {
     } catch (error) {
       console.error('🔴 Error updating target page description:', error);
       return false;
+    }
+  }
+
+  // Get prospects only
+  static async getProspects(): Promise<Client[]> {
+    try {
+      const prospects = await db
+        .select()
+        .from(clients)
+        .where(eq(clients.clientType, 'prospect'));
+      
+      // Add target pages to each prospect
+      const prospectsWithPages = await Promise.all(
+        prospects.map(async (prospect) => {
+          const pages = await this.getTargetPages(prospect.id);
+          return { ...prospect, targetPages: pages } as any;
+        })
+      );
+      
+      return prospectsWithPages;
+    } catch (error) {
+      console.error('Error loading prospects:', error);
+      return [];
+    }
+  }
+
+  // Get clients only (excluding prospects)
+  static async getClientsOnly(): Promise<Client[]> {
+    try {
+      const clientList = await db
+        .select()
+        .from(clients)
+        .where(eq(clients.clientType, 'client'));
+      
+      // Add target pages to each client
+      const clientsWithPages = await Promise.all(
+        clientList.map(async (client) => {
+          const pages = await this.getTargetPages(client.id);
+          return { ...client, targetPages: pages } as any;
+        })
+      );
+      
+      return clientsWithPages;
+    } catch (error) {
+      console.error('Error loading clients:', error);
+      return [];
+    }
+  }
+
+  // Convert prospect to client
+  static async convertProspectToClient(prospectId: string, conversionNotes?: string): Promise<Client | null> {
+    try {
+      const updateData = {
+        clientType: 'client' as const,
+        convertedFromProspectAt: new Date(),
+        conversionNotes: conversionNotes || null,
+        updatedAt: new Date()
+      };
+
+      const result = await db
+        .update(clients)
+        .set(updateData)
+        .where(eq(clients.id, prospectId))
+        .returning();
+
+      console.log('🟢 Prospect converted to client:', {
+        prospectId,
+        hasNotes: !!conversionNotes
+      });
+
+      return result[0] || null;
+    } catch (error) {
+      console.error('🔴 Error converting prospect to client:', error);
+      return null;
     }
   }
 }
