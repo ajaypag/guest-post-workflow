@@ -389,8 +389,7 @@ export class MasterQualificationService {
       .select({
         id: bulkAnalysisDomains.id,
         hasDataForSeo: bulkAnalysisDomains.hasDataForSeoResults,
-        qualificationStatus: bulkAnalysisDomains.qualificationStatus,
-        dataForSeoStatus: bulkAnalysisDomains.dataForSeoStatus
+        qualificationStatus: bulkAnalysisDomains.qualificationStatus
       })
       .from(bulkAnalysisDomains)
       .where(eq(bulkAnalysisDomains.clientId, clientId));
@@ -408,9 +407,7 @@ export class MasterQualificationService {
         .filter(d => !d.hasDataForSeo && d.qualificationStatus === 'pending')
         .map(d => d.id),
       
-      allWithErrors: domains
-        .filter(d => d.dataForSeoStatus === 'error')
-        .map(d => d.id)
+      allWithErrors: [] // No error tracking without dataForSeoStatus column
     };
   }
 }

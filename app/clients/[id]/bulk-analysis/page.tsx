@@ -31,7 +31,10 @@ import {
   Download,
   Folder,
   FolderPlus,
-  RefreshCw
+  RefreshCw,
+  ChevronDown,
+  Zap,
+  Sparkles
 } from 'lucide-react';
 
 import { BulkAnalysisDomain } from '@/types/bulk-analysis';
