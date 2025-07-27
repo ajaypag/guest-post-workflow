@@ -756,8 +756,8 @@ export default function GuidedTriageFlow(props: GuidedTriageFlowProps) {
                   </div>
                   
                   {/* Keywords Table */}
-                    <div className="flex-1 overflow-auto">
-                      <table className="w-full">
+                    <div className="flex-1 overflow-x-auto overflow-y-auto">
+                      <table className="w-full min-w-[800px]">
                         <thead className="sticky top-0 bg-gray-50">
                           <tr className="text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
                             <th className="px-3 py-2">Keyword</th>
@@ -785,7 +785,20 @@ export default function GuidedTriageFlow(props: GuidedTriageFlowProps) {
                             })
                             .map((kw, idx) => (
                             <tr key={idx} className="hover:bg-gray-50">
-                              <td className="px-3 py-2 text-sm">{kw.keyword}</td>
+                              <td className="px-3 py-2 text-sm">
+                                <div className="flex items-center gap-1.5">
+                                  <span>{kw.keyword}</span>
+                                  <a
+                                    href={`https://www.google.com/search?q=${encodeURIComponent(kw.keyword)}`}
+                                    target="_blank"
+                                    rel="noopener noreferrer"
+                                    className="text-gray-400 hover:text-indigo-600 transition-colors"
+                                    title="Search on Google"
+                                  >
+                                    <Search className="w-3.5 h-3.5" />
+                                  </a>
+                                </div>
+                              </td>
                               <td className="px-3 py-2 text-sm text-center">
                                 <span className={`inline-flex items-center justify-center w-7 h-7 rounded-full text-xs font-medium ${
                                   kw.position <= 3 ? 'bg-green-100 text-green-800' :
@@ -814,8 +827,23 @@ export default function GuidedTriageFlow(props: GuidedTriageFlowProps) {
                                   </span>
                                 )}
                               </td>
-                              <td className="px-3 py-2 text-sm text-gray-500 truncate max-w-xs" title={kw.url}>
-                                {kw.url.replace(/^https?:\/\/[^\/]+/, '')}
+                              <td className="px-3 py-2 text-sm text-gray-500">
+                                <div className="flex items-center gap-1.5">
+                                  <span className="truncate max-w-xs" title={kw.url}>
+                                    {kw.url.replace(/^https?:\/\/[^\/]+/, '')}
+                                  </span>
+                                  {kw.url && (
+                                    <a
+                                      href={kw.url}
+                                      target="_blank"
+                                      rel="noopener noreferrer"
+                                      className="text-gray-400 hover:text-indigo-600 transition-colors flex-shrink-0"
+                                      title="Open URL"
+                                    >
+                                      <ExternalLink className="w-3.5 h-3.5" />
+                                    </a>
+                                  )}
+                                </div>
                               </td>
                             </tr>
                           ))}
