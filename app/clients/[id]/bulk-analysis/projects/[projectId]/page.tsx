@@ -36,7 +36,9 @@ import {
   Edit,
   ArrowRight,
   Zap,
-  Sparkles
+  Sparkles,
+  FolderOpen,
+  Brain
 } from 'lucide-react';
 
 export default function ProjectDetailPage() {
@@ -125,6 +127,9 @@ export default function ProjectDetailPage() {
   
   // Move to project state
   const [showMoveDialog, setShowMoveDialog] = useState(false);
+  
+  // More actions dropdown state
+  const [isMoreActionsOpen, setIsMoreActionsOpen] = useState(false);
   
   // Master qualification state
   const [masterQualificationRunning, setMasterQualificationRunning] = useState(false);
@@ -978,7 +983,7 @@ export default function ProjectDetailPage() {
     }
   };
 
-  const handleBulkStatusUpdate = async (status: 'high_quality' | 'average_quality' | 'disqualified') => {
+  const handleBulkStatusUpdate = async (status: 'high_quality' | 'average_quality' | 'disqualified' | 'pending') => {
     try {
       setShowBulkStatusMenu(false);
       setLoading(true);
@@ -1623,12 +1628,117 @@ anotherdomain.com"
                 </div>
               </div>
               
+              {/* Primary Action Bar - Always Visible */}
+              <div className="mb-4 p-4 bg-white border border-gray-200 rounded-lg shadow-sm">
+                <div className="flex items-center justify-between">
+                  <div className="flex items-center gap-3">
+                    {/* Auto-Qualify All Button */}
+                    <button
+                      onClick={async () => {
+                        // Select all domains that need qualification
+                        const domainsNeedingQualification = domains.filter(d => 
+                          !d.hasDataForSeoResults || d.qualificationStatus === 'pending'
+                        );
+                        if (domainsNeedingQualification.length === 0) {
+                          setMessage('✅ All domains are already qualified!');
+                          return;
+                        }
+                        selectAll(domainsNeedingQualification.map(d => d.id));
+                        // Small delay to let state update
+                        setTimeout(() => startMasterQualification(), 100);
+                      }}
+                      disabled={bulkAnalysisRunning || loading || masterQualificationRunning || domains.length === 0}
+                      className="inline-flex items-center px-4 py-2 bg-gradient-to-r from-indigo-600 to-purple-600 text-white text-sm font-medium rounded-lg hover:from-indigo-700 hover:to-purple-700 disabled:opacity-50 disabled:cursor-not-allowed shadow-md"
+                      title={(() => {
+                        const needingDataForSeo = domains.filter(d => !d.hasDataForSeoResults).length;
+                        const needingAI = domains.filter(d => d.qualificationStatus === 'pending').length;
+                        const needingBoth = domains.filter(d => !d.hasDataForSeoResults && d.qualificationStatus === 'pending').length;
+                        return `Qualify all domains (${needingBoth} need both, ${needingDataForSeo - needingBoth} need DataForSEO only, ${needingAI - needingBoth} need AI only)`;
+                      })()}
+                    >
+                      {masterQualificationRunning ? (
+                        <svg className="w-4 h-4 mr-2 animate-spin" fill="none" viewBox="0 0 24 24">
+                          <circle cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4" className="opacity-25"></circle>
+                          <path fill="currentColor" className="opacity-75" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
+                        </svg>
+                      ) : (
+                        <Zap className="w-4 h-4 mr-2" />
+                      )}
+                      {masterQualificationRunning ? 'Qualifying...' : 'Auto-Qualify All'}
+                    </button>
+
+                    {/* Guided Review Button */}
+                    <button
+                      onClick={() => setShowGuidedTriage(true)}
+                      className="inline-flex items-center px-4 py-2 bg-purple-600 text-white text-sm font-medium rounded-lg hover:bg-purple-700 shadow-md"
+                    >
+                      <Target className="w-4 h-4 mr-2" />
+                      Guided Review
+                    </button>
+
+                    <div className="h-6 w-px bg-gray-300 mx-2" />
+
+                    {/* Search */}
+                    <div className="relative">
+                      <input
+                        type="text"
+                        placeholder="Search domains..."
+                        value={searchQuery}
+                        onChange={(e) => setSearchQuery(e.target.value)}
+                        className="w-64 pl-10 pr-4 py-2 border border-gray-300 rounded-lg text-sm focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500"
+                      />
+                      <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400 w-4 h-4" />
+                    </div>
+                  </div>
+
+                  <div className="flex items-center gap-2">
+                    {/* Status Filter */}
+                    <select
+                      value={statusFilter}
+                      onChange={(e) => setStatusFilter(e.target.value as 'all' | 'pending' | 'high_quality' | 'average_quality' | 'disqualified')}
+                      className="border border-gray-300 rounded-lg px-3 py-2 text-sm focus:ring-2 focus:ring-indigo-500"
+                    >
+                      <option value="all">All Status</option>
+                      <option value="pending">Pending</option>
+                      <option value="high_quality">High Quality</option>
+                      <option value="average_quality">Average</option>
+                      <option value="disqualified">Disqualified</option>
+                    </select>
+
+                    {/* Workflow Filter */}
+                    <select
+                      value={workflowFilter}
+                      onChange={(e) => setWorkflowFilter(e.target.value as 'all' | 'has_workflow' | 'no_workflow')}
+                      className="border border-gray-300 rounded-lg px-3 py-2 text-sm focus:ring-2 focus:ring-indigo-500"
+                    >
+                      <option value="all">All Workflows</option>
+                      <option value="has_workflow">Has Workflow</option>
+                      <option value="no_workflow">No Workflow</option>
+                    </select>
+
+                    {/* Clear Filters */}
+                    {(searchQuery || statusFilter !== 'all' || workflowFilter !== 'all') && (
+                      <button
+                        onClick={() => {
+                          setSearchQuery('');
+                          setStatusFilter('all');
+                          setWorkflowFilter('all');
+                        }}
+                        className="text-sm text-indigo-600 hover:text-indigo-800"
+                      >
+                        Clear
+                      </button>
+                    )}
+                  </div>
+                </div>
+              </div>
+
               {/* Filter Controls */}
               <div className="mb-6 p-6 bg-white border border-gray-200 rounded-lg shadow-sm space-y-4">
                 <div className="flex items-center justify-between mb-4">
                   <h3 className="text-lg font-semibold text-gray-900 flex items-center">
-                    <Search className="w-5 h-5 mr-2 text-gray-500" />
-                    Search & Filter Domains
+                    <span className="text-gray-500 mr-2">•</span>
+                    Filter & Sort Options
                   </h3>
                   <div className="flex items-center gap-4">
                     {/* Sorting Dropdown */}
@@ -1663,36 +1773,8 @@ anotherdomain.com"
                         )}
                       </button>
                     </div>
-                    {(searchQuery || statusFilter !== 'all' || workflowFilter !== 'all') && (
-                      <button
-                        onClick={() => {
-                          setSearchQuery('');
-                          setStatusFilter('all');
-                          setWorkflowFilter('all');
-                        }}
-                        className="text-sm text-indigo-600 hover:text-indigo-800 font-medium"
-                      >
-                        Clear all filters
-                      </button>
-                    )}
                   </div>
                 </div>
-                
-                {/* Search Bar */}
-                <div>
-                  <div className="relative">
-                    <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 w-4 h-4 text-gray-400" />
-                    <input
-                      type="text"
-                      value={searchQuery}
-                      onChange={(e) => setSearchQuery(e.target.value)}
-                      placeholder="Search by domain name..."
-                      className="w-full pl-10 pr-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-indigo-500 focus:border-transparent"
-                    />
-                  </div>
-                </div>
-
-                {/* DataForSEO and AI features are now always enabled */}
 
                 {/* Filter Sections */}
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
@@ -1879,89 +1961,163 @@ anotherdomain.com"
                         )}
                         {masterQualificationRunning ? 'Qualifying...' : 'Auto-Qualify Selected'}
                       </button>
-                      {/* Individual buttons for manual control */}
-                      <div className="flex items-center gap-1 border-l pl-2 ml-2">
-                        <button
-                          onClick={startBulkDataForSeoAnalysis}
-                          disabled={bulkAnalysisRunning}
-                          className="inline-flex items-center px-3 py-2 bg-indigo-600 text-white text-xs rounded hover:bg-indigo-700 disabled:opacity-50 disabled:cursor-not-allowed"
-                          title="Run DataForSEO only"
-                        >
-                          <Search className="w-3 h-3" />
-                        </button>
-                        <button
-                          onClick={startAIQualification}
-                          disabled={bulkAnalysisRunning || loading}
-                          className="inline-flex items-center px-3 py-2 bg-purple-600 text-white text-xs rounded hover:bg-purple-700 disabled:opacity-50 disabled:cursor-not-allowed"
-                          title="Run AI qualification only"
-                        >
-                          <Sparkles className="w-3 h-3" />
-                        </button>
-                      </div>
-                      <button
-                        onClick={handleExportSelected}
-                        disabled={loading}
-                        className="inline-flex items-center px-4 py-2 bg-gray-600 text-white text-sm rounded-lg hover:bg-gray-700 disabled:opacity-50 disabled:cursor-not-allowed"
-                      >
-                        <Download className="w-4 h-4 mr-2" />
-                        Export Selected
-                      </button>
                       
-                      {/* Bulk Status Update Dropdown */}
+                      {/* More Actions Dropdown */}
                       <div className="relative">
                         <button
-                          onClick={() => setShowBulkStatusMenu(!showBulkStatusMenu)}
-                          className="inline-flex items-center px-4 py-2 bg-blue-600 text-white text-sm rounded-lg hover:bg-blue-700"
+                          onClick={() => setIsMoreActionsOpen(!isMoreActionsOpen)}
+                          onBlur={() => setTimeout(() => setIsMoreActionsOpen(false), 200)}
+                          className="inline-flex items-center px-4 py-2 text-sm font-medium text-gray-700 bg-white border border-gray-300 rounded-lg hover:bg-gray-50"
                         >
-                          <CheckCircle className="w-4 h-4 mr-2" />
-                          Update Status
-                          <ChevronDown className="w-4 h-4 ml-2" />
+                          More Actions
+                          <ChevronDown className="w-4 h-4 ml-1" />
                         </button>
                         
-                        {showBulkStatusMenu && (
-                          <div className="absolute right-0 mt-2 w-48 bg-white rounded-lg shadow-lg border border-gray-200 z-10">
+                        {isMoreActionsOpen && (
+                          <div className="absolute right-0 z-10 mt-1 w-56 bg-white border border-gray-200 rounded-lg shadow-lg">
+                            {/* Update Status - Nested */}
+                            <div className="relative">
+                              <button
+                                onClick={() => setShowBulkStatusMenu(!showBulkStatusMenu)}
+                                className="flex items-center w-full px-4 py-2 text-sm text-gray-700 hover:bg-gray-50"
+                              >
+                                <CheckCircle className="w-4 h-4 mr-2" />
+                                Update Status
+                                <ChevronDown className="w-4 h-4 ml-auto" />
+                              </button>
+                              
+                              {showBulkStatusMenu && (
+                                <div className="absolute left-full top-0 ml-1 w-48 bg-white border border-gray-200 rounded-lg shadow-lg">
+                                  <button
+                                    onClick={() => {
+                                      handleBulkStatusUpdate('high_quality');
+                                      setIsMoreActionsOpen(false);
+                                      setShowBulkStatusMenu(false);
+                                    }}
+                                    className="w-full text-left px-4 py-2 text-sm hover:bg-gray-50 flex items-center gap-2"
+                                  >
+                                    <CheckCircle className="w-4 h-4 text-green-600" />
+                                    High Quality
+                                  </button>
+                                  <button
+                                    onClick={() => {
+                                      handleBulkStatusUpdate('average_quality');
+                                      setIsMoreActionsOpen(false);
+                                      setShowBulkStatusMenu(false);
+                                    }}
+                                    className="w-full text-left px-4 py-2 text-sm hover:bg-gray-50 flex items-center gap-2"
+                                  >
+                                    <AlertCircle className="w-4 h-4 text-yellow-600" />
+                                    Average Quality
+                                  </button>
+                                  <button
+                                    onClick={() => {
+                                      handleBulkStatusUpdate('pending');
+                                      setIsMoreActionsOpen(false);
+                                      setShowBulkStatusMenu(false);
+                                    }}
+                                    className="w-full text-left px-4 py-2 text-sm hover:bg-gray-50 flex items-center gap-2"
+                                  >
+                                    <Loader2 className="w-4 h-4 text-gray-600" />
+                                    Pending
+                                  </button>
+                                  <button
+                                    onClick={() => {
+                                      handleBulkStatusUpdate('disqualified');
+                                      setIsMoreActionsOpen(false);
+                                      setShowBulkStatusMenu(false);
+                                    }}
+                                    className="w-full text-left px-4 py-2 text-sm hover:bg-gray-50 flex items-center gap-2 border-t"
+                                  >
+                                    <XCircle className="w-4 h-4 text-red-600" />
+                                    Disqualified
+                                  </button>
+                                </div>
+                              )}
+                            </div>
+                            
+                            {/* Move to Project */}
                             <button
-                              onClick={() => handleBulkStatusUpdate('high_quality')}
-                              className="w-full text-left px-4 py-2 text-sm hover:bg-gray-50 flex items-center gap-2"
+                              onClick={() => {
+                                setShowMoveDialog(true);
+                                setIsMoreActionsOpen(false);
+                              }}
+                              className="flex items-center w-full px-4 py-2 text-sm text-gray-700 hover:bg-gray-50"
                             >
-                              <CheckCircle className="w-4 h-4 text-green-600" />
-                              High Quality
+                              <FolderOpen className="w-4 h-4 mr-2" />
+                              Move to Project
                             </button>
+                            
+                            {/* Export */}
                             <button
-                              onClick={() => handleBulkStatusUpdate('average_quality')}
-                              className="w-full text-left px-4 py-2 text-sm hover:bg-gray-50 flex items-center gap-2"
+                              onClick={() => {
+                                handleExportSelected();
+                                setIsMoreActionsOpen(false);
+                              }}
+                              className="flex items-center w-full px-4 py-2 text-sm text-gray-700 hover:bg-gray-50"
                             >
-                              <AlertCircle className="w-4 h-4 text-yellow-600" />
-                              Average Quality
+                              <Download className="w-4 h-4 mr-2" />
+                              Export CSV
                             </button>
+                            
+                            <div className="border-t border-gray-200 my-1"></div>
+                            
+                            {/* DataForSEO Only */}
                             <button
-                              onClick={() => handleBulkStatusUpdate('disqualified')}
-                              className="w-full text-left px-4 py-2 text-sm hover:bg-gray-50 flex items-center gap-2 border-t"
+                              onClick={() => {
+                                startBulkDataForSeoAnalysis();
+                                setIsMoreActionsOpen(false);
+                              }}
+                              disabled={bulkAnalysisRunning || loading}
+                              className="flex items-center w-full px-4 py-2 text-sm text-gray-700 hover:bg-gray-50 disabled:opacity-50 disabled:cursor-not-allowed"
                             >
-                              <XCircle className="w-4 h-4 text-red-600" />
-                              Disqualified
+                              {bulkAnalysisRunning ? (
+                                <svg className="w-4 h-4 mr-2 animate-spin" fill="none" viewBox="0 0 24 24">
+                                  <circle cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4" className="opacity-25"></circle>
+                                  <path fill="currentColor" className="opacity-75" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
+                                </svg>
+                              ) : (
+                                <Search className="w-4 h-4 mr-2" />
+                              )}
+                              DataForSEO Only
+                            </button>
+                            
+                            {/* AI Only */}
+                            <button
+                              onClick={() => {
+                                startAIQualification();
+                                setIsMoreActionsOpen(false);
+                              }}
+                              disabled={bulkAnalysisRunning || loading || masterQualificationRunning}
+                              className="flex items-center w-full px-4 py-2 text-sm text-gray-700 hover:bg-gray-50 disabled:opacity-50 disabled:cursor-not-allowed"
+                            >
+                              {masterQualificationRunning ? (
+                                <svg className="w-4 h-4 mr-2 animate-spin" fill="none" viewBox="0 0 24 24">
+                                  <circle cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4" className="opacity-25"></circle>
+                                  <path fill="currentColor" className="opacity-75" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
+                                </svg>
+                              ) : (
+                                <Brain className="w-4 h-4 mr-2" />
+                              )}
+                              AI Qualify Only
+                            </button>
+                            
+                            <div className="border-t border-gray-200 my-1"></div>
+                            
+                            {/* Delete */}
+                            <button
+                              onClick={() => {
+                                handleBulkDelete();
+                                setIsMoreActionsOpen(false);
+                              }}
+                              className="flex items-center w-full px-4 py-2 text-sm text-red-600 hover:bg-red-50"
+                            >
+                              <Trash2 className="w-4 h-4 mr-2" />
+                              Delete Selected
                             </button>
                           </div>
                         )}
                       </div>
-                      
-                      {/* Move to Project Button */}
-                      <button
-                        onClick={() => setShowMoveDialog(true)}
-                        className="inline-flex items-center px-4 py-2 bg-indigo-600 text-white text-sm rounded-lg hover:bg-indigo-700"
-                      >
-                        <ArrowRight className="w-4 h-4 mr-2" />
-                        Move to Project
-                      </button>
-                      
-                      {/* Delete Button */}
-                      <button
-                        onClick={handleBulkDelete}
-                        className="inline-flex items-center px-4 py-2 bg-red-600 text-white text-sm rounded-lg hover:bg-red-700"
-                      >
-                        <Trash2 className="w-4 h-4 mr-2" />
-                        Delete Selected
-                      </button>
                     </div>
                   </div>
                 </div>
