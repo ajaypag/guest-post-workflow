@@ -1,16 +1,17 @@
 'use client';
 
-import { useState, useEffect } from 'react';
+import { useState, useEffect, Suspense } from 'react';
 import Link from 'next/link';
-import { useRouter } from 'next/navigation';
+import { useRouter, useSearchParams } from 'next/navigation';
 import AuthWrapper from '@/components/AuthWrapper';
 import Header from '@/components/Header';
 import { clientStorage, sessionStorage } from '@/lib/userStorage';
 import { Client } from '@/types/user';
 import { Building2, Plus, Users, Globe, CheckCircle, XCircle, Clock, Edit, Trash2, X, BarChart2 } from 'lucide-react';
 
-export default function ClientsPage() {
+function ClientsPageContent() {
   const router = useRouter();
+  const searchParams = useSearchParams();
   const [clients, setClients] = useState<Client[]>([]);
   const [showNewClientForm, setShowNewClientForm] = useState(false);
   const [editingClient, setEditingClient] = useState<Client | null>(null);
@@ -27,7 +28,20 @@ export default function ClientsPage() {
 
   useEffect(() => {
     loadClients();
-  }, []);
+    
+    // Check URL parameters to auto-open form
+    const shouldShowForm = searchParams.get('new') === 'true';
+    const clientType = searchParams.get('type') as 'prospect' | 'client';
+    
+    if (shouldShowForm) {
+      setShowNewClientForm(true);
+      if (clientType) {
+        setNewClient(prev => ({ ...prev, clientType }));
+      }
+      // Clear URL parameters after opening form
+      router.replace('/clients', { scroll: false });
+    }
+  }, [searchParams]);
 
   const loadClients = async () => {
     const session = sessionStorage.getSession();
@@ -446,5 +460,13 @@ export default function ClientsPage() {
         </div>
       </div>
     </AuthWrapper>
+  );
+}
+
+export default function ClientsPage() {
+  return (
+    <Suspense fallback={<div>Loading...</div>}>
+      <ClientsPageContent />
+    </Suspense>
   );
 }

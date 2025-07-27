@@ -270,14 +270,14 @@ export default function BulkAnalysisDashboard() {
             {/* Action Buttons */}
             <div className="flex space-x-3">
               <button
-                onClick={() => router.push('/clients/new?type=prospect')}
+                onClick={() => router.push('/clients?new=true&type=prospect')}
                 className="px-4 py-2 bg-white border border-gray-300 text-gray-700 rounded-lg hover:bg-gray-50 flex items-center"
               >
                 <Plus className="w-4 h-4 mr-2" />
                 New Prospect
               </button>
               <button
-                onClick={() => router.push('/clients/new?type=client')}
+                onClick={() => router.push('/clients?new=true&type=client')}
                 className="px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 flex items-center"
               >
                 <Plus className="w-4 h-4 mr-2" />
