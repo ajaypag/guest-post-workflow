@@ -459,7 +459,7 @@ export default function GuidedTriageFlow(props: GuidedTriageFlowProps) {
                   title="Mark as High Quality (1)"
                 >
                   <Check className="w-4 h-4 mr-1.5" />
-                  High
+                  {currentDomain?.qualificationStatus === 'high_quality' ? 'Confirm High' : 'High'}
                 </button>
                 <button
                   onClick={() => handleQualify('average_quality')}
@@ -468,7 +468,7 @@ export default function GuidedTriageFlow(props: GuidedTriageFlowProps) {
                   title="Mark as Average Quality (2)"
                 >
                   <AlertCircle className="w-4 h-4 mr-1.5" />
-                  Average
+                  {currentDomain?.qualificationStatus === 'average_quality' ? 'Confirm Average' : 'Average'}
                 </button>
                 <button
                   onClick={() => handleQualify('disqualified')}
@@ -477,7 +477,7 @@ export default function GuidedTriageFlow(props: GuidedTriageFlowProps) {
                   title="Mark as Disqualified (3)"
                 >
                   <XCircle className="w-4 h-4 mr-1.5" />
-                  Disqualify
+                  {currentDomain?.qualificationStatus === 'disqualified' ? 'Confirm Disqualified' : 'Disqualify'}
                 </button>
               </div>
               
@@ -582,8 +582,11 @@ export default function GuidedTriageFlow(props: GuidedTriageFlowProps) {
         ) : (
           <div className="h-full flex gap-4 p-4">
             {/* Left Sidebar - Filters */}
-            <div className="w-64 bg-white rounded-lg shadow-sm p-4 overflow-y-auto">
-              <h3 className="text-sm font-medium text-gray-900 mb-3">Filters</h3>
+            <div className="w-64 bg-white rounded-lg shadow-sm flex flex-col">
+              <div className="p-4 border-b">
+                <h3 className="text-sm font-medium text-gray-900">Filters</h3>
+              </div>
+              <div className="flex-1 p-4 overflow-y-auto flex flex-col">
               
               {/* Search */}
               <div className="mb-4">
@@ -613,12 +616,12 @@ export default function GuidedTriageFlow(props: GuidedTriageFlowProps) {
               
               {/* Keywords Filter */}
               {data.keywords.length > 0 && (
-                <div className="mb-4">
+                <div className="flex-1 flex flex-col min-h-0">
                   <div className="flex items-center justify-between mb-2">
                     <h4 className="text-xs font-medium text-gray-700 uppercase">Keywords</h4>
                     <span className="text-xs text-gray-400">({data.keywords.length})</span>
                   </div>
-                  <div className="space-y-1 max-h-60 overflow-y-auto">
+                  <div className="space-y-1 flex-1 overflow-y-auto pr-2">
                     {data.keywords.map((keyword, idx) => {
                       const matchCount = data.dataForSeoResults?.allKeywords.filter(kw => 
                         kw.keyword.toLowerCase().includes(keyword.toLowerCase())
@@ -661,12 +664,22 @@ export default function GuidedTriageFlow(props: GuidedTriageFlowProps) {
                 <div>
                   <div className="flex items-center justify-between mb-2">
                     <h4 className="text-xs font-medium text-gray-700 uppercase">Common Terms</h4>
-                    <button
-                      onClick={() => setSelectedFilters([])}
-                      className="text-xs text-red-600 hover:text-red-700"
-                    >
-                      Clear
-                    </button>
+                    <div className="flex gap-2">
+                      <button
+                        onClick={() => setSelectedFilters(smartFilters)}
+                        className="text-xs text-indigo-600 hover:text-indigo-700"
+                      >
+                        Select All
+                      </button>
+                      {selectedFilters.length > 0 && (
+                        <button
+                          onClick={() => setSelectedFilters([])}
+                          className="text-xs text-red-600 hover:text-red-700"
+                        >
+                          Clear
+                        </button>
+                      )}
+                    </div>
                   </div>
                   <div className="flex flex-wrap gap-1">
                     {smartFilters.map((filter, idx) => {
@@ -700,6 +713,7 @@ export default function GuidedTriageFlow(props: GuidedTriageFlowProps) {
                   </div>
                 </div>
               )}
+              </div>
             </div>
             
             {/* Center Column - Keywords Data */}
@@ -1015,9 +1029,9 @@ export default function GuidedTriageFlow(props: GuidedTriageFlowProps) {
                         {showFullAiReasoning ? 'Show less' : 'Show more'}
                       </button>
                     </h3>
-                    <div className="bg-blue-50 rounded-lg p-4">
+                    <div className="bg-blue-50 rounded-lg p-4 max-h-96 overflow-y-auto">
                       <p className={`text-sm text-gray-700 whitespace-pre-wrap leading-relaxed ${
-                        showFullAiReasoning ? '' : 'line-clamp-6'
+                        showFullAiReasoning ? '' : 'line-clamp-[18]'
                       }`}>
                         {data.aiQualification.reasoning}
                       </p>
