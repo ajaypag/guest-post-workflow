@@ -1085,43 +1085,64 @@ export default function GuidedTriageFlow(props: GuidedTriageFlowProps) {
                 
                 {/* Target Pages Selection */}
                 {data.targetPages.length > 0 && (
-                  <div className="bg-white rounded-lg p-4 shadow-sm">
-                    <button
-                      onClick={() => setIsTargetPagesExpanded(!isTargetPagesExpanded)}
-                      className="w-full flex items-center justify-between text-sm font-medium text-gray-500 uppercase tracking-wider mb-3 hover:text-gray-700"
-                    >
-                      <div className="flex items-center gap-2">
-                        <Target className="w-4 h-4" />
-                        Target Pages
-                        {selectedTargetPages.length > 0 && (
-                          <span className="bg-indigo-100 text-indigo-600 px-2 py-0.5 rounded text-xs normal-case">
-                            {selectedTargetPages.length} selected
-                          </span>
-                        )}
-                      </div>
-                      <ChevronDown className={`w-4 h-4 transition-transform ${isTargetPagesExpanded ? 'rotate-180' : ''}`} />
-                    </button>
-                    {isTargetPagesExpanded && (
-                      <div className="space-y-2 max-h-64 overflow-y-auto">
-                        {data.targetPages.map(page => (
-                          <label key={page.id} className="flex items-start gap-3 p-2 hover:bg-gray-50 rounded-lg cursor-pointer">
-                            <input
-                              type="checkbox"
-                              checked={selectedTargetPages.includes(page.id)}
-                              onChange={(e) => {
-                                if (e.target.checked) {
-                                  setSelectedTargetPages([...selectedTargetPages, page.id]);
-                                } else {
-                                  setSelectedTargetPages(selectedTargetPages.filter(id => id !== page.id));
-                                }
-                              }}
-                              className="mt-1 rounded border-gray-300 text-indigo-600 focus:ring-indigo-500"
-                            />
-                            <span className="text-sm text-gray-700">{page.url}</span>
-                          </label>
-                        ))}
-                      </div>
-                    )}
+                  <div className="bg-white rounded-lg p-4 shadow-sm flex flex-col">
+                    <h3 className="text-sm font-medium text-gray-500 uppercase tracking-wider mb-3 flex items-center gap-2">
+                      <Target className="w-4 h-4" />
+                      Target Pages
+                      {selectedTargetPages.length > 0 && (
+                        <span className="bg-indigo-100 text-indigo-600 px-2 py-0.5 rounded text-xs normal-case">
+                          {selectedTargetPages.length} selected
+                        </span>
+                      )}
+                    </h3>
+                    <div className="flex-1 flex flex-col">
+                      {/* Calculate how many items to show based on whether AI reasoning exists */}
+                      {(() => {
+                        // Roughly estimate how many items fit in available space
+                        const hasAIReasoning = !!data.aiQualification;
+                        const baseItemsToShow = hasAIReasoning ? 4 : 8; // Show fewer if AI reasoning takes space
+                        const itemsToShow = isTargetPagesExpanded ? data.targetPages.length : Math.min(baseItemsToShow, data.targetPages.length);
+                        
+                        return (
+                          <>
+                            <div className={`space-y-2 ${isTargetPagesExpanded ? 'overflow-y-auto max-h-96' : ''}`}>
+                              {data.targetPages.slice(0, itemsToShow).map(page => (
+                                <label key={page.id} className="flex items-start gap-3 p-2 hover:bg-gray-50 rounded-lg cursor-pointer">
+                                  <input
+                                    type="checkbox"
+                                    checked={selectedTargetPages.includes(page.id)}
+                                    onChange={(e) => {
+                                      if (e.target.checked) {
+                                        setSelectedTargetPages([...selectedTargetPages, page.id]);
+                                      } else {
+                                        setSelectedTargetPages(selectedTargetPages.filter(id => id !== page.id));
+                                      }
+                                    }}
+                                    className="mt-1 rounded border-gray-300 text-indigo-600 focus:ring-indigo-500"
+                                  />
+                                  <span className="text-sm text-gray-700 line-clamp-1">{page.url}</span>
+                                </label>
+                              ))}
+                            </div>
+                            
+                            {/* Show expand button if there are more items */}
+                            {data.targetPages.length > baseItemsToShow && (
+                              <button
+                                onClick={() => setIsTargetPagesExpanded(!isTargetPagesExpanded)}
+                                className="mt-2 w-full text-left px-2 py-1 text-sm text-indigo-600 hover:text-indigo-700 font-medium flex items-center justify-center gap-1 border-t pt-2"
+                              >
+                                {isTargetPagesExpanded ? (
+                                  <>Show less</>
+                                ) : (
+                                  <>Show {data.targetPages.length - baseItemsToShow} more</>
+                                )}
+                                <ChevronDown className={`w-4 h-4 transition-transform ${isTargetPagesExpanded ? 'rotate-180' : ''}`} />
+                              </button>
+                            )}
+                          </>
+                        );
+                      })()}
+                    </div>
                   </div>
                 )}
                 
