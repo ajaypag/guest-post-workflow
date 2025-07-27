@@ -197,7 +197,7 @@ export default function DataForSeoAuditPage() {
         </Link>
         
         <h1 className="text-3xl font-bold text-gray-900">DataForSEO API Audit</h1>
-        <p className="text-gray-600 mt-2">Review API calls, task IDs, payloads, and errors</p>
+        <p className="text-gray-600 mt-2">Review logged API calls, task IDs, payloads, and errors from our database</p>
       </div>
 
       {/* Migration Notice */}

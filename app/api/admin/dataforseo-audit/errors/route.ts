@@ -1,66 +1,60 @@
 import { NextRequest, NextResponse } from 'next/server';
+import { db } from '@/lib/db/connection';
+import { sql } from 'drizzle-orm';
 
 export async function POST(request: NextRequest) {
   try {
     const { datetime_from, datetime_to } = await request.json();
     
-    if (!process.env.DATAFORSEO_LOGIN || !process.env.DATAFORSEO_PASSWORD) {
-      return NextResponse.json(
-        { error: 'DataForSEO credentials not configured' },
-        { status: 500 }
-      );
+    // Fetch logged errors from our database
+    const result = await db.execute(sql`
+      SELECT 
+        l.*,
+        bd.domain as domain_name,
+        c.name as client_name
+      FROM dataforseo_api_logs l
+      LEFT JOIN bulk_analysis_domains bd ON l.domain_id = bd.id
+      LEFT JOIN clients c ON l.client_id = c.id
+      WHERE l.requested_at >= ${datetime_from}::timestamp
+        AND l.requested_at <= ${datetime_to}::timestamp
+        AND (l.error_message IS NOT NULL OR l.response_status != 200)
+      ORDER BY l.requested_at DESC
+      LIMIT 1000
+    `).catch((err) => {
+      console.error('Database query error:', err);
+      return null;
+    });
+
+    if (!result || !result.rows) {
+      return NextResponse.json({ 
+        errors: [],
+        total: 0,
+        cost: 0,
+        error: 'Unable to fetch logged errors'
+      });
     }
 
-    const auth = Buffer.from(
-      `${process.env.DATAFORSEO_LOGIN}:${process.env.DATAFORSEO_PASSWORD}`
-    ).toString('base64');
-
-    // Prepare request body
-    const requestBody = [{
-      limit: 1000,
-      datetime_from,
-      datetime_to,
-      // We can filter by specific functions if needed
-      // filtered_function: "dataforseo_labs/google/ranked_keywords/live"
-    }];
-
-    console.log('Fetching DataForSEO errors:', requestBody);
-
-    const response = await fetch(
-      'https://api.dataforseo.com/v3/dataforseo_labs/errors',
-      {
-        method: 'POST',
-        headers: {
-          'Authorization': `Basic ${auth}`,
-          'Content-Type': 'application/json',
-        },
-        body: JSON.stringify(requestBody),
-      }
-    );
-
-    if (!response.ok) {
-      const errorText = await response.text();
-      console.error('DataForSEO API error:', errorText);
-      return NextResponse.json(
-        { error: `DataForSEO API error: ${response.status}` },
-        { status: response.status }
-      );
-    }
-
-    const data = await response.json();
-    console.log(`Retrieved ${data.tasks?.[0]?.result?.length || 0} errors`);
-
-    // Extract errors from the response
-    const errors = data.tasks?.[0]?.result || [];
+    // Transform database records to match the expected error format
+    const errors = result.rows.map((row: any) => ({
+      id: row.task_id || row.id,
+      datetime: row.requested_at,
+      function: 'dataforseo_labs/google/ranked_keywords/live',
+      error_code: row.response_status || 40000,
+      error_message: row.error_message || `HTTP ${row.response_status} Error`,
+      http_url: row.endpoint,
+      http_method: 'POST',
+      http_code: row.response_status || 500,
+      http_response: row.error_message || 'Request failed'
+    }));
     
     return NextResponse.json({ 
       errors,
       total: errors.length,
-      cost: data.cost || 0
+      cost: 0
     });
 
   } catch (error: any) {
-    console.error('DataForSEO errors list error:', error);
+    console.error('Failed to fetch logged errors:', error);
     return NextResponse.json(
       { error: 'Failed to fetch errors list', details: error.message },
       { status: 500 }
