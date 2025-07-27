@@ -90,7 +90,7 @@ export default function BulkAnalysisPage() {
   }>({ isOpen: false, domainId: '', domain: '', clientId: '', initialResults: [], totalFound: 0 });
   
   // Experimental features toggle - shown by default
-  const [hideExperimentalFeatures, setHideExperimentalFeatures] = useState(false);
+  // DataForSEO and AI features are now production-ready and always shown
   
   // Multi-select state for bulk operations
   const [selectedDomains, setSelectedDomains] = useState<Set<string>>(new Set());
@@ -133,10 +133,7 @@ export default function BulkAnalysisPage() {
 
   // Load experimental features preference from localStorage
   useEffect(() => {
-    const stored = localStorage.getItem('hideExperimentalFeatures');
-    if (stored !== null) {
-      setHideExperimentalFeatures(stored === 'true');
-    }
+    // DataForSEO and AI features are always enabled
   }, []);
 
   useEffect(() => {
@@ -1243,27 +1240,7 @@ export default function BulkAnalysisPage() {
                   </div>
                 </div>
 
-                {/* Experimental Features Toggle */}
-                <div className="flex items-center gap-4">
-                  <label className="flex items-center gap-2 text-sm">
-                    <input
-                      type="checkbox"
-                      checked={!hideExperimentalFeatures}
-                      onChange={(e) => {
-                        const hide = !e.target.checked;
-                        setHideExperimentalFeatures(hide);
-                        localStorage.setItem('hideExperimentalFeatures', hide.toString());
-                      }}
-                      className="rounded border-gray-300 text-indigo-600 focus:ring-indigo-500"
-                    />
-                    <span className="font-medium">Show Experimental Features</span>
-                  </label>
-                  {!hideExperimentalFeatures && (
-                    <span className="text-xs text-gray-500">
-                      Enables DataForSEO keyword analysis
-                    </span>
-                  )}
-                </div>
+                {/* DataForSEO and AI features are now always enabled */}
 
                 {/* Filter Sections */}
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
@@ -1424,29 +1401,25 @@ export default function BulkAnalysisPage() {
                     </div>
                     <div className="flex items-center gap-2">
                       {/* Master qualification UI removed - moved to project detail page */}
-                      {!hideExperimentalFeatures && (
-                        <>
-                          {/* Individual buttons for manual control */}
-                          <div className="flex items-center gap-1">
-                            <button
-                              onClick={startBulkDataForSeoAnalysis}
-                              disabled={bulkAnalysisRunning}
-                              className="inline-flex items-center px-3 py-2 bg-indigo-600 text-white text-xs rounded hover:bg-indigo-700 disabled:opacity-50 disabled:cursor-not-allowed"
-                              title="Run DataForSEO only"
-                            >
-                              <Search className="w-3 h-3" />
-                            </button>
-                            <button
-                              onClick={startAIQualification}
-                              disabled={bulkAnalysisRunning || loading}
-                              className="inline-flex items-center px-3 py-2 bg-purple-600 text-white text-xs rounded hover:bg-purple-700 disabled:opacity-50 disabled:cursor-not-allowed"
-                              title="Run AI qualification only"
-                            >
-                              <Sparkles className="w-3 h-3" />
-                            </button>
-                          </div>
-                        </>
-                      )}
+                      {/* Individual buttons for manual control */}
+                      <div className="flex items-center gap-1">
+                        <button
+                          onClick={startBulkDataForSeoAnalysis}
+                          disabled={bulkAnalysisRunning}
+                          className="inline-flex items-center px-3 py-2 bg-indigo-600 text-white text-xs rounded hover:bg-indigo-700 disabled:opacity-50 disabled:cursor-not-allowed"
+                          title="Run DataForSEO only"
+                        >
+                          <Search className="w-3 h-3" />
+                        </button>
+                        <button
+                          onClick={startAIQualification}
+                          disabled={bulkAnalysisRunning || loading}
+                          className="inline-flex items-center px-3 py-2 bg-purple-600 text-white text-xs rounded hover:bg-purple-700 disabled:opacity-50 disabled:cursor-not-allowed"
+                          title="Run AI qualification only"
+                        >
+                          <Sparkles className="w-3 h-3" />
+                        </button>
+                      </div>
                       <button
                         onClick={() => {
                           setMessage('🚧 Export selected domains coming soon!');
@@ -1592,7 +1565,7 @@ export default function BulkAnalysisPage() {
                 return (
                   <>
                     {/* Quick Actions when no domains selected */}
-                    {selectedDomains.size === 0 && filteredDomains.length > 0 && !hideExperimentalFeatures && (
+                    {selectedDomains.size === 0 && filteredDomains.length > 0 && (
                       <div className="mb-4 p-3 bg-purple-50 border border-purple-200 rounded-lg">
                         <div className="flex items-center justify-between">
                           <p className="text-sm text-purple-800">
@@ -1664,7 +1637,6 @@ export default function BulkAnalysisPage() {
                       }}
                       onAIQualifySingle={aiQualifySingleDomain}
                       selectedPositionRange={selectedPositionRange}
-                      hideExperimentalFeatures={hideExperimentalFeatures}
                       loading={loading}
                       keywordInputMode={keywordInputMode}
                       manualKeywords={manualKeywords}

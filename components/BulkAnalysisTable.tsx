@@ -40,7 +40,6 @@ interface BulkAnalysisTableProps {
   onAnalyzeWithDataForSeo: (domain: BulkAnalysisDomain) => void;
   onUpdateNotes: (domainId: string, notes: string) => void;
   selectedPositionRange: string;
-  hideExperimentalFeatures: boolean;
   loading: boolean;
   keywordInputMode: 'target-pages' | 'manual';
   manualKeywords?: string;
@@ -719,7 +718,7 @@ export default function BulkAnalysisTable(props: BulkAnalysisTableProps) {
                     <div className={`flex items-center ${props.triageMode ? 'gap-1' : 'gap-2'}`}>
                       {domain.qualificationStatus === 'pending' ? (
                         <div className={`flex ${props.triageMode ? 'gap-1' : 'gap-1'}`}>
-                          {!domain.aiQualificationReasoning && props.onAIQualifySingle && !props.hideExperimentalFeatures && (
+                          {!domain.aiQualificationReasoning && props.onAIQualifySingle && (
                             <button
                               onClick={(e) => {
                                 e.stopPropagation();
@@ -1055,8 +1054,7 @@ export default function BulkAnalysisTable(props: BulkAnalysisTableProps) {
                                     No keyword data available. Click below to analyze keywords.
                                   </p>
                                   <div className="flex justify-center gap-3">
-                                    {!props.hideExperimentalFeatures && (
-                                      <button
+                                    <button
                                         onClick={(e) => {
                                           e.stopPropagation();
                                           runDataForSeoAnalysisInline(domain);
@@ -1067,7 +1065,6 @@ export default function BulkAnalysisTable(props: BulkAnalysisTableProps) {
                                         <Search className="w-4 h-4 mr-2" />
                                         Analyze Keywords
                                       </button>
-                                    )}
                                     {data.keywords.groups.map((group, idx) => (
                                       <a
                                         key={idx}

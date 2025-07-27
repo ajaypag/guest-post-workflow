@@ -84,8 +84,7 @@ export default function ProjectDetailPage() {
     cacheInfo?: any;
   }>({ isOpen: false, domainId: '', domain: '', clientId: '', initialResults: [], totalFound: 0 });
   
-  // Experimental features toggle - shown by default
-  const [hideExperimentalFeatures, setHideExperimentalFeatures] = useState(false);
+  // DataForSEO and AI features are now production-ready and always shown
   
   // Multi-select state for bulk operations
   const [selectedDomains, setSelectedDomains] = useState<Set<string>>(new Set());
@@ -139,13 +138,7 @@ export default function ProjectDetailPage() {
     setDisplayLimit(ITEMS_PER_PAGE);
   }, [statusFilter, workflowFilter, searchQuery]);
 
-  // Load experimental features preference from localStorage
-  useEffect(() => {
-    const stored = localStorage.getItem('hideExperimentalFeatures');
-    if (stored !== null) {
-      setHideExperimentalFeatures(stored === 'true');
-    }
-  }, []);
+  // DataForSEO and AI features are always enabled
 
   useEffect(() => {
     loadClient();
@@ -1699,27 +1692,7 @@ anotherdomain.com"
                   </div>
                 </div>
 
-                {/* Experimental Features Toggle */}
-                <div className="flex items-center gap-4">
-                  <label className="flex items-center gap-2 text-sm">
-                    <input
-                      type="checkbox"
-                      checked={!hideExperimentalFeatures}
-                      onChange={(e) => {
-                        const hide = !e.target.checked;
-                        setHideExperimentalFeatures(hide);
-                        localStorage.setItem('hideExperimentalFeatures', hide.toString());
-                      }}
-                      className="rounded border-gray-300 text-indigo-600 focus:ring-indigo-500"
-                    />
-                    <span className="font-medium">Show Experimental Features</span>
-                  </label>
-                  {!hideExperimentalFeatures && (
-                    <span className="text-xs text-gray-500">
-                      Enables DataForSEO keyword analysis
-                    </span>
-                  )}
-                </div>
+                {/* DataForSEO and AI features are now always enabled */}
 
                 {/* Filter Sections */}
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
@@ -1890,45 +1863,41 @@ anotherdomain.com"
                       </div>
                     </div>
                     <div className="flex items-center gap-2">
-                      {!hideExperimentalFeatures && (
-                        <>
-                          {/* Master Qualification Button */}
-                          <button
-                            onClick={startMasterQualification}
-                            disabled={bulkAnalysisRunning || loading || masterQualificationRunning}
-                            className="inline-flex items-center px-4 py-2 bg-gradient-to-r from-indigo-600 to-purple-600 text-white text-sm rounded-lg hover:from-indigo-700 hover:to-purple-700 disabled:opacity-50 disabled:cursor-not-allowed shadow-md"
-                          >
-                            {masterQualificationRunning ? (
-                              <svg className="w-4 h-4 mr-2 animate-spin" fill="none" viewBox="0 0 24 24">
-                                <circle cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4" className="opacity-25"></circle>
-                                <path fill="currentColor" className="opacity-75" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
-                              </svg>
-                            ) : (
-                              <Zap className="w-4 h-4 mr-2" />
-                            )}
-                            {masterQualificationRunning ? 'Qualifying...' : 'Auto-Qualify Selected'}
-                          </button>
-                          {/* Individual buttons for manual control */}
-                          <div className="flex items-center gap-1 border-l pl-2 ml-2">
-                            <button
-                              onClick={startBulkDataForSeoAnalysis}
-                              disabled={bulkAnalysisRunning}
-                              className="inline-flex items-center px-3 py-2 bg-indigo-600 text-white text-xs rounded hover:bg-indigo-700 disabled:opacity-50 disabled:cursor-not-allowed"
-                              title="Run DataForSEO only"
-                            >
-                              <Search className="w-3 h-3" />
-                            </button>
-                            <button
-                              onClick={startAIQualification}
-                              disabled={bulkAnalysisRunning || loading}
-                              className="inline-flex items-center px-3 py-2 bg-purple-600 text-white text-xs rounded hover:bg-purple-700 disabled:opacity-50 disabled:cursor-not-allowed"
-                              title="Run AI qualification only"
-                            >
-                              <Sparkles className="w-3 h-3" />
-                            </button>
-                          </div>
-                        </>
-                      )}
+                      {/* Master Qualification Button */}
+                      <button
+                        onClick={startMasterQualification}
+                        disabled={bulkAnalysisRunning || loading || masterQualificationRunning}
+                        className="inline-flex items-center px-4 py-2 bg-gradient-to-r from-indigo-600 to-purple-600 text-white text-sm rounded-lg hover:from-indigo-700 hover:to-purple-700 disabled:opacity-50 disabled:cursor-not-allowed shadow-md"
+                      >
+                        {masterQualificationRunning ? (
+                          <svg className="w-4 h-4 mr-2 animate-spin" fill="none" viewBox="0 0 24 24">
+                            <circle cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4" className="opacity-25"></circle>
+                            <path fill="currentColor" className="opacity-75" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
+                          </svg>
+                        ) : (
+                          <Zap className="w-4 h-4 mr-2" />
+                        )}
+                        {masterQualificationRunning ? 'Qualifying...' : 'Auto-Qualify Selected'}
+                      </button>
+                      {/* Individual buttons for manual control */}
+                      <div className="flex items-center gap-1 border-l pl-2 ml-2">
+                        <button
+                          onClick={startBulkDataForSeoAnalysis}
+                          disabled={bulkAnalysisRunning}
+                          className="inline-flex items-center px-3 py-2 bg-indigo-600 text-white text-xs rounded hover:bg-indigo-700 disabled:opacity-50 disabled:cursor-not-allowed"
+                          title="Run DataForSEO only"
+                        >
+                          <Search className="w-3 h-3" />
+                        </button>
+                        <button
+                          onClick={startAIQualification}
+                          disabled={bulkAnalysisRunning || loading}
+                          className="inline-flex items-center px-3 py-2 bg-purple-600 text-white text-xs rounded hover:bg-purple-700 disabled:opacity-50 disabled:cursor-not-allowed"
+                          title="Run AI qualification only"
+                        >
+                          <Sparkles className="w-3 h-3" />
+                        </button>
+                      </div>
                       <button
                         onClick={handleExportSelected}
                         disabled={loading}
@@ -2164,7 +2133,7 @@ anotherdomain.com"
                 return (
                   <>
                     {/* Quick Actions when no domains selected */}
-                    {selectedDomains.size === 0 && filteredDomains.length > 0 && !hideExperimentalFeatures && (
+                    {selectedDomains.size === 0 && filteredDomains.length > 0 && (
                       <div className="mb-4 p-3 bg-purple-50 border border-purple-200 rounded-lg">
                         <div className="flex items-center justify-between">
                           <p className="text-sm text-purple-800">
@@ -2236,7 +2205,6 @@ anotherdomain.com"
                       }}
                       onAIQualifySingle={aiQualifySingleDomain}
                       selectedPositionRange={selectedPositionRange}
-                      hideExperimentalFeatures={hideExperimentalFeatures}
                       loading={loading}
                       keywordInputMode={keywordInputMode}
                       manualKeywords={manualKeywords}
