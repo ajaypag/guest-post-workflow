@@ -76,7 +76,6 @@ export default function GuidedTriageFlow(props: GuidedTriageFlowProps) {
   const [keywordSearch, setKeywordSearch] = useState('');
   const [selectedFilters, setSelectedFilters] = useState<string[]>([]);
   const [selectedTargetPages, setSelectedTargetPages] = useState<string[]>([]);
-  const [showFullAiReasoning, setShowFullAiReasoning] = useState(false);
   const [smartFilters, setSmartFilters] = useState<string[]>([]);
   
   // Use all domains passed in (already filtered by parent component)
@@ -265,7 +264,6 @@ export default function GuidedTriageFlow(props: GuidedTriageFlowProps) {
         setKeywordSearch('');
         setSelectedFilters([]);
         setSelectedTargetPages([]);
-        setShowFullAiReasoning(false);
       } else {
         // All done!
         props.onClose();
@@ -617,55 +615,71 @@ export default function GuidedTriageFlow(props: GuidedTriageFlowProps) {
               {/* Common Terms Filter */}
               {smartFilters.length > 0 && (
                 <div className="mb-4">
-                  <div className="flex items-center justify-between mb-2">
-                    <h4 className="text-xs font-medium text-gray-700 uppercase">Common Terms</h4>
-                    <div className="flex gap-2">
-                      <button
-                        onClick={() => setSelectedFilters(smartFilters)}
-                        className="text-xs text-indigo-600 hover:text-indigo-700"
-                      >
-                        Select All
-                      </button>
-                      {selectedFilters.length > 0 && (
-                        <button
-                          onClick={() => setSelectedFilters([])}
-                          className="text-xs text-red-600 hover:text-red-700"
-                        >
-                          Clear
-                        </button>
-                      )}
-                    </div>
-                  </div>
-                  <div className="flex flex-wrap gap-1">
-                    {smartFilters.map((filter, idx) => {
+                  {(() => {
+                    // Check if any smart filters have rankings
+                    const visibleFilters = smartFilters.filter(filter => {
                       const matchCount = data.dataForSeoResults?.allKeywords.filter(kw => 
                         kw.keyword.toLowerCase().includes(filter.toLowerCase())
                       ).length || 0;
-                      
-                      if (matchCount === 0) return null;
-                      
-                      return (
-                        <button
-                          key={idx}
-                          onClick={() => {
-                            if (selectedFilters.includes(filter)) {
-                              setSelectedFilters(selectedFilters.filter(f => f !== filter));
-                            } else {
-                              setSelectedFilters([...selectedFilters, filter]);
-                            }
-                          }}
-                          className={`px-2 py-1 text-xs rounded-md transition-colors ${
-                            selectedFilters.includes(filter)
-                              ? 'bg-indigo-600 text-white hover:bg-indigo-700' 
-                              : 'bg-gray-100 hover:bg-gray-200 text-gray-700'
-                          }`}
-                          title={`${matchCount} matches`}
-                        >
-                          {filter} ({matchCount})
-                        </button>
-                      );
-                    })}
-                  </div>
+                      return matchCount > 0;
+                    });
+                    
+                    if (visibleFilters.length === 0) return null;
+                    
+                    return (
+                      <>
+                        <div className="flex items-center justify-between mb-2">
+                          <h4 className="text-xs font-medium text-gray-700 uppercase">Common Terms</h4>
+                          <div className="flex gap-2">
+                            <button
+                              onClick={() => setSelectedFilters(visibleFilters)}
+                              className="text-xs text-indigo-600 hover:text-indigo-700"
+                            >
+                              Select All
+                            </button>
+                            {selectedFilters.length > 0 && (
+                              <button
+                                onClick={() => setSelectedFilters([])}
+                                className="text-xs text-red-600 hover:text-red-700"
+                              >
+                                Clear
+                              </button>
+                            )}
+                          </div>
+                        </div>
+                        <div className="flex flex-wrap gap-1">
+                          {smartFilters.map((filter, idx) => {
+                            const matchCount = data.dataForSeoResults?.allKeywords.filter(kw => 
+                              kw.keyword.toLowerCase().includes(filter.toLowerCase())
+                            ).length || 0;
+                            
+                            if (matchCount === 0) return null;
+                            
+                            return (
+                              <button
+                                key={idx}
+                                onClick={() => {
+                                  if (selectedFilters.includes(filter)) {
+                                    setSelectedFilters(selectedFilters.filter(f => f !== filter));
+                                  } else {
+                                    setSelectedFilters([...selectedFilters, filter]);
+                                  }
+                                }}
+                                className={`px-2 py-1 text-xs rounded-md transition-colors ${
+                                  selectedFilters.includes(filter)
+                                    ? 'bg-indigo-600 text-white hover:bg-indigo-700' 
+                                    : 'bg-gray-100 hover:bg-gray-200 text-gray-700'
+                                }`}
+                                title={`${matchCount} matches`}
+                              >
+                                {filter} ({matchCount})
+                              </button>
+                            );
+                          })}
+                        </div>
+                      </>
+                    );
+                  })()}
                 </div>
               )}
               
@@ -1045,22 +1059,12 @@ export default function GuidedTriageFlow(props: GuidedTriageFlowProps) {
                 {/* AI Analysis */}
                 {data.aiQualification && (
                   <div className="bg-white rounded-lg p-4 shadow-sm">
-                    <h3 className="text-sm font-medium text-gray-500 uppercase tracking-wider mb-3 flex items-center justify-between">
-                      <span className="flex items-center gap-2">
-                        <Sparkles className="w-4 h-4" />
-                        AI Reasoning
-                      </span>
-                      <button
-                        onClick={() => setShowFullAiReasoning(!showFullAiReasoning)}
-                        className="text-xs text-indigo-600 hover:text-indigo-700"
-                      >
-                        {showFullAiReasoning ? 'Show less' : 'Show more'}
-                      </button>
+                    <h3 className="text-sm font-medium text-gray-500 uppercase tracking-wider mb-3 flex items-center gap-2">
+                      <Sparkles className="w-4 h-4" />
+                      AI Reasoning
                     </h3>
                     <div className="bg-blue-50 rounded-lg p-4 max-h-96 overflow-y-auto">
-                      <p className={`text-sm text-gray-700 whitespace-pre-wrap leading-relaxed ${
-                        showFullAiReasoning ? '' : 'line-clamp-[18]'
-                      }`}>
+                      <p className="text-sm text-gray-700 whitespace-pre-wrap leading-relaxed">
                         {data.aiQualification.reasoning}
                       </p>
                     </div>
