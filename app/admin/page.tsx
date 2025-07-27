@@ -54,6 +54,14 @@ export default function AdminDashboard() {
       iconColor: 'text-emerald-600'
     },
     {
+      title: 'Add Selected Target Page',
+      description: 'Add selected_target_page_id column to bulk_analysis_domains table',
+      icon: Database,
+      href: '/admin/add-selected-target-page',
+      color: 'bg-violet-50 border-violet-200 text-violet-700',
+      iconColor: 'text-violet-600'
+    },
+    {
       title: 'Diagnostics',
       description: 'Run comprehensive system diagnostics and health checks',
       icon: Activity,

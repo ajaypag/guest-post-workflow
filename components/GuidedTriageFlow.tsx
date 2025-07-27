@@ -20,7 +20,8 @@ import {
   Brain,
   User,
   Clock,
-  RefreshCw
+  RefreshCw,
+  ChevronDown
 } from 'lucide-react';
 import { BulkAnalysisDomain } from '@/types/bulk-analysis';
 import { TargetPage } from '@/types/user';
@@ -77,6 +78,7 @@ export default function GuidedTriageFlow(props: GuidedTriageFlowProps) {
   const [selectedFilters, setSelectedFilters] = useState<string[]>([]);
   const [selectedTargetPages, setSelectedTargetPages] = useState<string[]>([]);
   const [smartFilters, setSmartFilters] = useState<string[]>([]);
+  const [isTargetPagesExpanded, setIsTargetPagesExpanded] = useState(false);
   
   // Use all domains passed in (already filtered by parent component)
   const reviewDomains = props.domains;
@@ -1065,7 +1067,7 @@ export default function GuidedTriageFlow(props: GuidedTriageFlowProps) {
             </div>
             
             {/* Right Column - Metadata */}
-            <div className="w-80 space-y-4 overflow-y-auto">
+            <div className="w-80 space-y-4">
                 {/* AI Analysis */}
                 {data.aiQualification && (
                   <div className="bg-white rounded-lg p-4 shadow-sm">
@@ -1084,28 +1086,42 @@ export default function GuidedTriageFlow(props: GuidedTriageFlowProps) {
                 {/* Target Pages Selection */}
                 {data.targetPages.length > 0 && (
                   <div className="bg-white rounded-lg p-4 shadow-sm">
-                    <h3 className="text-sm font-medium text-gray-500 uppercase tracking-wider mb-3">
-                      Target Pages
-                    </h3>
-                    <div className="space-y-2">
-                      {data.targetPages.map(page => (
-                        <label key={page.id} className="flex items-start gap-3 p-2 hover:bg-gray-50 rounded-lg cursor-pointer">
-                          <input
-                            type="checkbox"
-                            checked={selectedTargetPages.includes(page.id)}
-                            onChange={(e) => {
-                              if (e.target.checked) {
-                                setSelectedTargetPages([...selectedTargetPages, page.id]);
-                              } else {
-                                setSelectedTargetPages(selectedTargetPages.filter(id => id !== page.id));
-                              }
-                            }}
-                            className="mt-1 rounded border-gray-300 text-indigo-600 focus:ring-indigo-500"
-                          />
-                          <span className="text-sm text-gray-700">{page.url}</span>
-                        </label>
-                      ))}
-                    </div>
+                    <button
+                      onClick={() => setIsTargetPagesExpanded(!isTargetPagesExpanded)}
+                      className="w-full flex items-center justify-between text-sm font-medium text-gray-500 uppercase tracking-wider mb-3 hover:text-gray-700"
+                    >
+                      <div className="flex items-center gap-2">
+                        <Target className="w-4 h-4" />
+                        Target Pages
+                        {selectedTargetPages.length > 0 && (
+                          <span className="bg-indigo-100 text-indigo-600 px-2 py-0.5 rounded text-xs normal-case">
+                            {selectedTargetPages.length} selected
+                          </span>
+                        )}
+                      </div>
+                      <ChevronDown className={`w-4 h-4 transition-transform ${isTargetPagesExpanded ? 'rotate-180' : ''}`} />
+                    </button>
+                    {isTargetPagesExpanded && (
+                      <div className="space-y-2 max-h-64 overflow-y-auto">
+                        {data.targetPages.map(page => (
+                          <label key={page.id} className="flex items-start gap-3 p-2 hover:bg-gray-50 rounded-lg cursor-pointer">
+                            <input
+                              type="checkbox"
+                              checked={selectedTargetPages.includes(page.id)}
+                              onChange={(e) => {
+                                if (e.target.checked) {
+                                  setSelectedTargetPages([...selectedTargetPages, page.id]);
+                                } else {
+                                  setSelectedTargetPages(selectedTargetPages.filter(id => id !== page.id));
+                                }
+                              }}
+                              className="mt-1 rounded border-gray-300 text-indigo-600 focus:ring-indigo-500"
+                            />
+                            <span className="text-sm text-gray-700">{page.url}</span>
+                          </label>
+                        ))}
+                      </div>
+                    )}
                   </div>
                 )}
                 
