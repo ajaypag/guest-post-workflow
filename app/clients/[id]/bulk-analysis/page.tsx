@@ -499,7 +499,12 @@ export default function BulkAnalysisPage() {
   const createWorkflow = async (domain: BulkAnalysisDomain) => {
     // Navigate to workflow creation with pre-filled domain and notes
     const domainNotes = domain.notes || notes[domain.id] || '';
-    router.push(`/workflow/new?clientId=${client?.id}&guestPostSite=${encodeURIComponent(domain.domain)}&notes=${encodeURIComponent(domainNotes)}`);
+    const targetPageId = domain.selectedTargetPageId || '';
+    let url = `/workflow/new?clientId=${client?.id}&guestPostSite=${encodeURIComponent(domain.domain)}&notes=${encodeURIComponent(domainNotes)}`;
+    if (targetPageId) {
+      url += `&targetPageId=${targetPageId}`;
+    }
+    router.push(url);
   };
 
   const aiQualifySingleDomain = async (domainId: string) => {

@@ -181,7 +181,8 @@ export class BulkAnalysisService {
     status: 'pending' | 'high_quality' | 'average_quality' | 'disqualified',
     userId: string,
     notes?: string,
-    isManual?: boolean
+    isManual?: boolean,
+    selectedTargetPageId?: string
   ): Promise<BulkAnalysisDomain> {
     try {
       // First, get the current domain to check if it has AI reasoning
@@ -201,6 +202,7 @@ export class BulkAnalysisService {
         checkedAt: new Date(),
         notes: notes || null,
         updatedAt: new Date(),
+        ...(selectedTargetPageId && { selectedTargetPageId }),
       };
 
       // If this is a manual change to an AI qualification

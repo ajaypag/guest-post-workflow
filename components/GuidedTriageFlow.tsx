@@ -234,20 +234,30 @@ export default function GuidedTriageFlow(props: GuidedTriageFlowProps) {
     
     setSaving(true);
     try {
-      // First save notes if any
+      // Save notes and selected target page
+      const updateData: any = { 
+        status: currentDomain.qualificationStatus, 
+        userId: props.userId
+      };
+      
       if (notes) {
-        const noteResponse = await fetch(`/api/clients/${currentDomain.clientId}/bulk-analysis/${currentDomain.id}`, {
+        updateData.notes = notes;
+      }
+      
+      // Save the first selected target page as the primary one for workflow creation
+      if (selectedTargetPages.length > 0) {
+        updateData.selectedTargetPageId = selectedTargetPages[0];
+      }
+      
+      if (notes || selectedTargetPages.length > 0) {
+        const response = await fetch(`/api/clients/${currentDomain.clientId}/bulk-analysis/${currentDomain.id}`, {
           method: 'PUT',
           headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({ 
-            status: currentDomain.qualificationStatus, 
-            userId: props.userId, 
-            notes: notes 
-          })
+          body: JSON.stringify(updateData)
         });
         
-        if (!noteResponse.ok) {
-          console.error('Failed to save notes');
+        if (!response.ok) {
+          console.error('Failed to save domain data');
         }
       }
       

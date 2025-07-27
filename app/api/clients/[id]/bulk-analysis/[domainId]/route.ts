@@ -32,7 +32,7 @@ export async function PUT(
 ) {
   try {
     const { domainId } = await params;
-    const { status, notes, userId, isManual } = await request.json();
+    const { status, notes, userId, isManual, selectedTargetPageId } = await request.json();
 
     if (!status || !['pending', 'high_quality', 'average_quality', 'disqualified'].includes(status)) {
       return NextResponse.json(
@@ -53,7 +53,8 @@ export async function PUT(
       status,
       userId,
       notes,
-      isManual
+      isManual,
+      selectedTargetPageId
     );
 
     return NextResponse.json({ 

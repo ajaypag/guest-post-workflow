@@ -40,6 +40,7 @@ export const bulkAnalysisDomains = pgTable('bulk_analysis_domains', {
   domain: varchar('domain', { length: 255 }).notNull(),
   qualificationStatus: varchar('qualification_status', { length: 50 }).notNull().default('pending'), // 'pending' | 'high_quality' | 'average_quality' | 'disqualified'
   targetPageIds: jsonb('target_page_ids').notNull().default([]), // Array of target page IDs used for analysis
+  selectedTargetPageId: uuid('selected_target_page_id'), // Selected target page for workflow creation
   keywordCount: integer('keyword_count').default(0),
   checkedBy: uuid('checked_by').references(() => users.id),
   checkedAt: timestamp('checked_at'),
