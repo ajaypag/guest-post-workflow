@@ -63,6 +63,7 @@ export default function ProjectDetailPage() {
   // Filtering options
   const [statusFilter, setStatusFilter] = useState<'all' | 'pending' | 'high_quality' | 'average_quality' | 'disqualified'>('all');
   const [workflowFilter, setWorkflowFilter] = useState<'all' | 'has_workflow' | 'no_workflow'>('all');
+  const [verificationFilter, setVerificationFilter] = useState<'all' | 'human_verified' | 'ai_qualified' | 'unverified'>('all');
   const [searchQuery, setSearchQuery] = useState('');
   const [notes, setNotes] = useState<{ [key: string]: string }>({});
   
@@ -144,7 +145,7 @@ export default function ProjectDetailPage() {
   // Reset pagination when filters change
   useEffect(() => {
     setDisplayLimit(ITEMS_PER_PAGE);
-  }, [statusFilter, workflowFilter, searchQuery]);
+  }, [statusFilter, workflowFilter, verificationFilter, searchQuery]);
 
   // DataForSEO and AI features are always enabled
 
@@ -1182,6 +1183,11 @@ export default function ProjectDetailPage() {
         if (workflowFilter === 'has_workflow' && !domain.hasWorkflow) return false;
         if (workflowFilter === 'no_workflow' && domain.hasWorkflow) return false;
         
+        // Verification filter
+        if (verificationFilter === 'human_verified' && !domain.wasManuallyQualified) return false;
+        if (verificationFilter === 'ai_qualified' && (domain.wasManuallyQualified || domain.qualificationStatus === 'pending')) return false;
+        if (verificationFilter === 'unverified' && domain.qualificationStatus !== 'pending') return false;
+        
         // Search filter
         if (searchQuery && !domain.domain.toLowerCase().includes(searchQuery.toLowerCase())) {
           return false;
@@ -2037,6 +2043,18 @@ anotherdomain.com"
                       <option value="no_workflow">No Workflow</option>
                     </select>
 
+                    {/* Verification Filter */}
+                    <select
+                      value={verificationFilter}
+                      onChange={(e) => setVerificationFilter(e.target.value as 'all' | 'human_verified' | 'ai_qualified' | 'unverified')}
+                      className="border border-gray-300 rounded-lg px-3 py-2 text-sm focus:ring-2 focus:ring-indigo-500"
+                    >
+                      <option value="all">All Verification</option>
+                      <option value="human_verified">Human Verified</option>
+                      <option value="ai_qualified">AI Qualified</option>
+                      <option value="unverified">Unverified</option>
+                    </select>
+
                     {/* Sort By Dropdown */}
                     <div className="flex items-center gap-1 border-l pl-2">
                       <select
@@ -2070,12 +2088,13 @@ anotherdomain.com"
                     </div>
 
                     {/* Clear Filters */}
-                    {(searchQuery || statusFilter !== 'all' || workflowFilter !== 'all') && (
+                    {(searchQuery || statusFilter !== 'all' || workflowFilter !== 'all' || verificationFilter !== 'all') && (
                       <button
                         onClick={() => {
                           setSearchQuery('');
                           setStatusFilter('all');
                           setWorkflowFilter('all');
+                          setVerificationFilter('all');
                         }}
                         className="text-sm text-indigo-600 hover:text-indigo-800"
                       >
@@ -2555,6 +2574,11 @@ anotherdomain.com"
                   if (workflowFilter === 'has_workflow' && !domain.hasWorkflow) return false;
                   if (workflowFilter === 'no_workflow' && domain.hasWorkflow) return false;
                   
+                  // Verification filter
+                  if (verificationFilter === 'human_verified' && !domain.wasManuallyQualified) return false;
+                  if (verificationFilter === 'ai_qualified' && (domain.wasManuallyQualified || domain.qualificationStatus === 'pending')) return false;
+                  if (verificationFilter === 'unverified' && domain.qualificationStatus !== 'pending') return false;
+                  
                   // Search filter
                   if (searchQuery && !domain.domain.toLowerCase().includes(searchQuery.toLowerCase())) return false;
                   
@@ -2708,7 +2732,7 @@ anotherdomain.com"
                       </div>
                       
                       {/* Active Filters Summary */}
-                      {(searchQuery || statusFilter !== 'all' || workflowFilter !== 'all') && (
+                      {(searchQuery || statusFilter !== 'all' || workflowFilter !== 'all' || verificationFilter !== 'all') && (
                         <div className="mt-2 flex items-center justify-center gap-2 text-xs">
                           <span className="text-gray-500">Active filters:</span>
                           {searchQuery && (
@@ -2724,6 +2748,12 @@ anotherdomain.com"
                           {workflowFilter !== 'all' && (
                             <span className="px-2 py-1 bg-purple-100 text-purple-700 rounded">
                               {workflowFilter === 'has_workflow' ? 'Has workflow' : 'No workflow'}
+                            </span>
+                          )}
+                          {verificationFilter !== 'all' && (
+                            <span className="px-2 py-1 bg-amber-100 text-amber-700 rounded">
+                              {verificationFilter === 'human_verified' ? 'Human verified' : 
+                               verificationFilter === 'ai_qualified' ? 'AI qualified' : 'Unverified'}
                             </span>
                           )}
                         </div>
@@ -2774,6 +2804,11 @@ anotherdomain.com"
             // Workflow filter
             if (workflowFilter === 'has_workflow' && !domain.hasWorkflow) return false;
             if (workflowFilter === 'no_workflow' && domain.hasWorkflow) return false;
+            
+            // Verification filter
+            if (verificationFilter === 'human_verified' && !domain.wasManuallyQualified) return false;
+            if (verificationFilter === 'ai_qualified' && (domain.wasManuallyQualified || domain.qualificationStatus === 'pending')) return false;
+            if (verificationFilter === 'unverified' && domain.qualificationStatus !== 'pending') return false;
             
             // Search filter
             if (searchQuery && !domain.domain.toLowerCase().includes(searchQuery.toLowerCase())) return false;
