@@ -414,64 +414,160 @@ export default function GuidedTriageFlow(props: GuidedTriageFlowProps) {
 
   return (
     <div className="fixed inset-0 bg-gray-50 z-50 flex flex-col">
-      {/* Header */}
-      <div className="bg-white border-b px-6 py-4">
-        <div className="flex items-center justify-between">
-          <div className="flex items-center gap-4">
-            <button
-              onClick={props.onClose}
-              className="p-2 hover:bg-gray-100 rounded-lg"
-              title="Close (Esc)"
-            >
-              <X className="w-5 h-5" />
-            </button>
-            <div>
-              <h1 className="text-xl font-semibold">Domain Qualification</h1>
-              <p className="text-sm text-gray-500">
-                {currentIndex + 1} of {reviewDomains.length} domains
-              </p>
+      {/* Combined Header with Domain Info and Actions */}
+      <div className="bg-white border-b">
+        <div className="px-6 py-3">
+          {/* Top Row: Title, Domain, Status, Actions */}
+          <div className="flex items-center justify-between mb-2">
+            <div className="flex items-center gap-3">
+              <button
+                onClick={props.onClose}
+                className="p-1.5 hover:bg-gray-100 rounded-lg"
+                title="Close (Esc)"
+              >
+                <X className="w-5 h-5" />
+              </button>
+              <div className="flex items-center gap-3">
+                <h1 className="text-lg font-semibold">Domain Qualification</h1>
+                <span className="text-gray-400">—</span>
+                <Globe className="w-5 h-5 text-indigo-600" />
+                <span className="text-lg font-medium">{currentDomain?.domain}</span>
+              </div>
+            </div>
+            
+            {/* Current Status and Action Buttons */}
+            <div className="flex items-center gap-3">
+              {/* Current Status */}
+              <div className={`px-3 py-1.5 rounded-lg text-sm font-medium ${
+                currentDomain?.qualificationStatus === 'high_quality' ? 'bg-green-100 text-green-800' :
+                currentDomain?.qualificationStatus === 'average_quality' ? 'bg-blue-100 text-blue-800' :
+                currentDomain?.qualificationStatus === 'disqualified' ? 'bg-red-100 text-red-800' :
+                'bg-gray-100 text-gray-800'
+              }`}>
+                {currentDomain?.qualificationStatus === 'high_quality' ? 'High Quality' :
+                 currentDomain?.qualificationStatus === 'average_quality' ? 'Average Quality' :
+                 currentDomain?.qualificationStatus === 'disqualified' ? 'Disqualified' :
+                 'Pending'}
+              </div>
+              
+              {/* Action Buttons */}
+              <div className="flex items-center gap-2">
+                <button
+                  onClick={() => handleQualify('high_quality')}
+                  disabled={saving}
+                  className="inline-flex items-center px-4 py-2 bg-green-600 text-white text-sm font-medium rounded-lg hover:bg-green-700 disabled:opacity-50"
+                  title="Mark as High Quality (1)"
+                >
+                  <Check className="w-4 h-4 mr-1.5" />
+                  High
+                </button>
+                <button
+                  onClick={() => handleQualify('average_quality')}
+                  disabled={saving}
+                  className="inline-flex items-center px-4 py-2 bg-blue-600 text-white text-sm font-medium rounded-lg hover:bg-blue-700 disabled:opacity-50"
+                  title="Mark as Average Quality (2)"
+                >
+                  <AlertCircle className="w-4 h-4 mr-1.5" />
+                  Average
+                </button>
+                <button
+                  onClick={() => handleQualify('disqualified')}
+                  disabled={saving}
+                  className="inline-flex items-center px-4 py-2 bg-gray-500 text-white text-sm font-medium rounded-lg hover:bg-gray-600 disabled:opacity-50"
+                  title="Mark as Disqualified (3)"
+                >
+                  <XCircle className="w-4 h-4 mr-1.5" />
+                  Disqualify
+                </button>
+              </div>
+              
+              <a
+                href={`https://${currentDomain?.domain}`}
+                target="_blank"
+                rel="noopener noreferrer"
+                className="flex items-center gap-1.5 px-3 py-2 text-sm border rounded-lg hover:bg-gray-50"
+              >
+                Visit
+                <ExternalLink className="w-3.5 h-3.5" />
+              </a>
             </div>
           </div>
           
-          {/* Progress bar */}
-          <div className="flex items-center gap-4">
-            <div className="w-64 bg-gray-200 rounded-full h-2">
-              <div 
-                className="bg-indigo-600 h-2 rounded-full transition-all"
-                style={{ width: `${progress}%` }}
-              />
+          {/* Bottom Row: Progress, Metadata, Navigation */}
+          <div className="flex items-center justify-between">
+            <div className="flex items-center gap-6 text-sm">
+              <span className="text-gray-600">
+                {currentIndex + 1} of {reviewDomains.length} domains
+              </span>
+              <div className="flex items-center gap-4 text-gray-500">
+                {data && (
+                  <>
+                    <span className="flex items-center gap-1">
+                      <Target className="w-4 h-4" />
+                      {data.keywords.length} keywords
+                    </span>
+                    {currentDomain?.aiQualificationReasoning && (
+                      <span className="flex items-center gap-1">
+                        <Brain className="w-4 h-4" />
+                        AI Analyzed
+                      </span>
+                    )}
+                    {currentDomain?.wasManuallyQualified && (
+                      <span className="flex items-center gap-1">
+                        <User className="w-4 h-4" />
+                        Human Modified
+                      </span>
+                    )}
+                    {currentDomain?.wasHumanVerified && (
+                      <span className="flex items-center gap-1">
+                        <Check className="w-4 h-4" />
+                        Verified
+                      </span>
+                    )}
+                  </>
+                )}
+              </div>
             </div>
-            <div className="flex items-center gap-2">
-              <button
-                onClick={() => {
-                  if (currentIndex > 0) {
-                    setCurrentIndex(currentIndex - 1);
-                    setNotes('');
-                    setKeywordSearch('');
-                    setSelectedFilters([]);
-                  }
-                }}
-                disabled={currentIndex === 0}
-                className="p-2 hover:bg-gray-100 rounded-lg disabled:opacity-50"
-                title="Previous (←)"
-              >
-                <ChevronLeft className="w-5 h-5" />
-              </button>
-              <button
-                onClick={() => {
-                  if (currentIndex < reviewDomains.length - 1) {
-                    setCurrentIndex(currentIndex + 1);
-                    setNotes('');
-                    setKeywordSearch('');
-                    setSelectedFilters([]);
-                  }
-                }}
-                disabled={currentIndex === reviewDomains.length - 1}
-                className="p-2 hover:bg-gray-100 rounded-lg disabled:opacity-50"
-                title="Next (→)"
-              >
-                <ChevronRight className="w-5 h-5" />
-              </button>
+            
+            <div className="flex items-center gap-3">
+              <div className="w-48 bg-gray-200 rounded-full h-1.5">
+                <div 
+                  className="bg-indigo-600 h-1.5 rounded-full transition-all"
+                  style={{ width: `${progress}%` }}
+                />
+              </div>
+              <div className="flex items-center gap-1">
+                <button
+                  onClick={() => {
+                    if (currentIndex > 0) {
+                      setCurrentIndex(currentIndex - 1);
+                      setNotes('');
+                      setKeywordSearch('');
+                      setSelectedFilters([]);
+                    }
+                  }}
+                  disabled={currentIndex === 0}
+                  className="p-1.5 hover:bg-gray-100 rounded-lg disabled:opacity-50"
+                  title="Previous (←)"
+                >
+                  <ChevronLeft className="w-4 h-4" />
+                </button>
+                <button
+                  onClick={() => {
+                    if (currentIndex < reviewDomains.length - 1) {
+                      setCurrentIndex(currentIndex + 1);
+                      setNotes('');
+                      setKeywordSearch('');
+                      setSelectedFilters([]);
+                    }
+                  }}
+                  disabled={currentIndex === reviewDomains.length - 1}
+                  className="p-1.5 hover:bg-gray-100 rounded-lg disabled:opacity-50"
+                  title="Next (→)"
+                >
+                  <ChevronRight className="w-4 h-4" />
+                </button>
+              </div>
             </div>
           </div>
         </div>
@@ -484,81 +580,139 @@ export default function GuidedTriageFlow(props: GuidedTriageFlowProps) {
             <Loader2 className="w-8 h-8 animate-spin text-gray-400" />
           </div>
         ) : (
-          <div className="px-4 py-4 h-full flex flex-col">
-            {/* Domain Header - Compact */}
-            <div className="bg-white rounded-lg p-4 shadow-sm mb-4">
-              <div className="flex items-center justify-between">
-                <div className="flex items-center gap-3">
-                  <Globe className="w-6 h-6 text-indigo-600" />
-                  <div>
-                    <h2 className="text-xl font-bold">{currentDomain.domain}</h2>
-                    <div className="flex items-center gap-4 text-sm text-gray-500">
-                      <span className="flex items-center gap-1">
-                        <Target className="w-4 h-4" />
-                        {data.keywords.length} keywords
-                      </span>
-                      {currentDomain.aiQualificationReasoning && (
-                        <span className="flex items-center gap-1">
-                          <Brain className="w-4 h-4" />
-                          AI Analyzed
-                        </span>
-                      )}
-                      {currentDomain.wasManuallyQualified && (
-                        <span className="flex items-center gap-1">
-                          <User className="w-4 h-4" />
-                          Human Modified
-                        </span>
-                      )}
-                      {currentDomain.wasHumanVerified && (
-                        <span className="flex items-center gap-1">
-                          <Check className="w-4 h-4" />
-                          Human Verified
-                        </span>
-                      )}
-                    </div>
-                  </div>
-                </div>
-                <div className="flex items-center gap-4">
-                  {/* Current Status Display */}
-                  <div className="text-right">
-                    <p className="text-xs text-gray-500 uppercase tracking-wide">Current Status</p>
-                    <div className={`mt-1 px-4 py-2 rounded-lg text-sm font-medium ${
-                      currentDomain.qualificationStatus === 'high_quality' ? 'bg-green-100 text-green-800' :
-                      currentDomain.qualificationStatus === 'average_quality' ? 'bg-blue-100 text-blue-800' :
-                      currentDomain.qualificationStatus === 'disqualified' ? 'bg-red-100 text-red-800' :
-                      'bg-gray-100 text-gray-800'
-                    }`}>
-                      {currentDomain.qualificationStatus === 'high_quality' ? 'High Quality' :
-                       currentDomain.qualificationStatus === 'average_quality' ? 'Average Quality' :
-                       currentDomain.qualificationStatus === 'disqualified' ? 'Disqualified' :
-                       'Pending Review'}
-                    </div>
-                  </div>
-                  <a
-                    href={`https://${currentDomain.domain}`}
-                    target="_blank"
-                    rel="noopener noreferrer"
-                    className="flex items-center gap-2 px-4 py-2 text-sm border rounded-lg hover:bg-gray-50"
-                  >
-                    Visit Site
-                    <ExternalLink className="w-4 h-4" />
-                  </a>
+          <div className="h-full flex gap-4 p-4">
+            {/* Left Sidebar - Filters */}
+            <div className="w-64 bg-white rounded-lg shadow-sm p-4 overflow-y-auto">
+              <h3 className="text-sm font-medium text-gray-900 mb-3">Filters</h3>
+              
+              {/* Search */}
+              <div className="mb-4">
+                <div className="relative">
+                  <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-400" />
+                  <input
+                    type="text"
+                    placeholder="Search keywords..."
+                    value={keywordSearch}
+                    onChange={(e) => setKeywordSearch(e.target.value)}
+                    className="w-full pl-9 pr-9 py-2 text-sm border rounded-lg focus:ring-2 focus:ring-indigo-500 focus:border-transparent"
+                  />
+                  {(keywordSearch || selectedFilters.length > 0) && (
+                    <button
+                      onClick={() => {
+                        setKeywordSearch('');
+                        setSelectedFilters([]);
+                      }}
+                      className="absolute right-2 top-1/2 -translate-y-1/2 text-gray-400 hover:text-gray-600 p-1"
+                      title="Clear all filters"
+                    >
+                      <X className="w-4 h-4" />
+                    </button>
+                  )}
                 </div>
               </div>
+              
+              {/* Keywords Filter */}
+              {data.keywords.length > 0 && (
+                <div className="mb-4">
+                  <div className="flex items-center justify-between mb-2">
+                    <h4 className="text-xs font-medium text-gray-700 uppercase">Keywords</h4>
+                    <span className="text-xs text-gray-400">({data.keywords.length})</span>
+                  </div>
+                  <div className="space-y-1 max-h-60 overflow-y-auto">
+                    {data.keywords.map((keyword, idx) => {
+                      const matchCount = data.dataForSeoResults?.allKeywords.filter(kw => 
+                        kw.keyword.toLowerCase().includes(keyword.toLowerCase())
+                      ).length || 0;
+                      
+                      if (matchCount === 0) return null;
+                      
+                      return (
+                        <button
+                          key={idx}
+                          onClick={() => {
+                            if (selectedFilters.includes(keyword)) {
+                              setSelectedFilters(selectedFilters.filter(f => f !== keyword));
+                            } else {
+                              setSelectedFilters([...selectedFilters, keyword]);
+                            }
+                          }}
+                          className={`w-full text-left px-2 py-1.5 text-xs rounded-md transition-colors flex items-center justify-between ${
+                            selectedFilters.includes(keyword) 
+                              ? 'bg-indigo-600 text-white hover:bg-indigo-700' 
+                              : 'bg-gray-50 hover:bg-gray-100 text-gray-700'
+                          }`}
+                          title={`${matchCount} matches`}
+                        >
+                          <span className="truncate">{keyword}</span>
+                          <span className={`ml-1 text-xs ${
+                            selectedFilters.includes(keyword) ? 'text-indigo-200' : 'text-gray-500'
+                          }`}>
+                            {matchCount}
+                          </span>
+                        </button>
+                      );
+                    })}
+                  </div>
+                </div>
+              )}
+              
+              {/* Common Terms Filter */}
+              {smartFilters.length > 0 && (
+                <div>
+                  <div className="flex items-center justify-between mb-2">
+                    <h4 className="text-xs font-medium text-gray-700 uppercase">Common Terms</h4>
+                    <button
+                      onClick={() => setSelectedFilters([])}
+                      className="text-xs text-red-600 hover:text-red-700"
+                    >
+                      Clear
+                    </button>
+                  </div>
+                  <div className="flex flex-wrap gap-1">
+                    {smartFilters.map((filter, idx) => {
+                      const matchCount = data.dataForSeoResults?.allKeywords.filter(kw => 
+                        kw.keyword.toLowerCase().includes(filter.toLowerCase())
+                      ).length || 0;
+                      
+                      if (matchCount === 0) return null;
+                      
+                      return (
+                        <button
+                          key={idx}
+                          onClick={() => {
+                            if (selectedFilters.includes(filter)) {
+                              setSelectedFilters(selectedFilters.filter(f => f !== filter));
+                            } else {
+                              setSelectedFilters([...selectedFilters, filter]);
+                            }
+                          }}
+                          className={`px-2 py-1 text-xs rounded-md transition-colors ${
+                            selectedFilters.includes(filter)
+                              ? 'bg-indigo-600 text-white hover:bg-indigo-700' 
+                              : 'bg-gray-100 hover:bg-gray-200 text-gray-700'
+                          }`}
+                          title={`${matchCount} matches`}
+                        >
+                          {filter} ({matchCount})
+                        </button>
+                      );
+                    })}
+                  </div>
+                </div>
+              )}
             </div>
-
-            {/* Two Column Layout */}
-            <div className="flex-1 flex gap-6 overflow-hidden">
-              {/* Left Column - Keywords (Primary) */}
-              <div className="flex-1 overflow-hidden">
-                {data.dataForSeoResults ? (
-                  <div className="bg-white rounded-lg shadow-sm h-full flex flex-col">
-                    <div className="p-4 border-b">
-                      <div className="flex items-center justify-between mb-3">
-                        <h3 className="text-lg font-semibold flex items-center gap-2">
-                          <BarChart3 className="w-5 h-5 text-indigo-600" />
-                          DataForSEO Keyword Rankings
-                        </h3>
+            
+            {/* Center Column - Keywords Data */}
+            <div className="flex-1 overflow-hidden">
+              {data.dataForSeoResults ? (
+                <div className="bg-white rounded-lg shadow-sm h-full flex flex-col">
+                  <div className="p-4 border-b">
+                    <div className="flex items-center justify-between">
+                      <h3 className="text-lg font-semibold flex items-center gap-2">
+                        <BarChart3 className="w-5 h-5 text-indigo-600" />
+                        DataForSEO Keyword Rankings
+                      </h3>
+                      <div className="flex items-center gap-3">
                         <div className="flex items-center gap-3 text-sm">
                           <span className="text-gray-600">
                             <span className="font-semibold text-indigo-600">{data.dataForSeoResults.totalRankings}</span> keywords
@@ -567,133 +721,27 @@ export default function GuidedTriageFlow(props: GuidedTriageFlowProps) {
                             Avg: <span className="font-semibold text-green-600">{data.dataForSeoResults.avgPosition.toFixed(1)}</span>
                           </span>
                         </div>
-                      </div>
-                      
-                      {/* Search and Filters */}
-                      <div className="flex gap-2">
-                        <div className="flex-1 relative">
-                          <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-400" />
-                          <input
-                            type="text"
-                            placeholder="Search keywords..."
-                            value={keywordSearch}
-                            onChange={(e) => setKeywordSearch(e.target.value)}
-                            className="w-full pl-9 pr-9 py-2 text-sm border rounded-lg focus:ring-2 focus:ring-indigo-500 focus:border-transparent"
-                          />
-                          {(keywordSearch || selectedFilters.length > 0) && (
-                            <button
-                              onClick={() => {
-                                setKeywordSearch('');
-                                setSelectedFilters([]);
-                              }}
-                              className="absolute right-2 top-1/2 -translate-y-1/2 text-gray-400 hover:text-gray-600 p-1"
-                              title="Clear all filters"
-                            >
-                              <X className="w-4 h-4" />
-                            </button>
-                          )}
-                        </div>
-                      </div>
-                      
-                      {/* Smart Filters - Clickable Keywords */}
-                      {data.keywords.length > 0 && (
-                        <div className="mt-2">
-                          <div className="flex items-center justify-between mb-1">
-                            <div className="flex items-center gap-2">
-                              <span className="text-xs text-gray-500">Keywords analyzed:</span>
-                              <span className="text-xs text-gray-400">({data.keywords.length} total)</span>
-                            </div>
-                            {/* Subtle Ahrefs buttons when DataForSEO results exist */}
-                            <div className="flex flex-wrap gap-1">
-                              {data.keywordGroups.map((group, idx) => (
-                                <a
-                                  key={idx}
-                                  href={buildAhrefsUrl(currentDomain.domain, group.keywords)}
-                                  target="_blank"
-                                  rel="noopener noreferrer"
-                                  className="inline-flex items-center px-2 py-1 text-xs bg-gray-100 text-gray-600 hover:bg-gray-200 rounded-md transition-colors"
-                                  title={`Check ${group.name} rankings in Ahrefs`}
-                                >
-                                  <ExternalLink className="w-3 h-3 mr-1" />
-                                  {group.name}
-                                </a>
-                              ))}
-                            </div>
-                          </div>
-                          <div className="flex flex-wrap gap-1 max-h-20 overflow-y-auto">
-                            {data.keywords.map((keyword, idx) => (
-                              <button
-                                key={idx}
-                                onClick={() => {
-                                  if (selectedFilters.includes(keyword)) {
-                                    setSelectedFilters(selectedFilters.filter(f => f !== keyword));
-                                  } else {
-                                    setSelectedFilters([...selectedFilters, keyword]);
-                                  }
-                                }}
-                                className={`px-2 py-1 text-xs rounded-md transition-colors ${
-                                  selectedFilters.includes(keyword) 
-                                    ? 'bg-indigo-600 text-white hover:bg-indigo-700' 
-                                    : 'bg-indigo-50 hover:bg-indigo-100 text-indigo-700'
-                                }`}
-                                title={selectedFilters.includes(keyword) ? 'Click to remove filter' : 'Click to add filter'}
-                              >
-                                {keyword}
-                              </button>
-                            ))}
-                          </div>
-                        </div>
-                      )}
-                    </div>
-                    
-                    {/* Common Terms Filter */}
-                    {smartFilters.length > 0 && (
-                      <div className="px-4 pb-3">
-                        <div className="flex items-center justify-between mb-2">
-                          <h4 className="text-sm font-medium text-gray-700">Common Terms</h4>
-                          <div className="flex gap-2">
-                            <button
-                              onClick={() => setSelectedFilters(smartFilters)}
-                              className="text-xs text-indigo-600 hover:text-indigo-700"
-                            >
-                              Select All
-                            </button>
-                            {selectedFilters.length > 0 && (
-                              <button
-                                onClick={() => setSelectedFilters([])}
-                                className="text-xs text-red-600 hover:text-red-700"
-                              >
-                                Clear All
-                              </button>
-                            )}
-                          </div>
-                        </div>
-                        <div className="flex flex-wrap gap-1">
-                          {smartFilters.map((filter, idx) => (
-                            <button
+                        {/* Ahrefs buttons */}
+                        <div className="flex gap-1">
+                          {data.keywordGroups.map((group, idx) => (
+                            <a
                               key={idx}
-                              onClick={() => {
-                                if (selectedFilters.includes(filter)) {
-                                  setSelectedFilters(selectedFilters.filter(f => f !== filter));
-                                } else {
-                                  setSelectedFilters([...selectedFilters, filter]);
-                                }
-                              }}
-                              className={`px-2 py-1 text-xs rounded-md transition-colors ${
-                                selectedFilters.includes(filter)
-                                  ? 'bg-indigo-600 text-white hover:bg-indigo-700' 
-                                  : 'bg-gray-100 hover:bg-gray-200 text-gray-700'
-                              }`}
-                              title={`Toggle filter for "${filter}"`}
+                              href={buildAhrefsUrl(currentDomain.domain, group.keywords)}
+                              target="_blank"
+                              rel="noopener noreferrer"
+                              className="inline-flex items-center px-2 py-1 text-xs bg-gray-100 text-gray-600 hover:bg-gray-200 rounded-md transition-colors"
+                              title={`Check ${group.name} rankings in Ahrefs`}
                             >
-                              {filter}
-                            </button>
+                              <ExternalLink className="w-3 h-3 mr-1" />
+                              {group.name}
+                            </a>
                           ))}
                         </div>
                       </div>
-                    )}
-                    
-                    {/* Keywords Table */}
+                    </div>
+                  </div>
+                  
+                  {/* Keywords Table */}
                     <div className="flex-1 overflow-auto">
                       <table className="w-full">
                         <thead className="sticky top-0 bg-gray-50">
@@ -948,10 +996,10 @@ export default function GuidedTriageFlow(props: GuidedTriageFlowProps) {
                     </div>
                   </div>
                 )}
-              </div>
-              
-              {/* Right Column - Metadata */}
-              <div className="w-96 space-y-4 overflow-y-auto">
+            </div>
+            
+            {/* Right Column - Metadata */}
+            <div className="w-80 space-y-4 overflow-y-auto">
                 {/* AI Analysis */}
                 {data.aiQualification && (
                   <div className="bg-white rounded-lg p-4 shadow-sm">
@@ -1020,49 +1068,21 @@ export default function GuidedTriageFlow(props: GuidedTriageFlowProps) {
                 </div>
               </div>
             </div>
-          </div>
         )}
       </div>
 
-      {/* Action Footer */}
-      <div className="bg-white border-t px-6 py-4">
-        <div className="max-w-6xl mx-auto flex items-center justify-between">
-          <div className="text-sm text-gray-500">
-            <p>Keyboard shortcuts:</p>
-            <p>
-              <span className="font-mono bg-gray-100 px-1 rounded">1</span> High Quality • 
-              <span className="font-mono bg-gray-100 px-1 rounded ml-2">2</span> Average • 
-              <span className="font-mono bg-gray-100 px-1 rounded ml-2">3</span> Disqualified • 
-              <span className="font-mono bg-gray-100 px-1 rounded ml-2">←/→</span> Navigate
-            </p>
-          </div>
-          
-          <div className="flex items-center gap-3">
-            <button
-              onClick={() => handleQualify('disqualified')}
-              disabled={saving}
-              className="inline-flex items-center px-6 py-3 bg-gray-100 text-gray-700 font-medium rounded-lg hover:bg-gray-200 disabled:opacity-50"
-            >
-              <XCircle className="w-5 h-5 mr-2" />
-              {currentDomain.qualificationStatus === 'disqualified' ? 'Confirm Disqualified' : 'Disqualified'}
-            </button>
-            <button
-              onClick={() => handleQualify('average_quality')}
-              disabled={saving}
-              className="inline-flex items-center px-6 py-3 bg-blue-600 text-white font-medium rounded-lg hover:bg-blue-700 disabled:opacity-50"
-            >
-              <AlertCircle className="w-5 h-5 mr-2" />
-              {currentDomain.qualificationStatus === 'average_quality' ? 'Confirm Average' : 'Average Quality'}
-            </button>
-            <button
-              onClick={() => handleQualify('high_quality')}
-              disabled={saving}
-              className="inline-flex items-center px-6 py-3 bg-green-600 text-white font-medium rounded-lg hover:bg-green-700 disabled:opacity-50"
-            >
-              <Check className="w-5 h-5 mr-2" />
-              {currentDomain.qualificationStatus === 'high_quality' ? 'Confirm High Quality' : 'High Quality'}
-            </button>
-          </div>
+      {/* Minimal Footer with Keyboard Shortcuts */}
+      <div className="bg-white border-t px-6 py-2">
+        <div className="flex items-center justify-center text-xs text-gray-400">
+          <span className="font-mono bg-gray-100 px-1 rounded">1</span> High
+          <span className="mx-1">•</span>
+          <span className="font-mono bg-gray-100 px-1 rounded">2</span> Average
+          <span className="mx-1">•</span>
+          <span className="font-mono bg-gray-100 px-1 rounded">3</span> Disqualify
+          <span className="mx-1">•</span>
+          <span className="font-mono bg-gray-100 px-1 rounded">←→</span> Navigate
+          <span className="mx-1">•</span>
+          <span className="font-mono bg-gray-100 px-1 rounded">Esc</span> Close
         </div>
       </div>
     </div>
