@@ -28,7 +28,7 @@ export async function PUT(
       const count = await BulkAnalysisService.bulkUpdateStatus(
         domainIds,
         status,
-        'system' // Placeholder since no auth
+        null // No user ID for bulk operations
       );
 
       return NextResponse.json({ 

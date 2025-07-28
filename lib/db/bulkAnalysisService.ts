@@ -434,17 +434,23 @@ export class BulkAnalysisService {
   static async bulkUpdateStatus(
     domainIds: string[],
     status: 'pending' | 'high_quality' | 'good_quality' | 'marginal_quality' | 'disqualified',
-    userId: string
+    userId: string | null
   ): Promise<number> {
     try {
+      const updateData: any = {
+        qualificationStatus: status,
+        updatedAt: new Date(),
+      };
+      
+      // Only set checkedBy and checkedAt if userId is provided
+      if (userId) {
+        updateData.checkedBy = userId;
+        updateData.checkedAt = new Date();
+      }
+
       const result = await db
         .update(bulkAnalysisDomains)
-        .set({
-          qualificationStatus: status,
-          checkedBy: userId,
-          checkedAt: new Date(),
-          updatedAt: new Date(),
-        })
+        .set(updateData)
         .where(inArray(bulkAnalysisDomains.id, domainIds));
       
       return domainIds.length;
