@@ -15,9 +15,23 @@ export class AirtableService {
   private static readonly POSTFLOW_VIEW_ID = 'viwWrgaGb55n8iaVk';
   
   private static getHeaders() {
+    console.log('🔧 Checking Airtable environment variables...');
+    
     if (!process.env.AIRTABLE_API_KEY) {
+      console.error('❌ AIRTABLE_API_KEY not configured');
       throw new Error('Airtable API key not configured');
     }
+    
+    if (!process.env.AIRTABLE_BASE_ID) {
+      console.error('❌ AIRTABLE_BASE_ID not configured');
+      throw new Error('Airtable Base ID not configured');
+    }
+    
+    console.log('✅ Environment variables configured:', {
+      hasApiKey: !!process.env.AIRTABLE_API_KEY,
+      hasBaseId: !!process.env.AIRTABLE_BASE_ID,
+      baseId: process.env.AIRTABLE_BASE_ID?.substring(0, 8) + '...'
+    });
     
     return {
       'Authorization': `Bearer ${process.env.AIRTABLE_API_KEY}`,
@@ -90,6 +104,8 @@ export class AirtableService {
     limit: number = 100,
     offset?: string
   ): Promise<{ websites: ProcessedWebsite[], hasMore: boolean, nextOffset?: string }> {
+    console.log('🔍 AirtableService.searchWebsites called with:', { filters, limit, offset });
+    
     try {
       const params = new URLSearchParams({
         view: this.POSTFLOW_VIEW_ID,
@@ -98,26 +114,44 @@ export class AirtableService {
       });
       
       const filterFormula = this.buildFilterFormula(filters);
+      console.log('📋 Built filter formula:', filterFormula);
       if (filterFormula) {
         params.append('filterByFormula', filterFormula);
       }
       
       const url = `${this.API_BASE_URL}/${this.BASE_ID}/${this.WEBSITE_TABLE_ID}?${params}`;
+      console.log('🌐 Making Airtable API request to:', url);
+      
+      const headers = this.getHeaders();
+      console.log('📝 Request headers:', { ...headers, Authorization: 'Bearer [REDACTED]' });
       
       const response = await fetch(url, {
         method: 'GET',
-        headers: this.getHeaders()
+        headers
       });
       
+      console.log('📊 Airtable API response status:', response.status, response.statusText);
+      
       if (!response.ok) {
-        const error = await response.json();
+        console.error('❌ Airtable API error response');
+        const errorText = await response.text();
+        console.error('❌ Error response body:', errorText);
+        let error;
+        try {
+          error = JSON.parse(errorText);
+        } catch {
+          error = { error: { message: errorText } };
+        }
         throw new Error(`Airtable API error: ${error.error?.message || response.statusText}`);
       }
       
       const data: AirtableApiResponse<AirtableWebsite> = await response.json();
+      console.log('✅ Airtable API success, received records:', data.records?.length || 0);
+      console.log('📄 Sample record:', data.records?.[0] ? { id: data.records[0].id, fields: Object.keys(data.records[0].fields) } : 'No records');
       
       // Process websites to a cleaner format
       const processedWebsites = data.records.map(record => this.processWebsiteRecord(record));
+      console.log('🔄 Processed websites:', processedWebsites.length);
       
       return {
         websites: processedWebsites,

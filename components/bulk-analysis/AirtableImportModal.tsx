@@ -64,10 +64,12 @@ export default function AirtableImportModal({
   };
 
   const searchWebsites = async (append = false) => {
+    console.log('🔍 Airtable Search: Starting search with filters:', filters);
     setLoading(true);
     setError(null);
     
     try {
+      console.log('📡 Making API call to /api/airtable/websites/search');
       const response = await fetch('/api/airtable/websites/search', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
@@ -82,11 +84,16 @@ export default function AirtableImportModal({
         })
       });
 
+      console.log('📡 API Response status:', response.status);
       if (!response.ok) {
-        throw new Error('Failed to search websites');
+        console.error('❌ API call failed with status:', response.status);
+        const errorText = await response.text();
+        console.error('❌ Error response:', errorText);
+        throw new Error(`Failed to search websites: ${response.status} - ${errorText}`);
       }
 
       const data = await response.json();
+      console.log('✅ API call succeeded, received data:', data);
       
       if (append) {
         setWebsites(prev => [...prev, ...data.websites]);
@@ -97,10 +104,12 @@ export default function AirtableImportModal({
       setHasMore(data.hasMore);
       setNextOffset(data.nextOffset);
     } catch (error: any) {
+      console.error('❌ Airtable search failed:', error);
       setError(error.message || 'Failed to load websites');
       console.error('Search error:', error);
     } finally {
       setLoading(false);
+      console.log('🔍 Search completed, loading state set to false');
     }
   };
 

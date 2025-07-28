@@ -20,8 +20,10 @@ export async function GET(request: NextRequest) {
 }
 
 export async function POST(request: NextRequest) {
+  console.log('🚀 Airtable API: POST request received');
   try {
     const { filters, limit, offset, includeEnhancedData } = await request.json();
+    console.log('📊 Request data:', { filters, limit, offset, includeEnhancedData });
     
     if (!filters) {
       return NextResponse.json(
@@ -31,11 +33,13 @@ export async function POST(request: NextRequest) {
     }
     
     // Search websites with filters
+    console.log('🔍 Calling AirtableService.searchWebsites');
     const result = await AirtableService.searchWebsites(
       filters as WebsiteFilters,
       limit || 50,
       offset
     );
+    console.log('✅ AirtableService returned:', result);
     
     // Optionally enhance with link price data (slower)
     let websites = result.websites;
@@ -49,7 +53,8 @@ export async function POST(request: NextRequest) {
       nextOffset: result.nextOffset
     });
   } catch (error: any) {
-    console.error('Error searching Airtable websites:', error);
+    console.error('❌ Error searching Airtable websites:', error);
+    console.error('❌ Error stack:', error.stack);
     return NextResponse.json(
       { error: 'Failed to search websites', details: error.message },
       { status: 500 }
