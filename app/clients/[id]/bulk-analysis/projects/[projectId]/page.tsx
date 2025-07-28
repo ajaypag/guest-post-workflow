@@ -163,6 +163,9 @@ export default function ProjectDetailPage() {
     }
   }, [client, project]);
 
+  // Track if user came via guided parameter
+  const [cameFromGuidedLink, setCameFromGuidedLink] = useState(false);
+  
   // Handle guided parameter from URL
   useEffect(() => {
     const guidedDomainId = searchParams.get('guided');
@@ -170,6 +173,8 @@ export default function ProjectDetailPage() {
       // Find the domain with this ID
       const guidedDomain = domains.find(d => d.id === guidedDomainId);
       if (guidedDomain) {
+        // Mark that we came from a guided link
+        setCameFromGuidedLink(true);
         // Automatically open guided triage with this domain selected
         setShowGuidedTriage(true);
         // Set search to show only this domain
@@ -2869,8 +2874,23 @@ anotherdomain.com"
           onClose={() => {
             setShowGuidedTriage(false);
             loadDomains(); // Reload to see updates
+            
+            // If user came from guided link, go back to where they came from
+            if (cameFromGuidedLink) {
+              router.back();
+            }
           }}
-          onUpdateStatus={updateQualificationStatus}
+          onUpdateStatus={async (domainId: string, status: 'high_quality' | 'average_quality' | 'disqualified', isManual?: boolean) => {
+            await updateQualificationStatus(domainId, status, isManual);
+            
+            // If user came from guided link and just qualified the domain they were guided to
+            if (cameFromGuidedLink && domainId === searchParams.get('guided')) {
+              // Short delay to show the update, then go back
+              setTimeout(() => {
+                router.back();
+              }, 500);
+            }
+          }}
           onAnalyzeWithDataForSeo={analyzeWithDataForSeo}
           keywordInputMode={keywordInputMode}
           manualKeywords={manualKeywords}
