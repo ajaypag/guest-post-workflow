@@ -1,6 +1,6 @@
 import { NextResponse } from 'next/server';
-import { db } from '@/db/database';
-import { bulkAnalysis } from '@/db/schema/bulkAnalysisSchema';
+import { db } from '@/lib/db/connection';
+import { bulkAnalysisDomains } from '@/lib/db/bulkAnalysisSchema';
 import { sql } from 'drizzle-orm';
 
 export async function POST() {
@@ -20,7 +20,7 @@ export async function POST() {
     for (const column of columnsToAdd) {
       try {
         await db.execute(sql.raw(`
-          ALTER TABLE bulk_analysis 
+          ALTER TABLE bulk_analysis_domains 
           ADD COLUMN IF NOT EXISTS ${column.name} ${column.type}
         `));
         addedColumns.push(column.name);
@@ -32,7 +32,7 @@ export async function POST() {
 
     // Step 2: Update average_quality to marginal_quality
     const updateResult = await db.execute(sql`
-      UPDATE bulk_analysis 
+      UPDATE bulk_analysis_domains 
       SET qualification_status = 'marginal_quality'
       WHERE qualification_status = 'average_quality'
     `);
@@ -45,7 +45,7 @@ export async function POST() {
       SELECT 
         qualification_status,
         COUNT(*) as count
-      FROM bulk_analysis
+      FROM bulk_analysis_domains
       WHERE qualification_status IS NOT NULL
       GROUP BY qualification_status
       ORDER BY qualification_status
