@@ -54,6 +54,14 @@ export default function AdminDashboard() {
       iconColor: 'text-emerald-600'
     },
     {
+      title: 'Airtable Migration',
+      description: 'Add Airtable metadata columns to bulk_analysis_domains for domain import integration',
+      icon: Database,
+      href: '/admin/airtable-migration',
+      color: 'bg-orange-50 border-orange-200 text-orange-700',
+      iconColor: 'text-orange-600'
+    },
+    {
       title: 'Add Selected Target Page',
       description: 'Add selected_target_page_id column to bulk_analysis_domains table',
       icon: Database,

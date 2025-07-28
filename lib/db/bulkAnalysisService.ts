@@ -130,21 +130,32 @@ export class BulkAnalysisService {
       const keywordCount = allKeywords.size;
 
       // Prepare bulk insert/update data
-      const domainRecords = cleanedDomains.map(domain => ({
-        id: uuidv4(),
-        clientId,
-        domain,
-        qualificationStatus: 'pending' as const,
-        targetPageIds: targetPageIds,
-        keywordCount,
-        checkedBy: null,
-        checkedAt: null,
-        notes: null,
-        projectId: projectId,
-        projectAddedAt: new Date(),
-        createdAt: new Date(),
-        updatedAt: new Date(),
-      }));
+      const domainRecords = cleanedDomains.map(domain => {
+        const cleanDomain = this.cleanDomain(domain);
+        const metadata = airtableMetadata?.[domain] || airtableMetadata?.[cleanDomain];
+        
+        return {
+          id: uuidv4(),
+          clientId,
+          domain: cleanDomain,
+          qualificationStatus: 'pending' as const,
+          targetPageIds: targetPageIds,
+          keywordCount,
+          checkedBy: null,
+          checkedAt: null,
+          notes: null,
+          projectId: projectId,
+          projectAddedAt: new Date(),
+          createdAt: new Date(),
+          updatedAt: new Date(),
+          // Add Airtable metadata if available
+          ...(metadata && {
+            airtableRecordId: metadata.id,
+            airtableMetadata: metadata,
+            airtableLastSynced: new Date(),
+          }),
+        };
+      });
 
       // Insert domains with ON CONFLICT UPDATE
       const insertedDomains = await db
@@ -156,6 +167,12 @@ export class BulkAnalysisService {
             targetPageIds: sql`excluded.target_page_ids`,
             keywordCount: sql`excluded.keyword_count`,
             updatedAt: new Date(),
+            // Update Airtable metadata if provided
+            ...(airtableMetadata && {
+              airtableRecordId: sql`excluded.airtable_record_id`,
+              airtableMetadata: sql`excluded.airtable_metadata`,
+              airtableLastSynced: sql`excluded.airtable_last_synced`,
+            }),
           },
         })
         .returning();

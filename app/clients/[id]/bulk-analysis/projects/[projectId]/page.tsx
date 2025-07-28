@@ -16,8 +16,10 @@ import GuidedTriageFlow from '@/components/GuidedTriageFlow';
 import { MultiSelect, MultiSelectOption } from '@/components/ui/MultiSelect';
 import MoveToProjectDialog from '@/components/bulk-analysis/MoveToProjectDialog';
 import { MessageDisplay } from '@/components/bulk-analysis/MessageDisplay';
+import AirtableImportModal from '@/components/bulk-analysis/AirtableImportModal';
 import { BulkAnalysisProject } from '@/types/bulk-analysis-projects';
 import { BulkAnalysisDomain } from '@/types/bulk-analysis';
+import { ProcessedWebsite } from '@/types/airtable';
 import { 
   ArrowLeft, 
   Target, 
@@ -41,7 +43,8 @@ import {
   Sparkles,
   FolderOpen,
   Brain,
-  X
+  X,
+  Database
 } from 'lucide-react';
 
 export default function ProjectDetailPage() {
@@ -155,6 +158,10 @@ export default function ProjectDetailPage() {
   
   // Smart selection state
   const [showSmartSelection, setShowSmartSelection] = useState(false);
+  
+  // Airtable import modal state
+  const [showAirtableImport, setShowAirtableImport] = useState(false);
+  const [airtableMetadata, setAirtableMetadata] = useState<Record<string, any>>({});
   
   // Reset pagination when filters change
   useEffect(() => {
@@ -477,7 +484,8 @@ export default function ProjectDetailPage() {
           domains: domainList,
           targetPageIds: keywordInputMode === 'target-pages' ? selectedTargetPages : [],
           manualKeywords: keywordInputMode === 'manual' ? manualKeywords : undefined,
-          projectId: params.projectId
+          projectId: params.projectId,
+          airtableMetadata: Object.keys(airtableMetadata).length > 0 ? airtableMetadata : undefined
         })
       });
 
@@ -485,6 +493,7 @@ export default function ProjectDetailPage() {
         const data = await response.json();
         await loadDomains();
         setDomainText('');
+        setAirtableMetadata({});
         setMessage(`✅ Added ${data.domains.length} domains to project`);
       } else {
         throw new Error('Failed to create domains');
@@ -495,6 +504,32 @@ export default function ProjectDetailPage() {
     } finally {
       setLoading(false);
     }
+  };
+
+  const handleAirtableImport = (websites: ProcessedWebsite[]) => {
+    // Extract domains and create metadata map
+    const importedDomains = websites.map(w => w.domain);
+    const metadata: Record<string, any> = {};
+    
+    websites.forEach(website => {
+      metadata[website.domain] = {
+        id: website.id,
+        domainRating: website.domainRating,
+        totalTraffic: website.totalTraffic,
+        guestPostCost: website.guestPostCost,
+        categories: website.categories,
+        contacts: website.contacts,
+        publishedOpportunities: website.publishedOpportunities
+      };
+    });
+    
+    // Update state
+    setAirtableMetadata(metadata);
+    setDomainText(importedDomains.join('\n'));
+    
+    // Show success message
+    setMessage(`✅ Imported ${websites.length} domains from Airtable. Click "Add to Project" to analyze them.`);
+    setMessageType('success');
   };
 
   const updateQualificationStatus = async (domainId: string, status: 'high_quality' | 'good_quality' | 'marginal_quality' | 'disqualified', isManual?: boolean) => {
@@ -1509,14 +1544,28 @@ export default function ProjectDetailPage() {
               </div>
             )}
             
-            <textarea
-              value={domainText}
-              onChange={(e) => setDomainText(e.target.value)}
-              placeholder="example.com
+            <div className="space-y-3">
+              <div className="flex items-center justify-between">
+                <label className="text-sm font-medium text-gray-700">
+                  Enter domains (one per line)
+                </label>
+                <button
+                  onClick={() => setShowAirtableImport(true)}
+                  className="text-sm text-blue-600 hover:text-blue-700 flex items-center gap-1 hover:bg-blue-50 px-2 py-1 rounded"
+                >
+                  <Database className="w-4 h-4" />
+                  Import from Airtable
+                </button>
+              </div>
+              <textarea
+                value={domainText}
+                onChange={(e) => setDomainText(e.target.value)}
+                placeholder="example.com
 blog.example.com
 anotherdomain.com"
-              className="w-full h-32 px-3 py-2 border rounded-lg focus:ring-2 focus:ring-indigo-500 focus:border-transparent"
-            />
+                className="w-full h-32 px-3 py-2 border rounded-lg focus:ring-2 focus:ring-indigo-500 focus:border-transparent"
+              />
+            </div>
             
             {existingDomains.length > 0 && (
               <div className="mt-3 p-3 bg-yellow-50 border border-yellow-200 rounded-lg">
@@ -1775,14 +1824,28 @@ anotherdomain.com"
                       </div>
                     )}
                     
-                    <textarea
-                      value={domainText}
-                      onChange={(e) => setDomainText(e.target.value)}
-                      placeholder="example.com
+                    <div className="space-y-3">
+                      <div className="flex items-center justify-between">
+                        <label className="text-sm font-medium text-gray-700">
+                          Enter domains (one per line)
+                        </label>
+                        <button
+                          onClick={() => setShowAirtableImport(true)}
+                          className="text-sm text-blue-600 hover:text-blue-700 flex items-center gap-1 hover:bg-blue-50 px-2 py-1 rounded"
+                        >
+                          <Database className="w-4 h-4" />
+                          Import from Airtable
+                        </button>
+                      </div>
+                      <textarea
+                        value={domainText}
+                        onChange={(e) => setDomainText(e.target.value)}
+                        placeholder="example.com
 blog.example.com
 anotherdomain.com"
-                      className="w-full h-32 px-3 py-2 border rounded-lg focus:ring-2 focus:ring-indigo-500 focus:border-transparent"
-                    />
+                        className="w-full h-32 px-3 py-2 border rounded-lg focus:ring-2 focus:ring-indigo-500 focus:border-transparent"
+                      />
+                    </div>
                     
                     {existingDomains.length > 0 && (
                       <div className="mt-3 p-3 bg-yellow-50 border border-yellow-200 rounded-lg">
@@ -2840,6 +2903,15 @@ anotherdomain.com"
           onConfirm={handleMoveToProject}
         />
       )}
+
+      {/* Airtable Import Modal */}
+      <AirtableImportModal
+        isOpen={showAirtableImport}
+        onClose={() => setShowAirtableImport(false)}
+        onImport={handleAirtableImport}
+        clientId={params.id as string}
+        projectId={params.projectId as string}
+      />
     </AuthWrapper>
   );
 }
