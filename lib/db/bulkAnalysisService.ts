@@ -623,19 +623,26 @@ export class BulkAnalysisService {
    */
   static async updateDomainDataForSeoStatus(
     domainId: string,
-    hasResults: boolean
+    hasResults: boolean,
+    resultsCount?: number
   ): Promise<void> {
     try {
+      const updateData: any = {
+        hasDataForSeoResults: hasResults,
+        dataForSeoLastAnalyzed: new Date(),
+        updatedAt: new Date(),
+      };
+      
+      if (resultsCount !== undefined) {
+        updateData.dataForSeoResultsCount = resultsCount;
+      }
+      
       await db
         .update(bulkAnalysisDomains)
-        .set({
-          hasDataForSeoResults: hasResults,
-          dataForSeoLastAnalyzed: new Date(),
-          updatedAt: new Date(),
-        })
+        .set(updateData)
         .where(eq(bulkAnalysisDomains.id, domainId));
       
-      console.log(`Updated domain ${domainId} DataForSEO status: hasResults=${hasResults}`);
+      console.log(`Updated domain ${domainId} DataForSEO status: hasResults=${hasResults}, count=${resultsCount}`);
     } catch (error) {
       console.error('Error updating domain DataForSEO status:', error);
       throw error;

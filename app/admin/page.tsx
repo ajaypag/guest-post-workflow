@@ -188,6 +188,14 @@ export default function AdminDashboard() {
       href: '/admin/bulk-analysis-test',
       color: 'bg-green-50 border-green-200 text-green-700',
       iconColor: 'text-green-600'
+    },
+    {
+      title: 'Debug Analyzed Count',
+      description: 'Debug why analyzed metric shows 0 for projects',
+      icon: Bug,
+      href: '/api/admin/debug-analyzed-count',
+      color: 'bg-yellow-50 border-yellow-200 text-yellow-700',
+      iconColor: 'text-yellow-600'
     }
   ];
 

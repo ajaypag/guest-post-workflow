@@ -230,7 +230,8 @@ async function processBatchAsync(
             await db.execute(sql`
               UPDATE bulk_analysis_domains
               SET 
-                has_dataforseo_results = true,
+                has_dataforseo_results = ${allResults.length > 0},
+                dataforseo_results_count = ${allResults.length},
                 dataforseo_last_analyzed = NOW(),
                 updated_at = NOW()
               WHERE id = ${domainId}::uuid
