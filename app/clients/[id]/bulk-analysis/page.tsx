@@ -447,7 +447,7 @@ export default function BulkAnalysisPage() {
 
       // Clear selection and show success message
       setSelectedDomains(new Set());
-      setMessage(`✅ AI qualification complete! ${data.summary.highQuality} high quality, ${data.summary.averageQuality} average quality, ${data.summary.disqualified} disqualified domains`);
+      setMessage(`✅ AI qualification complete! ${data.summary.highQuality} high quality, ${data.summary.goodQuality} good quality, ${data.summary.marginalQuality} marginal quality, ${data.summary.disqualified} disqualified domains`);
       
       // Reload projects to get updated stats
       await loadProjects();

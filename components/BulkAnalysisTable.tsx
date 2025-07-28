@@ -428,7 +428,9 @@ export default function BulkAnalysisTable(props: BulkAnalysisTableProps) {
     switch (status) {
       case 'high_quality':
         return <CheckCircle className="w-4 h-4" />;
-      case 'average_quality':
+      case 'good_quality':
+        return <AlertCircle className="w-4 h-4" />;
+      case 'marginal_quality':
         return <AlertCircle className="w-4 h-4" />;
       case 'disqualified':
         return <XCircle className="w-4 h-4" />;

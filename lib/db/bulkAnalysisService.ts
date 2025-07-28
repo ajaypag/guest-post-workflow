@@ -19,7 +19,7 @@ export interface BulkAnalysisResult extends BulkAnalysisDomain {
 }
 
 export interface BulkAnalysisFilter {
-  qualificationStatus?: 'pending' | 'high_quality' | 'average_quality' | 'disqualified' | 'qualified_any';
+  qualificationStatus?: 'pending' | 'high_quality' | 'good_quality' | 'marginal_quality' | 'disqualified' | 'qualified_any';
   hasWorkflow?: boolean;
   search?: string;
   projectId?: string;
@@ -275,7 +275,11 @@ export class BulkAnalysisService {
         .where(
           and(
             eq(bulkAnalysisDomains.clientId, clientId),
-            eq(bulkAnalysisDomains.qualificationStatus, 'qualified')
+            or(
+              eq(bulkAnalysisDomains.qualificationStatus, 'high_quality'),
+              eq(bulkAnalysisDomains.qualificationStatus, 'good_quality'),
+              eq(bulkAnalysisDomains.qualificationStatus, 'marginal_quality')
+            )!
           )
         )
         .orderBy(desc(bulkAnalysisDomains.createdAt));
@@ -381,16 +385,33 @@ export class BulkAnalysisService {
         .where(and(...conditions));
       
       // Get paginated data
-      const orderByColumn = 
-        sortBy === 'domain' ? bulkAnalysisDomains.domain :
-        sortBy === 'qualificationStatus' ? bulkAnalysisDomains.qualificationStatus :
-        bulkAnalysisDomains.createdAt;
+      let orderByClause;
+      
+      if (sortBy === 'qualificationStatus') {
+        // Custom sort order for qualification status
+        const statusOrder = sql`
+          CASE ${bulkAnalysisDomains.qualificationStatus}
+            WHEN 'high_quality' THEN ${sortOrder === 'asc' ? 1 : 5}
+            WHEN 'good_quality' THEN ${sortOrder === 'asc' ? 2 : 4}
+            WHEN 'marginal_quality' THEN ${sortOrder === 'asc' ? 3 : 3}
+            WHEN 'disqualified' THEN ${sortOrder === 'asc' ? 4 : 2}
+            WHEN 'pending' THEN ${sortOrder === 'asc' ? 5 : 1}
+            ELSE ${sortOrder === 'asc' ? 6 : 0}
+          END
+        `;
+        orderByClause = statusOrder;
+      } else {
+        const orderByColumn = 
+          sortBy === 'domain' ? bulkAnalysisDomains.domain :
+          bulkAnalysisDomains.createdAt;
+        orderByClause = sortOrder === 'desc' ? desc(orderByColumn) : asc(orderByColumn);
+      }
       
       const domains = await db
         .select()
         .from(bulkAnalysisDomains)
         .where(and(...conditions))
-        .orderBy(sortOrder === 'desc' ? desc(orderByColumn) : asc(orderByColumn))
+        .orderBy(orderByClause)
         .limit(pageSize)
         .offset(offset);
       
