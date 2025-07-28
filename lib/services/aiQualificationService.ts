@@ -202,18 +202,18 @@ export class AIQualificationService {
     return `You will receive two JSON blobs:
 
  • **Client Information**  
-   – Each page: url, one-sentence description  
-   – List of core keywords (from narrow long-tails up to broad terms)
+   – Each potential target page: url, description  
+   – List of relevant niche keywords (from highly specific up to broader industry terms)
 
- • **Site to Evaluate**  
+ • **Guest Post Site to Evaluate**  
    – Domain name  
-   – List of all its keyword rankings  
+   – List of all its keyword rankings that overlap with the client's list of relevant niche keywords  
      (keyword, Google position ≤100, optional volume)
 
 YOUR TASK  
 1. Read all keywords for both sides and judge topical overlap:  
-   - *Direct*  → the site already ranks for a client core term  
-   - *Related* → the site ranks for an obviously relevant sibling topic but not the exact core term  
+   - *Direct*  → the site already ranks for a highly specific client niche term  
+   - *Related* → the site ranks for an obviously relevant sibling/broader industry topic but not the highly specific ones  
    If both Direct and Related exist, note that as "Both."  
    If nothing meaningful appears, mark as "None."
 
@@ -235,7 +235,7 @@ YOUR TASK
         No meaningful overlap at all
 
 4. Determine topic scope based on guest site authority:
-   • **short_tail** - Site can rank for broad core term without modifiers
+   • **short_tail** - Site can rank for broader industry term without modifiers
    • **long_tail** - Site needs simple modifier (geo, buyer type, "best", "how to")  
    • **ultra_long_tail** - Site needs very specific niche angle with multiple modifiers
 
