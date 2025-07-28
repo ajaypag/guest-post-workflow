@@ -13,6 +13,7 @@ import DataForSeoResultsModal from '@/components/DataForSeoResultsModal';
 import BulkAnalysisResultsModal from '@/components/BulkAnalysisResultsModal';
 import BulkAnalysisTable from '@/components/BulkAnalysisTable';
 import GuidedTriageFlow from '@/components/GuidedTriageFlow';
+import { MultiSelect, MultiSelectOption } from '@/components/ui/MultiSelect';
 import MoveToProjectDialog from '@/components/bulk-analysis/MoveToProjectDialog';
 import { MessageDisplay } from '@/components/bulk-analysis/MessageDisplay';
 import { BulkAnalysisProject } from '@/types/bulk-analysis-projects';
@@ -64,7 +65,7 @@ export default function ProjectDetailPage() {
   const [manualKeywords, setManualKeywords] = useState('');
   
   // Filtering options
-  const [statusFilter, setStatusFilter] = useState<'all' | 'pending' | 'high_quality' | 'good_quality' | 'marginal_quality' | 'disqualified'>('all');
+  const [statusFilter, setStatusFilter] = useState<string[]>([]);
   const [workflowFilter, setWorkflowFilter] = useState<'all' | 'has_workflow' | 'no_workflow'>('all');
   const [verificationFilter, setVerificationFilter] = useState<'all' | 'human_verified' | 'ai_qualified' | 'unverified'>('all');
   const [searchQuery, setSearchQuery] = useState('');
@@ -77,6 +78,15 @@ export default function ProjectDetailPage() {
   // Pagination state
   const [displayLimit, setDisplayLimit] = useState(50);
   const ITEMS_PER_PAGE = 50;
+  
+  // Status filter options for multi-select
+  const statusOptions: MultiSelectOption[] = [
+    { value: 'pending', label: 'Pending' },
+    { value: 'high_quality', label: 'High Quality' },
+    { value: 'good_quality', label: 'Good Quality' },
+    { value: 'marginal_quality', label: 'Marginal Quality' },
+    { value: 'disqualified', label: 'Disqualified' }
+  ];
   
   // DataForSEO modal state
   const [dataForSeoModal, setDataForSeoModal] = useState<{
@@ -1197,11 +1207,9 @@ export default function ProjectDetailPage() {
       
       // Apply current filters to export
       const filteredDomains = domains.filter(domain => {
-        // Status filter
-        if (statusFilter && statusFilter !== 'all') {
-          if (domain.qualificationStatus !== statusFilter) {
-            return false;
-          }
+        // Status filter - if any statuses are selected, domain must match one of them
+        if (statusFilter.length > 0 && !statusFilter.includes(domain.qualificationStatus)) {
+          return false;
         }
         
         // Workflow filter
@@ -1988,18 +1996,13 @@ anotherdomain.com"
                     {!isSearchExpanded && (
                       <div className="flex items-center gap-2 flex-nowrap overflow-x-auto scrollbar-hide">
                         {/* Status Filter */}
-                        <select
-                          value={statusFilter}
-                          onChange={(e) => setStatusFilter(e.target.value as 'all' | 'pending' | 'high_quality' | 'good_quality' | 'marginal_quality' | 'disqualified')}
-                          className="border border-gray-300 rounded-lg px-2 sm:px-3 py-2 text-xs sm:text-sm focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500 min-w-[100px] lg:min-w-[120px]"
-                        >
-                          <option value="all">All Status</option>
-                          <option value="pending">Pending</option>
-                          <option value="high_quality">High Quality</option>
-                          <option value="good_quality">Good Quality</option>
-                          <option value="marginal_quality">Marginal Quality</option>
-                          <option value="disqualified">Disqualified</option>
-                        </select>
+                        <MultiSelect
+                          options={statusOptions}
+                          selectedValues={statusFilter}
+                          onChange={setStatusFilter}
+                          placeholder="All Statuses"
+                          className="min-w-[120px] lg:min-w-[140px]"
+                        />
 
                         {/* Workflow Filter - Hidden on mobile */}
                         <select
@@ -2059,11 +2062,11 @@ anotherdomain.com"
                     )}
 
                     {/* Clear Filters - Always visible */}
-                    {(searchQuery || statusFilter !== 'all' || workflowFilter !== 'all' || verificationFilter !== 'all') && (
+                    {(searchQuery || statusFilter.length > 0 || workflowFilter !== 'all' || verificationFilter !== 'all') && (
                       <button
                         onClick={() => {
                           setSearchQuery('');
-                          setStatusFilter('all');
+                          setStatusFilter([]);
                           setWorkflowFilter('all');
                           setVerificationFilter('all');
                           setIsSearchExpanded(false);
@@ -2550,8 +2553,8 @@ anotherdomain.com"
               {/* Domain Table */}
               {(() => {
                 const filteredDomains = domains.filter(domain => {
-                  // Status filter
-                  if (statusFilter !== 'all' && domain.qualificationStatus !== statusFilter) return false;
+                  // Status filter - if any statuses are selected, domain must match one of them
+                  if (statusFilter.length > 0 && !statusFilter.includes(domain.qualificationStatus)) return false;
                   
                   // Workflow filter
                   if (workflowFilter === 'has_workflow' && !domain.hasWorkflow) return false;
@@ -2715,7 +2718,7 @@ anotherdomain.com"
                       </div>
                       
                       {/* Active Filters Summary */}
-                      {(searchQuery || statusFilter !== 'all' || workflowFilter !== 'all' || verificationFilter !== 'all') && (
+                      {(searchQuery || statusFilter.length > 0 || workflowFilter !== 'all' || verificationFilter !== 'all') && (
                         <div className="mt-2 flex items-center justify-center gap-2 text-xs">
                           <span className="text-gray-500">Active filters:</span>
                           {searchQuery && (
@@ -2723,9 +2726,9 @@ anotherdomain.com"
                               Search: "{searchQuery}"
                             </span>
                           )}
-                          {statusFilter !== 'all' && (
+                          {statusFilter.length > 0 && (
                             <span className="px-2 py-1 bg-indigo-100 text-indigo-700 rounded">
-                              Status: {statusFilter.replace('_', ' ')}
+                              Status: {statusFilter.length === statusOptions.length ? 'All' : statusFilter.map(s => s.replace('_', ' ')).join(', ')}
                             </span>
                           )}
                           {workflowFilter !== 'all' && (
@@ -2781,8 +2784,8 @@ anotherdomain.com"
       {showGuidedTriage && (
         <GuidedTriageFlow
           domains={domains.filter(domain => {
-            // Status filter
-            if (statusFilter !== 'all' && domain.qualificationStatus !== statusFilter) return false;
+            // Status filter - if any statuses are selected, domain must match one of them
+            if (statusFilter.length > 0 && !statusFilter.includes(domain.qualificationStatus)) return false;
             
             // Workflow filter
             if (workflowFilter === 'has_workflow' && !domain.hasWorkflow) return false;
