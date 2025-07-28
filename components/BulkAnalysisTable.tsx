@@ -779,11 +779,21 @@ export default function BulkAnalysisTable(props: BulkAnalysisTableProps) {
                                   <Search className="w-4 h-4 mr-2" />
                                   DataForSEO Results
                                 </div>
-                                {data.dataForSeoResults.lastAnalyzed && (
-                                  <span className="text-xs text-gray-500">
-                                    Last updated: {new Date(data.dataForSeoResults.lastAnalyzed).toLocaleTimeString()}
-                                  </span>
-                                )}
+                                <div className="flex items-center gap-3">
+                                  {data.dataForSeoResults.lastAnalyzed && (
+                                    <span className="text-xs text-gray-500">
+                                      Last updated: {new Date(data.dataForSeoResults.lastAnalyzed).toLocaleTimeString()}
+                                    </span>
+                                  )}
+                                  <a
+                                    href={`/clients/${domain.clientId}/bulk-analysis?guided=${domain.id}`}
+                                    className="inline-flex items-center px-3 py-1.5 text-xs font-medium text-indigo-700 bg-indigo-50 hover:bg-indigo-100 rounded-md transition-colors"
+                                    onClick={(e) => e.stopPropagation()}
+                                  >
+                                    <ExternalLink className="w-3 h-3 mr-1" />
+                                    View Full Analysis
+                                  </a>
+                                </div>
                               </h4>
                               {data.dataForSeoResults.wasAnalyzedWithNoResults ? (
                                 <div className="bg-amber-50 rounded-lg border border-amber-200 p-6 text-center">

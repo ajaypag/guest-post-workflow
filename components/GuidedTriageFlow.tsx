@@ -761,46 +761,94 @@ export default function GuidedTriageFlow(props: GuidedTriageFlowProps) {
                 </div>
               )}
               
-              {/* Position Range Filter - Subtle one-line implementation */}
+              {/* Position Range Filter */}
               {data.dataForSeoResults && (
                 <div className="relative pt-4 mt-auto border-t">
-                  <button
-                    onClick={() => setShowCustomRange(!showCustomRange)}
-                    className={`flex items-center gap-1.5 px-2.5 py-1.5 text-xs font-medium rounded-md transition-all ${
-                      positionFilter
-                        ? 'bg-indigo-100 text-indigo-700 border border-indigo-300'
-                        : 'bg-gray-100 text-gray-600 hover:bg-gray-200'
-                    }`}
-                  >
-                    <Filter className="w-3 h-3" />
-                    {positionFilter ? `Top ${positionFilter.split('-')[1]}` : 'Position'}
-                    <ChevronUp className={`w-3 h-3 ml-auto transition-transform ${showCustomRange ? 'rotate-180' : ''}`} />
-                  </button>
+                  <div className="flex items-center gap-2">
+                    {/* Quick action buttons */}
+                    <button
+                      onClick={() => setPositionFilter(positionFilter === '1-20' ? null : '1-20')}
+                      className={`px-3 py-1.5 text-xs font-medium rounded-md transition-all ${
+                        positionFilter === '1-20'
+                          ? 'bg-indigo-100 text-indigo-700 border border-indigo-300'
+                          : 'bg-gray-100 text-gray-600 hover:bg-gray-200'
+                      }`}
+                    >
+                      Top 20
+                    </button>
+                    <button
+                      onClick={() => setPositionFilter(positionFilter === '1-50' ? null : '1-50')}
+                      className={`px-3 py-1.5 text-xs font-medium rounded-md transition-all ${
+                        positionFilter === '1-50'
+                          ? 'bg-indigo-100 text-indigo-700 border border-indigo-300'
+                          : 'bg-gray-100 text-gray-600 hover:bg-gray-200'
+                      }`}
+                    >
+                      Top 50
+                    </button>
+                    
+                    {/* More options button */}
+                    <button
+                      onClick={() => setShowCustomRange(!showCustomRange)}
+                      className={`flex items-center gap-1.5 px-2.5 py-1.5 text-xs font-medium rounded-md transition-all ${
+                        ['1-10', '1-30', '1-40', '1-100'].includes(positionFilter || '') || 
+                        (positionFilter && !['1-20', '1-50'].includes(positionFilter))
+                          ? 'bg-indigo-100 text-indigo-700 border border-indigo-300'
+                          : 'bg-gray-100 text-gray-600 hover:bg-gray-200'
+                      }`}
+                    >
+                      <Filter className="w-3 h-3" />
+                      More
+                      <ChevronUp className={`w-3 h-3 ml-1 transition-transform ${showCustomRange ? 'rotate-180' : ''}`} />
+                    </button>
+                  </div>
                   
                   {/* Drop-up menu */}
                   {showCustomRange && (
-                    <div className="absolute bottom-full left-0 mb-1 bg-white border border-gray-200 rounded-md shadow-lg p-1 min-w-[120px]">
+                    <div className="absolute bottom-full left-0 mb-1 bg-white border border-gray-200 rounded-md shadow-lg p-1 min-w-[160px] z-10">
                       <button
                         onClick={() => {
-                          setPositionFilter(positionFilter === '1-20' ? null : '1-20');
+                          setPositionFilter(positionFilter === '1-10' ? null : '1-10');
                           setShowCustomRange(false);
                         }}
-                        className={`w-full text-left px-2 py-1 text-xs rounded hover:bg-gray-100 ${
-                          positionFilter === '1-20' ? 'bg-indigo-50 text-indigo-700' : ''
+                        className={`w-full text-left px-3 py-1.5 text-xs rounded hover:bg-gray-100 ${
+                          positionFilter === '1-10' ? 'bg-indigo-50 text-indigo-700' : ''
                         }`}
                       >
-                        Top 20
+                        Top 10
                       </button>
                       <button
                         onClick={() => {
-                          setPositionFilter(positionFilter === '1-50' ? null : '1-50');
+                          setPositionFilter(positionFilter === '1-30' ? null : '1-30');
                           setShowCustomRange(false);
                         }}
-                        className={`w-full text-left px-2 py-1 text-xs rounded hover:bg-gray-100 ${
-                          positionFilter === '1-50' ? 'bg-indigo-50 text-indigo-700' : ''
+                        className={`w-full text-left px-3 py-1.5 text-xs rounded hover:bg-gray-100 ${
+                          positionFilter === '1-30' ? 'bg-indigo-50 text-indigo-700' : ''
                         }`}
                       >
-                        Top 50
+                        Top 30
+                      </button>
+                      <button
+                        onClick={() => {
+                          setPositionFilter(positionFilter === '1-40' ? null : '1-40');
+                          setShowCustomRange(false);
+                        }}
+                        className={`w-full text-left px-3 py-1.5 text-xs rounded hover:bg-gray-100 ${
+                          positionFilter === '1-40' ? 'bg-indigo-50 text-indigo-700' : ''
+                        }`}
+                      >
+                        Top 40
+                      </button>
+                      <button
+                        onClick={() => {
+                          setPositionFilter(positionFilter === '1-100' ? null : '1-100');
+                          setShowCustomRange(false);
+                        }}
+                        className={`w-full text-left px-3 py-1.5 text-xs rounded hover:bg-gray-100 ${
+                          positionFilter === '1-100' ? 'bg-indigo-50 text-indigo-700' : ''
+                        }`}
+                      >
+                        1-100
                       </button>
                       <div className="border-t border-gray-100 my-0.5"></div>
                       <div className="px-2 py-1">
@@ -810,7 +858,7 @@ export default function GuidedTriageFlow(props: GuidedTriageFlowProps) {
                             placeholder="1"
                             value={customRangeMin}
                             onChange={(e) => setCustomRangeMin(e.target.value)}
-                            className="w-10 px-1 py-0.5 text-xs border border-gray-200 rounded"
+                            className="w-12 px-1 py-0.5 text-xs border border-gray-200 rounded"
                             min="1"
                           />
                           <span className="text-xs text-gray-500">-</span>
@@ -819,7 +867,7 @@ export default function GuidedTriageFlow(props: GuidedTriageFlowProps) {
                             placeholder="100"
                             value={customRangeMax}
                             onChange={(e) => setCustomRangeMax(e.target.value)}
-                            className="w-10 px-1 py-0.5 text-xs border border-gray-200 rounded"
+                            className="w-12 px-1 py-0.5 text-xs border border-gray-200 rounded"
                             min="1"
                           />
                           <button
@@ -835,7 +883,7 @@ export default function GuidedTriageFlow(props: GuidedTriageFlowProps) {
                           </button>
                         </div>
                       </div>
-                      {positionFilter && (
+                      {positionFilter && !['1-10', '1-20', '1-30', '1-40', '1-50', '1-100'].includes(positionFilter) && (
                         <>
                           <div className="border-t border-gray-100 my-0.5"></div>
                           <button

@@ -1,7 +1,7 @@
 'use client';
 
 import { useState, useEffect } from 'react';
-import { useParams, useRouter } from 'next/navigation';
+import { useParams, useRouter, useSearchParams } from 'next/navigation';
 import Link from 'next/link';
 import AuthWrapper from '@/components/AuthWrapper';
 import Header from '@/components/Header';
@@ -43,6 +43,7 @@ import { BulkAnalysisProject } from '@/types/bulk-analysis-projects';
 export default function BulkAnalysisPage() {
   const params = useParams();
   const router = useRouter();
+  const searchParams = useSearchParams();
   const [client, setClient] = useState<Client | null>(null);
   const [targetPages, setTargetPages] = useState<TargetPage[]>([]);
   const [selectedTargetPages, setSelectedTargetPages] = useState<string[]>([]);
@@ -145,6 +146,21 @@ export default function BulkAnalysisPage() {
       loadProjects();
     }
   }, [client]);
+
+  // Handle guided parameter from URL
+  useEffect(() => {
+    const guidedDomainId = searchParams.get('guided');
+    if (guidedDomainId && domains.length > 0) {
+      // Find the domain with this ID
+      const guidedDomain = domains.find(d => d.id === guidedDomainId);
+      if (guidedDomain) {
+        // Automatically open guided triage with this domain selected
+        setShowGuidedTriage(true);
+        // You might also want to filter to show only this domain
+        setSearchQuery(guidedDomain.domain);
+      }
+    }
+  }, [searchParams, domains]);
 
   const loadClient = async () => {
     try {
