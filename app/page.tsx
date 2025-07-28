@@ -1,6 +1,7 @@
 import AuthWrapper from '@/components/AuthWrapper';
 import Header from '@/components/Header';
 import WorkflowList from '@/components/WorkflowList';
+import QuickActions from '@/components/QuickActions';
 
 export default function Home() {
   return (
@@ -19,6 +20,9 @@ export default function Home() {
               </p>
             </div>
           </div>
+          
+          {/* Quick Actions Pipeline */}
+          <QuickActions />
           
           <WorkflowList />
         </main>
