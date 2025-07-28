@@ -1994,7 +1994,7 @@ anotherdomain.com"
                     
                     {/* Filters Container - Hide when search is expanded */}
                     {!isSearchExpanded && (
-                      <div className="flex items-center gap-2 flex-nowrap overflow-x-auto scrollbar-hide">
+                      <div className="flex items-center gap-2 flex-nowrap overflow-x-auto scrollbar-hide relative">
                         {/* Status Filter */}
                         <MultiSelect
                           options={statusOptions}

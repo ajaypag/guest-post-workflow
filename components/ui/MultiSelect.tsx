@@ -1,4 +1,5 @@
 import React, { useState, useRef, useEffect } from 'react';
+import { createPortal } from 'react-dom';
 import { ChevronDown, X, Check } from 'lucide-react';
 
 export interface MultiSelectOption {
@@ -25,11 +26,18 @@ export function MultiSelect({
   maxDisplayItems = 2
 }: MultiSelectProps) {
   const [isOpen, setIsOpen] = useState(false);
+  const [dropdownPosition, setDropdownPosition] = useState({ top: 0, left: 0, width: 0 });
   const dropdownRef = useRef<HTMLDivElement>(null);
+  const buttonRef = useRef<HTMLButtonElement>(null);
 
   useEffect(() => {
     const handleClickOutside = (event: MouseEvent) => {
-      if (dropdownRef.current && !dropdownRef.current.contains(event.target as Node)) {
+      if (
+        dropdownRef.current && 
+        !dropdownRef.current.contains(event.target as Node) &&
+        buttonRef.current &&
+        !buttonRef.current.contains(event.target as Node)
+      ) {
         setIsOpen(false);
       }
     };
@@ -43,6 +51,18 @@ export function MultiSelect({
       ? selectedValues.filter(v => v !== value)
       : [...selectedValues, value];
     onChange(newValues);
+  };
+
+  const handleToggleDropdown = () => {
+    if (!isOpen && buttonRef.current) {
+      const rect = buttonRef.current.getBoundingClientRect();
+      setDropdownPosition({
+        top: rect.bottom + window.scrollY,
+        left: rect.left + window.scrollX,
+        width: rect.width
+      });
+    }
+    setIsOpen(!isOpen);
   };
 
   const handleSelectAll = () => {
@@ -88,10 +108,11 @@ export function MultiSelect({
   };
 
   return (
-    <div className={`relative ${className}`} ref={dropdownRef}>
+    <div className={`relative ${className} ${isOpen ? 'z-[101]' : ''}`} ref={dropdownRef}>
       <button
+        ref={buttonRef}
         type="button"
-        onClick={() => setIsOpen(!isOpen)}
+        onClick={handleToggleDropdown}
         className="w-full border border-gray-300 rounded-lg px-2 sm:px-3 py-2 text-xs sm:text-sm focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500 bg-white text-left flex items-center justify-between min-w-[120px] lg:min-w-[140px]"
       >
         <span className="truncate text-gray-900">
@@ -100,8 +121,16 @@ export function MultiSelect({
         <ChevronDown className={`h-4 w-4 text-gray-400 transition-transform ${isOpen ? 'rotate-180' : ''}`} />
       </button>
 
-      {isOpen && (
-        <div className="absolute z-50 w-full mt-1 bg-white border border-gray-300 rounded-lg shadow-lg max-h-64 overflow-y-auto">
+      {isOpen && typeof window !== 'undefined' && createPortal(
+        <div 
+          className="fixed z-[100] bg-white border border-gray-300 rounded-lg shadow-lg max-h-64 overflow-y-auto"
+          style={{
+            top: dropdownPosition.top + 4,
+            left: dropdownPosition.left,
+            width: dropdownPosition.width
+          }}
+          ref={dropdownRef}
+        >
           {/* Select All Option */}
           <div 
             className="px-3 py-2 hover:bg-gray-50 cursor-pointer border-b border-gray-100 flex items-center justify-between text-sm font-medium"
@@ -134,7 +163,8 @@ export function MultiSelect({
               </div>
             );
           })}
-        </div>
+        </div>,
+        document.body
       )}
     </div>
   );
