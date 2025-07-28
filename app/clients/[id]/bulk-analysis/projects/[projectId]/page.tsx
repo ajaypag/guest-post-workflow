@@ -1956,8 +1956,8 @@ anotherdomain.com"
               
               {/* Primary Action Bar - Always Visible */}
               <div className="mb-4 p-4 bg-white border border-gray-200 rounded-lg shadow-sm">
-                <div className="flex items-center justify-between">
-                  <div className="flex items-center gap-3">
+                <div className="flex flex-col lg:flex-row items-start lg:items-center justify-between gap-4">
+                  <div className="flex flex-wrap items-center gap-2 sm:gap-3">
                     {/* Auto-Qualify All Button */}
                     <button
                       onClick={async () => {
@@ -1974,7 +1974,7 @@ anotherdomain.com"
                         setTimeout(() => startMasterQualification(), 100);
                       }}
                       disabled={bulkAnalysisRunning || loading || masterQualificationRunning || domains.length === 0}
-                      className="inline-flex items-center px-4 py-2 bg-indigo-600 text-white text-sm font-medium rounded-lg hover:bg-indigo-700 disabled:opacity-50 disabled:cursor-not-allowed shadow-md"
+                      className="inline-flex items-center px-3 sm:px-4 py-2 bg-indigo-600 text-white text-xs sm:text-sm font-medium rounded-lg hover:bg-indigo-700 disabled:opacity-50 disabled:cursor-not-allowed shadow-md"
                       title={(() => {
                         const needingDataForSeo = domains.filter(d => !d.hasDataForSeoResults).length;
                         const needingAI = domains.filter(d => d.qualificationStatus === 'pending').length;
@@ -1996,34 +1996,34 @@ anotherdomain.com"
                     {/* Guided Review Button */}
                     <button
                       onClick={() => setShowGuidedTriage(true)}
-                      className="inline-flex items-center px-4 py-2 bg-purple-600 text-white text-sm font-medium rounded-lg hover:bg-purple-700 shadow-md"
+                      className="inline-flex items-center px-3 sm:px-4 py-2 bg-purple-600 text-white text-xs sm:text-sm font-medium rounded-lg hover:bg-purple-700 shadow-md"
                       title="Review domains one by one with DataForSEO and AI analysis"
                     >
                       <Target className="w-4 h-4 mr-2" />
                       Guided Review
                     </button>
 
-                    <div className="h-6 w-px bg-gray-300 mx-2" />
+                    <div className="hidden sm:block h-6 w-px bg-gray-300 mx-2" />
 
                     {/* Search */}
-                    <div className="relative">
+                    <div className="relative w-full sm:w-auto">
                       <input
                         type="text"
                         placeholder="Search domains..."
                         value={searchQuery}
                         onChange={(e) => setSearchQuery(e.target.value)}
-                        className="w-64 pl-10 pr-4 py-2 border border-gray-300 rounded-lg text-sm focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500"
+                        className="w-full sm:w-64 pl-10 pr-4 py-2 border border-gray-300 rounded-lg text-sm focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500"
                       />
                       <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400 w-4 h-4" />
                     </div>
                   </div>
 
-                  <div className="flex items-center gap-2">
+                  <div className="flex flex-wrap items-center gap-2 w-full lg:w-auto">
                     {/* Status Filter */}
                     <select
                       value={statusFilter}
                       onChange={(e) => setStatusFilter(e.target.value as 'all' | 'pending' | 'high_quality' | 'average_quality' | 'disqualified')}
-                      className="border border-gray-300 rounded-lg px-3 py-2 text-sm focus:ring-2 focus:ring-indigo-500"
+                      className="flex-1 sm:flex-auto border border-gray-300 rounded-lg px-2 sm:px-3 py-2 text-xs sm:text-sm focus:ring-2 focus:ring-indigo-500"
                     >
                       <option value="all">All Status</option>
                       <option value="pending">Pending</option>
@@ -2036,7 +2036,7 @@ anotherdomain.com"
                     <select
                       value={workflowFilter}
                       onChange={(e) => setWorkflowFilter(e.target.value as 'all' | 'has_workflow' | 'no_workflow')}
-                      className="border border-gray-300 rounded-lg px-3 py-2 text-sm focus:ring-2 focus:ring-indigo-500"
+                      className="flex-1 sm:flex-auto border border-gray-300 rounded-lg px-2 sm:px-3 py-2 text-xs sm:text-sm focus:ring-2 focus:ring-indigo-500"
                     >
                       <option value="all">All Workflows</option>
                       <option value="has_workflow">Has Workflow</option>
@@ -2047,7 +2047,7 @@ anotherdomain.com"
                     <select
                       value={verificationFilter}
                       onChange={(e) => setVerificationFilter(e.target.value as 'all' | 'human_verified' | 'ai_qualified' | 'unverified')}
-                      className="border border-gray-300 rounded-lg px-3 py-2 text-sm focus:ring-2 focus:ring-indigo-500"
+                      className="flex-1 sm:flex-auto border border-gray-300 rounded-lg px-2 sm:px-3 py-2 text-xs sm:text-sm focus:ring-2 focus:ring-indigo-500"
                     >
                       <option value="all">All Verification</option>
                       <option value="human_verified">Human Verified</option>
@@ -2056,11 +2056,11 @@ anotherdomain.com"
                     </select>
 
                     {/* Sort By Dropdown */}
-                    <div className="flex items-center gap-1 border-l pl-2">
+                    <div className="flex items-center gap-1 border-l pl-2 ml-auto lg:ml-0">
                       <select
                         value={sortBy}
                         onChange={(e) => setSortBy(e.target.value as any)}
-                        className="border border-gray-300 rounded-lg px-3 py-2 text-sm focus:ring-2 focus:ring-indigo-500"
+                        className="flex-1 sm:flex-auto border border-gray-300 rounded-lg px-2 sm:px-3 py-2 text-xs sm:text-sm focus:ring-2 focus:ring-indigo-500"
                       >
                         <option value="createdAt">Date Added</option>
                         <option value="updatedAt">Last Modified</option>
@@ -2096,7 +2096,7 @@ anotherdomain.com"
                           setWorkflowFilter('all');
                           setVerificationFilter('all');
                         }}
-                        className="text-sm text-indigo-600 hover:text-indigo-800"
+                        className="text-xs sm:text-sm text-indigo-600 hover:text-indigo-800 whitespace-nowrap"
                       >
                         Clear
                       </button>
@@ -2109,11 +2109,11 @@ anotherdomain.com"
               {/* Bulk Actions Bar */}
               {selectedDomains.size > 0 && (
                 <div className="mb-4 p-4 bg-indigo-50 border border-indigo-200 rounded-lg">
-                  <div className="flex items-center justify-between">
-                    <div className="flex items-center gap-4">
+                  <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4">
+                    <div className="flex flex-wrap items-center gap-2 sm:gap-4">
                       {/* Selection Count with Expandable Stats */}
                       <div className="flex items-center gap-2">
-                        <span className="text-sm font-medium text-indigo-900">
+                        <span className="text-xs sm:text-sm font-medium text-indigo-900">
                           {selectedDomains.size} domain{selectedDomains.size > 1 ? 's' : ''} selected
                         </span>
                         {(() => {
@@ -2155,7 +2155,7 @@ anotherdomain.com"
                       </div>
                       <button
                         onClick={clearSelection}
-                        className="text-sm text-indigo-600 hover:text-indigo-800 underline"
+                        className="text-xs sm:text-sm text-indigo-600 hover:text-indigo-800 underline"
                       >
                         Clear selection
                       </button>
