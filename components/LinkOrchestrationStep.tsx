@@ -7,7 +7,7 @@ import {
   XCircle, 
   Link, 
   MessageSquare, 
-  Image, 
+  Image as ImageIcon, 
   FileText, 
   Globe,
   ChevronRight,
@@ -234,7 +234,7 @@ const LinkOrchestrationStep: React.FC<LinkOrchestrationStepProps> = ({
   const phaseInfo = [
     { icon: Link, label: 'Phase 1', description: 'Internal Links & Client Mentions' },
     { icon: MessageSquare, label: 'Phase 2', description: 'Client Link Placement' },
-    { icon: Image, label: 'Phase 3', description: 'Images, Link Requests & URL' }
+    { icon: ImageIcon, label: 'Phase 3', description: 'Images, Link Requests & URL' }
   ];
 
   return (
@@ -722,7 +722,7 @@ const LinkOrchestrationStep: React.FC<LinkOrchestrationStepProps> = ({
                   <div className="flex items-center justify-between">
                     <div className="flex items-center space-x-3">
                       <div className="w-8 h-8 bg-blue-100 rounded-full flex items-center justify-center">
-                        <Image className="w-4 h-4 text-blue-600" />
+                        <ImageIcon className="w-4 h-4 text-blue-600" />
                       </div>
                       <div>
                         <h4 className="font-medium text-gray-900">Step 13: Create Images</h4>

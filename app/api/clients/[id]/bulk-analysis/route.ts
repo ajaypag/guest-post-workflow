@@ -20,10 +20,11 @@ export async function GET(
     const hasWorkflow = searchParams.get('hasWorkflow') === 'true' ? true : 
                        searchParams.get('hasWorkflow') === 'false' ? false : undefined;
     const search = searchParams.get('search') || undefined;
+    const projectId = searchParams.get('projectId') || undefined;
     
     // Support legacy endpoint without pagination for backward compatibility
     if (!searchParams.get('page')) {
-      const domains = await BulkAnalysisService.getClientDomains(id);
+      const domains = await BulkAnalysisService.getClientDomains(id, projectId);
       return NextResponse.json({ domains });
     }
     
@@ -35,7 +36,8 @@ export async function GET(
       {
         qualificationStatus,
         hasWorkflow,
-        search
+        search,
+        projectId
       },
       sortBy,
       sortOrder
@@ -57,7 +59,7 @@ export async function POST(
 ) {
   try {
     const { id } = await params;
-    const { domains, targetPageIds } = await request.json();
+    const { domains, targetPageIds, manualKeywords, projectId } = await request.json();
 
     if (!domains || !Array.isArray(domains) || domains.length === 0) {
       return NextResponse.json(
@@ -66,9 +68,26 @@ export async function POST(
       );
     }
 
-    if (!targetPageIds || !Array.isArray(targetPageIds) || targetPageIds.length === 0) {
+    // Allow empty targetPageIds array when using manual keywords
+    if (!targetPageIds || !Array.isArray(targetPageIds)) {
       return NextResponse.json(
-        { error: 'No target pages selected' },
+        { error: 'Invalid target pages' },
+        { status: 400 }
+      );
+    }
+
+    // Require either targetPageIds or manualKeywords
+    if (targetPageIds.length === 0 && !manualKeywords) {
+      return NextResponse.json(
+        { error: 'Either target pages or manual keywords must be provided' },
+        { status: 400 }
+      );
+    }
+
+    // Require projectId for new domains
+    if (!projectId) {
+      return NextResponse.json(
+        { error: 'Project ID is required. Please select a project for your domains.' },
         { status: 400 }
       );
     }
@@ -77,6 +96,8 @@ export async function POST(
       clientId: id,
       domains,
       targetPageIds,
+      manualKeywords,
+      projectId,
       userId: 'system' // Placeholder since no auth
     });
 

@@ -91,6 +91,7 @@ function NewWorkflowContent() {
       // Get guest post site and notes from URL params if present
       const guestPostSite = searchParams.get('guestPostSite') || '';
       const notes = searchParams.get('notes') || '';
+      const targetPageId = searchParams.get('targetPageId') || '';
       
       const workflow: GuestPostWorkflow = {
         id: generateUUID(),
@@ -109,6 +110,8 @@ function NewWorkflowContent() {
           outputs: index === 0 && guestPostSite ? {
             domain: guestPostSite,
             notes: notes
+          } : index === 1 && targetPageId ? {
+            selectedTargetPageId: targetPageId
           } : {},
           completedAt: undefined
         })),

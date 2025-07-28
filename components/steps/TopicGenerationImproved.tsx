@@ -53,6 +53,34 @@ export const TopicGenerationImproved = ({ step, workflow, onChange, onWorkflowCh
     loadClient();
   }, [clientId]);
 
+  const keywordResearchStep = workflow.steps.find(s => s.id === 'keyword-research');
+  const domainSelectionStep = workflow.steps.find(s => s.id === 'domain-selection');
+  const guestPostSite = domainSelectionStep?.outputs?.domain || 'Guest post website from Step 1';
+  const urlSummaries = keywordResearchStep?.outputs?.urlSummaries || 'List of your target urls + summary';
+  
+  // Get selected target page URL from keyword research step
+  const selectedTargetPageId = keywordResearchStep?.outputs?.selectedTargetPageId;
+  const [selectedTargetPageUrl, setSelectedTargetPageUrl] = useState<string>('');
+  
+  // Load and auto-populate selected target page URL
+  useEffect(() => {
+    const loadTargetPageUrl = async () => {
+      if (!selectedTargetPageId || !client) return;
+      
+      const targetPage = client.targetPages?.find((page: any) => page.id === selectedTargetPageId);
+      if (targetPage && targetPage.url) {
+        setSelectedTargetPageUrl(targetPage.url);
+        
+        // Auto-populate clientTargetUrl if it's empty
+        if (!step.outputs.clientTargetUrl) {
+          onChange({ ...step.outputs, clientTargetUrl: targetPage.url });
+        }
+      }
+    };
+    
+    loadTargetPageUrl();
+  }, [selectedTargetPageId, client, step.outputs.clientTargetUrl]);
+
   // Get effective keyword preferences: workflow overrides > client defaults > none
   const getEffectiveKeywordPreferences = () => {
     const workflowPrefs = getWorkflowKeywordPreferences(workflow);
@@ -61,11 +89,6 @@ export const TopicGenerationImproved = ({ step, workflow, onChange, onWorkflowCh
   };
   
   const keywordPreferences = getEffectiveKeywordPreferences();
-
-  const keywordResearchStep = workflow.steps.find(s => s.id === 'keyword-research');
-  const domainSelectionStep = workflow.steps.find(s => s.id === 'domain-selection');
-  const guestPostSite = domainSelectionStep?.outputs?.domain || 'Guest post website from Step 1';
-  const urlSummaries = keywordResearchStep?.outputs?.urlSummaries || 'List of your target urls + summary';
   
   const toggleSection = (section: string) => {
     setExpandedSections(prev => ({

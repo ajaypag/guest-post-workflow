@@ -9,6 +9,8 @@ export interface BulkAnalysisInput {
   domains: string[];
   targetPageIds: string[];
   userId: string;
+  manualKeywords?: string;
+  projectId: string;
 }
 
 export interface BulkAnalysisResult extends BulkAnalysisDomain {
@@ -20,6 +22,7 @@ export interface BulkAnalysisFilter {
   qualificationStatus?: 'pending' | 'high_quality' | 'average_quality' | 'disqualified' | 'qualified_any';
   hasWorkflow?: boolean;
   search?: string;
+  projectId?: string;
 }
 
 export interface PaginatedResult<T> {
@@ -46,13 +49,19 @@ export class BulkAnalysisService {
   /**
    * Get all bulk analysis domains for a client
    */
-  static async getClientDomains(clientId: string): Promise<BulkAnalysisResult[]> {
+  static async getClientDomains(clientId: string, projectId?: string): Promise<BulkAnalysisResult[]> {
     try {
+      const conditions = [eq(bulkAnalysisDomains.clientId, clientId)];
+      
+      if (projectId !== undefined) {
+        conditions.push(eq(bulkAnalysisDomains.projectId, projectId));
+      }
+      
       const domains = await db
         .select()
         .from(bulkAnalysisDomains)
-        .where(eq(bulkAnalysisDomains.clientId, clientId))
-        .orderBy(bulkAnalysisDomains.createdAt);
+        .where(and(...conditions))
+        .orderBy(desc(bulkAnalysisDomains.createdAt));
 
       return domains;
     } catch (error) {
@@ -62,34 +71,61 @@ export class BulkAnalysisService {
   }
 
   /**
+   * Get a single domain by ID
+   */
+  static async getDomainById(domainId: string): Promise<BulkAnalysisResult | null> {
+    try {
+      const domains = await db
+        .select()
+        .from(bulkAnalysisDomains)
+        .where(eq(bulkAnalysisDomains.id, domainId))
+        .limit(1);
+
+      return domains[0] || null;
+    } catch (error) {
+      console.error('Error fetching domain by ID:', error);
+      throw error;
+    }
+  }
+
+  /**
    * Create or update bulk analysis domains
    */
   static async createOrUpdateDomains(input: BulkAnalysisInput): Promise<BulkAnalysisResult[]> {
     try {
-      const { clientId, domains, targetPageIds, userId } = input;
+      const { clientId, domains, targetPageIds, userId, manualKeywords, projectId } = input;
       
       // Clean domains
       const cleanedDomains = domains.map(d => this.cleanDomain(d)).filter(Boolean);
       
-      // Get target pages and their keywords
-      const pages = await db
-        .select()
-        .from(targetPages)
-        .where(
-          and(
-            eq(targetPages.clientId, clientId),
-            inArray(targetPages.id, targetPageIds)
-          )
-        );
+      let allKeywords = new Set<string>();
+      let pages: TargetPage[] = [];
+      
+      if (manualKeywords) {
+        // Use manual keywords if provided
+        const keywords = manualKeywords.split(',').map(k => k.trim()).filter(Boolean);
+        keywords.forEach(k => allKeywords.add(k));
+      } else if (targetPageIds && targetPageIds.length > 0) {
+        // Otherwise get keywords from target pages
+        pages = await db
+          .select()
+          .from(targetPages)
+          .where(
+            and(
+              eq(targetPages.clientId, clientId),
+              inArray(targetPages.id, targetPageIds)
+            )
+          );
 
-      // Aggregate and dedupe keywords
-      const allKeywords = new Set<string>();
-      pages.forEach(page => {
-        if (page.keywords) {
-          const keywords = page.keywords.split(',').map(k => k.trim());
-          keywords.forEach(k => allKeywords.add(k));
-        }
-      });
+        // Aggregate and dedupe keywords
+        pages.forEach(page => {
+          if (page.keywords) {
+            const keywords = page.keywords.split(',').map(k => k.trim());
+            keywords.forEach(k => allKeywords.add(k));
+          }
+        });
+      }
+      
       const keywordCount = allKeywords.size;
 
       // Prepare bulk insert/update data
@@ -103,6 +139,8 @@ export class BulkAnalysisService {
         checkedBy: null,
         checkedAt: null,
         notes: null,
+        projectId: projectId,
+        projectAddedAt: new Date(),
         createdAt: new Date(),
         updatedAt: new Date(),
       }));
@@ -142,18 +180,50 @@ export class BulkAnalysisService {
     domainId: string,
     status: 'pending' | 'high_quality' | 'average_quality' | 'disqualified',
     userId: string,
-    notes?: string
+    notes?: string,
+    isManual?: boolean,
+    selectedTargetPageId?: string
   ): Promise<BulkAnalysisDomain> {
     try {
+      // First, get the current domain to check if it has AI reasoning
+      const [currentDomain] = await db
+        .select()
+        .from(bulkAnalysisDomains)
+        .where(eq(bulkAnalysisDomains.id, domainId))
+        .limit(1);
+      
+      if (!currentDomain) {
+        throw new Error('Domain not found');
+      }
+
+      const updateData: any = {
+        qualificationStatus: status,
+        checkedBy: userId,
+        checkedAt: new Date(),
+        notes: notes || null,
+        updatedAt: new Date(),
+        ...(selectedTargetPageId && { selectedTargetPageId }),
+      };
+
+      // If this is a manual change to an AI qualification
+      if (isManual && currentDomain.aiQualificationReasoning) {
+        // Check if the status is being changed from the AI's original decision
+        if (currentDomain.qualificationStatus !== status) {
+          // Human modified the AI's decision
+          updateData.wasManuallyQualified = true;
+          updateData.manuallyQualifiedBy = userId;
+          updateData.manuallyQualifiedAt = new Date();
+        } else {
+          // Human verified/agreed with the AI's decision
+          updateData.wasHumanVerified = true;
+          updateData.humanVerifiedBy = userId;
+          updateData.humanVerifiedAt = new Date();
+        }
+      }
+
       const [updated] = await db
         .update(bulkAnalysisDomains)
-        .set({
-          qualificationStatus: status,
-          checkedBy: userId,
-          checkedAt: new Date(),
-          notes: notes || null,
-          updatedAt: new Date(),
-        })
+        .set(updateData)
         .where(eq(bulkAnalysisDomains.id, domainId))
         .returning();
 
@@ -208,7 +278,7 @@ export class BulkAnalysisService {
             eq(bulkAnalysisDomains.qualificationStatus, 'qualified')
           )
         )
-        .orderBy(bulkAnalysisDomains.checkedAt);
+        .orderBy(desc(bulkAnalysisDomains.createdAt));
 
       return domains;
     } catch (error) {
@@ -277,6 +347,10 @@ export class BulkAnalysisService {
       
       // Build where conditions
       const conditions = [eq(bulkAnalysisDomains.clientId, clientId)];
+      
+      if (filters?.projectId !== undefined) {
+        conditions.push(eq(bulkAnalysisDomains.projectId, filters.projectId));
+      }
       
       if (filters?.qualificationStatus) {
         if (filters.qualificationStatus === 'qualified_any') {
@@ -409,7 +483,8 @@ export class BulkAnalysisService {
    */
   static async refreshPendingDomains(
     clientId: string,
-    targetPageIds: string[]
+    targetPageIds: string[],
+    manualKeywords?: string
   ): Promise<BulkAnalysisResult[]> {
     try {
       // Get all pending domains for this client
@@ -427,25 +502,34 @@ export class BulkAnalysisService {
         return [];
       }
 
-      // Get target pages and their keywords
-      const pages = await db
-        .select()
-        .from(targetPages)
-        .where(
-          and(
-            eq(targetPages.clientId, clientId),
-            inArray(targetPages.id, targetPageIds)
-          )
-        );
+      let allKeywords = new Set<string>();
+      let pages: TargetPage[] = [];
+      
+      if (manualKeywords) {
+        // Use manual keywords if provided
+        const keywords = manualKeywords.split(',').map(k => k.trim()).filter(Boolean);
+        keywords.forEach(k => allKeywords.add(k));
+      } else if (targetPageIds && targetPageIds.length > 0) {
+        // Otherwise get keywords from target pages
+        pages = await db
+          .select()
+          .from(targetPages)
+          .where(
+            and(
+              eq(targetPages.clientId, clientId),
+              inArray(targetPages.id, targetPageIds)
+            )
+          );
 
-      // Aggregate and dedupe keywords
-      const allKeywords = new Set<string>();
-      pages.forEach(page => {
-        if (page.keywords) {
-          const keywords = page.keywords.split(',').map(k => k.trim());
-          keywords.forEach(k => allKeywords.add(k));
-        }
-      });
+        // Aggregate and dedupe keywords
+        pages.forEach(page => {
+          if (page.keywords) {
+            const keywords = page.keywords.split(',').map(k => k.trim());
+            keywords.forEach(k => allKeywords.add(k));
+          }
+        });
+      }
+      
       const keywordCount = allKeywords.size;
 
       // Update all pending domains with new target pages and keyword count
@@ -530,6 +614,37 @@ export class BulkAnalysisService {
       return csv;
     } catch (error) {
       console.error('Error exporting domains:', error);
+      throw error;
+    }
+  }
+
+  /**
+   * Update DataForSEO analysis status for a domain
+   */
+  static async updateDomainDataForSeoStatus(
+    domainId: string,
+    hasResults: boolean,
+    resultsCount?: number
+  ): Promise<void> {
+    try {
+      const updateData: any = {
+        hasDataForSeoResults: hasResults,
+        dataForSeoLastAnalyzed: new Date(),
+        updatedAt: new Date(),
+      };
+      
+      if (resultsCount !== undefined) {
+        updateData.dataForSeoResultsCount = resultsCount;
+      }
+      
+      await db
+        .update(bulkAnalysisDomains)
+        .set(updateData)
+        .where(eq(bulkAnalysisDomains.id, domainId));
+      
+      console.log(`Updated domain ${domainId} DataForSEO status: hasResults=${hasResults}, count=${resultsCount}`);
+    } catch (error) {
+      console.error('Error updating domain DataForSEO status:', error);
       throw error;
     }
   }

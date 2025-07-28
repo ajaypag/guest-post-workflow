@@ -30,6 +30,38 @@ export default function AdminDashboard() {
       iconColor: 'text-blue-600'
     },
     {
+      title: 'DataForSEO Cache Migrations',
+      description: 'Run migrations for smart caching system (fixes cache not working)',
+      icon: Database,
+      href: '/admin/dataforseo-migrations',
+      color: 'bg-cyan-50 border-cyan-200 text-cyan-700',
+      iconColor: 'text-cyan-600'
+    },
+    {
+      title: 'DataForSEO Count Migration',
+      description: 'Add results count column for immediate display in bulk analysis table',
+      icon: Database,
+      href: '/admin/dataforseo-count-migration',
+      color: 'bg-purple-50 border-purple-200 text-purple-700',
+      iconColor: 'text-purple-600'
+    },
+    {
+      title: 'Client Type Migration',
+      description: 'Add prospect vs client type system for bulk analysis dashboard',
+      icon: Database,
+      href: '/admin/client-type-migration',
+      color: 'bg-emerald-50 border-emerald-200 text-emerald-700',
+      iconColor: 'text-emerald-600'
+    },
+    {
+      title: 'Add Selected Target Page',
+      description: 'Add selected_target_page_id column to bulk_analysis_domains table',
+      icon: Database,
+      href: '/admin/add-selected-target-page',
+      color: 'bg-violet-50 border-violet-200 text-violet-700',
+      iconColor: 'text-violet-600'
+    },
+    {
       title: 'Diagnostics',
       description: 'Run comprehensive system diagnostics and health checks',
       icon: Activity,
@@ -124,6 +156,46 @@ export default function AdminDashboard() {
       href: '/admin/o3-response-analyzer',
       color: 'bg-purple-50 border-purple-200 text-purple-700',
       iconColor: 'text-purple-600'
+    },
+    {
+      title: 'DataForSEO Monitoring',
+      description: 'Monitor API calls, analyze keyword filtering patterns, and debug issues',
+      icon: Search,
+      href: '/admin/dataforseo-monitoring',
+      color: 'bg-orange-50 border-orange-200 text-orange-700',
+      iconColor: 'text-orange-600'
+    },
+    {
+      title: 'DataForSEO Audit',
+      description: 'Audit API task IDs, view errors, track costs and success rates',
+      icon: FileSearch,
+      href: '/admin/dataforseo-audit',
+      color: 'bg-amber-50 border-amber-200 text-amber-700',
+      iconColor: 'text-amber-600'
+    },
+    {
+      title: 'Bulk Analysis Debug',
+      description: 'Debug manual keywords domain persistence issues',
+      icon: Bug,
+      href: '/api/admin/bulk-analysis-debug?clientId=test',
+      color: 'bg-red-50 border-red-200 text-red-700',
+      iconColor: 'text-red-600'
+    },
+    {
+      title: 'Bulk Analysis Test',
+      description: 'Test manual keywords domain creation fix',
+      icon: Activity,
+      href: '/admin/bulk-analysis-test',
+      color: 'bg-green-50 border-green-200 text-green-700',
+      iconColor: 'text-green-600'
+    },
+    {
+      title: 'Debug Analyzed Count',
+      description: 'Debug why analyzed metric shows 0 for projects',
+      icon: Bug,
+      href: '/api/admin/debug-analyzed-count',
+      color: 'bg-yellow-50 border-yellow-200 text-yellow-700',
+      iconColor: 'text-yellow-600'
     }
   ];
 

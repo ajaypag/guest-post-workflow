@@ -1093,6 +1093,84 @@ export default function DatabaseMigrationPage() {
     setIsLoading(false);
   };
 
+  // Data Source Tracking functions
+  const checkDataSourceFields = async () => {
+    setIsLoading(true);
+    setMessage('');
+    
+    try {
+      const response = await fetch('/api/admin/check-datasource-fields');
+      const data = await response.json();
+      
+      if (data.allFieldsExist) {
+        setMessage('✅ All data source tracking fields exist (hasDataForSeoResults, dataForSeoLastAnalyzed, aiQualificationReasoning, aiQualifiedAt)');
+        setMessageType('success');
+      } else {
+        setMessage(`ℹ️ Data source tracking fields missing. These fields are needed to show "DataForSEO" and "AI" in the datasources column.`);
+        setMessageType('info');
+      }
+    } catch (error) {
+      setMessage(`❌ Error checking fields: ${error instanceof Error ? error.message : 'Unknown error'}`);
+      setMessageType('error');
+    }
+    
+    setIsLoading(false);
+  };
+
+  const runDataSourceFieldsMigration = async () => {
+    setIsLoading(true);
+    setMessage('');
+    
+    try {
+      const response = await fetch('/api/admin/add-datasource-fields', {
+        method: 'POST'
+      });
+      const data = await response.json();
+      
+      if (data.success) {
+        setMessage('✅ Data source tracking fields added successfully! The datasources column will now show which analysis services have been run.');
+        setMessageType('success');
+      } else {
+        setMessage(`❌ Migration failed: ${data.error}`);
+        setMessageType('error');
+      }
+    } catch (error) {
+      setMessage(`❌ Error: ${error instanceof Error ? error.message : 'Unknown error'}`);
+      setMessageType('error');
+    }
+    
+    setIsLoading(false);
+  };
+
+  const runDataSourceFieldsRollback = async () => {
+    if (!confirm('Are you sure you want to remove the data source tracking fields? This will remove the ability to see which analysis services have been run.')) {
+      return;
+    }
+    
+    setIsLoading(true);
+    setMessage('');
+    
+    try {
+      const response = await fetch('/api/admin/add-datasource-fields', {
+        method: 'DELETE'
+      });
+      const data = await response.json();
+      
+      if (data.success) {
+        setMessage('✅ Data source tracking fields removed successfully!');
+        setMessageType('success');
+      } else {
+        setMessage(`❌ Rollback failed: ${data.error}`);
+        setMessageType('error');
+      }
+    } catch (error) {
+      setMessage(`❌ Error: ${error instanceof Error ? error.message : 'Unknown error'}`);
+      setMessageType('error');
+    }
+    
+    setIsLoading(false);
+  };
+
   return (
     <div className="min-h-screen bg-gray-50 py-8">
       <div className="max-w-4xl mx-auto px-4 sm:px-6 lg:px-8">
@@ -2203,6 +2281,85 @@ export default function DatabaseMigrationPage() {
               >
                 <RotateCcw className="w-4 h-4 mr-2" />
                 {isLoading ? 'Rolling Back...' : 'Rollback Migration'}
+              </button>
+            </div>
+          </div>
+
+          {/* Data Source Tracking Migration Section */}
+          <div className="mt-12 mb-8">
+            <h2 className="text-lg font-semibold text-gray-900 mb-4">Data Source Tracking Migration</h2>
+            <p className="text-gray-600 mb-4">
+              This migration adds tracking fields to the{' '}
+              <code className="bg-gray-100 px-2 py-1 rounded">bulk_analysis_domains</code> table to show which analysis 
+              services have been run (DataForSEO and AI) in the datasources column.
+            </p>
+            
+            <div className="bg-amber-50 border border-amber-200 rounded-lg p-4 mb-6">
+              <div className="flex items-start space-x-3">
+                <AlertTriangle className="w-5 h-5 text-amber-600 mt-0.5" />
+                <div>
+                  <h3 className="text-sm font-semibold text-amber-800">New Fields Added:</h3>
+                  <ul className="text-sm text-amber-700 mt-2 space-y-1">
+                    <li>• <code>hasDataForSeoResults</code> - Tracks if DataForSEO analysis has been run</li>
+                    <li>• <code>dataForSeoLastAnalyzed</code> - Timestamp of last DataForSEO analysis</li>
+                    <li>• <code>aiQualificationReasoning</code> - Stores AI qualification reasoning text</li>
+                    <li>• <code>aiQualifiedAt</code> - Timestamp of AI qualification</li>
+                    <li>• <code>wasManuallyQualified</code> - Boolean tracking if qualification was manually edited</li>
+                    <li>• <code>manuallyQualifiedBy</code> - User ID of who manually edited the qualification</li>
+                    <li>• <code>manuallyQualifiedAt</code> - Timestamp of manual qualification edit</li>
+                    <li>• Shows "DataForSEO" and "AI" badges in the datasources column</li>
+                  </ul>
+                </div>
+              </div>
+            </div>
+          </div>
+
+          <div className="space-y-4 mb-8">
+            {/* Check Data Source Fields Status */}
+            <div className="border border-gray-200 rounded-lg p-4">
+              <h3 className="font-semibold text-gray-900 mb-2">Check Data Source Fields Status</h3>
+              <p className="text-gray-600 text-sm mb-3">
+                Check if the data source tracking fields exist in the bulk_analysis_domains table.
+              </p>
+              <button
+                onClick={checkDataSourceFields}
+                disabled={isLoading}
+                className="inline-flex items-center px-4 py-2 bg-blue-600 text-white text-sm font-medium rounded-md hover:bg-blue-700 disabled:opacity-50 disabled:cursor-not-allowed"
+              >
+                <Database className="w-4 h-4 mr-2" />
+                {isLoading ? 'Checking...' : 'Check Status'}
+              </button>
+            </div>
+
+            {/* Run Data Source Fields Migration */}
+            <div className="border border-green-200 rounded-lg p-4">
+              <h3 className="font-semibold text-gray-900 mb-2">Add Data Source Tracking Fields</h3>
+              <p className="text-gray-600 text-sm mb-3">
+                Add fields to track which analysis services have been run for each domain.
+              </p>
+              <button
+                onClick={runDataSourceFieldsMigration}
+                disabled={isLoading}
+                className="inline-flex items-center px-4 py-2 bg-green-600 text-white text-sm font-medium rounded-md hover:bg-green-700 disabled:opacity-50 disabled:cursor-not-allowed"
+              >
+                <Play className="w-4 h-4 mr-2" />
+                {isLoading ? 'Running Migration...' : 'Add Fields'}
+              </button>
+            </div>
+
+            {/* Rollback Data Source Fields */}
+            <div className="border border-red-200 rounded-lg p-4">
+              <h3 className="font-semibold text-gray-900 mb-2">Remove Data Source Fields (Rollback)</h3>
+              <p className="text-gray-600 text-sm mb-3">
+                Remove data source tracking fields. This will remove the ability to see which services have been run.
+              </p>
+              <button
+                onClick={runDataSourceFieldsRollback}
+                disabled={isLoading}
+                className="inline-flex items-center px-4 py-2 bg-red-600 text-white text-sm font-medium rounded-md hover:bg-red-700 disabled:opacity-50 disabled:cursor-not-allowed"
+              >
+                <RotateCcw className="w-4 h-4 mr-2" />
+                {isLoading ? 'Rolling Back...' : 'Remove Fields'}
               </button>
             </div>
           </div>

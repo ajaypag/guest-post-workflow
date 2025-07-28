@@ -91,6 +91,16 @@ export const KeywordResearchStepClean = ({ step, workflow, onChange }: KeywordRe
     loadClient();
   }, [loadClient]);
   
+  // Auto-select target page if specified in workflow
+  useEffect(() => {
+    if (step.outputs.selectedTargetPageId && allActiveTargetPages.length > 0) {
+      const targetPageId = step.outputs.selectedTargetPageId;
+      if (allActiveTargetPages.some((page: any) => page.id === targetPageId)) {
+        setSelectedTargetPages([targetPageId]);
+      }
+    }
+  }, [step.outputs.selectedTargetPageId, allActiveTargetPages]);
+  
   const toggleSection = (section: string) => {
     setExpandedSections(prev => ({
       ...prev,
@@ -863,7 +873,7 @@ export const KeywordResearchStepClean = ({ step, workflow, onChange }: KeywordRe
                           updateData.urlSummaries = descriptions;
                         }
                         
-                        onChange(updateData);
+                        onChange({ ...step.outputs, ...updateData });
                         
                         // Clear selection
                         setSelectedTargetPages([]);

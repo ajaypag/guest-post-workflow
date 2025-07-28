@@ -12,6 +12,8 @@ import {
   ChevronLeft,
   ChevronRight,
   Loader2,
+  Database,
+  RefreshCw,
 } from 'lucide-react';
 
 interface KeywordResult {
@@ -21,6 +23,7 @@ interface KeywordResult {
   url: string;
   cpc: number | null;
   competition: string | null;
+  isFromCache?: boolean;
 }
 
 interface DataForSeoResultsModalProps {
@@ -31,6 +34,13 @@ interface DataForSeoResultsModalProps {
   clientId: string;
   initialResults?: KeywordResult[];
   totalFound: number;
+  taskId?: string;
+  cacheInfo?: {
+    newKeywords: number;
+    cachedKeywords: number;
+    apiCallsSaved: number;
+    daysSinceLastAnalysis: number | null;
+  };
 }
 
 export default function DataForSeoResultsModal({
@@ -41,6 +51,8 @@ export default function DataForSeoResultsModal({
   clientId,
   initialResults = [],
   totalFound,
+  taskId,
+  cacheInfo,
 }: DataForSeoResultsModalProps) {
   const [results, setResults] = useState<KeywordResult[]>(initialResults);
   const [loading, setLoading] = useState(false);
@@ -52,6 +64,9 @@ export default function DataForSeoResultsModal({
 
   // Store all fetched results for export
   const [allResults, setAllResults] = useState<KeywordResult[]>(initialResults);
+  
+  // Track the actual total from database
+  const [actualTotal, setActualTotal] = useState(totalFound);
 
   useEffect(() => {
     if (isOpen && results.length === 0) {
@@ -72,11 +87,15 @@ export default function DataForSeoResultsModal({
         if (page === 1) {
           setResults(data.results);
           setAllResults(data.results);
+          // Update actual total from database
+          if (data.total !== undefined) {
+            setActualTotal(data.total);
+          }
         } else {
           setResults(prev => [...prev, ...data.results]);
           setAllResults(prev => [...prev, ...data.results]);
         }
-        setHasMore(data.results.length === pageSize);
+        setHasMore(data.hasMore);
         setCurrentPage(page);
       }
     } catch (error) {
@@ -136,7 +155,7 @@ export default function DataForSeoResultsModal({
           r.position,
           r.searchVolume || '',
           `"${r.url}"`,
-          r.cpc || '',
+          r.cpc ? r.cpc.toFixed(2) : '',
           r.competition || '',
         ].join(',')
       ),
@@ -174,8 +193,49 @@ export default function DataForSeoResultsModal({
           <div>
             <h2 className="text-xl font-semibold">DataForSEO Analysis Results</h2>
             <p className="text-sm text-gray-600 mt-1">
-              {domain} • {totalFound} keywords found
+              {domain} • {actualTotal} ranking{actualTotal !== 1 ? 's' : ''} found
             </p>
+            {taskId && (
+              <p className="text-xs text-gray-500 mt-1 font-mono">
+                Task ID: {taskId}
+              </p>
+            )}
+            {cacheInfo && (
+              <div className="mt-2">
+                <div className="flex items-center gap-4 text-xs text-gray-500">
+                  <span className="font-medium text-gray-700">
+                    {(cacheInfo.newKeywords + cacheInfo.cachedKeywords)} keywords analyzed:
+                  </span>
+                  {cacheInfo.cachedKeywords > 0 && (
+                    <span className="flex items-center">
+                      <Database className="w-3 h-3 mr-1" />
+                      {cacheInfo.cachedKeywords} from cache
+                    </span>
+                  )}
+                  {cacheInfo.newKeywords > 0 && (
+                    <span className="flex items-center">
+                      <RefreshCw className="w-3 h-3 mr-1" />
+                      {cacheInfo.newKeywords} new
+                    </span>
+                  )}
+                  {cacheInfo.apiCallsSaved > 0 && (
+                    <span className="text-green-600">
+                      • {cacheInfo.apiCallsSaved} API call{cacheInfo.apiCallsSaved > 1 ? 's' : ''} saved
+                    </span>
+                  )}
+                </div>
+                {actualTotal === 0 && (
+                  <p className="text-xs text-amber-600 mt-1">
+                    ⚠️ This domain doesn't rank in top 100 for any of the {cacheInfo.newKeywords + cacheInfo.cachedKeywords} keywords analyzed
+                  </p>
+                )}
+                {actualTotal > 0 && (
+                  <p className="text-xs text-gray-500 mt-1">
+                    Found rankings for {actualTotal} out of {cacheInfo.newKeywords + cacheInfo.cachedKeywords} keywords analyzed
+                  </p>
+                )}
+              </div>
+            )}
           </div>
           <button
             onClick={onClose}
@@ -226,8 +286,29 @@ export default function DataForSeoResultsModal({
         {/* Results Table */}
         <div className="flex-1 overflow-auto">
           {filteredResults.length === 0 ? (
-            <div className="flex items-center justify-center h-64 text-gray-500">
-              No results found
+            <div className="flex flex-col items-center justify-center h-64 text-gray-500">
+              {actualTotal === 0 ? (
+                <div className="text-center max-w-md">
+                  <div className="text-lg mb-2">No Rankings Found</div>
+                  {cacheInfo && (
+                    <div className="text-sm">
+                      <p className="mb-2">
+                        Analyzed {cacheInfo.newKeywords + cacheInfo.cachedKeywords} keywords
+                      </p>
+                      <p className="text-xs text-gray-400">
+                        This domain doesn't rank in Google's top 100 results for any of these keywords
+                      </p>
+                    </div>
+                  )}
+                </div>
+              ) : (
+                <div className="text-center">
+                  <div className="text-lg mb-2">No matches found</div>
+                  <p className="text-sm text-gray-400">
+                    Try adjusting your filters
+                  </p>
+                </div>
+              )}
             </div>
           ) : (
             <table className="w-full">
@@ -250,6 +331,9 @@ export default function DataForSeoResultsModal({
                   </th>
                   <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
                     URL
+                  </th>
+                  <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                    Source
                   </th>
                 </tr>
               </thead>
@@ -281,7 +365,7 @@ export default function DataForSeoResultsModal({
                       {result.cpc ? (
                         <div className="flex items-center">
                           <DollarSign className="w-4 h-4 mr-1 text-gray-400" />
-                          <span className="text-sm text-gray-900">${result.cpc}</span>
+                          <span className="text-sm text-gray-900">${result.cpc.toFixed(2)}</span>
                         </div>
                       ) : (
                         <span className="text-sm text-gray-400">-</span>
@@ -300,6 +384,19 @@ export default function DataForSeoResultsModal({
                         {result.url}
                         <ExternalLink className="w-3 h-3 ml-1 flex-shrink-0" />
                       </a>
+                    </td>
+                    <td className="px-4 py-3 whitespace-nowrap">
+                      {result.isFromCache ? (
+                        <span className="inline-flex items-center px-2 py-1 text-xs bg-gray-100 text-gray-700 rounded">
+                          <Database className="w-3 h-3 mr-1" />
+                          Cached
+                        </span>
+                      ) : (
+                        <span className="inline-flex items-center px-2 py-1 text-xs bg-blue-100 text-blue-700 rounded">
+                          <RefreshCw className="w-3 h-3 mr-1" />
+                          Fresh
+                        </span>
+                      )}
                     </td>
                   </tr>
                 ))}
@@ -331,7 +428,12 @@ export default function DataForSeoResultsModal({
         <div className="p-4 border-t bg-gray-50">
           <div className="flex justify-between items-center text-sm">
             <span className="text-gray-600">
-              Showing {filteredResults.length} of {results.length} loaded ({totalFound} total)
+              Showing {filteredResults.length} of {actualTotal} ranking{actualTotal !== 1 ? 's' : ''}
+              {results.length < actualTotal && (
+                <span className="ml-1 text-xs">
+                  ({results.length} loaded)
+                </span>
+              )}
             </span>
             <div className="flex gap-4 text-gray-600">
               <span>Avg Position: {

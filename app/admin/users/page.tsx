@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useCallback } from 'react';
 import { useRouter } from 'next/navigation';
 import Link from 'next/link';
 import { ArrowLeft, Users, Plus, Trash2, Edit, Shield, User, Mail, Calendar, Activity } from 'lucide-react';
@@ -27,11 +27,7 @@ export default function UsersManagement() {
     role: 'user' as 'user' | 'admin'
   });
 
-  useEffect(() => {
-    loadData();
-  }, [router]);
-
-  const loadData = async () => {
+  const loadData = useCallback(async () => {
     try {
       const session = sessionStorage.getSession();
       setCurrentSession(session);
@@ -58,7 +54,11 @@ export default function UsersManagement() {
     } finally {
       setLoading(false);
     }
-  };
+  }, [router]);
+
+  useEffect(() => {
+    loadData();
+  }, [loadData]);
 
   const handleAddUser = async (e: React.FormEvent) => {
     e.preventDefault();

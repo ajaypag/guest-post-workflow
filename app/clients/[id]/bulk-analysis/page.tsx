@@ -1,7 +1,7 @@
 'use client';
 
 import { useState, useEffect } from 'react';
-import { useParams, useRouter } from 'next/navigation';
+import { useParams, useRouter, useSearchParams } from 'next/navigation';
 import Link from 'next/link';
 import AuthWrapper from '@/components/AuthWrapper';
 import Header from '@/components/Header';
@@ -10,7 +10,11 @@ import { AuthService } from '@/lib/auth';
 import { Client, TargetPage } from '@/types/user';
 import { groupKeywordsByTopic, generateGroupedAhrefsUrls } from '@/lib/utils/keywordGroupingV2';
 import DataForSeoResultsModal from '@/components/DataForSeoResultsModal';
+import BulkAnalysisResultsModal from '@/components/BulkAnalysisResultsModal';
 import BulkAnalysisTutorial from '@/components/BulkAnalysisTutorial';
+import BulkAnalysisTable from '@/components/BulkAnalysisTable';
+import GuidedTriageFlow from '@/components/GuidedTriageFlow';
+import { ProjectCard } from '@/components/bulk-analysis/ProjectCard';
 import { 
   ArrowLeft, 
   Target, 
@@ -23,38 +27,45 @@ import {
   Plus,
   RotateCcw,
   Trash2,
-  Search
+  Search,
+  Download,
+  Folder,
+  FolderPlus,
+  RefreshCw,
+  ChevronDown,
+  Zap,
+  Sparkles
 } from 'lucide-react';
 
-interface BulkAnalysisDomain {
-  id: string;
-  domain: string;
-  qualificationStatus: 'pending' | 'high_quality' | 'average_quality' | 'disqualified';
-  keywordCount: number;
-  targetPageIds: string[];
-  checkedBy?: string;
-  checkedAt?: string;
-  notes?: string;
-  hasWorkflow?: boolean;
-  workflowId?: string;
-  workflowCreatedAt?: string;
-}
+import { BulkAnalysisDomain } from '@/types/bulk-analysis';
+import { BulkAnalysisProject } from '@/types/bulk-analysis-projects';
 
 export default function BulkAnalysisPage() {
   const params = useParams();
   const router = useRouter();
+  const searchParams = useSearchParams();
   const [client, setClient] = useState<Client | null>(null);
   const [targetPages, setTargetPages] = useState<TargetPage[]>([]);
   const [selectedTargetPages, setSelectedTargetPages] = useState<string[]>([]);
   const [domainText, setDomainText] = useState('');
   const [domains, setDomains] = useState<BulkAnalysisDomain[]>([]);
+  const [projects, setProjects] = useState<BulkAnalysisProject[]>([]);
+  const [showProjectForm, setShowProjectForm] = useState(false);
+  const [showArchivedProjects, setShowArchivedProjects] = useState(false);
+  const [newProjectName, setNewProjectName] = useState('');
+  const [newProjectDescription, setNewProjectDescription] = useState('');
+  const [newProjectColor, setNewProjectColor] = useState('#6366f1');
+  const [newProjectIcon, setNewProjectIcon] = useState('📁');
+  const [selectedProject, setSelectedProject] = useState<string | null>(null);
   const [loading, setLoading] = useState(false);
   const [message, setMessage] = useState('');
+  const [messageType, setMessageType] = useState<'info' | 'success' | 'error' | 'warning'>('info');
   const [existingDomains, setExistingDomains] = useState<{ domain: string; status: string }[]>([]);
   const [selectedPositionRange, setSelectedPositionRange] = useState('1-50');
   
   // Manual keyword input mode
   const [keywordInputMode, setKeywordInputMode] = useState<'target-pages' | 'manual'>('target-pages');
+  const [showSmartSelection, setShowSmartSelection] = useState(false);
   const [manualKeywords, setManualKeywords] = useState('');
   
   // Filtering options
@@ -75,10 +86,46 @@ export default function BulkAnalysisPage() {
     clientId: string;
     initialResults?: any[];
     totalFound: number;
+    taskId?: string;
+    cacheInfo?: any;
   }>({ isOpen: false, domainId: '', domain: '', clientId: '', initialResults: [], totalFound: 0 });
   
-  // Experimental features toggle - hidden by default
-  const [hideExperimentalFeatures, setHideExperimentalFeatures] = useState(true);
+  // Experimental features toggle - shown by default
+  // DataForSEO and AI features are now production-ready and always shown
+  
+  // Multi-select state for bulk operations
+  const [selectedDomains, setSelectedDomains] = useState<Set<string>>(new Set());
+  const [bulkAnalysisRunning, setBulkAnalysisRunning] = useState(false);
+  const [bulkProgress, setBulkProgress] = useState({ current: 0, total: 0 });
+  const [bulkResultsModal, setBulkResultsModal] = useState<{
+    isOpen: boolean;
+    jobId: string;
+    analyzedDomains: Array<{ id: string; domain: string }>;
+  }>({ isOpen: false, jobId: '', analyzedDomains: [] });
+  const [completedJobId, setCompletedJobId] = useState<string | null>(null);
+  const [recentlyAnalyzedDomains, setRecentlyAnalyzedDomains] = useState<Set<string>>(new Set());
+  const [showResultsModal, setShowResultsModal] = useState(false);
+  const [resultsJobId, setResultsJobId] = useState<string | null>(null);
+  
+  // Keyword clustering state
+  const [showKeywordClusters, setShowKeywordClusters] = useState(false);
+  const [keywordClusters, setKeywordClusters] = useState<Array<{
+    name: string;
+    keywords: string[];
+    relevance: 'core' | 'related' | 'wider';
+    priority: number;
+    selected: boolean;
+  }>>([]);
+  
+  // AI Qualification state - removed modal, now automatic
+  
+  // Triage mode state
+  const [triageMode, setTriageMode] = useState(false);
+  const [showGuidedTriage, setShowGuidedTriage] = useState(false);
+  
+  // Bulk workflow creation state
+  const [bulkWorkflowCreating, setBulkWorkflowCreating] = useState(false);
+  const [bulkWorkflowProgress, setBulkWorkflowProgress] = useState({ current: 0, total: 0 });
   
   // Reset pagination when filters change
   useEffect(() => {
@@ -87,10 +134,7 @@ export default function BulkAnalysisPage() {
 
   // Load experimental features preference from localStorage
   useEffect(() => {
-    const stored = localStorage.getItem('hideExperimentalFeatures');
-    if (stored !== null) {
-      setHideExperimentalFeatures(stored === 'true');
-    }
+    // DataForSEO and AI features are always enabled
   }, []);
 
   useEffect(() => {
@@ -99,9 +143,24 @@ export default function BulkAnalysisPage() {
 
   useEffect(() => {
     if (client) {
-      loadDomains();
+      loadProjects();
     }
   }, [client]);
+
+  // Handle guided parameter from URL
+  useEffect(() => {
+    const guidedDomainId = searchParams.get('guided');
+    if (guidedDomainId && domains.length > 0) {
+      // Find the domain with this ID
+      const guidedDomain = domains.find(d => d.id === guidedDomainId);
+      if (guidedDomain) {
+        // Automatically open guided triage with this domain selected
+        setShowGuidedTriage(true);
+        // You might also want to filter to show only this domain
+        setSearchQuery(guidedDomain.domain);
+      }
+    }
+  }, [searchParams, domains]);
 
   const loadClient = async () => {
     try {
@@ -121,98 +180,295 @@ export default function BulkAnalysisPage() {
     }
   };
 
-  const loadDomains = async () => {
+  const loadProjects = async () => {
     try {
-      const response = await fetch(`/api/clients/${params.id}/bulk-analysis`);
+      const response = await fetch(`/api/clients/${params.id}/projects`);
       if (response.ok) {
         const data = await response.json();
-        setDomains(data.domains || []);
+        setProjects(data.projects || []);
       }
     } catch (error) {
-      console.error('Error loading domains:', error);
+      console.error('Error loading projects:', error);
     }
   };
 
-  const handleAnalyze = async () => {
-    if (keywordInputMode === 'target-pages') {
-      if (!client || selectedTargetPages.length === 0 || !domainText.trim()) {
-        setMessage('Please select target pages and enter domains to analyze');
-        return;
+  const fetchSmartFilters = async () => {
+    try {
+      const response = await fetch(`/api/clients/${params.id}/bulk-analysis/master-qualify`);
+      if (response.ok) {
+        const data = await response.json();
+        return data.filters;
       }
+    } catch (error) {
+      console.error('Error fetching smart filters:', error);
+    }
+    return null;
+  };
+
+  const createProject = async () => {
+    if (!newProjectName.trim()) {
+      setMessage('❌ Please enter a project name');
+      return;
+    }
+
+    try {
+      const response = await fetch(`/api/clients/${params.id}/projects`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          name: newProjectName,
+          description: newProjectDescription,
+          color: newProjectColor,
+          icon: newProjectIcon
+        })
+      });
+
+      if (response.ok) {
+        const data = await response.json();
+        await loadProjects();
+        setShowProjectForm(false);
+        setNewProjectName('');
+        setNewProjectDescription('');
+        setMessage('✅ Project created successfully');
+        // Navigate to the new project
+        router.push(`/clients/${params.id}/bulk-analysis/projects/${data.project.id}`);
+      } else {
+        const error = await response.json();
+        setMessage(`❌ ${error.error}`);
+      }
+    } catch (error) {
+      console.error('Error creating project:', error);
+      setMessage('❌ Failed to create project');
+    }
+  };
+
+  const deleteProject = async (projectId: string) => {
+    try {
+      const response = await fetch(`/api/clients/${params.id}/projects/${projectId}`, {
+        method: 'DELETE'
+      });
+
+      if (response.ok) {
+        await loadProjects();
+        setMessage('✅ Project deleted successfully');
+      } else {
+        const error = await response.json();
+        setMessage(`❌ ${error.error}`);
+      }
+    } catch (error) {
+      console.error('Error deleting project:', error);
+      setMessage('❌ Failed to delete project');
+    }
+  };
+
+  const archiveProject = async (projectId: string) => {
+    try {
+      const response = await fetch(`/api/clients/${params.id}/projects/${projectId}`, {
+        method: 'PATCH',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ status: 'archived' })
+      });
+
+      if (response.ok) {
+        await loadProjects();
+        setMessage('✅ Project archived');
+      } else {
+        const error = await response.json();
+        setMessage(`❌ ${error.error}`);
+      }
+    } catch (error) {
+      console.error('Error archiving project:', error);
+      setMessage('❌ Failed to archive project');
+    }
+  };
+  
+  const unarchiveProject = async (projectId: string) => {
+    try {
+      const response = await fetch(`/api/clients/${params.id}/projects/${projectId}`, {
+        method: 'PATCH',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ status: 'active' })
+      });
+
+      if (response.ok) {
+        await loadProjects();
+        setMessage('✅ Project restored');
+      } else {
+        const error = await response.json();
+        setMessage(`❌ ${error.error}`);
+      }
+    } catch (error) {
+      console.error('Error unarchiving project:', error);
+      setMessage('❌ Failed to restore project');
+    }
+  };
+
+  // Selection helpers
+  const toggleDomainSelection = (domainId: string) => {
+    const newSelection = new Set(selectedDomains);
+    if (newSelection.has(domainId)) {
+      newSelection.delete(domainId);
     } else {
-      if (!manualKeywords.trim() || !domainText.trim()) {
-        setMessage('Please enter keywords and domains to analyze');
-        return;
-      }
+      newSelection.add(domainId);
+    }
+    setSelectedDomains(newSelection);
+  };
+
+  const selectAll = (domainIds: string[]) => {
+    setSelectedDomains(new Set(domainIds));
+  };
+
+  const clearSelection = () => {
+    setSelectedDomains(new Set());
+  };
+
+  // Master qualification moved to project detail page - this page is retired from UI
+  // const startMasterQualification = async () => {
+  //   const selectedDomainList = domains
+  //     .filter(d => selectedDomains.has(d.id))
+  //     .map(d => ({ id: d.id, domain: d.domain }));
+  //   
+  //   if (selectedDomainList.length === 0) {
+  //     setMessage('Please select domains to qualify');
+  //     return;
+  //   }
+  //
+  //   setLoading(true);
+  //   setMessage(`🚀 Running complete qualification for ${selectedDomainList.length} domains...`);
+  //
+  //   try {
+  //     const response = await fetch(`/api/clients/${params.id}/bulk-analysis/master-qualify`, {
+  //       method: 'POST',
+  //       headers: { 'Content-Type': 'application/json' },
+  //       body: JSON.stringify({
+  //         domainIds: selectedDomainList.map(d => d.id),
+  //         locationCode: 2840,
+  //         languageCode: 'en'
+  //       })
+  //     });
+  //
+  //     if (!response.ok) {
+  //       const error = await response.json();
+  //       throw new Error(error.error || 'Failed to run master qualification');
+  //     }
+  //
+  //     const data = await response.json();
+  //     const { summary } = data;
+  //
+  //     // Update local domains with results
+  //     if (data.results) {
+  //       setDomains(prevDomains => 
+  //         prevDomains.map(domain => {
+  //           const result = data.results.find((r: any) => r.domainId === domain.id);
+  //           if (result) {
+  //             return {
+  //               ...domain,
+  //               hasDataForSeoResults: result.dataForSeoStatus === 'success',
+  //               dataForSeoKeywordsFound: result.keywordsFound || 0,
+  //               qualificationStatus: result.qualificationStatus || domain.qualificationStatus,
+  //               updatedAt: new Date().toISOString()
+  //             };
+  //           }
+  //           return domain;
+  //         })
+  //       );
+  //     }
+  //
+  //     // Build success message
+  //     const messages = [];
+  //     if (summary.dataForSeo.success > 0) {
+  //       messages.push(`${summary.dataForSeo.success} DataForSEO analyses`);
+  //     }
+  //     if (summary.ai.success > 0) {
+  //       messages.push(`${summary.ai.success} AI qualifications`);
+  //     }
+  //     
+  //     setMessage(`✅ Completed: ${messages.join(', ')}`);
+  //     
+  //     // Clear selection
+  //     setSelectedDomains(new Set());
+  //     
+  //     // Reload projects to update counts
+  //     await loadProjects();
+  //
+  //   } catch (error: any) {
+  //     console.error('Master qualification error:', error);
+  //     setMessage(`❌ Qualification failed: ${error.message}`);
+  //   } finally {
+  //     setLoading(false);
+  //   }
+  // };
+
+  const startAIQualification = async () => {
+    const selectedDomainList = domains
+      .filter(d => selectedDomains.has(d.id))
+      .map(d => ({ id: d.id, domain: d.domain }));
+    
+    if (selectedDomainList.length === 0) {
+      setMessage('Please select domains to qualify');
+      return;
     }
 
     setLoading(true);
-    setMessage('');
+    setMessage(`🤖 AI is analyzing ${selectedDomainList.length} domains...`);
 
     try {
-      // Parse domains
-      const domainList = domainText
-        .split('\n')
-        .map(d => d.trim())
-        .filter(Boolean);
-
-      // Check for existing domains
-      const checkResponse = await fetch(`/api/clients/${params.id}/bulk-analysis/check`, {
+      const response = await fetch(`/api/clients/${params.id}/bulk-analysis/ai-qualify`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ domains: domainList })
+        body: JSON.stringify({
+          domainIds: selectedDomainList.map(d => d.id)
+        })
       });
 
-      if (checkResponse.ok) {
-        const checkData = await checkResponse.json();
-        setExistingDomains(checkData.existing || []);
+      if (!response.ok) {
+        const error = await response.json();
+        throw new Error(error.error || 'Failed to run AI qualification');
       }
 
-      // Create or update domains (only if using target pages mode)
-      if (keywordInputMode === 'target-pages') {
-        const response = await fetch(`/api/clients/${params.id}/bulk-analysis`, {
-          method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({
-            domains: domainList,
-            targetPageIds: selectedTargetPages
-          })
-        });
+      const data = await response.json();
+      
+      // Update local domain state immediately
+      setDomains(prevDomains => 
+        prevDomains.map(domain => {
+          const qualification = data.qualifications.find((q: any) => q.domainId === domain.id);
+          if (qualification) {
+            return {
+              ...domain,
+              qualificationStatus: qualification.qualification,
+              aiQualificationReasoning: qualification.reasoning,
+              aiQualifiedAt: new Date().toISOString(),
+              updatedAt: new Date().toISOString()
+            };
+          }
+          return domain;
+        })
+      );
 
-        if (response.ok) {
-          const data = await response.json();
-          setDomains(data.domains);
-          setDomainText('');
-          setMessage(`✅ Added ${data.domains.length} domains for analysis`);
-        } else {
-          throw new Error('Failed to create domains');
-        }
-      } else {
-        // Manual mode - create temporary domain objects for display
-        const tempDomains = domainList.map((domain, index) => ({
-          id: `temp-${index}`,
-          domain,
-          qualificationStatus: 'pending' as const,
-          keywordCount: manualKeywords.split(',').length,
-          targetPageIds: [],
-          checkedBy: undefined,
-          checkedAt: undefined,
-          notes: undefined
-        }));
-        
-        setDomains(tempDomains);
-        setDomainText('');
-        setMessage(`✅ Ready to analyze ${tempDomains.length} domains with manual keywords`);
-      }
-    } catch (error) {
-      console.error('Error analyzing domains:', error);
-      setMessage('❌ Error analyzing domains');
+      // Clear selection and show success message
+      setSelectedDomains(new Set());
+      setMessage(`✅ AI qualification complete! ${data.summary.highQuality} high quality, ${data.summary.averageQuality} average quality, ${data.summary.disqualified} disqualified domains`);
+      
+      // Reload projects to get updated stats
+      await loadProjects();
+
+    } catch (error: any) {
+      console.error('AI qualification error:', error);
+      setMessage(`❌ AI qualification failed: ${error.message}`);
     } finally {
       setLoading(false);
     }
   };
 
-  const updateQualificationStatus = async (domainId: string, status: 'high_quality' | 'average_quality' | 'disqualified') => {
+  const handleAIQualificationComplete = async (results: any[]) => {
+    // This function is no longer used since AI qualification is automatic
+    // Keeping for backward compatibility
+    await loadProjects();
+    setMessage(`✅ AI qualification applied to ${results.length} domains`);
+    setSelectedDomains(new Set());
+  };
+
+  const updateQualificationStatus = async (domainId: string, status: 'high_quality' | 'average_quality' | 'disqualified', isManual?: boolean) => {
     try {
       const session = AuthService.getSession();
       if (!session) {
@@ -224,7 +480,7 @@ export default function BulkAnalysisPage() {
       const response = await fetch(`/api/clients/${params.id}/bulk-analysis/${domainId}`, {
         method: 'PUT',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ status, userId: session.userId, notes: domainNotes })
+        body: JSON.stringify({ status, userId: session.userId, notes: domainNotes, isManual })
       });
 
       if (response.ok) {
@@ -232,7 +488,16 @@ export default function BulkAnalysisPage() {
         setDomains(prevDomains => 
           prevDomains.map(domain => 
             domain.id === domainId 
-              ? { ...domain, qualificationStatus: status, checkedBy: session.userId, checkedAt: new Date().toISOString(), notes: domainNotes }
+              ? { 
+                  ...domain, 
+                  qualificationStatus: status, 
+                  checkedBy: session.userId, 
+                  checkedAt: new Date().toISOString(), 
+                  notes: domainNotes,
+                  wasManuallyQualified: isManual || false,
+                  manuallyQualifiedBy: isManual ? session.userId : domain.manuallyQualifiedBy,
+                  manuallyQualifiedAt: isManual ? new Date().toISOString() : domain.manuallyQualifiedAt
+                }
               : domain
           )
         );
@@ -250,7 +515,152 @@ export default function BulkAnalysisPage() {
   const createWorkflow = async (domain: BulkAnalysisDomain) => {
     // Navigate to workflow creation with pre-filled domain and notes
     const domainNotes = domain.notes || notes[domain.id] || '';
-    router.push(`/workflow/new?clientId=${client?.id}&guestPostSite=${encodeURIComponent(domain.domain)}&notes=${encodeURIComponent(domainNotes)}`);
+    const targetPageId = domain.selectedTargetPageId || '';
+    let url = `/workflow/new?clientId=${client?.id}&guestPostSite=${encodeURIComponent(domain.domain)}&notes=${encodeURIComponent(domainNotes)}`;
+    if (targetPageId) {
+      url += `&targetPageId=${targetPageId}`;
+    }
+    router.push(url);
+  };
+
+  const aiQualifySingleDomain = async (domainId: string) => {
+    const domain = domains.find(d => d.id === domainId);
+    if (!domain) return;
+    
+    setLoading(true);
+    setMessage(`🤖 AI is analyzing ${domain.domain}...`);
+
+    try {
+      const response = await fetch(`/api/clients/${params.id}/bulk-analysis/ai-qualify`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          domainIds: [domainId]
+        })
+      });
+
+      if (!response.ok) {
+        const error = await response.json();
+        throw new Error(error.error || 'Failed to run AI qualification');
+      }
+
+      const data = await response.json();
+      
+      // Update local domain state immediately
+      setDomains(prevDomains => 
+        prevDomains.map(d => {
+          if (d.id === domainId) {
+            const qualification = data.qualifications[0];
+            return {
+              ...d,
+              qualificationStatus: qualification.qualification,
+              aiQualificationReasoning: qualification.reasoning,
+              aiQualifiedAt: new Date().toISOString(),
+              updatedAt: new Date().toISOString()
+            };
+          }
+          return d;
+        })
+      );
+
+      setMessage(`✅ ${domain.domain} qualified as ${data.qualifications[0].qualification.replace('_', ' ')}`);
+      
+      // Reload projects to get updated stats
+      await loadProjects();
+
+    } catch (error: any) {
+      console.error('AI qualification error:', error);
+      setMessage(`❌ AI qualification failed for ${domain.domain}: ${error.message}`);
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const bulkCreateWorkflows = async (domainIds: string[]) => {
+    if (!client) return;
+    
+    setBulkWorkflowCreating(true);
+    setBulkWorkflowProgress({ current: 0, total: domainIds.length });
+    
+    let successCount = 0;
+    let failureCount = 0;
+    
+    try {
+      for (let i = 0; i < domainIds.length; i++) {
+        const domainId = domainIds[i];
+        const domain = domains.find(d => d.id === domainId);
+        if (!domain) continue;
+        
+        setBulkWorkflowProgress({ current: i + 1, total: domainIds.length });
+        
+        try {
+          // Create workflow via API
+          const domainNotes = domain.notes || notes[domain.id] || '';
+          
+          const response = await fetch('/api/workflows', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({
+              clientId: client.id,
+              title: `Guest Post - ${domain.domain}`,
+              description: `Auto-generated workflow for ${domain.domain}${domainNotes ? `\n\nNotes: ${domainNotes}` : ''}`,
+              status: 'draft',
+              guestPostSite: domain.domain,
+              steps: []
+            })
+          });
+          
+          if (response.ok) {
+            const workflow = await response.json();
+            
+            // Update domain to mark as having workflow
+            await fetch(`/api/clients/${params.id}/bulk-analysis/${domainId}`, {
+              method: 'PUT',
+              headers: { 'Content-Type': 'application/json' },
+              body: JSON.stringify({ 
+                status: domain.qualificationStatus,
+                userId: AuthService.getSession()?.userId,
+                workflowId: workflow.id,
+                hasWorkflow: true
+              })
+            });
+            
+            successCount++;
+          } else {
+            throw new Error('Failed to create workflow');
+          }
+        } catch (error) {
+          console.error(`Failed to create workflow for ${domain.domain}:`, error);
+          failureCount++;
+        }
+      }
+      
+      // Update local state
+      setDomains(prevDomains => 
+        prevDomains.map(d => {
+          if (domainIds.includes(d.id)) {
+            return { ...d, hasWorkflow: true };
+          }
+          return d;
+        })
+      );
+      
+      // Clear selection
+      setSelectedDomains(new Set());
+      
+      if (failureCount === 0) {
+        setMessage(`✅ Successfully created ${successCount} workflows`);
+      } else {
+        setMessage(`⚠️ Created ${successCount} workflows, ${failureCount} failed`);
+      }
+      
+    } catch (error) {
+      console.error('Bulk workflow creation error:', error);
+      setMessage('❌ Failed to create workflows');
+    } finally {
+      setBulkWorkflowCreating(false);
+      setBulkWorkflowProgress({ current: 0, total: 0 });
+    }
   };
 
   const deleteDomain = async (domainId: string) => {
@@ -276,55 +686,224 @@ export default function BulkAnalysisPage() {
     }
   };
 
-  const refreshPendingDomains = async () => {
-    if (keywordInputMode !== 'target-pages') {
-      setMessage('❌ Refresh only works with target pages mode');
-      return;
-    }
-
-    if (selectedTargetPages.length === 0) {
-      setMessage('❌ Please select target pages to refresh with');
-      return;
-    }
-
-    const pendingCount = domains.filter(d => d.qualificationStatus === 'pending').length;
-    if (pendingCount === 0) {
-      setMessage('❌ No pending domains to refresh');
-      return;
-    }
-
-    if (!confirm(`Refresh ${pendingCount} pending domains with the selected target pages and their keywords?`)) {
-      return;
-    }
-
-    setLoading(true);
-    setMessage('🔄 Refreshing pending domains...');
-
+  // Update only the analyzed domains without reloading the entire list
+  const updateAnalyzedDomainsOnly = async (analyzedDomainIds: Set<string>) => {
     try {
-      const response = await fetch(`/api/clients/${params.id}/bulk-analysis/refresh`, {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-          targetPageIds: selectedTargetPages
-        })
+      // Mark domains as recently analyzed for visual feedback
+      setRecentlyAnalyzedDomains(analyzedDomainIds);
+      
+      // Clear the visual indicator after 5 seconds
+      setTimeout(() => {
+        setRecentlyAnalyzedDomains(new Set());
+      }, 5000);
+      
+      // Fetch only the analyzed domains' updated data
+      const updatePromises = Array.from(analyzedDomainIds).map(async (domainId) => {
+        const response = await fetch(`/api/clients/${params.id}/bulk-analysis/${domainId}`);
+        if (response.ok) {
+          return await response.json();
+        }
+        return null;
       });
 
-      if (response.ok) {
-        const data = await response.json();
-        
-        // Reload domains to get updated data
-        await loadDomains();
-        
-        setMessage(`✅ Refreshed ${data.refreshedCount} pending domains with updated keywords`);
-      } else {
-        throw new Error('Failed to refresh domains');
-      }
+      const updatedDomains = await Promise.all(updatePromises);
+      
+      // Update local state with the new data while preserving order
+      setDomains(prevDomains => 
+        prevDomains.map(domain => {
+          if (analyzedDomainIds.has(domain.id)) {
+            const updated = updatedDomains.find(d => d && d.id === domain.id);
+            if (updated) {
+              // Preserve clientId
+              return { ...updated, clientId: params.id };
+            }
+          }
+          return domain;
+        })
+      );
     } catch (error) {
-      console.error('Error refreshing domains:', error);
-      setMessage('❌ Error refreshing domains');
-    } finally {
-      setLoading(false);
+      console.error('Error updating analyzed domains:', error);
     }
+  };
+
+  const startBulkDataForSeoAnalysis = async () => {
+    console.log('startBulkDataForSeoAnalysis called');
+    console.log('selectedDomains.size:', selectedDomains.size);
+    console.log('keywordInputMode:', keywordInputMode);
+
+    if (selectedDomains.size === 0) {
+      setMessage('Please select domains to analyze');
+      return;
+    }
+
+    // Get keywords based on current mode
+    let keywords: string[] = [];
+    if (keywordInputMode === 'manual' && manualKeywords.trim()) {
+      keywords = manualKeywords
+        .split(',')
+        .map(k => k.trim())
+        .filter(k => k.length > 0);
+      console.log('Manual keywords found:', keywords);
+    } else if (keywordInputMode === 'target-pages') {
+      // Get keywords from domains' target pages
+      const selectedDomainsList = domains.filter(d => selectedDomains.has(d.id));
+      const keywordSet = new Set<string>();
+      
+      // Collect keywords from each domain's target pages
+      selectedDomainsList.forEach(domain => {
+        if (domain.targetPageIds && domain.targetPageIds.length > 0) {
+          // Get keywords from this domain's target pages
+          const domainTargetPages = targetPages.filter(p => domain.targetPageIds.includes(p.id));
+          domainTargetPages.forEach(page => {
+            const pageKeywords = (page as any).keywords?.split(',').map((k: string) => k.trim()) || [];
+            pageKeywords.forEach((k: string) => keywordSet.add(k));
+          });
+        }
+      });
+      
+      // If no keywords found from domains' target pages, use all target pages' keywords
+      if (keywordSet.size === 0 && targetPages.length > 0) {
+        console.log('No keywords from domain target pages, using all target pages');
+        targetPages.forEach(page => {
+          const pageKeywords = (page as any).keywords?.split(',').map((k: string) => k.trim()) || [];
+          pageKeywords.forEach((k: string) => keywordSet.add(k));
+        });
+      }
+      
+      keywords = Array.from(keywordSet);
+      console.log('Target page keywords found:', keywords);
+    }
+
+    if (keywords.length === 0) {
+      console.log('No keywords found!');
+      setMessage('No keywords found. Please ensure target pages have keywords or enter manual keywords.');
+      return;
+    }
+
+    // Group keywords by topic
+    const groups = groupKeywordsByTopic(keywords);
+    const clustersWithSelection = groups.map(group => ({
+      ...group,
+      selected: true // Default all clusters to selected
+    }));
+    
+    console.log('Keyword clusters:', clustersWithSelection);
+    setKeywordClusters(clustersWithSelection);
+    setShowKeywordClusters(true);
+    setMessage(`Found ${keywords.length} keywords grouped into ${groups.length} clusters`);
+  };
+
+  const executeDataForSeoAnalysis = async () => {
+    // Get selected keywords from clusters
+    const selectedKeywords = keywordClusters
+      .filter(cluster => cluster.selected)
+      .flatMap(cluster => cluster.keywords);
+
+    if (selectedKeywords.length === 0) {
+      setMessage('Please select at least one keyword cluster');
+      return;
+    }
+
+    setShowKeywordClusters(false);
+    setMessage(`🚀 Starting analysis for ${selectedDomains.size} domains with ${selectedKeywords.length} keywords...`);
+    setBulkAnalysisRunning(true);
+    setBulkProgress({ current: 0, total: selectedDomains.size });
+
+    try {
+      const response = await fetch(`/api/clients/${params.id}/bulk-analysis/dataforseo/batch`, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+          domainIds: Array.from(selectedDomains),
+          keywords: selectedKeywords,
+        }),
+      });
+
+      if (!response.ok) {
+        const error = await response.json();
+        throw new Error(error.error || 'Failed to start bulk analysis');
+      }
+
+      const { jobId, totalDomains } = await response.json();
+      
+      // Ensure progress bar stays visible
+      setMessage(`⏳ Analyzing ${totalDomains} domains...`);
+      setBulkProgress({ current: 0, total: totalDomains });
+      
+      // Start polling for job status
+      pollJobStatus(jobId);
+      
+    } catch (error: any) {
+      console.error('Bulk analysis error:', error);
+      setMessage(`❌ Bulk analysis failed: ${error.message}`);
+      setBulkAnalysisRunning(false);
+    }
+  };
+
+  const pollJobStatus = async (jobId: string) => {
+    const pollInterval = setInterval(async () => {
+      try {
+        const response = await fetch(
+          `/api/clients/${params.id}/bulk-analysis/dataforseo/batch?jobId=${jobId}`
+        );
+        
+        if (!response.ok) {
+          throw new Error('Failed to fetch job status');
+        }
+
+        const data = await response.json();
+        const { job, items } = data;
+
+        // Update progress
+        console.log('Job status update:', {
+          status: job.status,
+          processedDomains: job.processedDomains,
+          totalDomains: job.totalDomains,
+          bulkAnalysisRunning
+        });
+        setBulkProgress({
+          current: job.processedDomains || 0,
+          total: job.totalDomains || 0
+        });
+
+        // Update message
+        if (job.status === 'processing') {
+          setMessage(`⏳ Processing: ${job.processedDomains}/${job.totalDomains} domains analyzed`);
+        } else if (job.status === 'completed') {
+          clearInterval(pollInterval);
+          
+          // Store analyzed domains BEFORE clearing selection
+          const analyzedDomainIds = new Set(Array.from(selectedDomains));
+          const analyzedDomains = domains.filter(d => analyzedDomainIds.has(d.id)).map(d => ({ id: d.id, domain: d.domain }));
+          
+          setMessage(
+            `✅ Analysis complete! Analyzed ${job.totalKeywordsAnalyzed} keywords, found ${job.totalRankingsFound} rankings.`
+          );
+          setBulkAnalysisRunning(false);
+          setCompletedJobId(jobId);
+          
+          setBulkResultsModal({ isOpen: false, jobId, analyzedDomains });
+          clearSelection();
+          
+          // Instead of reloading all domains, just update the analyzed ones
+          // This preserves the current order and prevents "jumping"
+          updateAnalyzedDomainsOnly(analyzedDomainIds);
+        } else if (job.status === 'failed') {
+          clearInterval(pollInterval);
+          setMessage(`❌ Bulk analysis failed`);
+          setBulkAnalysisRunning(false);
+        }
+      } catch (error: any) {
+        console.error('Error polling job status:', error);
+        clearInterval(pollInterval);
+        setBulkAnalysisRunning(false);
+      }
+    }, 2000); // Poll every 2 seconds
+
+    // Store interval ID for cleanup
+    return () => clearInterval(pollInterval);
   };
 
   const analyzeWithDataForSeo = async (domain: BulkAnalysisDomain) => {
@@ -382,7 +961,9 @@ export default function BulkAnalysisPage() {
           domain: domain.domain,
           clientId: params.id as string,
           initialResults: data.result.keywords || [],
-          totalFound: data.result.totalFound || 0
+          totalFound: data.result.totalFound || 0,
+          taskId: data.result.taskId,
+          cacheInfo: data.result.cacheInfo
         });
         setMessage('');
       } else {
@@ -474,231 +1055,136 @@ export default function BulkAnalysisPage() {
             </div>
           )}
 
-          {/* Keyword Source Selection */}
-          <div className="bg-white rounded-lg shadow p-6 mb-6">
-            <div className="flex items-center justify-between mb-4">
-              <h2 className="text-lg font-medium">1. Choose Keyword Source</h2>
-              
-              {/* Mode Toggle */}
-              <div className="bg-gray-100 rounded-lg p-1 flex">
-                <button
-                  onClick={() => setKeywordInputMode('target-pages')}
-                  className={`px-4 py-2 text-sm rounded-md transition-colors ${
-                    keywordInputMode === 'target-pages'
-                      ? 'bg-white text-gray-900 shadow-sm'
-                      : 'text-gray-600 hover:text-gray-900'
-                  }`}
-                >
-                  Target Pages
-                </button>
-                <button
-                  onClick={() => setKeywordInputMode('manual')}
-                  className={`px-4 py-2 text-sm rounded-md transition-colors ${
-                    keywordInputMode === 'manual'
-                      ? 'bg-white text-gray-900 shadow-sm'
-                      : 'text-gray-600 hover:text-gray-900'
-                  }`}
-                >
-                  Manual Keywords
-                </button>
+          {/* Projects View */}
+          <div className="mb-8">
+            <div className="flex items-center justify-between mb-6">
+              <div className="flex items-center gap-4">
+                <h2 className="text-xl font-semibold text-gray-900">Projects</h2>
+                <label className="flex items-center text-sm text-gray-600">
+                  <input
+                    type="checkbox"
+                    checked={showArchivedProjects}
+                    onChange={(e) => setShowArchivedProjects(e.target.checked)}
+                    className="mr-2 rounded"
+                  />
+                  Show archived
+                </label>
               </div>
+              <button
+                onClick={() => setShowProjectForm(true)}
+                className="inline-flex items-center px-4 py-2 bg-indigo-600 text-white rounded-lg hover:bg-indigo-700 transition-colors"
+              >
+                <FolderPlus className="w-4 h-4 mr-2" />
+                New Project
+              </button>
             </div>
-            
-            {keywordInputMode === 'target-pages' ? (
-              <>
-                <p className="text-sm text-gray-600 mb-4">
-                  Choose which target pages to use for keyword analysis. Keywords from selected pages will be combined and deduplicated.
-                </p>
-            
-            {targetPages.length === 0 ? (
-              <div className="text-center py-8 text-gray-500">
-                <AlertCircle className="w-12 h-12 mx-auto mb-3 text-gray-400" />
-                <p>No active target pages with keywords found.</p>
-                <p className="text-sm mt-2">Please add target pages and generate keywords first.</p>
-              </div>
-            ) : (
-              <>
-                {/* Select All Controls */}
-                <div className="flex items-center justify-between mb-3">
-                  <p className="text-sm text-gray-600">
-                    Select target pages to use their keywords for analysis
-                  </p>
-                  <div className="flex space-x-2">
-                    <button
-                      onClick={() => {
-                        const allPageIds = targetPages
-                          .filter(page => (page as any).keywords && (page as any).keywords.trim() !== '')
-                          .map(page => page.id);
-                        setSelectedTargetPages(allPageIds);
-                      }}
-                      className="text-xs px-3 py-1 bg-indigo-600 text-white rounded hover:bg-indigo-700 transition-colors"
-                    >
-                      Select All ({targetPages.filter(page => (page as any).keywords && (page as any).keywords.trim() !== '').length})
-                    </button>
-                    <button
-                      onClick={() => setSelectedTargetPages([])}
-                      className="text-xs px-3 py-1 border border-gray-300 text-gray-700 rounded hover:bg-gray-50 transition-colors"
-                    >
-                      Clear All
-                    </button>
-                  </div>
-                </div>
-                
-                <div className="space-y-2 max-h-60 overflow-y-auto">
-                  {targetPages.map((page) => (
-                  <label key={page.id} className="flex items-start space-x-3 p-3 border rounded-lg hover:bg-gray-50 cursor-pointer">
-                    <input
-                      type="checkbox"
-                      checked={selectedTargetPages.includes(page.id)}
-                      onChange={(e) => {
-                        if (e.target.checked) {
-                          setSelectedTargetPages([...selectedTargetPages, page.id]);
-                        } else {
-                          setSelectedTargetPages(selectedTargetPages.filter(id => id !== page.id));
-                        }
-                      }}
-                      className="mt-1"
-                    />
-                    <div className="flex-1">
-                      <div className="font-medium text-sm">{page.url}</div>
-                      <div className="text-xs text-gray-500">
-                        {(page as any).keywords?.split(',').length || 0} keywords
-                      </div>
-                    </div>
-                  </label>
-                  ))}
-                </div>
-              </>
-            )}
-            
-            {selectedTargetPages.length > 0 && (
-              <div className="mt-4 text-sm text-gray-600">
-                Selected: {selectedTargetPages.length} pages • 
-                Total keywords: {
-                  targetPages
-                    .filter(p => selectedTargetPages.includes(p.id))
-                    .reduce((acc, p) => {
-                      const keywordList = (p as any).keywords?.split(',').map((k: string) => k.trim()) || [];
-                      keywordList.forEach((k: string) => acc.add(k));
-                      return acc;
-                    }, new Set<string>()).size
-                } (deduplicated)
-              </div>
-            )}
-              </>
-            ) : (
-              <>
-                <p className="text-sm text-gray-600 mb-4">
-                  Enter keywords manually for quick research without setting up target pages.
-                </p>
-                
+
+            {/* New Project Form */}
+            {showProjectForm && (
+              <div className="mb-6 p-6 bg-white rounded-lg shadow">
+                <h3 className="text-lg font-medium mb-4">Create New Project</h3>
                 <div className="space-y-4">
                   <div>
-                    <label className="block text-sm font-medium text-gray-700 mb-2">
-                      Keywords (comma-separated)
-                    </label>
-                    <textarea
-                      value={manualKeywords}
-                      onChange={(e) => setManualKeywords(e.target.value)}
-                      placeholder="seo tools, content marketing, guest posting, link building, digital marketing"
-                      className="w-full h-24 px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-indigo-500 focus:border-transparent"
+                    <label className="block text-sm font-medium text-gray-700 mb-1">Project Name *</label>
+                    <input
+                      type="text"
+                      value={newProjectName}
+                      onChange={(e) => setNewProjectName(e.target.value)}
+                      placeholder="e.g., Tech Blogs Q1 2024"
+                      className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-indigo-500 focus:border-transparent"
                     />
-                    {manualKeywords && (
-                      <p className="text-xs text-gray-500 mt-1">
-                        {manualKeywords.split(',').filter(k => k.trim()).length} keywords entered
-                      </p>
-                    )}
                   </div>
-                  
-                  <div className="bg-blue-50 border border-blue-200 rounded-lg p-3">
-                    <h4 className="text-sm font-medium text-blue-900 mb-1">💡 Quick Research Mode</h4>
-                    <p className="text-xs text-blue-800">
-                      Perfect for ad-hoc research. Enter any keywords you want to check against domains. 
-                      Results won't be saved to the database but you'll get instant Ahrefs analysis.
-                    </p>
+                  <div>
+                    <label className="block text-sm font-medium text-gray-700 mb-1">Description</label>
+                    <textarea
+                      value={newProjectDescription}
+                      onChange={(e) => setNewProjectDescription(e.target.value)}
+                      placeholder="Add a description..."
+                      className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-indigo-500 focus:border-transparent"
+                      rows={3}
+                    />
+                  </div>
+                  <div className="grid grid-cols-2 gap-4">
+                    <div>
+                      <label className="block text-sm font-medium text-gray-700 mb-1">Icon</label>
+                      <input
+                        type="text"
+                        value={newProjectIcon}
+                        onChange={(e) => setNewProjectIcon(e.target.value)}
+                        className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-indigo-500 focus:border-transparent"
+                        maxLength={2}
+                      />
+                    </div>
+                    <div>
+                      <label className="block text-sm font-medium text-gray-700 mb-1">Color</label>
+                      <input
+                        type="color"
+                        value={newProjectColor}
+                        onChange={(e) => setNewProjectColor(e.target.value)}
+                        className="w-full h-10 border border-gray-300 rounded-lg cursor-pointer"
+                      />
+                    </div>
+                  </div>
+                  <div className="flex gap-3">
+                    <button
+                      onClick={createProject}
+                      className="px-4 py-2 bg-indigo-600 text-white rounded-lg hover:bg-indigo-700"
+                    >
+                      Create Project
+                    </button>
+                    <button
+                      onClick={() => {
+                        setShowProjectForm(false);
+                        setNewProjectName('');
+                        setNewProjectDescription('');
+                      }}
+                      className="px-4 py-2 border border-gray-300 text-gray-700 rounded-lg hover:bg-gray-50"
+                    >
+                      Cancel
+                    </button>
                   </div>
                 </div>
-              </>
-            )}
-          </div>
-
-          {/* Domain Input */}
-          <div className="bg-white rounded-lg shadow p-6 mb-6">
-            <h2 className="text-lg font-medium mb-4">2. Enter Domains to Analyze</h2>
-            <p className="text-sm text-gray-600 mb-4">
-              Paste domains to analyze (one per line). Domains will be checked against {
-                keywordInputMode === 'manual' 
-                  ? 'the keywords you entered above'
-                  : 'keywords from selected target pages'
-              }.
-            </p>
-
-            {/* Refresh Info Box */}
-            {keywordInputMode === 'target-pages' && domains.some(d => d.qualificationStatus === 'pending') && (
-              <div className="mb-4 p-3 bg-blue-50 border border-blue-200 rounded-lg">
-                <h4 className="text-sm font-medium text-blue-900 mb-1">💡 Tip: Update Pending Domains</h4>
-                <p className="text-xs text-blue-800">
-                  Have you added new target pages or keywords? Use the "Refresh Pending" button below to update 
-                  all pending domains with your latest target pages and keywords without re-adding them.
-                </p>
               </div>
             )}
-            
-            <textarea
-              value={domainText}
-              onChange={(e) => setDomainText(e.target.value)}
-              placeholder="example.com\nblog.example.com\nanotherdomain.com"
-              className="w-full h-32 px-3 py-2 border rounded-lg focus:ring-2 focus:ring-indigo-500 focus:border-transparent"
-            />
-            
-            {existingDomains.length > 0 && (
-              <div className="mt-3 p-3 bg-yellow-50 border border-yellow-200 rounded-lg">
-                <p className="text-sm text-yellow-800 font-medium">Previously checked domains found:</p>
-                <ul className="text-sm text-yellow-700 mt-1">
-                  {existingDomains.map(d => (
-                    <li key={d.domain}>• {d.domain} ({d.status})</li>
+
+            {/* Projects Grid */}
+            {(() => {
+              const filteredProjects = showArchivedProjects 
+                ? projects 
+                : projects.filter(p => p.status !== 'archived');
+              
+              return filteredProjects.length > 0 ? (
+                <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+                  {filteredProjects.map((project) => (
+                    <ProjectCard
+                      key={project.id}
+                      project={project}
+                      clientId={params.id as string}
+                      onEdit={(project) => {
+                        setMessage('🚧 Edit functionality coming soon');
+                      }}
+                      onDelete={deleteProject}
+                      onArchive={archiveProject}
+                      onUnarchive={unarchiveProject}
+                    />
                   ))}
-                </ul>
-              </div>
-            )}
-            
-            <div className="flex items-center gap-3 mt-4">
-              <button
-                onClick={handleAnalyze}
-                disabled={loading || 
-                  (keywordInputMode === 'target-pages' ? selectedTargetPages.length === 0 : !manualKeywords.trim()) || 
-                  !domainText.trim()}
-                className="px-4 py-2 bg-indigo-600 text-white rounded-lg hover:bg-indigo-700 disabled:opacity-50 disabled:cursor-not-allowed flex items-center"
-              >
-                {loading ? (
-                  <>
-                    <Loader2 className="w-4 h-4 mr-2 animate-spin" />
-                    Analyzing...
-                  </>
-                ) : (
-                  <>
-                    <Target className="w-4 h-4 mr-2" />
-                    Analyze Domains
-                  </>
-                )}
-              </button>
+                </div>
+              ) : (
+                <div className="text-center py-12 bg-gray-50 rounded-lg">
+                  <Folder className="w-12 h-12 mx-auto mb-3 text-gray-400" />
+                  <p className="text-gray-500">
+                    {showArchivedProjects && projects.length > 0 
+                      ? 'No archived projects' 
+                      : 'No projects yet. Create your first project to get started.'}
+                  </p>
+                </div>
+              );
+            })()}
 
-              {keywordInputMode === 'target-pages' && domains.filter(d => d.qualificationStatus === 'pending').length > 0 && (
-                <button
-                  onClick={refreshPendingDomains}
-                  disabled={loading || selectedTargetPages.length === 0}
-                  className="px-4 py-2 bg-green-600 text-white rounded-lg hover:bg-green-700 disabled:opacity-50 disabled:cursor-not-allowed flex items-center"
-                  title="Update pending domains with new target pages and keywords"
-                >
-                  <RotateCcw className="w-4 h-4 mr-2" />
-                  Refresh Pending ({domains.filter(d => d.qualificationStatus === 'pending').length})
-                </button>
-              )}
-            </div>
           </div>
 
-          {/* Results Grid */}
-          {domains.length > 0 && (
+          {/* Legacy Results Grid - Hidden */}
+          {false && domains.length > 0 && (
             <div className="bg-white rounded-lg shadow p-6">
               <div className="flex items-center justify-between mb-6">
                 <h2 className="text-lg font-medium">Analysis Results</h2>
@@ -741,425 +1227,496 @@ export default function BulkAnalysisPage() {
               </div>
               
               {/* Filter Controls */}
-              <div className="mb-6 p-4 bg-gray-50 rounded-lg space-y-4">
-                {/* Search Bar */}
-                <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-2">Search Domains</label>
-                  <input
-                    type="text"
-                    value={searchQuery}
-                    onChange={(e) => setSearchQuery(e.target.value)}
-                    placeholder="Search by domain name..."
-                    className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-indigo-500 focus:border-transparent"
-                  />
-                </div>
-
-                {/* Experimental Features Toggle */}
-                <div className="flex items-center gap-4">
-                  <label className="flex items-center gap-2 text-sm">
-                    <input
-                      type="checkbox"
-                      checked={!hideExperimentalFeatures}
-                      onChange={(e) => {
-                        const hide = !e.target.checked;
-                        setHideExperimentalFeatures(hide);
-                        localStorage.setItem('hideExperimentalFeatures', hide.toString());
+              <div className="mb-6 p-6 bg-white border border-gray-200 rounded-lg shadow-sm space-y-4">
+                <div className="flex items-center justify-between mb-4">
+                  <h3 className="text-lg font-semibold text-gray-900 flex items-center">
+                    <Search className="w-5 h-5 mr-2 text-gray-500" />
+                    Search & Filter Domains
+                  </h3>
+                  {(searchQuery || statusFilter !== 'all' || workflowFilter !== 'all') && (
+                    <button
+                      onClick={() => {
+                        setSearchQuery('');
+                        setStatusFilter('all');
+                        setWorkflowFilter('all');
                       }}
-                      className="rounded border-gray-300 text-indigo-600 focus:ring-indigo-500"
-                    />
-                    <span className="font-medium">Show Experimental Features</span>
-                  </label>
-                  {!hideExperimentalFeatures && (
-                    <span className="text-xs text-gray-500">
-                      Enables DataForSEO keyword analysis
-                    </span>
+                      className="text-sm text-indigo-600 hover:text-indigo-800 font-medium"
+                    >
+                      Clear all filters
+                    </button>
                   )}
                 </div>
-
-                {/* Status Filters */}
+                
+                {/* Search Bar */}
                 <div>
-                  <h4 className="font-medium text-gray-900 mb-3">Filter by Status</h4>
-                  <div className="flex flex-wrap gap-2">
-                    {[
-                      { value: 'all', label: 'All Domains', count: domains.length },
-                      { value: 'pending', label: 'Pending Review', count: domains.filter(d => d.qualificationStatus === 'pending').length },
-                      { value: 'high_quality', label: 'High Quality', count: domains.filter(d => d.qualificationStatus === 'high_quality').length },
-                      { value: 'average_quality', label: 'Average Quality', count: domains.filter(d => d.qualificationStatus === 'average_quality').length },
-                      { value: 'disqualified', label: 'Disqualified', count: domains.filter(d => d.qualificationStatus === 'disqualified').length }
-                    ].map((filter) => (
-                      <button
-                        key={filter.value}
-                        onClick={() => setStatusFilter(filter.value as any)}
-                        className={`px-3 py-2 text-sm rounded-lg border transition-colors ${
-                          statusFilter === filter.value
-                            ? 'bg-indigo-600 text-white border-indigo-600'
-                            : 'bg-white text-gray-700 border-gray-300 hover:border-indigo-300 hover:bg-indigo-50'
-                        }`}
-                      >
-                        {filter.label} ({filter.count})
-                      </button>
-                    ))}
+                  <div className="relative">
+                    <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 w-4 h-4 text-gray-400" />
+                    <input
+                      type="text"
+                      value={searchQuery}
+                      onChange={(e) => setSearchQuery(e.target.value)}
+                      placeholder="Search by domain name..."
+                      className="w-full pl-10 pr-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-indigo-500 focus:border-transparent"
+                    />
                   </div>
                 </div>
 
-                {/* Workflow Filters */}
-                <div>
-                  <h4 className="font-medium text-gray-900 mb-3">Filter by Workflow Status</h4>
-                  <div className="flex flex-wrap gap-2">
-                    {[
-                      { value: 'all', label: 'All', count: domains.length },
-                      { value: 'has_workflow', label: 'Has Workflow', count: domains.filter(d => d.hasWorkflow).length },
-                      { value: 'no_workflow', label: 'No Workflow', count: domains.filter(d => !d.hasWorkflow).length }
-                    ].map((filter) => (
-                      <button
-                        key={filter.value}
-                        onClick={() => setWorkflowFilter(filter.value as any)}
-                        className={`px-3 py-2 text-sm rounded-lg border transition-colors ${
-                          workflowFilter === filter.value
-                            ? 'bg-purple-600 text-white border-purple-600'
-                            : 'bg-white text-gray-700 border-gray-300 hover:border-purple-300 hover:bg-purple-50'
-                        }`}
-                      >
-                        {filter.label} ({filter.count})
-                      </button>
-                    ))}
+                {/* DataForSEO and AI features are now always enabled */}
+
+                {/* Filter Sections */}
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                  {/* Status Filters */}
+                  <div>
+                    <h4 className="font-medium text-gray-900 mb-3 flex items-center">
+                      <Target className="w-4 h-4 mr-2 text-gray-500" />
+                      Filter by Qualification Status
+                    </h4>
+                    <div className="flex flex-wrap gap-2">
+                      {[
+                        { value: 'all', label: 'All Domains', count: domains.length, color: 'gray' },
+                        { value: 'pending', label: 'Pending Review', count: domains.filter(d => d.qualificationStatus === 'pending').length, color: 'gray' },
+                        { value: 'high_quality', label: 'High Quality', count: domains.filter(d => d.qualificationStatus === 'high_quality').length, color: 'green' },
+                        { value: 'average_quality', label: 'Average Quality', count: domains.filter(d => d.qualificationStatus === 'average_quality').length, color: 'yellow' },
+                        { value: 'disqualified', label: 'Disqualified', count: domains.filter(d => d.qualificationStatus === 'disqualified').length, color: 'red' }
+                      ].map((filter) => (
+                        <button
+                          key={filter.value}
+                          onClick={() => setStatusFilter(filter.value as any)}
+                          className={`px-3 py-2 text-sm rounded-lg border transition-all ${
+                            statusFilter === filter.value
+                              ? filter.color === 'green' ? 'bg-green-600 text-white border-green-600' :
+                                filter.color === 'yellow' ? 'bg-yellow-600 text-white border-yellow-600' :
+                                filter.color === 'red' ? 'bg-red-600 text-white border-red-600' :
+                                'bg-indigo-600 text-white border-indigo-600'
+                              : 'bg-white text-gray-700 border-gray-300 hover:border-gray-400 hover:shadow-sm'
+                          }`}
+                        >
+                          {filter.label} 
+                          <span className={`ml-1 ${statusFilter === filter.value ? 'text-white/80' : 'text-gray-500'}`}>
+                            ({filter.count})
+                          </span>
+                        </button>
+                      ))}
+                    </div>
+                  </div>
+
+                  {/* Workflow Filters */}
+                  <div>
+                    <h4 className="font-medium text-gray-900 mb-3 flex items-center">
+                      <FileText className="w-4 h-4 mr-2 text-gray-500" />
+                      Filter by Workflow Status
+                    </h4>
+                    <div className="flex flex-wrap gap-2">
+                      {[
+                        { value: 'all', label: 'All', count: domains.length, icon: null },
+                        { value: 'has_workflow', label: 'Has Workflow', count: domains.filter(d => d.hasWorkflow).length, icon: CheckCircle },
+                        { value: 'no_workflow', label: 'No Workflow', count: domains.filter(d => !d.hasWorkflow).length, icon: XCircle }
+                      ].map((filter) => {
+                        const Icon = filter.icon;
+                        return (
+                          <button
+                            key={filter.value}
+                            onClick={() => setWorkflowFilter(filter.value as any)}
+                            className={`px-3 py-2 text-sm rounded-lg border transition-all flex items-center ${
+                              workflowFilter === filter.value
+                                ? 'bg-purple-600 text-white border-purple-600'
+                                : 'bg-white text-gray-700 border-gray-300 hover:border-gray-400 hover:shadow-sm'
+                            }`}
+                          >
+                            {Icon && <Icon className={`w-4 h-4 mr-1 ${workflowFilter === filter.value ? 'text-white' : 'text-gray-500'}`} />}
+                            {filter.label} 
+                            <span className={`ml-1 ${workflowFilter === filter.value ? 'text-white/80' : 'text-gray-500'}`}>
+                              ({filter.count})
+                            </span>
+                          </button>
+                        );
+                      })}
+                    </div>
                   </div>
                 </div>
               </div>
 
-              <div className="grid gap-4">
-                {(() => {
-                  const filteredDomains = domains.filter(domain => {
-                    // Status filter
-                    if (statusFilter !== 'all' && domain.qualificationStatus !== statusFilter) return false;
-                    
-                    // Workflow filter
-                    if (workflowFilter === 'has_workflow' && !domain.hasWorkflow) return false;
-                    if (workflowFilter === 'no_workflow' && domain.hasWorkflow) return false;
-                    
-                    // Search filter
-                    if (searchQuery && !domain.domain.toLowerCase().includes(searchQuery.toLowerCase())) return false;
-                    
-                    return true;
-                  });
-                  
-                  const paginatedDomains = filteredDomains.slice(0, displayLimit);
-                  const hasMore = filteredDomains.length > displayLimit;
-                  
-                  return (
-                    <>
-                      {paginatedDomains.map((domain) => {
-                  // Get keywords based on mode
-                  let keywords: Set<string>;
-                  if (keywordInputMode === 'manual') {
-                    // Use manual keywords
-                    keywords = new Set(
-                      manualKeywords
-                        .split(',')
-                        .map(k => k.trim())
-                        .filter(k => k.length > 0)
-                    );
-                  } else {
-                    // Get keywords for this domain's target pages
-                    keywords = targetPages
-                      .filter(p => domain.targetPageIds.includes(p.id))
-                      .reduce((acc, p) => {
-                        const pageKeywords = (p as any).keywords?.split(',').map((k: string) => k.trim()) || [];
-                        pageKeywords.forEach((k: string) => acc.add(k));
-                        return acc;
-                      }, new Set<string>());
-                  }
-                  
-                  const keywordArray = Array.from(keywords);
-                  
-                  // Group keywords by topical relevance
-                  const keywordGroups = groupKeywordsByTopic(keywordArray);
-                  const groupedUrls = generateGroupedAhrefsUrls(domain.domain, keywordGroups, selectedPositionRange);
-                  
-                  return (
-                    <div key={domain.id} className="border rounded-lg p-4">
-                      <div className="flex items-start justify-between">
-                        <div className="flex-1">
-                          <h3 className="font-medium text-lg">{domain.domain}</h3>
-                          <p className="text-sm text-gray-500 mt-1">
-                            {domain.keywordCount} keywords • 
-                            {domain.targetPageIds.length} target pages
-                          </p>
-                          
-                          <div className="mt-3">
-                            {/* Keyword groups */}
-                            {groupedUrls.length > 0 ? (
-                              <div>
-                                <div className="space-y-2">
-                                  {groupedUrls.map((group, index) => (
-                                    <div key={index} className="flex items-center gap-2">
-                                      <a
-                                        href={group.url}
-                                        target="_blank"
-                                        rel="noopener noreferrer"
-                                        className={`inline-flex items-center px-3 py-1 text-white text-sm rounded hover:opacity-90 transition-opacity ${
-                                          group.relevance === 'core' 
-                                            ? 'bg-green-600' 
-                                            : group.relevance === 'related'
-                                            ? 'bg-blue-600'
-                                            : 'bg-gray-600'
-                                        }`}
-                                      >
-                                        <ExternalLink className="w-3 h-3 mr-1" />
-                                        {group.name}
-                                      </a>
-                                      <span className="text-xs text-gray-500">
-                                        {group.keywordCount} keywords
-                                      </span>
-                                      {group.relevance === 'core' && (
-                                        <span className="text-xs px-2 py-0.5 bg-green-100 text-green-800 rounded">Premium</span>
-                                      )}
-                                      {group.relevance === 'related' && (
-                                        <span className="text-xs px-2 py-0.5 bg-blue-100 text-blue-800 rounded">Good</span>
-                                      )}
-                                    </div>
-                                  ))}
-                                </div>
-                                
-                                {/* Action buttons - Open All, Open Premium, DataForSEO */}
-                                <div className="mt-2 flex flex-wrap gap-2">
-                                  {groupedUrls.length > 1 && (
-                                    <>
-                                      <button
-                                        onClick={() => {
-                                          // Reverse order so user lands on first tab
-                                          [...groupedUrls].reverse().forEach((group, index) => {
-                                            setTimeout(() => {
-                                              window.open(group.url, '_blank');
-                                            }, index * 200); // Small delay to prevent popup blocker
-                                          });
-                                        }}
-                                        className="inline-flex items-center px-3 py-1 bg-purple-600 text-white text-sm rounded hover:bg-purple-700"
-                                      >
-                                        <ExternalLink className="w-3 h-3 mr-1" />
-                                        Open All ({groupedUrls.length})
-                                      </button>
-                                      
-                                      {groupedUrls.filter(g => g.relevance === 'core').length > 0 && (
-                                        <button
-                                          onClick={() => {
-                                            // Reverse order so user lands on first tab
-                                            [...groupedUrls]
-                                              .filter(g => g.relevance === 'core')
-                                              .reverse()
-                                              .forEach((group, index) => {
-                                                setTimeout(() => {
-                                                  window.open(group.url, '_blank');
-                                                }, index * 200);
-                                              });
-                                          }}
-                                          className="inline-flex items-center px-3 py-1 bg-green-600 text-white text-sm rounded hover:bg-green-700"
-                                        >
-                                          <ExternalLink className="w-3 h-3 mr-1" />
-                                          Open Premium ({groupedUrls.filter(g => g.relevance === 'core').length})
-                                        </button>
-                                      )}
-                                    </>
-                                  )}
-                                  
-                                  {/* DataForSEO button only if experimental features enabled */}
-                                  {!hideExperimentalFeatures && (
-                                    <button
-                                      onClick={() => {
-                                        console.log('DataForSEO button onClick triggered');
-                                        analyzeWithDataForSeo(domain);
-                                      }}
-                                      disabled={loading}
-                                      className="inline-flex items-center px-3 py-1 bg-indigo-600 text-white text-sm rounded hover:bg-indigo-700 disabled:opacity-50 disabled:cursor-not-allowed"
-                                      title={`Analyze ${domain.domain} with DataForSEO`}
-                                    >
-                                      <Search className="w-3 h-3 mr-1" />
-                                      {loading ? 'Loading...' : 'DataForSEO'}
-                                    </button>
-                                  )}
-                                </div>
-                              </div>
-                            ) : (
-                              <span className="text-sm text-gray-500">No keywords available</span>
-                            )}
-                          </div>
-                        </div>
-                        
-                        <div className="ml-4 flex items-start space-x-4">
-                          {/* Notes section - more compact */}
-                          <div className="flex-1">
-                            <div className="relative">
-                              <textarea
-                                value={notes[domain.id] || domain.notes || ''}
-                                onChange={(e) => setNotes({ ...notes, [domain.id]: e.target.value })}
-                                placeholder="Notes..."
-                                className="w-48 h-20 px-2 py-1 text-xs border border-gray-200 rounded-md focus:ring-1 focus:ring-indigo-500 focus:border-indigo-500 resize-none"
-                              />
-                              {notes[domain.id] !== domain.notes && (
-                                <button
-                                  onClick={async () => {
-                                    // Save notes without changing status
-                                    try {
-                                      const session = AuthService.getSession();
-                                      if (!session) {
-                                        console.error('No user session found');
-                                        return;
-                                      }
-
-                                      const domainNotes = notes[domain.id] || '';
-                                      const response = await fetch(`/api/clients/${params.id}/bulk-analysis/${domain.id}`, {
-                                        method: 'PUT',
-                                        headers: { 'Content-Type': 'application/json' },
-                                        body: JSON.stringify({ 
-                                          status: domain.qualificationStatus, 
-                                          userId: session.userId, 
-                                          notes: domainNotes 
-                                        })
-                                      });
-
-                                      if (response.ok) {
-                                        setDomains(prevDomains => 
-                                          prevDomains.map(d => 
-                                            d.id === domain.id 
-                                              ? { ...d, notes: domainNotes }
-                                              : d
-                                          )
-                                        );
-                                        setMessage('✅ Notes saved');
-                                      } else {
-                                        const errorData = await response.json();
-                                        console.error('Error saving notes:', errorData);
-                                        setMessage(`❌ Error saving notes: ${errorData.error || 'Unknown error'}`);
-                                      }
-                                    } catch (error) {
-                                      console.error('Error saving notes:', error);
-                                      setMessage('❌ Failed to save notes');
-                                    }
-                                  }}
-                                  className="absolute bottom-1 right-1 text-xs px-2 py-0.5 bg-blue-600 text-white rounded hover:bg-blue-700"
-                                >
-                                  Save
-                                </button>
-                              )}
+              {/* Bulk Actions Bar */}
+              {selectedDomains.size > 0 && (
+                <div className="mb-4 p-4 bg-indigo-50 border border-indigo-200 rounded-lg">
+                  <div className="flex items-center justify-between">
+                    <div className="flex items-center gap-4">
+                      <span className="text-sm font-medium text-indigo-900">
+                        {selectedDomains.size} domain{selectedDomains.size > 1 ? 's' : ''} selected
+                      </span>
+                      <button
+                        onClick={clearSelection}
+                        className="text-sm text-indigo-600 hover:text-indigo-800 underline"
+                      >
+                        Clear selection
+                      </button>
+                      {/* Smart Selection Dropdown */}
+                      <div className="relative">
+                        <button
+                          onClick={() => setShowSmartSelection(!showSmartSelection)}
+                          className="text-sm text-indigo-600 hover:text-indigo-800 underline flex items-center gap-1"
+                        >
+                          Smart Select
+                          <ChevronDown className="w-3 h-3" />
+                        </button>
+                        {showSmartSelection && (
+                          <div className="absolute left-0 top-full mt-1 w-64 bg-white border border-gray-200 rounded-lg shadow-lg z-10">
+                            <div className="p-2">
+                              <button
+                                onClick={async () => {
+                                  const filters = await fetchSmartFilters();
+                                  if (filters?.allPendingDataForSeo) {
+                                    selectAll(filters.allPendingDataForSeo);
+                                    setShowSmartSelection(false);
+                                    setMessage(`Selected ${filters.allPendingDataForSeo.length} domains pending DataForSEO`);
+                                  }
+                                }}
+                                className="w-full text-left px-3 py-2 text-sm hover:bg-gray-50 rounded"
+                              >
+                                Select all pending DataForSEO analysis
+                              </button>
+                              <button
+                                onClick={async () => {
+                                  const filters = await fetchSmartFilters();
+                                  if (filters?.allPendingAI) {
+                                    selectAll(filters.allPendingAI);
+                                    setShowSmartSelection(false);
+                                    setMessage(`Selected ${filters.allPendingAI.length} domains pending AI qualification`);
+                                  }
+                                }}
+                                className="w-full text-left px-3 py-2 text-sm hover:bg-gray-50 rounded"
+                              >
+                                Select all pending AI qualification
+                              </button>
+                              <button
+                                onClick={async () => {
+                                  const filters = await fetchSmartFilters();
+                                  if (filters?.allPendingBoth) {
+                                    selectAll(filters.allPendingBoth);
+                                    setShowSmartSelection(false);
+                                    setMessage(`Selected ${filters.allPendingBoth.length} domains pending both analyses`);
+                                  }
+                                }}
+                                className="w-full text-left px-3 py-2 text-sm hover:bg-gray-50 rounded font-semibold text-indigo-600"
+                              >
+                                Select all pending both analyses
+                              </button>
+                              <div className="border-t my-1"></div>
+                              <button
+                                onClick={async () => {
+                                  const filters = await fetchSmartFilters();
+                                  if (filters?.allWithErrors) {
+                                    selectAll(filters.allWithErrors);
+                                    setShowSmartSelection(false);
+                                    setMessage(`Selected ${filters.allWithErrors.length} domains with errors`);
+                                  }
+                                }}
+                                className="w-full text-left px-3 py-2 text-sm hover:bg-gray-50 rounded text-red-600"
+                              >
+                                Select all with errors
+                              </button>
                             </div>
                           </div>
-                          
-                          {/* Qualification buttons - cleaner design */}
-                          <div className="flex flex-col space-y-1.5 min-w-[140px]">
-                            {domain.qualificationStatus === 'pending' ? (
-                              <>
-                                <button
-                                  onClick={() => updateQualificationStatus(domain.id, 'high_quality')}
-                                  className="px-3 py-1.5 bg-green-600 text-white text-xs font-medium rounded hover:bg-green-700 transition-colors"
-                                >
-                                  High Quality
-                                </button>
-                                <button
-                                  onClick={() => updateQualificationStatus(domain.id, 'average_quality')}
-                                  className="px-3 py-1.5 bg-blue-600 text-white text-xs font-medium rounded hover:bg-blue-700 transition-colors"
-                                >
-                                  Average
-                                </button>
-                                <button
-                                  onClick={() => updateQualificationStatus(domain.id, 'disqualified')}
-                                  className="px-3 py-1.5 bg-gray-500 text-white text-xs font-medium rounded hover:bg-gray-600 transition-colors"
-                                >
-                                  Disqualify
-                                </button>
-                              </>
-                            ) : (
-                              <div className="space-y-2">
-                                {domain.qualificationStatus === 'high_quality' && (
-                                  <>
-                                    <span className="inline-flex items-center px-2 py-1 bg-green-100 text-green-800 text-xs font-medium rounded cursor-pointer hover:bg-green-200 group relative" 
-                                          onClick={() => updateQualificationStatus(domain.id, 'pending' as any)}
-                                          title="Click to reset to pending">
-                                      High Quality
-                                      <RotateCcw className="w-3 h-3 ml-1 opacity-0 group-hover:opacity-100 transition-opacity inline" />
-                                    </span>
-                                    {!domain.hasWorkflow && (
-                                      <button
-                                        onClick={() => createWorkflow(domain)}
-                                        className="inline-flex items-center px-2 py-1 bg-green-600 text-white text-xs rounded hover:bg-green-700"
-                                      >
-                                        <Plus className="w-3 h-3 mr-1" />
-                                        Workflow
-                                      </button>
-                                    )}
-                                  </>
-                                )}
-                                {domain.qualificationStatus === 'average_quality' && (
-                                  <>
-                                    <span className="inline-flex items-center px-2 py-1 bg-blue-100 text-blue-800 text-xs font-medium rounded cursor-pointer hover:bg-blue-200 group relative" 
-                                          onClick={() => updateQualificationStatus(domain.id, 'pending' as any)}
-                                          title="Click to reset to pending">
-                                      Average
-                                      <RotateCcw className="w-3 h-3 ml-1 opacity-0 group-hover:opacity-100 transition-opacity inline" />
-                                    </span>
-                                    {!domain.hasWorkflow && (
-                                      <button
-                                        onClick={() => createWorkflow(domain)}
-                                        className="inline-flex items-center px-2 py-1 bg-blue-600 text-white text-xs rounded hover:bg-blue-700"
-                                      >
-                                        <Plus className="w-3 h-3 mr-1" />
-                                        Workflow
-                                      </button>
-                                    )}
-                                  </>
-                                )}
-                                {domain.qualificationStatus === 'disqualified' && (
-                                  <span className="inline-flex items-center px-2 py-1 bg-gray-100 text-gray-600 text-xs rounded cursor-pointer hover:bg-gray-200 group relative" 
-                                        onClick={() => updateQualificationStatus(domain.id, 'pending' as any)}
-                                        title="Click to reset to pending">
-                                    Disqualified
-                                    <RotateCcw className="w-3 h-3 ml-1 opacity-0 group-hover:opacity-100 transition-opacity inline" />
-                                  </span>
-                                )}
-                                {domain.hasWorkflow && (
-                                  <span className="inline-flex items-center px-2 py-1 bg-purple-100 text-purple-800 text-xs rounded">
-                                    <FileText className="w-3 h-3 mr-1" />
-                                    Has Workflow
-                                  </span>
-                                )}
-                              </div>
-                            )}
-                            
-                            {/* Delete button */}
+                        )}
+                      </div>
+                    </div>
+                    <div className="flex items-center gap-2">
+                      {/* Master qualification UI removed - moved to project detail page */}
+                      {/* Individual buttons for manual control */}
+                      <div className="flex items-center gap-1">
+                        <button
+                          onClick={startBulkDataForSeoAnalysis}
+                          disabled={bulkAnalysisRunning}
+                          className="inline-flex items-center px-3 py-2 bg-indigo-600 text-white text-xs rounded hover:bg-indigo-700 disabled:opacity-50 disabled:cursor-not-allowed"
+                          title="Run DataForSEO only"
+                        >
+                          <Search className="w-3 h-3" />
+                        </button>
+                        <button
+                          onClick={startAIQualification}
+                          disabled={bulkAnalysisRunning || loading}
+                          className="inline-flex items-center px-3 py-2 bg-purple-600 text-white text-xs rounded hover:bg-purple-700 disabled:opacity-50 disabled:cursor-not-allowed"
+                          title="Run AI qualification only"
+                        >
+                          <Sparkles className="w-3 h-3" />
+                        </button>
+                      </div>
+                      <button
+                        onClick={() => {
+                          setMessage('🚧 Export selected domains coming soon!');
+                        }}
+                        className="inline-flex items-center px-4 py-2 bg-gray-600 text-white text-sm rounded-lg hover:bg-gray-700"
+                      >
+                        <Download className="w-4 h-4 mr-2" />
+                        Export Selected
+                      </button>
+                    </div>
+                  </div>
+                </div>
+              )}
+
+              {/* Keyword Cluster Selection Modal */}
+              {showKeywordClusters && (
+                <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4">
+                  <div className="bg-white rounded-lg max-w-4xl w-full max-h-[80vh] overflow-hidden flex flex-col">
+                    <div className="p-6 border-b">
+                      <h2 className="text-xl font-semibold">Select Keyword Clusters for Analysis</h2>
+                      <p className="text-sm text-gray-600 mt-1">
+                        Keywords have been grouped into topical clusters. Select which clusters to analyze with DataForSEO.
+                      </p>
+                    </div>
+                    
+                    <div className="flex-1 overflow-y-auto p-6">
+                      <div className="space-y-4">
+                        {/* Select All/None buttons */}
+                        <div className="flex items-center justify-between mb-4">
+                          <div className="text-sm text-gray-600">
+                            {keywordClusters.filter(c => c.selected).length} of {keywordClusters.length} clusters selected • 
+                            {' '}{keywordClusters.filter(c => c.selected).flatMap(c => c.keywords).length} keywords
+                          </div>
+                          <div className="flex gap-2">
                             <button
-                              onClick={() => deleteDomain(domain.id)}
-                              className="mt-2 px-3 py-1.5 bg-red-500 text-white text-xs rounded hover:bg-red-600 transition-colors flex items-center justify-center w-full"
-                              title="Delete domain"
+                              onClick={() => setKeywordClusters(clusters => 
+                                clusters.map(c => ({ ...c, selected: true }))
+                              )}
+                              className="text-sm px-3 py-1 bg-indigo-600 text-white rounded hover:bg-indigo-700"
                             >
-                              <Trash2 className="w-3 h-3" />
+                              Select All
+                            </button>
+                            <button
+                              onClick={() => setKeywordClusters(clusters => 
+                                clusters.map(c => ({ ...c, selected: false }))
+                              )}
+                              className="text-sm px-3 py-1 border border-gray-300 text-gray-700 rounded hover:bg-gray-50"
+                            >
+                              Clear All
                             </button>
                           </div>
                         </div>
+                        
+                        {/* Cluster list */}
+                        {keywordClusters.map((cluster, index) => (
+                          <div key={index} className="border rounded-lg p-4 hover:bg-gray-50">
+                            <label className="flex items-start gap-3 cursor-pointer">
+                              <input
+                                type="checkbox"
+                                checked={cluster.selected}
+                                onChange={(e) => {
+                                  setKeywordClusters(clusters => 
+                                    clusters.map((c, i) => 
+                                      i === index ? { ...c, selected: e.target.checked } : c
+                                    )
+                                  );
+                                }}
+                                className="mt-1 w-4 h-4 text-indigo-600 rounded border-gray-300 focus:ring-indigo-500"
+                              />
+                              <div className="flex-1">
+                                <div className="flex items-center gap-2">
+                                  <h3 className="font-medium">{cluster.name}</h3>
+                                  <span className={`text-xs px-2 py-0.5 rounded ${
+                                    cluster.relevance === 'core' 
+                                      ? 'bg-green-100 text-green-800' 
+                                      : cluster.relevance === 'related'
+                                      ? 'bg-blue-100 text-blue-800'
+                                      : 'bg-gray-100 text-gray-800'
+                                  }`}>
+                                    {cluster.relevance === 'core' ? 'Premium' : 
+                                     cluster.relevance === 'related' ? 'Good' : 'Standard'}
+                                  </span>
+                                  <span className="text-sm text-gray-500">
+                                    {cluster.keywords.length} keywords
+                                  </span>
+                                </div>
+                                <div className="mt-2 text-sm text-gray-600">
+                                  <div className="line-clamp-2">
+                                    {cluster.keywords.slice(0, 5).join(', ')}
+                                    {cluster.keywords.length > 5 && ` +${cluster.keywords.length - 5} more`}
+                                  </div>
+                                </div>
+                              </div>
+                            </label>
+                          </div>
+                        ))}
                       </div>
                     </div>
-                  );
-                })}
-                      
-                      {/* Show More Button */}
-                      {hasMore && (
-                        <div className="mt-6 text-center">
+                    
+                    <div className="p-6 border-t bg-gray-50">
+                      <div className="flex items-center justify-between">
+                        <button
+                          onClick={() => {
+                            setShowKeywordClusters(false);
+                            setKeywordClusters([]);
+                          }}
+                          className="px-4 py-2 text-gray-700 hover:text-gray-900"
+                        >
+                          Cancel
+                        </button>
+                        <button
+                          onClick={executeDataForSeoAnalysis}
+                          disabled={!keywordClusters.some(c => c.selected)}
+                          className="px-6 py-2 bg-indigo-600 text-white rounded-lg hover:bg-indigo-700 disabled:opacity-50 disabled:cursor-not-allowed"
+                        >
+                          Analyze Selected Clusters
+                        </button>
+                      </div>
+                    </div>
+                  </div>
+                </div>
+              )}
+
+              {/* Domain Table */}
+              {(() => {
+                const filteredDomains = domains.filter(domain => {
+                  // Status filter
+                  if (statusFilter !== 'all' && domain.qualificationStatus !== statusFilter) return false;
+                  
+                  // Workflow filter
+                  if (workflowFilter === 'has_workflow' && !domain.hasWorkflow) return false;
+                  if (workflowFilter === 'no_workflow' && domain.hasWorkflow) return false;
+                  
+                  // Search filter
+                  if (searchQuery && !domain.domain.toLowerCase().includes(searchQuery.toLowerCase())) return false;
+                  
+                  return true;
+                });
+                
+                const paginatedDomains = filteredDomains.slice(0, displayLimit);
+                const hasMore = filteredDomains.length > displayLimit;
+                
+                return (
+                  <>
+                    {/* Quick Actions when no domains selected */}
+                    {selectedDomains.size === 0 && filteredDomains.length > 0 && (
+                      <div className="mb-4 p-3 bg-purple-50 border border-purple-200 rounded-lg">
+                        <div className="flex items-center justify-between">
+                          <p className="text-sm text-purple-800">
+                            <strong>Tip:</strong> Select domains to qualify them with AI
+                          </p>
                           <button
-                            onClick={() => setDisplayLimit(displayLimit + ITEMS_PER_PAGE)}
-                            className="inline-flex items-center px-6 py-3 bg-gray-100 hover:bg-gray-200 text-gray-800 font-medium rounded-lg transition-colors"
+                            onClick={() => selectAll(filteredDomains.map(d => d.id))}
+                            className="inline-flex items-center px-3 py-1.5 bg-purple-600 text-white text-sm rounded hover:bg-purple-700"
                           >
-                            <Plus className="w-5 h-5 mr-2" />
-                            Show More ({filteredDomains.length - paginatedDomains.length} remaining)
+                            <CheckCircle className="w-4 h-4 mr-1.5" />
+                            Select All {filteredDomains.length} Domains
                           </button>
                         </div>
-                      )}
-                      
-                      {/* Results Summary */}
-                      <div className="mt-4 text-center text-sm text-gray-600">
-                        Showing {paginatedDomains.length} of {filteredDomains.length} domains
                       </div>
-                    </>
-                  );
-                })()}
-              </div>
+                    )}
+
+                    <BulkAnalysisTable
+                      domains={paginatedDomains}
+                      targetPages={targetPages}
+                      selectedDomains={selectedDomains}
+                      recentlyAnalyzedDomains={recentlyAnalyzedDomains}
+                      onToggleSelection={toggleDomainSelection}
+                      onSelectAll={selectAll}
+                      onClearSelection={clearSelection}
+                      onUpdateStatus={updateQualificationStatus}
+                      onCreateWorkflow={createWorkflow}
+                      onDeleteDomain={deleteDomain}
+                      onAnalyzeWithDataForSeo={analyzeWithDataForSeo}
+                      onUpdateNotes={async (domainId, notes) => {
+                        // Save notes
+                        try {
+                          const session = AuthService.getSession();
+                          if (!session) {
+                            console.error('No user session found');
+                            return;
+                          }
+
+                          const domain = domains.find(d => d.id === domainId);
+                          if (!domain) return;
+
+                          const response = await fetch(`/api/clients/${params.id}/bulk-analysis/${domainId}`, {
+                            method: 'PUT',
+                            headers: { 'Content-Type': 'application/json' },
+                            body: JSON.stringify({ 
+                              status: domain.qualificationStatus, 
+                              userId: session.userId, 
+                              notes: notes 
+                            })
+                          });
+
+                          if (response.ok) {
+                            setDomains(prevDomains => 
+                              prevDomains.map(d => 
+                                d.id === domainId 
+                                  ? { ...d, notes }
+                                  : d
+                              )
+                            );
+                            setMessage('✅ Notes saved');
+                          } else {
+                            const errorData = await response.json();
+                            console.error('Error saving notes:', errorData);
+                            setMessage(`❌ Error saving notes: ${errorData.error || 'Unknown error'}`);
+                          }
+                        } catch (error) {
+                          console.error('Error saving notes:', error);
+                          setMessage('❌ Failed to save notes');
+                        }
+                      }}
+                      onAIQualifySingle={aiQualifySingleDomain}
+                      selectedPositionRange={selectedPositionRange}
+                      loading={loading}
+                      keywordInputMode={keywordInputMode}
+                      manualKeywords={manualKeywords}
+                      triageMode={triageMode}
+                      onToggleTriageMode={() => setShowGuidedTriage(true)}
+                      onBulkCreateWorkflows={bulkCreateWorkflows}
+                      bulkWorkflowCreating={bulkWorkflowCreating}
+                    />
+                    
+                    {/* Show More Button */}
+                    {hasMore && (
+                      <div className="mt-6 text-center">
+                        <button
+                          onClick={() => setDisplayLimit(displayLimit + ITEMS_PER_PAGE)}
+                          className="inline-flex items-center px-6 py-3 bg-gray-100 hover:bg-gray-200 text-gray-800 font-medium rounded-lg transition-colors"
+                        >
+                          <Plus className="w-5 h-5 mr-2" />
+                          Show More ({filteredDomains.length - paginatedDomains.length} remaining)
+                        </button>
+                      </div>
+                    )}
+                    
+                    {/* Results Summary */}
+                    <div className="mt-4 text-center">
+                      <div className="text-sm text-gray-600">
+                        Showing {paginatedDomains.length} of {filteredDomains.length} domains
+                        {filteredDomains.length < domains.length && (
+                          <span className="text-indigo-600 ml-1">
+                            (filtered from {domains.length} total)
+                          </span>
+                        )}
+                      </div>
+                      
+                      {/* Active Filters Summary */}
+                      {(searchQuery || statusFilter !== 'all' || workflowFilter !== 'all') && (
+                        <div className="mt-2 flex items-center justify-center gap-2 text-xs">
+                          <span className="text-gray-500">Active filters:</span>
+                          {searchQuery && (
+                            <span className="px-2 py-1 bg-gray-100 text-gray-700 rounded">
+                              Search: "{searchQuery}"
+                            </span>
+                          )}
+                          {statusFilter !== 'all' && (
+                            <span className="px-2 py-1 bg-indigo-100 text-indigo-700 rounded">
+                              Status: {statusFilter.replace('_', ' ')}
+                            </span>
+                          )}
+                          {workflowFilter !== 'all' && (
+                            <span className="px-2 py-1 bg-purple-100 text-purple-700 rounded">
+                              {workflowFilter === 'has_workflow' ? 'Has workflow' : 'No workflow'}
+                            </span>
+                          )}
+                        </div>
+                      )}
+                    </div>
+                  </>
+                );
+              })()}
+
             </div>
           )}
         </div>
@@ -1175,6 +1732,47 @@ export default function BulkAnalysisPage() {
           clientId={dataForSeoModal.clientId}
           initialResults={dataForSeoModal.initialResults}
           totalFound={dataForSeoModal.totalFound}
+          taskId={dataForSeoModal.taskId}
+          cacheInfo={dataForSeoModal.cacheInfo}
+        />
+      )}
+      
+      {/* Bulk Analysis Results Modal */}
+      {bulkResultsModal.isOpen && (
+        <BulkAnalysisResultsModal
+          isOpen={bulkResultsModal.isOpen}
+          onClose={() => setBulkResultsModal({ isOpen: false, jobId: '', analyzedDomains: [] })}
+          jobId={bulkResultsModal.jobId}
+          domains={bulkResultsModal.analyzedDomains}
+        />
+      )}
+
+
+      {/* Guided Triage Flow */}
+      {showGuidedTriage && (
+        <GuidedTriageFlow
+          domains={domains.filter(domain => {
+            // Status filter
+            if (statusFilter !== 'all' && domain.qualificationStatus !== statusFilter) return false;
+            
+            // Workflow filter
+            if (workflowFilter === 'has_workflow' && !domain.hasWorkflow) return false;
+            if (workflowFilter === 'no_workflow' && domain.hasWorkflow) return false;
+            
+            // Search filter
+            if (searchQuery && !domain.domain.toLowerCase().includes(searchQuery.toLowerCase())) return false;
+            
+            return true;
+          })}
+          targetPages={targetPages}
+          onClose={() => {
+            setShowGuidedTriage(false);
+          }}
+          onUpdateStatus={updateQualificationStatus}
+          onAnalyzeWithDataForSeo={analyzeWithDataForSeo}
+          keywordInputMode={keywordInputMode}
+          manualKeywords={manualKeywords}
+          userId={AuthService.getSession()?.userId || ''}
         />
       )}
     </AuthWrapper>

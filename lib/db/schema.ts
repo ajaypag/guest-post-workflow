@@ -20,7 +20,10 @@ export const clients = pgTable('clients', {
   name: varchar('name', { length: 255 }).notNull(),
   website: varchar('website', { length: 255 }).notNull(),
   description: text('description').default(''),
+  clientType: varchar('client_type', { length: 50 }).default('client'), // 'prospect' | 'client'
   createdBy: uuid('created_by').notNull().references(() => users.id),
+  convertedFromProspectAt: timestamp('converted_from_prospect_at'),
+  conversionNotes: text('conversion_notes'),
   createdAt: timestamp('created_at').notNull(), // Remove defaultNow() to handle in application code
   updatedAt: timestamp('updated_at').notNull(), // Remove defaultNow() to handle in application code
 });

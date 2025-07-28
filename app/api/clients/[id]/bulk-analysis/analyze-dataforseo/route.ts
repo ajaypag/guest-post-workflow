@@ -19,7 +19,8 @@ export async function POST(
       domainId,
       locationCode = 2840, 
       languageCode = 'en',
-      manualKeywords 
+      manualKeywords,
+      useCache = true // Default to using cache
     } = body;
 
     if (!domainId) {
@@ -69,21 +70,40 @@ export async function POST(
       hasPassword: !!process.env.DATAFORSEO_PASSWORD
     });
 
-    // Analyze with DataForSEO
-    console.log('Starting DataForSEO analysis...');
-    const result = await DataForSeoService.analyzeDomain(
-      domain.id,
-      domain.domain,
-      keywords,
-      locationCode,
-      languageCode
-    );
+    // Analyze with DataForSEO (with or without cache)
+    console.log('Starting DataForSEO analysis...', { useCache });
+    
+    const result = useCache 
+      ? await DataForSeoService.analyzeDomainWithCache(
+          domain.id,
+          domain.domain,
+          keywords,
+          locationCode,
+          languageCode
+        )
+      : await DataForSeoService.analyzeDomain(
+          domain.id,
+          domain.domain,
+          keywords,
+          locationCode,
+          languageCode
+        );
     
     console.log('DataForSEO analysis result:', {
       status: result.status,
       totalFound: result.totalFound,
       error: result.error
     });
+
+    // Update domain status if analysis was successful
+    if (result.status === 'success') {
+      console.log('Updating domain hasDataForSeoResults status...');
+      await BulkAnalysisService.updateDomainDataForSeoStatus(
+        domainId, 
+        result.totalFound > 0,
+        result.totalFound
+      );
+    }
 
     return NextResponse.json({ 
       success: true,

@@ -1,23 +1,25 @@
 'use client';
 
-import { useState, useEffect } from 'react';
+import { useState, useEffect, Suspense } from 'react';
 import Link from 'next/link';
-import { useRouter } from 'next/navigation';
+import { useRouter, useSearchParams } from 'next/navigation';
 import AuthWrapper from '@/components/AuthWrapper';
 import Header from '@/components/Header';
 import { clientStorage, sessionStorage } from '@/lib/userStorage';
 import { Client } from '@/types/user';
 import { Building2, Plus, Users, Globe, CheckCircle, XCircle, Clock, Edit, Trash2, X, BarChart2 } from 'lucide-react';
 
-export default function ClientsPage() {
+function ClientsPageContent() {
   const router = useRouter();
+  const searchParams = useSearchParams();
   const [clients, setClients] = useState<Client[]>([]);
   const [showNewClientForm, setShowNewClientForm] = useState(false);
   const [editingClient, setEditingClient] = useState<Client | null>(null);
   const [newClient, setNewClient] = useState({
     name: '',
     website: '',
-    targetPages: ''
+    targetPages: '',
+    clientType: 'client' as 'prospect' | 'client'
   });
   const [editClient, setEditClient] = useState({
     name: '',
@@ -26,7 +28,20 @@ export default function ClientsPage() {
 
   useEffect(() => {
     loadClients();
-  }, []);
+    
+    // Check URL parameters to auto-open form
+    const shouldShowForm = searchParams.get('new') === 'true';
+    const clientType = searchParams.get('type') as 'prospect' | 'client';
+    
+    if (shouldShowForm) {
+      setShowNewClientForm(true);
+      if (clientType) {
+        setNewClient(prev => ({ ...prev, clientType }));
+      }
+      // Clear URL parameters after opening form
+      router.replace('/clients', { scroll: false });
+    }
+  }, [searchParams]);
 
   const loadClients = async () => {
     const session = sessionStorage.getSession();
@@ -57,7 +72,8 @@ export default function ClientsPage() {
         website: newClient.website,
         targetPages: [],
         assignedUsers: [session.userId],
-        createdBy: session.userId
+        createdBy: session.userId,
+        clientType: newClient.clientType
       });
 
       // Add target pages if provided
@@ -65,7 +81,7 @@ export default function ClientsPage() {
         await clientStorage.addTargetPages(client.id, urls);
       }
 
-      setNewClient({ name: '', website: '', targetPages: '' });
+      setNewClient({ name: '', website: '', targetPages: '', clientType: 'client' });
       setShowNewClientForm(false);
       
       // If target pages were added, redirect to client page with prompt flag
@@ -168,6 +184,40 @@ export default function ClientsPage() {
             <div className="bg-white rounded-lg shadow p-6 mb-6">
               <h3 className="text-lg font-medium mb-4">Create New Client</h3>
               <form onSubmit={handleCreateClient} className="space-y-4">
+                {/* Client Type Selector */}
+                <div className="mb-4">
+                  <label className="block text-sm font-medium text-gray-700 mb-2">
+                    Client Type
+                  </label>
+                  <div className="flex space-x-4">
+                    <label className="flex items-center">
+                      <input
+                        type="radio"
+                        value="prospect"
+                        checked={newClient.clientType === 'prospect'}
+                        onChange={(e) => setNewClient({ ...newClient, clientType: 'prospect' })}
+                        className="mr-2"
+                      />
+                      <span className="text-sm">
+                        <span className="font-medium">Prospect</span>
+                        <span className="text-gray-500 ml-1">(Limited to 2 projects, no workflows)</span>
+                      </span>
+                    </label>
+                    <label className="flex items-center">
+                      <input
+                        type="radio"
+                        value="client"
+                        checked={newClient.clientType === 'client'}
+                        onChange={(e) => setNewClient({ ...newClient, clientType: 'client' })}
+                        className="mr-2"
+                      />
+                      <span className="text-sm">
+                        <span className="font-medium">Client</span>
+                        <span className="text-gray-500 ml-1">(Full access)</span>
+                      </span>
+                    </label>
+                  </div>
+                </div>
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                   <div>
                     <label className="block text-sm font-medium text-gray-700 mb-1">
@@ -300,7 +350,18 @@ export default function ClientsPage() {
                     <div className="flex items-start justify-between">
                       <div className="flex items-center">
                         <Building2 className="w-5 h-5 text-gray-400 mr-2" />
-                        <h3 className="text-lg font-medium text-gray-900">{client.name}</h3>
+                        <div>
+                          <h3 className="text-lg font-medium text-gray-900">{client.name}</h3>
+                          <div className="mt-1">
+                            <span className={`inline-flex px-2 py-1 text-xs font-medium rounded-full ${
+                              (client as any).clientType === 'prospect' 
+                                ? 'bg-yellow-100 text-yellow-800' 
+                                : 'bg-green-100 text-green-800'
+                            }`}>
+                              {(client as any).clientType === 'prospect' ? 'Prospect' : 'Client'}
+                            </span>
+                          </div>
+                        </div>
                       </div>
                       <div className="flex space-x-2">
                         <button
@@ -399,5 +460,13 @@ export default function ClientsPage() {
         </div>
       </div>
     </AuthWrapper>
+  );
+}
+
+export default function ClientsPage() {
+  return (
+    <Suspense fallback={<div>Loading...</div>}>
+      <ClientsPageContent />
+    </Suspense>
   );
 }
