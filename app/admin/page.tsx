@@ -62,6 +62,14 @@ export default function AdminDashboard() {
       iconColor: 'text-violet-600'
     },
     {
+      title: 'Airtable Migration',
+      description: 'Add Airtable metadata columns for domain import integration',
+      icon: Database,
+      href: '/admin/airtable-migration',
+      color: 'bg-teal-50 border-teal-200 text-teal-700',
+      iconColor: 'text-teal-600'
+    },
+    {
       title: 'Diagnostics',
       description: 'Run comprehensive system diagnostics and health checks',
       icon: Activity,
