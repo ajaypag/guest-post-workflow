@@ -25,6 +25,7 @@ import {
 import { BulkAnalysisDomain } from '@/types/bulk-analysis';
 import { TargetPage } from '@/types/user';
 import { groupKeywordsByTopic } from '@/lib/utils/keywordGroupingV2';
+import { InfoTooltip } from '@/components/ui/InfoTooltip';
 
 interface BulkAnalysisTableProps {
   domains: BulkAnalysisDomain[];
@@ -1100,33 +1101,47 @@ export default function BulkAnalysisTable(props: BulkAnalysisTableProps) {
 
                                   {/* Topical Match & Evidence Row */}
                                   {domain.overlapStatus && (
-                                    <div className="bg-gray-50 rounded-lg p-3 space-y-2">
-                                      <div className="flex items-start justify-between">
-                                        <div className="w-full">
-                                          <div className="flex items-center gap-2 mb-1">
+                                    <div className="bg-gray-50 rounded-lg p-3">
+                                      <div className="grid grid-cols-2 gap-4">
+                                        {/* Left Column - Topical Match & Evidence */}
+                                        <div>
+                                          <div className="flex items-center gap-2 mb-2">
                                             <span className="text-sm font-medium text-gray-900">
                                               Topical Match: 
                                             </span>
-                                            <span className={`inline-flex items-center px-2 py-0.5 rounded text-xs font-medium ${
-                                              domain.overlapStatus === 'direct' ? 'bg-green-100 text-green-800' :
-                                              domain.overlapStatus === 'related' ? 'bg-blue-100 text-blue-800' :
-                                              domain.overlapStatus === 'both' ? 'bg-purple-100 text-purple-800' :
-                                              'bg-gray-100 text-gray-600'
-                                            }`}>
-                                              {domain.overlapStatus === 'direct' ? '✓ Direct' :
-                                               domain.overlapStatus === 'related' ? '~ Related' :
-                                               domain.overlapStatus === 'both' ? '✓~ Both' :
-                                               '✗ None'}
-                                            </span>
-                                            {domain.authorityDirect !== 'n/a' && (
+                                            <InfoTooltip content={
+                                              domain.overlapStatus === 'direct' ? 'The site already ranks for your exact core keywords' :
+                                              domain.overlapStatus === 'related' ? 'The site ranks for relevant sibling topics but not your exact keywords' :
+                                              domain.overlapStatus === 'both' ? 'The site ranks for both your core keywords and related topics' :
+                                              'No meaningful keyword overlap detected'
+                                            }>
                                               <span className={`inline-flex items-center px-2 py-0.5 rounded text-xs font-medium ${
-                                                domain.authorityDirect === 'strong' ? 'bg-green-100 text-green-800' :
-                                                domain.authorityDirect === 'moderate' ? 'bg-yellow-100 text-yellow-800' :
-                                                'bg-red-100 text-red-800'
+                                                domain.overlapStatus === 'direct' ? 'bg-green-100 text-green-800' :
+                                                domain.overlapStatus === 'related' ? 'bg-blue-100 text-blue-800' :
+                                                domain.overlapStatus === 'both' ? 'bg-purple-100 text-purple-800' :
+                                                'bg-gray-100 text-gray-600'
                                               }`}>
-                                                {domain.authorityDirect === 'strong' ? '🟢' :
-                                                 domain.authorityDirect === 'moderate' ? '🟡' : '🔴'} {domain.authorityDirect}
+                                                {domain.overlapStatus === 'direct' ? '✓ Direct' :
+                                                 domain.overlapStatus === 'related' ? '~ Related' :
+                                                 domain.overlapStatus === 'both' ? '✓~ Both' :
+                                                 '✗ None'}
                                               </span>
+                                            </InfoTooltip>
+                                            {domain.authorityDirect !== 'n/a' && (
+                                              <InfoTooltip content={
+                                                domain.authorityDirect === 'strong' ? 'Rankings in top 30 positions (pages 1-3 of Google)' :
+                                                domain.authorityDirect === 'moderate' ? 'Rankings in positions 31-60 (pages 4-6 of Google)' :
+                                                'Rankings in positions 61-100 (pages 7-10 of Google)'
+                                              }>
+                                                <span className={`inline-flex items-center px-2 py-0.5 rounded text-xs font-medium ${
+                                                  domain.authorityDirect === 'strong' ? 'bg-green-100 text-green-800' :
+                                                  domain.authorityDirect === 'moderate' ? 'bg-yellow-100 text-yellow-800' :
+                                                  'bg-red-100 text-red-800'
+                                                }`}>
+                                                  {domain.authorityDirect === 'strong' ? '🟢' :
+                                                   domain.authorityDirect === 'moderate' ? '🟡' : '🔴'} {domain.authorityDirect}
+                                                </span>
+                                              </InfoTooltip>
                                             )}
                                           </div>
                                           
@@ -1150,51 +1165,40 @@ export default function BulkAnalysisTable(props: BulkAnalysisTableProps) {
                                             </div>
                                           )}
                                         </div>
-                                      </div>
-                                      
-                                      {/* Content Strategy Section */}
-                                      {domain.topicScope && (
-                                        <div className="border-t pt-2">
-                                          <div className="flex items-center gap-2">
+                                        
+                                        {/* Right Column - Content Strategy */}
+                                        {domain.topicScope && (
+                                          <div>
+                                            <div className="flex items-center gap-2 mb-2">
                                             <span className="text-sm font-medium text-gray-900">
                                               Content Strategy:
                                             </span>
-                                            <span className={`inline-flex items-center px-2 py-0.5 rounded text-xs font-medium ${
-                                              domain.topicScope === 'short_tail' ? 'bg-green-100 text-green-800' :
-                                              domain.topicScope === 'long_tail' ? 'bg-blue-100 text-blue-800' :
-                                              'bg-purple-100 text-purple-800'
-                                            }`}>
-                                              {domain.topicScope === 'short_tail' ? '🎯 Short Tail' :
-                                               domain.topicScope === 'long_tail' ? '🏹 Long Tail' :
-                                               '🔬 Ultra Long Tail'}
-                                            </span>
+                                            <InfoTooltip content={
+                                              domain.topicScope === 'short_tail' ? 'Site can rank for broad core terms without modifiers' :
+                                              domain.topicScope === 'long_tail' ? 'Site needs simple modifiers (geo, buyer type, "best", "how to")' :
+                                              'Site needs very specific niche angles with multiple modifiers'
+                                            }>
+                                              <span className={`inline-flex items-center px-2 py-0.5 rounded text-xs font-medium ${
+                                                domain.topicScope === 'short_tail' ? 'bg-green-100 text-green-800' :
+                                                domain.topicScope === 'long_tail' ? 'bg-blue-100 text-blue-800' :
+                                                'bg-purple-100 text-purple-800'
+                                              }`}>
+                                                {domain.topicScope === 'short_tail' ? '🎯 Short Tail' :
+                                                 domain.topicScope === 'long_tail' ? '🏹 Long Tail' :
+                                                 '🔬 Ultra Long Tail'}
+                                              </span>
+                                            </InfoTooltip>
                                           </div>
                                           
-                                          {/* Extract modifier guidance from reasoning */}
-                                          {(() => {
-                                            const reasoning = data.aiQualification.reasoning.toLowerCase();
-                                            let modifierGuidance = '';
-                                            
-                                            if (reasoning.includes('geo modifier') || reasoning.includes('geographic')) {
-                                              modifierGuidance = 'Add geographic modifiers (city, state, region)';
-                                            } else if (reasoning.includes('buyer') || reasoning.includes('buyer-type')) {
-                                              modifierGuidance = 'Add buyer-type qualifiers (for business, enterprise, SMB)';
-                                            } else if (reasoning.includes('no modifier')) {
-                                              modifierGuidance = 'Can target broad terms without modifiers';
-                                            } else if (reasoning.includes('specific') || reasoning.includes('niche')) {
-                                              modifierGuidance = 'Needs specific niche angle with multiple modifiers';
-                                            } else if (reasoning.includes('best') || reasoning.includes('how to')) {
-                                              modifierGuidance = 'Use intent modifiers (best, how to, guide)';
-                                            }
-                                            
-                                            return modifierGuidance && (
+                                            {/* Show full modifier guidance from topicReasoning */}
+                                            {domain.topicReasoning && (
                                               <p className="text-xs text-gray-600 mt-1 italic">
-                                                💡 {modifierGuidance}
+                                                💡 {domain.topicReasoning}
                                               </p>
-                                            );
-                                          })()}
-                                        </div>
-                                      )}
+                                            )}
+                                          </div>
+                                        )}
+                                      </div>
                                     </div>
                                   )}
                                 </div>
@@ -1255,7 +1259,7 @@ export default function BulkAnalysisTable(props: BulkAnalysisTableProps) {
                               }}
                               placeholder="Add notes about this domain..."
                               className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-indigo-500 focus:border-transparent"
-                              rows={3}
+                              rows={2}
                               onClick={(e) => e.stopPropagation()}
                             />
                           </div>

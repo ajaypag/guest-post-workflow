@@ -28,6 +28,7 @@ import {
 import { BulkAnalysisDomain } from '@/types/bulk-analysis';
 import { TargetPage } from '@/types/user';
 import { groupKeywordsByTopic } from '@/lib/utils/keywordGroupingV2';
+import { InfoTooltip } from '@/components/ui/InfoTooltip';
 
 interface GuidedTriageFlowProps {
   domains: BulkAnalysisDomain[];
@@ -1278,7 +1279,7 @@ export default function GuidedTriageFlow(props: GuidedTriageFlowProps) {
             </div>
             
             {/* Right Column - Metadata */}
-            <div className="w-80 space-y-4">
+            <div className="w-96 space-y-4">
                 {/* AI Analysis - Enhanced */}
                 {data.aiQualification && (
                   <div className="bg-white rounded-lg p-4 shadow-sm">
@@ -1304,34 +1305,76 @@ export default function GuidedTriageFlow(props: GuidedTriageFlowProps) {
                              'Disqualified'}
                           </span>
                           
-                          <span className={`inline-flex items-center px-2 py-1 rounded text-xs font-medium ${
-                            currentDomain.overlapStatus === 'direct' ? 'bg-green-100 text-green-800' :
-                            currentDomain.overlapStatus === 'related' ? 'bg-blue-100 text-blue-800' :
-                            currentDomain.overlapStatus === 'both' ? 'bg-purple-100 text-purple-800' :
-                            'bg-gray-100 text-gray-600'
-                          }`}>
-                            {currentDomain.overlapStatus === 'direct' ? '✓ Direct Match' :
-                             currentDomain.overlapStatus === 'related' ? '~ Related Match' :
-                             currentDomain.overlapStatus === 'both' ? '✓~ Both' :
-                             '✗ No Match'}
-                          </span>
+                          <InfoTooltip content={
+                            currentDomain.overlapStatus === 'direct' ? 'The site already ranks for your exact core keywords' :
+                            currentDomain.overlapStatus === 'related' ? 'The site ranks for relevant sibling topics but not your exact keywords' :
+                            currentDomain.overlapStatus === 'both' ? 'The site ranks for both your core keywords and related topics' :
+                            'No meaningful keyword overlap detected'
+                          }>
+                            <span className={`inline-flex items-center px-2 py-1 rounded text-xs font-medium ${
+                              currentDomain.overlapStatus === 'direct' ? 'bg-green-100 text-green-800' :
+                              currentDomain.overlapStatus === 'related' ? 'bg-blue-100 text-blue-800' :
+                              currentDomain.overlapStatus === 'both' ? 'bg-purple-100 text-purple-800' :
+                              'bg-gray-100 text-gray-600'
+                            }`}>
+                              {currentDomain.overlapStatus === 'direct' ? '✓ Direct Match' :
+                               currentDomain.overlapStatus === 'related' ? '~ Related Match' :
+                               currentDomain.overlapStatus === 'both' ? '✓~ Both' :
+                               '✗ No Match'}
+                            </span>
+                          </InfoTooltip>
                           
                           {currentDomain.overlapStatus !== 'none' && (
-                            <span className={`inline-flex items-center px-2 py-1 rounded text-xs font-medium ${
+                            <InfoTooltip content={
                               (currentDomain.authorityDirect === 'strong' || currentDomain.authorityRelated === 'strong') 
-                                ? 'bg-green-100 text-green-800' 
+                                ? 'Rankings in top 30 positions (pages 1-3 of Google)' 
                                 : (currentDomain.authorityDirect === 'moderate' || currentDomain.authorityRelated === 'moderate')
-                                ? 'bg-yellow-100 text-yellow-800'
-                                : 'bg-red-100 text-red-800'
-                            }`}>
-                              {(currentDomain.authorityDirect === 'strong' || currentDomain.authorityRelated === 'strong') 
-                                ? '🟢 Strong' 
-                                : (currentDomain.authorityDirect === 'moderate' || currentDomain.authorityRelated === 'moderate')
-                                ? '🟡 Moderate'
-                                : '🔴 Weak'}
-                            </span>
+                                ? 'Rankings in positions 31-60 (pages 4-6 of Google)'
+                                : 'Rankings in positions 61-100 (pages 7-10 of Google)'
+                            }>
+                              <span className={`inline-flex items-center px-2 py-1 rounded text-xs font-medium ${
+                                (currentDomain.authorityDirect === 'strong' || currentDomain.authorityRelated === 'strong') 
+                                  ? 'bg-green-100 text-green-800' 
+                                  : (currentDomain.authorityDirect === 'moderate' || currentDomain.authorityRelated === 'moderate')
+                                  ? 'bg-yellow-100 text-yellow-800'
+                                  : 'bg-red-100 text-red-800'
+                              }`}>
+                                {(currentDomain.authorityDirect === 'strong' || currentDomain.authorityRelated === 'strong') 
+                                  ? '🟢 Strong' 
+                                  : (currentDomain.authorityDirect === 'moderate' || currentDomain.authorityRelated === 'moderate')
+                                  ? '🟡 Moderate'
+                                  : '🔴 Weak'}
+                              </span>
+                            </InfoTooltip>
                           )}
                         </div>
+                        
+                        {/* Authority Bar Visualization */}
+                        {currentDomain.overlapStatus && currentDomain.overlapStatus !== 'none' && (
+                          <div className="flex items-center gap-2">
+                            <span className="text-xs text-gray-600">Authority Range:</span>
+                            <div className="flex items-center gap-1">
+                              <div className="w-32 h-2 bg-gray-200 rounded-full overflow-hidden">
+                                <div 
+                                  className={`h-full transition-all ${
+                                    (currentDomain.authorityDirect === 'strong' || currentDomain.authorityRelated === 'strong') 
+                                      ? 'bg-green-500 w-full' 
+                                      : (currentDomain.authorityDirect === 'moderate' || currentDomain.authorityRelated === 'moderate')
+                                      ? 'bg-yellow-500 w-2/3'
+                                      : 'bg-red-500 w-1/3'
+                                  }`}
+                                />
+                              </div>
+                              <span className="text-xs font-medium">
+                                {(currentDomain.authorityDirect === 'strong' || currentDomain.authorityRelated === 'strong') 
+                                  ? 'Strong' 
+                                  : (currentDomain.authorityDirect === 'moderate' || currentDomain.authorityRelated === 'moderate')
+                                  ? 'Moderate'
+                                  : 'Weak'}
+                              </span>
+                            </div>
+                          </div>
+                        )}
                         
                         {/* Quick Stats Row */}
                         <div className="text-xs text-gray-700 space-y-1">
@@ -1380,8 +1423,8 @@ export default function GuidedTriageFlow(props: GuidedTriageFlowProps) {
                       </div>
                     )}
                     
-                    {/* AI Reasoning Text */}
-                    <div className="bg-blue-50 rounded-lg p-4 max-h-64 overflow-y-auto">
+                    {/* AI Reasoning Text - Expanded */}
+                    <div className="bg-blue-50 rounded-lg p-4 max-h-96 overflow-y-auto">
                       <p className="text-sm text-gray-700 whitespace-pre-wrap leading-relaxed">
                         {data.aiQualification.reasoning}
                       </p>
