@@ -79,6 +79,10 @@ export default function GuidedTriageFlow(props: GuidedTriageFlowProps) {
   const [selectedTargetPages, setSelectedTargetPages] = useState<string[]>([]);
   const [smartFilters, setSmartFilters] = useState<string[]>([]);
   const [isTargetPagesExpanded, setIsTargetPagesExpanded] = useState(false);
+  const [positionFilter, setPositionFilter] = useState<string | null>(null);
+  const [showCustomRangeModal, setShowCustomRangeModal] = useState(false);
+  const [customRangeMin, setCustomRangeMin] = useState('1');
+  const [customRangeMax, setCustomRangeMax] = useState('100');
   
   // Use all domains passed in (already filtered by parent component)
   const reviewDomains = props.domains;
@@ -630,9 +634,18 @@ export default function GuidedTriageFlow(props: GuidedTriageFlowProps) {
                   {(() => {
                     // Check if any smart filters have rankings
                     const visibleFilters = smartFilters.filter(filter => {
-                      const matchCount = data.dataForSeoResults?.allKeywords.filter(kw => 
-                        kw.keyword.toLowerCase().includes(filter.toLowerCase())
-                      ).length || 0;
+                      const matchCount = data.dataForSeoResults?.allKeywords.filter(kw => {
+                        if (!kw.keyword.toLowerCase().includes(filter.toLowerCase())) return false;
+                        if (positionFilter) {
+                          if (positionFilter === 'top-20' && kw.position > 20) return false;
+                          if (positionFilter === 'top-50' && kw.position > 50) return false;
+                          if (positionFilter.startsWith('custom-')) {
+                            const [min, max] = positionFilter.replace('custom-', '').split('-').map(Number);
+                            if (kw.position < min || kw.position > max) return false;
+                          }
+                        }
+                        return true;
+                      }).length || 0;
                       return matchCount > 0;
                     });
                     
@@ -661,9 +674,18 @@ export default function GuidedTriageFlow(props: GuidedTriageFlowProps) {
                         </div>
                         <div className="flex flex-wrap gap-1">
                           {smartFilters.map((filter, idx) => {
-                            const matchCount = data.dataForSeoResults?.allKeywords.filter(kw => 
-                              kw.keyword.toLowerCase().includes(filter.toLowerCase())
-                            ).length || 0;
+                            const matchCount = data.dataForSeoResults?.allKeywords.filter(kw => {
+                              if (!kw.keyword.toLowerCase().includes(filter.toLowerCase())) return false;
+                              if (positionFilter) {
+                                if (positionFilter === 'top-20' && kw.position > 20) return false;
+                                if (positionFilter === 'top-50' && kw.position > 50) return false;
+                                if (positionFilter.startsWith('custom-')) {
+                                  const [min, max] = positionFilter.replace('custom-', '').split('-').map(Number);
+                                  if (kw.position < min || kw.position > max) return false;
+                                }
+                              }
+                              return true;
+                            }).length || 0;
                             
                             if (matchCount === 0) return null;
                             
@@ -704,9 +726,18 @@ export default function GuidedTriageFlow(props: GuidedTriageFlowProps) {
                   </div>
                   <div className="space-y-1 flex-1 overflow-y-auto pr-2">
                     {data.keywords.map((keyword, idx) => {
-                      const matchCount = data.dataForSeoResults?.allKeywords.filter(kw => 
-                        kw.keyword.toLowerCase().includes(keyword.toLowerCase())
-                      ).length || 0;
+                      const matchCount = data.dataForSeoResults?.allKeywords.filter(kw => {
+                        if (!kw.keyword.toLowerCase().includes(keyword.toLowerCase())) return false;
+                        if (positionFilter) {
+                          if (positionFilter === 'top-20' && kw.position > 20) return false;
+                          if (positionFilter === 'top-50' && kw.position > 50) return false;
+                          if (positionFilter.startsWith('custom-')) {
+                            const [min, max] = positionFilter.replace('custom-', '').split('-').map(Number);
+                            if (kw.position < min || kw.position > max) return false;
+                          }
+                        }
+                        return true;
+                      }).length || 0;
                       
                       if (matchCount === 0) return null;
                       
@@ -739,6 +770,62 @@ export default function GuidedTriageFlow(props: GuidedTriageFlowProps) {
                   </div>
                 </div>
               )}
+              
+              {/* Position Range Filter - Bottom of sidebar */}
+              {data.dataForSeoResults && (
+                <div className="pt-4 mt-auto border-t">
+                  <h4 className="text-xs font-medium text-gray-700 uppercase mb-2">Position Filter</h4>
+                  <div className="space-y-2">
+                    <div className="flex gap-2">
+                      <button
+                        onClick={() => {
+                          if (positionFilter === 'top-20') {
+                            setPositionFilter(null);
+                          } else {
+                            setPositionFilter('top-20');
+                          }
+                        }}
+                        className={`flex-1 px-3 py-2 text-xs font-medium rounded-md transition-colors ${
+                          positionFilter === 'top-20'
+                            ? 'bg-indigo-600 text-white hover:bg-indigo-700' 
+                            : 'bg-gray-100 hover:bg-gray-200 text-gray-700'
+                        }`}
+                      >
+                        Top 20
+                      </button>
+                      <button
+                        onClick={() => {
+                          if (positionFilter === 'top-50') {
+                            setPositionFilter(null);
+                          } else {
+                            setPositionFilter('top-50');
+                          }
+                        }}
+                        className={`flex-1 px-3 py-2 text-xs font-medium rounded-md transition-colors ${
+                          positionFilter === 'top-50'
+                            ? 'bg-indigo-600 text-white hover:bg-indigo-700' 
+                            : 'bg-gray-100 hover:bg-gray-200 text-gray-700'
+                        }`}
+                      >
+                        Top 50
+                      </button>
+                    </div>
+                    <button
+                      onClick={() => setShowCustomRangeModal(true)}
+                      className={`w-full px-3 py-2 text-xs font-medium rounded-md transition-colors ${
+                        positionFilter && positionFilter.startsWith('custom-')
+                          ? 'bg-indigo-600 text-white hover:bg-indigo-700' 
+                          : 'bg-gray-100 hover:bg-gray-200 text-gray-700'
+                      }`}
+                    >
+                      Custom...
+                      {positionFilter && positionFilter.startsWith('custom-') && 
+                        ` (${positionFilter.substring(7)})`
+                      }
+                    </button>
+                  </div>
+                </div>
+              )}
               </div>
             </div>
             
@@ -755,10 +842,47 @@ export default function GuidedTriageFlow(props: GuidedTriageFlowProps) {
                       <div className="flex items-center gap-3">
                         <div className="flex items-center gap-3 text-sm">
                           <span className="text-gray-600">
-                            <span className="font-semibold text-indigo-600">{data.dataForSeoResults.totalRankings}</span> keywords
+                            <span className="font-semibold text-indigo-600">
+                              {(() => {
+                                const filtered = data.dataForSeoResults.allKeywords.filter(kw => {
+                                  if (positionFilter) {
+                                    if (positionFilter === 'top-20' && kw.position > 20) return false;
+                                    if (positionFilter === 'top-50' && kw.position > 50) return false;
+                                    if (positionFilter.startsWith('custom-')) {
+                                      const [min, max] = positionFilter.replace('custom-', '').split('-').map(Number);
+                                      if (kw.position < min || kw.position > max) return false;
+                                    }
+                                  }
+                                  return true;
+                                });
+                                return filtered.length;
+                              })()}
+                            </span> keywords
+                            {positionFilter && (
+                              <span className="text-xs text-indigo-600">
+                                (of {data.dataForSeoResults.totalRankings})
+                              </span>
+                            )}
                           </span>
                           <span className="text-gray-600">
-                            Avg: <span className="font-semibold text-green-600">{data.dataForSeoResults.avgPosition.toFixed(1)}</span>
+                            Avg: <span className="font-semibold text-green-600">
+                              {(() => {
+                                const filtered = data.dataForSeoResults.allKeywords.filter(kw => {
+                                  if (positionFilter) {
+                                    if (positionFilter === 'top-20' && kw.position > 20) return false;
+                                    if (positionFilter === 'top-50' && kw.position > 50) return false;
+                                    if (positionFilter.startsWith('custom-')) {
+                                      const [min, max] = positionFilter.replace('custom-', '').split('-').map(Number);
+                                      if (kw.position < min || kw.position > max) return false;
+                                    }
+                                  }
+                                  return true;
+                                });
+                                return filtered.length > 0 
+                                  ? (filtered.reduce((acc, r) => acc + r.position, 0) / filtered.length).toFixed(1)
+                                  : '0.0';
+                              })()}
+                            </span>
                           </span>
                         </div>
                         {/* Ahrefs buttons */}
@@ -797,6 +921,15 @@ export default function GuidedTriageFlow(props: GuidedTriageFlowProps) {
                         <tbody className="divide-y divide-gray-200">
                           {data.dataForSeoResults.allKeywords
                             .filter(kw => {
+                              // Filter by position range
+                              if (positionFilter) {
+                                if (positionFilter === 'top-20' && kw.position > 20) return false;
+                                if (positionFilter === 'top-50' && kw.position > 50) return false;
+                                if (positionFilter.startsWith('custom-')) {
+                                  const [min, max] = positionFilter.replace('custom-', '').split('-').map(Number);
+                                  if (kw.position < min || kw.position > max) return false;
+                                }
+                              }
                               // Filter by search input
                               if (keywordSearch && !kw.keyword.toLowerCase().includes(keywordSearch.toLowerCase())) {
                                 return false;
@@ -1178,6 +1311,105 @@ export default function GuidedTriageFlow(props: GuidedTriageFlowProps) {
           <span className="font-mono bg-gray-100 px-1 rounded">Esc</span> Close
         </div>
       </div>
+
+      {/* Custom Range Modal */}
+      {showCustomRangeModal && (
+        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-[60]">
+          <div className="bg-white rounded-lg p-6 max-w-md w-full">
+            <h3 className="text-lg font-semibold mb-4">Custom Position Range</h3>
+            
+            <div className="space-y-4">
+              {/* Preset options */}
+              <div className="grid grid-cols-2 gap-2">
+                <button
+                  onClick={() => {
+                    setPositionFilter('custom-1-3');
+                    setShowCustomRangeModal(false);
+                  }}
+                  className="px-3 py-2 text-sm bg-gray-100 hover:bg-gray-200 rounded-md transition-colors"
+                >
+                  Top 3
+                </button>
+                <button
+                  onClick={() => {
+                    setPositionFilter('custom-1-10');
+                    setShowCustomRangeModal(false);
+                  }}
+                  className="px-3 py-2 text-sm bg-gray-100 hover:bg-gray-200 rounded-md transition-colors"
+                >
+                  Top 10
+                </button>
+                <button
+                  onClick={() => {
+                    setPositionFilter('custom-1-30');
+                    setShowCustomRangeModal(false);
+                  }}
+                  className="px-3 py-2 text-sm bg-gray-100 hover:bg-gray-200 rounded-md transition-colors"
+                >
+                  Top 30
+                </button>
+                <button
+                  onClick={() => {
+                    setPositionFilter('custom-1-40');
+                    setShowCustomRangeModal(false);
+                  }}
+                  className="px-3 py-2 text-sm bg-gray-100 hover:bg-gray-200 rounded-md transition-colors"
+                >
+                  Top 40
+                </button>
+              </div>
+              
+              {/* Custom range inputs */}
+              <div className="border-t pt-4">
+                <p className="text-sm text-gray-600 mb-3">Or enter custom range:</p>
+                <div className="flex items-center gap-3">
+                  <input
+                    type="number"
+                    min="1"
+                    max="100"
+                    value={customRangeMin}
+                    onChange={(e) => setCustomRangeMin(e.target.value)}
+                    className="flex-1 px-3 py-2 border rounded-md text-sm focus:ring-2 focus:ring-indigo-500 focus:border-transparent"
+                    placeholder="Min"
+                  />
+                  <span className="text-gray-500">to</span>
+                  <input
+                    type="number"
+                    min="1"
+                    max="100"
+                    value={customRangeMax}
+                    onChange={(e) => setCustomRangeMax(e.target.value)}
+                    className="flex-1 px-3 py-2 border rounded-md text-sm focus:ring-2 focus:ring-indigo-500 focus:border-transparent"
+                    placeholder="Max"
+                  />
+                </div>
+              </div>
+            </div>
+            
+            <div className="flex gap-3 mt-6">
+              <button
+                onClick={() => {
+                  const min = parseInt(customRangeMin) || 1;
+                  const max = parseInt(customRangeMax) || 100;
+                  if (min <= max && min >= 1 && max <= 100) {
+                    setPositionFilter(`custom-${min}-${max}`);
+                    setShowCustomRangeModal(false);
+                  }
+                }}
+                className="flex-1 px-4 py-2 bg-indigo-600 text-white rounded-md hover:bg-indigo-700 transition-colors"
+              >
+                Apply
+              </button>
+              <button
+                onClick={() => setShowCustomRangeModal(false)}
+                className="flex-1 px-4 py-2 bg-gray-200 text-gray-700 rounded-md hover:bg-gray-300 transition-colors"
+              >
+                Cancel
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
 }
