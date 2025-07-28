@@ -137,20 +137,35 @@ export class AIQualificationService {
       
       // Validate the V2 result structure
       if (result.qualification && result.reasoning) {
+        // Log the parsed result for debugging
+        console.log(`✅ Parsed AI response for ${domain.domain}:`, {
+          qualification: result.qualification,
+          overlap_status: result.overlap_status,
+          authority_direct: result.authority_direct,
+          authority_related: result.authority_related,
+          topic_scope: result.topic_scope,
+          evidence: result.evidence
+        });
+        
         return {
           domainId: domain.domainId,
           domain: domain.domain,
           qualification: this.validateQualification(result.qualification),
           reasoning: result.reasoning,
-          overlapStatus: result.overlap_status,
+          overlapStatus: result.overlap_status || 'none',
           authorityDirect: result.authority_direct || 'n/a',
           authorityRelated: result.authority_related || 'n/a',
           topicScope: result.topic_scope || 'long_tail',
-          evidence: {
+          evidence: result.evidence ? {
             direct_count: result.evidence.direct_count || 0,
             direct_median_position: result.evidence.direct_median_position || null,
             related_count: result.evidence.related_count || 0,
             related_median_position: result.evidence.related_median_position || null
+          } : {
+            direct_count: 0,
+            direct_median_position: null,
+            related_count: 0,
+            related_median_position: null
           }
         };
       }
