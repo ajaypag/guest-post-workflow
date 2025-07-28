@@ -61,7 +61,8 @@ export async function POST(
       },
       qualification: {
         highQuality: results.filter(r => r.qualificationStatus === 'high_quality').length,
-        averageQuality: results.filter(r => r.qualificationStatus === 'average_quality').length,
+        goodQuality: results.filter(r => r.qualificationStatus === 'good_quality').length,
+        marginalQuality: results.filter(r => r.qualificationStatus === 'marginal_quality').length,
         disqualified: results.filter(r => r.qualificationStatus === 'disqualified').length
       }
     };

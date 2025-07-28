@@ -349,19 +349,37 @@ export class MasterQualificationService {
     const qualifications = await aiService.qualifyDomains(domainData, clientContext);
 
     // Update database and prepare results
-    const updatePromises = qualifications.map(qual => 
-      this.openAILimiter(() =>
+    const updatePromises = qualifications.map(qual => {
+      // Extract topic reasoning from the main reasoning if present
+      const reasoningParts = qual.reasoning.match(/\(b\)\s*(.+)/);
+      const topicReasoning = reasoningParts ? reasoningParts[1] : null;
+      
+      console.log(`💾 Master qualification saving V2 data for ${qual.domain}:`, {
+        overlapStatus: qual.overlapStatus,
+        authorityDirect: qual.authorityDirect,
+        authorityRelated: qual.authorityRelated,
+        topicScope: qual.topicScope,
+        evidence: qual.evidence
+      });
+      
+      return this.openAILimiter(() =>
         db
           .update(bulkAnalysisDomains)
           .set({
             qualificationStatus: qual.qualification,
             aiQualificationReasoning: qual.reasoning,
+            overlapStatus: qual.overlapStatus,
+            authorityDirect: qual.authorityDirect,
+            authorityRelated: qual.authorityRelated,
+            topicScope: qual.topicScope,
+            topicReasoning: topicReasoning,
+            evidence: qual.evidence,
             aiQualifiedAt: new Date(),
             updatedAt: new Date()
           })
           .where(eq(bulkAnalysisDomains.id, qual.domainId))
-      )
-    );
+      );
+    });
 
     await Promise.all(updatePromises);
 
