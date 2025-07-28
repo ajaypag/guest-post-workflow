@@ -1058,54 +1058,152 @@ export default function BulkAnalysisTable(props: BulkAnalysisTableProps) {
                                 AI Qualification Analysis
                               </h4>
                               <div className="bg-white rounded-lg border border-gray-200 p-4">
-                                <div className="mb-3">
-                                  <span className={`inline-flex items-center px-3 py-1 rounded text-sm font-medium ${
-                                    getStatusColor(data.aiQualification.status)
-                                  }`}>
-                                    {getStatusIcon(data.aiQualification.status)}
-                                    <span className="ml-1">{getStatusLabel(data.aiQualification.status)}</span>
-                                  </span>
-                                </div>
-                                <p className="text-sm text-gray-700 whitespace-pre-wrap">
-                                  {data.aiQualification.reasoning}
-                                </p>
-                                
-                                {/* V2 Fields Display */}
-                                {domain.overlapStatus && (
-                                  <div className="mt-4 space-y-2">
-                                    <div className="flex flex-wrap gap-2">
-                                      <span className="inline-flex items-center px-2.5 py-1 rounded text-xs font-medium bg-gray-100 text-gray-800">
-                                        Overlap: {domain.overlapStatus}
-                                      </span>
-                                      {domain.authorityDirect !== 'n/a' && (
-                                        <span className="inline-flex items-center px-2.5 py-1 rounded text-xs font-medium bg-gray-100 text-gray-800">
-                                          Direct Auth: {domain.authorityDirect}
-                                        </span>
-                                      )}
-                                      {domain.authorityRelated !== 'n/a' && (
-                                        <span className="inline-flex items-center px-2.5 py-1 rounded text-xs font-medium bg-gray-100 text-gray-800">
-                                          Related Auth: {domain.authorityRelated}
-                                        </span>
-                                      )}
-                                      {domain.topicScope && (
-                                        <span className="inline-flex items-center px-2.5 py-1 rounded text-xs font-medium bg-purple-100 text-purple-800">
-                                          Topic: {domain.topicScope.replace('_', ' ')}
-                                        </span>
-                                      )}
-                                    </div>
-                                    {domain.evidence && (
-                                      <div className="text-xs text-gray-600">
-                                        Evidence: {domain.evidence.direct_count + domain.evidence.related_count} keywords 
-                                        (Direct: {domain.evidence.direct_count}, Related: {domain.evidence.related_count})
-                                      </div>
-                                    )}
-                                    {domain.topicReasoning && (
-                                      <div className="text-xs text-gray-600 italic">
-                                        Topic Reasoning: {domain.topicReasoning}
+                                {/* Enhanced Qualification Header */}
+                                <div className="mb-4">
+                                  <div className="flex items-center justify-between mb-3">
+                                    <span className={`inline-flex items-center px-3 py-1 rounded text-sm font-medium ${
+                                      getStatusColor(data.aiQualification.status)
+                                    }`}>
+                                      {getStatusIcon(data.aiQualification.status)}
+                                      <span className="ml-1">{getStatusLabel(data.aiQualification.status)}</span>
+                                    </span>
+                                    
+                                    {/* Visual Authority Meter */}
+                                    {domain.overlapStatus && domain.overlapStatus !== 'none' && (
+                                      <div className="flex items-center gap-2">
+                                        <span className="text-xs text-gray-600">Authority:</span>
+                                        <div className="flex items-center gap-1">
+                                          <div className="w-32 h-2 bg-gray-200 rounded-full overflow-hidden">
+                                            <div 
+                                              className={`h-full transition-all ${
+                                                (domain.authorityDirect === 'strong' || domain.authorityRelated === 'strong') 
+                                                  ? 'bg-green-500 w-full' 
+                                                  : (domain.authorityDirect === 'moderate' || domain.authorityRelated === 'moderate')
+                                                  ? 'bg-yellow-500 w-2/3'
+                                                  : 'bg-red-500 w-1/3'
+                                              }`}
+                                            />
+                                          </div>
+                                          <span className="text-xs font-medium">
+                                            {(domain.authorityDirect === 'strong' || domain.authorityRelated === 'strong') 
+                                              ? 'Strong' 
+                                              : (domain.authorityDirect === 'moderate' || domain.authorityRelated === 'moderate')
+                                              ? 'Moderate'
+                                              : 'Weak'}
+                                          </span>
+                                        </div>
                                       </div>
                                     )}
                                   </div>
-                                )}
+
+                                  {/* Topical Match & Evidence Row */}
+                                  {domain.overlapStatus && (
+                                    <div className="bg-gray-50 rounded-lg p-3 space-y-2">
+                                      <div className="flex items-start justify-between">
+                                        <div className="w-full">
+                                          <div className="flex items-center gap-2 mb-1">
+                                            <span className="text-sm font-medium text-gray-900">
+                                              Topical Match: 
+                                            </span>
+                                            <span className={`inline-flex items-center px-2 py-0.5 rounded text-xs font-medium ${
+                                              domain.overlapStatus === 'direct' ? 'bg-green-100 text-green-800' :
+                                              domain.overlapStatus === 'related' ? 'bg-blue-100 text-blue-800' :
+                                              domain.overlapStatus === 'both' ? 'bg-purple-100 text-purple-800' :
+                                              'bg-gray-100 text-gray-600'
+                                            }`}>
+                                              {domain.overlapStatus === 'direct' ? '✓ Direct' :
+                                               domain.overlapStatus === 'related' ? '~ Related' :
+                                               domain.overlapStatus === 'both' ? '✓~ Both' :
+                                               '✗ None'}
+                                            </span>
+                                            {domain.authorityDirect !== 'n/a' && (
+                                              <span className={`inline-flex items-center px-2 py-0.5 rounded text-xs font-medium ${
+                                                domain.authorityDirect === 'strong' ? 'bg-green-100 text-green-800' :
+                                                domain.authorityDirect === 'moderate' ? 'bg-yellow-100 text-yellow-800' :
+                                                'bg-red-100 text-red-800'
+                                              }`}>
+                                                {domain.authorityDirect === 'strong' ? '🟢' :
+                                                 domain.authorityDirect === 'moderate' ? '🟡' : '🔴'} {domain.authorityDirect}
+                                              </span>
+                                            )}
+                                          </div>
+                                          
+                                          {/* Evidence Details */}
+                                          {domain.evidence && (
+                                            <div className="text-xs text-gray-600">
+                                              {domain.evidence.direct_count > 0 && (
+                                                <div>
+                                                  ├─ {domain.evidence.direct_count} direct keywords 
+                                                  {domain.evidence.direct_median_position && 
+                                                    ` (median pos: ${domain.evidence.direct_median_position})`}
+                                                </div>
+                                              )}
+                                              {domain.evidence.related_count > 0 && (
+                                                <div>
+                                                  └─ {domain.evidence.related_count} related keywords
+                                                  {domain.evidence.related_median_position && 
+                                                    ` (median pos: ${domain.evidence.related_median_position})`}
+                                                </div>
+                                              )}
+                                            </div>
+                                          )}
+                                        </div>
+                                      </div>
+                                      
+                                      {/* Content Strategy Section */}
+                                      {domain.topicScope && (
+                                        <div className="border-t pt-2">
+                                          <div className="flex items-center gap-2">
+                                            <span className="text-sm font-medium text-gray-900">
+                                              Content Strategy:
+                                            </span>
+                                            <span className={`inline-flex items-center px-2 py-0.5 rounded text-xs font-medium ${
+                                              domain.topicScope === 'short_tail' ? 'bg-green-100 text-green-800' :
+                                              domain.topicScope === 'long_tail' ? 'bg-blue-100 text-blue-800' :
+                                              'bg-purple-100 text-purple-800'
+                                            }`}>
+                                              {domain.topicScope === 'short_tail' ? '🎯 Short Tail' :
+                                               domain.topicScope === 'long_tail' ? '🏹 Long Tail' :
+                                               '🔬 Ultra Long Tail'}
+                                            </span>
+                                          </div>
+                                          
+                                          {/* Extract modifier guidance from reasoning */}
+                                          {(() => {
+                                            const reasoning = data.aiQualification.reasoning.toLowerCase();
+                                            let modifierGuidance = '';
+                                            
+                                            if (reasoning.includes('geo modifier') || reasoning.includes('geographic')) {
+                                              modifierGuidance = 'Add geographic modifiers (city, state, region)';
+                                            } else if (reasoning.includes('buyer') || reasoning.includes('buyer-type')) {
+                                              modifierGuidance = 'Add buyer-type qualifiers (for business, enterprise, SMB)';
+                                            } else if (reasoning.includes('no modifier')) {
+                                              modifierGuidance = 'Can target broad terms without modifiers';
+                                            } else if (reasoning.includes('specific') || reasoning.includes('niche')) {
+                                              modifierGuidance = 'Needs specific niche angle with multiple modifiers';
+                                            } else if (reasoning.includes('best') || reasoning.includes('how to')) {
+                                              modifierGuidance = 'Use intent modifiers (best, how to, guide)';
+                                            }
+                                            
+                                            return modifierGuidance && (
+                                              <p className="text-xs text-gray-600 mt-1 italic">
+                                                💡 {modifierGuidance}
+                                              </p>
+                                            );
+                                          })()}
+                                        </div>
+                                      )}
+                                    </div>
+                                  )}
+                                </div>
+                                
+                                {/* AI Reasoning */}
+                                <div className="border-t pt-3">
+                                  <h5 className="text-xs font-medium text-gray-700 mb-2">AI Analysis:</h5>
+                                  <p className="text-sm text-gray-700 whitespace-pre-wrap">
+                                    {data.aiQualification.reasoning}
+                                  </p>
+                                </div>
                                 
                                 {data.aiQualification.qualifiedAt && (
                                   <p className="text-xs text-gray-500 mt-3">

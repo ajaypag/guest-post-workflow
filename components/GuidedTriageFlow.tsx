@@ -1279,55 +1279,113 @@ export default function GuidedTriageFlow(props: GuidedTriageFlowProps) {
             
             {/* Right Column - Metadata */}
             <div className="w-80 space-y-4">
-                {/* AI Analysis */}
+                {/* AI Analysis - Enhanced */}
                 {data.aiQualification && (
                   <div className="bg-white rounded-lg p-4 shadow-sm">
                     <h3 className="text-sm font-medium text-gray-500 uppercase tracking-wider mb-3 flex items-center gap-2">
                       <Sparkles className="w-4 h-4" />
-                      AI Reasoning
+                      AI Qualification Analysis
                     </h3>
-                    <div className="bg-blue-50 rounded-lg p-4 max-h-96 overflow-y-auto">
+                    
+                    {/* Quick Stats Section */}
+                    {currentDomain?.overlapStatus && (
+                      <div className="bg-gray-50 rounded-lg p-3 mb-3 space-y-3">
+                        {/* Top Row - Status Badges */}
+                        <div className="flex items-center gap-2">
+                          <span className={`inline-flex items-center px-2 py-1 rounded text-xs font-medium ${
+                            currentDomain.qualificationStatus === 'high_quality' ? 'bg-green-100 text-green-800' :
+                            currentDomain.qualificationStatus === 'good_quality' ? 'bg-blue-100 text-blue-800' :
+                            currentDomain.qualificationStatus === 'marginal_quality' ? 'bg-yellow-100 text-yellow-800' :
+                            'bg-red-100 text-red-800'
+                          }`}>
+                            {currentDomain.qualificationStatus === 'high_quality' ? 'High Quality' :
+                             currentDomain.qualificationStatus === 'good_quality' ? 'Good Quality' :
+                             currentDomain.qualificationStatus === 'marginal_quality' ? 'Marginal' :
+                             'Disqualified'}
+                          </span>
+                          
+                          <span className={`inline-flex items-center px-2 py-1 rounded text-xs font-medium ${
+                            currentDomain.overlapStatus === 'direct' ? 'bg-green-100 text-green-800' :
+                            currentDomain.overlapStatus === 'related' ? 'bg-blue-100 text-blue-800' :
+                            currentDomain.overlapStatus === 'both' ? 'bg-purple-100 text-purple-800' :
+                            'bg-gray-100 text-gray-600'
+                          }`}>
+                            {currentDomain.overlapStatus === 'direct' ? '✓ Direct Match' :
+                             currentDomain.overlapStatus === 'related' ? '~ Related Match' :
+                             currentDomain.overlapStatus === 'both' ? '✓~ Both' :
+                             '✗ No Match'}
+                          </span>
+                          
+                          {currentDomain.overlapStatus !== 'none' && (
+                            <span className={`inline-flex items-center px-2 py-1 rounded text-xs font-medium ${
+                              (currentDomain.authorityDirect === 'strong' || currentDomain.authorityRelated === 'strong') 
+                                ? 'bg-green-100 text-green-800' 
+                                : (currentDomain.authorityDirect === 'moderate' || currentDomain.authorityRelated === 'moderate')
+                                ? 'bg-yellow-100 text-yellow-800'
+                                : 'bg-red-100 text-red-800'
+                            }`}>
+                              {(currentDomain.authorityDirect === 'strong' || currentDomain.authorityRelated === 'strong') 
+                                ? '🟢 Strong' 
+                                : (currentDomain.authorityDirect === 'moderate' || currentDomain.authorityRelated === 'moderate')
+                                ? '🟡 Moderate'
+                                : '🔴 Weak'}
+                            </span>
+                          )}
+                        </div>
+                        
+                        {/* Quick Stats Row */}
+                        <div className="text-xs text-gray-700 space-y-1">
+                          {currentDomain.evidence && (currentDomain.evidence.direct_count > 0 || currentDomain.evidence.related_count > 0) && (
+                            <>
+                              {currentDomain.evidence.direct_count > 0 && (
+                                <div>• {currentDomain.evidence.direct_count} direct keywords (pos {currentDomain.evidence.direct_median_position || '1-100'})</div>
+                              )}
+                              {currentDomain.evidence.related_count > 0 && (
+                                <div>• {currentDomain.evidence.related_count} related keywords (pos {currentDomain.evidence.related_median_position || '1-100'})</div>
+                              )}
+                            </>
+                          )}
+                          
+                          {currentDomain.topicScope && (
+                            <div className="flex items-center gap-2">
+                              <span>• Topic Scope:</span>
+                              <span className="font-medium">
+                                {currentDomain.topicScope === 'short_tail' ? '🎯 Short Tail' :
+                                 currentDomain.topicScope === 'long_tail' ? '🏹 Long Tail' :
+                                 '🔬 Ultra Long Tail'}
+                              </span>
+                            </div>
+                          )}
+                          
+                          {/* Extract strategy from reasoning */}
+                          {(() => {
+                            const reasoning = data.aiQualification.reasoning.toLowerCase();
+                            let strategy = '';
+                            
+                            if (reasoning.includes('geo modifier')) {
+                              strategy = 'Add geo modifiers';
+                            } else if (reasoning.includes('buyer')) {
+                              strategy = 'Add buyer-type qualifiers';
+                            } else if (reasoning.includes('no modifier')) {
+                              strategy = 'Target broad terms';
+                            } else if (reasoning.includes('specific')) {
+                              strategy = 'Use specific niche angle';
+                            }
+                            
+                            return strategy && (
+                              <div className="font-medium text-indigo-700">• Strategy: "{strategy}"</div>
+                            );
+                          })()}
+                        </div>
+                      </div>
+                    )}
+                    
+                    {/* AI Reasoning Text */}
+                    <div className="bg-blue-50 rounded-lg p-4 max-h-64 overflow-y-auto">
                       <p className="text-sm text-gray-700 whitespace-pre-wrap leading-relaxed">
                         {data.aiQualification.reasoning}
                       </p>
                     </div>
-                    
-                    {/* V2 Fields Display */}
-                    {currentDomain?.overlapStatus && (
-                      <div className="mt-3 space-y-2">
-                        <div className="flex flex-wrap gap-2">
-                          <span className="inline-flex items-center px-2 py-1 rounded text-xs font-medium bg-gray-100 text-gray-800">
-                            Overlap: {currentDomain.overlapStatus}
-                          </span>
-                          {currentDomain.authorityDirect !== 'n/a' && (
-                            <span className="inline-flex items-center px-2 py-1 rounded text-xs font-medium bg-gray-100 text-gray-800">
-                              Direct Auth: {currentDomain.authorityDirect}
-                            </span>
-                          )}
-                          {currentDomain.authorityRelated !== 'n/a' && (
-                            <span className="inline-flex items-center px-2 py-1 rounded text-xs font-medium bg-gray-100 text-gray-800">
-                              Related Auth: {currentDomain.authorityRelated}
-                            </span>
-                          )}
-                          {currentDomain.topicScope && (
-                            <span className="inline-flex items-center px-2 py-1 rounded text-xs font-medium bg-purple-100 text-purple-800">
-                              Topic: {currentDomain.topicScope.replace('_', ' ')}
-                            </span>
-                          )}
-                        </div>
-                        {currentDomain.evidence && (
-                          <div className="text-xs text-gray-600">
-                            Evidence: {currentDomain.evidence.direct_count + currentDomain.evidence.related_count} keywords 
-                            (Direct: {currentDomain.evidence.direct_count}, Related: {currentDomain.evidence.related_count})
-                          </div>
-                        )}
-                        {currentDomain.topicReasoning && (
-                          <div className="text-xs text-gray-600 italic">
-                            Topic Reasoning: {currentDomain.topicReasoning}
-                          </div>
-                        )}
-                      </div>
-                    )}
                   </div>
                 )}
                 
