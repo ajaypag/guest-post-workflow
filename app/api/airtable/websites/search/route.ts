@@ -39,13 +39,29 @@ export async function POST(request: NextRequest) {
       limit || 50,
       offset
     );
-    console.log('✅ AirtableService returned:', result);
+    console.log('✅ AirtableService returned:', {
+      websitesCount: result.websites?.length,
+      hasMore: result.hasMore,
+      nextOffset: result.nextOffset,
+      firstWebsite: result.websites?.[0]
+    });
     
     // Optionally enhance with link price data (slower)
     let websites = result.websites;
     if (includeEnhancedData) {
       websites = await AirtableService.enhanceWebsitesWithLinkPrices(websites);
     }
+    
+    console.log('📤 Sending response with:', {
+      websitesCount: websites?.length,
+      hasMore: result.hasMore,
+      sampleWebsite: websites?.[0] ? {
+        id: websites[0].id,
+        domain: websites[0].domain,
+        domainRating: websites[0].domainRating,
+        hasContacts: websites[0].contacts?.length > 0
+      } : null
+    });
     
     return NextResponse.json({
       websites,

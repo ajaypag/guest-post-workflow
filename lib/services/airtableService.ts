@@ -107,10 +107,30 @@ export class AirtableService {
     console.log('🔍 AirtableService.searchWebsites called with:', { filters, limit, offset });
     
     try {
+      // Only request the fields we actually need
+      const fields = [
+        'Website',
+        'Domain Rating', 
+        'Total Traffic',
+        'Guest Post Cost V2',
+        'Category',
+        'Type',
+        'Status',
+        'Guest Post Access?',
+        'Link Insert Access?',
+        'Count of Published Opportunities',
+        'Overall Website Quality'
+      ];
+      
       const params = new URLSearchParams({
         view: this.POSTFLOW_VIEW_ID,
         maxRecords: limit.toString(),
         ...(offset && { offset })
+      });
+      
+      // Add field filtering
+      fields.forEach(field => {
+        params.append('fields[]', field);
       });
       
       const filterFormula = this.buildFilterFormula(filters);
@@ -227,7 +247,7 @@ export class AirtableService {
       guestPostCost: fields['Guest Post Cost V2'] || null,
       categories: fields.Category || [],
       type: fields.Type || [],
-      contacts: this.processContacts(fields['Guest Post Contact'] || []),
+      contacts: [], // Will be populated from Link Price table
       publishedOpportunities: fields['Count of Published Opportunities'] || 0,
       status: fields.Status || 'Unknown',
       hasGuestPost: fields['Guest Post Access?'] === 'Yes',
@@ -274,61 +294,66 @@ export class AirtableService {
    * Enhance websites with link price data
    */
   static async enhanceWebsitesWithLinkPrices(websites: ProcessedWebsite[]): Promise<ProcessedWebsite[]> {
+    console.log('🔄 Enhancing websites with Link Price data...');
+    
     // Batch fetch link prices for all websites
     const enhancedWebsites = await Promise.all(
       websites.map(async (website) => {
         const linkPrices = await this.getLinkPricesForWebsite(website.id);
         
-        // Update contacts with link price information
-        const enhancedContacts = website.contacts.map(contact => {
-          const linkPriceRecords = linkPrices.filter(lp => 
-            lp.fields.Name.includes(contact.email)
-          );
+        // Extract unique contacts from Link Price records
+        const contactsMap = new Map<string, ProcessedContact>();
+        
+        linkPrices.forEach(lp => {
+          const email = lp.fields.Name;
+          if (!email || lp.fields.Status !== 'Active') return;
           
-          const paidGuestPost = linkPriceRecords.find(lp => 
-            lp.fields['Post type'] === 'Guest Post' && 
-            lp.fields.Requirement === 'Paid' &&
-            lp.fields.Status === 'Active'
-          );
+          // Skip if we already have a better option for this contact
+          const existing = contactsMap.get(email);
+          if (existing && existing.hasPaidGuestPost && lp.fields.Requirement !== 'Paid') {
+            return; // Skip swap if we already have paid
+          }
           
-          const swapOption = linkPriceRecords.find(lp => 
-            lp.fields.Requirement === 'Swap' &&
-            lp.fields.Status === 'Active'
-          );
-          
-          return {
-            ...contact,
-            hasPaidGuestPost: !!paidGuestPost,
-            hasSwapOption: !!swapOption,
-            guestPostCost: paidGuestPost?.fields['Guest Post Cost'],
-            linkInsertCost: linkPriceRecords.find(lp => 
-              lp.fields['Post type'] === 'Link Insert'
-            )?.fields['Link Insert Cost'],
-            requirement: paidGuestPost?.fields.Requirement || swapOption?.fields.Requirement
-          };
+          contactsMap.set(email, {
+            email,
+            isPrimary: false, // Will be set later
+            hasPaidGuestPost: lp.fields['Post type'] === 'Guest Post' && lp.fields.Requirement === 'Paid',
+            hasSwapOption: lp.fields.Requirement === 'Swap',
+            guestPostCost: lp.fields['Guest Post Cost'] || undefined,
+            linkInsertCost: lp.fields['Link Insert Cost'] || undefined,
+            requirement: lp.fields.Requirement
+          });
         });
         
-        // Sort contacts: paid first, then swap, then others
-        enhancedContacts.sort((a, b) => {
+        // Convert to array and sort by priority
+        const contacts = Array.from(contactsMap.values());
+        contacts.sort((a, b) => {
+          // Paid guest posts first
           if (a.hasPaidGuestPost && !b.hasPaidGuestPost) return -1;
           if (!a.hasPaidGuestPost && b.hasPaidGuestPost) return 1;
+          // Then swap options
           if (a.hasSwapOption && !b.hasSwapOption) return -1;
           if (!a.hasSwapOption && b.hasSwapOption) return 1;
+          // Then by cost (lower cost first)
+          if (a.guestPostCost && b.guestPostCost) {
+            return a.guestPostCost - b.guestPostCost;
+          }
           return 0;
         });
         
-        // Update primary contact based on link prices
-        if (enhancedContacts.length > 0) {
-          enhancedContacts.forEach((c, i) => c.isPrimary = i === 0);
+        // Mark the first contact as primary
+        if (contacts.length > 0) {
+          contacts[0].isPrimary = true;
         }
         
         return {
           ...website,
-          contacts: enhancedContacts
+          contacts
         };
       })
     );
     
+    console.log('✅ Enhanced websites with contacts from Link Price table');
     return enhancedWebsites;
   }
 }

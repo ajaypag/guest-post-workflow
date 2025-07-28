@@ -80,7 +80,7 @@ export default function AirtableImportModal({
           },
           limit: 50,
           offset: append ? nextOffset : undefined,
-          includeEnhancedData: false // For faster initial load
+          includeEnhancedData: true // Get contact data from Link Price table
         })
       });
 
@@ -306,7 +306,6 @@ export default function AirtableImportModal({
 
           {/* Results */}
           <div className="mb-6">
-            {console.log('🎨 Rendering with:', { websites: websites.length, loading, error })}
             <div className="flex items-center justify-between mb-3">
               <h3 className="text-lg font-medium text-gray-900">
                 {loading ? 'Loading...' : `Found ${websites.length} websites`}
@@ -356,12 +355,19 @@ export default function AirtableImportModal({
                           Categories
                         </th>
                         <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                          Contact
+                        </th>
+                        <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
                           Opportunities
                         </th>
                       </tr>
                     </thead>
                     <tbody className="bg-white divide-y divide-gray-200">
-                      {websites.map((website) => (
+                      {websites.map((website, index) => {
+                        if (index === 0) {
+                          console.log('🎨 First website structure:', website);
+                        }
+                        return (
                         <tr
                           key={website.id}
                           className={`hover:bg-gray-50 cursor-pointer ${
@@ -403,10 +409,24 @@ export default function AirtableImportModal({
                             </div>
                           </td>
                           <td className="px-4 py-3 text-gray-500">
+                            {website.contacts && website.contacts.length > 0 ? (
+                              <div className="text-xs">
+                                <div>{website.contacts[0].email}</div>
+                                <div className="text-gray-400">
+                                  {website.contacts[0].hasPaidGuestPost ? 'Paid' : 
+                                   website.contacts[0].hasSwapOption ? 'Swap' : 'Other'}
+                                </div>
+                              </div>
+                            ) : (
+                              <span className="text-gray-400">-</span>
+                            )}
+                          </td>
+                          <td className="px-4 py-3 text-gray-500">
                             {website.publishedOpportunities}
                           </td>
                         </tr>
-                      ))}
+                        );
+                      })}
                     </tbody>
                   </table>
                 )}
