@@ -46,11 +46,8 @@ export async function POST(request: NextRequest) {
       firstWebsite: result.websites?.[0]
     });
     
-    // Optionally enhance with link price data (slower)
-    let websites = result.websites;
-    if (includeEnhancedData) {
-      websites = await AirtableService.enhanceWebsitesWithLinkPrices(websites);
-    }
+    // No need to enhance - PostFlow data comes directly from lookup fields
+    const websites = result.websites;
     
     console.log('📤 Sending response with:', {
       websitesCount: websites?.length,

@@ -25,6 +25,11 @@ export interface AirtableWebsite extends AirtableRecord {
     'Guest Post Access?': string;
     'Link Insert Access?': string;
     'Overall Website Quality': string;
+    // PostFlow lookup fields
+    'PostFlow Contact Emails'?: string[];
+    'PostFlow Guest Post Prices'?: number[];
+    'PostFlow Blogger Requirements'?: string[];
+    'PostFlow Contact Status'?: string[];
   };
 }
 

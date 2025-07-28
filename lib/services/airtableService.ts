@@ -239,6 +239,9 @@ export class AirtableService {
       // If URL parsing fails, use as-is
     }
     
+    // Process PostFlow contacts if available
+    const contacts = this.processPostFlowContacts(fields);
+    
     return {
       id: record.id,
       domain,
@@ -247,7 +250,7 @@ export class AirtableService {
       guestPostCost: fields['Guest Post Cost V2'] || null,
       categories: fields.Category || [],
       type: fields.Type || [],
-      contacts: [], // Will be populated from Link Price table
+      contacts, // Now populated from PostFlow lookup fields
       publishedOpportunities: fields['Count of Published Opportunities'] || 0,
       status: fields.Status || 'Unknown',
       hasGuestPost: fields['Guest Post Access?'] === 'Yes',
@@ -256,6 +259,60 @@ export class AirtableService {
     };
   }
 
+  /**
+   * Process PostFlow contacts from lookup fields
+   */
+  private static processPostFlowContacts(fields: AirtableWebsite['fields']): ProcessedContact[] {
+    const emails = fields['PostFlow Contact Emails'] || [];
+    const prices = fields['PostFlow Guest Post Prices'] || [];
+    const requirements = fields['PostFlow Blogger Requirements'] || [];
+    const statuses = fields['PostFlow Contact Status'] || [];
+    
+    if (emails.length === 0) {
+      return [];
+    }
+    
+    const contacts: ProcessedContact[] = [];
+    let bestPaidIndex = -1;
+    let lowestCost = Infinity;
+    
+    // Process all contacts
+    for (let i = 0; i < emails.length; i++) {
+      // Skip inactive contacts
+      if (statuses[i] !== 'Active') continue;
+      
+      const isPaid = requirements[i] === 'Paid' && prices[i] > 0;
+      const isSwap = requirements[i] === 'Swap';
+      
+      // Skip unqualified contacts
+      if (!isPaid && !isSwap) continue;
+      
+      // Track cheapest paid option
+      if (isPaid && prices[i] < lowestCost) {
+        bestPaidIndex = contacts.length; // Index in contacts array
+        lowestCost = prices[i];
+      }
+      
+      contacts.push({
+        email: emails[i],
+        isPrimary: false, // Will set later
+        hasPaidGuestPost: isPaid,
+        hasSwapOption: isSwap,
+        guestPostCost: prices[i] || undefined,
+        requirement: requirements[i]
+      });
+    }
+    
+    // Mark primary contact (cheapest paid, or first swap if no paid)
+    if (bestPaidIndex >= 0) {
+      contacts[bestPaidIndex].isPrimary = true;
+    } else if (contacts.length > 0) {
+      contacts[0].isPrimary = true;
+    }
+    
+    return contacts;
+  }
+  
   /**
    * Process contact emails into structured format
    */
