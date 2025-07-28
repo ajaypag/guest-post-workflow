@@ -14,8 +14,10 @@ import BulkAnalysisResultsModal from '@/components/BulkAnalysisResultsModal';
 import BulkAnalysisTable from '@/components/BulkAnalysisTable';
 import GuidedTriageFlow from '@/components/GuidedTriageFlow';
 import MoveToProjectDialog from '@/components/bulk-analysis/MoveToProjectDialog';
+import AirtableImportModal from '@/components/bulk-analysis/AirtableImportModal';
 import { BulkAnalysisProject } from '@/types/bulk-analysis-projects';
 import { BulkAnalysisDomain } from '@/types/bulk-analysis';
+import { ProcessedWebsite } from '@/types/airtable';
 import { 
   ArrowLeft, 
   Target, 
@@ -39,7 +41,8 @@ import {
   Sparkles,
   FolderOpen,
   Brain,
-  X
+  X,
+  Database
 } from 'lucide-react';
 
 export default function ProjectDetailPage() {
@@ -124,6 +127,9 @@ export default function ProjectDetailPage() {
   
   // Add domains section visibility
   const [showAddDomains, setShowAddDomains] = useState(false);
+  
+  // Airtable import modal
+  const [showAirtableImport, setShowAirtableImport] = useState(false);
   
   // Bulk workflow creation state
   const [bulkWorkflowCreating, setBulkWorkflowCreating] = useState(false);
@@ -457,6 +463,15 @@ export default function ProjectDetailPage() {
         setExistingDomains(checkData.existing || []);
       }
 
+      // Build Airtable metadata map for domains
+      const airtableMetadata: Record<string, any> = {};
+      domainList.forEach(domain => {
+        const metadata = airtableMetadataMap.get(domain);
+        if (metadata) {
+          airtableMetadata[domain] = metadata;
+        }
+      });
+      
       // Create or update domains
       const response = await fetch(`/api/clients/${params.id}/bulk-analysis`, {
         method: 'POST',
@@ -465,7 +480,8 @@ export default function ProjectDetailPage() {
           domains: domainList,
           targetPageIds: keywordInputMode === 'target-pages' ? selectedTargetPages : [],
           manualKeywords: keywordInputMode === 'manual' ? manualKeywords : undefined,
-          projectId: params.projectId
+          projectId: params.projectId,
+          airtableMetadata: Object.keys(airtableMetadata).length > 0 ? airtableMetadata : undefined
         })
       });
 
@@ -473,6 +489,8 @@ export default function ProjectDetailPage() {
         const data = await response.json();
         await loadDomains();
         setDomainText('');
+        // Clear Airtable metadata for submitted domains
+        setAirtableMetadataMap(new Map());
         setMessage(`✅ Added ${data.domains.length} domains to project`);
       } else {
         throw new Error('Failed to create domains');
@@ -1059,6 +1077,31 @@ export default function ProjectDetailPage() {
     }
   };
   
+  // Store Airtable metadata for imported domains
+  const [airtableMetadataMap, setAirtableMetadataMap] = useState<Map<string, ProcessedWebsite>>(new Map());
+  
+  const handleAirtableImport = (websites: ProcessedWebsite[]) => {
+    // Store metadata for each domain
+    const newMetadataMap = new Map(airtableMetadataMap);
+    websites.forEach(website => {
+      newMetadataMap.set(website.domain, website);
+    });
+    setAirtableMetadataMap(newMetadataMap);
+    
+    // Convert Airtable websites to domain text format
+    const domainsToAdd = websites.map(w => w.domain).join('\n');
+    
+    // Add to existing domain text or replace
+    if (domainText.trim()) {
+      setDomainText(domainText + '\n' + domainsToAdd);
+    } else {
+      setDomainText(domainsToAdd);
+    }
+    
+    // Show success message
+    setMessage(`✅ Imported ${websites.length} domains from Airtable`);
+  };
+  
   const handleMoveToProject = async (targetProjectId: string) => {
     try {
       setLoading(true);
@@ -1479,9 +1522,18 @@ export default function ProjectDetailPage() {
 
           {/* Domain Input */}
           <div className="bg-white rounded-lg shadow p-6 mb-6">
-            <h2 className="text-lg font-medium mb-4">2. Enter Domains to Analyze</h2>
+            <div className="flex items-center justify-between mb-4">
+              <h2 className="text-lg font-medium">2. Enter Domains to Analyze</h2>
+              <button
+                onClick={() => setShowAirtableImport(true)}
+                className="flex items-center gap-2 px-3 py-2 text-sm bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors"
+              >
+                <Database className="w-4 h-4" />
+                Import from Airtable
+              </button>
+            </div>
             <p className="text-sm text-gray-600 mb-4">
-              Paste domains to analyze (one per line). Domains will be added to this project and checked against {
+              Paste domains to analyze (one per line) or import from Airtable. Domains will be added to this project and checked against {
                 keywordInputMode === 'manual' 
                   ? 'the keywords you entered above'
                   : 'keywords from selected target pages'
@@ -1788,9 +1840,18 @@ anotherdomain.com"
 
                   {/* Domain Input */}
                   <div className="bg-white rounded-lg shadow p-6 mb-6">
-                    <h2 className="text-lg font-medium mb-4">2. Enter Domains to Analyze</h2>
+                    <div className="flex items-center justify-between mb-4">
+                      <h2 className="text-lg font-medium">2. Enter Domains to Analyze</h2>
+                      <button
+                        onClick={() => setShowAirtableImport(true)}
+                        className="flex items-center gap-2 px-3 py-2 text-sm bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors"
+                      >
+                        <Database className="w-4 h-4" />
+                        Import from Airtable
+                      </button>
+                    </div>
                     <p className="text-sm text-gray-600 mb-4">
-                      Paste domains to analyze (one per line). Domains will be added to this project and checked against {
+                      Paste domains to analyze (one per line) or import from Airtable. Domains will be added to this project and checked against {
                         keywordInputMode === 'manual' 
                           ? 'the keywords you entered above'
                           : 'keywords from selected target pages'
@@ -2909,6 +2970,15 @@ anotherdomain.com"
           onConfirm={handleMoveToProject}
         />
       )}
+      
+      {/* Airtable Import Modal */}
+      <AirtableImportModal
+        isOpen={showAirtableImport}
+        onClose={() => setShowAirtableImport(false)}
+        onImport={handleAirtableImport}
+        clientId={params.id as string}
+        projectId={params.projectId as string}
+      />
     </AuthWrapper>
   );
 }
