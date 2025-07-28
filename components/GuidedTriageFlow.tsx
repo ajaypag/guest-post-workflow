@@ -768,20 +768,20 @@ export default function GuidedTriageFlow(props: GuidedTriageFlowProps) {
                     {/* Quick action buttons */}
                     <button
                       onClick={() => setPositionFilter(positionFilter === '1-20' ? null : '1-20')}
-                      className={`px-3 py-1.5 text-xs font-medium rounded-md transition-all ${
+                      className={`px-3 py-1.5 text-xs font-medium rounded-md transition-all border whitespace-nowrap ${
                         positionFilter === '1-20'
-                          ? 'bg-indigo-100 text-indigo-700 border border-indigo-300'
-                          : 'bg-gray-100 text-gray-600 hover:bg-gray-200'
+                          ? 'bg-indigo-100 text-indigo-700 border-indigo-300'
+                          : 'bg-gray-100 text-gray-600 hover:bg-gray-200 border-transparent'
                       }`}
                     >
                       Top 20
                     </button>
                     <button
                       onClick={() => setPositionFilter(positionFilter === '1-50' ? null : '1-50')}
-                      className={`px-3 py-1.5 text-xs font-medium rounded-md transition-all ${
+                      className={`px-3 py-1.5 text-xs font-medium rounded-md transition-all border whitespace-nowrap ${
                         positionFilter === '1-50'
-                          ? 'bg-indigo-100 text-indigo-700 border border-indigo-300'
-                          : 'bg-gray-100 text-gray-600 hover:bg-gray-200'
+                          ? 'bg-indigo-100 text-indigo-700 border-indigo-300'
+                          : 'bg-gray-100 text-gray-600 hover:bg-gray-200 border-transparent'
                       }`}
                     >
                       Top 50
@@ -790,11 +790,11 @@ export default function GuidedTriageFlow(props: GuidedTriageFlowProps) {
                     {/* More options button */}
                     <button
                       onClick={() => setShowCustomRange(!showCustomRange)}
-                      className={`flex items-center gap-1.5 px-2.5 py-1.5 text-xs font-medium rounded-md transition-all ${
+                      className={`flex items-center gap-1.5 px-2.5 py-1.5 text-xs font-medium rounded-md transition-all border whitespace-nowrap ${
                         ['1-10', '1-30', '1-40', '1-100'].includes(positionFilter || '') || 
                         (positionFilter && !['1-20', '1-50'].includes(positionFilter))
-                          ? 'bg-indigo-100 text-indigo-700 border border-indigo-300'
-                          : 'bg-gray-100 text-gray-600 hover:bg-gray-200'
+                          ? 'bg-indigo-100 text-indigo-700 border-indigo-300'
+                          : 'bg-gray-100 text-gray-600 hover:bg-gray-200 border-transparent'
                       }`}
                     >
                       <Filter className="w-3 h-3" />
