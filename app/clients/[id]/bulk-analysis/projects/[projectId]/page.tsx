@@ -225,19 +225,6 @@ export default function ProjectDetailPage() {
       );
       if (response.ok) {
         const data = await response.json();
-        
-        // Debug: Log first domain to see V2 fields
-        if (data.domains && data.domains.length > 0) {
-          console.log('🔍 First domain V2 data:', {
-            domain: data.domains[0].domain,
-            overlapStatus: data.domains[0].overlapStatus,
-            authorityDirect: data.domains[0].authorityDirect,
-            authorityRelated: data.domains[0].authorityRelated,
-            topicScope: data.domains[0].topicScope,
-            evidence: data.domains[0].evidence
-          });
-        }
-        
         // Add clientId to each domain
         const domainsWithClientId = (data.domains || []).map((d: any) => ({
           ...d,

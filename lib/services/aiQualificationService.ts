@@ -111,8 +111,6 @@ export class AIQualificationService {
       const content = response.choices[0].message.content;
       if (!content) throw new Error('No response from AI');
 
-      // Log the raw response for debugging
-      console.log(`🔍 Raw AI response for ${domain.domain}:`, content.substring(0, 200));
 
       // Try to parse JSON from the response
       let result;
@@ -137,16 +135,6 @@ export class AIQualificationService {
       
       // Validate the V2 result structure
       if (result.qualification && result.reasoning) {
-        // Log the parsed result for debugging
-        console.log(`✅ Parsed AI response for ${domain.domain}:`, {
-          qualification: result.qualification,
-          overlap_status: result.overlap_status,
-          authority_direct: result.authority_direct,
-          authority_related: result.authority_related,
-          topic_scope: result.topic_scope,
-          evidence: result.evidence
-        });
-        
         return {
           domainId: domain.domainId,
           domain: domain.domain,

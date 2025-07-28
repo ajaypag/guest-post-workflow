@@ -122,15 +122,6 @@ export async function POST(
 
     // Update domains with AI qualifications (including V2 fields)
     const updatePromises = qualifications.map(qual => {
-      // Log what we're about to save
-      console.log(`💾 Saving V2 data for ${qual.domain}:`, {
-        overlapStatus: qual.overlapStatus,
-        authorityDirect: qual.authorityDirect,
-        authorityRelated: qual.authorityRelated,
-        topicScope: qual.topicScope,
-        evidence: qual.evidence
-      });
-      
       // Extract topic reasoning from the main reasoning if present
       const reasoningParts = qual.reasoning.match(/\(b\)\s*(.+)/);
       const topicReasoning = reasoningParts ? reasoningParts[1] : null;

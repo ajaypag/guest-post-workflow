@@ -1071,16 +1071,6 @@ export default function BulkAnalysisTable(props: BulkAnalysisTableProps) {
                                     </span>
                                     
                                     {/* Visual Authority Meter */}
-                                    {(() => {
-                                      console.log('🔍 Domain V2 data in UI:', { 
-                                        domain: domain.domain, 
-                                        overlapStatus: domain.overlapStatus, 
-                                        authorityDirect: domain.authorityDirect,
-                                        authorityRelated: domain.authorityRelated,
-                                        topicScope: domain.topicScope 
-                                      });
-                                      return null;
-                                    })()}
                                     {domain.overlapStatus && domain.overlapStatus !== 'none' && (
                                       <div className="flex items-center gap-2">
                                         <span className="text-xs text-gray-600">Authority:</span>

@@ -354,14 +354,6 @@ export class MasterQualificationService {
       const reasoningParts = qual.reasoning.match(/\(b\)\s*(.+)/);
       const topicReasoning = reasoningParts ? reasoningParts[1] : null;
       
-      console.log(`💾 Master qualification saving V2 data for ${qual.domain}:`, {
-        overlapStatus: qual.overlapStatus,
-        authorityDirect: qual.authorityDirect,
-        authorityRelated: qual.authorityRelated,
-        topicScope: qual.topicScope,
-        evidence: qual.evidence
-      });
-      
       return this.openAILimiter(() =>
         db
           .update(bulkAnalysisDomains)
