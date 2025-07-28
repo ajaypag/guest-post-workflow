@@ -28,12 +28,13 @@ import {
 import { BulkAnalysisDomain } from '@/types/bulk-analysis';
 import { TargetPage } from '@/types/user';
 import { groupKeywordsByTopic } from '@/lib/utils/keywordGroupingV2';
+import { InfoTooltip } from '@/components/ui/InfoTooltip';
 
 interface GuidedTriageFlowProps {
   domains: BulkAnalysisDomain[];
   targetPages: TargetPage[];
   onClose: () => void;
-  onUpdateStatus: (domainId: string, status: 'high_quality' | 'average_quality' | 'disqualified', isManual?: boolean) => Promise<void>;
+  onUpdateStatus: (domainId: string, status: 'high_quality' | 'good_quality' | 'marginal_quality' | 'disqualified', isManual?: boolean) => Promise<void>;
   onAnalyzeWithDataForSeo?: (domain: BulkAnalysisDomain) => Promise<void>;
   keywordInputMode: 'target-pages' | 'manual';
   manualKeywords?: string;
@@ -237,7 +238,7 @@ export default function GuidedTriageFlow(props: GuidedTriageFlowProps) {
     }
   }, [currentIndex, currentDomain, domainData, reviewDomains, props]);
 
-  const handleQualify = async (status: 'high_quality' | 'average_quality' | 'disqualified') => {
+  const handleQualify = async (status: 'high_quality' | 'good_quality' | 'marginal_quality' | 'disqualified') => {
     if (!currentDomain) return;
     
     setSaving(true);
@@ -373,9 +374,13 @@ export default function GuidedTriageFlow(props: GuidedTriageFlowProps) {
           break;
         case '2':
           e.preventDefault();
-          handleQualify('average_quality');
+          handleQualify('good_quality');
           break;
         case '3':
+          e.preventDefault();
+          handleQualify('marginal_quality');
+          break;
+        case '4':
           e.preventDefault();
           handleQualify('disqualified');
           break;
@@ -456,12 +461,14 @@ export default function GuidedTriageFlow(props: GuidedTriageFlowProps) {
               {/* Current Status */}
               <div className={`px-3 py-1.5 rounded-lg text-sm font-medium ${
                 currentDomain?.qualificationStatus === 'high_quality' ? 'bg-green-100 text-green-800' :
-                currentDomain?.qualificationStatus === 'average_quality' ? 'bg-blue-100 text-blue-800' :
+                currentDomain?.qualificationStatus === 'good_quality' ? 'bg-blue-100 text-blue-800' :
+                currentDomain?.qualificationStatus === 'marginal_quality' ? 'bg-yellow-100 text-yellow-800' :
                 currentDomain?.qualificationStatus === 'disqualified' ? 'bg-red-100 text-red-800' :
                 'bg-gray-100 text-gray-800'
               }`}>
                 {currentDomain?.qualificationStatus === 'high_quality' ? 'High Quality' :
-                 currentDomain?.qualificationStatus === 'average_quality' ? 'Average Quality' :
+                 currentDomain?.qualificationStatus === 'good_quality' ? 'Good Quality' :
+                 currentDomain?.qualificationStatus === 'marginal_quality' ? 'Marginal Quality' :
                  currentDomain?.qualificationStatus === 'disqualified' ? 'Disqualified' :
                  'Pending'}
               </div>
@@ -478,19 +485,28 @@ export default function GuidedTriageFlow(props: GuidedTriageFlowProps) {
                   {currentDomain?.qualificationStatus === 'high_quality' ? 'Confirm High' : 'High'}
                 </button>
                 <button
-                  onClick={() => handleQualify('average_quality')}
+                  onClick={() => handleQualify('good_quality')}
                   disabled={saving}
                   className="inline-flex items-center px-4 py-2 bg-blue-600 text-white text-sm font-medium rounded-lg hover:bg-blue-700 disabled:opacity-50"
-                  title="Mark as Average Quality (2)"
+                  title="Mark as Good Quality (2)"
+                >
+                  <Check className="w-4 h-4 mr-1.5" />
+                  {currentDomain?.qualificationStatus === 'good_quality' ? 'Confirm Good' : 'Good'}
+                </button>
+                <button
+                  onClick={() => handleQualify('marginal_quality')}
+                  disabled={saving}
+                  className="inline-flex items-center px-4 py-2 bg-yellow-600 text-white text-sm font-medium rounded-lg hover:bg-yellow-700 disabled:opacity-50"
+                  title="Mark as Marginal Quality (3)"
                 >
                   <AlertCircle className="w-4 h-4 mr-1.5" />
-                  {currentDomain?.qualificationStatus === 'average_quality' ? 'Confirm Average' : 'Average'}
+                  {currentDomain?.qualificationStatus === 'marginal_quality' ? 'Confirm Marginal' : 'Marginal'}
                 </button>
                 <button
                   onClick={() => handleQualify('disqualified')}
                   disabled={saving}
                   className="inline-flex items-center px-4 py-2 bg-gray-500 text-white text-sm font-medium rounded-lg hover:bg-gray-600 disabled:opacity-50"
-                  title="Mark as Disqualified (3)"
+                  title="Mark as Disqualified (4)"
                 >
                   <XCircle className="w-4 h-4 mr-1.5" />
                   {currentDomain?.qualificationStatus === 'disqualified' ? 'Confirm Disqualified' : 'Disqualify'}
@@ -596,7 +612,7 @@ export default function GuidedTriageFlow(props: GuidedTriageFlowProps) {
             <Loader2 className="w-8 h-8 animate-spin text-gray-400" />
           </div>
         ) : (
-          <div className="h-full flex gap-4 p-4">
+          <div className="h-full flex gap-4 p-4 overflow-hidden">
             {/* Left Sidebar - Filters */}
             <div className="w-64 bg-white rounded-lg shadow-sm flex flex-col">
               <div className="p-4 border-b">
@@ -1263,14 +1279,151 @@ export default function GuidedTriageFlow(props: GuidedTriageFlowProps) {
             </div>
             
             {/* Right Column - Metadata */}
-            <div className="w-80 space-y-4">
-                {/* AI Analysis */}
+            <div className="w-96 space-y-4 overflow-y-auto max-h-full">
+                {/* AI Analysis - Enhanced */}
                 {data.aiQualification && (
                   <div className="bg-white rounded-lg p-4 shadow-sm">
                     <h3 className="text-sm font-medium text-gray-500 uppercase tracking-wider mb-3 flex items-center gap-2">
                       <Sparkles className="w-4 h-4" />
-                      AI Reasoning
+                      AI Qualification Analysis
                     </h3>
+                    
+                    {/* Quick Stats Section */}
+                    {currentDomain?.overlapStatus && (
+                      <div className="bg-gray-50 rounded-lg p-3 mb-3 space-y-3">
+                        {/* Top Row - Status Badges */}
+                        <div className="flex items-center gap-2">
+                          <span className={`inline-flex items-center px-2 py-1 rounded text-xs font-medium ${
+                            currentDomain.qualificationStatus === 'high_quality' ? 'bg-green-100 text-green-800' :
+                            currentDomain.qualificationStatus === 'good_quality' ? 'bg-blue-100 text-blue-800' :
+                            currentDomain.qualificationStatus === 'marginal_quality' ? 'bg-yellow-100 text-yellow-800' :
+                            'bg-red-100 text-red-800'
+                          }`}>
+                            {currentDomain.qualificationStatus === 'high_quality' ? 'High Quality' :
+                             currentDomain.qualificationStatus === 'good_quality' ? 'Good Quality' :
+                             currentDomain.qualificationStatus === 'marginal_quality' ? 'Marginal' :
+                             'Disqualified'}
+                          </span>
+                          
+                          <InfoTooltip content={
+                            currentDomain.overlapStatus === 'direct' ? 'The site already ranks for your exact core keywords' :
+                            currentDomain.overlapStatus === 'related' ? 'The site ranks for relevant sibling topics but not your exact keywords' :
+                            currentDomain.overlapStatus === 'both' ? 'The site ranks for both your core keywords and related topics' :
+                            'No meaningful keyword overlap detected'
+                          }>
+                            <span className={`inline-flex items-center px-2 py-1 rounded text-xs font-medium ${
+                              currentDomain.overlapStatus === 'direct' ? 'bg-green-100 text-green-800' :
+                              currentDomain.overlapStatus === 'related' ? 'bg-blue-100 text-blue-800' :
+                              currentDomain.overlapStatus === 'both' ? 'bg-purple-100 text-purple-800' :
+                              'bg-gray-100 text-gray-600'
+                            }`}>
+                              {currentDomain.overlapStatus === 'direct' ? '✓ Direct Match' :
+                               currentDomain.overlapStatus === 'related' ? '~ Related Match' :
+                               currentDomain.overlapStatus === 'both' ? '✓~ Both' :
+                               '✗ No Match'}
+                            </span>
+                          </InfoTooltip>
+                          
+                          {currentDomain.overlapStatus !== 'none' && (
+                            <InfoTooltip content={
+                              (currentDomain.authorityDirect === 'strong' || currentDomain.authorityRelated === 'strong') 
+                                ? 'Rankings in top 30 positions (pages 1-3 of Google)' 
+                                : (currentDomain.authorityDirect === 'moderate' || currentDomain.authorityRelated === 'moderate')
+                                ? 'Rankings in positions 31-60 (pages 4-6 of Google)'
+                                : 'Rankings in positions 61-100 (pages 7-10 of Google)'
+                            }>
+                              <span className={`inline-flex items-center px-2 py-1 rounded text-xs font-medium ${
+                                (currentDomain.authorityDirect === 'strong' || currentDomain.authorityRelated === 'strong') 
+                                  ? 'bg-green-100 text-green-800' 
+                                  : (currentDomain.authorityDirect === 'moderate' || currentDomain.authorityRelated === 'moderate')
+                                  ? 'bg-yellow-100 text-yellow-800'
+                                  : 'bg-red-100 text-red-800'
+                              }`}>
+                                {(currentDomain.authorityDirect === 'strong' || currentDomain.authorityRelated === 'strong') 
+                                  ? '🟢 Strong' 
+                                  : (currentDomain.authorityDirect === 'moderate' || currentDomain.authorityRelated === 'moderate')
+                                  ? '🟡 Moderate'
+                                  : '🔴 Weak'}
+                              </span>
+                            </InfoTooltip>
+                          )}
+                        </div>
+                        
+                        {/* Authority Bar Visualization */}
+                        {currentDomain.overlapStatus && currentDomain.overlapStatus !== 'none' && (
+                          <div className="flex items-center gap-2">
+                            <span className="text-xs text-gray-600">Authority Range:</span>
+                            <div className="flex items-center gap-1">
+                              <div className="w-32 h-2 bg-gray-200 rounded-full overflow-hidden">
+                                <div 
+                                  className={`h-full transition-all ${
+                                    (currentDomain.authorityDirect === 'strong' || currentDomain.authorityRelated === 'strong') 
+                                      ? 'bg-green-500 w-full' 
+                                      : (currentDomain.authorityDirect === 'moderate' || currentDomain.authorityRelated === 'moderate')
+                                      ? 'bg-yellow-500 w-2/3'
+                                      : 'bg-red-500 w-1/3'
+                                  }`}
+                                />
+                              </div>
+                              <span className="text-xs font-medium">
+                                {(currentDomain.authorityDirect === 'strong' || currentDomain.authorityRelated === 'strong') 
+                                  ? 'Strong' 
+                                  : (currentDomain.authorityDirect === 'moderate' || currentDomain.authorityRelated === 'moderate')
+                                  ? 'Moderate'
+                                  : 'Weak'}
+                              </span>
+                            </div>
+                          </div>
+                        )}
+                        
+                        {/* Quick Stats Row */}
+                        <div className="text-xs text-gray-700 space-y-1">
+                          {currentDomain.evidence && (currentDomain.evidence.direct_count > 0 || currentDomain.evidence.related_count > 0) && (
+                            <>
+                              {currentDomain.evidence.direct_count > 0 && (
+                                <div>• {currentDomain.evidence.direct_count} direct keywords (pos {currentDomain.evidence.direct_median_position || '1-100'})</div>
+                              )}
+                              {currentDomain.evidence.related_count > 0 && (
+                                <div>• {currentDomain.evidence.related_count} related keywords (pos {currentDomain.evidence.related_median_position || '1-100'})</div>
+                              )}
+                            </>
+                          )}
+                          
+                          {currentDomain.topicScope && (
+                            <div className="flex items-center gap-2">
+                              <span>• Topic Scope:</span>
+                              <span className="font-medium">
+                                {currentDomain.topicScope === 'short_tail' ? '🎯 Short Tail' :
+                                 currentDomain.topicScope === 'long_tail' ? '🏹 Long Tail' :
+                                 '🔬 Ultra Long Tail'}
+                              </span>
+                            </div>
+                          )}
+                          
+                          {/* Extract strategy from reasoning */}
+                          {(() => {
+                            const reasoning = data.aiQualification.reasoning.toLowerCase();
+                            let strategy = '';
+                            
+                            if (reasoning.includes('geo modifier')) {
+                              strategy = 'Add geo modifiers';
+                            } else if (reasoning.includes('buyer')) {
+                              strategy = 'Add buyer-type qualifiers';
+                            } else if (reasoning.includes('no modifier')) {
+                              strategy = 'Target broad terms';
+                            } else if (reasoning.includes('specific')) {
+                              strategy = 'Use specific niche angle';
+                            }
+                            
+                            return strategy && (
+                              <div className="font-medium text-indigo-700">• Strategy: "{strategy}"</div>
+                            );
+                          })()}
+                        </div>
+                      </div>
+                    )}
+                    
+                    {/* AI Reasoning Text - Expanded */}
                     <div className="bg-blue-50 rounded-lg p-4 max-h-96 overflow-y-auto">
                       <p className="text-sm text-gray-700 whitespace-pre-wrap leading-relaxed">
                         {data.aiQualification.reasoning}
@@ -1316,7 +1469,7 @@ export default function GuidedTriageFlow(props: GuidedTriageFlowProps) {
                                     }}
                                     className="mt-1 rounded border-gray-300 text-indigo-600 focus:ring-indigo-500"
                                   />
-                                  <span className="text-sm text-gray-700 line-clamp-1">{page.url}</span>
+                                  <span className="text-sm text-gray-700 line-clamp-1" title={page.url}>{page.url}</span>
                                 </label>
                               ))}
                             </div>
@@ -1365,9 +1518,11 @@ export default function GuidedTriageFlow(props: GuidedTriageFlowProps) {
         <div className="flex items-center justify-center text-xs text-gray-400">
           <span className="font-mono bg-gray-100 px-1 rounded">1</span> High
           <span className="mx-1">•</span>
-          <span className="font-mono bg-gray-100 px-1 rounded">2</span> Average
+          <span className="font-mono bg-gray-100 px-1 rounded">2</span> Good
           <span className="mx-1">•</span>
-          <span className="font-mono bg-gray-100 px-1 rounded">3</span> Disqualify
+          <span className="font-mono bg-gray-100 px-1 rounded">3</span> Marginal
+          <span className="mx-1">•</span>
+          <span className="font-mono bg-gray-100 px-1 rounded">4</span> Disqualify
           <span className="mx-1">•</span>
           <span className="font-mono bg-gray-100 px-1 rounded">←→</span> Navigate
           <span className="mx-1">•</span>

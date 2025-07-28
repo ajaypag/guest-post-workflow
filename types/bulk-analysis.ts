@@ -2,7 +2,7 @@ export interface BulkAnalysisDomain {
   id: string;
   clientId: string;
   domain: string;
-  qualificationStatus: 'pending' | 'high_quality' | 'average_quality' | 'disqualified';
+  qualificationStatus: 'pending' | 'high_quality' | 'good_quality' | 'marginal_quality' | 'disqualified';
   keywordCount: number;
   targetPageIds: string[];
   checkedBy?: string;
@@ -23,6 +23,18 @@ export interface BulkAnalysisDomain {
   humanVerifiedBy?: string;
   humanVerifiedAt?: string;
   selectedTargetPageId?: string;
+  // AI Qualification V2 fields
+  overlapStatus?: 'direct' | 'related' | 'both' | 'none';
+  authorityDirect?: 'strong' | 'moderate' | 'weak' | 'n/a';
+  authorityRelated?: 'strong' | 'moderate' | 'weak' | 'n/a';
+  topicScope?: 'short_tail' | 'long_tail' | 'ultra_long_tail';
+  topicReasoning?: string;
+  evidence?: {
+    direct_count: number;
+    direct_median_position: number | null;
+    related_count: number;
+    related_median_position: number | null;
+  };
   // Project support
   projectId?: string | null;
   projectAddedAt?: string | null;

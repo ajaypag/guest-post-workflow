@@ -25,6 +25,7 @@ import {
 import { BulkAnalysisDomain } from '@/types/bulk-analysis';
 import { TargetPage } from '@/types/user';
 import { groupKeywordsByTopic } from '@/lib/utils/keywordGroupingV2';
+import { InfoTooltip } from '@/components/ui/InfoTooltip';
 
 interface BulkAnalysisTableProps {
   domains: BulkAnalysisDomain[];
@@ -34,7 +35,7 @@ interface BulkAnalysisTableProps {
   onToggleSelection: (domainId: string) => void;
   onSelectAll: (domainIds: string[]) => void;
   onClearSelection: () => void;
-  onUpdateStatus: (domainId: string, status: 'high_quality' | 'average_quality' | 'disqualified', isManual?: boolean) => void;
+  onUpdateStatus: (domainId: string, status: 'high_quality' | 'good_quality' | 'marginal_quality' | 'disqualified', isManual?: boolean) => void;
   onCreateWorkflow: (domain: BulkAnalysisDomain) => void;
   onDeleteDomain: (domainId: string) => void;
   onAnalyzeWithDataForSeo: (domain: BulkAnalysisDomain) => void;
@@ -83,7 +84,7 @@ interface ExpandedRowData {
     wasAnalyzedWithNoResults?: boolean;
   };
   aiQualification?: {
-    status: 'high_quality' | 'average_quality' | 'disqualified';
+    status: 'high_quality' | 'good_quality' | 'marginal_quality' | 'disqualified';
     reasoning: string;
     qualifiedAt: string;
   };
@@ -154,13 +155,20 @@ export default function BulkAnalysisTable(props: BulkAnalysisTableProps) {
           e.preventDefault();
           const domain2 = props.domains[currentIndex];
           if (domain2.qualificationStatus === 'pending') {
-            props.onUpdateStatus(focusedDomainId, 'average_quality');
+            props.onUpdateStatus(focusedDomainId, 'good_quality');
           }
           break;
         case '3':
           e.preventDefault();
           const domain3 = props.domains[currentIndex];
           if (domain3.qualificationStatus === 'pending') {
+            props.onUpdateStatus(focusedDomainId, 'marginal_quality');
+          }
+          break;
+        case '4':
+          e.preventDefault();
+          const domain4 = props.domains[currentIndex];
+          if (domain4.qualificationStatus === 'pending') {
             props.onUpdateStatus(focusedDomainId, 'disqualified');
           }
           break;
@@ -277,7 +285,7 @@ export default function BulkAnalysisTable(props: BulkAnalysisTableProps) {
 
     // Get AI qualification if available
     let aiQualification: {
-      status: 'high_quality' | 'average_quality' | 'disqualified';
+      status: 'high_quality' | 'good_quality' | 'marginal_quality' | 'disqualified';
       reasoning: string;
       qualifiedAt: string;
     } | undefined;
@@ -406,8 +414,10 @@ export default function BulkAnalysisTable(props: BulkAnalysisTableProps) {
     switch (status) {
       case 'high_quality':
         return 'bg-green-100 text-green-800';
-      case 'average_quality':
+      case 'good_quality':
         return 'bg-blue-100 text-blue-800';
+      case 'marginal_quality':
+        return 'bg-yellow-100 text-yellow-800';
       case 'disqualified':
         return 'bg-gray-100 text-gray-600';
       default:
@@ -419,7 +429,9 @@ export default function BulkAnalysisTable(props: BulkAnalysisTableProps) {
     switch (status) {
       case 'high_quality':
         return <CheckCircle className="w-4 h-4" />;
-      case 'average_quality':
+      case 'good_quality':
+        return <AlertCircle className="w-4 h-4" />;
+      case 'marginal_quality':
         return <AlertCircle className="w-4 h-4" />;
       case 'disqualified':
         return <XCircle className="w-4 h-4" />;
@@ -432,8 +444,10 @@ export default function BulkAnalysisTable(props: BulkAnalysisTableProps) {
     switch (status) {
       case 'high_quality':
         return 'High Quality';
-      case 'average_quality':
-        return 'Average';
+      case 'good_quality':
+        return 'Good Quality';
+      case 'marginal_quality':
+        return 'Marginal';
       case 'disqualified':
         return 'Disqualified';
       default:
@@ -444,7 +458,7 @@ export default function BulkAnalysisTable(props: BulkAnalysisTableProps) {
   // Get qualified domains for bulk operations
   const qualifiedDomains = props.domains.filter(d => 
     props.selectedDomains.has(d.id) && 
-    (d.qualificationStatus === 'high_quality' || d.qualificationStatus === 'average_quality') &&
+    (d.qualificationStatus === 'high_quality' || d.qualificationStatus === 'good_quality' || d.qualificationStatus === 'marginal_quality') &&
     !d.hasWorkflow
   );
 
@@ -675,12 +689,22 @@ export default function BulkAnalysisTable(props: BulkAnalysisTableProps) {
                           <button
                             onClick={(e) => {
                               e.stopPropagation();
-                              props.onUpdateStatus(domain.id, 'average_quality');
+                              props.onUpdateStatus(domain.id, 'good_quality');
                             }}
                             className={`${props.triageMode ? 'px-1.5 py-0.5 text-xs' : 'px-2 py-1 text-xs'} bg-blue-600 text-white rounded hover:bg-blue-700`}
-                            title="Mark as Average (Press 2)"
+                            title="Mark as Good Quality (Press 2)"
                           >
-                            {props.triageMode ? '2' : 'Avg'}
+                            {props.triageMode ? '2' : 'Good'}
+                          </button>
+                          <button
+                            onClick={(e) => {
+                              e.stopPropagation();
+                              props.onUpdateStatus(domain.id, 'marginal_quality');
+                            }}
+                            className={`${props.triageMode ? 'px-1.5 py-0.5 text-xs' : 'px-2 py-1 text-xs'} bg-yellow-600 text-white rounded hover:bg-yellow-700`}
+                            title="Mark as Marginal (Press 3)"
+                          >
+                            {props.triageMode ? '3' : 'Marg'}
                           </button>
                           <button
                             onClick={(e) => {
@@ -688,14 +712,14 @@ export default function BulkAnalysisTable(props: BulkAnalysisTableProps) {
                               props.onUpdateStatus(domain.id, 'disqualified');
                             }}
                             className={`${props.triageMode ? 'px-1.5 py-0.5 text-xs' : 'px-2 py-1 text-xs'} bg-gray-600 text-white rounded hover:bg-gray-700`}
-                            title="Disqualify (Press 3)"
+                            title="Disqualify (Press 4)"
                           >
-                            {props.triageMode ? '3' : 'DQ'}
+                            {props.triageMode ? '4' : 'DQ'}
                           </button>
                         </div>
                       ) : (
                         <>
-                          {!props.triageMode && (domain.qualificationStatus === 'high_quality' || domain.qualificationStatus === 'average_quality') && !domain.hasWorkflow && (
+                          {!props.triageMode && (domain.qualificationStatus === 'high_quality' || domain.qualificationStatus === 'good_quality' || domain.qualificationStatus === 'marginal_quality') && !domain.hasWorkflow && (
                             <button
                               onClick={(e) => {
                                 e.stopPropagation();
@@ -1037,17 +1061,156 @@ export default function BulkAnalysisTable(props: BulkAnalysisTableProps) {
                                 AI Qualification Analysis
                               </h4>
                               <div className="bg-white rounded-lg border border-gray-200 p-4">
-                                <div className="mb-3">
-                                  <span className={`inline-flex items-center px-3 py-1 rounded text-sm font-medium ${
-                                    getStatusColor(data.aiQualification.status)
-                                  }`}>
-                                    {getStatusIcon(data.aiQualification.status)}
-                                    <span className="ml-1">{getStatusLabel(data.aiQualification.status)}</span>
-                                  </span>
+                                {/* Enhanced Qualification Header */}
+                                <div className="mb-4">
+                                  <div className="flex items-center justify-between mb-3">
+                                    <span className={`inline-flex items-center px-3 py-1 rounded text-sm font-medium ${
+                                      getStatusColor(data.aiQualification.status)
+                                    }`}>
+                                      {getStatusIcon(data.aiQualification.status)}
+                                      <span className="ml-1">{getStatusLabel(data.aiQualification.status)}</span>
+                                    </span>
+                                    
+                                    {/* Visual Authority Meter */}
+                                    {domain.overlapStatus && domain.overlapStatus !== 'none' && (
+                                      <div className="flex items-center gap-2">
+                                        <span className="text-xs text-gray-600">Authority:</span>
+                                        <div className="flex items-center gap-1">
+                                          <div className="w-32 h-2 bg-gray-200 rounded-full overflow-hidden">
+                                            <div 
+                                              className={`h-full transition-all ${
+                                                (domain.authorityDirect === 'strong' || domain.authorityRelated === 'strong') 
+                                                  ? 'bg-green-500 w-full' 
+                                                  : (domain.authorityDirect === 'moderate' || domain.authorityRelated === 'moderate')
+                                                  ? 'bg-yellow-500 w-2/3'
+                                                  : 'bg-red-500 w-1/3'
+                                              }`}
+                                            />
+                                          </div>
+                                          <span className="text-xs font-medium">
+                                            {(domain.authorityDirect === 'strong' || domain.authorityRelated === 'strong') 
+                                              ? 'Strong' 
+                                              : (domain.authorityDirect === 'moderate' || domain.authorityRelated === 'moderate')
+                                              ? 'Moderate'
+                                              : 'Weak'}
+                                          </span>
+                                        </div>
+                                      </div>
+                                    )}
+                                  </div>
+
+                                  {/* Topical Match & Evidence Row */}
+                                  {domain.overlapStatus && (
+                                    <div className="bg-gray-50 rounded-lg p-3">
+                                      <div className="grid grid-cols-2 gap-4">
+                                        {/* Left Column - Topical Match & Evidence */}
+                                        <div>
+                                          <div className="flex items-center gap-2 mb-2">
+                                            <span className="text-sm font-medium text-gray-900">
+                                              Topical Match: 
+                                            </span>
+                                            <InfoTooltip content={
+                                              domain.overlapStatus === 'direct' ? 'The site already ranks for your exact core keywords' :
+                                              domain.overlapStatus === 'related' ? 'The site ranks for relevant sibling topics but not your exact keywords' :
+                                              domain.overlapStatus === 'both' ? 'The site ranks for both your core keywords and related topics' :
+                                              'No meaningful keyword overlap detected'
+                                            }>
+                                              <span className={`inline-flex items-center px-2 py-0.5 rounded text-xs font-medium ${
+                                                domain.overlapStatus === 'direct' ? 'bg-green-100 text-green-800' :
+                                                domain.overlapStatus === 'related' ? 'bg-blue-100 text-blue-800' :
+                                                domain.overlapStatus === 'both' ? 'bg-purple-100 text-purple-800' :
+                                                'bg-gray-100 text-gray-600'
+                                              }`}>
+                                                {domain.overlapStatus === 'direct' ? '✓ Direct' :
+                                                 domain.overlapStatus === 'related' ? '~ Related' :
+                                                 domain.overlapStatus === 'both' ? '✓~ Both' :
+                                                 '✗ None'}
+                                              </span>
+                                            </InfoTooltip>
+                                            {domain.authorityDirect !== 'n/a' && (
+                                              <InfoTooltip content={
+                                                domain.authorityDirect === 'strong' ? 'Rankings in top 30 positions (pages 1-3 of Google)' :
+                                                domain.authorityDirect === 'moderate' ? 'Rankings in positions 31-60 (pages 4-6 of Google)' :
+                                                'Rankings in positions 61-100 (pages 7-10 of Google)'
+                                              }>
+                                                <span className={`inline-flex items-center px-2 py-0.5 rounded text-xs font-medium ${
+                                                  domain.authorityDirect === 'strong' ? 'bg-green-100 text-green-800' :
+                                                  domain.authorityDirect === 'moderate' ? 'bg-yellow-100 text-yellow-800' :
+                                                  'bg-red-100 text-red-800'
+                                                }`}>
+                                                  {domain.authorityDirect === 'strong' ? '🟢' :
+                                                   domain.authorityDirect === 'moderate' ? '🟡' : '🔴'} {domain.authorityDirect}
+                                                </span>
+                                              </InfoTooltip>
+                                            )}
+                                          </div>
+                                          
+                                          {/* Evidence Details */}
+                                          {domain.evidence && (
+                                            <div className="text-xs text-gray-600">
+                                              {domain.evidence.direct_count > 0 && (
+                                                <div>
+                                                  ├─ {domain.evidence.direct_count} direct keywords 
+                                                  {domain.evidence.direct_median_position && 
+                                                    ` (median pos: ${domain.evidence.direct_median_position})`}
+                                                </div>
+                                              )}
+                                              {domain.evidence.related_count > 0 && (
+                                                <div>
+                                                  └─ {domain.evidence.related_count} related keywords
+                                                  {domain.evidence.related_median_position && 
+                                                    ` (median pos: ${domain.evidence.related_median_position})`}
+                                                </div>
+                                              )}
+                                            </div>
+                                          )}
+                                        </div>
+                                        
+                                        {/* Right Column - Content Strategy */}
+                                        {domain.topicScope && (
+                                          <div>
+                                            <div className="flex items-center gap-2 mb-2">
+                                            <span className="text-sm font-medium text-gray-900">
+                                              Content Strategy:
+                                            </span>
+                                            <InfoTooltip content={
+                                              domain.topicScope === 'short_tail' ? 'Site can rank for broad core terms without modifiers' :
+                                              domain.topicScope === 'long_tail' ? 'Site needs simple modifiers (geo, buyer type, "best", "how to")' :
+                                              'Site needs very specific niche angles with multiple modifiers'
+                                            }>
+                                              <span className={`inline-flex items-center px-2 py-0.5 rounded text-xs font-medium ${
+                                                domain.topicScope === 'short_tail' ? 'bg-green-100 text-green-800' :
+                                                domain.topicScope === 'long_tail' ? 'bg-blue-100 text-blue-800' :
+                                                'bg-purple-100 text-purple-800'
+                                              }`}>
+                                                {domain.topicScope === 'short_tail' ? '🎯 Short Tail' :
+                                                 domain.topicScope === 'long_tail' ? '🏹 Long Tail' :
+                                                 '🔬 Ultra Long Tail'}
+                                              </span>
+                                            </InfoTooltip>
+                                          </div>
+                                          
+                                            {/* Show full modifier guidance from topicReasoning */}
+                                            {domain.topicReasoning && (
+                                              <p className="text-xs text-gray-600 mt-1 italic">
+                                                💡 {domain.topicReasoning}
+                                              </p>
+                                            )}
+                                          </div>
+                                        )}
+                                      </div>
+                                    </div>
+                                  )}
                                 </div>
-                                <p className="text-sm text-gray-700 whitespace-pre-wrap">
-                                  {data.aiQualification.reasoning}
-                                </p>
+                                
+                                {/* AI Reasoning */}
+                                <div className="border-t pt-3">
+                                  <h5 className="text-xs font-medium text-gray-700 mb-2">AI Analysis:</h5>
+                                  <p className="text-sm text-gray-700 whitespace-pre-wrap">
+                                    {data.aiQualification.reasoning}
+                                  </p>
+                                </div>
+                                
                                 {data.aiQualification.qualifiedAt && (
                                   <p className="text-xs text-gray-500 mt-3">
                                     Analyzed: {new Date(data.aiQualification.qualifiedAt).toLocaleString()}
@@ -1096,7 +1259,7 @@ export default function BulkAnalysisTable(props: BulkAnalysisTableProps) {
                               }}
                               placeholder="Add notes about this domain..."
                               className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-indigo-500 focus:border-transparent"
-                              rows={3}
+                              rows={2}
                               onClick={(e) => e.stopPropagation()}
                             />
                           </div>
@@ -1133,7 +1296,8 @@ export default function BulkAnalysisTable(props: BulkAnalysisTableProps) {
                                         className="px-3 py-1 text-sm border border-gray-300 rounded-lg focus:ring-2 focus:ring-indigo-500 focus:border-transparent"
                                       >
                                         <option value="high_quality">High Quality</option>
-                                        <option value="average_quality">Average Quality</option>
+                                        <option value="good_quality">Good Quality</option>
+                                        <option value="marginal_quality">Marginal Quality</option>
                                         <option value="disqualified">Disqualified</option>
                                       </select>
                                     </div>

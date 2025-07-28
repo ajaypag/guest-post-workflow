@@ -21,7 +21,6 @@ import { BulkAnalysisProject } from '@/types/bulk-analysis-projects';
 
 interface ProjectCardProps {
   project: BulkAnalysisProject & {
-    analyzedCount?: number;
     pendingCount?: number;
   };
   clientId: string;
@@ -171,7 +170,7 @@ export function ProjectCard({
             </div>
           </div>
 
-          <div className="grid grid-cols-2 md:grid-cols-4 gap-4 mb-4">
+          <div className="grid grid-cols-3 gap-4 mb-4">
             <div className="space-y-1">
               <div className="flex items-center text-gray-500 text-sm">
                 <Globe className="w-4 h-4 mr-1" />
@@ -186,15 +185,6 @@ export function ProjectCard({
               </div>
               <p className="text-2xl font-semibold text-green-600">
                 {project.qualifiedCount || 0}
-              </p>
-            </div>
-            <div className="space-y-1">
-              <div className="flex items-center text-gray-500 text-sm">
-                <TrendingUp className="w-4 h-4 mr-1" />
-                Analyzed
-              </div>
-              <p className="text-2xl font-semibold text-blue-600">
-                {project.analyzedCount || 0}
               </p>
             </div>
             <div className="space-y-1">

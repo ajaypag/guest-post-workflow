@@ -33,11 +33,6 @@ export async function GET(
         createdAt: bulkAnalysisProjects.createdAt,
         updatedAt: bulkAnalysisProjects.updatedAt,
         // Additional computed stats
-        analyzedCount: sql<number>`
-          (SELECT COUNT(*) FROM ${bulkAnalysisDomains} 
-           WHERE ${bulkAnalysisDomains.projectId} = ${bulkAnalysisProjects.id} 
-           AND ${bulkAnalysisDomains.hasDataForSeoResults} = true)
-        `.as('analyzedCount'),
         pendingCount: sql<number>`
           (SELECT COUNT(*) FROM ${bulkAnalysisDomains} 
            WHERE ${bulkAnalysisDomains.projectId} = ${bulkAnalysisProjects.id} 

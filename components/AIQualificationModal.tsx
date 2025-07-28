@@ -6,8 +6,19 @@ import { X, Sparkles, CheckCircle, XCircle, AlertCircle, Loader2 } from 'lucide-
 interface QualificationResult {
   domainId: string;
   domain: string;
-  qualification: 'high_quality' | 'average_quality' | 'disqualified';
+  qualification: 'high_quality' | 'good_quality' | 'marginal_quality' | 'disqualified';
   reasoning: string;
+  // V2 fields - optional for UI display
+  overlapStatus?: 'direct' | 'related' | 'both' | 'none';
+  authorityDirect?: 'strong' | 'moderate' | 'weak' | 'n/a';
+  authorityRelated?: 'strong' | 'moderate' | 'weak' | 'n/a';
+  topicScope?: 'short_tail' | 'long_tail' | 'ultra_long_tail';
+  evidence?: {
+    direct_count: number;
+    direct_median_position: number | null;
+    related_count: number;
+    related_median_position: number | null;
+  };
 }
 
 interface AIQualificationModalProps {
@@ -77,7 +88,9 @@ export default function AIQualificationModal({
     switch (qualification) {
       case 'high_quality':
         return <CheckCircle className="w-5 h-5 text-green-600" />;
-      case 'average_quality':
+      case 'good_quality':
+        return <CheckCircle className="w-5 h-5 text-blue-600" />;
+      case 'marginal_quality':
         return <AlertCircle className="w-5 h-5 text-yellow-600" />;
       case 'disqualified':
         return <XCircle className="w-5 h-5 text-red-600" />;
@@ -90,7 +103,9 @@ export default function AIQualificationModal({
     switch (qualification) {
       case 'high_quality':
         return 'bg-green-100 text-green-800';
-      case 'average_quality':
+      case 'good_quality':
+        return 'bg-blue-100 text-blue-800';
+      case 'marginal_quality':
         return 'bg-yellow-100 text-yellow-800';
       case 'disqualified':
         return 'bg-red-100 text-red-800';
@@ -160,18 +175,24 @@ export default function AIQualificationModal({
           {results.length > 0 && (
             <div className="space-y-4">
               {/* Summary Stats */}
-              <div className="grid grid-cols-3 gap-4 mb-6">
+              <div className="grid grid-cols-4 gap-4 mb-6">
                 <div className="bg-green-50 border border-green-200 rounded-lg p-4 text-center">
                   <div className="text-2xl font-bold text-green-800">
                     {results.filter(r => r.qualification === 'high_quality').length}
                   </div>
                   <div className="text-sm text-green-600">High Quality</div>
                 </div>
+                <div className="bg-blue-50 border border-blue-200 rounded-lg p-4 text-center">
+                  <div className="text-2xl font-bold text-blue-800">
+                    {results.filter(r => r.qualification === 'good_quality').length}
+                  </div>
+                  <div className="text-sm text-blue-600">Good Quality</div>
+                </div>
                 <div className="bg-yellow-50 border border-yellow-200 rounded-lg p-4 text-center">
                   <div className="text-2xl font-bold text-yellow-800">
-                    {results.filter(r => r.qualification === 'average_quality').length}
+                    {results.filter(r => r.qualification === 'marginal_quality').length}
                   </div>
-                  <div className="text-sm text-yellow-600">Average Quality</div>
+                  <div className="text-sm text-yellow-600">Marginal Quality</div>
                 </div>
                 <div className="bg-red-50 border border-red-200 rounded-lg p-4 text-center">
                   <div className="text-2xl font-bold text-red-800">
@@ -216,6 +237,35 @@ export default function AIQualificationModal({
                         </div>
                         
                         <p className="text-sm text-gray-700">{result.reasoning}</p>
+                        
+                        {/* V2 Fields Display */}
+                        {result.overlapStatus && (
+                          <div className="mt-2 flex flex-wrap gap-2 text-xs">
+                            <span className="px-2 py-1 bg-gray-100 rounded">
+                              Overlap: {result.overlapStatus}
+                            </span>
+                            {result.authorityDirect !== 'n/a' && (
+                              <span className="px-2 py-1 bg-gray-100 rounded">
+                                Direct Auth: {result.authorityDirect}
+                              </span>
+                            )}
+                            {result.authorityRelated !== 'n/a' && (
+                              <span className="px-2 py-1 bg-gray-100 rounded">
+                                Related Auth: {result.authorityRelated}
+                              </span>
+                            )}
+                            {result.topicScope && (
+                              <span className="px-2 py-1 bg-purple-100 rounded">
+                                Topic: {result.topicScope.replace('_', ' ')}
+                              </span>
+                            )}
+                            {result.evidence && (
+                              <span className="px-2 py-1 bg-gray-100 rounded">
+                                Evidence: {result.evidence.direct_count + result.evidence.related_count} keywords
+                              </span>
+                            )}
+                          </div>
+                        )}
                       </div>
                     </div>
                   </div>

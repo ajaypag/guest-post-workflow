@@ -102,7 +102,7 @@ export default function WorkflowList() {
   };
 
   return (
-    <div>
+    <div className="workflow-list-section">
       <div className="mb-8 flex justify-between items-center">
         <div>
           <h2 className="text-2xl font-bold text-gray-900">Active Workflows</h2>

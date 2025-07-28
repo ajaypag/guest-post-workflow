@@ -3,8 +3,19 @@ import OpenAI from 'openai';
 interface QualificationResult {
   domainId: string;
   domain: string;
-  qualification: 'high_quality' | 'average_quality' | 'disqualified';
+  qualification: 'high_quality' | 'good_quality' | 'marginal_quality' | 'disqualified';
   reasoning: string;
+  // V2 fields
+  overlapStatus: 'direct' | 'related' | 'both' | 'none';
+  authorityDirect: 'strong' | 'moderate' | 'weak' | 'n/a';
+  authorityRelated: 'strong' | 'moderate' | 'weak' | 'n/a';
+  topicScope: 'short_tail' | 'long_tail' | 'ultra_long_tail';
+  evidence: {
+    direct_count: number;
+    direct_median_position: number | null;
+    related_count: number;
+    related_median_position: number | null;
+  };
 }
 
 interface DomainData {
@@ -61,10 +72,16 @@ export class AIQualificationService {
       // Process each domain in the chunk concurrently
       const chunkPromises = chunk.map(domain => 
         this.processSingleDomain(domain, clientContext)
+          .catch(error => {
+            console.error(`Skipping ${domain.domain} due to error:`, error);
+            // Return null for errors - will be filtered out
+            return null;
+          })
       );
       
       const chunkResults = await Promise.all(chunkPromises);
-      results.push(...chunkResults);
+      // Only add successful results - errors remain as pending
+      results.push(...chunkResults.filter((r): r is QualificationResult => r !== null));
       
       // Report progress
       completed += chunk.length;
@@ -86,29 +103,60 @@ export class AIQualificationService {
     try {
       const prompt = this.buildPromptForSingleDomain(domain, clientContext);
       
-      const response = await this.openai.chat.completions.create({
-        model: "o3-2025-04-16",
-        messages: [
-          {
-            role: "user",
-            content: prompt
-          }
-        ],
-        response_format: { type: "json_object" }
+      const response = await this.openai.responses.create({
+        model: "o3",
+        input: prompt,  // Put entire prompt as input (includes instructions + data)
+        reasoning: { effort: "high" },
+        store: true
       });
 
-      const content = response.choices[0].message.content;
+      const content = response.output_text;
       if (!content) throw new Error('No response from AI');
 
-      const result = JSON.parse(content);
+
+      // Try to parse JSON from the response
+      let result;
+      try {
+        // If the response starts with text, try to extract JSON
+        if (!content.trim().startsWith('{')) {
+          // Look for JSON in the response
+          const jsonMatch = content.match(/\{[\s\S]*\}/);
+          if (jsonMatch) {
+            result = JSON.parse(jsonMatch[0]);
+          } else {
+            throw new Error('No JSON found in response');
+          }
+        } else {
+          result = JSON.parse(content);
+        }
+      } catch (parseError) {
+        console.error('Failed to parse AI response as JSON:', parseError);
+        console.error('Full response:', content);
+        throw new Error('Invalid JSON in AI response');
+      }
       
-      // Validate the single result
+      // Validate the V2 result structure
       if (result.qualification && result.reasoning) {
         return {
           domainId: domain.domainId,
           domain: domain.domain,
           qualification: this.validateQualification(result.qualification),
-          reasoning: result.reasoning
+          reasoning: result.reasoning,
+          overlapStatus: result.overlap_status || 'none',
+          authorityDirect: result.authority_direct || 'n/a',
+          authorityRelated: result.authority_related || 'n/a',
+          topicScope: result.topic_scope || 'long_tail',
+          evidence: result.evidence ? {
+            direct_count: result.evidence.direct_count || 0,
+            direct_median_position: result.evidence.direct_median_position || null,
+            related_count: result.evidence.related_count || 0,
+            related_median_position: result.evidence.related_median_position || null
+          } : {
+            direct_count: 0,
+            direct_median_position: null,
+            related_count: 0,
+            related_median_position: null
+          }
         };
       }
       
@@ -116,13 +164,8 @@ export class AIQualificationService {
 
     } catch (error) {
       console.error(`Domain ${domain.domain} processing error:`, error);
-      // Return as needing manual review
-      return {
-        domainId: domain.domainId,
-        domain: domain.domain,
-        qualification: 'average_quality' as const,
-        reasoning: 'AI processing error - requires manual review'
-      };
+      // Re-throw to let caller handle - domain will remain pending
+      throw error;
     }
   }
 
@@ -134,7 +177,7 @@ export class AIQualificationService {
         keywords: page.keywords.join(', '),
         description: page.description || ''
       })),
-      keywordThemes: this.extractKeywordThemes(context.clientKeywords)
+      clientKeywords: context.clientKeywords
     };
 
     // Include ALL keyword rankings - no filtering or limiting
@@ -156,9 +199,51 @@ export class AIQualificationService {
         }))
     };
 
-    return `I'm going to give you my client pages, some narrow to broad keyword topics related to it and then I'll give you a site I want to guest post on along with ALL their keyword rankings.
+    return `You will receive two JSON blobs:
 
-Your job: reason through and determine if this guest post site is highly relevant, average or disqualified. The best site is basically a site that I can publish an article about a topic that is a long tail of my keyword and it has a great chance of ranking from existing topical authority. Average would be some justifiable overlap but not a home run.
+ • **Client Information**  
+   – Each potential target page: url, description  
+   – List of relevant niche keywords (from highly specific up to broader industry terms)
+
+ • **Guest Post Site to Evaluate**  
+   – Domain name  
+   – List of all its keyword rankings that overlap with the client's list of relevant niche keywords  
+     (keyword, Google position ≤100, optional volume)
+
+YOUR TASK  
+1. Read all keywords for both sides and judge topical overlap:  
+   - *Direct*  → the site already ranks for a highly specific client niche term  
+   - *Related* → the site ranks for an obviously relevant sibling/broader industry topic but not the highly specific ones.  
+   If both Direct and Related exist, note that as "Both."  
+   If nothing meaningful appears, mark as "None."
+
+2. Estimate how strong the site is inside each overlap bucket:  
+   *Strong* ≈ positions 1-30 (pages 1-3)  
+   *Moderate* ≈ positions 31-60 (pages 4-6)  
+   *Weak* ≈ positions 61-100 (pages 7-10)  
+   Use median position or any sensible heuristic—you choose.
+
+3. Return a verdict:  
+   • **high_quality**  
+        Direct overlap AND strength is Strong or Moderate  
+   • **good_quality**  
+        a) Direct overlap but strength is Weak  OR  
+        b) No Direct overlap, but Related overlap is Strong/Moderate  
+   • **marginal_quality**  
+        Some overlap exists, yet every strength signal looks Weak  
+   • **disqualified**  
+        No meaningful overlap at all
+
+4. Determine topic scope based on guest site authority:
+   • **short_tail** - Site can rank for broader industry term without modifiers
+   • **long_tail** - Site needs simple modifier (geo, buyer type, "best", "how to")  
+   • **ultra_long_tail** - Site needs very specific niche angle with multiple modifiers
+
+5. Provide evidence counts & median positions so a human can audit your call. Keep the explanation concise, actionable, and framed in SEO language.
+
+   The reasoning must include two parts:
+   a) Why this tail level citing specific keywords/positions
+   b) What kind of modifier guidance (NO suggested keywords, just modifier type)
 
 Client Information:
 ${JSON.stringify(clientInfo, null, 2)}
@@ -166,41 +251,25 @@ ${JSON.stringify(clientInfo, null, 2)}
 Site to Evaluate:
 ${JSON.stringify(domainInfo, null, 2)}
 
-Output your decision and justification in this JSON format:
+OUTPUT — RETURN EXACTLY THIS JSON
 {
-  "qualification": "high_quality" | "average_quality" | "disqualified",
-  "reasoning": "Your detailed reasoning explaining the topical overlap and ranking potential. Be specific about which keywords show topical authority relevant to the client's needs."
+  "qualification": "high_quality" | "good_quality" | "marginal_quality" | "disqualified",
+  "overlap_status": "direct" | "related" | "both" | "none",
+  "authority_direct": "strong" | "moderate" | "weak" | "n/a",
+  "authority_related": "strong" | "moderate" | "weak" | "n/a",
+  "topic_scope": "short_tail" | "long_tail" | "ultra_long_tail",
+  "evidence": {
+      "direct_count": <integer>,
+      "direct_median_position": <integer or null>,
+      "related_count": <integer>,
+      "related_median_position": <integer or null>
+  },
+  "reasoning": "One–two short paragraphs explaining why the verdict makes sense, which keyword clusters prove authority, and how that benefits (or fails) the client. Include: (a) Why this tail level citing keywords/positions (b) Modifier guidance (e.g. 'add geo modifier', 'use buyer-type qualifier', 'no modifier needed')"
 }`;
   }
 
-  private extractKeywordThemes(keywords: string[]): string[] {
-    // Group keywords by common terms to identify themes
-    const themes = new Set<string>();
-    const commonWords = new Map<string, number>();
-    
-    // Count word frequency
-    keywords.forEach(keyword => {
-      const words = keyword.toLowerCase().split(/\s+/);
-      words.forEach(word => {
-        if (word.length > 3) { // Skip short words
-          commonWords.set(word, (commonWords.get(word) || 0) + 1);
-        }
-      });
-    });
-    
-    // Extract themes (words that appear in multiple keywords)
-    Array.from(commonWords.entries())
-      .filter(([_, count]) => count >= 3)
-      .sort((a, b) => b[1] - a[1])
-      .slice(0, 10)
-      .forEach(([word]) => themes.add(word));
-    
-    return Array.from(themes);
-  }
-
-
-  private validateQualification(qual: string): 'high_quality' | 'average_quality' | 'disqualified' {
-    const valid = ['high_quality', 'average_quality', 'disqualified'];
-    return valid.includes(qual) ? qual as any : 'average_quality';
+  private validateQualification(qual: string): 'high_quality' | 'good_quality' | 'marginal_quality' | 'disqualified' {
+    const valid = ['high_quality', 'good_quality', 'marginal_quality', 'disqualified'];
+    return valid.includes(qual) ? qual as any : 'marginal_quality';
   }
 }

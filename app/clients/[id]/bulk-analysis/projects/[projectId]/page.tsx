@@ -13,7 +13,9 @@ import DataForSeoResultsModal from '@/components/DataForSeoResultsModal';
 import BulkAnalysisResultsModal from '@/components/BulkAnalysisResultsModal';
 import BulkAnalysisTable from '@/components/BulkAnalysisTable';
 import GuidedTriageFlow from '@/components/GuidedTriageFlow';
+import { MultiSelect, MultiSelectOption } from '@/components/ui/MultiSelect';
 import MoveToProjectDialog from '@/components/bulk-analysis/MoveToProjectDialog';
+import { MessageDisplay } from '@/components/bulk-analysis/MessageDisplay';
 import { BulkAnalysisProject } from '@/types/bulk-analysis-projects';
 import { BulkAnalysisDomain } from '@/types/bulk-analysis';
 import { 
@@ -63,7 +65,7 @@ export default function ProjectDetailPage() {
   const [manualKeywords, setManualKeywords] = useState('');
   
   // Filtering options
-  const [statusFilter, setStatusFilter] = useState<'all' | 'pending' | 'high_quality' | 'average_quality' | 'disqualified'>('all');
+  const [statusFilter, setStatusFilter] = useState<string[]>([]);
   const [workflowFilter, setWorkflowFilter] = useState<'all' | 'has_workflow' | 'no_workflow'>('all');
   const [verificationFilter, setVerificationFilter] = useState<'all' | 'human_verified' | 'ai_qualified' | 'unverified'>('all');
   const [searchQuery, setSearchQuery] = useState('');
@@ -76,6 +78,15 @@ export default function ProjectDetailPage() {
   // Pagination state
   const [displayLimit, setDisplayLimit] = useState(50);
   const ITEMS_PER_PAGE = 50;
+  
+  // Status filter options for multi-select
+  const statusOptions: MultiSelectOption[] = [
+    { value: 'pending', label: 'Pending' },
+    { value: 'high_quality', label: 'High Quality' },
+    { value: 'good_quality', label: 'Good Quality' },
+    { value: 'marginal_quality', label: 'Marginal Quality' },
+    { value: 'disqualified', label: 'Disqualified' }
+  ];
   
   // DataForSEO modal state
   const [dataForSeoModal, setDataForSeoModal] = useState<{
@@ -323,7 +334,8 @@ export default function ProjectDetailPage() {
       const summary = data.summary;
       setMessage(
         `✅ Master qualification complete! ${summary.qualification.highQuality} high quality, ` +
-        `${summary.qualification.averageQuality} average, ${summary.qualification.disqualified} disqualified`
+        `${summary.qualification.goodQuality} good quality, ${summary.qualification.marginalQuality} marginal quality, ` +
+        `${summary.qualification.disqualified} disqualified`
       );
       
       // Reload domains to get updated stats
@@ -401,7 +413,7 @@ export default function ProjectDetailPage() {
 
       // Clear selection and show success message
       setSelectedDomains(new Set());
-      setMessage(`✅ AI qualification complete! ${data.summary.highQuality} high quality, ${data.summary.averageQuality} average quality, ${data.summary.disqualified} disqualified domains`);
+      setMessage(`✅ AI qualification complete! ${data.summary.highQuality} high quality, ${data.summary.goodQuality} good quality, ${data.summary.marginalQuality} marginal quality, ${data.summary.disqualified} disqualified domains`);
       
       // Reload domains to get updated stats
       await loadDomains();
@@ -485,7 +497,7 @@ export default function ProjectDetailPage() {
     }
   };
 
-  const updateQualificationStatus = async (domainId: string, status: 'high_quality' | 'average_quality' | 'disqualified', isManual?: boolean) => {
+  const updateQualificationStatus = async (domainId: string, status: 'high_quality' | 'good_quality' | 'marginal_quality' | 'disqualified', isManual?: boolean) => {
     try {
       const session = AuthService.getSession();
       if (!session) {
@@ -1010,7 +1022,7 @@ export default function ProjectDetailPage() {
     }
   };
 
-  const handleBulkStatusUpdate = async (status: 'high_quality' | 'average_quality' | 'disqualified' | 'pending') => {
+  const handleBulkStatusUpdate = async (status: 'high_quality' | 'good_quality' | 'marginal_quality' | 'disqualified' | 'pending') => {
     try {
       setShowBulkStatusMenu(false);
       setLoading(true);
@@ -1195,11 +1207,9 @@ export default function ProjectDetailPage() {
       
       // Apply current filters to export
       const filteredDomains = domains.filter(domain => {
-        // Status filter
-        if (statusFilter && statusFilter !== 'all') {
-          if (domain.qualificationStatus !== statusFilter) {
-            return false;
-          }
+        // Status filter - if any statuses are selected, domain must match one of them
+        if (statusFilter.length > 0 && !statusFilter.includes(domain.qualificationStatus)) {
+          return false;
         }
         
         // Workflow filter
@@ -1520,61 +1530,18 @@ anotherdomain.com"
             )}
 
             {/* Message Display */}
-            {message && (
-              <div className={`mt-3 p-3 rounded-lg ${
-                message.startsWith('❌') ? 'bg-red-50 border border-red-200 text-red-800' :
-                message.startsWith('✅') ? 'bg-green-50 border border-green-200 text-green-800' :
-                message.startsWith('⏳') || message.startsWith('🔄') || message.startsWith('🚀') ? 'bg-blue-50 border border-blue-200 text-blue-800' :
-                'bg-gray-50 border border-gray-200 text-gray-800'
-              }`}>
-                <p className="text-sm">{message}</p>
-                
-                {/* Progress Bar for Bulk Analysis */}
-                {bulkAnalysisRunning && bulkProgress.total > 0 && (
-                  <div className="mt-2">
-                    <div className="flex justify-between text-xs mb-1">
-                      <span>Progress</span>
-                      <span>{bulkProgress.current} / {bulkProgress.total}</span>
-                    </div>
-                    <div className="w-full bg-gray-200 rounded-full h-2">
-                      <div 
-                        className="bg-indigo-600 h-2 rounded-full transition-all duration-300"
-                        style={{ width: `${(bulkProgress.current / bulkProgress.total) * 100}%` }}
-                      />
-                    </div>
-                  </div>
-                )}
-                
-                {/* Progress Bar for Master Qualification */}
-                {masterQualificationRunning && masterQualificationProgress.total > 0 && (
-                  <div className="mt-2">
-                    <div className="flex justify-between text-xs mb-1">
-                      <span>Master Qualification Progress</span>
-                      <span>{masterQualificationProgress.current} / {masterQualificationProgress.total}</span>
-                    </div>
-                    <div className="w-full bg-gray-200 rounded-full h-2">
-                      <div 
-                        className="bg-indigo-600 h-2 rounded-full transition-all duration-300"
-                        style={{ width: `${(masterQualificationProgress.current / masterQualificationProgress.total) * 100}%` }}
-                      />
-                    </div>
-                  </div>
-                )}
-                
-                {/* View Results Button */}
-                {completedJobId && message.includes('Analysis complete') && (
-                  <button
-                    onClick={() => {
-                      setBulkResultsModal({ ...bulkResultsModal, isOpen: true });
-                      setCompletedJobId(null);
-                    }}
-                    className="mt-3 px-4 py-2 bg-indigo-600 text-white rounded-md hover:bg-indigo-700 transition-colors text-sm font-medium"
-                  >
-                    View Results
-                  </button>
-                )}
-              </div>
-            )}
+            <MessageDisplay
+              message={message}
+              bulkAnalysisRunning={bulkAnalysisRunning}
+              bulkProgress={bulkProgress}
+              masterQualificationRunning={masterQualificationRunning}
+              masterQualificationProgress={masterQualificationProgress}
+              completedJobId={completedJobId}
+              onViewResults={() => {
+                setBulkResultsModal({ ...bulkResultsModal, isOpen: true });
+                setCompletedJobId(null);
+              }}
+            />
             
             <div className="flex items-center gap-3 mt-4">
               <button
@@ -1829,61 +1796,18 @@ anotherdomain.com"
                     )}
 
                     {/* Message Display */}
-                    {message && (
-                      <div className={`mt-3 p-3 rounded-lg ${
-                        message.startsWith('❌') ? 'bg-red-50 border border-red-200 text-red-800' :
-                        message.startsWith('✅') ? 'bg-green-50 border border-green-200 text-green-800' :
-                        message.startsWith('⏳') || message.startsWith('🔄') || message.startsWith('🚀') ? 'bg-blue-50 border border-blue-200 text-blue-800' :
-                        'bg-gray-50 border border-gray-200 text-gray-800'
-                      }`}>
-                        <p className="text-sm">{message}</p>
-                        
-                        {/* Progress Bar for Bulk Analysis */}
-                        {bulkAnalysisRunning && bulkProgress.total > 0 && (
-                          <div className="mt-2">
-                            <div className="flex justify-between text-xs mb-1">
-                              <span>Progress</span>
-                              <span>{bulkProgress.current} / {bulkProgress.total}</span>
-                            </div>
-                            <div className="w-full bg-gray-200 rounded-full h-2">
-                              <div 
-                                className="bg-indigo-600 h-2 rounded-full transition-all duration-300"
-                                style={{ width: `${(bulkProgress.current / bulkProgress.total) * 100}%` }}
-                              />
-                            </div>
-                          </div>
-                        )}
-                        
-                        {/* Progress Bar for Master Qualification */}
-                        {masterQualificationRunning && masterQualificationProgress.total > 0 && (
-                          <div className="mt-2">
-                            <div className="flex justify-between text-xs mb-1">
-                              <span>Master Qualification Progress</span>
-                              <span>{masterQualificationProgress.current} / {masterQualificationProgress.total}</span>
-                            </div>
-                            <div className="w-full bg-gray-200 rounded-full h-2">
-                              <div 
-                                className="bg-indigo-600 h-2 rounded-full transition-all duration-300"
-                                style={{ width: `${(masterQualificationProgress.current / masterQualificationProgress.total) * 100}%` }}
-                              />
-                            </div>
-                          </div>
-                        )}
-                        
-                        {/* View Results Button */}
-                        {completedJobId && message.includes('Analysis complete') && (
-                          <button
-                            onClick={() => {
-                              setBulkResultsModal({ ...bulkResultsModal, isOpen: true });
-                              setCompletedJobId(null);
-                            }}
-                            className="mt-3 px-4 py-2 bg-indigo-600 text-white rounded-md hover:bg-indigo-700 transition-colors text-sm font-medium"
-                          >
-                            View Results
-                          </button>
-                        )}
-                      </div>
-                    )}
+                    <MessageDisplay
+                      message={message}
+                      bulkAnalysisRunning={bulkAnalysisRunning}
+                      bulkProgress={bulkProgress}
+                      masterQualificationRunning={masterQualificationRunning}
+                      masterQualificationProgress={masterQualificationProgress}
+                      completedJobId={completedJobId}
+                      onViewResults={() => {
+                        setBulkResultsModal({ ...bulkResultsModal, isOpen: true });
+                        setCompletedJobId(null);
+                      }}
+                    />
                     
                     <div className="flex items-center gap-3 mt-4">
                       <button
@@ -2070,19 +1994,15 @@ anotherdomain.com"
                     
                     {/* Filters Container - Hide when search is expanded */}
                     {!isSearchExpanded && (
-                      <div className="flex items-center gap-2 flex-nowrap overflow-x-auto scrollbar-hide">
+                      <div className="flex items-center gap-2 flex-nowrap overflow-x-auto scrollbar-hide relative">
                         {/* Status Filter */}
-                        <select
-                          value={statusFilter}
-                          onChange={(e) => setStatusFilter(e.target.value as 'all' | 'pending' | 'high_quality' | 'average_quality' | 'disqualified')}
-                          className="border border-gray-300 rounded-lg px-2 sm:px-3 py-2 text-xs sm:text-sm focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500 min-w-[100px] lg:min-w-[120px]"
-                        >
-                          <option value="all">All Status</option>
-                          <option value="pending">Pending</option>
-                          <option value="high_quality">High Quality</option>
-                          <option value="average_quality">Average</option>
-                          <option value="disqualified">Disqualified</option>
-                        </select>
+                        <MultiSelect
+                          options={statusOptions}
+                          selectedValues={statusFilter}
+                          onChange={setStatusFilter}
+                          placeholder="All Statuses"
+                          className="min-w-[120px] lg:min-w-[140px]"
+                        />
 
                         {/* Workflow Filter - Hidden on mobile */}
                         <select
@@ -2142,11 +2062,11 @@ anotherdomain.com"
                     )}
 
                     {/* Clear Filters - Always visible */}
-                    {(searchQuery || statusFilter !== 'all' || workflowFilter !== 'all' || verificationFilter !== 'all') && (
+                    {(searchQuery || statusFilter.length > 0 || workflowFilter !== 'all' || verificationFilter !== 'all') && (
                       <button
                         onClick={() => {
                           setSearchQuery('');
-                          setStatusFilter('all');
+                          setStatusFilter([]);
                           setWorkflowFilter('all');
                           setVerificationFilter('all');
                           setIsSearchExpanded(false);
@@ -2175,7 +2095,7 @@ anotherdomain.com"
                           const selectedDomainsArray = Array.from(selectedDomains);
                           const qualifiedCount = domains.filter(d => 
                             selectedDomainsArray.includes(d.id) && 
-                            (d.qualificationStatus === 'high_quality' || d.qualificationStatus === 'average_quality') && 
+                            (d.qualificationStatus === 'high_quality' || d.qualificationStatus === 'good_quality' || d.qualificationStatus === 'marginal_quality') && 
                             !d.hasWorkflow
                           ).length;
                           const pendingCount = domains.filter(d => 
@@ -2318,7 +2238,7 @@ anotherdomain.com"
                         const selectedDomainsArray = Array.from(selectedDomains);
                         const qualifiedDomains = domains.filter(d => 
                           selectedDomainsArray.includes(d.id) && 
-                          (d.qualificationStatus === 'high_quality' || d.qualificationStatus === 'average_quality') && 
+                          (d.qualificationStatus === 'high_quality' || d.qualificationStatus === 'good_quality') && 
                           !d.hasWorkflow
                         );
                         
@@ -2388,14 +2308,25 @@ anotherdomain.com"
                                   </button>
                                   <button
                                     onClick={() => {
-                                      handleBulkStatusUpdate('average_quality');
+                                      handleBulkStatusUpdate('good_quality');
+                                      setIsMoreActionsOpen(false);
+                                      setShowBulkStatusMenu(false);
+                                    }}
+                                    className="w-full text-left px-4 py-2 text-sm hover:bg-gray-50 flex items-center gap-2"
+                                  >
+                                    <CheckCircle className="w-4 h-4 text-blue-600" />
+                                    Good Quality
+                                  </button>
+                                  <button
+                                    onClick={() => {
+                                      handleBulkStatusUpdate('marginal_quality');
                                       setIsMoreActionsOpen(false);
                                       setShowBulkStatusMenu(false);
                                     }}
                                     className="w-full text-left px-4 py-2 text-sm hover:bg-gray-50 flex items-center gap-2"
                                   >
                                     <AlertCircle className="w-4 h-4 text-yellow-600" />
-                                    Average Quality
+                                    Marginal Quality
                                   </button>
                                   <button
                                     onClick={() => {
@@ -2622,8 +2553,8 @@ anotherdomain.com"
               {/* Domain Table */}
               {(() => {
                 const filteredDomains = domains.filter(domain => {
-                  // Status filter
-                  if (statusFilter !== 'all' && domain.qualificationStatus !== statusFilter) return false;
+                  // Status filter - if any statuses are selected, domain must match one of them
+                  if (statusFilter.length > 0 && !statusFilter.includes(domain.qualificationStatus)) return false;
                   
                   // Workflow filter
                   if (workflowFilter === 'has_workflow' && !domain.hasWorkflow) return false;
@@ -2655,8 +2586,8 @@ anotherdomain.com"
                       compareValue = new Date(a.updatedAt || 0).getTime() - new Date(b.updatedAt || 0).getTime();
                       break;
                     case 'qualificationStatus':
-                      // Custom order: high_quality > average_quality > disqualified > pending
-                      const statusOrder = { 'high_quality': 0, 'average_quality': 1, 'disqualified': 2, 'pending': 3 };
+                      // Custom order: high_quality > good_quality > marginal_quality > disqualified > pending
+                      const statusOrder = { 'high_quality': 0, 'good_quality': 1, 'marginal_quality': 2, 'disqualified': 3, 'pending': 4 };
                       compareValue = (statusOrder[a.qualificationStatus] || 99) - (statusOrder[b.qualificationStatus] || 99);
                       break;
                     case 'hasDataForSeoResults':
@@ -2787,7 +2718,7 @@ anotherdomain.com"
                       </div>
                       
                       {/* Active Filters Summary */}
-                      {(searchQuery || statusFilter !== 'all' || workflowFilter !== 'all' || verificationFilter !== 'all') && (
+                      {(searchQuery || statusFilter.length > 0 || workflowFilter !== 'all' || verificationFilter !== 'all') && (
                         <div className="mt-2 flex items-center justify-center gap-2 text-xs">
                           <span className="text-gray-500">Active filters:</span>
                           {searchQuery && (
@@ -2795,9 +2726,9 @@ anotherdomain.com"
                               Search: "{searchQuery}"
                             </span>
                           )}
-                          {statusFilter !== 'all' && (
+                          {statusFilter.length > 0 && (
                             <span className="px-2 py-1 bg-indigo-100 text-indigo-700 rounded">
-                              Status: {statusFilter.replace('_', ' ')}
+                              Status: {statusFilter.length === statusOptions.length ? 'All' : statusFilter.map(s => s.replace('_', ' ')).join(', ')}
                             </span>
                           )}
                           {workflowFilter !== 'all' && (
@@ -2853,8 +2784,8 @@ anotherdomain.com"
       {showGuidedTriage && (
         <GuidedTriageFlow
           domains={domains.filter(domain => {
-            // Status filter
-            if (statusFilter !== 'all' && domain.qualificationStatus !== statusFilter) return false;
+            // Status filter - if any statuses are selected, domain must match one of them
+            if (statusFilter.length > 0 && !statusFilter.includes(domain.qualificationStatus)) return false;
             
             // Workflow filter
             if (workflowFilter === 'has_workflow' && !domain.hasWorkflow) return false;
@@ -2880,7 +2811,7 @@ anotherdomain.com"
               router.back();
             }
           }}
-          onUpdateStatus={async (domainId: string, status: 'high_quality' | 'average_quality' | 'disqualified', isManual?: boolean) => {
+          onUpdateStatus={async (domainId: string, status: 'high_quality' | 'good_quality' | 'marginal_quality' | 'disqualified', isManual?: boolean) => {
             await updateQualificationStatus(domainId, status, isManual);
             
             // If user came from guided link and just qualified the domain they were guided to

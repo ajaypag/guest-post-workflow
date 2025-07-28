@@ -34,7 +34,7 @@ export async function PUT(
     const { domainId } = await params;
     const { status, notes, userId, isManual, selectedTargetPageId } = await request.json();
 
-    if (!status || !['pending', 'high_quality', 'average_quality', 'disqualified'].includes(status)) {
+    if (!status || !['pending', 'high_quality', 'good_quality', 'marginal_quality', 'disqualified'].includes(status)) {
       return NextResponse.json(
         { error: 'Invalid status provided' },
         { status: 400 }

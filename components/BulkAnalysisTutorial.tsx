@@ -38,7 +38,7 @@ export default function BulkAnalysisTutorial() {
           </div>
           <div className="relative rounded-md overflow-hidden" style={{ paddingBottom: '56.25%' }}>
             <iframe
-              src="https://www.loom.com/embed/4184c0d8d9694055b26af2e21eb71b69?sid=4a5e8e33-8f2a-4f37-8e3e-4a5e8e338f2a"
+              src="https://www.loom.com/embed/47de2d4c70dd4147adbdfd0f0bbbcec4"
               frameBorder="0"
               allowFullScreen
               className="absolute top-0 left-0 w-full h-full"
