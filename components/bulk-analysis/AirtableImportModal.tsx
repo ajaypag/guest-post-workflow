@@ -94,11 +94,22 @@ export default function AirtableImportModal({
 
       const data = await response.json();
       console.log('✅ API call succeeded, received data:', data);
+      console.log('📊 Data structure:', {
+        isArray: Array.isArray(data.websites),
+        websitesLength: data.websites?.length,
+        firstWebsite: data.websites?.[0],
+        hasMore: data.hasMore
+      });
       
       if (append) {
-        setWebsites(prev => [...prev, ...data.websites]);
+        setWebsites(prev => {
+          const newWebsites = [...prev, ...data.websites];
+          console.log('📝 Appending websites, new total:', newWebsites.length);
+          return newWebsites;
+        });
       } else {
-        setWebsites(data.websites);
+        console.log('📝 Setting websites directly:', data.websites?.length);
+        setWebsites(data.websites || []);
       }
       
       setHasMore(data.hasMore);
@@ -295,6 +306,7 @@ export default function AirtableImportModal({
 
           {/* Results */}
           <div className="mb-6">
+            {console.log('🎨 Rendering with:', { websites: websites.length, loading, error })}
             <div className="flex items-center justify-between mb-3">
               <h3 className="text-lg font-medium text-gray-900">
                 {loading ? 'Loading...' : `Found ${websites.length} websites`}

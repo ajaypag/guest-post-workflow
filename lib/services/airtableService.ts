@@ -201,6 +201,15 @@ export class AirtableService {
   private static processWebsiteRecord(record: AirtableWebsite): ProcessedWebsite {
     const fields = record.fields;
     
+    // Debug: Check the structure of fields
+    console.log('🔍 Processing record:', {
+      recordId: record.id,
+      fieldsType: typeof fields,
+      isArray: Array.isArray(fields),
+      fieldsKeys: fields && typeof fields === 'object' && !Array.isArray(fields) ? Object.keys(fields).slice(0, 5) : 'Not an object',
+      sampleFieldValue: fields?.Website
+    });
+    
     // Extract domain from URL
     let domain = fields.Website || '';
     try {
