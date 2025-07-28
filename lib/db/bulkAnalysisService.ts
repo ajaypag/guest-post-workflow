@@ -178,7 +178,7 @@ export class BulkAnalysisService {
    */
   static async updateQualificationStatus(
     domainId: string,
-    status: 'pending' | 'high_quality' | 'average_quality' | 'disqualified',
+    status: 'pending' | 'high_quality' | 'good_quality' | 'marginal_quality' | 'disqualified',
     userId: string,
     notes?: string,
     isManual?: boolean,
@@ -357,7 +357,8 @@ export class BulkAnalysisService {
           conditions.push(
             or(
               eq(bulkAnalysisDomains.qualificationStatus, 'high_quality'),
-              eq(bulkAnalysisDomains.qualificationStatus, 'average_quality')
+              eq(bulkAnalysisDomains.qualificationStatus, 'good_quality'),
+              eq(bulkAnalysisDomains.qualificationStatus, 'marginal_quality')
             )!
           );
         } else {
@@ -411,7 +412,7 @@ export class BulkAnalysisService {
    */
   static async bulkUpdateStatus(
     domainIds: string[],
-    status: 'pending' | 'high_quality' | 'average_quality' | 'disqualified',
+    status: 'pending' | 'high_quality' | 'good_quality' | 'marginal_quality' | 'disqualified',
     userId: string
   ): Promise<number> {
     try {
@@ -577,7 +578,8 @@ export class BulkAnalysisService {
           conditions.push(
             or(
               eq(bulkAnalysisDomains.qualificationStatus, 'high_quality'),
-              eq(bulkAnalysisDomains.qualificationStatus, 'average_quality')
+              eq(bulkAnalysisDomains.qualificationStatus, 'good_quality'),
+              eq(bulkAnalysisDomains.qualificationStatus, 'marginal_quality')
             )!
           );
         } else {

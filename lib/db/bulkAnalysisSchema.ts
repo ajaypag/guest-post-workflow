@@ -38,7 +38,7 @@ export const bulkAnalysisDomains = pgTable('bulk_analysis_domains', {
   id: uuid('id').primaryKey(),
   clientId: uuid('client_id').notNull().references(() => clients.id, { onDelete: 'cascade' }),
   domain: varchar('domain', { length: 255 }).notNull(),
-  qualificationStatus: varchar('qualification_status', { length: 50 }).notNull().default('pending'), // 'pending' | 'high_quality' | 'average_quality' | 'disqualified'
+  qualificationStatus: varchar('qualification_status', { length: 50 }).notNull().default('pending'), // 'pending' | 'high_quality' | 'good_quality' | 'marginal_quality' | 'disqualified'
   targetPageIds: jsonb('target_page_ids').notNull().default([]), // Array of target page IDs used for analysis
   selectedTargetPageId: uuid('selected_target_page_id'), // Selected target page for workflow creation
   keywordCount: integer('keyword_count').default(0),
@@ -55,6 +55,13 @@ export const bulkAnalysisDomains = pgTable('bulk_analysis_domains', {
   aiQualificationReasoning: text('ai_qualification_reasoning'),
   aiQualifiedAt: timestamp('ai_qualified_at'),
   wasManuallyQualified: boolean('was_manually_qualified').default(false),
+  // AI Qualification V2 fields
+  overlapStatus: varchar('overlap_status', { length: 20 }), // 'direct' | 'related' | 'both' | 'none'
+  authorityDirect: varchar('authority_direct', { length: 20 }), // 'strong' | 'moderate' | 'weak' | 'n/a'
+  authorityRelated: varchar('authority_related', { length: 20 }), // 'strong' | 'moderate' | 'weak' | 'n/a'
+  topicScope: varchar('topic_scope', { length: 20 }), // 'short_tail' | 'long_tail' | 'ultra_long_tail'
+  topicReasoning: text('topic_reasoning'), // Modifier guidance for topic creation
+  evidence: jsonb('evidence'), // { direct_count, direct_median_position, related_count, related_median_position }
   manuallyQualifiedBy: uuid('manually_qualified_by').references(() => users.id),
   manuallyQualifiedAt: timestamp('manually_qualified_at'),
   // Human verification tracking

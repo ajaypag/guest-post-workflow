@@ -34,7 +34,7 @@ interface BulkAnalysisTableProps {
   onToggleSelection: (domainId: string) => void;
   onSelectAll: (domainIds: string[]) => void;
   onClearSelection: () => void;
-  onUpdateStatus: (domainId: string, status: 'high_quality' | 'average_quality' | 'disqualified', isManual?: boolean) => void;
+  onUpdateStatus: (domainId: string, status: 'high_quality' | 'good_quality' | 'marginal_quality' | 'disqualified', isManual?: boolean) => void;
   onCreateWorkflow: (domain: BulkAnalysisDomain) => void;
   onDeleteDomain: (domainId: string) => void;
   onAnalyzeWithDataForSeo: (domain: BulkAnalysisDomain) => void;
@@ -83,7 +83,7 @@ interface ExpandedRowData {
     wasAnalyzedWithNoResults?: boolean;
   };
   aiQualification?: {
-    status: 'high_quality' | 'average_quality' | 'disqualified';
+    status: 'high_quality' | 'good_quality' | 'marginal_quality' | 'disqualified';
     reasoning: string;
     qualifiedAt: string;
   };
@@ -154,13 +154,20 @@ export default function BulkAnalysisTable(props: BulkAnalysisTableProps) {
           e.preventDefault();
           const domain2 = props.domains[currentIndex];
           if (domain2.qualificationStatus === 'pending') {
-            props.onUpdateStatus(focusedDomainId, 'average_quality');
+            props.onUpdateStatus(focusedDomainId, 'good_quality');
           }
           break;
         case '3':
           e.preventDefault();
           const domain3 = props.domains[currentIndex];
           if (domain3.qualificationStatus === 'pending') {
+            props.onUpdateStatus(focusedDomainId, 'marginal_quality');
+          }
+          break;
+        case '4':
+          e.preventDefault();
+          const domain4 = props.domains[currentIndex];
+          if (domain4.qualificationStatus === 'pending') {
             props.onUpdateStatus(focusedDomainId, 'disqualified');
           }
           break;
@@ -277,7 +284,7 @@ export default function BulkAnalysisTable(props: BulkAnalysisTableProps) {
 
     // Get AI qualification if available
     let aiQualification: {
-      status: 'high_quality' | 'average_quality' | 'disqualified';
+      status: 'high_quality' | 'good_quality' | 'marginal_quality' | 'disqualified';
       reasoning: string;
       qualifiedAt: string;
     } | undefined;
@@ -406,8 +413,10 @@ export default function BulkAnalysisTable(props: BulkAnalysisTableProps) {
     switch (status) {
       case 'high_quality':
         return 'bg-green-100 text-green-800';
-      case 'average_quality':
+      case 'good_quality':
         return 'bg-blue-100 text-blue-800';
+      case 'marginal_quality':
+        return 'bg-yellow-100 text-yellow-800';
       case 'disqualified':
         return 'bg-gray-100 text-gray-600';
       default:
@@ -432,8 +441,10 @@ export default function BulkAnalysisTable(props: BulkAnalysisTableProps) {
     switch (status) {
       case 'high_quality':
         return 'High Quality';
-      case 'average_quality':
-        return 'Average';
+      case 'good_quality':
+        return 'Good Quality';
+      case 'marginal_quality':
+        return 'Marginal';
       case 'disqualified':
         return 'Disqualified';
       default:
@@ -444,7 +455,7 @@ export default function BulkAnalysisTable(props: BulkAnalysisTableProps) {
   // Get qualified domains for bulk operations
   const qualifiedDomains = props.domains.filter(d => 
     props.selectedDomains.has(d.id) && 
-    (d.qualificationStatus === 'high_quality' || d.qualificationStatus === 'average_quality') &&
+    (d.qualificationStatus === 'high_quality' || d.qualificationStatus === 'good_quality' || d.qualificationStatus === 'marginal_quality') &&
     !d.hasWorkflow
   );
 
@@ -675,12 +686,22 @@ export default function BulkAnalysisTable(props: BulkAnalysisTableProps) {
                           <button
                             onClick={(e) => {
                               e.stopPropagation();
-                              props.onUpdateStatus(domain.id, 'average_quality');
+                              props.onUpdateStatus(domain.id, 'good_quality');
                             }}
                             className={`${props.triageMode ? 'px-1.5 py-0.5 text-xs' : 'px-2 py-1 text-xs'} bg-blue-600 text-white rounded hover:bg-blue-700`}
-                            title="Mark as Average (Press 2)"
+                            title="Mark as Good Quality (Press 2)"
                           >
-                            {props.triageMode ? '2' : 'Avg'}
+                            {props.triageMode ? '2' : 'Good'}
+                          </button>
+                          <button
+                            onClick={(e) => {
+                              e.stopPropagation();
+                              props.onUpdateStatus(domain.id, 'marginal_quality');
+                            }}
+                            className={`${props.triageMode ? 'px-1.5 py-0.5 text-xs' : 'px-2 py-1 text-xs'} bg-yellow-600 text-white rounded hover:bg-yellow-700`}
+                            title="Mark as Marginal (Press 3)"
+                          >
+                            {props.triageMode ? '3' : 'Marg'}
                           </button>
                           <button
                             onClick={(e) => {
@@ -688,14 +709,14 @@ export default function BulkAnalysisTable(props: BulkAnalysisTableProps) {
                               props.onUpdateStatus(domain.id, 'disqualified');
                             }}
                             className={`${props.triageMode ? 'px-1.5 py-0.5 text-xs' : 'px-2 py-1 text-xs'} bg-gray-600 text-white rounded hover:bg-gray-700`}
-                            title="Disqualify (Press 3)"
+                            title="Disqualify (Press 4)"
                           >
-                            {props.triageMode ? '3' : 'DQ'}
+                            {props.triageMode ? '4' : 'DQ'}
                           </button>
                         </div>
                       ) : (
                         <>
-                          {!props.triageMode && (domain.qualificationStatus === 'high_quality' || domain.qualificationStatus === 'average_quality') && !domain.hasWorkflow && (
+                          {!props.triageMode && (domain.qualificationStatus === 'high_quality' || domain.qualificationStatus === 'good_quality' || domain.qualificationStatus === 'marginal_quality') && !domain.hasWorkflow && (
                             <button
                               onClick={(e) => {
                                 e.stopPropagation();
@@ -1048,6 +1069,44 @@ export default function BulkAnalysisTable(props: BulkAnalysisTableProps) {
                                 <p className="text-sm text-gray-700 whitespace-pre-wrap">
                                   {data.aiQualification.reasoning}
                                 </p>
+                                
+                                {/* V2 Fields Display */}
+                                {domain.overlapStatus && (
+                                  <div className="mt-4 space-y-2">
+                                    <div className="flex flex-wrap gap-2">
+                                      <span className="inline-flex items-center px-2.5 py-1 rounded text-xs font-medium bg-gray-100 text-gray-800">
+                                        Overlap: {domain.overlapStatus}
+                                      </span>
+                                      {domain.authorityDirect !== 'n/a' && (
+                                        <span className="inline-flex items-center px-2.5 py-1 rounded text-xs font-medium bg-gray-100 text-gray-800">
+                                          Direct Auth: {domain.authorityDirect}
+                                        </span>
+                                      )}
+                                      {domain.authorityRelated !== 'n/a' && (
+                                        <span className="inline-flex items-center px-2.5 py-1 rounded text-xs font-medium bg-gray-100 text-gray-800">
+                                          Related Auth: {domain.authorityRelated}
+                                        </span>
+                                      )}
+                                      {domain.topicScope && (
+                                        <span className="inline-flex items-center px-2.5 py-1 rounded text-xs font-medium bg-purple-100 text-purple-800">
+                                          Topic: {domain.topicScope.replace('_', ' ')}
+                                        </span>
+                                      )}
+                                    </div>
+                                    {domain.evidence && (
+                                      <div className="text-xs text-gray-600">
+                                        Evidence: {domain.evidence.direct_count + domain.evidence.related_count} keywords 
+                                        (Direct: {domain.evidence.direct_count}, Related: {domain.evidence.related_count})
+                                      </div>
+                                    )}
+                                    {domain.topicReasoning && (
+                                      <div className="text-xs text-gray-600 italic">
+                                        Topic Reasoning: {domain.topicReasoning}
+                                      </div>
+                                    )}
+                                  </div>
+                                )}
+                                
                                 {data.aiQualification.qualifiedAt && (
                                   <p className="text-xs text-gray-500 mt-3">
                                     Analyzed: {new Date(data.aiQualification.qualifiedAt).toLocaleString()}
@@ -1133,7 +1192,8 @@ export default function BulkAnalysisTable(props: BulkAnalysisTableProps) {
                                         className="px-3 py-1 text-sm border border-gray-300 rounded-lg focus:ring-2 focus:ring-indigo-500 focus:border-transparent"
                                       >
                                         <option value="high_quality">High Quality</option>
-                                        <option value="average_quality">Average Quality</option>
+                                        <option value="good_quality">Good Quality</option>
+                                        <option value="marginal_quality">Marginal Quality</option>
                                         <option value="disqualified">Disqualified</option>
                                       </select>
                                     </div>

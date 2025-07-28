@@ -69,7 +69,7 @@ export default function BulkAnalysisPage() {
   const [manualKeywords, setManualKeywords] = useState('');
   
   // Filtering options
-  const [statusFilter, setStatusFilter] = useState<'all' | 'pending' | 'high_quality' | 'average_quality' | 'disqualified'>('all');
+  const [statusFilter, setStatusFilter] = useState<'all' | 'pending' | 'high_quality' | 'good_quality' | 'marginal_quality' | 'disqualified'>('all');
   const [workflowFilter, setWorkflowFilter] = useState<'all' | 'has_workflow' | 'no_workflow'>('all');
   const [searchQuery, setSearchQuery] = useState('');
   const [notes, setNotes] = useState<{ [key: string]: string }>({});
@@ -468,7 +468,7 @@ export default function BulkAnalysisPage() {
     setSelectedDomains(new Set());
   };
 
-  const updateQualificationStatus = async (domainId: string, status: 'high_quality' | 'average_quality' | 'disqualified', isManual?: boolean) => {
+  const updateQualificationStatus = async (domainId: string, status: 'high_quality' | 'good_quality' | 'marginal_quality' | 'disqualified', isManual?: boolean) => {
     try {
       const session = AuthService.getSession();
       if (!session) {
@@ -1276,7 +1276,8 @@ export default function BulkAnalysisPage() {
                         { value: 'all', label: 'All Domains', count: domains.length, color: 'gray' },
                         { value: 'pending', label: 'Pending Review', count: domains.filter(d => d.qualificationStatus === 'pending').length, color: 'gray' },
                         { value: 'high_quality', label: 'High Quality', count: domains.filter(d => d.qualificationStatus === 'high_quality').length, color: 'green' },
-                        { value: 'average_quality', label: 'Average Quality', count: domains.filter(d => d.qualificationStatus === 'average_quality').length, color: 'yellow' },
+                        { value: 'good_quality', label: 'Good Quality', count: domains.filter(d => d.qualificationStatus === 'good_quality').length, color: 'blue' },
+                        { value: 'marginal_quality', label: 'Marginal Quality', count: domains.filter(d => d.qualificationStatus === 'marginal_quality').length, color: 'yellow' },
                         { value: 'disqualified', label: 'Disqualified', count: domains.filter(d => d.qualificationStatus === 'disqualified').length, color: 'red' }
                       ].map((filter) => (
                         <button

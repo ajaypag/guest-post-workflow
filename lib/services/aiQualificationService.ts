@@ -3,8 +3,19 @@ import OpenAI from 'openai';
 interface QualificationResult {
   domainId: string;
   domain: string;
-  qualification: 'high_quality' | 'average_quality' | 'disqualified';
+  qualification: 'high_quality' | 'good_quality' | 'marginal_quality' | 'disqualified';
   reasoning: string;
+  // V2 fields
+  overlapStatus: 'direct' | 'related' | 'both' | 'none';
+  authorityDirect: 'strong' | 'moderate' | 'weak' | 'n/a';
+  authorityRelated: 'strong' | 'moderate' | 'weak' | 'n/a';
+  topicScope: 'short_tail' | 'long_tail' | 'ultra_long_tail';
+  evidence: {
+    direct_count: number;
+    direct_median_position: number | null;
+    related_count: number;
+    related_median_position: number | null;
+  };
 }
 
 interface DomainData {
@@ -102,13 +113,23 @@ export class AIQualificationService {
 
       const result = JSON.parse(content);
       
-      // Validate the single result
-      if (result.qualification && result.reasoning) {
+      // Validate the V2 result structure
+      if (result.qualification && result.reasoning && result.overlap_status && result.evidence) {
         return {
           domainId: domain.domainId,
           domain: domain.domain,
           qualification: this.validateQualification(result.qualification),
-          reasoning: result.reasoning
+          reasoning: result.reasoning,
+          overlapStatus: result.overlap_status,
+          authorityDirect: result.authority_direct || 'n/a',
+          authorityRelated: result.authority_related || 'n/a',
+          topicScope: result.topic_scope || 'long_tail',
+          evidence: {
+            direct_count: result.evidence.direct_count || 0,
+            direct_median_position: result.evidence.direct_median_position || null,
+            related_count: result.evidence.related_count || 0,
+            related_median_position: result.evidence.related_median_position || null
+          }
         };
       }
       
@@ -120,8 +141,18 @@ export class AIQualificationService {
       return {
         domainId: domain.domainId,
         domain: domain.domain,
-        qualification: 'average_quality' as const,
-        reasoning: 'AI processing error - requires manual review'
+        qualification: 'marginal_quality' as const,
+        reasoning: 'AI processing error - requires manual review',
+        overlapStatus: 'none',
+        authorityDirect: 'n/a',
+        authorityRelated: 'n/a',
+        topicScope: 'long_tail',
+        evidence: {
+          direct_count: 0,
+          direct_median_position: null,
+          related_count: 0,
+          related_median_position: null
+        }
       };
     }
   }
@@ -156,9 +187,51 @@ export class AIQualificationService {
         }))
     };
 
-    return `I'm going to give you my client pages, some narrow to broad keyword topics related to it and then I'll give you a site I want to guest post on along with ALL their keyword rankings.
+    return `You will receive two JSON blobs:
 
-Your job: reason through and determine if this guest post site is highly relevant, average or disqualified. The best site is basically a site that I can publish an article about a topic that is a long tail of my keyword and it has a great chance of ranking from existing topical authority. Average would be some justifiable overlap but not a home run.
+ • **Client Information**  
+   – Each page: url, one-sentence description  
+   – List of core keywords (from narrow long-tails up to broad terms)
+
+ • **Site to Evaluate**  
+   – Domain name  
+   – List of all its keyword rankings  
+     (keyword, Google position ≤100, optional volume)
+
+YOUR TASK  
+1. Read all keywords for both sides and judge topical overlap:  
+   - *Direct*  → the site already ranks for a client core term  
+   - *Related* → the site ranks for an obviously relevant sibling topic but not the exact core term  
+   If both Direct and Related exist, note that as "Both."  
+   If nothing meaningful appears, mark as "None."
+
+2. Estimate how strong the site is inside each overlap bucket:  
+   *Strong* ≈ positions 1-30 (pages 1-3)  
+   *Moderate* ≈ positions 31-60 (pages 4-6)  
+   *Weak* ≈ positions 61-100 (pages 7-10)  
+   Use median position or any sensible heuristic—you choose.
+
+3. Return a verdict:  
+   • **high_quality**  
+        Direct overlap AND strength is Strong or Moderate  
+   • **good_quality**  
+        a) Direct overlap but strength is Weak  OR  
+        b) No Direct overlap, but Related overlap is Strong/Moderate  
+   • **marginal_quality**  
+        Some overlap exists, yet every strength signal looks Weak  
+   • **disqualified**  
+        No meaningful overlap at all
+
+4. Determine topic scope based on guest site authority:
+   • **short_tail** - Site can rank for broad core term without modifiers
+   • **long_tail** - Site needs simple modifier (geo, buyer type, "best", "how to")  
+   • **ultra_long_tail** - Site needs very specific niche angle with multiple modifiers
+
+5. Provide evidence counts & median positions so a human can audit your call. Keep the explanation concise, actionable, and framed in SEO language.
+
+   The reasoning must include two parts:
+   a) Why this tail level citing specific keywords/positions
+   b) What kind of modifier guidance (NO suggested keywords, just modifier type)
 
 Client Information:
 ${JSON.stringify(clientInfo, null, 2)}
@@ -166,10 +239,20 @@ ${JSON.stringify(clientInfo, null, 2)}
 Site to Evaluate:
 ${JSON.stringify(domainInfo, null, 2)}
 
-Output your decision and justification in this JSON format:
+OUTPUT — RETURN EXACTLY THIS JSON
 {
-  "qualification": "high_quality" | "average_quality" | "disqualified",
-  "reasoning": "Your detailed reasoning explaining the topical overlap and ranking potential. Be specific about which keywords show topical authority relevant to the client's needs."
+  "qualification": "high_quality" | "good_quality" | "marginal_quality" | "disqualified",
+  "overlap_status": "direct" | "related" | "both" | "none",
+  "authority_direct": "strong" | "moderate" | "weak" | "n/a",
+  "authority_related": "strong" | "moderate" | "weak" | "n/a",
+  "topic_scope": "short_tail" | "long_tail" | "ultra_long_tail",
+  "evidence": {
+      "direct_count": <integer>,
+      "direct_median_position": <integer or null>,
+      "related_count": <integer>,
+      "related_median_position": <integer or null>
+  },
+  "reasoning": "One–two short paragraphs explaining why the verdict makes sense, which keyword clusters prove authority, and how that benefits (or fails) the client. Include: (a) Why this tail level citing keywords/positions (b) Modifier guidance (e.g. 'add geo modifier', 'use buyer-type qualifier', 'no modifier needed')"
 }`;
   }
 
@@ -199,8 +282,8 @@ Output your decision and justification in this JSON format:
   }
 
 
-  private validateQualification(qual: string): 'high_quality' | 'average_quality' | 'disqualified' {
-    const valid = ['high_quality', 'average_quality', 'disqualified'];
-    return valid.includes(qual) ? qual as any : 'average_quality';
+  private validateQualification(qual: string): 'high_quality' | 'good_quality' | 'marginal_quality' | 'disqualified' {
+    const valid = ['high_quality', 'good_quality', 'marginal_quality', 'disqualified'];
+    return valid.includes(qual) ? qual as any : 'marginal_quality';
   }
 }

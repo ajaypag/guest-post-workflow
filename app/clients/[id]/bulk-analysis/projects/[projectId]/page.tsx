@@ -63,7 +63,7 @@ export default function ProjectDetailPage() {
   const [manualKeywords, setManualKeywords] = useState('');
   
   // Filtering options
-  const [statusFilter, setStatusFilter] = useState<'all' | 'pending' | 'high_quality' | 'average_quality' | 'disqualified'>('all');
+  const [statusFilter, setStatusFilter] = useState<'all' | 'pending' | 'high_quality' | 'good_quality' | 'marginal_quality' | 'disqualified'>('all');
   const [workflowFilter, setWorkflowFilter] = useState<'all' | 'has_workflow' | 'no_workflow'>('all');
   const [verificationFilter, setVerificationFilter] = useState<'all' | 'human_verified' | 'ai_qualified' | 'unverified'>('all');
   const [searchQuery, setSearchQuery] = useState('');
@@ -485,7 +485,7 @@ export default function ProjectDetailPage() {
     }
   };
 
-  const updateQualificationStatus = async (domainId: string, status: 'high_quality' | 'average_quality' | 'disqualified', isManual?: boolean) => {
+  const updateQualificationStatus = async (domainId: string, status: 'high_quality' | 'good_quality' | 'marginal_quality' | 'disqualified', isManual?: boolean) => {
     try {
       const session = AuthService.getSession();
       if (!session) {
@@ -1010,7 +1010,7 @@ export default function ProjectDetailPage() {
     }
   };
 
-  const handleBulkStatusUpdate = async (status: 'high_quality' | 'average_quality' | 'disqualified' | 'pending') => {
+  const handleBulkStatusUpdate = async (status: 'high_quality' | 'good_quality' | 'marginal_quality' | 'disqualified' | 'pending') => {
     try {
       setShowBulkStatusMenu(false);
       setLoading(true);
@@ -2074,13 +2074,14 @@ anotherdomain.com"
                         {/* Status Filter */}
                         <select
                           value={statusFilter}
-                          onChange={(e) => setStatusFilter(e.target.value as 'all' | 'pending' | 'high_quality' | 'average_quality' | 'disqualified')}
+                          onChange={(e) => setStatusFilter(e.target.value as 'all' | 'pending' | 'high_quality' | 'good_quality' | 'marginal_quality' | 'disqualified')}
                           className="border border-gray-300 rounded-lg px-2 sm:px-3 py-2 text-xs sm:text-sm focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500 min-w-[100px] lg:min-w-[120px]"
                         >
                           <option value="all">All Status</option>
                           <option value="pending">Pending</option>
                           <option value="high_quality">High Quality</option>
-                          <option value="average_quality">Average</option>
+                          <option value="good_quality">Good Quality</option>
+                          <option value="marginal_quality">Marginal Quality</option>
                           <option value="disqualified">Disqualified</option>
                         </select>
 
@@ -2175,7 +2176,7 @@ anotherdomain.com"
                           const selectedDomainsArray = Array.from(selectedDomains);
                           const qualifiedCount = domains.filter(d => 
                             selectedDomainsArray.includes(d.id) && 
-                            (d.qualificationStatus === 'high_quality' || d.qualificationStatus === 'average_quality') && 
+                            (d.qualificationStatus === 'high_quality' || d.qualificationStatus === 'good_quality' || d.qualificationStatus === 'marginal_quality') && 
                             !d.hasWorkflow
                           ).length;
                           const pendingCount = domains.filter(d => 
@@ -2318,7 +2319,7 @@ anotherdomain.com"
                         const selectedDomainsArray = Array.from(selectedDomains);
                         const qualifiedDomains = domains.filter(d => 
                           selectedDomainsArray.includes(d.id) && 
-                          (d.qualificationStatus === 'high_quality' || d.qualificationStatus === 'average_quality') && 
+                          (d.qualificationStatus === 'high_quality' || d.qualificationStatus === 'good_quality') && 
                           !d.hasWorkflow
                         );
                         
@@ -2388,14 +2389,25 @@ anotherdomain.com"
                                   </button>
                                   <button
                                     onClick={() => {
-                                      handleBulkStatusUpdate('average_quality');
+                                      handleBulkStatusUpdate('good_quality');
+                                      setIsMoreActionsOpen(false);
+                                      setShowBulkStatusMenu(false);
+                                    }}
+                                    className="w-full text-left px-4 py-2 text-sm hover:bg-gray-50 flex items-center gap-2"
+                                  >
+                                    <CheckCircle className="w-4 h-4 text-blue-600" />
+                                    Good Quality
+                                  </button>
+                                  <button
+                                    onClick={() => {
+                                      handleBulkStatusUpdate('marginal_quality');
                                       setIsMoreActionsOpen(false);
                                       setShowBulkStatusMenu(false);
                                     }}
                                     className="w-full text-left px-4 py-2 text-sm hover:bg-gray-50 flex items-center gap-2"
                                   >
                                     <AlertCircle className="w-4 h-4 text-yellow-600" />
-                                    Average Quality
+                                    Marginal Quality
                                   </button>
                                   <button
                                     onClick={() => {
@@ -2655,8 +2667,8 @@ anotherdomain.com"
                       compareValue = new Date(a.updatedAt || 0).getTime() - new Date(b.updatedAt || 0).getTime();
                       break;
                     case 'qualificationStatus':
-                      // Custom order: high_quality > average_quality > disqualified > pending
-                      const statusOrder = { 'high_quality': 0, 'average_quality': 1, 'disqualified': 2, 'pending': 3 };
+                      // Custom order: high_quality > good_quality > marginal_quality > disqualified > pending
+                      const statusOrder = { 'high_quality': 0, 'good_quality': 1, 'marginal_quality': 2, 'disqualified': 3, 'pending': 4 };
                       compareValue = (statusOrder[a.qualificationStatus] || 99) - (statusOrder[b.qualificationStatus] || 99);
                       break;
                     case 'hasDataForSeoResults':
@@ -2880,7 +2892,7 @@ anotherdomain.com"
               router.back();
             }
           }}
-          onUpdateStatus={async (domainId: string, status: 'high_quality' | 'average_quality' | 'disqualified', isManual?: boolean) => {
+          onUpdateStatus={async (domainId: string, status: 'high_quality' | 'good_quality' | 'marginal_quality' | 'disqualified', isManual?: boolean) => {
             await updateQualificationStatus(domainId, status, isManual);
             
             // If user came from guided link and just qualified the domain they were guided to

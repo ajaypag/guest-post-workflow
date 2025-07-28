@@ -120,18 +120,28 @@ export async function POST(
       }
     );
 
-    // Update domains with AI qualifications
-    const updatePromises = qualifications.map(qual => 
-      db
+    // Update domains with AI qualifications (including V2 fields)
+    const updatePromises = qualifications.map(qual => {
+      // Extract topic reasoning from the main reasoning if present
+      const reasoningParts = qual.reasoning.match(/\(b\)\s*(.+)/);
+      const topicReasoning = reasoningParts ? reasoningParts[1] : null;
+      
+      return db
         .update(bulkAnalysisDomains)
         .set({
           qualificationStatus: qual.qualification,
           aiQualificationReasoning: qual.reasoning,
+          overlapStatus: qual.overlapStatus,
+          authorityDirect: qual.authorityDirect,
+          authorityRelated: qual.authorityRelated,
+          topicScope: qual.topicScope,
+          topicReasoning: topicReasoning,
+          evidence: qual.evidence,
           aiQualifiedAt: new Date(),
           updatedAt: new Date()
         })
-        .where(eq(bulkAnalysisDomains.id, qual.domainId))
-    );
+        .where(eq(bulkAnalysisDomains.id, qual.domainId));
+    });
 
     await Promise.all(updatePromises);
 
@@ -143,7 +153,8 @@ export async function POST(
       summary: {
         total: qualifications.length,
         highQuality: qualifications.filter(q => q.qualification === 'high_quality').length,
-        averageQuality: qualifications.filter(q => q.qualification === 'average_quality').length,
+        goodQuality: qualifications.filter(q => q.qualification === 'good_quality').length,
+        marginalQuality: qualifications.filter(q => q.qualification === 'marginal_quality').length,
         disqualified: qualifications.filter(q => q.qualification === 'disqualified').length
       }
     });

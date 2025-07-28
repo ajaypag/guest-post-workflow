@@ -33,7 +33,7 @@ interface GuidedTriageFlowProps {
   domains: BulkAnalysisDomain[];
   targetPages: TargetPage[];
   onClose: () => void;
-  onUpdateStatus: (domainId: string, status: 'high_quality' | 'average_quality' | 'disqualified', isManual?: boolean) => Promise<void>;
+  onUpdateStatus: (domainId: string, status: 'high_quality' | 'good_quality' | 'marginal_quality' | 'disqualified', isManual?: boolean) => Promise<void>;
   onAnalyzeWithDataForSeo?: (domain: BulkAnalysisDomain) => Promise<void>;
   keywordInputMode: 'target-pages' | 'manual';
   manualKeywords?: string;
@@ -237,7 +237,7 @@ export default function GuidedTriageFlow(props: GuidedTriageFlowProps) {
     }
   }, [currentIndex, currentDomain, domainData, reviewDomains, props]);
 
-  const handleQualify = async (status: 'high_quality' | 'average_quality' | 'disqualified') => {
+  const handleQualify = async (status: 'high_quality' | 'good_quality' | 'marginal_quality' | 'disqualified') => {
     if (!currentDomain) return;
     
     setSaving(true);
@@ -373,9 +373,13 @@ export default function GuidedTriageFlow(props: GuidedTriageFlowProps) {
           break;
         case '2':
           e.preventDefault();
-          handleQualify('average_quality');
+          handleQualify('good_quality');
           break;
         case '3':
+          e.preventDefault();
+          handleQualify('marginal_quality');
+          break;
+        case '4':
           e.preventDefault();
           handleQualify('disqualified');
           break;
@@ -456,12 +460,14 @@ export default function GuidedTriageFlow(props: GuidedTriageFlowProps) {
               {/* Current Status */}
               <div className={`px-3 py-1.5 rounded-lg text-sm font-medium ${
                 currentDomain?.qualificationStatus === 'high_quality' ? 'bg-green-100 text-green-800' :
-                currentDomain?.qualificationStatus === 'average_quality' ? 'bg-blue-100 text-blue-800' :
+                currentDomain?.qualificationStatus === 'good_quality' ? 'bg-blue-100 text-blue-800' :
+                currentDomain?.qualificationStatus === 'marginal_quality' ? 'bg-yellow-100 text-yellow-800' :
                 currentDomain?.qualificationStatus === 'disqualified' ? 'bg-red-100 text-red-800' :
                 'bg-gray-100 text-gray-800'
               }`}>
                 {currentDomain?.qualificationStatus === 'high_quality' ? 'High Quality' :
-                 currentDomain?.qualificationStatus === 'average_quality' ? 'Average Quality' :
+                 currentDomain?.qualificationStatus === 'good_quality' ? 'Good Quality' :
+                 currentDomain?.qualificationStatus === 'marginal_quality' ? 'Marginal Quality' :
                  currentDomain?.qualificationStatus === 'disqualified' ? 'Disqualified' :
                  'Pending'}
               </div>
@@ -478,19 +484,28 @@ export default function GuidedTriageFlow(props: GuidedTriageFlowProps) {
                   {currentDomain?.qualificationStatus === 'high_quality' ? 'Confirm High' : 'High'}
                 </button>
                 <button
-                  onClick={() => handleQualify('average_quality')}
+                  onClick={() => handleQualify('good_quality')}
                   disabled={saving}
                   className="inline-flex items-center px-4 py-2 bg-blue-600 text-white text-sm font-medium rounded-lg hover:bg-blue-700 disabled:opacity-50"
-                  title="Mark as Average Quality (2)"
+                  title="Mark as Good Quality (2)"
+                >
+                  <Check className="w-4 h-4 mr-1.5" />
+                  {currentDomain?.qualificationStatus === 'good_quality' ? 'Confirm Good' : 'Good'}
+                </button>
+                <button
+                  onClick={() => handleQualify('marginal_quality')}
+                  disabled={saving}
+                  className="inline-flex items-center px-4 py-2 bg-yellow-600 text-white text-sm font-medium rounded-lg hover:bg-yellow-700 disabled:opacity-50"
+                  title="Mark as Marginal Quality (3)"
                 >
                   <AlertCircle className="w-4 h-4 mr-1.5" />
-                  {currentDomain?.qualificationStatus === 'average_quality' ? 'Confirm Average' : 'Average'}
+                  {currentDomain?.qualificationStatus === 'marginal_quality' ? 'Confirm Marginal' : 'Marginal'}
                 </button>
                 <button
                   onClick={() => handleQualify('disqualified')}
                   disabled={saving}
                   className="inline-flex items-center px-4 py-2 bg-gray-500 text-white text-sm font-medium rounded-lg hover:bg-gray-600 disabled:opacity-50"
-                  title="Mark as Disqualified (3)"
+                  title="Mark as Disqualified (4)"
                 >
                   <XCircle className="w-4 h-4 mr-1.5" />
                   {currentDomain?.qualificationStatus === 'disqualified' ? 'Confirm Disqualified' : 'Disqualify'}
@@ -1276,6 +1291,43 @@ export default function GuidedTriageFlow(props: GuidedTriageFlowProps) {
                         {data.aiQualification.reasoning}
                       </p>
                     </div>
+                    
+                    {/* V2 Fields Display */}
+                    {currentDomain?.overlapStatus && (
+                      <div className="mt-3 space-y-2">
+                        <div className="flex flex-wrap gap-2">
+                          <span className="inline-flex items-center px-2 py-1 rounded text-xs font-medium bg-gray-100 text-gray-800">
+                            Overlap: {currentDomain.overlapStatus}
+                          </span>
+                          {currentDomain.authorityDirect !== 'n/a' && (
+                            <span className="inline-flex items-center px-2 py-1 rounded text-xs font-medium bg-gray-100 text-gray-800">
+                              Direct Auth: {currentDomain.authorityDirect}
+                            </span>
+                          )}
+                          {currentDomain.authorityRelated !== 'n/a' && (
+                            <span className="inline-flex items-center px-2 py-1 rounded text-xs font-medium bg-gray-100 text-gray-800">
+                              Related Auth: {currentDomain.authorityRelated}
+                            </span>
+                          )}
+                          {currentDomain.topicScope && (
+                            <span className="inline-flex items-center px-2 py-1 rounded text-xs font-medium bg-purple-100 text-purple-800">
+                              Topic: {currentDomain.topicScope.replace('_', ' ')}
+                            </span>
+                          )}
+                        </div>
+                        {currentDomain.evidence && (
+                          <div className="text-xs text-gray-600">
+                            Evidence: {currentDomain.evidence.direct_count + currentDomain.evidence.related_count} keywords 
+                            (Direct: {currentDomain.evidence.direct_count}, Related: {currentDomain.evidence.related_count})
+                          </div>
+                        )}
+                        {currentDomain.topicReasoning && (
+                          <div className="text-xs text-gray-600 italic">
+                            Topic Reasoning: {currentDomain.topicReasoning}
+                          </div>
+                        )}
+                      </div>
+                    )}
                   </div>
                 )}
                 
@@ -1365,9 +1417,11 @@ export default function GuidedTriageFlow(props: GuidedTriageFlowProps) {
         <div className="flex items-center justify-center text-xs text-gray-400">
           <span className="font-mono bg-gray-100 px-1 rounded">1</span> High
           <span className="mx-1">•</span>
-          <span className="font-mono bg-gray-100 px-1 rounded">2</span> Average
+          <span className="font-mono bg-gray-100 px-1 rounded">2</span> Good
           <span className="mx-1">•</span>
-          <span className="font-mono bg-gray-100 px-1 rounded">3</span> Disqualify
+          <span className="font-mono bg-gray-100 px-1 rounded">3</span> Marginal
+          <span className="mx-1">•</span>
+          <span className="font-mono bg-gray-100 px-1 rounded">4</span> Disqualify
           <span className="mx-1">•</span>
           <span className="font-mono bg-gray-100 px-1 rounded">←→</span> Navigate
           <span className="mx-1">•</span>
