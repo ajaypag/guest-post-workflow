@@ -64,12 +64,17 @@ export const bulkAnalysisDomains = pgTable('bulk_analysis_domains', {
   // Project support - required going forward
   projectId: uuid('project_id').references(() => bulkAnalysisProjects.id, { onDelete: 'cascade' }),
   projectAddedAt: timestamp('project_added_at'),
+  // Airtable integration
+  airtableRecordId: varchar('airtable_record_id', { length: 255 }),
+  airtableMetadata: jsonb('airtable_metadata'),
+  airtableLastSynced: timestamp('airtable_last_synced'),
   createdAt: timestamp('created_at').notNull(),
   updatedAt: timestamp('updated_at').notNull(),
 }, (table) => {
   return {
     projectIdIdx: index('idx_bulk_domains_project').on(table.projectId),
     clientDomainIdx: index('idx_bulk_domains_client_domain').on(table.clientId, table.domain),
+    airtableIdIdx: index('idx_bulk_domains_airtable_id').on(table.airtableRecordId),
   };
 });
 
