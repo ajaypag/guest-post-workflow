@@ -213,7 +213,7 @@ export class AIQualificationService {
 YOUR TASK  
 1. Read all keywords for both sides and judge topical overlap:  
    - *Direct*  → the site already ranks for a highly specific client niche term  
-   - *Related* → the site ranks for an obviously relevant sibling/broader industry topic but not the highly specific ones  
+   - *Related* → the site ranks for an obviously relevant sibling/broader industry topic but not the highly specific ones.  
    If both Direct and Related exist, note that as "Both."  
    If nothing meaningful appears, mark as "None."
 
