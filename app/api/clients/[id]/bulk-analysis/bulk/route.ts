@@ -18,7 +18,7 @@ export async function PUT(
     }
 
     if (action === 'updateStatus') {
-      if (!status || !['high_quality', 'average_quality', 'disqualified'].includes(status)) {
+      if (!status || !['high_quality', 'good_quality', 'marginal_quality', 'disqualified', 'pending'].includes(status)) {
         return NextResponse.json(
           { error: 'Invalid status' },
           { status: 400 }
