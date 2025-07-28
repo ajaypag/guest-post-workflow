@@ -612,7 +612,7 @@ export default function GuidedTriageFlow(props: GuidedTriageFlowProps) {
             <Loader2 className="w-8 h-8 animate-spin text-gray-400" />
           </div>
         ) : (
-          <div className="h-full flex gap-4 p-4">
+          <div className="h-full flex gap-4 p-4 overflow-hidden">
             {/* Left Sidebar - Filters */}
             <div className="w-64 bg-white rounded-lg shadow-sm flex flex-col">
               <div className="p-4 border-b">
@@ -1279,7 +1279,7 @@ export default function GuidedTriageFlow(props: GuidedTriageFlowProps) {
             </div>
             
             {/* Right Column - Metadata */}
-            <div className="w-96 space-y-4">
+            <div className="w-96 space-y-4 overflow-y-auto max-h-full">
                 {/* AI Analysis - Enhanced */}
                 {data.aiQualification && (
                   <div className="bg-white rounded-lg p-4 shadow-sm">
@@ -1469,7 +1469,7 @@ export default function GuidedTriageFlow(props: GuidedTriageFlowProps) {
                                     }}
                                     className="mt-1 rounded border-gray-300 text-indigo-600 focus:ring-indigo-500"
                                   />
-                                  <span className="text-sm text-gray-700 line-clamp-1">{page.url}</span>
+                                  <span className="text-sm text-gray-700 line-clamp-1" title={page.url}>{page.url}</span>
                                 </label>
                               ))}
                             </div>
