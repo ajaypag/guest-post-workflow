@@ -167,7 +167,16 @@ export class AirtableService {
       
       const data: AirtableApiResponse<AirtableWebsite> = await response.json();
       console.log('✅ Airtable API success, received records:', data.records?.length || 0);
-      console.log('📄 Sample record:', data.records?.[0] ? { id: data.records[0].id, fields: Object.keys(data.records[0].fields) } : 'No records');
+      console.log('📄 Sample record:', data.records?.[0] ? { 
+        id: data.records[0].id, 
+        fields: Object.keys(data.records[0].fields),
+        hasPostFlowFields: {
+          emails: !!data.records[0].fields['PostFlow Contact Emails'],
+          prices: !!data.records[0].fields['PostFlow Guest Post Prices'],
+          requirements: !!data.records[0].fields['PostFlow Blogger Requirements'],
+          statuses: !!data.records[0].fields['PostFlow Contact Status']
+        }
+      } : 'No records');
       
       // Process websites to a cleaner format
       const processedWebsites = data.records.map(record => this.processWebsiteRecord(record));
@@ -227,7 +236,13 @@ export class AirtableService {
       fieldsType: typeof fields,
       isArray: Array.isArray(fields),
       fieldsKeys: fields && typeof fields === 'object' && !Array.isArray(fields) ? Object.keys(fields).slice(0, 5) : 'Not an object',
-      sampleFieldValue: fields?.Website
+      sampleFieldValue: fields?.Website,
+      postFlowFields: {
+        emails: fields['PostFlow Contact Emails'],
+        prices: fields['PostFlow Guest Post Prices'],
+        requirements: fields['PostFlow Blogger Requirements'],
+        statuses: fields['PostFlow Contact Status']
+      }
     });
     
     // Extract domain from URL
