@@ -14,6 +14,7 @@ import BulkAnalysisResultsModal from '@/components/BulkAnalysisResultsModal';
 import BulkAnalysisTable from '@/components/BulkAnalysisTable';
 import GuidedTriageFlow from '@/components/GuidedTriageFlow';
 import MoveToProjectDialog from '@/components/bulk-analysis/MoveToProjectDialog';
+import { MessageDisplay } from '@/components/bulk-analysis/MessageDisplay';
 import { BulkAnalysisProject } from '@/types/bulk-analysis-projects';
 import { BulkAnalysisDomain } from '@/types/bulk-analysis';
 import { 
@@ -323,7 +324,8 @@ export default function ProjectDetailPage() {
       const summary = data.summary;
       setMessage(
         `✅ Master qualification complete! ${summary.qualification.highQuality} high quality, ` +
-        `${summary.qualification.averageQuality} average, ${summary.qualification.disqualified} disqualified`
+        `${summary.qualification.goodQuality} good quality, ${summary.qualification.marginalQuality} marginal quality, ` +
+        `${summary.qualification.disqualified} disqualified`
       );
       
       // Reload domains to get updated stats
@@ -401,7 +403,7 @@ export default function ProjectDetailPage() {
 
       // Clear selection and show success message
       setSelectedDomains(new Set());
-      setMessage(`✅ AI qualification complete! ${data.summary.highQuality} high quality, ${data.summary.averageQuality} average quality, ${data.summary.disqualified} disqualified domains`);
+      setMessage(`✅ AI qualification complete! ${data.summary.highQuality} high quality, ${data.summary.goodQuality} good quality, ${data.summary.marginalQuality} marginal quality, ${data.summary.disqualified} disqualified domains`);
       
       // Reload domains to get updated stats
       await loadDomains();
@@ -1520,61 +1522,18 @@ anotherdomain.com"
             )}
 
             {/* Message Display */}
-            {message && (
-              <div className={`mt-3 p-3 rounded-lg ${
-                message.startsWith('❌') ? 'bg-red-50 border border-red-200 text-red-800' :
-                message.startsWith('✅') ? 'bg-green-50 border border-green-200 text-green-800' :
-                message.startsWith('⏳') || message.startsWith('🔄') || message.startsWith('🚀') ? 'bg-blue-50 border border-blue-200 text-blue-800' :
-                'bg-gray-50 border border-gray-200 text-gray-800'
-              }`}>
-                <p className="text-sm">{message}</p>
-                
-                {/* Progress Bar for Bulk Analysis */}
-                {bulkAnalysisRunning && bulkProgress.total > 0 && (
-                  <div className="mt-2">
-                    <div className="flex justify-between text-xs mb-1">
-                      <span>Progress</span>
-                      <span>{bulkProgress.current} / {bulkProgress.total}</span>
-                    </div>
-                    <div className="w-full bg-gray-200 rounded-full h-2">
-                      <div 
-                        className="bg-indigo-600 h-2 rounded-full transition-all duration-300"
-                        style={{ width: `${(bulkProgress.current / bulkProgress.total) * 100}%` }}
-                      />
-                    </div>
-                  </div>
-                )}
-                
-                {/* Progress Bar for Master Qualification */}
-                {masterQualificationRunning && masterQualificationProgress.total > 0 && (
-                  <div className="mt-2">
-                    <div className="flex justify-between text-xs mb-1">
-                      <span>Master Qualification Progress</span>
-                      <span>{masterQualificationProgress.current} / {masterQualificationProgress.total}</span>
-                    </div>
-                    <div className="w-full bg-gray-200 rounded-full h-2">
-                      <div 
-                        className="bg-indigo-600 h-2 rounded-full transition-all duration-300"
-                        style={{ width: `${(masterQualificationProgress.current / masterQualificationProgress.total) * 100}%` }}
-                      />
-                    </div>
-                  </div>
-                )}
-                
-                {/* View Results Button */}
-                {completedJobId && message.includes('Analysis complete') && (
-                  <button
-                    onClick={() => {
-                      setBulkResultsModal({ ...bulkResultsModal, isOpen: true });
-                      setCompletedJobId(null);
-                    }}
-                    className="mt-3 px-4 py-2 bg-indigo-600 text-white rounded-md hover:bg-indigo-700 transition-colors text-sm font-medium"
-                  >
-                    View Results
-                  </button>
-                )}
-              </div>
-            )}
+            <MessageDisplay
+              message={message}
+              bulkAnalysisRunning={bulkAnalysisRunning}
+              bulkProgress={bulkProgress}
+              masterQualificationRunning={masterQualificationRunning}
+              masterQualificationProgress={masterQualificationProgress}
+              completedJobId={completedJobId}
+              onViewResults={() => {
+                setBulkResultsModal({ ...bulkResultsModal, isOpen: true });
+                setCompletedJobId(null);
+              }}
+            />
             
             <div className="flex items-center gap-3 mt-4">
               <button
@@ -1829,61 +1788,18 @@ anotherdomain.com"
                     )}
 
                     {/* Message Display */}
-                    {message && (
-                      <div className={`mt-3 p-3 rounded-lg ${
-                        message.startsWith('❌') ? 'bg-red-50 border border-red-200 text-red-800' :
-                        message.startsWith('✅') ? 'bg-green-50 border border-green-200 text-green-800' :
-                        message.startsWith('⏳') || message.startsWith('🔄') || message.startsWith('🚀') ? 'bg-blue-50 border border-blue-200 text-blue-800' :
-                        'bg-gray-50 border border-gray-200 text-gray-800'
-                      }`}>
-                        <p className="text-sm">{message}</p>
-                        
-                        {/* Progress Bar for Bulk Analysis */}
-                        {bulkAnalysisRunning && bulkProgress.total > 0 && (
-                          <div className="mt-2">
-                            <div className="flex justify-between text-xs mb-1">
-                              <span>Progress</span>
-                              <span>{bulkProgress.current} / {bulkProgress.total}</span>
-                            </div>
-                            <div className="w-full bg-gray-200 rounded-full h-2">
-                              <div 
-                                className="bg-indigo-600 h-2 rounded-full transition-all duration-300"
-                                style={{ width: `${(bulkProgress.current / bulkProgress.total) * 100}%` }}
-                              />
-                            </div>
-                          </div>
-                        )}
-                        
-                        {/* Progress Bar for Master Qualification */}
-                        {masterQualificationRunning && masterQualificationProgress.total > 0 && (
-                          <div className="mt-2">
-                            <div className="flex justify-between text-xs mb-1">
-                              <span>Master Qualification Progress</span>
-                              <span>{masterQualificationProgress.current} / {masterQualificationProgress.total}</span>
-                            </div>
-                            <div className="w-full bg-gray-200 rounded-full h-2">
-                              <div 
-                                className="bg-indigo-600 h-2 rounded-full transition-all duration-300"
-                                style={{ width: `${(masterQualificationProgress.current / masterQualificationProgress.total) * 100}%` }}
-                              />
-                            </div>
-                          </div>
-                        )}
-                        
-                        {/* View Results Button */}
-                        {completedJobId && message.includes('Analysis complete') && (
-                          <button
-                            onClick={() => {
-                              setBulkResultsModal({ ...bulkResultsModal, isOpen: true });
-                              setCompletedJobId(null);
-                            }}
-                            className="mt-3 px-4 py-2 bg-indigo-600 text-white rounded-md hover:bg-indigo-700 transition-colors text-sm font-medium"
-                          >
-                            View Results
-                          </button>
-                        )}
-                      </div>
-                    )}
+                    <MessageDisplay
+                      message={message}
+                      bulkAnalysisRunning={bulkAnalysisRunning}
+                      bulkProgress={bulkProgress}
+                      masterQualificationRunning={masterQualificationRunning}
+                      masterQualificationProgress={masterQualificationProgress}
+                      completedJobId={completedJobId}
+                      onViewResults={() => {
+                        setBulkResultsModal({ ...bulkResultsModal, isOpen: true });
+                        setCompletedJobId(null);
+                      }}
+                    />
                     
                     <div className="flex items-center gap-3 mt-4">
                       <button
