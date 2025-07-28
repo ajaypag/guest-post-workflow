@@ -38,7 +38,8 @@ import {
   Zap,
   Sparkles,
   FolderOpen,
-  Brain
+  Brain,
+  X
 } from 'lucide-react';
 
 export default function ProjectDetailPage() {
@@ -118,6 +119,7 @@ export default function ProjectDetailPage() {
   // Triage mode state
   const [triageMode, setTriageMode] = useState(false);
   const [showGuidedTriage, setShowGuidedTriage] = useState(false);
+  const [isSearchExpanded, setIsSearchExpanded] = useState(false);
   
   // Add domains section visibility
   const [showAddDomains, setShowAddDomains] = useState(false);
@@ -1957,7 +1959,7 @@ anotherdomain.com"
               {/* Primary Action Bar - Always Visible */}
               <div className="mb-4 p-4 bg-white border border-gray-200 rounded-lg shadow-sm">
                 <div className="flex flex-col lg:flex-row items-start lg:items-center justify-between gap-4">
-                  <div className="flex flex-wrap items-center gap-2 sm:gap-3">
+                  <div className="flex flex-wrap items-center gap-2 lg:gap-3 w-full lg:w-auto">
                     {/* Auto-Qualify All Button */}
                     <button
                       onClick={async () => {
@@ -1974,7 +1976,7 @@ anotherdomain.com"
                         setTimeout(() => startMasterQualification(), 100);
                       }}
                       disabled={bulkAnalysisRunning || loading || masterQualificationRunning || domains.length === 0}
-                      className="inline-flex items-center px-3 sm:px-4 py-2 bg-indigo-600 text-white text-xs sm:text-sm font-medium rounded-lg hover:bg-indigo-700 disabled:opacity-50 disabled:cursor-not-allowed shadow-md"
+                      className="inline-flex items-center px-3 sm:px-4 py-2 bg-indigo-600 text-white text-xs sm:text-sm font-medium rounded-lg hover:bg-indigo-700 disabled:opacity-50 disabled:cursor-not-allowed transition-colors flex-1 lg:flex-initial justify-center lg:justify-start"
                       title={(() => {
                         const needingDataForSeo = domains.filter(d => !d.hasDataForSeoResults).length;
                         const needingAI = domains.filter(d => d.qualificationStatus === 'pending').length;
@@ -1996,98 +1998,129 @@ anotherdomain.com"
                     {/* Guided Review Button */}
                     <button
                       onClick={() => setShowGuidedTriage(true)}
-                      className="inline-flex items-center px-3 sm:px-4 py-2 bg-purple-600 text-white text-xs sm:text-sm font-medium rounded-lg hover:bg-purple-700 shadow-md"
+                      className="inline-flex items-center px-3 sm:px-4 py-2 bg-purple-600 text-white text-xs sm:text-sm font-medium rounded-lg hover:bg-purple-700 transition-colors flex-1 lg:flex-initial justify-center lg:justify-start"
                       title="Review domains one by one with DataForSEO and AI analysis"
                     >
                       <Target className="w-4 h-4 mr-2" />
                       Guided Review
                     </button>
-
-                    <div className="hidden sm:block h-6 w-px bg-gray-300 mx-2" />
-
-                    {/* Search */}
-                    <div className="relative w-full sm:w-auto">
-                      <input
-                        type="text"
-                        placeholder="Search domains..."
-                        value={searchQuery}
-                        onChange={(e) => setSearchQuery(e.target.value)}
-                        className="w-full sm:w-64 pl-10 pr-4 py-2 border border-gray-300 rounded-lg text-sm focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500"
-                      />
-                      <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400 w-4 h-4" />
-                    </div>
                   </div>
 
-                  <div className="flex flex-wrap items-center gap-2 w-full lg:w-auto">
-                    {/* Status Filter */}
-                    <select
-                      value={statusFilter}
-                      onChange={(e) => setStatusFilter(e.target.value as 'all' | 'pending' | 'high_quality' | 'average_quality' | 'disqualified')}
-                      className="flex-1 sm:flex-auto border border-gray-300 rounded-lg px-2 sm:px-3 py-2 text-xs sm:text-sm focus:ring-2 focus:ring-indigo-500"
-                    >
-                      <option value="all">All Status</option>
-                      <option value="pending">Pending</option>
-                      <option value="high_quality">High Quality</option>
-                      <option value="average_quality">Average</option>
-                      <option value="disqualified">Disqualified</option>
-                    </select>
-
-                    {/* Workflow Filter */}
-                    <select
-                      value={workflowFilter}
-                      onChange={(e) => setWorkflowFilter(e.target.value as 'all' | 'has_workflow' | 'no_workflow')}
-                      className="flex-1 sm:flex-auto border border-gray-300 rounded-lg px-2 sm:px-3 py-2 text-xs sm:text-sm focus:ring-2 focus:ring-indigo-500"
-                    >
-                      <option value="all">All Workflows</option>
-                      <option value="has_workflow">Has Workflow</option>
-                      <option value="no_workflow">No Workflow</option>
-                    </select>
-
-                    {/* Verification Filter */}
-                    <select
-                      value={verificationFilter}
-                      onChange={(e) => setVerificationFilter(e.target.value as 'all' | 'human_verified' | 'ai_qualified' | 'unverified')}
-                      className="flex-1 sm:flex-auto border border-gray-300 rounded-lg px-2 sm:px-3 py-2 text-xs sm:text-sm focus:ring-2 focus:ring-indigo-500"
-                    >
-                      <option value="all">All Verification</option>
-                      <option value="human_verified">Human Verified</option>
-                      <option value="ai_qualified">AI Qualified</option>
-                      <option value="unverified">Unverified</option>
-                    </select>
-
-                    {/* Sort By Dropdown */}
-                    <div className="flex items-center gap-1 border-l pl-2 ml-auto lg:ml-0">
-                      <select
-                        value={sortBy}
-                        onChange={(e) => setSortBy(e.target.value as any)}
-                        className="flex-1 sm:flex-auto border border-gray-300 rounded-lg px-2 sm:px-3 py-2 text-xs sm:text-sm focus:ring-2 focus:ring-indigo-500"
-                      >
-                        <option value="createdAt">Date Added</option>
-                        <option value="updatedAt">Last Modified</option>
-                        <option value="domain">Domain Name</option>
-                        <option value="qualificationStatus">Qualification Status</option>
-                        <option value="hasDataForSeoResults">DataForSEO Analyzed</option>
-                        <option value="hasWorkflow">Has Workflow</option>
-                        <option value="keywordCount">Keyword Count</option>
-                      </select>
-                      <button
-                        onClick={() => setSortOrder(sortOrder === 'asc' ? 'desc' : 'asc')}
-                        className="p-2 text-gray-600 hover:text-gray-900 hover:bg-gray-100 rounded-lg transition-colors border border-gray-300"
-                        title={sortOrder === 'asc' ? 'Sort Ascending' : 'Sort Descending'}
-                      >
-                        {sortOrder === 'asc' ? (
-                          <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M3 4h13M3 8h9m-9 4h6m4 0l4-4m0 0l4 4m-4-4v12" />
-                          </svg>
-                        ) : (
-                          <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M3 4h13M3 8h9m-9 4h9m5-4v12m0 0l-4-4m4 4l4-4" />
-                          </svg>
-                        )}
-                      </button>
+                  {/* Right side with search and filters */}
+                  <div className="flex items-center gap-2 flex-nowrap w-full lg:w-auto">
+                    {/* Expandable Search */}
+                    <div className="relative">
+                      {isSearchExpanded ? (
+                        <div className="flex items-center relative">
+                          <input
+                            type="text"
+                            placeholder="Search domains..."
+                            value={searchQuery}
+                            onChange={(e) => setSearchQuery(e.target.value)}
+                            onKeyDown={(e) => {
+                              if (e.key === 'Escape' && !searchQuery) {
+                                setIsSearchExpanded(false);
+                              }
+                            }}
+                            className="w-48 lg:w-64 pl-10 pr-8 py-2 border border-gray-300 rounded-lg text-sm focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500"
+                            autoFocus
+                          />
+                          <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400 w-4 h-4" />
+                          <button
+                            onClick={() => {
+                              setSearchQuery('');
+                              setIsSearchExpanded(false);
+                            }}
+                            className="absolute right-2 top-1/2 transform -translate-y-1/2 text-gray-400 hover:text-gray-600"
+                          >
+                            <X className="w-4 h-4" />
+                          </button>
+                        </div>
+                      ) : (
+                        <button
+                          onClick={() => setIsSearchExpanded(true)}
+                          className="p-2 text-gray-500 hover:text-gray-700 hover:bg-gray-100 rounded-lg transition-colors"
+                          title="Search domains"
+                        >
+                          <Search className="w-5 h-5" />
+                        </button>
+                      )}
                     </div>
+                    
+                    {/* Filters Container - Hide when search is expanded */}
+                    {!isSearchExpanded && (
+                      <div className="flex items-center gap-2 flex-nowrap overflow-x-auto scrollbar-hide">
+                        {/* Status Filter */}
+                        <select
+                          value={statusFilter}
+                          onChange={(e) => setStatusFilter(e.target.value as 'all' | 'pending' | 'high_quality' | 'average_quality' | 'disqualified')}
+                          className="border border-gray-300 rounded-lg px-2 sm:px-3 py-2 text-xs sm:text-sm focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500 min-w-[100px] lg:min-w-[120px]"
+                        >
+                          <option value="all">All Status</option>
+                          <option value="pending">Pending</option>
+                          <option value="high_quality">High Quality</option>
+                          <option value="average_quality">Average</option>
+                          <option value="disqualified">Disqualified</option>
+                        </select>
 
-                    {/* Clear Filters */}
+                        {/* Workflow Filter - Hidden on mobile */}
+                        <select
+                          value={workflowFilter}
+                          onChange={(e) => setWorkflowFilter(e.target.value as 'all' | 'has_workflow' | 'no_workflow')}
+                          className="hidden sm:block border border-gray-300 rounded-lg px-2 sm:px-3 py-2 text-xs sm:text-sm focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500 min-w-[120px]"
+                        >
+                          <option value="all">All Workflows</option>
+                          <option value="has_workflow">Has Workflow</option>
+                          <option value="no_workflow">No Workflow</option>
+                        </select>
+
+                        {/* Verification Filter */}
+                        <select
+                          value={verificationFilter}
+                          onChange={(e) => setVerificationFilter(e.target.value as 'all' | 'human_verified' | 'ai_qualified' | 'unverified')}
+                          className="border border-gray-300 rounded-lg px-2 sm:px-3 py-2 text-xs sm:text-sm focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500 min-w-[100px] lg:min-w-[140px]"
+                        >
+                          <option value="all">All</option>
+                          <option value="human_verified">Human</option>
+                          <option value="ai_qualified">AI</option>
+                          <option value="unverified">Unverified</option>
+                        </select>
+
+                        {/* Sort By Dropdown */}
+                        <div className="flex items-center gap-1 border-l pl-2">
+                          <select
+                            value={sortBy}
+                            onChange={(e) => setSortBy(e.target.value as any)}
+                            className="border border-gray-300 rounded-lg px-2 sm:px-3 py-2 text-xs sm:text-sm focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500 min-w-[90px] lg:min-w-[140px]"
+                          >
+                            <option value="createdAt">Date</option>
+                            <option value="updatedAt">Modified</option>
+                            <option value="domain">Name</option>
+                            <option value="qualificationStatus">Status</option>
+                            <option value="hasDataForSeoResults" className="hidden lg:block">DataForSEO</option>
+                            <option value="hasWorkflow" className="hidden lg:block">Workflow</option>
+                            <option value="keywordCount" className="hidden lg:block">Keywords</option>
+                          </select>
+                          <button
+                            onClick={() => setSortOrder(sortOrder === 'asc' ? 'desc' : 'asc')}
+                            className="p-1.5 sm:p-2 text-gray-600 hover:text-gray-900 hover:bg-gray-100 rounded-lg transition-colors border border-gray-300"
+                            title={sortOrder === 'asc' ? 'Sort Ascending' : 'Sort Descending'}
+                          >
+                            {sortOrder === 'asc' ? (
+                              <svg className="w-3 h-3 sm:w-4 sm:h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M3 4h13M3 8h9m-9 4h6m4 0l4-4m0 0l4 4m-4-4v12" />
+                              </svg>
+                            ) : (
+                              <svg className="w-3 h-3 sm:w-4 sm:h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M3 4h13M3 8h9m-9 4h9m5-4v12m0 0l-4-4m4 4l4-4" />
+                              </svg>
+                            )}
+                          </button>
+                        </div>
+                      </div>
+                    )}
+
+                    {/* Clear Filters - Always visible */}
                     {(searchQuery || statusFilter !== 'all' || workflowFilter !== 'all' || verificationFilter !== 'all') && (
                       <button
                         onClick={() => {
@@ -2095,8 +2128,9 @@ anotherdomain.com"
                           setStatusFilter('all');
                           setWorkflowFilter('all');
                           setVerificationFilter('all');
+                          setIsSearchExpanded(false);
                         }}
-                        className="text-xs sm:text-sm text-indigo-600 hover:text-indigo-800 whitespace-nowrap"
+                        className="text-sm text-indigo-600 hover:text-indigo-800"
                       >
                         Clear
                       </button>
@@ -2109,11 +2143,11 @@ anotherdomain.com"
               {/* Bulk Actions Bar */}
               {selectedDomains.size > 0 && (
                 <div className="mb-4 p-4 bg-indigo-50 border border-indigo-200 rounded-lg">
-                  <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4">
-                    <div className="flex flex-wrap items-center gap-2 sm:gap-4">
+                  <div className="flex items-center justify-between gap-4">
+                    <div className="flex items-center gap-3">
                       {/* Selection Count with Expandable Stats */}
                       <div className="flex items-center gap-2">
-                        <span className="text-xs sm:text-sm font-medium text-indigo-900">
+                        <span className="text-sm font-medium text-indigo-900">
                           {selectedDomains.size} domain{selectedDomains.size > 1 ? 's' : ''} selected
                         </span>
                         {(() => {
@@ -2155,7 +2189,7 @@ anotherdomain.com"
                       </div>
                       <button
                         onClick={clearSelection}
-                        className="text-xs sm:text-sm text-indigo-600 hover:text-indigo-800 underline"
+                        className="text-sm text-indigo-600 hover:text-indigo-800 underline"
                       >
                         Clear selection
                       </button>
