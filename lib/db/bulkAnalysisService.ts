@@ -11,6 +11,7 @@ export interface BulkAnalysisInput {
   userId: string;
   manualKeywords?: string;
   projectId: string;
+  airtableMetadata?: Record<string, any>; // Map of domain -> metadata
 }
 
 export interface BulkAnalysisResult extends BulkAnalysisDomain {
@@ -93,7 +94,7 @@ export class BulkAnalysisService {
    */
   static async createOrUpdateDomains(input: BulkAnalysisInput): Promise<BulkAnalysisResult[]> {
     try {
-      const { clientId, domains, targetPageIds, userId, manualKeywords, projectId } = input;
+      const { clientId, domains, targetPageIds, userId, manualKeywords, projectId, airtableMetadata } = input;
       
       // Clean domains
       const cleanedDomains = domains.map(d => this.cleanDomain(d)).filter(Boolean);
