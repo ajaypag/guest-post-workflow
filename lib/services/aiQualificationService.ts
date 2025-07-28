@@ -72,10 +72,16 @@ export class AIQualificationService {
       // Process each domain in the chunk concurrently
       const chunkPromises = chunk.map(domain => 
         this.processSingleDomain(domain, clientContext)
+          .catch(error => {
+            console.error(`Skipping ${domain.domain} due to error:`, error);
+            // Return null for errors - will be filtered out
+            return null;
+          })
       );
       
       const chunkResults = await Promise.all(chunkPromises);
-      results.push(...chunkResults);
+      // Only add successful results - errors remain as pending
+      results.push(...chunkResults.filter((r): r is QualificationResult => r !== null));
       
       // Report progress
       completed += chunk.length;
@@ -158,23 +164,8 @@ export class AIQualificationService {
 
     } catch (error) {
       console.error(`Domain ${domain.domain} processing error:`, error);
-      // Return as needing manual review
-      return {
-        domainId: domain.domainId,
-        domain: domain.domain,
-        qualification: 'marginal_quality' as const,
-        reasoning: 'AI processing error - requires manual review',
-        overlapStatus: 'none',
-        authorityDirect: 'n/a',
-        authorityRelated: 'n/a',
-        topicScope: 'long_tail',
-        evidence: {
-          direct_count: 0,
-          direct_median_position: null,
-          related_count: 0,
-          related_median_position: null
-        }
-      };
+      // Re-throw to let caller handle - domain will remain pending
+      throw error;
     }
   }
 
@@ -186,7 +177,7 @@ export class AIQualificationService {
         keywords: page.keywords.join(', '),
         description: page.description || ''
       })),
-      keywordThemes: this.extractKeywordThemes(context.clientKeywords)
+      clientKeywords: context.clientKeywords
     };
 
     // Include ALL keyword rankings - no filtering or limiting
@@ -276,32 +267,6 @@ OUTPUT — RETURN EXACTLY THIS JSON
   "reasoning": "One–two short paragraphs explaining why the verdict makes sense, which keyword clusters prove authority, and how that benefits (or fails) the client. Include: (a) Why this tail level citing keywords/positions (b) Modifier guidance (e.g. 'add geo modifier', 'use buyer-type qualifier', 'no modifier needed')"
 }`;
   }
-
-  private extractKeywordThemes(keywords: string[]): string[] {
-    // Group keywords by common terms to identify themes
-    const themes = new Set<string>();
-    const commonWords = new Map<string, number>();
-    
-    // Count word frequency
-    keywords.forEach(keyword => {
-      const words = keyword.toLowerCase().split(/\s+/);
-      words.forEach(word => {
-        if (word.length > 3) { // Skip short words
-          commonWords.set(word, (commonWords.get(word) || 0) + 1);
-        }
-      });
-    });
-    
-    // Extract themes (words that appear in multiple keywords)
-    Array.from(commonWords.entries())
-      .filter(([_, count]) => count >= 3)
-      .sort((a, b) => b[1] - a[1])
-      .slice(0, 10)
-      .forEach(([word]) => themes.add(word));
-    
-    return Array.from(themes);
-  }
-
 
   private validateQualification(qual: string): 'high_quality' | 'good_quality' | 'marginal_quality' | 'disqualified' {
     const valid = ['high_quality', 'good_quality', 'marginal_quality', 'disqualified'];
