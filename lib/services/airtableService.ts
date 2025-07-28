@@ -119,7 +119,12 @@ export class AirtableService {
         'Guest Post Access?',
         'Link Insert Access?',
         'Count of Published Opportunities',
-        'Overall Website Quality'
+        'Overall Website Quality',
+        // PostFlow lookup fields
+        'PostFlow Contact Emails',
+        'PostFlow Guest Post Prices',
+        'PostFlow Blogger Requirements',
+        'PostFlow Contact Status'
       ];
       
       const params = new URLSearchParams({
