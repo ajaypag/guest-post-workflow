@@ -111,10 +111,32 @@ export class AIQualificationService {
       const content = response.choices[0].message.content;
       if (!content) throw new Error('No response from AI');
 
-      const result = JSON.parse(content);
+      // Log the raw response for debugging
+      console.log(`🔍 Raw AI response for ${domain.domain}:`, content.substring(0, 200));
+
+      // Try to parse JSON from the response
+      let result;
+      try {
+        // If the response starts with text, try to extract JSON
+        if (!content.trim().startsWith('{')) {
+          // Look for JSON in the response
+          const jsonMatch = content.match(/\{[\s\S]*\}/);
+          if (jsonMatch) {
+            result = JSON.parse(jsonMatch[0]);
+          } else {
+            throw new Error('No JSON found in response');
+          }
+        } else {
+          result = JSON.parse(content);
+        }
+      } catch (parseError) {
+        console.error('Failed to parse AI response as JSON:', parseError);
+        console.error('Full response:', content);
+        throw new Error('Invalid JSON in AI response');
+      }
       
       // Validate the V2 result structure
-      if (result.qualification && result.reasoning && result.overlap_status && result.evidence) {
+      if (result.qualification && result.reasoning) {
         return {
           domainId: domain.domainId,
           domain: domain.domain,
