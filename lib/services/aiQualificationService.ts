@@ -97,18 +97,14 @@ export class AIQualificationService {
     try {
       const prompt = this.buildPromptForSingleDomain(domain, clientContext);
       
-      const response = await this.openai.chat.completions.create({
-        model: "o3-2025-04-16",
-        messages: [
-          {
-            role: "user",
-            content: prompt
-          }
-        ],
-        response_format: { type: "json_object" }
+      const response = await this.openai.responses.create({
+        model: "o3",
+        input: prompt,  // Put entire prompt as input (includes instructions + data)
+        reasoning: { effort: "high" },
+        store: true
       });
 
-      const content = response.choices[0].message.content;
+      const content = response.output_text;
       if (!content) throw new Error('No response from AI');
 
 
