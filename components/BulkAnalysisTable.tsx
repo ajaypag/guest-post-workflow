@@ -786,7 +786,10 @@ export default function BulkAnalysisTable(props: BulkAnalysisTableProps) {
                                     </span>
                                   )}
                                   <a
-                                    href={`/clients/${domain.clientId}/bulk-analysis?guided=${domain.id}`}
+                                    href={domain.projectId 
+                                      ? `/clients/${domain.clientId}/bulk-analysis/projects/${domain.projectId}?guided=${domain.id}`
+                                      : `/clients/${domain.clientId}/bulk-analysis?guided=${domain.id}`
+                                    }
                                     className="inline-flex items-center px-3 py-1.5 text-xs font-medium text-indigo-700 bg-indigo-50 hover:bg-indigo-100 rounded-md transition-colors"
                                     onClick={(e) => e.stopPropagation()}
                                   >
