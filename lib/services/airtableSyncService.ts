@@ -34,10 +34,16 @@ export class AirtableSyncService {
     try {
       let hasMore = true;
       let offset: string | undefined;
+      let pageCount = 0;
+      const maxPages = 100; // Safety limit - max 10,000 records
       
       // Fetch all websites from Airtable
-      while (hasMore) {
+      while (hasMore && pageCount < maxPages) {
+        pageCount++;
+        console.log(`📄 Fetching page ${stats.total > 0 ? Math.floor(stats.total / 100) + 1 : 1}, offset: ${offset || 'none'}`);
         const result = await AirtableService.searchWebsites({}, 100, offset);
+        
+        console.log(`📊 Page results: ${result.websites.length} websites, hasMore: ${result.hasMore}, nextOffset: ${result.nextOffset || 'none'}`);
         
         for (const website of result.websites) {
           stats.total++;
@@ -62,6 +68,20 @@ export class AirtableSyncService {
         
         hasMore = result.hasMore;
         offset = result.nextOffset;
+        
+        // Progress update every 100 records
+        if (stats.total % 100 === 0) {
+          console.log(`✅ Progress: ${stats.total} websites processed (${stats.created} created, ${stats.updated} updated, ${stats.errors} errors)`);
+        }
+        
+        // Add a small delay between pages to avoid rate limiting (5 requests/second limit)
+        if (hasMore) {
+          await new Promise(resolve => setTimeout(resolve, 250)); // 4 requests per second to be safe
+        }
+      }
+      
+      if (pageCount >= maxPages) {
+        console.warn(`⚠️ Reached maximum page limit of ${maxPages}. Some records may not have been synced.`);
       }
       
       await this.completeSyncLog(syncLogId, 'success', stats.total);
