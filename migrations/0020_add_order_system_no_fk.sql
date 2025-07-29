@@ -131,7 +131,7 @@ CREATE TABLE IF NOT EXISTS domain_suggestions (
   
   viewed_at TIMESTAMP,
   response_at TIMESTAMP,
-  advertiser_notes TEXT,
+  advertiser_notes TEXT
   
   -- Note: Unique constraint will be added separately after table creation
 );
