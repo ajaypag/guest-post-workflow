@@ -16,10 +16,23 @@ export async function POST(request: NextRequest) {
     logs.push('✓ Migration file loaded successfully');
     
     // Split migration into individual statements
-    const statements = migrationContent
+    // First remove single-line comments but keep the statement
+    const cleanedContent = migrationContent
+      .split('\n')
+      .map(line => {
+        // Remove single-line comments but keep the rest of the line
+        const commentIndex = line.indexOf('--');
+        if (commentIndex !== -1) {
+          return line.substring(0, commentIndex).trim();
+        }
+        return line;
+      })
+      .join('\n');
+    
+    const statements = cleanedContent
       .split(';')
       .map(s => s.trim())
-      .filter(s => s.length > 0 && !s.startsWith('--'));
+      .filter(s => s.length > 0);
     
     logs.push(`Found ${statements.length} SQL statements to execute`);
     
@@ -30,6 +43,7 @@ export async function POST(request: NextRequest) {
       
       try {
         logs.push(`[${i + 1}/${statements.length}] Executing: ${tableName || 'Statement'}`);
+        logs.push(`SQL: ${statement.substring(0, 100)}${statement.length > 100 ? '...' : ''}`);
         await db.execute(sql.raw(statement));
         logs.push(`✓ ${tableName || 'Statement'} completed`);
       } catch (error) {
