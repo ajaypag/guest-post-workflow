@@ -1,7 +1,7 @@
 'use client';
 
 import React from 'react';
-import { Database, Activity, Wrench, Users, BarChart3, Settings, AlertTriangle, Bug, FileSearch, Search } from 'lucide-react';
+import { Database, Activity, Wrench, Users, BarChart3, Settings, AlertTriangle, Bug, FileSearch, Search, Mail } from 'lucide-react';
 
 export default function AdminDashboard() {
   const adminTools = [
@@ -164,6 +164,14 @@ export default function AdminDashboard() {
       href: '/admin/users',
       color: 'bg-indigo-50 border-indigo-200 text-indigo-700',
       iconColor: 'text-indigo-600'
+    },
+    {
+      title: 'Email Management',
+      description: 'Monitor email communications, view logs, and send test emails',
+      icon: Mail,
+      href: '/admin/email',
+      color: 'bg-emerald-50 border-emerald-200 text-emerald-700',
+      iconColor: 'text-emerald-600'
     },
     {
       title: 'Analytics',
