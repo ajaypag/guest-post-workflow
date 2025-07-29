@@ -128,9 +128,10 @@ export class AirtableService {
       ];
       
       const params = new URLSearchParams({
-        // For full sync, don't use view filtering to get all records
-        ...(filters.forceAllRecords ? {} : { view: this.POSTFLOW_VIEW_ID }),
-        maxRecords: limit.toString(),
+        view: this.POSTFLOW_VIEW_ID,
+        // Don't use maxRecords as it limits TOTAL records across all pages
+        // pageSize controls records per page
+        pageSize: '100',
         ...(offset && { offset })
       });
       
@@ -147,6 +148,12 @@ export class AirtableService {
       
       const url = `${this.API_BASE_URL}/${this.BASE_ID}/${this.WEBSITE_TABLE_ID}?${params}`;
       console.log('🌐 Making Airtable API request to:', url);
+      console.log('📋 Request params:', {
+        view: this.POSTFLOW_VIEW_ID,
+        pageSize: limit,
+        offset: offset || 'none',
+        hasFilter: !!filterFormula
+      });
       
       const headers = this.getHeaders();
       console.log('📝 Request headers:', { ...headers, Authorization: 'Bearer [REDACTED]' });
@@ -173,6 +180,16 @@ export class AirtableService {
       
       const data: AirtableApiResponse<AirtableWebsite> = await response.json();
       console.log('✅ Airtable API success, received records:', data.records?.length || 0);
+      console.log('📄 Raw Airtable response structure:', {
+        hasRecords: !!data.records,
+        recordCount: data.records?.length || 0,
+        hasOffset: !!data.offset,
+        offsetValue: data.offset || 'none',
+        // Log all keys in the response to see what Airtable is returning
+        responseKeys: Object.keys(data),
+        // Check if there's any indication of more pages
+        rawData: JSON.stringify(data).substring(0, 200) + '...'
+      });
       console.log('📄 Sample record:', data.records?.[0] ? { 
         id: data.records[0].id, 
         fields: Object.keys(data.records[0].fields),

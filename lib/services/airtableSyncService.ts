@@ -41,7 +41,8 @@ export class AirtableSyncService {
       while (hasMore && pageCount < maxPages) {
         pageCount++;
         console.log(`📄 Fetching page ${stats.total > 0 ? Math.floor(stats.total / 100) + 1 : 1}, offset: ${offset || 'none'}`);
-        const result = await AirtableService.searchWebsites({ forceAllRecords: true }, 100, offset);
+        // Don't pass a limit - let Airtable handle pagination naturally
+        const result = await AirtableService.searchWebsites({}, 9999, offset); // Large number to avoid maxRecords limitation
         
         console.log(`📊 Page results: ${result.websites.length} websites, hasMore: ${result.hasMore}, nextOffset: ${result.nextOffset || 'none'}`);
         
