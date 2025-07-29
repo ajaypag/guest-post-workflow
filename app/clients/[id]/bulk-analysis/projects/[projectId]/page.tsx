@@ -16,8 +16,8 @@ import GuidedTriageFlow from '@/components/GuidedTriageFlow';
 import { MultiSelect, MultiSelectOption } from '@/components/ui/MultiSelect';
 import MoveToProjectDialog from '@/components/bulk-analysis/MoveToProjectDialog';
 import { MessageDisplay } from '@/components/bulk-analysis/MessageDisplay';
-import AirtableImportModal from '@/components/bulk-analysis/AirtableImportModal';
 import WebsiteDetailModal from '@/components/websites/WebsiteDetailModal';
+import InlineDatabaseSelector from '@/components/bulk-analysis/InlineDatabaseSelector';
 import { BulkAnalysisProject } from '@/types/bulk-analysis-projects';
 import { BulkAnalysisDomain } from '@/types/bulk-analysis';
 import { ProcessedWebsite } from '@/types/airtable';
@@ -159,10 +159,6 @@ export default function ProjectDetailPage() {
   
   // Smart selection state
   const [showSmartSelection, setShowSmartSelection] = useState(false);
-  
-  // Airtable import modal state
-  const [showAirtableImport, setShowAirtableImport] = useState(false);
-  const [airtableMetadata, setAirtableMetadata] = useState<Record<string, any>>({});
   
   // Domain input mode state
   const [domainInputMode, setDomainInputMode] = useState<'paste' | 'database'>('paste');
@@ -554,7 +550,7 @@ export default function ProjectDetailPage() {
             targetPageIds: keywordInputMode === 'target-pages' ? selectedTargetPages : [],
             manualKeywords: keywordInputMode === 'manual' ? manualKeywords : undefined,
             projectId: params.projectId,
-            airtableMetadata: Object.keys(airtableMetadata).length > 0 ? airtableMetadata : undefined
+            airtableMetadata: undefined // No metadata for paste mode
           })
         });
 
@@ -562,7 +558,6 @@ export default function ProjectDetailPage() {
           const data = await response.json();
           await loadDomains();
           setDomainText('');
-          setAirtableMetadata({});
           setMessage(`✅ Added ${data.domains.length} domains to project`);
         } else {
           throw new Error('Failed to create domains');
@@ -576,37 +571,6 @@ export default function ProjectDetailPage() {
     }
   };
 
-  const handleAirtableImport = (websites: ProcessedWebsite[]) => {
-    if (domainInputMode === 'database') {
-      // Store selected websites for database mode
-      setSelectedDatabaseWebsites(websites);
-      setMessage(`✅ Selected ${websites.length} websites from database. Click "Add to Project" to analyze them.`);
-    } else {
-      // Extract domains and create metadata map for paste mode
-      const importedDomains = websites.map(w => w.domain);
-      const metadata: Record<string, any> = {};
-      
-      websites.forEach(website => {
-        metadata[website.domain] = {
-          id: website.id,
-          domainRating: website.domainRating,
-          totalTraffic: website.totalTraffic,
-          guestPostCost: website.guestPostCost,
-          categories: website.categories,
-          contacts: website.contacts,
-          publishedOpportunities: website.publishedOpportunities
-        };
-      });
-      
-      // Update state
-      setAirtableMetadata(metadata);
-      setDomainText(importedDomains.join('\n'));
-      
-      // Show success message
-      setMessage(`✅ Imported ${websites.length} domains. Click "Add to Project" to analyze them.`);
-    }
-    setMessageType('success');
-  };
 
   const updateQualificationStatus = async (domainId: string, status: 'high_quality' | 'good_quality' | 'marginal_quality' | 'disqualified', isManual?: boolean) => {
     try {
@@ -1669,24 +1633,13 @@ anotherdomain.com"
                 </p>
               </div>
             ) : (
-              <div>
-                <div className="p-4 bg-gray-50 rounded-lg">
-                  <p className="text-sm text-gray-600 mb-3">
-                    Select websites from your synced database. You can filter by DR, traffic, cost, and more.
-                  </p>
-                  <button
-                    onClick={() => setShowAirtableImport(true)}
-                    className="px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 flex items-center gap-2"
-                  >
-                    <Search className="w-4 h-4" />
-                    Browse Website Database
-                  </button>
-                  {selectedDatabaseWebsites.length > 0 && (
-                    <div className="mt-3 text-sm text-gray-600">
-                      <span className="font-medium">{selectedDatabaseWebsites.length} websites selected</span>
-                    </div>
-                  )}
-                </div>
+              <div className="mt-4">
+                <InlineDatabaseSelector
+                  clientId={params.id as string}
+                  projectId={project?.id || ''}
+                  selectedWebsites={selectedDatabaseWebsites}
+                  onSelectionChange={setSelectedDatabaseWebsites}
+                />
               </div>
             )}
             
@@ -1996,24 +1949,13 @@ anotherdomain.com"
                         </p>
                       </div>
                     ) : (
-                      <div>
-                        <div className="p-4 bg-gray-50 rounded-lg">
-                          <p className="text-sm text-gray-600 mb-3">
-                            Select websites from your synced database. You can filter by DR, traffic, cost, and more.
-                          </p>
-                          <button
-                            onClick={() => setShowAirtableImport(true)}
-                            className="px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 flex items-center gap-2"
-                          >
-                            <Search className="w-4 h-4" />
-                            Browse Website Database
-                          </button>
-                          {selectedDatabaseWebsites.length > 0 && (
-                            <div className="mt-3 text-sm text-gray-600">
-                              <span className="font-medium">{selectedDatabaseWebsites.length} websites selected</span>
-                            </div>
-                          )}
-                        </div>
+                      <div className="mt-4">
+                        <InlineDatabaseSelector
+                          clientId={params.id as string}
+                          projectId={params.projectId as string}
+                          selectedWebsites={selectedDatabaseWebsites}
+                          onSelectionChange={setSelectedDatabaseWebsites}
+                        />
                       </div>
                     )}
                     
@@ -3073,15 +3015,6 @@ anotherdomain.com"
           onConfirm={handleMoveToProject}
         />
       )}
-
-      {/* Airtable Import Modal */}
-      <AirtableImportModal
-        isOpen={showAirtableImport}
-        onClose={() => setShowAirtableImport(false)}
-        onImport={handleAirtableImport}
-        clientId={params.id as string}
-        projectId={params.projectId as string}
-      />
     </AuthWrapper>
   );
 }
