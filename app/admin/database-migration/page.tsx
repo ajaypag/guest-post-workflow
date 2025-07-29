@@ -1200,7 +1200,8 @@ export default function DatabaseMigrationPage() {
     setMessage('');
     
     try {
-      const response = await fetch('/api/admin/migrate-email-logs', {
+      // Use direct migration endpoint instead of streaming
+      const response = await fetch('/api/admin/migrate-email-logs-direct', {
         method: 'POST'
       });
       
