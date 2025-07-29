@@ -113,12 +113,21 @@ export async function PUT(request: NextRequest) {
     }
 
     const updatedWorkflow = await WorkflowService.updateWorkflow(id, {
-      content: workflow,
-      updatedAt: new Date()
+      content: workflow
     });
 
+    if (!updatedWorkflow) {
+      return NextResponse.json(
+        { error: 'Workflow not found' },
+        { status: 404 }
+      );
+    }
+
+    // Convert back to GuestPostWorkflow format
+    const guestWorkflow = WorkflowService.databaseToGuestPostWorkflow(updatedWorkflow);
+
     return NextResponse.json({ 
-      workflow: updatedWorkflow,
+      workflow: guestWorkflow,
       success: true 
     });
   } catch (error) {
