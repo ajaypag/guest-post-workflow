@@ -64,7 +64,7 @@ export async function POST(request: NextRequest) {
     }
 
     // Ensure we have required fields
-    if (!guestWorkflow || !guestWorkflow.title) {
+    if (!guestWorkflow || !guestWorkflow.clientName) {
       console.error('Invalid workflow data:', guestWorkflow);
       return NextResponse.json(
         { error: 'Invalid workflow data' },
@@ -73,7 +73,7 @@ export async function POST(request: NextRequest) {
     }
 
     console.log('Creating workflow with:', {
-      title: guestWorkflow.title,
+      clientName: guestWorkflow.clientName,
       userId,
       userName,
       userEmail
@@ -112,11 +112,10 @@ export async function PUT(request: NextRequest) {
       );
     }
 
-    const updatedWorkflow = await WorkflowService.updateGuestPostWorkflow(
-      id,
-      workflow,
-      userId
-    );
+    const updatedWorkflow = await WorkflowService.updateWorkflow(id, {
+      content: workflow,
+      updatedAt: new Date()
+    });
 
     return NextResponse.json({ 
       workflow: updatedWorkflow,
