@@ -45,6 +45,11 @@ export default function MigrationsPage() {
       id: '0013_add_airtable_sync_tables',
       name: 'Airtable Sync Tables',
       description: 'Creates websites, contacts, qualifications, and sync tracking tables'
+    },
+    {
+      id: '0015_fix_traffic_column_type',
+      name: 'Fix Traffic Column Type',
+      description: 'Changes total_traffic from INTEGER to DECIMAL to handle Airtable decimal values'
     }
   ];
 

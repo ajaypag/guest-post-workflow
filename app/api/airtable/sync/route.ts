@@ -51,7 +51,7 @@ export async function GET(request: NextRequest) {
         error,
         EXTRACT(EPOCH FROM (completed_at - started_at)) as duration_seconds
       FROM website_sync_logs
-      WHERE started_at > NOW() - INTERVAL $1
+      WHERE started_at > NOW() - CAST($1 AS INTERVAL)
       ORDER BY started_at DESC
       LIMIT 20
     `, [`${days} days`]);
