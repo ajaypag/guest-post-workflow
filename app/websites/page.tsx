@@ -24,6 +24,7 @@ import { sessionStorage } from '@/lib/userStorage';
 import { type AuthSession } from '@/lib/auth';
 import { debounce } from 'lodash';
 import WebsiteDetailModal from '@/components/websites/WebsiteDetailModal';
+import QualificationModal from '@/components/websites/QualificationModal';
 
 interface Website {
   id: string;
@@ -92,7 +93,9 @@ export default function WebsitesPage() {
   const [clients, setClients] = useState<Array<{ id: string; name: string }>>([]);
   const [categories, setCategories] = useState<string[]>([]);
   const [selectedWebsiteId, setSelectedWebsiteId] = useState<string | null>(null);
+  const [selectedWebsiteDomain, setSelectedWebsiteDomain] = useState<string>('');
   const [showDetailModal, setShowDetailModal] = useState(false);
+  const [showQualificationModal, setShowQualificationModal] = useState(false);
 
   // Load websites
   const loadWebsites = useCallback(async () => {
@@ -214,9 +217,36 @@ export default function WebsitesPage() {
     return traffic.toString();
   };
 
-  const handleWebsiteClick = (websiteId: string) => {
+  const handleWebsiteClick = (websiteId: string, domain: string) => {
     setSelectedWebsiteId(websiteId);
+    setSelectedWebsiteDomain(domain);
     setShowDetailModal(true);
+  };
+
+  const handleQualifyClick = (websiteId: string, domain: string) => {
+    setSelectedWebsiteId(websiteId);
+    setSelectedWebsiteDomain(domain);
+    setShowQualificationModal(true);
+  };
+
+  const handleQualify = async (clientId: string, status: string, notes: string) => {
+    const response = await fetch(`/api/websites/${selectedWebsiteId}/qualifications`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        clientId,
+        status,
+        notes,
+        userId: session?.userId
+      })
+    });
+
+    if (!response.ok) {
+      throw new Error('Failed to save qualification');
+    }
+
+    // Reload websites to show updated qualification status
+    loadWebsites();
   };
 
   return (
@@ -549,7 +579,7 @@ export default function WebsitesPage() {
                   <td className="px-4 py-3">
                     <div 
                       className="cursor-pointer hover:text-blue-600"
-                      onClick={() => handleWebsiteClick(website.id)}
+                      onClick={() => handleWebsiteClick(website.id, website.domain)}
                     >
                       <div className="font-medium text-gray-900">
                         {website.domain}
@@ -636,9 +666,22 @@ export default function WebsitesPage() {
                     )}
                   </td>
                   <td className="px-4 py-3 text-right">
-                    <button className="p-1 hover:bg-gray-100 rounded">
-                      <MoreVertical className="w-4 h-4 text-gray-500" />
-                    </button>
+                    <div className="flex items-center justify-end gap-2">
+                      {!website.qualification && (
+                        <button
+                          onClick={(e) => {
+                            e.stopPropagation();
+                            handleQualifyClick(website.id, website.domain);
+                          }}
+                          className="text-sm px-3 py-1 bg-purple-600 text-white rounded hover:bg-purple-700"
+                        >
+                          Qualify
+                        </button>
+                      )}
+                      <button className="p-1 hover:bg-gray-100 rounded">
+                        <MoreVertical className="w-4 h-4 text-gray-500" />
+                      </button>
+                    </div>
                   </td>
                 </tr>
               ))}
@@ -683,6 +726,24 @@ export default function WebsitesPage() {
             setShowDetailModal(false);
             setSelectedWebsiteId(null);
           }}
+          onQualify={(websiteId) => {
+            setShowDetailModal(false);
+            handleQualifyClick(websiteId, selectedWebsiteDomain);
+          }}
+        />
+      )}
+
+      {/* Qualification Modal */}
+      {selectedWebsiteId && (
+        <QualificationModal
+          websiteId={selectedWebsiteId}
+          websiteDomain={selectedWebsiteDomain}
+          isOpen={showQualificationModal}
+          onClose={() => {
+            setShowQualificationModal(false);
+            setSelectedWebsiteId(null);
+          }}
+          onQualify={handleQualify}
         />
       )}
     </div>
