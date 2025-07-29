@@ -1265,20 +1265,30 @@ export default function DatabaseMigrationPage() {
       setMessage(`❌ Error: ${error instanceof Error ? error.message : 'Unknown error'}. Trying simplified migration...`);
       setMessageType('error');
       
-      // Try the simplified migration as a fallback
+      // Try the direct migration as a fallback
       try {
-        const fallbackResponse = await fetch('/api/admin/migrate-email-logs-simple', {
+        const fallbackResponse = await fetch('/api/admin/migrate-email-logs-direct', {
           method: 'POST'
         });
         
         const fallbackData = await fallbackResponse.json();
         
         if (fallbackData.success) {
-          setMessage('✅ Email logs table created successfully using simplified migration!');
+          setMessage('✅ Email logs table created successfully using direct migration!');
           setMessageType('success');
+          
+          // Show the migration log
+          if (fallbackData.log && fallbackData.log.length > 0) {
+            console.log('Migration log:', fallbackData.log.join('\n'));
+          }
         } else {
-          setMessage(`❌ Both migrations failed. Error: ${fallbackData.error || 'Unknown error'}`);
+          setMessage(`❌ Migration failed. Error: ${fallbackData.error || 'Unknown error'}`);
           setMessageType('error');
+          
+          // Show detailed error log
+          if (fallbackData.log && fallbackData.log.length > 0) {
+            console.error('Migration log:', fallbackData.log.join('\n'));
+          }
         }
       } catch (fallbackError) {
         setMessage(`❌ All migration attempts failed. Please check server logs.`);
@@ -1298,7 +1308,7 @@ export default function DatabaseMigrationPage() {
     setMessage('');
     
     try {
-      const response = await fetch('/api/admin/migrate-email-logs', {
+      const response = await fetch('/api/admin/migrate-email-logs-direct', {
         method: 'DELETE'
       });
       const data = await response.json();
