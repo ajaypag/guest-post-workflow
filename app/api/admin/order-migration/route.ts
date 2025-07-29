@@ -8,8 +8,14 @@ export async function POST(request: NextRequest) {
   const logs: string[] = [];
   
   try {
+    // Get migration file name from request body
+    const body = await request.json().catch(() => ({}));
+    const migrationFile = body.useNoFk 
+      ? '0020_add_order_system_no_fk.sql' 
+      : '0020_add_order_system.sql';
+    
     // Read the migration file
-    const migrationPath = path.join(process.cwd(), 'migrations', '0020_add_order_system.sql');
+    const migrationPath = path.join(process.cwd(), 'migrations', migrationFile);
     logs.push(`Reading migration file: ${migrationPath}`);
     
     const migrationContent = await fs.readFile(migrationPath, 'utf-8');
@@ -51,17 +57,24 @@ export async function POST(request: NextRequest) {
         
         // Extract detailed database error information
         const dbError = error as any;
+        
+        // Check if error has a cause (Drizzle wraps PG errors)
+        const pgError = dbError.cause || dbError;
+        
         const errorDetails = {
           message: errorMessage,
-          code: dbError.code || 'unknown',
-          detail: dbError.detail || 'no detail',
-          hint: dbError.hint || 'no hint',
-          position: dbError.position || 'unknown',
-          severity: dbError.severity || 'unknown',
-          table: dbError.table || 'unknown',
-          column: dbError.column || 'unknown',
-          constraint: dbError.constraint || 'unknown',
-          routine: dbError.routine || 'unknown'
+          code: pgError.code || dbError.code || 'unknown',
+          detail: pgError.detail || dbError.detail || 'no detail',
+          hint: pgError.hint || dbError.hint || 'no hint',
+          position: pgError.position || dbError.position || 'unknown',
+          severity: pgError.severity || dbError.severity || 'unknown',
+          table: pgError.table || dbError.table || 'unknown',
+          column: pgError.column || dbError.column || 'unknown',
+          constraint: pgError.constraint || dbError.constraint || 'unknown',
+          routine: pgError.routine || dbError.routine || 'unknown',
+          where: pgError.where || dbError.where || 'unknown',
+          file: pgError.file || dbError.file || 'unknown',
+          line: pgError.line || dbError.line || 'unknown'
         };
         
         logs.push(`❌ Error executing statement ${i + 1}:`);
@@ -71,6 +84,11 @@ export async function POST(request: NextRequest) {
         logs.push(`   Hint: ${errorDetails.hint}`);
         logs.push(`   Table: ${errorDetails.table}`);
         logs.push(`   Constraint: ${errorDetails.constraint}`);
+        logs.push(`   Where: ${errorDetails.where}`);
+        logs.push(`   Position: ${errorDetails.position}`);
+        
+        // Log the raw error object to see structure
+        logs.push(`   Raw error: ${JSON.stringify(dbError, null, 2).substring(0, 500)}`);
         
         // Check if it's a "already exists" error
         if (errorMessage.includes('already exists') || errorDetails.code === '42P07') {
