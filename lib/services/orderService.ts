@@ -459,4 +459,64 @@ export class OrderService {
 
     return result;
   }
+
+  /**
+   * Get all orders with pagination
+   */
+  static async getAllOrders(limit: number = 50, offset: number = 0): Promise<Order[]> {
+    const result = await db.query.orders.findMany({
+      orderBy: desc(orders.createdAt),
+      limit,
+      offset,
+    });
+
+    return result;
+  }
+
+  /**
+   * Get orders with item counts
+   */
+  static async getOrdersWithItemCounts(): Promise<(Order & { itemCount: number })[]> {
+    const result = await db
+      .select({
+        id: orders.id,
+        clientId: orders.clientId,
+        advertiserId: orders.advertiserId,
+        advertiserEmail: orders.advertiserEmail,
+        advertiserName: orders.advertiserName,
+        advertiserCompany: orders.advertiserCompany,
+        status: orders.status,
+        subtotalRetail: orders.subtotalRetail,
+        discountPercent: orders.discountPercent,
+        discountAmount: orders.discountAmount,
+        totalRetail: orders.totalRetail,
+        totalWholesale: orders.totalWholesale,
+        profitMargin: orders.profitMargin,
+        includesClientReview: orders.includesClientReview,
+        clientReviewFee: orders.clientReviewFee,
+        rushDelivery: orders.rushDelivery,
+        rushFee: orders.rushFee,
+        shareToken: orders.shareToken,
+        shareExpiresAt: orders.shareExpiresAt,
+        approvedAt: orders.approvedAt,
+        invoicedAt: orders.invoicedAt,
+        paidAt: orders.paidAt,
+        completedAt: orders.completedAt,
+        cancelledAt: orders.cancelledAt,
+        createdBy: orders.createdBy,
+        assignedTo: orders.assignedTo,
+        internalNotes: orders.internalNotes,
+        advertiserNotes: orders.advertiserNotes,
+        cancellationReason: orders.cancellationReason,
+        createdAt: orders.createdAt,
+        updatedAt: orders.updatedAt,
+        itemCount: sql<number>`cast(count(${orderItems.id}) as int)`,
+      })
+      .from(orders)
+      .leftJoin(orderItems, eq(orders.id, orderItems.orderId))
+      .groupBy(orders.id)
+      .orderBy(desc(orders.createdAt));
+
+    return result;
+  }
 }

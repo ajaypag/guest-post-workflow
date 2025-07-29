@@ -4,9 +4,9 @@ import { AuthServiceServer } from '@/lib/auth-server';
 
 export async function POST(
   request: NextRequest,
-  { params }: { params: Promise<{ orderId: string }> }
+  { params }: { params: Promise<{ id: string }> }
 ) {
-  const { orderId } = await params;
+  const { id } = await params;
   try {
     const session = await AuthServiceServer.getSession(request);
     if (!session || session.userType !== 'internal') {
@@ -24,7 +24,7 @@ export async function POST(
     for (const domainId of domainIds) {
       try {
         const item = await OrderService.addOrderItem({
-          orderId: orderId,
+          orderId: id,
           domainId,
         });
         items.push(item);
@@ -35,7 +35,7 @@ export async function POST(
     }
 
     // Get updated order
-    const order = await OrderService.getOrderById(orderId);
+    const order = await OrderService.getOrderById(id);
 
     return NextResponse.json({ 
       items,
@@ -54,9 +54,9 @@ export async function POST(
 
 export async function DELETE(
   request: NextRequest,
-  { params }: { params: Promise<{ orderId: string }> }
+  { params }: { params: Promise<{ id: string }> }
 ) {
-  const { orderId } = await params;
+  const { id } = await params;
   try {
     const session = await AuthServiceServer.getSession(request);
     if (!session || session.userType !== 'internal') {
@@ -73,10 +73,10 @@ export async function DELETE(
       );
     }
 
-    await OrderService.removeOrderItem(orderId, itemId);
+    await OrderService.removeOrderItem(id, itemId);
 
     // Get updated order
-    const order = await OrderService.getOrderById(orderId);
+    const order = await OrderService.getOrderById(id);
 
     return NextResponse.json({ order });
   } catch (error) {

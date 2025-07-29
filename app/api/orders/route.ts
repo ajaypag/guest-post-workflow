@@ -25,9 +25,8 @@ export async function GET(request: NextRequest) {
       // Internal users can filter by status
       orders = await OrderService.getOrdersByStatus(status);
     } else if (session.userType === 'internal') {
-      // Internal users see all orders
-      // TODO: Implement getAllOrders with pagination
-      orders = [];
+      // Internal users see all orders with item counts
+      orders = await OrderService.getOrdersWithItemCounts();
     } else {
       return NextResponse.json({ error: 'Forbidden' }, { status: 403 });
     }

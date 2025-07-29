@@ -166,23 +166,23 @@ CREATE TABLE IF NOT EXISTS pricing_rules (
 );
 
 -- Create indexes for performance
-CREATE INDEX idx_orders_client_id ON orders(client_id);
-CREATE INDEX idx_orders_advertiser_id ON orders(advertiser_id);
-CREATE INDEX idx_orders_status ON orders(status);
-CREATE INDEX idx_orders_share_token ON orders(share_token);
-CREATE INDEX idx_orders_created_by ON orders(created_by);
+CREATE INDEX IF NOT EXISTS idx_orders_client_id ON orders(client_id);
+CREATE INDEX IF NOT EXISTS idx_orders_advertiser_id ON orders(advertiser_id);
+CREATE INDEX IF NOT EXISTS idx_orders_status ON orders(status);
+CREATE INDEX IF NOT EXISTS idx_orders_share_token ON orders(share_token);
+CREATE INDEX IF NOT EXISTS idx_orders_created_by ON orders(created_by);
 
-CREATE INDEX idx_order_items_order_id ON order_items(order_id);
-CREATE INDEX idx_order_items_domain_id ON order_items(domain_id);
-CREATE INDEX idx_order_items_workflow_id ON order_items(workflow_id);
-CREATE INDEX idx_order_items_status ON order_items(status);
+CREATE INDEX IF NOT EXISTS idx_order_items_order_id ON order_items(order_id);
+CREATE INDEX IF NOT EXISTS idx_order_items_domain_id ON order_items(domain_id);
+CREATE INDEX IF NOT EXISTS idx_order_items_workflow_id ON order_items(workflow_id);
+CREATE INDEX IF NOT EXISTS idx_order_items_status ON order_items(status);
 
-CREATE INDEX idx_suggestions_advertiser ON domain_suggestions(advertiser_id, advertiser_email);
-CREATE INDEX idx_suggestions_domain ON domain_suggestions(domain_id);
-CREATE INDEX idx_suggestions_status ON domain_suggestions(status);
+CREATE INDEX IF NOT EXISTS idx_suggestions_advertiser ON domain_suggestions(advertiser_id, advertiser_email);
+CREATE INDEX IF NOT EXISTS idx_suggestions_domain ON domain_suggestions(domain_id);
+CREATE INDEX IF NOT EXISTS idx_suggestions_status ON domain_suggestions(status);
 
-CREATE INDEX idx_pricing_rules_client ON pricing_rules(client_id);
-CREATE INDEX idx_pricing_rules_quantity ON pricing_rules(min_quantity, max_quantity);
+CREATE INDEX IF NOT EXISTS idx_pricing_rules_client ON pricing_rules(client_id);
+CREATE INDEX IF NOT EXISTS idx_pricing_rules_quantity ON pricing_rules(min_quantity, max_quantity);
 
 -- Add unique constraint for domain suggestions (using partial index approach)
 CREATE UNIQUE INDEX IF NOT EXISTS idx_domain_suggestions_unique 
@@ -193,15 +193,29 @@ CREATE UNIQUE INDEX IF NOT EXISTS idx_domain_suggestions_unique_email
 ON domain_suggestions (advertiser_email, domain_id) 
 WHERE advertiser_id IS NULL;
 
--- Add order reference to workflows table
-ALTER TABLE workflows ADD COLUMN IF NOT EXISTS order_item_id UUID;
-CREATE INDEX IF NOT EXISTS idx_workflows_order_item ON workflows(order_item_id);
+-- Add order reference to workflows table (only if table exists)
+DO $$ 
+BEGIN
+    IF EXISTS (SELECT FROM information_schema.tables WHERE table_name = 'workflows') THEN
+        ALTER TABLE workflows ADD COLUMN IF NOT EXISTS order_item_id UUID;
+        CREATE INDEX IF NOT EXISTS idx_workflows_order_item ON workflows(order_item_id);
+    END IF;
+END $$;
 
--- Default pricing rules
-INSERT INTO pricing_rules (name, min_quantity, max_quantity, discount_percent, created_by) VALUES
-  ('Small Order', 1, 4, 0, '00000000-0000-0000-0000-000000000000'::UUID),
-  ('Medium Order', 5, 9, 5, '00000000-0000-0000-0000-000000000000'::UUID),
-  ('Large Order', 10, 19, 10, '00000000-0000-0000-0000-000000000000'::UUID),
-  ('Bulk Order', 20, 49, 15, '00000000-0000-0000-0000-000000000000'::UUID),
-  ('Enterprise Order', 50, NULL, 20, '00000000-0000-0000-0000-000000000000'::UUID)
-ON CONFLICT DO NOTHING;
+-- Default pricing rules (using system placeholder UUID)
+DO $$
+DECLARE
+    system_user_id UUID := '00000000-0000-0000-0000-000000000000'::UUID;
+BEGIN
+    INSERT INTO pricing_rules (name, min_quantity, max_quantity, discount_percent, created_by) VALUES
+      ('Small Order', 1, 4, 0, system_user_id),
+      ('Medium Order', 5, 9, 5, system_user_id),
+      ('Large Order', 10, 19, 10, system_user_id),
+      ('Bulk Order', 20, 49, 15, system_user_id),
+      ('Enterprise Order', 50, NULL, 20, system_user_id)
+    ON CONFLICT DO NOTHING;
+EXCEPTION
+    WHEN OTHERS THEN
+        -- Ignore errors if rules already exist or other issues
+        NULL;
+END $$;

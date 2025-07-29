@@ -4,29 +4,28 @@ import { AuthServiceServer } from '@/lib/auth-server';
 
 export async function GET(
   request: NextRequest,
-  { params }: { params: Promise<{ orderId: string }> }
+  { params }: { params: Promise<{ id: string }> }
 ) {
-  const { orderId } = await params;
+  const { id } = await params;
   try {
     const session = await AuthServiceServer.getSession(request);
     if (!session) {
       return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
     }
 
-    const order = await OrderService.getOrderById(orderId);
-    
+    const order = await OrderService.getOrderById(id);
     if (!order) {
       return NextResponse.json({ error: 'Order not found' }, { status: 404 });
     }
 
-    // Check access
-    if (session.userType === 'advertiser' && order.advertiserId !== session.userId) {
-      return NextResponse.json({ error: 'Forbidden' }, { status: 403 });
-    }
-
-    // Filter sensitive data for advertisers
+    // Check permissions
     if (session.userType === 'advertiser') {
-      // Remove wholesale pricing and internal notes
+      // Advertisers can only see their own orders
+      if (order.advertiserId !== session.userId) {
+        return NextResponse.json({ error: 'Forbidden' }, { status: 403 });
+      }
+
+      // Filter sensitive data for advertisers
       const filteredOrder = { ...order };
       delete (filteredOrder as any).totalWholesale;
       delete (filteredOrder as any).profitMargin;
@@ -41,6 +40,7 @@ export async function GET(
       return NextResponse.json({ order: filteredOrder });
     }
 
+    // Internal users can see all orders
     return NextResponse.json({ order });
   } catch (error) {
     console.error('Error fetching order:', error);
@@ -53,9 +53,9 @@ export async function GET(
 
 export async function PUT(
   request: NextRequest,
-  { params }: { params: Promise<{ orderId: string }> }
+  { params }: { params: Promise<{ id: string }> }
 ) {
-  const { orderId } = await params;
+  const { id } = await params;
   try {
     const session = await AuthServiceServer.getSession(request);
     if (!session || session.userType !== 'internal') {
@@ -68,7 +68,7 @@ export async function PUT(
     switch (action) {
       case 'updateStatus':
         await OrderService.updateOrderStatus(
-          orderId,
+          id,
           data.status,
           session.userId,
           data.notes
@@ -77,13 +77,13 @@ export async function PUT(
 
       case 'generateShareToken':
         const token = await OrderService.generateShareToken(
-          orderId,
+          id,
           data.expiresInDays || 7
         );
         return NextResponse.json({ token });
 
       case 'createWorkflows':
-        await OrderService.createWorkflowsForOrder(orderId, session.userId);
+        await OrderService.createWorkflowsForOrder(id, session.userId);
         break;
 
       default:
@@ -93,7 +93,7 @@ export async function PUT(
         );
     }
 
-    const updatedOrder = await OrderService.getOrderById(orderId);
+    const updatedOrder = await OrderService.getOrderById(id);
     return NextResponse.json({ order: updatedOrder });
   } catch (error) {
     console.error('Error updating order:', error);
