@@ -203,8 +203,17 @@ export default function ProjectDetailPage() {
           break;
         case 'qualificationStatus':
           // Custom order: high_quality > good_quality > marginal_quality > disqualified > pending
-          const statusOrder = { 'high_quality': 0, 'good_quality': 1, 'marginal_quality': 2, 'disqualified': 3, 'pending': 4 };
-          compareValue = (statusOrder[a.qualificationStatus] || 99) - (statusOrder[b.qualificationStatus] || 99);
+          const statusOrder: Record<string, number> = { 
+            'high_quality': 0, 
+            'good_quality': 1, 
+            'marginal_quality': 2, 
+            'disqualified': 3, 
+            'pending': 4,
+            '': 5  // Handle empty status
+          };
+          const aOrder = statusOrder[a.qualificationStatus || ''] ?? 99;
+          const bOrder = statusOrder[b.qualificationStatus || ''] ?? 99;
+          compareValue = aOrder - bOrder;
           break;
         case 'hasDataForSeoResults':
           compareValue = (a.hasDataForSeoResults ? 0 : 1) - (b.hasDataForSeoResults ? 0 : 1);
@@ -2270,7 +2279,14 @@ anotherdomain.com"
                         <div className="flex items-center gap-1 border-l pl-2">
                           <select
                             value={sortBy}
-                            onChange={(e) => setSortBy(e.target.value as any)}
+                            onChange={(e) => {
+                              const newSortBy = e.target.value as any;
+                              setSortBy(newSortBy);
+                              // When switching to status sorting, default to ascending (best first)
+                              if (newSortBy === 'qualificationStatus' && sortBy !== 'qualificationStatus') {
+                                setSortOrder('asc');
+                              }
+                            }}
                             className="border border-gray-300 rounded-lg px-2 sm:px-3 py-2 text-xs sm:text-sm focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500 min-w-[90px] lg:min-w-[140px]"
                           >
                             <option value="createdAt">Date</option>
@@ -2811,42 +2827,8 @@ anotherdomain.com"
                 });
                 
                 // Apply sorting
-                const sortedDomains = [...filteredDomains].sort((a, b) => {
-                  let compareValue = 0;
-                  
-                  switch (sortBy) {
-                    case 'domain':
-                      compareValue = a.domain.localeCompare(b.domain);
-                      break;
-                    case 'createdAt':
-                      compareValue = new Date(a.createdAt || 0).getTime() - new Date(b.createdAt || 0).getTime();
-                      break;
-                    case 'updatedAt':
-                      compareValue = new Date(a.updatedAt || 0).getTime() - new Date(b.updatedAt || 0).getTime();
-                      break;
-                    case 'qualificationStatus':
-                      // Custom order: high_quality > good_quality > marginal_quality > disqualified > pending
-                      const statusOrder = { 'high_quality': 0, 'good_quality': 1, 'marginal_quality': 2, 'disqualified': 3, 'pending': 4 };
-                      compareValue = (statusOrder[a.qualificationStatus] || 99) - (statusOrder[b.qualificationStatus] || 99);
-                      break;
-                    case 'hasDataForSeoResults':
-                      compareValue = (a.hasDataForSeoResults ? 0 : 1) - (b.hasDataForSeoResults ? 0 : 1);
-                      break;
-                    case 'hasWorkflow':
-                      compareValue = (a.hasWorkflow ? 0 : 1) - (b.hasWorkflow ? 0 : 1);
-                      break;
-                    case 'keywordCount':
-                      compareValue = (a.keywordCount || 0) - (b.keywordCount || 0);
-                      break;
-                    default:
-                      compareValue = 0;
-                  }
-                  
-                  return sortOrder === 'asc' ? compareValue : -compareValue;
-                });
-                
-                const paginatedDomains = sortedDomains.slice(0, displayLimit);
-                const hasMore = sortedDomains.length > displayLimit;
+                const paginatedDomains = sortedFilteredDomains.slice(0, displayLimit);
+                const hasMore = sortedFilteredDomains.length > displayLimit;
                 
                 return (
                   <>
@@ -2858,11 +2840,11 @@ anotherdomain.com"
                             <strong>Tip:</strong> Select domains to qualify them with AI
                           </p>
                           <button
-                            onClick={() => selectAll(sortedDomains.map(d => d.id))}
+                            onClick={() => selectAll(sortedFilteredDomains.map(d => d.id))}
                             className="inline-flex items-center px-3 py-1.5 bg-purple-600 text-white text-sm rounded hover:bg-purple-700"
                           >
                             <CheckCircle className="w-4 h-4 mr-1.5" />
-                            Select All {sortedDomains.length} Domains
+                            Select All {sortedFilteredDomains.length} Domains
                           </button>
                         </div>
                       </div>
@@ -2940,7 +2922,7 @@ anotherdomain.com"
                           className="inline-flex items-center px-6 py-3 bg-gray-100 hover:bg-gray-200 text-gray-800 font-medium rounded-lg transition-colors"
                         >
                           <Plus className="w-5 h-5 mr-2" />
-                          Show More ({sortedDomains.length - paginatedDomains.length} remaining)
+                          Show More ({sortedFilteredDomains.length - paginatedDomains.length} remaining)
                         </button>
                       </div>
                     )}
@@ -2948,8 +2930,8 @@ anotherdomain.com"
                     {/* Results Summary */}
                     <div className="mt-4 text-center">
                       <div className="text-sm text-gray-600">
-                        Showing {paginatedDomains.length} of {sortedDomains.length} domains
-                        {sortedDomains.length < domains.length && (
+                        Showing {paginatedDomains.length} of {sortedFilteredDomains.length} domains
+                        {sortedFilteredDomains.length < domains.length && (
                           <span className="text-indigo-600 ml-1">
                             (filtered from {domains.length} total)
                           </span>
