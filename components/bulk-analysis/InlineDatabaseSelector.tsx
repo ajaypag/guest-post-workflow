@@ -167,6 +167,58 @@ export default function InlineDatabaseSelector({
     onSelectionChange(newSelectedWebsites);
   };
 
+  // Select all matching filters
+  const selectAllMatching = async () => {
+    setLoading(true);
+    try {
+      // Fetch ALL websites matching current filters (not just current page)
+      const response = await fetch('/api/websites/search', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          filters: {
+            searchTerm: searchTerm || undefined,
+            ...filters,
+            status: 'Active'
+          },
+          limit: 10000, // Get all matching websites
+          offset: 0,
+          clientId,
+          projectId,
+          onlyUnqualified: filters.qualificationStatus === 'unqualified',
+          onlyQualified: filters.qualificationStatus === 'qualified'
+        })
+      });
+
+      const data = await response.json();
+      const allMatchingWebsites = data.websites || [];
+      
+      // Update selection
+      const newSelectedIds = new Set(selectedIds);
+      const newSelectedWebsites = [...selectedWebsites];
+      
+      allMatchingWebsites.forEach((website: ProcessedWebsite) => {
+        if (!newSelectedIds.has(website.id)) {
+          newSelectedIds.add(website.id);
+          newSelectedWebsites.push(website);
+        }
+      });
+      
+      setSelectedIds(newSelectedIds);
+      onSelectionChange(newSelectedWebsites);
+      
+      // Show a message about how many were selected
+      if (allMatchingWebsites.length > 0) {
+        alert(`Selected all ${allMatchingWebsites.length} websites matching current filters`);
+      }
+    } catch (error) {
+      console.error('Failed to select all matching websites:', error);
+      alert('Failed to select all matching websites');
+    } finally {
+      setLoading(false);
+    }
+  };
+
   // Clear selection
   const clearSelection = () => {
     setSelectedIds(new Set());
@@ -367,7 +419,14 @@ export default function InlineDatabaseSelector({
               onClick={selectAllVisible}
               className="text-sm text-blue-600 hover:text-blue-700"
             >
-              Select all visible
+              Select visible ({websites.length})
+            </button>
+            <button
+              onClick={selectAllMatching}
+              className="text-sm text-purple-600 hover:text-purple-700 font-medium"
+              disabled={loading}
+            >
+              {loading ? 'Loading...' : `Select all matching (${total})`}
             </button>
             <button
               onClick={clearSelection}

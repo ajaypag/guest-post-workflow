@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useMemo } from 'react';
 import { useParams, useRouter, useSearchParams } from 'next/navigation';
 import Link from 'next/link';
 import AuthWrapper from '@/components/AuthWrapper';
@@ -136,6 +136,7 @@ export default function ProjectDetailPage() {
   const [triageMode, setTriageMode] = useState(false);
   const [showGuidedTriage, setShowGuidedTriage] = useState(false);
   const [isSearchExpanded, setIsSearchExpanded] = useState(false);
+  const [currentSortedFilteredDomains, setCurrentSortedFilteredDomains] = useState<BulkAnalysisDomain[]>([]);
   
   // Add domains section visibility
   const [showAddDomains, setShowAddDomains] = useState(false);
@@ -164,6 +165,66 @@ export default function ProjectDetailPage() {
   const [domainInputMode, setDomainInputMode] = useState<'paste' | 'database'>('paste');
   const [selectedDatabaseWebsites, setSelectedDatabaseWebsites] = useState<ProcessedWebsite[]>([]);
   
+  // Calculate sorted and filtered domains
+  const sortedFilteredDomains = useMemo(() => {
+    // Filter domains
+    let filteredDomains = domains.filter(domain => {
+      // Status filter - if any statuses are selected, domain must match one of them
+      if (statusFilter.length > 0 && !statusFilter.includes(domain.qualificationStatus)) return false;
+      
+      // Workflow filter
+      if (workflowFilter === 'has_workflow' && !domain.hasWorkflow) return false;
+      if (workflowFilter === 'no_workflow' && domain.hasWorkflow) return false;
+      
+      // Verification filter
+      if (verificationFilter === 'human_verified' && !domain.wasManuallyQualified) return false;
+      if (verificationFilter === 'ai_qualified' && (domain.wasManuallyQualified || domain.qualificationStatus === 'pending')) return false;
+      if (verificationFilter === 'unverified' && domain.qualificationStatus !== 'pending') return false;
+      
+      // Search filter
+      if (searchQuery && !domain.domain.toLowerCase().includes(searchQuery.toLowerCase())) return false;
+      
+      return true;
+    });
+    
+    // Apply sorting
+    const sorted = [...filteredDomains].sort((a, b) => {
+      let compareValue = 0;
+      
+      switch (sortBy) {
+        case 'domain':
+          compareValue = a.domain.localeCompare(b.domain);
+          break;
+        case 'createdAt':
+          compareValue = new Date(a.createdAt || 0).getTime() - new Date(b.createdAt || 0).getTime();
+          break;
+        case 'updatedAt':
+          compareValue = new Date(a.updatedAt || 0).getTime() - new Date(b.updatedAt || 0).getTime();
+          break;
+        case 'qualificationStatus':
+          // Custom order: high_quality > good_quality > marginal_quality > disqualified > pending
+          const statusOrder = { 'high_quality': 0, 'good_quality': 1, 'marginal_quality': 2, 'disqualified': 3, 'pending': 4 };
+          compareValue = (statusOrder[a.qualificationStatus] || 99) - (statusOrder[b.qualificationStatus] || 99);
+          break;
+        case 'hasDataForSeoResults':
+          compareValue = (a.hasDataForSeoResults ? 0 : 1) - (b.hasDataForSeoResults ? 0 : 1);
+          break;
+        case 'hasWorkflow':
+          compareValue = (a.hasWorkflow ? 0 : 1) - (b.hasWorkflow ? 0 : 1);
+          break;
+        case 'keywordCount':
+          compareValue = (a.keywordCount || 0) - (b.keywordCount || 0);
+          break;
+        default:
+          compareValue = 0;
+      }
+      
+      return sortOrder === 'asc' ? compareValue : -compareValue;
+    });
+    
+    return sorted;
+  }, [domains, statusFilter, workflowFilter, verificationFilter, searchQuery, sortBy, sortOrder]);
+
   // Reset pagination when filters change
   useEffect(() => {
     setDisplayLimit(ITEMS_PER_PAGE);
@@ -2117,7 +2178,10 @@ anotherdomain.com"
 
                     {/* Guided Review Button */}
                     <button
-                      onClick={() => setShowGuidedTriage(true)}
+                      onClick={() => {
+                        setCurrentSortedFilteredDomains(sortedFilteredDomains);
+                        setShowGuidedTriage(true);
+                      }}
                       className="inline-flex items-center px-3 sm:px-4 py-2 bg-purple-600 text-white text-xs sm:text-sm font-medium rounded-lg hover:bg-purple-700 transition-colors flex-1 lg:flex-initial justify-center lg:justify-start"
                       title="Review domains one by one with DataForSEO and AI analysis"
                     >
@@ -2958,24 +3022,7 @@ anotherdomain.com"
       {/* Guided Triage Flow */}
       {showGuidedTriage && (
         <GuidedTriageFlow
-          domains={domains.filter(domain => {
-            // Status filter - if any statuses are selected, domain must match one of them
-            if (statusFilter.length > 0 && !statusFilter.includes(domain.qualificationStatus)) return false;
-            
-            // Workflow filter
-            if (workflowFilter === 'has_workflow' && !domain.hasWorkflow) return false;
-            if (workflowFilter === 'no_workflow' && domain.hasWorkflow) return false;
-            
-            // Verification filter
-            if (verificationFilter === 'human_verified' && !domain.wasManuallyQualified) return false;
-            if (verificationFilter === 'ai_qualified' && (domain.wasManuallyQualified || domain.qualificationStatus === 'pending')) return false;
-            if (verificationFilter === 'unverified' && domain.qualificationStatus !== 'pending') return false;
-            
-            // Search filter
-            if (searchQuery && !domain.domain.toLowerCase().includes(searchQuery.toLowerCase())) return false;
-            
-            return true;
-          })}
+          domains={currentSortedFilteredDomains}
           targetPages={targetPages}
           onClose={() => {
             setShowGuidedTriage(false);
