@@ -160,7 +160,7 @@ function OrdersPageContent() {
             <p className="text-gray-600 mt-1">Manage guest post orders and track their progress</p>
           </div>
           {userType === 'internal' && (
-            <Link href="/orders/new">
+            <Link href="/orders/create">
               <button className="bg-blue-600 hover:bg-blue-700 text-white px-4 py-2 rounded-md flex items-center gap-2 font-medium">
                 <Plus className="h-4 w-4" />
                 New Order
