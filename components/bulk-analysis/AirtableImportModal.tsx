@@ -19,12 +19,9 @@ export default function AirtableImportModal({
   clientId,
   projectId
 }: AirtableImportModalProps) {
-  // Filter state
+  // Filter state - start with no filters to show all data
   const [filters, setFilters] = useState<WebsiteFilters>({
-    minDR: 30,
-    minTraffic: 1000,
-    status: 'Active',
-    hasGuestPost: true
+    status: 'All'
   });
   
   // UI state
@@ -38,7 +35,6 @@ export default function AirtableImportModal({
   
   // Pagination
   const [hasMore, setHasMore] = useState(false);
-  const [nextOffset, setNextOffset] = useState<string | undefined>();
 
   // Load categories on mount
   useEffect(() => {
@@ -69,8 +65,8 @@ export default function AirtableImportModal({
     setError(null);
     
     try {
-      console.log('📡 Making API call to /api/airtable/websites/search');
-      const response = await fetch('/api/airtable/websites/search', {
+      console.log('📡 Making API call to /api/websites/search');
+      const response = await fetch('/api/websites/search', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
@@ -79,8 +75,10 @@ export default function AirtableImportModal({
             searchTerm: searchTerm || undefined
           },
           limit: 50,
-          offset: append ? nextOffset : undefined,
-          includeEnhancedData: true // Get contact data from Link Price table
+          offset: append ? websites.length : 0,
+          clientId,
+          projectId,
+          onlyUnqualified: true // Show only websites not qualified for this client
         })
       });
 
@@ -113,7 +111,6 @@ export default function AirtableImportModal({
       }
       
       setHasMore(data.hasMore);
-      setNextOffset(data.nextOffset);
     } catch (error: any) {
       console.error('❌ Airtable search failed:', error);
       setError(error.message || 'Failed to load websites');
@@ -166,7 +163,7 @@ export default function AirtableImportModal({
           <div className="flex items-center justify-between mb-6">
             <div className="flex items-center gap-3">
               <Database className="w-6 h-6 text-blue-600" />
-              <h2 className="text-2xl font-bold text-gray-900">Import from Airtable</h2>
+              <h2 className="text-2xl font-bold text-gray-900">Import Websites</h2>
             </div>
             <button
               onClick={onClose}

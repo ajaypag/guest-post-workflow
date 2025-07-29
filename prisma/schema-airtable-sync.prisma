@@ -1,0 +1,142 @@
+// Airtable Website Sync Schema
+
+model Website {
+  id                    String   @id @default(uuid())
+  airtableId           String   @unique // Airtable record ID
+  domain               String   @unique
+  domainRating         Int?
+  totalTraffic         Int?
+  guestPostCost        Float?
+  categories           String[] // Array of categories
+  type                 String[] // Array of types
+  status               String   @default("Unknown")
+  hasGuestPost         Boolean  @default(false)
+  hasLinkInsert        Boolean  @default(false)
+  publishedOpportunities Int     @default(0)
+  overallQuality       String?
+  
+  // Airtable metadata
+  airtableCreatedAt    DateTime
+  airtableUpdatedAt    DateTime
+  lastSyncedAt         DateTime @default(now())
+  
+  // Local metadata
+  createdAt            DateTime @default(now())
+  updatedAt            DateTime @updatedAt
+  
+  // Relations
+  contacts             WebsiteContact[]
+  qualifications       WebsiteQualification[]
+  syncLogs             WebsiteSyncLog[]
+  
+  @@index([domain])
+  @@index([domainRating])
+  @@index([totalTraffic])
+  @@index([status])
+}
+
+model WebsiteContact {
+  id                    String   @id @default(uuid())
+  websiteId            String
+  website              Website  @relation(fields: [websiteId], references: [id], onDelete: Cascade)
+  
+  email                String
+  isPrimary            Boolean  @default(false)
+  hasPaidGuestPost     Boolean  @default(false)
+  hasSwapOption        Boolean  @default(false)
+  guestPostCost        Float?
+  linkInsertCost       Float?
+  requirement          String?  // "Paid", "Swap", etc
+  status               String   @default("Active")
+  
+  // Airtable reference
+  airtableLinkPriceId  String?  @unique
+  
+  // Local enrichment
+  lastContacted        DateTime?
+  responseRate         Float?   // Percentage of responses
+  averageResponseTime  Int?     // Hours
+  notes                String?
+  
+  createdAt            DateTime @default(now())
+  updatedAt            DateTime @updatedAt
+  
+  @@unique([websiteId, email])
+  @@index([websiteId, isPrimary])
+}
+
+model WebsiteQualification {
+  id                    String   @id @default(uuid())
+  websiteId            String
+  website              Website  @relation(fields: [websiteId], references: [id], onDelete: Cascade)
+  clientId             String
+  client               Client   @relation(fields: [clientId], references: [id], onDelete: Cascade)
+  projectId            String?
+  project              Project? @relation(fields: [projectId], references: [id], onDelete: SetNull)
+  
+  qualifiedAt          DateTime @default(now())
+  qualifiedBy          String   // User ID
+  status               String   @default("qualified") // qualified, rejected, pending
+  reason               String?  // Why qualified/rejected
+  notes                String?
+  
+  // Tracking
+  importedFrom         String   @default("airtable") // airtable, manual, csv
+  
+  createdAt            DateTime @default(now())
+  updatedAt            DateTime @updatedAt
+  
+  @@unique([websiteId, clientId, projectId])
+  @@index([clientId])
+  @@index([projectId])
+}
+
+model WebsiteSyncLog {
+  id                    String   @id @default(uuid())
+  websiteId            String?
+  website              Website? @relation(fields: [websiteId], references: [id], onDelete: Cascade)
+  
+  syncType             String   // full, incremental, webhook
+  action               String   // create, update, delete
+  status               String   // success, failed, skipped
+  
+  airtableRecordId     String?
+  changes              Json?    // What changed
+  error                String?
+  
+  startedAt            DateTime
+  completedAt          DateTime?
+  recordsProcessed     Int      @default(0)
+  
+  @@index([websiteId])
+  @@index([syncType])
+  @@index([startedAt])
+}
+
+// Configuration for sync
+model AirtableSyncConfig {
+  id                    String   @id @default(uuid())
+  key                  String   @unique
+  value                String
+  
+  createdAt            DateTime @default(now())
+  updatedAt            DateTime @updatedAt
+}
+
+// Track webhook events
+model AirtableWebhookEvent {
+  id                    String   @id @default(uuid())
+  webhookId            String
+  eventType            String   // record.created, record.updated, record.deleted
+  tableId              String
+  recordId             String
+  payload              Json
+  processed            Boolean  @default(false)
+  processedAt          DateTime?
+  error                String?
+  
+  receivedAt           DateTime @default(now())
+  
+  @@index([processed, receivedAt])
+  @@index([recordId])
+}

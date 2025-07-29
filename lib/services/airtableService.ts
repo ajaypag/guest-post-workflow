@@ -298,6 +298,18 @@ export class AirtableService {
     
     // Process all contacts
     for (let i = 0; i < emails.length; i++) {
+      // Handle record IDs vs actual emails
+      const email = emails[i];
+      if (!email) continue;
+      
+      // For now, skip record IDs (starting with 'rec')
+      // TODO: In Airtable, add a "Contact Email" lookup field in Link Price table
+      // that pulls the actual email from Contacts table
+      if (typeof email === 'string' && email.startsWith('rec')) {
+        console.log(`⚠️ PostFlow Contact Emails is returning record IDs. Need to lookup actual email field in Airtable.`);
+        continue;
+      }
+      
       // Skip inactive contacts
       if (statuses[i] !== 'Active') continue;
       
