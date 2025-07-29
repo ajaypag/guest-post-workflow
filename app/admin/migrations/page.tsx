@@ -50,6 +50,11 @@ export default function MigrationsPage() {
       id: '0015_fix_traffic_column_type',
       name: 'Fix Traffic Column Type',
       description: 'Changes total_traffic from INTEGER to DECIMAL to handle Airtable decimal values'
+    },
+    {
+      id: '0016_add_project_websites_table',
+      name: 'Project & Workflow Website Associations',
+      description: 'Creates tables to track website usage in projects and workflows'
     }
   ];
 
