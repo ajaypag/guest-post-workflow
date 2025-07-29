@@ -3,6 +3,8 @@ import { db } from '@/lib/db/connection';
 import { invitations } from '@/lib/db/schema';
 import { eq } from 'drizzle-orm';
 import crypto from 'crypto';
+import { EmailService } from '@/lib/services/emailService';
+import { InvitationEmail } from '@/lib/email/templates';
 
 export async function POST(
   request: NextRequest,
@@ -60,13 +62,38 @@ export async function POST(
       .where(eq(invitations.id, invitationId))
       .returning();
 
-    // TODO: Send email invitation here
-    console.log(`Invitation resent for ${invitation.email} with new token: ${newToken}`);
-    console.log(`New invitation URL: ${process.env.NEXTAUTH_URL}/accept-invitation?token=${newToken}`);
+    // Send resent invitation email
+    const invitationUrl = `${process.env.NEXTAUTH_URL}/accept-invitation?token=${newToken}`;
+    const expiresAtFormatted = newExpiresAt.toISOString();
+    
+    const emailResult = await EmailService.sendWithTemplate(
+      'invitation',
+      invitation.email,
+      {
+        subject: `Reminder: You're invited to join PostFlow`,
+        template: InvitationEmail({
+          inviteeEmail: invitation.email,
+          userType: invitation.userType as 'internal' | 'advertiser' | 'publisher',
+          role: invitation.role as 'user' | 'admin',
+          invitationUrl,
+          expiresAt: expiresAtFormatted,
+          invitedBy: 'System Administrator', // TODO: Get from actual session
+        }),
+      }
+    );
+
+    if (!emailResult.success) {
+      console.error('Failed to resend invitation email:', emailResult.error);
+      // Don't fail the resend operation, just log the error
+    } else {
+      console.log(`Invitation email resent successfully to ${invitation.email}`);
+    }
 
     return NextResponse.json({ 
       invitation: updatedInvitation[0],
-      message: 'Invitation resent successfully'
+      message: emailResult.success 
+        ? 'Invitation resent and email sent successfully'
+        : 'Invitation resent but email failed to send'
     });
   } catch (error) {
     console.error('Error resending invitation:', error);

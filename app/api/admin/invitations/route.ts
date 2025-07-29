@@ -4,6 +4,8 @@ import { invitations, users } from '@/lib/db/schema';
 import { eq, desc } from 'drizzle-orm';
 import crypto from 'crypto';
 import { sessionStorage } from '@/lib/userStorage';
+import { EmailService } from '@/lib/services/emailService';
+import { InvitationEmail } from '@/lib/email/templates';
 
 // Get all invitations
 export async function GET() {
@@ -134,13 +136,38 @@ export async function POST(request: NextRequest) {
       })
       .returning();
 
-    // TODO: Send email invitation here
-    console.log(`Invitation created for ${email} with token: ${token}`);
-    console.log(`Invitation URL: ${process.env.NEXTAUTH_URL}/accept-invitation?token=${token}`);
+    // Send invitation email
+    const invitationUrl = `${process.env.NEXTAUTH_URL}/accept-invitation?token=${token}`;
+    const expiresAtFormatted = expiresAt.toISOString();
+    
+    const emailResult = await EmailService.sendWithTemplate(
+      'invitation',
+      email,
+      {
+        subject: `You're invited to join PostFlow`,
+        template: InvitationEmail({
+          inviteeEmail: email,
+          userType: userType as 'internal' | 'advertiser' | 'publisher',
+          role: role as 'user' | 'admin',
+          invitationUrl,
+          expiresAt: expiresAtFormatted,
+          invitedBy: 'System Administrator', // TODO: Get from actual session
+        }),
+      }
+    );
+
+    if (!emailResult.success) {
+      console.error('Failed to send invitation email:', emailResult.error);
+      // Don't fail the invitation creation, just log the error
+    } else {
+      console.log(`Invitation email sent successfully to ${email}`);
+    }
 
     return NextResponse.json({ 
       invitation: newInvitation[0],
-      message: 'Invitation created successfully'
+      message: emailResult.success 
+        ? 'Invitation created and email sent successfully'
+        : 'Invitation created but email failed to send'
     });
   } catch (error) {
     console.error('Error creating invitation:', error);

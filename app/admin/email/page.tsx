@@ -251,6 +251,7 @@ export default function EmailManagement() {
                           <option value="welcome">Welcome</option>
                           <option value="workflow-completed">Workflow Completed</option>
                           <option value="contact-outreach">Contact Outreach</option>
+                          <option value="invitation">Invitation</option>
                           <option value="notification">Notification</option>
                         </select>
                         
@@ -375,6 +376,7 @@ export default function EmailManagement() {
                           >
                             <option value="welcome">Welcome Email</option>
                             <option value="workflow-completed">Workflow Completed</option>
+                            <option value="invitation">Invitation Email</option>
                             <option value="custom">Custom Email</option>
                           </select>
                         </div>

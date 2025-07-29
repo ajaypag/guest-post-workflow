@@ -18,6 +18,8 @@ Production-ready workflow system with PostgreSQL, multi-user auth, and AI agent 
 - ✅ Dynamic outline-based completion detection
 - ✅ Increased section limit to 40
 - ✅ Auto-save race condition fix for AI agents (2025-01-20)
+- ✅ User system migration to invite-only (2025-01-29)
+- ✅ Email service integration with invitations (2025-01-29)
 - ⚠️ Auto-save diagnostics removed (reverted)
 
 ## 🔧 Quick Reference
@@ -29,6 +31,7 @@ Production-ready workflow system with PostgreSQL, multi-user auth, and AI agent 
 | **Database Schema** | [docs/architecture/DATABASE.md](docs/architecture/DATABASE.md) |
 | **Build AI Agents** | [docs/agents/BUILDING_BLOCKS.md](docs/agents/BUILDING_BLOCKS.md) |
 | **Auto-Save Fix** | [docs/agents/AUTO_SAVE_PATTERN.md](docs/agents/AUTO_SAVE_PATTERN.md) |
+| **Email System** | [docs/services/EMAIL_SERVICE.md](docs/services/EMAIL_SERVICE.md) |
 | **Debug Issues** | [docs/admin/DIAGNOSTICS.md](docs/admin/DIAGNOSTICS.md) |
 | **All Documentation** | [docs/DEVELOPER_GUIDE.md](docs/DEVELOPER_GUIDE.md) |
 
@@ -37,6 +40,7 @@ Production-ready workflow system with PostgreSQL, multi-user auth, and AI agent 
 DATABASE_URL=postgresql://user:pass@host:port/db?sslmode=disable
 NEXTAUTH_SECRET=your-secret-key
 NEXTAUTH_URL=https://your-domain.com
+RESEND_API_KEY=re_your_api_key_here
 ```
 
 ### OpenAI Accounts
@@ -139,6 +143,7 @@ npm run db:studio       # Browse database
 - ✅ `agenticSemanticAuditService.ts`
 - 🔄 `agenticArticleService.ts` (in progress)
 - ⏳ `agenticFormattingQAService.ts` (planned)
+
 
 ## 📚 Full Documentation
 
