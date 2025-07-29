@@ -124,10 +124,8 @@ export default function WebsiteDetailModal({
   if (!isOpen) return null;
 
   return (
-    <div className="fixed inset-0 z-50 overflow-hidden">
-      <div className="absolute inset-0 bg-gray-900 bg-opacity-10" onClick={onClose} />
-      
-      <div className="absolute right-0 top-0 bottom-0 w-full max-w-2xl bg-white shadow-xl">
+    <div className="fixed inset-0 z-50 overflow-hidden pointer-events-none">
+      <div className="absolute right-0 top-0 bottom-0 w-full max-w-2xl bg-white shadow-xl pointer-events-auto">
         {loading ? (
           <div className="h-full flex items-center justify-center">
             <Loader2 className="w-8 h-8 animate-spin text-gray-400" />
