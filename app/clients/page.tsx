@@ -257,6 +257,9 @@ function ClientsPageContent() {
                     rows={4}
                     placeholder="https://example.com/blog&#10;https://anotherdomain.com/articles&#10;https://techblog.com"
                   />
+                  <p className="mt-1 text-xs text-gray-500">
+                    These are the pages you want to build backlinks to. Enter one URL per line.
+                  </p>
                   <p className="text-xs text-gray-500 mt-1">
                     Optional: Add initial target pages. You can add more later.
                   </p>
