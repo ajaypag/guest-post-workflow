@@ -519,4 +519,47 @@ export class OrderService {
 
     return result;
   }
+
+  /**
+   * Get order by share token
+   */
+  static async getOrderByShareToken(token: string): Promise<Order | null> {
+    const order = await db.query.orders.findFirst({
+      where: eq(orders.shareToken, token),
+    });
+
+    return order || null;
+  }
+
+  /**
+   * Track share token usage
+   */
+  static async trackShareTokenUsage(token: string, ip?: string): Promise<void> {
+    const tokenRecord = await db.query.orderShareTokens.findFirst({
+      where: eq(orderShareTokens.token, token),
+    });
+
+    if (tokenRecord) {
+      await db.update(orderShareTokens)
+        .set({
+          usedAt: new Date(),
+          usedByIp: ip || null,
+          useCount: sql`${orderShareTokens.useCount} + 1`,
+        })
+        .where(eq(orderShareTokens.token, token));
+    }
+  }
+
+  /**
+   * Invalidate share token after use
+   */
+  static async invalidateShareToken(orderId: string): Promise<void> {
+    await db.update(orders)
+      .set({
+        shareToken: null,
+        shareExpiresAt: null,
+        updatedAt: new Date(),
+      })
+      .where(eq(orders.id, orderId));
+  }
 }

@@ -40,7 +40,11 @@ export type EmailType =
   | 'contact-outreach'
   | 'guest-post-request'
   | 'invitation'
-  | 'notification';
+  | 'notification'
+  | 'advertiser_welcome'
+  | 'order_review'
+  | 'order_approved'
+  | 'order_paid';
 
 // Email send options
 export interface EmailOptions {
@@ -436,6 +440,84 @@ export class EmailService {
         failed: parseInt(row.failed),
       })),
     };
+  }
+
+  /**
+   * Send advertiser welcome email
+   */
+  static async sendAdvertiserWelcome(data: {
+    email: string;
+    name: string;
+    company?: string;
+  }): Promise<{ success: boolean; id?: string; error?: string }> {
+    const html = `
+      <div style="font-family: Arial, sans-serif; line-height: 1.6; color: #333;">
+        <h2>Welcome to PostFlow, ${data.name}!</h2>
+        <p>Thank you for creating your advertiser account${data.company ? ` for ${data.company}` : ''}.</p>
+        
+        <p>You can now:</p>
+        <ul>
+          <li>View and approve guest post orders</li>
+          <li>Track the progress of your campaigns</li>
+          <li>Access published URLs and reports</li>
+          <li>Manage your account settings</li>
+        </ul>
+        
+        <p>To access your dashboard, simply log in at:</p>
+        <p><a href="${process.env.NEXTAUTH_URL}/auth/login" style="color: #0066cc;">Login to PostFlow</a></p>
+        
+        <p>If you have any questions or need assistance, please don't hesitate to contact our support team.</p>
+        
+        <p>Best regards,<br>The PostFlow Team</p>
+      </div>
+    `;
+
+    return this.send('advertiser_welcome', {
+      to: data.email,
+      subject: 'Welcome to PostFlow - Your Account is Ready',
+      html,
+      text: `Welcome to PostFlow, ${data.name}! Your advertiser account has been created successfully.`,
+    });
+  }
+
+  /**
+   * Send order ready for review email
+   */
+  static async sendOrderReadyForReview(data: {
+    email: string;
+    name: string;
+    orderId: string;
+    shareToken: string;
+    itemCount: number;
+    totalAmount: number;
+  }): Promise<{ success: boolean; id?: string; error?: string }> {
+    const previewUrl = `${process.env.NEXTAUTH_URL}/orders/share/${data.shareToken}`;
+    
+    const html = `
+      <div style="font-family: Arial, sans-serif; line-height: 1.6; color: #333;">
+        <h2>Your Guest Post Order is Ready for Review</h2>
+        <p>Hi ${data.name},</p>
+        
+        <p>Your guest post order (${data.itemCount} placement${data.itemCount > 1 ? 's' : ''}) totaling $${(data.totalAmount / 100).toFixed(2)} is ready for your review and approval.</p>
+        
+        <div style="margin: 30px 0;">
+          <a href="${previewUrl}" style="background-color: #0066cc; color: white; padding: 12px 24px; text-decoration: none; border-radius: 4px; display: inline-block;">Review and Approve Order</a>
+        </div>
+        
+        <p>This link will expire in 7 days. If you need a new link, please contact your account manager.</p>
+        
+        <p>If you have any questions about this order, please don't hesitate to reach out.</p>
+        
+        <p>Best regards,<br>The PostFlow Team</p>
+      </div>
+    `;
+
+    return this.send('order_review', {
+      to: data.email,
+      subject: `Guest Post Order Ready for Review - ${data.itemCount} Placement${data.itemCount > 1 ? 's' : ''}`,
+      html,
+      text: `Your guest post order is ready for review. Visit ${previewUrl} to review and approve.`,
+    });
   }
 }
 
