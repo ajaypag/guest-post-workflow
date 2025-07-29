@@ -113,6 +113,7 @@ export const workflows = pgTable('workflows', {
   status: varchar('status', { length: 50 }).notNull().default('active'),
   content: jsonb('content'), // Stores the complete GuestPostWorkflow as JSON
   targetPages: jsonb('target_pages'), // Stores target pages as JSON
+  orderItemId: uuid('order_item_id'), // Link to order system
   createdAt: timestamp('created_at').notNull(),
   updatedAt: timestamp('updated_at').notNull(),
 });
