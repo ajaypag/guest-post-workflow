@@ -25,6 +25,7 @@ export default function InlineDatabaseSelector({
   const [selectedIds, setSelectedIds] = useState<Set<string>>(
     new Set(selectedWebsites.map(w => w.id))
   );
+  const [availableCategories, setAvailableCategories] = useState<string[]>([]);
   
   // Filters
   const [filters, setFilters] = useState({
@@ -79,9 +80,34 @@ export default function InlineDatabaseSelector({
     }
   }, [searchTerm, filters, page, pageSize, clientId, projectId]);
 
+  // Load categories
+  const loadCategories = useCallback(async () => {
+    try {
+      // Get unique categories from loaded websites
+      const allCategories = new Set<string>();
+      const response = await fetch('/api/websites/search', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          filters: {},
+          limit: 1000,
+          offset: 0
+        })
+      });
+      const data = await response.json();
+      data.websites?.forEach((w: ProcessedWebsite) => {
+        w.categories?.forEach(cat => allCategories.add(cat));
+      });
+      setAvailableCategories(Array.from(allCategories).sort());
+    } catch (error) {
+      console.error('Failed to load categories:', error);
+    }
+  }, []);
+
   // Initial load
   useEffect(() => {
     loadWebsites(true);
+    loadCategories();
   }, []);
 
   // Load when page changes
@@ -269,6 +295,38 @@ export default function InlineDatabaseSelector({
               </select>
             </div>
           </div>
+
+          {/* Categories */}
+          {availableCategories.length > 0 && (
+            <div className="mt-4">
+              <label className="block text-sm font-medium text-gray-700 mb-2">Categories</label>
+              <div className="grid grid-cols-2 md:grid-cols-4 lg:grid-cols-6 gap-2">
+                {availableCategories.map(category => (
+                  <label key={category} className="flex items-center gap-1.5">
+                    <input
+                      type="checkbox"
+                      checked={filters.categories.includes(category)}
+                      onChange={(e) => {
+                        if (e.target.checked) {
+                          setFilters(prev => ({ 
+                            ...prev, 
+                            categories: [...prev.categories, category] 
+                          }));
+                        } else {
+                          setFilters(prev => ({ 
+                            ...prev, 
+                            categories: prev.categories.filter(c => c !== category) 
+                          }));
+                        }
+                      }}
+                      className="w-4 h-4 text-indigo-600 rounded border-gray-300 focus:ring-indigo-500"
+                    />
+                    <span className="text-sm text-gray-700">{category}</span>
+                  </label>
+                ))}
+              </div>
+            </div>
+          )}
 
           <div className="flex justify-between">
             <button
