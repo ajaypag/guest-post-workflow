@@ -8,16 +8,14 @@ import { AuthService } from '@/lib/auth';
 console.log('Login page loaded - DEPLOYMENT TEST v2 -', new Date().toISOString());
 
 // Deployment version tracking
-const DEPLOYMENT_VERSION = 'v2.0';
-const LAST_UPDATED = '2025-01-22 15:45 UTC';
+const DEPLOYMENT_VERSION = 'v3.0 - Invite Only';
+const LAST_UPDATED = '2025-01-29 14:30 UTC';
 
 export default function LoginPage() {
   const router = useRouter();
-  const [isLogin, setIsLogin] = useState(true);
   const [formData, setFormData] = useState({
     email: '',
-    password: '',
-    name: ''
+    password: ''
   });
   const [error, setError] = useState('');
   const [loading, setLoading] = useState(false);
@@ -28,33 +26,13 @@ export default function LoginPage() {
     setLoading(true);
 
     try {
-      if (isLogin) {
-        // Login logic
-        const user = await AuthService.login(formData.email, formData.password);
-        if (!user) {
-          throw new Error('Invalid email or password');
-        }
-        
-        router.push('/');
-      } else {
-        // Registration logic
-        if (!formData.name.trim()) {
-          throw new Error('Name is required');
-        }
-        
-        const user = await AuthService.register({
-          email: formData.email,
-          name: formData.name,
-          password: formData.password,
-          role: 'user', // Default role
-        });
-        
-        if (!user) {
-          throw new Error('Registration failed');
-        }
-        
-        router.push('/');
+      // Login logic only - no registration
+      const user = await AuthService.login(formData.email, formData.password);
+      if (!user) {
+        throw new Error('Invalid email or password');
       }
+      
+      router.push('/');
     } catch (error: any) {
       setError(error.message);
     } finally {
@@ -74,10 +52,13 @@ export default function LoginPage() {
         
         <div>
           <h2 className="mt-6 text-center text-3xl font-extrabold text-gray-900">
-            {isLogin ? 'Sign in to your account - TEST v2' : 'Create new account - TEST v2'}
+            Sign in to your account
           </h2>
           <p className="mt-2 text-center text-sm text-gray-600">
             Guest Post Workflow Manager
+          </p>
+          <p className="mt-1 text-center text-xs text-gray-500">
+            Internal tool - Invite only
           </p>
         </div>
         
@@ -89,24 +70,6 @@ export default function LoginPage() {
           )}
           
           <div className="space-y-4">
-            {!isLogin && (
-              <div>
-                <label htmlFor="name" className="block text-sm font-medium text-gray-700">
-                  Full Name
-                </label>
-                <input
-                  id="name"
-                  name="name"
-                  type="text"
-                  required={!isLogin}
-                  className="mt-1 appearance-none rounded-md relative block w-full px-3 py-2 border border-gray-300 placeholder-gray-500 text-gray-900 focus:outline-none focus:ring-blue-500 focus:border-blue-500"
-                  placeholder="John Doe"
-                  value={formData.name}
-                  onChange={(e) => setFormData({ ...formData, name: e.target.value })}
-                />
-              </div>
-            )}
-            
             <div>
               <label htmlFor="email" className="block text-sm font-medium text-gray-700">
                 Email address
@@ -137,11 +100,9 @@ export default function LoginPage() {
                 value={formData.password}
                 onChange={(e) => setFormData({ ...formData, password: e.target.value })}
               />
-              {isLogin && (
-                <p className="mt-1 text-xs text-gray-500">
-                  Note: This is a demo - password not validated
-                </p>
-              )}
+              <p className="mt-1 text-xs text-gray-500">
+                Note: This is a demo - password not validated
+              </p>
             </div>
           </div>
 
@@ -151,30 +112,19 @@ export default function LoginPage() {
               disabled={loading}
               className="group relative w-full flex justify-center py-2 px-4 border border-transparent text-sm font-medium rounded-md text-white bg-blue-600 hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500 disabled:opacity-50"
             >
-              {loading ? 'Processing...' : (isLogin ? 'Sign in' : 'Create account')}
+              {loading ? 'Processing...' : 'Sign in'}
             </button>
           </div>
 
-          <div className="text-center">
-            <button
-              type="button"
-              onClick={() => {
-                setIsLogin(!isLogin);
-                setError('');
-                setFormData({ email: '', password: '', name: '' });
-              }}
-              className="text-blue-600 hover:text-blue-500 text-sm"
-            >
-              {isLogin ? "Don't have an account? Sign up" : "Already have an account? Sign in"}
-            </button>
+          <div className="text-center text-sm text-gray-600">
+            <p>Need access? Contact your administrator</p>
           </div>
           
-          {isLogin && (
+          {(
             <div className="text-center mt-4 p-4 bg-blue-50 rounded">
               <p className="text-sm text-blue-800 font-medium">Demo Account</p>
               <p className="text-xs text-blue-600 mt-1">
-                Email: admin@example.com (Admin)<br/>
-                Or create a new account
+                Email: admin@example.com
               </p>
             </div>
           )}
