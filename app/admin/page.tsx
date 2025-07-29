@@ -6,6 +6,22 @@ import { Database, Activity, Wrench, Users, BarChart3, Settings, AlertTriangle, 
 export default function AdminDashboard() {
   const adminTools = [
     {
+      title: 'Database Migrations',
+      description: 'Run and manage all database migrations from one place',
+      icon: Database,
+      href: '/admin/migrations',
+      color: 'bg-emerald-50 border-emerald-200 text-emerald-700',
+      iconColor: 'text-emerald-600'
+    },
+    {
+      title: 'Airtable Sync',
+      description: 'Sync websites from Airtable to local database',
+      icon: Database,
+      href: '/admin/airtable-sync',
+      color: 'bg-indigo-50 border-indigo-200 text-indigo-700',
+      iconColor: 'text-indigo-600'
+    },
+    {
       title: 'Database Migration',
       description: 'Manage database tables and migrations for agentic features',
       icon: Database,
