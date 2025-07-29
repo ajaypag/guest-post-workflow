@@ -28,16 +28,22 @@ export default function OrderMigrationPage() {
 
       const data = await response.json();
 
-      if (!response.ok) {
-        throw new Error(data.error || 'Migration failed');
+      // Always update logs if available
+      if (data.logs && Array.isArray(data.logs)) {
+        setLogs(data.logs);
       }
 
-      setLogs(prev => [...prev, ...data.logs]);
+      if (!response.ok) {
+        // Show detailed error if available
+        const errorMsg = data.errorDetail 
+          ? `${data.error}\nDetail: ${data.errorDetail}\nCode: ${data.errorCode || 'unknown'}`
+          : data.error || 'Migration failed';
+        throw new Error(errorMsg);
+      }
+
       setSuccess(true);
-      setLogs(prev => [...prev, '✅ Order system migration completed successfully!']);
     } catch (err) {
       setError(err instanceof Error ? err.message : 'Unknown error occurred');
-      setLogs(prev => [...prev, `❌ Error: ${err instanceof Error ? err.message : 'Unknown error'}`]);
     } finally {
       setIsRunning(false);
     }

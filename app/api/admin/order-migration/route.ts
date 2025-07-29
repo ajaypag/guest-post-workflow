@@ -49,11 +49,35 @@ export async function POST(request: NextRequest) {
       } catch (error) {
         const errorMessage = error instanceof Error ? error.message : 'Unknown error';
         
+        // Extract detailed database error information
+        const dbError = error as any;
+        const errorDetails = {
+          message: errorMessage,
+          code: dbError.code || 'unknown',
+          detail: dbError.detail || 'no detail',
+          hint: dbError.hint || 'no hint',
+          position: dbError.position || 'unknown',
+          severity: dbError.severity || 'unknown',
+          table: dbError.table || 'unknown',
+          column: dbError.column || 'unknown',
+          constraint: dbError.constraint || 'unknown',
+          routine: dbError.routine || 'unknown'
+        };
+        
+        logs.push(`❌ Error executing statement ${i + 1}:`);
+        logs.push(`   Code: ${errorDetails.code}`);
+        logs.push(`   Message: ${errorDetails.message}`);
+        logs.push(`   Detail: ${errorDetails.detail}`);
+        logs.push(`   Hint: ${errorDetails.hint}`);
+        logs.push(`   Table: ${errorDetails.table}`);
+        logs.push(`   Constraint: ${errorDetails.constraint}`);
+        
         // Check if it's a "already exists" error
-        if (errorMessage.includes('already exists')) {
+        if (errorMessage.includes('already exists') || errorDetails.code === '42P07') {
           logs.push(`⚠️ ${tableName || 'Statement'} already exists - skipping`);
         } else {
-          throw new Error(`Failed at statement ${i + 1}: ${errorMessage}`);
+          // Include full error details in the thrown error
+          throw new Error(`Failed at statement ${i + 1}: ${errorMessage}\nCode: ${errorDetails.code}\nDetail: ${errorDetails.detail}`);
         }
       }
     }
@@ -180,13 +204,30 @@ export async function POST(request: NextRequest) {
     
   } catch (error) {
     const errorMessage = error instanceof Error ? error.message : 'Unknown error';
+    const dbError = error as any;
+    
     logs.push(`\n❌ Migration failed: ${errorMessage}`);
+    
+    // Add full error details to logs
+    if (dbError.code) {
+      logs.push(`\nDatabase Error Details:`);
+      logs.push(`Code: ${dbError.code}`);
+      logs.push(`Severity: ${dbError.severity || 'unknown'}`);
+      logs.push(`Detail: ${dbError.detail || 'none'}`);
+      logs.push(`Hint: ${dbError.hint || 'none'}`);
+      logs.push(`Position: ${dbError.position || 'unknown'}`);
+      logs.push(`File: ${dbError.file || 'unknown'}`);
+      logs.push(`Line: ${dbError.line || 'unknown'}`);
+      logs.push(`Routine: ${dbError.routine || 'unknown'}`);
+    }
     
     return NextResponse.json(
       { 
         error: errorMessage,
         logs,
-        success: false 
+        success: false,
+        errorCode: dbError.code || null,
+        errorDetail: dbError.detail || null
       },
       { status: 500 }
     );
