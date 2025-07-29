@@ -1203,18 +1203,87 @@ export default function DatabaseMigrationPage() {
       const response = await fetch('/api/admin/migrate-email-logs', {
         method: 'POST'
       });
-      const data = await response.json();
       
-      if (data.success) {
-        setMessage('✅ Email logs table created successfully! Email tracking is now enabled.');
-        setMessageType('success');
+      if (!response.ok) {
+        throw new Error(`HTTP error! status: ${response.status}`);
+      }
+      
+      // Handle streaming response
+      if (response.headers.get('content-type')?.includes('text/event-stream')) {
+        const reader = response.body?.getReader();
+        const decoder = new TextDecoder();
+        
+        if (!reader) {
+          throw new Error('No response body');
+        }
+        
+        let lastMessage = '';
+        
+        while (true) {
+          const { done, value } = await reader.read();
+          if (done) break;
+          
+          const chunk = decoder.decode(value);
+          const lines = chunk.split('\n');
+          
+          for (const line of lines) {
+            if (line.startsWith('data: ')) {
+              try {
+                const data = JSON.parse(line.slice(6));
+                
+                if (data.step === 'error') {
+                  setMessage(`❌ Migration failed: ${data.error}`);
+                  setMessageType('error');
+                } else if (data.step === 'complete') {
+                  setMessage('✅ Email logs table created successfully! Email tracking is now enabled.');
+                  setMessageType('success');
+                } else {
+                  lastMessage = data.message || lastMessage;
+                  setMessage(`⏳ ${lastMessage}`);
+                  setMessageType('info');
+                }
+              } catch (e) {
+                // Ignore parse errors
+              }
+            }
+          }
+        }
       } else {
-        setMessage(`❌ Migration failed: ${data.error}`);
-        setMessageType('error');
+        // Fallback to JSON response
+        const data = await response.json();
+        
+        if (data.success) {
+          setMessage('✅ Email logs table created successfully! Email tracking is now enabled.');
+          setMessageType('success');
+        } else {
+          setMessage(`❌ Migration failed: ${data.error}`);
+          setMessageType('error');
+        }
       }
     } catch (error) {
-      setMessage(`❌ Error: ${error instanceof Error ? error.message : 'Unknown error'}`);
+      console.error('Migration error:', error);
+      setMessage(`❌ Error: ${error instanceof Error ? error.message : 'Unknown error'}. Trying simplified migration...`);
       setMessageType('error');
+      
+      // Try the simplified migration as a fallback
+      try {
+        const fallbackResponse = await fetch('/api/admin/migrate-email-logs-simple', {
+          method: 'POST'
+        });
+        
+        const fallbackData = await fallbackResponse.json();
+        
+        if (fallbackData.success) {
+          setMessage('✅ Email logs table created successfully using simplified migration!');
+          setMessageType('success');
+        } else {
+          setMessage(`❌ Both migrations failed. Error: ${fallbackData.error || 'Unknown error'}`);
+          setMessageType('error');
+        }
+      } catch (fallbackError) {
+        setMessage(`❌ All migration attempts failed. Please check server logs.`);
+        setMessageType('error');
+      }
     }
     
     setIsLoading(false);
