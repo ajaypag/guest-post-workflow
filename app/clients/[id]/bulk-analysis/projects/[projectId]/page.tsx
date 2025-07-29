@@ -16,8 +16,11 @@ import GuidedTriageFlow from '@/components/GuidedTriageFlow';
 import { MultiSelect, MultiSelectOption } from '@/components/ui/MultiSelect';
 import MoveToProjectDialog from '@/components/bulk-analysis/MoveToProjectDialog';
 import { MessageDisplay } from '@/components/bulk-analysis/MessageDisplay';
+import WebsiteDetailModal from '@/components/websites/WebsiteDetailModal';
+import InlineDatabaseSelector from '@/components/bulk-analysis/InlineDatabaseSelector';
 import { BulkAnalysisProject } from '@/types/bulk-analysis-projects';
 import { BulkAnalysisDomain } from '@/types/bulk-analysis';
+import { ProcessedWebsite } from '@/types/airtable';
 import { 
   ArrowLeft, 
   Target, 
@@ -41,7 +44,8 @@ import {
   Sparkles,
   FolderOpen,
   Brain,
-  X
+  X,
+  Database
 } from 'lucide-react';
 
 export default function ProjectDetailPage() {
@@ -155,6 +159,10 @@ export default function ProjectDetailPage() {
   
   // Smart selection state
   const [showSmartSelection, setShowSmartSelection] = useState(false);
+  
+  // Domain input mode state
+  const [domainInputMode, setDomainInputMode] = useState<'paste' | 'database'>('paste');
+  const [selectedDatabaseWebsites, setSelectedDatabaseWebsites] = useState<ProcessedWebsite[]>([]);
   
   // Reset pagination when filters change
   useEffect(() => {
@@ -435,67 +443,134 @@ export default function ProjectDetailPage() {
   };
 
   const handleAnalyze = async () => {
-    if (keywordInputMode === 'target-pages') {
-      if (!client || selectedTargetPages.length === 0 || !domainText.trim()) {
-        setMessage('Please select target pages and enter domains to analyze');
+    if (domainInputMode === 'database') {
+      // Handle database mode
+      if (selectedDatabaseWebsites.length === 0) {
+        setMessage('Please select websites from the database');
         return;
+      }
+      
+      if (keywordInputMode === 'target-pages' && selectedTargetPages.length === 0) {
+        setMessage('Please select target pages');
+        return;
+      } else if (keywordInputMode === 'manual' && !manualKeywords.trim()) {
+        setMessage('Please enter keywords');
+        return;
+      }
+      
+      setLoading(true);
+      setMessage('');
+      try {
+        // Extract domains and metadata from selected websites
+        const domainList = selectedDatabaseWebsites.map(w => w.domain);
+        const metadata: Record<string, any> = {};
+        
+        selectedDatabaseWebsites.forEach(website => {
+          metadata[website.domain] = {
+            id: website.id,
+            domainRating: website.domainRating,
+            totalTraffic: website.totalTraffic,
+            guestPostCost: website.guestPostCost,
+            categories: website.categories,
+            contacts: website.contacts,
+            publishedOpportunities: website.publishedOpportunities,
+            skipDataForSeo: true // Skip DataForSEO API calls for database websites
+          };
+        });
+        
+        // Create domains with metadata
+        const response = await fetch(`/api/clients/${params.id}/bulk-analysis`, {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            domains: domainList,
+            targetPageIds: keywordInputMode === 'target-pages' ? selectedTargetPages : [],
+            manualKeywords: keywordInputMode === 'manual' ? manualKeywords : undefined,
+            projectId: params.projectId,
+            airtableMetadata: metadata
+          })
+        });
+        
+        if (response.ok) {
+          const data = await response.json();
+          await loadDomains();
+          setSelectedDatabaseWebsites([]);
+          setMessage(`✅ Added ${data.domains.length} websites from database to project`);
+        } else {
+          throw new Error('Failed to add websites');
+        }
+      } catch (error) {
+        console.error('Error adding websites:', error);
+        setMessage('❌ Error adding websites from database');
+      } finally {
+        setLoading(false);
       }
     } else {
-      if (!manualKeywords.trim() || !domainText.trim()) {
-        setMessage('Please enter keywords and domains to analyze');
-        return;
-      }
-    }
-
-    setLoading(true);
-    setMessage('');
-
-    try {
-      // Parse domains
-      const domainList = domainText
-        .split('\n')
-        .map(d => d.trim())
-        .filter(Boolean);
-
-      // Check for existing domains
-      const checkResponse = await fetch(`/api/clients/${params.id}/bulk-analysis/check`, {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ domains: domainList })
-      });
-
-      if (checkResponse.ok) {
-        const checkData = await checkResponse.json();
-        setExistingDomains(checkData.existing || []);
-      }
-
-      // Create or update domains
-      const response = await fetch(`/api/clients/${params.id}/bulk-analysis`, {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-          domains: domainList,
-          targetPageIds: keywordInputMode === 'target-pages' ? selectedTargetPages : [],
-          manualKeywords: keywordInputMode === 'manual' ? manualKeywords : undefined,
-          projectId: params.projectId
-        })
-      });
-
-      if (response.ok) {
-        const data = await response.json();
-        await loadDomains();
-        setDomainText('');
-        setMessage(`✅ Added ${data.domains.length} domains to project`);
+      // Handle paste mode (existing logic)
+      if (keywordInputMode === 'target-pages') {
+        if (!client || selectedTargetPages.length === 0 || !domainText.trim()) {
+          setMessage('Please select target pages and enter domains to analyze');
+          return;
+        }
       } else {
-        throw new Error('Failed to create domains');
+        if (!manualKeywords.trim() || !domainText.trim()) {
+          setMessage('Please enter keywords and domains to analyze');
+          return;
+        }
       }
-    } catch (error) {
-      console.error('Error analyzing domains:', error);
-      setMessage('❌ Error analyzing domains');
-    } finally {
-      setLoading(false);
+
+      setLoading(true);
+      setMessage('');
+
+      try {
+        // Parse domains
+        const domainList = domainText
+          .split('\n')
+          .map(d => d.trim())
+          .filter(Boolean);
+
+        // Check for existing domains
+        const checkResponse = await fetch(`/api/clients/${params.id}/bulk-analysis/check`, {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ domains: domainList })
+        });
+
+        if (checkResponse.ok) {
+          const checkData = await checkResponse.json();
+          setExistingDomains(checkData.existing || []);
+        }
+
+        // Create or update domains
+        const response = await fetch(`/api/clients/${params.id}/bulk-analysis`, {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            domains: domainList,
+            targetPageIds: keywordInputMode === 'target-pages' ? selectedTargetPages : [],
+            manualKeywords: keywordInputMode === 'manual' ? manualKeywords : undefined,
+            projectId: params.projectId,
+            airtableMetadata: undefined // No metadata for paste mode
+          })
+        });
+
+        if (response.ok) {
+          const data = await response.json();
+          await loadDomains();
+          setDomainText('');
+          setMessage(`✅ Added ${data.domains.length} domains to project`);
+        } else {
+          throw new Error('Failed to create domains');
+        }
+      } catch (error) {
+        console.error('Error analyzing domains:', error);
+        setMessage('❌ Error analyzing domains');
+      } finally {
+        setLoading(false);
+      }
     }
   };
+
 
   const updateQualificationStatus = async (domainId: string, status: 'high_quality' | 'good_quality' | 'marginal_quality' | 'disqualified', isManual?: boolean) => {
     try {
@@ -1491,7 +1566,7 @@ export default function ProjectDetailPage() {
           <div className="bg-white rounded-lg shadow p-6 mb-6">
             <h2 className="text-lg font-medium mb-4">2. Enter Domains to Analyze</h2>
             <p className="text-sm text-gray-600 mb-4">
-              Paste domains to analyze (one per line). Domains will be added to this project and checked against {
+              Add domains to analyze. Domains will be added to this project and checked against {
                 keywordInputMode === 'manual' 
                   ? 'the keywords you entered above'
                   : 'keywords from selected target pages'
@@ -1509,14 +1584,64 @@ export default function ProjectDetailPage() {
               </div>
             )}
             
-            <textarea
-              value={domainText}
-              onChange={(e) => setDomainText(e.target.value)}
-              placeholder="example.com
+            {/* Tab Selection */}
+            <div className="flex border-b mb-4">
+              <button
+                onClick={() => setDomainInputMode('paste')}
+                className={`px-4 py-2 text-sm font-medium border-b-2 transition-colors ${
+                  domainInputMode === 'paste'
+                    ? 'text-blue-600 border-blue-600'
+                    : 'text-gray-500 border-transparent hover:text-gray-700'
+                }`}
+              >
+                <div className="flex items-center gap-2">
+                  <FileText className="w-4 h-4" />
+                  Paste Domains
+                </div>
+              </button>
+              <button
+                onClick={() => setDomainInputMode('database')}
+                className={`px-4 py-2 text-sm font-medium border-b-2 transition-colors ${
+                  domainInputMode === 'database'
+                    ? 'text-blue-600 border-blue-600'
+                    : 'text-gray-500 border-transparent hover:text-gray-700'
+                }`}
+              >
+                <div className="flex items-center gap-2">
+                  <Database className="w-4 h-4" />
+                  Select from Database
+                </div>
+              </button>
+            </div>
+            
+            {/* Domain Input Content */}
+            {domainInputMode === 'paste' ? (
+              <div className="space-y-3">
+                <label className="text-sm font-medium text-gray-700">
+                  Enter domains (one per line)
+                </label>
+                <textarea
+                  value={domainText}
+                  onChange={(e) => setDomainText(e.target.value)}
+                  placeholder="example.com
 blog.example.com
 anotherdomain.com"
-              className="w-full h-32 px-3 py-2 border rounded-lg focus:ring-2 focus:ring-indigo-500 focus:border-transparent"
-            />
+                  className="w-full h-32 px-3 py-2 border rounded-lg focus:ring-2 focus:ring-indigo-500 focus:border-transparent"
+                />
+                <p className="text-xs text-gray-500">
+                  {domainText.split('\n').filter(d => d.trim()).length} domains entered
+                </p>
+              </div>
+            ) : (
+              <div className="mt-4">
+                <InlineDatabaseSelector
+                  clientId={params.id as string}
+                  projectId={project?.id || ''}
+                  selectedWebsites={selectedDatabaseWebsites}
+                  onSelectionChange={setSelectedDatabaseWebsites}
+                />
+              </div>
+            )}
             
             {existingDomains.length > 0 && (
               <div className="mt-3 p-3 bg-yellow-50 border border-yellow-200 rounded-lg">
@@ -1548,7 +1673,7 @@ anotherdomain.com"
                 onClick={handleAnalyze}
                 disabled={loading || 
                   (keywordInputMode === 'target-pages' ? selectedTargetPages.length === 0 : !manualKeywords.trim()) || 
-                  !domainText.trim()}
+                  (domainInputMode === 'paste' ? !domainText.trim() : selectedDatabaseWebsites.length === 0)}
                 className="px-4 py-2 bg-indigo-600 text-white rounded-lg hover:bg-indigo-700 disabled:opacity-50 disabled:cursor-not-allowed flex items-center"
               >
                 {loading ? (
@@ -1757,7 +1882,7 @@ anotherdomain.com"
                   <div className="bg-white rounded-lg shadow p-6 mb-6">
                     <h2 className="text-lg font-medium mb-4">2. Enter Domains to Analyze</h2>
                     <p className="text-sm text-gray-600 mb-4">
-                      Paste domains to analyze (one per line). Domains will be added to this project and checked against {
+                      Add domains to analyze. Domains will be added to this project and checked against {
                         keywordInputMode === 'manual' 
                           ? 'the keywords you entered above'
                           : 'keywords from selected target pages'
@@ -1775,14 +1900,64 @@ anotherdomain.com"
                       </div>
                     )}
                     
-                    <textarea
-                      value={domainText}
-                      onChange={(e) => setDomainText(e.target.value)}
-                      placeholder="example.com
+                    {/* Tab Selection */}
+                    <div className="flex border-b mb-4">
+                      <button
+                        onClick={() => setDomainInputMode('paste')}
+                        className={`px-4 py-2 text-sm font-medium border-b-2 transition-colors ${
+                          domainInputMode === 'paste'
+                            ? 'text-blue-600 border-blue-600'
+                            : 'text-gray-500 border-transparent hover:text-gray-700'
+                        }`}
+                      >
+                        <div className="flex items-center gap-2">
+                          <FileText className="w-4 h-4" />
+                          Paste Domains
+                        </div>
+                      </button>
+                      <button
+                        onClick={() => setDomainInputMode('database')}
+                        className={`px-4 py-2 text-sm font-medium border-b-2 transition-colors ${
+                          domainInputMode === 'database'
+                            ? 'text-blue-600 border-blue-600'
+                            : 'text-gray-500 border-transparent hover:text-gray-700'
+                        }`}
+                      >
+                        <div className="flex items-center gap-2">
+                          <Database className="w-4 h-4" />
+                          Select from Database
+                        </div>
+                      </button>
+                    </div>
+                    
+                    {/* Domain Input Content */}
+                    {domainInputMode === 'paste' ? (
+                      <div className="space-y-3">
+                        <label className="text-sm font-medium text-gray-700">
+                          Enter domains (one per line)
+                        </label>
+                        <textarea
+                          value={domainText}
+                          onChange={(e) => setDomainText(e.target.value)}
+                          placeholder="example.com
 blog.example.com
 anotherdomain.com"
-                      className="w-full h-32 px-3 py-2 border rounded-lg focus:ring-2 focus:ring-indigo-500 focus:border-transparent"
-                    />
+                          className="w-full h-32 px-3 py-2 border rounded-lg focus:ring-2 focus:ring-indigo-500 focus:border-transparent"
+                        />
+                        <p className="text-xs text-gray-500">
+                          {domainText.split('\n').filter(d => d.trim()).length} domains entered
+                        </p>
+                      </div>
+                    ) : (
+                      <div className="mt-4">
+                        <InlineDatabaseSelector
+                          clientId={params.id as string}
+                          projectId={params.projectId as string}
+                          selectedWebsites={selectedDatabaseWebsites}
+                          onSelectionChange={setSelectedDatabaseWebsites}
+                        />
+                      </div>
+                    )}
                     
                     {existingDomains.length > 0 && (
                       <div className="mt-3 p-3 bg-yellow-50 border border-yellow-200 rounded-lg">
@@ -1814,7 +1989,7 @@ anotherdomain.com"
                         onClick={handleAnalyze}
                         disabled={loading || 
                           (keywordInputMode === 'target-pages' ? selectedTargetPages.length === 0 : !manualKeywords.trim()) || 
-                          !domainText.trim()}
+                          (domainInputMode === 'paste' ? !domainText.trim() : selectedDatabaseWebsites.length === 0)}
                         className="px-4 py-2 bg-indigo-600 text-white rounded-lg hover:bg-indigo-700 disabled:opacity-50 disabled:cursor-not-allowed flex items-center"
                       >
                         {loading ? (

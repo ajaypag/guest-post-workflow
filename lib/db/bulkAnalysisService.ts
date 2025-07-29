@@ -11,6 +11,7 @@ export interface BulkAnalysisInput {
   userId: string;
   manualKeywords?: string;
   projectId: string;
+  airtableMetadata?: Record<string, any>; // Map of domain -> metadata
 }
 
 export interface BulkAnalysisResult extends BulkAnalysisDomain {
@@ -93,7 +94,7 @@ export class BulkAnalysisService {
    */
   static async createOrUpdateDomains(input: BulkAnalysisInput): Promise<BulkAnalysisResult[]> {
     try {
-      const { clientId, domains, targetPageIds, userId, manualKeywords, projectId } = input;
+      const { clientId, domains, targetPageIds, userId, manualKeywords, projectId, airtableMetadata } = input;
       
       // Clean domains
       const cleanedDomains = domains.map(d => this.cleanDomain(d)).filter(Boolean);
@@ -129,21 +130,32 @@ export class BulkAnalysisService {
       const keywordCount = allKeywords.size;
 
       // Prepare bulk insert/update data
-      const domainRecords = cleanedDomains.map(domain => ({
-        id: uuidv4(),
-        clientId,
-        domain,
-        qualificationStatus: 'pending' as const,
-        targetPageIds: targetPageIds,
-        keywordCount,
-        checkedBy: null,
-        checkedAt: null,
-        notes: null,
-        projectId: projectId,
-        projectAddedAt: new Date(),
-        createdAt: new Date(),
-        updatedAt: new Date(),
-      }));
+      const domainRecords = cleanedDomains.map(domain => {
+        const cleanDomain = this.cleanDomain(domain);
+        const metadata = airtableMetadata?.[domain] || airtableMetadata?.[cleanDomain];
+        
+        return {
+          id: uuidv4(),
+          clientId,
+          domain: cleanDomain,
+          qualificationStatus: 'pending' as const,
+          targetPageIds: targetPageIds,
+          keywordCount,
+          checkedBy: null,
+          checkedAt: null,
+          notes: null,
+          projectId: projectId,
+          projectAddedAt: new Date(),
+          createdAt: new Date(),
+          updatedAt: new Date(),
+          // Add Airtable metadata if available
+          ...(metadata && {
+            airtableRecordId: metadata.id,
+            airtableMetadata: metadata,
+            airtableLastSynced: new Date(),
+          }),
+        };
+      });
 
       // Insert domains with ON CONFLICT UPDATE
       const insertedDomains = await db
@@ -155,6 +167,12 @@ export class BulkAnalysisService {
             targetPageIds: sql`excluded.target_page_ids`,
             keywordCount: sql`excluded.keyword_count`,
             updatedAt: new Date(),
+            // Update Airtable metadata if provided
+            ...(airtableMetadata && {
+              airtableRecordId: sql`excluded.airtable_record_id`,
+              airtableMetadata: sql`excluded.airtable_metadata`,
+              airtableLastSynced: sql`excluded.airtable_last_synced`,
+            }),
           },
         })
         .returning();

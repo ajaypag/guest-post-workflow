@@ -59,7 +59,7 @@ export async function POST(
 ) {
   try {
     const { id } = await params;
-    const { domains, targetPageIds, manualKeywords, projectId } = await request.json();
+    const { domains, targetPageIds, manualKeywords, projectId, airtableMetadata } = await request.json();
 
     if (!domains || !Array.isArray(domains) || domains.length === 0) {
       return NextResponse.json(
@@ -98,7 +98,8 @@ export async function POST(
       targetPageIds,
       manualKeywords,
       projectId,
-      userId: 'system' // Placeholder since no auth
+      userId: 'system', // Placeholder since no auth
+      airtableMetadata
     });
 
     return NextResponse.json({ 
