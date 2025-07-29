@@ -1,6 +1,6 @@
 'use client';
 
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import AuthWrapper from '@/components/AuthWrapper';
 import Header from '@/components/Header';
 
@@ -15,7 +15,25 @@ interface MigrationLog {
 export default function UserSystemMigrationPage() {
   const [migrationStatus, setMigrationStatus] = useState<'idle' | 'running' | 'complete' | 'error'>('idle');
   const [migrationLog, setMigrationLog] = useState<MigrationLog | null>(null);
-  const [showRollback, setShowRollback] = useState(false);
+  const [hasMigrated, setHasMigrated] = useState(false);
+  const [checkingStatus, setCheckingStatus] = useState(true);
+
+  // Check if migration has already been applied
+  useEffect(() => {
+    const checkMigrationStatus = async () => {
+      try {
+        const response = await fetch('/api/admin/check-user-type-column');
+        const data = await response.json();
+        setHasMigrated(data.exists);
+      } catch (error) {
+        console.error('Failed to check migration status:', error);
+      } finally {
+        setCheckingStatus(false);
+      }
+    };
+    
+    checkMigrationStatus();
+  }, []);
 
   const runMigration = async () => {
     setMigrationStatus('running');
@@ -31,7 +49,7 @@ export default function UserSystemMigrationPage() {
       setMigrationStatus(data.success ? 'complete' : 'error');
       
       if (data.success) {
-        setShowRollback(true);
+        setHasMigrated(true);
       }
     } catch (error) {
       setMigrationStatus('error');
@@ -61,7 +79,7 @@ export default function UserSystemMigrationPage() {
       setMigrationStatus(data.success ? 'complete' : 'error');
       
       if (data.success) {
-        setShowRollback(false);
+        setHasMigrated(false);
       }
     } catch (error) {
       setMigrationStatus('error');
@@ -146,30 +164,41 @@ export default function UserSystemMigrationPage() {
           <div className="bg-white rounded-lg shadow-sm p-6 mb-6">
             <h2 className="text-xl font-semibold mb-4">Migration Actions</h2>
             
-            <div className="flex items-center space-x-4">
-              <button
-                onClick={runMigration}
-                disabled={migrationStatus === 'running'}
-                className={`px-4 py-2 rounded-lg font-medium transition-colors ${
-                  migrationStatus === 'running'
-                    ? 'bg-gray-100 text-gray-400 cursor-not-allowed'
-                    : 'bg-blue-600 text-white hover:bg-blue-700'
-                }`}
-              >
-                {migrationStatus === 'running' ? (
-                  <span className="flex items-center">
-                    <svg className="animate-spin -ml-1 mr-3 h-5 w-5 text-gray-400" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
-                      <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle>
-                      <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
-                    </svg>
-                    Running Migration...
-                  </span>
-                ) : (
-                  'Run Migration'
-                )}
-              </button>
-              
-              {showRollback && (
+            {checkingStatus ? (
+              <div className="flex items-center space-x-2 text-gray-600">
+                <svg className="animate-spin h-5 w-5" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
+                  <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle>
+                  <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
+                </svg>
+                <span>Checking migration status...</span>
+              </div>
+            ) : (
+            <div className="space-y-4">
+              <div className="flex items-center space-x-4">
+                <button
+                  onClick={runMigration}
+                  disabled={migrationStatus === 'running' || hasMigrated}
+                  className={`px-4 py-2 rounded-lg font-medium transition-colors ${
+                    migrationStatus === 'running' || hasMigrated
+                      ? 'bg-gray-100 text-gray-400 cursor-not-allowed'
+                      : 'bg-blue-600 text-white hover:bg-blue-700'
+                  }`}
+                >
+                  {migrationStatus === 'running' ? (
+                    <span className="flex items-center">
+                      <svg className="animate-spin -ml-1 mr-3 h-5 w-5 text-gray-400" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
+                        <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle>
+                        <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
+                      </svg>
+                      Running Migration...
+                    </span>
+                  ) : hasMigrated ? (
+                    'Migration Already Applied'
+                  ) : (
+                    'Run Migration'
+                  )}
+                </button>
+                
                 <button
                   onClick={rollbackMigration}
                   disabled={migrationStatus === 'running'}
@@ -181,13 +210,12 @@ export default function UserSystemMigrationPage() {
                 >
                   Rollback Migration
                 </button>
-              )}
+              </div>
+              
+              <div className="text-sm text-gray-600">
+                <p>⚠️ <strong>Important:</strong> Always have a database backup before running migrations or rollbacks.</p>
+              </div>
             </div>
-            
-            {migrationStatus === 'idle' && (
-              <p className="mt-4 text-sm text-gray-600">
-                ⚠️ This migration will modify the database schema. Make sure you have a backup before proceeding.
-              </p>
             )}
           </div>
 
