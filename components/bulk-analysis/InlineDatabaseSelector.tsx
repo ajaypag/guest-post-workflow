@@ -1,7 +1,7 @@
 'use client';
 
 import { useState, useEffect, useCallback, useMemo } from 'react';
-import { Search, Filter, CheckSquare, Square, ChevronDown, ChevronUp, X, Database, TrendingUp, DollarSign, Tag } from 'lucide-react';
+import { Search, Filter, ChevronDown, ChevronUp, Database, TrendingUp, DollarSign } from 'lucide-react';
 import { ProcessedWebsite } from '@/types/airtable';
 import { debounce } from 'lodash';
 
@@ -316,7 +316,7 @@ export default function InlineDatabaseSelector({
         </div>
       )}
 
-      {/* Website Grid */}
+      {/* Website Table */}
       <div className="border rounded-lg overflow-hidden">
         {loading && websites.length === 0 ? (
           <div className="p-8 text-center text-gray-500">
@@ -327,72 +327,135 @@ export default function InlineDatabaseSelector({
             No websites found matching your criteria
           </div>
         ) : (
-          <div className="divide-y">
-            {websites.map((website) => (
-              <div
-                key={website.id}
-                className={`p-4 hover:bg-gray-50 cursor-pointer transition-colors ${
-                  selectedIds.has(website.id) ? 'bg-blue-50' : ''
-                }`}
-                onClick={() => toggleSelection(website)}
-              >
-                <div className="flex items-start gap-4">
-                  {/* Checkbox */}
-                  <div className="pt-1">
-                    {selectedIds.has(website.id) ? (
-                      <CheckSquare className="w-5 h-5 text-blue-600" />
-                    ) : (
-                      <Square className="w-5 h-5 text-gray-400" />
-                    )}
-                  </div>
-
-                  {/* Main Content */}
-                  <div className="flex-1 min-w-0">
-                    <div className="flex items-start justify-between">
-                      <div>
-                        <h3 className="font-medium text-gray-900">{website.domain}</h3>
-                        <div className="flex items-center gap-4 mt-1 text-sm text-gray-600">
-                          <div className="flex items-center gap-1">
-                            <span className="font-medium">DR:</span> {website.domainRating || '-'}
-                          </div>
-                          <div className="flex items-center gap-1">
-                            <TrendingUp className="w-4 h-4" />
-                            {getTrafficDisplay(website.totalTraffic)}
-                          </div>
-                          {website.guestPostCost && (
-                            <div className="flex items-center gap-1">
-                              <DollarSign className="w-4 h-4" />
-                              ${website.guestPostCost}
-                            </div>
+          <table className="min-w-full divide-y divide-gray-200">
+            <thead className="bg-gray-50">
+              <tr>
+                <th className="w-12 px-3 py-3 text-left">
+                  <input
+                    type="checkbox"
+                    checked={websites.length > 0 && websites.every(w => selectedIds.has(w.id))}
+                    onChange={(e) => {
+                      if (e.target.checked) {
+                        selectAllVisible();
+                      } else {
+                        // Clear only visible websites from selection
+                        const newSelectedIds = new Set(selectedIds);
+                        const newSelectedWebsites = selectedWebsites.filter(w => 
+                          !websites.some(vw => vw.id === w.id)
+                        );
+                        websites.forEach(w => newSelectedIds.delete(w.id));
+                        setSelectedIds(newSelectedIds);
+                        onSelectionChange(newSelectedWebsites);
+                      }
+                    }}
+                    className="w-4 h-4 text-indigo-600 rounded border-gray-300 focus:ring-indigo-500"
+                  />
+                </th>
+                <th className="px-3 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                  Domain
+                </th>
+                <th className="px-3 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                  DR
+                </th>
+                <th className="px-3 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                  Traffic
+                </th>
+                <th className="px-3 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                  Cost
+                </th>
+                <th className="px-3 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                  Categories
+                </th>
+                <th className="px-3 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                  Contacts
+                </th>
+              </tr>
+            </thead>
+            <tbody className="bg-white divide-y divide-gray-200">
+              {websites.map((website) => (
+                <tr 
+                  key={website.id}
+                  className={`hover:bg-gray-50 transition-colors cursor-pointer ${
+                    selectedIds.has(website.id) ? 'bg-blue-50' : ''
+                  }`}
+                  onClick={() => toggleSelection(website)}
+                >
+                  <td className="px-3 py-4">
+                    <input
+                      type="checkbox"
+                      checked={selectedIds.has(website.id)}
+                      onChange={() => toggleSelection(website)}
+                      onClick={(e) => e.stopPropagation()}
+                      className="w-4 h-4 text-indigo-600 rounded border-gray-300 focus:ring-indigo-500"
+                    />
+                  </td>
+                  <td className="px-3 py-4">
+                    <div className="text-sm font-medium text-gray-900">
+                      {website.domain}
+                    </div>
+                  </td>
+                  <td className="px-3 py-4">
+                    <div className="text-sm text-gray-900">
+                      {website.domainRating || '-'}
+                    </div>
+                  </td>
+                  <td className="px-3 py-4">
+                    <div className="flex items-center text-sm text-gray-900">
+                      <TrendingUp className="w-4 h-4 text-gray-400 mr-1" />
+                      {getTrafficDisplay(website.totalTraffic)}
+                    </div>
+                  </td>
+                  <td className="px-3 py-4">
+                    <div className="text-sm text-gray-900">
+                      {website.guestPostCost ? (
+                        <span className="flex items-center">
+                          <DollarSign className="w-4 h-4 text-gray-400 mr-1" />
+                          ${website.guestPostCost}
+                        </span>
+                      ) : '-'}
+                    </div>
+                  </td>
+                  <td className="px-3 py-4">
+                    <div className="text-sm text-gray-900">
+                      {website.categories.length > 0 ? (
+                        <div className="flex items-center gap-1">
+                          {website.categories.slice(0, 2).map((cat, i) => (
+                            <span 
+                              key={i}
+                              className="inline-flex items-center px-2 py-0.5 rounded text-xs font-medium bg-gray-100 text-gray-700"
+                            >
+                              {cat}
+                            </span>
+                          ))}
+                          {website.categories.length > 2 && (
+                            <span className="text-xs text-gray-500">
+                              +{website.categories.length - 2}
+                            </span>
                           )}
                         </div>
-                      </div>
-                      {website.categories.length > 0 && (
-                        <div className="flex items-center gap-1 flex-shrink-0">
-                          <Tag className="w-4 h-4 text-gray-400" />
-                          <span className="text-sm text-gray-600">
-                            {website.categories.slice(0, 2).join(', ')}
-                            {website.categories.length > 2 && ` +${website.categories.length - 2}`}
-                          </span>
-                        </div>
-                      )}
+                      ) : '-'}
                     </div>
-                  </div>
-                </div>
-              </div>
-            ))}
-          </div>
+                  </td>
+                  <td className="px-3 py-4">
+                    <div className="text-sm text-gray-900">
+                      {website.contacts?.length || 0}
+                    </div>
+                  </td>
+                </tr>
+              ))}
+            </tbody>
+          </table>
         )}
 
         {/* Load More */}
         {hasMore && !loading && (
-          <div className="p-3 text-center border-t">
+          <div className="p-3 text-center border-t bg-gray-50">
             <button
               onClick={() => {
                 setPage(prev => prev + 1);
                 loadWebsites(false);
               }}
-              className="text-blue-600 hover:text-blue-700"
+              className="text-sm text-indigo-600 hover:text-indigo-700 font-medium"
             >
               Load more websites
             </button>
