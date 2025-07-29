@@ -174,6 +174,14 @@ export default function AdminDashboard() {
       iconColor: 'text-emerald-600'
     },
     {
+      title: 'User System Migration',
+      description: 'Migrate user system to support invite-only registration and multiple user types',
+      icon: Users,
+      href: '/admin/user-system-migration',
+      color: 'bg-pink-50 border-pink-200 text-pink-700',
+      iconColor: 'text-pink-600'
+    },
+    {
       title: 'Analytics',
       description: 'View system usage and performance analytics',
       icon: BarChart3,
