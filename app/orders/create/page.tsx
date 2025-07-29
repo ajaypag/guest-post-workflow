@@ -235,6 +235,7 @@ function CreateOrderContent() {
           name: newClient.name,
           website: newClient.website,
           targetPages: newClient.targetPages.filter(tp => tp.trim()),
+          clientType: 'client', // Explicitly set as client, not prospect
         }),
       });
 
@@ -469,37 +470,35 @@ function CreateOrderContent() {
 
           <div>
             <label className="block text-sm font-medium text-gray-700 mb-1">
-              Target Pages (for internal linking)
+              Target Pages (for backlink purposes)
             </label>
-            {newClient.targetPages.map((page, index) => (
-              <div key={index} className="flex gap-2 mb-2">
-                <input
-                  type="url"
-                  value={page}
-                  onChange={(e) => {
-                    const updated = [...newClient.targetPages];
-                    updated[index] = e.target.value;
-                    setNewClient({ ...newClient, targetPages: updated });
-                  }}
-                  className="flex-1 px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
-                  placeholder="https://example.com/product"
-                />
-                {newClient.targetPages.length > 1 && (
-                  <button
-                    onClick={() => {
-                      const updated = newClient.targetPages.filter((_, i) => i !== index);
-                      setNewClient({ ...newClient, targetPages: updated });
-                    }}
-                    className="p-2 text-red-600 hover:text-red-800"
-                  >
-                    <X className="h-5 w-5" />
-                  </button>
-                )}
-              </div>
-            ))}
+            <textarea
+              value={newClient.targetPages.join('\n')}
+              onChange={(e) => {
+                const pages = e.target.value.split('\n');
+                setNewClient({ ...newClient, targetPages: pages });
+              }}
+              placeholder="Enter URLs, one per line:
+https://example.com/page1
+https://example.com/page2"
+              rows={4}
+              className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
+            />
+            <p className="mt-1 text-xs text-gray-500">
+              These are the pages you want to build backlinks to. Enter one URL per line.
+            </p>
+          </div>
+          <div className="mt-4 flex justify-end gap-3">
             <button
-              onClick={() => setNewClient({ ...newClient, targetPages: [...newClient.targetPages, ''] })}
-              className="text-sm text-blue-600 hover:text-blue-800"
+              onClick={() => setIsNewClient(false)}
+              className="px-4 py-2 border border-gray-300 rounded-md text-gray-700 hover:bg-gray-50"
+            >
+              Cancel
+            </button>
+            <button
+              onClick={handleCreateClient}
+              disabled={loading || !newClient.name || !newClient.website}
+              className="px-4 py-2 bg-blue-600 hover:bg-blue-700 text-white rounded-md font-medium disabled:bg-gray-400 flex items-center gap-2"
             >
               + Add Target Page
             </button>
