@@ -17,6 +17,7 @@ import { MultiSelect, MultiSelectOption } from '@/components/ui/MultiSelect';
 import MoveToProjectDialog from '@/components/bulk-analysis/MoveToProjectDialog';
 import { MessageDisplay } from '@/components/bulk-analysis/MessageDisplay';
 import AirtableImportModal from '@/components/bulk-analysis/AirtableImportModal';
+import WebsiteDetailModal from '@/components/websites/WebsiteDetailModal';
 import { BulkAnalysisProject } from '@/types/bulk-analysis-projects';
 import { BulkAnalysisDomain } from '@/types/bulk-analysis';
 import { ProcessedWebsite } from '@/types/airtable';

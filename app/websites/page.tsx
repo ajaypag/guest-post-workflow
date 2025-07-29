@@ -23,6 +23,7 @@ import { useRouter } from 'next/navigation';
 import { sessionStorage } from '@/lib/userStorage';
 import { type AuthSession } from '@/lib/auth';
 import { debounce } from 'lodash';
+import WebsiteDetailModal from '@/components/websites/WebsiteDetailModal';
 
 interface Website {
   id: string;
@@ -90,6 +91,8 @@ export default function WebsitesPage() {
   });
   const [clients, setClients] = useState<Array<{ id: string; name: string }>>([]);
   const [categories, setCategories] = useState<string[]>([]);
+  const [selectedWebsiteId, setSelectedWebsiteId] = useState<string | null>(null);
+  const [showDetailModal, setShowDetailModal] = useState(false);
 
   // Load websites
   const loadWebsites = useCallback(async () => {
@@ -209,6 +212,11 @@ export default function WebsitesPage() {
     if (traffic >= 1000000) return `${(traffic / 1000000).toFixed(1)}M`;
     if (traffic >= 1000) return `${(traffic / 1000).toFixed(1)}K`;
     return traffic.toString();
+  };
+
+  const handleWebsiteClick = (websiteId: string) => {
+    setSelectedWebsiteId(websiteId);
+    setShowDetailModal(true);
   };
 
   return (
@@ -539,7 +547,10 @@ export default function WebsitesPage() {
                     />
                   </td>
                   <td className="px-4 py-3">
-                    <div>
+                    <div 
+                      className="cursor-pointer hover:text-blue-600"
+                      onClick={() => handleWebsiteClick(website.id)}
+                    >
                       <div className="font-medium text-gray-900">
                         {website.domain}
                       </div>
@@ -662,6 +673,18 @@ export default function WebsitesPage() {
           </div>
         )}
       </div>
+
+      {/* Website Detail Modal */}
+      {selectedWebsiteId && (
+        <WebsiteDetailModal
+          websiteId={selectedWebsiteId}
+          isOpen={showDetailModal}
+          onClose={() => {
+            setShowDetailModal(false);
+            setSelectedWebsiteId(null);
+          }}
+        />
+      )}
     </div>
   );
 }

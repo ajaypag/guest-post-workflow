@@ -430,4 +430,125 @@ export class AirtableSyncService {
       WHERE id = $4
     `, [status, recordsProcessed, error?.message || null, id]);
   }
+
+  /**
+   * Get detailed website information including relations
+   */
+  static async getWebsiteDetails(websiteId: string): Promise<any> {
+    try {
+      // Get website with contacts
+      const websiteResult = await pool.query(`
+        SELECT 
+          w.*,
+          COALESCE(
+            json_agg(
+              DISTINCT jsonb_build_object(
+                'id', c.id,
+                'email', c.email,
+                'isPrimary', c.is_primary,
+                'hasPaidGuestPost', c.has_paid_guest_post,
+                'hasSwapOption', c.has_swap_option,
+                'guestPostCost', c.guest_post_cost,
+                'requirement', c.requirement,
+                'createdAt', c.created_at
+              )
+            ) FILTER (WHERE c.id IS NOT NULL),
+            '[]'::json
+          ) as contacts
+        FROM websites w
+        LEFT JOIN website_contacts c ON w.id = c.website_id
+        WHERE w.id = $1
+        GROUP BY w.id
+      `, [websiteId]);
+
+      if (websiteResult.rows.length === 0) {
+        return null;
+      }
+
+      const website = websiteResult.rows[0];
+
+      // Get qualifications
+      const qualificationsResult = await pool.query(`
+        SELECT 
+          q.id,
+          q.client_id,
+          c.name as client_name,
+          q.qualified_at,
+          q.qualified_by,
+          u.name as qualified_by_name,
+          q.status,
+          q.notes
+        FROM website_qualifications q
+        JOIN clients c ON q.client_id = c.id
+        JOIN users u ON q.qualified_by = u.id
+        WHERE q.website_id = $1
+        ORDER BY q.qualified_at DESC
+      `, [websiteId]);
+
+      // Get project associations
+      const projectsResult = await pool.query(`
+        SELECT 
+          p.id,
+          p.name,
+          c.name as client_name,
+          pw.added_at,
+          pw.analysis_status
+        FROM project_websites pw
+        JOIN bulk_analysis_projects p ON pw.project_id = p.id
+        JOIN clients c ON p.client_id = c.id
+        WHERE pw.website_id = $1
+        ORDER BY pw.added_at DESC
+      `, [websiteId]);
+
+      // Transform to match expected format
+      return {
+        id: website.id,
+        airtableId: website.airtable_id,
+        domain: website.domain,
+        domainRating: website.domain_rating,
+        totalTraffic: website.total_traffic,
+        guestPostCost: website.guest_post_cost,
+        categories: website.categories || [],
+        type: website.type || [],
+        status: website.status,
+        hasGuestPost: website.has_guest_post,
+        hasLinkInsert: website.has_link_insert,
+        publishedOpportunities: website.published_opportunities,
+        overallQuality: website.overall_quality,
+        lastSyncedAt: website.last_synced_at,
+        createdAt: website.created_at,
+        updatedAt: website.updated_at,
+        domainAuthority: website.domain_authority,
+        spamScore: website.spam_score,
+        organicKeywords: website.organic_keywords,
+        organicTraffic: website.organic_traffic,
+        referringDomains: website.referring_domains,
+        language: website.language,
+        country: website.country,
+        notes: website.notes,
+        lastOutreachDate: website.last_outreach_date,
+        contacts: website.contacts,
+        qualifications: qualificationsResult.rows.map(q => ({
+          id: q.id,
+          clientId: q.client_id,
+          clientName: q.client_name,
+          qualifiedAt: q.qualified_at,
+          qualifiedBy: q.qualified_by,
+          qualifiedByName: q.qualified_by_name || 'Unknown',
+          status: q.status,
+          notes: q.notes
+        })),
+        projects: projectsResult.rows.map(p => ({
+          id: p.id,
+          name: p.name,
+          clientName: p.client_name,
+          addedAt: p.added_at,
+          analysisStatus: p.analysis_status
+        }))
+      };
+    } catch (error) {
+      console.error('Error fetching website details:', error);
+      throw error;
+    }
+  }
 }
