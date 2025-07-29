@@ -1,6 +1,5 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { WorkflowService } from '@/lib/db/workflowService';
-import { AuthService } from '@/lib/auth';
 import { GuestPostWorkflow } from '@/types/workflow';
 
 export async function GET(request: NextRequest) {
@@ -48,41 +47,112 @@ export async function POST(request: NextRequest) {
       userId = data.userId;
       userName = guestWorkflow.createdBy;
       userEmail = guestWorkflow.createdByEmail;
-    } else if (data.clientName && data.steps) {
-      // New format - direct GuestPostWorkflow
-      console.log('Using new format (direct workflow)');
-      guestWorkflow = data;
-      userId = data.userId || 'placeholder-user-id'; // Use placeholder if not provided
-      userName = guestWorkflow.createdBy;
-      userEmail = guestWorkflow.createdByEmail;
+    } else if (data.workflow) {
+      // New format - direct workflow object
+      console.log('Using new format (workflow field)');
+      guestWorkflow = data.workflow;
+      userId = data.userId;
+      userName = data.userName || guestWorkflow.createdBy;
+      userEmail = data.userEmail || guestWorkflow.createdByEmail;
     } else {
-      console.error('Invalid data format received:', Object.keys(data));
-      throw new Error(`Invalid workflow data format. Received keys: ${Object.keys(data).join(', ')}`);
+      // Fallback - assume the entire data is the workflow
+      console.log('Using fallback format (direct workflow)');
+      guestWorkflow = data as GuestPostWorkflow;
+      userId = data.userId || 'system'; // Fallback to 'system' if no userId
+      userName = data.createdBy || 'System';
+      userEmail = data.createdByEmail;
     }
 
-    console.log('Processed workflow data:', {
-      workflowId: guestWorkflow.id,
-      clientName: guestWorkflow.clientName,
+    // Ensure we have required fields
+    if (!guestWorkflow || !guestWorkflow.title) {
+      console.error('Invalid workflow data:', guestWorkflow);
+      return NextResponse.json(
+        { error: 'Invalid workflow data' },
+        { status: 400 }
+      );
+    }
+
+    console.log('Creating workflow with:', {
+      title: guestWorkflow.title,
       userId,
       userName,
-      stepCount: guestWorkflow.steps?.length
+      userEmail
     });
 
-    const createdWorkflow = await WorkflowService.createGuestPostWorkflow(
+    const savedWorkflow = await WorkflowService.createGuestPostWorkflow(
       guestWorkflow,
       userId,
       userName,
       userEmail
     );
-
-    console.log('Workflow created successfully:', createdWorkflow.id);
-    return NextResponse.json({ workflow: createdWorkflow });
+    
+    console.log('Workflow created successfully:', savedWorkflow.id);
+    return NextResponse.json({ 
+      workflow: savedWorkflow,
+      success: true 
+    });
   } catch (error) {
     console.error('Error creating workflow:', error);
-    const errorMessage = error instanceof Error ? error.message : 'Failed to create workflow';
-    console.error('Full error details:', error);
     return NextResponse.json(
-      { error: errorMessage },
+      { error: 'Failed to create workflow' },
+      { status: 500 }
+    );
+  }
+}
+
+export async function PUT(request: NextRequest) {
+  try {
+    const data = await request.json();
+    const { id, workflow, userId } = data;
+
+    if (!id || !workflow) {
+      return NextResponse.json(
+        { error: 'Workflow ID and data are required' },
+        { status: 400 }
+      );
+    }
+
+    const updatedWorkflow = await WorkflowService.updateGuestPostWorkflow(
+      id,
+      workflow,
+      userId
+    );
+
+    return NextResponse.json({ 
+      workflow: updatedWorkflow,
+      success: true 
+    });
+  } catch (error) {
+    console.error('Error updating workflow:', error);
+    return NextResponse.json(
+      { error: 'Failed to update workflow' },
+      { status: 500 }
+    );
+  }
+}
+
+export async function DELETE(request: NextRequest) {
+  try {
+    const { searchParams } = new URL(request.url);
+    const workflowId = searchParams.get('id');
+
+    if (!workflowId) {
+      return NextResponse.json(
+        { error: 'Workflow ID is required' },
+        { status: 400 }
+      );
+    }
+
+    await WorkflowService.deleteWorkflow(workflowId);
+
+    return NextResponse.json({ 
+      success: true,
+      message: 'Workflow deleted successfully' 
+    });
+  } catch (error) {
+    console.error('Error deleting workflow:', error);
+    return NextResponse.json(
+      { error: 'Failed to delete workflow' },
       { status: 500 }
     );
   }
