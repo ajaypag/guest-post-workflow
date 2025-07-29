@@ -5,6 +5,7 @@ export interface AuthSession {
   email: string;
   name: string;
   role: string;
+  userType: string; // 'internal' | 'advertiser' | 'publisher'
 }
 
 export class AuthService {
@@ -16,7 +17,8 @@ export class AuthService {
       userId: user.id,
       email: user.email,
       name: user.name,
-      role: user.role
+      role: user.role,
+      userType: user.userType || 'internal'
     };
     
     if (typeof window !== 'undefined') {

@@ -432,6 +432,23 @@ export const formattingQaChecksRelations = relations(formattingQaChecks, ({ one 
   }),
 }));
 
+// Re-export order schema tables
+export { 
+  orders,
+  orderItems,
+  orderShareTokens,
+  orderStatusHistory,
+  domainSuggestions,
+  advertiserOrderAccess,
+  pricingRules
+} from './orderSchema';
+
+// Re-export website schema tables  
+export { websites } from './websiteSchema';
+
+// Re-export bulk analysis schema tables
+export { bulkAnalysisDomains } from './bulkAnalysisSchema';
+
 // Outline sessions for tracking deep research outline generation with clarifications
 export const outlineSessions = pgTable('outline_sessions', {
   id: uuid('id').primaryKey(),

@@ -63,7 +63,7 @@ export class PricingService {
     }
 
     // Use the actual price from Airtable as retail
-    const retailPrice = website.guestPostCost;
+    const retailPrice = website.guestPostCost ? parseFloat(website.guestPostCost) : 0;
     // Calculate wholesale with 40% margin
     const wholesalePrice = Math.floor(retailPrice * 0.6);
 

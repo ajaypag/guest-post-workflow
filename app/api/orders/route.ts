@@ -1,10 +1,10 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { OrderService } from '@/lib/services/orderService';
-import { AuthService } from '@/lib/auth';
+import { AuthServiceServer } from '@/lib/auth-server';
 
 export async function GET(request: NextRequest) {
   try {
-    const session = AuthService.getSession();
+    const session = await AuthServiceServer.getSession(request);
     if (!session) {
       return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
     }
@@ -13,7 +13,7 @@ export async function GET(request: NextRequest) {
     const status = searchParams.get('status');
     const advertiserId = searchParams.get('advertiserId');
 
-    let orders;
+    let orders: any[] = [];
     
     if (session.userType === 'advertiser') {
       // Advertisers can only see their own orders
@@ -44,7 +44,7 @@ export async function GET(request: NextRequest) {
 
 export async function POST(request: NextRequest) {
   try {
-    const session = AuthService.getSession();
+    const session = await AuthServiceServer.getSession(request);
     if (!session || session.userType !== 'internal') {
       return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
     }

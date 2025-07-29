@@ -127,7 +127,7 @@ export class OrderService {
       ),
     });
 
-    const retailPrice = website?.guestPostCost || 0;
+    const retailPrice = website?.guestPostCost ? parseFloat(website.guestPostCost) : 0;
     const wholesalePrice = Math.floor(retailPrice * 0.6); // 40% margin
 
     const [item] = await db.insert(orderItems).values({
@@ -187,7 +187,7 @@ export class OrderService {
 
     // Get applicable discount
     const discount = await this.getApplicableDiscount(order.clientId, items.length);
-    const discountAmount = Math.floor(subtotalRetail * (discount.discountPercent / 100));
+    const discountAmount = Math.floor(subtotalRetail * (parseFloat(discount.discountPercent) / 100));
 
     // Add fees
     const totalRetail = subtotalRetail - discountAmount + 

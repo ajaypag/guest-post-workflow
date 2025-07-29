@@ -67,7 +67,7 @@ export async function POST(request: NextRequest) {
           AND table_name = ${table}
         `);
         
-        const exists = result.rows[0]?.count > 0;
+        const exists = Number(result.rows[0]?.count || 0) > 0;
         logs.push(`✓ Table ${table}: ${exists ? 'EXISTS' : 'NOT FOUND'}`);
         
         if (!exists) {
@@ -101,7 +101,7 @@ export async function POST(request: NextRequest) {
           AND tc.constraint_type = 'FOREIGN KEY'
         `);
         
-        const exists = result.rows[0]?.count > 0;
+        const exists = Number(result.rows[0]?.count || 0) > 0;
         logs.push(`✓ FK ${fk.table}.${fk.column} -> ${fk.ref_table}: ${exists ? 'OK' : 'MISSING'}`);
       } catch (error) {
         logs.push(`✗ Failed to check FK ${fk.table}.${fk.column}`);
@@ -128,7 +128,7 @@ export async function POST(request: NextRequest) {
           AND indexname = ${idx.index}
         `);
         
-        const exists = result.rows[0]?.count > 0;
+        const exists = Number(result.rows[0]?.count || 0) > 0;
         logs.push(`✓ Index ${idx.index}: ${exists ? 'OK' : 'MISSING'}`);
       } catch (error) {
         logs.push(`✗ Failed to check index ${idx.index}`);

@@ -1,18 +1,19 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { OrderService } from '@/lib/services/orderService';
-import { AuthService } from '@/lib/auth';
+import { AuthServiceServer } from '@/lib/auth-server';
 
 export async function GET(
   request: NextRequest,
-  { params }: { params: { orderId: string } }
+  { params }: { params: Promise<{ orderId: string }> }
 ) {
+  const { orderId } = await params;
   try {
-    const session = AuthService.getSession();
+    const session = await AuthServiceServer.getSession(request);
     if (!session) {
       return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
     }
 
-    const order = await OrderService.getOrderById(params.orderId);
+    const order = await OrderService.getOrderById(orderId);
     
     if (!order) {
       return NextResponse.json({ error: 'Order not found' }, { status: 404 });
@@ -26,13 +27,18 @@ export async function GET(
     // Filter sensitive data for advertisers
     if (session.userType === 'advertiser') {
       // Remove wholesale pricing and internal notes
-      delete order.totalWholesale;
-      delete order.profitMargin;
-      delete order.internalNotes;
+      const filteredOrder = { ...order };
+      delete (filteredOrder as any).totalWholesale;
+      delete (filteredOrder as any).profitMargin;
+      delete (filteredOrder as any).internalNotes;
       
-      order.items.forEach(item => {
-        delete item.wholesalePrice;
+      filteredOrder.items = filteredOrder.items.map((item: any) => {
+        const filteredItem = { ...item };
+        delete filteredItem.wholesalePrice;
+        return filteredItem;
       });
+      
+      return NextResponse.json({ order: filteredOrder });
     }
 
     return NextResponse.json({ order });
@@ -47,10 +53,11 @@ export async function GET(
 
 export async function PUT(
   request: NextRequest,
-  { params }: { params: { orderId: string } }
+  { params }: { params: Promise<{ orderId: string }> }
 ) {
+  const { orderId } = await params;
   try {
-    const session = AuthService.getSession();
+    const session = await AuthServiceServer.getSession(request);
     if (!session || session.userType !== 'internal') {
       return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
     }
@@ -61,7 +68,7 @@ export async function PUT(
     switch (action) {
       case 'updateStatus':
         await OrderService.updateOrderStatus(
-          params.orderId,
+          orderId,
           data.status,
           session.userId,
           data.notes
@@ -70,13 +77,13 @@ export async function PUT(
 
       case 'generateShareToken':
         const token = await OrderService.generateShareToken(
-          params.orderId,
+          orderId,
           data.expiresInDays || 7
         );
         return NextResponse.json({ token });
 
       case 'createWorkflows':
-        await OrderService.createWorkflowsForOrder(params.orderId, session.userId);
+        await OrderService.createWorkflowsForOrder(orderId, session.userId);
         break;
 
       default:
@@ -86,7 +93,7 @@ export async function PUT(
         );
     }
 
-    const updatedOrder = await OrderService.getOrderById(params.orderId);
+    const updatedOrder = await OrderService.getOrderById(orderId);
     return NextResponse.json({ order: updatedOrder });
   } catch (error) {
     console.error('Error updating order:', error);

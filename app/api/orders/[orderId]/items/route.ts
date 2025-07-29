@@ -1,13 +1,14 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { OrderService } from '@/lib/services/orderService';
-import { AuthService } from '@/lib/auth';
+import { AuthServiceServer } from '@/lib/auth-server';
 
 export async function POST(
   request: NextRequest,
-  { params }: { params: { orderId: string } }
+  { params }: { params: Promise<{ orderId: string }> }
 ) {
+  const { orderId } = await params;
   try {
-    const session = AuthService.getSession();
+    const session = await AuthServiceServer.getSession(request);
     if (!session || session.userType !== 'internal') {
       return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
     }
@@ -23,7 +24,7 @@ export async function POST(
     for (const domainId of domainIds) {
       try {
         const item = await OrderService.addOrderItem({
-          orderId: params.orderId,
+          orderId: orderId,
           domainId,
         });
         items.push(item);
@@ -34,7 +35,7 @@ export async function POST(
     }
 
     // Get updated order
-    const order = await OrderService.getOrderById(params.orderId);
+    const order = await OrderService.getOrderById(orderId);
 
     return NextResponse.json({ 
       items,
@@ -53,10 +54,11 @@ export async function POST(
 
 export async function DELETE(
   request: NextRequest,
-  { params }: { params: { orderId: string } }
+  { params }: { params: Promise<{ orderId: string }> }
 ) {
+  const { orderId } = await params;
   try {
-    const session = AuthService.getSession();
+    const session = await AuthServiceServer.getSession(request);
     if (!session || session.userType !== 'internal') {
       return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
     }
@@ -71,10 +73,10 @@ export async function DELETE(
       );
     }
 
-    await OrderService.removeOrderItem(params.orderId, itemId);
+    await OrderService.removeOrderItem(orderId, itemId);
 
     // Get updated order
-    const order = await OrderService.getOrderById(params.orderId);
+    const order = await OrderService.getOrderById(orderId);
 
     return NextResponse.json({ order });
   } catch (error) {
