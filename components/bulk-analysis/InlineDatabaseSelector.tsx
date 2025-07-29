@@ -39,8 +39,8 @@ export default function InlineDatabaseSelector({
 
   // Pagination
   const [page, setPage] = useState(0);
-  const [hasMore, setHasMore] = useState(false);
-  const pageSize = 20;
+  const [total, setTotal] = useState(0);
+  const [pageSize, setPageSize] = useState(50);
 
   // Load websites
   const loadWebsites = useCallback(async (reset = false) => {
@@ -66,25 +66,30 @@ export default function InlineDatabaseSelector({
 
       const data = await response.json();
       
-      if (reset) {
-        setWebsites(data.websites || []);
-        setPage(0);
-      } else {
-        setWebsites(prev => [...prev, ...(data.websites || [])]);
-      }
+      setWebsites(data.websites || []);
+      setTotal(data.total || 0);
       
-      setHasMore(data.hasMore || false);
+      if (reset) {
+        setPage(0);
+      }
     } catch (error) {
       console.error('Failed to load websites:', error);
     } finally {
       setLoading(false);
     }
-  }, [searchTerm, filters, page, clientId, projectId]);
+  }, [searchTerm, filters, page, pageSize, clientId, projectId]);
 
   // Initial load
   useEffect(() => {
     loadWebsites(true);
   }, []);
+
+  // Load when page changes
+  useEffect(() => {
+    if (page > 0) {
+      loadWebsites();
+    }
+  }, [page, loadWebsites]);
 
   // Debounced search
   const debouncedSearch = useMemo(
@@ -447,18 +452,54 @@ export default function InlineDatabaseSelector({
           </table>
         )}
 
-        {/* Load More */}
-        {hasMore && !loading && (
-          <div className="p-3 text-center border-t bg-gray-50">
-            <button
-              onClick={() => {
-                setPage(prev => prev + 1);
-                loadWebsites(false);
-              }}
-              className="text-sm text-indigo-600 hover:text-indigo-700 font-medium"
-            >
-              Load more websites
-            </button>
+        {/* Pagination */}
+        {websites.length > 0 && (
+          <div className="px-4 py-3 border-t bg-gray-50">
+            <div className="flex items-center justify-between">
+              <div className="text-sm text-gray-700">
+                Showing {page * pageSize + 1} to {Math.min((page + 1) * pageSize, total)} of {total.toLocaleString()} results
+              </div>
+              <div className="flex items-center gap-4">
+                <div className="flex items-center gap-2">
+                  <label className="text-sm text-gray-700">Show:</label>
+                  <select
+                    value={pageSize}
+                    onChange={(e) => {
+                      setPageSize(parseInt(e.target.value));
+                      setPage(0);
+                      loadWebsites(true);
+                    }}
+                    className="px-2 py-1 border rounded text-sm"
+                  >
+                    <option value="20">20</option>
+                    <option value="50">50</option>
+                    <option value="100">100</option>
+                  </select>
+                </div>
+                <div className="flex gap-2">
+                  <button
+                    onClick={() => {
+                      setPage(prev => Math.max(0, prev - 1));
+                      loadWebsites();
+                    }}
+                    disabled={page === 0}
+                    className="px-3 py-1 border rounded text-sm disabled:opacity-50 disabled:cursor-not-allowed hover:bg-gray-100"
+                  >
+                    Previous
+                  </button>
+                  <button
+                    onClick={() => {
+                      setPage(prev => prev + 1);
+                      loadWebsites();
+                    }}
+                    disabled={(page + 1) * pageSize >= total}
+                    className="px-3 py-1 border rounded text-sm disabled:opacity-50 disabled:cursor-not-allowed hover:bg-gray-100"
+                  >
+                    Next
+                  </button>
+                </div>
+              </div>
+            </div>
           </div>
         )}
       </div>
