@@ -4,8 +4,8 @@
 -- Orders table - central entity for advertiser orders
 CREATE TABLE IF NOT EXISTS orders (
   id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
-  client_id UUID NOT NULL REFERENCES clients(id),
-  advertiser_id UUID REFERENCES users(id), -- NULL until account created
+  client_id UUID NOT NULL,
+  advertiser_id UUID, -- NULL until account created
   advertiser_email VARCHAR(255) NOT NULL,
   advertiser_name VARCHAR(255) NOT NULL,
   advertiser_company VARCHAR(255),
@@ -40,8 +40,8 @@ CREATE TABLE IF NOT EXISTS orders (
   cancelled_at TIMESTAMP,
   
   -- Metadata
-  created_by UUID NOT NULL REFERENCES users(id),
-  assigned_to UUID REFERENCES users(id), -- Account manager
+  created_by UUID NOT NULL,
+  assigned_to UUID, -- Account manager
   internal_notes TEXT,
   advertiser_notes TEXT,
   cancellation_reason TEXT,
@@ -54,7 +54,7 @@ CREATE TABLE IF NOT EXISTS orders (
 -- Order items (individual domains in an order)
 CREATE TABLE IF NOT EXISTS order_items (
   id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
-  order_id UUID NOT NULL REFERENCES orders(id) ON DELETE CASCADE,
+  order_id UUID NOT NULL,
   domain_id UUID NOT NULL, -- Changed: No FK for now
   domain VARCHAR(255) NOT NULL, -- Denormalized for performance
   
@@ -71,7 +71,7 @@ CREATE TABLE IF NOT EXISTS order_items (
   -- Possible values: pending, workflow_created, in_progress, completed, published, cancelled
   
   -- Workflow tracking
-  workflow_id UUID REFERENCES workflows(id),
+  workflow_id UUID,
   workflow_status VARCHAR(50),
   workflow_created_at TIMESTAMP,
   workflow_completed_at TIMESTAMP,
@@ -87,7 +87,7 @@ CREATE TABLE IF NOT EXISTS order_items (
 -- Share tokens for order access
 CREATE TABLE IF NOT EXISTS order_share_tokens (
   token VARCHAR(255) PRIMARY KEY,
-  order_id UUID NOT NULL REFERENCES orders(id) ON DELETE CASCADE,
+  order_id UUID NOT NULL,
   permissions TEXT[] DEFAULT ARRAY['view'],
   expires_at TIMESTAMP NOT NULL,
   
@@ -101,9 +101,9 @@ CREATE TABLE IF NOT EXISTS order_share_tokens (
 -- Advertiser access control
 CREATE TABLE IF NOT EXISTS advertiser_order_access (
   id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
-  advertiser_id UUID NOT NULL REFERENCES users(id),
-  order_id UUID NOT NULL REFERENCES orders(id),
-  granted_by UUID NOT NULL REFERENCES users(id),
+  advertiser_id UUID NOT NULL,
+  order_id UUID NOT NULL,
+  granted_by UUID NOT NULL,
   granted_at TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
   expires_at TIMESTAMP,
   
@@ -113,16 +113,16 @@ CREATE TABLE IF NOT EXISTS advertiser_order_access (
 -- Domain suggestions for advertisers
 CREATE TABLE IF NOT EXISTS domain_suggestions (
   id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
-  advertiser_id UUID REFERENCES users(id), -- NULL for email-only
+  advertiser_id UUID, -- NULL for email-only
   advertiser_email VARCHAR(255), -- For pre-account suggestions
   domain_id UUID NOT NULL, -- Changed: No FK for now
-  order_id UUID REFERENCES orders(id), -- If added to order
+  order_id UUID, -- If added to order
   
   match_score INTEGER CHECK (match_score >= 0 AND match_score <= 100),
   match_reasons TEXT[], -- Why this domain matches advertiser
   retail_price INTEGER NOT NULL,
   
-  suggested_by UUID NOT NULL REFERENCES users(id),
+  suggested_by UUID NOT NULL,
   suggested_at TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
   expires_at TIMESTAMP, -- When suggestion expires
   
@@ -140,10 +140,10 @@ CREATE TABLE IF NOT EXISTS domain_suggestions (
 -- Order status history
 CREATE TABLE IF NOT EXISTS order_status_history (
   id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
-  order_id UUID NOT NULL REFERENCES orders(id) ON DELETE CASCADE,
+  order_id UUID NOT NULL,
   old_status VARCHAR(50),
   new_status VARCHAR(50) NOT NULL,
-  changed_by UUID NOT NULL REFERENCES users(id),
+  changed_by UUID NOT NULL,
   changed_at TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
   notes TEXT
 );
@@ -151,7 +151,7 @@ CREATE TABLE IF NOT EXISTS order_status_history (
 -- Pricing rules for volume discounts
 CREATE TABLE IF NOT EXISTS pricing_rules (
   id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
-  client_id UUID REFERENCES clients(id), -- NULL for global rules
+  client_id UUID, -- NULL for global rules
   name VARCHAR(255) NOT NULL,
   
   min_quantity INTEGER NOT NULL,
@@ -186,8 +186,8 @@ CREATE INDEX idx_pricing_rules_client ON pricing_rules(client_id);
 CREATE INDEX idx_pricing_rules_quantity ON pricing_rules(min_quantity, max_quantity);
 
 -- Add order reference to workflows table
-ALTER TABLE workflows ADD COLUMN IF NOT EXISTS order_item_id UUID REFERENCES order_items(id);
-CREATE INDEX idx_workflows_order_item ON workflows(order_item_id);
+ALTER TABLE workflows ADD COLUMN IF NOT EXISTS order_item_id UUID;
+CREATE INDEX IF NOT EXISTS idx_workflows_order_item ON workflows(order_item_id);
 
 -- Default pricing rules
 INSERT INTO pricing_rules (name, min_quantity, max_quantity, discount_percent, created_by) VALUES
