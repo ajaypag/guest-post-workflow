@@ -3,6 +3,8 @@ import { db } from '@/lib/db/connection';
 import { sql } from 'drizzle-orm';
 
 export async function GET() {
+  console.log('[Check Email Logs Table] Starting check...');
+  
   try {
     // TODO: Add authentication check when auth system is implemented
 
@@ -12,11 +14,13 @@ export async function GET() {
         SELECT FROM information_schema.tables 
         WHERE table_schema = 'public' 
         AND table_name = 'email_logs'
-      );
+      ) as exists
     `) as any;
     
     const tableExists = tableResult[0]?.exists || false;
 
+    console.log('[Check Email Logs Table] Table exists:', tableExists);
+    
     if (!tableExists) {
       return NextResponse.json({
         exists: false,
@@ -38,6 +42,9 @@ export async function GET() {
     // Get email count
     const countResult = await db.execute(sql`SELECT COUNT(*) as count FROM email_logs`) as any;
     const emailCount = parseInt(countResult[0]?.count || '0');
+    
+    console.log('[Check Email Logs Table] Email count:', emailCount);
+    console.log('[Check Email Logs Table] Indexes found:', indexes.length);
 
     return NextResponse.json({
       exists: true,
@@ -46,7 +53,7 @@ export async function GET() {
       message: `Email logs table exists with ${emailCount} emails logged`
     });
   } catch (error: any) {
-    console.error('Check email logs table error:', error);
+    console.error('[Check Email Logs Table] Error:', error);
     return NextResponse.json(
       { error: error.message || 'Internal server error' },
       { status: 500 }
