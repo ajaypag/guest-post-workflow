@@ -15,6 +15,49 @@ export const users = pgTable('users', {
   updatedAt: timestamp('updated_at').notNull(), // Remove defaultNow() to handle in application code
 });
 
+// Invitations table for invite-only system
+export const invitations = pgTable('invitations', {
+  id: uuid('id').primaryKey(),
+  email: varchar('email', { length: 255 }).notNull(),
+  userType: varchar('user_type', { length: 20 }).notNull(), // 'internal' | 'advertiser' | 'publisher'
+  role: varchar('role', { length: 50 }).notNull(), // 'user' | 'admin'
+  token: varchar('token', { length: 255 }).notNull().unique(),
+  expiresAt: timestamp('expires_at').notNull(),
+  usedAt: timestamp('used_at'),
+  revokedAt: timestamp('revoked_at'),
+  createdByEmail: varchar('created_by_email', { length: 255 }).notNull(),
+  createdAt: timestamp('created_at').notNull(),
+  updatedAt: timestamp('updated_at').notNull(),
+});
+
+// User client access table for multi-client system
+export const userClientAccess = pgTable('user_client_access', {
+  id: uuid('id').primaryKey(),
+  userId: uuid('user_id').notNull().references(() => users.id, { onDelete: 'cascade' }),
+  clientId: uuid('client_id').notNull().references(() => clients.id, { onDelete: 'cascade' }),
+  accessLevel: varchar('access_level', { length: 50 }).notNull().default('read'), // 'read' | 'write' | 'admin'
+  grantedAt: timestamp('granted_at').notNull(),
+  grantedBy: uuid('granted_by').notNull().references(() => users.id),
+  revokedAt: timestamp('revoked_at'),
+  revokedBy: uuid('revoked_by').references(() => users.id),
+  createdAt: timestamp('created_at').notNull(),
+  updatedAt: timestamp('updated_at').notNull(),
+});
+
+// User website access table for publisher users
+export const userWebsiteAccess = pgTable('user_website_access', {
+  id: uuid('id').primaryKey(),
+  userId: uuid('user_id').notNull().references(() => users.id, { onDelete: 'cascade' }),
+  websiteId: uuid('website_id').notNull(), // References websites table (will be created later)
+  accessLevel: varchar('access_level', { length: 50 }).notNull().default('read'), // 'read' | 'write' | 'admin'
+  grantedAt: timestamp('granted_at').notNull(),
+  grantedBy: uuid('granted_by').notNull().references(() => users.id),
+  revokedAt: timestamp('revoked_at'),
+  revokedBy: uuid('revoked_by').references(() => users.id),
+  createdAt: timestamp('created_at').notNull(),
+  updatedAt: timestamp('updated_at').notNull(),
+});
+
 // Clients table
 export const clients = pgTable('clients', {
   id: uuid('id').primaryKey(), // Remove defaultRandom() to handle in application code
@@ -445,6 +488,12 @@ export type FormattingQaCheck = typeof formattingQaChecks.$inferSelect;
 export type NewFormattingQaCheck = typeof formattingQaChecks.$inferInsert;
 export type OutlineSession = typeof outlineSessions.$inferSelect;
 export type NewOutlineSession = typeof outlineSessions.$inferInsert;
+export type Invitation = typeof invitations.$inferSelect;
+export type NewInvitation = typeof invitations.$inferInsert;
+export type UserClientAccess = typeof userClientAccess.$inferSelect;
+export type NewUserClientAccess = typeof userClientAccess.$inferInsert;
+export type UserWebsiteAccess = typeof userWebsiteAccess.$inferSelect;
+export type NewUserWebsiteAccess = typeof userWebsiteAccess.$inferInsert;
 
 // V2 Agent Sessions for LLM Orchestration
 export const v2AgentSessions = pgTable('v2_agent_sessions', {

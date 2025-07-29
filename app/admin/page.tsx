@@ -166,6 +166,14 @@ export default function AdminDashboard() {
       iconColor: 'text-indigo-600'
     },
     {
+      title: 'Invitation Management',
+      description: 'Create and manage user invitations for invite-only system',
+      icon: Mail,
+      href: '/admin/invitations',
+      color: 'bg-purple-50 border-purple-200 text-purple-700',
+      iconColor: 'text-purple-600'
+    },
+    {
       title: 'Email Management',
       description: 'Monitor email communications, view logs, and send test emails',
       icon: Mail,
