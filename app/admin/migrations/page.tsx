@@ -45,11 +45,6 @@ export default function MigrationsPage() {
       id: '0013_add_airtable_sync_tables',
       name: 'Airtable Sync Tables',
       description: 'Creates websites, contacts, qualifications, and sync tracking tables'
-    },
-    {
-      id: '0014_add_cron_jobs_table',
-      name: 'Cron Jobs Table',
-      description: 'Adds table for tracking scheduled sync jobs'
     }
   ];
 
