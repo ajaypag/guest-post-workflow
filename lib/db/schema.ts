@@ -8,6 +8,7 @@ export const users = pgTable('users', {
   name: varchar('name', { length: 255 }).notNull(),
   passwordHash: varchar('password_hash', { length: 255 }).notNull(),
   role: varchar('role', { length: 50 }).notNull().default('user'), // 'user' | 'admin'
+  userType: varchar('user_type', { length: 20 }).notNull().default('internal'), // 'internal' | 'advertiser' | 'publisher'
   isActive: boolean('is_active').notNull().default(true),
   lastLogin: timestamp('last_login'),
   createdAt: timestamp('created_at').notNull(), // Remove defaultNow() to handle in application code

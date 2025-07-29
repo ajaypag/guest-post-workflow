@@ -120,14 +120,12 @@ export default function LoginPage() {
             <p>Need access? Contact your administrator</p>
           </div>
           
-          {(
-            <div className="text-center mt-4 p-4 bg-blue-50 rounded">
-              <p className="text-sm text-blue-800 font-medium">Demo Account</p>
-              <p className="text-xs text-blue-600 mt-1">
-                Email: admin@example.com
-              </p>
-            </div>
-          )}
+          <div className="text-center mt-4 p-4 bg-blue-50 rounded">
+            <p className="text-sm text-blue-800 font-medium">Demo Account</p>
+            <p className="text-xs text-blue-600 mt-1">
+              Email: admin@example.com
+            </p>
+          </div>
         </form>
         
         {/* Version indicator */}
