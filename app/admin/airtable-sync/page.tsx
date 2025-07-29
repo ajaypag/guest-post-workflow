@@ -210,7 +210,7 @@ export default function AirtableSyncPage() {
           Configure this webhook URL in Airtable for real-time updates:
         </p>
         <code className="block mt-2 p-2 bg-white rounded text-xs">
-          {syncStatus?.webhookUrl || `${window.location.origin}/api/airtable/webhook`}
+          {syncStatus?.webhookUrl || `${typeof window !== 'undefined' ? window.location.origin : ''}/api/airtable/webhook`}
         </code>
       </div>
     </div>
