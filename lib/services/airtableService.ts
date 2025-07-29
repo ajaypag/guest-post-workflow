@@ -128,7 +128,8 @@ export class AirtableService {
       ];
       
       const params = new URLSearchParams({
-        view: this.POSTFLOW_VIEW_ID,
+        // For full sync, don't use view filtering to get all records
+        ...(filters.forceAllRecords ? {} : { view: this.POSTFLOW_VIEW_ID }),
         maxRecords: limit.toString(),
         ...(offset && { offset })
       });

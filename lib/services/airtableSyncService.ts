@@ -41,7 +41,7 @@ export class AirtableSyncService {
       while (hasMore && pageCount < maxPages) {
         pageCount++;
         console.log(`📄 Fetching page ${stats.total > 0 ? Math.floor(stats.total / 100) + 1 : 1}, offset: ${offset || 'none'}`);
-        const result = await AirtableService.searchWebsites({}, 100, offset);
+        const result = await AirtableService.searchWebsites({ forceAllRecords: true }, 100, offset);
         
         console.log(`📊 Page results: ${result.websites.length} websites, hasMore: ${result.hasMore}, nextOffset: ${result.nextOffset || 'none'}`);
         
@@ -149,8 +149,21 @@ export class AirtableSyncService {
         DELETE FROM website_contacts WHERE website_id = $1
       `, [websiteId]);
       
-      // Insert contacts
+      // Deduplicate contacts by email
+      const uniqueContacts = new Map<string, typeof website.contacts[0]>();
       for (const contact of website.contacts) {
+        if (contact.email) {
+          // If duplicate, prefer the one marked as primary or with lower cost
+          const existing = uniqueContacts.get(contact.email);
+          if (!existing || contact.isPrimary || 
+              (contact.guestPostCost && (!existing.guestPostCost || contact.guestPostCost < existing.guestPostCost))) {
+            uniqueContacts.set(contact.email, contact);
+          }
+        }
+      }
+      
+      // Insert unique contacts
+      for (const contact of uniqueContacts.values()) {
         await client.query(`
           INSERT INTO website_contacts (
             website_id, email, is_primary, has_paid_guest_post,

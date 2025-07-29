@@ -86,4 +86,5 @@ export interface WebsiteFilters {
   hasLinkInsert?: boolean;
   categories?: string[];
   searchTerm?: string;
+  forceAllRecords?: boolean; // Skip view filtering for full sync
 }
