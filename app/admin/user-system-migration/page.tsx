@@ -17,6 +17,7 @@ export default function UserSystemMigrationPage() {
   const [migrationLog, setMigrationLog] = useState<MigrationLog | null>(null);
   const [hasMigrated, setHasMigrated] = useState(false);
   const [checkingStatus, setCheckingStatus] = useState(true);
+  const [verificationResult, setVerificationResult] = useState<any>(null);
 
   // Check if migration has already been applied
   useEffect(() => {
@@ -87,6 +88,21 @@ export default function UserSystemMigrationPage() {
         success: false,
         error: 'Failed to connect to rollback endpoint',
         log: [`Error: ${error instanceof Error ? error.message : 'Unknown error'}`]
+      });
+    }
+  };
+
+  const verifyMigration = async () => {
+    setVerificationResult(null);
+    
+    try {
+      const response = await fetch('/api/admin/verify-user-system-migration');
+      const data = await response.json();
+      setVerificationResult(data);
+    } catch (error) {
+      setVerificationResult({
+        success: false,
+        error: 'Failed to verify migration status'
       });
     }
   };
@@ -210,6 +226,18 @@ export default function UserSystemMigrationPage() {
                 >
                   Rollback Migration
                 </button>
+                
+                <button
+                  onClick={verifyMigration}
+                  disabled={migrationStatus === 'running'}
+                  className={`px-4 py-2 rounded-lg font-medium transition-colors ${
+                    migrationStatus === 'running'
+                      ? 'bg-gray-100 text-gray-400 cursor-not-allowed'
+                      : 'bg-green-600 text-white hover:bg-green-700'
+                  }`}
+                >
+                  Verify Migration
+                </button>
               </div>
               
               <div className="text-sm text-gray-600">
@@ -265,6 +293,84 @@ export default function UserSystemMigrationPage() {
                   ))}
                 </ul>
               </div>
+            </div>
+          )}
+
+          {/* Verification Results */}
+          {verificationResult && (
+            <div className={`rounded-lg shadow-sm p-6 mb-6 ${
+              verificationResult.migrationComplete ? 'bg-green-50' : 'bg-yellow-50'
+            }`}>
+              <h2 className={`text-xl font-semibold mb-4 ${
+                verificationResult.migrationComplete ? 'text-green-900' : 'text-yellow-900'
+              }`}>
+                Migration Verification {verificationResult.migrationComplete ? '✓ Complete' : '⚠️ Incomplete'}
+              </h2>
+              
+              {verificationResult.summary && (
+                <div className="space-y-3">
+                  <div className="grid grid-cols-2 gap-4">
+                    <div>
+                      <p className="font-medium">Database Changes:</p>
+                      <ul className="mt-2 space-y-1 text-sm">
+                        <li className={verificationResult.summary.userTypeColumn ? 'text-green-700' : 'text-red-700'}>
+                          {verificationResult.summary.userTypeColumn ? '✓' : '✗'} user_type column exists
+                        </li>
+                        <li className={verificationResult.summary.invitationsTable ? 'text-green-700' : 'text-red-700'}>
+                          {verificationResult.summary.invitationsTable ? '✓' : '✗'} invitations table exists
+                        </li>
+                        <li className={verificationResult.summary.userClientAccessTable ? 'text-green-700' : 'text-red-700'}>
+                          {verificationResult.summary.userClientAccessTable ? '✓' : '✗'} user_client_access table exists
+                        </li>
+                        <li className={verificationResult.summary.userWebsiteAccessTable ? 'text-green-700' : 'text-red-700'}>
+                          {verificationResult.summary.userWebsiteAccessTable ? '✓' : '✗'} user_website_access table exists
+                        </li>
+                      </ul>
+                    </div>
+                    
+                    <div>
+                      <p className="font-medium">Optimization:</p>
+                      <ul className="mt-2 space-y-1 text-sm">
+                        <li className="text-gray-700">
+                          {verificationResult.summary.indexesCreated} indexes created
+                        </li>
+                        <li className="text-gray-700">
+                          {verificationResult.summary.triggersCreated} triggers created
+                        </li>
+                      </ul>
+                      
+                      {verificationResult.summary.userTypeValues && verificationResult.summary.userTypeValues.length > 0 && (
+                        <div className="mt-3">
+                          <p className="font-medium">User Types:</p>
+                          <ul className="mt-1 space-y-1 text-sm">
+                            {verificationResult.summary.userTypeValues.map((item: any) => (
+                              <li key={item.user_type || 'null'} className="text-gray-700">
+                                {item.user_type || 'NULL'}: {item.count} users
+                              </li>
+                            ))}
+                          </ul>
+                        </div>
+                      )}
+                    </div>
+                  </div>
+                  
+                  {!verificationResult.migrationComplete && (
+                    <div className="mt-4 p-3 bg-yellow-100 rounded">
+                      <p className="text-sm text-yellow-800">
+                        ⚠️ Migration appears incomplete. Try running the migration again or check the logs for errors.
+                      </p>
+                    </div>
+                  )}
+                </div>
+              )}
+              
+              {verificationResult.error && (
+                <div className="mt-4 p-3 bg-red-100 rounded">
+                  <p className="text-sm text-red-800">
+                    Error: {verificationResult.error}
+                  </p>
+                </div>
+              )}
             </div>
           )}
 
