@@ -84,7 +84,9 @@ export async function POST(
     console.log('[InvitationResendAPI] Invitation updated with new token');
 
     // Send resent invitation email
-    const invitationUrl = `${process.env.NEXTAUTH_URL}/accept-invitation?token=${newToken}`;
+    // Fallback to a default URL if NEXTAUTH_URL is not set
+    const baseUrl = process.env.NEXTAUTH_URL || 'http://localhost:3000';
+    const invitationUrl = `${baseUrl}/accept-invitation?token=${newToken}`;
     const expiresAtFormatted = newExpiresAt.toISOString();
     
     console.log('[InvitationResendAPI] Preparing to send resend email with:', {

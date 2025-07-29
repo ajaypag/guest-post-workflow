@@ -168,7 +168,9 @@ export async function POST(request: NextRequest) {
     });
 
     // Send invitation email
-    const invitationUrl = `${process.env.NEXTAUTH_URL}/accept-invitation?token=${token}`;
+    // Fallback to a default URL if NEXTAUTH_URL is not set
+    const baseUrl = process.env.NEXTAUTH_URL || 'http://localhost:3000';
+    const invitationUrl = `${baseUrl}/accept-invitation?token=${token}`;
     const expiresAtFormatted = expiresAt.toISOString();
     
     console.log('[InvitationAPI] Preparing to send email with:', {
