@@ -7,11 +7,15 @@ import {
 } from '@/lib/email/templates';
 
 export async function POST(request: NextRequest) {
+  console.log('[Email Send API] Received request');
+  
   try {
     // TODO: Add authentication check when auth system is implemented
 
     const body = await request.json();
     const { type, recipient, data } = body;
+    
+    console.log('[Email Send API] Request data:', { type, recipient, hasData: !!data });
 
     // Validate required fields
     if (!type || !recipient) {
@@ -25,14 +29,16 @@ export async function POST(request: NextRequest) {
 
     switch (type) {
       case 'welcome':
+        console.log('[Email Send API] Sending welcome email to:', recipient);
         result = await EmailService.sendWithTemplate('welcome', recipient, {
           subject: 'Welcome to PostFlow',
           template: WelcomeEmail({
-            userName: data.userName || 'User',
-            userEmail: data.userEmail || recipient,
-            loginUrl: data.loginUrl,
+            userName: data?.userName || 'User',
+            userEmail: data?.userEmail || recipient,
+            loginUrl: data?.loginUrl,
           }),
         });
+        console.log('[Email Send API] Welcome email result:', result);
         break;
 
       case 'workflow-completed':

@@ -20,9 +20,9 @@ function getResendClient(): Resend {
 
 // Email configuration
 export const EMAIL_CONFIG = {
-  FROM_EMAIL: process.env.EMAIL_FROM || 'noreply@postflow.outreachlabs.net',
+  FROM_EMAIL: process.env.EMAIL_FROM || 'onboarding@resend.dev', // Use Resend's test email if not configured
   FROM_NAME: process.env.EMAIL_FROM_NAME || 'PostFlow',
-  REPLY_TO: process.env.EMAIL_REPLY_TO || 'support@postflow.outreachlabs.net',
+  REPLY_TO: process.env.EMAIL_REPLY_TO || process.env.EMAIL_FROM || 'onboarding@resend.dev',
 };
 
 // Email types
@@ -78,11 +78,16 @@ export class EmailService {
     type: EmailType,
     options: EmailOptions
   ): Promise<{ success: boolean; id?: string; error?: string }> {
+    console.log('[EmailService] send() called with type:', type);
+    
     try {
       // Validate API key
       if (!process.env.RESEND_API_KEY) {
+        console.error('[EmailService] RESEND_API_KEY not found in environment');
         throw new Error('Resend API key not configured');
       }
+      
+      console.log('[EmailService] API key found, preparing email...');
 
       // Prepare email data
       const emailData = {
@@ -99,10 +104,17 @@ export class EmailService {
         tags: options.tags || [],
       };
 
+      console.log('[EmailService] Sending email with data:', {
+        to: emailData.to,
+        subject: emailData.subject,
+        from: emailData.from
+      });
+      
       // Send email
       const { data, error } = await getResendClient().emails.send(emailData);
 
       if (error) {
+        console.error('[EmailService] Resend API error:', error);
         // Log error
         await this.logEmail(type, options, 'failed', undefined, error.message);
         return { success: false, error: error.message };
