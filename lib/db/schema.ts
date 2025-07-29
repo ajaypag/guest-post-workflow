@@ -58,6 +58,16 @@ export const userWebsiteAccess = pgTable('user_website_access', {
   updatedAt: timestamp('updated_at').notNull(),
 });
 
+// Password reset tokens table
+export const passwordResetTokens = pgTable('password_reset_tokens', {
+  id: uuid('id').primaryKey(),
+  userId: uuid('user_id').notNull().references(() => users.id, { onDelete: 'cascade' }),
+  token: varchar('token', { length: 255 }).notNull().unique(),
+  expiresAt: timestamp('expires_at').notNull(),
+  usedAt: timestamp('used_at'),
+  createdAt: timestamp('created_at').notNull(),
+});
+
 // Clients table
 export const clients = pgTable('clients', {
   id: uuid('id').primaryKey(), // Remove defaultRandom() to handle in application code
