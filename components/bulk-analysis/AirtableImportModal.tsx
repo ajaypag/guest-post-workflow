@@ -163,7 +163,7 @@ export default function AirtableImportModal({
           <div className="flex items-center justify-between mb-6">
             <div className="flex items-center gap-3">
               <Database className="w-6 h-6 text-blue-600" />
-              <h2 className="text-2xl font-bold text-gray-900">Import Websites</h2>
+              <h2 className="text-2xl font-bold text-gray-900">Select Websites from Database</h2>
             </div>
             <button
               onClick={onClose}
@@ -323,7 +323,7 @@ export default function AirtableImportModal({
                 {loading && websites.length === 0 ? (
                   <div className="p-8 text-center">
                     <Loader2 className="w-8 h-8 animate-spin mx-auto text-blue-600" />
-                    <p className="mt-2 text-gray-500">Searching Airtable...</p>
+                    <p className="mt-2 text-gray-500">Searching database...</p>
                   </div>
                 ) : websites.length === 0 ? (
                   <div className="p-8 text-center text-gray-500">
