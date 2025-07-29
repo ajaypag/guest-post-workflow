@@ -9,6 +9,7 @@ import Header from '@/components/Header';
 export default function TestEmailMigration() {
   const [testResult, setTestResult] = useState<any>(null);
   const [createResult, setCreateResult] = useState<any>(null);
+  const [fixResult, setFixResult] = useState<any>(null);
   const [loading, setLoading] = useState(false);
 
   const runConnectionTest = async () => {
@@ -33,6 +34,20 @@ export default function TestEmailMigration() {
       setCreateResult(data);
     } catch (error) {
       setCreateResult({ success: false, error: error instanceof Error ? error.message : 'Creation failed' });
+    }
+    setLoading(false);
+  };
+
+  const runFixTable = async () => {
+    setLoading(true);
+    try {
+      const response = await fetch('/api/admin/fix-email-logs-table', {
+        method: 'POST'
+      });
+      const data = await response.json();
+      setFixResult(data);
+    } catch (error) {
+      setFixResult({ success: false, error: error instanceof Error ? error.message : 'Fix failed' });
     }
     setLoading(false);
   };
@@ -98,6 +113,29 @@ export default function TestEmailMigration() {
                   <div className="mt-4 p-4 bg-gray-50 rounded-lg">
                     <pre className="text-xs overflow-auto">
                       {JSON.stringify(createResult, null, 2)}
+                    </pre>
+                  </div>
+                )}
+              </div>
+
+              {/* Fix Table */}
+              <div className="border border-red-200 rounded-lg p-4 bg-red-50">
+                <h2 className="font-semibold text-gray-900 mb-3">Fix Email Logs Table</h2>
+                <p className="text-gray-600 text-sm mb-4">
+                  If the table exists but has missing columns (like sent_at), use this to drop and recreate it properly.
+                </p>
+                <button
+                  onClick={runFixTable}
+                  disabled={loading}
+                  className="px-4 py-2 bg-red-600 text-white rounded-md hover:bg-red-700 disabled:opacity-50"
+                >
+                  {loading ? 'Fixing...' : 'Fix Table (Drop & Recreate)'}
+                </button>
+                
+                {fixResult && (
+                  <div className="mt-4 p-4 bg-gray-50 rounded-lg">
+                    <pre className="text-xs overflow-auto">
+                      {JSON.stringify(fixResult, null, 2)}
                     </pre>
                   </div>
                 )}

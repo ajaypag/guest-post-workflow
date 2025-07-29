@@ -2616,12 +2616,19 @@ export default function DatabaseMigrationPage() {
           )}
 
           {/* Navigation */}
-          <div className="mt-8 pt-6 border-t border-gray-200">
+          <div className="mt-8 pt-6 border-t border-gray-200 flex justify-between items-center">
             <a
               href="/admin/users"
               className="inline-flex items-center text-sm text-blue-600 hover:text-blue-700"
             >
               ← Back to Admin Panel
+            </a>
+            
+            <a
+              href="/admin/test-email-migration"
+              className="inline-flex items-center text-sm text-blue-600 hover:text-blue-700"
+            >
+              Email Migration Testing Tools →
             </a>
           </div>
         </div>
