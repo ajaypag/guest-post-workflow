@@ -159,19 +159,11 @@ export default function AdminDashboard() {
     },
     {
       title: 'User Management',
-      description: 'Manage user accounts and permissions',
+      description: 'Manage users, permissions, and send invitations',
       icon: Users,
       href: '/admin/users',
       color: 'bg-indigo-50 border-indigo-200 text-indigo-700',
       iconColor: 'text-indigo-600'
-    },
-    {
-      title: 'Invitation Management',
-      description: 'Create and manage user invitations for invite-only system',
-      icon: Mail,
-      href: '/admin/invitations',
-      color: 'bg-purple-50 border-purple-200 text-purple-700',
-      iconColor: 'text-purple-600'
     },
     {
       title: 'Email Management',
