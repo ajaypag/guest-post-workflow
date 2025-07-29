@@ -13,13 +13,16 @@ export async function POST() {
     
     // Step 1: Check if table exists
     log.push('Checking if email_logs table already exists...');
-    const tableCheck = await db.execute(sql`
+    const tableCheckResult = await db.execute(sql`
       SELECT EXISTS (
         SELECT FROM information_schema.tables 
         WHERE table_schema = 'public' 
         AND table_name = 'email_logs'
       ) as exists
     `) as any;
+    
+    // Handle both array and object with rows property
+    const tableCheck = Array.isArray(tableCheckResult) ? tableCheckResult : (tableCheckResult.rows || []);
     
     if (tableCheck[0]?.exists) {
       log.push('Table already exists, skipping creation');

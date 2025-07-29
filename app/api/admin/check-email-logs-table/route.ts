@@ -17,7 +17,9 @@ export async function GET() {
       ) as exists
     `) as any;
     
-    const tableExists = tableResult[0]?.exists || false;
+    // Handle both array and object with rows property
+    const results = Array.isArray(tableResult) ? tableResult : (tableResult.rows || []);
+    const tableExists = results[0]?.exists || false;
 
     console.log('[Check Email Logs Table] Table exists:', tableExists);
     
