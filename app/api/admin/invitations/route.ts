@@ -55,9 +55,12 @@ export async function GET() {
 // Create new invitation  
 export async function POST(request: NextRequest) {
   try {
+    console.log('[InvitationAPI] === Starting invitation creation ===');
     const { email, userType, role } = await request.json();
+    console.log('[InvitationAPI] Request data:', { email, userType, role });
 
     if (!email || !userType || !role) {
+      console.log('[InvitationAPI] Missing required fields');
       return NextResponse.json(
         { error: 'Email, user type, and role are required' },
         { status: 400 }
@@ -66,6 +69,7 @@ export async function POST(request: NextRequest) {
 
     // Validate userType and role
     if (!['internal', 'advertiser', 'publisher'].includes(userType)) {
+      console.log('[InvitationAPI] Invalid user type:', userType);
       return NextResponse.json(
         { error: 'Invalid user type' },
         { status: 400 }
@@ -73,11 +77,14 @@ export async function POST(request: NextRequest) {
     }
 
     if (!['user', 'admin'].includes(role)) {
+      console.log('[InvitationAPI] Invalid role:', role);
       return NextResponse.json(
         { error: 'Invalid role' },
         { status: 400 }
       );
     }
+
+    console.log('[InvitationAPI] Validation passed, checking for existing user...');
 
     // Check if user already exists
     const existingUser = await db
@@ -87,11 +94,14 @@ export async function POST(request: NextRequest) {
       .limit(1);
 
     if (existingUser.length > 0) {
+      console.log('[InvitationAPI] User already exists with email:', email);
       return NextResponse.json(
         { error: 'User with this email already exists' },
         { status: 400 }
       );
     }
+
+    console.log('[InvitationAPI] No existing user found, checking for pending invitations...');
 
     // Check if invitation already exists and is pending
     const existingInvitation = await db
@@ -104,8 +114,18 @@ export async function POST(request: NextRequest) {
       const inv = existingInvitation[0];
       const now = new Date();
       
+      console.log('[InvitationAPI] Found existing invitation:', {
+        id: inv.id,
+        email: inv.email,
+        usedAt: inv.usedAt,
+        revokedAt: inv.revokedAt,
+        expiresAt: inv.expiresAt,
+        isExpired: new Date(inv.expiresAt) < now
+      });
+      
       // If invitation exists and is still pending/valid, return error
       if (!inv.usedAt && !inv.revokedAt && new Date(inv.expiresAt) > now) {
+        console.log('[InvitationAPI] Active invitation already exists');
         return NextResponse.json(
           { error: 'Active invitation already exists for this email' },
           { status: 400 }
@@ -113,12 +133,16 @@ export async function POST(request: NextRequest) {
       }
     }
 
+    console.log('[InvitationAPI] Generating invitation token and creating record...');
+
     // Generate secure token
     const token = crypto.randomBytes(32).toString('hex');
     
     // Set expiration to 7 days from now
     const expiresAt = new Date();
     expiresAt.setDate(expiresAt.getDate() + 7);
+
+    console.log('[InvitationAPI] Generated token length:', token.length, 'Expires at:', expiresAt.toISOString());
 
     // Create invitation record
     const newInvitation = await db
@@ -136,9 +160,23 @@ export async function POST(request: NextRequest) {
       })
       .returning();
 
+    console.log('[InvitationAPI] Invitation record created:', {
+      id: newInvitation[0].id,
+      email: newInvitation[0].email,
+      userType: newInvitation[0].userType,
+      role: newInvitation[0].role
+    });
+
     // Send invitation email
     const invitationUrl = `${process.env.NEXTAUTH_URL}/accept-invitation?token=${token}`;
     const expiresAtFormatted = expiresAt.toISOString();
+    
+    console.log('[InvitationAPI] Preparing to send email with:', {
+      recipient: email,
+      invitationUrl,
+      emailServiceExists: !!EmailService,
+      nextAuthUrl: process.env.NEXTAUTH_URL
+    });
     
     const emailResult = await EmailService.sendWithTemplate(
       'invitation',
@@ -156,23 +194,41 @@ export async function POST(request: NextRequest) {
       }
     );
 
+    console.log('[InvitationAPI] Email send result:', {
+      success: emailResult.success,
+      id: emailResult.id,
+      error: emailResult.error
+    });
+
     if (!emailResult.success) {
-      console.error('Failed to send invitation email:', emailResult.error);
+      console.error('[InvitationAPI] Failed to send invitation email:', emailResult.error);
       // Don't fail the invitation creation, just log the error
     } else {
-      console.log(`Invitation email sent successfully to ${email}`);
+      console.log(`[InvitationAPI] Invitation email sent successfully to ${email} with ID: ${emailResult.id}`);
     }
+
+    const responseMessage = emailResult.success 
+      ? 'Invitation created and email sent successfully'
+      : 'Invitation created but email failed to send';
+
+    console.log('[InvitationAPI] === Invitation creation completed ===');
+    console.log('[InvitationAPI] Final result:', responseMessage);
 
     return NextResponse.json({ 
       invitation: newInvitation[0],
-      message: emailResult.success 
-        ? 'Invitation created and email sent successfully'
-        : 'Invitation created but email failed to send'
+      message: responseMessage,
+      emailSent: emailResult.success,
+      emailId: emailResult.id
     });
   } catch (error) {
-    console.error('Error creating invitation:', error);
+    console.error('[InvitationAPI] === ERROR in invitation creation ===');
+    console.error('[InvitationAPI] Error details:', error);
+    console.error('[InvitationAPI] Error stack:', error instanceof Error ? error.stack : 'No stack trace');
     return NextResponse.json(
-      { error: 'Failed to create invitation' },
+      { 
+        error: 'Failed to create invitation',
+        details: error instanceof Error ? error.message : 'Unknown error'
+      },
       { status: 500 }
     );
   }

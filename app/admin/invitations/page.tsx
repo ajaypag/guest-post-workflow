@@ -30,6 +30,12 @@ export default function InvitationsManagement() {
   const [currentSession, setCurrentSession] = useState<AuthSession | null>(null);
   const [showCreateForm, setShowCreateForm] = useState(false);
   const [loading, setLoading] = useState(true);
+  const [creating, setCreating] = useState(false);
+  const [feedback, setFeedback] = useState<{
+    type: 'success' | 'error' | 'info';
+    message: string;
+    details?: string;
+  } | null>(null);
   const [formData, setFormData] = useState({
     email: '',
     userType: 'internal' as 'internal' | 'advertiser' | 'publisher',
@@ -67,7 +73,12 @@ export default function InvitationsManagement() {
   const handleCreateInvitation = async (e: React.FormEvent) => {
     e.preventDefault();
     
+    setCreating(true);
+    setFeedback({ type: 'info', message: 'Creating invitation and sending email...' });
+    
     try {
+      console.log('[InvitationUI] Starting invitation creation for:', formData.email);
+      
       const response = await fetch('/api/admin/invitations', {
         method: 'POST',
         headers: {
@@ -76,36 +87,86 @@ export default function InvitationsManagement() {
         body: JSON.stringify(formData),
       });
 
+      const result = await response.json();
+      console.log('[InvitationUI] API Response:', { 
+        status: response.status, 
+        ok: response.ok, 
+        result 
+      });
+
       if (response.ok) {
+        setFeedback({
+          type: 'success',
+          message: result.message || 'Invitation created successfully!',
+          details: `Email sent to ${formData.email}. They will receive login instructions.`
+        });
+        
         await loadData();
-        setShowCreateForm(false);
         setFormData({ email: '', userType: 'internal', role: 'user' });
+        
+        // Auto-hide success message after 5 seconds
+        setTimeout(() => {
+          setFeedback(null);
+          setShowCreateForm(false);
+        }, 5000);
       } else {
-        const error = await response.json();
-        alert(error.error || 'Failed to create invitation');
+        setFeedback({
+          type: 'error',
+          message: result.error || 'Failed to create invitation',
+          details: result.details || 'Please check the server logs for more information.'
+        });
       }
     } catch (error) {
-      console.error('Error creating invitation:', error);
-      alert('Failed to create invitation');
+      console.error('[InvitationUI] Network error creating invitation:', error);
+      setFeedback({
+        type: 'error',
+        message: 'Network error creating invitation',
+        details: 'Please check your connection and try again.'
+      });
+    } finally {
+      setCreating(false);
     }
   };
 
   const handleResendInvitation = async (invitationId: string) => {
     try {
+      console.log('[InvitationUI] Starting invitation resend for ID:', invitationId);
+      
       const response = await fetch(`/api/admin/invitations/${invitationId}/resend`, {
         method: 'POST',
       });
 
+      const result = await response.json();
+      console.log('[InvitationUI] Resend API Response:', { 
+        status: response.status, 
+        ok: response.ok, 
+        result 
+      });
+
       if (response.ok) {
         await loadData();
-        alert('Invitation resent successfully');
+        setFeedback({
+          type: 'success',
+          message: result.message || 'Invitation resent successfully!',
+          details: 'The user will receive a new invitation email with updated expiration.'
+        });
+        
+        // Auto-hide success message after 5 seconds
+        setTimeout(() => setFeedback(null), 5000);
       } else {
-        const error = await response.json();
-        alert(error.error || 'Failed to resend invitation');
+        setFeedback({
+          type: 'error',
+          message: result.error || 'Failed to resend invitation',
+          details: result.details || 'Please check the server logs for more information.'
+        });
       }
     } catch (error) {
-      console.error('Error resending invitation:', error);
-      alert('Failed to resend invitation');
+      console.error('[InvitationUI] Network error resending invitation:', error);
+      setFeedback({
+        type: 'error',
+        message: 'Network error resending invitation',
+        details: 'Please check your connection and try again.'
+      });
     }
   };
 
@@ -292,6 +353,31 @@ export default function InvitationsManagement() {
             <div className="bg-white rounded-2xl border border-gray-200 p-6 mb-8">
               <h2 className="text-xl font-semibold text-gray-900 mb-4">Create New Invitation</h2>
               
+              {/* Feedback Message */}
+              {feedback && (
+                <div className={`p-4 rounded-lg border mb-4 ${
+                  feedback.type === 'success' 
+                    ? 'bg-green-50 border-green-200 text-green-800'
+                    : feedback.type === 'error'
+                    ? 'bg-red-50 border-red-200 text-red-800'
+                    : 'bg-blue-50 border-blue-200 text-blue-800'
+                }`}>
+                  <div className="flex items-start">
+                    <div className="flex-shrink-0">
+                      {feedback.type === 'success' && <CheckCircle className="w-5 h-5 text-green-600" />}
+                      {feedback.type === 'error' && <XCircle className="w-5 h-5 text-red-600" />}
+                      {feedback.type === 'info' && <Clock className="w-5 h-5 text-blue-600 animate-spin" />}
+                    </div>
+                    <div className="ml-3">
+                      <h3 className="text-sm font-medium">{feedback.message}</h3>
+                      {feedback.details && (
+                        <p className="mt-1 text-sm opacity-75">{feedback.details}</p>
+                      )}
+                    </div>
+                  </div>
+                </div>
+              )}
+              
               <form onSubmit={handleCreateInvitation} className="space-y-4">
                 <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
                   <div>
@@ -335,9 +421,17 @@ export default function InvitationsManagement() {
                 <div className="flex gap-3">
                   <button
                     type="submit"
-                    className="px-6 py-2 bg-gradient-to-r from-purple-500 to-indigo-600 text-white rounded-lg hover:from-purple-600 hover:to-indigo-700 transition-colors"
+                    disabled={creating}
+                    className="px-6 py-2 bg-gradient-to-r from-purple-500 to-indigo-600 text-white rounded-lg hover:from-purple-600 hover:to-indigo-700 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
                   >
-                    Send Invitation
+                    {creating ? (
+                      <>
+                        <Clock className="w-4 h-4 inline-block mr-2 animate-spin" />
+                        Sending...
+                      </>
+                    ) : (
+                      'Send Invitation'
+                    )}
                   </button>
                   <button
                     type="button"
