@@ -39,11 +39,14 @@ export async function GET() {
       ORDER BY indexname;
     `) as any;
     
-    const indexes = indexResult.map((row: any) => row.indexname);
+    // Handle both array and object with rows property
+    const indexRows = Array.isArray(indexResult) ? indexResult : (indexResult.rows || []);
+    const indexes = indexRows.map((row: any) => row.indexname);
 
     // Get email count
     const countResult = await db.execute(sql`SELECT COUNT(*) as count FROM email_logs`) as any;
-    const emailCount = parseInt(countResult[0]?.count || '0');
+    const countRows = Array.isArray(countResult) ? countResult : (countResult.rows || []);
+    const emailCount = parseInt(countRows[0]?.count || '0');
     
     console.log('[Check Email Logs Table] Email count:', emailCount);
     console.log('[Check Email Logs Table] Indexes found:', indexes.length);
