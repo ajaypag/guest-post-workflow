@@ -10,9 +10,9 @@ export async function POST(request: NextRequest) {
   try {
     // Get migration file name from request body
     const body = await request.json().catch(() => ({}));
-    const migrationFile = body.useNoFk 
-      ? '0020_add_order_system_no_fk.sql' 
-      : '0020_add_order_system.sql';
+    const migrationFile = body.useNoFk === false
+      ? '0020_add_order_system.sql' 
+      : '0020_add_order_system_no_fk.sql';
     
     // Read the migration file
     const migrationPath = path.join(process.cwd(), 'migrations', migrationFile);
