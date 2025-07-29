@@ -133,8 +133,7 @@ CREATE TABLE IF NOT EXISTS domain_suggestions (
   response_at TIMESTAMP,
   advertiser_notes TEXT,
   
-  -- Ensure unique suggestions per advertiser/domain combo
-  UNIQUE(COALESCE(advertiser_id, '00000000-0000-0000-0000-000000000000'::UUID), advertiser_email, domain_id)
+  -- Note: Unique constraint will be added separately after table creation
 );
 
 -- Order status history
@@ -184,6 +183,15 @@ CREATE INDEX idx_suggestions_status ON domain_suggestions(status);
 
 CREATE INDEX idx_pricing_rules_client ON pricing_rules(client_id);
 CREATE INDEX idx_pricing_rules_quantity ON pricing_rules(min_quantity, max_quantity);
+
+-- Add unique constraint for domain suggestions (using partial index approach)
+CREATE UNIQUE INDEX IF NOT EXISTS idx_domain_suggestions_unique 
+ON domain_suggestions (advertiser_id, domain_id) 
+WHERE advertiser_id IS NOT NULL;
+
+CREATE UNIQUE INDEX IF NOT EXISTS idx_domain_suggestions_unique_email 
+ON domain_suggestions (advertiser_email, domain_id) 
+WHERE advertiser_id IS NULL;
 
 -- Add order reference to workflows table
 ALTER TABLE workflows ADD COLUMN IF NOT EXISTS order_item_id UUID;
