@@ -74,6 +74,33 @@ export async function POST(request: NextRequest) {
 
 export async function GET(request: NextRequest) {
   try {
+    // Check if this is a simple request (no auth required for new order system)
+    const { searchParams } = new URL(request.url);
+    const simple = searchParams.get('simple') === 'true';
+    
+    if (simple) {
+      // Simple mode for new order system - return users with role 'user'
+      const { users } = await import('@/lib/db/schema');
+      const { and } = await import('drizzle-orm');
+      
+      const accounts = await db.select({
+        id: users.id,
+        email: users.email,
+        name: users.name
+      })
+      .from(users)
+      .where(
+        and(
+          eq(users.role, 'user'),
+          eq(users.isActive, true)
+        )
+      )
+      .orderBy(users.name);
+
+      return NextResponse.json(accounts);
+    }
+    
+    // Original implementation for legacy system
     const session = await AuthServiceServer.getSession(request);
     if (!session || session.userType !== 'internal') {
       return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
