@@ -2,19 +2,22 @@ import { NextRequest, NextResponse } from 'next/server';
 import { db } from '@/lib/db/connection';
 import { orders, orderGroups, clients, bulkAnalysisProjects, bulkAnalysisDomains, orderSiteSelections } from '@/lib/db/schema';
 import { eq, and, inArray, sql } from 'drizzle-orm';
+import { AuthServiceServer } from '@/lib/auth-server';
 
-interface RouteParams {
-  params: {
-    id: string;
-    groupId: string;
-  };
-}
-
-export async function GET(request: NextRequest, { params }: RouteParams) {
+export async function GET(
+  request: NextRequest, 
+  { params }: { params: { id: string; groupId: string } }
+) {
   try {
     const { id: orderId, groupId } = params;
 
-    // Verify order exists
+    // Authenticate user
+    const session = await AuthServiceServer.getSession(request);
+    if (!session) {
+      return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
+    }
+
+    // Verify order exists and user has access to it
     const order = await db.query.orders.findFirst({
       where: eq(orders.id, orderId),
       with: {
@@ -26,9 +29,15 @@ export async function GET(request: NextRequest, { params }: RouteParams) {
         }
       }
     });
-
+    
     if (!order) {
       return NextResponse.json({ error: 'Order not found' }, { status: 404 });
+    }
+
+    // Check account access - only allow access to orders belonging to the user's account
+    // For now, we'll check if the user created the order or if it's an admin/internal user
+    if (session.userType !== 'internal' && order.createdBy !== session.userId) {
+      return NextResponse.json({ error: 'Forbidden - Access denied' }, { status: 403 });
     }
 
     const orderGroup = order.orderGroups[0];
@@ -119,12 +128,21 @@ export async function GET(request: NextRequest, { params }: RouteParams) {
   }
 }
 
-export async function POST(request: NextRequest, { params }: RouteParams) {
+export async function POST(
+  request: NextRequest, 
+  { params }: { params: { id: string; groupId: string } }
+) {
   try {
     const { id: orderId, groupId } = params;
     const body = await request.json();
 
-    // Verify order exists
+    // Authenticate user
+    const session = await AuthServiceServer.getSession(request);
+    if (!session) {
+      return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
+    }
+
+    // Verify order exists and user has access to it
     const order = await db.query.orders.findFirst({
       where: eq(orders.id, orderId),
       with: {
@@ -139,6 +157,12 @@ export async function POST(request: NextRequest, { params }: RouteParams) {
 
     if (!order) {
       return NextResponse.json({ error: 'Order not found' }, { status: 404 });
+    }
+
+    // Check account access - only allow access to orders belonging to the user's account
+    // For now, we'll check if the user created the order or if it's an admin/internal user
+    if (session.userType !== 'internal' && order.createdBy !== session.userId) {
+      return NextResponse.json({ error: 'Forbidden - Access denied' }, { status: 403 });
     }
 
     const orderGroup = order.orderGroups[0];
