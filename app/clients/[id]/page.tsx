@@ -36,6 +36,7 @@ export default function ClientDetailPage() {
   const [showKeywordPrompt, setShowKeywordPrompt] = useState(false);
   const [newlyAddedPages, setNewlyAddedPages] = useState<any[]>([]);
   const [bulkKeywordProgress, setBulkKeywordProgress] = useState({ current: 0, total: 0 });
+  const [userType, setUserType] = useState<string>('');
   
   // Bulk URL Update states
   const [showBulkUrlUpdate, setShowBulkUrlUpdate] = useState(false);
@@ -45,6 +46,11 @@ export default function ClientDetailPage() {
   const [isBulkUrlProcessing, setIsBulkUrlProcessing] = useState(false);
 
   useEffect(() => {
+    // Get user type from session
+    const session = sessionStorage.getSession();
+    if (session) {
+      setUserType(session.userType || 'internal');
+    }
     loadClient();
   }, [params.id]);
 

@@ -64,6 +64,7 @@ export default function ProjectDetailPage() {
   const [messageType, setMessageType] = useState<'info' | 'success' | 'error' | 'warning'>('info');
   const [existingDomains, setExistingDomains] = useState<{ domain: string; status: string }[]>([]);
   const [selectedPositionRange, setSelectedPositionRange] = useState('1-50');
+  const [userType, setUserType] = useState<string>('');
   
   // Manual keyword input mode
   const [keywordInputMode, setKeywordInputMode] = useState<'target-pages' | 'manual'>('target-pages');
@@ -249,6 +250,11 @@ export default function ProjectDetailPage() {
   // DataForSEO and AI features are always enabled
 
   useEffect(() => {
+    // Get user type
+    const user = AuthService.getCurrentUser();
+    if (user) {
+      setUserType(user.userType || 'internal');
+    }
     loadClient();
     loadProject();
   }, [params.id, params.projectId]);
@@ -1523,6 +1529,7 @@ export default function ProjectDetailPage() {
           {/* Add Domains Section - Contextual Display */}
           {domains.length === 0 ? (
             // New project - show add domains prominently
+            userType === 'internal' ? (
             <>
               <div className="bg-blue-50 border border-blue-200 rounded-lg p-6 mb-6">
                 <div className="flex items-center mb-3">
@@ -1824,9 +1831,21 @@ anotherdomain.com"
           </div>
             </>
           ) : (
+            // Advertiser view - show message for empty project
+            <div className="bg-gray-50 border border-gray-200 rounded-lg p-6 mb-6">
+              <div className="flex items-center mb-3">
+                <AlertCircle className="w-5 h-5 text-gray-600 mr-2" />
+                <h3 className="text-lg font-medium text-gray-900">No Domains Yet</h3>
+              </div>
+              <p className="text-gray-700">
+                This project doesn't have any domains yet. Your account manager will add domains to analyze for guest post opportunities.
+              </p>
+            </div>
+          )
+          ) : (
             // Existing project - show subtle add domains option
             <>
-              {!showAddDomains && (
+              {!showAddDomains && userType === 'internal' && (
                 <div className="mb-6">
                   <button
                     onClick={() => setShowAddDomains(true)}

@@ -15,6 +15,7 @@ function ClientsPageContent() {
   const [clients, setClients] = useState<Client[]>([]);
   const [showNewClientForm, setShowNewClientForm] = useState(false);
   const [editingClient, setEditingClient] = useState<Client | null>(null);
+  const [userType, setUserType] = useState<string>('');
   const [newClient, setNewClient] = useState({
     name: '',
     website: '',
@@ -27,6 +28,12 @@ function ClientsPageContent() {
   });
 
   useEffect(() => {
+    // Get user type from session
+    const session = sessionStorage.getSession();
+    if (session) {
+      setUserType(session.userType || 'internal');
+    }
+    
     loadClients();
     
     // Check URL parameters to auto-open form
