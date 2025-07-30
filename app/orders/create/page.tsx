@@ -137,7 +137,9 @@ function CreateOrderContent() {
 
   const loadAdvertiserClients = async () => {
     try {
-      const response = await fetch('/api/advertiser/clients');
+      const response = await fetch('/api/advertiser/clients', {
+        credentials: 'include'
+      });
       if (response.ok) {
         const data = await response.json();
         setClients(data.clients || []);
@@ -149,7 +151,9 @@ function CreateOrderContent() {
 
   const loadAllClients = async () => {
     try {
-      const response = await fetch('/api/clients');
+      const response = await fetch('/api/clients', {
+        credentials: 'include'
+      });
       if (response.ok) {
         const data = await response.json();
         setClients(data.clients || []);
@@ -168,7 +172,9 @@ function CreateOrderContent() {
         ? `/api/domains/available?clientId=${clientId}`
         : `/api/clients/${clientId}/bulk-analysis`;
         
-      const response = await fetch(endpoint);
+      const response = await fetch(endpoint, {
+        credentials: 'include'
+      });
       if (response.ok) {
         const data = await response.json();
         setAvailableDomains(data.domains || []);
@@ -231,6 +237,7 @@ function CreateOrderContent() {
       const response = await fetch('/api/clients', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
+        credentials: 'include', // Include cookies for authentication
         body: JSON.stringify({
           name: newClient.name,
           website: newClient.website,
@@ -277,6 +284,7 @@ function CreateOrderContent() {
       const response = await fetch('/api/orders', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
+        credentials: 'include',
         body: JSON.stringify(orderData),
       });
 
@@ -502,12 +510,6 @@ https://example.com/page2"
             >
               {loading ? <Loader2 className="h-4 w-4 animate-spin" /> : <CheckCircle className="h-4 w-4" />}
               Create Client
-            </button>
-            <button
-              onClick={() => setIsNewClient(false)}
-              className="px-4 py-2 border border-gray-300 rounded-md text-gray-700 hover:bg-gray-50"
-            >
-              Cancel
             </button>
           </div>
         </div>
