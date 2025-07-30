@@ -6,10 +6,10 @@ import { AuthServiceServer } from '@/lib/auth-server';
 
 export async function GET(
   request: NextRequest, 
-  { params }: { params: { id: string; groupId: string } }
+  { params }: { params: Promise<{ id: string; groupId: string }> }
 ) {
   try {
-    const { id: orderId, groupId } = params;
+    const { id: orderId, groupId } = await params;
 
     // Authenticate user
     const session = await AuthServiceServer.getSession(request);
@@ -17,17 +17,9 @@ export async function GET(
       return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
     }
 
-    // Verify order exists and user has access to it
+    // First verify the order exists and user has access
     const order = await db.query.orders.findFirst({
-      where: eq(orders.id, orderId),
-      with: {
-        orderGroups: {
-          where: eq(orderGroups.id, groupId),
-          with: {
-            client: true
-          }
-        }
-      }
+      where: eq(orders.id, orderId)
     });
     
     if (!order) {
@@ -40,7 +32,14 @@ export async function GET(
       return NextResponse.json({ error: 'Forbidden - Access denied' }, { status: 403 });
     }
 
-    const orderGroup = order.orderGroups[0];
+    // Now get the specific order group
+    const orderGroup = await db.query.orderGroups.findFirst({
+      where: and(eq(orderGroups.orderId, orderId), eq(orderGroups.id, groupId)),
+      with: {
+        client: true
+      }
+    });
+
     if (!orderGroup) {
       return NextResponse.json({ error: 'Order group not found' }, { status: 404 });
     }
@@ -73,7 +72,7 @@ export async function GET(
     // Get suggested sites based on client requirements
     const suggestedSites = transformedDomains.filter(domain => {
       // Apply client requirements as filters
-      const reqs = orderGroup.requirements || {};
+      const reqs = orderGroup.requirementOverrides || {};
       
       if (reqs.minDR && domain.dr < reqs.minDR) return false;
       if (reqs.minTraffic && domain.traffic < reqs.minTraffic) return false;
@@ -130,10 +129,10 @@ export async function GET(
 
 export async function POST(
   request: NextRequest, 
-  { params }: { params: { id: string; groupId: string } }
+  { params }: { params: Promise<{ id: string; groupId: string }> }
 ) {
   try {
-    const { id: orderId, groupId } = params;
+    const { id: orderId, groupId } = await params;
     const body = await request.json();
 
     // Authenticate user
@@ -142,17 +141,9 @@ export async function POST(
       return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
     }
 
-    // Verify order exists and user has access to it
+    // First verify the order exists and user has access
     const order = await db.query.orders.findFirst({
-      where: eq(orders.id, orderId),
-      with: {
-        orderGroups: {
-          where: eq(orderGroups.id, groupId),
-          with: {
-            client: true
-          }
-        }
-      }
+      where: eq(orders.id, orderId)
     });
 
     if (!order) {
@@ -165,7 +156,14 @@ export async function POST(
       return NextResponse.json({ error: 'Forbidden - Access denied' }, { status: 403 });
     }
 
-    const orderGroup = order.orderGroups[0];
+    // Now get the specific order group
+    const orderGroup = await db.query.orderGroups.findFirst({
+      where: and(eq(orderGroups.orderId, orderId), eq(orderGroups.id, groupId)),
+      with: {
+        client: true
+      }
+    });
+
     if (!orderGroup) {
       return NextResponse.json({ error: 'Order group not found' }, { status: 404 });
     }
