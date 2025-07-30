@@ -35,9 +35,11 @@ export async function POST() {
           await db.insert(accounts).values({
             id: user.id, // Use same ID as user for consistency
             email: user.email,
-            name: user.name,
-            company: null, // You might want to set this based on client data
+            password: 'temp-password-needs-reset', // Temporary password
+            contactName: user.name,
+            companyName: possibleClient?.name || 'Unknown Company',
             primaryClientId: possibleClient?.id || null,
+            status: 'active',
             createdAt: new Date(),
             updatedAt: new Date()
           });
