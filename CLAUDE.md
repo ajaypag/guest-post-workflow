@@ -21,6 +21,10 @@ Production-ready workflow system with PostgreSQL, multi-user auth, and AI agent 
 - ✅ User system migration to invite-only (2025-01-29)
 - ✅ Email service integration with invitations (2025-01-29)
 - ⚠️ Auto-save diagnostics removed (reverted)
+- 🏗️ Advertiser/Publisher architecture redesign (2025-01-30)
+  - Created separate tables for advertisers/publishers
+  - Orders currently use users.id (migration needed)
+  - See: docs/architecture/USER_TYPES.md
 
 ## 🔧 Quick Reference
 

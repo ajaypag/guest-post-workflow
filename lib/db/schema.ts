@@ -469,6 +469,14 @@ export {
   bulkAnalysisProjectsRelations
 } from './bulkAnalysisSchema';
 
+// Re-export advertiser schema tables
+export {
+  advertisers,
+  publishers,
+  publisherWebsites,
+  advertisersRelations
+} from './advertiserSchema';
+
 // Outline sessions for tracking deep research outline generation with clarifications
 export const outlineSessions = pgTable('outline_sessions', {
   id: uuid('id').primaryKey(),
