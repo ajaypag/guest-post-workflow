@@ -6,12 +6,12 @@ import { Building, Mail, Lock, User, CheckCircle, AlertCircle } from 'lucide-rea
 import Link from 'next/link';
 
 interface OrderInfo {
-  advertiserEmail: string;
-  advertiserName: string;
-  advertiserCompany?: string;
+  accountEmail: string;
+  accountName: string;
+  accountCompany?: string;
 }
 
-function AdvertiserSignupContent() {
+function AccountSignupContent() {
   const router = useRouter();
   const searchParams = useSearchParams();
   const token = searchParams.get('token');
@@ -41,17 +41,17 @@ function AdvertiserSignupContent() {
           const data = await response.json();
           const order = data.order;
           setOrderInfo({
-            advertiserEmail: order.advertiserEmail,
-            advertiserName: order.advertiserName,
-            advertiserCompany: order.advertiserCompany,
+            accountEmail: order.accountEmail,
+            accountName: order.accountName,
+            accountCompany: order.accountCompany,
           });
           
           // Pre-fill form with order data
           setFormData(prev => ({
             ...prev,
-            email: order.advertiserEmail,
-            name: order.advertiserName,
-            company: order.advertiserCompany || '',
+            email: order.accountEmail,
+            name: order.accountName,
+            company: order.accountCompany || '',
           }));
         }
       } catch (err) {
@@ -112,7 +112,7 @@ function AdvertiserSignupContent() {
     setLoading(true);
 
     try {
-      const response = await fetch('/api/auth/advertiser-signup', {
+      const response = await fetch('/api/auth/account-signup', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
@@ -347,7 +347,7 @@ function AdvertiserSignupContent() {
   );
 }
 
-export default function AdvertiserSignupPage() {
+export default function AccountSignupPage() {
   return (
     <Suspense fallback={
       <div className="min-h-screen bg-gray-50 flex items-center justify-center">
@@ -357,7 +357,7 @@ export default function AdvertiserSignupPage() {
         </div>
       </div>
     }>
-      <AdvertiserSignupContent />
+      <AccountSignupContent />
     </Suspense>
   );
 }

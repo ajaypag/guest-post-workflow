@@ -113,7 +113,7 @@ export default function OrderSharePage() {
       }
     } else {
       // Redirect to signup with order context
-      router.push(`/auth/signup/advertiser?token=${params.token}`);
+      router.push(`/auth/signup/account?token=${params.token}`);
     }
   };
 
