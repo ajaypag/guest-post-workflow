@@ -27,15 +27,19 @@ Accounts get "behind the curtain" visibility as a selling point, but with:
 ## What Accounts See
 
 ### Order-Centric View
-Everything is accessed through their orders, not as standalone components:
+Everything is accessed through their orders, supporting multi-client bundles:
 
 ```
-Order #123
-├── Configuration (links, targets, requirements)
-├── Site Analysis (filtered bulk analysis results)
-├── Site Review (approve/reject sites)
-├── Progress Tracking (workflow status)
-└── Deliverables (final content)
+Order #123 (Multi-Client)
+├── Client A Group (2 links)
+│   ├── Site Analysis (20 domains analyzed)
+│   ├── Site Review (pick from ALL 20)
+│   └── 2 Workflows (1 per link)
+├── Client B Group (3 links)
+│   ├── Site Analysis (25 domains analyzed)
+│   ├── Site Review (pick from ALL 25)
+│   └── 3 Workflows (1 per link)
+└── Total: 5 link placements across 2 clients
 ```
 
 ### Specific Visibility by Stage
@@ -46,11 +50,12 @@ Order #123
 - Specify anchor text preferences
 - Define site requirements
 
-**Site Analysis**: FILTERED VIEW
-- See domains analyzed for their order
-- View quality metrics (DR, traffic)
-- See categorization (High Quality, Good, etc)
-- HIDDEN: Internal scoring, costs, unrelated domains
+**Site Analysis**: FULL TRANSPARENCY
+- See ALL domains analyzed (not just suggested)
+- Browse complete results to pick alternatives
+- View quality metrics (DR, traffic) for all
+- Full categorization visibility
+- HIDDEN: Internal costs and scoring algorithms
 
 **Workflow Progress**: READ-ONLY TRACKING
 - Current status per site
@@ -97,11 +102,12 @@ Order #123
 
 ## Benefits of This Architecture
 
-1. **Clean Separation**: Operations vs order management
-2. **Sales Advantage**: "See your content being created"
-3. **No Duplication**: Reuse components with filtered views
-4. **Scalable**: Easy to add more account features without affecting operations
-5. **True Dogfooding**: OutreachLabs as an account uses same interface as clients
+1. **Efficiency**: Multi-client orders save agencies time (10 clients, 1 checkout)
+2. **Full Transparency**: Browse all analyzed sites, not just pre-selected
+3. **Sales Advantage**: "See your content being created" + pick your own sites
+4. **Flexibility**: Not locked into system suggestions
+5. **Clean Separation**: Operations vs order management
+6. **True Dogfooding**: OutreachLabs as an account uses same interface
 
 ## What This Is NOT
 
@@ -119,10 +125,11 @@ Order #123
 4. Add share_tokens table
 
 ### Phase 2: Order-Centric Refactor
-1. Link bulk_analysis_projects to orders
-2. Link workflows to order_items
-3. Implement order state machine
-4. Create order-based API filters
+1. Create order_groups table for multi-client support
+2. Link bulk_analysis_projects to order_groups (not orders)
+3. Link workflows to individual site_selections
+4. Implement flexible site review with full browsing
+5. Add client-level default requirements
 
 ### Phase 3: Account Experience
 1. Build order-centric UI

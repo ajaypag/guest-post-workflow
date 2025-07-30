@@ -4,18 +4,18 @@
 
 ```mermaid
 graph TD
-    A[Order Initiation] --> B[Order Configuration]
-    B --> C[Site Identification]
-    C --> D[Bulk Analysis]
-    D --> E[Site Categorization]
+    A[Order Initiation] --> B[Add Client Groups]
+    B --> C[Configure Each Group]
+    C --> D[Bulk Analysis per Group]
+    D --> E[System Suggests Sites]
     E --> F{Client Review?}
-    F -->|Yes| G[Site Selection]
-    F -->|No| H[Auto-Select]
+    F -->|Yes| G[Browse All Sites + Select]
+    F -->|No| H[Use Suggested Sites]
     G --> I[Payment]
     H --> I
-    I --> J[Workflow Creation]
+    I --> J[Create Workflows per Link]
     J --> K[Content Generation]
-    K --> L[Published Article]
+    K --> L[Published Articles]
 ```
 
 ## Order Lifecycle Stages
@@ -32,52 +32,65 @@ graph TD
 - Order type (standard, lead-gen, managed)
 - Created by (account user, internal user, sales)
 
-### 2. Order Configuration
-**What's configured:**
-- Number of links needed
-- Target clients/pages (from account's client list)
+### 2. Order Configuration (Multi-Client)
+**What's configured per client group:**
+- Client selection from their list
+- Number of links for this client
+- Target pages for this client
 - Anchor text preferences
-- Site requirements (if any)
-- Budget constraints
+- Override client's default requirements (optional)
 
-**Account visibility:** FULL - they need to see/edit their requirements
+**Benefits:**
+- One order can cover 10+ clients
+- Saves clicks and time
+- Single checkout process
 
-### 3. Site Identification & Analysis
+**Account visibility:** FULL - they configure each client group
+
+### 3. Site Identification & Analysis (Per Group)
 **Internal process:**
-- Pull domains from database
-- Run bulk analysis
-- Categorize: High Quality, Good, Marginal, Disqualified
+- Each client group gets separate bulk analysis
+- System analyzes 20+ domains per group
+- Suggests top 5-7 sites
+- Categorizes all: High Quality, Good, Marginal, Disqualified
 
-**Account visibility:** FILTERED
-- See final categorized results
-- Hide internal scoring algorithms
-- Hide cost calculations
-- Show only domains relevant to their order
+**Account visibility:** FULL BROWSE ACCESS
+- See ALL analyzed domains (not just suggested)
+- Can pick from alternatives if they don't like suggestions
+- View quality metrics for all domains
+- HIDDEN: Internal costs, scoring algorithms
 
-### 4. Client Review (Optional)
-**When triggered:**
-- Account preference
-- Order value threshold
-- First-time orders
+### 4. Flexible Site Review
+**Review capabilities:**
+- View system's suggested sites
+- Browse ALL analyzed sites (full transparency)
+- Swap suggestions for alternatives
+- Assign specific sites to specific target pages
+- Set custom anchor text per placement
 
-**Account visibility:** INTERACTIVE
-- Review categorized sites
-- Select/deselect sites
-- See DR, traffic, relevance scores
-- Approve final list
+**Example flow:**
+```
+Client A needs 2 links:
+- System suggests 5 sites
+- User approves 1 suggested site for target page #1
+- User browses alternatives, picks different site for target page #2
+- User sets specific anchor texts for each
+```
 
-### 5. Workflow Execution
+### 5. Workflow Execution (Per Link)
 **Internal process:**
-- Create workflow for each selected site
-- Assign to team members
-- Generate content via AI agents
+- Create individual workflow for EACH link placement
+- Example: Client A (2 links) = 2 workflows
+- Each workflow tracks: client, target page, domain, anchor text
+- AI agents generate content
 - Quality checks
 
 **Account visibility:** PROGRESS VIEW
-- See workflow status (pending, writing, reviewing, published)
+- Track each workflow individually
+- See which client/page each workflow is for
 - Preview content drafts
 - NO access to AI agent details
-- NO access to internal notes
+- NO access to internal operations
 
 ## Use Case Flows
 
@@ -121,49 +134,64 @@ Order transfers to account
 
 ## Data Relationships for Visibility
 
-### Order → Bulk Analysis Projects
+### Order → Groups → Bulk Analysis
 ```sql
--- Link orders to relevant bulk analysis domains
-SELECT bad.* 
-FROM bulk_analysis_domains bad
-JOIN order_site_selections oss ON bad.id = oss.domain_id
-WHERE oss.order_id = :orderId
+-- Get all domains for a client group (not just selected)
+SELECT 
+  bad.*,
+  CASE 
+    WHEN oss.id IS NOT NULL THEN oss.status
+    ELSE 'available'
+  END as selection_status
+FROM order_groups og
+JOIN bulk_analysis_projects bap ON og.bulk_analysis_project_id = bap.id
+JOIN bulk_analysis_domains bad ON bad.project_id = bap.id
+LEFT JOIN order_site_selections oss ON oss.domain_id = bad.id
+WHERE og.id = :groupId
 ```
 
 **What accounts see:**
-- Domains analyzed for their order
-- Status (selected, rejected, pending)
-- Quality metrics
-- NOT internal costs or margins
+- ALL domains analyzed for each client group
+- Which ones were suggested vs available
+- Full browsing capability
+- Can select any analyzed domain
 
-### Order → Workflows
+### Order → Workflows (Per Link)
 ```sql
--- Link orders to fulfillment workflows
-SELECT w.*
+-- Each approved site selection becomes a workflow
+SELECT 
+  w.*,
+  og.client_id,
+  c.name as client_name,
+  oss.target_page_url,
+  oss.anchor_text
 FROM workflows w
-JOIN order_items oi ON w.order_item_id = oi.id
-WHERE oi.order_id = :orderId
+JOIN order_site_selections oss ON w.site_selection_id = oss.id
+JOIN order_groups og ON oss.order_group_id = og.id
+JOIN clients c ON og.client_id = c.id
+WHERE og.order_id = :orderId
 ```
 
-**What accounts see:**
-- Workflow progress
-- Content drafts
-- Publishing status
-- NOT agent conversations or internal config
+**Workflow granularity:**
+- 1 workflow per link placement
+- Tracks: client, target page, domain, anchor
+- Clear attribution for each piece of work
 
 ## Implementation Strategy
 
 ### 1. Order-Centric Navigation
-Instead of showing raw bulk analysis or workflows, organize everything under orders:
+Organize by order, then by client group:
 
 ```
 /account/orders
   ├── /[orderId]
-  │   ├── /details        (configuration)
-  │   ├── /sites          (bulk analysis results)
-  │   ├── /review         (site selection)
-  │   ├── /progress       (workflow tracking)
-  │   └── /deliverables   (final content)
+  │   ├── /overview           (all client groups)
+  │   ├── /groups/[groupId]
+  │   │   ├── /sites          (ALL analyzed sites)
+  │   │   ├── /review         (site selection)
+  │   │   └── /workflows      (link-specific progress)
+  │   ├── /payment           (for entire order)
+  │   └── /deliverables      (all content)
 ```
 
 ### 2. Context-Aware Data Loading
@@ -212,12 +240,18 @@ enum OrderState {
 }
 ```
 
-## Key Decisions
+## Key Architectural Decisions
 
-1. **Order-Centric UI**: Everything is accessed through orders, not standalone bulk analysis or workflows
-2. **Smart Filtering**: Accounts only see data related to their orders
-3. **Progressive Disclosure**: More details revealed as order progresses
-4. **Share Links**: Enable sales process without account creation
-5. **Flexible Review**: Client review is optional based on configuration
+1. **Multi-Client Orders**: One order can contain multiple client groups to save time
+2. **Full Transparency in Review**: Show ALL analyzed sites, not just pre-selected
+3. **Per-Link Workflows**: Each link placement gets its own workflow for clear tracking
+4. **Client-Level Defaults**: Site requirements stored at client level, overridable per order
+5. **Flexible Site Selection**: Users can pick any analyzed site, not limited to suggestions
 
-This structure accommodates all three use cases while maintaining clean separation between internal operations and account visibility.
+## Benefits of This Approach
+
+- **Efficiency**: Agencies can process 10 clients in one order
+- **Transparency**: "Behind the curtain" view builds trust
+- **Flexibility**: Not locked into system suggestions
+- **Clarity**: Each workflow clearly tied to specific client/page/link
+- **Simplicity**: Requirements set once at client level
