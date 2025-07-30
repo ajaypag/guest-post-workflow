@@ -2,6 +2,10 @@ import { NextRequest, NextResponse } from 'next/server';
 import { UserService } from '@/lib/db/userService';
 import { AuthServiceServer } from '@/lib/auth-server';
 import { cookies } from 'next/headers';
+import { db } from '@/lib/db/connection';
+import { advertisers } from '@/lib/db/advertiserSchema';
+import { eq } from 'drizzle-orm';
+import bcrypt from 'bcryptjs';
 
 export async function POST(request: NextRequest) {
   try {
@@ -14,7 +18,44 @@ export async function POST(request: NextRequest) {
       );
     }
 
-    const user = await UserService.verifyPassword(email, password);
+    // First try to find user in users table (internal team)
+    let user = await UserService.verifyPassword(email, password);
+    let userType = 'internal';
+    let token: string;
+    
+    if (!user) {
+      // If not found in users table, check advertisers table
+      const advertiser = await db.query.advertisers.findFirst({
+        where: eq(advertisers.email, email.toLowerCase()),
+      });
+      
+      if (advertiser) {
+        // Verify advertiser password
+        const isPasswordValid = await bcrypt.compare(password, advertiser.password);
+        if (isPasswordValid && (advertiser.status === 'active' || advertiser.status === 'pending')) {
+          // Create user object from advertiser
+          user = {
+            id: advertiser.id,
+            email: advertiser.email,
+            name: advertiser.contactName,
+            role: 'advertiser',
+            isActive: true,
+            userType: 'advertiser',
+            passwordHash: advertiser.password,
+            lastLogin: advertiser.lastLoginAt,
+            createdAt: advertiser.createdAt,
+            updatedAt: advertiser.updatedAt,
+          };
+          userType = 'advertiser';
+          
+          // Update last login
+          await db
+            .update(advertisers)
+            .set({ lastLoginAt: new Date() })
+            .where(eq(advertisers.id, advertiser.id));
+        }
+      }
+    }
     
     if (!user) {
       return NextResponse.json(
@@ -24,7 +65,7 @@ export async function POST(request: NextRequest) {
     }
 
     // Create JWT token
-    const token = await AuthServiceServer.createSession(user);
+    token = await AuthServiceServer.createSession(user);
     
     // Create response first
     const response = NextResponse.json({
@@ -34,7 +75,7 @@ export async function POST(request: NextRequest) {
         name: user.name,
         role: user.role,
         isActive: user.isActive,
-        userType: user.userType || 'internal'
+        userType: userType
       }
     });
 

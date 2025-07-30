@@ -156,8 +156,14 @@ function OrdersPageContent() {
       <div className="mb-8">
         <div className="flex items-center justify-between mb-6">
           <div>
-            <h1 className="text-3xl font-bold text-gray-900">Orders</h1>
-            <p className="text-gray-600 mt-1">Manage guest post orders and track their progress</p>
+            <h1 className="text-3xl font-bold text-gray-900">
+              {userType === 'advertiser' ? 'My Orders' : 'Orders'}
+            </h1>
+            <p className="text-gray-600 mt-1">
+              {userType === 'advertiser' 
+                ? 'Track your guest post campaigns and monitor progress'
+                : 'Manage guest post orders and track their progress'}
+            </p>
           </div>
           {userType === 'internal' && (
             <Link href="/orders/create">
