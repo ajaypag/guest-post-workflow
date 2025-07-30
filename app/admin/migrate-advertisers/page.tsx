@@ -225,10 +225,10 @@ export default function MigrateAdvertisersPage() {
                 <div className="border rounded-lg p-4">
                   <h3 className="font-medium text-gray-900 mb-2 flex items-center">
                     <Globe className="h-4 w-4 mr-2 text-green-600" />
-                    Orders Referencing Users
+                    Orders with Advertiser IDs
                   </h3>
                   <p className="text-gray-600">
-                    Found <span className="font-bold">{existingData.ordersWithUserId}</span> orders that reference users.id that will need to be updated
+                    Found <span className="font-bold">{existingData.ordersWithUserId}</span> orders that already reference advertiser_id (currently pointing to users.id)
                   </p>
                 </div>
               </div>

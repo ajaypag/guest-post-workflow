@@ -56,9 +56,9 @@ export async function GET(request: NextRequest) {
         },
       });
 
-      // Count orders that reference user IDs
+      // Count orders that reference user IDs (via advertiser_id)
       const ordersResult = await db.execute(sql`
-        SELECT COUNT(*) as count FROM orders WHERE user_id IS NOT NULL
+        SELECT COUNT(*) as count FROM orders WHERE advertiser_id IS NOT NULL
       `);
       const ordersWithUserId = parseInt(String(ordersResult.rows[0].count));
 
