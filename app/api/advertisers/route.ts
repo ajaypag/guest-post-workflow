@@ -1,7 +1,8 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { db } from '@/lib/db/connection';
 import { advertisers } from '@/lib/db/advertiserSchema';
-import { eq } from 'drizzle-orm';
+import { orders } from '@/lib/db/orderSchema';
+import { eq, count, sum } from 'drizzle-orm';
 import { v4 as uuidv4 } from 'uuid';
 import { AuthServiceServer } from '@/lib/auth-server';
 import bcrypt from 'bcryptjs';
@@ -78,11 +79,36 @@ export async function GET(request: NextRequest) {
       return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
     }
 
-    const allAdvertisers = await db.query.advertisers.findMany({
+    // Fetch all advertisers with their primary client data
+    const advertisersList = await db.query.advertisers.findMany({
+      with: {
+        primaryClient: true,
+      },
       orderBy: (advertisers, { desc }) => [desc(advertisers.createdAt)],
     });
 
-    return NextResponse.json({ advertisers: allAdvertisers });
+    // Fetch order statistics for each advertiser
+    const advertisersWithStats = await Promise.all(
+      advertisersList.map(async (advertiser) => {
+        // Get order count and total revenue
+        const orderStats = await db
+          .select({
+            orderCount: count(orders.id),
+            totalRevenue: sum(orders.totalRetail),
+          })
+          .from(orders)
+          .where(eq(orders.advertiserId, advertiser.id))
+          .groupBy(orders.advertiserId);
+
+        return {
+          ...advertiser,
+          orderCount: orderStats[0]?.orderCount || 0,
+          totalRevenue: orderStats[0]?.totalRevenue || 0,
+        };
+      })
+    );
+
+    return NextResponse.json({ advertisers: advertisersWithStats });
   } catch (error) {
     console.error('Error fetching advertisers:', error);
     return NextResponse.json(

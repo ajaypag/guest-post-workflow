@@ -106,6 +106,13 @@ export default function Header() {
                   <Mail className="w-4 h-4 mr-1.5" />
                   Contacts
                 </Link>
+                <Link
+                  href="/advertisers"
+                  className="text-gray-600 hover:text-gray-900 hover:bg-gray-50 px-3 py-2 rounded-lg text-sm font-medium transition-colors flex items-center"
+                >
+                  <Users className="w-4 h-4 mr-1.5" />
+                  Advertisers
+                </Link>
                 {session.role === 'admin' && (
                   <Link
                     href="/admin/users"

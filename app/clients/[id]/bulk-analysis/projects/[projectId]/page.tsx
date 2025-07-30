@@ -5,7 +5,7 @@ import { useParams, useRouter, useSearchParams } from 'next/navigation';
 import Link from 'next/link';
 import AuthWrapper from '@/components/AuthWrapper';
 import Header from '@/components/Header';
-import { clientStorage } from '@/lib/userStorage';
+import { clientStorage, sessionStorage } from '@/lib/userStorage';
 import { AuthService } from '@/lib/auth';
 import { Client, TargetPage } from '@/types/user';
 import { groupKeywordsByTopic, generateGroupedAhrefsUrls } from '@/lib/utils/keywordGroupingV2';
@@ -250,10 +250,10 @@ export default function ProjectDetailPage() {
   // DataForSEO and AI features are always enabled
 
   useEffect(() => {
-    // Get user type
-    const user = AuthService.getCurrentUser();
-    if (user) {
-      setUserType(user.userType || 'internal');
+    // Get user type from session
+    const session = sessionStorage.getSession();
+    if (session) {
+      setUserType(session.userType || 'internal');
     }
     loadClient();
     loadProject();
