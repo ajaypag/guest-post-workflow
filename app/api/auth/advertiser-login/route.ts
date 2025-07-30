@@ -1,6 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { db } from '@/lib/db/connection';
-import { advertisers } from '@/lib/db/advertiserSchema';
+import { accounts } from '@/lib/db/accountSchema';
 import { eq } from 'drizzle-orm';
 import bcrypt from 'bcryptjs';
 import { SignJWT } from 'jose';
@@ -21,12 +21,12 @@ export async function POST(request: NextRequest) {
       );
     }
 
-    // Find advertiser by email
-    const advertiser = await db.query.advertisers.findFirst({
-      where: eq(advertisers.email, email.toLowerCase()),
+    // Find account by email
+    const account = await db.query.accounts.findFirst({
+      where: eq(accounts.email, email.toLowerCase()),
     });
 
-    if (!advertiser) {
+    if (!account) {
       return NextResponse.json(
         { error: 'Invalid credentials' },
         { status: 401 }
@@ -34,7 +34,7 @@ export async function POST(request: NextRequest) {
     }
 
     // Check if account is active
-    if (advertiser.status !== 'active' && advertiser.status !== 'pending') {
+    if (account.status !== 'active' && account.status !== 'pending') {
       return NextResponse.json(
         { error: 'Account is not active. Please contact support.' },
         { status: 403 }
@@ -42,7 +42,7 @@ export async function POST(request: NextRequest) {
     }
 
     // Verify password
-    const isPasswordValid = await bcrypt.compare(password, advertiser.password);
+    const isPasswordValid = await bcrypt.compare(password, account.password);
     if (!isPasswordValid) {
       return NextResponse.json(
         { error: 'Invalid credentials' },
@@ -52,17 +52,17 @@ export async function POST(request: NextRequest) {
 
     // Update last login
     await db
-      .update(advertisers)
+      .update(accounts)
       .set({ lastLoginAt: new Date() })
-      .where(eq(advertisers.id, advertiser.id));
+      .where(eq(accounts.id, account.id));
 
-    // Create JWT token with advertiser info
+    // Create JWT token with account info
     const token = await new SignJWT({
-      userId: advertiser.id,
-      email: advertiser.email,
-      userType: 'advertiser',
-      role: 'advertiser',
-      name: advertiser.contactName,
+      userId: account.id,
+      email: account.email,
+      userType: 'account',
+      role: 'account',
+      name: account.contactName,
     })
       .setProtectedHeader({ alg: 'HS256' })
       .setExpirationTime('7d')
@@ -78,20 +78,20 @@ export async function POST(request: NextRequest) {
       path: '/',
     });
 
-    // Return advertiser data (excluding password)
-    const { password: _, ...advertiserData } = advertiser;
+    // Return account data (excluding password)
+    const { password: _, ...accountData } = account;
     
     return NextResponse.json({
       success: true,
       user: {
-        ...advertiserData,
-        name: advertiser.contactName,
-        userType: 'advertiser',
-        role: 'advertiser',
+        ...accountData,
+        name: account.contactName,
+        userType: 'account',
+        role: 'account',
       },
     });
   } catch (error) {
-    console.error('Advertiser login error:', error);
+    console.error('Account login error:', error);
     return NextResponse.json(
       { error: 'An error occurred during login' },
       { status: 500 }

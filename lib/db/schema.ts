@@ -439,7 +439,7 @@ export {
   orderShareTokens,
   orderStatusHistory,
   domainSuggestions,
-  advertiserOrderAccess,
+  accountOrderAccess,
   pricingRules,
   ordersRelations,
   orderItemsRelations
@@ -469,13 +469,21 @@ export {
   bulkAnalysisProjectsRelations
 } from './bulkAnalysisSchema';
 
-// Re-export advertiser schema tables
+// Re-export account schema tables
 export {
-  advertisers,
+  accounts,
   publishers,
   publisherWebsites,
-  advertisersRelations
-} from './advertiserSchema';
+  accountsRelations
+} from './accountSchema';
+
+// Re-export order group schema tables
+export {
+  orderGroups,
+  orderSiteSelections,
+  orderGroupsRelations,
+  orderSiteSelectionsRelations
+} from './orderGroupSchema';
 
 // Outline sessions for tracking deep research outline generation with clarifications
 export const outlineSessions = pgTable('outline_sessions', {

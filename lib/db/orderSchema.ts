@@ -2,18 +2,21 @@ import { pgTable, uuid, varchar, text, timestamp, boolean, integer, decimal, ind
 import { relations } from 'drizzle-orm';
 import { users, clients, workflows } from './schema';
 import { bulkAnalysisDomains } from './bulkAnalysisSchema';
+import { accounts } from './accountSchema';
 
-// Orders table - central entity for advertiser orders
+// Orders table - central entity for account orders
 export const orders = pgTable('orders', {
   id: uuid('id').primaryKey(),
-  clientId: uuid('client_id').notNull().references(() => clients.id),
-  advertiserId: uuid('advertiser_id').references(() => users.id),
-  advertiserEmail: varchar('advertiser_email', { length: 255 }).notNull(),
-  advertiserName: varchar('advertiser_name', { length: 255 }).notNull(),
-  advertiserCompany: varchar('advertiser_company', { length: 255 }),
+  // Note: clientId removed - now in order_groups
+  accountId: uuid('account_id').references(() => accounts.id),
+  accountEmail: varchar('account_email', { length: 255 }).notNull(),
+  accountName: varchar('account_name', { length: 255 }).notNull(),
+  accountCompany: varchar('account_company', { length: 255 }),
   
   // Status tracking
   status: varchar('status', { length: 50 }).notNull().default('draft'),
+  state: varchar('state', { length: 50 }).default('configuring'),
+  // States: configuring → analyzing → reviewing → payment_pending → in_progress → completed
   
   // Pricing (in cents)
   subtotalRetail: integer('subtotal_retail').notNull().default(0),
@@ -28,6 +31,10 @@ export const orders = pgTable('orders', {
   clientReviewFee: integer('client_review_fee').default(0),
   rushDelivery: boolean('rush_delivery').default(false),
   rushFee: integer('rush_fee').default(0),
+  
+  // Review tracking
+  requiresClientReview: boolean('requires_client_review').default(false),
+  reviewCompletedAt: timestamp('review_completed_at'),
   
   // Sharing
   shareToken: varchar('share_token', { length: 255 }).unique(),
@@ -44,16 +51,16 @@ export const orders = pgTable('orders', {
   createdBy: uuid('created_by').notNull().references(() => users.id),
   assignedTo: uuid('assigned_to').references(() => users.id),
   internalNotes: text('internal_notes'),
-  advertiserNotes: text('advertiser_notes'),
+  accountNotes: text('account_notes'),
   cancellationReason: text('cancellation_reason'),
   
   // Timestamps
   createdAt: timestamp('created_at').notNull(),
   updatedAt: timestamp('updated_at').notNull(),
 }, (table) => ({
-  clientIdIdx: index('idx_orders_client_id').on(table.clientId),
-  advertiserIdIdx: index('idx_orders_advertiser_id').on(table.advertiserId),
+  accountIdIdx: index('idx_orders_account_id').on(table.accountId),
   statusIdx: index('idx_orders_status').on(table.status),
+  stateIdx: index('idx_orders_state').on(table.state),
   shareTokenIdx: index('idx_orders_share_token').on(table.shareToken),
   createdByIdx: index('idx_orders_created_by').on(table.createdBy),
 }));
@@ -64,6 +71,10 @@ export const orderItems = pgTable('order_items', {
   orderId: uuid('order_id').notNull().references(() => orders.id, { onDelete: 'cascade' }),
   domainId: uuid('domain_id').notNull().references(() => bulkAnalysisDomains.id),
   targetPageId: uuid('target_page_id'), // Added for bulk analysis integration
+  
+  // Link to unified order system
+  orderGroupId: uuid('order_group_id'),
+  siteSelectionId: uuid('site_selection_id'),
   
   // Snapshot data
   domain: varchar('domain', { length: 255 }).notNull(),
@@ -114,8 +125,8 @@ export const orderShareTokens = pgTable('order_share_tokens', {
   useCount: integer('use_count').default(0),
 });
 
-// Advertiser access to orders
-export const advertiserOrderAccess = pgTable('advertiser_order_access', {
+// Account access to orders
+export const accountOrderAccess = pgTable('account_order_access', {
   id: uuid('id').primaryKey(),
   userId: uuid('user_id').notNull().references(() => users.id, { onDelete: 'cascade' }),
   orderId: uuid('order_id').notNull().references(() => orders.id, { onDelete: 'cascade' }),
@@ -129,8 +140,8 @@ export const advertiserOrderAccess = pgTable('advertiser_order_access', {
 // Domain suggestions
 export const domainSuggestions = pgTable('domain_suggestions', {
   id: uuid('id').primaryKey(),
-  advertiserId: uuid('advertiser_id').references(() => users.id),
-  advertiserEmail: varchar('advertiser_email', { length: 255 }),
+  accountId: uuid('account_id').references(() => accounts.id),
+  accountEmail: varchar('account_email', { length: 255 }),
   domainId: uuid('domain_id').notNull().references(() => bulkAnalysisDomains.id),
   orderId: uuid('order_id').references(() => orders.id),
   
@@ -146,13 +157,13 @@ export const domainSuggestions = pgTable('domain_suggestions', {
   suggestedAt: timestamp('suggested_at').notNull(),
   expiresAt: timestamp('expires_at'),
   
-  // Advertiser response
+  // Account response
   status: varchar('status', { length: 50 }).default('pending'),
   viewedAt: timestamp('viewed_at'),
   responseAt: timestamp('response_at'),
-  advertiserNotes: text('advertiser_notes'),
+  accountNotes: text('account_notes'),
 }, (table) => ({
-  advertiserIdx: index('idx_suggestions_advertiser').on(table.advertiserId, table.advertiserEmail),
+  accountIdx: index('idx_suggestions_account').on(table.accountId, table.accountEmail),
   domainIdx: index('idx_suggestions_domain').on(table.domainId),
   statusIdx: index('idx_suggestions_status').on(table.status),
 }));
@@ -202,13 +213,9 @@ export type NewPricingRule = typeof pricingRules.$inferInsert;
 
 // Relations
 export const ordersRelations = relations(orders, ({ one, many }) => ({
-  client: one(clients, {
-    fields: [orders.clientId],
-    references: [clients.id],
-  }),
-  advertiser: one(users, {
-    fields: [orders.advertiserId],
-    references: [users.id],
+  account: one(accounts, {
+    fields: [orders.accountId],
+    references: [accounts.id],
   }),
   createdByUser: one(users, {
     fields: [orders.createdBy],
@@ -220,6 +227,7 @@ export const ordersRelations = relations(orders, ({ one, many }) => ({
   }),
   items: many(orderItems),
   statusHistory: many(orderStatusHistory),
+  // Note: order groups relation defined in orderGroupSchema
 }));
 
 export const orderItemsRelations = relations(orderItems, ({ one }) => ({

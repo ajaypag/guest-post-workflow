@@ -4,10 +4,11 @@ import { clients } from './schema';
 import { orders } from './orderSchema';
 
 /**
- * Advertisers table - external clients who order guest posts
+ * Accounts table - external clients who order guest posts
  * These are NOT internal users - they are customers
+ * Previously named "advertisers" - renamed for neutrality
  */
-export const advertisers = pgTable('advertisers', {
+export const accounts = pgTable('accounts', {
   id: uuid('id').primaryKey(),
   
   // Authentication fields
@@ -53,15 +54,15 @@ export const advertisers = pgTable('advertisers', {
   updatedAt: timestamp('updated_at').notNull().defaultNow(),
   lastLoginAt: timestamp('last_login_at'),
 }, (table) => ({
-  emailIdx: uniqueIndex('idx_advertisers_email').on(table.email),
-  statusIdx: index('idx_advertisers_status').on(table.status),
-  clientIdx: index('idx_advertisers_client').on(table.primaryClientId),
+  emailIdx: uniqueIndex('idx_accounts_email').on(table.email),
+  statusIdx: index('idx_accounts_status').on(table.status),
+  clientIdx: index('idx_accounts_client').on(table.primaryClientId),
 }));
 
 // Relations
-export const advertisersRelations = relations(advertisers, ({ one, many }) => ({
+export const accountsRelations = relations(accounts, ({ one, many }) => ({
   primaryClient: one(clients, {
-    fields: [advertisers.primaryClientId],
+    fields: [accounts.primaryClientId],
     references: [clients.id],
   }),
   orders: many(orders),
@@ -144,4 +145,24 @@ export const publisherWebsites = pgTable('publisher_websites', {
   publisherIdx: index('idx_publisher_websites_publisher').on(table.publisherId),
   websiteIdx: index('idx_publisher_websites_website').on(table.websiteId),
   uniqueCombo: uniqueIndex('idx_publisher_website_unique').on(table.publisherId, table.websiteId),
+}));
+
+// Type exports
+export type Account = typeof accounts.$inferSelect;
+export type NewAccount = typeof accounts.$inferInsert;
+export type Publisher = typeof publishers.$inferSelect;
+export type NewPublisher = typeof publishers.$inferInsert;
+export type PublisherWebsite = typeof publisherWebsites.$inferSelect;
+export type NewPublisherWebsite = typeof publisherWebsites.$inferInsert;
+
+// Relations
+export const publishersRelations = relations(publishers, ({ many }) => ({
+  websites: many(publisherWebsites),
+}));
+
+export const publisherWebsitesRelations = relations(publisherWebsites, ({ one }) => ({
+  publisher: one(publishers, {
+    fields: [publisherWebsites.publisherId],
+    references: [publishers.id],
+  }),
 }));

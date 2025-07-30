@@ -1,6 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { db } from '@/lib/db/connection';
-import { advertisers } from '@/lib/db/advertiserSchema';
+import { accounts } from '@/lib/db/accountSchema';
 import { eq } from 'drizzle-orm';
 import { AuthServiceServer } from '@/lib/auth-server';
 
@@ -18,16 +18,16 @@ export async function GET(request: NextRequest) {
       return NextResponse.json({ error: 'Email is required' }, { status: 400 });
     }
 
-    // Search for advertiser by email
-    const advertiser = await db.query.advertisers.findFirst({
-      where: eq(advertisers.email, email.toLowerCase()),
+    // Search for account by email
+    const account = await db.query.accounts.findFirst({
+      where: eq(accounts.email, email.toLowerCase()),
     });
 
-    return NextResponse.json({ advertiser });
+    return NextResponse.json({ account });
   } catch (error) {
-    console.error('Error searching for advertiser:', error);
+    console.error('Error searching for account:', error);
     return NextResponse.json(
-      { error: 'Failed to search for advertiser' },
+      { error: 'Failed to search for account' },
       { status: 500 }
     );
   }

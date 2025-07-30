@@ -1,6 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { db } from '@/lib/db/connection';
-import { advertisers } from '@/lib/db/advertiserSchema';
+import { accounts } from '@/lib/db/accountSchema';
 import { orders } from '@/lib/db/orderSchema';
 import { eq, count, sum } from 'drizzle-orm';
 import { v4 as uuidv4 } from 'uuid';
@@ -21,33 +21,33 @@ export async function POST(request: NextRequest) {
       return NextResponse.json({ error: 'Email and contact name are required' }, { status: 400 });
     }
 
-    // Check if advertiser already exists
-    const existing = await db.query.advertisers.findFirst({
-      where: eq(advertisers.email, email.toLowerCase()),
+    // Check if account already exists
+    const existing = await db.query.accounts.findFirst({
+      where: eq(accounts.email, email.toLowerCase()),
     });
 
     if (existing) {
-      // Update existing advertiser
+      // Update existing account
       const [updated] = await db
-        .update(advertisers)
+        .update(accounts)
         .set({
           contactName: contactName || existing.contactName,
           companyName: companyName || existing.companyName,
           updatedAt: new Date(),
         })
-        .where(eq(advertisers.id, existing.id))
+        .where(eq(accounts.id, existing.id))
         .returning();
 
-      return NextResponse.json({ advertiser: updated });
+      return NextResponse.json({ account: updated });
     }
 
-    // Create new advertiser
-    // Generate a random password for the advertiser
+    // Create new account
+    // Generate a random password for the account
     const tempPassword = Math.random().toString(36).slice(-8);
     const hashedPassword = await bcrypt.hash(tempPassword, 10);
 
-    const [advertiser] = await db
-      .insert(advertisers)
+    const [account] = await db
+      .insert(accounts)
       .values({
         id: uuidv4(),
         email: email.toLowerCase(),
@@ -62,11 +62,11 @@ export async function POST(request: NextRequest) {
       })
       .returning();
 
-    return NextResponse.json({ advertiser });
+    return NextResponse.json({ account });
   } catch (error) {
-    console.error('Error creating advertiser:', error);
+    console.error('Error creating account:', error);
     return NextResponse.json(
-      { error: 'Failed to create advertiser' },
+      { error: 'Failed to create account' },
       { status: 500 }
     );
   }
@@ -79,17 +79,17 @@ export async function GET(request: NextRequest) {
       return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
     }
 
-    // Fetch all advertisers with their primary client data
-    const advertisersList = await db.query.advertisers.findMany({
+    // Fetch all accounts with their primary client data
+    const accountsList = await db.query.accounts.findMany({
       with: {
         primaryClient: true,
       },
-      orderBy: (advertisers, { desc }) => [desc(advertisers.createdAt)],
+      orderBy: (accounts, { desc }) => [desc(accounts.createdAt)],
     });
 
-    // Fetch order statistics for each advertiser
-    const advertisersWithStats = await Promise.all(
-      advertisersList.map(async (advertiser) => {
+    // Fetch order statistics for each account
+    const accountsWithStats = await Promise.all(
+      accountsList.map(async (account) => {
         // Get order count and total revenue
         const orderStats = await db
           .select({
@@ -97,22 +97,22 @@ export async function GET(request: NextRequest) {
             totalRevenue: sum(orders.totalRetail),
           })
           .from(orders)
-          .where(eq(orders.advertiserId, advertiser.id))
-          .groupBy(orders.advertiserId);
+          .where(eq(orders.accountId, account.id))
+          .groupBy(orders.accountId);
 
         return {
-          ...advertiser,
+          ...account,
           orderCount: orderStats[0]?.orderCount || 0,
           totalRevenue: orderStats[0]?.totalRevenue || 0,
         };
       })
     );
 
-    return NextResponse.json({ advertisers: advertisersWithStats });
+    return NextResponse.json({ accounts: accountsWithStats });
   } catch (error) {
-    console.error('Error fetching advertisers:', error);
+    console.error('Error fetching accounts:', error);
     return NextResponse.json(
-      { error: 'Failed to fetch advertisers' },
+      { error: 'Failed to fetch accounts' },
       { status: 500 }
     );
   }

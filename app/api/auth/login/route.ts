@@ -3,7 +3,7 @@ import { UserService } from '@/lib/db/userService';
 import { AuthServiceServer } from '@/lib/auth-server';
 import { cookies } from 'next/headers';
 import { db } from '@/lib/db/connection';
-import { advertisers } from '@/lib/db/advertiserSchema';
+import { accounts } from '@/lib/db/accountSchema';
 import { eq } from 'drizzle-orm';
 import bcrypt from 'bcryptjs';
 
@@ -24,35 +24,35 @@ export async function POST(request: NextRequest) {
     let token: string;
     
     if (!user) {
-      // If not found in users table, check advertisers table
-      const advertiser = await db.query.advertisers.findFirst({
-        where: eq(advertisers.email, email.toLowerCase()),
+      // If not found in users table, check accounts table
+      const account = await db.query.accounts.findFirst({
+        where: eq(accounts.email, email.toLowerCase()),
       });
       
-      if (advertiser) {
-        // Verify advertiser password
-        const isPasswordValid = await bcrypt.compare(password, advertiser.password);
-        if (isPasswordValid && (advertiser.status === 'active' || advertiser.status === 'pending')) {
-          // Create user object from advertiser
+      if (account) {
+        // Verify account password
+        const isPasswordValid = await bcrypt.compare(password, account.password);
+        if (isPasswordValid && (account.status === 'active' || account.status === 'pending')) {
+          // Create user object from account
           user = {
-            id: advertiser.id,
-            email: advertiser.email,
-            name: advertiser.contactName,
-            role: 'advertiser',
+            id: account.id,
+            email: account.email,
+            name: account.contactName,
+            role: 'account',
             isActive: true,
-            userType: 'advertiser',
-            passwordHash: advertiser.password,
-            lastLogin: advertiser.lastLoginAt,
-            createdAt: advertiser.createdAt,
-            updatedAt: advertiser.updatedAt,
+            userType: 'account',
+            passwordHash: account.password,
+            lastLogin: account.lastLoginAt,
+            createdAt: account.createdAt,
+            updatedAt: account.updatedAt,
           };
-          userType = 'advertiser';
+          userType = 'account';
           
           // Update last login
           await db
-            .update(advertisers)
+            .update(accounts)
             .set({ lastLoginAt: new Date() })
-            .where(eq(advertisers.id, advertiser.id));
+            .where(eq(accounts.id, account.id));
         }
       }
     }

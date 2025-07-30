@@ -2,7 +2,7 @@ import { NextRequest, NextResponse } from 'next/server';
 import { ClientService } from '@/lib/db/clientService';
 import { AuthServiceServer } from '@/lib/auth-server';
 import { db } from '@/lib/db/connection';
-import { advertisers } from '@/lib/db/advertiserSchema';
+import { accounts } from '@/lib/db/accountSchema';
 import { eq } from 'drizzle-orm';
 
 export async function GET(request: NextRequest) {
@@ -18,17 +18,17 @@ export async function GET(request: NextRequest) {
     
     let clients;
     
-    // If advertiser, only return their associated client
-    if (session.userType === 'advertiser') {
-      const advertiser = await db.query.advertisers.findFirst({
-        where: eq(advertisers.id, session.userId),
+    // If account, only return their associated client
+    if (session.userType === 'account') {
+      const account = await db.query.accounts.findFirst({
+        where: eq(accounts.id, session.userId),
       });
       
-      if (!advertiser || !advertiser.primaryClientId) {
+      if (!account || !account.primaryClientId) {
         return NextResponse.json({ clients: [] });
       }
       
-      const client = await ClientService.getClient(advertiser.primaryClientId);
+      const client = await ClientService.getClient(account.primaryClientId);
       clients = client ? [client] : [];
     } else {
       // Internal users can see all clients

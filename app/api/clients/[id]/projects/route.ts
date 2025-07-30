@@ -1,7 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { db } from '@/lib/db/connection';
 import { bulkAnalysisProjects, bulkAnalysisDomains } from '@/lib/db/bulkAnalysisSchema';
-import { advertisers } from '@/lib/db/advertiserSchema';
+import { accounts } from '@/lib/db/accountSchema';
 import { eq, and, sql, desc } from 'drizzle-orm';
 import { randomUUID } from 'crypto';
 import { AuthServiceServer } from '@/lib/auth-server';
@@ -20,13 +20,13 @@ export async function GET(
       return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
     }
     
-    // If advertiser, verify they have access to this client
-    if (session.userType === 'advertiser') {
-      const advertiser = await db.query.advertisers.findFirst({
-        where: eq(advertisers.id, session.userId),
+    // If account, verify they have access to this client
+    if (session.userType === 'account') {
+      const account = await db.query.accounts.findFirst({
+        where: eq(accounts.id, session.userId),
       });
       
-      if (!advertiser || advertiser.primaryClientId !== clientId) {
+      if (!account || account.primaryClientId !== clientId) {
         return NextResponse.json({ error: 'Forbidden' }, { status: 403 });
       }
     }
@@ -96,13 +96,13 @@ export async function POST(
       return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
     }
     
-    // If advertiser, verify they have access to this client
-    if (session.userType === 'advertiser') {
-      const advertiser = await db.query.advertisers.findFirst({
-        where: eq(advertisers.id, session.userId),
+    // If account, verify they have access to this client
+    if (session.userType === 'account') {
+      const account = await db.query.accounts.findFirst({
+        where: eq(accounts.id, session.userId),
       });
       
-      if (!advertiser || advertiser.primaryClientId !== clientId) {
+      if (!account || account.primaryClientId !== clientId) {
         return NextResponse.json({ error: 'Forbidden' }, { status: 403 });
       }
     }

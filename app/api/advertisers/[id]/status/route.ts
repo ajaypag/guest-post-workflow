@@ -1,7 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { AuthServiceServer } from '@/lib/auth-server';
 import { db } from '@/lib/db/connection';
-import { advertisers } from '@/lib/db/advertiserSchema';
+import { accounts } from '@/lib/db/accountSchema';
 import { eq } from 'drizzle-orm';
 
 export async function PATCH(
@@ -21,25 +21,25 @@ export async function PATCH(
       return NextResponse.json({ error: 'Invalid status' }, { status: 400 });
     }
 
-    // Update advertiser status
+    // Update account status
     const [updated] = await db
-      .update(advertisers)
+      .update(accounts)
       .set({
         status,
         updatedAt: new Date(),
       })
-      .where(eq(advertisers.id, params.id))
+      .where(eq(accounts.id, params.id))
       .returning();
 
     if (!updated) {
-      return NextResponse.json({ error: 'Advertiser not found' }, { status: 404 });
+      return NextResponse.json({ error: 'Account not found' }, { status: 404 });
     }
 
-    return NextResponse.json({ advertiser: updated });
+    return NextResponse.json({ account: updated });
   } catch (error) {
-    console.error('Error updating advertiser status:', error);
+    console.error('Error updating account status:', error);
     return NextResponse.json(
-      { error: 'Failed to update advertiser status' },
+      { error: 'Failed to update account status' },
       { status: 500 }
     );
   }

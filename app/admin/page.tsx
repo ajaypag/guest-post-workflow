@@ -38,6 +38,14 @@ export default function AdminDashboard() {
       iconColor: 'text-indigo-600'
     },
     {
+      title: 'Unified Order Migration',
+      description: 'Migrate to multi-client order system (advertisers → accounts, order_groups)',
+      icon: Database,
+      href: '/admin/unified-order-migration',
+      color: 'bg-rose-50 border-rose-200 text-rose-700',
+      iconColor: 'text-rose-600'
+    },
+    {
       title: 'DataForSEO Migration',
       description: 'Manage database migration for DataForSEO integration and keyword analysis',
       icon: Search,
