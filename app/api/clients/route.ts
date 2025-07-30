@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { ClientService } from '@/lib/db/clientService';
+import { AuthServiceServer } from '@/lib/auth-server';
 
 export async function GET(request: NextRequest) {
   try {
@@ -25,13 +26,32 @@ export async function GET(request: NextRequest) {
 
 export async function POST(request: NextRequest) {
   try {
+    const session = await AuthServiceServer.getSession(request);
+    if (!session) {
+      return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
+    }
+
     const data = await request.json();
-    const client = await ClientService.createClient(data);
+    
+    // Add created_by from session
+    const clientData = {
+      ...data,
+      createdBy: session.userId
+    };
+    
+    const client = await ClientService.createClient(clientData);
 
     // If assignedUsers is provided, handle assignments
     if (data.assignedUsers && Array.isArray(data.assignedUsers)) {
       for (const userId of data.assignedUsers) {
         await ClientService.assignUserToClient(client.id, userId);
+      }
+    }
+
+    // Handle target pages
+    if (data.targetPages && Array.isArray(data.targetPages)) {
+      for (const url of data.targetPages.filter((u: string) => u.trim())) {
+        await ClientService.addTargetPage(client.id, { url });
       }
     }
 

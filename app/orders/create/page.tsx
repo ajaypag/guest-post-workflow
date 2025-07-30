@@ -500,16 +500,6 @@ https://example.com/page2"
               disabled={loading || !newClient.name || !newClient.website}
               className="px-4 py-2 bg-blue-600 hover:bg-blue-700 text-white rounded-md font-medium disabled:bg-gray-400 flex items-center gap-2"
             >
-              + Add Target Page
-            </button>
-          </div>
-
-          <div className="flex gap-3">
-            <button
-              onClick={handleCreateClient}
-              disabled={loading || !newClient.name || !newClient.website}
-              className="px-4 py-2 bg-blue-600 hover:bg-blue-700 text-white rounded-md font-medium disabled:bg-gray-400 flex items-center gap-2"
-            >
               {loading ? <Loader2 className="h-4 w-4 animate-spin" /> : <CheckCircle className="h-4 w-4" />}
               Create Client
             </button>
