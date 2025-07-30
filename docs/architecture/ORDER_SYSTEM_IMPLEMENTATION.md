@@ -33,6 +33,11 @@
 - ⚠️ `createdBy` field uses placeholder system user ID until auth implemented
 - ⚠️ No account authentication on endpoints yet
 
+### Required Migration
+- 🔴 **IMPORTANT**: Run migration at `/admin/order-groups-migration` before using Phase 2 features
+- Adds `bulk_analysis_project_id` column to `order_groups` table
+- See [Order Groups Migration Guide](ORDER_GROUPS_MIGRATION.md) for details
+
 ## Overview
 This document provides the complete implementation guide for the PostFlow order system, incorporating multi-client support, full site transparency, and data-driven bulk analysis.
 
@@ -522,15 +527,15 @@ GROUP BY o.id, oi.client_id;
 ## Next Steps & Priority
 
 ### Immediate Priorities
-1. **Fix Authentication** (Blocker)
+1. **Run Database Migration** (Required for Phase 2)
+   - Go to `/admin/order-groups-migration`
+   - Run the migration to add `bulk_analysis_project_id` column
+   - Verify migration completed successfully
+
+2. **Fix Authentication** (Blocker)
    - Implement proper user authentication for order creation
    - Replace placeholder system user ID with actual user context
    - Add session management for account users
-
-2. **Phase 2: Bulk Analysis Integration** 
-   - Create project creation API endpoint
-   - Auto-trigger analysis when order confirmed
-   - Link bulk analysis projects to order groups
 
 3. **Phase 3: Site Selection Interface** (Critical)
    - Build account-facing site browser

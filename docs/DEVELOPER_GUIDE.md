@@ -17,6 +17,7 @@ Comprehensive technical documentation for the Guest Post Workflow system.
 ### Database & Infrastructure  
 - [Schema Rules](db/SCHEMA_RULES.md) - VARCHAR sizes, TEXT usage
 - [Migration Checklist](migrations/CHECKLIST.md) - Adding new tables
+- **[Order Groups Migration](architecture/ORDER_GROUPS_MIGRATION.md)** - Phase 2 bulk analysis integration (RUN THIS!)
 
 ### Debugging & Operations
 - [Diagnostics Guide](admin/DIAGNOSTICS.md) - Debug production issues

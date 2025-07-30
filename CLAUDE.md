@@ -25,6 +25,11 @@ Production-ready workflow system with PostgreSQL, multi-user auth, and AI agent 
   - Created separate tables for advertisers/publishers
   - Orders currently use users.id (migration needed)
   - See: docs/architecture/USER_TYPES.md
+- ✅ Order System Phase 1 & 2 Complete (2025-01-30)
+  - Multi-client order creation working
+  - Bulk analysis projects auto-created on order confirmation
+  - Notification system for internal users
+  - **MIGRATION REQUIRED**: Run `/admin/order-groups-migration`
 
 ## 🔧 Quick Reference
 
