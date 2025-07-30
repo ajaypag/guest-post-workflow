@@ -32,13 +32,15 @@ interface Client {
 
 interface Domain {
   id: string;
-  domainName: string;
-  url: string;
+  domain: string; // Bulk analysis uses 'domain', not 'domainName'
+  domainName?: string; // Keep for backward compatibility
+  url?: string;
   domainRating?: number;
   traffic?: string;
   niche?: string;
-  projectId: string;
+  projectId?: string;
   retailPrice?: number;
+  qualificationStatus?: string;
 }
 
 interface PricingCalculation {
@@ -562,9 +564,10 @@ https://example.com/page2"
   );
 
   const renderDomainStep = () => {
-    const filteredDomains = availableDomains.filter(domain => 
-      domainSearch ? domain.domainName.toLowerCase().includes(domainSearch.toLowerCase()) : true
-    );
+    const filteredDomains = availableDomains.filter(domain => {
+      const domainName = domain.domain || domain.domainName || '';
+      return domainSearch ? domainName.toLowerCase().includes(domainSearch.toLowerCase()) : true;
+    });
 
     return (
       <div className="bg-white rounded-lg border border-gray-200 shadow-sm p-6">
@@ -612,7 +615,7 @@ https://example.com/page2"
                   className="h-4 w-4 text-blue-600 focus:ring-blue-500 border-gray-300 rounded"
                 />
                 <div className="ml-3 flex-1">
-                  <p className="font-medium text-gray-900">{domain.domainName}</p>
+                  <p className="font-medium text-gray-900">{domain.domain || domain.domainName}</p>
                   <div className="mt-1 flex items-center gap-4 text-sm text-gray-500">
                     <span>DR: {domain.domainRating || 'N/A'}</span>
                     <span>Traffic: {domain.traffic || 'N/A'}</span>
@@ -793,7 +796,7 @@ https://example.com/page2"
             <div className="space-y-2 max-h-48 overflow-y-auto">
               {selectedDomainData.map(domain => (
                 <div key={domain.id} className="flex justify-between text-sm">
-                  <span>{domain.domainName}</span>
+                  <span>{domain.domain || domain.domainName}</span>
                   <span className="text-gray-600">DR: {domain.domainRating || 'N/A'}</span>
                 </div>
               ))}
