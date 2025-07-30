@@ -83,7 +83,7 @@ function CreateOrderContent() {
   const [saving, setSaving] = useState(false);
   const [user, setUser] = useState<any>(null);
 
-  // Client/Advertiser Selection
+  // Client/Account Selection
   const [isNewClient, setIsNewClient] = useState(false);
   const [clients, setClients] = useState<Client[]>([]);
   const [selectedClient, setSelectedClient] = useState<string>('');
@@ -107,9 +107,9 @@ function CreateOrderContent() {
 
   // Order Details
   const [orderDetails, setOrderDetails] = useState({
-    advertiserEmail: '',
-    advertiserName: '',
-    advertiserCompany: '',
+    accountEmail: '',
+    accountName: '',
+    accountCompany: '',
     includesClientReview: false,
     rushDelivery: false,
     internalNotes: '',
@@ -151,15 +151,15 @@ function CreateOrderContent() {
   }, []);
 
   useEffect(() => {
-    if (user?.userType === 'advertiser') {
-      // For advertisers, pre-fill their info
+    if (user?.userType === 'account') {
+      // For accounts, pre-fill their info
       setOrderDetails(prev => ({
         ...prev,
-        advertiserEmail: user.email,
-        advertiserName: user.name,
+        accountEmail: user.email,
+        accountName: user.name,
       }));
       // Load their clients
-      loadAdvertiserClients();
+      loadAccountClients();
     } else if (user?.role === 'admin' || user?.role === 'user') {
       // For internal users, load all clients
       loadAllClients();
@@ -182,9 +182,9 @@ function CreateOrderContent() {
     setUser(currentUser);
   };
 
-  const loadAdvertiserClients = async () => {
+  const loadAccountClients = async () => {
     try {
-      const response = await fetch('/api/advertiser/clients', {
+      const response = await fetch('/api/account/clients', {
         credentials: 'include'
       });
       if (response.ok) {
@@ -379,9 +379,9 @@ function CreateOrderContent() {
       const orderData = {
         clientId: selectedClient,
         domainMappings, // Send domain-to-target-page mappings
-        advertiserEmail: orderDetails.advertiserEmail,
-        advertiserName: orderDetails.advertiserName,
-        advertiserCompany: orderDetails.advertiserCompany,
+        accountEmail: orderDetails.accountEmail,
+        accountName: orderDetails.accountName,
+        accountCompany: orderDetails.accountCompany,
         includesClientReview: orderDetails.includesClientReview,
         rushDelivery: orderDetails.rushDelivery,
         internalNotes: orderDetails.internalNotes,
@@ -464,8 +464,8 @@ function CreateOrderContent() {
     <div className="bg-white rounded-lg border border-gray-200 shadow-sm p-6">
       <h2 className="text-lg font-semibold mb-4">Select or Create Client</h2>
       
-      {user?.userType === 'advertiser' ? (
-        // Advertiser view - their clients
+      {user?.userType === 'account' ? (
+        // Account view - their clients
         <div className="space-y-4">
           {clients.length > 0 && (
             <div>
@@ -503,7 +503,7 @@ function CreateOrderContent() {
           </div>
         </div>
       ) : (
-        // Internal user view - all clients with advertiser selection
+        // Internal user view - all clients with account selection
         <div className="space-y-4">
           <div>
             <label className="block text-sm font-medium text-gray-700 mb-2">
@@ -511,10 +511,10 @@ function CreateOrderContent() {
             </label>
             <input
               type="email"
-              value={orderDetails.advertiserEmail}
-              onChange={(e) => setOrderDetails({ ...orderDetails, advertiserEmail: e.target.value })}
+              value={orderDetails.accountEmail}
+              onChange={(e) => setOrderDetails({ ...orderDetails, accountEmail: e.target.value })}
               className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
-              placeholder="advertiser@company.com"
+              placeholder="account@company.com"
             />
           </div>
 
@@ -891,8 +891,8 @@ https://example.com/page2"
       <h2 className="text-lg font-semibold mb-4">Order Details</h2>
       
       <div className="space-y-4">
-        {/* Advertiser Info (for internal users) */}
-        {user?.userType !== 'advertiser' && (
+        {/* Account Info (for internal users) */}
+        {user?.userType !== 'account' && (
           <>
             <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
               <div>
@@ -901,8 +901,8 @@ https://example.com/page2"
                 </label>
                 <input
                   type="text"
-                  value={orderDetails.advertiserName}
-                  onChange={(e) => setOrderDetails({ ...orderDetails, advertiserName: e.target.value })}
+                  value={orderDetails.accountName}
+                  onChange={(e) => setOrderDetails({ ...orderDetails, accountName: e.target.value })}
                   className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
                 />
               </div>
@@ -912,8 +912,8 @@ https://example.com/page2"
                 </label>
                 <input
                   type="text"
-                  value={orderDetails.advertiserCompany}
-                  onChange={(e) => setOrderDetails({ ...orderDetails, advertiserCompany: e.target.value })}
+                  value={orderDetails.accountCompany}
+                  onChange={(e) => setOrderDetails({ ...orderDetails, accountCompany: e.target.value })}
                   className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
                 />
               </div>
@@ -980,7 +980,7 @@ https://example.com/page2"
         </button>
         <button
           onClick={() => setCurrentStep('review')}
-          disabled={!orderDetails.advertiserEmail || !orderDetails.advertiserName}
+          disabled={!orderDetails.accountEmail || !orderDetails.accountName}
           className="px-4 py-2 bg-blue-600 hover:bg-blue-700 text-white rounded-md font-medium disabled:bg-gray-400 flex items-center gap-2"
         >
           Review Order
@@ -1025,12 +1025,12 @@ https://example.com/page2"
 
           {/* Advertiser Info */}
           <div className="mb-6">
-            <h3 className="text-sm font-medium text-gray-700 mb-2">Advertiser</h3>
+            <h3 className="text-sm font-medium text-gray-700 mb-2">Account</h3>
             <div className="bg-gray-50 p-3 rounded space-y-1">
-              <p className="text-sm"><span className="font-medium">Name:</span> {orderDetails.advertiserName}</p>
-              <p className="text-sm"><span className="font-medium">Email:</span> {orderDetails.advertiserEmail}</p>
-              {orderDetails.advertiserCompany && (
-                <p className="text-sm"><span className="font-medium">Company:</span> {orderDetails.advertiserCompany}</p>
+              <p className="text-sm"><span className="font-medium">Name:</span> {orderDetails.accountName}</p>
+              <p className="text-sm"><span className="font-medium">Email:</span> {orderDetails.accountEmail}</p>
+              {orderDetails.accountCompany && (
+                <p className="text-sm"><span className="font-medium">Company:</span> {orderDetails.accountCompany}</p>
               )}
             </div>
           </div>

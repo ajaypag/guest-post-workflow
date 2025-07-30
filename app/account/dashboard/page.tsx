@@ -40,7 +40,7 @@ interface Client {
   }>;
 }
 
-export default function AdvertiserDashboard() {
+export default function AccountDashboard() {
   const router = useRouter();
   const [loading, setLoading] = useState(true);
   const [user, setUser] = useState<any>(null);
@@ -55,7 +55,7 @@ export default function AdvertiserDashboard() {
 
   useEffect(() => {
     const session = AuthService.getSession();
-    if (!session || session.userType !== 'advertiser') {
+    if (!session || session.userType !== 'account') {
       router.push('/login');
       return;
     }
@@ -68,7 +68,7 @@ export default function AdvertiserDashboard() {
       setLoading(true);
       
       // Load orders
-      const ordersResponse = await fetch('/api/orders?advertiserId=' + AuthService.getSession()?.userId, {
+      const ordersResponse = await fetch('/api/orders?accountId=' + AuthService.getSession()?.userId, {
         credentials: 'include',
       });
       
@@ -90,7 +90,7 @@ export default function AdvertiserDashboard() {
       }
       
       // Load associated client data
-      const clientResponse = await fetch('/api/advertisers/client', {
+      const clientResponse = await fetch('/api/accounts/client', {
         credentials: 'include',
       });
       

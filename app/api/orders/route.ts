@@ -16,16 +16,16 @@ export async function GET(request: NextRequest) {
 
     const { searchParams } = new URL(request.url);
     const status = searchParams.get('status');
-    const advertiserId = searchParams.get('advertiserId');
+    const accountId = searchParams.get('accountId');
 
     let orders: any[] = [];
     
     if (session.userType === 'account') {
       // Accounts can only see their own orders
       orders = await OrderService.getAccountOrders(session.userId);
-    } else if (advertiserId && session.userType === 'internal') {
-      // Internal users can filter by advertiser
-      orders = await OrderService.getAccountOrders(advertiserId);
+    } else if (accountId && session.userType === 'internal') {
+      // Internal users can filter by account
+      orders = await OrderService.getAccountOrders(accountId);
     } else if (status && session.userType === 'internal') {
       // Internal users can filter by status
       orders = await OrderService.getOrdersByStatus(status);
@@ -58,9 +58,9 @@ export async function POST(request: NextRequest) {
       clientId,
       domains: domainIds, // Legacy support
       domainMappings, // New format with target page mappings
-      advertiserEmail,
-      advertiserName,
-      advertiserCompany,
+      accountEmail,
+      accountName,
+      accountCompany,
       includesClientReview,
       rushDelivery,
       internalNotes,
@@ -85,15 +85,15 @@ export async function POST(request: NextRequest) {
       );
     }
 
-    if (!advertiserEmail || !advertiserName) {
+    if (!accountEmail || !accountName) {
       return NextResponse.json(
-        { error: 'Advertiser email and name are required' },
+        { error: 'Account email and name are required' },
         { status: 400 }
       );
     }
 
     // Check permissions
-    if (session.userType !== 'internal' && session.userType !== 'advertiser') {
+    if (session.userType !== 'internal' && session.userType !== 'account') {
       return NextResponse.json({ error: 'Forbidden' }, { status: 403 });
     }
 
@@ -160,9 +160,9 @@ export async function POST(request: NextRequest) {
     await db.insert(orders).values({
       id: orderId,
       accountId: session.userType === 'account' ? session.userId : null,
-      accountEmail: advertiserEmail.toLowerCase(),
-      accountName: advertiserName,
-      accountCompany: advertiserCompany,
+      accountEmail: accountEmail.toLowerCase(),
+      accountName: accountName,
+      accountCompany: accountCompany,
       status: 'draft',
       subtotalRetail,
       discountPercent: discountPercent.toString(),

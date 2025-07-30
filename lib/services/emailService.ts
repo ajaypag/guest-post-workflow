@@ -41,7 +41,7 @@ export type EmailType =
   | 'guest-post-request'
   | 'invitation'
   | 'notification'
-  | 'advertiser_welcome'
+  | 'account_welcome'
   | 'order_review'
   | 'order_approved'
   | 'order_paid';
@@ -443,9 +443,9 @@ export class EmailService {
   }
 
   /**
-   * Send advertiser welcome email
+   * Send account welcome email
    */
-  static async sendAdvertiserWelcome(data: {
+  static async sendAccountWelcome(data: {
     email: string;
     name: string;
     company?: string;
@@ -453,7 +453,7 @@ export class EmailService {
     const html = `
       <div style="font-family: Arial, sans-serif; line-height: 1.6; color: #333;">
         <h2>Welcome to PostFlow, ${data.name}!</h2>
-        <p>Thank you for creating your advertiser account${data.company ? ` for ${data.company}` : ''}.</p>
+        <p>Thank you for creating your account${data.company ? ` for ${data.company}` : ''}.</p>
         
         <p>You can now:</p>
         <ul>
@@ -472,11 +472,11 @@ export class EmailService {
       </div>
     `;
 
-    return this.send('advertiser_welcome', {
+    return this.send('account_welcome', {
       to: data.email,
       subject: 'Welcome to PostFlow - Your Account is Ready',
       html,
-      text: `Welcome to PostFlow, ${data.name}! Your advertiser account has been created successfully.`,
+      text: `Welcome to PostFlow, ${data.name}! Your account has been created successfully.`,
     });
   }
 

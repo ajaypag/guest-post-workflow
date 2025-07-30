@@ -117,7 +117,7 @@ export async function POST(request: NextRequest) {
 
     // Send welcome email
     try {
-      await EmailService.sendAdvertiserWelcome({
+      await EmailService.sendAccountWelcome({
         email,
         name,
         company: company || undefined,
@@ -168,7 +168,7 @@ export async function POST(request: NextRequest) {
       hasOrdersLinked: existingOrders.length > 0,
     });
   } catch (error) {
-    console.error('Advertiser signup error:', error);
+    console.error('Account signup error:', error);
     return NextResponse.json(
       { error: 'Failed to create account' },
       { status: 500 }

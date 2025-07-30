@@ -44,11 +44,11 @@ export default function Header() {
 
           {/* Navigation */}
           <nav className="hidden md:flex items-center space-x-1">
-            {session.userType === 'advertiser' ? (
-              // Advertiser Navigation
+            {session.userType === 'account' ? (
+              // Account Navigation
               <>
                 <Link
-                  href="/advertiser/dashboard"
+                  href="/account/dashboard"
                   className="text-gray-600 hover:text-gray-900 hover:bg-gray-50 px-3 py-2 rounded-lg text-sm font-medium transition-colors flex items-center"
                 >
                   <Package className="w-4 h-4 mr-1.5" />
@@ -107,11 +107,11 @@ export default function Header() {
                   Contacts
                 </Link>
                 <Link
-                  href="/advertisers"
+                  href="/accounts"
                   className="text-gray-600 hover:text-gray-900 hover:bg-gray-50 px-3 py-2 rounded-lg text-sm font-medium transition-colors flex items-center"
                 >
                   <Users className="w-4 h-4 mr-1.5" />
-                  Advertisers
+                  Accounts
                 </Link>
                 {session.role === 'admin' && (
                   <Link
