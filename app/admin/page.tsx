@@ -268,6 +268,14 @@ export default function AdminDashboard() {
       href: '/api/admin/fix-account-data',
       color: 'bg-green-50 border-green-200 text-green-700',
       iconColor: 'text-green-600'
+    },
+    {
+      title: 'Debug Clients API',
+      description: 'Debug why clients/projects are not showing for internal users',
+      icon: Bug,
+      href: '/api/admin/debug-clients-api',
+      color: 'bg-purple-50 border-purple-200 text-purple-700',
+      iconColor: 'text-purple-600'
     }
   ];
 

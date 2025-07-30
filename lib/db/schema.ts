@@ -78,6 +78,7 @@ export const clients = pgTable('clients', {
   createdBy: uuid('created_by').notNull().references(() => users.id),
   convertedFromProspectAt: timestamp('converted_from_prospect_at'),
   conversionNotes: text('conversion_notes'),
+  defaultRequirements: text('default_requirements').default('{}'), // JSONB column for order-centric architecture
   createdAt: timestamp('created_at').notNull(), // Remove defaultNow() to handle in application code
   updatedAt: timestamp('updated_at').notNull(), // Remove defaultNow() to handle in application code
 });
