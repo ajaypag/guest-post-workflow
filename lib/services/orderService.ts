@@ -5,7 +5,6 @@ import {
   orderShareTokens, 
   orderStatusHistory,
   domainSuggestions,
-  advertiserOrderAccess,
   pricingRules,
   type Order,
   type OrderItem,
@@ -21,11 +20,10 @@ import { v4 as uuidv4 } from 'uuid';
 import crypto from 'crypto';
 
 export interface CreateOrderInput {
-  clientId: string;
-  advertiserEmail: string;
-  advertiserName: string;
-  advertiserCompany?: string;
-  advertiserId?: string;
+  accountEmail: string;
+  accountName: string;
+  accountCompany?: string;
+  accountId?: string;
   createdBy: string;
   assignedTo?: string;
   internalNotes?: string;
@@ -44,8 +42,7 @@ export interface OrderWithItems extends Order {
     domain?: any;
     workflow?: any;
   })[];
-  client?: any;
-  advertiser?: any;
+  account?: any;
   createdByUser?: any;
   assignedToUser?: any;
 }
@@ -60,11 +57,10 @@ export class OrderService {
 
     const [order] = await db.insert(orders).values({
       id: orderId,
-      clientId: input.clientId,
-      advertiserId: input.advertiserId || null,
-      advertiserEmail: input.advertiserEmail,
-      advertiserName: input.advertiserName,
-      advertiserCompany: input.advertiserCompany || null,
+      accountId: input.accountId || null,
+      accountEmail: input.accountEmail,
+      accountName: input.accountName,
+      accountCompany: input.accountCompany || null,
       status: 'draft',
       createdBy: input.createdBy,
       assignedTo: input.assignedTo || null,
@@ -188,7 +184,8 @@ export class OrderService {
     const subtotalWholesale = items.reduce((sum, item) => sum + item.wholesalePrice, 0);
 
     // Get applicable discount
-    const discount = await this.getApplicableDiscount(order.clientId, items.length);
+    // TODO: After migration, get clientId from order_groups
+    const discount = await this.getApplicableDiscount(null, items.length);
     const discountAmount = Math.floor(subtotalRetail * (parseFloat(discount.discountPercent) / 100));
 
     // Add fees
@@ -403,7 +400,7 @@ export class OrderService {
       if (item.workflowId) continue; // Already has workflow
 
       // Create workflow title
-      const workflowTitle = `${order.advertiserCompany || order.advertiserName} - ${item.domain}`;
+      const workflowTitle = `${order.accountCompany || order.accountName} - ${item.domain}`;
 
       // Create workflow
       const workflowId = uuidv4();
@@ -412,7 +409,8 @@ export class OrderService {
       await db.insert(workflows).values({
         id: workflowId,
         userId: createdBy,
-        clientId: order.clientId,
+        // TODO: After migration, get clientId from order_groups
+        clientId: null, // Will be set from order_groups
         title: workflowTitle,
         status: 'active',
         orderItemId: item.id,
@@ -439,11 +437,11 @@ export class OrderService {
   }
 
   /**
-   * Get orders for advertiser
+   * Get orders for account
    */
-  static async getAdvertiserOrders(advertiserId: string): Promise<Order[]> {
+  static async getAccountOrders(accountId: string): Promise<Order[]> {
     const result = await db.query.orders.findMany({
-      where: eq(orders.advertiserId, advertiserId),
+      where: eq(orders.accountId, accountId),
       orderBy: desc(orders.createdAt),
     });
 
@@ -482,12 +480,12 @@ export class OrderService {
     const result = await db
       .select({
         id: orders.id,
-        clientId: orders.clientId,
-        advertiserId: orders.advertiserId,
-        advertiserEmail: orders.advertiserEmail,
-        advertiserName: orders.advertiserName,
-        advertiserCompany: orders.advertiserCompany,
+        accountId: orders.accountId,
+        accountEmail: orders.accountEmail,
+        accountName: orders.accountName,
+        accountCompany: orders.accountCompany,
         status: orders.status,
+        state: orders.state,
         subtotalRetail: orders.subtotalRetail,
         discountPercent: orders.discountPercent,
         discountAmount: orders.discountAmount,
@@ -498,6 +496,8 @@ export class OrderService {
         clientReviewFee: orders.clientReviewFee,
         rushDelivery: orders.rushDelivery,
         rushFee: orders.rushFee,
+        requiresClientReview: orders.requiresClientReview,
+        reviewCompletedAt: orders.reviewCompletedAt,
         shareToken: orders.shareToken,
         shareExpiresAt: orders.shareExpiresAt,
         approvedAt: orders.approvedAt,
@@ -508,7 +508,7 @@ export class OrderService {
         createdBy: orders.createdBy,
         assignedTo: orders.assignedTo,
         internalNotes: orders.internalNotes,
-        advertiserNotes: orders.advertiserNotes,
+        accountNotes: orders.accountNotes,
         cancellationReason: orders.cancellationReason,
         createdAt: orders.createdAt,
         updatedAt: orders.updatedAt,

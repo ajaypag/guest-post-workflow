@@ -93,7 +93,7 @@ export async function POST(
     await OrderService.updateOrderStatus(
       order.id,
       'approved',
-      order.advertiserId || 'system',
+      order.accountId || 'system',
       'Approved via share link'
     );
 

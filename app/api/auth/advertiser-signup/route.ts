@@ -1,6 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { db } from '@/lib/db/connection';
-import { users } from '@/lib/db/schema';
+import { accounts } from '@/lib/db/accountSchema';
 import { orders } from '@/lib/db/orderSchema';
 import { eq, and, isNull } from 'drizzle-orm';
 import bcrypt from 'bcryptjs';
@@ -40,12 +40,12 @@ export async function POST(request: NextRequest) {
       );
     }
 
-    // Check if user already exists
-    const existingUser = await db.query.users.findFirst({
-      where: eq(users.email, email.toLowerCase()),
+    // Check if account already exists
+    const existingAccount = await db.query.accounts.findFirst({
+      where: eq(accounts.email, email.toLowerCase()),
     });
 
-    if (existingUser) {
+    if (existingAccount) {
       return NextResponse.json(
         { error: 'An account with this email already exists' },
         { status: 409 }
@@ -55,18 +55,18 @@ export async function POST(request: NextRequest) {
     // Hash password
     const hashedPassword = await bcrypt.hash(password, 10);
 
-    // Create advertiser user
-    const userId = uuidv4();
+    // Create account
+    const accountId = uuidv4();
     const now = new Date();
 
-    await db.insert(users).values({
-      id: userId,
+    await db.insert(accounts).values({
+      id: accountId,
       email: email.toLowerCase(),
-      passwordHash: hashedPassword,
-      name,
-      role: 'user',
-      userType: 'advertiser',
-      isActive: true,
+      password: hashedPassword,
+      contactName: name,
+      companyName: company || '',
+      phone: phone || null,
+      status: 'active',
       createdAt: now,
       updatedAt: now,
     });
@@ -75,21 +75,21 @@ export async function POST(request: NextRequest) {
     if (token) {
       const order = await OrderService.getOrderByShareToken(token);
       if (order && order.status === 'pending_approval') {
-        // Update order with advertiser ID
+        // Update order with account ID
         await db.update(orders)
           .set({
-            advertiserId: userId,
+            accountId: accountId,
             updatedAt: now,
           })
           .where(eq(orders.id, order.id));
 
-        // Advertiser now has access to the order through advertiserId
+        // Account now has access to the order through accountId
 
         // Approve the order
         await OrderService.updateOrderStatus(
           order.id,
           'approved',
-          userId,
+          accountId,
           'Approved during account creation'
         );
 
@@ -101,15 +101,15 @@ export async function POST(request: NextRequest) {
     // Link any existing orders by email
     const existingOrders = await db.query.orders.findMany({
       where: and(
-        eq(orders.advertiserEmail, email.toLowerCase()),
-        isNull(orders.advertiserId)
+        eq(orders.accountEmail, email.toLowerCase()),
+        isNull(orders.accountId)
       ),
     });
 
     for (const existingOrder of existingOrders) {
       await db.update(orders)
         .set({
-          advertiserId: userId,
+          accountId: accountId,
           updatedAt: now,
         })
         .where(eq(orders.id, existingOrder.id));
@@ -128,12 +128,26 @@ export async function POST(request: NextRequest) {
     }
 
     // Create session and set cookie
-    const userData = await db.query.users.findFirst({
-      where: eq(users.id, userId),
+    const accountData = await db.query.accounts.findFirst({
+      where: eq(accounts.id, accountId),
     });
 
-    if (userData) {
-      const token = await AuthServiceServer.createSession(userData);
+    if (accountData) {
+      // Create user object from account for session
+      const user = {
+        id: accountData.id,
+        email: accountData.email,
+        name: accountData.contactName,
+        role: 'account' as const,
+        isActive: true,
+        userType: 'account' as const,
+        passwordHash: accountData.password,
+        lastLogin: accountData.lastLoginAt,
+        createdAt: accountData.createdAt,
+        updatedAt: accountData.updatedAt,
+      };
+      
+      const token = await AuthServiceServer.createSession(user);
       
       // Set cookie
       const cookieStore = await cookies();
@@ -145,7 +159,7 @@ export async function POST(request: NextRequest) {
         path: '/',
       });
 
-      console.log('🔐 Advertiser signup successful, cookie set for:', email);
+      console.log('🔐 Account signup successful, cookie set for:', email);
     }
 
     return NextResponse.json({

@@ -20,7 +20,7 @@ export async function GET(
     const order = await db.query.orders.findFirst({
       where: eq(orders.id, id),
       with: {
-        client: true,
+        account: true,
         items: true,
       },
     });
@@ -30,13 +30,13 @@ export async function GET(
     }
 
     // Check permissions
-    if (session.userType === 'advertiser') {
-      // Advertisers can only see their own orders
-      if (order.advertiserId !== session.userId && order.advertiserEmail !== session.email) {
+    if (session.userType === 'account') {
+      // Accounts can only see their own orders
+      if (order.accountId !== session.userId && order.accountEmail !== session.email) {
         return NextResponse.json({ error: 'Forbidden' }, { status: 403 });
       }
     } else if (session.userType !== 'internal') {
-      // Only internal users and advertisers can view orders
+      // Only internal users and accounts can view orders
       return NextResponse.json({ error: 'Forbidden' }, { status: 403 });
     }
 
@@ -81,7 +81,7 @@ export async function PUT(
     const updatedOrder = await db.query.orders.findFirst({
       where: eq(orders.id, id),
       with: {
-        client: true,
+        account: true,
         items: true,
       },
     });

@@ -20,12 +20,12 @@ export async function GET(request: NextRequest) {
 
     let orders: any[] = [];
     
-    if (session.userType === 'advertiser') {
-      // Advertisers can only see their own orders
-      orders = await OrderService.getAdvertiserOrders(session.userId);
+    if (session.userType === 'account') {
+      // Accounts can only see their own orders
+      orders = await OrderService.getAccountOrders(session.userId);
     } else if (advertiserId && session.userType === 'internal') {
       // Internal users can filter by advertiser
-      orders = await OrderService.getAdvertiserOrders(advertiserId);
+      orders = await OrderService.getAccountOrders(advertiserId);
     } else if (status && session.userType === 'internal') {
       // Internal users can filter by status
       orders = await OrderService.getOrdersByStatus(status);
@@ -159,11 +159,10 @@ export async function POST(request: NextRequest) {
     // Create the order
     await db.insert(orders).values({
       id: orderId,
-      clientId,
-      advertiserId: session.userType === 'advertiser' ? session.userId : null,
-      advertiserEmail: advertiserEmail.toLowerCase(),
-      advertiserName,
-      advertiserCompany,
+      accountId: session.userType === 'account' ? session.userId : null,
+      accountEmail: advertiserEmail.toLowerCase(),
+      accountName: advertiserName,
+      accountCompany: advertiserCompany,
       status: 'draft',
       subtotalRetail,
       discountPercent: discountPercent.toString(),
