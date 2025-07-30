@@ -436,27 +436,73 @@ export class OrderService {
   }
 
   /**
-   * Get orders for account
+   * Get orders for account with order groups
    */
-  static async getAccountOrders(accountId: string): Promise<Order[]> {
-    const result = await db.query.orders.findMany({
+  static async getAccountOrders(accountId: string): Promise<any[]> {
+    const accountOrders = await db.query.orders.findMany({
       where: eq(orders.accountId, accountId),
       orderBy: desc(orders.createdAt),
     });
 
-    return result;
+    // Fetch order groups for each order
+    const ordersWithGroups = await Promise.all(
+      accountOrders.map(async (order) => {
+        const groups = await this.getOrderGroups(order.id);
+        
+        // Count total items if groups are empty (legacy orders)
+        let itemCount = 0;
+        if (groups.length === 0) {
+          const items = await db.query.orderItems.findMany({
+            where: eq(orderItems.orderId, order.id),
+          });
+          itemCount = items.length;
+        }
+        
+        return {
+          ...order,
+          totalLinks: groups.reduce((sum, g) => sum + g.linkCount, 0) || itemCount,
+          itemCount: itemCount, // For backwards compatibility
+          orderGroups: groups
+        };
+      })
+    );
+
+    return ordersWithGroups;
   }
 
   /**
-   * Get orders by status
+   * Get orders by status with order groups
    */
-  static async getOrdersByStatus(status: string): Promise<Order[]> {
-    const result = await db.query.orders.findMany({
+  static async getOrdersByStatus(status: string): Promise<any[]> {
+    const statusOrders = await db.query.orders.findMany({
       where: eq(orders.status, status),
       orderBy: desc(orders.createdAt),
     });
 
-    return result;
+    // Fetch order groups for each order
+    const ordersWithGroups = await Promise.all(
+      statusOrders.map(async (order) => {
+        const groups = await this.getOrderGroups(order.id);
+        
+        // Count total items if groups are empty (legacy orders)
+        let itemCount = 0;
+        if (groups.length === 0) {
+          const items = await db.query.orderItems.findMany({
+            where: eq(orderItems.orderId, order.id),
+          });
+          itemCount = items.length;
+        }
+        
+        return {
+          ...order,
+          totalLinks: groups.reduce((sum, g) => sum + g.linkCount, 0) || itemCount,
+          itemCount: itemCount, // For backwards compatibility
+          orderGroups: groups
+        };
+      })
+    );
+
+    return ordersWithGroups;
   }
 
   /**
@@ -473,10 +519,11 @@ export class OrderService {
   }
 
   /**
-   * Get orders with item counts
+   * Get orders with item counts and order groups
    */
-  static async getOrdersWithItemCounts(): Promise<(Order & { itemCount: number })[]> {
-    const result = await db
+  static async getOrdersWithItemCounts(): Promise<any[]> {
+    // First get all orders with item counts
+    const ordersWithCounts = await db
       .select({
         id: orders.id,
         accountId: orders.accountId,
@@ -518,7 +565,54 @@ export class OrderService {
       .groupBy(orders.id)
       .orderBy(desc(orders.createdAt));
 
-    return result;
+    // Now fetch order groups for each order
+    const ordersWithGroups = await Promise.all(
+      ordersWithCounts.map(async (order) => {
+        const groups = await this.getOrderGroups(order.id);
+        return {
+          ...order,
+          totalLinks: groups.reduce((sum, g) => sum + g.linkCount, 0) || order.itemCount,
+          orderGroups: groups
+        };
+      })
+    );
+
+    return ordersWithGroups;
+  }
+
+  /**
+   * Get order groups with client info and site selections
+   */
+  static async getOrderGroups(orderId: string): Promise<any[]> {
+    const { orderGroups } = await import('@/lib/db/orderGroupSchema');
+    const { clients } = await import('@/lib/db/schema');
+    const { orderSiteSelections } = await import('@/lib/db/orderGroupSchema');
+    
+    const groups = await db.query.orderGroups.findMany({
+      where: eq(orderGroups.orderId, orderId),
+      with: {
+        client: true,
+        bulkAnalysisProject: true,
+        siteSelections: true
+      }
+    });
+
+    // Transform to match the UI expectations
+    return groups.map(group => ({
+      id: group.id,
+      clientId: group.clientId,
+      clientName: group.client?.name || 'Unknown Client',
+      clientWebsite: group.client?.website,
+      linkCount: group.linkCount,
+      targetPages: group.targetPages?.map(tp => tp.url) || [],
+      bulkAnalysisProjectId: group.bulkAnalysisProjectId,
+      groupStatus: group.groupStatus || 'pending',
+      siteSelections: {
+        approved: group.siteSelections?.filter(s => s.status === 'approved').length || 0,
+        pending: group.siteSelections?.filter(s => s.status === 'suggested').length || 0,
+        total: group.siteSelections?.length || 0
+      }
+    }));
   }
 
   /**

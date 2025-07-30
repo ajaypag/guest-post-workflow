@@ -1,6 +1,7 @@
 import { drizzle } from 'drizzle-orm/node-postgres';
 import { Pool } from 'pg';
 import * as schema from './schema';
+import * as orderGroupSchema from './orderGroupSchema';
 
 // Database configuration
 const connectionString = process.env.DATABASE_URL || 
@@ -12,8 +13,14 @@ const pool = new Pool({
   ssl: false, // Coolify PostgreSQL doesn't use SSL
 });
 
+// Combine all schemas
+const allSchemas = {
+  ...schema,
+  ...orderGroupSchema,
+};
+
 // Create Drizzle instance
-export const db = drizzle(pool, { schema });
+export const db = drizzle(pool, { schema: allSchemas });
 
 // Test connection function
 export async function testConnection() {

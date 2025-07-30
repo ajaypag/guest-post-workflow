@@ -2,7 +2,7 @@
 
 import React, { useState, useEffect } from 'react';
 import { Search, Plus, FileText, DollarSign, Calendar, User } from 'lucide-react';
-import { OrdersTable } from '@/components/OrdersTableSimple';
+import { OrdersTableMultiClient } from '@/components/OrdersTableMultiClient';
 import AuthWrapper from '@/components/AuthWrapper';
 import Header from '@/components/Header';
 import { AuthService } from '@/lib/auth';
@@ -16,6 +16,8 @@ interface Order {
   accountName: string;
   accountCompany?: string;
   status: string;
+  state?: string;
+  totalLinks?: number;
   subtotalRetail: number;
   discountPercent: string;
   discountAmount: number;
@@ -41,6 +43,7 @@ interface Order {
   createdAt: string;
   updatedAt: string;
   itemCount?: number;
+  orderGroups?: any[];
 }
 
 function OrdersPageContent() {
@@ -294,12 +297,13 @@ function OrdersPageContent() {
       </div>
 
       {/* Orders Table */}
-      <OrdersTable
+      <OrdersTableMultiClient
         orders={filteredOrders}
         loading={loading}
         onRefresh={fetchOrders}
         getStatusColor={getStatusColor}
         formatCurrency={formatCurrency}
+        isInternal={userType === 'internal'}
       />
     </div>
   );

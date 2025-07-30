@@ -5,17 +5,18 @@
 ### 🎯 Primary Architecture
 - **[ACCOUNT_PLATFORM_ARCHITECTURE.md](./ACCOUNT_PLATFORM_ARCHITECTURE.md)** - Complete platform vision and user experience design
 - **[ORDER_SCHEMA_DESIGN.md](./ORDER_SCHEMA_DESIGN.md)** - Database schema and API design for order-centric system
+- **[ORDER_SYSTEM_IMPLEMENTATION.md](./ORDER_SYSTEM_IMPLEMENTATION.md)** - Complete implementation guide with data flow, UI components, and critical details
 
 ### 📋 Implementation Plan
 - **[../PRD_ORDER_MANAGEMENT.md](../PRD_ORDER_MANAGEMENT.md)** - Feature requirements, UI standards, and implementation checklist
 
 ## Supporting Documents
 
-### 🚀 Implementation Plans
-- **[ORDER_SYSTEM_REPLACEMENT_PLAN.md](./ORDER_SYSTEM_REPLACEMENT_PLAN.md)** - Step-by-step plan for replacing current order system
+### 🚀 Implementation Reference
+- **[ORDER_SYSTEM_REPLACEMENT_PLAN.md](./ORDER_SYSTEM_REPLACEMENT_PLAN.md)** - Initial planning document (see ORDER_SYSTEM_IMPLEMENTATION.md for current approach)
 
-### 🔄 Migration Reference  
-- **[ACCOUNT_MIGRATION_PLAN.md](./ACCOUNT_MIGRATION_PLAN.md)** - Simple advertiser→account renaming (Phase 1 only)
+### 🔄 Migration History  
+- **[ACCOUNT_MIGRATION_PLAN.md](./ACCOUNT_MIGRATION_PLAN.md)** - Advertiser→account renaming (Phase 1 completed)
 
 ## Key Principles
 
@@ -28,10 +29,15 @@
 ## Current Status
 
 - ✅ Phase 1: Database migration (advertiser→account) completed
-- 🔄 Phase 2: Need to implement order-centric schema (order_groups, order_site_selections)
-- ⏳ Phase 3: Build account experience UI
+- ✅ Phase 2: Order-centric schema implemented (order_groups, order_site_selections, share_tokens)
+- 🔄 Phase 3: Building account experience UI - See ORDER_SYSTEM_IMPLEMENTATION.md
 - ⏳ Phase 4: Launch and testing
 
 ## Next Steps
 
-Focus on ORDER_SCHEMA_DESIGN.md implementation - this is the foundation for the entire account platform experience.
+1. **Immediate Priority**: Build order creation UI with multi-client support
+2. **Critical Path**: Site selection interface with full transparency
+3. **Integration**: Connect bulk analysis to order groups
+4. **Polish**: Share token system for sales process
+
+See ORDER_SYSTEM_IMPLEMENTATION.md for detailed implementation guide.
