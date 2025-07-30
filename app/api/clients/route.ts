@@ -25,13 +25,27 @@ export async function GET(request: NextRequest) {
 }
 
 export async function POST(request: NextRequest) {
+  console.log('🔍 POST /api/clients - Starting request');
+  
   try {
+    // Log request headers for debugging
+    console.log('🔍 Request headers:', {
+      cookie: request.headers.get('cookie'),
+      authorization: request.headers.get('authorization'),
+      contentType: request.headers.get('content-type'),
+    });
+    
     const session = await AuthServiceServer.getSession(request);
+    console.log('🔍 Session result:', session ? 'Session found' : 'No session');
+    
     if (!session) {
-      return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
+      console.log('❌ No session found - returning 401');
+      return NextResponse.json({ error: 'Unauthorized - No session found' }, { status: 401 });
     }
 
+    console.log('✅ Session found for user:', session.email);
     const data = await request.json();
+    console.log('🔍 Request data:', { ...data, targetPages: data.targetPages?.length + ' pages' });
     
     // Add created_by from session
     const clientData = {

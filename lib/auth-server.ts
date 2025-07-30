@@ -19,25 +19,38 @@ const JWT_SECRET = new TextEncoder().encode(
 
 export class AuthServiceServer {
   static async getSession(request?: NextRequest): Promise<AuthSession | null> {
+    console.log('🔐 AuthServiceServer.getSession - Starting');
+    
     try {
       let token: string | undefined;
 
       // Try to get token from cookies first
       const cookieStore = await cookies();
-      token = cookieStore.get('auth-token')?.value;
+      const authTokenCookie = cookieStore.get('auth-token');
+      token = authTokenCookie?.value;
+      
+      console.log('🔐 Cookie check:', {
+        hasAuthToken: !!token,
+        cookieValue: token ? 'Token present' : 'No token',
+        allCookies: cookieStore.getAll().map(c => c.name)
+      });
 
       // If no cookie and request provided, check Authorization header
       if (!token && request) {
         const authHeader = request.headers.get('authorization');
+        console.log('🔐 Authorization header:', authHeader || 'None');
         if (authHeader?.startsWith('Bearer ')) {
           token = authHeader.substring(7);
+          console.log('🔐 Token from header extracted');
         }
       }
 
       if (!token) {
+        console.log('🔐 No token found in cookies or headers');
         return null;
       }
 
+      console.log('🔐 Attempting to verify JWT token');
       // Verify JWT token
       const { payload } = await jwtVerify(token, JWT_SECRET);
       

@@ -7,6 +7,8 @@ import bcrypt from 'bcryptjs';
 import { v4 as uuidv4 } from 'uuid';
 import { EmailService } from '@/lib/services/emailService';
 import { OrderService } from '@/lib/services/orderService';
+import { AuthServiceServer } from '@/lib/auth-server';
+import { cookies } from 'next/headers';
 
 export async function POST(request: NextRequest) {
   try {
@@ -123,6 +125,27 @@ export async function POST(request: NextRequest) {
     } catch (emailError) {
       console.error('Failed to send welcome email:', emailError);
       // Don't fail registration if email fails
+    }
+
+    // Create session and set cookie
+    const userData = await db.query.users.findFirst({
+      where: eq(users.id, userId),
+    });
+
+    if (userData) {
+      const token = await AuthServiceServer.createSession(userData);
+      
+      // Set cookie
+      const cookieStore = await cookies();
+      cookieStore.set('auth-token', token, {
+        httpOnly: true,
+        secure: process.env.NODE_ENV === 'production',
+        sameSite: 'lax',
+        maxAge: 60 * 60 * 24 * 7, // 7 days
+        path: '/',
+      });
+
+      console.log('🔐 Advertiser signup successful, cookie set for:', email);
     }
 
     return NextResponse.json({

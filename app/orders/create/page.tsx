@@ -234,6 +234,16 @@ function CreateOrderContent() {
 
     setLoading(true);
     try {
+      console.log('🚀 Creating client with data:', {
+        name: newClient.name,
+        website: newClient.website,
+        targetPagesCount: newClient.targetPages.filter(tp => tp.trim()).length,
+      });
+      
+      // Check if we have auth token in localStorage
+      const authSession = AuthService.getSession();
+      console.log('🔑 Auth session check:', authSession ? 'Session exists' : 'No session');
+      
       const response = await fetch('/api/clients', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
@@ -246,8 +256,12 @@ function CreateOrderContent() {
         }),
       });
 
+      console.log('📡 Response status:', response.status);
+      
       if (!response.ok) {
-        throw new Error('Failed to create client');
+        const errorData = await response.json();
+        console.error('❌ Error response:', errorData);
+        throw new Error(errorData.error || 'Failed to create client');
       }
 
       const data = await response.json();
