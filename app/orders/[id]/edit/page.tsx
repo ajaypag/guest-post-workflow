@@ -138,8 +138,8 @@ export default function EditOrderPage({ params }: { params: Promise<PageParams> 
       });
 
       // Load appropriate clients
-      if (user.userType === 'advertiser') {
-        loadAdvertiserClients();
+      if (user.userType === 'account') {
+        loadAccountClients();
       } else {
         loadAllClients();
       }
@@ -177,9 +177,9 @@ export default function EditOrderPage({ params }: { params: Promise<PageParams> 
     }
   };
 
-  const loadAdvertiserClients = async () => {
+  const loadAccountClients = async () => {
     try {
-      const response = await fetch('/api/advertiser/clients');
+      const response = await fetch('/api/account/clients');
       if (response.ok) {
         const data = await response.json();
         setClients(data.clients || []);
@@ -204,7 +204,7 @@ export default function EditOrderPage({ params }: { params: Promise<PageParams> 
   const loadDomainsForClient = async (clientId: string) => {
     setLoadingDomains(true);
     try {
-      const endpoint = user?.userType === 'advertiser' 
+      const endpoint = user?.userType === 'account' 
         ? `/api/domains/available?clientId=${clientId}`
         : `/api/clients/${clientId}/bulk-analysis`;
         
@@ -372,7 +372,7 @@ export default function EditOrderPage({ params }: { params: Promise<PageParams> 
           </select>
         </div>
 
-        {user?.userType !== 'advertiser' && (
+        {user?.userType !== 'account' && (
           <div>
             <label className="block text-sm font-medium text-gray-700 mb-2">
               Advertiser Email

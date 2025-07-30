@@ -157,10 +157,10 @@ function OrdersPageContent() {
         <div className="flex items-center justify-between mb-6">
           <div>
             <h1 className="text-3xl font-bold text-gray-900">
-              {userType === 'advertiser' ? 'My Orders' : 'Orders'}
+              {userType === 'account' ? 'My Orders' : 'Orders'}
             </h1>
             <p className="text-gray-600 mt-1">
-              {userType === 'advertiser' 
+              {userType === 'account' 
                 ? 'Track your guest post campaigns and monitor progress'
                 : 'Manage guest post orders and track their progress'}
             </p>

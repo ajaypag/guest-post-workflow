@@ -389,7 +389,7 @@ export default function OrderDetailPage() {
                       Submit for Approval
                     </button>
                   )}
-                  {order.status === 'pending_approval' && user?.userType === 'advertiser' && (
+                  {order.status === 'pending_approval' && user?.userType === 'account' && (
                     <>
                       <button className="w-full px-4 py-2 bg-green-600 text-white rounded-md hover:bg-green-700">
                         Approve Order
