@@ -1,8 +1,10 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { db } from '@/lib/db/connection';
 import { bulkAnalysisProjects, bulkAnalysisDomains } from '@/lib/db/bulkAnalysisSchema';
+import { advertisers } from '@/lib/db/advertiserSchema';
 import { eq, and, sql, desc } from 'drizzle-orm';
 import { randomUUID } from 'crypto';
+import { AuthServiceServer } from '@/lib/auth-server';
 
 // GET /api/clients/[id]/projects - List all projects for a client
 export async function GET(
@@ -11,7 +13,23 @@ export async function GET(
 ) {
   try {
     const { id: clientId } = await params;
-    // TODO: Add authentication check when available
+    
+    // Check authentication
+    const session = await AuthServiceServer.getSession(request);
+    if (!session) {
+      return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
+    }
+    
+    // If advertiser, verify they have access to this client
+    if (session.userType === 'advertiser') {
+      const advertiser = await db.query.advertisers.findFirst({
+        where: eq(advertisers.id, session.userId),
+      });
+      
+      if (!advertiser || advertiser.primaryClientId !== clientId) {
+        return NextResponse.json({ error: 'Forbidden' }, { status: 403 });
+      }
+    }
     
     // Get all projects with stats
     const projects = await db
@@ -71,7 +89,23 @@ export async function POST(
 ) {
   try {
     const { id: clientId } = await params;
-    // TODO: Add authentication check when available
+    
+    // Check authentication
+    const session = await AuthServiceServer.getSession(request);
+    if (!session) {
+      return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
+    }
+    
+    // If advertiser, verify they have access to this client
+    if (session.userType === 'advertiser') {
+      const advertiser = await db.query.advertisers.findFirst({
+        where: eq(advertisers.id, session.userId),
+      });
+      
+      if (!advertiser || advertiser.primaryClientId !== clientId) {
+        return NextResponse.json({ error: 'Forbidden' }, { status: 403 });
+      }
+    }
     
     const body = await request.json();
     const { name, description, color, icon, autoApplyKeywords, tags } = body;

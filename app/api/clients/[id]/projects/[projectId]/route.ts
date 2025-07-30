@@ -1,7 +1,9 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { db } from '@/lib/db/connection';
 import { bulkAnalysisProjects, bulkAnalysisDomains } from '@/lib/db/bulkAnalysisSchema';
+import { advertisers } from '@/lib/db/advertiserSchema';
 import { eq, and } from 'drizzle-orm';
+import { AuthServiceServer } from '@/lib/auth-server';
 
 // GET /api/clients/[id]/projects/[projectId] - Get project details
 export async function GET(
@@ -10,7 +12,23 @@ export async function GET(
 ) {
   try {
     const { id: clientId, projectId } = await params;
-    // TODO: Add auth when available
+    
+    // Check authentication
+    const session = await AuthServiceServer.getSession(request);
+    if (!session) {
+      return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
+    }
+    
+    // If advertiser, verify they have access to this client
+    if (session.userType === 'advertiser') {
+      const advertiser = await db.query.advertisers.findFirst({
+        where: eq(advertisers.id, session.userId),
+      });
+      
+      if (!advertiser || advertiser.primaryClientId !== clientId) {
+        return NextResponse.json({ error: 'Forbidden' }, { status: 403 });
+      }
+    }
 
     const [project] = await db
       .select()
@@ -45,7 +63,23 @@ export async function PATCH(
 ) {
   try {
     const { id: clientId, projectId } = await params;
-    // TODO: Add auth when available
+    
+    // Check authentication
+    const session = await AuthServiceServer.getSession(request);
+    if (!session) {
+      return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
+    }
+    
+    // If advertiser, verify they have access to this client
+    if (session.userType === 'advertiser') {
+      const advertiser = await db.query.advertisers.findFirst({
+        where: eq(advertisers.id, session.userId),
+      });
+      
+      if (!advertiser || advertiser.primaryClientId !== clientId) {
+        return NextResponse.json({ error: 'Forbidden' }, { status: 403 });
+      }
+    }
 
     const body = await request.json();
     const { name, description, color, icon, status, autoApplyKeywords, tags } = body;
@@ -133,7 +167,23 @@ export async function DELETE(
 ) {
   try {
     const { id: clientId, projectId } = await params;
-    // TODO: Add auth when available
+    
+    // Check authentication
+    const session = await AuthServiceServer.getSession(request);
+    if (!session) {
+      return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
+    }
+    
+    // If advertiser, verify they have access to this client
+    if (session.userType === 'advertiser') {
+      const advertiser = await db.query.advertisers.findFirst({
+        where: eq(advertisers.id, session.userId),
+      });
+      
+      if (!advertiser || advertiser.primaryClientId !== clientId) {
+        return NextResponse.json({ error: 'Forbidden' }, { status: 403 });
+      }
+    }
 
     // Check project exists
     const [existing] = await db

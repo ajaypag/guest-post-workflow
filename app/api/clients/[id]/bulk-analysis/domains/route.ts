@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { db } from '@/lib/db/connection';
 import { bulkAnalysisDomains, bulkAnalysisProjects } from '@/lib/db/bulkAnalysisSchema';
+import { advertisers } from '@/lib/db/advertiserSchema';
 import { eq, and, inArray } from 'drizzle-orm';
 import { AuthServiceServer } from '@/lib/auth-server';
 
@@ -12,8 +13,19 @@ export async function GET(
   
   try {
     const session = await AuthServiceServer.getSession(request);
-    if (!session || session.userType !== 'internal') {
+    if (!session) {
       return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
+    }
+    
+    // If advertiser, verify they have access to this client
+    if (session.userType === 'advertiser') {
+      const advertiser = await db.query.advertisers.findFirst({
+        where: eq(advertisers.id, session.userId),
+      });
+      
+      if (!advertiser || advertiser.primaryClientId !== clientId) {
+        return NextResponse.json({ error: 'Forbidden' }, { status: 403 });
+      }
     }
 
     const { searchParams } = new URL(request.url);

@@ -1,5 +1,9 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { ClientService } from '@/lib/db/clientService';
+import { AuthServiceServer } from '@/lib/auth-server';
+import { db } from '@/lib/db/connection';
+import { advertisers } from '@/lib/db/advertiserSchema';
+import { eq } from 'drizzle-orm';
 
 export async function GET(
   request: NextRequest,
@@ -7,6 +11,23 @@ export async function GET(
 ) {
   try {
     const { id } = await params;
+    
+    // Check authentication
+    const session = await AuthServiceServer.getSession(request);
+    if (!session) {
+      return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
+    }
+    
+    // If advertiser, verify they have access to this client
+    if (session.userType === 'advertiser') {
+      const advertiser = await db.query.advertisers.findFirst({
+        where: eq(advertisers.id, session.userId),
+      });
+      
+      if (!advertiser || advertiser.primaryClientId !== id) {
+        return NextResponse.json({ error: 'Forbidden' }, { status: 403 });
+      }
+    }
     const client = await ClientService.getClient(id);
     if (!client) {
       return NextResponse.json(
@@ -30,6 +51,23 @@ export async function PUT(
 ) {
   try {
     const { id } = await params;
+    
+    // Check authentication
+    const session = await AuthServiceServer.getSession(request);
+    if (!session) {
+      return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
+    }
+    
+    // If advertiser, verify they have access to this client
+    if (session.userType === 'advertiser') {
+      const advertiser = await db.query.advertisers.findFirst({
+        where: eq(advertisers.id, session.userId),
+      });
+      
+      if (!advertiser || advertiser.primaryClientId !== id) {
+        return NextResponse.json({ error: 'Forbidden' }, { status: 403 });
+      }
+    }
     const updates = await request.json();
     
     console.log('🟨 PUT /api/clients/[id] - ID:', id);
@@ -75,6 +113,12 @@ export async function DELETE(
 ) {
   try {
     const { id } = await params;
+    
+    // Check authentication - only internal users can delete clients
+    const session = await AuthServiceServer.getSession(request);
+    if (!session || session.userType !== 'internal') {
+      return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
+    }
     const success = await ClientService.deleteClient(id);
     
     if (!success) {

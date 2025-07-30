@@ -1,17 +1,42 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { ClientService } from '@/lib/db/clientService';
 import { AuthServiceServer } from '@/lib/auth-server';
+import { db } from '@/lib/db/connection';
+import { advertisers } from '@/lib/db/advertiserSchema';
+import { eq } from 'drizzle-orm';
 
 export async function GET(request: NextRequest) {
   try {
+    // Check authentication
+    const session = await AuthServiceServer.getSession(request);
+    if (!session) {
+      return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
+    }
+    
     const { searchParams } = new URL(request.url);
     const userId = searchParams.get('userId');
     
     let clients;
-    if (userId) {
-      clients = await ClientService.getUserClients(userId);
+    
+    // If advertiser, only return their associated client
+    if (session.userType === 'advertiser') {
+      const advertiser = await db.query.advertisers.findFirst({
+        where: eq(advertisers.id, session.userId),
+      });
+      
+      if (!advertiser || !advertiser.primaryClientId) {
+        return NextResponse.json({ clients: [] });
+      }
+      
+      const client = await ClientService.getClient(advertiser.primaryClientId);
+      clients = client ? [client] : [];
     } else {
-      clients = await ClientService.getAllClients();
+      // Internal users can see all clients
+      if (userId) {
+        clients = await ClientService.getUserClients(userId);
+      } else {
+        clients = await ClientService.getAllClients();
+      }
     }
 
     return NextResponse.json({ clients });
