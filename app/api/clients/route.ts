@@ -50,8 +50,9 @@ export async function POST(request: NextRequest) {
 
     // Handle target pages
     if (data.targetPages && Array.isArray(data.targetPages)) {
-      for (const url of data.targetPages.filter((u: string) => u.trim())) {
-        await ClientService.addTargetPage(client.id, { url });
+      const urls = data.targetPages.filter((u: string) => u.trim());
+      if (urls.length > 0) {
+        await ClientService.addTargetPages(client.id, urls);
       }
     }
 
