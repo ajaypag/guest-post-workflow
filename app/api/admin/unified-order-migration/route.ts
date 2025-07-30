@@ -245,14 +245,14 @@ export async function POST(request: NextRequest) {
           ) as has_account_id
       `);
       
-      const checkResult = tableCheckResult.rows[0] as any;
-      log(`Table advertiser_order_access exists: ${checkResult.table_exists}`);
-      log(`Has advertiser_id column: ${checkResult.has_advertiser_id}`);
-      log(`Has account_id column: ${checkResult.has_account_id}`);
+      const accessTableCheck = tableCheckResult.rows[0] as any;
+      log(`Table advertiser_order_access exists: ${accessTableCheck.table_exists}`);
+      log(`Has advertiser_id column: ${accessTableCheck.has_advertiser_id}`);
+      log(`Has account_id column: ${accessTableCheck.has_account_id}`);
       
-      if (checkResult.table_exists) {
+      if (accessTableCheck.table_exists) {
         // Only rename column if it exists and hasn't been renamed yet
-        if (checkResult.has_advertiser_id && !checkResult.has_account_id) {
+        if (accessTableCheck.has_advertiser_id && !accessTableCheck.has_account_id) {
           try {
             await db.execute(sql`ALTER TABLE advertiser_order_access RENAME COLUMN advertiser_id TO account_id`);
             log('✓ Column renamed: advertiser_id → account_id in advertiser_order_access');
@@ -260,7 +260,7 @@ export async function POST(request: NextRequest) {
             log(`Failed to rename column: ${colError.message}`, 'error');
             throw colError;
           }
-        } else if (checkResult.has_account_id) {
+        } else if (accessTableCheck.has_account_id) {
           log('⚠️ Column already renamed to account_id - skipping column rename', 'warn');
         }
         
