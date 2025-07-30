@@ -223,41 +223,124 @@ export async function POST(request: NextRequest) {
       // 11. Rename other tables with advertiser references
       log('Step 10: Renaming advertiser_order_access table');
       
-      // First check if the table exists
+      // First check if the table exists and what columns it has
       const tableCheckResult = await db.execute(sql`
-        SELECT EXISTS (
-          SELECT 1 FROM information_schema.tables 
-          WHERE table_schema = 'public' 
-          AND table_name = 'advertiser_order_access'
-        ) as table_exists
+        SELECT 
+          EXISTS (
+            SELECT 1 FROM information_schema.tables 
+            WHERE table_schema = 'public' 
+            AND table_name = 'advertiser_order_access'
+          ) as table_exists,
+          EXISTS (
+            SELECT 1 FROM information_schema.columns 
+            WHERE table_schema = 'public' 
+            AND table_name = 'advertiser_order_access'
+            AND column_name = 'advertiser_id'
+          ) as has_advertiser_id,
+          EXISTS (
+            SELECT 1 FROM information_schema.columns 
+            WHERE table_schema = 'public' 
+            AND table_name = 'advertiser_order_access'
+            AND column_name = 'account_id'
+          ) as has_account_id
       `);
       
-      const tableExists = (tableCheckResult.rows[0] as any).table_exists;
+      const checkResult = tableCheckResult.rows[0] as any;
+      log(`Table advertiser_order_access exists: ${checkResult.table_exists}`);
+      log(`Has advertiser_id column: ${checkResult.has_advertiser_id}`);
+      log(`Has account_id column: ${checkResult.has_account_id}`);
       
-      if (tableExists) {
-        // Rename column first, then rename table
-        await db.execute(sql`ALTER TABLE advertiser_order_access RENAME COLUMN advertiser_id TO account_id`);
-        log('✓ Column renamed: advertiser_id → account_id in advertiser_order_access');
+      if (checkResult.table_exists) {
+        // Only rename column if it exists and hasn't been renamed yet
+        if (checkResult.has_advertiser_id && !checkResult.has_account_id) {
+          try {
+            await db.execute(sql`ALTER TABLE advertiser_order_access RENAME COLUMN advertiser_id TO account_id`);
+            log('✓ Column renamed: advertiser_id → account_id in advertiser_order_access');
+          } catch (colError: any) {
+            log(`Failed to rename column: ${colError.message}`, 'error');
+            throw colError;
+          }
+        } else if (checkResult.has_account_id) {
+          log('⚠️ Column already renamed to account_id - skipping column rename', 'warn');
+        }
         
-        await db.execute(sql`ALTER TABLE advertiser_order_access RENAME TO account_order_access`);
-        migrationDetails.tablesRenamed++;
-        log('✓ Table renamed: advertiser_order_access → account_order_access');
+        // Now rename the table
+        try {
+          await db.execute(sql`ALTER TABLE advertiser_order_access RENAME TO account_order_access`);
+          migrationDetails.tablesRenamed++;
+          log('✓ Table renamed: advertiser_order_access → account_order_access');
+        } catch (tableError: any) {
+          log(`Failed to rename table: ${tableError.message}`, 'error');
+          throw tableError;
+        }
       } else {
-        log('⚠️ advertiser_order_access table not found - skipping rename', 'warn');
+        // Check if it was already renamed
+        const renamedCheckResult = await db.execute(sql`
+          SELECT EXISTS (
+            SELECT 1 FROM information_schema.tables 
+            WHERE table_schema = 'public' 
+            AND table_name = 'account_order_access'
+          ) as already_renamed
+        `);
+        
+        if ((renamedCheckResult.rows[0] as any).already_renamed) {
+          log('⚠️ Table already renamed to account_order_access - skipping', 'warn');
+        } else {
+          log('⚠️ Neither advertiser_order_access nor account_order_access table found', 'warn');
+        }
       }
 
       // 12. Update domain_suggestions table
       log('Step 11: Updating domain_suggestions table');
-      const suggestionRenames = [
-        { old: 'advertiser_id', new: 'account_id' },
-        { old: 'advertiser_email', new: 'account_email' },
-        { old: 'advertiser_notes', new: 'account_notes' }
-      ];
+      
+      // Check if domain_suggestions table exists
+      const domainSuggestionsExists = await db.execute(sql`
+        SELECT EXISTS (
+          SELECT 1 FROM information_schema.tables 
+          WHERE table_schema = 'public' 
+          AND table_name = 'domain_suggestions'
+        ) as table_exists
+      `);
+      
+      if ((domainSuggestionsExists.rows[0] as any).table_exists) {
+        const suggestionRenames = [
+          { old: 'advertiser_id', new: 'account_id' },
+          { old: 'advertiser_email', new: 'account_email' },
+          { old: 'advertiser_notes', new: 'account_notes' }
+        ];
 
-      for (const rename of suggestionRenames) {
-        await db.execute(sql.raw(`ALTER TABLE domain_suggestions RENAME COLUMN ${rename.old} TO ${rename.new}`));
-        log(`✓ Column renamed in domain_suggestions: ${rename.old} → ${rename.new}`);
-        migrationDetails.columnsUpdated++;
+        for (const rename of suggestionRenames) {
+          // Check if column exists and hasn't been renamed
+          const columnCheck = await db.execute(sql`
+            SELECT 
+              EXISTS (
+                SELECT 1 FROM information_schema.columns 
+                WHERE table_schema = 'public' 
+                AND table_name = 'domain_suggestions'
+                AND column_name = ${rename.old}
+              ) as has_old_column,
+              EXISTS (
+                SELECT 1 FROM information_schema.columns 
+                WHERE table_schema = 'public' 
+                AND table_name = 'domain_suggestions'
+                AND column_name = ${rename.new}
+              ) as has_new_column
+          `);
+          
+          const colCheckResult = columnCheck.rows[0] as any;
+          
+          if (colCheckResult.has_old_column && !colCheckResult.has_new_column) {
+            await db.execute(sql.raw(`ALTER TABLE domain_suggestions RENAME COLUMN ${rename.old} TO ${rename.new}`));
+            log(`✓ Column renamed in domain_suggestions: ${rename.old} → ${rename.new}`);
+            migrationDetails.columnsUpdated++;
+          } else if (colCheckResult.has_new_column) {
+            log(`⚠️ Column ${rename.new} already exists in domain_suggestions - skipping`, 'warn');
+          } else if (!colCheckResult.has_old_column) {
+            log(`⚠️ Column ${rename.old} not found in domain_suggestions - skipping`, 'warn');
+          }
+        }
+      } else {
+        log('⚠️ domain_suggestions table not found - skipping column renames', 'warn');
       }
 
       // 13. Add foreign key constraints
