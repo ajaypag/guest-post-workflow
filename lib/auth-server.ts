@@ -4,7 +4,7 @@ import { jwtVerify, SignJWT } from 'jose';
 import { db } from './db/connection';
 import { users } from './db/schema';
 import { eq } from 'drizzle-orm';
-import { AuthSession, UserType } from './types/auth';
+import { AuthSession, UserType, UserRole } from './types/auth';
 
 // Re-export for backward compatibility
 export type { AuthSession };
@@ -54,7 +54,7 @@ export class AuthServiceServer {
         userId: payload.userId as string,
         email: payload.email as string,
         name: payload.name as string,
-        role: payload.role as string,
+        role: payload.role as UserRole,
         userType: (payload.userType as UserType) || 'internal',
       };
     } catch (error) {
