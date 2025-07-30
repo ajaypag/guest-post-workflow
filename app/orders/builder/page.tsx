@@ -110,8 +110,8 @@ function OrderBuilderContent() {
 
   useEffect(() => {
     const session = AuthService.getSession();
-    if (session && session.user) {
-      setUser(session.user);
+    if (session) {
+      setUser(session);
     }
     
     loadInitialData();
@@ -214,7 +214,7 @@ function OrderBuilderContent() {
           setOrderForm(prev => ({
             ...prev,
             advertiserName: advertiser.name || '',
-            advertiserCompany: advertiser.companyName || '',
+            advertiserCompany: '',  // TODO: Add when using advertisers table
           }));
         }
       }

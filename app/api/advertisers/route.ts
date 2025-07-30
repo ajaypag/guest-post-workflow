@@ -31,7 +31,6 @@ export async function POST(request: NextRequest) {
         .update(users)
         .set({
           name: contactName || existing.name,
-          companyName: companyName || existing.companyName,
           updatedAt: new Date(),
         })
         .where(eq(users.id, existing.id))
@@ -51,10 +50,10 @@ export async function POST(request: NextRequest) {
         id: uuidv4(),
         email: email.toLowerCase(),
         name: contactName,
-        companyName,
-        password: hashedPassword,
+        passwordHash: hashedPassword,
         role: 'client',
-        status: 'active',
+        userType: 'advertiser',
+        isActive: true,
         createdAt: new Date(),
         updatedAt: new Date(),
       })

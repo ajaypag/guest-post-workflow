@@ -60,7 +60,7 @@ export async function GET(request: NextRequest) {
       const ordersResult = await db.execute(sql`
         SELECT COUNT(*) as count FROM orders WHERE user_id IS NOT NULL
       `);
-      const ordersWithUserId = parseInt(ordersResult.rows[0].count);
+      const ordersWithUserId = parseInt(String(ordersResult.rows[0].count));
 
       return NextResponse.json({
         advertisersTableExists,
