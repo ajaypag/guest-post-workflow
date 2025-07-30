@@ -1,13 +1,13 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { db } from '@/lib/db/connection';
-import { users } from '@/lib/db/schema';
+import { advertisers } from '@/lib/db/advertiserSchema';
 import { eq } from 'drizzle-orm';
 import { AuthServiceServer } from '@/lib/auth-server';
 
 export async function GET(request: NextRequest) {
   try {
     const session = await AuthServiceServer.getSession(request);
-    if (!session || session.userType !== 'internal') {
+    if (!session) {
       return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
     }
 
@@ -18,9 +18,9 @@ export async function GET(request: NextRequest) {
       return NextResponse.json({ error: 'Email is required' }, { status: 400 });
     }
 
-    // Search for advertiser user by email
-    const advertiser = await db.query.users.findFirst({
-      where: eq(users.email, email.toLowerCase()),
+    // Search for advertiser by email
+    const advertiser = await db.query.advertisers.findFirst({
+      where: eq(advertisers.email, email.toLowerCase()),
     });
 
     return NextResponse.json({ advertiser });

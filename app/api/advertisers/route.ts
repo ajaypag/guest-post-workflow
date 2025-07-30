@@ -1,6 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { db } from '@/lib/db/connection';
-import { users } from '@/lib/db/schema';
+import { advertisers } from '@/lib/db/advertiserSchema';
 import { eq } from 'drizzle-orm';
 import { v4 as uuidv4 } from 'uuid';
 import { AuthServiceServer } from '@/lib/auth-server';
@@ -16,44 +16,46 @@ export async function POST(request: NextRequest) {
     const data = await request.json();
     const { email, contactName, companyName, clientId } = data;
 
-    if (!email) {
-      return NextResponse.json({ error: 'Email is required' }, { status: 400 });
+    if (!email || !contactName) {
+      return NextResponse.json({ error: 'Email and contact name are required' }, { status: 400 });
     }
 
-    // Check if advertiser user already exists
-    const existing = await db.query.users.findFirst({
-      where: eq(users.email, email.toLowerCase()),
+    // Check if advertiser already exists
+    const existing = await db.query.advertisers.findFirst({
+      where: eq(advertisers.email, email.toLowerCase()),
     });
 
     if (existing) {
-      // Update existing advertiser user
+      // Update existing advertiser
       const [updated] = await db
-        .update(users)
+        .update(advertisers)
         .set({
-          name: contactName || existing.name,
+          contactName: contactName || existing.contactName,
+          companyName: companyName || existing.companyName,
           updatedAt: new Date(),
         })
-        .where(eq(users.id, existing.id))
+        .where(eq(advertisers.id, existing.id))
         .returning();
 
       return NextResponse.json({ advertiser: updated });
     }
 
-    // Create new advertiser user
+    // Create new advertiser
     // Generate a random password for the advertiser
     const tempPassword = Math.random().toString(36).slice(-8);
     const hashedPassword = await bcrypt.hash(tempPassword, 10);
 
     const [advertiser] = await db
-      .insert(users)
+      .insert(advertisers)
       .values({
         id: uuidv4(),
         email: email.toLowerCase(),
-        name: contactName,
-        passwordHash: hashedPassword,
-        role: 'client',
-        userType: 'advertiser',
-        isActive: true,
+        password: hashedPassword,
+        contactName,
+        companyName: companyName || '',
+        primaryClientId: clientId || null,
+        status: 'pending',
+        emailVerified: false,
         createdAt: new Date(),
         updatedAt: new Date(),
       })
@@ -76,9 +78,8 @@ export async function GET(request: NextRequest) {
       return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
     }
 
-    const allAdvertisers = await db.query.users.findMany({
-      where: eq(users.role, 'client'),
-      orderBy: (users, { desc }) => [desc(users.createdAt)],
+    const allAdvertisers = await db.query.advertisers.findMany({
+      orderBy: (advertisers, { desc }) => [desc(advertisers.createdAt)],
     });
 
     return NextResponse.json({ advertisers: allAdvertisers });

@@ -213,8 +213,8 @@ function OrderBuilderContent() {
           setExistingAdvertiser(advertiser);
           setOrderForm(prev => ({
             ...prev,
-            advertiserName: advertiser.name || '',
-            advertiserCompany: '',  // TODO: Add when using advertisers table
+            advertiserName: advertiser.contactName || advertiser.name || '',
+            advertiserCompany: advertiser.companyName || '',
           }));
         }
       }
@@ -324,11 +324,10 @@ function OrderBuilderContent() {
       }
 
       // Create domain mappings with target pages
-      const domainMappings = selectedDomains.reduce((acc, domain) => {
-        const targetPageId = domain.targetPageId || client?.targetPages?.[0]?.id || null;
-        acc[domain.id] = targetPageId;
-        return acc;
-      }, {} as Record<string, string | null>);
+      const domainMappings = selectedDomains.map(domain => ({
+        bulkAnalysisDomainId: domain.id,
+        targetPageId: domain.targetPageId || client?.targetPages?.[0]?.id || null
+      }));
 
       // Create order
       const orderResponse = await fetch('/api/orders', {
@@ -343,10 +342,10 @@ function OrderBuilderContent() {
           advertiserEmail: orderForm.advertiserEmail,
           advertiserName: orderForm.advertiserName,
           advertiserCompany: orderForm.advertiserCompany,
-          selectedDomains: domainMappings,
+          domainMappings, // Use correct field name expected by API
           includesClientReview: orderForm.includesClientReview,
           rushDelivery: orderForm.rushDelivery,
-          notes: orderForm.notes,
+          internalNotes: orderForm.notes,
         }),
       });
 
