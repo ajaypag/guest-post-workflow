@@ -5,12 +5,14 @@
 | Phase | Status | Completion Date | Notes |
 |-------|--------|-----------------|-------|
 | **Phase 1: Order Builder** | ✅ COMPLETED | 2025-01-30 | Multi-client order creation page fully functional |
-| **Phase 2: Bulk Analysis** | 🚧 IN PROGRESS | - | Project creation deferred to bulk analysis interface |
+| **Phase 2: Bulk Analysis** | ✅ COMPLETED | 2025-01-30 | Human-driven projects with notification system |
 | **Phase 3: Site Selection** | ❌ NOT STARTED | - | Critical for account transparency |
 | **Phase 4: Workflow Gen** | ❌ NOT STARTED | - | Auto-create workflows from approved sites |
 | **Phase 5: Share Tokens** | ❌ NOT STARTED | - | Public preview and conversion flow |
 
-### Completed Features (Phase 1)
+### Completed Features
+
+#### Phase 1: Order Builder
 - ✅ Account selection with search and new account creation
 - ✅ Multi-client selection with expandable details  
 - ✅ Target page selection per client
@@ -19,9 +21,16 @@
 - ✅ API endpoints for order creation and pricing
 - ✅ OrdersTableMultiClient integration
 
+#### Phase 2: Bulk Analysis Integration
+- ✅ Order confirmation endpoint that creates projects
+- ✅ Bulk analysis projects assigned to internal users
+- ✅ Dashboard notification widget for assigned projects
+- ✅ Dedicated page for viewing all assigned projects
+- ✅ Status tracking for projects (pending, in progress, ready)
+- ✅ Direct integration with order groups
+
 ### Known Issues
 - ⚠️ `createdBy` field uses placeholder system user ID until auth implemented
-- ⚠️ Bulk analysis project creation deferred - manual creation required
 - ⚠️ No account authentication on endpoints yet
 
 ## Overview
@@ -125,37 +134,43 @@ interface OrderGroup {
 3. Show default requirements (editable)
 4. Calculate suggested link distribution
 
-### Phase 2: Bulk Analysis Integration 🚧 IN PROGRESS
+### Phase 2: Bulk Analysis Integration ✅ COMPLETED (2025-01-30)
 
-**Status**: Project creation deferred to bulk analysis interface
-**Next**: Need to create auto-trigger mechanism when order is confirmed
+**Status**: Human-driven bulk analysis projects created on order confirmation
+**Implementation**: Projects assigned to internal users for manual analysis
 
-#### 2.1 Auto-trigger Analysis
-**API Endpoint**: `/api/orders/[id]/trigger-analysis` ❌ NOT IMPLEMENTED
+#### 2.1 Order Confirmation & Project Creation
+**API Endpoint**: `/api/orders/[id]/confirm` ✅ IMPLEMENTED
 
 When order moves to "confirmed" state:
 ```typescript
-async function triggerBulkAnalysis(orderGroup: OrderGroup) {
-  // 1. Create bulk_analysis_project
-  const project = await createBulkAnalysisProject({
+// Creates bulk analysis projects for manual domain selection
+const [project] = await tx
+  .insert(bulkAnalysisProjects)
+  .values({
+    id: projectId,
     clientId: orderGroup.clientId,
-    targetPages: orderGroup.targetPages,
-    keywords: extractKeywordsFromTargetPages(orderGroup.targetPages),
-    requirements: orderGroup.requirements
+    name: `Order #${orderId.slice(0, 8)} - ${client.name}`,
+    description: `Bulk analysis for ${orderGroup.linkCount} links`,
+    icon: '📊',
+    color: '#3B82F6',
+    status: 'active',
+    tags: ['order', `${orderGroup.linkCount} links`, `order-group:${orderGroup.id}`],
+    createdBy: assignedTo || '00000000-0000-0000-0000-000000000000',
   });
-  
-  // 2. Link to order group
-  await updateOrderGroup(orderGroup.id, {
-    bulkAnalysisProjectId: project.id
-  });
-  
-  // 3. Start analysis process
-  await startBulkAnalysis(project.id);
-}
 ```
 
-#### 2.2 Analysis Status Tracking
-**File**: `/app/orders/[id]/analysis/page.tsx`
+#### 2.2 Internal User Notifications
+**Files**: 
+- `/components/AssignedProjectsNotification.tsx` ✅ IMPLEMENTED
+- `/app/bulk-analysis/assigned/page.tsx` ✅ IMPLEMENTED
+- `/app/api/bulk-analysis/assigned-projects/route.ts` ✅ IMPLEMENTED
+
+**Features**:
+- Dashboard notification widget showing assigned projects
+- Dedicated page for viewing all assigned projects
+- Status tracking (pending, in progress, ready)
+- Direct links to bulk analysis projects
 
 ```typescript
 interface AnalysisProgress {
