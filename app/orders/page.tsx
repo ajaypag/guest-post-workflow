@@ -11,10 +11,10 @@ import Link from 'next/link';
 interface Order {
   id: string;
   clientId: string;
-  advertiserId?: string;
-  advertiserEmail: string;
-  advertiserName: string;
-  advertiserCompany?: string;
+  accountId?: string;
+  accountEmail: string;
+  accountName: string;
+  accountCompany?: string;
   status: string;
   subtotalRetail: number;
   discountPercent: string;
@@ -36,7 +36,7 @@ interface Order {
   createdBy: string;
   assignedTo?: string;
   internalNotes?: string;
-  advertiserNotes?: string;
+  accountNotes?: string;
   cancellationReason?: string;
   createdAt: string;
   updatedAt: string;
@@ -111,9 +111,9 @@ function OrdersPageContent() {
     if (searchTerm) {
       const searchLower = searchTerm.toLowerCase();
       return (
-        order.advertiserName.toLowerCase().includes(searchLower) ||
-        order.advertiserEmail.toLowerCase().includes(searchLower) ||
-        (order.advertiserCompany?.toLowerCase().includes(searchLower)) ||
+        order.accountName.toLowerCase().includes(searchLower) ||
+        order.accountEmail.toLowerCase().includes(searchLower) ||
+        (order.accountCompany?.toLowerCase().includes(searchLower)) ||
         order.id.toLowerCase().includes(searchLower)
       );
     }
@@ -259,7 +259,7 @@ function OrdersPageContent() {
                   <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400 h-4 w-4" />
                   <input
                     type="text"
-                    placeholder="Search by advertiser name, email, company, or order ID..."
+                    placeholder="Search by account name, email, company, or order ID..."
                     value={searchTerm}
                     onChange={(e) => setSearchTerm(e.target.value)}
                     className="w-full pl-10 pr-4 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent"
