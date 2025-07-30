@@ -8,7 +8,7 @@ import { Mail, User, Shield, Eye, EyeOff, CheckCircle, XCircle, Clock } from 'lu
 interface InvitationData {
   id: string;
   email: string;
-  userType: 'internal' | 'advertiser' | 'publisher';
+  userType: 'internal' | 'account' | 'publisher';
   role: 'user' | 'admin';
   expiresAt: string;
   createdByEmail: string;
@@ -115,7 +115,7 @@ function AcceptInvitationContent() {
     switch (userType) {
       case 'internal':
         return 'bg-blue-100 text-blue-800';
-      case 'advertiser':
+      case 'account':
         return 'bg-green-100 text-green-800';
       case 'publisher':
         return 'bg-orange-100 text-orange-800';

@@ -68,7 +68,7 @@ export async function POST(request: NextRequest) {
     }
 
     // Validate userType and role
-    if (!['internal', 'advertiser', 'publisher'].includes(userType)) {
+    if (!['internal', 'account', 'publisher'].includes(userType)) {
       console.log('[InvitationAPI] Invalid user type:', userType);
       return NextResponse.json(
         { error: 'Invalid user type' },
@@ -187,7 +187,7 @@ export async function POST(request: NextRequest) {
         subject: `You're invited to join PostFlow`,
         template: InvitationEmail({
           inviteeEmail: email,
-          userType: userType as 'internal' | 'advertiser' | 'publisher',
+          userType: userType as 'internal' | 'account' | 'publisher',
           role: role as 'user' | 'admin',
           invitationUrl,
           expiresAt: expiresAtFormatted,

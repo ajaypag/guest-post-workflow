@@ -103,7 +103,7 @@ export async function POST(
         subject: `Reminder: You're invited to join PostFlow`,
         template: InvitationEmail({
           inviteeEmail: invitation.email,
-          userType: invitation.userType as 'internal' | 'advertiser' | 'publisher',
+          userType: invitation.userType as 'internal' | 'account' | 'publisher',
           role: invitation.role as 'user' | 'admin',
           invitationUrl,
           expiresAt: expiresAtFormatted,

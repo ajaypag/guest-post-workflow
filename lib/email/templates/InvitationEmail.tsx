@@ -3,7 +3,7 @@ import { BaseEmail } from './BaseEmail';
 
 interface InvitationEmailProps {
   inviteeEmail: string;
-  userType: 'internal' | 'advertiser' | 'publisher';
+  userType: 'internal' | 'account' | 'publisher';
   role: 'user' | 'admin';
   invitationUrl: string;
   expiresAt: string;
@@ -20,7 +20,7 @@ export function InvitationEmail({
 }: InvitationEmailProps) {
   const userTypeDisplay = {
     internal: 'Internal Team Member',
-    advertiser: 'Advertiser',
+    account: 'Account',
     publisher: 'Publisher'
   }[userType];
 

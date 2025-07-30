@@ -1,12 +1,8 @@
 import { type User } from './db/schema';
+import { AuthSession as AuthSessionType } from './types/auth';
 
-export interface AuthSession {
-  userId: string;
-  email: string;
-  name: string;
-  role: string;
-  userType: string; // 'internal' | 'advertiser' | 'publisher'
-}
+// Re-export for backward compatibility
+export type AuthSession = AuthSessionType;
 
 export class AuthService {
   private static SESSION_KEY = 'guest_post_session';

@@ -35,9 +35,7 @@ export interface TargetPage {
   completedAt?: Date;
 }
 
-export interface AuthSession {
-  userId: string;
-  email: string;
-  name: string;
-  role: 'admin' | 'user';
-}
+import { AuthSession as AuthSessionType } from '@/lib/types/auth';
+
+// Re-export for backward compatibility
+export type AuthSession = AuthSessionType;

@@ -8,7 +8,7 @@ export const users = pgTable('users', {
   name: varchar('name', { length: 255 }).notNull(),
   passwordHash: varchar('password_hash', { length: 255 }).notNull(),
   role: varchar('role', { length: 50 }).notNull().default('user'), // 'user' | 'admin'
-  userType: varchar('user_type', { length: 20 }).notNull().default('internal'), // 'internal' | 'advertiser' | 'publisher'
+  userType: varchar('user_type', { length: 20 }).notNull().default('internal'), // 'internal' | 'account' | 'publisher'
   isActive: boolean('is_active').notNull().default(true),
   lastLogin: timestamp('last_login'),
   createdAt: timestamp('created_at').notNull(), // Remove defaultNow() to handle in application code
@@ -19,7 +19,7 @@ export const users = pgTable('users', {
 export const invitations = pgTable('invitations', {
   id: uuid('id').primaryKey(),
   email: varchar('email', { length: 255 }).notNull(),
-  userType: varchar('user_type', { length: 20 }).notNull(), // 'internal' | 'advertiser' | 'publisher'
+  userType: varchar('user_type', { length: 20 }).notNull(), // 'internal' | 'account' | 'publisher'
   role: varchar('role', { length: 50 }).notNull(), // 'user' | 'admin'
   token: varchar('token', { length: 255 }).notNull().unique(),
   expiresAt: timestamp('expires_at').notNull(),

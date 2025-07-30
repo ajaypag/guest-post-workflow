@@ -19,7 +19,7 @@ import { format } from 'date-fns';
 interface Invitation {
   id: string;
   email: string;
-  userType: 'internal' | 'advertiser' | 'publisher';
+  userType: 'internal' | 'account' | 'publisher';
   role: 'user' | 'admin';
   token: string;
   expiresAt: string;
@@ -49,7 +49,7 @@ export default function UsersManagement() {
   
   const [inviteData, setInviteData] = useState({
     email: '',
-    userType: 'internal' as 'internal' | 'advertiser' | 'publisher',
+    userType: 'internal' as 'internal' | 'account' | 'publisher',
     role: 'user' as 'user' | 'admin'
   });
 
@@ -463,7 +463,7 @@ export default function UsersManagement() {
                       className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-purple-500"
                     >
                       <option value="internal">Internal</option>
-                      <option value="advertiser">Advertiser</option>
+                      <option value="account">Account</option>
                       <option value="publisher">Publisher</option>
                     </select>
                   </div>
@@ -656,7 +656,7 @@ export default function UsersManagement() {
                           <td className="px-6 py-4 whitespace-nowrap">
                             <span className={`inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium ${
                               (user as any).userType === 'internal' ? 'bg-blue-100 text-blue-800' :
-                              (user as any).userType === 'advertiser' ? 'bg-green-100 text-green-800' :
+                              (user as any).userType === 'account' ? 'bg-green-100 text-green-800' :
                               (user as any).userType === 'publisher' ? 'bg-orange-100 text-orange-800' :
                               'bg-gray-100 text-gray-800'
                             }`}>
@@ -769,7 +769,7 @@ export default function UsersManagement() {
                           <td className="px-6 py-4 whitespace-nowrap">
                             <span className={`inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium ${
                               invitation.userType === 'internal' ? 'bg-blue-100 text-blue-800' :
-                              invitation.userType === 'advertiser' ? 'bg-green-100 text-green-800' :
+                              invitation.userType === 'account' ? 'bg-green-100 text-green-800' :
                               'bg-orange-100 text-orange-800'
                             }`}>
                               {invitation.userType}

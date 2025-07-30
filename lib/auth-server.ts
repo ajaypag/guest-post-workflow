@@ -4,14 +4,10 @@ import { jwtVerify, SignJWT } from 'jose';
 import { db } from './db/connection';
 import { users } from './db/schema';
 import { eq } from 'drizzle-orm';
+import { AuthSession, UserType } from './types/auth';
 
-export interface AuthSession {
-  userId: string;
-  email: string;
-  name: string;
-  role: string;
-  userType: string; // 'internal' | 'advertiser' | 'publisher'
-}
+// Re-export for backward compatibility
+export type { AuthSession };
 
 const JWT_SECRET = new TextEncoder().encode(
   process.env.JWT_SECRET || 'your-secret-key-change-in-production'
@@ -59,7 +55,7 @@ export class AuthServiceServer {
         email: payload.email as string,
         name: payload.name as string,
         role: payload.role as string,
-        userType: payload.userType as string || 'internal',
+        userType: (payload.userType as UserType) || 'internal',
       };
     } catch (error) {
       console.error('Session verification error:', error);
