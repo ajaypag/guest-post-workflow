@@ -28,6 +28,16 @@ export async function POST(request: NextRequest) {
     
     // Set cookie
     const cookieStore = await cookies();
+    
+    // Log environment for debugging
+    console.log('🔐 Setting cookie with:', {
+      httpOnly: true,
+      secure: process.env.NODE_ENV === 'production',
+      nodeEnv: process.env.NODE_ENV,
+      sameSite: 'lax',
+      path: '/',
+    });
+    
     cookieStore.set('auth-token', token, {
       httpOnly: true,
       secure: process.env.NODE_ENV === 'production',

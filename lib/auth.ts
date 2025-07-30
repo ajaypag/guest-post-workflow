@@ -65,6 +65,7 @@ export class AuthService {
         headers: {
           'Content-Type': 'application/json',
         },
+        credentials: 'include', // Include cookies
         body: JSON.stringify({ email, password }),
       });
 
@@ -96,6 +97,7 @@ export class AuthService {
         headers: {
           'Content-Type': 'application/json',
         },
+        credentials: 'include', // Include cookies
         body: JSON.stringify(userData),
       });
 
