@@ -7,10 +7,10 @@ import Link from 'next/link';
 interface Order {
   id: string;
   clientId: string;
-  advertiserId?: string;
-  advertiserEmail: string;
-  advertiserName: string;
-  advertiserCompany?: string;
+  accountId?: string;
+  accountEmail: string;
+  accountName: string;
+  accountCompany?: string;
   status: string;
   subtotalRetail: number;
   discountPercent: string;
@@ -32,7 +32,7 @@ interface Order {
   createdBy: string;
   assignedTo?: string;
   internalNotes?: string;
-  advertiserNotes?: string;
+  accountNotes?: string;
   cancellationReason?: string;
   createdAt: string;
   updatedAt: string;
@@ -109,7 +109,7 @@ export function OrdersTable({
                 Order
               </th>
               <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                Advertiser
+                Account
               </th>
               <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
                 Status
@@ -155,11 +155,11 @@ export function OrdersTable({
 
                 <td className="px-6 py-4 whitespace-nowrap">
                   <div>
-                    <div className="font-medium text-sm">{order.advertiserName}</div>
-                    {order.advertiserCompany && (
-                      <div className="text-xs text-gray-500">{order.advertiserCompany}</div>
+                    <div className="font-medium text-sm">{order.accountName}</div>
+                    {order.accountCompany && (
+                      <div className="text-xs text-gray-500">{order.accountCompany}</div>
                     )}
-                    <div className="text-xs text-gray-500">{order.advertiserEmail}</div>
+                    <div className="text-xs text-gray-500">{order.accountEmail}</div>
                   </div>
                 </td>
 

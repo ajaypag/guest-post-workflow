@@ -20,7 +20,7 @@ import {
   Filter
 } from 'lucide-react';
 
-interface Advertiser {
+interface Account {
   id: string;
   email: string;
   contactName: string;
@@ -37,9 +37,9 @@ interface Advertiser {
   totalRevenue?: number;
 }
 
-export default function AdvertisersPage() {
+export default function AccountsPage() {
   const router = useRouter();
-  const [advertisers, setAdvertisers] = useState<Advertiser[]>([]);
+  const [accounts, setAccounts] = useState<Account[]>([]);
   const [loading, setLoading] = useState(true);
   const [searchTerm, setSearchTerm] = useState('');
   const [statusFilter, setStatusFilter] = useState<string>('all');

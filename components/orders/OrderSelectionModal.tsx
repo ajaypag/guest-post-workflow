@@ -5,8 +5,8 @@ import { X, Plus, FileText, Loader2 } from 'lucide-react';
 
 interface Order {
   id: string;
-  advertiserName: string;
-  advertiserEmail: string;
+  accountName: string;
+  accountEmail: string;
   createdAt: string;
   itemCount: number;
   totalRetail: number;
@@ -165,7 +165,7 @@ export default function OrderSelectionModal({
                           <div className="flex items-center gap-2">
                             <FileText className="h-4 w-4 text-gray-600" />
                             <span className="font-medium text-gray-900">
-                              {order.advertiserName || order.advertiserEmail}
+                              {order.accountName || order.accountEmail}
                             </span>
                           </div>
                           <div className="text-sm text-gray-600 mt-1">
