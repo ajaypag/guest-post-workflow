@@ -30,9 +30,17 @@ interface Client {
   targetPages?: string[];
 }
 
+interface BulkAnalysisProject {
+  id: string;
+  name: string;
+  description?: string;
+  domainCount: number;
+  qualifiedCount: number;
+}
+
 interface Domain {
   id: string;
-  domain: string; // Bulk analysis uses 'domain', not 'domainName'
+  domain: string;
   domainName?: string; // Keep for backward compatibility
   url?: string;
   domainRating?: number;
@@ -41,6 +49,19 @@ interface Domain {
   projectId?: string;
   retailPrice?: number;
   qualificationStatus?: string;
+  targetPageIds?: string[];
+  selectedTargetPageId?: string;
+  hasWorkflow?: boolean;
+  workflowId?: string;
+  aiQualificationReasoning?: string;
+  wasHumanVerified?: boolean;
+}
+
+interface TargetPage {
+  id: string;
+  url: string;
+  keywords?: string;
+  description?: string;
 }
 
 interface PricingCalculation {
@@ -52,7 +73,7 @@ interface PricingCalculation {
   total: number;
 }
 
-type Step = 'client' | 'domains' | 'details' | 'review';
+type Step = 'client' | 'projects' | 'domains' | 'details' | 'review';
 
 function CreateOrderContent() {
   const router = useRouter();
@@ -72,11 +93,17 @@ function CreateOrderContent() {
     targetPages: [''],
   });
 
+  // Project Selection
+  const [projects, setProjects] = useState<BulkAnalysisProject[]>([]);
+  const [selectedProjects, setSelectedProjects] = useState<string[]>([]);
+  const [loadingProjects, setLoadingProjects] = useState(false);
+
   // Domain Selection
   const [availableDomains, setAvailableDomains] = useState<Domain[]>([]);
-  const [selectedDomains, setSelectedDomains] = useState<string[]>([]);
+  const [selectedDomains, setSelectedDomains] = useState<{ [domainId: string]: string }>({});
   const [domainSearch, setDomainSearch] = useState('');
   const [loadingDomains, setLoadingDomains] = useState(false);
+  const [targetPages, setTargetPages] = useState<TargetPage[]>([]);
 
   // Order Details
   const [orderDetails, setOrderDetails] = useState({
@@ -144,9 +171,9 @@ function CreateOrderContent() {
   }, [selectedDomains, orderDetails.includesClientReview, orderDetails.rushDelivery]);
 
   useEffect(() => {
-    // Auto-load domains when client is selected (especially from bulk analysis)
+    // Auto-load projects when client is selected (especially from bulk analysis)
     if (selectedClient && clients.length > 0) {
-      loadDomainsForClient(selectedClient);
+      loadProjectsForClient(selectedClient);
     }
   }, [selectedClient, clients]);
 
@@ -183,22 +210,60 @@ function CreateOrderContent() {
     }
   };
 
-  const loadDomainsForClient = async (clientId: string) => {
-    setLoadingDomains(true);
+  const loadProjectsForClient = async (clientId: string) => {
+    setLoadingProjects(true);
     try {
-      // For now, load domains from the first project
-      // In a real implementation, this would be more sophisticated
-      const endpoint = user?.userType === 'advertiser' 
-        ? `/api/domains/available?clientId=${clientId}`
-        : `/api/clients/${clientId}/bulk-analysis`;
-        
-      const response = await fetch(endpoint, {
-        credentials: 'include'
+      const response = await fetch(`/api/clients/${clientId}/projects`, {
+        credentials: 'include',
       });
+      
       if (response.ok) {
         const data = await response.json();
-        setAvailableDomains(data.domains || []);
+        setProjects(data.projects || []);
       }
+    } catch (error) {
+      console.error('Error loading projects:', error);
+    } finally {
+      setLoadingProjects(false);
+    }
+  };
+
+  const loadDomainsForProjects = async () => {
+    if (selectedProjects.length === 0) {
+      setAvailableDomains([]);
+      return;
+    }
+
+    setLoadingDomains(true);
+    try {
+      // Load domains from all selected projects
+      const allDomains: Domain[] = [];
+      
+      for (const projectId of selectedProjects) {
+        const response = await fetch(`/api/clients/${selectedClient}/bulk-analysis?projectId=${projectId}`, {
+          credentials: 'include',
+        });
+        
+        if (response.ok) {
+          const data = await response.json();
+          const qualifiedDomains = (data.domains || []).filter((d: Domain) => 
+            d.qualificationStatus && d.qualificationStatus !== 'pending' && d.qualificationStatus !== 'disqualified'
+          );
+          allDomains.push(...qualifiedDomains);
+        }
+      }
+
+      // Load target pages for the client
+      const clientResponse = await fetch(`/api/clients/${selectedClient}`, {
+        credentials: 'include',
+      });
+      
+      if (clientResponse.ok) {
+        const clientData = await clientResponse.json();
+        setTargetPages(clientData.targetPages || []);
+      }
+
+      setAvailableDomains(allDomains);
     } catch (error) {
       console.error('Error loading domains:', error);
     } finally {
@@ -207,7 +272,8 @@ function CreateOrderContent() {
   };
 
   const calculatePricing = () => {
-    const selectedDomainData = availableDomains.filter(d => selectedDomains.includes(d.id));
+    const selectedDomainIds = Object.keys(selectedDomains);
+    const selectedDomainData = availableDomains.filter(d => selectedDomainIds.includes(d.id));
     
     // Calculate base prices
     let subtotal = 0;
@@ -219,11 +285,12 @@ function CreateOrderContent() {
 
     // Apply volume discount
     let discountPercent = 0;
-    if (selectedDomains.length >= 20) {
+    const domainCount = selectedDomainIds.length;
+    if (domainCount >= 20) {
       discountPercent = 15;
-    } else if (selectedDomains.length >= 10) {
+    } else if (domainCount >= 10) {
       discountPercent = 10;
-    } else if (selectedDomains.length >= 5) {
+    } else if (domainCount >= 5) {
       discountPercent = 5;
     }
 
@@ -289,9 +356,9 @@ function CreateOrderContent() {
       setSelectedClient(data.client.id);
       setIsNewClient(false);
       
-      // Load domains for the new client
-      await loadDomainsForClient(data.client.id);
-      setCurrentStep('domains');
+      // Load projects for the new client
+      await loadProjectsForClient(data.client.id);
+      setCurrentStep('projects');
     } catch (error) {
       console.error('Error creating client:', error);
       alert('Failed to create client');
@@ -303,9 +370,15 @@ function CreateOrderContent() {
   const handleCreateOrder = async (status: 'draft' | 'pending_approval') => {
     setSaving(true);
     try {
+      // Transform selectedDomains object into array with target page mappings
+      const domainMappings = Object.entries(selectedDomains).map(([domainId, targetPageId]) => ({
+        bulkAnalysisDomainId: domainId,
+        targetPageId: targetPageId,
+      }));
+
       const orderData = {
         clientId: selectedClient,
-        domains: selectedDomains,
+        domainMappings, // Send domain-to-target-page mappings
         advertiserEmail: orderDetails.advertiserEmail,
         advertiserName: orderDetails.advertiserName,
         advertiserCompany: orderDetails.advertiserCompany,
@@ -339,6 +412,7 @@ function CreateOrderContent() {
   const renderStepIndicator = () => {
     const steps = [
       { key: 'client', label: 'Client', icon: Building },
+      { key: 'projects', label: 'Projects', icon: Package },
       { key: 'domains', label: 'Domains', icon: Globe },
       { key: 'details', label: 'Details', icon: User },
       { key: 'review', label: 'Review', icon: CheckCircle },
@@ -403,7 +477,7 @@ function CreateOrderContent() {
                 onChange={(e) => {
                   setSelectedClient(e.target.value);
                   if (e.target.value) {
-                    loadDomainsForClient(e.target.value);
+                    loadProjectsForClient(e.target.value);
                   }
                 }}
                 className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
@@ -453,7 +527,7 @@ function CreateOrderContent() {
               onChange={(e) => {
                 setSelectedClient(e.target.value);
                 if (e.target.value) {
-                  loadDomainsForClient(e.target.value);
+                  loadProjectsForClient(e.target.value);
                 }
               }}
               className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
@@ -552,8 +626,85 @@ https://example.com/page2"
       {/* Navigation */}
       <div className="mt-6 flex justify-end">
         <button
-          onClick={() => setCurrentStep('domains')}
+          onClick={() => {
+            if (selectedClient) {
+              loadProjectsForClient(selectedClient);
+              setCurrentStep('projects');
+            }
+          }}
           disabled={!selectedClient || loading}
+          className="px-4 py-2 bg-blue-600 hover:bg-blue-700 text-white rounded-md font-medium disabled:bg-gray-400 flex items-center gap-2"
+        >
+          Next
+          <ChevronRight className="h-4 w-4" />
+        </button>
+      </div>
+    </div>
+  );
+
+  const renderProjectStep = () => (
+    <div className="bg-white rounded-lg border border-gray-200 shadow-sm p-6">
+      <h2 className="text-lg font-semibold mb-4">Select Bulk Analysis Projects</h2>
+      
+      {loadingProjects ? (
+        <div className="text-center py-8">
+          <Loader2 className="h-8 w-8 animate-spin text-gray-400 mx-auto" />
+          <p className="mt-2 text-gray-600">Loading projects...</p>
+        </div>
+      ) : projects.length === 0 ? (
+        <div className="text-center py-8 text-gray-500">
+          <p>No bulk analysis projects found for this client.</p>
+          <p className="text-sm mt-2">Create a bulk analysis project first to access qualified domains.</p>
+        </div>
+      ) : (
+        <div className="space-y-3">
+          {projects.map((project) => (
+            <label
+              key={project.id}
+              className="flex items-start p-4 border border-gray-200 rounded-lg hover:bg-gray-50 cursor-pointer"
+            >
+              <input
+                type="checkbox"
+                checked={selectedProjects.includes(project.id)}
+                onChange={(e) => {
+                  if (e.target.checked) {
+                    setSelectedProjects([...selectedProjects, project.id]);
+                  } else {
+                    setSelectedProjects(selectedProjects.filter(id => id !== project.id));
+                  }
+                }}
+                className="h-4 w-4 text-blue-600 focus:ring-blue-500 border-gray-300 rounded mt-1"
+              />
+              <div className="ml-3 flex-1">
+                <p className="font-medium text-gray-900">{project.name}</p>
+                {project.description && (
+                  <p className="text-sm text-gray-600 mt-1">{project.description}</p>
+                )}
+                <div className="mt-2 flex items-center gap-4 text-sm text-gray-500">
+                  <span>Total Domains: {project.domainCount}</span>
+                  <span className="text-green-600">Qualified: {project.qualifiedCount}</span>
+                </div>
+              </div>
+            </label>
+          ))}
+        </div>
+      )}
+
+      {/* Navigation */}
+      <div className="mt-6 flex justify-between">
+        <button
+          onClick={() => setCurrentStep('client')}
+          className="px-4 py-2 border border-gray-300 rounded-md text-gray-700 hover:bg-gray-50 flex items-center gap-2"
+        >
+          <ChevronLeft className="h-4 w-4" />
+          Back
+        </button>
+        <button
+          onClick={() => {
+            loadDomainsForProjects();
+            setCurrentStep('domains');
+          }}
+          disabled={selectedProjects.length === 0 || loadingProjects}
           className="px-4 py-2 bg-blue-600 hover:bg-blue-700 text-white rounded-md font-medium disabled:bg-gray-400 flex items-center gap-2"
         >
           Next
@@ -571,7 +722,7 @@ https://example.com/page2"
 
     return (
       <div className="bg-white rounded-lg border border-gray-200 shadow-sm p-6">
-        <h2 className="text-lg font-semibold mb-4">Select Domains ({selectedDomains.length} selected)</h2>
+        <h2 className="text-lg font-semibold mb-4">Select Domains ({Object.keys(selectedDomains).length} selected)</h2>
         
         {/* Search */}
         <div className="mb-4 relative">
@@ -597,44 +748,112 @@ https://example.com/page2"
           </div>
         ) : (
           <div className="max-h-96 overflow-y-auto border border-gray-200 rounded-md">
-            {filteredDomains.map((domain) => (
-              <label
-                key={domain.id}
-                className="flex items-center p-4 hover:bg-gray-50 border-b border-gray-100 cursor-pointer"
-              >
-                <input
-                  type="checkbox"
-                  checked={selectedDomains.includes(domain.id)}
-                  onChange={(e) => {
-                    if (e.target.checked) {
-                      setSelectedDomains([...selectedDomains, domain.id]);
-                    } else {
-                      setSelectedDomains(selectedDomains.filter(id => id !== domain.id));
-                    }
-                  }}
-                  className="h-4 w-4 text-blue-600 focus:ring-blue-500 border-gray-300 rounded"
-                />
-                <div className="ml-3 flex-1">
-                  <p className="font-medium text-gray-900">{domain.domain || domain.domainName}</p>
-                  <div className="mt-1 flex items-center gap-4 text-sm text-gray-500">
-                    <span>DR: {domain.domainRating || 'N/A'}</span>
-                    <span>Traffic: {domain.traffic || 'N/A'}</span>
-                    {domain.niche && <span>Niche: {domain.niche}</span>}
+            {filteredDomains.map((domain) => {
+              const isSelected = Object.keys(selectedDomains).includes(domain.id);
+              const selectedTargetPageId = selectedDomains[domain.id];
+              
+              return (
+                <div
+                  key={domain.id}
+                  className="p-4 hover:bg-gray-50 border-b border-gray-100"
+                >
+                  <div className="flex items-start">
+                    <input
+                      type="checkbox"
+                      checked={isSelected}
+                      onChange={(e) => {
+                        if (e.target.checked) {
+                          // Select domain with first available target page
+                          const firstTargetPageId = domain.targetPageIds?.[0] || targetPages[0]?.id || '';
+                          setSelectedDomains({
+                            ...selectedDomains,
+                            [domain.id]: firstTargetPageId
+                          });
+                        } else {
+                          // Remove domain
+                          const newSelection = { ...selectedDomains };
+                          delete newSelection[domain.id];
+                          setSelectedDomains(newSelection);
+                        }
+                      }}
+                      className="h-4 w-4 text-blue-600 focus:ring-blue-500 border-gray-300 rounded mt-1"
+                    />
+                    <div className="ml-3 flex-1">
+                      <div className="flex items-center gap-2">
+                        <p className="font-medium text-gray-900">{domain.domain || domain.domainName}</p>
+                        {domain.qualificationStatus && (
+                          <span className={`inline-flex items-center px-2 py-0.5 rounded text-xs font-medium ${
+                            domain.qualificationStatus === 'high_quality' ? 'bg-green-100 text-green-800' :
+                            domain.qualificationStatus === 'good_quality' ? 'bg-blue-100 text-blue-800' :
+                            domain.qualificationStatus === 'marginal_quality' ? 'bg-yellow-100 text-yellow-800' :
+                            'bg-gray-100 text-gray-800'
+                          }`}>
+                            {domain.qualificationStatus.replace('_', ' ')}
+                          </span>
+                        )}
+                        {domain.wasHumanVerified && (
+                          <span className="inline-flex items-center px-2 py-0.5 rounded text-xs font-medium bg-purple-100 text-purple-800">
+                            Verified
+                          </span>
+                        )}
+                      </div>
+                      <div className="mt-1 flex items-center gap-4 text-sm text-gray-500">
+                        <span>DR: {domain.domainRating || 'N/A'}</span>
+                        <span>Traffic: {domain.traffic || 'N/A'}</span>
+                        {domain.niche && <span>Niche: {domain.niche}</span>}
+                      </div>
+                      
+                      {/* Target Page Selection */}
+                      {isSelected && targetPages.length > 0 && (
+                        <div className="mt-2">
+                          <label className="block text-xs font-medium text-gray-700 mb-1">
+                            Target Page for Backlink
+                          </label>
+                          <select
+                            value={selectedTargetPageId}
+                            onChange={(e) => {
+                              setSelectedDomains({
+                                ...selectedDomains,
+                                [domain.id]: e.target.value
+                              });
+                            }}
+                            className="text-sm px-2 py-1 border border-gray-300 rounded-md focus:outline-none focus:ring-1 focus:ring-blue-500"
+                          >
+                            {targetPages.map(tp => (
+                              <option key={tp.id} value={tp.id}>
+                                {tp.url}
+                              </option>
+                            ))}
+                          </select>
+                        </div>
+                      )}
+                      
+                      {domain.aiQualificationReasoning && (
+                        <details className="mt-2">
+                          <summary className="text-xs text-gray-600 cursor-pointer hover:text-gray-800">
+                            View qualification details
+                          </summary>
+                          <p className="mt-1 text-xs text-gray-600 whitespace-pre-wrap">
+                            {domain.aiQualificationReasoning}
+                          </p>
+                        </details>
+                      )}
+                    </div>
+                    <div className="text-sm font-medium text-gray-900">
+                      {formatCurrency(domain.retailPrice || 39900)}
+                    </div>
                   </div>
                 </div>
-                <div className="text-sm font-medium text-gray-900">
-                  {formatCurrency(domain.retailPrice || 39900)}
-                </div>
-              </label>
-            ))}
+              );
+            })}
           </div>
         )}
 
         {/* Pricing Preview */}
-        {selectedDomains.length > 0 && (
+        {Object.keys(selectedDomains).length > 0 && (
           <div className="mt-4 p-4 bg-blue-50 rounded-lg">
             <div className="flex justify-between text-sm">
-              <span>Selected: {selectedDomains.length} domains</span>
+              <span>Selected: {Object.keys(selectedDomains).length} domains</span>
               <span className="font-medium">
                 Subtotal: {formatCurrency(pricing.subtotal)}
                 {pricing.discountPercent > 0 && (
@@ -648,7 +867,7 @@ https://example.com/page2"
         {/* Navigation */}
         <div className="mt-6 flex justify-between">
           <button
-            onClick={() => setCurrentStep('client')}
+            onClick={() => setCurrentStep('projects')}
             className="px-4 py-2 border border-gray-300 rounded-md text-gray-700 hover:bg-gray-50 flex items-center gap-2"
           >
             <ChevronLeft className="h-4 w-4" />
@@ -656,7 +875,7 @@ https://example.com/page2"
           </button>
           <button
             onClick={() => setCurrentStep('details')}
-            disabled={selectedDomains.length === 0}
+            disabled={Object.keys(selectedDomains).length === 0}
             className="px-4 py-2 bg-blue-600 hover:bg-blue-700 text-white rounded-md font-medium disabled:bg-gray-400 flex items-center gap-2"
           >
             Next
@@ -773,7 +992,8 @@ https://example.com/page2"
 
   const renderReviewStep = () => {
     const selectedClientData = clients.find(c => c.id === selectedClient);
-    const selectedDomainData = availableDomains.filter(d => selectedDomains.includes(d.id));
+    const selectedDomainIds = Object.keys(selectedDomains);
+    const selectedDomainData = availableDomains.filter(d => selectedDomainIds.includes(d.id));
 
     return (
       <div className="space-y-6">
@@ -887,6 +1107,8 @@ https://example.com/page2"
     switch (currentStep) {
       case 'client':
         return renderClientStep();
+      case 'projects':
+        return renderProjectStep();
       case 'domains':
         return renderDomainStep();
       case 'details':

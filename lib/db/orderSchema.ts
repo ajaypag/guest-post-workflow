@@ -63,6 +63,7 @@ export const orderItems = pgTable('order_items', {
   id: uuid('id').primaryKey(),
   orderId: uuid('order_id').notNull().references(() => orders.id, { onDelete: 'cascade' }),
   domainId: uuid('domain_id').notNull().references(() => bulkAnalysisDomains.id),
+  targetPageId: uuid('target_page_id'), // Added for bulk analysis integration
   
   // Snapshot data
   domain: varchar('domain', { length: 255 }).notNull(),

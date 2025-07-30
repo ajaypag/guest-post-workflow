@@ -56,7 +56,8 @@ export async function POST(request: NextRequest) {
     const data = await request.json();
     const {
       clientId,
-      domains: domainIds,
+      domains: domainIds, // Legacy support
+      domainMappings, // New format with target page mappings
       advertiserEmail,
       advertiserName,
       advertiserCompany,
@@ -65,8 +66,19 @@ export async function POST(request: NextRequest) {
       internalNotes,
     } = data;
 
+    // Extract domain IDs from either format
+    let domainData: Array<{ bulkAnalysisDomainId: string; targetPageId?: string }> = [];
+    
+    if (domainMappings && Array.isArray(domainMappings)) {
+      // New format with target page mappings
+      domainData = domainMappings;
+    } else if (domainIds && Array.isArray(domainIds)) {
+      // Legacy format - just domain IDs
+      domainData = domainIds.map(id => ({ bulkAnalysisDomainId: id }));
+    }
+
     // Validate required fields
-    if (!clientId || !domainIds || domainIds.length === 0) {
+    if (!clientId || domainData.length === 0) {
       return NextResponse.json(
         { error: 'Client and at least one domain are required' },
         { status: 400 }
@@ -85,9 +97,12 @@ export async function POST(request: NextRequest) {
       return NextResponse.json({ error: 'Forbidden' }, { status: 403 });
     }
 
+    // Extract just the domain IDs for querying
+    const domainIdsToQuery = domainData.map(d => d.bulkAnalysisDomainId);
+
     // Fetch selected domains
     const selectedDomains = await db.query.bulkAnalysisDomains.findMany({
-      where: inArray(bulkAnalysisDomains.id, domainIds),
+      where: inArray(bulkAnalysisDomains.id, domainIdsToQuery),
     });
 
     if (selectedDomains.length === 0) {
@@ -96,6 +111,11 @@ export async function POST(request: NextRequest) {
         { status: 400 }
       );
     }
+
+    // Create a map for quick lookup of target pages
+    const domainTargetPageMap = new Map(
+      domainData.map(d => [d.bulkAnalysisDomainId, d.targetPageId])
+    );
 
     // Calculate pricing
     let subtotalRetail = 0;
@@ -168,10 +188,14 @@ export async function POST(request: NextRequest) {
       const retailPrice = dr >= 70 ? 59900 : dr >= 50 ? 49900 : dr >= 30 ? 39900 : 29900;
       const wholesalePrice = Math.floor(retailPrice * 0.6);
 
+      // Get the target page ID for this domain
+      const targetPageId = domainTargetPageMap.get(domain.id) || null;
+
       await db.insert(orderItems).values({
         id: uuidv4(),
         orderId,
         domainId: domain.id,
+        targetPageId, // Include target page mapping
         domain: domain.domain,
         domainRating: dr,
         traffic: null,
