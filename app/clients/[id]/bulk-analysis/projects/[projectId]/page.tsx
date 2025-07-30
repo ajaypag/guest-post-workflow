@@ -2862,6 +2862,14 @@ anotherdomain.com"
                       onCreateWorkflow={createWorkflow}
                       onDeleteDomain={deleteDomain}
                       onAnalyzeWithDataForSeo={analyzeWithDataForSeo}
+                      onAddToOrder={(domains) => {
+                        // Navigate to order creation with selected domains
+                        const domainIds = domains.map(d => d.id);
+                        const searchParams = new URLSearchParams();
+                        searchParams.set('domains', JSON.stringify(domainIds));
+                        searchParams.set('clientId', params.id as string);
+                        router.push(`/orders/create?${searchParams.toString()}`);
+                      }}
                       onUpdateNotes={async (domainId, notes) => {
                         // Save notes
                         try {

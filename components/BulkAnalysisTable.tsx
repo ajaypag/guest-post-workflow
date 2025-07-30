@@ -20,7 +20,8 @@ import {
   Zap,
   Loader2,
   Database,
-  RefreshCw
+  RefreshCw,
+  ShoppingCart
 } from 'lucide-react';
 import { BulkAnalysisDomain } from '@/types/bulk-analysis';
 import { TargetPage } from '@/types/user';
@@ -40,6 +41,7 @@ interface BulkAnalysisTableProps {
   onDeleteDomain: (domainId: string) => void;
   onAnalyzeWithDataForSeo: (domain: BulkAnalysisDomain) => void;
   onUpdateNotes: (domainId: string, notes: string) => void;
+  onAddToOrder?: (domains: BulkAnalysisDomain[]) => void;
   selectedPositionRange: string;
   loading: boolean;
   keywordInputMode: 'target-pages' | 'manual';
@@ -464,7 +466,58 @@ export default function BulkAnalysisTable(props: BulkAnalysisTableProps) {
 
   return (
     <div className="w-full">
-
+      {/* Bulk Actions Bar */}
+      {props.selectedDomains.size > 0 && (
+        <div className="mb-4 p-3 bg-blue-50 border border-blue-200 rounded-lg flex items-center justify-between">
+          <div className="flex items-center gap-3">
+            <span className="text-sm font-medium text-blue-900">
+              {props.selectedDomains.size} domain{props.selectedDomains.size > 1 ? 's' : ''} selected
+            </span>
+            <button
+              onClick={props.onClearSelection}
+              className="text-xs text-blue-700 hover:text-blue-900 underline"
+            >
+              Clear selection
+            </button>
+          </div>
+          <div className="flex items-center gap-2">
+            {props.onBulkCreateWorkflows && qualifiedDomains.length > 0 && (
+              <button
+                onClick={() => props.onBulkCreateWorkflows!(qualifiedDomains.map(d => d.id))}
+                disabled={props.bulkWorkflowCreating}
+                className="inline-flex items-center px-3 py-1.5 bg-green-600 text-white text-sm rounded hover:bg-green-700 disabled:opacity-50"
+              >
+                {props.bulkWorkflowCreating ? (
+                  <Loader2 className="w-4 h-4 mr-1 animate-spin" />
+                ) : (
+                  <Plus className="w-4 h-4 mr-1" />
+                )}
+                Create {qualifiedDomains.length} Workflow{qualifiedDomains.length > 1 ? 's' : ''}
+              </button>
+            )}
+            {props.onAddToOrder && (
+              <button
+                onClick={() => {
+                  const selectedDomainList = props.domains.filter(d => 
+                    props.selectedDomains.has(d.id) && 
+                    (d.qualificationStatus === 'high_quality' || d.qualificationStatus === 'good_quality' || d.qualificationStatus === 'marginal_quality')
+                  );
+                  if (selectedDomainList.length > 0 && props.onAddToOrder) {
+                    props.onAddToOrder(selectedDomainList);
+                  }
+                }}
+                className="inline-flex items-center px-3 py-1.5 bg-blue-600 text-white text-sm rounded hover:bg-blue-700"
+              >
+                <ShoppingCart className="w-4 h-4 mr-1" />
+                Add to Order ({props.domains.filter(d => 
+                  props.selectedDomains.has(d.id) && 
+                  (d.qualificationStatus === 'high_quality' || d.qualificationStatus === 'good_quality' || d.qualificationStatus === 'marginal_quality')
+                ).length})
+              </button>
+            )}
+          </div>
+        </div>
+      )}
 
       <table className="min-w-full divide-y divide-gray-200">
         <thead className="bg-gray-50">
@@ -736,6 +789,21 @@ export default function BulkAnalysisTable(props: BulkAnalysisTableProps) {
                               <FileText className="w-3 h-3 mr-1" />
                               Has Workflow
                             </span>
+                          )}
+                          {!props.triageMode && props.onAddToOrder && (domain.qualificationStatus === 'high_quality' || domain.qualificationStatus === 'good_quality' || domain.qualificationStatus === 'marginal_quality') && (
+                            <button
+                              onClick={(e) => {
+                                e.stopPropagation();
+                                if (props.onAddToOrder) {
+                                  props.onAddToOrder([domain]);
+                                }
+                              }}
+                              className="inline-flex items-center px-2 py-1 bg-blue-600 text-white text-xs rounded hover:bg-blue-700"
+                              title="Add to Order"
+                            >
+                              <ShoppingCart className="w-3 h-3 mr-1" />
+                              Add to Order
+                            </button>
                           )}
                         </>
                       )}

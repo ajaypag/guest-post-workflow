@@ -101,12 +101,23 @@ function CreateOrderContent() {
     
     // Check if coming from bulk analysis
     const preselectedDomains = searchParams.get('domains');
+    const preselectedClientId = searchParams.get('clientId');
+    
     if (preselectedDomains) {
       try {
         setSelectedDomains(JSON.parse(preselectedDomains));
       } catch (e) {
         console.error('Invalid domains parameter');
       }
+    }
+    
+    if (preselectedClientId) {
+      setSelectedClient(preselectedClientId);
+    }
+    
+    // If both client and domains are pre-selected, go to domains step
+    if (preselectedClientId && preselectedDomains) {
+      setCurrentStep('domains');
     }
   }, []);
 
@@ -129,6 +140,13 @@ function CreateOrderContent() {
   useEffect(() => {
     calculatePricing();
   }, [selectedDomains, orderDetails.includesClientReview, orderDetails.rushDelivery]);
+
+  useEffect(() => {
+    // Auto-load domains when client is selected (especially from bulk analysis)
+    if (selectedClient && clients.length > 0) {
+      loadDomainsForClient(selectedClient);
+    }
+  }, [selectedClient, clients]);
 
   const loadUser = async () => {
     const currentUser = await AuthService.getCurrentUser();
