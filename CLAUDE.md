@@ -37,6 +37,7 @@ Production-ready workflow system with PostgreSQL, multi-user auth, and AI agent 
 | **Auto-Save Fix** | [docs/agents/AUTO_SAVE_PATTERN.md](docs/agents/AUTO_SAVE_PATTERN.md) |
 | **Email System** | [docs/services/EMAIL_SERVICE.md](docs/services/EMAIL_SERVICE.md) |
 | **Debug Issues** | [docs/admin/DIAGNOSTICS.md](docs/admin/DIAGNOSTICS.md) |
+| **Order System Replacement** | [docs/architecture/ORDER_SYSTEM_REPLACEMENT_PLAN.md](docs/architecture/ORDER_SYSTEM_REPLACEMENT_PLAN.md) |
 | **All Documentation** | [docs/DEVELOPER_GUIDE.md](docs/DEVELOPER_GUIDE.md) |
 
 ### Production Config

@@ -203,18 +203,18 @@ function OrderBuilderContent() {
     try {
       setSearchingAdvertiser(true);
       
-      const response = await fetch(`/api/advertisers/search?email=${encodeURIComponent(email)}`, {
+      const response = await fetch(`/api/accounts/search?email=${encodeURIComponent(email)}`, {
         credentials: 'include',
       });
       
       if (response.ok) {
-        const { advertiser } = await response.json();
-        if (advertiser) {
-          setExistingAdvertiser(advertiser);
+        const { account } = await response.json();
+        if (account) {
+          setExistingAdvertiser(account);
           setOrderForm(prev => ({
             ...prev,
-            advertiserName: advertiser.contactName || advertiser.name || '',
-            advertiserCompany: advertiser.companyName || '',
+            advertiserName: account.contactName || account.name || '',
+            advertiserCompany: account.companyName || '',
           }));
         }
       }
@@ -300,7 +300,7 @@ function OrderBuilderContent() {
       let advertiserId = existingAdvertiser?.id;
       
       if (!advertiserId) {
-        const advertiserResponse = await fetch('/api/advertisers', {
+        const accountResponse = await fetch('/api/accounts', {
           method: 'POST',
           headers: {
             'Content-Type': 'application/json',
@@ -314,13 +314,13 @@ function OrderBuilderContent() {
           }),
         });
 
-        if (!advertiserResponse.ok) {
-          const error = await advertiserResponse.json();
-          throw new Error(error.error || 'Failed to create advertiser');
+        if (!accountResponse.ok) {
+          const error = await accountResponse.json();
+          throw new Error(error.error || 'Failed to create account');
         }
 
-        const { advertiser } = await advertiserResponse.json();
-        advertiserId = advertiser.id;
+        const { account } = await accountResponse.json();
+        advertiserId = account.id;
       }
 
       // Create domain mappings with target pages

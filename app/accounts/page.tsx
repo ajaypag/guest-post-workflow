@@ -53,36 +53,36 @@ export default function AccountsPage() {
       return;
     }
     
-    loadAdvertisers();
+    loadAccounts();
   }, []);
 
-  const loadAdvertisers = async () => {
+  const loadAccounts = async () => {
     try {
-      const response = await fetch('/api/advertisers');
+      const response = await fetch('/api/accounts');
       if (response.ok) {
         const data = await response.json();
-        setAdvertisers(data.advertisers || []);
+        setAccounts(data.accounts || []);
       }
     } catch (error) {
-      console.error('Error loading advertisers:', error);
+      console.error('Error loading accounts:', error);
     } finally {
       setLoading(false);
     }
   };
 
-  const updateAdvertiserStatus = async (advertiserId: string, newStatus: string) => {
+  const updateAccountStatus = async (accountId: string, newStatus: string) => {
     try {
-      const response = await fetch(`/api/advertisers/${advertiserId}/status`, {
+      const response = await fetch(`/api/accounts/${accountId}/status`, {
         method: 'PATCH',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ status: newStatus })
       });
 
       if (response.ok) {
-        await loadAdvertisers();
+        await loadAccounts();
       }
     } catch (error) {
-      console.error('Error updating advertiser status:', error);
+      console.error('Error updating account status:', error);
     }
   };
 
@@ -129,15 +129,15 @@ export default function AccountsPage() {
     }).format(cents / 100);
   };
 
-  // Filter and sort advertisers
-  const filteredAdvertisers = advertisers
-    .filter(advertiser => {
+  // Filter and sort accounts
+  const filteredAccounts = accounts
+    .filter(account => {
       const matchesSearch = searchTerm === '' || 
-        advertiser.contactName.toLowerCase().includes(searchTerm.toLowerCase()) ||
-        advertiser.companyName.toLowerCase().includes(searchTerm.toLowerCase()) ||
-        advertiser.email.toLowerCase().includes(searchTerm.toLowerCase());
+        account.contactName.toLowerCase().includes(searchTerm.toLowerCase()) ||
+        account.companyName.toLowerCase().includes(searchTerm.toLowerCase()) ||
+        account.email.toLowerCase().includes(searchTerm.toLowerCase());
       
-      const matchesStatus = statusFilter === 'all' || advertiser.status === statusFilter;
+      const matchesStatus = statusFilter === 'all' || account.status === statusFilter;
       
       return matchesSearch && matchesStatus;
     })
@@ -181,9 +181,9 @@ export default function AccountsPage() {
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
           {/* Header */}
           <div className="mb-8">
-            <h1 className="text-2xl font-bold text-gray-900">Advertiser Management</h1>
+            <h1 className="text-2xl font-bold text-gray-900">Account Management</h1>
             <p className="text-gray-600 mt-1">
-              Manage advertiser accounts and access their client data
+              Manage accounts and access their client data
             </p>
           </div>
 
@@ -236,8 +236,8 @@ export default function AccountsPage() {
               <div className="flex items-center">
                 <Users className="w-10 h-10 text-blue-500 mr-3" />
                 <div>
-                  <p className="text-sm text-gray-600">Total Advertisers</p>
-                  <p className="text-2xl font-bold text-gray-900">{advertisers.length}</p>
+                  <p className="text-sm text-gray-600">Total Accounts</p>
+                  <p className="text-2xl font-bold text-gray-900">{accounts.length}</p>
                 </div>
               </div>
             </div>
@@ -248,7 +248,7 @@ export default function AccountsPage() {
                 <div>
                   <p className="text-sm text-gray-600">Active</p>
                   <p className="text-2xl font-bold text-gray-900">
-                    {advertisers.filter(a => a.status === 'active').length}
+                    {accounts.filter(a => a.status === 'active').length}
                   </p>
                 </div>
               </div>
@@ -260,7 +260,7 @@ export default function AccountsPage() {
                 <div>
                   <p className="text-sm text-gray-600">Pending</p>
                   <p className="text-2xl font-bold text-gray-900">
-                    {advertisers.filter(a => a.status === 'pending').length}
+                    {accounts.filter(a => a.status === 'pending').length}
                   </p>
                 </div>
               </div>
@@ -272,7 +272,7 @@ export default function AccountsPage() {
                 <div>
                   <p className="text-sm text-gray-600">Suspended</p>
                   <p className="text-2xl font-bold text-gray-900">
-                    {advertisers.filter(a => a.status === 'suspended').length}
+                    {accounts.filter(a => a.status === 'suspended').length}
                   </p>
                 </div>
               </div>
@@ -285,7 +285,7 @@ export default function AccountsPage() {
               <thead className="bg-gray-50">
                 <tr>
                   <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                    Advertiser
+                    Account
                   </th>
                   <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
                     Primary Client
@@ -308,30 +308,30 @@ export default function AccountsPage() {
                 </tr>
               </thead>
               <tbody className="bg-white divide-y divide-gray-200">
-                {filteredAdvertisers.map((advertiser) => (
-                  <tr key={advertiser.id} className="hover:bg-gray-50">
+                {filteredAccounts.map((account) => (
+                  <tr key={account.id} className="hover:bg-gray-50">
                     <td className="px-6 py-4 whitespace-nowrap">
                       <div>
                         <div className="text-sm font-medium text-gray-900">
-                          {advertiser.contactName}
+                          {account.contactName}
                         </div>
                         <div className="text-sm text-gray-500">
-                          {advertiser.companyName}
+                          {account.companyName}
                         </div>
                         <div className="text-sm text-gray-500 flex items-center">
                           <Mail className="w-3 h-3 mr-1" />
-                          {advertiser.email}
+                          {account.email}
                         </div>
                       </div>
                     </td>
                     <td className="px-6 py-4 whitespace-nowrap">
-                      {advertiser.primaryClient ? (
+                      {account.primaryClient ? (
                         <Link
-                          href={`/clients/${advertiser.primaryClient.id}`}
+                          href={`/clients/${account.primaryClient.id}`}
                           className="text-sm text-blue-600 hover:text-blue-800 flex items-center"
                         >
                           <Building2 className="w-3 h-3 mr-1" />
-                          {advertiser.primaryClient.name}
+                          {account.primaryClient.name}
                           <ExternalLink className="w-3 h-3 ml-1" />
                         </Link>
                       ) : (
@@ -339,24 +339,24 @@ export default function AccountsPage() {
                       )}
                     </td>
                     <td className="px-6 py-4 whitespace-nowrap">
-                      {getStatusBadge(advertiser.status)}
+                      {getStatusBadge(account.status)}
                     </td>
                     <td className="px-6 py-4 whitespace-nowrap">
                       <div className="text-sm text-gray-900">
-                        {advertiser.orderCount || 0}
+                        {account.orderCount || 0}
                       </div>
                     </td>
                     <td className="px-6 py-4 whitespace-nowrap">
                       <div className="text-sm font-medium text-gray-900">
-                        {advertiser.totalRevenue ? formatCurrency(advertiser.totalRevenue) : '$0.00'}
+                        {account.totalRevenue ? formatCurrency(account.totalRevenue) : '$0.00'}
                       </div>
                     </td>
                     <td className="px-6 py-4 whitespace-nowrap">
                       <div className="text-sm text-gray-500">
-                        {advertiser.lastLoginAt ? (
+                        {account.lastLoginAt ? (
                           <>
                             <Calendar className="w-3 h-3 inline mr-1" />
-                            {formatDate(advertiser.lastLoginAt)}
+                            {formatDate(account.lastLoginAt)}
                           </>
                         ) : (
                           'Never'
@@ -365,9 +365,9 @@ export default function AccountsPage() {
                     </td>
                     <td className="px-6 py-4 whitespace-nowrap text-sm font-medium">
                       <div className="flex items-center space-x-3">
-                        {advertiser.primaryClient && (
+                        {account.primaryClient && (
                           <Link
-                            href={`/clients/${advertiser.primaryClient.id}`}
+                            href={`/clients/${account.primaryClient.id}`}
                             className="text-indigo-600 hover:text-indigo-900 flex items-center"
                             title="View Client"
                           >
@@ -375,9 +375,9 @@ export default function AccountsPage() {
                           </Link>
                         )}
                         
-                        {advertiser.status === 'pending' && (
+                        {account.status === 'pending' && (
                           <button
-                            onClick={() => updateAdvertiserStatus(advertiser.id, 'active')}
+                            onClick={() => updateAccountStatus(account.id, 'active')}
                             className="text-green-600 hover:text-green-900"
                             title="Activate"
                           >
@@ -385,9 +385,9 @@ export default function AccountsPage() {
                           </button>
                         )}
                         
-                        {advertiser.status === 'active' && (
+                        {account.status === 'active' && (
                           <button
-                            onClick={() => updateAdvertiserStatus(advertiser.id, 'suspended')}
+                            onClick={() => updateAccountStatus(account.id, 'suspended')}
                             className="text-red-600 hover:text-red-900"
                             title="Suspend"
                           >
@@ -395,9 +395,9 @@ export default function AccountsPage() {
                           </button>
                         )}
                         
-                        {advertiser.status === 'suspended' && (
+                        {account.status === 'suspended' && (
                           <button
-                            onClick={() => updateAdvertiserStatus(advertiser.id, 'active')}
+                            onClick={() => updateAccountStatus(account.id, 'active')}
                             className="text-green-600 hover:text-green-900"
                             title="Reactivate"
                           >
@@ -411,10 +411,10 @@ export default function AccountsPage() {
               </tbody>
             </table>
             
-            {filteredAdvertisers.length === 0 && (
+            {filteredAccounts.length === 0 && (
               <div className="text-center py-12">
                 <Users className="w-12 h-12 text-gray-400 mx-auto mb-4" />
-                <p className="text-gray-500">No advertisers found</p>
+                <p className="text-gray-500">No accounts found</p>
               </div>
             )}
           </div>

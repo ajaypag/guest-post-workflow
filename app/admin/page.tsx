@@ -46,6 +46,14 @@ export default function AdminDashboard() {
       iconColor: 'text-rose-600'
     },
     {
+      title: 'Order System Migration',
+      description: 'Create order_groups, order_site_selections tables for order-centric architecture',
+      icon: Database,
+      href: '/admin/order-system-migration',
+      color: 'bg-purple-50 border-purple-200 text-purple-700',
+      iconColor: 'text-purple-600'
+    },
+    {
       title: 'DataForSEO Migration',
       description: 'Manage database migration for DataForSEO integration and keyword analysis',
       icon: Search,
