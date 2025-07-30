@@ -15,21 +15,31 @@ export async function POST(
 
     const data = await request.json();
     
-    // Support both single and bulk add
-    const domainIds = Array.isArray(data.domainIds) 
-      ? data.domainIds 
-      : [data.domainId];
+    // Support both single and bulk add with domain mappings
+    let mappings = [];
+    
+    if (data.domainMappings) {
+      // New format with target page mappings
+      mappings = data.domainMappings;
+    } else if (Array.isArray(data.domainIds)) {
+      // Legacy format - array of domain IDs
+      mappings = data.domainIds.map((domainId: string) => ({ bulkAnalysisDomainId: domainId }));
+    } else if (data.domainId) {
+      // Legacy format - single domain ID
+      mappings = [{ bulkAnalysisDomainId: data.domainId }];
+    }
 
     const items = [];
-    for (const domainId of domainIds) {
+    for (const mapping of mappings) {
       try {
         const item = await OrderService.addOrderItem({
           orderId: id,
-          domainId,
+          domainId: mapping.bulkAnalysisDomainId,
+          targetPageId: mapping.targetPageId,
         });
         items.push(item);
       } catch (error) {
-        console.error(`Failed to add domain ${domainId}:`, error);
+        console.error(`Failed to add domain ${mapping.bulkAnalysisDomainId}:`, error);
         // Continue with other domains
       }
     }
@@ -41,7 +51,7 @@ export async function POST(
       items,
       order,
       added: items.length,
-      failed: domainIds.length - items.length,
+      failed: mappings.length - items.length,
     });
   } catch (error) {
     console.error('Error adding order items:', error);

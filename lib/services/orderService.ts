@@ -36,6 +36,7 @@ export interface CreateOrderInput {
 export interface AddOrderItemInput {
   orderId: string;
   domainId: string;
+  targetPageId?: string;
 }
 
 export interface OrderWithItems extends Order {
@@ -140,6 +141,7 @@ export class OrderService {
       retailPrice: Math.floor(retailPrice * 100), // Convert to cents
       wholesalePrice: Math.floor(wholesalePrice * 100),
       status: 'pending',
+      targetPageId: input.targetPageId || null,
       createdAt: new Date(),
       updatedAt: new Date(),
     }).returning();

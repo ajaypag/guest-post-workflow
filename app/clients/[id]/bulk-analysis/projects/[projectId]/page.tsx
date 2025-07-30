@@ -21,6 +21,7 @@ import InlineDatabaseSelector from '@/components/bulk-analysis/InlineDatabaseSel
 import { BulkAnalysisProject } from '@/types/bulk-analysis-projects';
 import { BulkAnalysisDomain } from '@/types/bulk-analysis';
 import { ProcessedWebsite } from '@/types/airtable';
+import OrderSelectionModal from '@/components/orders/OrderSelectionModal';
 import { 
   ArrowLeft, 
   Target, 
@@ -164,6 +165,12 @@ export default function ProjectDetailPage() {
   // Domain input mode state
   const [domainInputMode, setDomainInputMode] = useState<'paste' | 'database'>('paste');
   const [selectedDatabaseWebsites, setSelectedDatabaseWebsites] = useState<ProcessedWebsite[]>([]);
+  
+  // Order selection modal state
+  const [orderSelectionModal, setOrderSelectionModal] = useState<{
+    isOpen: boolean;
+    domains: BulkAnalysisDomain[];
+  }>({ isOpen: false, domains: [] });
   
   // Calculate sorted and filtered domains
   const sortedFilteredDomains = useMemo(() => {
@@ -1216,6 +1223,49 @@ export default function ProjectDetailPage() {
     }
   };
   
+  const handleAddToExistingOrder = async (orderId: string, domains: BulkAnalysisDomain[]) => {
+    try {
+      setLoading(true);
+      setMessage('Adding domains to order...');
+      
+      // Create domain mappings with target pages
+      const domainMappings = domains.map(domain => {
+        // Find the selected target page for this domain
+        const targetPageId = domain.selectedTargetPageId || targetPages[0]?.id || null;
+        
+        return {
+          bulkAnalysisDomainId: domain.id,
+          targetPageId: targetPageId,
+          domain: domain.domain
+        };
+      });
+      
+      const response = await fetch(`/api/orders/${orderId}/items`, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        credentials: 'include',
+        body: JSON.stringify({ domainMappings })
+      });
+      
+      if (!response.ok) {
+        const error = await response.json();
+        throw new Error(error.error || 'Failed to add domains to order');
+      }
+      
+      setMessage('✅ Domains added to order successfully!');
+      // Navigate to order detail page
+      router.push(`/orders/${orderId}`);
+      
+    } catch (error: any) {
+      console.error('Error adding to order:', error);
+      setMessage(`❌ Failed to add domains: ${error.message}`);
+    } finally {
+      setLoading(false);
+    }
+  };
+
   const handleMoveToProject = async (targetProjectId: string) => {
     try {
       setLoading(true);
@@ -2863,12 +2913,11 @@ anotherdomain.com"
                       onDeleteDomain={deleteDomain}
                       onAnalyzeWithDataForSeo={analyzeWithDataForSeo}
                       onAddToOrder={(domains) => {
-                        // Navigate to order creation with selected domains
-                        const domainIds = domains.map(d => d.id);
-                        const searchParams = new URLSearchParams();
-                        searchParams.set('domains', JSON.stringify(domainIds));
-                        searchParams.set('clientId', params.id as string);
-                        router.push(`/orders/create?${searchParams.toString()}`);
+                        // Open order selection modal
+                        setOrderSelectionModal({
+                          isOpen: true,
+                          domains: domains
+                        });
                       }}
                       onUpdateNotes={async (domainId, notes) => {
                         // Save notes
@@ -3052,6 +3101,27 @@ anotherdomain.com"
           onConfirm={handleMoveToProject}
         />
       )}
+      
+      {/* Order Selection Modal */}
+      <OrderSelectionModal
+        isOpen={orderSelectionModal.isOpen}
+        onClose={() => setOrderSelectionModal({ isOpen: false, domains: [] })}
+        clientId={params.id as string}
+        onSelectOrder={(orderId) => {
+          if (orderId) {
+            // Add to existing order
+            handleAddToExistingOrder(orderId, orderSelectionModal.domains);
+          } else {
+            // Create new order
+            const domainIds = orderSelectionModal.domains.map(d => d.id);
+            const searchParams = new URLSearchParams();
+            searchParams.set('domains', JSON.stringify(domainIds));
+            searchParams.set('clientId', params.id as string);
+            router.push(`/orders/create?${searchParams.toString()}`);
+          }
+          setOrderSelectionModal({ isOpen: false, domains: [] });
+        }}
+      />
     </AuthWrapper>
   );
 }
