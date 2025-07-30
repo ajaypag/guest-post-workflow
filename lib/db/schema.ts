@@ -440,14 +440,34 @@ export {
   orderStatusHistory,
   domainSuggestions,
   advertiserOrderAccess,
-  pricingRules
+  pricingRules,
+  ordersRelations,
+  orderItemsRelations
 } from './orderSchema';
 
 // Re-export website schema tables  
-export { websites } from './websiteSchema';
+export { 
+  websites,
+  websiteContacts,
+  websiteQualifications,
+  projectWebsites,
+  workflowWebsites,
+  websiteSyncLogs,
+  websitesRelations,
+  websiteContactsRelations,
+  websiteQualificationsRelations,
+  projectWebsitesRelations,
+  workflowWebsitesRelations,
+  websiteSyncLogsRelations
+} from './websiteSchema';
 
 // Re-export bulk analysis schema tables
-export { bulkAnalysisDomains } from './bulkAnalysisSchema';
+export { 
+  bulkAnalysisDomains,
+  bulkAnalysisProjects,
+  bulkAnalysisDomainsRelations,
+  bulkAnalysisProjectsRelations
+} from './bulkAnalysisSchema';
 
 // Outline sessions for tracking deep research outline generation with clarifications
 export const outlineSessions = pgTable('outline_sessions', {
