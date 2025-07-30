@@ -222,10 +222,29 @@ export async function POST(request: NextRequest) {
 
       // 11. Rename other tables with advertiser references
       log('Step 10: Renaming advertiser_order_access table');
-      await db.execute(sql`ALTER TABLE advertiser_order_access RENAME TO account_order_access`);
-      await db.execute(sql`ALTER TABLE account_order_access RENAME COLUMN advertiser_id TO account_id`);
-      migrationDetails.tablesRenamed++;
-      log('✓ Renamed advertiser_order_access → account_order_access');
+      
+      // First check if the table exists
+      const tableCheckResult = await db.execute(sql`
+        SELECT EXISTS (
+          SELECT 1 FROM information_schema.tables 
+          WHERE table_schema = 'public' 
+          AND table_name = 'advertiser_order_access'
+        ) as table_exists
+      `);
+      
+      const tableExists = (tableCheckResult.rows[0] as any).table_exists;
+      
+      if (tableExists) {
+        // Rename column first, then rename table
+        await db.execute(sql`ALTER TABLE advertiser_order_access RENAME COLUMN advertiser_id TO account_id`);
+        log('✓ Column renamed: advertiser_id → account_id in advertiser_order_access');
+        
+        await db.execute(sql`ALTER TABLE advertiser_order_access RENAME TO account_order_access`);
+        migrationDetails.tablesRenamed++;
+        log('✓ Table renamed: advertiser_order_access → account_order_access');
+      } else {
+        log('⚠️ advertiser_order_access table not found - skipping rename', 'warn');
+      }
 
       // 12. Update domain_suggestions table
       log('Step 11: Updating domain_suggestions table');
