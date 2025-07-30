@@ -252,6 +252,22 @@ export default function AdminDashboard() {
       href: '/api/admin/debug-analyzed-count',
       color: 'bg-yellow-50 border-yellow-200 text-yellow-700',
       iconColor: 'text-yellow-600'
+    },
+    {
+      title: 'Check Account Data',
+      description: 'Check integrity of account users and their linked clients',
+      icon: AlertTriangle,
+      href: '/api/admin/check-account-data',
+      color: 'bg-red-50 border-red-200 text-red-700',
+      iconColor: 'text-red-600'
+    },
+    {
+      title: 'Fix Account Data',
+      description: 'Create missing account records and link to clients',
+      icon: Wrench,
+      href: '/api/admin/fix-account-data',
+      color: 'bg-green-50 border-green-200 text-green-700',
+      iconColor: 'text-green-600'
     }
   ];
 
