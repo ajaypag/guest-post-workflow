@@ -15,7 +15,7 @@ export async function GET(request: NextRequest) {
     const allClients = await db.query.clients.findMany();
     
     // Debug info
-    const debugInfo = {
+    const debugInfo: any = {
       session: session ? {
         userId: session.userId,
         email: session.email,
