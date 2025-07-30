@@ -211,7 +211,7 @@ export async function POST(request: NextRequest) {
       where: eq(orders.id, orderId),
       with: {
         items: true,
-        client: true,
+        account: true,
       },
     });
 
