@@ -26,29 +26,8 @@ export async function POST(request: NextRequest) {
     // Create JWT token
     const token = await AuthServiceServer.createSession(user);
     
-    // Set cookie
-    const cookieStore = await cookies();
-    
-    // Log environment for debugging
-    console.log('🔐 Setting cookie with:', {
-      httpOnly: true,
-      secure: process.env.NODE_ENV === 'production',
-      nodeEnv: process.env.NODE_ENV,
-      sameSite: 'lax',
-      path: '/',
-    });
-    
-    cookieStore.set('auth-token', token, {
-      httpOnly: true,
-      secure: process.env.NODE_ENV === 'production',
-      sameSite: 'lax',
-      maxAge: 60 * 60 * 24 * 7, // 7 days
-      path: '/',
-    });
-
-    console.log('🔐 Login successful, cookie set for:', user.email);
-
-    return NextResponse.json({
+    // Create response first
+    const response = NextResponse.json({
       user: {
         id: user.id,
         email: user.email,
@@ -58,6 +37,38 @@ export async function POST(request: NextRequest) {
         userType: user.userType || 'internal'
       }
     });
+
+    // Set cookie on the response
+    const isProduction = process.env.NODE_ENV === 'production';
+    
+    // Log environment for debugging
+    console.log('🔐 Setting cookie with:', {
+      name: 'auth-token',
+      value: token.substring(0, 20) + '...',
+      httpOnly: true,
+      secure: isProduction,
+      nodeEnv: process.env.NODE_ENV,
+      sameSite: 'lax',
+      path: '/',
+      domain: process.env.COOKIE_DOMAIN || undefined,
+    });
+    
+    response.cookies.set({
+      name: 'auth-token',
+      value: token,
+      httpOnly: true,
+      secure: isProduction,
+      sameSite: 'lax',
+      maxAge: 60 * 60 * 24 * 7, // 7 days
+      path: '/',
+      // Add domain if specified in env
+      ...(process.env.COOKIE_DOMAIN && { domain: process.env.COOKIE_DOMAIN })
+    });
+
+    console.log('🔐 Login successful, cookie set for:', user.email);
+    console.log('🔐 Response headers:', response.headers.get('set-cookie'));
+
+    return response;
   } catch (error) {
     console.error('Login error:', error);
     return NextResponse.json(

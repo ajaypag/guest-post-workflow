@@ -60,6 +60,8 @@ export class AuthService {
   // Login with email and password
   static async login(email: string, password: string): Promise<User | null> {
     try {
+      console.log('🔐 AuthService.login - Starting login request');
+      
       const response = await fetch('/api/auth/login', {
         method: 'POST',
         headers: {
@@ -69,13 +71,24 @@ export class AuthService {
         body: JSON.stringify({ email, password }),
       });
 
+      console.log('🔐 Login response status:', response.status);
+      console.log('🔐 Response headers:', {
+        'set-cookie': response.headers.get('set-cookie'),
+        'content-type': response.headers.get('content-type'),
+      });
+
       if (!response.ok) {
+        const errorData = await response.json();
+        console.error('🔐 Login failed:', errorData);
         return null;
       }
 
       const { user } = await response.json();
+      console.log('🔐 User data received:', user ? 'Yes' : 'No');
+      
       if (user) {
         this.setSession(user);
+        console.log('🔐 Session set in localStorage');
       }
       return user;
     } catch (error) {

@@ -38,6 +38,15 @@ export async function POST(request: NextRequest) {
     const session = await AuthServiceServer.getSession(request);
     console.log('🔍 Session result:', session ? 'Session found' : 'No session');
     
+    // Additional debugging for production
+    console.log('🔍 Environment:', {
+      NODE_ENV: process.env.NODE_ENV,
+      NEXTAUTH_URL: process.env.NEXTAUTH_URL,
+      APP_URL: request.headers.get('host'),
+      REFERER: request.headers.get('referer'),
+      ORIGIN: request.headers.get('origin'),
+    });
+    
     if (!session) {
       console.log('❌ No session found - returning 401');
       return NextResponse.json({ error: 'Unauthorized - No session found' }, { status: 401 });

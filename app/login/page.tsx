@@ -20,14 +20,22 @@ export default function LoginPage() {
     setLoading(true);
 
     try {
+      console.log('🔐 Attempting login for:', formData.email);
+      
       // Login logic only - no registration
       const user = await AuthService.login(formData.email, formData.password);
+      console.log('🔐 Login response:', user ? 'User received' : 'No user');
+      
       if (!user) {
         throw new Error('Invalid email or password');
       }
       
+      // Check if cookie was set
+      console.log('🔐 Document cookies after login:', document.cookie);
+      
       router.push('/');
     } catch (error: any) {
+      console.error('🔐 Login error:', error);
       setError(error.message);
     } finally {
       setLoading(false);
