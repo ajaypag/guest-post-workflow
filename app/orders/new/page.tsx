@@ -138,7 +138,7 @@ function NewOrderContent() {
       const response = await fetch('/api/clients');
       if (response.ok) {
         const data = await response.json();
-        setClients(data);
+        setClients(data.clients || data);  // Handle both { clients: [...] } and direct array
       }
     } catch (error) {
       console.error('Error loading clients:', error);
