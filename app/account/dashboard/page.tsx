@@ -32,15 +32,6 @@ interface Order {
   completedCount: number;
 }
 
-interface Client {
-  id: string;
-  name: string;
-  website: string;
-  targetPages: Array<{
-    id: string;
-    url: string;
-  }>;
-}
 
 interface AccountDashboardProps {
   user: any;
@@ -65,7 +56,6 @@ function AccountDashboardContent({ user }: AccountDashboardProps) {
   const router = useRouter();
   const [loading, setLoading] = useState(true);
   const [orders, setOrders] = useState<Order[]>([]);
-  const [client, setClient] = useState<Client | null>(null);
   const [stats, setStats] = useState({
     totalOrders: 0,
     activeOrders: 0,
@@ -108,16 +98,6 @@ function AccountDashboardContent({ user }: AccountDashboardProps) {
           completedOrders,
           totalSpent,
         });
-      }
-      
-      // Load associated client data
-      const clientResponse = await fetch('/api/accounts/client', {
-        credentials: 'include',
-      });
-      
-      if (clientResponse.ok) {
-        const { client: clientData } = await clientResponse.json();
-        setClient(clientData);
       }
       
       // Load onboarding status
@@ -279,76 +259,50 @@ function AccountDashboardContent({ user }: AccountDashboardProps) {
             </div>
           </div>
 
-          {/* Client Info */}
-          {client ? (
-            <div className="bg-white rounded-lg shadow-md p-6 mb-8">
-              <div className="flex justify-between items-start mb-4">
-                <h2 className="text-xl font-semibold text-gray-900 flex items-center">
-                  <Building className="h-5 w-5 mr-2 text-gray-600" />
-                  Your Brand Information
-                </h2>
-                <button
-                  onClick={() => router.push('/clients')}
-                  className="text-sm text-blue-600 hover:text-blue-800"
-                >
-                  Manage Brands
-                </button>
-              </div>
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-                <div>
-                  <p className="text-sm text-gray-600">Company</p>
-                  <p className="font-medium text-gray-900">{client.name}</p>
+          {/* Quick Actions */}
+          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6 mb-8">
+            <button
+              onClick={() => router.push('/clients')}
+              className="bg-white rounded-lg shadow-md p-6 hover:shadow-lg transition-shadow text-left"
+            >
+              <div className="flex items-center justify-between mb-4">
+                <div className="p-3 bg-purple-100 rounded-lg">
+                  <Building className="h-6 w-6 text-purple-600" />
                 </div>
-                <div>
-                  <p className="text-sm text-gray-600">Website</p>
-                  <a 
-                    href={client.website}
-                    target="_blank"
-                    rel="noopener noreferrer"
-                    className="font-medium text-blue-600 hover:text-blue-800 flex items-center"
-                  >
-                    {client.website}
-                    <ExternalLink className="h-4 w-4 ml-1" />
-                  </a>
-                </div>
-                {client.targetPages && client.targetPages.length > 0 && (
-                  <div className="md:col-span-2">
-                    <p className="text-sm text-gray-600 mb-2">Target Pages</p>
-                    <div className="space-y-1">
-                      {client.targetPages.map((page) => (
-                        <a
-                          key={page.id}
-                          href={page.url}
-                          target="_blank"
-                          rel="noopener noreferrer"
-                          className="block text-blue-600 hover:text-blue-800 text-sm"
-                        >
-                          {page.url}
-                        </a>
-                      ))}
-                    </div>
-                  </div>
-                )}
+                <ExternalLink className="h-5 w-5 text-gray-400" />
               </div>
-            </div>
-          ) : (
-            <div className="bg-white rounded-lg shadow-md p-8 mb-8 text-center">
-              <Building className="h-12 w-12 text-gray-400 mx-auto mb-4" />
-              <h2 className="text-xl font-semibold text-gray-900 mb-2">
-                Add Your First Brand
-              </h2>
-              <p className="text-gray-600 mb-6">
-                You need to add at least one brand before creating orders.
-              </p>
-              <button
-                onClick={() => router.push('/clients/new')}
-                className="inline-flex items-center px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700"
-              >
-                <Plus className="h-4 w-4 mr-2" />
-                Add Brand
-              </button>
-            </div>
-          )}
+              <h3 className="text-lg font-semibold text-gray-900 mb-1">Manage Brands</h3>
+              <p className="text-sm text-gray-600">View and manage all your brands in one place</p>
+            </button>
+
+            <button
+              onClick={() => router.push('/orders/new')}
+              className="bg-white rounded-lg shadow-md p-6 hover:shadow-lg transition-shadow text-left"
+            >
+              <div className="flex items-center justify-between mb-4">
+                <div className="p-3 bg-green-100 rounded-lg">
+                  <Plus className="h-6 w-6 text-green-600" />
+                </div>
+                <ExternalLink className="h-5 w-5 text-gray-400" />
+              </div>
+              <h3 className="text-lg font-semibold text-gray-900 mb-1">New Order</h3>
+              <p className="text-sm text-gray-600">Start a new guest post campaign</p>
+            </button>
+
+            <button
+              onClick={() => router.push('/orders')}
+              className="bg-white rounded-lg shadow-md p-6 hover:shadow-lg transition-shadow text-left"
+            >
+              <div className="flex items-center justify-between mb-4">
+                <div className="p-3 bg-blue-100 rounded-lg">
+                  <ShoppingCart className="h-6 w-6 text-blue-600" />
+                </div>
+                <ExternalLink className="h-5 w-5 text-gray-400" />
+              </div>
+              <h3 className="text-lg font-semibold text-gray-900 mb-1">View Orders</h3>
+              <p className="text-sm text-gray-600">Track all your guest post orders</p>
+            </button>
+          </div>
 
           {/* Recent Orders */}
           <div className="bg-white rounded-lg shadow-md">
