@@ -8,10 +8,8 @@ export async function POST() {
     const fixes = [];
     const errors = [];
     
-    // Get all users with account userType
-    const accountUsers = await db.query.users.findMany({
-      where: eq(users.userType, 'account'),
-    });
+    // Note: No longer checking users table for account userType since accounts are in separate table
+    const accountUsers: any[] = [];
     
     // Get all existing accounts
     const existingAccounts = await db.query.accounts.findMany();

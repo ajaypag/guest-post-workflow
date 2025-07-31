@@ -80,7 +80,6 @@ export async function POST(request: NextRequest) {
         name,
         password,
         role: inv.role,
-        userType: inv.userType,
         isActive: true,
       });
 

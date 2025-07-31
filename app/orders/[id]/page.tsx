@@ -22,13 +22,18 @@ import {
   Building,
   Globe,
   FileText,
-  Loader2
+  Loader2,
+  CreditCard
 } from 'lucide-react';
+import PaymentStatus, { PaymentStatusCard } from '@/components/orders/PaymentStatus';
+import RecordPaymentModal from '@/components/orders/RecordPaymentModal';
+import WorkflowGenerationButton from '@/components/orders/WorkflowGenerationButton';
 
 interface OrderDetail {
   id: string;
   clientId: string;
   status: string;
+  state: string;
   advertiserEmail: string;
   advertiserName: string;
   advertiserCompany?: string;
@@ -43,6 +48,8 @@ interface OrderDetail {
   rushDelivery: boolean;
   rushFee: number;
   internalNotes?: string;
+  paidAt?: string | null;
+  invoicedAt?: string | null;
   createdAt: string;
   updatedAt: string;
   client?: {
@@ -68,6 +75,7 @@ export default function OrderDetailPage() {
   const [order, setOrder] = useState<OrderDetail | null>(null);
   const [loading, setLoading] = useState(true);
   const [user, setUser] = useState<any>(null);
+  const [showPaymentModal, setShowPaymentModal] = useState(false);
 
   useEffect(() => {
     loadUser();
@@ -305,6 +313,9 @@ export default function OrderDetailPage() {
 
             {/* Sidebar */}
             <div className="space-y-6">
+              {/* Payment Status Card */}
+              <PaymentStatusCard order={order} />
+
               {/* Pricing Summary */}
               <div className="bg-white rounded-lg border border-gray-200 shadow-sm p-6">
                 <h2 className="text-lg font-semibold mb-4 flex items-center">
@@ -399,10 +410,21 @@ export default function OrderDetailPage() {
                       </button>
                     </>
                   )}
-                  {order.status === 'approved' && user?.userType === 'internal' && (
-                    <button className="w-full px-4 py-2 bg-blue-600 text-white rounded-md hover:bg-blue-700">
-                      Start Fulfillment
+                  {order.status === 'confirmed' && user?.userType === 'internal' && !order.paidAt && (
+                    <button 
+                      onClick={() => setShowPaymentModal(true)}
+                      className="w-full px-4 py-2 bg-green-600 text-white rounded-md hover:bg-green-700 flex items-center justify-center gap-2"
+                    >
+                      <CreditCard className="h-4 w-4" />
+                      Record Payment
                     </button>
+                  )}
+                  {order.status === 'confirmed' && order.paidAt && (
+                    <WorkflowGenerationButton 
+                      order={order}
+                      isPaid={true}
+                      onSuccess={() => loadOrder()}
+                    />
                   )}
                 </div>
               </div>
@@ -410,6 +432,23 @@ export default function OrderDetailPage() {
           </div>
         </div>
       </div>
+
+      {/* Payment Recording Modal */}
+      {order && showPaymentModal && (
+        <RecordPaymentModal
+          order={{
+            id: order.id,
+            totalRetail: order.totalRetail,
+            accountName: order.advertiserName
+          }}
+          isOpen={showPaymentModal}
+          onClose={() => setShowPaymentModal(false)}
+          onSuccess={() => {
+            setShowPaymentModal(false);
+            loadOrder(); // Reload to show updated payment status
+          }}
+        />
+      )}
     </AuthWrapper>
   );
 }

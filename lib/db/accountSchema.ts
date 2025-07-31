@@ -14,6 +14,7 @@ export const accounts = pgTable('accounts', {
   // Authentication fields
   email: varchar('email', { length: 255 }).notNull().unique(),
   password: varchar('password', { length: 255 }).notNull(),
+  role: varchar('role', { length: 50 }).notNull().default('viewer'), // viewer, editor, admin
   
   // Profile information
   contactName: varchar('contact_name', { length: 255 }).notNull(),

@@ -32,7 +32,7 @@ export async function GET(
     // Check permissions
     if (session.userType === 'account') {
       // Accounts can only see their own orders
-      if (order.accountId !== session.userId && order.accountEmail !== session.email) {
+      if (order.accountId !== session.accountId && order.accountEmail !== session.email) {
         return NextResponse.json({ error: 'Forbidden' }, { status: 403 });
       }
     } else if (session.userType !== 'internal') {

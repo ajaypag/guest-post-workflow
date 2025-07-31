@@ -19,7 +19,6 @@ export async function POST(request: NextRequest) {
       .select({
         id: invitations.id,
         email: invitations.email,
-        userType: invitations.userType,
         role: invitations.role,
         expiresAt: invitations.expiresAt,
         createdByEmail: invitations.createdByEmail,

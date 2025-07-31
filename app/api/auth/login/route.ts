@@ -6,9 +6,30 @@ import { db } from '@/lib/db/connection';
 import { accounts } from '@/lib/db/accountSchema';
 import { eq } from 'drizzle-orm';
 import bcrypt from 'bcryptjs';
+import { authRateLimiter, getClientIp } from '@/lib/utils/rateLimiter';
 
 export async function POST(request: NextRequest) {
   try {
+    // Check rate limit
+    const clientIp = getClientIp(request);
+    const rateLimitKey = `login:${clientIp}`;
+    const { allowed, retryAfter } = authRateLimiter.check(rateLimitKey);
+    
+    if (!allowed) {
+      return NextResponse.json(
+        { 
+          error: 'Too many login attempts. Please try again later.',
+          retryAfter 
+        },
+        { 
+          status: 429,
+          headers: {
+            'Retry-After': String(retryAfter)
+          }
+        }
+      );
+    }
+    
     const { email, password } = await request.json();
 
     if (!email || !password) {
@@ -40,7 +61,6 @@ export async function POST(request: NextRequest) {
             name: account.contactName,
             role: 'account',
             isActive: true,
-            userType: 'account',
             passwordHash: account.password,
             lastLogin: account.lastLoginAt,
             createdAt: account.createdAt,
@@ -64,8 +84,9 @@ export async function POST(request: NextRequest) {
       );
     }
 
-    // Create JWT token
-    token = await AuthServiceServer.createSession(user);
+    // Create JWT token with userType
+    const userWithType = { ...user, userType };
+    token = await AuthServiceServer.createSession(userWithType);
     
     // Create response first
     const response = NextResponse.json({

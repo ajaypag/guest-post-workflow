@@ -1,7 +1,14 @@
 import { NextRequest, NextResponse } from 'next/server';
+import { AuthServiceServer } from '@/lib/auth-server';
 
 export async function POST(request: NextRequest) {
   try {
+    // Check authentication
+    const session = await AuthServiceServer.getSession(request);
+    if (!session) {
+      return NextResponse.json({ error: 'Authentication required to view pricing information.' }, { status: 401 });
+    }
+
     const { itemCount, includesClientReview, rushDelivery } = await request.json();
 
     // Base pricing: $300 per link (30000 cents)

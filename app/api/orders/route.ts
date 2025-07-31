@@ -22,7 +22,7 @@ export async function GET(request: NextRequest) {
     
     if (session.userType === 'account') {
       // Accounts can only see their own orders
-      orders = await OrderService.getAccountOrders(session.userId);
+      orders = await OrderService.getAccountOrders(session.accountId!);
     } else if (accountId && session.userType === 'internal') {
       // Internal users can filter by account
       orders = await OrderService.getAccountOrders(accountId);
@@ -159,7 +159,7 @@ export async function POST(request: NextRequest) {
     // Create the order
     await db.insert(orders).values({
       id: orderId,
-      accountId: session.userType === 'account' ? session.userId : null,
+      accountId: session.userType === 'account' ? session.accountId : null,
       accountEmail: accountEmail.toLowerCase(),
       accountName: accountName,
       accountCompany: accountCompany,

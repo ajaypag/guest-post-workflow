@@ -76,8 +76,8 @@ function OrdersPageContent() {
 
   useEffect(() => {
     const initAuth = async () => {
-      const user = await AuthService.getCurrentUser();
-      setUserType(user?.userType || '');
+      const session = AuthService.getSession();
+      setUserType(session?.userType || '');
     };
     initAuth();
   }, []);

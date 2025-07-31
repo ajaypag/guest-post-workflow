@@ -2,6 +2,7 @@ import { drizzle } from 'drizzle-orm/node-postgres';
 import { Pool } from 'pg';
 import * as schema from './schema';
 import * as orderGroupSchema from './orderGroupSchema';
+import * as paymentSchema from './paymentSchema';
 
 // Database configuration
 const connectionString = process.env.DATABASE_URL || 
@@ -17,6 +18,7 @@ const pool = new Pool({
 const allSchemas = {
   ...schema,
   ...orderGroupSchema,
+  ...paymentSchema,
 };
 
 // Create Drizzle instance

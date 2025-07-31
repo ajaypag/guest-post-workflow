@@ -6,9 +6,19 @@ import { clients, users } from '@/lib/db/schema';
 import { eq, and } from 'drizzle-orm';
 import { v4 as uuidv4 } from 'uuid';
 import { BulkAnalysisService } from '@/lib/db/bulkAnalysisService';
+import { AuthServiceServer } from '@/lib/auth-server';
 
 export async function POST(request: NextRequest) {
   try {
+    // Check authentication - only internal users can create orders
+    const session = await AuthServiceServer.getSession(request);
+    if (!session) {
+      return NextResponse.json({ error: 'Authentication required. Please log in.' }, { status: 401 });
+    }
+    if (session.userType !== 'internal') {
+      return NextResponse.json({ error: 'Access denied. This action requires internal user privileges.' }, { status: 403 });
+    }
+
     const data = await request.json();
     const {
       account,
@@ -16,12 +26,11 @@ export async function POST(request: NextRequest) {
       orderGroups: orderGroupsData,
       includesClientReview,
       rushDelivery,
-      internalNotes,
-      createdBy // Internal user creating the order
+      internalNotes
     } = data;
 
-    // For now, use a system user ID (in production, this would come from auth)
-    const systemUserId = createdBy || 'system';
+    // Use the authenticated user's ID
+    const createdBy = session.userId;
 
     // Start a transaction
     return await db.transaction(async (tx) => {
@@ -29,27 +38,17 @@ export async function POST(request: NextRequest) {
 
       // Handle account creation or selection
       if (isNewAccount) {
-        // Create new account (user)
-        const [newUser] = await tx.insert(users).values({
-          id: uuidv4(),
-          email: account.email,
-          name: account.name,
-          passwordHash: '', // Temporary - user will set password via invite
-          role: 'user',
-          userType: 'account',
-          isActive: true,
-          createdAt: new Date(),
-          updatedAt: new Date()
-        }).returning();
-        
-        accountId = newUser.id;
+        // NOTE: Account creation should be done through proper account onboarding flow
+        // For now, we'll require selecting an existing account
+        throw new Error('Account creation not supported in order flow. Please create account first.');
       } else {
         // Use existing account
         accountId = account.id;
         
-        // Verify account exists
-        const [existingUser] = await tx.select().from(users).where(eq(users.id, accountId));
-        if (!existingUser) {
+        // Verify account exists in accounts table (not users table)
+        const { accounts } = await import('@/lib/db/accountSchema');
+        const [existingAccount] = await tx.select().from(accounts).where(eq(accounts.id, accountId));
+        if (!existingAccount) {
           throw new Error('Selected account not found');
         }
       }
@@ -77,26 +76,23 @@ export async function POST(request: NextRequest) {
       // Create the main order
       const orderId = uuidv4();
       
-      // Get account details for the order
-      let accountDetails;
-      if (isNewAccount) {
-        accountDetails = {
-          email: account.email,
-          name: account.name,
-          company: account.company || ''
-        };
-      } else {
-        const [user] = await tx.select().from(users).where(eq(users.id, accountId));
-        accountDetails = {
-          email: user.email,
-          name: user.name,
-          company: account.company || '' // Use company from frontend data
-        };
+      // Get account details from the accounts table
+      const { accounts } = await import('@/lib/db/accountSchema');
+      const [accountRecord] = await tx.select().from(accounts).where(eq(accounts.id, accountId));
+      
+      if (!accountRecord) {
+        throw new Error('Account not found');
       }
+      
+      const accountDetails = {
+        email: accountRecord.email,
+        name: accountRecord.contactName || account.name,
+        company: accountRecord.companyName || account.company || ''
+      };
       
       const [newOrder] = await tx.insert(orders).values({
         id: orderId,
-        accountId: null, // We're using users table, not accounts table
+        accountId: accountId, // Now properly using accounts table
         accountEmail: accountDetails.email,
         accountName: accountDetails.name,
         accountCompany: accountDetails.company,
@@ -113,7 +109,7 @@ export async function POST(request: NextRequest) {
         rushDelivery,
         rushFee,
         requiresClientReview: includesClientReview,
-        createdBy: '00000000-0000-0000-0000-000000000000', // Placeholder system user ID
+        createdBy: session.userId, // Use authenticated user ID
         createdAt: new Date(),
         updatedAt: new Date()
       }).returning();

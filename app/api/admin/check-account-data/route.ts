@@ -5,10 +5,8 @@ import { eq } from 'drizzle-orm';
 
 export async function GET() {
   try {
-    // Get all users with account userType
-    const accountUsers = await db.query.users.findMany({
-      where: eq(users.userType, 'account'),
-    });
+    // Note: No longer checking users table for account userType since accounts are in separate table
+    const accountUsers: any[] = [];
     
     // Get all accounts
     const allAccounts = await db.query.accounts.findMany();

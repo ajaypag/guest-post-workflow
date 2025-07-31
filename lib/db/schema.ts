@@ -1,14 +1,14 @@
 import { pgTable, uuid, varchar, text, timestamp, boolean, integer, real, jsonb, decimal } from 'drizzle-orm/pg-core';
 import { relations } from 'drizzle-orm';
 
-// Users table
+// Users table - INTERNAL STAFF ONLY
+// Note: accounts and publishers have separate tables with their own authentication
 export const users = pgTable('users', {
   id: uuid('id').primaryKey(), // Remove defaultRandom() to handle in application code
   email: varchar('email', { length: 255 }).notNull().unique(),
   name: varchar('name', { length: 255 }).notNull(),
   passwordHash: varchar('password_hash', { length: 255 }).notNull(),
   role: varchar('role', { length: 50 }).notNull().default('user'), // 'user' | 'admin'
-  userType: varchar('user_type', { length: 20 }).notNull().default('internal'), // 'internal' | 'account' | 'publisher'
   isActive: boolean('is_active').notNull().default(true),
   lastLogin: timestamp('last_login'),
   createdAt: timestamp('created_at').notNull(), // Remove defaultNow() to handle in application code
@@ -19,8 +19,8 @@ export const users = pgTable('users', {
 export const invitations = pgTable('invitations', {
   id: uuid('id').primaryKey(),
   email: varchar('email', { length: 255 }).notNull(),
-  userType: varchar('user_type', { length: 20 }).notNull(), // 'internal' | 'account' | 'publisher'
-  role: varchar('role', { length: 50 }).notNull(), // 'user' | 'admin'
+  targetTable: varchar('target_table', { length: 20 }).notNull(), // 'users' | 'accounts' | 'publishers'
+  role: varchar('role', { length: 50 }).notNull(), // 'user' | 'admin' (for users table only)
   token: varchar('token', { length: 255 }).notNull().unique(),
   expiresAt: timestamp('expires_at').notNull(),
   usedAt: timestamp('used_at'),

@@ -443,6 +443,63 @@ export class EmailService {
   }
 
   /**
+   * Send payment confirmation email
+   */
+  static async sendPaymentConfirmation(email: string, data: {
+    orderNumber: string;
+    amount: string;
+    paymentMethod: string;
+    transactionId?: string;
+    invoiceNumber?: string;
+  }): Promise<{ success: boolean; id?: string; error?: string }> {
+    const html = `
+      <div style="font-family: Arial, sans-serif; line-height: 1.6; color: #333;">
+        <h2>Payment Confirmation</h2>
+        <p>This email confirms that we have received your payment for order #${data.orderNumber}.</p>
+        
+        <div style="background-color: #f5f5f5; padding: 20px; border-radius: 5px; margin: 20px 0;">
+          <h3 style="margin-top: 0;">Payment Details:</h3>
+          <table style="width: 100%;">
+            <tr>
+              <td style="padding: 5px 0;"><strong>Amount:</strong></td>
+              <td style="padding: 5px 0;">$${data.amount}</td>
+            </tr>
+            <tr>
+              <td style="padding: 5px 0;"><strong>Payment Method:</strong></td>
+              <td style="padding: 5px 0;">${data.paymentMethod}</td>
+            </tr>
+            ${data.transactionId ? `
+            <tr>
+              <td style="padding: 5px 0;"><strong>Transaction ID:</strong></td>
+              <td style="padding: 5px 0;">${data.transactionId}</td>
+            </tr>
+            ` : ''}
+            ${data.invoiceNumber ? `
+            <tr>
+              <td style="padding: 5px 0;"><strong>Invoice Number:</strong></td>
+              <td style="padding: 5px 0;">${data.invoiceNumber}</td>
+            </tr>
+            ` : ''}
+          </table>
+        </div>
+        
+        <p>Our team will now begin processing your order. You can track the progress in your account dashboard.</p>
+        
+        <p>If you have any questions, please don't hesitate to contact us.</p>
+        
+        <p>Best regards,<br>The PostFlow Team</p>
+      </div>
+    `;
+
+    return this.send('order_paid', {
+      to: email,
+      subject: `Payment Confirmed - Order #${data.orderNumber}`,
+      html,
+      text: `Payment confirmed for order #${data.orderNumber}. Amount: $${data.amount}`,
+    });
+  }
+
+  /**
    * Send account welcome email
    */
   static async sendAccountWelcome(data: {

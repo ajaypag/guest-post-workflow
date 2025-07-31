@@ -65,7 +65,6 @@ export async function GET(request: NextRequest) {
       users: allUsers.slice(0, 3).map(u => ({
         id: u.id,
         email: u.email,
-        userType: u.userType,
         role: u.role
       })),
       accounts: allAccounts.slice(0, 3),

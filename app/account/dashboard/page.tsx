@@ -2,9 +2,8 @@
 
 import React, { useState, useEffect } from 'react';
 import { useRouter } from 'next/navigation';
-import AuthWrapper from '@/components/AuthWrapper';
+import AccountAuthWrapper from '@/components/AccountAuthWrapper';
 import Header from '@/components/Header';
-import { AuthService } from '@/lib/auth';
 import { formatCurrency } from '@/lib/utils/formatting';
 import {
   Package,
@@ -18,7 +17,8 @@ import {
   TrendingUp,
   Calendar,
   DollarSign,
-  ExternalLink
+  ExternalLink,
+  Settings
 } from 'lucide-react';
 
 interface Order {
@@ -40,10 +40,28 @@ interface Client {
   }>;
 }
 
+interface AccountDashboardProps {
+  user: any;
+}
+
 export default function AccountDashboard() {
+  const [user, setUser] = useState<any>(null);
+
+  return (
+    <AccountAuthWrapper>
+      {(authUser: any) => (
+        <>
+          <Header />
+          <AccountDashboardContent user={authUser} />
+        </>
+      )}
+    </AccountAuthWrapper>
+  );
+}
+
+function AccountDashboardContent({ user }: AccountDashboardProps) {
   const router = useRouter();
   const [loading, setLoading] = useState(true);
-  const [user, setUser] = useState<any>(null);
   const [orders, setOrders] = useState<Order[]>([]);
   const [client, setClient] = useState<Client | null>(null);
   const [stats, setStats] = useState({
@@ -54,21 +72,17 @@ export default function AccountDashboard() {
   });
 
   useEffect(() => {
-    const session = AuthService.getSession();
-    if (!session || session.userType !== 'account') {
-      router.push('/login');
-      return;
+    if (user) {
+      loadDashboardData();
     }
-    setUser(session);
-    loadDashboardData();
-  }, [router]);
+  }, [user]);
 
   const loadDashboardData = async () => {
     try {
       setLoading(true);
       
       // Load orders
-      const ordersResponse = await fetch('/api/orders?accountId=' + AuthService.getSession()?.userId, {
+      const ordersResponse = await fetch('/api/orders', {
         credentials: 'include',
       });
       
@@ -142,37 +156,41 @@ export default function AccountDashboard() {
 
   if (loading) {
     return (
-      <AuthWrapper>
-        <div className="min-h-screen bg-gray-100">
-          <Header />
-          <div className="max-w-7xl mx-auto px-4 py-8">
-            <div className="animate-pulse">
-              <div className="h-8 bg-gray-200 rounded w-1/4 mb-8"></div>
-              <div className="grid grid-cols-1 md:grid-cols-4 gap-6 mb-8">
-                {[1, 2, 3, 4].map(i => (
-                  <div key={i} className="bg-white rounded-lg shadow-md p-6 h-32"></div>
-                ))}
-              </div>
+      <div className="min-h-screen bg-gray-100">
+        <div className="max-w-7xl mx-auto px-4 py-8">
+          <div className="animate-pulse">
+            <div className="h-8 bg-gray-200 rounded w-1/4 mb-8"></div>
+            <div className="grid grid-cols-1 md:grid-cols-4 gap-6 mb-8">
+              {[1, 2, 3, 4].map(i => (
+                <div key={i} className="bg-white rounded-lg shadow-md p-6 h-32"></div>
+              ))}
             </div>
           </div>
         </div>
-      </AuthWrapper>
+      </div>
     );
   }
 
   return (
-    <AuthWrapper>
-      <div className="min-h-screen bg-gray-100">
-        <Header />
-        <div className="max-w-7xl mx-auto px-4 py-8">
+    <div className="min-h-screen bg-gray-100">
+      <div className="max-w-7xl mx-auto px-4 py-8">
           {/* Welcome Section */}
-          <div className="mb-8">
-            <h1 className="text-3xl font-bold text-gray-900">
-              Welcome back, {user?.name}
-            </h1>
-            <p className="mt-1 text-gray-600">
-              Manage your guest post orders and track your campaigns
-            </p>
+          <div className="mb-8 flex justify-between items-start">
+            <div>
+              <h1 className="text-3xl font-bold text-gray-900">
+                Welcome back, {user?.name}
+              </h1>
+              <p className="mt-1 text-gray-600">
+                Manage your guest post orders and track your campaigns
+              </p>
+            </div>
+            <button
+              onClick={() => router.push('/account/settings')}
+              className="inline-flex items-center px-4 py-2 border border-gray-300 rounded-lg hover:bg-gray-50 text-gray-700"
+            >
+              <Settings className="h-4 w-4 mr-2" />
+              Settings
+            </button>
           </div>
 
           {/* Stats Grid */}
@@ -363,6 +381,5 @@ export default function AccountDashboard() {
           </div>
         </div>
       </div>
-    </AuthWrapper>
   );
 }

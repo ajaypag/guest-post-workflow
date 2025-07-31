@@ -6,12 +6,22 @@ import { bulkAnalysisProjects } from '@/lib/db/bulkAnalysisSchema';
 import { clients } from '@/lib/db/schema';
 import { eq } from 'drizzle-orm';
 import { v4 as uuidv4 } from 'uuid';
+import { AuthServiceServer } from '@/lib/auth-server';
 
 export async function POST(
   request: NextRequest,
   { params }: { params: Promise<{ id: string }> }
 ) {
   try {
+    // Check authentication - only internal users can confirm orders
+    const session = await AuthServiceServer.getSession(request);
+    if (!session) {
+      return NextResponse.json({ error: 'Authentication required. Please log in.' }, { status: 401 });
+    }
+    if (session.userType !== 'internal') {
+      return NextResponse.json({ error: 'Access denied. Order confirmation requires internal user privileges.' }, { status: 403 });
+    }
+
     const { id: orderId } = await params;
     const data = await request.json();
     const { assignedTo } = data; // Internal user who will handle bulk analysis

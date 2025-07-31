@@ -36,7 +36,7 @@ export async function POST(
     console.log('[InvitationResendAPI] Found invitation:', {
       id: invitation.id,
       email: invitation.email,
-      userType: invitation.userType,
+      targetTable: invitation.targetTable,
       role: invitation.role,
       usedAt: invitation.usedAt,
       revokedAt: invitation.revokedAt,
@@ -103,7 +103,7 @@ export async function POST(
         subject: `Reminder: You're invited to join PostFlow`,
         template: InvitationEmail({
           inviteeEmail: invitation.email,
-          userType: invitation.userType as 'internal' | 'account' | 'publisher',
+          userType: invitation.targetTable === 'users' ? 'internal' : invitation.targetTable as 'internal' | 'account' | 'publisher',
           role: invitation.role as 'user' | 'admin',
           invitationUrl,
           expiresAt: expiresAtFormatted,

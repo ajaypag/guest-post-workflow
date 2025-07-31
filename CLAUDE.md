@@ -25,6 +25,12 @@ Production-ready workflow system with PostgreSQL, multi-user auth, and AI agent 
   - Created separate tables for advertisers/publishers
   - Orders currently use users.id (migration needed)
   - See: docs/architecture/USER_TYPES.md
+- ✅ Account Authentication System (2025-01-30)
+  - Full login/logout with HTTP-only cookies
+  - Password reset via email
+  - Account settings & profile management
+  - JWT auto-refresh & rate limiting
+  - Role-based permissions (viewer/editor/admin)
 - ✅ Order System Phase 1 & 2 Complete (2025-01-30)
   - Multi-client order creation working
   - Bulk analysis projects auto-created on order confirmation
@@ -42,7 +48,8 @@ Production-ready workflow system with PostgreSQL, multi-user auth, and AI agent 
 | **Auto-Save Fix** | [docs/agents/AUTO_SAVE_PATTERN.md](docs/agents/AUTO_SAVE_PATTERN.md) |
 | **Email System** | [docs/services/EMAIL_SERVICE.md](docs/services/EMAIL_SERVICE.md) |
 | **Debug Issues** | [docs/admin/DIAGNOSTICS.md](docs/admin/DIAGNOSTICS.md) |
-| **Order System Replacement** | [docs/architecture/ORDER_SYSTEM_REPLACEMENT_PLAN.md](docs/architecture/ORDER_SYSTEM_REPLACEMENT_PLAN.md) |
+| **Order System Implementation** | [docs/architecture/ORDER_SYSTEM_IMPLEMENTATION.md](docs/architecture/ORDER_SYSTEM_IMPLEMENTATION.md) |
+| **Tech Debt & Shortcuts** | [docs/architecture/TECH_DEBT_AND_SHORTCUTS.md](docs/architecture/TECH_DEBT_AND_SHORTCUTS.md) |
 | **All Documentation** | [docs/DEVELOPER_GUIDE.md](docs/DEVELOPER_GUIDE.md) |
 
 ### Production Config

@@ -11,14 +11,18 @@ export async function GET(request: NextRequest) {
       return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
     }
 
-    // Only accounts can access this endpoint
+    // Only account users can access this endpoint
     if (session.userType !== 'account') {
-      return NextResponse.json({ error: 'Forbidden' }, { status: 403 });
+      return NextResponse.json({ error: 'Forbidden - Account access only' }, { status: 403 });
     }
 
-    // Get account with primary client
+    // Get account with primary client using accountId from session
+    if (!session.accountId) {
+      return NextResponse.json({ error: 'Account ID not found in session' }, { status: 400 });
+    }
+
     const account = await db.query.accounts.findFirst({
-      where: eq(accounts.id, session.userId),
+      where: eq(accounts.id, session.accountId),
       with: {
         primaryClient: {
           with: {

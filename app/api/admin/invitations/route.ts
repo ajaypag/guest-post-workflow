@@ -17,7 +17,7 @@ export async function GET() {
       .select({
         id: invitations.id,
         email: invitations.email,
-        userType: invitations.userType,
+        targetTable: invitations.targetTable,
         role: invitations.role,
         token: invitations.token,
         expiresAt: invitations.expiresAt,
@@ -66,6 +66,9 @@ export async function POST(request: NextRequest) {
         { status: 400 }
       );
     }
+
+    // Map userType to targetTable
+    const targetTable = userType === 'internal' ? 'users' : userType === 'account' ? 'accounts' : 'publishers';
 
     // Validate userType and role
     if (!['internal', 'account', 'publisher'].includes(userType)) {
@@ -150,7 +153,7 @@ export async function POST(request: NextRequest) {
       .values({
         id: crypto.randomUUID(),
         email,
-        userType,
+        targetTable,
         role,
         token,
         expiresAt,
@@ -163,7 +166,7 @@ export async function POST(request: NextRequest) {
     console.log('[InvitationAPI] Invitation record created:', {
       id: newInvitation[0].id,
       email: newInvitation[0].email,
-      userType: newInvitation[0].userType,
+      targetTable: newInvitation[0].targetTable,
       role: newInvitation[0].role
     });
 

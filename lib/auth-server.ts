@@ -22,8 +22,11 @@ export class AuthServiceServer {
 
       // Try to get token from cookies first
       const cookieStore = await cookies();
+      
+      // Check for account token first, then internal user token
+      const accountTokenCookie = cookieStore.get('auth-token-account');
       const authTokenCookie = cookieStore.get('auth-token');
-      token = authTokenCookie?.value;
+      token = accountTokenCookie?.value || authTokenCookie?.value;
       
       console.log('🔐 Cookie check:', {
         hasAuthToken: !!token,
@@ -56,6 +59,9 @@ export class AuthServiceServer {
         name: payload.name as string,
         role: payload.role as UserRole,
         userType: (payload.userType as UserType) || 'internal',
+        accountId: payload.accountId as string | undefined,
+        clientId: payload.clientId as string | null | undefined,
+        companyName: payload.companyName as string | undefined,
       };
     } catch (error) {
       console.error('Session verification error:', error);
@@ -70,6 +76,7 @@ export class AuthServiceServer {
       name: user.name,
       role: user.role,
       userType: user.userType || 'internal',
+      accountId: user.accountId || undefined,
     })
       .setProtectedHeader({ alg: 'HS256' })
       .setExpirationTime('7d')
@@ -104,5 +111,18 @@ export class AuthServiceServer {
       where: eq(users.id, userId),
     });
     return user;
+  }
+  
+  static async createAccountToken(sessionData: AuthSession): Promise<string> {
+    const token = await new SignJWT({
+      ...sessionData,
+      iat: Date.now(),
+      exp: Date.now() + 7 * 24 * 60 * 60 * 1000, // 7 days
+    })
+      .setProtectedHeader({ alg: 'HS256' })
+      .setExpirationTime('7d')
+      .sign(JWT_SECRET);
+    
+    return token;
   }
 }

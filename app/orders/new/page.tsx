@@ -527,7 +527,15 @@ function NewOrderContent() {
                             <div className="flex-1">
                               <select
                                 value={group.clientId}
-                                onChange={(e) => updateOrderGroup(index, { clientId: e.target.value })}
+                                onChange={(e) => {
+                                  if (e.target.value === 'new') {
+                                    // Store return URL and redirect to client creation page
+                                    sessionStorage.setItem('clientCreateReturnUrl', window.location.pathname);
+                                    router.push('/clients/new');
+                                  } else {
+                                    updateOrderGroup(index, { clientId: e.target.value });
+                                  }
+                                }}
                                 className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500"
                               >
                                 <option value="">Select Client</option>
@@ -536,6 +544,9 @@ function NewOrderContent() {
                                     {client.name}
                                   </option>
                                 ))}
+                                <option value="new" className="font-medium text-blue-600">
+                                  + Create New Client
+                                </option>
                               </select>
                             </div>
                             

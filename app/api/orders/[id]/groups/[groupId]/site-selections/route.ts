@@ -26,10 +26,16 @@ export async function GET(
       return NextResponse.json({ error: 'Order not found' }, { status: 404 });
     }
 
-    // Check account access - only allow access to orders belonging to the user's account
-    // For now, we'll check if the user created the order or if it's an admin/internal user
-    if (session.userType !== 'internal' && order.createdBy !== session.userId) {
-      return NextResponse.json({ error: 'Forbidden - Access denied' }, { status: 403 });
+    // Check access - both internal and account users allowed with different permissions
+    if (session.userType === 'internal') {
+      // Internal users: Full access to any order
+    } else if (session.userType === 'account') {
+      // Account users: Only access orders they own
+      if (order.accountId !== session.accountId) {
+        return NextResponse.json({ error: 'Forbidden - Account access denied' }, { status: 403 });
+      }
+    } else {
+      return NextResponse.json({ error: 'Unauthorized - Invalid user type' }, { status: 401 });
     }
 
     // Now get the specific order group
@@ -115,7 +121,12 @@ export async function GET(
     return NextResponse.json({
       suggested: suggestedSites,
       all: transformedDomains,
-      currentSelections: transformedSelections
+      currentSelections: transformedSelections,
+      userCapabilities: {
+        canCreateSelections: session.userType === 'internal',
+        canModifySelections: session.userType === 'internal' || session.userType === 'account',
+        userType: session.userType
+      }
     });
 
   } catch (error) {
@@ -150,10 +161,16 @@ export async function POST(
       return NextResponse.json({ error: 'Order not found' }, { status: 404 });
     }
 
-    // Check account access - only allow access to orders belonging to the user's account
-    // For now, we'll check if the user created the order or if it's an admin/internal user
-    if (session.userType !== 'internal' && order.createdBy !== session.userId) {
-      return NextResponse.json({ error: 'Forbidden - Access denied' }, { status: 403 });
+    // Check access - both internal and account users allowed with different permissions
+    if (session.userType === 'internal') {
+      // Internal users: Full access to any order
+    } else if (session.userType === 'account') {
+      // Account users: Only access orders they own
+      if (order.accountId !== session.accountId) {
+        return NextResponse.json({ error: 'Forbidden - Account access denied' }, { status: 403 });
+      }
+    } else {
+      return NextResponse.json({ error: 'Unauthorized - Invalid user type' }, { status: 401 });
     }
 
     // Now get the specific order group
@@ -168,8 +185,34 @@ export async function POST(
       return NextResponse.json({ error: 'Order group not found' }, { status: 404 });
     }
 
+    // Check if this is a new selection creation (no bulk analysis project yet)
+    if (session.userType === 'account' && !orderGroup.bulkAnalysisProjectId) {
+      // Account users can only modify existing suggestions, not create new ones
+      return NextResponse.json({ 
+        error: 'Forbidden - Account users cannot create new site selections. Please wait for site suggestions from the team.' 
+      }, { status: 403 });
+    }
+
     // Start a transaction to update selections
     await db.transaction(async (tx) => {
+      // For account users, validate they're only modifying suggested sites
+      if (session.userType === 'account' && body.selections) {
+        // Get the bulk analysis project to verify suggested domains
+        if (orderGroup.bulkAnalysisProjectId) {
+          const validDomainIds = await tx.query.bulkAnalysisDomains.findMany({
+            where: eq(bulkAnalysisDomains.projectId, orderGroup.bulkAnalysisProjectId),
+            columns: { id: true }
+          });
+          
+          const validIds = new Set(validDomainIds.map(d => d.id));
+          const invalidSelections = body.selections.filter((s: any) => !validIds.has(s.domainId));
+          
+          if (invalidSelections.length > 0) {
+            throw new Error('Account users can only select from analyzed domains');
+          }
+        }
+      }
+
       // Delete existing selections for this order group
       await tx.delete(orderSiteSelections).where(eq(orderSiteSelections.orderGroupId, groupId));
 
@@ -182,6 +225,8 @@ export async function POST(
           targetPageUrl: selection.targetPageUrl,
           anchorText: selection.anchorText,
           status: selection.status || 'approved',
+          reviewedAt: new Date(),
+          reviewedBy: session.userId,
           createdAt: new Date(),
           updatedAt: new Date()
         }));
@@ -190,7 +235,20 @@ export async function POST(
       }
     });
 
-    return NextResponse.json({ success: true });
+    // Check if any selections were approved
+    const approvedCount = body.selections?.filter((s: any) => s.status === 'approved').length || 0;
+    
+    // NOTE: Workflow generation is now manual or triggered after payment
+    // We don't automatically generate workflows on approval anymore
+    // Use the /generate-workflows endpoint after payment is confirmed
+
+    return NextResponse.json({ 
+      success: true,
+      approvedCount,
+      message: approvedCount > 0 
+        ? `${approvedCount} sites approved. Workflows will be generated after payment is confirmed.`
+        : 'Site selections updated successfully'
+    });
 
   } catch (error) {
     console.error('Error updating site selections:', error);
