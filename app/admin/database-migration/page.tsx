@@ -987,6 +987,83 @@ export default function DatabaseMigrationPage() {
     setIsLoading(false);
   };
 
+  const checkArchiveColumnsExist = async () => {
+    setIsLoading(true);
+    setMessage('');
+    
+    try {
+      const response = await fetch('/api/admin/check-archive-columns');
+      const data = await response.json();
+      
+      if (data.exists) {
+        setMessage('✅ Archive columns exist in clients table');
+        setMessageType('success');
+      } else {
+        setMessage(`ℹ️ ${data.message || 'Archive columns do not exist in clients table'}`);
+        setMessageType('info');
+      }
+    } catch (error) {
+      setMessage(`❌ Error checking archive columns: ${error instanceof Error ? error.message : 'Unknown error'}`);
+      setMessageType('error');
+    }
+    
+    setIsLoading(false);
+  };
+
+  const runArchiveMigration = async () => {
+    setIsLoading(true);
+    setMessage('');
+    
+    try {
+      const response = await fetch('/api/admin/migrate-archive', {
+        method: 'POST'
+      });
+      const data = await response.json();
+      
+      if (data.success) {
+        setMessage('✅ Archive columns migration completed successfully!');
+        setMessageType('success');
+      } else {
+        setMessage(`❌ Migration failed: ${data.error}`);
+        setMessageType('error');
+      }
+    } catch (error) {
+      setMessage(`❌ Error: ${error instanceof Error ? error.message : 'Unknown error'}`);
+      setMessageType('error');
+    }
+    
+    setIsLoading(false);
+  };
+
+  const runArchiveRollback = async () => {
+    if (!confirm('Are you sure you want to remove the archive columns? This will permanently delete any archive history.')) {
+      return;
+    }
+    
+    setIsLoading(true);
+    setMessage('');
+    
+    try {
+      const response = await fetch('/api/admin/migrate-archive', {
+        method: 'DELETE'
+      });
+      const data = await response.json();
+      
+      if (data.success) {
+        setMessage('✅ Archive columns removed successfully!');
+        setMessageType('success');
+      } else {
+        setMessage(`❌ Rollback failed: ${data.error}`);
+        setMessageType('error');
+      }
+    } catch (error) {
+      setMessage(`❌ Error: ${error instanceof Error ? error.message : 'Unknown error'}`);
+      setMessageType('error');
+    }
+    
+    setIsLoading(false);
+  };
+
   const runLinkOrchestrationRollback = async () => {
     if (!confirm('Are you sure you want to remove the link orchestration table? This will delete all link orchestration sessions.')) {
       return;
