@@ -41,6 +41,24 @@ export const semanticAuditorAgentV2 = new Agent({
   tools: [semanticSEOFileSearch, webSearch], // Vector store and web search
 });
 
+interface ArticleSection {
+  id: string;
+  title: string;
+  level: number; // 1 for H1, 2 for H2, etc.
+  content: string;
+  wordCount: number;
+}
+
+interface SectionPlan {
+  sections: ArticleSection[];
+  totalSections: number;
+  auditGroups: Array<{
+    sectionIds: string[];
+    sectionTitles: string[];
+    prompt: string;
+  }>;
+}
+
 export class AgenticSemanticAuditV2Service {
   // Helper to extract text content from various message formats
   private extractTextContent(content: any): string {
@@ -59,7 +77,6 @@ export class AgenticSemanticAuditV2Service {
   
   // Parse delimiter-based response from audit
   private parseAuditResponse(response: string): {
-    status?: 'complete';
     parsed?: {
       strengths: string[];
       weaknesses: string[];
@@ -67,15 +84,12 @@ export class AgenticSemanticAuditV2Service {
     };
   } {
     try {
-      // First try to extract audit data (before checking for completion)
+      // Extract audit data
       const strengthsMatch = response.match(/===STRENGTHS_START===\s*([\s\S]*?)\s*===STRENGTHS_END===/);
       const weaknessesMatch = response.match(/===WEAKNESSES_START===\s*([\s\S]*?)\s*===WEAKNESSES_END===/);
       const suggestedMatch = response.match(/===SUGGESTED_VERSION_START===\s*([\s\S]*?)\s*===SUGGESTED_VERSION_END===/);
       
-      // Build the result object
-      let result: any = {};
-      
-      // If we have audit data, parse it
+      // If we have all required data, parse it
       if (strengthsMatch && weaknessesMatch && suggestedMatch) {
         // Parse strengths and weaknesses as arrays (one per line)
         const strengths = strengthsMatch[1]
@@ -90,24 +104,17 @@ export class AgenticSemanticAuditV2Service {
           
         const suggestedVersion = suggestedMatch[1].trim();
         
-        result.parsed = {
-          strengths,
-          weaknesses,
-          suggestedVersion
+        return {
+          parsed: {
+            strengths,
+            weaknesses,
+            suggestedVersion
+          }
         };
       }
       
-      // Now check if it also includes completion status
-      if (response.includes('===AUDIT_COMPLETE===')) {
-        result.status = 'complete';
-      }
-      
-      // If we found neither audit data nor completion, log error
-      if (!result.parsed && !result.status) {
-        console.error('Missing required delimiters in response:', response.substring(0, 200));
-      }
-      
-      return result;
+      console.error('Missing required delimiters in response:', response.substring(0, 200));
+      return {};
     } catch (error) {
       console.error('Failed to parse delimiter response:', error, 'Response:', response.substring(0, 200));
       return {};
@@ -121,7 +128,169 @@ export class AgenticSemanticAuditV2Service {
     });
   }
 
-  async startAuditSession(workflowId: string, originalArticle: string, researchOutline?: string): Promise<string> {
+  // Identify sections in the article using O3
+  private async identifySections(article: string): Promise<SectionPlan> {
+    const sectionIdentificationPrompt = `Analyze this article and identify all logical sections and subsections.
+
+${article}
+
+Your task:
+1. Identify each section by its heading (preserve exact text including markdown)
+2. Group the article into logical sections (max 15 sections)
+3. Each H2 heading should generally be its own section
+4. For very short sections (under 200 words), you may group adjacent related sections
+5. The introduction (before first heading) should be its own section
+
+Output JSON in this exact format:
+{
+  "sections": [
+    {
+      "id": "intro",
+      "title": "Introduction",
+      "level": 1,
+      "headingText": null
+    },
+    {
+      "id": "section-1",
+      "title": "## Understanding Semantic SEO",
+      "level": 2,
+      "headingText": "## Understanding Semantic SEO"
+    }
+  ],
+  "totalSections": 12
+}
+
+IMPORTANT: 
+- The "title" field must contain the exact markdown heading as it appears in the article
+- For the introduction, use "Introduction" as title with headingText: null
+- Maximum 15 sections total`;
+
+    try {
+      // Use a simple agent for section identification
+      const sectionAgent = new Agent({
+        name: 'SectionIdentifier',
+        instructions: '',
+        model: 'o3-2025-01-17',
+        tools: []
+      });
+
+      const runner = new Runner({
+        modelProvider: this.openaiProvider,
+        tracingDisabled: true
+      });
+
+      const result = await runner.run(sectionAgent, [
+        { role: 'user', content: sectionIdentificationPrompt }
+      ], {
+        stream: false,
+        maxTurns: 1
+      });
+
+      await result.finalOutput;
+      const response = this.extractTextContent((result as any).history[1].content);
+      
+      // Extract JSON from response
+      const jsonMatch = response.match(/\{[\s\S]*\}/);
+      if (!jsonMatch) {
+        throw new Error('Failed to extract JSON from section identification response');
+      }
+
+      const sectionData = JSON.parse(jsonMatch[0]);
+      
+      // Extract actual content for each section from the article
+      const sections: ArticleSection[] = [];
+      const lines = article.split('\n');
+      
+      for (let i = 0; i < sectionData.sections.length; i++) {
+        const section = sectionData.sections[i];
+        const nextSection = sectionData.sections[i + 1];
+        
+        let content = '';
+        if (section.id === 'intro') {
+          // Introduction is everything before the first heading
+          const firstHeadingIndex = lines.findIndex(line => line.startsWith('#'));
+          content = lines.slice(0, firstHeadingIndex).join('\n').trim();
+        } else {
+          // Find section content between headings
+          const startIndex = lines.findIndex(line => line === section.headingText);
+          let endIndex = lines.length;
+          
+          if (nextSection && nextSection.headingText) {
+            endIndex = lines.findIndex((line, idx) => 
+              idx > startIndex && line === nextSection.headingText
+            );
+          }
+          
+          if (startIndex !== -1) {
+            content = lines.slice(startIndex, endIndex).join('\n').trim();
+          }
+        }
+        
+        sections.push({
+          id: section.id,
+          title: section.title,
+          level: section.level,
+          content: content,
+          wordCount: content.split(/\s+/).filter(Boolean).length
+        });
+      }
+
+      // Create audit groups (for now, one section per group)
+      const auditGroups = sections.map(section => ({
+        sectionIds: [section.id],
+        sectionTitles: [section.title],
+        prompt: this.generateSectionPrompt(section)
+      }));
+
+      return {
+        sections,
+        totalSections: sections.length,
+        auditGroups
+      };
+    } catch (error) {
+      console.error('Failed to identify sections:', error);
+      throw new Error('Failed to analyze article structure');
+    }
+  }
+
+  // Generate prompt for a specific section
+  private generateSectionPrompt(section: ArticleSection): string {
+    const sectionIndicator = section.id === 'intro' 
+      ? 'the Introduction section'
+      : `the section titled "${section.title}"`;
+      
+    return `Now audit ${sectionIndicator}. 
+
+Here is the specific section to focus on:
+${section.content}
+
+Output your analysis in this EXACT format:
+
+===STRENGTHS_START===
+strength 1
+strength 2
+(more strengths if applicable)
+===STRENGTHS_END===
+
+===WEAKNESSES_START===
+weakness 1
+weakness 2
+(more weaknesses if applicable)
+===WEAKNESSES_END===
+
+===SUGGESTED_VERSION_START===
+Your improved version of the section here
+===SUGGESTED_VERSION_END===
+
+Important:
+- Use EXACTLY these delimiters, don't modify them
+- Each strength/weakness should be on its own line
+- The suggestedVersion should preserve markdown formatting (headings, lists, bold, italics, etc.)
+- When you identify weaknesses related to lack of numbers or data, DO NOT make up data. Instead, use the web search tool to find accurate, factual data to support your improvements
+- Focus ONLY on this specific section. Do not audit any other sections.`;
+  }
+
+  async startAuditSession(workflowId: string, originalArticle: string, researchOutline: string): Promise<string> {
     try {
       // Get the next version number for this workflow's V2 audit sessions
       const maxVersionResult = await db.select({
@@ -173,22 +342,40 @@ export class AgenticSemanticAuditV2Service {
       if (!session) throw new Error('V2 audit session not found');
 
       const originalArticle = (session.sessionMetadata as any)?.originalArticle as string;
+      const researchOutline = session.outline || '';
 
       await this.updateAuditSession(sessionId, { status: 'auditing' });
       auditV2SSEPush(sessionId, { type: 'status', status: 'auditing', message: 'Starting V2 semantic SEO audit...' });
       
-      // Add end marker to article
-      const END_MARKER = '<!-- END_OF_ARTICLE -->';
-      const articleWithEndMarker = originalArticle + '\n\n' + END_MARKER;
+      // Step 1: Identify sections in the article
+      console.log('🔍 Identifying article sections...');
+      auditV2SSEPush(sessionId, { type: 'status', status: 'analyzing', message: 'Analyzing article structure...' });
+      
+      const sectionPlan = await this.identifySections(originalArticle);
+      console.log(`📋 Identified ${sectionPlan.totalSections} sections for audit`);
+      
+      auditV2SSEPush(sessionId, { 
+        type: 'section_plan', 
+        totalSections: sectionPlan.totalSections,
+        sections: sectionPlan.sections.map(s => ({ id: s.id, title: s.title, wordCount: s.wordCount }))
+      });
       
       // Build initial prompt with exact user prompts
+      const firstSection = sectionPlan.sections[0];
+      const firstSectionIndicator = firstSection.id === 'intro' 
+        ? 'the Introduction section'
+        : `the section titled "${firstSection.title}"`;
+        
       const initialPrompt = `This is an article that you wrote for me:
 
-${articleWithEndMarker}
+${originalArticle}
 
 If you look at your knowledge base, you'll see that I've added some instructions for semantic SEO in writing. I want you to be a content editor, and I want you to review the article section by section to see if it's meeting the best practices that we discuss.
 
-Now I realize this is a lot, so i want your first output to only be an audit of the first section. For each section you audit, output your analysis in this EXACT format:
+For full reference, this was the original deep research data and outline that might be useful as you edit.
+${researchOutline}
+
+Now I realize this is a lot, so i want your first output to only be an audit of ${firstSectionIndicator}. For each section you audit, output your analysis in this EXACT format:
 
 ===STRENGTHS_START===
 strength 1
@@ -213,40 +400,8 @@ Important:
 - When you identify weaknesses related to lack of numbers or data, DO NOT make up data. Instead, use the web search tool to find accurate, factual data to support your improvements
 - Introduction sections should NOT include H2 headers. They appear at the start of the article before any section headings
 
-Start with the first section. In cases where a section has many subsections, output just the subsection.`;
+Start with ${firstSectionIndicator}. Focus ONLY on this specific section.`;
 
-      // Exact looping prompt from user
-      const loopingPrompt = `Okay, now I want you to proceed your audit with the next section. Output your analysis in this EXACT format:
-
-===STRENGTHS_START===
-strength 1
-strength 2
-(more strengths if applicable)
-===STRENGTHS_END===
-
-===WEAKNESSES_START===
-weakness 1
-weakness 2
-(more weaknesses if applicable)
-===WEAKNESSES_END===
-
-===SUGGESTED_VERSION_START===
-Your improved version of the section here
-===SUGGESTED_VERSION_END===
-
-In cases where a section has many subsections, output just the subsection. While auditing, keep in mind we are creating a "primarily narrative" article so bullet points can appear but only very sporadically.
-
-Important: 
-- Use EXACTLY these delimiters, don't modify them
-- Each strength/weakness should be on its own line
-- The suggestedVersion should preserve markdown formatting (headings, lists, bold, italics, etc.)
-- When you identify weaknesses related to lack of numbers or data, DO NOT make up data. Instead, use the web search tool to find accurate, factual data to support your improvements
-
-When you reach <!-- END_OF_ARTICLE -->, confirm that the section matches the Conclusion in the original outline.
-
-If it does, output: ===AUDIT_COMPLETE===
-
-If the Conclusion is missing, add it, then output: ===AUDIT_COMPLETE===`;
 
       // Initialize conversation
       let messages: any[] = [
@@ -259,60 +414,57 @@ If the Conclusion is missing, add it, then output: ===AUDIT_COMPLETE===`;
         tracingDisabled: true
       });
       
-      let auditActive = true;
-      let sectionsCompleted = 0;
       let auditedSections: Array<{
+        sectionId: string;
+        sectionTitle: string;
         strengths: string[];
         weaknesses: string[];
         suggestedVersion: string;
       }> = [];
       
-      while (auditActive) {
-        console.log(`🔄 V2 Audit turn ${messages.length} with ${sectionsCompleted} sections completed`);
+      // Process each section in order
+      for (let sectionIndex = 0; sectionIndex < sectionPlan.sections.length; sectionIndex++) {
+        const currentSection = sectionPlan.sections[sectionIndex];
+        console.log(`🔄 Auditing section ${sectionIndex + 1}/${sectionPlan.totalSections}: ${currentSection.title}`);
+        
+        auditV2SSEPush(sessionId, { 
+          type: 'section_progress',
+          currentSection: sectionIndex + 1,
+          totalSections: sectionPlan.totalSections,
+          sectionTitle: currentSection.title
+        });
+        
+        // For sections after the first, generate specific prompt
+        if (sectionIndex > 0) {
+          const sectionPrompt = this.generateSectionPrompt(currentSection);
+          messages.push({ role: 'user', content: sectionPrompt });
+        }
         
         // Deduplicate messages before each run to prevent duplicate ID errors
-        // This handles both msg_* and rs_* (reasoning) items
         const seen = new Set<string>();
         const deduplicatedMessages: any[] = [];
-        const duplicateIds: string[] = [];
         
         for (const message of messages) {
-          // Skip null/undefined messages
-          if (!message) {
-            console.log(`⚠️ Skipping null/undefined message`);
-            continue;
-          }
+          if (!message) continue;
           
           const id = (message as any).id;
-          
-          // If no ID, it's safe to include (likely a user message)
           if (!id) {
             deduplicatedMessages.push(message);
             continue;
           }
           
-          // Skip if we've already seen this ID
-          if (seen.has(id)) {
-            duplicateIds.push(id);
-            console.log(`⚠️ Filtering duplicate message with id: ${id}, role: ${message.role}`);
-            continue;
+          if (!seen.has(id)) {
+            seen.add(id);
+            deduplicatedMessages.push(message);
           }
-          
-          seen.add(id);
-          deduplicatedMessages.push(message);
         }
         
         messages = deduplicatedMessages;
-        console.log(`📊 Deduplicated message count: ${messages.length}, removed ${duplicateIds.length} duplicates`);
-        
-        if (duplicateIds.length > 0) {
-          console.log(`🔍 Duplicate IDs found: ${duplicateIds.join(', ')}`);
-        }
         
         // Run the agent with full message history
         const result = await runner.run(semanticAuditorAgentV2, messages, {
           stream: true,
-          maxTurns: 150
+          maxTurns: 10 // Lower since we're doing one section at a time
         });
         
         // Process the streaming result
@@ -322,12 +474,6 @@ If the Conclusion is missing, add it, then output: ===AUDIT_COMPLETE===`;
             if (event.data.type === 'output_text_delta' && event.data.delta) {
               // Stream to UI
               auditV2SSEPush(sessionId, { type: 'text', content: event.data.delta });
-              
-              // Check for end marker in output
-              if (event.data.delta.includes(END_MARKER)) {
-                console.log('🎯 End marker detected in output');
-                auditActive = false;
-              }
             }
           }
         }
@@ -348,74 +494,45 @@ If the Conclusion is missing, add it, then output: ===AUDIT_COMPLETE===`;
           // Parse delimiter-based response
           const sectionData = this.parseAuditResponse(textContent);
           
-          // Handle parsed audit data first (if present)
+          // Handle parsed audit data
           if (sectionData.parsed) {
-            // Add to audited sections
-            auditedSections.push(sectionData.parsed);
-            sectionsCompleted++;
-            console.log(`✅ Section ${sectionsCompleted} audited`);
-          }
-          
-          // Send section completed event if we parsed a section
-          if (sectionData.parsed) {
+            // Add to audited sections with section metadata
+            auditedSections.push({
+              sectionId: currentSection.id,
+              sectionTitle: currentSection.title,
+              ...sectionData.parsed
+            });
+            console.log(`✅ Section ${sectionIndex + 1} audited: ${currentSection.title}`);
+            
+            // Send section completed event
             await this.updateAuditSession(sessionId, {
-              completedSections: sectionsCompleted,
+              completedSections: sectionIndex + 1,
               sessionMetadata: {
                 ...(session.sessionMetadata as any),
-                sectionsCompleted,
+                sectionsCompleted: sectionIndex + 1,
                 lastUpdate: new Date().toISOString()
               }
             });
             
             auditV2SSEPush(sessionId, { 
               type: 'section_completed',
-              sectionsCompleted,
+              sectionsCompleted: sectionIndex + 1,
+              totalSections: sectionPlan.totalSections,
               content: sectionData.parsed,
-              message: `Completed section ${sectionsCompleted}`
+              sectionTitle: currentSection.title,
+              message: `Completed ${currentSection.title}`
             });
+          } else {
+            console.error(`Failed to parse audit response for section: ${currentSection.title}`);
+            // Could retry or handle error here
           }
           
-          // Then check if audit is complete
-          if (sectionData.status === 'complete') {
-            console.log('✅ Audit completion detected - status: complete');
-            auditActive = false;
-          } else if (!sectionData.parsed && !sectionData.status) {
-            // No valid data found, check for completion indicators in plain text as fallback
-            console.error('Failed to parse section response:', textContent);
-            const lowerContent = textContent.toLowerCase();
-            if (lowerContent.includes('end of article') ||
-                lowerContent.includes('audit complete') ||
-                lowerContent.includes('audit_complete') ||
-                lowerContent.includes('conclud') ||
-                textContent.includes(END_MARKER) ||
-                textContent.includes('===AUDIT_COMPLETE===')) {
-              console.log('✅ Audit completion detected in text');
-              auditActive = false;
-            } else {
-              // Continue anyway
-              sectionsCompleted++;
-            }
-          }
-          // Note: If we have sectionData.parsed but no completion status, we continue normally below
-          
-          if (auditActive) {
-            // CRITICAL: Use the SDK's complete history which includes message-reasoning pairs
-            // Don't manually construct messages - let the SDK manage the conversation
-            messages = [...conversationHistory];
-            
-            // Add the user prompt - this is safe as it doesn't have an ID yet
-            messages.push({ role: 'user', content: loopingPrompt });
-          }
-        }
-        
-        // Safety limits
-        if (messages.length > 100 || sectionsCompleted > 50) {
-          console.log('⚠️ Safety limit reached');
-          auditActive = false;
+          // Update messages for next iteration
+          messages = [...conversationHistory];
         }
       }
       
-      console.log('🏁 V2 semantic audit conversation loop completed');
+      console.log('🏁 V2 semantic audit completed all sections');
       
       // Assemble the final audited article from JSON data
       console.log('🔍 Assembling audited article from structured data...');
@@ -428,6 +545,8 @@ If the Conclusion is missing, add it, then output: ===AUDIT_COMPLETE===`;
       
       // Prepare audit feedback for metadata
       const auditFeedback = auditedSections.map(section => ({
+        sectionId: section.sectionId,
+        sectionTitle: section.sectionTitle,
         strengths: section.strengths,
         weaknesses: section.weaknesses
       }));
@@ -436,14 +555,16 @@ If the Conclusion is missing, add it, then output: ===AUDIT_COMPLETE===`;
       await this.updateAuditSession(sessionId, {
         status: 'completed',
         finalArticle: cleanSuggestedArticle,  // Store clean article
-        completedSections: sectionsCompleted,
+        completedSections: auditedSections.length,
         completedAt: new Date(),
         sessionMetadata: {
           ...(session.sessionMetadata as any),
           completedAt: new Date().toISOString(),
           totalMessages: messages.length,
+          totalSections: sectionPlan.totalSections,
           auditedSections: auditedSections,  // Store structured audit data
-          auditFeedback: auditFeedback  // Store feedback for analysis
+          auditFeedback: auditFeedback,  // Store feedback for analysis
+          sectionPlan: sectionPlan.sections.map(s => ({ id: s.id, title: s.title, wordCount: s.wordCount }))
         }
       });
       
@@ -456,7 +577,8 @@ If the Conclusion is missing, add it, then output: ===AUDIT_COMPLETE===`;
         status: 'completed',
         auditedSections: auditedSections,  // Structured audit data
         finalArticle: cleanSuggestedArticle,  // Clean article only
-        sectionsCompleted,
+        sectionsCompleted: auditedSections.length,
+        totalSections: sectionPlan.totalSections,
         message: 'V2 semantic audit completed successfully!'
       });
 
