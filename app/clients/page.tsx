@@ -85,7 +85,7 @@ function ClientsPageContent() {
       
       if (response.ok) {
         setEditingClient(null);
-        setEditClient({ name: '', website: '' });
+        setEditClient({ name: '', website: '', description: '' });
         await loadClients();
       } else {
         const error = await response.json();
