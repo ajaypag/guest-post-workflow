@@ -10,7 +10,7 @@ import { Client, TargetPage } from '@/types/user';
 import { 
   ArrowLeft, Plus, Trash2, CheckCircle, XCircle, Clock, 
   Edit, Globe, ExternalLink, Check, Settings, ChevronDown, ChevronUp,
-  FileText, Target, AlertCircle, BarChart2
+  FileText, Target, AlertCircle, BarChart2, Users
 } from 'lucide-react';
 import { KeywordPreferencesSelector } from '@/components/ui/KeywordPreferencesSelector';
 import { getClientKeywordPreferences, setClientKeywordPreferences, KeywordPreferences } from '@/types/keywordPreferences';
@@ -25,6 +25,7 @@ export default function ClientDetailPage() {
   const router = useRouter();
   const searchParams = useSearchParams();
   const [client, setClient] = useState<Client | null>(null);
+  const [accountInfo, setAccountInfo] = useState<{ name: string; email: string } | null>(null);
   const [selectedPages, setSelectedPages] = useState<string[]>([]);
   const [showAddForm, setShowAddForm] = useState(false);
   const [bulkAction, setBulkAction] = useState<'active' | 'inactive' | 'completed' | 'delete' | 'generate-keywords' | 'generate-descriptions' | ''>('');
@@ -72,12 +73,31 @@ export default function ClientDetailPage() {
 
   const loadClient = async () => {
     try {
-      const clientData = await clientStorage.getClient(params.id as string);
+      // Use API instead of clientStorage to get the new fields
+      const response = await fetch(`/api/clients/${params.id}`);
+      if (!response.ok) {
+        router.push('/clients');
+        return;
+      }
+      
+      const data = await response.json();
+      const clientData = data.client;
+      
       if (!clientData) {
         router.push('/clients');
         return;
       }
+      
       setClient(clientData);
+      
+      // Load account info if client has accountId
+      if ((clientData as any).accountId) {
+        const accountResponse = await fetch(`/api/accounts/${(clientData as any).accountId}`);
+        if (accountResponse.ok) {
+          const accountData = await accountResponse.json();
+          setAccountInfo(accountData.account);
+        }
+      }
     } catch (error) {
       console.error('Error loading client:', error);
       router.push('/clients');
@@ -600,6 +620,26 @@ export default function ClientDetailPage() {
                   {client.website}
                   <ExternalLink className="w-3 h-3 ml-1" />
                 </a>
+                <div className="mt-2">
+                  {(client as any).accountId ? (
+                    accountInfo ? (
+                      <span className="inline-flex items-center px-3 py-1 text-sm font-medium text-blue-700 bg-blue-50 rounded-full">
+                        <Users className="w-4 h-4 mr-1" />
+                        Owned by: {accountInfo.name || accountInfo.email}
+                      </span>
+                    ) : (
+                      <span className="inline-flex items-center px-3 py-1 text-sm font-medium text-gray-600 bg-gray-100 rounded-full">
+                        <Users className="w-4 h-4 mr-1" />
+                        Loading account...
+                      </span>
+                    )
+                  ) : (
+                    <span className="inline-flex items-center px-3 py-1 text-sm font-medium text-orange-700 bg-orange-50 rounded-full">
+                      <AlertCircle className="w-4 h-4 mr-1" />
+                      No Account - This client needs to be assigned
+                    </span>
+                  )}
+                </div>
               </div>
               
               <div className="flex space-x-3">

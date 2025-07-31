@@ -77,6 +77,7 @@ export async function GET(request: NextRequest) {
     // Check if this is a simple request (no auth required for new order system)
     const { searchParams } = new URL(request.url);
     const simple = searchParams.get('simple') === 'true';
+    const ids = searchParams.get('ids');
     
     if (simple) {
       // Simple mode for new order system - return accounts
@@ -91,6 +92,16 @@ export async function GET(request: NextRequest) {
       .orderBy(accounts.contactName);
 
       return NextResponse.json(accountsList);
+    }
+    
+    // Support filtering by IDs
+    if (ids) {
+      const { inArray } = await import('drizzle-orm');
+      const idArray = ids.split(',');
+      const accountsList = await db.query.accounts.findMany({
+        where: inArray(accounts.id, idArray),
+      });
+      return NextResponse.json({ accounts: accountsList });
     }
     
     // Original implementation for legacy system
