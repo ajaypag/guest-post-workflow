@@ -7,7 +7,7 @@ import AuthWrapper from '@/components/AuthWrapper';
 import Header from '@/components/Header';
 import { clientStorage, sessionStorage } from '@/lib/userStorage';
 import { Client } from '@/types/user';
-import { Building2, Plus, Users, Globe, CheckCircle, XCircle, Clock, Edit, Trash2, X, BarChart2, AlertCircle, ArrowLeft } from 'lucide-react';
+import { Building2, Plus, Users, Globe, CheckCircle, XCircle, Clock, Edit, Archive, ArchiveRestore, X, BarChart2, AlertCircle, ArrowLeft } from 'lucide-react';
 
 function ClientsPageContent() {
   const router = useRouter();
@@ -16,6 +16,7 @@ function ClientsPageContent() {
   const [editingClient, setEditingClient] = useState<Client | null>(null);
   const [userType, setUserType] = useState<string>('');
   const [accountName, setAccountName] = useState<{ [key: string]: string }>({});
+  const [showArchived, setShowArchived] = useState(false);
   const [editClient, setEditClient] = useState({
     name: '',
     website: '',
@@ -30,14 +31,15 @@ function ClientsPageContent() {
     }
     
     loadClients();
-  }, [searchParams]);
+  }, [searchParams, showArchived]);
 
   const loadClients = async () => {
     const session = sessionStorage.getSession();
     if (!session) return;
 
     try {
-      const response = await fetch('/api/clients');
+      const url = showArchived ? '/api/clients?includeArchived=true' : '/api/clients';
+      const response = await fetch(url);
       if (response.ok) {
         const data = await response.json();
         const clientsList = data.clients || [];
@@ -96,13 +98,38 @@ function ClientsPageContent() {
     }
   };
 
-  const handleDeleteClient = async (client: Client) => {
-    if (!confirm(`Are you sure you want to delete "${client.name}"? This action cannot be undone.`)) {
+  const handleArchiveClient = async (client: Client) => {
+    const reason = prompt(`Archive "${client.name}"?\n\nPlease provide a reason (optional):`);
+    if (reason === null) {
+      return; // User cancelled
+    }
+
+    try {
+      const response = await fetch(`/api/clients/${client.id}/archive`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        credentials: 'include',
+        body: JSON.stringify({ reason: reason || 'No reason provided' })
+      });
+      
+      if (response.ok) {
+        await loadClients();
+      } else {
+        const error = await response.json();
+        alert(error.error || 'Failed to archive client');
+      }
+    } catch (error: any) {
+      alert('Error archiving client: ' + error.message);
+    }
+  };
+
+  const handleRestoreClient = async (client: Client) => {
+    if (!confirm(`Restore "${client.name}" from archive?`)) {
       return;
     }
 
     try {
-      const response = await fetch(`/api/clients/${client.id}`, {
+      const response = await fetch(`/api/clients/${client.id}/archive`, {
         method: 'DELETE',
         credentials: 'include'
       });
@@ -111,10 +138,10 @@ function ClientsPageContent() {
         await loadClients();
       } else {
         const error = await response.json();
-        alert(error.error || 'Failed to delete client');
+        alert(error.error || 'Failed to restore client');
       }
     } catch (error: any) {
-      alert('Error deleting client: ' + error.message);
+      alert('Error restoring client: ' + error.message);
     }
   };
 
@@ -169,13 +196,24 @@ function ClientsPageContent() {
               </div>
               <div className="flex items-center gap-2">
                 {userType === 'internal' && (
-                  <Link
-                    href="/admin/orphaned-clients"
-                    className="inline-flex items-center px-4 py-2 bg-orange-600 text-white text-sm font-medium rounded-md hover:bg-orange-700"
-                  >
-                    <AlertCircle className="w-4 h-4 mr-2" />
-                    Orphaned Clients
-                  </Link>
+                  <>
+                    <label className="inline-flex items-center">
+                      <input
+                        type="checkbox"
+                        checked={showArchived}
+                        onChange={(e) => setShowArchived(e.target.checked)}
+                        className="rounded border-gray-300 text-blue-600 focus:ring-blue-500"
+                      />
+                      <span className="ml-2 text-sm text-gray-600">Show Archived</span>
+                    </label>
+                    <Link
+                      href="/admin/orphaned-clients"
+                      className="inline-flex items-center px-4 py-2 bg-orange-600 text-white text-sm font-medium rounded-md hover:bg-orange-700"
+                    >
+                      <AlertCircle className="w-4 h-4 mr-2" />
+                      Orphaned Clients
+                    </Link>
+                  </>
                 )}
                 <Link
                   href="/clients/new"
@@ -267,8 +305,9 @@ function ClientsPageContent() {
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
             {clients.map((client) => {
               const stats = getStatusCounts(client);
+              const isArchived = !!(client as any).archivedAt;
               return (
-                <div key={client.id} className="bg-white rounded-lg shadow hover:shadow-md transition-shadow">
+                <div key={client.id} className={`bg-white rounded-lg shadow hover:shadow-md transition-shadow ${isArchived ? 'opacity-75' : ''}`}>
                   <div className="p-6">
                     <div className="flex items-start justify-between">
                       <div className="flex items-center">
@@ -295,6 +334,12 @@ function ClientsPageContent() {
                                   No Account
                                 </span>
                               )}
+                              {isArchived && (
+                                <span className="inline-flex items-center px-2 py-1 text-xs font-medium text-gray-700 bg-gray-100 rounded-full">
+                                  <Archive className="w-3 h-3 mr-1" />
+                                  Archived
+                                </span>
+                              )}
                             </div>
                           )}
                         </div>
@@ -307,13 +352,23 @@ function ClientsPageContent() {
                         >
                           <Edit className="w-4 h-4" />
                         </button>
-                        <button
-                          onClick={() => handleDeleteClient(client)}
-                          className="text-gray-400 hover:text-red-600 transition-colors"
-                          title="Delete client"
-                        >
-                          <Trash2 className="w-4 h-4" />
-                        </button>
+                        {isArchived ? (
+                          <button
+                            onClick={() => handleRestoreClient(client)}
+                            className="text-gray-400 hover:text-green-600 transition-colors"
+                            title="Restore client"
+                          >
+                            <ArchiveRestore className="w-4 h-4" />
+                          </button>
+                        ) : (
+                          <button
+                            onClick={() => handleArchiveClient(client)}
+                            className="text-gray-400 hover:text-orange-600 transition-colors"
+                            title="Archive client"
+                          >
+                            <Archive className="w-4 h-4" />
+                          </button>
+                        )}
                       </div>
                     </div>
                     

@@ -82,6 +82,9 @@ export const clients = pgTable('clients', {
   convertedFromProspectAt: timestamp('converted_from_prospect_at'),
   conversionNotes: text('conversion_notes'),
   defaultRequirements: text('default_requirements').default('{}'), // JSONB column for order-centric architecture
+  archivedAt: timestamp('archived_at'), // Soft delete timestamp
+  archivedBy: uuid('archived_by').references(() => users.id), // Who archived the client
+  archiveReason: text('archive_reason'), // Reason for archiving (audit trail)
   createdAt: timestamp('created_at').notNull(), // Remove defaultNow() to handle in application code
   updatedAt: timestamp('updated_at').notNull(), // Remove defaultNow() to handle in application code
 });

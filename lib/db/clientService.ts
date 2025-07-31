@@ -1,13 +1,18 @@
-import { eq, and } from 'drizzle-orm';
+import { eq, and, isNull } from 'drizzle-orm';
 import crypto from 'crypto';
 import { db } from './connection';
 import { clients, clientAssignments, targetPages, type Client, type NewClient, type TargetPage, type NewTargetPage } from './schema';
 
 export class ClientService {
-  // Get all clients
-  static async getAllClients(): Promise<Client[]> {
+  // Get all clients (excluding archived)
+  static async getAllClients(includeArchived: boolean = false): Promise<Client[]> {
     try {
-      const clientList = await db.select().from(clients);
+      const query = db.select().from(clients);
+      
+      // Filter out archived clients by default
+      const clientList = includeArchived 
+        ? await query
+        : await query.where(isNull(clients.archivedAt));
       
       // Add target pages to each client
       const clientsWithPages = await Promise.all(
