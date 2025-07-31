@@ -3,6 +3,7 @@ import { ClientService } from '@/lib/db/clientService';
 import { AuthServiceServer } from '@/lib/auth-server';
 import { db } from '@/lib/db/connection';
 import { accounts } from '@/lib/db/accountSchema';
+import { clients } from '@/lib/db/schema';
 import { eq } from 'drizzle-orm';
 
 export async function GET(request: NextRequest) {
@@ -81,13 +82,75 @@ export async function POST(request: NextRequest) {
     const data = await request.json();
     console.log('🔍 Request data:', { ...data, targetPages: data.targetPages?.length + ' pages' });
     
+    // Extract creation path and related data
+    const { creationPath, accountId, invitationEmail, ...clientInfo } = data;
+    
     // Add created_by from session
-    const clientData = {
-      ...data,
+    const clientData: any = {
+      ...clientInfo,
       createdBy: session.userId
     };
     
+    // Handle path-specific data
+    let invitationSent = false;
+    let shareToken = null;
+    
+    if (creationPath === 'existing_account') {
+      // Link to existing account
+      if (!accountId) {
+        return NextResponse.json({ error: 'Account ID required' }, { status: 400 });
+      }
+      clientData.accountId = accountId;
+    } else if (creationPath === 'send_invitation') {
+      // Will create invitation after client is created
+      if (!invitationEmail) {
+        return NextResponse.json({ error: 'Invitation email required' }, { status: 400 });
+      }
+    } else if (creationPath === 'generate_link') {
+      // Generate share token
+      const crypto = await import('crypto');
+      shareToken = crypto.randomBytes(32).toString('base64url');
+      clientData.shareToken = shareToken;
+    }
+    
     const client = await ClientService.createClient(clientData);
+
+    // Handle invitation if needed
+    if (creationPath === 'send_invitation' && invitationEmail) {
+      try {
+        // Import invitation service
+        const { InvitationService } = await import('@/lib/services/invitationService');
+        
+        // Create invitation
+        const invitation = await InvitationService.createInvitation({
+          email: invitationEmail,
+          targetTable: 'accounts',
+          role: 'admin',
+          createdByEmail: session.email
+        });
+        
+        // Update client with invitation ID
+        await db.update(clients)
+          .set({ invitationId: invitation.id })
+          .where(eq(clients.id, client.id));
+        
+        // Send invitation email
+        const { EmailService } = await import('@/lib/services/emailService');
+        const inviteUrl = `${process.env.NEXTAUTH_URL || request.headers.get('origin')}/register/account?token=${invitation.token}`;
+        
+        await EmailService.sendAccountInvitation({
+          to: invitationEmail,
+          inviterName: session.name || session.email,
+          inviteUrl,
+          brandName: client.name
+        });
+        
+        invitationSent = true;
+      } catch (error) {
+        console.error('Error sending invitation:', error);
+        // Don't fail the whole request if invitation fails
+      }
+    }
 
     // If assignedUsers is provided, handle assignments
     if (data.assignedUsers && Array.isArray(data.assignedUsers)) {
@@ -104,7 +167,11 @@ export async function POST(request: NextRequest) {
       }
     }
 
-    return NextResponse.json({ client });
+    return NextResponse.json({ 
+      client,
+      invitationSent,
+      shareToken
+    });
   } catch (error) {
     console.error('Error creating client:', error);
     return NextResponse.json(

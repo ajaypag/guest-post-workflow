@@ -7,7 +7,7 @@
 | **Phase 1: Order Builder** | ✅ COMPLETED | 2025-01-30 | Multi-client order creation page fully functional |
 | **Phase 2: Bulk Analysis** | ✅ COMPLETED | 2025-01-30 | Human-driven projects with notification system |
 | **Phase 3: Site Selection** | ✅ COMPLETED | 2025-01-30 | Account-facing site browser with full transparency |
-| **Phase 4: Account Dashboard** | 🚧 IN PROGRESS | - | Auth complete, dashboard pending, needs integration work |
+| **Phase 4: Account Dashboard** | 🚧 IN PROGRESS | - | Auth complete, dashboard pending, needs integration work (see BUYER_PORTAL_IMPLEMENTATION.md) |
 | **Phase 5: Workflow Gen** | ✅ COMPLETED | 2025-01-30 | Payment-aware workflow generation |
 | **Phase 6: Share Tokens** | ❌ NOT STARTED | - | Public preview and conversion flow |
 | **Payment System** | ✅ COMPLETED | 2025-01-31 | Manual payment recording with invoices |
@@ -108,6 +108,13 @@ const canModifyExisting = userType === 'internal' || userType === 'account';
 ### Known Issues
 - ⚠️ `createdBy` field uses placeholder system user ID until auth implemented
 - 🔴 **"Add Client" button in `/orders/new` returns 404** - Missing client creation endpoint/page
+
+### Related Documentation
+- **[BUYER_PORTAL_IMPLEMENTATION.md](./BUYER_PORTAL_IMPLEMENTATION.md)** - Detailed implementation guide for:
+  - Client/brand architecture and account integration
+  - Order creation workflow redesign
+  - Three client creation scenarios
+  - Step-by-step implementation plan
 
 ### Required Migrations
 - ✅ **Phase 2**: Run migration at `/admin/order-groups-migration` (completed)

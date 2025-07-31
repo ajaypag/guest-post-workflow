@@ -93,7 +93,7 @@ export class ClientService {
   static async createClient(clientData: Omit<NewClient, 'id' | 'createdAt' | 'updatedAt'>): Promise<Client> {
     try {
       const now = new Date();
-      const insertData = {
+      const insertData: any = {
         id: crypto.randomUUID(),
         ...clientData,
         // Default to 'client' type if not specified
@@ -101,6 +101,18 @@ export class ClientService {
         createdAt: now,
         updatedAt: now
       };
+      
+      // Handle optional fields that might be passed in
+      if ('accountId' in clientData) {
+        insertData.accountId = clientData.accountId;
+      }
+      if ('shareToken' in clientData) {
+        insertData.shareToken = clientData.shareToken;
+      }
+      if ('invitationId' in clientData) {
+        insertData.invitationId = clientData.invitationId;
+      }
+      
       const result = await db.insert(clients).values(insertData).returning();
       return result[0];
     } catch (error) {
@@ -383,6 +395,49 @@ export class ClientService {
       return result[0] || null;
     } catch (error) {
       console.error('🔴 Error converting prospect to client:', error);
+      return null;
+    }
+  }
+
+  // Get clients by account ID
+  static async getClientsByAccount(accountId: string): Promise<Client[]> {
+    try {
+      const clientList = await db
+        .select()
+        .from(clients)
+        .where(eq(clients.accountId as any, accountId));
+      
+      // Add target pages to each client
+      const clientsWithPages = await Promise.all(
+        clientList.map(async (client) => {
+          const pages = await this.getTargetPages(client.id);
+          return { ...client, targetPages: pages } as any;
+        })
+      );
+      
+      return clientsWithPages;
+    } catch (error) {
+      console.error('Error loading account clients:', error);
+      return [];
+    }
+  }
+
+  // Get client by share token
+  static async getClientByShareToken(shareToken: string): Promise<Client | null> {
+    try {
+      const result = await db
+        .select()
+        .from(clients)
+        .where(eq(clients.shareToken as any, shareToken));
+      
+      const client = result[0];
+      if (!client) return null;
+      
+      // Add target pages to the client
+      const pages = await this.getTargetPages(client.id);
+      return { ...client, targetPages: pages } as any;
+    } catch (error) {
+      console.error('Error loading client by share token:', error);
       return null;
     }
   }
