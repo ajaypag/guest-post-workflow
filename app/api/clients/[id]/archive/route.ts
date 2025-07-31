@@ -58,18 +58,22 @@ export async function POST(
     }
 
     // Archive the client
+    // Note: archivedBy references users table, so we can only store internal user IDs
+    // For account users, we'll store null but log the action
     const [archivedClient] = await db
       .update(clients)
       .set({
         archivedAt: new Date(),
-        archivedBy: session.userId,
-        archiveReason: reason || 'No reason provided',
+        archivedBy: session.userType === 'internal' ? session.userId : null,
+        archiveReason: session.userType === 'account' 
+          ? `${reason || 'No reason provided'} (by account: ${session.email})`
+          : reason || 'No reason provided',
         updatedAt: new Date()
       })
       .where(eq(clients.id, clientId))
       .returning();
 
-    console.log(`[ARCHIVE] Client ${clientId} archived by ${session.email}`);
+    console.log(`[ARCHIVE] Client ${clientId} archived by ${session.email} (${session.userType})`);
 
     return NextResponse.json({
       success: true,
@@ -146,7 +150,7 @@ export async function DELETE(
       .where(eq(clients.id, clientId))
       .returning();
 
-    console.log(`[RESTORE] Client ${clientId} restored by ${session.email}`);
+    console.log(`[RESTORE] Client ${clientId} restored by ${session.email} (${session.userType})`);
 
     return NextResponse.json({
       success: true,
