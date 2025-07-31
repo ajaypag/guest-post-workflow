@@ -26,7 +26,8 @@ type CreationPath = 'existing_account' | 'send_invitation' | 'generate_link';
 
 interface Account {
   id: string;
-  name: string;
+  name?: string;
+  contactName?: string;
   email: string;
 }
 
@@ -79,10 +80,17 @@ function NewClientContent() {
   const loadAccounts = async () => {
     setLoadingAccounts(true);
     try {
-      const response = await fetch('/api/accounts');
+      const response = await fetch('/api/accounts', {
+        credentials: 'include'
+      });
       if (response.ok) {
         const data = await response.json();
         setAccounts(data.accounts || []);
+      } else if (response.status === 401) {
+        setError('You need to be logged in as an internal user to select existing accounts');
+        setSelectedPath(null);
+      } else {
+        console.error('Failed to load accounts');
       }
     } catch (error) {
       console.error('Error loading accounts:', error);
@@ -224,10 +232,13 @@ function NewClientContent() {
   };
   
   // Filtered accounts based on search
-  const filteredAccounts = accounts.filter(account => 
-    account.name.toLowerCase().includes(searchQuery.toLowerCase()) ||
-    account.email.toLowerCase().includes(searchQuery.toLowerCase())
-  );
+  const filteredAccounts = accounts.filter(account => {
+    const name = account.name || account.contactName || '';
+    const email = account.email || '';
+    const searchLower = searchQuery.toLowerCase();
+    return name.toLowerCase().includes(searchLower) || 
+           email.toLowerCase().includes(searchLower);
+  });
   
   return (
     <div className="min-h-screen bg-gray-50">
@@ -352,7 +363,7 @@ function NewClientContent() {
                             className="sr-only"
                           />
                           <div>
-                            <div className="font-medium">{account.name}</div>
+                            <div className="font-medium">{account.name || account.contactName}</div>
                             <div className="text-sm text-gray-600">{account.email}</div>
                           </div>
                         </label>
