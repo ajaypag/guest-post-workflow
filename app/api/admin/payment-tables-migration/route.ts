@@ -79,7 +79,7 @@ export async function POST(request: NextRequest) {
           processor_response JSONB,
           notes VARCHAR(1000),
           failure_reason VARCHAR(500),
-          recorded_by UUID REFERENCES accounts(id),
+          recorded_by UUID REFERENCES users(id),
           created_at TIMESTAMP DEFAULT NOW() NOT NULL,
           updated_at TIMESTAMP DEFAULT NOW() NOT NULL,
           processed_at TIMESTAMP,

@@ -1,6 +1,6 @@
 import { pgTable, uuid, varchar, integer, timestamp, boolean, jsonb, pgEnum } from 'drizzle-orm/pg-core';
 import { orders } from './orderSchema';
-import { accounts } from './schema';
+import { accounts, users } from './schema';
 
 // Payment status enum
 export const paymentStatusEnum = pgEnum('payment_status', [
@@ -44,7 +44,7 @@ export const payments = pgTable('payments', {
   failureReason: varchar('failure_reason', { length: 500 }),
   
   // Metadata
-  recordedBy: uuid('recorded_by'), // Who recorded the payment (internal user ID)
+  recordedBy: uuid('recorded_by').references(() => users.id), // Who recorded the payment (internal user ID)
   createdAt: timestamp('created_at').defaultNow().notNull(),
   updatedAt: timestamp('updated_at').defaultNow().notNull(),
   processedAt: timestamp('processed_at'), // When payment was actually processed

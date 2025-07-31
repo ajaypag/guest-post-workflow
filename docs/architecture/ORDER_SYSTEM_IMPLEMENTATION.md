@@ -697,30 +697,54 @@ GROUP BY o.id, oi.client_id;
 
 #### Payment System Technical Debt (Added 2025-01-31)
 
+**COMPLETED (2025-01-31):**
+- ✅ **Basic Invoice Generation**: Invoices table created with line items stored as JSONB
+- ✅ **Payment History Table**: Full payments table tracking all transactions  
+- ✅ **Email Notifications**: Payment confirmation emails sent automatically
+- ✅ **Multiple Payment States**: Support for pending, completed, failed, refunded, partial, cancelled
+
+**REMAINING TECHNICAL DEBT:**
+
 **1. No Payment Processor Integration**
 - **Current**: Manual payment recording only via internal users
 - **Missing**: Stripe, PayPal, or other payment gateway integration
 - **Impact**: Requires manual tracking and reconciliation
 
-**4. Limited Payment Validation**
+**2. Limited Payment Validation**
 - **Current**: 3% tolerance for payment amount differences
 - **Missing**: Configurable tolerance, currency conversion, tax handling
 
-**6. Basic Error Handling**
+**3. Basic Error Handling**
 - **Current**: Generic error messages in payment flow
 - **Missing**: Specific payment failure reasons, retry logic, webhook handling
 
-**8. Manual Workflow Trigger**
+**4. Manual Workflow Trigger**
 - **Current**: Separate button click after payment to generate workflows
 - **Ideal**: Automatic workflow generation on payment confirmation
 
-**9. No Payment Audit Trail**
+**5. No Payment Audit Trail**
 - **Current**: Basic console.log for payment recording
 - **Missing**: Proper audit log table with who/when/what/why
 
-**10. Hard-coded UI Text**
+**6. Hard-coded UI Text**
 - **Current**: Fixed messages like "Payment must be recorded before workflows"
 - **Missing**: Configurable messaging, internationalization
+
+**7. PDF Invoice Generation**
+- **Current**: TODO comment in code, no PDF generation
+- **Missing**: Actual PDF generation and cloud storage upload
+
+**8. Payment Reports**
+- **Current**: No reporting interface
+- **Missing**: Admin dashboard for payment analytics, revenue reports
+
+**9. Refund Management**
+- **Current**: Status exists but no refund workflow
+- **Missing**: Refund processing API, partial refund support
+
+**10. Payment Reminders**
+- **Current**: No automated reminders
+- **Missing**: Automated payment reminder emails for pending invoices
 
 ### Technical Debt & Placeholders (CRITICAL FOR FUTURE FIXES)
 

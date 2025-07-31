@@ -52,6 +52,10 @@ export async function POST(
       return NextResponse.json({ error: 'Order not found' }, { status: 404 });
     }
 
+    if (!order.accountId) {
+      return NextResponse.json({ error: 'Order has no associated account' }, { status: 400 });
+    }
+
     if (order.paidAt) {
       return NextResponse.json({ 
         error: 'Order already marked as paid', 
@@ -79,7 +83,7 @@ export async function POST(
       // Create payment record
       const [payment] = await tx.insert(payments).values({
         orderId,
-        accountId: order.accountId,
+        accountId: order.accountId!,  // We've already checked it's not null above
         amount,
         status: 'completed',
         method: paymentMethod,
