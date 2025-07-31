@@ -58,6 +58,7 @@ export async function POST(request: NextRequest) {
       clientId,
       domains: domainIds, // Legacy support
       domainMappings, // New format with target page mappings
+      accountId,
       accountEmail,
       accountName,
       accountCompany,
@@ -159,7 +160,7 @@ export async function POST(request: NextRequest) {
     // Create the order
     await db.insert(orders).values({
       id: orderId,
-      accountId: session.userType === 'account' ? session.accountId : null,
+      accountId: accountId || (session.userType === 'account' ? session.accountId : null),
       accountEmail: accountEmail.toLowerCase(),
       accountName: accountName,
       accountCompany: accountCompany,

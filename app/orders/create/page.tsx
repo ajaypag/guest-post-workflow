@@ -28,6 +28,7 @@ interface Client {
   name: string;
   website: string;
   targetPages?: string[];
+  accountId?: string;
 }
 
 interface BulkAnalysisProject {
@@ -107,6 +108,7 @@ function CreateOrderContent() {
 
   // Order Details
   const [orderDetails, setOrderDetails] = useState({
+    accountId: '',
     accountEmail: '',
     accountName: '',
     accountCompany: '',
@@ -142,6 +144,8 @@ function CreateOrderContent() {
     
     if (preselectedClientId) {
       setSelectedClient(preselectedClientId);
+      // Load account info for pre-selected client
+      loadAccountForClient(preselectedClientId);
     }
     
     // If both client and domains are pre-selected, go to domains step
@@ -225,6 +229,51 @@ function CreateOrderContent() {
       console.error('Error loading projects:', error);
     } finally {
       setLoadingProjects(false);
+    }
+  };
+
+  const loadAccountForClient = async (clientId: string) => {
+    try {
+      // First get the client details to check if it has an accountId
+      const clientResponse = await fetch(`/api/clients/${clientId}`, {
+        credentials: 'include',
+      });
+      
+      if (clientResponse.ok) {
+        const clientData = await clientResponse.json();
+        const client = clientData.client;
+        
+        if (client.accountId) {
+          // Client has an associated account
+          const accountResponse = await fetch(`/api/accounts/${client.accountId}`, {
+            credentials: 'include',
+          });
+          
+          if (accountResponse.ok) {
+            const accountData = await accountResponse.json();
+            const account = accountData.account;
+            
+            setOrderDetails(prev => ({
+              ...prev,
+              accountId: account.id,
+              accountEmail: account.email,
+              accountName: account.name || account.contactName,
+              accountCompany: account.company || account.companyName || ''
+            }));
+          }
+        } else {
+          // Client is orphaned, clear account fields
+          setOrderDetails(prev => ({
+            ...prev,
+            accountId: '',
+            accountEmail: '',
+            accountName: '',
+            accountCompany: ''
+          }));
+        }
+      }
+    } catch (error) {
+      console.error('Error loading account for client:', error);
     }
   };
 
@@ -356,8 +405,9 @@ function CreateOrderContent() {
       setSelectedClient(data.client.id);
       setIsNewClient(false);
       
-      // Load projects for the new client
+      // Load projects and account info for the new client
       await loadProjectsForClient(data.client.id);
+      await loadAccountForClient(data.client.id);
       setCurrentStep('projects');
     } catch (error) {
       console.error('Error creating client:', error);
@@ -379,6 +429,7 @@ function CreateOrderContent() {
       const orderData = {
         clientId: selectedClient,
         domainMappings, // Send domain-to-target-page mappings
+        accountId: orderDetails.accountId,
         accountEmail: orderDetails.accountEmail,
         accountName: orderDetails.accountName,
         accountCompany: orderDetails.accountCompany,
@@ -478,6 +529,7 @@ function CreateOrderContent() {
                   setSelectedClient(e.target.value);
                   if (e.target.value) {
                     loadProjectsForClient(e.target.value);
+                    loadAccountForClient(e.target.value);
                   }
                 }}
                 className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
