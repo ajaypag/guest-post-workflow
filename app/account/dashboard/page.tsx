@@ -33,6 +33,16 @@ interface Order {
 }
 
 
+interface Client {
+  id: string;
+  name: string;
+  website: string;
+  targetPages: Array<{
+    id: string;
+    url: string;
+  }>;
+}
+
 interface AccountDashboardProps {
   user: any;
 }
@@ -56,11 +66,13 @@ function AccountDashboardContent({ user }: AccountDashboardProps) {
   const router = useRouter();
   const [loading, setLoading] = useState(true);
   const [orders, setOrders] = useState<Order[]>([]);
+  const [clients, setClients] = useState<Client[]>([]);
   const [stats, setStats] = useState({
     totalOrders: 0,
     activeOrders: 0,
     completedOrders: 0,
     totalSpent: 0,
+    totalBrands: 0,
   });
   const [onboardingData, setOnboardingData] = useState({
     completed: false,
@@ -92,12 +104,27 @@ function AccountDashboardContent({ user }: AccountDashboardProps) {
         const activeOrders = orderData.filter((o: any) => ['draft', 'approved', 'in_progress'].includes(o.status)).length;
         const completedOrders = orderData.filter((o: any) => o.status === 'completed').length;
         
-        setStats({
+        setStats(prev => ({
+          ...prev,
           totalOrders: orderData.length,
           activeOrders,
           completedOrders,
           totalSpent,
-        });
+        }));
+      }
+      
+      // Load account brands
+      const clientResponse = await fetch('/api/accounts/client', {
+        credentials: 'include',
+      });
+      
+      if (clientResponse.ok) {
+        const { clients: clientData, totalBrands } = await clientResponse.json();
+        setClients(clientData || []);
+        setStats(prev => ({
+          ...prev,
+          totalBrands: totalBrands || 0,
+        }));
       }
       
       // Load onboarding status
@@ -211,13 +238,22 @@ function AccountDashboardContent({ user }: AccountDashboardProps) {
           )}
 
           {/* Stats Grid */}
-          <div className="grid grid-cols-1 md:grid-cols-4 gap-6 mb-8">
+          <div className="grid grid-cols-2 md:grid-cols-5 gap-4 mb-8">
+            <div className="bg-white rounded-lg shadow-md p-6">
+              <div className="flex items-center justify-between mb-4">
+                <div className="p-3 bg-purple-100 rounded-lg">
+                  <Building className="h-6 w-6 text-purple-600" />
+                </div>
+              </div>
+              <div className="text-2xl font-bold text-gray-900">{stats.totalBrands}</div>
+              <p className="text-sm text-gray-600">Active Brands</p>
+            </div>
+
             <div className="bg-white rounded-lg shadow-md p-6">
               <div className="flex items-center justify-between mb-4">
                 <div className="p-3 bg-blue-100 rounded-lg">
                   <Package className="h-6 w-6 text-blue-600" />
                 </div>
-                <span className="text-sm text-gray-500">Total</span>
               </div>
               <div className="text-2xl font-bold text-gray-900">{stats.totalOrders}</div>
               <p className="text-sm text-gray-600">Total Orders</p>
@@ -228,7 +264,6 @@ function AccountDashboardContent({ user }: AccountDashboardProps) {
                 <div className="p-3 bg-yellow-100 rounded-lg">
                   <Clock className="h-6 w-6 text-yellow-600" />
                 </div>
-                <span className="text-sm text-gray-500">Active</span>
               </div>
               <div className="text-2xl font-bold text-gray-900">{stats.activeOrders}</div>
               <p className="text-sm text-gray-600">In Progress</p>
@@ -239,7 +274,6 @@ function AccountDashboardContent({ user }: AccountDashboardProps) {
                 <div className="p-3 bg-green-100 rounded-lg">
                   <CheckCircle className="h-6 w-6 text-green-600" />
                 </div>
-                <span className="text-sm text-gray-500">Complete</span>
               </div>
               <div className="text-2xl font-bold text-gray-900">{stats.completedOrders}</div>
               <p className="text-sm text-gray-600">Completed</p>
@@ -247,17 +281,81 @@ function AccountDashboardContent({ user }: AccountDashboardProps) {
 
             <div className="bg-white rounded-lg shadow-md p-6">
               <div className="flex items-center justify-between mb-4">
-                <div className="p-3 bg-purple-100 rounded-lg">
-                  <DollarSign className="h-6 w-6 text-purple-600" />
+                <div className="p-3 bg-indigo-100 rounded-lg">
+                  <DollarSign className="h-6 w-6 text-indigo-600" />
                 </div>
-                <span className="text-sm text-gray-500">Spent</span>
               </div>
               <div className="text-2xl font-bold text-gray-900">
                 {formatCurrency(stats.totalSpent)}
               </div>
-              <p className="text-sm text-gray-600">Total Investment</p>
+              <p className="text-sm text-gray-600">Total Spent</p>
             </div>
           </div>
+
+          {/* Brand Summary */}
+          {clients.length > 0 ? (
+            <div className="bg-white rounded-lg shadow-md p-6 mb-8">
+              <div className="flex justify-between items-start mb-4">
+                <div>
+                  <h2 className="text-xl font-semibold text-gray-900 mb-2">Your Brands</h2>
+                  <p className="text-sm text-gray-600">
+                    You have {stats.totalBrands} active {stats.totalBrands === 1 ? 'brand' : 'brands'} registered
+                  </p>
+                </div>
+                <button
+                  onClick={() => router.push('/clients')}
+                  className="inline-flex items-center px-4 py-2 border border-gray-300 rounded-lg hover:bg-gray-50 text-sm font-medium text-gray-700"
+                >
+                  Manage All Brands
+                  <ExternalLink className="h-4 w-4 ml-2" />
+                </button>
+              </div>
+              <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+                {clients.slice(0, 3).map((client) => (
+                  <div key={client.id} className="border border-gray-200 rounded-lg p-4">
+                    <h3 className="font-medium text-gray-900 mb-1">{client.name}</h3>
+                    <a 
+                      href={client.website}
+                      target="_blank"
+                      rel="noopener noreferrer"
+                      className="text-sm text-blue-600 hover:text-blue-800"
+                    >
+                      {client.website}
+                    </a>
+                    <p className="text-xs text-gray-500 mt-2">
+                      {client.targetPages?.length || 0} target pages
+                    </p>
+                  </div>
+                ))}
+                {clients.length > 3 && (
+                  <div className="border border-gray-200 rounded-lg p-4 flex items-center justify-center">
+                    <p className="text-sm text-gray-600">
+                      +{clients.length - 3} more {clients.length - 3 === 1 ? 'brand' : 'brands'}
+                    </p>
+                  </div>
+                )}
+              </div>
+            </div>
+          ) : (
+            <div className="bg-yellow-50 border border-yellow-200 rounded-lg p-6 mb-8">
+              <div className="flex items-start">
+                <AlertCircle className="h-5 w-5 text-yellow-600 mt-0.5 mr-3" />
+                <div className="flex-1">
+                  <h3 className="text-sm font-medium text-yellow-800">No Brands Found</h3>
+                  <p className="text-sm text-yellow-700 mt-1">
+                    You need to add at least one brand before creating orders.
+                  </p>
+                  <button
+                    onClick={() => router.push('/clients/new')}
+                    className="mt-3 inline-flex items-center px-3 py-1.5 bg-yellow-600 text-white text-sm font-medium rounded hover:bg-yellow-700"
+                  >
+                    <Plus className="h-4 w-4 mr-1" />
+                    Add Your First Brand
+                  </button>
+                </div>
+              </div>
+            </div>
+          )}
 
           {/* Quick Actions */}
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6 mb-8">
@@ -271,22 +369,35 @@ function AccountDashboardContent({ user }: AccountDashboardProps) {
                 </div>
                 <ExternalLink className="h-5 w-5 text-gray-400" />
               </div>
-              <h3 className="text-lg font-semibold text-gray-900 mb-1">Manage Brands</h3>
-              <p className="text-sm text-gray-600">View and manage all your brands in one place</p>
+              <h3 className="text-lg font-semibold text-gray-900 mb-1">
+                {clients.length > 0 ? 'Manage Brands' : 'Add First Brand'}
+              </h3>
+              <p className="text-sm text-gray-600">
+                {clients.length > 0 
+                  ? 'View and manage all your brands' 
+                  : 'Get started by adding your first brand'}
+              </p>
             </button>
 
             <button
-              onClick={() => router.push('/orders/new')}
+              onClick={() => router.push(clients.length > 0 ? '/orders/new' : '/clients/new')}
               className="bg-white rounded-lg shadow-md p-6 hover:shadow-lg transition-shadow text-left"
+              disabled={clients.length === 0}
             >
               <div className="flex items-center justify-between mb-4">
-                <div className="p-3 bg-green-100 rounded-lg">
-                  <Plus className="h-6 w-6 text-green-600" />
+                <div className={`p-3 rounded-lg ${clients.length > 0 ? 'bg-green-100' : 'bg-gray-100'}`}>
+                  <Plus className={`h-6 w-6 ${clients.length > 0 ? 'text-green-600' : 'text-gray-400'}`} />
                 </div>
                 <ExternalLink className="h-5 w-5 text-gray-400" />
               </div>
-              <h3 className="text-lg font-semibold text-gray-900 mb-1">New Order</h3>
-              <p className="text-sm text-gray-600">Start a new guest post campaign</p>
+              <h3 className={`text-lg font-semibold mb-1 ${clients.length > 0 ? 'text-gray-900' : 'text-gray-400'}`}>
+                New Order
+              </h3>
+              <p className="text-sm text-gray-600">
+                {clients.length > 0 
+                  ? 'Start a new guest post campaign' 
+                  : 'Add a brand first to create orders'}
+              </p>
             </button>
 
             <button
@@ -300,7 +411,11 @@ function AccountDashboardContent({ user }: AccountDashboardProps) {
                 <ExternalLink className="h-5 w-5 text-gray-400" />
               </div>
               <h3 className="text-lg font-semibold text-gray-900 mb-1">View Orders</h3>
-              <p className="text-sm text-gray-600">Track all your guest post orders</p>
+              <p className="text-sm text-gray-600">
+                {orders.length > 0 
+                  ? 'Track all your guest post orders' 
+                  : 'Your order history will appear here'}
+              </p>
             </button>
           </div>
 
