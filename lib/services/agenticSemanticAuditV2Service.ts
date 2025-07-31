@@ -145,22 +145,25 @@ YOUR TASK:
 Break this article into the optimal number of focused sections for detailed analysis.
 
 RULES:
-1. **Default approach**: Treat subsections (H3, H4, H5) as individual sections
+1. **Look for logical breaks**: Identify natural content boundaries, regardless of heading formatting
 2. **Introduction**: Always its own section (content before first heading)
-3. **Listicles**: If this covers products/services/software/tools, each item should be its own section
-4. **Only group when**: 
-   - Individual subsections are very thin (under 100 words)
+3. **Main sections (H2)**: Generally their own sections, but can have subsections
+4. **Subsections (H3)**: Often their own sections for focused analysis
+5. **H4, H5 and beyond**: Usually group with parent section unless they're substantial (200+ words)
+6. **Listicles**: Each product/service/tool/item should be its own section
+7. **Messy formatting**: Use content logic over heading hierarchy - look for topic shifts
+8. **Only group when**: 
+   - Individual chunks are very thin (under 100 words)
    - You'd create more than 20 sections total
-   - Adjacent subsections are nearly identical in scope
-5. **Never group**: Different H2 sections together by default
-6. **Preserve exact markdown**: Headings must match exactly as written
+   - Adjacent content covers nearly identical topics
 
 REASONING APPROACH:
-- Scan for article type (listicle, guide, comparison, etc.)
-- Count natural breakpoints (H2, H3, H4 headings)
-- Assess word count of each potential section
-- Determine if any grouping is needed for thin content
-- Prioritize focused analysis over artificial grouping
+- Scan for article type and content patterns
+- Identify major topic shifts (regardless of heading level)
+- Look for listicle patterns (numbered items, product names, etc.)
+- Check for substantial vs. thin content blocks
+- Consider real-world messy formatting - some docs use inconsistent heading levels
+- Prioritize logical content boundaries over perfect markdown hierarchy
 
 Output JSON in this exact format:
 {
