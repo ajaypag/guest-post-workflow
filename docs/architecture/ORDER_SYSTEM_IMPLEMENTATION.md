@@ -12,6 +12,8 @@
 | **Phase 6: Share Tokens** | ❌ NOT STARTED | - | Public preview and conversion flow |
 | **Payment System** | ✅ COMPLETED | 2025-01-31 | Manual payment recording with invoices |
 | **Email Integration** | ✅ COMPLETED | 2025-01-31 | Payment confirmations, invitations ready |
+| **Archive System** | ✅ COMPLETED | 2025-01-31 | Soft delete with consistent UI/API behavior |
+| **AI Permissions** | ✅ COMPLETED | 2025-01-31 | Granular AI feature access control for accounts |
 
 ### Completed Features
 
@@ -696,6 +698,8 @@ GROUP BY o.id, oi.client_id;
 | **Implement payment recording system** | 🔴 HIGH | ✅ COMPLETED | Full payment flow with invoices |
 | **Add email notifications for payments** | 🔴 HIGH | ✅ COMPLETED | Confirmation emails sent |
 | **Fix TypeScript compilation errors** | 🔴 HIGH | ✅ COMPLETED | Field name mismatches resolved |
+| **Implement client archive system** | 🔴 HIGH | ✅ COMPLETED | Soft delete with UI and API |
+| **Implement AI permissions for accounts** | 🔴 HIGH | ✅ COMPLETED | Granular control over AI features |
 | **Fix createdBy user reference** | 🟡 MEDIUM | ❌ PENDING | Needs proper auth system |
 | **Integrate real domain metrics from DataForSEO** | 🟡 MEDIUM | ❌ PENDING | Currently hardcoded as DR:70, traffic:10000 |
 | **Implement dynamic pricing calculation** | 🟡 MEDIUM | ❌ PENDING | Currently hardcoded as $100 per site |
@@ -704,6 +708,42 @@ GROUP BY o.id, oi.client_id;
 | **Re-implement account user audit tools** | 🟢 LOW | ❌ PENDING | `/admin/check-account-data` disabled |
 
 ### Technical Debt & Placeholders (CRITICAL FOR FUTURE FIXES)
+
+#### Archive System Technical Debt (Added 2025-01-31)
+
+**COMPLETED:**
+- ✅ **Consistent Archive Behavior**: Archive/restore works identically for internal and account users
+- ✅ **UI Implementation**: Archive modal, visual indicators, and list filtering
+- ✅ **Permission Checking**: Proper authorization for archive operations
+- ✅ **TypeScript Types**: Added archive fields to Client interface
+
+**REMAINING TECHNICAL DEBT:**
+
+**1. Foreign Key Constraint Issue**
+- **Current**: Account users' archive actions show `archivedBy` as NULL
+- **Reason**: FK constraint to users table prevents storing account IDs
+- **Impact**: Can't track which account user performed archive action
+- **Solution**: Consider polymorphic reference or separate archive_log table
+
+**2. No Audit Log Table**
+- **Current**: Archive operations only logged to console
+- **Missing**: Permanent audit trail for compliance/debugging
+- **Impact**: Can't review archive history or restore metadata
+
+**3. No Bulk Operations**
+- **Current**: Must archive/restore clients one at a time
+- **Missing**: Bulk selection and archive functionality
+- **Impact**: Time-consuming for users with many clients
+
+**4. No Cascade Behavior**
+- **Current**: Archiving client doesn't affect related data
+- **Missing**: Option to archive/hide related orders, workflows
+- **Impact**: Archived clients still show in order history
+
+**5. Hard-coded System User**
+- **Current**: Using UUID constant for system operations
+- **Missing**: Dynamic system user lookup
+- **Impact**: Breaks if system user ID changes
 
 #### Payment System Technical Debt (Added 2025-01-31)
 
@@ -1142,6 +1182,122 @@ GET /api/accounts/onboarding
 ```
 
 This onboarding system ensures new account users understand the platform and complete essential setup steps, improving user activation and reducing support burden.
+
+## Archive System Implementation (Added 2025-01-31)
+
+### ✅ **IMPLEMENTATION COMPLETE**
+
+**Purpose**: Provide soft delete functionality for clients with consistent behavior across all interfaces.
+
+### **Features Implemented**
+
+1. **Database Schema** (Migration: `/admin/client-archive-migration`)
+   - `archivedAt` (TIMESTAMP) - Archive timestamp (null = active)
+   - `archivedBy` (UUID) - User who archived (NULL for account users due to FK)
+   - `archiveReason` (TEXT) - Optional reason for archiving
+   
+2. **API Endpoints**
+   - `POST /api/clients/[id]/archive` - Archive a client
+   - `POST /api/clients/[id]/restore` - Restore an archived client
+   - Consistent behavior for both internal and account users
+   
+3. **UI Implementation**
+   - Archive button with confirmation modal on client detail pages
+   - Visual indicators for archived clients (gray text, archive icon)
+   - "Include Archived" toggle in client lists
+   - Archive/restore tracked in audit logs
+
+4. **Permission Model**
+   - Internal users: Can archive/restore any client
+   - Account users: Can only archive/restore their own clients
+   - Proper error messages for permission violations
+
+### **Technical Details**
+
+```typescript
+// Archive operation
+await db.update(clients)
+  .set({
+    archivedAt: new Date(),
+    archivedBy: isInternalUser ? session.userId : null, // FK constraint
+    archiveReason: reason || null,
+    updatedAt: new Date()
+  })
+  .where(eq(clients.id, clientId));
+```
+
+### **Known Limitations**
+- Account users' archive actions show `archivedBy` as NULL due to foreign key constraint
+- Archive operations logged in console but not in separate audit table
+- No bulk archive functionality
+- No automatic archive of related data (orders, workflows)
+
+## AI Permissions System (Added 2025-01-31)
+
+### ✅ **IMPLEMENTATION COMPLETE**
+
+**Purpose**: Control account user access to AI-powered features with granular permissions.
+
+### **Features Implemented**
+
+1. **Database Schema** (Migration: `/api/admin/add-ai-permissions`)
+   - `canUseAiKeywords` (BOOLEAN) - AI keyword generation permission
+   - `canUseAiDescriptions` (BOOLEAN) - AI description generation permission  
+   - `canUseAiContentGeneration` (BOOLEAN) - Future AI content features
+   - `aiPermissions` (JSONB) - Extensible permissions object
+
+2. **Admin Management UI**
+   - AI Permissions modal in accounts management page
+   - Visual indicators (K/D/C badges) for enabled features
+   - Purple wand icon to access permission settings
+   - Real-time permission updates
+
+3. **Client Pages Integration**
+   - AI features hidden by default for account users
+   - Features conditionally rendered based on permissions
+   - Internal users always have full access
+   - Permission checks on page load
+
+4. **API Endpoint**
+   - `PATCH /api/accounts/[id]/permissions` - Update AI permissions
+   - Internal-only endpoint with proper authentication
+   - Tracks who updated permissions and when
+
+### **Permission Model**
+
+```typescript
+// Internal users - always full access
+if (session.userType === 'internal') {
+  setAiPermissions({
+    canUseAiKeywords: true,
+    canUseAiDescriptions: true,
+    canUseAiContentGeneration: true
+  });
+}
+
+// Account users - check database permissions
+else if (session.userType === 'account') {
+  const account = await fetchAccountData(session.accountId);
+  setAiPermissions({
+    canUseAiKeywords: account.canUseAiKeywords || false,
+    canUseAiDescriptions: account.canUseAiDescriptions || false,
+    canUseAiContentGeneration: account.canUseAiContentGeneration || false
+  });
+}
+```
+
+### **UI Behavior**
+- Keyword generation button hidden without permission
+- Description generation button hidden without permission
+- Bulk AI operations hidden without permission
+- Clear visual feedback when features are restricted
+
+### **Future Extensibility**
+The `aiPermissions` JSONB field allows for future granular permissions:
+- Rate limiting per feature
+- Usage quotas
+- Model selection permissions
+- Advanced feature toggles
 
 ## Critical Database Schema Fix (2025-01-31)
 
