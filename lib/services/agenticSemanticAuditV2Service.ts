@@ -190,7 +190,20 @@ IMPORTANT:
       await result.finalOutput;
       console.log('📋 Section identification completed, extracting response...');
       
-      const response = this.extractTextContent((result as any).history[1].content);
+      // Get conversation history and find last assistant message
+      const conversationHistory = (result as any).history;
+      console.log('📊 History length:', conversationHistory?.length);
+      
+      const lastAssistantMessage = conversationHistory
+        ?.filter((msg: any) => msg.role === 'assistant')
+        ?.pop();
+      
+      if (!lastAssistantMessage) {
+        console.error('❌ No assistant message found in history');
+        throw new Error('No response from section identification agent');
+      }
+      
+      const response = this.extractTextContent(lastAssistantMessage.content);
       console.log('📝 Raw response:', response.substring(0, 500));
       
       // Extract JSON from response
