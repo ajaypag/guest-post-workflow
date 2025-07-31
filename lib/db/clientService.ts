@@ -405,12 +405,21 @@ export class ClientService {
   }
 
   // Get clients by account ID
-  static async getClientsByAccount(accountId: string): Promise<Client[]> {
+  static async getClientsByAccount(accountId: string, includeArchived: boolean = false): Promise<Client[]> {
     try {
-      const clientList = await db
-        .select()
-        .from(clients)
-        .where(eq(clients.accountId as any, accountId));
+      // Filter out archived clients by default
+      const clientList = includeArchived 
+        ? await db
+            .select()
+            .from(clients)
+            .where(eq(clients.accountId as any, accountId))
+        : await db
+            .select()
+            .from(clients)
+            .where(and(
+              eq(clients.accountId as any, accountId),
+              isNull(clients.archivedAt)
+            ));
       
       // Add target pages to each client
       const clientsWithPages = await Promise.all(

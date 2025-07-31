@@ -195,25 +195,23 @@ function ClientsPageContent() {
                 </p>
               </div>
               <div className="flex items-center gap-2">
+                <label className="inline-flex items-center">
+                  <input
+                    type="checkbox"
+                    checked={showArchived}
+                    onChange={(e) => setShowArchived(e.target.checked)}
+                    className="rounded border-gray-300 text-blue-600 focus:ring-blue-500"
+                  />
+                  <span className="ml-2 text-sm text-gray-600">Show Archived</span>
+                </label>
                 {userType === 'internal' && (
-                  <>
-                    <label className="inline-flex items-center">
-                      <input
-                        type="checkbox"
-                        checked={showArchived}
-                        onChange={(e) => setShowArchived(e.target.checked)}
-                        className="rounded border-gray-300 text-blue-600 focus:ring-blue-500"
-                      />
-                      <span className="ml-2 text-sm text-gray-600">Show Archived</span>
-                    </label>
-                    <Link
-                      href="/admin/orphaned-clients"
-                      className="inline-flex items-center px-4 py-2 bg-orange-600 text-white text-sm font-medium rounded-md hover:bg-orange-700"
-                    >
-                      <AlertCircle className="w-4 h-4 mr-2" />
-                      Orphaned Clients
-                    </Link>
-                  </>
+                  <Link
+                    href="/admin/orphaned-clients"
+                    className="inline-flex items-center px-4 py-2 bg-orange-600 text-white text-sm font-medium rounded-md hover:bg-orange-700"
+                  >
+                    <AlertCircle className="w-4 h-4 mr-2" />
+                    Orphaned Clients
+                  </Link>
                 )}
                 <Link
                   href="/clients/new"
@@ -314,34 +312,36 @@ function ClientsPageContent() {
                         <Building2 className="w-5 h-5 text-gray-400 mr-2" />
                         <div className="flex-1">
                           <h3 className="text-lg font-medium text-gray-900">{client.name}</h3>
-                          {userType === 'internal' && (
-                            <div className="mt-1 flex items-center gap-2">
-                              <span className={`inline-flex px-2 py-1 text-xs font-medium rounded-full ${
-                                (client as any).clientType === 'prospect' 
-                                  ? 'bg-yellow-100 text-yellow-800' 
-                                  : 'bg-green-100 text-green-800'
-                              }`}>
-                                {(client as any).clientType === 'prospect' ? 'Prospect' : 'Client'}
+                          <div className="mt-1 flex items-center gap-2">
+                            {userType === 'internal' && (
+                              <>
+                                <span className={`inline-flex px-2 py-1 text-xs font-medium rounded-full ${
+                                  (client as any).clientType === 'prospect' 
+                                    ? 'bg-yellow-100 text-yellow-800' 
+                                    : 'bg-green-100 text-green-800'
+                                }`}>
+                                  {(client as any).clientType === 'prospect' ? 'Prospect' : 'Client'}
+                                </span>
+                                {(client as any).accountId ? (
+                                  <span className="inline-flex items-center px-2 py-1 text-xs font-medium text-blue-700 bg-blue-50 rounded-full">
+                                    <Users className="w-3 h-3 mr-1" />
+                                    {accountName[(client as any).accountId] || 'Account'}
+                                  </span>
+                                ) : (
+                                  <span className="inline-flex items-center px-2 py-1 text-xs font-medium text-orange-700 bg-orange-50 rounded-full">
+                                    <AlertCircle className="w-3 h-3 mr-1" />
+                                    No Account
+                                  </span>
+                                )}
+                              </>
+                            )}
+                            {isArchived && (
+                              <span className="inline-flex items-center px-2 py-1 text-xs font-medium text-gray-700 bg-gray-100 rounded-full">
+                                <Archive className="w-3 h-3 mr-1" />
+                                Archived
                               </span>
-                              {(client as any).accountId ? (
-                                <span className="inline-flex items-center px-2 py-1 text-xs font-medium text-blue-700 bg-blue-50 rounded-full">
-                                  <Users className="w-3 h-3 mr-1" />
-                                  {accountName[(client as any).accountId] || 'Account'}
-                                </span>
-                              ) : (
-                                <span className="inline-flex items-center px-2 py-1 text-xs font-medium text-orange-700 bg-orange-50 rounded-full">
-                                  <AlertCircle className="w-3 h-3 mr-1" />
-                                  No Account
-                                </span>
-                              )}
-                              {isArchived && (
-                                <span className="inline-flex items-center px-2 py-1 text-xs font-medium text-gray-700 bg-gray-100 rounded-full">
-                                  <Archive className="w-3 h-3 mr-1" />
-                                  Archived
-                                </span>
-                              )}
-                            </div>
-                          )}
+                            )}
+                          </div>
                         </div>
                       </div>
                       <div className="flex space-x-2">

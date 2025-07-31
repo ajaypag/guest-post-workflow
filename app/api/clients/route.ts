@@ -30,7 +30,7 @@ export async function GET(request: NextRequest) {
       }
     } else if (session.userType === 'account') {
       // Account users: Only access their own clients
-      clients = await ClientService.getClientsByAccount(session.userId);
+      clients = await ClientService.getClientsByAccount(session.userId, includeArchived);
       
       // Also check if account has a primary client (legacy support)
       const account = await db.query.accounts.findFirst({
@@ -40,7 +40,10 @@ export async function GET(request: NextRequest) {
       if (account && account.primaryClientId) {
         const primaryClient = await ClientService.getClient(account.primaryClientId);
         if (primaryClient && !clients.find(c => c.id === primaryClient.id)) {
-          clients.push(primaryClient);
+          // Only include if not archived (unless includeArchived is true)
+          if (includeArchived || !primaryClient.archivedAt) {
+            clients.push(primaryClient);
+          }
         }
       }
     } else {
