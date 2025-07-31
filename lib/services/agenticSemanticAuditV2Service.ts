@@ -121,7 +121,7 @@ export class AgenticSemanticAuditV2Service {
     });
   }
 
-  async startAuditSession(workflowId: string, originalArticle: string, researchOutline: string): Promise<string> {
+  async startAuditSession(workflowId: string, originalArticle: string, researchOutline?: string): Promise<string> {
     try {
       // Get the next version number for this workflow's V2 audit sessions
       const maxVersionResult = await db.select({
@@ -173,7 +173,6 @@ export class AgenticSemanticAuditV2Service {
       if (!session) throw new Error('V2 audit session not found');
 
       const originalArticle = (session.sessionMetadata as any)?.originalArticle as string;
-      const researchOutline = session.outline || '';
 
       await this.updateAuditSession(sessionId, { status: 'auditing' });
       auditV2SSEPush(sessionId, { type: 'status', status: 'auditing', message: 'Starting V2 semantic SEO audit...' });
@@ -187,9 +186,7 @@ export class AgenticSemanticAuditV2Service {
 
 ${articleWithEndMarker}
 
-If you look at your knowledge base, you'll see that I've added some instructions for semantic SEO in writing. I want you to be a content editor, and I want you to review the article section by section to see if it's meeting the best practices that we discuss. For full reference, this was the original deep research data and outline that might be useful as you edit.
-
-${researchOutline}
+If you look at your knowledge base, you'll see that I've added some instructions for semantic SEO in writing. I want you to be a content editor, and I want you to review the article section by section to see if it's meeting the best practices that we discuss.
 
 Now I realize this is a lot, so i want your first output to only be an audit of the first section. For each section you audit, output your analysis in this EXACT format:
 

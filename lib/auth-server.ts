@@ -31,6 +31,8 @@ export class AuthServiceServer {
       console.log('🔐 Cookie check:', {
         hasAuthToken: !!token,
         cookieValue: token ? 'Token present' : 'No token',
+        accountTokenCookie: accountTokenCookie?.name,
+        authTokenCookie: authTokenCookie?.name,
         allCookies: cookieStore.getAll().map(c => c.name)
       });
 
