@@ -336,9 +336,12 @@ Your improved version of the section here
 Important:
 - Use EXACTLY these delimiters, don't modify them
 - Each strength/weakness should be on its own line
+- Ground your analysis in the specific principles from the guides in your file search - identify which best practices are being followed (strengths) or violated (weaknesses)
 - The suggestedVersion should preserve markdown formatting (headings, lists, bold, italics, etc.)
 - When you identify weaknesses related to lack of numbers or data, DO NOT make up data. Instead, use the web search tool to find accurate, factual data to support your improvements
-- Focus ONLY on this specific section. Do not audit any other sections.`;
+- While auditing, keep in mind we are creating a "primarily narrative" article so bullet points can appear but only very sporadically
+- Focus ONLY on this specific section and do not audit any other sections. But keep in mind you are ultimately crafting an article here, so it should feel like part of a greater whole if that makes sense
+- When your context starts getting too big, be sure to refresh yourself on the brand kit, semantic writing guide, content writing guide, and words not to use via your file search tool to ensure that your content stays high quality`;
   }
 
   async startAuditSession(workflowId: string, originalArticle: string, researchOutline: string): Promise<string> {
@@ -450,6 +453,8 @@ Important:
 - The suggestedVersion should preserve markdown formatting (headings, lists, bold, italics, etc.)
 - When you identify weaknesses related to lack of numbers or data, DO NOT make up data. Instead, use the web search tool to find accurate, factual data to support your improvements
 - Introduction sections should NOT include H2 headers. They appear at the start of the article before any section headings
+
+First, using File Search, review the content writing guide, semantic SEO guide, the brand kit, and the words not to use.
 
 Start with ${firstSectionIndicator}. Focus ONLY on this specific section.`;
 
