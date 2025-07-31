@@ -170,7 +170,7 @@ IMPORTANT:
       const sectionAgent = new Agent({
         name: 'SectionIdentifier',
         instructions: '',
-        model: 'o3-2025-01-17',
+        model: 'o3-2025-04-16', // Use same O3 model as other agents
         tools: []
       });
 
@@ -179,6 +179,7 @@ IMPORTANT:
         tracingDisabled: true
       });
 
+      console.log('🔍 Starting section identification...');
       const result = await runner.run(sectionAgent, [
         { role: 'user', content: sectionIdentificationPrompt }
       ], {
@@ -187,14 +188,19 @@ IMPORTANT:
       });
 
       await result.finalOutput;
+      console.log('📋 Section identification completed, extracting response...');
+      
       const response = this.extractTextContent((result as any).history[1].content);
+      console.log('📝 Raw response:', response.substring(0, 500));
       
       // Extract JSON from response
       const jsonMatch = response.match(/\{[\s\S]*\}/);
       if (!jsonMatch) {
+        console.error('❌ No JSON found in response:', response);
         throw new Error('Failed to extract JSON from section identification response');
       }
 
+      console.log('🔧 Parsing JSON:', jsonMatch[0].substring(0, 200));
       const sectionData = JSON.parse(jsonMatch[0]);
       
       // Extract actual content for each section from the article
@@ -248,8 +254,14 @@ IMPORTANT:
         auditGroups
       };
     } catch (error) {
-      console.error('Failed to identify sections:', error);
-      throw new Error('Failed to analyze article structure');
+      console.error('❌ Section identification failed:', error);
+      if (error instanceof SyntaxError) {
+        console.error('JSON parsing error - AI may not have returned valid JSON');
+      }
+      if (error instanceof Error) {
+        console.error('Error details:', error.message, error.stack);
+      }
+      throw new Error(`Failed to analyze article structure: ${error instanceof Error ? error.message : 'Unknown error'}`);
     }
   }
 
