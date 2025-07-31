@@ -19,8 +19,10 @@ import {
   Filter,
   MoreVertical,
   Key,
-  AlertCircle
+  AlertCircle,
+  Wand2
 } from 'lucide-react';
+import AIPermissionsModal from '@/components/AIPermissionsModal';
 
 interface Account {
   id: string;
@@ -37,6 +39,9 @@ interface Account {
   };
   orderCount?: number;
   totalRevenue?: number;
+  canUseAiKeywords?: boolean;
+  canUseAiDescriptions?: boolean;
+  canUseAiContentGeneration?: boolean;
 }
 
 function AccountsPageContent() {
@@ -51,6 +56,7 @@ function AccountsPageContent() {
     type: 'success' | 'error';
     message: string;
   } | null>(null);
+  const [showPermissionsModal, setShowPermissionsModal] = useState<Account | null>(null);
 
   useEffect(() => {
     loadAccounts();
@@ -352,6 +358,9 @@ function AccountsPageContent() {
                     Revenue
                   </th>
                   <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                    AI Features
+                  </th>
+                  <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
                     Last Login
                   </th>
                   <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
@@ -404,6 +413,31 @@ function AccountsPageContent() {
                       </div>
                     </td>
                     <td className="px-6 py-4 whitespace-nowrap">
+                      <div className="flex gap-1">
+                        {(account.canUseAiKeywords || account.canUseAiDescriptions || account.canUseAiContentGeneration) ? (
+                          <>
+                            {account.canUseAiKeywords && (
+                              <span className="inline-flex items-center px-2 py-0.5 rounded text-xs font-medium bg-blue-100 text-blue-800" title="AI Keywords">
+                                K
+                              </span>
+                            )}
+                            {account.canUseAiDescriptions && (
+                              <span className="inline-flex items-center px-2 py-0.5 rounded text-xs font-medium bg-purple-100 text-purple-800" title="AI Descriptions">
+                                D
+                              </span>
+                            )}
+                            {account.canUseAiContentGeneration && (
+                              <span className="inline-flex items-center px-2 py-0.5 rounded text-xs font-medium bg-green-100 text-green-800" title="AI Content">
+                                C
+                              </span>
+                            )}
+                          </>
+                        ) : (
+                          <span className="text-xs text-gray-400">None</span>
+                        )}
+                      </div>
+                    </td>
+                    <td className="px-6 py-4 whitespace-nowrap">
                       <div className="text-sm text-gray-500">
                         {account.lastLoginAt ? (
                           <>
@@ -439,6 +473,15 @@ function AccountsPageContent() {
                           ) : (
                             <Key className="w-4 h-4" />
                           )}
+                        </button>
+                        
+                        {/* AI Permissions */}
+                        <button
+                          onClick={() => setShowPermissionsModal(account)}
+                          className="text-purple-600 hover:text-purple-900"
+                          title="AI Permissions"
+                        >
+                          <Wand2 className="w-4 h-4" />
                         </button>
                         
                         {/* Status Actions */}
@@ -486,6 +529,18 @@ function AccountsPageContent() {
             )}
           </div>
         </div>
+
+        {/* AI Permissions Modal */}
+        {showPermissionsModal && (
+          <AIPermissionsModal
+            account={showPermissionsModal}
+            onClose={() => setShowPermissionsModal(null)}
+            onUpdate={() => {
+              loadAccounts();
+              setShowPermissionsModal(null);
+            }}
+          />
+        )}
       </div>
   );
 }

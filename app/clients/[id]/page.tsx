@@ -38,6 +38,11 @@ export default function ClientDetailPage() {
   const [newlyAddedPages, setNewlyAddedPages] = useState<any[]>([]);
   const [bulkKeywordProgress, setBulkKeywordProgress] = useState({ current: 0, total: 0 });
   const [userType, setUserType] = useState<string>('');
+  const [aiPermissions, setAiPermissions] = useState({
+    canUseAiKeywords: false,
+    canUseAiDescriptions: false,
+    canUseAiContentGeneration: false
+  });
   
   // Bulk URL Update states
   const [showBulkUrlUpdate, setShowBulkUrlUpdate] = useState(false);
@@ -51,6 +56,15 @@ export default function ClientDetailPage() {
     const session = sessionStorage.getSession();
     if (session) {
       setUserType(session.userType || 'internal');
+      
+      // For internal users, grant all permissions
+      if (session.userType === 'internal') {
+        setAiPermissions({
+          canUseAiKeywords: true,
+          canUseAiDescriptions: true,
+          canUseAiContentGeneration: true
+        });
+      }
     }
     loadClient();
   }, [params.id]);
@@ -96,6 +110,16 @@ export default function ClientDetailPage() {
         if (accountResponse.ok) {
           const accountData = await accountResponse.json();
           setAccountInfo(accountData.account);
+          
+          // Load AI permissions for account users
+          const session = sessionStorage.getSession();
+          if (session && session.userType === 'account') {
+            setAiPermissions({
+              canUseAiKeywords: accountData.account.canUseAiKeywords || false,
+              canUseAiDescriptions: accountData.account.canUseAiDescriptions || false,
+              canUseAiContentGeneration: accountData.account.canUseAiContentGeneration || false
+            });
+          }
         }
       }
     } catch (error) {
@@ -793,7 +817,7 @@ export default function ClientDetailPage() {
           )}
 
           {/* Keyword Generation Prompt */}
-          {showKeywordPrompt && (
+          {showKeywordPrompt && (aiPermissions.canUseAiKeywords || aiPermissions.canUseAiDescriptions) && (
             <div className="bg-white rounded-lg shadow p-6 mb-6 border-l-4 border-purple-500">
               <h3 className="text-lg font-medium mb-4 text-purple-800">Generate Keywords & Descriptions for Target Pages?</h3>
               <p className="text-sm text-gray-600 mb-4">
@@ -881,7 +905,9 @@ export default function ClientDetailPage() {
                       <option value="active">Mark as Active</option>
                       <option value="inactive">Mark as Inactive</option>
                       <option value="completed">Mark as Completed</option>
-                      <option value="generate-keywords">Generate Keywords & Descriptions</option>
+                      {(aiPermissions.canUseAiKeywords || aiPermissions.canUseAiDescriptions) && (
+                        <option value="generate-keywords">Generate Keywords & Descriptions</option>
+                      )}
                       <option value="delete">Delete</option>
                     </select>
                     <button
@@ -952,13 +978,15 @@ export default function ClientDetailPage() {
                               targetPageId={page.id}
                               onKeywordsUpdate={handleKeywordsUpdate}
                             />
-                            <KeywordGenerationButton
-                              targetPageId={page.id}
-                              targetUrl={page.url}
-                              onSuccess={handleKeywordSuccess}
-                              onError={handleKeywordError}
-                              size="sm"
-                            />
+                            {aiPermissions.canUseAiKeywords && (
+                              <KeywordGenerationButton
+                                targetPageId={page.id}
+                                targetUrl={page.url}
+                                onSuccess={handleKeywordSuccess}
+                                onError={handleKeywordError}
+                                size="sm"
+                              />
+                            )}
                           </div>
 
                           {/* Description Section */}
@@ -969,13 +997,15 @@ export default function ClientDetailPage() {
                               targetPageId={page.id}
                               onDescriptionUpdate={handleDescriptionUpdate}
                             />
-                            <DescriptionGenerationButton
-                              targetPageId={page.id}
-                              targetUrl={page.url}
-                              onSuccess={handleDescriptionSuccess}
-                              onError={handleDescriptionError}
-                              size="sm"
-                            />
+                            {aiPermissions.canUseAiDescriptions && (
+                              <DescriptionGenerationButton
+                                targetPageId={page.id}
+                                targetUrl={page.url}
+                                onSuccess={handleDescriptionSuccess}
+                                onError={handleDescriptionError}
+                                size="sm"
+                              />
+                            )}
                           </div>
                         </div>
                         
