@@ -81,13 +81,15 @@ function NewClientContent() {
           setUserType(session.userType as 'internal' | 'account');
           if (session.userType === 'account') {
             // For account users, pre-select their account
+            // Account users have their userId as the account ID
+            const accountId = session.accountId || session.userId;
             setAccountInfo({
-              id: session.id,
+              id: accountId,
               email: session.email
             });
             // Skip the path selection for account users
             setSelectedPath('existing_account');
-            setSelectedAccountId(session.id);
+            setSelectedAccountId(accountId);
           }
         }
       } catch (error) {
@@ -138,6 +140,7 @@ function NewClientContent() {
     
     // Validate based on selected path
     if (selectedPath === 'existing_account' && !selectedAccountId) {
+      console.error('Account validation failed:', { selectedPath, selectedAccountId, userType });
       setError('Please select an account');
       return;
     }
@@ -379,7 +382,15 @@ function NewClientContent() {
                 </div>
               )}
               
-              {/* Account Selection - Only show for internal users */}
+              {/* Account Selection - Show for internal users, or info for account users */}
+              {selectedPath === 'existing_account' && userType === 'account' && accountInfo && (
+                <div className="bg-gray-50 border border-gray-200 rounded-lg p-4 mb-6">
+                  <p className="text-sm text-gray-600">
+                    Creating brand for account: <span className="font-medium">{accountInfo.email}</span>
+                  </p>
+                </div>
+              )}
+              
               {selectedPath === 'existing_account' && userType === 'internal' && (
                 <div className="bg-white rounded-lg shadow-sm p-6 mb-6">
                   <h2 className="text-xl font-semibold mb-4">Select Account</h2>
@@ -548,10 +559,7 @@ function NewClientContent() {
                     onChange={(e) => setTargetPagesText(e.target.value)}
                     className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 font-mono text-sm"
                     rows={6}
-                    placeholder="Enter URLs, one per line:
-https://example.com/page1
-https://example.com/page2
-https://example.com/page3"
+                    placeholder="Enter URLs, one per line"
                   />
                   <p className="mt-2 text-xs text-gray-500">
                     Enter one URL per line. Each URL must include http:// or https://
