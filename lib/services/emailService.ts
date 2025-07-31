@@ -616,6 +616,48 @@ export class EmailService {
   }
 
   /**
+   * Send password reset email
+   */
+  static async sendPasswordResetEmail(data: {
+    to: string;
+    contactName: string;
+    resetUrl: string;
+    expiresIn: string;
+  }): Promise<{ success: boolean; id?: string; error?: string }> {
+    const html = `
+      <div style="font-family: Arial, sans-serif; line-height: 1.6; color: #333;">
+        <h2>Password Reset Request</h2>
+        <p>Hi ${data.contactName},</p>
+        
+        <p>We received a request to reset your password for your PostFlow account. If you didn't make this request, you can safely ignore this email.</p>
+        
+        <p>To reset your password, click the button below:</p>
+        
+        <div style="margin: 30px 0;">
+          <a href="${data.resetUrl}" style="background-color: #0066cc; color: white; padding: 12px 24px; text-decoration: none; border-radius: 4px; display: inline-block;">Reset Password</a>
+        </div>
+        
+        <p style="color: #666; font-size: 14px;">This link will expire in ${data.expiresIn}. If the link has expired, you can request a new password reset from your administrator.</p>
+        
+        <p>If you're having trouble clicking the button, copy and paste this URL into your browser:</p>
+        <p style="color: #666; font-size: 14px; word-break: break-all;">${data.resetUrl}</p>
+        
+        <p>Best regards,<br>The PostFlow Team</p>
+        
+        <hr style="margin: 30px 0; border: none; border-top: 1px solid #eee;">
+        <p style="color: #999; font-size: 12px;">This is an automated message. Please do not reply to this email.</p>
+      </div>
+    `;
+
+    return this.send('password-reset', {
+      to: data.to,
+      subject: 'Reset Your PostFlow Password',
+      html,
+      text: `Hi ${data.contactName}, We received a request to reset your password. Visit ${data.resetUrl} to reset your password. This link will expire in ${data.expiresIn}.`,
+    });
+  }
+
+  /**
    * Send order ready for review email
    */
   static async sendOrderReadyForReview(data: {
