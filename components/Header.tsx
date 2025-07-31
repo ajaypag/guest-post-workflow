@@ -114,13 +114,22 @@ export default function Header() {
                   Accounts
                 </Link>
                 {session.role === 'admin' && (
-                  <Link
-                    href="/admin/users"
-                    className="text-gray-600 hover:text-gray-900 hover:bg-gray-50 px-3 py-2 rounded-lg text-sm font-medium transition-colors flex items-center"
-                  >
-                    <Users className="w-4 h-4 mr-1.5" />
-                    Users
-                  </Link>
+                  <>
+                    <Link
+                      href="/admin/users"
+                      className="text-gray-600 hover:text-gray-900 hover:bg-gray-50 px-3 py-2 rounded-lg text-sm font-medium transition-colors flex items-center"
+                    >
+                      <Users className="w-4 h-4 mr-1.5" />
+                      Users
+                    </Link>
+                    <Link
+                      href="/admin/account-invitations"
+                      className="text-gray-600 hover:text-gray-900 hover:bg-gray-50 px-3 py-2 rounded-lg text-sm font-medium transition-colors flex items-center"
+                    >
+                      <Mail className="w-4 h-4 mr-1.5" />
+                      Invitations
+                    </Link>
+                  </>
                 )}
               </>
             )}

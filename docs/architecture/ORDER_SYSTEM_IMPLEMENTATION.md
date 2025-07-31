@@ -7,8 +7,11 @@
 | **Phase 1: Order Builder** | ✅ COMPLETED | 2025-01-30 | Multi-client order creation page fully functional |
 | **Phase 2: Bulk Analysis** | ✅ COMPLETED | 2025-01-30 | Human-driven projects with notification system |
 | **Phase 3: Site Selection** | ✅ COMPLETED | 2025-01-30 | Account-facing site browser with full transparency |
-| **Phase 4: Workflow Gen** | ❌ NOT STARTED | - | Auto-create workflows from approved sites |
-| **Phase 5: Share Tokens** | ❌ NOT STARTED | - | Public preview and conversion flow |
+| **Phase 4: Account Dashboard** | 🚧 IN PROGRESS | - | Auth complete, dashboard pending |
+| **Phase 5: Workflow Gen** | ✅ COMPLETED | 2025-01-30 | Payment-aware workflow generation |
+| **Phase 6: Share Tokens** | ❌ NOT STARTED | - | Public preview and conversion flow |
+| **Payment System** | ✅ COMPLETED | 2025-01-31 | Manual payment recording with invoices |
+| **Email Integration** | ✅ COMPLETED | 2025-01-31 | Payment confirmations, invitations ready |
 
 ### Completed Features
 
@@ -675,21 +678,21 @@ GROUP BY o.id, oi.client_id;
 
 ## 🔴 Active Development Tasks & Technical Debt
 
-### Current Sprint Tasks (2025-01-30)
+### Current Sprint Tasks (2025-01-31)
 
 | Task | Priority | Status | Notes |
 |------|----------|--------|--------|
-| **Implement dual user type support for site selection API** | 🔴 HIGH | ✅ COMPLETED | API now supports both internal and account users |
-| **Fix all userType compilation errors** | 🔴 HIGH | ✅ COMPLETED | Build passes successfully |
-| **Audit and fix auth mistakes in previous phases** | 🔴 HIGH | ✅ COMPLETED | Fixed all critical auth issues found |
-| **Implement account authentication system** | 🔴 HIGH | ✅ COMPLETED | Login, password reset, settings, JWT refresh, role management |
-| **Implement Phase 4: Account Dashboard UI** | 🔴 HIGH | ✅ COMPLETED | Dashboard, orders view, site selection interface |
+| **Implement invite-only account registration system** | 🔴 HIGH | 🚧 IN PROGRESS | Blocking order testing |
 | **Create account user onboarding flow** | 🔴 HIGH | ❌ PENDING | Registration, invitation acceptance for accounts |
-| **Fix 'Add Client' button 404 error** | 🟡 MEDIUM | ✅ COMPLETED | Added "Create New Client" option in dropdown |
+| **Fix client dropdown in order creation** | 🔴 HIGH | ✅ COMPLETED | Fixed API response format mismatch |
+| **Fix account dropdown using wrong table** | 🔴 HIGH | ✅ COMPLETED | Now uses accounts table, not users |
+| **Implement payment recording system** | 🔴 HIGH | ✅ COMPLETED | Full payment flow with invoices |
+| **Add email notifications for payments** | 🔴 HIGH | ✅ COMPLETED | Confirmation emails sent |
+| **Fix TypeScript compilation errors** | 🔴 HIGH | ✅ COMPLETED | Field name mismatches resolved |
 | **Fix createdBy user reference** | 🟡 MEDIUM | ❌ PENDING | Needs proper auth system |
 | **Integrate real domain metrics from DataForSEO** | 🟡 MEDIUM | ❌ PENDING | Currently hardcoded as DR:70, traffic:10000 |
 | **Implement dynamic pricing calculation** | 🟡 MEDIUM | ❌ PENDING | Currently hardcoded as $100 per site |
-| **Fix incomplete permission validation** | 🟡 MEDIUM | ✅ COMPLETED | Site selection API validates account ownership |
+| **Manual workflow trigger after payment** | 🟡 MEDIUM | ❌ PENDING | Currently requires button click |
 | **Fix niche assignment logic** | 🟢 LOW | ❌ PENDING | Falls back to 'General' for all domains |
 | **Re-implement account user audit tools** | 🟢 LOW | ❌ PENDING | `/admin/check-account-data` disabled |
 
@@ -938,7 +941,7 @@ The workflow generation system is now payment-aware:
    - Button disabled until payment received
    - Site approval no longer triggers automatic workflow generation
 
-### Updated Implementation Timeline & Status (2025-01-30)
+### Updated Implementation Timeline & Status (2025-01-31)
 
 #### ✅ Completed Phases
 - **Phase 1**: Order Builder Interface
@@ -946,31 +949,37 @@ The workflow generation system is now payment-aware:
 - **Phase 3**: Site Selection Interface
 - **Phase 5**: Workflow Generation (payment-aware)
 - **Authentication**: Complete system with JWT, password reset, rate limiting
+- **Payment System**: Manual recording with invoices and email notifications
+- **Invitation System**: Admin-managed account creation with email invites
 
-#### 🚧 In Progress / Next Steps
-1. **Payment Recording System** (Critical Blocker)
-   - Need `/api/orders/[id]/record-payment` endpoint
-   - Invoice generation
-   - Payment status UI
+#### 🚧 Current Blockers
+1. **Invite-Only Registration** ✅ COMPLETED (2025-01-31)
+   - ✅ Admin invitation system built (`/admin/account-invitations`)
+   - ✅ Email invitations with 7-day expiration
+   - ✅ Registration page accepts tokens (`/register/account`)
+   - ✅ Account creation flow complete
+   - ✅ Email notifications (invitation + welcome)
    
-2. **Invite-Only Registration** (Account Creation Blocker)
-   - Complete invitation flow
-   - Registration with invite code
-   - Account onboarding
+2. **Account Creation in Order Flow** ✅ RESOLVED
+   - Order flow requires existing accounts (by design)
+   - Accounts created through invitation system
+   - Admin users send invitations from dashboard
 
-3. **Phase 4: Account Dashboard**
-   - Order management interface
-   - Workflow progress tracking
-   - Client communication tools
+3. **Phase 4: Account Dashboard** (Partially Complete)
+   - Auth system ✅ Complete
+   - Dashboard UI ✅ Complete
+   - Account creation ✅ Complete via invitations
 
 #### 📋 Feature Readiness
-- ✅ Orders can be created and configured
-- ✅ Bulk analysis runs and qualifies domains
-- ✅ Sites can be selected and approved
-- ✅ Workflows generate from approved sites
-- ⚠️ Workflows blocked until payment recorded
-- ❌ New accounts can't register (invite system incomplete)
-- ❌ Account users can't fully manage orders yet
+- ✅ Order builder works (accounts created via invitation)
+- ✅ Client selection works
+- ✅ Bulk analysis creates projects
+- ✅ Site selection interface complete
+- ✅ Payment recording system complete
+- ✅ Workflow generation ready (after payment)
+- ✅ **Account creation via invitation system**
+- ✅ **Full order flow now testable!**
+- ❌ Share token system not started
 
 ### Critical Understanding
 The system currently has a **complete technical foundation** but several **user experience and business process gaps** that require detailed requirements from the user before implementation can proceed. Each major feature area marked with "NOTE" needs user input to define:
@@ -981,3 +990,43 @@ The system currently has a **complete technical foundation** but several **user 
 4. **Internal team processes** (how should work be assigned/managed?)
 
 This architecture provides a complete, data-driven order system that leverages existing client data while providing unprecedented transparency and flexibility for accounts.
+
+## Invitation System (Added 2025-01-31)
+
+The invite-only account registration system provides controlled access to customer accounts:
+
+### Key Features
+1. **Admin-Only Invitations**
+   - Only admin users can send invitations
+   - Available at `/admin/account-invitations`
+   - Track all invitations (pending, used, expired, revoked)
+
+2. **Secure Token System**
+   - Cryptographically secure tokens (base64url)
+   - 7-day expiration by default
+   - One-time use (marked as used after registration)
+   - Can be revoked before use
+
+3. **Registration Flow**
+   - Invitation email sent with registration link
+   - Registration page at `/register/account?token=XXX`
+   - Pre-filled email from invitation
+   - Password requirements enforced
+   - Welcome email sent after successful registration
+
+4. **API Endpoints**
+   - `POST /api/invitations/send-account` - Send invitation
+   - `GET /api/invitations/verify` - Verify token validity
+   - `POST /api/register/account` - Complete registration
+   - `GET /api/invitations` - List all invitations
+   - `POST /api/invitations/[id]/revoke` - Revoke invitation
+
+### Usage Flow
+1. Admin navigates to `/admin/account-invitations`
+2. Clicks "Send Invitation" and enters email
+3. System sends invitation email with unique link
+4. Recipient clicks link and completes registration
+5. Account is created and marked as active
+6. User redirected to account login page
+
+This system ensures that only authorized customers can create accounts while maintaining security and providing a smooth onboarding experience.

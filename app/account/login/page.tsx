@@ -17,9 +17,11 @@ function AccountLoginForm() {
   const searchParams = useSearchParams();
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState('');
+  const [successMessage, setSuccessMessage] = useState('');
   
   // Get redirect URL from query params
   const redirectTo = searchParams.get('redirect') || '/account/dashboard';
+  const registered = searchParams.get('registered') === 'true';
   
   const [formData, setFormData] = useState({
     email: '',
@@ -80,6 +82,12 @@ function AccountLoginForm() {
         {/* Login Form */}
         <div className="bg-white rounded-lg shadow-xl p-8">
           <form onSubmit={handleSubmit} className="space-y-6">
+            {registered && !error && !loading && (
+              <div className="flex items-center gap-2 text-green-600 bg-green-50 p-3 rounded-lg text-sm">
+                <AlertCircle className="h-4 w-4 flex-shrink-0" />
+                Account created successfully! Please sign in.
+              </div>
+            )}
             {error && (
               <div className="flex items-center gap-2 text-red-600 bg-red-50 p-3 rounded-lg text-sm">
                 <AlertCircle className="h-4 w-4 flex-shrink-0" />

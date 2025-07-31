@@ -42,6 +42,7 @@ export type EmailType =
   | 'invitation'
   | 'notification'
   | 'account_welcome'
+  | 'account_invitation'
   | 'order_review'
   | 'order_approved'
   | 'order_paid';
@@ -534,6 +535,51 @@ export class EmailService {
       subject: 'Welcome to PostFlow - Your Account is Ready',
       html,
       text: `Welcome to PostFlow, ${data.name}! Your account has been created successfully.`,
+    });
+  }
+
+  /**
+   * Send account invitation email
+   */
+  static async sendAccountInvitation(email: string, data: {
+    inviteUrl: string;
+    expiresIn: string;
+    companyName?: string;
+    contactName?: string;
+    invitedBy: string;
+  }): Promise<{ success: boolean; id?: string; error?: string }> {
+    const html = `
+      <div style="font-family: Arial, sans-serif; line-height: 1.6; color: #333;">
+        <h2>You're Invited to Join PostFlow</h2>
+        <p>Hi${data.contactName ? ` ${data.contactName}` : ''},</p>
+        
+        <p>${data.invitedBy} has invited you to create an account${data.companyName ? ` for ${data.companyName}` : ''} on PostFlow, our guest post management platform.</p>
+        
+        <p>With your PostFlow account, you'll be able to:</p>
+        <ul>
+          <li>Review and approve guest post orders</li>
+          <li>Track the progress of your content campaigns</li>
+          <li>Access published URLs and detailed reports</li>
+          <li>Communicate directly with our team</li>
+        </ul>
+        
+        <div style="margin: 30px 0;">
+          <a href="${data.inviteUrl}" style="background-color: #0066cc; color: white; padding: 12px 24px; text-decoration: none; border-radius: 4px; display: inline-block;">Accept Invitation</a>
+        </div>
+        
+        <p style="color: #666; font-size: 14px;">This invitation will expire in ${data.expiresIn}. If you need a new invitation, please contact ${data.invitedBy}.</p>
+        
+        <p>If you have any questions, please don't hesitate to reach out.</p>
+        
+        <p>Best regards,<br>The PostFlow Team</p>
+      </div>
+    `;
+
+    return this.send('account_invitation', {
+      to: email,
+      subject: `You're invited to join PostFlow${data.companyName ? ` - ${data.companyName}` : ''}`,
+      html,
+      text: `You've been invited to create an account on PostFlow. Visit ${data.inviteUrl} to accept the invitation.`,
     });
   }
 
