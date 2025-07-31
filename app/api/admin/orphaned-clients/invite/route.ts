@@ -1,11 +1,11 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { db } from '@/lib/db/connection';
-import { clients } from '@/lib/db/schema';
-import { InvitationService } from '@/lib/services/invitationService';
+import { clients, invitations } from '@/lib/db/schema';
 import { EmailService } from '@/lib/services/emailService';
 import { AuthServiceServer } from '@/lib/auth-server';
-import { inArray, sql } from 'drizzle-orm';
+import { inArray, sql, eq, and, isNull } from 'drizzle-orm';
 import crypto from 'crypto';
+import { v4 as uuidv4 } from 'uuid';
 
 export async function POST(request: NextRequest) {
   try {
@@ -46,13 +46,39 @@ export async function POST(request: NextRequest) {
       );
     }
 
+    // Check if email already has a pending invitation
+    const existingInvitation = await db.query.invitations.findFirst({
+      where: and(
+        eq(invitations.email, email.toLowerCase()),
+        eq(invitations.targetTable, 'accounts'),
+        isNull(invitations.usedAt),
+        isNull(invitations.revokedAt)
+      )
+    });
+
+    if (existingInvitation && existingInvitation.expiresAt > new Date()) {
+      return NextResponse.json({ 
+        error: 'An active invitation already exists for this email' 
+      }, { status: 400 });
+    }
+
+    // Generate secure token
+    const token = crypto.randomBytes(32).toString('base64url');
+    const expiresAt = new Date();
+    expiresAt.setDate(expiresAt.getDate() + 7); // 7 day expiration
+
     // Create invitation
-    const invitation = await InvitationService.createInvitation({
-      email,
+    const [invitation] = await db.insert(invitations).values({
+      id: uuidv4(),
+      email: email.toLowerCase(),
       targetTable: 'accounts',
       role: 'admin',
-      createdByEmail: session.email
-    });
+      token,
+      expiresAt,
+      createdByEmail: session.email,
+      createdAt: new Date(),
+      updatedAt: new Date()
+    }).returning();
 
     // Create a temporary association token to link these clients after signup
     const associationToken = crypto.randomBytes(32).toString('base64url');
@@ -75,11 +101,11 @@ export async function POST(request: NextRequest) {
       ? `manage the following brands: ${clientNames}`
       : `manage ${clientNames}`;
 
-    await EmailService.sendAccountInvitation({
-      to: email,
-      inviterName: session.name || session.email,
+    await EmailService.sendAccountInvitation(email, {
       inviteUrl,
-      brandName: emailBody
+      expiresIn: '7 days',
+      companyName: clientNames.length > 1 ? 'Multiple Brands' : clientNames,
+      invitedBy: session.name || session.email
     });
 
     return NextResponse.json({ 

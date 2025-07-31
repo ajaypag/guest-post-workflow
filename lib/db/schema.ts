@@ -76,6 +76,9 @@ export const clients = pgTable('clients', {
   description: text('description').default(''),
   clientType: varchar('client_type', { length: 50 }).default('client'), // 'prospect' | 'client'
   createdBy: uuid('created_by').notNull().references(() => users.id),
+  accountId: uuid('account_id'), // Link to account that owns this client
+  shareToken: varchar('share_token', { length: 255 }).unique(), // For public claim links
+  invitationId: uuid('invitation_id'), // Link to invitation if created via invitation
   convertedFromProspectAt: timestamp('converted_from_prospect_at'),
   conversionNotes: text('conversion_notes'),
   defaultRequirements: text('default_requirements').default('{}'), // JSONB column for order-centric architecture

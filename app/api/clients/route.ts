@@ -122,16 +122,44 @@ export async function POST(request: NextRequest) {
     // Handle invitation if needed
     if (creationPath === 'send_invitation' && invitationEmail) {
       try {
-        // Import invitation service
-        const { InvitationService } = await import('@/lib/services/invitationService');
+        const { invitations } = await import('@/lib/db/schema');
+        const { v4: uuidv4 } = await import('uuid');
+        const { isNull, and } = await import('drizzle-orm');
         
-        // Create invitation
-        const invitation = await InvitationService.createInvitation({
-          email: invitationEmail,
-          targetTable: 'accounts',
-          role: 'admin',
-          createdByEmail: session.email
+        // Check if email already has a pending invitation
+        const existingInvitation = await db.query.invitations.findFirst({
+          where: and(
+            eq(invitations.email, invitationEmail.toLowerCase()),
+            eq(invitations.targetTable, 'accounts'),
+            isNull(invitations.usedAt),
+            isNull(invitations.revokedAt)
+          )
         });
+
+        if (existingInvitation && existingInvitation.expiresAt > new Date()) {
+          // Use existing invitation
+          var invitation = existingInvitation;
+        } else {
+          // Generate secure token
+          const token = (await import('crypto')).randomBytes(32).toString('base64url');
+          const expiresAt = new Date();
+          expiresAt.setDate(expiresAt.getDate() + 7); // 7 day expiration
+
+          // Create invitation
+          const [newInvitation] = await db.insert(invitations).values({
+            id: uuidv4(),
+            email: invitationEmail.toLowerCase(),
+            targetTable: 'accounts',
+            role: 'admin',
+            token,
+            expiresAt,
+            createdByEmail: session.email,
+            createdAt: new Date(),
+            updatedAt: new Date()
+          }).returning();
+          
+          var invitation = newInvitation;
+        }
         
         // Update client with invitation ID
         await db.update(clients)
@@ -142,11 +170,11 @@ export async function POST(request: NextRequest) {
         const { EmailService } = await import('@/lib/services/emailService');
         const inviteUrl = `${process.env.NEXTAUTH_URL || request.headers.get('origin')}/register/account?token=${invitation.token}`;
         
-        await EmailService.sendAccountInvitation({
-          to: invitationEmail,
-          inviterName: session.name || session.email,
+        await EmailService.sendAccountInvitation(invitationEmail, {
           inviteUrl,
-          brandName: client.name
+          expiresIn: '7 days',
+          companyName: client.name,
+          invitedBy: session.name || session.email
         });
         
         invitationSent = true;
