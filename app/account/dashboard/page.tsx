@@ -4,6 +4,7 @@ import React, { useState, useEffect } from 'react';
 import { useRouter } from 'next/navigation';
 import AccountAuthWrapper from '@/components/AccountAuthWrapper';
 import Header from '@/components/Header';
+import OnboardingChecklist from '@/components/OnboardingChecklist';
 import { formatCurrency } from '@/lib/utils/formatting';
 import {
   Package,
@@ -70,6 +71,11 @@ function AccountDashboardContent({ user }: AccountDashboardProps) {
     completedOrders: 0,
     totalSpent: 0,
   });
+  const [onboardingData, setOnboardingData] = useState({
+    completed: false,
+    steps: {},
+    showChecklist: true
+  });
 
   useEffect(() => {
     if (user) {
@@ -111,6 +117,20 @@ function AccountDashboardContent({ user }: AccountDashboardProps) {
       if (clientResponse.ok) {
         const { client: clientData } = await clientResponse.json();
         setClient(clientData);
+      }
+      
+      // Load onboarding status
+      const onboardingResponse = await fetch('/api/accounts/onboarding', {
+        credentials: 'include',
+      });
+      
+      if (onboardingResponse.ok) {
+        const onboarding = await onboardingResponse.json();
+        setOnboardingData({
+          completed: onboarding.onboardingCompleted || false,
+          steps: onboarding.onboardingSteps || {},
+          showChecklist: !onboarding.onboardingCompleted
+        });
       }
       
     } catch (error) {
@@ -192,6 +212,22 @@ function AccountDashboardContent({ user }: AccountDashboardProps) {
               Settings
             </button>
           </div>
+
+          {/* Onboarding Checklist for new users */}
+          {onboardingData.showChecklist && !onboardingData.completed && (
+            <div className="mb-8">
+              <OnboardingChecklist
+                accountId={user?.id || ''}
+                onboardingSteps={onboardingData.steps}
+                onClose={() => setOnboardingData(prev => ({ ...prev, showChecklist: false }))}
+                onComplete={() => {
+                  setOnboardingData(prev => ({ ...prev, completed: true, showChecklist: false }));
+                  // Optionally reload dashboard data
+                  loadDashboardData();
+                }}
+              />
+            </div>
+          )}
 
           {/* Stats Grid */}
           <div className="grid grid-cols-1 md:grid-cols-4 gap-6 mb-8">

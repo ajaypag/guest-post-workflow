@@ -509,24 +509,56 @@ export class EmailService {
     company?: string;
   }): Promise<{ success: boolean; id?: string; error?: string }> {
     const html = `
-      <div style="font-family: Arial, sans-serif; line-height: 1.6; color: #333;">
-        <h2>Welcome to PostFlow, ${data.name}!</h2>
-        <p>Thank you for creating your account${data.company ? ` for ${data.company}` : ''}.</p>
+      <div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto;">
+        <div style="background: linear-gradient(to right, #2563EB, #1D4ED8); color: white; padding: 40px 30px; border-radius: 8px 8px 0 0;">
+          <h1 style="margin: 0; font-size: 28px;">Welcome to PostFlow!</h1>
+          <p style="margin: 10px 0 0 0; opacity: 0.9;">Your guest posting journey starts here</p>
+        </div>
         
-        <p>You can now:</p>
-        <ul>
-          <li>View and approve guest post orders</li>
-          <li>Track the progress of your campaigns</li>
-          <li>Access published URLs and reports</li>
-          <li>Manage your account settings</li>
-        </ul>
+        <div style="padding: 30px; background: #ffffff; border: 1px solid #e5e5e5; border-top: none; border-radius: 0 0 8px 8px;">
+          <p style="font-size: 16px; color: #374151;">Hi ${data.name},</p>
+          
+          <p style="font-size: 16px; color: #374151; line-height: 1.6;">
+            Welcome aboard! Your PostFlow account has been successfully created. 
+            ${data.company ? `We're excited to help ${data.company} grow its online presence through high-quality guest posting.` : 'We\'re excited to help you grow your online presence through high-quality guest posting.'}
+          </p>
+          
+          <div style="background: #F3F4F6; border-radius: 8px; padding: 20px; margin: 20px 0;">
+            <h2 style="margin: 0 0 15px 0; font-size: 18px; color: #1F2937;">🚀 Getting Started Checklist</h2>
+            <ul style="margin: 0; padding-left: 20px; color: #4B5563;">
+              <li style="margin-bottom: 10px;">✅ Complete your profile information</li>
+              <li style="margin-bottom: 10px;">✅ Add your website and target pages</li>
+              <li style="margin-bottom: 10px;">✅ Create your first guest post order</li>
+              <li style="margin-bottom: 10px;">✅ Explore our publisher network</li>
+              <li style="margin-bottom: 10px;">✅ Review content guidelines</li>
+              <li style="margin-bottom: 10px;">✅ Set up your preferences</li>
+            </ul>
+          </div>
+          
+          <div style="text-align: center; margin: 30px 0;">
+            <a href="${process.env.NEXTAUTH_URL}/account/dashboard" 
+               style="background-color: #2563EB; color: white; padding: 14px 32px; text-decoration: none; border-radius: 6px; display: inline-block; font-weight: 600;">
+              Go to Your Dashboard →
+            </a>
+          </div>
+          
+          <div style="border-top: 1px solid #E5E7EB; margin-top: 30px; padding-top: 20px;">
+            <h3 style="font-size: 16px; color: #1F2937; margin-bottom: 10px;">Need Help?</h3>
+            <p style="font-size: 14px; color: #6B7280; line-height: 1.6;">
+              Our team is here to support you. Visit our 
+              <a href="${process.env.NEXTAUTH_URL}/help" style="color: #2563EB;">Help Center</a> 
+              or reply to this email if you have any questions.
+            </p>
+          </div>
+        </div>
         
-        <p>To access your dashboard, simply log in at:</p>
-        <p><a href="${process.env.NEXTAUTH_URL}/auth/login" style="color: #0066cc;">Login to PostFlow</a></p>
-        
-        <p>If you have any questions or need assistance, please don't hesitate to contact our support team.</p>
-        
-        <p>Best regards,<br>The PostFlow Team</p>
+        <div style="text-align: center; padding: 20px; color: #9CA3AF; font-size: 12px;">
+          <p style="margin: 0;">© ${new Date().getFullYear()} PostFlow. All rights reserved.</p>
+          <p style="margin: 5px 0 0 0;">
+            <a href="${process.env.NEXTAUTH_URL}/terms" style="color: #9CA3AF; text-decoration: none;">Terms</a> · 
+            <a href="${process.env.NEXTAUTH_URL}/privacy" style="color: #9CA3AF; text-decoration: none;">Privacy</a>
+          </p>
+        </div>
       </div>
     `;
 
@@ -534,7 +566,7 @@ export class EmailService {
       to: data.email,
       subject: 'Welcome to PostFlow - Your Account is Ready',
       html,
-      text: `Welcome to PostFlow, ${data.name}! Your account has been created successfully.`,
+      text: `Welcome to PostFlow, ${data.name}! Your account has been created successfully. Visit ${process.env.NEXTAUTH_URL}/account/dashboard to get started.`,
     });
   }
 

@@ -50,6 +50,11 @@ export const accounts = pgTable('accounts', {
   internalNotes: text('internal_notes'), // Only visible to internal team
   orderPreferences: text('order_preferences'), // JSON - delivery preferences, content guidelines
   
+  // Onboarding tracking
+  onboardingCompleted: boolean('onboarding_completed').default(false),
+  onboardingSteps: text('onboarding_steps').default('{}'), // JSON tracking individual steps
+  onboardingCompletedAt: timestamp('onboarding_completed_at'),
+  
   // Timestamps
   createdAt: timestamp('created_at').notNull().defaultNow(),
   updatedAt: timestamp('updated_at').notNull().defaultNow(),
@@ -58,6 +63,7 @@ export const accounts = pgTable('accounts', {
   emailIdx: uniqueIndex('idx_accounts_email').on(table.email),
   statusIdx: index('idx_accounts_status').on(table.status),
   clientIdx: index('idx_accounts_client').on(table.primaryClientId),
+  onboardingIdx: index('idx_accounts_onboarding').on(table.onboardingCompleted),
 }));
 
 // Relations
