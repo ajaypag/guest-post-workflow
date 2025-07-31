@@ -198,6 +198,14 @@ export default function AdminDashboard() {
       iconColor: 'text-pink-600'
     },
     {
+      title: 'Debug Invitations',
+      description: 'View all invitations in database for debugging',
+      icon: Search,
+      href: '/admin/debug-invitations',
+      color: 'bg-purple-50 border-purple-200 text-purple-700',
+      iconColor: 'text-purple-600'
+    },
+    {
       title: 'Analytics',
       description: 'View system usage and performance analytics',
       icon: BarChart3,
