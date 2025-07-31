@@ -17,7 +17,9 @@ import {
   UserPlus,
   Share2,
   FileText,
-  ArrowRight
+  ArrowRight,
+  Copy,
+  CheckCircle2
 } from 'lucide-react';
 
 type CreationPath = 'existing_account' | 'send_invitation' | 'generate_link';
@@ -61,6 +63,11 @@ function NewClientContent() {
   
   // Target pages - simplified to just URLs
   const [targetPages, setTargetPages] = useState<string[]>(['']);
+  
+  // Success modal for share link
+  const [showSuccessModal, setShowSuccessModal] = useState(false);
+  const [shareLink, setShareLink] = useState('');
+  const [createdClientId, setCreatedClientId] = useState('');
   
   // Load accounts when path is selected
   useEffect(() => {
@@ -185,20 +192,24 @@ function NewClientContent() {
         
         // Show success message based on path
         if (selectedPath === 'send_invitation' && invitationSent) {
-          // Could show a success toast here
-          console.log('Invitation sent successfully');
-        } else if (selectedPath === 'generate_link' && shareToken) {
-          // Could show share link in a modal
-          console.log('Share link generated:', shareToken);
-        }
-        
-        // Redirect back to order creation with the new client selected
-        const returnUrl = sessionStorage.getItem('clientCreateReturnUrl');
-        if (returnUrl) {
-          sessionStorage.removeItem('clientCreateReturnUrl');
-          router.push(returnUrl);
-        } else {
+          // Show success and redirect
+          alert(`Invitation sent successfully to ${invitationEmail}`);
           router.push(`/clients/${client.id}`);
+        } else if (selectedPath === 'generate_link' && shareToken) {
+          // Show share link modal
+          const baseUrl = window.location.origin;
+          setShareLink(`${baseUrl}/claim/${shareToken}`);
+          setCreatedClientId(client.id);
+          setShowSuccessModal(true);
+        } else {
+          // For existing account, just redirect
+          const returnUrl = sessionStorage.getItem('clientCreateReturnUrl');
+          if (returnUrl) {
+            sessionStorage.removeItem('clientCreateReturnUrl');
+            router.push(returnUrl);
+          } else {
+            router.push(`/clients/${client.id}`);
+          }
         }
       } else {
         const data = await response.json();
@@ -524,6 +535,72 @@ function NewClientContent() {
             </>
           )}
         </form>
+        
+        {/* Share Link Success Modal */}
+        {showSuccessModal && (
+          <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4">
+            <div className="bg-white rounded-lg shadow-xl max-w-md w-full p-6">
+              <div className="text-center mb-6">
+                <CheckCircle2 className="h-12 w-12 text-green-500 mx-auto mb-4" />
+                <h3 className="text-xl font-semibold text-gray-900 mb-2">
+                  Client Created Successfully!
+                </h3>
+                <p className="text-gray-600">
+                  Share this link to allow someone to claim this client and create their account.
+                </p>
+              </div>
+              
+              <div className="bg-gray-50 rounded-lg p-4 mb-6">
+                <label className="block text-sm font-medium text-gray-700 mb-2">
+                  Share Link
+                </label>
+                <div className="flex gap-2">
+                  <input
+                    type="text"
+                    readOnly
+                    value={shareLink}
+                    className="flex-1 px-3 py-2 border border-gray-300 rounded-md bg-white text-sm"
+                    onClick={(e) => e.currentTarget.select()}
+                  />
+                  <button
+                    onClick={() => {
+                      navigator.clipboard.writeText(shareLink);
+                      alert('Link copied to clipboard!');
+                    }}
+                    className="px-3 py-2 bg-blue-600 text-white rounded-md hover:bg-blue-700 flex items-center gap-2"
+                  >
+                    <Copy className="h-4 w-4" />
+                    Copy
+                  </button>
+                </div>
+                <p className="text-xs text-gray-500 mt-2">
+                  This link can be used once to claim the client.
+                </p>
+              </div>
+              
+              <div className="flex gap-3">
+                <button
+                  onClick={() => {
+                    setShowSuccessModal(false);
+                    router.push(`/clients/${createdClientId}`);
+                  }}
+                  className="flex-1 px-4 py-2 bg-gray-200 text-gray-800 rounded-md hover:bg-gray-300"
+                >
+                  View Client
+                </button>
+                <button
+                  onClick={() => {
+                    setShowSuccessModal(false);
+                    router.push('/clients');
+                  }}
+                  className="flex-1 px-4 py-2 bg-blue-600 text-white rounded-md hover:bg-blue-700"
+                >
+                  Back to Clients
+                </button>
+              </div>
+            </div>
+          </div>
+        )}
       </div>
     </div>
   );
