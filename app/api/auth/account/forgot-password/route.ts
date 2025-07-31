@@ -61,6 +61,9 @@ export async function POST(request: NextRequest) {
     const token = crypto.randomBytes(32).toString('hex');
     const hashedToken = crypto.createHash('sha256').update(token).digest('hex');
     
+    console.log('[FORGOT PASSWORD] Generated raw token:', token);
+    console.log('[FORGOT PASSWORD] Generated hashed token:', hashedToken);
+    
     // Token expires in 1 hour
     const expiresAt = new Date(Date.now() + 60 * 60 * 1000);
 
@@ -72,6 +75,9 @@ export async function POST(request: NextRequest) {
         updatedAt: new Date()
       })
       .where(eq(accounts.id, account.id));
+      
+    console.log('[FORGOT PASSWORD] Stored token for account:', account.email);
+    console.log('[FORGOT PASSWORD] Token expiry:', expiresAt);
 
     // Create reset URL
     const baseUrl = process.env.NEXTAUTH_URL || 'http://localhost:3000';

@@ -44,6 +44,16 @@ export default function DatabaseMigrationPage() {
                 </p>
               </a>
               
+              <a 
+                href="/admin/debug-reset-token" 
+                className="block border border-gray-200 rounded-lg p-4 hover:bg-gray-50 transition-colors"
+              >
+                <h3 className="font-semibold text-gray-900">Debug Reset Token</h3>
+                <p className="text-gray-600 text-sm mt-1">
+                  Debug password reset tokens and verify token hashing
+                </p>
+              </a>
+              
               {/* Add more migration links here as needed */}
             </div>
           </div>
