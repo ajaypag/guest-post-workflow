@@ -100,24 +100,22 @@ export async function POST(request: NextRequest) {
     }
 
     // Create session and set cookie for auto-login
-    const user = {
-      id: newAccount.id,
+    const sessionData = {
+      userId: newAccount.id,
+      accountId: newAccount.id,
       email: newAccount.email,
-      name: newAccount.contactName,
-      role: newAccount.role as 'viewer' | 'editor' | 'admin',
-      isActive: true,
+      name: newAccount.contactName || newAccount.companyName || 'Account User',
+      role: (newAccount.role || 'viewer') as 'viewer' | 'editor' | 'admin',
       userType: 'account' as const,
-      passwordHash: newAccount.password,
-      lastLogin: newAccount.lastLoginAt,
-      createdAt: newAccount.createdAt,
-      updatedAt: newAccount.updatedAt,
+      clientId: newAccount.primaryClientId || undefined,
+      companyName: newAccount.companyName || undefined
     };
     
-    const token = await AuthServiceServer.createSession(user);
+    const token = await AuthServiceServer.createAccountToken(sessionData);
     
-    // Set cookie
+    // Set cookie - use auth-token-account for account users
     const cookieStore = await cookies();
-    cookieStore.set('auth-token', token, {
+    cookieStore.set('auth-token-account', token, {
       httpOnly: true,
       secure: process.env.NODE_ENV === 'production',
       sameSite: 'lax',
