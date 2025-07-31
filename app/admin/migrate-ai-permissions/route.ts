@@ -1,8 +1,8 @@
-import { NextResponse } from 'next/server';
+import { NextRequest, NextResponse } from 'next/server';
 import { db } from '@/lib/db/connection';
 import { AuthServiceServer } from '@/lib/auth-server';
 
-export async function POST(request: Request) {
+export async function POST(request: NextRequest) {
   try {
     const session = await AuthServiceServer.getSession(request);
     if (!session || session.userType !== 'internal') {
