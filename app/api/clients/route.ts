@@ -19,20 +19,24 @@ export async function GET(request: NextRequest) {
     
     let clients;
     
-    // If account, only return their associated client
+    // If account, only return their associated clients
     if (session.userType === 'account') {
+      // Get clients linked to this account
+      clients = await ClientService.getClientsByAccount(session.userId);
+      
+      // Also check if account has a primary client (legacy support)
       const account = await db.query.accounts.findFirst({
         where: eq(accounts.id, session.userId),
       });
       
-      if (!account || !account.primaryClientId) {
-        return NextResponse.json({ clients: [] });
+      if (account && account.primaryClientId) {
+        const primaryClient = await ClientService.getClient(account.primaryClientId);
+        if (primaryClient && !clients.find(c => c.id === primaryClient.id)) {
+          clients.push(primaryClient);
+        }
       }
-      
-      const client = await ClientService.getClient(account.primaryClientId);
-      clients = client ? [client] : [];
     } else {
-      // Internal users can see all clients
+      // Internal users can see all clients (including orphaned)
       if (userId) {
         clients = await ClientService.getUserClients(userId);
       } else {

@@ -141,9 +141,56 @@ Missing/Needed:
 3. **Create share link preview page** - For lead generation flow
 4. **Update account dashboard** - Show account's associated clients
 
+## Critical Migration Considerations
+
+### Orphaned Clients Issue
+After running the migration, all existing clients will have `accountId = NULL`, making them "orphaned". We need:
+
+1. **Admin tool to manage orphaned clients** at `/admin/orphaned-clients`:
+   - List all clients where `accountId IS NULL`
+   - Bulk assign to existing accounts
+   - Send invitations for clients without accounts
+   - Generate share links for unclaimed clients
+
+2. **Update client listing logic**:
+   - Internal users should see ALL clients (including orphaned)
+   - Account users should only see their linked clients
+   - Add "Unclaimed" badge for orphaned clients
+
+3. **Claim mechanism** for orphaned clients:
+   - Allow accounts to claim clients by domain match
+   - Admin approval for client claims
+   - Audit trail of who claimed what
+
+## Technical Debt & Placeholders
+
+### Email & Notifications
+- ❌ Using generic account invitation template for client invitations
+- ❌ No success feedback when invitation sent or share link generated
+- ❌ Silent failures if invitation sending fails
+
+### Share Token Issues
+- ❌ No expiration on share tokens
+- ❌ No UI to display/copy share link after generation
+- ❌ No `/orders/preview/[shareToken]` page exists
+- ❌ No tracking of share link usage
+
+### Type Safety & Validation
+- ⚠️ Using `any` types in ClientService
+- ⚠️ No validation that accountId exists
+- ⚠️ No check if invitation email already in use
+- ⚠️ Hard-coded invitation role as 'admin'
+
+### UI/UX Limitations
+- ⚠️ Basic account dropdown without pagination
+- ⚠️ No "Create new account" option in dropdown
+- ⚠️ No invitation management (resend/revoke)
+- ⚠️ No loading states for async operations
+
 ## Notes for Next Steps
 
+- **PRIORITY**: Create orphaned clients management tool before migration
 - Share link preview page needs to be created at `/orders/preview/[shareToken]`
 - Order creation flow needs to respect account-client relationships
 - Consider if we need industry/category for better bulk analysis
-- Email template for client invitations is using the account invitation template
+- Create specific email template for client invitations
