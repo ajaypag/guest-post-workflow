@@ -598,13 +598,13 @@ export default function ClientDetailPage() {
           {/* Header */}
           <div className="mb-8">
             <div className="flex items-center mb-4">
-              <Link
-                href="/clients"
+              <button
+                onClick={() => router.push(userType === 'account' ? '/account/dashboard' : '/clients')}
                 className="inline-flex items-center text-gray-600 hover:text-gray-900 mr-4"
               >
                 <ArrowLeft className="w-4 h-4 mr-2" />
-                Back to Clients
-              </Link>
+                {userType === 'account' ? 'Back to Dashboard' : 'Back to Clients'}
+              </button>
             </div>
             
             <div className="flex justify-between items-start">
@@ -643,19 +643,23 @@ export default function ClientDetailPage() {
               </div>
               
               <div className="flex space-x-3">
-                <Link
-                  href={`/workflow/new?clientId=${client.id}`}
-                  className="inline-flex items-center px-4 py-2 bg-green-600 text-white text-sm font-medium rounded-md hover:bg-green-700"
-                >
-                  Create Workflow
-                </Link>
-                <Link
-                  href={`/clients/${client.id}/bulk-analysis`}
-                  className="inline-flex items-center px-4 py-2 bg-indigo-600 text-white text-sm font-medium rounded-md hover:bg-indigo-700"
-                >
-                  <BarChart2 className="w-4 h-4 mr-2" />
-                  Bulk Analysis
-                </Link>
+                {userType === 'internal' && (
+                  <>
+                    <Link
+                      href={`/workflow/new?clientId=${client.id}`}
+                      className="inline-flex items-center px-4 py-2 bg-green-600 text-white text-sm font-medium rounded-md hover:bg-green-700"
+                    >
+                      Create Workflow
+                    </Link>
+                    <Link
+                      href={`/clients/${client.id}/bulk-analysis`}
+                      className="inline-flex items-center px-4 py-2 bg-indigo-600 text-white text-sm font-medium rounded-md hover:bg-indigo-700"
+                    >
+                      <BarChart2 className="w-4 h-4 mr-2" />
+                      Bulk Analysis
+                    </Link>
+                  </>
+                )}
                 <button
                   onClick={() => setShowKeywordPrefs(true)}
                   className="inline-flex items-center px-4 py-2 bg-purple-600 text-white text-sm font-medium rounded-md hover:bg-purple-700"

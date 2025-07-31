@@ -7,7 +7,7 @@ import AuthWrapper from '@/components/AuthWrapper';
 import Header from '@/components/Header';
 import { clientStorage, sessionStorage } from '@/lib/userStorage';
 import { Client } from '@/types/user';
-import { Building2, Plus, Users, Globe, CheckCircle, XCircle, Clock, Edit, Trash2, X, BarChart2, AlertCircle } from 'lucide-react';
+import { Building2, Plus, Users, Globe, CheckCircle, XCircle, Clock, Edit, Trash2, X, BarChart2, AlertCircle, ArrowLeft } from 'lucide-react';
 
 function ClientsPageContent() {
   const router = useRouter();
@@ -18,7 +18,8 @@ function ClientsPageContent() {
   const [accountName, setAccountName] = useState<{ [key: string]: string }>({});
   const [editClient, setEditClient] = useState({
     name: '',
-    website: ''
+    website: '',
+    description: ''
   });
 
   useEffect(() => {
@@ -77,7 +78,8 @@ function ClientsPageContent() {
         credentials: 'include',
         body: JSON.stringify({
           name: editClient.name,
-          website: editClient.website
+          website: editClient.website,
+          description: editClient.description
         })
       });
       
@@ -120,13 +122,14 @@ function ClientsPageContent() {
     setEditingClient(client);
     setEditClient({
       name: client.name,
-      website: client.website
+      website: client.website,
+      description: (client as any).description || ''
     });
   };
 
   const cancelEdit = () => {
     setEditingClient(null);
-    setEditClient({ name: '', website: '' });
+    setEditClient({ name: '', website: '', description: '' });
   };
 
   const getStatusCounts = (client: Client) => {
@@ -144,6 +147,15 @@ function ClientsPageContent() {
         
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
           <div className="mb-8">
+            {userType === 'account' && (
+              <button
+                onClick={() => router.push('/account/dashboard')}
+                className="mb-4 inline-flex items-center text-gray-600 hover:text-gray-900"
+              >
+                <ArrowLeft className="w-4 h-4 mr-1" />
+                Back to Dashboard
+              </button>
+            )}
             <div className="flex justify-between items-center">
               <div>
                 <h1 className="text-2xl font-bold text-gray-900">
@@ -190,31 +202,45 @@ function ClientsPageContent() {
                 </button>
               </div>
               <form onSubmit={handleEditClient} className="space-y-4">
-                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                  <div>
-                    <label className="block text-sm font-medium text-gray-700 mb-1">
-                      Client Name
-                    </label>
-                    <input
-                      type="text"
-                      required
-                      value={editClient.name}
-                      onChange={(e) => setEditClient({ ...editClient, name: e.target.value })}
-                      className="w-full px-3 py-2 border border-gray-300 rounded-md focus:ring-blue-500 focus:border-blue-500"
-                      placeholder="Acme Corp"
-                    />
+                <div className="space-y-4">
+                  <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                    <div>
+                      <label className="block text-sm font-medium text-gray-700 mb-1">
+                        {userType === 'account' ? 'Brand Name' : 'Client Name'}
+                      </label>
+                      <input
+                        type="text"
+                        required
+                        value={editClient.name}
+                        onChange={(e) => setEditClient({ ...editClient, name: e.target.value })}
+                        className="w-full px-3 py-2 border border-gray-300 rounded-md focus:ring-blue-500 focus:border-blue-500"
+                        placeholder="Acme Corp"
+                      />
+                    </div>
+                    <div>
+                      <label className="block text-sm font-medium text-gray-700 mb-1">
+                        Website
+                      </label>
+                      <input
+                        type="url"
+                        required
+                        value={editClient.website}
+                        onChange={(e) => setEditClient({ ...editClient, website: e.target.value })}
+                        className="w-full px-3 py-2 border border-gray-300 rounded-md focus:ring-blue-500 focus:border-blue-500"
+                        placeholder="https://example.com"
+                      />
+                    </div>
                   </div>
                   <div>
                     <label className="block text-sm font-medium text-gray-700 mb-1">
-                      Website
+                      Description
                     </label>
-                    <input
-                      type="url"
-                      required
-                      value={editClient.website}
-                      onChange={(e) => setEditClient({ ...editClient, website: e.target.value })}
+                    <textarea
+                      value={editClient.description}
+                      onChange={(e) => setEditClient({ ...editClient, description: e.target.value })}
                       className="w-full px-3 py-2 border border-gray-300 rounded-md focus:ring-blue-500 focus:border-blue-500"
-                      placeholder="https://example.com"
+                      rows={3}
+                      placeholder="Brief description of the client/brand..."
                     />
                   </div>
                 </div>
@@ -339,13 +365,15 @@ function ClientsPageContent() {
                       >
                         Manage Target Pages
                       </Link>
-                      <Link
-                        href={`/clients/${client.id}/bulk-analysis`}
-                        className="w-full inline-flex justify-center items-center px-4 py-2 bg-purple-600 text-white text-sm font-medium rounded-md hover:bg-purple-700"
-                      >
-                        <BarChart2 className="w-4 h-4 mr-2" />
-                        Bulk Domain Analysis
-                      </Link>
+                      {userType === 'internal' && (
+                        <Link
+                          href={`/clients/${client.id}/bulk-analysis`}
+                          className="w-full inline-flex justify-center items-center px-4 py-2 bg-purple-600 text-white text-sm font-medium rounded-md hover:bg-purple-700"
+                        >
+                          <BarChart2 className="w-4 h-4 mr-2" />
+                          Bulk Domain Analysis
+                        </Link>
+                      )}
                     </div>
                   </div>
                 </div>
