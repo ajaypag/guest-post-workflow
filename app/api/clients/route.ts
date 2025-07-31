@@ -118,7 +118,7 @@ export async function POST(request: NextRequest) {
     
     // Add created_by from session
     // For account users, we need to use a system user ID since accounts are not in the users table
-    const SYSTEM_USER_ID = '00000000-0000-0000-0000-000000000000'; // Placeholder for system user
+    const SYSTEM_USER_ID = '00000000-0000-0000-0000-000000000000'; // system@internal.postflow user
     
     const clientData: any = {
       ...clientInfo,
