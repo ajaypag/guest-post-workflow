@@ -24,6 +24,7 @@ interface Invitation {
   id: string;
   email: string;
   targetTable: string;
+  token: string;
   status: 'pending' | 'used' | 'expired' | 'revoked';
   expiresAt: string;
   usedAt?: string;
@@ -105,7 +106,7 @@ function AccountInvitationsContent() {
 
   const copyInviteLink = (invitation: Invitation) => {
     const baseUrl = window.location.origin;
-    const inviteUrl = `${baseUrl}/register/account?token=${invitation.id}`;
+    const inviteUrl = `${baseUrl}/register/account?token=${invitation.token}`;
     navigator.clipboard.writeText(inviteUrl);
     setMessage({ type: 'success', text: 'Invitation link copied to clipboard!' });
     setTimeout(() => setMessage({ type: '', text: '' }), 3000);
