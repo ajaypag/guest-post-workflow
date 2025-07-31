@@ -136,6 +136,13 @@ export default function Header() {
                       <Database className="w-4 h-4 mr-1.5" />
                       Migrate Onboarding
                     </Link>
+                    <Link
+                      href="/admin/fix-invitations-table"
+                      className="text-gray-600 hover:text-gray-900 hover:bg-gray-50 px-3 py-2 rounded-lg text-sm font-medium transition-colors flex items-center"
+                    >
+                      <Database className="w-4 h-4 mr-1.5" />
+                      Fix Invitations Table
+                    </Link>
                   </>
                 )}
               </>

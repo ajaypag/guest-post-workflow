@@ -59,19 +59,40 @@ export default function FixInvitationsTablePage() {
           </div>
 
           <div className="bg-white rounded-2xl shadow-sm border border-gray-200 p-6">
-            {/* Warning */}
-            <div className="bg-yellow-50 border border-yellow-200 rounded-lg p-4 mb-6">
+            {/* Critical Error Alert */}
+            <div className="bg-red-50 border border-red-200 rounded-lg p-4 mb-6">
               <div className="flex items-start">
-                <AlertTriangle className="w-5 h-5 text-yellow-600 mt-0.5 mr-3" />
+                <AlertTriangle className="w-5 w-5 text-red-600 mt-0.5 mr-3" />
                 <div>
-                  <h3 className="font-medium text-yellow-800">Database Migration Required</h3>
-                  <p className="text-yellow-700 text-sm mt-1">
-                    The invitations table has column name mismatches. This migration will:
+                  <h3 className="font-medium text-red-800">CRITICAL: Missing target_table Column</h3>
+                  <p className="text-red-700 text-sm mt-1">
+                    Account invitations are failing because the database is missing the 'target_table' column:
                   </p>
-                  <ul className="list-disc list-inside text-yellow-700 text-sm mt-2 space-y-1">
-                    <li>Rename <code>accepted_at</code> → <code>used_at</code></li>
-                    <li>Add missing <code>revoked_at</code> column</li>
-                    <li>Replace <code>invited_by</code> (uuid) → <code>created_by_email</code> (varchar)</li>
+                  <div className="bg-red-100 border border-red-300 rounded p-3 mt-2">
+                    <code className="text-sm text-red-800">
+                      ERROR: column "target_table" does not exist
+                    </code>
+                  </div>
+                </div>
+              </div>
+            </div>
+            
+            {/* Migration Details */}
+            <div className="bg-blue-50 border border-blue-200 rounded-lg p-4 mb-6">
+              <div className="flex items-start">
+                <Database className="w-5 h-5 text-blue-600 mt-0.5 mr-3" />
+                <div>
+                  <h3 className="font-medium text-blue-800">Schema Migration</h3>
+                  <p className="text-blue-700 text-sm mt-1">
+                    This migration will fix the invitations table schema:
+                  </p>
+                  <ul className="list-disc list-inside text-blue-700 text-sm mt-2 space-y-1">
+                    <li><strong>Add missing <code>target_table</code> VARCHAR(20) column</strong> (critical fix)</li>
+                    <li>Add missing <code>role</code> VARCHAR(50) column if needed</li>
+                    <li>Rename <code>accepted_at</code> → <code>used_at</code> if needed</li>
+                    <li>Add missing <code>revoked_at</code> TIMESTAMP column</li>
+                    <li>Add missing <code>created_by_email</code> VARCHAR(255) column</li>
+                    <li>Validate schema with the exact query that was failing</li>
                   </ul>
                 </div>
               </div>
@@ -91,7 +112,7 @@ export default function FixInvitationsTablePage() {
                 ) : (
                   <>
                     <Play className="w-5 h-5 mr-2" />
-                    Run Migration
+                    Fix Critical Schema Error
                   </>
                 )}
               </button>
@@ -155,11 +176,12 @@ export default function FixInvitationsTablePage() {
                       Next Steps
                     </h4>
                     <div className="mt-2 text-sm text-green-700">
-                      <p className="mb-2">The invitations table has been fixed! You can now:</p>
+                      <p className="mb-2">The critical database schema error has been fixed! You can now:</p>
                       <ul className="list-disc list-inside space-y-1">
-                        <li>Go back to <Link href="/admin/invitations" className="underline">Invitation Management</Link></li>
-                        <li>Test creating new invitations</li>
-                        <li>Check the <Link href="/admin/check-invitations-table" className="underline">table structure</Link> again to confirm</li>
+                        <li>Go back to <Link href="/admin/account-invitations" className="underline">Account Invitations</Link></li>
+                        <li>Test sending account invitations (should work without errors)</li>
+                        <li>The "column 'target_table' does not exist" error is resolved</li>
+                        <li>All invitation functionality should now work properly</li>
                       </ul>
                     </div>
                   </div>

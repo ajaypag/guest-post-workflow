@@ -7,7 +7,7 @@
 | **Phase 1: Order Builder** | ✅ COMPLETED | 2025-01-30 | Multi-client order creation page fully functional |
 | **Phase 2: Bulk Analysis** | ✅ COMPLETED | 2025-01-30 | Human-driven projects with notification system |
 | **Phase 3: Site Selection** | ✅ COMPLETED | 2025-01-30 | Account-facing site browser with full transparency |
-| **Phase 4: Account Dashboard** | 🚧 IN PROGRESS | - | Auth complete, dashboard pending |
+| **Phase 4: Account Dashboard** | 🚧 IN PROGRESS | - | Auth complete, dashboard pending, needs integration work |
 | **Phase 5: Workflow Gen** | ✅ COMPLETED | 2025-01-30 | Payment-aware workflow generation |
 | **Phase 6: Share Tokens** | ❌ NOT STARTED | - | Public preview and conversion flow |
 | **Payment System** | ✅ COMPLETED | 2025-01-31 | Manual payment recording with invoices |
@@ -1135,3 +1135,50 @@ GET /api/accounts/onboarding
 ```
 
 This onboarding system ensures new account users understand the platform and complete essential setup steps, improving user activation and reducing support burden.
+
+## Critical Database Schema Fix (2025-01-31)
+
+### Invitations Table Schema Mismatch ✅ RESOLVED
+
+**Issue**: Account invitations were failing with database error:
+```
+Error: Failed query: select 'id', 'email', 'target_table', 'role', 'token'... 
+ERROR: column "target_table" does not exist
+```
+
+**Root Cause**: The Drizzle schema expected a `target_table` column in the `invitations` table, but the actual database table was missing this column.
+
+**Resolution**: Created migration tools at:
+- **API Route**: `/api/admin/fix-invitations-table` - Database migration endpoint
+- **Admin UI**: `/admin/fix-invitations-table` - User-friendly migration interface  
+
+**Schema Changes Applied**:
+- ✅ Added missing `target_table` VARCHAR(20) column (default: 'accounts')
+- ✅ Added missing `role` VARCHAR(50) column (default: 'user')
+- ✅ Renamed `accepted_at` → `used_at` if needed
+- ✅ Added missing `revoked_at` TIMESTAMP column
+- ✅ Added missing `created_by_email` VARCHAR(255) column
+- ✅ Validated schema with exact failing query
+
+**Result**: Account invitation system now works properly without database errors.
+
+## Active Technical Debt (Updated 2025-01-31)
+
+### Account Features Integration Debt
+
+**Status**: Account dashboard and features need comprehensive integration work with the actual app.
+
+**Issues Identified**:
+1. **Account Dashboard**: Basic implementation exists but not properly integrated with real app functionality
+2. **Feature Integration**: Account features developed rapidly without full integration testing
+3. **User Experience**: Account flow and features need refinement and proper UX testing
+4. **Missing Routes**: Some onboarding checklist items point to non-existent routes
+5. **Dynamic Metrics**: Account dashboard shows placeholder data instead of real metrics
+6. **Navigation**: Account-specific navigation and user flows need polish
+
+**Next Steps**:
+- [ ] Comprehensive integration testing of account features
+- [ ] Create missing routes referenced in onboarding checklist
+- [ ] Replace placeholder data with real metrics and functionality
+- [ ] Refine account user experience and flows
+- [ ] Test complete end-to-end account journey
