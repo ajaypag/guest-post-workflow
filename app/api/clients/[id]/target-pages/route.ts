@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { ClientService } from '@/lib/db/clientService';
+import { AuthServiceServer } from '@/lib/auth-server';
 
 // GET /api/clients/[id]/target-pages - Get all target pages for a client
 export async function GET(
@@ -11,13 +12,31 @@ export async function GET(
     
     console.log(`GET /api/clients/${id}/target-pages - Fetching target pages`);
     
-    // Check if client exists
+    // Authenticate user
+    const session = await AuthServiceServer.getSession(request);
+    if (!session) {
+      return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
+    }
+    
+    // Check if client exists and get it for permission check
     const client = await ClientService.getClient(id);
     if (!client) {
       return NextResponse.json(
         { error: 'Client not found' },
         { status: 404 }
       );
+    }
+    
+    // Check access permissions
+    if (session.userType === 'internal') {
+      // Internal users: Full access to any client's target pages
+    } else if (session.userType === 'account') {
+      // Account users: Only access their own client's target pages
+      if (client.accountId !== session.userId) {
+        return NextResponse.json({ error: 'Forbidden - Access denied' }, { status: 403 });
+      }
+    } else {
+      return NextResponse.json({ error: 'Unauthorized - Invalid user type' }, { status: 401 });
     }
 
     // Get target pages for this client
@@ -49,6 +68,12 @@ export async function POST(
     const { urls } = await request.json();
     
     console.log(`POST /api/clients/${id}/target-pages - Adding target pages`, { urls });
+    
+    // Authenticate user
+    const session = await AuthServiceServer.getSession(request);
+    if (!session) {
+      return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
+    }
     
     // Validate input
     if (!urls || !Array.isArray(urls) || urls.length === 0) {
@@ -82,13 +107,25 @@ export async function POST(
       );
     }
 
-    // Check if client exists
+    // Check if client exists and get it for permission check
     const client = await ClientService.getClient(id);
     if (!client) {
       return NextResponse.json(
         { error: 'Client not found' },
         { status: 404 }
       );
+    }
+    
+    // Check permissions
+    if (session.userType === 'internal') {
+      // Internal users: Can add target pages to any client
+    } else if (session.userType === 'account') {
+      // Account users: Can only add to their own clients
+      if (client.accountId !== session.userId) {
+        return NextResponse.json({ error: 'Forbidden - Access denied' }, { status: 403 });
+      }
+    } else {
+      return NextResponse.json({ error: 'Unauthorized - Invalid user type' }, { status: 401 });
     }
 
     // Add target pages using ClientService
@@ -136,6 +173,12 @@ export async function PUT(
     
     console.log(`PUT /api/clients/${id}/target-pages - Updating status`, { pageIds, status });
     
+    // Authenticate user
+    const session = await AuthServiceServer.getSession(request);
+    if (!session) {
+      return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
+    }
+    
     // Validate input
     if (!pageIds || !Array.isArray(pageIds) || pageIds.length === 0) {
       return NextResponse.json(
@@ -151,13 +194,25 @@ export async function PUT(
       );
     }
 
-    // Check if client exists
+    // Check if client exists and get it for permission check
     const client = await ClientService.getClient(id);
     if (!client) {
       return NextResponse.json(
         { error: 'Client not found' },
         { status: 404 }
       );
+    }
+    
+    // Check permissions
+    if (session.userType === 'internal') {
+      // Internal users: Can update target pages for any client
+    } else if (session.userType === 'account') {
+      // Account users: Can only update their own client's target pages
+      if (client.accountId !== session.userId) {
+        return NextResponse.json({ error: 'Forbidden - Access denied' }, { status: 403 });
+      }
+    } else {
+      return NextResponse.json({ error: 'Unauthorized - Invalid user type' }, { status: 401 });
     }
 
     // Update target page statuses using ClientService
@@ -205,6 +260,12 @@ export async function DELETE(
     
     console.log(`DELETE /api/clients/${id}/target-pages - Removing target pages`, { pageIds });
     
+    // Authenticate user
+    const session = await AuthServiceServer.getSession(request);
+    if (!session) {
+      return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
+    }
+    
     // Validate input
     if (!pageIds || !Array.isArray(pageIds) || pageIds.length === 0) {
       return NextResponse.json(
@@ -213,13 +274,25 @@ export async function DELETE(
       );
     }
 
-    // Check if client exists
+    // Check if client exists and get it for permission check
     const client = await ClientService.getClient(id);
     if (!client) {
       return NextResponse.json(
         { error: 'Client not found' },
         { status: 404 }
       );
+    }
+    
+    // Check permissions
+    if (session.userType === 'internal') {
+      // Internal users: Can remove target pages from any client
+    } else if (session.userType === 'account') {
+      // Account users: Can only remove from their own clients
+      if (client.accountId !== session.userId) {
+        return NextResponse.json({ error: 'Forbidden - Access denied' }, { status: 403 });
+      }
+    } else {
+      return NextResponse.json({ error: 'Unauthorized - Invalid user type' }, { status: 401 });
     }
 
     // Remove target pages using ClientService

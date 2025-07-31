@@ -19,12 +19,18 @@ Comprehensive technical documentation for the Guest Post Workflow system.
 - [Migration Checklist](migrations/CHECKLIST.md) - Adding new tables
 - **[Order Groups Migration](architecture/ORDER_GROUPS_MIGRATION.md)** - Phase 2 bulk analysis integration (RUN THIS!)
 
+### Security & Authentication
+- [Client Security Implementation](architecture/CLIENT_SECURITY_IMPLEMENTATION.md) - Authentication pattern for client management
+- [User Types](architecture/USER_TYPES.md) - User type definitions and permissions
+- **Pattern**: All shared interfaces follow the order system security model
+
 ### Debugging & Operations
 - [Diagnostics Guide](admin/DIAGNOSTICS.md) - Debug production issues
 - [Admin UI Requirements](admin/UI_REQUIREMENTS.md) - Required admin pages
 
 ### Architecture & Design
 - **[ORDER_SYSTEM_IMPLEMENTATION.md](architecture/ORDER_SYSTEM_IMPLEMENTATION.md)** - Complete order system implementation guide (CURRENT PRIORITY)
+- [Client Security Implementation](architecture/CLIENT_SECURITY_IMPLEMENTATION.md) - Security pattern for client management
 - [Account Platform Architecture](architecture/ACCOUNT_PLATFORM_ARCHITECTURE.md) - Platform vision and user experience
 - [Order Schema Design](architecture/ORDER_SCHEMA_DESIGN.md) - Database schema for order-centric system
 - [Component Clean Pattern](architecture/COMPONENT_PATTERN.md) - Step component architecture

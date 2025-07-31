@@ -19,7 +19,8 @@ import {
   Calendar,
   DollarSign,
   ExternalLink,
-  Settings
+  Settings,
+  Plus
 } from 'lucide-react';
 
 interface Order {
@@ -279,12 +280,20 @@ function AccountDashboardContent({ user }: AccountDashboardProps) {
           </div>
 
           {/* Client Info */}
-          {client && (
+          {client ? (
             <div className="bg-white rounded-lg shadow-md p-6 mb-8">
-              <h2 className="text-xl font-semibold text-gray-900 mb-4 flex items-center">
-                <Building className="h-5 w-5 mr-2 text-gray-600" />
-                Your Brand Information
-              </h2>
+              <div className="flex justify-between items-start mb-4">
+                <h2 className="text-xl font-semibold text-gray-900 flex items-center">
+                  <Building className="h-5 w-5 mr-2 text-gray-600" />
+                  Your Brand Information
+                </h2>
+                <button
+                  onClick={() => router.push('/clients')}
+                  className="text-sm text-blue-600 hover:text-blue-800"
+                >
+                  Manage Brands
+                </button>
+              </div>
               <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
                 <div>
                   <p className="text-sm text-gray-600">Company</p>
@@ -321,6 +330,23 @@ function AccountDashboardContent({ user }: AccountDashboardProps) {
                   </div>
                 )}
               </div>
+            </div>
+          ) : (
+            <div className="bg-white rounded-lg shadow-md p-8 mb-8 text-center">
+              <Building className="h-12 w-12 text-gray-400 mx-auto mb-4" />
+              <h2 className="text-xl font-semibold text-gray-900 mb-2">
+                Add Your First Brand
+              </h2>
+              <p className="text-gray-600 mb-6">
+                You need to add at least one brand before creating orders.
+              </p>
+              <button
+                onClick={() => router.push('/clients/new')}
+                className="inline-flex items-center px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700"
+              >
+                <Plus className="h-4 w-4 mr-2" />
+                Add Brand
+              </button>
             </div>
           )}
 

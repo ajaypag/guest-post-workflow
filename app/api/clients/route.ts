@@ -8,7 +8,7 @@ import { eq } from 'drizzle-orm';
 
 export async function GET(request: NextRequest) {
   try {
-    // Check authentication
+    // Authenticate user
     const session = await AuthServiceServer.getSession(request);
     if (!session) {
       return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
@@ -19,9 +19,16 @@ export async function GET(request: NextRequest) {
     
     let clients;
     
-    // If account, only return their associated clients
-    if (session.userType === 'account') {
-      // Get clients linked to this account
+    // Check access based on user type
+    if (session.userType === 'internal') {
+      // Internal users: Full access to all clients
+      if (userId) {
+        clients = await ClientService.getUserClients(userId);
+      } else {
+        clients = await ClientService.getAllClients();
+      }
+    } else if (session.userType === 'account') {
+      // Account users: Only access their own clients
       clients = await ClientService.getClientsByAccount(session.userId);
       
       // Also check if account has a primary client (legacy support)
@@ -36,12 +43,7 @@ export async function GET(request: NextRequest) {
         }
       }
     } else {
-      // Internal users can see all clients (including orphaned)
-      if (userId) {
-        clients = await ClientService.getUserClients(userId);
-      } else {
-        clients = await ClientService.getAllClients();
-      }
+      return NextResponse.json({ error: 'Unauthorized - Invalid user type' }, { status: 401 });
     }
 
     return NextResponse.json({ clients });
@@ -89,6 +91,27 @@ export async function POST(request: NextRequest) {
     // Extract creation path and related data
     const { creationPath, accountId, invitationEmail, ...clientInfo } = data;
     
+    // Check permissions based on user type
+    if (session.userType === 'internal') {
+      // Internal users: Can create clients with any configuration
+    } else if (session.userType === 'account') {
+      // Account users: Can only create clients for themselves
+      if (creationPath !== 'existing_account') {
+        return NextResponse.json({ 
+          error: 'Forbidden - Account users can only create brands for their own account' 
+        }, { status: 403 });
+      }
+      
+      // Force the accountId to be their own
+      if (accountId && accountId !== session.userId) {
+        return NextResponse.json({ 
+          error: 'Forbidden - Cannot create brands for other accounts' 
+        }, { status: 403 });
+      }
+    } else {
+      return NextResponse.json({ error: 'Unauthorized - Invalid user type' }, { status: 401 });
+    }
+    
     // Add created_by from session
     const clientData: any = {
       ...clientInfo,
@@ -104,7 +127,13 @@ export async function POST(request: NextRequest) {
       if (!accountId) {
         return NextResponse.json({ error: 'Account ID required' }, { status: 400 });
       }
-      clientData.accountId = accountId;
+      
+      // For account users, ensure it's their own account
+      if (session.userType === 'account') {
+        clientData.accountId = session.userId;
+      } else {
+        clientData.accountId = accountId;
+      }
     } else if (creationPath === 'send_invitation') {
       // Will create invitation after client is created
       if (!invitationEmail) {

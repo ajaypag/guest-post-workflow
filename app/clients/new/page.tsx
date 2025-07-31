@@ -7,14 +7,11 @@ import AuthWrapper from '@/components/AuthWrapper';
 import { 
   Building,
   Globe,
-  Plus,
   User,
   Mail,
   Target,
   Loader2,
-  X,
   AlertCircle,
-  UserPlus,
   Share2,
   FileText,
   ArrowRight,
@@ -45,6 +42,8 @@ function NewClientContent() {
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState('');
   const [selectedPath, setSelectedPath] = useState<CreationPath | null>(null);
+  const [userType, setUserType] = useState<'internal' | 'account' | null>(null);
+  const [accountInfo, setAccountInfo] = useState<{id: string, email: string} | null>(null);
   
   // Account selection
   const [accounts, setAccounts] = useState<Account[]>([]);
@@ -62,20 +61,48 @@ function NewClientContent() {
     description: ''
   });
   
-  // Target pages - simplified to just URLs
-  const [targetPages, setTargetPages] = useState<string[]>(['']);
+  // Target pages - as multiline text
+  const [targetPagesText, setTargetPagesText] = useState('');
   
   // Success modal for share link
   const [showSuccessModal, setShowSuccessModal] = useState(false);
   const [shareLink, setShareLink] = useState('');
   const [createdClientId, setCreatedClientId] = useState('');
   
+  // Check user type on mount
+  useEffect(() => {
+    const checkUserType = async () => {
+      try {
+        const response = await fetch('/api/auth/session', {
+          credentials: 'include'
+        });
+        if (response.ok) {
+          const session = await response.json();
+          setUserType(session.userType as 'internal' | 'account');
+          if (session.userType === 'account') {
+            // For account users, pre-select their account
+            setAccountInfo({
+              id: session.id,
+              email: session.email
+            });
+            // Skip the path selection for account users
+            setSelectedPath('existing_account');
+            setSelectedAccountId(session.id);
+          }
+        }
+      } catch (error) {
+        console.error('Error checking user type:', error);
+      }
+    };
+    checkUserType();
+  }, []);
+  
   // Load accounts when path is selected
   useEffect(() => {
-    if (selectedPath === 'existing_account') {
+    if (selectedPath === 'existing_account' && userType === 'internal') {
       loadAccounts();
     }
-  }, [selectedPath]);
+  }, [selectedPath, userType]);
   
   const loadAccounts = async () => {
     setLoadingAccounts(true);
@@ -97,20 +124,6 @@ function NewClientContent() {
     } finally {
       setLoadingAccounts(false);
     }
-  };
-  
-  const addTargetPage = () => {
-    setTargetPages([...targetPages, '']);
-  };
-  
-  const removeTargetPage = (index: number) => {
-    setTargetPages(targetPages.filter((_, i) => i !== index));
-  };
-  
-  const updateTargetPage = (index: number, value: string) => {
-    const updated = [...targetPages];
-    updated[index] = value;
-    setTargetPages(updated);
   };
   
   const handleSubmit = async (e: React.FormEvent) => {
@@ -151,8 +164,27 @@ function NewClientContent() {
       return;
     }
     
-    // Filter out empty target pages
-    const validTargetPages = targetPages.filter(url => url.trim());
+    // Parse and validate target pages
+    const targetPageLines = targetPagesText.split('\n').filter(line => line.trim());
+    const validTargetPages: string[] = [];
+    const invalidUrls: string[] = [];
+    
+    for (const url of targetPageLines) {
+      const trimmedUrl = url.trim();
+      if (trimmedUrl) {
+        try {
+          new URL(trimmedUrl);
+          validTargetPages.push(trimmedUrl);
+        } catch {
+          invalidUrls.push(trimmedUrl);
+        }
+      }
+    }
+    
+    if (invalidUrls.length > 0) {
+      setError(`Invalid URLs found: ${invalidUrls.join(', ')}. Please ensure all URLs include http:// or https://`);
+      return;
+    }
     
     setLoading(true);
     
@@ -242,13 +274,19 @@ function NewClientContent() {
   
   return (
     <div className="min-h-screen bg-gray-50">
-      <div className="container mx-auto px-4 py-8">
-        <div className="mb-8">
-          <h1 className="text-3xl font-bold text-gray-900">Create New Client</h1>
-          <p className="text-gray-600 mt-2">Add a new brand/client to your system</p>
+      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
+        <div className="mb-8 text-center">
+          <h1 className="text-3xl font-bold text-gray-900">
+            {userType === 'account' ? 'Add Your Brand' : 'Create New Client'}
+          </h1>
+          <p className="text-gray-600 mt-2">
+            {userType === 'account' 
+              ? 'Tell us about your brand and the pages you want to build backlinks to'
+              : 'Add a new brand/client to your system'}
+          </p>
         </div>
         
-        <form onSubmit={handleSubmit} className="max-w-4xl">
+        <form onSubmit={handleSubmit} className="max-w-4xl mx-auto">
           {error && (
             <div className="mb-6 flex items-center gap-2 text-red-600 bg-red-50 p-4 rounded-lg">
               <AlertCircle className="h-5 w-5" />
@@ -256,46 +294,58 @@ function NewClientContent() {
             </div>
           )}
           
-          {/* Path Selection */}
-          {!selectedPath && (
-            <div className="bg-white rounded-lg shadow-sm p-6 mb-6">
-              <h2 className="text-xl font-semibold mb-4">How would you like to create this client?</h2>
+          {/* Path Selection - Only show for internal users */}
+          {!selectedPath && userType === 'internal' && (
+            <div className="bg-white rounded-lg shadow-sm p-8 mb-6">
+              <h2 className="text-2xl font-semibold mb-6 text-center text-gray-900">How would you like to create this client?</h2>
               
               <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
                 <button
                   type="button"
                   onClick={() => setSelectedPath('existing_account')}
-                  className="p-6 border-2 border-gray-200 rounded-lg hover:border-blue-500 hover:bg-blue-50 transition-colors text-left"
+                  className="p-6 border-2 border-gray-200 rounded-lg hover:border-blue-500 hover:bg-blue-50 transition-all duration-200 text-left group"
                 >
-                  <User className="h-8 w-8 text-blue-600 mb-3" />
-                  <h3 className="font-semibold mb-2">For Existing Account</h3>
-                  <p className="text-sm text-gray-600">
-                    Select an account that already exists in the system
-                  </p>
+                  <div className="flex flex-col items-center text-center">
+                    <div className="p-3 bg-blue-100 rounded-full mb-4 group-hover:bg-blue-200 transition-colors">
+                      <User className="h-8 w-8 text-blue-600" />
+                    </div>
+                    <h3 className="font-semibold text-lg mb-2 text-gray-900">For Existing Account</h3>
+                    <p className="text-sm text-gray-600">
+                      Select an account that already exists in the system
+                    </p>
+                  </div>
                 </button>
                 
                 <button
                   type="button"
                   onClick={() => setSelectedPath('send_invitation')}
-                  className="p-6 border-2 border-gray-200 rounded-lg hover:border-blue-500 hover:bg-blue-50 transition-colors text-left"
+                  className="p-6 border-2 border-gray-200 rounded-lg hover:border-blue-500 hover:bg-blue-50 transition-all duration-200 text-left group"
                 >
-                  <Mail className="h-8 w-8 text-blue-600 mb-3" />
-                  <h3 className="font-semibold mb-2">Send Invitation</h3>
-                  <p className="text-sm text-gray-600">
-                    Create client and invite contact to create their account
-                  </p>
+                  <div className="flex flex-col items-center text-center">
+                    <div className="p-3 bg-blue-100 rounded-full mb-4 group-hover:bg-blue-200 transition-colors">
+                      <Mail className="h-8 w-8 text-blue-600" />
+                    </div>
+                    <h3 className="font-semibold text-lg mb-2 text-gray-900">Send Invitation</h3>
+                    <p className="text-sm text-gray-600">
+                      Create client and invite contact to create their account
+                    </p>
+                  </div>
                 </button>
                 
                 <button
                   type="button"
                   onClick={() => setSelectedPath('generate_link')}
-                  className="p-6 border-2 border-gray-200 rounded-lg hover:border-blue-500 hover:bg-blue-50 transition-colors text-left"
+                  className="p-6 border-2 border-gray-200 rounded-lg hover:border-blue-500 hover:bg-blue-50 transition-all duration-200 text-left group"
                 >
-                  <Share2 className="h-8 w-8 text-blue-600 mb-3" />
-                  <h3 className="font-semibold mb-2">Generate Share Link</h3>
-                  <p className="text-sm text-gray-600">
-                    Create client for lead generation with shareable link
-                  </p>
+                  <div className="flex flex-col items-center text-center">
+                    <div className="p-3 bg-blue-100 rounded-full mb-4 group-hover:bg-blue-200 transition-colors">
+                      <Share2 className="h-8 w-8 text-blue-600" />
+                    </div>
+                    <h3 className="font-semibold text-lg mb-2 text-gray-900">Generate Share Link</h3>
+                    <p className="text-sm text-gray-600">
+                      Create client for lead generation with shareable link
+                    </p>
+                  </div>
                 </button>
               </div>
             </div>
@@ -304,30 +354,33 @@ function NewClientContent() {
           {/* Path-specific fields */}
           {selectedPath && (
             <>
-              <div className="bg-blue-50 border border-blue-200 rounded-lg p-4 mb-6">
-                <div className="flex items-center justify-between">
-                  <div className="flex items-center gap-2">
-                    {selectedPath === 'existing_account' && <User className="h-5 w-5 text-blue-600" />}
-                    {selectedPath === 'send_invitation' && <Mail className="h-5 w-5 text-blue-600" />}
-                    {selectedPath === 'generate_link' && <Share2 className="h-5 w-5 text-blue-600" />}
-                    <span className="font-medium text-blue-900">
-                      {selectedPath === 'existing_account' && 'Creating for Existing Account'}
-                      {selectedPath === 'send_invitation' && 'Creating with Invitation'}
-                      {selectedPath === 'generate_link' && 'Creating for Lead Generation'}
-                    </span>
+              {/* Path indicator - hide for account users */}
+              {userType === 'internal' && (
+                <div className="bg-blue-50 border border-blue-200 rounded-lg p-4 mb-6">
+                  <div className="flex items-center justify-between">
+                    <div className="flex items-center gap-2">
+                      {selectedPath === 'existing_account' && <User className="h-5 w-5 text-blue-600" />}
+                      {selectedPath === 'send_invitation' && <Mail className="h-5 w-5 text-blue-600" />}
+                      {selectedPath === 'generate_link' && <Share2 className="h-5 w-5 text-blue-600" />}
+                      <span className="font-medium text-blue-900">
+                        {selectedPath === 'existing_account' && 'Creating for Existing Account'}
+                        {selectedPath === 'send_invitation' && 'Creating with Invitation'}
+                        {selectedPath === 'generate_link' && 'Creating for Lead Generation'}
+                      </span>
+                    </div>
+                    <button
+                      type="button"
+                      onClick={() => setSelectedPath(null)}
+                      className="text-sm text-blue-600 hover:text-blue-700"
+                    >
+                      Change
+                    </button>
                   </div>
-                  <button
-                    type="button"
-                    onClick={() => setSelectedPath(null)}
-                    className="text-sm text-blue-600 hover:text-blue-700"
-                  >
-                    Change
-                  </button>
                 </div>
-              </div>
+              )}
               
-              {/* Account Selection */}
-              {selectedPath === 'existing_account' && (
+              {/* Account Selection - Only show for internal users */}
+              {selectedPath === 'existing_account' && userType === 'internal' && (
                 <div className="bg-white rounded-lg shadow-sm p-6 mb-6">
                   <h2 className="text-xl font-semibold mb-4">Select Account</h2>
                   
@@ -376,8 +429,8 @@ function NewClientContent() {
                 </div>
               )}
               
-              {/* Invitation Email */}
-              {selectedPath === 'send_invitation' && (
+              {/* Invitation Email - Only for internal users */}
+              {selectedPath === 'send_invitation' && userType === 'internal' && (
                 <div className="bg-white rounded-lg shadow-sm p-6 mb-6">
                   <h2 className="text-xl font-semibold mb-4">Contact Email</h2>
                   
@@ -403,8 +456,8 @@ function NewClientContent() {
                 </div>
               )}
               
-              {/* Lead Generation Notice */}
-              {selectedPath === 'generate_link' && (
+              {/* Lead Generation Notice - Only for internal users */}
+              {selectedPath === 'generate_link' && userType === 'internal' && (
                 <div className="bg-amber-50 border border-amber-200 rounded-lg p-4 mb-6">
                   <p className="text-amber-800">
                     A shareable link will be generated after creating this client. 
@@ -415,10 +468,14 @@ function NewClientContent() {
               
               {/* Brand Information */}
               <div className="bg-white rounded-lg shadow-sm p-6 mb-6">
-                <h2 className="text-xl font-semibold mb-4 flex items-center gap-2">
-                  <Building className="h-5 w-5" />
-                  Brand Information
-                </h2>
+                <div className="flex items-center gap-3 mb-6">
+                  <div className="p-2 bg-gray-100 rounded-lg">
+                    <Building className="h-5 w-5 text-gray-700" />
+                  </div>
+                  <h2 className="text-xl font-semibold text-gray-900">
+                    Brand Information
+                  </h2>
+                </div>
                 
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
                   <div>
@@ -472,55 +529,42 @@ function NewClientContent() {
               
               {/* Target Pages */}
               <div className="bg-white rounded-lg shadow-sm p-6 mb-6">
-                <div className="flex justify-between items-center mb-4">
-                  <h2 className="text-xl font-semibold flex items-center gap-2">
-                    <Target className="h-5 w-5" />
+                <div className="flex items-center gap-3 mb-6">
+                  <div className="p-2 bg-gray-100 rounded-lg">
+                    <Target className="h-5 w-5 text-gray-700" />
+                  </div>
+                  <h2 className="text-xl font-semibold text-gray-900">
                     Target Pages
                   </h2>
-                  <button
-                    type="button"
-                    onClick={addTargetPage}
-                    className="flex items-center gap-2 text-blue-600 hover:text-blue-700"
-                  >
-                    <Plus className="h-4 w-4" />
-                    Add Page
-                  </button>
                 </div>
                 
                 <p className="text-sm text-gray-600 mb-4">
                   Add URLs where you want to build backlinks. AI analysis will be triggered during order fulfillment.
                 </p>
                 
-                <div className="space-y-3">
-                  {targetPages.map((url, index) => (
-                    <div key={index} className="flex gap-2">
-                      <input
-                        type="url"
-                        value={url}
-                        onChange={(e) => updateTargetPage(index, e.target.value)}
-                        className="flex-1 px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500"
-                        placeholder="https://example.com/page"
-                      />
-                      {targetPages.length > 1 && (
-                        <button
-                          type="button"
-                          onClick={() => removeTargetPage(index)}
-                          className="p-2 text-red-500 hover:text-red-700"
-                        >
-                          <X className="h-5 w-5" />
-                        </button>
-                      )}
-                    </div>
-                  ))}
+                <div>
+                  <textarea
+                    value={targetPagesText}
+                    onChange={(e) => setTargetPagesText(e.target.value)}
+                    className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 font-mono text-sm"
+                    rows={6}
+                    placeholder="Enter URLs, one per line:
+https://example.com/page1
+https://example.com/page2
+https://example.com/page3"
+                  />
+                  <p className="mt-2 text-xs text-gray-500">
+                    Enter one URL per line. Each URL must include http:// or https://
+                  </p>
                 </div>
               </div>
               
               {/* Actions */}
-              <div className="flex justify-between">
+              <div className="flex justify-end gap-4 pt-6">
                 <button
                   type="button"
                   onClick={() => router.back()}
-                  className="px-6 py-3 border border-gray-300 rounded-lg hover:bg-gray-50 font-medium"
+                  className="px-6 py-3 border border-gray-300 rounded-lg hover:bg-gray-50 font-medium transition-colors"
                 >
                   Cancel
                 </button>
@@ -528,7 +572,7 @@ function NewClientContent() {
                 <button
                   type="submit"
                   disabled={loading}
-                  className="px-6 py-3 bg-blue-600 text-white rounded-lg hover:bg-blue-700 font-medium disabled:opacity-50 disabled:cursor-not-allowed flex items-center gap-2"
+                  className="px-6 py-3 bg-blue-600 text-white rounded-lg hover:bg-blue-700 font-medium disabled:opacity-50 disabled:cursor-not-allowed flex items-center gap-2 transition-colors"
                 >
                   {loading ? (
                     <>
@@ -537,7 +581,7 @@ function NewClientContent() {
                     </>
                   ) : (
                     <>
-                      Create Client
+                      {userType === 'account' ? 'Add Brand' : 'Create Client'}
                       <ArrowRight className="h-4 w-4" />
                     </>
                   )}

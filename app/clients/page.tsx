@@ -74,6 +74,7 @@ function ClientsPageContent() {
       const response = await fetch(`/api/clients/${editingClient.id}`, {
         method: 'PUT',
         headers: { 'Content-Type': 'application/json' },
+        credentials: 'include',
         body: JSON.stringify({
           name: editClient.name,
           website: editClient.website
@@ -85,7 +86,8 @@ function ClientsPageContent() {
         setEditClient({ name: '', website: '' });
         await loadClients();
       } else {
-        alert('Failed to update client');
+        const error = await response.json();
+        alert(error.error || 'Failed to update client');
       }
     } catch (error: any) {
       alert('Error updating client: ' + error.message);
@@ -99,13 +101,15 @@ function ClientsPageContent() {
 
     try {
       const response = await fetch(`/api/clients/${client.id}`, {
-        method: 'DELETE'
+        method: 'DELETE',
+        credentials: 'include'
       });
       
       if (response.ok) {
         await loadClients();
       } else {
-        alert('Failed to delete client');
+        const error = await response.json();
+        alert(error.error || 'Failed to delete client');
       }
     } catch (error: any) {
       alert('Error deleting client: ' + error.message);
@@ -142,9 +146,13 @@ function ClientsPageContent() {
           <div className="mb-8">
             <div className="flex justify-between items-center">
               <div>
-                <h1 className="text-2xl font-bold text-gray-900">Client Management</h1>
+                <h1 className="text-2xl font-bold text-gray-900">
+                  {userType === 'account' ? 'Your Brands' : 'Client Management'}
+                </h1>
                 <p className="text-gray-600 mt-1">
-                  Manage your clients and their target pages
+                  {userType === 'account' 
+                    ? 'Manage your brands and their target pages'
+                    : 'Manage your clients and their target pages'}
                 </p>
               </div>
               <div className="flex items-center gap-2">
@@ -162,7 +170,7 @@ function ClientsPageContent() {
                   className="inline-flex items-center px-4 py-2 bg-blue-600 text-white text-sm font-medium rounded-md hover:bg-blue-700"
                 >
                   <Plus className="w-4 h-4 mr-2" />
-                  New Client
+                  {userType === 'account' ? 'New Brand' : 'New Client'}
                 </Link>
               </div>
             </div>
@@ -241,26 +249,28 @@ function ClientsPageContent() {
                         <Building2 className="w-5 h-5 text-gray-400 mr-2" />
                         <div className="flex-1">
                           <h3 className="text-lg font-medium text-gray-900">{client.name}</h3>
-                          <div className="mt-1 flex items-center gap-2">
-                            <span className={`inline-flex px-2 py-1 text-xs font-medium rounded-full ${
-                              (client as any).clientType === 'prospect' 
-                                ? 'bg-yellow-100 text-yellow-800' 
-                                : 'bg-green-100 text-green-800'
-                            }`}>
-                              {(client as any).clientType === 'prospect' ? 'Prospect' : 'Client'}
-                            </span>
-                            {(client as any).accountId ? (
-                              <span className="inline-flex items-center px-2 py-1 text-xs font-medium text-blue-700 bg-blue-50 rounded-full">
-                                <Users className="w-3 h-3 mr-1" />
-                                {accountName[(client as any).accountId] || 'Account'}
+                          {userType === 'internal' && (
+                            <div className="mt-1 flex items-center gap-2">
+                              <span className={`inline-flex px-2 py-1 text-xs font-medium rounded-full ${
+                                (client as any).clientType === 'prospect' 
+                                  ? 'bg-yellow-100 text-yellow-800' 
+                                  : 'bg-green-100 text-green-800'
+                              }`}>
+                                {(client as any).clientType === 'prospect' ? 'Prospect' : 'Client'}
                               </span>
-                            ) : (
-                              <span className="inline-flex items-center px-2 py-1 text-xs font-medium text-orange-700 bg-orange-50 rounded-full">
-                                <AlertCircle className="w-3 h-3 mr-1" />
-                                No Account
-                              </span>
-                            )}
-                          </div>
+                              {(client as any).accountId ? (
+                                <span className="inline-flex items-center px-2 py-1 text-xs font-medium text-blue-700 bg-blue-50 rounded-full">
+                                  <Users className="w-3 h-3 mr-1" />
+                                  {accountName[(client as any).accountId] || 'Account'}
+                                </span>
+                              ) : (
+                                <span className="inline-flex items-center px-2 py-1 text-xs font-medium text-orange-700 bg-orange-50 rounded-full">
+                                  <AlertCircle className="w-3 h-3 mr-1" />
+                                  No Account
+                                </span>
+                              )}
+                            </div>
+                          )}
                         </div>
                       </div>
                       <div className="flex space-x-2">
@@ -346,14 +356,20 @@ function ClientsPageContent() {
           {clients.length === 0 && (
             <div className="text-center py-12">
               <Building2 className="w-12 h-12 text-gray-400 mx-auto mb-4" />
-              <h3 className="text-lg font-medium text-gray-900 mb-2">No clients yet</h3>
-              <p className="text-gray-600 mb-4">Get started by creating your first client.</p>
+              <h3 className="text-lg font-medium text-gray-900 mb-2">
+                {userType === 'account' ? 'No brands yet' : 'No clients yet'}
+              </h3>
+              <p className="text-gray-600 mb-4">
+                {userType === 'account' 
+                  ? 'Add your first brand to start creating guest post orders.'
+                  : 'Get started by creating your first client.'}
+              </p>
               <Link
                 href="/clients/new"
                 className="inline-flex items-center px-4 py-2 bg-blue-600 text-white text-sm font-medium rounded-md hover:bg-blue-700"
               >
                 <Plus className="w-4 h-4 mr-2" />
-                Create First Client
+                {userType === 'account' ? 'Add Your First Brand' : 'Create First Client'}
               </Link>
             </div>
           )}

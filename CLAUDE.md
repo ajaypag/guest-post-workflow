@@ -161,6 +161,19 @@ npm run db:studio       # Browse database
 - 🔄 `agenticArticleService.ts` (in progress)
 - ⏳ `agenticFormattingQAService.ts` (planned)
 
+## 🔒 Security & Authentication
+
+**When implementing auth/permissions for shared interfaces**:
+1. Check [CLIENT_SECURITY_IMPLEMENTATION.md](docs/architecture/CLIENT_SECURITY_IMPLEMENTATION.md)
+2. Follow the pattern from [ORDER_SYSTEM_IMPLEMENTATION.md](docs/architecture/ORDER_SYSTEM_IMPLEMENTATION.md)
+3. Key pattern:
+```typescript
+if (session.userType === 'internal') {
+  // Full access
+} else if (session.userType === 'account') {
+  // Check ownership (accountId === userId)
+}
+```
 
 ## 📚 Full Documentation
 
@@ -169,6 +182,7 @@ For detailed guides on all topics:
 - **[Building Agents](docs/agents/)** - Agent patterns and examples
 - **[Database Rules](docs/db/)** - Schema patterns and pitfalls
 - **[Architecture](docs/architecture/)** - System design and patterns
+- **[Security](docs/architecture/CLIENT_SECURITY_IMPLEMENTATION.md)** - Auth patterns for shared interfaces
 
 ---
 

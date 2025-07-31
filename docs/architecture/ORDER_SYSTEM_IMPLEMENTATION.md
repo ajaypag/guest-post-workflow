@@ -1189,3 +1189,10 @@ ERROR: column "target_table" does not exist
 - [ ] Replace placeholder data with real metrics and functionality
 - [ ] Refine account user experience and flows
 - [ ] Test complete end-to-end account journey
+
+## Related Documentation
+
+- [Database Schema](../architecture/DATABASE.md) - Full database structure
+- [API Routes](../api/README.md) - API endpoint documentation
+- [User Types](./USER_TYPES.md) - User type definitions and permissions
+- [Client Security Implementation](./CLIENT_SECURITY_IMPLEMENTATION.md) - Similar security pattern for client management
