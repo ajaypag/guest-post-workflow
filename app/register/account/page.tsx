@@ -38,6 +38,9 @@ function AccountRegistrationContent() {
   });
 
   useEffect(() => {
+    console.log('[AccountRegistration] Token from URL:', token);
+    console.log('[AccountRegistration] Full URL:', window.location.href);
+    
     if (!token) {
       setError('Invalid invitation link. Please contact your account manager.');
       setLoading(false);
@@ -49,8 +52,14 @@ function AccountRegistrationContent() {
 
   const verifyInvitation = async () => {
     try {
-      const response = await fetch(`/api/invitations/verify?token=${token}&type=accounts`);
+      console.log('[AccountRegistration] Verifying invitation with token:', token);
+      const verifyUrl = `/api/invitations/verify?token=${token}&type=accounts`;
+      console.log('[AccountRegistration] Verify URL:', verifyUrl);
+      
+      const response = await fetch(verifyUrl);
       const data = await response.json();
+      
+      console.log('[AccountRegistration] Verify response:', data);
 
       if (!response.ok) {
         setError(data.error || 'Invalid or expired invitation');
