@@ -98,6 +98,46 @@ export async function POST(request: NextRequest) {
     }
 
     try {
+      // Step 2.5: Check for user_type column and drop it if it exists (it's not in our schema)
+      console.log('[InvitationTableFix] Checking for unexpected user_type column...');
+      const userTypeCheck = await db.execute(sql`
+        SELECT column_name, is_nullable
+        FROM information_schema.columns 
+        WHERE table_name = 'invitations' 
+        AND column_name = 'user_type'
+      `);
+      
+      if (userTypeCheck.rows.length > 0) {
+        console.log('[InvitationTableFix] Found unexpected user_type column, dropping it...');
+        // First make it nullable if it's not
+        if (userTypeCheck.rows[0].is_nullable === 'NO') {
+          await db.execute(sql`
+            ALTER TABLE invitations 
+            ALTER COLUMN user_type DROP NOT NULL
+          `);
+        }
+        // Then drop the column
+        await db.execute(sql`
+          ALTER TABLE invitations 
+          DROP COLUMN user_type
+        `);
+        
+        results.push({
+          success: true,
+          message: 'Removed unexpected user_type column from invitations table',
+          details: 'Column was not part of the schema and was causing insert errors'
+        });
+      }
+    } catch (error) {
+      console.error('[InvitationTableFix] Failed to handle user_type column:', error);
+      results.push({
+        success: false,
+        message: 'Failed to handle user_type column',
+        details: error instanceof Error ? error.message : 'Unknown error'
+      });
+    }
+
+    try {
       // Step 3: Handle other column migrations if needed
       console.log('[InvitationTableFix] Checking for other required columns...');
       

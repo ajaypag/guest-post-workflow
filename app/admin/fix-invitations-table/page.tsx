@@ -216,6 +216,7 @@ export default function FixInvitationsTablePage() {
                   <ul className="list-disc list-inside text-blue-700 text-sm mt-2 space-y-1">
                     <li><strong>Add missing <code>target_table</code> VARCHAR(20) column</strong> (critical fix)</li>
                     <li>Add missing <code>role</code> VARCHAR(50) column if needed</li>
+                    <li><strong>Remove unexpected <code>user_type</code> column if found</strong> (causes insert errors)</li>
                     <li>Rename <code>accepted_at</code> → <code>used_at</code> if needed</li>
                     <li>Add missing <code>revoked_at</code> TIMESTAMP column</li>
                     <li>Add missing <code>created_by_email</code> VARCHAR(255) column</li>
