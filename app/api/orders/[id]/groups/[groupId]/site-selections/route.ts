@@ -1,0 +1,260 @@
+import { NextRequest, NextResponse } from 'next/server';
+import { db } from '@/lib/db/connection';
+import { orders, orderGroups, clients, bulkAnalysisProjects, bulkAnalysisDomains, orderSiteSelections } from '@/lib/db/schema';
+import { eq, and, inArray, sql } from 'drizzle-orm';
+import { AuthServiceServer } from '@/lib/auth-server';
+
+export async function GET(
+  request: NextRequest, 
+  { params }: { params: Promise<{ id: string; groupId: string }> }
+) {
+  try {
+    const { id: orderId, groupId } = await params;
+
+    // Authenticate user
+    const session = await AuthServiceServer.getSession(request);
+    if (!session) {
+      return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
+    }
+
+    // First verify the order exists and user has access
+    const order = await db.query.orders.findFirst({
+      where: eq(orders.id, orderId)
+    });
+    
+    if (!order) {
+      return NextResponse.json({ error: 'Order not found' }, { status: 404 });
+    }
+
+    // Check access - both internal and account users allowed with different permissions
+    if (session.userType === 'internal') {
+      // Internal users: Full access to any order
+    } else if (session.userType === 'account') {
+      // Account users: Only access orders they own
+      if (order.accountId !== session.accountId) {
+        return NextResponse.json({ error: 'Forbidden - Account access denied' }, { status: 403 });
+      }
+    } else {
+      return NextResponse.json({ error: 'Unauthorized - Invalid user type' }, { status: 401 });
+    }
+
+    // Now get the specific order group
+    const orderGroup = await db.query.orderGroups.findFirst({
+      where: and(eq(orderGroups.orderId, orderId), eq(orderGroups.id, groupId)),
+      with: {
+        client: true
+      }
+    });
+
+    if (!orderGroup) {
+      return NextResponse.json({ error: 'Order group not found' }, { status: 404 });
+    }
+
+    // Get analyzed domains from the bulk analysis project
+    let analyzedDomainsList: any[] = [];
+    
+    if (orderGroup.bulkAnalysisProjectId) {
+      // Get all analyzed domains from the bulk analysis project
+      analyzedDomainsList = await db.query.bulkAnalysisDomains.findMany({
+        where: eq(bulkAnalysisDomains.projectId, orderGroup.bulkAnalysisProjectId)
+      });
+    }
+
+    // Transform bulk analysis domains to the expected format
+    const transformedDomains = analyzedDomainsList.map(domain => ({
+      id: domain.id,
+      domain: domain.domain,
+      dr: 70, // TODO: Get from DataForSEO or other metrics
+      traffic: 10000, // TODO: Get from DataForSEO or other metrics
+      niche: domain.client?.niche || 'General',
+      status: domain.qualificationStatus === 'high_quality' ? 'high_quality' : 
+              domain.qualificationStatus === 'good_quality' ? 'good' :
+              domain.qualificationStatus === 'marginal_quality' ? 'marginal' : 'disqualified',
+      price: 100, // TODO: Calculate based on metrics
+      projectId: domain.projectId,
+      notes: domain.notes
+    }));
+
+    // Get suggested sites based on client requirements
+    const suggestedSites = transformedDomains.filter(domain => {
+      // Apply client requirements as filters
+      const reqs = orderGroup.requirementOverrides || {};
+      
+      if (reqs.minDR && domain.dr < reqs.minDR) return false;
+      if (reqs.minTraffic && domain.traffic < reqs.minTraffic) return false;
+      if (reqs.niches && reqs.niches.length > 0 && !reqs.niches.includes(domain.niche)) return false;
+      
+      // Only suggest high quality and good sites
+      return domain.status === 'high_quality' || domain.status === 'good';
+    });
+
+    // Get current selections for this order group
+    const currentSelections = await db.query.orderSiteSelections.findMany({
+      where: eq(orderSiteSelections.orderGroupId, groupId),
+      with: {
+        domain: true
+      }
+    });
+
+    // Transform selections to expected format
+    const transformedSelections = currentSelections.map(selection => ({
+      id: selection.id,
+      domainId: selection.domainId,
+      domain: {
+        id: selection.domain.id,
+        domain: selection.domain.domain,
+        dr: 70, // TODO: Get from DataForSEO or other metrics
+        traffic: 10000, // TODO: Get from DataForSEO or other metrics
+        niche: 'General',
+        status: selection.domain.qualificationStatus === 'high_quality' ? 'high_quality' : 
+                selection.domain.qualificationStatus === 'good_quality' ? 'good' :
+                selection.domain.qualificationStatus === 'marginal_quality' ? 'marginal' : 'disqualified',
+        price: 100,
+        projectId: selection.domain.projectId,
+        notes: selection.domain.notes
+      },
+      targetPageUrl: selection.targetPageUrl,
+      anchorText: selection.anchorText,
+      status: selection.status
+    }));
+
+    return NextResponse.json({
+      suggested: suggestedSites,
+      all: transformedDomains,
+      currentSelections: transformedSelections,
+      userCapabilities: {
+        canCreateSelections: session.userType === 'internal',
+        canModifySelections: session.userType === 'internal' || session.userType === 'account',
+        userType: session.userType
+      }
+    });
+
+  } catch (error) {
+    console.error('Error fetching site selections:', error);
+    return NextResponse.json(
+      { error: 'Failed to fetch site selections' },
+      { status: 500 }
+    );
+  }
+}
+
+export async function POST(
+  request: NextRequest, 
+  { params }: { params: Promise<{ id: string; groupId: string }> }
+) {
+  try {
+    const { id: orderId, groupId } = await params;
+    const body = await request.json();
+
+    // Authenticate user
+    const session = await AuthServiceServer.getSession(request);
+    if (!session) {
+      return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
+    }
+
+    // First verify the order exists and user has access
+    const order = await db.query.orders.findFirst({
+      where: eq(orders.id, orderId)
+    });
+
+    if (!order) {
+      return NextResponse.json({ error: 'Order not found' }, { status: 404 });
+    }
+
+    // Check access - both internal and account users allowed with different permissions
+    if (session.userType === 'internal') {
+      // Internal users: Full access to any order
+    } else if (session.userType === 'account') {
+      // Account users: Only access orders they own
+      if (order.accountId !== session.accountId) {
+        return NextResponse.json({ error: 'Forbidden - Account access denied' }, { status: 403 });
+      }
+    } else {
+      return NextResponse.json({ error: 'Unauthorized - Invalid user type' }, { status: 401 });
+    }
+
+    // Now get the specific order group
+    const orderGroup = await db.query.orderGroups.findFirst({
+      where: and(eq(orderGroups.orderId, orderId), eq(orderGroups.id, groupId)),
+      with: {
+        client: true
+      }
+    });
+
+    if (!orderGroup) {
+      return NextResponse.json({ error: 'Order group not found' }, { status: 404 });
+    }
+
+    // Check if this is a new selection creation (no bulk analysis project yet)
+    if (session.userType === 'account' && !orderGroup.bulkAnalysisProjectId) {
+      // Account users can only modify existing suggestions, not create new ones
+      return NextResponse.json({ 
+        error: 'Forbidden - Account users cannot create new site selections. Please wait for site suggestions from the team.' 
+      }, { status: 403 });
+    }
+
+    // Start a transaction to update selections
+    await db.transaction(async (tx) => {
+      // For account users, validate they're only modifying suggested sites
+      if (session.userType === 'account' && body.selections) {
+        // Get the bulk analysis project to verify suggested domains
+        if (orderGroup.bulkAnalysisProjectId) {
+          const validDomainIds = await tx.query.bulkAnalysisDomains.findMany({
+            where: eq(bulkAnalysisDomains.projectId, orderGroup.bulkAnalysisProjectId),
+            columns: { id: true }
+          });
+          
+          const validIds = new Set(validDomainIds.map(d => d.id));
+          const invalidSelections = body.selections.filter((s: any) => !validIds.has(s.domainId));
+          
+          if (invalidSelections.length > 0) {
+            throw new Error('Account users can only select from analyzed domains');
+          }
+        }
+      }
+
+      // Delete existing selections for this order group
+      await tx.delete(orderSiteSelections).where(eq(orderSiteSelections.orderGroupId, groupId));
+
+      // Insert new selections
+      if (body.selections && body.selections.length > 0) {
+        const newSelections = body.selections.map((selection: any) => ({
+          id: crypto.randomUUID(),
+          orderGroupId: groupId,
+          domainId: selection.domainId,
+          targetPageUrl: selection.targetPageUrl,
+          anchorText: selection.anchorText,
+          status: selection.status || 'approved',
+          reviewedAt: new Date(),
+          reviewedBy: session.userId,
+          createdAt: new Date(),
+          updatedAt: new Date()
+        }));
+
+        await tx.insert(orderSiteSelections).values(newSelections);
+      }
+    });
+
+    // Check if any selections were approved
+    const approvedCount = body.selections?.filter((s: any) => s.status === 'approved').length || 0;
+    
+    // NOTE: Workflow generation is now manual or triggered after payment
+    // We don't automatically generate workflows on approval anymore
+    // Use the /generate-workflows endpoint after payment is confirmed
+
+    return NextResponse.json({ 
+      success: true,
+      approvedCount,
+      message: approvedCount > 0 
+        ? `${approvedCount} sites approved. Workflows will be generated after payment is confirmed.`
+        : 'Site selections updated successfully'
+    });
+
+  } catch (error) {
+    console.error('Error updating site selections:', error);
+    return NextResponse.json(
+      { error: 'Failed to update site selections' },
+      { status: 500 }
+    );
+  }
+}

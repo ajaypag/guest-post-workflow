@@ -1,7 +1,8 @@
 import { pgTable, uuid, varchar, text, timestamp, boolean, integer, real, jsonb, decimal } from 'drizzle-orm/pg-core';
 import { relations } from 'drizzle-orm';
 
-// Users table
+// Users table - INTERNAL STAFF ONLY
+// Note: accounts and publishers have separate tables with their own authentication
 export const users = pgTable('users', {
   id: uuid('id').primaryKey(), // Remove defaultRandom() to handle in application code
   email: varchar('email', { length: 255 }).notNull().unique(),
@@ -14,6 +15,59 @@ export const users = pgTable('users', {
   updatedAt: timestamp('updated_at').notNull(), // Remove defaultNow() to handle in application code
 });
 
+// Invitations table for invite-only system
+export const invitations = pgTable('invitations', {
+  id: uuid('id').primaryKey(),
+  email: varchar('email', { length: 255 }).notNull(),
+  targetTable: varchar('target_table', { length: 20 }).notNull(), // 'users' | 'accounts' | 'publishers'
+  role: varchar('role', { length: 50 }).notNull(), // 'user' | 'admin' (for users table only)
+  token: varchar('token', { length: 255 }).notNull().unique(),
+  expiresAt: timestamp('expires_at').notNull(),
+  usedAt: timestamp('used_at'),
+  revokedAt: timestamp('revoked_at'),
+  createdByEmail: varchar('created_by_email', { length: 255 }).notNull(),
+  createdAt: timestamp('created_at').notNull(),
+  updatedAt: timestamp('updated_at').notNull(),
+});
+
+// User client access table for multi-client system
+export const userClientAccess = pgTable('user_client_access', {
+  id: uuid('id').primaryKey(),
+  userId: uuid('user_id').notNull().references(() => users.id, { onDelete: 'cascade' }),
+  clientId: uuid('client_id').notNull().references(() => clients.id, { onDelete: 'cascade' }),
+  accessLevel: varchar('access_level', { length: 50 }).notNull().default('read'), // 'read' | 'write' | 'admin'
+  grantedAt: timestamp('granted_at').notNull(),
+  grantedBy: uuid('granted_by').notNull().references(() => users.id),
+  revokedAt: timestamp('revoked_at'),
+  revokedBy: uuid('revoked_by').references(() => users.id),
+  createdAt: timestamp('created_at').notNull(),
+  updatedAt: timestamp('updated_at').notNull(),
+});
+
+// User website access table for publisher users
+export const userWebsiteAccess = pgTable('user_website_access', {
+  id: uuid('id').primaryKey(),
+  userId: uuid('user_id').notNull().references(() => users.id, { onDelete: 'cascade' }),
+  websiteId: uuid('website_id').notNull(), // References websites table (will be created later)
+  accessLevel: varchar('access_level', { length: 50 }).notNull().default('read'), // 'read' | 'write' | 'admin'
+  grantedAt: timestamp('granted_at').notNull(),
+  grantedBy: uuid('granted_by').notNull().references(() => users.id),
+  revokedAt: timestamp('revoked_at'),
+  revokedBy: uuid('revoked_by').references(() => users.id),
+  createdAt: timestamp('created_at').notNull(),
+  updatedAt: timestamp('updated_at').notNull(),
+});
+
+// Password reset tokens table
+export const passwordResetTokens = pgTable('password_reset_tokens', {
+  id: uuid('id').primaryKey(),
+  userId: uuid('user_id').notNull().references(() => users.id, { onDelete: 'cascade' }),
+  token: varchar('token', { length: 255 }).notNull().unique(),
+  expiresAt: timestamp('expires_at').notNull(),
+  usedAt: timestamp('used_at'),
+  createdAt: timestamp('created_at').notNull(),
+});
+
 // Clients table
 export const clients = pgTable('clients', {
   id: uuid('id').primaryKey(), // Remove defaultRandom() to handle in application code
@@ -24,6 +78,7 @@ export const clients = pgTable('clients', {
   createdBy: uuid('created_by').notNull().references(() => users.id),
   convertedFromProspectAt: timestamp('converted_from_prospect_at'),
   conversionNotes: text('conversion_notes'),
+  defaultRequirements: text('default_requirements').default('{}'), // JSONB column for order-centric architecture
   createdAt: timestamp('created_at').notNull(), // Remove defaultNow() to handle in application code
   updatedAt: timestamp('updated_at').notNull(), // Remove defaultNow() to handle in application code
 });
@@ -59,6 +114,7 @@ export const workflows = pgTable('workflows', {
   status: varchar('status', { length: 50 }).notNull().default('active'),
   content: jsonb('content'), // Stores the complete GuestPostWorkflow as JSON
   targetPages: jsonb('target_pages'), // Stores target pages as JSON
+  orderItemId: uuid('order_item_id'), // Link to order system
   createdAt: timestamp('created_at').notNull(),
   updatedAt: timestamp('updated_at').notNull(),
 });
@@ -377,6 +433,59 @@ export const formattingQaChecksRelations = relations(formattingQaChecks, ({ one 
   }),
 }));
 
+// Re-export order schema tables
+export { 
+  orders,
+  orderItems,
+  orderShareTokens,
+  orderStatusHistory,
+  domainSuggestions,
+  accountOrderAccess,
+  pricingRules,
+  ordersRelations,
+  orderItemsRelations
+} from './orderSchema';
+
+// Re-export website schema tables  
+export { 
+  websites,
+  websiteContacts,
+  websiteQualifications,
+  projectWebsites,
+  workflowWebsites,
+  websiteSyncLogs,
+  websitesRelations,
+  websiteContactsRelations,
+  websiteQualificationsRelations,
+  projectWebsitesRelations,
+  workflowWebsitesRelations,
+  websiteSyncLogsRelations
+} from './websiteSchema';
+
+// Re-export bulk analysis schema tables
+export { 
+  bulkAnalysisDomains,
+  bulkAnalysisProjects,
+  bulkAnalysisDomainsRelations,
+  bulkAnalysisProjectsRelations
+} from './bulkAnalysisSchema';
+
+// Re-export account schema tables
+export {
+  accounts,
+  publishers,
+  publisherWebsites,
+  accountsRelations
+} from './accountSchema';
+
+// Re-export order group schema tables
+export {
+  orderGroups,
+  orderSiteSelections,
+  orderGroupsRelations,
+  orderSiteSelectionsRelations
+} from './orderGroupSchema';
+
 // Outline sessions for tracking deep research outline generation with clarifications
 export const outlineSessions = pgTable('outline_sessions', {
   id: uuid('id').primaryKey(),
@@ -444,6 +553,12 @@ export type FormattingQaCheck = typeof formattingQaChecks.$inferSelect;
 export type NewFormattingQaCheck = typeof formattingQaChecks.$inferInsert;
 export type OutlineSession = typeof outlineSessions.$inferSelect;
 export type NewOutlineSession = typeof outlineSessions.$inferInsert;
+export type Invitation = typeof invitations.$inferSelect;
+export type NewInvitation = typeof invitations.$inferInsert;
+export type UserClientAccess = typeof userClientAccess.$inferSelect;
+export type NewUserClientAccess = typeof userClientAccess.$inferInsert;
+export type UserWebsiteAccess = typeof userWebsiteAccess.$inferSelect;
+export type NewUserWebsiteAccess = typeof userWebsiteAccess.$inferInsert;
 
 // V2 Agent Sessions for LLM Orchestration
 export const v2AgentSessions = pgTable('v2_agent_sessions', {

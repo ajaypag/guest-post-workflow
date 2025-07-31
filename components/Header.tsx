@@ -5,7 +5,7 @@ import { useRouter } from 'next/navigation';
 import { sessionStorage } from '@/lib/userStorage';
 import { type AuthSession } from '@/lib/auth';
 import { useState, useEffect } from 'react';
-import { User, LogOut, Users, Building2, Zap, Search, BarChart2, Globe, Mail } from 'lucide-react';
+import { User, LogOut, Users, Building2, Zap, Search, BarChart2, Globe, Mail, ShoppingCart, Package, Database } from 'lucide-react';
 
 export default function Header() {
   const router = useRouter();
@@ -44,48 +44,108 @@ export default function Header() {
 
           {/* Navigation */}
           <nav className="hidden md:flex items-center space-x-1">
-            <Link
-              href="/"
-              className="text-gray-600 hover:text-gray-900 hover:bg-gray-50 px-3 py-2 rounded-lg text-sm font-medium transition-colors"
-            >
-              Workflows
-            </Link>
-            <Link
-              href="/clients"
-              className="text-gray-600 hover:text-gray-900 hover:bg-gray-50 px-3 py-2 rounded-lg text-sm font-medium transition-colors flex items-center"
-            >
-              <Building2 className="w-4 h-4 mr-1.5" />
-              Clients
-            </Link>
-            <Link
-              href="/bulk-analysis"
-              className="text-gray-600 hover:text-gray-900 hover:bg-gray-50 px-3 py-2 rounded-lg text-sm font-medium transition-colors flex items-center"
-            >
-              <BarChart2 className="w-4 h-4 mr-1.5" />
-              Bulk Analysis
-            </Link>
-            <Link
-              href="/websites"
-              className="text-gray-600 hover:text-gray-900 hover:bg-gray-50 px-3 py-2 rounded-lg text-sm font-medium transition-colors flex items-center"
-            >
-              <Globe className="w-4 h-4 mr-1.5" />
-              Websites
-            </Link>
-            <Link
-              href="/contacts"
-              className="text-gray-600 hover:text-gray-900 hover:bg-gray-50 px-3 py-2 rounded-lg text-sm font-medium transition-colors flex items-center"
-            >
-              <Mail className="w-4 h-4 mr-1.5" />
-              Contacts
-            </Link>
-            {session.role === 'admin' && (
-              <Link
-                href="/admin/users"
-                className="text-gray-600 hover:text-gray-900 hover:bg-gray-50 px-3 py-2 rounded-lg text-sm font-medium transition-colors flex items-center"
-              >
-                <Users className="w-4 h-4 mr-1.5" />
-                Users
-              </Link>
+            {session.userType === 'account' ? (
+              // Account Navigation
+              <>
+                <Link
+                  href="/account/dashboard"
+                  className="text-gray-600 hover:text-gray-900 hover:bg-gray-50 px-3 py-2 rounded-lg text-sm font-medium transition-colors flex items-center"
+                >
+                  <Package className="w-4 h-4 mr-1.5" />
+                  Dashboard
+                </Link>
+                <Link
+                  href="/orders"
+                  className="text-gray-600 hover:text-gray-900 hover:bg-gray-50 px-3 py-2 rounded-lg text-sm font-medium transition-colors flex items-center"
+                >
+                  <ShoppingCart className="w-4 h-4 mr-1.5" />
+                  My Orders
+                </Link>
+              </>
+            ) : (
+              // Internal Team Navigation
+              <>
+                <Link
+                  href="/"
+                  className="text-gray-600 hover:text-gray-900 hover:bg-gray-50 px-3 py-2 rounded-lg text-sm font-medium transition-colors"
+                >
+                  Workflows
+                </Link>
+                <Link
+                  href="/clients"
+                  className="text-gray-600 hover:text-gray-900 hover:bg-gray-50 px-3 py-2 rounded-lg text-sm font-medium transition-colors flex items-center"
+                >
+                  <Building2 className="w-4 h-4 mr-1.5" />
+                  Clients
+                </Link>
+                <Link
+                  href="/bulk-analysis"
+                  className="text-gray-600 hover:text-gray-900 hover:bg-gray-50 px-3 py-2 rounded-lg text-sm font-medium transition-colors flex items-center"
+                >
+                  <BarChart2 className="w-4 h-4 mr-1.5" />
+                  Bulk Analysis
+                </Link>
+                <Link
+                  href="/orders"
+                  className="text-gray-600 hover:text-gray-900 hover:bg-gray-50 px-3 py-2 rounded-lg text-sm font-medium transition-colors flex items-center"
+                >
+                  <ShoppingCart className="w-4 h-4 mr-1.5" />
+                  Orders
+                </Link>
+                <Link
+                  href="/websites"
+                  className="text-gray-600 hover:text-gray-900 hover:bg-gray-50 px-3 py-2 rounded-lg text-sm font-medium transition-colors flex items-center"
+                >
+                  <Globe className="w-4 h-4 mr-1.5" />
+                  Websites
+                </Link>
+                <Link
+                  href="/contacts"
+                  className="text-gray-600 hover:text-gray-900 hover:bg-gray-50 px-3 py-2 rounded-lg text-sm font-medium transition-colors flex items-center"
+                >
+                  <Mail className="w-4 h-4 mr-1.5" />
+                  Contacts
+                </Link>
+                <Link
+                  href="/accounts"
+                  className="text-gray-600 hover:text-gray-900 hover:bg-gray-50 px-3 py-2 rounded-lg text-sm font-medium transition-colors flex items-center"
+                >
+                  <Users className="w-4 h-4 mr-1.5" />
+                  Accounts
+                </Link>
+                {session.role === 'admin' && (
+                  <>
+                    <Link
+                      href="/admin/users"
+                      className="text-gray-600 hover:text-gray-900 hover:bg-gray-50 px-3 py-2 rounded-lg text-sm font-medium transition-colors flex items-center"
+                    >
+                      <Users className="w-4 h-4 mr-1.5" />
+                      Users
+                    </Link>
+                    <Link
+                      href="/admin/account-invitations"
+                      className="text-gray-600 hover:text-gray-900 hover:bg-gray-50 px-3 py-2 rounded-lg text-sm font-medium transition-colors flex items-center"
+                    >
+                      <Mail className="w-4 h-4 mr-1.5" />
+                      Invitations
+                    </Link>
+                    <Link
+                      href="/admin/migrate-onboarding"
+                      className="text-gray-600 hover:text-gray-900 hover:bg-gray-50 px-3 py-2 rounded-lg text-sm font-medium transition-colors flex items-center"
+                    >
+                      <Database className="w-4 h-4 mr-1.5" />
+                      Migrate Onboarding
+                    </Link>
+                    <Link
+                      href="/admin/fix-invitations-table"
+                      className="text-gray-600 hover:text-gray-900 hover:bg-gray-50 px-3 py-2 rounded-lg text-sm font-medium transition-colors flex items-center"
+                    >
+                      <Database className="w-4 h-4 mr-1.5" />
+                      Fix Invitations Table
+                    </Link>
+                  </>
+                )}
+              </>
             )}
           </nav>
 

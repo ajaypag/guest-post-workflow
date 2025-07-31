@@ -1,8 +1,35 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { UserService } from '@/lib/db/userService';
+import { AuthServiceServer } from '@/lib/auth-server';
+import { cookies } from 'next/headers';
+import { db } from '@/lib/db/connection';
+import { accounts } from '@/lib/db/accountSchema';
+import { eq } from 'drizzle-orm';
+import bcrypt from 'bcryptjs';
+import { authRateLimiter, getClientIp } from '@/lib/utils/rateLimiter';
 
 export async function POST(request: NextRequest) {
   try {
+    // Check rate limit
+    const clientIp = getClientIp(request);
+    const rateLimitKey = `login:${clientIp}`;
+    const { allowed, retryAfter } = authRateLimiter.check(rateLimitKey);
+    
+    if (!allowed) {
+      return NextResponse.json(
+        { 
+          error: 'Too many login attempts. Please try again later.',
+          retryAfter 
+        },
+        { 
+          status: 429,
+          headers: {
+            'Retry-After': String(retryAfter)
+          }
+        }
+      );
+    }
+    
     const { email, password } = await request.json();
 
     if (!email || !password) {
@@ -12,7 +39,43 @@ export async function POST(request: NextRequest) {
       );
     }
 
-    const user = await UserService.verifyPassword(email, password);
+    // First try to find user in users table (internal team)
+    let user = await UserService.verifyPassword(email, password);
+    let userType = 'internal';
+    let token: string;
+    
+    if (!user) {
+      // If not found in users table, check accounts table
+      const account = await db.query.accounts.findFirst({
+        where: eq(accounts.email, email.toLowerCase()),
+      });
+      
+      if (account) {
+        // Verify account password
+        const isPasswordValid = await bcrypt.compare(password, account.password);
+        if (isPasswordValid && (account.status === 'active' || account.status === 'pending')) {
+          // Create user object from account
+          user = {
+            id: account.id,
+            email: account.email,
+            name: account.contactName,
+            role: 'account',
+            isActive: true,
+            passwordHash: account.password,
+            lastLogin: account.lastLoginAt,
+            createdAt: account.createdAt,
+            updatedAt: account.updatedAt,
+          };
+          userType = 'account';
+          
+          // Update last login
+          await db
+            .update(accounts)
+            .set({ lastLoginAt: new Date() })
+            .where(eq(accounts.id, account.id));
+        }
+      }
+    }
     
     if (!user) {
       return NextResponse.json(
@@ -21,15 +84,53 @@ export async function POST(request: NextRequest) {
       );
     }
 
-    return NextResponse.json({
+    // Create JWT token with userType
+    const userWithType = { ...user, userType };
+    token = await AuthServiceServer.createSession(userWithType);
+    
+    // Create response first
+    const response = NextResponse.json({
       user: {
         id: user.id,
         email: user.email,
         name: user.name,
         role: user.role,
-        isActive: user.isActive
+        isActive: user.isActive,
+        userType: userType
       }
     });
+
+    // Set cookie on the response
+    const isProduction = process.env.NODE_ENV === 'production';
+    
+    // Log environment for debugging
+    console.log('🔐 Setting cookie with:', {
+      name: 'auth-token',
+      value: token.substring(0, 20) + '...',
+      httpOnly: true,
+      secure: isProduction,
+      nodeEnv: process.env.NODE_ENV,
+      sameSite: 'lax',
+      path: '/',
+      domain: process.env.COOKIE_DOMAIN || undefined,
+    });
+    
+    response.cookies.set({
+      name: 'auth-token',
+      value: token,
+      httpOnly: true,
+      secure: isProduction,
+      sameSite: 'lax',
+      maxAge: 60 * 60 * 24 * 7, // 7 days
+      path: '/',
+      // Add domain if specified in env
+      ...(process.env.COOKIE_DOMAIN && { domain: process.env.COOKIE_DOMAIN })
+    });
+
+    console.log('🔐 Login successful, cookie set for:', user.email);
+    console.log('🔐 Response headers:', response.headers.get('set-cookie'));
+
+    return response;
   } catch (error) {
     console.error('Login error:', error);
     return NextResponse.json(

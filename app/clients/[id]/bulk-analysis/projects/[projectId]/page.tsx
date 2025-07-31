@@ -1,11 +1,11 @@
 'use client';
 
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useMemo } from 'react';
 import { useParams, useRouter, useSearchParams } from 'next/navigation';
 import Link from 'next/link';
 import AuthWrapper from '@/components/AuthWrapper';
 import Header from '@/components/Header';
-import { clientStorage } from '@/lib/userStorage';
+import { clientStorage, sessionStorage } from '@/lib/userStorage';
 import { AuthService } from '@/lib/auth';
 import { Client, TargetPage } from '@/types/user';
 import { groupKeywordsByTopic, generateGroupedAhrefsUrls } from '@/lib/utils/keywordGroupingV2';
@@ -21,6 +21,7 @@ import InlineDatabaseSelector from '@/components/bulk-analysis/InlineDatabaseSel
 import { BulkAnalysisProject } from '@/types/bulk-analysis-projects';
 import { BulkAnalysisDomain } from '@/types/bulk-analysis';
 import { ProcessedWebsite } from '@/types/airtable';
+import OrderSelectionModal from '@/components/orders/OrderSelectionModal';
 import { 
   ArrowLeft, 
   Target, 
@@ -63,6 +64,7 @@ export default function ProjectDetailPage() {
   const [messageType, setMessageType] = useState<'info' | 'success' | 'error' | 'warning'>('info');
   const [existingDomains, setExistingDomains] = useState<{ domain: string; status: string }[]>([]);
   const [selectedPositionRange, setSelectedPositionRange] = useState('1-50');
+  const [userType, setUserType] = useState<string>('');
   
   // Manual keyword input mode
   const [keywordInputMode, setKeywordInputMode] = useState<'target-pages' | 'manual'>('target-pages');
@@ -136,6 +138,7 @@ export default function ProjectDetailPage() {
   const [triageMode, setTriageMode] = useState(false);
   const [showGuidedTriage, setShowGuidedTriage] = useState(false);
   const [isSearchExpanded, setIsSearchExpanded] = useState(false);
+  const [currentSortedFilteredDomains, setCurrentSortedFilteredDomains] = useState<BulkAnalysisDomain[]>([]);
   
   // Add domains section visibility
   const [showAddDomains, setShowAddDomains] = useState(false);
@@ -164,6 +167,81 @@ export default function ProjectDetailPage() {
   const [domainInputMode, setDomainInputMode] = useState<'paste' | 'database'>('paste');
   const [selectedDatabaseWebsites, setSelectedDatabaseWebsites] = useState<ProcessedWebsite[]>([]);
   
+  // Order selection modal state
+  const [orderSelectionModal, setOrderSelectionModal] = useState<{
+    isOpen: boolean;
+    domains: BulkAnalysisDomain[];
+  }>({ isOpen: false, domains: [] });
+  
+  // Calculate sorted and filtered domains
+  const sortedFilteredDomains = useMemo(() => {
+    // Filter domains
+    let filteredDomains = domains.filter(domain => {
+      // Status filter - if any statuses are selected, domain must match one of them
+      if (statusFilter.length > 0 && !statusFilter.includes(domain.qualificationStatus)) return false;
+      
+      // Workflow filter
+      if (workflowFilter === 'has_workflow' && !domain.hasWorkflow) return false;
+      if (workflowFilter === 'no_workflow' && domain.hasWorkflow) return false;
+      
+      // Verification filter
+      if (verificationFilter === 'human_verified' && !domain.wasManuallyQualified) return false;
+      if (verificationFilter === 'ai_qualified' && (domain.wasManuallyQualified || domain.qualificationStatus === 'pending')) return false;
+      if (verificationFilter === 'unverified' && domain.qualificationStatus !== 'pending') return false;
+      
+      // Search filter
+      if (searchQuery && !domain.domain.toLowerCase().includes(searchQuery.toLowerCase())) return false;
+      
+      return true;
+    });
+    
+    // Apply sorting
+    const sorted = [...filteredDomains].sort((a, b) => {
+      let compareValue = 0;
+      
+      switch (sortBy) {
+        case 'domain':
+          compareValue = a.domain.localeCompare(b.domain);
+          break;
+        case 'createdAt':
+          compareValue = new Date(a.createdAt || 0).getTime() - new Date(b.createdAt || 0).getTime();
+          break;
+        case 'updatedAt':
+          compareValue = new Date(a.updatedAt || 0).getTime() - new Date(b.updatedAt || 0).getTime();
+          break;
+        case 'qualificationStatus':
+          // Custom order: high_quality > good_quality > marginal_quality > disqualified > pending
+          const statusOrder: Record<string, number> = { 
+            'high_quality': 0, 
+            'good_quality': 1, 
+            'marginal_quality': 2, 
+            'disqualified': 3, 
+            'pending': 4,
+            '': 5  // Handle empty status
+          };
+          const aOrder = statusOrder[a.qualificationStatus || ''] ?? 99;
+          const bOrder = statusOrder[b.qualificationStatus || ''] ?? 99;
+          compareValue = aOrder - bOrder;
+          break;
+        case 'hasDataForSeoResults':
+          compareValue = (a.hasDataForSeoResults ? 0 : 1) - (b.hasDataForSeoResults ? 0 : 1);
+          break;
+        case 'hasWorkflow':
+          compareValue = (a.hasWorkflow ? 0 : 1) - (b.hasWorkflow ? 0 : 1);
+          break;
+        case 'keywordCount':
+          compareValue = (a.keywordCount || 0) - (b.keywordCount || 0);
+          break;
+        default:
+          compareValue = 0;
+      }
+      
+      return sortOrder === 'asc' ? compareValue : -compareValue;
+    });
+    
+    return sorted;
+  }, [domains, statusFilter, workflowFilter, verificationFilter, searchQuery, sortBy, sortOrder]);
+
   // Reset pagination when filters change
   useEffect(() => {
     setDisplayLimit(ITEMS_PER_PAGE);
@@ -172,6 +250,11 @@ export default function ProjectDetailPage() {
   // DataForSEO and AI features are always enabled
 
   useEffect(() => {
+    // Get user type from session
+    const session = sessionStorage.getSession();
+    if (session) {
+      setUserType(session.userType || 'internal');
+    }
     loadClient();
     loadProject();
   }, [params.id, params.projectId]);
@@ -1146,6 +1229,49 @@ export default function ProjectDetailPage() {
     }
   };
   
+  const handleAddToExistingOrder = async (orderId: string, domains: BulkAnalysisDomain[]) => {
+    try {
+      setLoading(true);
+      setMessage('Adding domains to order...');
+      
+      // Create domain mappings with target pages
+      const domainMappings = domains.map(domain => {
+        // Find the selected target page for this domain
+        const targetPageId = domain.selectedTargetPageId || targetPages[0]?.id || null;
+        
+        return {
+          bulkAnalysisDomainId: domain.id,
+          targetPageId: targetPageId,
+          domain: domain.domain
+        };
+      });
+      
+      const response = await fetch(`/api/orders/${orderId}/items`, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        credentials: 'include',
+        body: JSON.stringify({ domainMappings })
+      });
+      
+      if (!response.ok) {
+        const error = await response.json();
+        throw new Error(error.error || 'Failed to add domains to order');
+      }
+      
+      setMessage('✅ Domains added to order successfully!');
+      // Navigate to order detail page
+      router.push(`/orders/${orderId}`);
+      
+    } catch (error: any) {
+      console.error('Error adding to order:', error);
+      setMessage(`❌ Failed to add domains: ${error.message}`);
+    } finally {
+      setLoading(false);
+    }
+  };
+
   const handleMoveToProject = async (targetProjectId: string) => {
     try {
       setLoading(true);
@@ -1403,6 +1529,7 @@ export default function ProjectDetailPage() {
           {/* Add Domains Section - Contextual Display */}
           {domains.length === 0 ? (
             // New project - show add domains prominently
+            userType === 'internal' ? (
             <>
               <div className="bg-blue-50 border border-blue-200 rounded-lg p-6 mb-6">
                 <div className="flex items-center mb-3">
@@ -1704,9 +1831,21 @@ anotherdomain.com"
           </div>
             </>
           ) : (
+            // Advertiser view - show message for empty project
+            <div className="bg-gray-50 border border-gray-200 rounded-lg p-6 mb-6">
+              <div className="flex items-center mb-3">
+                <AlertCircle className="w-5 h-5 text-gray-600 mr-2" />
+                <h3 className="text-lg font-medium text-gray-900">No Domains Yet</h3>
+              </div>
+              <p className="text-gray-700">
+                This project doesn't have any domains yet. Your account manager will add domains to analyze for guest post opportunities.
+              </p>
+            </div>
+          )
+          ) : (
             // Existing project - show subtle add domains option
             <>
-              {!showAddDomains && (
+              {!showAddDomains && userType === 'internal' && (
                 <div className="mb-6">
                   <button
                     onClick={() => setShowAddDomains(true)}
@@ -2117,7 +2256,10 @@ anotherdomain.com"
 
                     {/* Guided Review Button */}
                     <button
-                      onClick={() => setShowGuidedTriage(true)}
+                      onClick={() => {
+                        setCurrentSortedFilteredDomains(sortedFilteredDomains);
+                        setShowGuidedTriage(true);
+                      }}
                       className="inline-flex items-center px-3 sm:px-4 py-2 bg-purple-600 text-white text-xs sm:text-sm font-medium rounded-lg hover:bg-purple-700 transition-colors flex-1 lg:flex-initial justify-center lg:justify-start"
                       title="Review domains one by one with DataForSEO and AI analysis"
                     >
@@ -2206,7 +2348,14 @@ anotherdomain.com"
                         <div className="flex items-center gap-1 border-l pl-2">
                           <select
                             value={sortBy}
-                            onChange={(e) => setSortBy(e.target.value as any)}
+                            onChange={(e) => {
+                              const newSortBy = e.target.value as any;
+                              setSortBy(newSortBy);
+                              // When switching to status sorting, default to ascending (best first)
+                              if (newSortBy === 'qualificationStatus' && sortBy !== 'qualificationStatus') {
+                                setSortOrder('asc');
+                              }
+                            }}
                             className="border border-gray-300 rounded-lg px-2 sm:px-3 py-2 text-xs sm:text-sm focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500 min-w-[90px] lg:min-w-[140px]"
                           >
                             <option value="createdAt">Date</option>
@@ -2747,42 +2896,8 @@ anotherdomain.com"
                 });
                 
                 // Apply sorting
-                const sortedDomains = [...filteredDomains].sort((a, b) => {
-                  let compareValue = 0;
-                  
-                  switch (sortBy) {
-                    case 'domain':
-                      compareValue = a.domain.localeCompare(b.domain);
-                      break;
-                    case 'createdAt':
-                      compareValue = new Date(a.createdAt || 0).getTime() - new Date(b.createdAt || 0).getTime();
-                      break;
-                    case 'updatedAt':
-                      compareValue = new Date(a.updatedAt || 0).getTime() - new Date(b.updatedAt || 0).getTime();
-                      break;
-                    case 'qualificationStatus':
-                      // Custom order: high_quality > good_quality > marginal_quality > disqualified > pending
-                      const statusOrder = { 'high_quality': 0, 'good_quality': 1, 'marginal_quality': 2, 'disqualified': 3, 'pending': 4 };
-                      compareValue = (statusOrder[a.qualificationStatus] || 99) - (statusOrder[b.qualificationStatus] || 99);
-                      break;
-                    case 'hasDataForSeoResults':
-                      compareValue = (a.hasDataForSeoResults ? 0 : 1) - (b.hasDataForSeoResults ? 0 : 1);
-                      break;
-                    case 'hasWorkflow':
-                      compareValue = (a.hasWorkflow ? 0 : 1) - (b.hasWorkflow ? 0 : 1);
-                      break;
-                    case 'keywordCount':
-                      compareValue = (a.keywordCount || 0) - (b.keywordCount || 0);
-                      break;
-                    default:
-                      compareValue = 0;
-                  }
-                  
-                  return sortOrder === 'asc' ? compareValue : -compareValue;
-                });
-                
-                const paginatedDomains = sortedDomains.slice(0, displayLimit);
-                const hasMore = sortedDomains.length > displayLimit;
+                const paginatedDomains = sortedFilteredDomains.slice(0, displayLimit);
+                const hasMore = sortedFilteredDomains.length > displayLimit;
                 
                 return (
                   <>
@@ -2794,11 +2909,11 @@ anotherdomain.com"
                             <strong>Tip:</strong> Select domains to qualify them with AI
                           </p>
                           <button
-                            onClick={() => selectAll(sortedDomains.map(d => d.id))}
+                            onClick={() => selectAll(sortedFilteredDomains.map(d => d.id))}
                             className="inline-flex items-center px-3 py-1.5 bg-purple-600 text-white text-sm rounded hover:bg-purple-700"
                           >
                             <CheckCircle className="w-4 h-4 mr-1.5" />
-                            Select All {sortedDomains.length} Domains
+                            Select All {sortedFilteredDomains.length} Domains
                           </button>
                         </div>
                       </div>
@@ -2816,6 +2931,13 @@ anotherdomain.com"
                       onCreateWorkflow={createWorkflow}
                       onDeleteDomain={deleteDomain}
                       onAnalyzeWithDataForSeo={analyzeWithDataForSeo}
+                      onAddToOrder={(domains) => {
+                        // Open order selection modal
+                        setOrderSelectionModal({
+                          isOpen: true,
+                          domains: domains
+                        });
+                      }}
                       onUpdateNotes={async (domainId, notes) => {
                         // Save notes
                         try {
@@ -2876,7 +2998,7 @@ anotherdomain.com"
                           className="inline-flex items-center px-6 py-3 bg-gray-100 hover:bg-gray-200 text-gray-800 font-medium rounded-lg transition-colors"
                         >
                           <Plus className="w-5 h-5 mr-2" />
-                          Show More ({sortedDomains.length - paginatedDomains.length} remaining)
+                          Show More ({sortedFilteredDomains.length - paginatedDomains.length} remaining)
                         </button>
                       </div>
                     )}
@@ -2884,8 +3006,8 @@ anotherdomain.com"
                     {/* Results Summary */}
                     <div className="mt-4 text-center">
                       <div className="text-sm text-gray-600">
-                        Showing {paginatedDomains.length} of {sortedDomains.length} domains
-                        {sortedDomains.length < domains.length && (
+                        Showing {paginatedDomains.length} of {sortedFilteredDomains.length} domains
+                        {sortedFilteredDomains.length < domains.length && (
                           <span className="text-indigo-600 ml-1">
                             (filtered from {domains.length} total)
                           </span>
@@ -2958,24 +3080,7 @@ anotherdomain.com"
       {/* Guided Triage Flow */}
       {showGuidedTriage && (
         <GuidedTriageFlow
-          domains={domains.filter(domain => {
-            // Status filter - if any statuses are selected, domain must match one of them
-            if (statusFilter.length > 0 && !statusFilter.includes(domain.qualificationStatus)) return false;
-            
-            // Workflow filter
-            if (workflowFilter === 'has_workflow' && !domain.hasWorkflow) return false;
-            if (workflowFilter === 'no_workflow' && domain.hasWorkflow) return false;
-            
-            // Verification filter
-            if (verificationFilter === 'human_verified' && !domain.wasManuallyQualified) return false;
-            if (verificationFilter === 'ai_qualified' && (domain.wasManuallyQualified || domain.qualificationStatus === 'pending')) return false;
-            if (verificationFilter === 'unverified' && domain.qualificationStatus !== 'pending') return false;
-            
-            // Search filter
-            if (searchQuery && !domain.domain.toLowerCase().includes(searchQuery.toLowerCase())) return false;
-            
-            return true;
-          })}
+          domains={currentSortedFilteredDomains}
           targetPages={targetPages}
           onClose={() => {
             setShowGuidedTriage(false);
@@ -3015,6 +3120,27 @@ anotherdomain.com"
           onConfirm={handleMoveToProject}
         />
       )}
+      
+      {/* Order Selection Modal */}
+      <OrderSelectionModal
+        isOpen={orderSelectionModal.isOpen}
+        onClose={() => setOrderSelectionModal({ isOpen: false, domains: [] })}
+        clientId={params.id as string}
+        onSelectOrder={(orderId) => {
+          if (orderId) {
+            // Add to existing order
+            handleAddToExistingOrder(orderId, orderSelectionModal.domains);
+          } else {
+            // Create new order
+            const domainIds = orderSelectionModal.domains.map(d => d.id);
+            const searchParams = new URLSearchParams();
+            searchParams.set('domains', JSON.stringify(domainIds));
+            searchParams.set('clientId', params.id as string);
+            router.push(`/orders/builder?${searchParams.toString()}`);
+          }
+          setOrderSelectionModal({ isOpen: false, domains: [] });
+        }}
+      />
     </AuthWrapper>
   );
 }

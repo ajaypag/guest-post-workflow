@@ -15,6 +15,7 @@ function ClientsPageContent() {
   const [clients, setClients] = useState<Client[]>([]);
   const [showNewClientForm, setShowNewClientForm] = useState(false);
   const [editingClient, setEditingClient] = useState<Client | null>(null);
+  const [userType, setUserType] = useState<string>('');
   const [newClient, setNewClient] = useState({
     name: '',
     website: '',
@@ -27,6 +28,12 @@ function ClientsPageContent() {
   });
 
   useEffect(() => {
+    // Get user type from session
+    const session = sessionStorage.getSession();
+    if (session) {
+      setUserType(session.userType || 'internal');
+    }
+    
     loadClients();
     
     // Check URL parameters to auto-open form
@@ -257,6 +264,9 @@ function ClientsPageContent() {
                     rows={4}
                     placeholder="https://example.com/blog&#10;https://anotherdomain.com/articles&#10;https://techblog.com"
                   />
+                  <p className="mt-1 text-xs text-gray-500">
+                    These are the pages you want to build backlinks to. Enter one URL per line.
+                  </p>
                   <p className="text-xs text-gray-500 mt-1">
                     Optional: Add initial target pages. You can add more later.
                   </p>

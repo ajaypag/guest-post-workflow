@@ -5,7 +5,7 @@ import { useParams, useRouter } from 'next/navigation';
 import Link from 'next/link';
 import AuthWrapper from '@/components/AuthWrapper';
 import Header from '@/components/Header';
-import { clientStorage } from '@/lib/userStorage';
+import { clientStorage, sessionStorage } from '@/lib/userStorage';
 import { Client } from '@/types/user';
 import BulkAnalysisTutorial from '@/components/BulkAnalysisTutorial';
 import { ProjectCard } from '@/components/bulk-analysis/ProjectCard';
@@ -30,8 +30,14 @@ export default function BulkAnalysisPage() {
   const [loading, setLoading] = useState(false);
   const [message, setMessage] = useState('');
   const [messageType, setMessageType] = useState<'info' | 'success' | 'error' | 'warning'>('info');
+  const [userType, setUserType] = useState<string>('');
 
   useEffect(() => {
+    // Get user type from session
+    const session = sessionStorage.getSession();
+    if (session) {
+      setUserType(session.userType || 'internal');
+    }
     loadClient();
   }, [params.id]);
 
@@ -232,13 +238,15 @@ export default function BulkAnalysisPage() {
                   Show archived
                 </label>
               </div>
-              <button
-                onClick={() => setShowProjectForm(true)}
-                className="inline-flex items-center px-4 py-2 bg-indigo-600 text-white rounded-lg hover:bg-indigo-700 transition-colors"
-              >
-                <FolderPlus className="w-4 h-4 mr-2" />
-                New Project
-              </button>
+              {userType === 'internal' && (
+                <button
+                  onClick={() => setShowProjectForm(true)}
+                  className="inline-flex items-center px-4 py-2 bg-indigo-600 text-white rounded-lg hover:bg-indigo-700 transition-colors"
+                >
+                  <FolderPlus className="w-4 h-4 mr-2" />
+                  New Project
+                </button>
+              )}
             </div>
 
             {/* New Project Form */}

@@ -1,0 +1,452 @@
+import { db } from '@/lib/db/connection';
+import { workflows, workflowSteps, users } from '@/lib/db/schema';
+import { orderSiteSelections, orderGroups } from '@/lib/db/orderGroupSchema';
+import { orderItems, orders } from '@/lib/db/orderSchema';
+import { bulkAnalysisDomains } from '@/lib/db/bulkAnalysisSchema';
+import { accounts } from '@/lib/db/accountSchema';
+import { eq, and, inArray, sql } from 'drizzle-orm';
+import { GuestPostWorkflow, WORKFLOW_STEPS } from '@/types/workflow';
+import { WorkflowService } from '@/lib/db/workflowService';
+import { v4 as uuidv4 } from 'uuid';
+
+export interface WorkflowGenerationResult {
+  success: boolean;
+  workflowsCreated: number;
+  orderItemsCreated: number;
+  errors: string[];
+}
+
+export interface WorkflowGenerationOptions {
+  assignToUserId?: string; // Optionally assign all generated workflows to a specific user
+  autoAssign?: boolean; // Auto-assign based on workload
+}
+
+export class WorkflowGenerationService {
+  /**
+   * Generate workflows for all approved site selections in an order group
+   */
+  static async generateWorkflowsForOrderGroup(
+    orderGroupId: string, 
+    userId: string,
+    options: WorkflowGenerationOptions = {}
+  ): Promise<WorkflowGenerationResult> {
+    const errors: string[] = [];
+    let workflowsCreated = 0;
+    let orderItemsCreated = 0;
+
+    try {
+      // Get order group with related data
+      const orderGroup = await db.query.orderGroups.findFirst({
+        where: eq(orderGroups.id, orderGroupId),
+        with: {
+          order: {
+            with: {
+              account: true
+            }
+          },
+          client: true,
+          siteSelections: {
+            where: eq(orderSiteSelections.status, 'approved'),
+            with: {
+              domain: true
+            }
+          }
+        }
+      });
+
+      if (!orderGroup) {
+        throw new Error('Order group not found');
+      }
+
+      if (!orderGroup.siteSelections || orderGroup.siteSelections.length === 0) {
+        return {
+          success: true,
+          workflowsCreated: 0,
+          orderItemsCreated: 0,
+          errors: ['No approved site selections found']
+        };
+      }
+
+      // Generate workflows for each approved site
+      for (const siteSelection of orderGroup.siteSelections) {
+        try {
+          // Skip if already has an order item (workflow already created)
+          if (siteSelection.orderItemId) {
+            console.log(`Site selection ${siteSelection.id} already has workflow`);
+            continue;
+          }
+
+          // Determine assigned user
+          const assignedUserId = options.assignToUserId || 
+            (options.autoAssign ? await this.getNextAvailableUser() : userId);
+
+          // Create workflow
+          const workflow = await this.createWorkflowFromSiteSelection(
+            siteSelection,
+            orderGroup,
+            assignedUserId
+          );
+
+          if (workflow) {
+            workflowsCreated++;
+
+            // Create order item
+            const orderItem = await this.createOrderItem(
+              orderGroup.orderId,
+              siteSelection,
+              workflow.id,
+              orderGroup.id
+            );
+
+            if (orderItem) {
+              orderItemsCreated++;
+
+              // Update site selection with order item reference
+              await db.update(orderSiteSelections)
+                .set({ 
+                  orderItemId: orderItem.id,
+                  updatedAt: new Date()
+                })
+                .where(eq(orderSiteSelections.id, siteSelection.id));
+            }
+          }
+        } catch (error) {
+          const errorMsg = `Failed to generate workflow for domain ${siteSelection.domain?.domain}: ${error}`;
+          console.error(errorMsg);
+          errors.push(errorMsg);
+        }
+      }
+
+      // Update order state if all workflows created successfully
+      if (errors.length === 0 && workflowsCreated > 0) {
+        await db.update(orders)
+          .set({
+            state: 'in_progress',
+            updatedAt: new Date()
+          })
+          .where(eq(orders.id, orderGroup.orderId));
+      }
+
+      return {
+        success: errors.length === 0,
+        workflowsCreated,
+        orderItemsCreated,
+        errors
+      };
+
+    } catch (error) {
+      console.error('Error generating workflows:', error);
+      return {
+        success: false,
+        workflowsCreated,
+        orderItemsCreated,
+        errors: [`System error: ${error}`]
+      };
+    }
+  }
+
+  /**
+   * Create a workflow from an approved site selection
+   */
+  private static async createWorkflowFromSiteSelection(
+    siteSelection: any,
+    orderGroup: any,
+    userId: string
+  ): Promise<GuestPostWorkflow | null> {
+    try {
+      const domain = siteSelection.domain;
+      const client = orderGroup.client;
+      const account = orderGroup.order.account;
+
+      // Build workflow metadata
+      const workflowData: GuestPostWorkflow = {
+        id: uuidv4(),
+        createdAt: new Date(),
+        updatedAt: new Date(),
+        clientName: client.name,
+        clientUrl: client.website,
+        targetDomain: domain.domain,
+        currentStep: 0,
+        createdBy: account?.contactName || 'System',
+        createdByEmail: account?.email,
+        steps: this.generateWorkflowSteps(siteSelection, domain),
+        metadata: {
+          clientId: client.id,
+          orderId: orderGroup.orderId,
+          orderGroupId: orderGroup.id,
+          siteSelectionId: siteSelection.id,
+          targetPageUrl: siteSelection.targetPageUrl,
+          anchorText: siteSelection.anchorText
+        }
+      };
+
+      // Create workflow using existing service
+      const createdWorkflow = await WorkflowService.createGuestPostWorkflow(
+        workflowData,
+        userId,
+        account?.contactName || 'System',
+        account?.email
+      );
+
+      // Link workflow to order
+      if (createdWorkflow) {
+        await db.update(workflows)
+          .set({
+            orderItemId: siteSelection.id, // Temporary link until order item created
+            updatedAt: new Date()
+          })
+          .where(eq(workflows.id, createdWorkflow.id));
+      }
+
+      return createdWorkflow;
+    } catch (error) {
+      console.error('Error creating workflow:', error);
+      throw error;
+    }
+  }
+
+  /**
+   * Generate workflow steps with pre-filled data
+   */
+  private static generateWorkflowSteps(siteSelection: any, domain: any): any[] {
+    return WORKFLOW_STEPS.map((stepTemplate, index) => ({
+      id: `step-${index + 1}`,
+      title: stepTemplate.title,
+      description: stepTemplate.description,
+      status: 'pending',
+      inputs: this.getStepInputs(stepTemplate.id, siteSelection, domain),
+      outputs: {},
+      fields: {
+        inputs: this.getStepInputFields(stepTemplate.id),
+        outputs: this.getStepOutputFields(stepTemplate.id)
+      }
+    }));
+  }
+
+  /**
+   * Get pre-filled inputs for a workflow step
+   */
+  private static getStepInputs(stepId: string, siteSelection: any, domain: any): Record<string, any> {
+    switch (stepId) {
+      case 'domain-selection':
+        return {
+          domain: domain.domain,
+          targetPageUrl: siteSelection.targetPageUrl,
+          anchorText: siteSelection.anchorText,
+          dr: domain.dr || 70,
+          traffic: domain.traffic || 10000,
+          niche: domain.primaryNiche || 'General'
+        };
+      
+      case 'keyword-research':
+        return {
+          targetDomain: domain.domain,
+          targetPage: siteSelection.targetPageUrl,
+          clientNiche: domain.clientNiche || '',
+          competitorAnalysis: ''
+        };
+      
+      default:
+        return {};
+    }
+  }
+
+  /**
+   * Get input field definitions for a step
+   */
+  private static getStepInputFields(stepId: string): any[] {
+    // This could be extracted to a configuration file
+    switch (stepId) {
+      case 'domain-selection':
+        return [
+          { name: 'domain', label: 'Target Domain', type: 'text' },
+          { name: 'targetPageUrl', label: 'Target Page URL', type: 'url' },
+          { name: 'anchorText', label: 'Anchor Text', type: 'text' }
+        ];
+      
+      case 'keyword-research':
+        return [
+          { name: 'targetDomain', label: 'Target Domain', type: 'text' },
+          { name: 'targetPage', label: 'Target Page', type: 'url' },
+          { name: 'clientNiche', label: 'Client Niche', type: 'text' }
+        ];
+      
+      default:
+        return [];
+    }
+  }
+
+  /**
+   * Get output field definitions for a step
+   */
+  private static getStepOutputFields(stepId: string): any[] {
+    // This could be extracted to a configuration file
+    switch (stepId) {
+      case 'domain-selection':
+        return [
+          { name: 'confirmedDomain', label: 'Confirmed Domain', type: 'text' },
+          { name: 'siteMetrics', label: 'Site Metrics', type: 'textarea' }
+        ];
+      
+      case 'keyword-research':
+        return [
+          { name: 'primaryKeywords', label: 'Primary Keywords', type: 'textarea' },
+          { name: 'competitorInsights', label: 'Competitor Insights', type: 'textarea' }
+        ];
+      
+      default:
+        return [];
+    }
+  }
+
+  /**
+   * Create an order item for the workflow
+   */
+  private static async createOrderItem(
+    orderId: string,
+    siteSelection: any,
+    workflowId: string,
+    orderGroupId: string
+  ): Promise<any> {
+    try {
+      // Calculate prices (these would come from real pricing logic)
+      const retailPrice = siteSelection.domain?.price || 100;
+      const wholesalePrice = Math.floor(retailPrice * 0.7); // 30% margin
+
+      const orderItemData = {
+        id: uuidv4(),
+        orderId: orderId,
+        domainId: siteSelection.domainId,
+        domain: siteSelection.domain?.domain || 'unknown',
+        targetPageId: null, // Will be set when target page is selected
+        orderGroupId: orderGroupId,
+        siteSelectionId: siteSelection.id,
+        
+        // Domain metrics snapshot
+        domainRating: siteSelection.domain?.dr || 70,
+        traffic: siteSelection.domain?.traffic || 10000,
+        retailPrice: retailPrice,
+        wholesalePrice: wholesalePrice,
+        
+        // Workflow tracking
+        workflowId: workflowId,
+        workflowStatus: 'pending',
+        workflowCreatedAt: new Date(),
+        
+        // Status
+        status: 'pending',
+        createdAt: new Date(),
+        updatedAt: new Date()
+      };
+
+      const [orderItem] = await db.insert(orderItems)
+        .values(orderItemData)
+        .returning();
+
+      return orderItem;
+    } catch (error) {
+      console.error('Error creating order item:', error);
+      throw error;
+    }
+  }
+
+  /**
+   * Generate workflows for all approved sites in an order
+   */
+  static async generateWorkflowsForOrder(
+    orderId: string,
+    userId: string,
+    options: WorkflowGenerationOptions = {}
+  ): Promise<WorkflowGenerationResult> {
+    const errors: string[] = [];
+    let totalWorkflowsCreated = 0;
+    let totalOrderItemsCreated = 0;
+
+    try {
+      // Get all order groups for this order
+      const groups = await db.query.orderGroups.findMany({
+        where: eq(orderGroups.orderId, orderId)
+      });
+
+      // Generate workflows for each group
+      for (const group of groups) {
+        const result = await this.generateWorkflowsForOrderGroup(group.id, userId, options);
+        totalWorkflowsCreated += result.workflowsCreated;
+        totalOrderItemsCreated += result.orderItemsCreated;
+        errors.push(...result.errors);
+      }
+
+      return {
+        success: errors.length === 0,
+        workflowsCreated: totalWorkflowsCreated,
+        orderItemsCreated: totalOrderItemsCreated,
+        errors
+      };
+
+    } catch (error) {
+      console.error('Error generating workflows for order:', error);
+      return {
+        success: false,
+        workflowsCreated: totalWorkflowsCreated,
+        orderItemsCreated: totalOrderItemsCreated,
+        errors: [`System error: ${error}`]
+      };
+    }
+  }
+
+  /**
+   * Get the next available user for workflow assignment
+   * Uses round-robin or workload-based assignment
+   */
+  private static async getNextAvailableUser(): Promise<string> {
+    try {
+      // Get all active internal users
+      const activeUsers = await db.query.users.findMany({
+        where: and(
+          eq(users.isActive, true),
+          eq(users.role, 'user')
+        )
+      });
+
+      if (activeUsers.length === 0) {
+        throw new Error('No active users available for assignment');
+      }
+
+      // Count active workflows per user
+      const workflowCounts = await db
+        .select({
+          userId: workflows.userId,
+          count: sql<number>`count(*)::int`
+        })
+        .from(workflows)
+        .where(
+          and(
+            eq(workflows.status, 'active'),
+            inArray(workflows.userId, activeUsers.map(u => u.id))
+          )
+        )
+        .groupBy(workflows.userId);
+
+      // Create a map of user workflow counts
+      const countMap = new Map<string, number>(workflowCounts.map(wc => [wc.userId, wc.count]));
+
+      // Find user with least workflows
+      let minCount = Infinity;
+      let selectedUser = activeUsers[0];
+
+      for (const user of activeUsers) {
+        const count = countMap.get(user.id) || 0;
+        if (count < minCount) {
+          minCount = count;
+          selectedUser = user;
+        }
+      }
+
+      return selectedUser.id;
+    } catch (error) {
+      console.error('Error getting next available user:', error);
+      // Fallback to system user
+      return '00000000-0000-0000-0000-000000000000';
+    }
+  }
+}

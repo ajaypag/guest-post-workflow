@@ -1,7 +1,7 @@
 'use client';
 
 import React from 'react';
-import { Database, Activity, Wrench, Users, BarChart3, Settings, AlertTriangle, Bug, FileSearch, Search } from 'lucide-react';
+import { Database, Activity, Wrench, Users, BarChart3, Settings, AlertTriangle, Bug, FileSearch, Search, Mail } from 'lucide-react';
 
 export default function AdminDashboard() {
   const adminTools = [
@@ -36,6 +36,22 @@ export default function AdminDashboard() {
       href: '/admin/bulk-url-migration',
       color: 'bg-indigo-50 border-indigo-200 text-indigo-700',
       iconColor: 'text-indigo-600'
+    },
+    {
+      title: 'Unified Order Migration',
+      description: 'Migrate to multi-client order system (advertisers → accounts, order_groups)',
+      icon: Database,
+      href: '/admin/unified-order-migration',
+      color: 'bg-rose-50 border-rose-200 text-rose-700',
+      iconColor: 'text-rose-600'
+    },
+    {
+      title: 'Order System Migration',
+      description: 'Create order_groups, order_site_selections tables for order-centric architecture',
+      icon: Database,
+      href: '/admin/order-system-migration',
+      color: 'bg-purple-50 border-purple-200 text-purple-700',
+      iconColor: 'text-purple-600'
     },
     {
       title: 'DataForSEO Migration',
@@ -159,11 +175,35 @@ export default function AdminDashboard() {
     },
     {
       title: 'User Management',
-      description: 'Manage user accounts and permissions',
+      description: 'Manage users, permissions, and send invitations',
       icon: Users,
       href: '/admin/users',
       color: 'bg-indigo-50 border-indigo-200 text-indigo-700',
       iconColor: 'text-indigo-600'
+    },
+    {
+      title: 'Email Management',
+      description: 'Monitor email communications, view logs, and send test emails',
+      icon: Mail,
+      href: '/admin/email',
+      color: 'bg-emerald-50 border-emerald-200 text-emerald-700',
+      iconColor: 'text-emerald-600'
+    },
+    {
+      title: 'User System Migration',
+      description: 'Migrate user system to support invite-only registration and multiple user types',
+      icon: Users,
+      href: '/admin/user-system-migration',
+      color: 'bg-pink-50 border-pink-200 text-pink-700',
+      iconColor: 'text-pink-600'
+    },
+    {
+      title: 'Debug Invitations',
+      description: 'View all invitations in database for debugging',
+      icon: Search,
+      href: '/admin/debug-invitations',
+      color: 'bg-purple-50 border-purple-200 text-purple-700',
+      iconColor: 'text-purple-600'
     },
     {
       title: 'Analytics',
@@ -220,6 +260,30 @@ export default function AdminDashboard() {
       href: '/api/admin/debug-analyzed-count',
       color: 'bg-yellow-50 border-yellow-200 text-yellow-700',
       iconColor: 'text-yellow-600'
+    },
+    {
+      title: 'Check Account Data',
+      description: 'Check integrity of account users and their linked clients',
+      icon: AlertTriangle,
+      href: '/api/admin/check-account-data',
+      color: 'bg-red-50 border-red-200 text-red-700',
+      iconColor: 'text-red-600'
+    },
+    {
+      title: 'Fix Account Data',
+      description: 'Create missing account records and link to clients',
+      icon: Wrench,
+      href: '/api/admin/fix-account-data',
+      color: 'bg-green-50 border-green-200 text-green-700',
+      iconColor: 'text-green-600'
+    },
+    {
+      title: 'Debug Clients API',
+      description: 'Debug why clients/projects are not showing for internal users',
+      icon: Bug,
+      href: '/api/admin/debug-clients-api',
+      color: 'bg-purple-50 border-purple-200 text-purple-700',
+      iconColor: 'text-purple-600'
     }
   ];
 

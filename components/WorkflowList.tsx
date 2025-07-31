@@ -117,7 +117,7 @@ export default function WorkflowList() {
         </Link>
       </div>
 
-      {/* Filters */}
+      {/* Filters - Only show for internal users */}
       {!loading && workflows.length > 0 && (
         <div className="mb-6 bg-white rounded-xl border border-gray-200 p-4">
           <div className="flex flex-wrap items-center gap-4">

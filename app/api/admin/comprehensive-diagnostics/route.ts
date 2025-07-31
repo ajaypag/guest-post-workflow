@@ -1,264 +1,255 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { db } from '@/lib/db/connection';
+import { AuthServiceServer } from '@/lib/auth-server';
 import { sql } from 'drizzle-orm';
+
+interface TableDiagnostic {
+  status: 'healthy' | 'warning' | 'error';
+  columnCount: number;
+  recordCount: number;
+  missingColumns: string[];
+  issues: string[];
+  expectedColumns: string[];
+  actualColumns: string[];
+  error?: string;
+}
+
+interface CriticalIssue {
+  table: string;
+  error: string;
+  description: string;
+  query?: string;
+  recommendation: string;
+}
 
 export async function GET(request: NextRequest) {
   try {
-    const diagnostics: any = {
-      timestamp: new Date().toISOString(),
-      issues: [],
-      warnings: [],
-      tableSchemas: {},
-      sampleData: {},
-      recommendations: []
+    // Check authentication - only internal admin users can run diagnostics
+    const session = await AuthServiceServer.getSession(request);
+    if (!session || session.userType !== 'internal' || session.role !== 'admin') {
+      return NextResponse.json({ error: 'Admin privileges required' }, { status: 403 });
+    }
+
+    console.log('[ComprehensiveDiagnostics] === Starting comprehensive database diagnostics ===');
+    
+    const tables: { [key: string]: TableDiagnostic } = {};
+    const criticalIssues: CriticalIssue[] = [];
+
+    // Expected schema definitions (based on our Drizzle schemas)
+    const expectedSchemas = {
+      invitations: [
+        'id', 'email', 'target_table', 'role', 'token', 'expires_at', 
+        'used_at', 'revoked_at', 'created_by_email', 'created_at', 'updated_at'
+      ],
+      accounts: [
+        'id', 'email', 'password', 'contact_name', 'company_name', 'phone', 
+        'website', 'tax_id', 'billing_address', 'billing_city', 'billing_state',
+        'billing_zip', 'billing_country', 'credit_terms', 'credit_limit',
+        'primary_client_id', 'status', 'email_verified', 'email_verification_token',
+        'reset_token', 'reset_token_expiry', 'internal_notes', 'order_preferences',
+        'onboarding_completed', 'onboarding_steps', 'onboarding_completed_at',
+        'created_at', 'updated_at', 'last_login_at'
+      ],
+      users: [
+        'id', 'email', 'name', 'password_hash', 'role', 'is_active',
+        'last_login', 'created_at', 'updated_at'
+      ],
+      publishers: [
+        'id', 'email', 'password', 'contact_name', 'company_name', 'phone',
+        'status', 'email_verified', 'email_verification_token', 'reset_token',
+        'reset_token_expiry', 'created_at', 'updated_at', 'last_login_at'
+      ],
+      orders: [
+        'id', 'account_id', 'order_number', 'status', 'total_amount',
+        'currency', 'payment_status', 'created_at', 'updated_at'
+      ],
+      payments: [
+        'id', 'order_id', 'account_id', 'amount', 'status', 'method',
+        'transaction_id', 'processed_at', 'recorded_by', 'notes',
+        'created_at', 'updated_at'
+      ],
+      workflows: [
+        'id', 'user_id', 'client_id', 'title', 'status', 'content', 
+        'target_pages', 'order_item_id', 'created_at', 'updated_at'
+      ],
+      workflow_steps: [
+        'id', 'workflow_id', 'step_number', 'title', 'description', 'status',
+        'inputs', 'outputs', 'completed_at', 'created_at', 'updated_at'
+      ]
     };
 
-    // 1. Check all table schemas
-    const tableChecks = [
-      'workflows',
-      'workflow_steps',
-      'formatting_qa_sessions', 
-      'formatting_qa_checks',
-      'article_sections',
-      'agent_sessions',
-      'audit_sessions',
-      'audit_sections',
-      'polish_sessions',
-      'polish_sections'
+    // Test critical queries that are currently failing
+    const criticalQueries = [
+      {
+        name: 'invitations_check',
+        table: 'invitations',
+        query: `SELECT id, email, target_table, role, token, expires_at, used_at, revoked_at, created_by_email, created_at, updated_at 
+                FROM invitations 
+                WHERE email = 'test@example.com' AND target_table = 'accounts' AND used_at IS NULL AND revoked_at IS NULL 
+                LIMIT 1`,
+        description: 'Check if invitations table matches expected schema'
+      },
+      {
+        name: 'accounts_check',
+        table: 'accounts',
+        query: `SELECT id, email, role, contact_name, company_name, phone, website, tax_id, billing_address, billing_city, billing_state, billing_zip, billing_country, credit_terms, credit_limit, primary_client_id, status, email_verified, email_verification_token, reset_token, reset_token_expiry, internal_notes, order_preferences, onboarding_completed, onboarding_steps, onboarding_completed_at, created_at, updated_at, last_login_at 
+                FROM accounts 
+                WHERE email = 'test@example.com' 
+                LIMIT 1`,
+        description: 'Check if accounts table matches expected schema (the current failing query)'
+      }
     ];
 
-    for (const tableName of tableChecks) {
+    // Run critical query tests first
+    console.log('[ComprehensiveDiagnostics] Testing critical queries...');
+    for (const queryTest of criticalQueries) {
       try {
-        // Get table columns
-        const columnsResult = await db.execute(sql`
-          SELECT 
-            column_name,
-            data_type,
-            character_maximum_length,
-            is_nullable,
-            column_default
-          FROM information_schema.columns
+        await db.execute(sql.raw(queryTest.query));
+        console.log(`[ComprehensiveDiagnostics] ✅ ${queryTest.name} passed`);
+      } catch (error) {
+        console.error(`[ComprehensiveDiagnostics] ❌ ${queryTest.name} failed:`, error);
+        criticalIssues.push({
+          table: queryTest.table,
+          error: error instanceof Error ? error.message : 'Unknown error',
+          description: queryTest.description,
+          query: queryTest.query,
+          recommendation: `The ${queryTest.table} table is missing required columns or has schema mismatch`
+        });
+      }
+    }
+
+    // Analyze each table
+    for (const [tableName, expectedColumns] of Object.entries(expectedSchemas)) {
+      console.log(`[ComprehensiveDiagnostics] Analyzing table: ${tableName}`);
+      
+      try {
+        // Get actual table structure
+        const columnInfo = await db.execute(sql`
+          SELECT column_name, data_type, is_nullable, column_default, character_maximum_length
+          FROM information_schema.columns 
           WHERE table_name = ${tableName}
           ORDER BY ordinal_position
         `);
 
-        diagnostics.tableSchemas[tableName] = {
-          exists: columnsResult.rows.length > 0,
-          columns: columnsResult.rows
+        const actualColumns = columnInfo.rows.map(row => row.column_name as string);
+        const missingColumns = expectedColumns.filter(col => !actualColumns.includes(col));
+        const extraColumns = actualColumns.filter(col => !expectedColumns.includes(col));
+
+        // Get record count
+        let recordCount = 0;
+        try {
+          const countResult = await db.execute(sql.raw(`SELECT COUNT(*) as total FROM ${tableName}`));
+          recordCount = parseInt(String(countResult.rows[0]?.total || '0'));
+        } catch (error) {
+          console.error(`[ComprehensiveDiagnostics] Failed to count records in ${tableName}:`, error);
+        }
+
+        // Determine status
+        let status: 'healthy' | 'warning' | 'error' = 'healthy';
+        const issues: string[] = [];
+
+        if (missingColumns.length > 0) {
+          status = 'error';
+          issues.push(`Missing columns: ${missingColumns.join(', ')}`);
+        }
+
+        if (extraColumns.length > 0) {
+          if (status === 'healthy') status = 'warning';
+          issues.push(`Extra columns: ${extraColumns.join(', ')}`);
+        }
+
+        tables[tableName] = {
+          status,
+          columnCount: actualColumns.length,
+          recordCount,
+          missingColumns,
+          issues,
+          expectedColumns,
+          actualColumns
         };
 
-        if (columnsResult.rows.length === 0) {
-          diagnostics.issues.push({
-            severity: 'ERROR',
-            table: tableName,
-            message: `Table ${tableName} does not exist`
-          });
-        }
+        console.log(`[ComprehensiveDiagnostics] ${tableName}: ${status} (${actualColumns.length} columns, ${recordCount} records)`);
 
-        // Get row count
-        if (columnsResult.rows.length > 0) {
-          const countResult = await db.execute(sql`SELECT COUNT(*) as count FROM ${sql.raw(tableName)}`);
-          diagnostics.tableSchemas[tableName].rowCount = countResult.rows[0].count;
-        }
-
-      } catch (e: any) {
-        diagnostics.issues.push({
-          severity: 'ERROR',
-          table: tableName,
-          message: `Failed to check table ${tableName}: ${e.message}`
-        });
-      }
-    }
-
-    // 2. Specific check for workflow_steps columns
-    const workflowStepsSchema = diagnostics.tableSchemas.workflow_steps;
-    if (workflowStepsSchema?.exists) {
-      const columns = workflowStepsSchema.columns.map((c: any) => c.column_name);
-      
-      // Check for expected columns
-      const expectedColumns = ['id', 'workflow_id', 'step_number', 'title', 'description', 'status', 'inputs', 'outputs', 'completed_at', 'created_at', 'updated_at'];
-      const missingColumns = expectedColumns.filter(col => !columns.includes(col));
-      
-      if (missingColumns.length > 0) {
-        diagnostics.issues.push({
-          severity: 'CRITICAL',
-          table: 'workflow_steps',
-          message: `Missing expected columns: ${missingColumns.join(', ')}`,
-          impact: 'This will cause queries to fail when trying to access these columns'
-        });
-      }
-
-      // Check if step_number specifically exists (the error column)
-      if (!columns.includes('step_number')) {
-        diagnostics.issues.push({
-          severity: 'CRITICAL',
-          table: 'workflow_steps',
-          message: 'Column step_number is missing - this is causing the current error',
-          recommendation: 'Need to add step_number column or update queries to not use it'
-        });
-      }
-    }
-
-    // 3. Check workflows table structure
-    const workflowsSchema = diagnostics.tableSchemas.workflows;
-    if (workflowsSchema?.exists) {
-      // Check if content column is JSONB
-      const contentCol = workflowsSchema.columns.find((c: any) => c.column_name === 'content');
-      if (contentCol && contentCol.data_type !== 'jsonb') {
-        diagnostics.warnings.push({
-          table: 'workflows',
-          column: 'content',
-          message: `Column type is ${contentCol.data_type}, expected jsonb`,
-          impact: 'May cause issues with JSON operations'
-        });
-      }
-    }
-
-    // 4. Sample workflow data to understand structure
-    try {
-      const sampleWorkflow = await db.execute(sql`
-        SELECT id, title, content, created_at 
-        FROM workflows 
-        LIMIT 1
-      `);
-      
-      if (sampleWorkflow.rows.length > 0) {
-        const workflow = sampleWorkflow.rows[0];
-        diagnostics.sampleData.workflow = {
-          id: workflow.id,
-          title: workflow.title,
-          hasContent: !!workflow.content,
-          contentType: typeof workflow.content,
-          contentStructure: workflow.content ? Object.keys(workflow.content) : null
+      } catch (error) {
+        console.error(`[ComprehensiveDiagnostics] Failed to analyze ${tableName}:`, error);
+        tables[tableName] = {
+          status: 'error',
+          columnCount: 0,
+          recordCount: 0,
+          missingColumns: expectedColumns,
+          issues: ['Table analysis failed'],
+          expectedColumns,
+          actualColumns: [],
+          error: error instanceof Error ? error.message : 'Unknown error'
         };
-
-        // Check if workflow content has steps
-        if (workflow.content && typeof workflow.content === 'object') {
-          const content = workflow.content as any;
-          if (content.steps) {
-            diagnostics.sampleData.workflow.stepsInContent = true;
-            diagnostics.sampleData.workflow.stepCount = content.steps.length;
-            diagnostics.sampleData.workflow.firstStepStructure = content.steps[0] ? Object.keys(content.steps[0]) : null;
-          }
-        }
-      }
-    } catch (e: any) {
-      diagnostics.warnings.push({
-        area: 'sample_data',
-        message: `Could not fetch sample workflow: ${e.message}`
-      });
-    }
-
-    // 5. Check for workflow_steps data
-    try {
-      const workflowStepsCount = await db.execute(sql`
-        SELECT COUNT(*) as count FROM workflow_steps
-      `);
-      
-      diagnostics.sampleData.workflowSteps = {
-        totalRows: workflowStepsCount.rows[0].count
-      };
-
-      if (parseInt(String(workflowStepsCount.rows[0].count)) > 0) {
-        const sampleStep = await db.execute(sql`
-          SELECT * FROM workflow_steps LIMIT 1
-        `);
-        if (sampleStep.rows.length > 0) {
-          diagnostics.sampleData.workflowSteps.sampleRow = sampleStep.rows[0];
-        }
-      }
-    } catch (e: any) {
-      diagnostics.warnings.push({
-        area: 'workflow_steps',
-        message: `Could not check workflow_steps: ${e.message}`
-      });
-    }
-
-    // 6. Test the exact failing query
-    try {
-      const testQuery = await db.execute(sql`
-        SELECT 
-          w.id,
-          w.content,
-          ws.data as steps
-        FROM workflows w
-        LEFT JOIN LATERAL (
-          SELECT json_agg(ws.*) as data
-          FROM workflow_steps ws
-          WHERE ws.workflow_id = w.id
-        ) ws ON true
-        LIMIT 1
-      `);
-      
-      diagnostics.queryTests = {
-        lateralJoinTest: {
-          success: true,
-          rowCount: testQuery.rows.length
-        }
-      };
-    } catch (e: any) {
-      diagnostics.queryTests = {
-        lateralJoinTest: {
-          success: false,
-          error: e.message
-        }
-      };
-    }
-
-    // 7. Analyze the findings and provide recommendations
-    if (diagnostics.issues.length > 0) {
-      // Check if workflow_steps table is missing or has wrong schema
-      const workflowStepsIssue = diagnostics.issues.find((i: any) => i.table === 'workflow_steps' && i.message.includes('step_number'));
-      
-      if (workflowStepsIssue) {
-        diagnostics.recommendations.push({
-          priority: 'HIGH',
-          issue: 'workflow_steps table is missing step_number column',
-          solution: 'Either add the column to the table OR update the code to not use workflow_steps table',
-          details: 'The application is trying to query workflow_steps with step_number column, but this column does not exist in the database'
-        });
-      }
-
-      // Check if we're using workflow steps at all
-      if (diagnostics.sampleData.workflowSteps?.totalRows === '0' || diagnostics.sampleData.workflowSteps?.totalRows === 0) {
-        diagnostics.recommendations.push({
-          priority: 'HIGH',
-          issue: 'workflow_steps table is empty',
-          solution: 'The application might be storing steps in the workflows.content JSON instead of the workflow_steps table',
-          details: 'Check if steps are stored in workflows.content.steps instead of separate table'
-        });
       }
     }
 
-    // 8. Check how the application is actually storing workflow data
-    if (diagnostics.sampleData.workflow?.stepsInContent) {
-      diagnostics.recommendations.push({
-        priority: 'MEDIUM',
-        finding: 'Workflows store steps in content JSON',
-        implication: 'The workflow_steps table might not be used at all',
-        recommendation: 'Update queries to read from workflows.content.steps instead of joining workflow_steps table'
-      });
-    }
+    // Generate summary
+    const healthyTables = Object.values(tables).filter(t => t.status === 'healthy').length;
+    const warningTables = Object.values(tables).filter(t => t.status === 'warning').length;
+    const errorTables = Object.values(tables).filter(t => t.status === 'error').length;
 
-    // 9. Final diagnosis
-    diagnostics.diagnosis = {
-      primaryIssue: diagnostics.issues.find((i: any) => i.severity === 'CRITICAL') || 'No critical issues found',
-      likelyRoot: 'The application appears to be using workflows.content JSON for step storage but queries are trying to join workflow_steps table',
-      immediateAction: 'Update the formatting QA service to read steps from workflows.content instead of joining workflow_steps'
+    const result = {
+      success: true,
+      timestamp: new Date().toISOString(),
+      summary: {
+        totalTables: Object.keys(tables).length,
+        healthyTables,
+        warningTables,
+        errorTables,
+        criticalIssuesCount: criticalIssues.length
+      },
+      criticalIssues,
+      tables,
+      recommendations: generateRecommendations(criticalIssues, tables)
     };
 
-    return NextResponse.json(diagnostics, { 
-      status: 200,
-      headers: {
-        'Content-Type': 'application/json',
-      }
-    });
+    console.log('[ComprehensiveDiagnostics] === Diagnostics completed ===');
+    console.log(`[ComprehensiveDiagnostics] Summary: ${healthyTables} healthy, ${warningTables} warnings, ${errorTables} errors, ${criticalIssues.length} critical issues`);
 
-  } catch (error: any) {
+    return NextResponse.json(result);
+
+  } catch (error) {
+    console.error('[ComprehensiveDiagnostics] === Critical diagnostics error ===');
+    console.error('[ComprehensiveDiagnostics] Error:', error);
+    
     return NextResponse.json({
-      error: 'Diagnostic check failed',
-      details: error.message,
-      stack: error.stack
+      success: false,
+      error: 'Diagnostics failed',
+      details: error instanceof Error ? error.message : 'Unknown error',
+      timestamp: new Date().toISOString()
     }, { status: 500 });
   }
+}
+
+function generateRecommendations(criticalIssues: CriticalIssue[], tables: { [key: string]: TableDiagnostic }): string[] {
+  const recommendations: string[] = [];
+
+  // Critical issues first
+  if (criticalIssues.length > 0) {
+    recommendations.push('CRITICAL: Fix database schema mismatches before using invitation system');
+    
+    for (const issue of criticalIssues) {
+      if (issue.table === 'invitations' && issue.error.includes('target_table')) {
+        recommendations.push('Run the invitations table migration to add missing target_table column');
+      }
+      if (issue.table === 'accounts' && issue.error.includes('role')) {
+        recommendations.push('The accounts table is missing a "role" column - this needs to be added');
+      }
+    }
+  }
+
+  // Table-specific recommendations
+  for (const [tableName, tableInfo] of Object.entries(tables)) {
+    if (tableInfo.status === 'error' && tableInfo.missingColumns.length > 0) {
+      recommendations.push(`${tableName}: Add missing columns: ${tableInfo.missingColumns.join(', ')}`);
+    }
+  }
+
+  if (recommendations.length === 0) {
+    recommendations.push('All tables appear healthy! No immediate action required.');
+  }
+
+  return recommendations;
 }

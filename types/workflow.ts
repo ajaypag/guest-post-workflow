@@ -41,6 +41,11 @@ export interface GuestPostWorkflow {
     googleDocUrl?: string;
     finalDraftUrl?: string;
     clientId?: string;
+    orderId?: string;
+    orderGroupId?: string;
+    siteSelectionId?: string;
+    targetPageUrl?: string;
+    anchorText?: string;
   };
 }
 

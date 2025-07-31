@@ -18,7 +18,24 @@ Production-ready workflow system with PostgreSQL, multi-user auth, and AI agent 
 - ✅ Dynamic outline-based completion detection
 - ✅ Increased section limit to 40
 - ✅ Auto-save race condition fix for AI agents (2025-01-20)
+- ✅ User system migration to invite-only (2025-01-29)
+- ✅ Email service integration with invitations (2025-01-29)
 - ⚠️ Auto-save diagnostics removed (reverted)
+- 🏗️ Advertiser/Publisher architecture redesign (2025-01-30)
+  - Created separate tables for advertisers/publishers
+  - Orders currently use users.id (migration needed)
+  - See: docs/architecture/USER_TYPES.md
+- ✅ Account Authentication System (2025-01-30)
+  - Full login/logout with HTTP-only cookies
+  - Password reset via email
+  - Account settings & profile management
+  - JWT auto-refresh & rate limiting
+  - Role-based permissions (viewer/editor/admin)
+- ✅ Order System Phase 1 & 2 Complete (2025-01-30)
+  - Multi-client order creation working
+  - Bulk analysis projects auto-created on order confirmation
+  - Notification system for internal users
+  - **MIGRATION REQUIRED**: Run `/admin/order-groups-migration`
 
 ## 🔧 Quick Reference
 
@@ -29,7 +46,10 @@ Production-ready workflow system with PostgreSQL, multi-user auth, and AI agent 
 | **Database Schema** | [docs/architecture/DATABASE.md](docs/architecture/DATABASE.md) |
 | **Build AI Agents** | [docs/agents/BUILDING_BLOCKS.md](docs/agents/BUILDING_BLOCKS.md) |
 | **Auto-Save Fix** | [docs/agents/AUTO_SAVE_PATTERN.md](docs/agents/AUTO_SAVE_PATTERN.md) |
+| **Email System** | [docs/services/EMAIL_SERVICE.md](docs/services/EMAIL_SERVICE.md) |
 | **Debug Issues** | [docs/admin/DIAGNOSTICS.md](docs/admin/DIAGNOSTICS.md) |
+| **Order System Implementation** | [docs/architecture/ORDER_SYSTEM_IMPLEMENTATION.md](docs/architecture/ORDER_SYSTEM_IMPLEMENTATION.md) |
+| **Tech Debt & Shortcuts** | [docs/architecture/TECH_DEBT_AND_SHORTCUTS.md](docs/architecture/TECH_DEBT_AND_SHORTCUTS.md) |
 | **All Documentation** | [docs/DEVELOPER_GUIDE.md](docs/DEVELOPER_GUIDE.md) |
 
 ### Production Config
@@ -37,12 +57,20 @@ Production-ready workflow system with PostgreSQL, multi-user auth, and AI agent 
 DATABASE_URL=postgresql://user:pass@host:port/db?sslmode=disable
 NEXTAUTH_SECRET=your-secret-key
 NEXTAUTH_URL=https://your-domain.com
+RESEND_API_KEY=re_your_api_key_here
 ```
 
 ### OpenAI Accounts
 - info@onlyoutreach.com
 - ajay@pitchpanda.com  
 - ajay@linkio.com
+
+### Email Configuration (Resend)
+**TEMPORARY**: Using `onboarding@resend.dev` until domain verification complete
+- **TODO**: After verifying `postflow.outreachlabs.net` in Resend:
+  1. Remove temporary override in `lib/services/emailService.ts` line 29-31
+  2. Emails will use: `noreply@postflow.outreachlabs.net`
+- **Current**: All emails send from Resend's test address
 
 ## ⚠️ Active Issues & Warnings
 
@@ -132,6 +160,7 @@ npm run db:studio       # Browse database
 - ✅ `agenticSemanticAuditService.ts`
 - 🔄 `agenticArticleService.ts` (in progress)
 - ⏳ `agenticFormattingQAService.ts` (planned)
+
 
 ## 📚 Full Documentation
 
