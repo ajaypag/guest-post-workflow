@@ -79,25 +79,18 @@ export async function GET(request: NextRequest) {
     const simple = searchParams.get('simple') === 'true';
     
     if (simple) {
-      // Simple mode for new order system - return users with role 'user'
-      const { users } = await import('@/lib/db/schema');
-      const { and } = await import('drizzle-orm');
-      
-      const accounts = await db.select({
-        id: users.id,
-        email: users.email,
-        name: users.name
+      // Simple mode for new order system - return accounts
+      const accountsList = await db.select({
+        id: accounts.id,
+        email: accounts.email,
+        name: accounts.contactName,
+        company: accounts.companyName
       })
-      .from(users)
-      .where(
-        and(
-          eq(users.role, 'user'),
-          eq(users.isActive, true)
-        )
-      )
-      .orderBy(users.name);
+      .from(accounts)
+      .where(eq(accounts.status, 'active'))
+      .orderBy(accounts.contactName);
 
-      return NextResponse.json(accounts);
+      return NextResponse.json(accountsList);
     }
     
     // Original implementation for legacy system
