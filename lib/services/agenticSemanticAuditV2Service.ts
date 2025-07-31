@@ -130,23 +130,44 @@ export class AgenticSemanticAuditV2Service {
 
   // Identify sections in the article using O3
   private async identifySections(article: string): Promise<SectionPlan> {
-    const sectionIdentificationPrompt = `Analyze this article and identify all logical sections and subsections.
+    const sectionIdentificationPrompt = `You are helping to break down this article into focused chunks for detailed AI analysis and improvement.
 
+CONTEXT: Each section you create will be sent to another AI agent that will:
+- Analyze it for semantic SEO opportunities
+- Fact-check and enhance with research
+- Improve clarity and engagement
+- The smaller and more focused the section, the better the analysis quality
+
+ARTICLE:
 ${article}
 
-Your task:
-1. Identify each section by its heading (preserve exact text including markdown)
-2. Group the article into logical sections (max 15 sections)
-3. Each H2 heading should generally be its own section
-4. For very short sections (under 200 words), you may group adjacent related sections
-5. The introduction (before first heading) should be its own section
+YOUR TASK:
+Break this article into the optimal number of focused sections for detailed analysis.
+
+RULES:
+1. **Default approach**: Treat subsections (H3, H4, H5) as individual sections
+2. **Introduction**: Always its own section (content before first heading)
+3. **Listicles**: If this covers products/services/software/tools, each item should be its own section
+4. **Only group when**: 
+   - Individual subsections are very thin (under 100 words)
+   - You'd create more than 20 sections total
+   - Adjacent subsections are nearly identical in scope
+5. **Never group**: Different H2 sections together by default
+6. **Preserve exact markdown**: Headings must match exactly as written
+
+REASONING APPROACH:
+- Scan for article type (listicle, guide, comparison, etc.)
+- Count natural breakpoints (H2, H3, H4 headings)
+- Assess word count of each potential section
+- Determine if any grouping is needed for thin content
+- Prioritize focused analysis over artificial grouping
 
 Output JSON in this exact format:
 {
   "sections": [
     {
       "id": "intro",
-      "title": "Introduction",
+      "title": "Introduction", 
       "level": 1,
       "headingText": null
     },
@@ -160,10 +181,11 @@ Output JSON in this exact format:
   "totalSections": 12
 }
 
-IMPORTANT: 
-- The "title" field must contain the exact markdown heading as it appears in the article
-- For the introduction, use "Introduction" as title with headingText: null
-- Maximum 15 sections total`;
+CRITICAL:
+- "title" = exact markdown heading from article
+- "headingText" = same as title (null only for intro)
+- Maximum 20 sections total
+- Err on the side of MORE focused sections, not fewer broad ones`;
 
     try {
       // Use a simple agent for section identification
