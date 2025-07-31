@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from 'next/server';
 import { AuthServiceServer } from '@/lib/auth-server';
 import { db } from '@/lib/db/connection';
 import { clients } from '@/lib/db/schema';
+import { accounts } from '@/lib/db/accountSchema';
 import { eq, isNull } from 'drizzle-orm';
 
 export async function POST(
@@ -10,7 +11,7 @@ export async function POST(
 ) {
   try {
     const session = await AuthServiceServer.getSession(request);
-    if (!session || session.userType !== 'internal') {
+    if (!session) {
       return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
     }
 
@@ -34,6 +35,26 @@ export async function POST(
 
     if (client.archivedAt) {
       return NextResponse.json({ error: 'Client is already archived' }, { status: 400 });
+    }
+
+    // Check authorization based on user type
+    if (session.userType === 'account') {
+      // Account users can only archive their own clients
+      // Check if this client belongs to the account
+      const hasAccess = client.accountId === session.userId;
+      
+      if (!hasAccess) {
+        // Also check if account has this as primary client (legacy support)
+        const account = await db.query.accounts.findFirst({
+          where: eq(accounts.id, session.userId),
+        });
+        
+        if (!account || account.primaryClientId !== clientId) {
+          return NextResponse.json({ error: 'Unauthorized - You can only archive your own clients' }, { status: 403 });
+        }
+      }
+    } else if (session.userType !== 'internal') {
+      return NextResponse.json({ error: 'Unauthorized - Invalid user type' }, { status: 401 });
     }
 
     // Archive the client
@@ -71,7 +92,7 @@ export async function DELETE(
 ) {
   try {
     const session = await AuthServiceServer.getSession(request);
-    if (!session || session.userType !== 'internal') {
+    if (!session) {
       return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
     }
 
@@ -91,6 +112,26 @@ export async function DELETE(
 
     if (!client.archivedAt) {
       return NextResponse.json({ error: 'Client is not archived' }, { status: 400 });
+    }
+
+    // Check authorization based on user type
+    if (session.userType === 'account') {
+      // Account users can only restore their own clients
+      // Check if this client belongs to the account
+      const hasAccess = client.accountId === session.userId;
+      
+      if (!hasAccess) {
+        // Also check if account has this as primary client (legacy support)
+        const account = await db.query.accounts.findFirst({
+          where: eq(accounts.id, session.userId),
+        });
+        
+        if (!account || account.primaryClientId !== clientId) {
+          return NextResponse.json({ error: 'Unauthorized - You can only restore your own clients' }, { status: 403 });
+        }
+      }
+    } else if (session.userType !== 'internal') {
+      return NextResponse.json({ error: 'Unauthorized - Invalid user type' }, { status: 401 });
     }
 
     // Restore the client
