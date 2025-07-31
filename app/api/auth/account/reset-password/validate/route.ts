@@ -1,6 +1,8 @@
 import { NextRequest, NextResponse } from 'next/server';
 import crypto from 'crypto';
-import { resetTokens } from '../../forgot-password/route';
+import { db } from '@/lib/db/connection';
+import { accounts } from '@/lib/db/accountSchema';
+import { eq, and } from 'drizzle-orm';
 
 export async function POST(request: NextRequest) {
   try {
@@ -16,10 +18,13 @@ export async function POST(request: NextRequest) {
     // Hash the token to look it up
     const hashedToken = crypto.createHash('sha256').update(token).digest('hex');
     
-    // Check if token exists and is not expired
-    const resetToken = resetTokens.get(hashedToken);
+    // Find account with this reset token
+    const account = await db.query.accounts.findFirst({
+      where: eq(accounts.resetToken, hashedToken)
+    });
     
-    if (!resetToken) {
+    if (!account) {
+      console.log('[RESET] Token not found in database:', hashedToken.substring(0, 10) + '...');
       return NextResponse.json({
         error: 'Invalid or expired reset token',
         valid: false
@@ -27,15 +32,24 @@ export async function POST(request: NextRequest) {
     }
     
     // Check if token is expired
-    if (new Date() > resetToken.expiresAt) {
-      // Remove expired token
-      resetTokens.delete(hashedToken);
+    if (!account.resetTokenExpiry || new Date() > account.resetTokenExpiry) {
+      console.log('[RESET] Token expired for account:', account.email);
+      // Clear expired token
+      await db.update(accounts)
+        .set({
+          resetToken: null,
+          resetTokenExpiry: null,
+          updatedAt: new Date()
+        })
+        .where(eq(accounts.id, account.id));
+        
       return NextResponse.json({
         error: 'Reset token has expired',
         valid: false
       }, { status: 400 });
     }
     
+    console.log('[RESET] Valid token for account:', account.email);
     return NextResponse.json({
       valid: true
     });

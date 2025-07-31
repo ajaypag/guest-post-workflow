@@ -7,16 +7,6 @@ import crypto from 'crypto';
 import { v4 as uuidv4 } from 'uuid';
 import { passwordResetRateLimiter, getClientIp } from '@/lib/utils/rateLimiter';
 
-// Create a new table for account password reset tokens
-// For now, we'll store in a simple JSON file or memory
-// In production, this should be a proper database table
-
-const resetTokens = new Map<string, {
-  accountId: string;
-  token: string;
-  expiresAt: Date;
-}>();
-
 export async function POST(request: NextRequest) {
   try {
     // Check rate limit
@@ -74,20 +64,14 @@ export async function POST(request: NextRequest) {
     // Token expires in 1 hour
     const expiresAt = new Date(Date.now() + 60 * 60 * 1000);
 
-    // Store token (in production, this should be in database)
-    // Clear any existing tokens for this account
-    for (const [key, value] of resetTokens.entries()) {
-      if (value.accountId === account.id) {
-        resetTokens.delete(key);
-      }
-    }
-    
-    // Store new token
-    resetTokens.set(hashedToken, {
-      accountId: account.id,
-      token: hashedToken,
-      expiresAt
-    });
+    // Store token in database
+    await db.update(accounts)
+      .set({
+        resetToken: hashedToken,
+        resetTokenExpiry: expiresAt,
+        updatedAt: new Date()
+      })
+      .where(eq(accounts.id, account.id));
 
     // Create reset URL
     const baseUrl = process.env.NEXTAUTH_URL || 'http://localhost:3000';
@@ -164,5 +148,3 @@ The PostFlow Team
   }
 }
 
-// Export the resetTokens for use in other endpoints
-export { resetTokens };
