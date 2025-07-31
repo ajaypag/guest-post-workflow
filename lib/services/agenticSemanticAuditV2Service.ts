@@ -136,7 +136,7 @@ CONTEXT: Each section you create will be sent to another AI agent that will:
 - Analyze it for semantic SEO opportunities
 - Fact-check and enhance with research
 - Improve clarity and engagement
-- The smaller and more focused the section, the better the analysis quality
+- The more focused the section, the better the analysis quality
 
 ARTICLE:
 ${article}
@@ -145,15 +145,15 @@ YOUR TASK:
 Break this article into the optimal number of focused sections for detailed analysis.
 
 RULES:
-1. **Look for logical breaks**: Identify natural content boundaries, regardless of heading formatting
+1. **Look for logical breaks**: Identify natural content boundaries
 2. **Introduction**: Always its own section (content before first heading)
 3. **Main sections (H2)**: Generally their own sections, but can have subsections
 4. **Subsections (H3)**: Often their own sections for focused analysis
-5. **H4, H5 and beyond**: Usually group with parent section unless they're substantial (200+ words)
-6. **Listicles**: Each product/service/tool/item should be its own section
+5. **Listicles**: Each product/service/tool/item should be its own section if its the primary reason for the article to exist
 7. **Messy formatting**: Use content logic over heading hierarchy - look for topic shifts
-8. **Only group when**: 
-   - Individual chunks are very thin (under 100 words)
+8. **Unsure when to group sections vs leave separate? Group when**:
+   - Group when Individual chunks are very thin.
+   - Group when its a section with subsections that are not the core part of the article
    - You'd create more than 20 sections total
    - Adjacent content covers nearly identical topics
 
@@ -164,13 +164,14 @@ REASONING APPROACH:
 - Check for substantial vs. thin content blocks
 - Consider real-world messy formatting - some docs use inconsistent heading levels
 - Prioritize logical content boundaries over perfect markdown hierarchy
+- If its a section with many subsections ie 5 that have weak content, instead of creating just 1 section, you could create 2 sections that contain 2 and 3 subsections, so its like - granular but not overly so
 
 Output JSON in this exact format:
 {
   "sections": [
     {
       "id": "intro",
-      "title": "Introduction", 
+      "title": "Introduction",
       "level": 1,
       "headingText": null
     },
