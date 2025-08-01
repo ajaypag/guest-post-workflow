@@ -1,865 +1,551 @@
 'use client';
 
-import React, { useState, useEffect } from 'react';
+import { useState, useEffect, useCallback } from 'react';
 import { useRouter } from 'next/navigation';
-import Header from '@/components/Header';
 import AuthWrapper from '@/components/AuthWrapper';
+import Header from '@/components/Header';
 import { AuthService } from '@/lib/auth';
 import { formatCurrency } from '@/lib/utils/formatting';
 import { 
-  Plus,
-  X,
-  Search,
-  Building,
-  Globe,
-  Mail,
-  User,
-  Package,
-  AlertCircle,
-  CheckCircle,
-  Loader2,
-  Target,
-  Link as LinkIcon,
-  Trash2,
-  Settings,
-  DollarSign,
-  Zap,
-  Clock,
-  ChevronDown,
-  ChevronUp,
-  ChevronRight
+  Building, Package, Plus, X, ChevronDown, ChevronUp, ChevronRight,
+  Search, Target, Link, Type, CheckCircle,
+  AlertCircle, Copy, Trash2, User, Globe, ExternalLink
 } from 'lucide-react';
 
-interface Account {
-  id?: string;
-  email: string;
-  name: string;
-  company?: string;
+interface OrderLineItem {
+  id: string;
+  clientId: string;
+  clientName: string;
+  targetPageId?: string;
+  targetPageUrl?: string;
+  anchorText?: string;
+  price: number;
 }
 
-interface Client {
+interface ClientWithSelection {
   id: string;
   name: string;
   website: string;
-  targetPages?: TargetPage[];
-  defaultRequirements?: any;
+  targetPages: Array<{ id: string; url: string; }>;
+  selected: boolean;
+  linkCount: number;
 }
 
-interface TargetPage {
+interface TargetPageWithMetadata {
   id: string;
   url: string;
-  keywords?: string;
-  description?: string;
-  status: string;
-}
-
-interface OrderGroup {
+  keywords?: string[];
+  dr: number;
+  traffic: number;
   clientId: string;
-  client?: Client;
-  linkCount: number;
-  targetPages: string[]; // Target page IDs
-  requirements: {
-    minDR?: number;
-    minTraffic?: number;
-    niches?: string[];
-    customGuidelines?: string;
-  };
-}
-
-interface PricingCalculation {
-  subtotal: number;
-  discountPercent: number;
-  discountAmount: number;
-  clientReviewFee: number;
-  rushFee: number;
-  total: number;
-  profitMargin: number;
+  clientName: string;
+  usageCount: number;
 }
 
 export default function NewOrderPage() {
-  return (
-    <AuthWrapper>
-      <Header />
-      <NewOrderContent />
-    </AuthWrapper>
-  );
-}
-
-function NewOrderContent() {
   const router = useRouter();
-  const [loading, setLoading] = useState(false);
-  const [saving, setSaving] = useState(false);
-  const [message, setMessage] = useState('');
-  const [messageType, setMessageType] = useState<'success' | 'error' | 'info'>('info');
-
-  // Get current session to check user type
   const session = AuthService.getSession();
   const isAccountUser = session?.userType === 'account';
+  
+  // Client management
+  const [clients, setClients] = useState<ClientWithSelection[]>([]);
+  const [loadingClients, setLoadingClients] = useState(true);
+  
+  // Three-column state
+  const [selectedClients, setSelectedClients] = useState<Map<string, { selected: boolean; linkCount: number }>>(new Map());
+  const [availableTargets, setAvailableTargets] = useState<TargetPageWithMetadata[]>([]);
+  const [lineItems, setLineItems] = useState<OrderLineItem[]>([]);
+  
+  // UI state
+  const [searchQuery, setSearchQuery] = useState('');
+  const [error, setError] = useState('');
+  const [subtotal, setSubtotal] = useState(0);
+  const [total, setTotal] = useState(0);
 
-  // Account Management
-  const [accountSearch, setAccountSearch] = useState('');
-  const [existingAccounts, setExistingAccounts] = useState<Account[]>([]);
-  const [selectedAccount, setSelectedAccount] = useState<Account | null>(null);
-  const [isNewAccount, setIsNewAccount] = useState(false);
-  const [newAccount, setNewAccount] = useState<Account>({
-    email: '',
-    name: '',
-    company: ''
-  });
-
-  // Client & Order Groups
-  const [clients, setClients] = useState<Client[]>([]);
-  const [orderGroups, setOrderGroups] = useState<OrderGroup[]>([]);
-  const [expandedGroups, setExpandedGroups] = useState<Set<number>>(new Set());
-
-  // Pricing & Options
-  const [includesClientReview, setIncludesClientReview] = useState(false);
-  const [rushDelivery, setRushDelivery] = useState(false);
-  const [pricing, setPricing] = useState<PricingCalculation>({
-    subtotal: 0,
-    discountPercent: 0,
-    discountAmount: 0,
-    clientReviewFee: 0,
-    rushFee: 0,
-    total: 0,
-    profitMargin: 0
-  });
-
-  // Internal notes
-  const [internalNotes, setInternalNotes] = useState('');
-
-  useEffect(() => {
-    loadClients();
-    
-    // For account users, automatically set their account
-    if (isAccountUser && session) {
-      setSelectedAccount({
-        id: session.accountId,
-        email: session.email,
-        name: session.name,
-        company: session.companyName
-      });
-    } else {
-      // Only load accounts for internal users
-      loadAccounts();
-    }
-  }, []);
-
-  useEffect(() => {
-    calculatePricing();
-  }, [orderGroups, includesClientReview, rushDelivery]);
-
-  const loadClients = async () => {
+  const loadClients = useCallback(async () => {
     try {
-      // For account users, load only their clients
+      setLoadingClients(true);
       const url = isAccountUser ? '/api/account/clients' : '/api/clients';
       const response = await fetch(url);
+      
       if (response.ok) {
         const data = await response.json();
-        setClients(data.clients || data);  // Handle both { clients: [...] } and direct array
+        const clientList = data.clients || data;
+        setClients(clientList);
       }
     } catch (error) {
       console.error('Error loading clients:', error);
+      setError('Failed to load clients');
+    } finally {
+      setLoadingClients(false);
     }
-  };
+  }, [isAccountUser]);
 
-  const loadAccounts = async () => {
-    try {
-      const response = await fetch('/api/accounts?simple=true');
-      if (response.ok) {
-        const data = await response.json();
-        setExistingAccounts(data);
-      }
-    } catch (error) {
-      console.error('Error loading accounts:', error);
-    }
-  };
+  useEffect(() => {
+    loadClients();
+  }, [loadClients]);
 
-  const searchAccounts = (query: string) => {
-    if (!query) return [];
-    const lowerQuery = query.toLowerCase();
-    return existingAccounts.filter(acc => 
-      acc.email.toLowerCase().includes(lowerQuery) ||
-      acc.name.toLowerCase().includes(lowerQuery) ||
-      (acc.company && acc.company.toLowerCase().includes(lowerQuery))
-    ).slice(0, 5);
-  };
-
-  const addOrderGroup = () => {
-    setOrderGroups([...orderGroups, {
-      clientId: '',
-      linkCount: 5,
-      targetPages: [],
-      requirements: {}
-    }]);
-    setExpandedGroups(new Set([...expandedGroups, orderGroups.length]));
-  };
-
-  const removeOrderGroup = (index: number) => {
-    setOrderGroups(orderGroups.filter((_, i) => i !== index));
-  };
-
-  const updateOrderGroup = (index: number, updates: Partial<OrderGroup>) => {
-    const newGroups = [...orderGroups];
-    newGroups[index] = { ...newGroups[index], ...updates };
+  const updateAvailableTargets = useCallback(() => {
+    const targets: TargetPageWithMetadata[] = [];
     
-    // If client changed, load its data
-    if (updates.clientId) {
-      const client = clients.find(c => c.id === updates.clientId);
-      if (client) {
-        newGroups[index].client = client;
-        // Auto-populate requirements from client defaults
-        if (client.defaultRequirements) {
-          newGroups[index].requirements = {
-            ...client.defaultRequirements,
-            ...newGroups[index].requirements
-          };
+    selectedClients.forEach((clientData, clientId) => {
+      if (clientData.selected) {
+        const client = clients.find(c => c.id === clientId);
+        if (client && client.targetPages) {
+          client.targetPages.forEach(page => {
+            const usageCount = lineItems.filter(item => 
+              item.clientId === clientId && item.targetPageId === page.id
+            ).length;
+            
+            targets.push({
+              id: page.id,
+              url: page.url,
+              keywords: [],
+              dr: 70, // TODO: Get real metrics
+              traffic: 10000, // TODO: Get real metrics
+              clientId,
+              clientName: client.name,
+              usageCount
+            });
+          });
         }
       }
+    });
+    
+    setAvailableTargets(targets);
+  }, [selectedClients, clients, lineItems]);
+
+  useEffect(() => {
+    calculatePricing(lineItems);
+  }, [lineItems]);
+
+  useEffect(() => {
+    updateAvailableTargets();
+  }, [updateAvailableTargets]);
+
+  const toggleClientSelection = (clientId: string, selected: boolean) => {
+    setSelectedClients(prev => {
+      const newMap = new Map(prev);
+      if (selected) {
+        newMap.set(clientId, { selected: true, linkCount: prev.get(clientId)?.linkCount || 0 });
+      } else {
+        newMap.delete(clientId);
+        // Remove line items for this client
+        setLineItems(prevItems => prevItems.filter(item => item.clientId !== clientId));
+      }
+      return newMap;
+    });
+  };
+
+  const updateClientLinkCount = (clientId: string, count: number) => {
+    setSelectedClients(prev => {
+      const newMap = new Map(prev);
+      const existing = newMap.get(clientId);
+      if (existing) {
+        newMap.set(clientId, { ...existing, linkCount: count });
+      }
+      return newMap;
+    });
+  };
+
+  const addLineItemFromTarget = (target: TargetPageWithMetadata) => {
+    const newItem: OrderLineItem = {
+      id: `${Date.now()}-${Math.random()}`,
+      clientId: target.clientId,
+      clientName: target.clientName,
+      targetPageId: target.id,
+      targetPageUrl: target.url,
+      anchorText: generateAnchorText(target.clientName),
+      price: 100 // TODO: Calculate based on metrics
+    };
+    
+    setLineItems(prev => [...prev, newItem]);
+  };
+
+  const addEmptyLineItem = () => {
+    const newItem: OrderLineItem = {
+      id: Date.now().toString(),
+      clientId: '',
+      clientName: '',
+      price: 100
+    };
+    setLineItems([...lineItems, newItem]);
+  };
+
+  const updateLineItem = (id: string, updates: Partial<OrderLineItem>) => {
+    setLineItems(prev => {
+      const updated = prev.map(item => 
+        item.id === id ? { ...item, ...updates } : item
+      );
+      calculatePricing(updated);
+      return updated;
+    });
+  };
+
+  const removeLineItem = (id: string) => {
+    setLineItems(prev => {
+      const updated = prev.filter(item => item.id !== id);
+      calculatePricing(updated);
+      return updated;
+    });
+  };
+
+  const duplicateLineItem = (id: string) => {
+    const itemToDuplicate = lineItems.find(item => item.id === id);
+    if (itemToDuplicate) {
+      const newItem = {
+        ...itemToDuplicate,
+        id: Date.now().toString()
+      };
+      setLineItems([...lineItems, newItem]);
+    }
+  };
+
+  const getTotalLinks = () => {
+    return lineItems.length;
+  };
+  
+  const getTotalClients = () => {
+    const clientIds = new Set(lineItems.map(item => item.clientId).filter(Boolean));
+    return clientIds.size;
+  };
+  
+  const getFilteredTargets = () => {
+    if (!searchQuery) return availableTargets;
+    
+    return availableTargets.filter(target => 
+      target.url.toLowerCase().includes(searchQuery.toLowerCase()) ||
+      target.clientName.toLowerCase().includes(searchQuery.toLowerCase())
+    );
+  };
+
+  const generateAnchorText = (clientName: string) => {
+    // Simple anchor text generation - in real app would be more sophisticated
+    const variations = [
+      clientName,
+      `Visit ${clientName}`,
+      `Learn more about ${clientName}`,
+      `${clientName} services`,
+      `Check out ${clientName}`
+    ];
+    return variations[Math.floor(Math.random() * variations.length)];
+  };
+
+  const calculatePricing = (items: OrderLineItem[]) => {
+    const sub = items.reduce((sum, item) => sum + item.price, 0);
+    setSubtotal(sub);
+    setTotal(sub); // Add discounts, fees, etc. here
+  };
+
+  const handleSubmit = async () => {
+    // Validate line items
+    const invalidItems = lineItems.filter(item => !item.clientId);
+    
+    if (invalidItems.length > 0) {
+      setError('Please complete all order details');
+      return;
     }
     
-    setOrderGroups(newGroups);
+    // Submit order logic here
+    console.log('Submitting order:', { lineItems, total });
   };
-
-  const toggleGroupExpanded = (index: number) => {
-    const newExpanded = new Set(expandedGroups);
-    if (newExpanded.has(index)) {
-      newExpanded.delete(index);
-    } else {
-      newExpanded.add(index);
-    }
-    setExpandedGroups(newExpanded);
-  };
-
-  const calculatePricing = async () => {
-    try {
-      const totalLinks = orderGroups.reduce((sum, group) => sum + group.linkCount, 0);
-      
-      const response = await fetch('/api/orders/calculate-pricing', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-          itemCount: totalLinks,
-          includesClientReview,
-          rushDelivery
-        })
-      });
-
-      if (response.ok) {
-        const data = await response.json();
-        setPricing(data);
-      }
-    } catch (error) {
-      console.error('Error calculating pricing:', error);
-    }
-  };
-
-  const validateOrder = () => {
-    // Validate account (only for internal users)
-    if (!isAccountUser && !selectedAccount && !isNewAccount) {
-      setMessage('Please select or create an account');
-      setMessageType('error');
-      return false;
-    }
-
-    if (isNewAccount) {
-      if (!newAccount.email || !newAccount.name) {
-        setMessage('Please fill in all required account fields');
-        setMessageType('error');
-        return false;
-      }
-    }
-
-    // Validate order groups
-    if (orderGroups.length === 0) {
-      setMessage('Please add at least one client to the order');
-      setMessageType('error');
-      return false;
-    }
-
-    for (let i = 0; i < orderGroups.length; i++) {
-      const group = orderGroups[i];
-      if (!group.clientId) {
-        setMessage(`Please select a client for group ${i + 1}`);
-        setMessageType('error');
-        return false;
-      }
-      if (group.linkCount < 1) {
-        setMessage(`Link count must be at least 1 for ${group.client?.name || 'group ' + (i + 1)}`);
-        setMessageType('error');
-        return false;
-      }
-      if (group.targetPages.length === 0) {
-        setMessage(`Please select target pages for ${group.client?.name || 'group ' + (i + 1)}`);
-        setMessageType('error');
-        return false;
-      }
-    }
-
-    return true;
-  };
-
-  const createOrder = async () => {
-    if (!validateOrder()) return;
-
-    setSaving(true);
-    setMessage('');
-
-    try {
-      const orderData = {
-        account: isNewAccount ? newAccount : selectedAccount,
-        isNewAccount,
-        orderGroups: orderGroups.map(group => ({
-          clientId: group.clientId,
-          linkCount: group.linkCount,
-          targetPages: group.targetPages,
-          requirements: group.requirements
-        })),
-        includesClientReview,
-        rushDelivery,
-        internalNotes
-      };
-
-      const response = await fetch('/api/orders/new', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify(orderData)
-      });
-
-      if (response.ok) {
-        const { orderId } = await response.json();
-        router.push(`/orders/${orderId}`);
-      } else {
-        const error = await response.json();
-        setMessage(error.error || 'Failed to create order');
-        setMessageType('error');
-      }
-    } catch (error) {
-      console.error('Error creating order:', error);
-      setMessage('Failed to create order');
-      setMessageType('error');
-    } finally {
-      setSaving(false);
-    }
-  };
-
-  const totalLinks = orderGroups.reduce((sum, group) => sum + group.linkCount, 0);
 
   return (
-    <div className="container mx-auto px-4 py-8">
-      <div className="max-w-6xl mx-auto">
-        {/* Header */}
-        <div className="mb-8">
-          <h1 className="text-3xl font-bold text-gray-900">
-            {isAccountUser ? 'Create New Order' : 'Create Multi-Client Order'}
-          </h1>
-          <p className="text-gray-600 mt-2">
-            {isAccountUser 
-              ? 'Start a new guest post campaign for your brands'
-              : 'Build orders for multiple clients with automatic bulk analysis and transparent site selection'}
-          </p>
-        </div>
-
-        {/* Main Form */}
-        <div className="space-y-8">
-          {/* Step 1: Account Selection - Only show for internal users */}
-          {!isAccountUser && (
-            <div className="bg-white rounded-lg shadow-sm border border-gray-200 p-6">
-              <div className="flex items-center mb-4">
-                <div className="flex items-center justify-center w-8 h-8 rounded-full bg-blue-100 text-blue-600 font-semibold mr-3">
-                  1
-                </div>
-                <h2 className="text-xl font-semibold">Account Information</h2>
-              </div>
-
-            {/* Account Search */}
-            <div className="mb-4">
-              <label className="block text-sm font-medium text-gray-700 mb-2">
-                Search existing accounts or create new
-              </label>
-              <div className="relative">
-                <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400 h-4 w-4" />
-                <input
-                  type="text"
-                  value={accountSearch}
-                  onChange={(e) => {
-                    setAccountSearch(e.target.value);
-                    setIsNewAccount(false);
-                  }}
-                  placeholder="Search by email, name, or company..."
-                  className="w-full pl-10 pr-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
-                />
-              </div>
-
-              {/* Search Results */}
-              {accountSearch && !selectedAccount && (
-                <div className="mt-2 border border-gray-200 rounded-lg divide-y">
-                  {searchAccounts(accountSearch).map((account) => (
-                    <button
-                      key={account.id}
-                      onClick={() => {
-                        setSelectedAccount(account);
-                        setAccountSearch('');
-                        setIsNewAccount(false);
-                      }}
-                      className="w-full px-4 py-3 text-left hover:bg-gray-50 flex items-start"
-                    >
-                      <Building className="h-5 w-5 text-gray-400 mt-0.5 mr-3" />
-                      <div>
-                        <div className="font-medium">{account.name}</div>
-                        <div className="text-sm text-gray-500">{account.email}</div>
-                        {account.company && (
-                          <div className="text-sm text-gray-500">{account.company}</div>
-                        )}
-                      </div>
-                    </button>
-                  ))}
-                  <button
-                    onClick={() => {
-                      setIsNewAccount(true);
-                      setSelectedAccount(null);
-                      setNewAccount({
-                        email: accountSearch.includes('@') ? accountSearch : '',
-                        name: '',
-                        company: ''
-                      });
-                    }}
-                    className="w-full px-4 py-3 text-left hover:bg-blue-50 flex items-center text-blue-600"
-                  >
-                    <Plus className="h-5 w-5 mr-3" />
-                    Create new account
-                  </button>
-                </div>
-              )}
-            </div>
-
-            {/* Selected Account or New Account Form */}
-            {selectedAccount && !isNewAccount && (
-              <div className="bg-gray-50 rounded-lg p-4 flex items-start justify-between">
-                <div>
-                  <div className="font-medium">{selectedAccount.name}</div>
-                  <div className="text-sm text-gray-500">{selectedAccount.email}</div>
-                  {selectedAccount.company && (
-                    <div className="text-sm text-gray-500">{selectedAccount.company}</div>
-                  )}
-                </div>
-                <button
-                  onClick={() => {
-                    setSelectedAccount(null);
-                    setAccountSearch('');
-                  }}
-                  className="text-gray-400 hover:text-gray-600"
+    <AuthWrapper>
+      <div className="min-h-screen bg-gray-50">
+        <Header />
+        
+        {/* Full-screen three-column layout */}
+        <div className="h-[calc(100vh-64px)] flex">
+          {error && (
+            <div className="absolute top-20 left-1/2 transform -translate-x-1/2 z-50 bg-red-50 border border-red-200 rounded-lg p-4 flex items-start shadow-lg">
+              <AlertCircle className="h-5 w-5 text-red-600 mt-0.5 mr-3" />
+              <div>
+                <p className="text-red-800">{error}</p>
+                <button 
+                  onClick={() => setError('')}
+                  className="text-red-600 hover:text-red-800 text-sm mt-1"
                 >
-                  <X className="h-5 w-5" />
+                  Dismiss
                 </button>
               </div>
-            )}
-
-            {isNewAccount && (
-              <div className="space-y-4 bg-blue-50 rounded-lg p-4">
-                <h3 className="font-medium text-blue-900">New Account Details</h3>
-                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                  <div>
-                    <label className="block text-sm font-medium text-gray-700 mb-1">
-                      Email *
-                    </label>
-                    <input
-                      type="email"
-                      value={newAccount.email}
-                      onChange={(e) => setNewAccount({ ...newAccount, email: e.target.value })}
-                      className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500"
-                      required
-                    />
-                  </div>
-                  <div>
-                    <label className="block text-sm font-medium text-gray-700 mb-1">
-                      Name *
-                    </label>
-                    <input
-                      type="text"
-                      value={newAccount.name}
-                      onChange={(e) => setNewAccount({ ...newAccount, name: e.target.value })}
-                      className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500"
-                      required
-                    />
-                  </div>
-                  <div className="md:col-span-2">
-                    <label className="block text-sm font-medium text-gray-700 mb-1">
-                      Company
-                    </label>
-                    <input
-                      type="text"
-                      value={newAccount.company}
-                      onChange={(e) => setNewAccount({ ...newAccount, company: e.target.value })}
-                      className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500"
-                    />
-                  </div>
-                </div>
-              </div>
-            )}
             </div>
           )}
 
-          {/* Step 2: Client Selection */}
-          <div className="bg-white rounded-lg shadow-sm border border-gray-200 p-6">
-            <div className="flex items-center justify-between mb-4">
-              <div className="flex items-center">
-                <div className="flex items-center justify-center w-8 h-8 rounded-full bg-blue-100 text-blue-600 font-semibold mr-3">
-                  {isAccountUser ? '1' : '2'}
-                </div>
-                <h2 className="text-xl font-semibold">Clients & Link Requirements</h2>
-              </div>
-              <button
-                onClick={addOrderGroup}
-                className="flex items-center px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700"
-              >
-                <Plus className="h-4 w-4 mr-2" />
-                Add Client
-              </button>
+          {/* Left Sidebar - Client Selection */}
+          <div className="w-80 bg-white border-r border-gray-200 p-6 overflow-y-auto">
+            <div className="mb-6">
+              <h2 className="text-xl font-semibold text-gray-900 mb-2">Select Clients</h2>
+              <p className="text-sm text-gray-600">Choose clients and set link counts for your order</p>
             </div>
-
-            {orderGroups.length === 0 ? (
-              <div className="text-center py-8 text-gray-500">
-                <Package className="h-12 w-12 mx-auto mb-3 text-gray-400" />
-                <p>No clients added yet</p>
-                <button
-                  onClick={addOrderGroup}
-                  className="mt-3 text-blue-600 hover:text-blue-700 font-medium"
-                >
-                  Add your first client
-                </button>
+            
+            {loadingClients ? (
+              <div className="flex items-center justify-center py-8">
+                <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-blue-600"></div>
               </div>
             ) : (
-              <div className="space-y-4">
-                {orderGroups.map((group, index) => (
-                  <div key={index} className="border border-gray-200 rounded-lg">
-                    <div className="p-4">
-                      <div className="flex items-center justify-between">
-                        <div className="flex items-center flex-1">
-                          <button
-                            onClick={() => toggleGroupExpanded(index)}
-                            className="mr-3 text-gray-400 hover:text-gray-600"
-                          >
-                            {expandedGroups.has(index) ? (
-                              <ChevronUp className="h-5 w-5" />
-                            ) : (
-                              <ChevronDown className="h-5 w-5" />
-                            )}
-                          </button>
-                          
-                          <div className="flex-1 grid grid-cols-1 md:grid-cols-3 gap-4">
-                            <div className="flex-1">
-                              <select
-                                value={group.clientId}
-                                onChange={(e) => {
-                                  if (e.target.value === 'new') {
-                                    // Store return URL and redirect to client creation page
-                                    sessionStorage.setItem('clientCreateReturnUrl', window.location.pathname);
-                                    router.push('/clients/new');
-                                  } else {
-                                    updateOrderGroup(index, { clientId: e.target.value });
-                                  }
-                                }}
-                                className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500"
-                              >
-                                <option value="">Select Client</option>
-                                {clients.map((client) => (
-                                  <option key={client.id} value={client.id}>
-                                    {client.name}
-                                  </option>
-                                ))}
-                                <option value="new" className="font-medium text-blue-600">
-                                  + Create New Client
-                                </option>
-                              </select>
-                            </div>
-                            
-                            <div className="flex items-center gap-2">
-                              <LinkIcon className="h-4 w-4 text-gray-400" />
-                              <input
-                                type="number"
-                                min="1"
-                                value={group.linkCount}
-                                onChange={(e) => updateOrderGroup(index, { linkCount: parseInt(e.target.value) || 1 })}
-                                className="w-20 px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500"
-                              />
-                              <span className="text-sm text-gray-500">links</span>
-                            </div>
-                            
-                            {group.client && (
-                              <div className="text-sm text-gray-500">
-                                <Globe className="h-4 w-4 inline mr-1" />
-                                {group.client.website}
-                              </div>
-                            )}
+              <div className="space-y-3">
+                {clients.map(client => {
+                  const clientSelection = selectedClients.get(client.id);
+                  const isSelected = clientSelection?.selected || false;
+                  const linkCount = clientSelection?.linkCount || 0;
+                  
+                  return (
+                    <div 
+                      key={client.id} 
+                      className={`border rounded-lg p-4 transition-all ${
+                        isSelected ? 'border-blue-500 bg-blue-50' : 'border-gray-200 hover:border-gray-300'
+                      }`}
+                    >
+                      <div className="flex items-start justify-between">
+                        <div className="flex items-start space-x-3">
+                          <input
+                            type="checkbox"
+                            checked={isSelected}
+                            onChange={(e) => toggleClientSelection(client.id, e.target.checked)}
+                            className="mt-1 h-4 w-4 text-blue-600 focus:ring-blue-500 border-gray-300 rounded"
+                          />
+                          <div className="flex-1">
+                            <h3 className="font-medium text-gray-900">{client.name}</h3>
+                            <p className="text-sm text-gray-500">{client.website}</p>
+                            <p className="text-xs text-gray-400 mt-1">
+                              {client.targetPages?.length || 0} target pages
+                            </p>
+                          </div>
+                        </div>
+                      </div>
+                      
+                      {isSelected && (
+                        <div className="mt-3 pt-3 border-t border-blue-200">
+                          <label className="block text-sm font-medium text-blue-900 mb-1">
+                            Links for this client
+                          </label>
+                          <input
+                            type="number"
+                            min="0"
+                            max="50"
+                            value={linkCount}
+                            onChange={(e) => updateClientLinkCount(client.id, parseInt(e.target.value) || 0)}
+                            className="w-full px-2 py-1 text-sm border border-blue-300 rounded focus:ring-1 focus:ring-blue-500"
+                            placeholder="0"
+                          />
+                        </div>
+                      )}
+                    </div>
+                  );
+                })}
+              </div>
+            )}
+            
+            {/* Totals */}
+            <div className="mt-6 pt-6 border-t border-gray-200">
+              <div className="space-y-2 text-sm">
+                <div className="flex justify-between">
+                  <span className="text-gray-600">Total Links:</span>
+                  <span className="font-medium">{getTotalLinks()}</span>
+                </div>
+                <div className="flex justify-between">
+                  <span className="text-gray-600">Selected Clients:</span>
+                  <span className="font-medium">{getTotalClients()}</span>
+                </div>
+                <div className="flex justify-between text-lg font-semibold pt-2 border-t">
+                  <span>Total Cost:</span>
+                  <span>{formatCurrency(total)}</span>
+                </div>
+              </div>
+            </div>
+          </div>
+
+          {/* Middle Column - Order Line Items */}
+          <div className="flex-1 bg-white p-6 overflow-y-auto">
+            <div className="mb-6">
+              <h2 className="text-xl font-semibold text-gray-900 mb-2">Order Line Items</h2>
+              <p className="text-sm text-gray-600">Click target URLs on the right to populate order items</p>
+              
+              <div className="mt-4 flex items-center justify-between">
+                <div className="text-sm text-gray-500">
+                  {lineItems.length} items • {formatCurrency(total)} total
+                </div>
+                <button
+                  onClick={addEmptyLineItem}
+                  className="px-3 py-1 text-sm bg-blue-600 text-white rounded hover:bg-blue-700 flex items-center"
+                >
+                  <Plus className="h-4 w-4 mr-1" />
+                  Add Manual Item
+                </button>
+              </div>
+            </div>
+
+            {lineItems.length === 0 ? (
+              <div className="text-center py-12 text-gray-500">
+                <Package className="h-12 w-12 mx-auto mb-3 text-gray-400" />
+                <p className="text-lg font-medium mb-2">No order items yet</p>
+                <p className="text-sm mb-4">Select clients on the left, then click target URLs on the right to build your order</p>
+                <div className="text-xs text-gray-400">
+                  <p>1. ← Select clients with checkboxes</p>
+                  <p>2. → Click target URLs to add line items</p>
+                  <p>3. Edit anchor text and details here</p>
+                </div>
+              </div>
+            ) : (
+              <div className="space-y-3">
+                {lineItems.map((item) => (
+                  <div key={item.id} className="border border-gray-200 rounded-lg p-4 hover:border-gray-300 transition-colors">
+                    <div className="flex items-start justify-between">
+                      <div className="flex-1 grid grid-cols-2 gap-4">
+                        {/* Client Info */}
+                        <div>
+                          <label className="block text-xs font-medium text-gray-700 mb-1">Client</label>
+                          <div className="flex items-center space-x-2">
+                            <Building className="h-4 w-4 text-gray-400" />
+                            <span className="text-sm font-medium">{item.clientName}</span>
+                          </div>
+                          <div className="text-xs text-gray-500 mt-1">
+                            {clients.find(c => c.id === item.clientId)?.website}
                           </div>
                         </div>
                         
-                        <button
-                          onClick={() => removeOrderGroup(index)}
-                          className="ml-4 text-red-500 hover:text-red-700"
-                        >
-                          <Trash2 className="h-5 w-5" />
-                        </button>
-                      </div>
-
-                      {/* Expanded Details */}
-                      {expandedGroups.has(index) && group.client && (
-                        <div className="mt-4 space-y-4 pt-4 border-t">
-                          {/* Target Pages Selection */}
-                          <div>
-                            <label className="block text-sm font-medium text-gray-700 mb-2">
-                              Select Target Pages
-                            </label>
-                            {group.client.targetPages && group.client.targetPages.length > 0 ? (
-                              <div className="space-y-2 max-h-48 overflow-y-auto">
-                                {group.client.targetPages
-                                  .filter(page => page.status === 'active')
-                                  .map((page) => (
-                                    <label key={page.id} className="flex items-start p-2 hover:bg-gray-50 rounded cursor-pointer">
-                                      <input
-                                        type="checkbox"
-                                        checked={group.targetPages.includes(page.id)}
-                                        onChange={(e) => {
-                                          const newTargetPages = e.target.checked
-                                            ? [...group.targetPages, page.id]
-                                            : group.targetPages.filter(id => id !== page.id);
-                                          updateOrderGroup(index, { targetPages: newTargetPages });
-                                        }}
-                                        className="mt-1 mr-3"
-                                      />
-                                      <div className="flex-1">
-                                        <div className="text-sm font-medium">{page.url}</div>
-                                        {page.keywords && (
-                                          <div className="text-xs text-gray-500">
-                                            {page.keywords.split(',').length} keywords
-                                          </div>
-                                        )}
-                                      </div>
-                                    </label>
-                                  ))}
-                              </div>
-                            ) : (
-                              <p className="text-sm text-gray-500">No target pages available for this client</p>
-                            )}
-                          </div>
-
-                          {/* Requirements Override */}
-                          <div>
-                            <label className="block text-sm font-medium text-gray-700 mb-2">
-                              <Settings className="h-4 w-4 inline mr-1" />
-                              Requirements (Optional Overrides)
-                            </label>
-                            <div className="grid grid-cols-2 gap-4">
-                              <div>
-                                <label className="block text-xs text-gray-500 mb-1">Min DR</label>
-                                <input
-                                  type="number"
-                                  min="0"
-                                  max="100"
-                                  value={group.requirements.minDR || ''}
-                                  onChange={(e) => updateOrderGroup(index, {
-                                    requirements: { ...group.requirements, minDR: parseInt(e.target.value) || undefined }
-                                  })}
-                                  placeholder={group.client.defaultRequirements?.minDR || '30'}
-                                  className="w-full px-3 py-2 border border-gray-300 rounded-lg text-sm"
-                                />
-                              </div>
-                              <div>
-                                <label className="block text-xs text-gray-500 mb-1">Min Traffic</label>
-                                <input
-                                  type="number"
-                                  min="0"
-                                  value={group.requirements.minTraffic || ''}
-                                  onChange={(e) => updateOrderGroup(index, {
-                                    requirements: { ...group.requirements, minTraffic: parseInt(e.target.value) || undefined }
-                                  })}
-                                  placeholder={group.client.defaultRequirements?.minTraffic || '1000'}
-                                  className="w-full px-3 py-2 border border-gray-300 rounded-lg text-sm"
-                                />
-                              </div>
-                            </div>
+                        {/* Target Page */}
+                        <div>
+                          <label className="block text-xs font-medium text-gray-700 mb-1">Target Page</label>
+                          <div className="flex items-center space-x-2">
+                            <ExternalLink className="h-4 w-4 text-gray-400" />
+                            <span className="text-sm truncate">{item.targetPageUrl}</span>
                           </div>
                         </div>
-                      )}
+                      </div>
+                      
+                      {/* Actions */}
+                      <div className="flex items-center space-x-2 ml-4">
+                        <span className="text-sm font-medium">{formatCurrency(item.price)}</span>
+                        <button
+                          onClick={() => duplicateLineItem(item.id)}
+                          className="p-1 text-gray-400 hover:text-gray-600"
+                          title="Duplicate"
+                        >
+                          <Copy className="h-4 w-4" />
+                        </button>
+                        <button
+                          onClick={() => removeLineItem(item.id)}
+                          className="p-1 text-red-400 hover:text-red-600"
+                          title="Remove"
+                        >
+                          <Trash2 className="h-4 w-4" />
+                        </button>
+                      </div>
+                    </div>
+                    
+                    {/* Anchor Text */}
+                    <div className="mt-3 pt-3 border-t border-gray-100">
+                      <label className="block text-xs font-medium text-gray-700 mb-1">Anchor Text</label>
+                      <div className="flex items-center space-x-2">
+                        <input
+                          type="text"
+                          value={item.anchorText || ''}
+                          onChange={(e) => updateLineItem(item.id, { anchorText: e.target.value })}
+                          placeholder="Enter anchor text for this link"
+                          className="flex-1 px-3 py-2 border border-gray-300 rounded-lg text-sm focus:ring-2 focus:ring-blue-500"
+                        />
+                        {!item.anchorText && item.clientName && (
+                          <button
+                            onClick={() => updateLineItem(item.id, { anchorText: generateAnchorText(item.clientName) })}
+                            className="px-3 py-2 text-xs text-blue-600 hover:text-blue-700 border border-blue-200 rounded-lg"
+                          >
+                            Auto-generate
+                          </button>
+                        )}
+                      </div>
                     </div>
                   </div>
                 ))}
               </div>
             )}
-
-            {/* Order Summary */}
-            {orderGroups.length > 0 && (
-              <div className="mt-6 bg-gray-50 rounded-lg p-4">
-                <div className="flex items-center justify-between">
-                  <div>
-                    <span className="text-sm text-gray-500">Total Clients:</span>
-                    <span className="ml-2 font-semibold">{orderGroups.length}</span>
-                  </div>
-                  <div>
-                    <span className="text-sm text-gray-500">Total Links:</span>
-                    <span className="ml-2 font-semibold">{totalLinks}</span>
-                  </div>
-                </div>
+            
+            {/* Action Button */}
+            {lineItems.length > 0 && (
+              <div className="mt-6 pt-6 border-t border-gray-200">
+                <button
+                  onClick={handleSubmit}
+                  className="w-full py-3 bg-blue-600 text-white font-medium rounded-lg hover:bg-blue-700 transition-colors flex items-center justify-center"
+                >
+                  Continue to Site Selection
+                  <ChevronRight className="h-5 w-5 ml-2" />
+                </button>
               </div>
             )}
           </div>
-
-          {/* Step 3: Order Options */}
-          <div className="bg-white rounded-lg shadow-sm border border-gray-200 p-6">
-            <div className="flex items-center mb-4">
-              <div className="flex items-center justify-center w-8 h-8 rounded-full bg-blue-100 text-blue-600 font-semibold mr-3">
-                {isAccountUser ? '2' : '3'}
-              </div>
-              <h2 className="text-xl font-semibold">Additional Options</h2>
-            </div>
-
-            <div className="space-y-4">
-              <label className="flex items-start space-x-3 p-4 border border-gray-200 rounded-lg hover:bg-gray-50 cursor-pointer">
+          
+          {/* Right Sidebar - Target URLs */}
+          <div className="w-80 bg-white border-l border-gray-200 p-6 overflow-y-auto">
+            <div className="mb-6">
+              <h2 className="text-xl font-semibold text-gray-900 mb-2">Target URLs</h2>
+              <p className="text-sm text-gray-600">Click URLs to add them to your order</p>
+              
+              {/* Search */}
+              <div className="mt-4 relative">
+                <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 h-4 w-4 text-gray-400" />
                 <input
-                  type="checkbox"
-                  checked={includesClientReview}
-                  onChange={(e) => setIncludesClientReview(e.target.checked)}
-                  className="mt-1"
-                />
-                <div className="flex-1">
-                  <div className="font-medium">Include Client Review</div>
-                  <div className="text-sm text-gray-500">
-                    Allow the account to review and approve content before publishing
-                  </div>
-                  <div className="text-sm font-medium text-green-600 mt-1">
-                    +{formatCurrency(50000)}
-                  </div>
-                </div>
-              </label>
-
-              <label className="flex items-start space-x-3 p-4 border border-gray-200 rounded-lg hover:bg-gray-50 cursor-pointer">
-                <input
-                  type="checkbox"
-                  checked={rushDelivery}
-                  onChange={(e) => setRushDelivery(e.target.checked)}
-                  className="mt-1"
-                />
-                <div className="flex-1">
-                  <div className="font-medium flex items-center">
-                    <Zap className="h-4 w-4 mr-1 text-orange-500" />
-                    Rush Delivery
-                  </div>
-                  <div className="text-sm text-gray-500">
-                    Prioritize this order for faster completion
-                  </div>
-                  <div className="text-sm font-medium text-orange-600 mt-1">
-                    +{formatCurrency(100000)}
-                  </div>
-                </div>
-              </label>
-
-              <div>
-                <label className="block text-sm font-medium text-gray-700 mb-2">
-                  Internal Notes (Optional)
-                </label>
-                <textarea
-                  value={internalNotes}
-                  onChange={(e) => setInternalNotes(e.target.value)}
-                  placeholder="Any special instructions or notes for the team..."
-                  className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500"
-                  rows={3}
+                  type="text"
+                  placeholder="Search targets..."
+                  value={searchQuery}
+                  onChange={(e) => setSearchQuery(e.target.value)}
+                  className="w-full pl-10 pr-3 py-2 border border-gray-300 rounded-lg text-sm focus:ring-2 focus:ring-blue-500"
                 />
               </div>
             </div>
-          </div>
-
-          {/* Pricing Summary */}
-          <div className="bg-white rounded-lg shadow-sm border border-gray-200 p-6">
-            <h2 className="text-xl font-semibold mb-4">Order Summary</h2>
             
-            <div className="space-y-3">
-              <div className="flex justify-between text-sm">
-                <span className="text-gray-600">Subtotal ({totalLinks} links)</span>
-                <span>{formatCurrency(pricing.subtotal)}</span>
+            {selectedClients.size === 0 ? (
+              <div className="text-center py-8 text-gray-500">
+                <Target className="h-8 w-8 mx-auto mb-2 text-gray-400" />
+                <p className="text-sm mb-1">Select clients first</p>
+                <p className="text-xs text-gray-400">Choose clients on the left to see their target pages here</p>
               </div>
-              
-              {pricing.discountPercent > 0 && (
-                <div className="flex justify-between text-sm text-green-600">
-                  <span>Volume Discount ({pricing.discountPercent}%)</span>
-                  <span>-{formatCurrency(pricing.discountAmount)}</span>
-                </div>
-              )}
-              
-              {includesClientReview && (
-                <div className="flex justify-between text-sm">
-                  <span className="text-gray-600">Client Review</span>
-                  <span>{formatCurrency(pricing.clientReviewFee)}</span>
-                </div>
-              )}
-              
-              {rushDelivery && (
-                <div className="flex justify-between text-sm">
-                  <span className="text-gray-600">Rush Delivery</span>
-                  <span>{formatCurrency(pricing.rushFee)}</span>
-                </div>
-              )}
-              
-              <div className="border-t pt-3">
-                <div className="flex justify-between font-semibold text-lg">
-                  <span>Total</span>
-                  <span>{formatCurrency(pricing.total)}</span>
-                </div>
-                <div className="flex justify-between text-sm text-gray-500 mt-1">
-                  <span>Estimated Profit Margin</span>
-                  <span>{formatCurrency(pricing.profitMargin)}</span>
-                </div>
+            ) : (
+              <div className="space-y-4">
+                {getFilteredTargets().map(target => (
+                  <div key={`${target.clientId}-${target.id}`} className="border border-gray-200 rounded-lg p-3 hover:border-blue-300 hover:bg-blue-50 cursor-pointer transition-all"
+                       onClick={() => addLineItemFromTarget(target)}>
+                    <div className="flex items-start justify-between mb-2">
+                      <div className="flex-1">
+                        <h4 className="text-sm font-medium text-gray-900 truncate">{target.url}</h4>
+                        <p className="text-xs text-gray-500">{target.clientName}</p>
+                      </div>
+                      {target.usageCount > 0 && (
+                        <span className="inline-flex items-center px-2 py-1 rounded-full text-xs bg-blue-100 text-blue-800">
+                          Used {target.usageCount}x
+                        </span>
+                      )}
+                    </div>
+                    
+                    <div className="flex items-center space-x-4 text-xs text-gray-500">
+                      <div className="flex items-center">
+                        <span className="w-2 h-2 bg-green-500 rounded-full mr-1"></span>
+                        DR: {target.dr}
+                      </div>
+                      <div className="flex items-center">
+                        <span className="w-2 h-2 bg-blue-500 rounded-full mr-1"></span>
+                        {(target.traffic / 1000).toFixed(0)}k traffic
+                      </div>
+                    </div>
+                    
+                    <div className="mt-2 text-xs text-blue-600">
+                      Click to add to order →
+                    </div>
+                  </div>
+                ))}
+                
+                {getFilteredTargets().length === 0 && searchQuery && (
+                  <div className="text-center py-8 text-gray-500">
+                    <Search className="h-8 w-8 mx-auto mb-2 text-gray-400" />
+                    <p className="text-sm">No targets found</p>
+                    <p className="text-xs text-gray-400">Try adjusting your search</p>
+                  </div>
+                )}
               </div>
-            </div>
-          </div>
-
-          {/* Message Display */}
-          {message && (
-            <div className={`p-4 rounded-lg flex items-start ${
-              messageType === 'error' ? 'bg-red-50 text-red-800' :
-              messageType === 'success' ? 'bg-green-50 text-green-800' :
-              'bg-blue-50 text-blue-800'
-            }`}>
-              {messageType === 'error' ? (
-                <AlertCircle className="h-5 w-5 mr-2 mt-0.5" />
-              ) : messageType === 'success' ? (
-                <CheckCircle className="h-5 w-5 mr-2 mt-0.5" />
-              ) : (
-                <AlertCircle className="h-5 w-5 mr-2 mt-0.5" />
-              )}
-              <span>{message}</span>
-            </div>
-          )}
-
-          {/* Actions */}
-          <div className="flex justify-between">
-            <button
-              onClick={() => router.push('/orders')}
-              className="px-6 py-3 border border-gray-300 rounded-lg hover:bg-gray-50 font-medium"
-            >
-              Cancel
-            </button>
-            
-            <button
-              onClick={createOrder}
-              disabled={saving || orderGroups.length === 0 || (!isAccountUser && !selectedAccount && !isNewAccount)}
-              className="px-6 py-3 bg-blue-600 text-white rounded-lg hover:bg-blue-700 disabled:opacity-50 disabled:cursor-not-allowed font-medium flex items-center"
-            >
-              {saving ? (
-                <>
-                  <Loader2 className="h-5 w-5 mr-2 animate-spin" />
-                  Creating Order...
-                </>
-              ) : (
-                <>
-                  Create Order
-                  <ChevronRight className="h-5 w-5 ml-2" />
-                </>
-              )}
-            </button>
+            )}
           </div>
         </div>
       </div>
-    </div>
+    </AuthWrapper>
   );
 }

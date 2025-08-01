@@ -1363,6 +1363,187 @@ const accountClients = await db.query.clients.findMany({
 
 **Key Learning**: The authentication system sets both `userId` and `accountId` to the same value during login, but the client-side session only includes `userId`. All account endpoints must use `session.userId` to access account data.
 
+## Order Creation Interface Redesign (2025-08-01)
+
+### 🚧 **IN PROGRESS: Unified Order Interface** 
+
+**Problem**: The existing order creation page needs to serve both simple users (1 brand, few links) and power users (agencies with many clients) without being confusing or overwhelming.
+
+**Core Design Principle**: **One interface, not two** - No toggles, no modes, no progressive disclosure.
+
+### **Issues with Common UI Patterns**
+
+**1. Mode Toggles = Design Failure**
+- Toggles mean you couldn't design one interface that works for everyone
+- Forces users to choose between "simple" and "advanced" when they just want to order
+- Creates maintenance burden - two interfaces to maintain
+- Fragments the user experience
+
+**2. Progressive Disclosure = Patronizing**
+- Hiding features from users who want to order is counterproductive
+- Users ordering links want to see their options upfront, not have things revealed
+- "This is for babies" - if someone is ordering, they're not beginners
+- Creates confusion about what's available
+
+**3. The Real Challenge**
+An order form should:
+- Show all capabilities immediately
+- Make simple tasks simple without hiding advanced features
+- Scale naturally from 1 link to 50 links
+- Work for single clients and multi-client agencies
+- Feel natural and obvious, not clever or complex
+
+### **Required Solution Approach**
+
+**Core Requirement**: Design a single interface that naturally accommodates:
+- **Simple User**: 1 brand, 5 links, wants it easy
+- **Power User**: Agency with 30 clients, 50+ links, needs granular control
+- **Everyone In Between**: Without making them choose modes or wait for reveals
+
+**Key Features Needed**:
+1. **Granular anchor text control** - Some users want specific anchor text per link
+2. **Smart auto-fill** - Leverage existing target pages effectively  
+3. **Bulk operations** - Easy for agencies to add many links at once
+4. **Line item system** - Clear view of exactly what's being ordered
+5. **Natural flow** - From simple to detailed as needed, without modes
+
+### **Current Implementation Status**
+
+**Files Modified**:
+- `/app/orders/new/page.tsx` - Main order creation interface
+- `/app/orders/legacy/original-new-page.tsx` - Moved old implementation
+
+**Current Approach Issues**:
+- Still includes toggle between "simple" and "advanced" modes
+- Still uses progressive disclosure patterns (hiding Quick Add after first use)
+- Creates two different user experiences instead of one unified flow
+
+### **Unified Interface Design Plan**
+
+**Analysis of User Workflows**:
+1. **Simple User (1 client, 5 links)**: Wants quick bulk addition for one brand
+2. **Power User (30 clients, 50 links)**: Wants granular control + efficient bulk operations  
+3. **Mixed User**: Same person doing both depending on the order size
+
+### **Solution Architecture: Three-Column Full-Screen Layout**
+
+**Core Principle**: Use the entire screen with three specialized columns that work together dynamically - no cramped forms or hidden features.
+
+**Design Strategy**:
+1. **Left Column**: Client selection with checkboxes and link counts
+2. **Middle Column**: Dynamic order line items that populate based on selections
+3. **Right Column**: Target URLs for selected clients with metadata
+4. **Natural Flow**: Select clients → See their targets → Build specific line items by clicking
+5. **Full Screen**: Utilizes entire viewport for maximum information density
+
+**Key Components**:
+```
+Full-Screen Three-Column Order Interface:
+┌─────────────────────────────────────────────────────────────────────────────────────┐
+│                           Create New Order                                          │
+├───────────────┬─────────────────────────────────────┬───────────────────────────────┤
+│ LEFT SIDEBAR  │            MIDDLE COLUMN            │         RIGHT SIDEBAR         │
+│ Client List   │         Order Line Items            │      Target URLs             │
+├───────────────┼─────────────────────────────────────┼───────────────────────────────┤
+│ ☑️ ClientA    │ ┌─────────────────────────────────┐ │ ClientA Target Pages:         │
+│   [5] links   │ │ Row 1: ClientA → PageA → $100  │ │ • PageA (DR:70, 10k traffic) │
+│               │ └─────────────────────────────────┘ │ • PageB (DR:65, 5k traffic)  │
+│ ☑️ ClientB    │ ┌─────────────────────────────────┐ │ • PageC (DR:80, 15k traffic) │
+│   [3] links   │ │ Row 2: ClientA → PageB → $100  │ │                               │
+│               │ └─────────────────────────────────┘ │ ClientB Target Pages:         │
+│ ☐ ClientC     │ ┌─────────────────────────────────┐ │ • PageX (DR:75, 8k traffic)  │
+│   [0] links   │ │ Row 3: ClientB → PageX → $100  │ │ • PageY (DR:60, 12k traffic) │
+│               │ └─────────────────────────────────┘ │                               │
+│ ☐ ClientD     │                                     │ [Empty - select clients       │
+│   [0] links   │ [Click target URLs on right →]     │  to see target pages]         │
+│               │ [to populate rows here]             │                               │
+│ Total: 8 links│                                     │ [Clickable URLs populate      │
+│ Total: $800   │                                     │  middle column rows]          │
+└───────────────┴─────────────────────────────────────┴───────────────────────────────┘
+```
+
+**User Experience Flow**:
+
+**For Simple Users (1 client, 5 links)**:
+1. **Left**: Check ClientA, set links to 5
+2. **Right**: See ClientA's target pages appear with metadata
+3. **Middle**: Click target pages 5 times to populate 5 order rows
+4. **Result**: 5 specific line items ready for ordering
+5. **Granular Control**: Edit anchor text in any row if desired
+
+**For Power Users (agencies, complex orders)**:
+1. **Left**: Check multiple clients (ClientA: 10, ClientB: 15, ClientC: 25)
+2. **Right**: See all selected clients' target pages with filtering/search
+3. **Middle**: Click target pages strategically to build specific combinations
+4. **Efficiency**: Click same target multiple times for bulk assignment
+5. **Granular Control**: Fine-tune each line item individually
+
+**Natural Scaling**: Interface works identically for 5 links or 50 links - no mode switching needed.
+
+**Key Interactions**:
+- **Left Sidebar**: Checkbox client → See their targets on right → Count updates total
+- **Right Sidebar**: Click target URL → Populates new row in middle → Can click again for duplicates
+- **Middle Column**: Full granular control - edit anchor text, swap targets, remove rows
+- **Dynamic Updates**: All columns update in real-time as selections change
+
+**Implementation Plan**:
+1. ✅ Document the problems with current approach
+2. ✅ Create unified interface design plan  
+3. ✅ **Updated to three-column full-screen approach**
+4. 🔄 **NEXT: Implement three-column layout without toggles/progressive disclosure**
+5. Test with both simple and power user scenarios
+6. Ensure responsive design for different screen sizes
+
+**Current Status**: Three-column design plan complete - ready to implement full-screen unified interface that naturally serves all user types through spatial organization and direct interaction.
+
+### **Three-Column Technical Implementation Details**
+
+**Component Structure**:
+```typescript
+interface OrderBuilderState {
+  selectedClients: Map<string, { selected: boolean; linkCount: number }>;
+  availableTargets: Map<string, TargetPage[]>; // Keyed by clientId
+  orderLineItems: OrderLineItem[];
+  totalCost: number;
+}
+
+interface TargetPageWithMetadata {
+  id: string;
+  url: string;
+  keywords: string[];
+  dr: number;
+  traffic: number;
+  clientId: string;
+  clientName: string;
+}
+```
+
+**Key Features**:
+1. **Smart Target Filtering**: Right sidebar shows only targets for selected clients
+2. **Real-time Totals**: Left sidebar updates counts as middle column changes
+3. **Duplicate Management**: Same target can be used multiple times for different anchor texts
+4. **Visual Feedback**: Clear indication of which targets have been used and how many times
+5. **Bulk Operations**: Shift+click or bulk select targets for rapid population
+
+**Responsive Considerations**:
+- **Desktop**: Full three-column layout (1200px+)
+- **Tablet**: Stack to two columns (left+middle, right becomes modal/drawer)
+- **Mobile**: Single column with tab navigation between client/target/order views
+
+**Advanced Interactions**:
+- **Drag & Drop**: Drag targets from right sidebar to middle column
+- **Keyboard Shortcuts**: Quick client selection, target search, row navigation
+- **Bulk Assignment**: Select multiple targets and assign to multiple rows at once
+- **Template Saves**: Save common client+target combinations for future orders
+
+**Data Flow**:
+1. **Client Selection** (Left) → Triggers target loading for right sidebar
+2. **Target Click** (Right) → Creates new line item in middle column
+3. **Line Item Edit** (Middle) → Updates totals in left sidebar and order state
+4. **Real-time Sync**: All three columns stay synchronized through shared state
+
+This approach eliminates the need for any toggles, modes, or progressive disclosure by using spatial separation and direct manipulation to handle complexity naturally.
+
 ## Active Technical Debt (Updated 2025-08-01)
 
 ### Account Features Integration Debt
