@@ -40,7 +40,7 @@ function DebugOrderClientLoadingContent() {
         const stored = localStorage.getItem('auth-session');
         results.sessionTiming.fromLocalStorage = stored ? JSON.parse(stored) : null;
       } catch (e) {
-        results.sessionTiming.localStorageError = e.message;
+        results.sessionTiming.localStorageError = e instanceof Error ? e.message : 'Unknown error';
       }
     }
     
@@ -51,7 +51,7 @@ function DebugOrderClientLoadingContent() {
       });
       results.sessionTiming.cookieCheck = await cookieResponse.json();
     } catch (e) {
-      results.sessionTiming.cookieError = e.message;
+      results.sessionTiming.cookieError = e instanceof Error ? e.message : 'Unknown error';
     }
     
     // Test 3: Test both endpoints with different auth contexts
@@ -79,7 +79,7 @@ function DebugOrderClientLoadingContent() {
           };
         } catch (e) {
           results.endpoints[endpoint.name] = {
-            error: e.message,
+            error: e instanceof Error ? e.message : 'Unknown error',
             fetchFailed: true
           };
         }
@@ -123,7 +123,7 @@ function DebugOrderClientLoadingContent() {
         const data = await response.json();
         results.directAccountCheck = data;
       } catch (e) {
-        results.directAccountCheck = { error: e.message };
+        results.directAccountCheck = { error: e instanceof Error ? e.message : 'Unknown error' };
       }
     }
   };
