@@ -1,5 +1,5 @@
 import { eq, and, isNull } from 'drizzle-orm';
-import crypto from 'crypto';
+import * as crypto from 'crypto';
 import { db } from './connection';
 import { clients, clientAssignments, targetPages, type Client, type NewClient, type TargetPage, type NewTargetPage } from './schema';
 import { normalizeUrl, extractNormalizedDomain } from '@/lib/utils/urlUtils';
