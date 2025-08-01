@@ -104,6 +104,9 @@ export default function NewOrderPage() {
   // Modal state
   const [showCreateClientModal, setShowCreateClientModal] = useState(false);
   const [showCreateTargetPageModal, setShowCreateTargetPageModal] = useState(false);
+  
+  // Mobile view state
+  const [mobileView, setMobileView] = useState<'clients' | 'order' | 'targets'>('order');
 
   const loadClients = useCallback(async () => {
     try {
@@ -187,11 +190,8 @@ export default function NewOrderPage() {
       }
     });
     
-    // Sort by domain rating (descending) then by usage count (ascending)
-    targets.sort((a, b) => {
-      if (a.dr !== b.dr) return b.dr - a.dr;
-      return a.usageCount - b.usageCount;
-    });
+    // Sort by domain rating (descending) only - don't re-sort by usage to prevent jumping
+    targets.sort((a, b) => b.dr - a.dr);
     
     setAvailableTargets(targets);
   }, [selectedClients, clients, lineItems]);
@@ -339,11 +339,33 @@ export default function NewOrderPage() {
   };
 
   const removeLineItem = (id: string) => {
+    const itemToRemove = lineItems.find(item => item.id === id);
+    if (!itemToRemove) return;
+    
     setLineItems(prev => {
       const updated = prev.filter(item => item.id !== id);
       calculatePricing(updated);
       return updated;
     });
+    
+    // Update the link count in selected clients
+    const clientItems = lineItems.filter(item => item.clientId === itemToRemove.clientId);
+    const newCount = clientItems.length - 1; // -1 for the item being removed
+    
+    if (newCount === 0) {
+      // If no items left for this client, deselect it
+      toggleClientSelection(itemToRemove.clientId, false);
+    } else {
+      // Update the count
+      setSelectedClients(prev => {
+        const newMap = new Map(prev);
+        const existing = newMap.get(itemToRemove.clientId);
+        if (existing) {
+          newMap.set(itemToRemove.clientId, { ...existing, linkCount: newCount });
+        }
+        return newMap;
+      });
+    }
   };
 
   const duplicateLineItem = (id: string) => {
@@ -425,8 +447,44 @@ export default function NewOrderPage() {
           </div>
         </div>
         
-        {/* Main Content Area - Three Column Layout */}
-        <div className="flex-1 flex gap-4 p-4 overflow-hidden relative bg-gray-100">
+        {/* Mobile Navigation (shown on small screens) */}
+        <div className="md:hidden bg-white border-b border-gray-200">
+          <div className="flex">
+            <button
+              onClick={() => setMobileView('clients')}
+              className={`flex-1 px-4 py-3 text-sm font-medium border-b-2 transition-colors ${
+                mobileView === 'clients' 
+                  ? 'text-blue-600 border-blue-600' 
+                  : 'text-gray-600 border-transparent hover:text-gray-900'
+              }`}
+            >
+              Brands ({selectedClients.size})
+            </button>
+            <button
+              onClick={() => setMobileView('order')}
+              className={`flex-1 px-4 py-3 text-sm font-medium border-b-2 transition-colors ${
+                mobileView === 'order' 
+                  ? 'text-blue-600 border-blue-600' 
+                  : 'text-gray-600 border-transparent hover:text-gray-900'
+              }`}
+            >
+              Order ({lineItems.length})
+            </button>
+            <button
+              onClick={() => setMobileView('targets')}
+              className={`flex-1 px-4 py-3 text-sm font-medium border-b-2 transition-colors ${
+                mobileView === 'targets' 
+                  ? 'text-blue-600 border-blue-600' 
+                  : 'text-gray-600 border-transparent hover:text-gray-900'
+              }`}
+            >
+              Targets ({availableTargets.length})
+            </button>
+          </div>
+        </div>
+        
+        {/* Main Content Area - Three Column Layout (Desktop) / Single Column (Mobile) */}
+        <div className="flex-1 flex flex-col md:flex-row gap-4 p-4 overflow-hidden bg-gray-100" style={{height: 'calc(100vh - 64px - 80px)'}}>
           {error && (
             <div className="absolute top-4 left-1/2 transform -translate-x-1/2 z-50 bg-red-50 border border-red-200 rounded-lg p-4 flex items-start shadow-lg">
               <AlertCircle className="h-5 w-5 text-red-600 mt-0.5 mr-3" />
@@ -443,7 +501,9 @@ export default function NewOrderPage() {
           )}
 
           {/* Left Sidebar - Client Selection */}
-          <div className="w-80 bg-white rounded-lg shadow-sm overflow-hidden flex flex-col">
+          <div className={`w-full md:w-80 bg-white rounded-lg shadow-sm flex flex-col h-full ${
+            mobileView === 'clients' ? 'block md:block' : 'hidden md:block'
+          }`}>
             <div className="p-4 border-b bg-gray-50">
               <div className="flex items-center justify-between">
                 <div>
@@ -545,7 +605,9 @@ export default function NewOrderPage() {
           </div>
 
           {/* Middle Column - Order Line Items */}
-          <div className="flex-1 bg-white rounded-lg shadow-sm overflow-hidden flex flex-col">
+          <div className={`flex-1 bg-white rounded-lg shadow-sm flex flex-col h-full ${
+            mobileView === 'order' ? 'block md:block' : 'hidden md:block'
+          }`}>
             <div className="p-4 border-b border-gray-200">
               <div className="flex items-center justify-between">
                 <div>
@@ -641,7 +703,9 @@ export default function NewOrderPage() {
           </div>
           
           {/* Right Sidebar - Target URLs */}
-          <div className="w-80 bg-white rounded-lg shadow-sm overflow-hidden flex flex-col">
+          <div className={`w-full md:w-80 bg-white rounded-lg shadow-sm flex flex-col h-full ${
+            mobileView === 'targets' ? 'block md:block' : 'hidden md:block'
+          }`}>
             <div className="p-4 border-b border-gray-200">
               <div className="flex items-center justify-between mb-3">
                 <div>
@@ -783,11 +847,11 @@ export default function NewOrderPage() {
         
         {/* Fixed Bottom Bar */}
         <div className="bg-white border-t border-gray-200 shadow-lg">
-          <div className="px-6 py-4">
-            <div className="flex items-center justify-between">
+          <div className="px-4 md:px-6 py-4">
+            <div className="flex flex-col md:flex-row items-center justify-between gap-4">
               {/* Left Side - Order Summary Stats and Package Selection */}
-              <div className="flex items-center space-x-6">
-                <div className="flex items-center space-x-4">
+              <div className="flex flex-col md:flex-row items-center gap-4 md:space-x-6 w-full md:w-auto">
+                <div className="hidden md:flex items-center space-x-4">
                   <span className="text-sm font-medium text-gray-700">Default Package:</span>
                   <div className="flex items-center space-x-2 bg-gray-50 p-1 rounded-lg">
                     {Object.entries(packagePricing).filter(([key]) => key !== 'custom').map(([key, pkg]) => (
@@ -805,8 +869,8 @@ export default function NewOrderPage() {
                         }}
                         className={`px-3 py-1.5 rounded text-sm font-medium transition-all ${
                           selectedPackage === key 
-                            ? 'bg-white text-gray-900 shadow-sm' 
-                            : 'text-gray-600 hover:text-gray-900'
+                            ? 'bg-blue-600 text-white shadow-sm' 
+                            : 'text-gray-600 hover:text-gray-900 hover:bg-gray-100'
                         }`}
                         title={`${pkg.name} - ${pkg.description}`}
                       >
@@ -816,7 +880,7 @@ export default function NewOrderPage() {
                   </div>
                 </div>
                 
-                <div className="h-8 w-px bg-gray-200"></div>
+                <div className="hidden md:block h-8 w-px bg-gray-200"></div>
                 
                 <div className="flex items-center space-x-4 text-sm">
                   <div className="flex items-center space-x-1">
@@ -842,19 +906,20 @@ export default function NewOrderPage() {
               </div>
               
               {/* Right Side - Total and Continue */}
-              <div className="flex items-center space-x-6">
+              <div className="flex items-center space-x-4 md:space-x-6 w-full md:w-auto">
                 <div className="text-right">
                   <p className="text-sm text-gray-500">Order Total</p>
-                  <p className="text-2xl font-bold text-gray-900">{formatCurrency(total)}</p>
+                  <p className="text-2xl font-bold text-gray-900">${total}</p>
                 </div>
                 
                 <button
                   onClick={handleSubmit}
                   disabled={lineItems.length === 0 || lineItems.some(item => !item.clientId)}
-                  className="px-6 py-3 bg-blue-600 text-white font-medium rounded-lg hover:bg-blue-700 
-                           transition-colors flex items-center disabled:bg-gray-300 disabled:cursor-not-allowed"
+                  className="px-4 md:px-6 py-2 md:py-3 bg-blue-600 text-white font-medium rounded-lg hover:bg-blue-700 
+                           transition-colors flex items-center disabled:bg-gray-300 disabled:cursor-not-allowed flex-1 md:flex-initial justify-center"
                 >
-                  Continue to Site Selection
+                  <span className="hidden md:inline">Continue to Site Selection</span>
+                  <span className="md:hidden">Continue</span>
                   <ChevronRight className="h-5 w-5 ml-2" />
                 </button>
               </div>
