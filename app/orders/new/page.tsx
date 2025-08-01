@@ -6,6 +6,8 @@ import AuthWrapper from '@/components/AuthWrapper';
 import Header from '@/components/Header';
 import { AuthService } from '@/lib/auth';
 import { formatCurrency } from '@/lib/utils/formatting';
+import CreateClientModal from '@/components/ui/CreateClientModal';
+import CreateTargetPageModal from '@/components/ui/CreateTargetPageModal';
 import { 
   Building, Package, Plus, X, ChevronDown, ChevronUp, ChevronRight,
   Search, Target, Link, Type, CheckCircle,
@@ -99,6 +101,10 @@ export default function NewOrderPage() {
   const [orderMode, setOrderMode] = useState<'detailed' | 'simple'>('detailed');
   const [expandedClients, setExpandedClients] = useState<Set<string>>(new Set());
   const [expandedDomains, setExpandedDomains] = useState<Set<string>>(new Set());
+  
+  // Modal state
+  const [showCreateClientModal, setShowCreateClientModal] = useState(false);
+  const [showCreateTargetPageModal, setShowCreateTargetPageModal] = useState(false);
 
   const loadClients = useCallback(async () => {
     try {
@@ -118,6 +124,24 @@ export default function NewOrderPage() {
       setLoadingClients(false);
     }
   }, [isAccountUser]);
+
+  const handleClientCreated = (newClient: any) => {
+    // Refresh the client list to include the new client
+    loadClients();
+    // Optionally auto-select the new client
+    if (newClient) {
+      setTimeout(() => {
+        toggleClientSelection(newClient.id, true);
+      }, 100);
+    }
+  };
+
+  const handleTargetPagesCreated = (newTargetPages: any[]) => {
+    // Refresh the client list to include the new target pages
+    loadClients();
+    // The target pages will automatically show up in the available targets
+    // when clients are refreshed and updateAvailableTargets is called
+  };
 
   useEffect(() => {
     loadClients();
@@ -556,10 +580,7 @@ export default function NewOrderPage() {
                   </p>
                 </div>
                 <button 
-                  onClick={() => {
-                    // TODO: Implement inline client creation modal
-                    console.log('Add new client');
-                  }}
+                  onClick={() => setShowCreateClientModal(true)}
                   className="p-1.5 text-blue-600 hover:bg-blue-50 rounded"
                   title="Add new brand"
                 >
@@ -787,10 +808,7 @@ export default function NewOrderPage() {
                   </p>
                 </div>
                 <button 
-                  onClick={() => {
-                    // TODO: Implement inline target page creation modal
-                    console.log('Add custom target');
-                  }}
+                  onClick={() => setShowCreateTargetPageModal(true)}
                   className="p-1.5 text-blue-600 hover:bg-blue-50 rounded"
                   title="Add custom target"
                 >
@@ -1055,6 +1073,20 @@ export default function NewOrderPage() {
           </div>
         </div>
         )}
+        
+        {/* Create Client Modal */}
+        <CreateClientModal
+          isOpen={showCreateClientModal}
+          onClose={() => setShowCreateClientModal(false)}
+          onClientCreated={handleClientCreated}
+        />
+        
+        {/* Create Target Page Modal */}
+        <CreateTargetPageModal
+          isOpen={showCreateTargetPageModal}
+          onClose={() => setShowCreateTargetPageModal(false)}
+          onTargetPagesCreated={handleTargetPagesCreated}
+        />
       </div>
     </AuthWrapper>
   );
