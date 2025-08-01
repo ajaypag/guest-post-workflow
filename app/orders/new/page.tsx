@@ -16,6 +16,18 @@ import {
 
 type PackageType = 'good' | 'better' | 'best';
 
+// Debounce utility
+function debounce<T extends (...args: any[]) => any>(
+  func: T,
+  wait: number
+): (...args: Parameters<T>) => void {
+  let timeout: NodeJS.Timeout;
+  return (...args: Parameters<T>) => {
+    clearTimeout(timeout);
+    timeout = setTimeout(() => func(...args), wait);
+  };
+}
+
 interface OrderLineItem {
   id: string;
   clientId: string;
@@ -98,6 +110,11 @@ export default function NewOrderPage() {
     better: { price: 279, name: 'Better Guest Posts', description: 'DR 35-49' },
     best: { price: 349, name: 'Best Guest Posts', description: 'DR 50-80' }
   };
+  
+  // Draft order state
+  const [draftOrderId, setDraftOrderId] = useState<string | null>(null);
+  const [lastSaved, setLastSaved] = useState<Date | null>(null);
+  const [saveStatus, setSaveStatus] = useState<'idle' | 'saving' | 'saved' | 'error'>('idle');
   
   // UI state
   const [expandedClients, setExpandedClients] = useState<Set<string>>(new Set());
@@ -255,6 +272,135 @@ export default function NewOrderPage() {
   useEffect(() => {
     updateAvailableTargets();
   }, [updateAvailableTargets]);
+  
+  // Auto-save functionality
+  const saveOrderDraft = useCallback(async () => {
+    if (!session) return;
+    
+    try {
+      setSaveStatus('saving');
+      
+      // Prepare order data
+      const orderData = {
+        // Account info (these would come from a form in real implementation)
+        accountEmail: '',
+        accountName: '',
+        accountCompany: '',
+        
+        // Pricing
+        subtotalRetail: subtotal,
+        totalRetail: total,
+        totalWholesale: Math.round(total * 0.6), // Estimate wholesale cost
+        profitMargin: Math.round(total * 0.4),
+        
+        // Groups for the new order structure
+        groups: Array.from(selectedClients.entries())
+          .filter(([_, data]) => data.selected && data.linkCount > 0)
+          .map(([clientId, data]) => {
+            const client = clients.find(c => c.id === clientId);
+            const clientItems = lineItems.filter(item => item.clientId === clientId);
+            const groupSubtotal = clientItems.reduce((sum, item) => sum + item.price, 0);
+            
+            return {
+              clientId,
+              clientName: client?.name || '',
+              linkCount: data.linkCount,
+              packageType: clientItems[0]?.selectedPackage || 'better',
+              packagePrice: packagePricing[clientItems[0]?.selectedPackage || 'better'].price,
+              subtotal: groupSubtotal,
+              selections: clientItems.map(item => ({
+                domainId: '', // Will be filled when domain selection is implemented
+                targetPageId: item.targetPageId || '',
+                domain: '', // Will be filled when domain selection is implemented
+                domainRating: 0,
+                traffic: 0,
+                retailPrice: item.price,
+                wholesalePrice: Math.round(item.price * 0.6),
+              }))
+            };
+          })
+      };
+      
+      if (draftOrderId) {
+        // Update existing draft
+        const response = await fetch(`/api/orders/drafts/${draftOrderId}`, {
+          method: 'PUT',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ orderData })
+        });
+        
+        if (response.ok) {
+          setSaveStatus('saved');
+          setLastSaved(new Date());
+        } else {
+          setSaveStatus('error');
+        }
+      } else if (lineItems.length > 0) {
+        // Create new draft only if there are items
+        const response = await fetch('/api/orders/drafts', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ orderData })
+        });
+        
+        if (response.ok) {
+          const { orderId } = await response.json();
+          setDraftOrderId(orderId);
+          setSaveStatus('saved');
+          setLastSaved(new Date());
+        } else {
+          setSaveStatus('error');
+        }
+      }
+      
+      // Reset status after 2 seconds
+      setTimeout(() => setSaveStatus('idle'), 2000);
+      
+    } catch (error) {
+      console.error('Error saving draft:', error);
+      setSaveStatus('error');
+      setTimeout(() => setSaveStatus('idle'), 2000);
+    }
+  }, [session, draftOrderId, lineItems, selectedClients, clients, subtotal, total, packagePricing]);
+  
+  // Debounced auto-save
+  const debouncedSave = useCallback(
+    debounce(() => saveOrderDraft(), 2000),
+    [saveOrderDraft]
+  );
+  
+  // Trigger auto-save when order changes
+  useEffect(() => {
+    if (lineItems.length > 0) {
+      debouncedSave();
+    }
+  }, [lineItems, selectedClients, debouncedSave]);
+  
+  // Load draft on mount
+  useEffect(() => {
+    const loadDraft = async () => {
+      if (!session) return;
+      
+      try {
+        const response = await fetch('/api/orders/drafts');
+        if (response.ok) {
+          const { drafts } = await response.json();
+          if (drafts && drafts.length > 0) {
+            // Load the most recent draft
+            const draft = drafts[0];
+            setDraftOrderId(draft.id);
+            
+            // TODO: Restore order state from draft
+            // This would involve parsing the order groups and recreating the UI state
+          }
+        }
+      } catch (error) {
+        console.error('Error loading draft:', error);
+      }
+    };
+    
+    loadDraft();
+  }, [session]);
 
   const toggleClientSelection = (clientId: string, selected: boolean) => {
     setSelectedClients(prev => {
@@ -832,9 +978,25 @@ export default function NewOrderPage() {
             <div className="p-4 border-b border-gray-200">
               <div className="flex items-center justify-between">
                 <div>
-                  <h2 className="text-lg font-semibold text-gray-900">Order Details</h2>
+                  <div className="flex items-center space-x-3">
+                    <h2 className="text-lg font-semibold text-gray-900">Order Details</h2>
+                    {saveStatus !== 'idle' && (
+                      <span className={`text-xs px-2 py-1 rounded ${
+                        saveStatus === 'saving' ? 'bg-yellow-100 text-yellow-700' :
+                        saveStatus === 'saved' ? 'bg-green-100 text-green-700' :
+                        'bg-red-100 text-red-700'
+                      }`}>
+                        {saveStatus === 'saving' ? 'Saving...' :
+                         saveStatus === 'saved' ? 'Saved' :
+                         'Save failed'}
+                      </span>
+                    )}
+                  </div>
                   <p className="text-sm text-gray-600 mt-1">
                     {lineItems.length} items • {lineItems.filter(item => item.targetPageUrl).length} assigned
+                    {lastSaved && (
+                      <span className="text-gray-400"> • Last saved {new Date(lastSaved).toLocaleTimeString()}</span>
+                    )}
                   </p>
                 </div>
                 <div className="flex items-center space-x-2">
