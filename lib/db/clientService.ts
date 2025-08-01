@@ -183,10 +183,28 @@ export class ClientService {
   }
 
   // Add target pages to client
-  static async addTargetPages(clientId: string, urls: string[]): Promise<boolean> {
+  static async addTargetPages(clientId: string, urls: string[]): Promise<{success: boolean, added: number, duplicates: number}> {
     try {
+      // Get existing URLs for this client to avoid duplicates
+      const existingPages = await db
+        .select({ url: targetPages.url })
+        .from(targetPages)
+        .where(eq(targetPages.clientId, clientId));
+      
+      const existingUrls = new Set(existingPages.map(p => p.url));
+      
+      // Filter out duplicate URLs
+      const uniqueUrls = urls.filter(url => !existingUrls.has(url));
+      
+      const duplicatesCount = urls.length - uniqueUrls.length;
+      
+      if (uniqueUrls.length === 0) {
+        console.log('No new URLs to add - all URLs already exist');
+        return { success: true, added: 0, duplicates: duplicatesCount };
+      }
+
       const now = new Date();
-      const newPages: NewTargetPage[] = urls.map(url => ({
+      const newPages: NewTargetPage[] = uniqueUrls.map(url => ({
         id: crypto.randomUUID(),
         clientId,
         url,
@@ -196,10 +214,11 @@ export class ClientService {
       }));
 
       await db.insert(targetPages).values(newPages);
-      return true;
+      console.log(`Added ${uniqueUrls.length} new target pages (${duplicatesCount} duplicates skipped)`);
+      return { success: true, added: uniqueUrls.length, duplicates: duplicatesCount };
     } catch (error) {
       console.error('Error adding target pages:', error);
-      return false;
+      return { success: false, added: 0, duplicates: 0 };
     }
   }
 

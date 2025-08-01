@@ -129,9 +129,9 @@ export async function POST(
     }
 
     // Add target pages using ClientService
-    const success = await ClientService.addTargetPages(id, validUrls);
+    const result = await ClientService.addTargetPages(id, validUrls);
     
-    if (!success) {
+    if (!result.success) {
       return NextResponse.json(
         { error: 'Failed to add target pages to database' },
         { status: 500 }
@@ -141,13 +141,18 @@ export async function POST(
     // Get the updated target pages list
     const updatedTargetPages = await ClientService.getTargetPages(id);
     
-    console.log(`Successfully added ${validUrls.length} target pages to client ${id}`);
+    console.log(`Successfully added ${result.added} target pages to client ${id} (${result.duplicates} duplicates skipped)`);
+    
+    const message = result.duplicates > 0 
+      ? `Added ${result.added} new target pages (${result.duplicates} duplicates skipped)`
+      : `Added ${result.added} target pages`;
     
     return NextResponse.json({
       success: true,
-      message: `Added ${validUrls.length} target pages`,
+      message,
       targetPages: updatedTargetPages,
-      addedUrls: validUrls
+      addedUrls: validUrls.slice(0, result.added), // Only the ones actually added
+      duplicatesSkipped: result.duplicates
     });
 
   } catch (error) {

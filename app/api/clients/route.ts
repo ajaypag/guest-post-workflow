@@ -231,7 +231,8 @@ export async function POST(request: NextRequest) {
     if (data.targetPages && Array.isArray(data.targetPages)) {
       const urls = data.targetPages.filter((u: string) => u.trim());
       if (urls.length > 0) {
-        await ClientService.addTargetPages(client.id, urls);
+        const result = await ClientService.addTargetPages(client.id, urls);
+        console.log(`Target pages added to new client: ${result.added} added, ${result.duplicates} duplicates skipped`);
       }
     }
 
