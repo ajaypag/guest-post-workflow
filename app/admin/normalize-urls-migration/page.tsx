@@ -1,11 +1,6 @@
 'use client';
 
 import { useState, useEffect } from 'react';
-import { Button } from '@/components/ui/button';
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
-import { Alert, AlertDescription } from '@/components/ui/alert';
-import { Progress } from '@/components/ui/progress';
-import { CheckCircle2, AlertCircle, RefreshCw, Database } from 'lucide-react';
 
 interface MigrationStatus {
   totalPages: number;
@@ -132,118 +127,111 @@ export default function NormalizeUrlsMigrationPage() {
     <div className="container mx-auto py-8 max-w-4xl">
       <h1 className="text-3xl font-bold mb-8">Normalized URL Migration</h1>
 
-      <Card className="mb-6">
-        <CardHeader>
-          <CardTitle>Migration Status</CardTitle>
-          <CardDescription>
-            Add normalized URLs to target pages for better duplicate detection
-          </CardDescription>
-        </CardHeader>
-        <CardContent className="space-y-4">
-          <div className="grid grid-cols-2 gap-4">
-            <div>
-              <p className="text-sm text-muted-foreground">Total Target Pages</p>
-              <p className="text-2xl font-bold">{status.totalPages}</p>
+      <div className="bg-white shadow rounded-lg p-6 mb-6">
+        <h2 className="text-xl font-semibold mb-2">Migration Status</h2>
+        <p className="text-gray-600 mb-4">
+          Add normalized URLs to target pages for better duplicate detection
+        </p>
+        
+        <div className="grid grid-cols-2 gap-4 mb-6">
+          <div className="p-4 bg-gray-50 rounded">
+            <p className="text-sm text-gray-600">Total Target Pages</p>
+            <p className="text-2xl font-bold">{status.totalPages}</p>
+          </div>
+          <div className="p-4 bg-gray-50 rounded">
+            <p className="text-sm text-gray-600">Pages Needing Migration</p>
+            <p className="text-2xl font-bold text-orange-600">
+              {status.pagesWithoutNormalizedUrl}
+            </p>
+          </div>
+        </div>
+
+        {status.isComplete && (
+          <div className="bg-green-50 border border-green-200 rounded p-4 mb-4">
+            <p className="text-green-800">
+              ✅ All target pages have normalized URLs. Migration is complete!
+            </p>
+          </div>
+        )}
+
+        {status.pagesWithoutNormalizedUrl > 0 && !status.isRunning && (
+          <div className="bg-yellow-50 border border-yellow-200 rounded p-4 mb-4">
+            <p className="text-yellow-800">
+              ⚠️ {status.pagesWithoutNormalizedUrl} target pages need normalized URLs.
+              Run the migration to fix this.
+            </p>
+          </div>
+        )}
+
+        {status.isRunning && (
+          <div className="mb-4">
+            <div className="flex items-center justify-between text-sm mb-2">
+              <span>Processing pages...</span>
+              <span>{status.pagesProcessed} / {status.pagesWithoutNormalizedUrl}</span>
             </div>
-            <div>
-              <p className="text-sm text-muted-foreground">Pages Needing Migration</p>
-              <p className="text-2xl font-bold text-orange-600">
-                {status.pagesWithoutNormalizedUrl}
-              </p>
+            <div className="w-full bg-gray-200 rounded-full h-2">
+              <div 
+                className="bg-blue-600 h-2 rounded-full transition-all duration-300"
+                style={{ width: `${progress}%` }}
+              ></div>
             </div>
           </div>
+        )}
 
-          {status.isComplete && (
-            <Alert className="bg-green-50 border-green-200">
-              <CheckCircle2 className="h-4 w-4 text-green-600" />
-              <AlertDescription className="text-green-800">
-                All target pages have normalized URLs. Migration is complete!
-              </AlertDescription>
-            </Alert>
-          )}
-
-          {status.pagesWithoutNormalizedUrl > 0 && !status.isRunning && (
-            <Alert className="bg-yellow-50 border-yellow-200">
-              <AlertCircle className="h-4 w-4 text-yellow-600" />
-              <AlertDescription className="text-yellow-800">
-                {status.pagesWithoutNormalizedUrl} target pages need normalized URLs.
-                Run the migration to fix this.
-              </AlertDescription>
-            </Alert>
-          )}
-
-          {status.isRunning && (
-            <div className="space-y-2">
-              <div className="flex items-center justify-between text-sm">
-                <span>Processing pages...</span>
-                <span>{status.pagesProcessed} / {status.pagesWithoutNormalizedUrl}</span>
-              </div>
-              <Progress value={progress} className="h-2" />
-            </div>
-          )}
-
-          {status.errors.length > 0 && (
-            <Alert className="bg-red-50 border-red-200">
-              <AlertCircle className="h-4 w-4 text-red-600" />
-              <AlertDescription>
-                <p className="font-medium text-red-800 mb-2">Errors occurred:</p>
-                <ul className="list-disc list-inside text-sm text-red-700 space-y-1">
-                  {status.errors.map((error, i) => (
-                    <li key={i}>{error}</li>
-                  ))}
-                </ul>
-              </AlertDescription>
-            </Alert>
-          )}
-
-          <div className="flex gap-3">
-            <Button
-              onClick={checkStatus}
-              disabled={isChecking || status.isRunning}
-              variant="outline"
-            >
-              <RefreshCw className={`mr-2 h-4 w-4 ${isChecking ? 'animate-spin' : ''}`} />
-              Check Status
-            </Button>
-
-            <Button
-              onClick={runMigration}
-              disabled={status.isRunning || status.pagesWithoutNormalizedUrl === 0}
-              className="bg-blue-600 hover:bg-blue-700"
-            >
-              <Database className="mr-2 h-4 w-4" />
-              {status.isRunning ? 'Running Migration...' : 'Run Migration'}
-            </Button>
-          </div>
-        </CardContent>
-      </Card>
-
-      <Card>
-        <CardHeader>
-          <CardTitle>What This Migration Does</CardTitle>
-        </CardHeader>
-        <CardContent className="space-y-3 text-sm text-muted-foreground">
-          <p>
-            This migration adds a <code className="bg-gray-100 px-1 py-0.5 rounded">normalizedUrl</code> column
-            to all target pages for improved duplicate detection.
-          </p>
-          <div className="bg-gray-50 p-4 rounded-lg space-y-2">
-            <p className="font-medium text-gray-700">Normalization Rules:</p>
-            <ul className="list-disc list-inside space-y-1 ml-2">
-              <li>Forces HTTPS protocol</li>
-              <li>Removes www prefix</li>
-              <li>Removes trailing slashes</li>
-              <li>Preserves full path for matching</li>
+        {status.errors.length > 0 && (
+          <div className="bg-red-50 border border-red-200 rounded p-4 mb-4">
+            <p className="font-medium text-red-800 mb-2">Errors occurred:</p>
+            <ul className="list-disc list-inside text-sm text-red-700 space-y-1">
+              {status.errors.map((error, i) => (
+                <li key={i}>{error}</li>
+              ))}
             </ul>
           </div>
-          <div className="bg-blue-50 p-4 rounded-lg">
-            <p className="font-medium text-blue-700 mb-2">Example:</p>
-            <code className="text-xs">
-              http://www.example.com/services/ → example.com/services
-            </code>
-          </div>
-        </CardContent>
-      </Card>
+        )}
+
+        <div className="flex gap-3">
+          <button
+            onClick={checkStatus}
+            disabled={isChecking || status.isRunning}
+            className="px-4 py-2 border border-gray-300 rounded-md hover:bg-gray-50 disabled:opacity-50 disabled:cursor-not-allowed"
+          >
+            {isChecking ? '⟳ Checking...' : '⟳ Check Status'}
+          </button>
+
+          <button
+            onClick={runMigration}
+            disabled={status.isRunning || status.pagesWithoutNormalizedUrl === 0}
+            className="px-4 py-2 bg-blue-600 text-white rounded-md hover:bg-blue-700 disabled:opacity-50 disabled:cursor-not-allowed"
+          >
+            {status.isRunning ? 'Running Migration...' : '▶ Run Migration'}
+          </button>
+        </div>
+      </div>
+
+      <div className="bg-white shadow rounded-lg p-6">
+        <h2 className="text-xl font-semibold mb-4">What This Migration Does</h2>
+        <p className="text-gray-600 mb-4">
+          This migration adds a <code className="bg-gray-100 px-1 py-0.5 rounded">normalizedUrl</code> column
+          to all target pages for improved duplicate detection.
+        </p>
+        
+        <div className="bg-gray-50 p-4 rounded-lg mb-4">
+          <p className="font-medium text-gray-700 mb-2">Normalization Rules:</p>
+          <ul className="list-disc list-inside space-y-1 ml-2 text-gray-600">
+            <li>Forces HTTPS protocol</li>
+            <li>Removes www prefix</li>
+            <li>Removes trailing slashes</li>
+            <li>Preserves full path for matching</li>
+          </ul>
+        </div>
+        
+        <div className="bg-blue-50 p-4 rounded-lg">
+          <p className="font-medium text-blue-700 mb-2">Example:</p>
+          <code className="text-sm text-gray-700">
+            http://www.example.com/services/ → example.com/services
+          </code>
+        </div>
+      </div>
     </div>
   );
 }
