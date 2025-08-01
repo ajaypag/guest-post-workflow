@@ -792,8 +792,10 @@ export default function NewOrderPage() {
                 <button
                   key={draft.id}
                   onClick={() => {
-                    // Load the draft order
-                    router.push(`/orders/${draft.id}/edit`);
+                    // TODO: Load the draft data into the current page
+                    // For now, just close the picker and show a message
+                    setShowDraftPicker(false);
+                    alert('Draft loading is being implemented. For now, draft data is auto-saved.');
                   }}
                   className="w-full text-left px-4 py-3 bg-white rounded-md border border-blue-200 hover:border-blue-400 transition-colors"
                 >
