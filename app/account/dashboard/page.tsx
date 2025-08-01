@@ -114,7 +114,7 @@ function AccountDashboardContent({ user }: AccountDashboardProps) {
       }
       
       // Load account brands
-      const clientResponse = await fetch('/api/accounts/client', {
+      const clientResponse = await fetch('/api/account/clients', {
         credentials: 'include',
       });
       

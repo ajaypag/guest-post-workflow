@@ -14,11 +14,13 @@ export async function GET(request: NextRequest) {
     }
 
     // Get all clients/brands for this account
-    const accountClients = await ClientService.getClientsByAccount(session.userId);
+    // For account users, we need to use accountId from session, not userId
+    const accountId = session.accountId || session.userId;
+    const accountClients = await ClientService.getClientsByAccount(accountId);
     
     // Also check for legacy primaryClientId
     const account = await db.query.accounts.findFirst({
-      where: eq(accounts.id, session.userId),
+      where: eq(accounts.id, accountId),
     });
     
     if (account && account.primaryClientId) {
