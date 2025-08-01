@@ -14,7 +14,7 @@ import {
   AlertCircle, Copy, Trash2, User, Globe, ExternalLink
 } from 'lucide-react';
 
-type PackageType = 'good' | 'better' | 'best' | 'custom';
+type PackageType = 'good' | 'better' | 'best';
 
 interface OrderLineItem {
   id: string;
@@ -96,8 +96,7 @@ export default function NewOrderPage() {
   const packagePricing = {
     good: { price: 230, name: 'Good Guest Posts', description: 'DR 20-34' },
     better: { price: 279, name: 'Better Guest Posts', description: 'DR 35-49' },
-    best: { price: 349, name: 'Best Guest Posts', description: 'DR 50-80' },
-    custom: { price: 0, name: 'Custom Mix', description: 'Mix and match' }
+    best: { price: 349, name: 'Best Guest Posts', description: 'DR 50-80' }
   };
   
   // UI state
@@ -121,7 +120,9 @@ export default function NewOrderPage() {
       if (response.ok) {
         const data = await response.json();
         const clientList = data.clients || data;
-        setClients(clientList);
+        // Filter out archived clients
+        const activeClients = clientList.filter((client: any) => !client.archivedAt);
+        setClients(activeClients);
       }
     } catch (error) {
       console.error('Error loading clients:', error);
@@ -323,17 +324,6 @@ export default function NewOrderPage() {
         return [...prev, newItem];
       }
     });
-  };
-
-  const addEmptyLineItem = () => {
-    const newItem: OrderLineItem = {
-      id: Date.now().toString(),
-      clientId: '',
-      clientName: '',
-      price: packagePricing[selectedPackage].price || 100,
-      selectedPackage: selectedPackage
-    };
-    setLineItems([...lineItems, newItem]);
   };
 
   const updateLineItem = (id: string, updates: Partial<OrderLineItem>) => {
@@ -788,13 +778,6 @@ export default function NewOrderPage() {
                     <option value="status">Group by Status</option>
                     <option value="none">No Grouping</option>
                   </select>
-                  <button
-                    onClick={addEmptyLineItem}
-                    className="px-3 py-1 text-sm bg-blue-600 text-white rounded hover:bg-blue-700 flex items-center"
-                  >
-                    <Plus className="h-4 w-4 mr-1" />
-                    Add Item
-                  </button>
                 </div>
               </div>
             </div>
@@ -849,7 +832,7 @@ export default function NewOrderPage() {
                           </td>
                           <td className="px-4 py-3">
                             <select
-                              value={item.selectedPackage || 'custom'}
+                              value={item.selectedPackage || 'better'}
                               onChange={(e) => {
                                 const pkg = e.target.value as keyof typeof packagePricing;
                                 updateLineItem(item.id, { 
@@ -862,7 +845,6 @@ export default function NewOrderPage() {
                               <option value="good">Good (DR 20-34)</option>
                               <option value="better">Better (DR 35-49)</option>
                               <option value="best">Best (DR 50-80)</option>
-                              <option value="custom">Custom</option>
                             </select>
                           </td>
                           <td className="px-4 py-3">
