@@ -14,6 +14,8 @@ import {
   AlertCircle, Copy, Trash2, User, Globe, ExternalLink
 } from 'lucide-react';
 
+type PackageType = 'good' | 'better' | 'best' | 'custom';
+
 interface OrderLineItem {
   id: string;
   clientId: string;
@@ -22,7 +24,7 @@ interface OrderLineItem {
   targetPageUrl?: string;
   anchorText?: string;
   price: number;
-  selectedPackage: 'good' | 'better' | 'best' | 'custom';
+  selectedPackage: PackageType;
 }
 
 interface ClientWithSelection {
@@ -90,7 +92,7 @@ export default function NewOrderPage() {
   const [total, setTotal] = useState(0);
   
   // Pricing state
-  const [selectedPackage, setSelectedPackage] = useState<'good' | 'better' | 'best' | 'custom'>('better');
+  const [selectedPackage, setSelectedPackage] = useState<PackageType>('better');
   const packagePricing = {
     good: { price: 230, name: 'Good Guest Posts', description: 'DR 20-34' },
     better: { price: 279, name: 'Better Guest Posts', description: 'DR 35-49' },
@@ -345,11 +347,15 @@ export default function NewOrderPage() {
   };
 
   const handleTargetPageChange = (lineItemId: string, targetPageUrl: string) => {
-    const targetPage = targetPages.find(tp => tp.url === targetPageUrl);
+    const targetPage = availableTargets.find(tp => tp.url === targetPageUrl);
     updateLineItem(lineItemId, {
       targetPageUrl,
       targetPageId: targetPage?.id
     });
+  };
+
+  const getClientTargetPages = (clientId: string) => {
+    return availableTargets.filter(target => target.clientId === clientId);
   };
 
   const removeLineItem = (id: string) => {
