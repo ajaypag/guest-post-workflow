@@ -293,6 +293,11 @@ export default function NewOrderPage() {
   };
 
   const addLineItemFromTarget = (target: TargetPageWithMetadata) => {
+    // Check if we're creating a new item (no placeholder)
+    const hasPlaceholder = lineItems.some(
+      item => item.clientId === target.clientId && !item.targetPageId
+    );
+    
     setLineItems(prev => {
       // Find first placeholder for this client
       const placeholderIndex = prev.findIndex(
@@ -324,6 +329,19 @@ export default function NewOrderPage() {
         return [...prev, newItem];
       }
     });
+    
+    // Update the client's link count if we created a new item
+    if (!hasPlaceholder) {
+      setSelectedClients(prev => {
+        const newMap = new Map(prev);
+        const existing = newMap.get(target.clientId);
+        if (existing) {
+          const currentCount = lineItems.filter(item => item.clientId === target.clientId).length;
+          newMap.set(target.clientId, { ...existing, linkCount: currentCount + 1 });
+        }
+        return newMap;
+      });
+    }
   };
 
   const updateLineItem = (id: string, updates: Partial<OrderLineItem>) => {
@@ -940,7 +958,10 @@ export default function NewOrderPage() {
                                         value={item.selectedPackage}
                                         onChange={(e) => {
                                           const newPackage = e.target.value as PackageType;
-                                          updateLineItem(item.id, { selectedPackage: newPackage });
+                                          updateLineItem(item.id, { 
+                                            selectedPackage: newPackage,
+                                            price: packagePricing[newPackage].price
+                                          });
                                         }}
                                         className="px-3 py-1.5 border border-gray-300 rounded text-sm"
                                       >
