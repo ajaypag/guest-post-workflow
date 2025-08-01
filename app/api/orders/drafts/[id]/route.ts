@@ -1,7 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { AuthServiceServer } from '@/lib/auth-server';
 import { db } from '@/lib/db/connection';
-import { orders, orderGroups, orderSiteSelections } from '@/lib/db/schema';
+import { orders, orderGroups } from '@/lib/db/schema';
 import { eq, and } from 'drizzle-orm';
 
 // PUT - Update a draft order
@@ -98,6 +98,9 @@ export async function PUT(
         }).returning();
 
         // Insert site selections
+        // TODO: Site selection happens later in the process, not at draft stage
+        // Commenting out until proper domain selection is implemented
+        /*
         if (group.selections && group.selections.length > 0) {
           const selectionsToInsert = group.selections.map((selection: any) => ({
             orderGroupId: insertedGroup.id,
@@ -112,6 +115,7 @@ export async function PUT(
 
           await db.insert(orderSiteSelections).values(selectionsToInsert);
         }
+        */
       }
     }
 
