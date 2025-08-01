@@ -102,6 +102,14 @@ export default function AdminDashboard() {
       iconColor: 'text-violet-600'
     },
     {
+      title: 'Normalized URL Migration',
+      description: 'Add normalized URLs to target pages for better duplicate detection',
+      icon: Database,
+      href: '/admin/normalize-urls-migration',
+      color: 'bg-teal-50 border-teal-200 text-teal-700',
+      iconColor: 'text-teal-600'
+    },
+    {
       title: 'Diagnostics',
       description: 'Run comprehensive system diagnostics and health checks',
       icon: Activity,
