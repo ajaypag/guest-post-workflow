@@ -12,11 +12,7 @@ export async function POST(request: NextRequest) {
     }
 
     // First, find the existing constraint name for account_id
-    const existingConstraints = await db.execute<{
-      constraint_name: string;
-      column_name: string;
-      foreign_table_name: string;
-    }>(sql`
+    const existingConstraintsResult = await db.execute(sql`
       SELECT 
         tc.constraint_name,
         kcu.column_name,
@@ -34,6 +30,8 @@ export async function POST(request: NextRequest) {
         AND kcu.column_name = 'account_id'
         AND tc.table_schema = 'public';
     `);
+
+    const existingConstraints = existingConstraintsResult.rows as any[];
 
     let droppedConstraint = null;
     let createdConstraint = null;

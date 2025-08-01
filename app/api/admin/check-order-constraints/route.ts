@@ -12,12 +12,7 @@ export async function GET(request: NextRequest) {
     }
 
     // Check all foreign key constraints on orders table
-    const constraints = await db.execute<{
-      constraint_name: string;
-      column_name: string;
-      foreign_table_name: string;
-      foreign_column_name: string;
-    }>(sql`
+    const constraintsResult = await db.execute(sql`
       SELECT 
         tc.constraint_name,
         kcu.column_name,
@@ -38,26 +33,26 @@ export async function GET(request: NextRequest) {
     `);
 
     // Check if system user exists
-    const systemUser = await db.execute<{ id: string }>(sql`
+    const systemUserResult = await db.execute(sql`
       SELECT id FROM users 
       WHERE id = '00000000-0000-0000-0000-000000000000'
     `);
 
     // Check accounts table
-    const accountCount = await db.execute<{ count: string }>(sql`
+    const accountCountResult = await db.execute(sql`
       SELECT COUNT(*) as count FROM accounts
     `);
 
     // Check if there are any orders with account_id
-    const ordersWithAccount = await db.execute<{ count: string }>(sql`
+    const ordersWithAccountResult = await db.execute(sql`
       SELECT COUNT(*) as count FROM orders WHERE account_id IS NOT NULL
     `);
 
     return NextResponse.json({
-      constraints,
-      systemUserExists: systemUser.length > 0,
-      accountCount: parseInt(accountCount[0]?.count || '0'),
-      ordersWithAccount: parseInt(ordersWithAccount[0]?.count || '0'),
+      constraints: constraintsResult.rows as any[],
+      systemUserExists: systemUserResult.rows.length > 0,
+      accountCount: parseInt((accountCountResult.rows[0] as any)?.count || '0'),
+      ordersWithAccount: parseInt((ordersWithAccountResult.rows[0] as any)?.count || '0'),
     });
 
   } catch (error) {
