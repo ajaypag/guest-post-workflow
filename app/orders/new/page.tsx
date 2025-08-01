@@ -461,16 +461,6 @@ export default function NewOrderPage() {
               Brands ({selectedClients.size})
             </button>
             <button
-              onClick={() => setMobileView('order')}
-              className={`flex-1 px-4 py-3 text-sm font-medium border-b-2 transition-colors ${
-                mobileView === 'order' 
-                  ? 'text-blue-600 border-blue-600' 
-                  : 'text-gray-600 border-transparent hover:text-gray-900'
-              }`}
-            >
-              Order ({lineItems.length})
-            </button>
-            <button
               onClick={() => setMobileView('targets')}
               className={`flex-1 px-4 py-3 text-sm font-medium border-b-2 transition-colors ${
                 mobileView === 'targets' 
@@ -479,6 +469,16 @@ export default function NewOrderPage() {
               }`}
             >
               Targets ({availableTargets.length})
+            </button>
+            <button
+              onClick={() => setMobileView('order')}
+              className={`flex-1 px-4 py-3 text-sm font-medium border-b-2 transition-colors ${
+                mobileView === 'order' 
+                  ? 'text-blue-600 border-blue-600' 
+                  : 'text-gray-600 border-transparent hover:text-gray-900'
+              }`}
+            >
+              Order ({lineItems.length})
             </button>
           </div>
         </div>
@@ -500,8 +500,8 @@ export default function NewOrderPage() {
             </div>
           )}
 
-          {/* Left Sidebar - Client Selection */}
-          <div className={`w-full md:w-80 bg-white rounded-lg shadow-sm flex flex-col h-full ${
+          {/* Left Column - Client Selection */}
+          <div className={`w-full md:w-64 bg-white rounded-lg shadow-sm flex flex-col h-full ${
             mobileView === 'clients' ? 'block md:block' : 'hidden md:block'
           }`}>
             <div className="p-4 border-b bg-gray-50">
@@ -604,105 +604,7 @@ export default function NewOrderPage() {
             </div>
           </div>
 
-          {/* Middle Column - Order Line Items */}
-          <div className={`flex-1 bg-white rounded-lg shadow-sm flex flex-col h-full ${
-            mobileView === 'order' ? 'block md:block' : 'hidden md:block'
-          }`}>
-            <div className="p-4 border-b border-gray-200">
-              <div className="flex items-center justify-between">
-                <div>
-                  <h2 className="text-lg font-semibold text-gray-900">Order Details</h2>
-                  <p className="text-sm text-gray-600 mt-1">
-                    {lineItems.length} items • {lineItems.filter(item => item.targetPageUrl).length} assigned
-                  </p>
-                </div>
-              </div>
-            </div>
-            
-            <div className="flex-1 overflow-hidden">
-              {lineItems.length === 0 ? (
-                <div className="text-center py-12 text-gray-500">
-                  <Target className="h-12 w-12 mx-auto mb-3 text-gray-300" />
-                  <p className="text-base">No items added yet</p>
-                  <p className="text-sm mt-2 text-gray-400">Select brands from the left to get started</p>
-                </div>
-              ) : (
-                <div className="h-full overflow-y-auto">
-                  <table className="w-full">
-                    <thead className="bg-gray-50 border-b border-gray-200 sticky top-0">
-                      <tr>
-                        <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Brand</th>
-                        <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Target Page</th>
-                        <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Anchor Text</th>
-                        <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Package</th>
-                        <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Price</th>
-                        <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider"></th>
-                      </tr>
-                    </thead>
-                    <tbody className="divide-y divide-gray-100">
-                      {lineItems.map((item) => (
-                        <tr key={item.id} className="hover:bg-gray-50 transition-colors">
-                          <td className="px-4 py-3">
-                            <p className="text-sm font-medium text-gray-900">{item.clientName}</p>
-                          </td>
-                          <td className="px-4 py-3">
-                            {item.targetPageUrl ? (
-                              <div className="flex items-center space-x-1">
-                                <p className="text-sm text-gray-600 truncate max-w-xs" title={item.targetPageUrl}>
-                                  {item.targetPageUrl}
-                                </p>
-                                <ExternalLink className="h-3 w-3 text-gray-400" />
-                              </div>
-                            ) : (
-                              <p className="text-sm text-gray-400 italic">Click a target page →</p>
-                            )}
-                          </td>
-                          <td className="px-4 py-3">
-                            <input
-                              type="text"
-                              value={item.anchorText || ''}
-                              onChange={(e) => updateLineItem(item.id, { anchorText: e.target.value })}
-                              placeholder="Enter anchor text..."
-                              className="w-full px-2 py-1 text-sm border border-gray-200 rounded focus:outline-none focus:ring-1 focus:ring-blue-500 focus:border-blue-500"
-                              disabled={!item.targetPageUrl}
-                            />
-                          </td>
-                          <td className="px-4 py-3">
-                            <select
-                              value={item.price === 230 ? 'good' : item.price === 279 ? 'better' : item.price === 349 ? 'best' : 'custom'}
-                              onChange={(e) => {
-                                const pkg = e.target.value as keyof typeof packagePricing;
-                                updateLineItem(item.id, { price: packagePricing[pkg].price || item.price });
-                              }}
-                              className="w-full px-2 py-1 text-sm border border-gray-200 rounded focus:outline-none focus:ring-1 focus:ring-blue-500"
-                            >
-                              <option value="good">Good (DR 20-34)</option>
-                              <option value="better">Better (DR 35-49)</option>
-                              <option value="best">Best (DR 50-80)</option>
-                              <option value="custom">Custom</option>
-                            </select>
-                          </td>
-                          <td className="px-4 py-3">
-                            <p className="text-sm font-medium text-gray-900">${item.price}</p>
-                          </td>
-                          <td className="px-4 py-3">
-                            <button
-                              onClick={() => removeLineItem(item.id)}
-                              className="text-gray-400 hover:text-red-500 transition-colors"
-                            >
-                              <X className="h-4 w-4" />
-                            </button>
-                          </td>
-                        </tr>
-                      ))}
-                    </tbody>
-                  </table>
-                </div>
-              )}
-            </div>
-          </div>
-          
-          {/* Right Sidebar - Target URLs */}
+          {/* Middle Column - Target Pages */}
           <div className={`w-full md:w-80 bg-white rounded-lg shadow-sm flex flex-col h-full ${
             mobileView === 'targets' ? 'block md:block' : 'hidden md:block'
           }`}>
@@ -843,6 +745,105 @@ export default function NewOrderPage() {
               )}
             </div>
           </div>
+
+          {/* Right Column - Order Details */}
+          <div className={`flex-1 bg-white rounded-lg shadow-sm flex flex-col h-full ${
+            mobileView === 'order' ? 'block md:block' : 'hidden md:block'
+          }`}>
+            <div className="p-4 border-b border-gray-200">
+              <div className="flex items-center justify-between">
+                <div>
+                  <h2 className="text-lg font-semibold text-gray-900">Order Details</h2>
+                  <p className="text-sm text-gray-600 mt-1">
+                    {lineItems.length} items • {lineItems.filter(item => item.targetPageUrl).length} assigned
+                  </p>
+                </div>
+              </div>
+            </div>
+            
+            <div className="flex-1 overflow-hidden">
+              {lineItems.length === 0 ? (
+                <div className="text-center py-12 text-gray-500">
+                  <Target className="h-12 w-12 mx-auto mb-3 text-gray-300" />
+                  <p className="text-base">No items added yet</p>
+                  <p className="text-sm mt-2 text-gray-400">Select brands and target pages to build your order</p>
+                </div>
+              ) : (
+                <div className="h-full overflow-y-auto">
+                  <table className="w-full">
+                    <thead className="bg-gray-50 border-b border-gray-200 sticky top-0">
+                      <tr>
+                        <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Brand</th>
+                        <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Target Page</th>
+                        <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Anchor Text</th>
+                        <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Package</th>
+                        <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Price</th>
+                        <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider"></th>
+                      </tr>
+                    </thead>
+                    <tbody className="divide-y divide-gray-100">
+                      {lineItems.map((item) => (
+                        <tr key={item.id} className="hover:bg-gray-50 transition-colors">
+                          <td className="px-4 py-3">
+                            <p className="text-sm font-medium text-gray-900">{item.clientName}</p>
+                          </td>
+                          <td className="px-4 py-3">
+                            {item.targetPageUrl ? (
+                              <div className="flex items-center space-x-1">
+                                <p className="text-sm text-gray-600 truncate max-w-xs" title={item.targetPageUrl}>
+                                  {item.targetPageUrl}
+                                </p>
+                                <ExternalLink className="h-3 w-3 text-gray-400" />
+                              </div>
+                            ) : (
+                              <p className="text-sm text-gray-400 italic">Click a target page →</p>
+                            )}
+                          </td>
+                          <td className="px-4 py-3">
+                            <input
+                              type="text"
+                              value={item.anchorText || ''}
+                              onChange={(e) => updateLineItem(item.id, { anchorText: e.target.value })}
+                              placeholder="Enter anchor text..."
+                              className="w-full px-2 py-1 text-sm border border-gray-200 rounded focus:outline-none focus:ring-1 focus:ring-blue-500 focus:border-blue-500"
+                              disabled={!item.targetPageUrl}
+                            />
+                          </td>
+                          <td className="px-4 py-3">
+                            <select
+                              value={item.price === 230 ? 'good' : item.price === 279 ? 'better' : item.price === 349 ? 'best' : 'custom'}
+                              onChange={(e) => {
+                                const pkg = e.target.value as keyof typeof packagePricing;
+                                updateLineItem(item.id, { price: packagePricing[pkg].price || item.price });
+                              }}
+                              className="w-full px-2 py-1 text-sm border border-gray-200 rounded focus:outline-none focus:ring-1 focus:ring-blue-500"
+                            >
+                              <option value="good">Good (DR 20-34)</option>
+                              <option value="better">Better (DR 35-49)</option>
+                              <option value="best">Best (DR 50-80)</option>
+                              <option value="custom">Custom</option>
+                            </select>
+                          </td>
+                          <td className="px-4 py-3">
+                            <p className="text-sm font-medium text-gray-900">${item.price}</p>
+                          </td>
+                          <td className="px-4 py-3">
+                            <button
+                              onClick={() => removeLineItem(item.id)}
+                              className="text-gray-400 hover:text-red-500 transition-colors"
+                            >
+                              <X className="h-4 w-4" />
+                            </button>
+                          </td>
+                        </tr>
+                      ))}
+                    </tbody>
+                  </table>
+                </div>
+              )}
+            </div>
+          </div>
+          
         </div>
         
         {/* Fixed Bottom Bar */}
