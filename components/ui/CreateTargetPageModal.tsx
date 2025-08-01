@@ -142,11 +142,19 @@ export default function CreateTargetPageModal({
       // Get existing target pages for the selected client
       let existingUrls: string[] = [];
       if (selectedClientId) {
-        const client = clients.find(c => c.id === selectedClientId);
-        if (client && client.targetPages) {
-          existingUrls = client.targetPages
-            .filter(tp => tp.status === 'active')
-            .map(tp => tp.url);
+        try {
+          // Fetch target pages for this client
+          const response = await fetch(`/api/clients/${selectedClientId}/target-pages`);
+          if (response.ok) {
+            const data = await response.json();
+            if (data.targetPages && Array.isArray(data.targetPages)) {
+              existingUrls = data.targetPages
+                .filter((tp: any) => tp.status === 'active')
+                .map((tp: any) => tp.url);
+            }
+          }
+        } catch (error) {
+          console.error('Error fetching existing target pages:', error);
         }
       }
 
