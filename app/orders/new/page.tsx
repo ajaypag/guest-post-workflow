@@ -791,11 +791,37 @@ export default function NewOrderPage() {
               {existingDrafts.map(draft => (
                 <button
                   key={draft.id}
-                  onClick={() => {
-                    // TODO: Load the draft data into the current page
-                    // For now, just close the picker and show a message
-                    setShowDraftPicker(false);
-                    alert('Draft loading is being implemented. For now, draft data is auto-saved.');
+                  onClick={async () => {
+                    // Load the draft data
+                    try {
+                      const response = await fetch(`/api/orders/drafts/${draft.id}`, {
+                        credentials: 'include'
+                      });
+                      
+                      if (response.ok) {
+                        const { order } = await response.json();
+                        
+                        // Set the draft ID for future saves
+                        setDraftOrderId(order.id);
+                        
+                        // Load account information
+                        if (order.accountId) {
+                          setSelectedAccountId(order.accountId);
+                          setSelectedAccountEmail(order.accountEmail || '');
+                          setSelectedAccountName(order.accountName || '');
+                          setSelectedAccountCompany(order.accountCompany || '');
+                        }
+                        
+                        // TODO: Load order groups and line items
+                        // This requires parsing the order.groups data and reconstructing
+                        // the selectedClients and lineItems state
+                        
+                        setShowDraftPicker(false);
+                      }
+                    } catch (error) {
+                      console.error('Error loading draft:', error);
+                      alert('Failed to load draft order');
+                    }
                   }}
                   className="w-full text-left px-4 py-3 bg-white rounded-md border border-blue-200 hover:border-blue-400 transition-colors"
                 >
