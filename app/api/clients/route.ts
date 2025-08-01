@@ -6,31 +6,11 @@ import { accounts } from '@/lib/db/accountSchema';
 import { clients } from '@/lib/db/schema';
 import { eq } from 'drizzle-orm';
 
-// Diagnostic tracking for infinite loop detection
-let getCallCount = 0;
-const getCallLog: { timestamp: number; sessionType?: string }[] = [];
-
 export async function GET(request: NextRequest) {
-  // Diagnostic logging
-  getCallCount++;
-  const now = Date.now();
-  console.log(`[CLIENTS API] GET call #${getCallCount} at ${new Date().toISOString()}`);
-  
   try {
     // Authenticate user
     const session = await AuthServiceServer.getSession(request);
-    console.log(`[CLIENTS API] Session type: ${session?.userType}`);
     
-    getCallLog.push({
-      timestamp: now,
-      sessionType: session?.userType
-    });
-    
-    // Calculate recent call rate
-    const recentCalls = getCallLog.filter(log => now - log.timestamp < 5000); // Last 5 seconds
-    if (recentCalls.length > 10) {
-      console.error(`[CLIENTS API] ⚠️ INFINITE LOOP DETECTED: ${recentCalls.length} calls in last 5 seconds!`);
-    }
     if (!session) {
       return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
     }
@@ -82,36 +62,14 @@ export async function GET(request: NextRequest) {
 }
 
 export async function POST(request: NextRequest) {
-  console.log('🔍 POST /api/clients - Starting request');
-  
   try {
-    // Log request headers for debugging
-    console.log('🔍 Request headers:', {
-      cookie: request.headers.get('cookie'),
-      authorization: request.headers.get('authorization'),
-      contentType: request.headers.get('content-type'),
-    });
-    
     const session = await AuthServiceServer.getSession(request);
-    console.log('🔍 Session result:', session ? 'Session found' : 'No session');
-    
-    // Additional debugging for production
-    console.log('🔍 Environment:', {
-      NODE_ENV: process.env.NODE_ENV,
-      NEXTAUTH_URL: process.env.NEXTAUTH_URL,
-      APP_URL: request.headers.get('host'),
-      REFERER: request.headers.get('referer'),
-      ORIGIN: request.headers.get('origin'),
-    });
     
     if (!session) {
-      console.log('❌ No session found - returning 401');
       return NextResponse.json({ error: 'Unauthorized - No session found' }, { status: 401 });
     }
 
-    console.log('✅ Session found for user:', session.email);
     const data = await request.json();
-    console.log('🔍 Request data:', { ...data, targetPages: data.targetPages?.length + ' pages' });
     
     // Extract creation path and related data
     const { creationPath, accountId, invitationEmail, ...clientInfo } = data;
@@ -252,8 +210,7 @@ export async function POST(request: NextRequest) {
     if (data.targetPages && Array.isArray(data.targetPages)) {
       const urls = data.targetPages.filter((u: string) => u.trim());
       if (urls.length > 0) {
-        const result = await ClientService.addTargetPages(client.id, urls);
-        console.log(`Target pages added to new client: ${result.added} added, ${result.duplicates} duplicates skipped`);
+        await ClientService.addTargetPages(client.id, urls);
       }
     }
 
@@ -276,8 +233,6 @@ export async function PUT(request: NextRequest) {
     const data = await request.json();
     const { id, ...updates } = data;
     
-    console.log('🟨 PUT /api/clients - Received data:', { id, updates });
-    
     if (!id) {
       return NextResponse.json(
         { error: 'Client ID is required' },
@@ -286,10 +241,8 @@ export async function PUT(request: NextRequest) {
     }
 
     const client = await ClientService.updateClient(id, updates);
-    console.log('🟨 ClientService.updateClient result:', client);
     
     if (!client) {
-      console.log('🟨 Client not found for ID:', id);
       return NextResponse.json(
         { error: 'Client not found' },
         { status: 404 }
@@ -298,7 +251,7 @@ export async function PUT(request: NextRequest) {
 
     return NextResponse.json({ client });
   } catch (error) {
-    console.error('🟨 Error updating client:', error);
+    console.error('Error updating client:', error);
     return NextResponse.json(
       { error: error instanceof Error ? error.message : 'Failed to update client' },
       { status: 500 }

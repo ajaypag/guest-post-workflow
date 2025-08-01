@@ -88,9 +88,6 @@ export default function NewOrderPage() {
   const session = AuthService.getSession();
   const isAccountUser = session?.userType === 'account';
   
-  // Diagnostic logging
-  console.log('[DIAGNOSTIC] NewOrderPage render at', new Date().toISOString());
-  
   // Client management
   const [clients, setClients] = useState<ClientWithSelection[]>([]);
   const [loadingClients, setLoadingClients] = useState(true);
@@ -282,12 +279,6 @@ export default function NewOrderPage() {
   }, [session]);
 
   useEffect(() => {
-    console.log('[DIAGNOSTIC] Main useEffect triggered at', new Date().toISOString());
-    console.log('[DIAGNOSTIC] Session:', { 
-      userType: session?.userType,
-      userId: session?.userId 
-    });
-    
     // Only load data once when session is available
     if (!session) return;
     
@@ -760,7 +751,7 @@ export default function NewOrderPage() {
     }
     
     // Submit order logic here
-    console.log('Submitting order:', { lineItems, total });
+    // TODO: Implement order submission
   };
 
   return (
