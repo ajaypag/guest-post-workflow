@@ -674,7 +674,6 @@ export default function NewOrderPage() {
                     ).map(([domain, targets]) => {
                       const isExpanded = !expandedDomains.has(domain);
                       const totalUsage = targets.reduce((sum, t) => sum + t.usageCount, 0);
-                      const avgDr = Math.round(targets.reduce((sum, t) => sum + t.dr, 0) / targets.length);
                       
                       return (
                         <div key={domain}>
@@ -698,8 +697,6 @@ export default function NewOrderPage() {
                                 <h3 className="font-medium text-sm text-gray-900 truncate">{domain}</h3>
                                 <div className="flex items-center space-x-2 text-xs text-gray-500 mt-0.5">
                                   <span>{targets.length} {targets.length === 1 ? 'page' : 'pages'}</span>
-                                  <span>•</span>
-                                  <span>DR {avgDr}</span>
                                   {totalUsage > 0 && (
                                     <>
                                       <span>•</span>
@@ -720,7 +717,7 @@ export default function NewOrderPage() {
                                   onClick={() => addLineItemFromTarget(target)}
                                 >
                                   <div className="flex-1 min-w-0">
-                                    <p className="text-sm text-gray-700 truncate" title={target.url}>
+                                    <p className="text-sm text-gray-700 break-words line-clamp-2" title={target.url}>
                                       {target.url.replace(`https://${target.domain}`, '').replace(`http://${target.domain}`, '') || '/'}
                                     </p>
                                     <div className="flex items-center space-x-2 mt-0.5">
