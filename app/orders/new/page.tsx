@@ -22,6 +22,7 @@ interface OrderLineItem {
   targetPageUrl?: string;
   anchorText?: string;
   price: number;
+  selectedPackage: 'good' | 'better' | 'best' | 'custom';
 }
 
 interface ClientWithSelection {
@@ -100,6 +101,7 @@ export default function NewOrderPage() {
   // UI state
   const [expandedClients, setExpandedClients] = useState<Set<string>>(new Set());
   const [expandedDomains, setExpandedDomains] = useState<Set<string>>(new Set());
+  const [groupByMode, setGroupByMode] = useState<'client' | 'status' | 'none'>('client');
   
   // Modal state
   const [showCreateClientModal, setShowCreateClientModal] = useState(false);
@@ -220,6 +222,7 @@ export default function NewOrderPage() {
             targetPageUrl: undefined,
             anchorText: undefined,
             price: packagePricing[selectedPackage].price || 100,
+            selectedPackage: selectedPackage,
           }]);
         }
       } else {
@@ -267,6 +270,7 @@ export default function NewOrderPage() {
             targetPageUrl: undefined,
             anchorText: undefined,
             price: packagePricing[selectedPackage].price || 100,
+            selectedPackage: selectedPackage,
           });
         }
         return [...nonClientItems, ...existingItems, ...newItems];
@@ -311,7 +315,8 @@ export default function NewOrderPage() {
           targetPageId: target.id,
           targetPageUrl: target.url,
           anchorText: generateAnchorText(target.clientName),
-          price: packagePricing[selectedPackage].price || 100
+          price: packagePricing[selectedPackage].price || 100,
+          selectedPackage: selectedPackage
         };
         return [...prev, newItem];
       }
@@ -323,7 +328,8 @@ export default function NewOrderPage() {
       id: Date.now().toString(),
       clientId: '',
       clientName: '',
-      price: packagePricing[selectedPackage].price || 100
+      price: packagePricing[selectedPackage].price || 100,
+      selectedPackage: selectedPackage
     };
     setLineItems([...lineItems, newItem]);
   };
@@ -335,6 +341,14 @@ export default function NewOrderPage() {
       );
       calculatePricing(updated);
       return updated;
+    });
+  };
+
+  const handleTargetPageChange = (lineItemId: string, targetPageUrl: string) => {
+    const targetPage = targetPages.find(tp => tp.url === targetPageUrl);
+    updateLineItem(lineItemId, {
+      targetPageUrl,
+      targetPageId: targetPage?.id
     });
   };
 
@@ -758,6 +772,24 @@ export default function NewOrderPage() {
                     {lineItems.length} items • {lineItems.filter(item => item.targetPageUrl).length} assigned
                   </p>
                 </div>
+                <div className="flex items-center space-x-2">
+                  <select 
+                    value={groupByMode}
+                    onChange={(e) => setGroupByMode(e.target.value as 'client' | 'status' | 'none')}
+                    className="text-sm border border-gray-300 rounded px-2 py-1"
+                  >
+                    <option value="client">Group by Brand</option>
+                    <option value="status">Group by Status</option>
+                    <option value="none">No Grouping</option>
+                  </select>
+                  <button
+                    onClick={addEmptyLineItem}
+                    className="px-3 py-1 text-sm bg-blue-600 text-white rounded hover:bg-blue-700 flex items-center"
+                  >
+                    <Plus className="h-4 w-4 mr-1" />
+                    Add Item
+                  </button>
+                </div>
               </div>
             </div>
             
@@ -768,7 +800,7 @@ export default function NewOrderPage() {
                   <p className="text-base">No items added yet</p>
                   <p className="text-sm mt-2 text-gray-400">Select brands and target pages to build your order</p>
                 </div>
-              ) : (
+              ) : groupByMode === 'none' ? (
                 <div className="h-full overflow-y-auto">
                   <table className="w-full">
                     <thead className="bg-gray-50 border-b border-gray-200 sticky top-0">
@@ -811,10 +843,13 @@ export default function NewOrderPage() {
                           </td>
                           <td className="px-4 py-3">
                             <select
-                              value={item.price === 230 ? 'good' : item.price === 279 ? 'better' : item.price === 349 ? 'best' : 'custom'}
+                              value={item.selectedPackage || 'custom'}
                               onChange={(e) => {
                                 const pkg = e.target.value as keyof typeof packagePricing;
-                                updateLineItem(item.id, { price: packagePricing[pkg].price || item.price });
+                                updateLineItem(item.id, { 
+                                  price: packagePricing[pkg].price || item.price,
+                                  selectedPackage: pkg 
+                                });
                               }}
                               className="w-full px-2 py-1 text-sm border border-gray-200 rounded focus:outline-none focus:ring-1 focus:ring-blue-500"
                             >
@@ -839,6 +874,118 @@ export default function NewOrderPage() {
                       ))}
                     </tbody>
                   </table>
+                </div>
+              ) : (
+                <div className="h-full overflow-y-auto">
+                  {/* Grouped view */}
+                  {Object.entries(
+                    lineItems.reduce((acc, item) => {
+                      const groupKey = groupByMode === 'client' ? item.clientName : (item.targetPageUrl ? 'Assigned' : 'Unassigned');
+                      if (!acc[groupKey]) acc[groupKey] = [];
+                      acc[groupKey].push(item);
+                      return acc;
+                    }, {} as Record<string, typeof lineItems>)
+                  ).map(([groupName, items]) => {
+                    const isExpanded = !expandedClients.has(groupName);
+                    const assignedCount = items.filter(item => item.targetPageUrl).length;
+                    
+                    return (
+                      <div key={groupName} className="border-b last:border-b-0">
+                        <button
+                          onClick={() => {
+                            setExpandedClients(prev => {
+                              const newSet = new Set(prev);
+                              if (newSet.has(groupName)) {
+                                newSet.delete(groupName);
+                              } else {
+                                newSet.add(groupName);
+                              }
+                              return newSet;
+                            });
+                          }}
+                          className="w-full px-4 py-3 bg-gray-50 hover:bg-gray-100 flex items-center justify-between sticky top-0 z-10"
+                        >
+                          <div className="flex items-center space-x-2">
+                            <ChevronRight className={`h-4 w-4 text-gray-400 transition-transform ${isExpanded ? 'rotate-90' : ''}`} />
+                            <span className="font-medium text-gray-900">{groupName}</span>
+                            <span className="text-sm text-gray-500">({items.length} items)</span>
+                            {assignedCount > 0 && (
+                              <span className="text-sm text-green-600">{assignedCount} assigned</span>
+                            )}
+                          </div>
+                          <span className="text-sm font-medium text-gray-900">
+                            ${items.reduce((sum, item) => sum + (packagePricing[item.selectedPackage as keyof typeof packagePricing]?.price || 0), 0)}
+                          </span>
+                        </button>
+                        
+                        {isExpanded && (
+                          <div className="">
+                            <table className="w-full">
+                              <tbody className="divide-y divide-gray-100">
+                                {items.map((item, index) => (
+                                  <tr key={item.id} className="hover:bg-gray-50">
+                                    <td className="px-4 py-3 text-sm text-gray-900">
+                                      <span className="text-gray-500 mr-2">{index + 1}.</span>
+                                    </td>
+                                    <td className="px-4 py-3">
+                                      <select
+                                        value={item.targetPageUrl || ''}
+                                        onChange={(e) => handleTargetPageChange(item.id, e.target.value)}
+                                        className="w-full px-3 py-1.5 border border-gray-300 rounded text-sm"
+                                      >
+                                        <option value="">Select target page...</option>
+                                        {getClientTargetPages(item.clientId).map(page => (
+                                          <option key={page.id} value={page.url}>
+                                            {page.url} {page.usageCount > 0 && `(${page.usageCount})`}
+                                          </option>
+                                        ))}
+                                      </select>
+                                    </td>
+                                    <td className="px-4 py-3">
+                                      <input
+                                        type="text"
+                                        value={item.anchorText}
+                                        onChange={(e) => updateLineItem(item.id, { anchorText: e.target.value })}
+                                        placeholder="Enter anchor text..."
+                                        className="w-full px-3 py-1.5 border border-gray-300 rounded text-sm"
+                                      />
+                                    </td>
+                                    <td className="px-4 py-3">
+                                      <select
+                                        value={item.selectedPackage}
+                                        onChange={(e) => {
+                                          const newPackage = e.target.value as PackageType;
+                                          updateLineItem(item.id, { selectedPackage: newPackage });
+                                        }}
+                                        className="px-3 py-1.5 border border-gray-300 rounded text-sm"
+                                      >
+                                        {Object.entries(packagePricing).map(([key, pkg]) => (
+                                          <option key={key} value={key}>
+                                            {pkg.name} {pkg.price > 0 && `($${pkg.price})`}
+                                          </option>
+                                        ))}
+                                      </select>
+                                    </td>
+                                    <td className="px-4 py-3 text-sm font-medium text-gray-900">
+                                      ${packagePricing[item.selectedPackage as keyof typeof packagePricing]?.price || 0}
+                                    </td>
+                                    <td className="px-4 py-3">
+                                      <button
+                                        onClick={() => removeLineItem(item.id)}
+                                        className="text-red-600 hover:text-red-800"
+                                      >
+                                        <X className="h-4 w-4" />
+                                      </button>
+                                    </td>
+                                  </tr>
+                                ))}
+                              </tbody>
+                            </table>
+                          </div>
+                        )}
+                      </div>
+                    );
+                  })}
                 </div>
               )}
             </div>
