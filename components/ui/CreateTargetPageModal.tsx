@@ -22,6 +22,8 @@ interface CreateTargetPageModalProps {
 interface UrlAnalysis {
   new: string[];
   invalid: string[];
+  duplicatesInBatch: string[]; // Duplicates within the current batch
+  duplicatesExisting: string[]; // Duplicates with existing target pages
 }
 
 export default function CreateTargetPageModal({ 
@@ -97,6 +99,20 @@ export default function CreateTargetPageModal({
     onClose();
   };
 
+  // Helper to normalize URLs for comparison
+  const normalizeUrlForComparison = (url: string): string => {
+    try {
+      const urlObj = new URL(url);
+      // Remove protocol (http/https), www, and trailing slashes
+      let normalized = urlObj.hostname + urlObj.pathname;
+      normalized = normalized.replace(/^www\./, '');
+      normalized = normalized.replace(/\/$/, '');
+      return normalized.toLowerCase();
+    } catch {
+      return url.toLowerCase();
+    }
+  };
+
   const analyzeUrls = async () => {
     const urls = urlInput
       .split('\n')
@@ -115,14 +131,49 @@ export default function CreateTargetPageModal({
       const validUrlPattern = /^https?:\/\/.+\..+/i;
       const analysis: UrlAnalysis = {
         new: [],
-        invalid: []
+        invalid: [],
+        duplicatesInBatch: [],
+        duplicatesExisting: []
       };
+
+      // Track normalized URLs to detect duplicates within batch
+      const batchUrls = new Map<string, string>(); // normalized -> original
+      
+      // Get existing target pages for the selected client
+      let existingUrls: string[] = [];
+      if (selectedClientId) {
+        const client = clients.find(c => c.id === selectedClientId);
+        if (client && client.targetPages) {
+          existingUrls = client.targetPages
+            .filter(tp => tp.status === 'active')
+            .map(tp => tp.url);
+        }
+      }
+
+      // Normalize existing URLs for comparison
+      const existingNormalized = new Set(
+        existingUrls.map(url => normalizeUrlForComparison(url))
+      );
 
       urls.forEach(url => {
         if (!validUrlPattern.test(url)) {
           analysis.invalid.push(url);
         } else {
-          analysis.new.push(url);
+          const normalized = normalizeUrlForComparison(url);
+          
+          // Check if duplicate within current batch
+          if (batchUrls.has(normalized)) {
+            analysis.duplicatesInBatch.push(url);
+          } 
+          // Check if duplicate with existing URLs
+          else if (existingNormalized.has(normalized)) {
+            analysis.duplicatesExisting.push(url);
+          } 
+          // It's a new URL
+          else {
+            analysis.new.push(url);
+            batchUrls.set(normalized, url);
+          }
         }
       });
 
@@ -143,6 +194,7 @@ export default function CreateTargetPageModal({
 
     setIsCreating(true);
     setError('');
+    setStep('creating');
 
     try {
       const response = await fetch(`/api/clients/${selectedClientId}/target-pages`, {
@@ -152,15 +204,28 @@ export default function CreateTargetPageModal({
       });
 
       if (!response.ok) {
-        throw new Error('Failed to create target pages');
+        const errorData = await response.json();
+        throw new Error(errorData.error || 'Failed to create target pages');
       }
 
       const result = await response.json();
+      
+      // Show success message with details about duplicates if any
+      let successMessage = `Successfully added ${result.added || urlAnalysis.new.length} target page${result.added !== 1 ? 's' : ''}`;
+      
+      if (result.duplicatesSkipped && result.duplicatesSkipped > 0) {
+        successMessage += ` (${result.duplicatesSkipped} duplicate${result.duplicatesSkipped > 1 ? 's' : ''} skipped by server)`;
+      }
+      
+      // Create a temporary toast/notification (you could use a toast library here)
+      console.log(successMessage);
+      
       onTargetPagesCreated(result.targetPages || []);
       handleClose();
     } catch (error) {
       console.error('Error creating target pages:', error);
-      setError('Failed to create target pages. Please try again.');
+      setStep('analysis'); // Go back to analysis step on error
+      setError(error instanceof Error ? error.message : 'Failed to create target pages. Please try again.');
     } finally {
       setIsCreating(false);
     }
@@ -342,7 +407,21 @@ export default function CreateTargetPageModal({
                 {urlAnalysis.new.length > 0 && (
                   <div className="flex items-center text-green-600">
                     <CheckCircle className="h-5 w-5 mr-2" />
-                    <span>{urlAnalysis.new.length} valid URL{urlAnalysis.new.length > 1 ? 's' : ''} to add</span>
+                    <span>{urlAnalysis.new.length} new URL{urlAnalysis.new.length > 1 ? 's' : ''} to add</span>
+                  </div>
+                )}
+                
+                {urlAnalysis.duplicatesInBatch.length > 0 && (
+                  <div className="flex items-center text-yellow-600">
+                    <AlertCircle className="h-5 w-5 mr-2" />
+                    <span>{urlAnalysis.duplicatesInBatch.length} duplicate{urlAnalysis.duplicatesInBatch.length > 1 ? 's' : ''} in your list (will be skipped)</span>
+                  </div>
+                )}
+                
+                {urlAnalysis.duplicatesExisting.length > 0 && (
+                  <div className="flex items-center text-yellow-600">
+                    <AlertCircle className="h-5 w-5 mr-2" />
+                    <span>{urlAnalysis.duplicatesExisting.length} URL{urlAnalysis.duplicatesExisting.length > 1 ? 's' : ''} already exist (will be skipped)</span>
                   </div>
                 )}
                 
@@ -353,13 +432,41 @@ export default function CreateTargetPageModal({
                   </div>
                 )}
 
-                {/* Show valid URLs */}
+                {/* Show URLs to be added */}
                 {urlAnalysis.new.length > 0 && (
                   <div className="mt-3">
                     <p className="text-sm font-medium text-gray-700 mb-2">URLs to add:</p>
                     <div className="bg-white border border-gray-200 rounded p-3 max-h-32 overflow-y-auto">
                       {urlAnalysis.new.map((url, idx) => (
                         <div key={idx} className="text-sm text-gray-600 truncate py-0.5">
+                          {url}
+                        </div>
+                      ))}
+                    </div>
+                  </div>
+                )}
+
+                {/* Show duplicates within batch */}
+                {urlAnalysis.duplicatesInBatch.length > 0 && (
+                  <div className="mt-3">
+                    <p className="text-sm font-medium text-yellow-700 mb-2">Duplicates in your list:</p>
+                    <div className="bg-yellow-50 border border-yellow-200 rounded p-3 max-h-32 overflow-y-auto">
+                      {urlAnalysis.duplicatesInBatch.map((url, idx) => (
+                        <div key={idx} className="text-sm text-yellow-700 truncate py-0.5">
+                          {url}
+                        </div>
+                      ))}
+                    </div>
+                  </div>
+                )}
+
+                {/* Show existing duplicates */}
+                {urlAnalysis.duplicatesExisting.length > 0 && (
+                  <div className="mt-3">
+                    <p className="text-sm font-medium text-yellow-700 mb-2">Already exist for this client:</p>
+                    <div className="bg-yellow-50 border border-yellow-200 rounded p-3 max-h-32 overflow-y-auto">
+                      {urlAnalysis.duplicatesExisting.map((url, idx) => (
+                        <div key={idx} className="text-sm text-yellow-700 truncate py-0.5">
                           {url}
                         </div>
                       ))}
@@ -382,14 +489,14 @@ export default function CreateTargetPageModal({
                 )}
               </div>
 
-              {urlAnalysis.new.length > 0 && (
-                <div className="flex justify-end space-x-3 pt-4 border-t">
-                  <button
-                    onClick={() => setStep('urlInput')}
-                    className="px-4 py-2 border border-gray-300 rounded-lg hover:bg-gray-50 font-medium"
-                  >
-                    Back
-                  </button>
+              <div className="flex justify-end space-x-3 pt-4 border-t">
+                <button
+                  onClick={() => setStep('urlInput')}
+                  className="px-4 py-2 border border-gray-300 rounded-lg hover:bg-gray-50 font-medium"
+                >
+                  Back
+                </button>
+                {urlAnalysis.new.length > 0 ? (
                   <button
                     onClick={handleCreateTargetPages}
                     disabled={isCreating}
@@ -407,8 +514,15 @@ export default function CreateTargetPageModal({
                       </>
                     )}
                   </button>
-                </div>
-              )}
+                ) : (
+                  <button
+                    onClick={handleClose}
+                    className="px-4 py-2 bg-gray-600 text-white rounded-lg hover:bg-gray-700 font-medium"
+                  >
+                    Close
+                  </button>
+                )}
+              </div>
             </div>
           )}
 
