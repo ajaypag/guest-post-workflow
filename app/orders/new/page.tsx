@@ -92,6 +92,10 @@ function NewOrderContent() {
   const [message, setMessage] = useState('');
   const [messageType, setMessageType] = useState<'success' | 'error' | 'info'>('info');
 
+  // Get current session to check user type
+  const session = AuthService.getSession();
+  const isAccountUser = session?.userType === 'account';
+
   // Account Management
   const [accountSearch, setAccountSearch] = useState('');
   const [existingAccounts, setExistingAccounts] = useState<Account[]>([]);
@@ -126,7 +130,19 @@ function NewOrderContent() {
 
   useEffect(() => {
     loadClients();
-    loadAccounts();
+    
+    // For account users, automatically set their account
+    if (isAccountUser && session) {
+      setSelectedAccount({
+        id: session.accountId,
+        email: session.email,
+        name: session.name,
+        company: session.companyName
+      });
+    } else {
+      // Only load accounts for internal users
+      loadAccounts();
+    }
   }, []);
 
   useEffect(() => {
@@ -135,7 +151,9 @@ function NewOrderContent() {
 
   const loadClients = async () => {
     try {
-      const response = await fetch('/api/clients');
+      // For account users, load only their clients
+      const url = isAccountUser ? '/api/account/clients' : '/api/clients';
+      const response = await fetch(url);
       if (response.ok) {
         const data = await response.json();
         setClients(data.clients || data);  // Handle both { clients: [...] } and direct array
@@ -237,8 +255,8 @@ function NewOrderContent() {
   };
 
   const validateOrder = () => {
-    // Validate account
-    if (!selectedAccount && !isNewAccount) {
+    // Validate account (only for internal users)
+    if (!isAccountUser && !selectedAccount && !isNewAccount) {
       setMessage('Please select or create an account');
       setMessageType('error');
       return false;
@@ -332,22 +350,27 @@ function NewOrderContent() {
       <div className="max-w-6xl mx-auto">
         {/* Header */}
         <div className="mb-8">
-          <h1 className="text-3xl font-bold text-gray-900">Create Multi-Client Order</h1>
+          <h1 className="text-3xl font-bold text-gray-900">
+            {isAccountUser ? 'Create New Order' : 'Create Multi-Client Order'}
+          </h1>
           <p className="text-gray-600 mt-2">
-            Build orders for multiple clients with automatic bulk analysis and transparent site selection
+            {isAccountUser 
+              ? 'Start a new guest post campaign for your brands'
+              : 'Build orders for multiple clients with automatic bulk analysis and transparent site selection'}
           </p>
         </div>
 
         {/* Main Form */}
         <div className="space-y-8">
-          {/* Step 1: Account Selection */}
-          <div className="bg-white rounded-lg shadow-sm border border-gray-200 p-6">
-            <div className="flex items-center mb-4">
-              <div className="flex items-center justify-center w-8 h-8 rounded-full bg-blue-100 text-blue-600 font-semibold mr-3">
-                1
+          {/* Step 1: Account Selection - Only show for internal users */}
+          {!isAccountUser && (
+            <div className="bg-white rounded-lg shadow-sm border border-gray-200 p-6">
+              <div className="flex items-center mb-4">
+                <div className="flex items-center justify-center w-8 h-8 rounded-full bg-blue-100 text-blue-600 font-semibold mr-3">
+                  1
+                </div>
+                <h2 className="text-xl font-semibold">Account Information</h2>
               </div>
-              <h2 className="text-xl font-semibold">Account Information</h2>
-            </div>
 
             {/* Account Search */}
             <div className="mb-4">
@@ -474,14 +497,15 @@ function NewOrderContent() {
                 </div>
               </div>
             )}
-          </div>
+            </div>
+          )}
 
           {/* Step 2: Client Selection */}
           <div className="bg-white rounded-lg shadow-sm border border-gray-200 p-6">
             <div className="flex items-center justify-between mb-4">
               <div className="flex items-center">
                 <div className="flex items-center justify-center w-8 h-8 rounded-full bg-blue-100 text-blue-600 font-semibold mr-3">
-                  2
+                  {isAccountUser ? '1' : '2'}
                 </div>
                 <h2 className="text-xl font-semibold">Clients & Link Requirements</h2>
               </div>
@@ -685,7 +709,7 @@ function NewOrderContent() {
           <div className="bg-white rounded-lg shadow-sm border border-gray-200 p-6">
             <div className="flex items-center mb-4">
               <div className="flex items-center justify-center w-8 h-8 rounded-full bg-blue-100 text-blue-600 font-semibold mr-3">
-                3
+                {isAccountUser ? '2' : '3'}
               </div>
               <h2 className="text-xl font-semibold">Additional Options</h2>
             </div>
@@ -818,7 +842,7 @@ function NewOrderContent() {
             
             <button
               onClick={createOrder}
-              disabled={saving || orderGroups.length === 0 || (!selectedAccount && !isNewAccount)}
+              disabled={saving || orderGroups.length === 0 || (!isAccountUser && !selectedAccount && !isNewAccount)}
               className="px-6 py-3 bg-blue-600 text-white rounded-lg hover:bg-blue-700 disabled:opacity-50 disabled:cursor-not-allowed font-medium flex items-center"
             >
               {saving ? (
