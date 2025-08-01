@@ -14,6 +14,7 @@
 | **Email Integration** | ✅ COMPLETED | 2025-01-31 | Payment confirmations, invitations ready |
 | **Archive System** | ✅ COMPLETED | 2025-01-31 | Soft delete with consistent UI/API behavior |
 | **AI Permissions** | ✅ COMPLETED | 2025-01-31 | Granular AI feature access control for accounts |
+| **Account API Fix** | ✅ COMPLETED | 2025-08-01 | Fixed account users unable to see their clients |
 
 ### Completed Features
 
@@ -1325,7 +1326,44 @@ ERROR: column "target_table" does not exist
 
 **Result**: Account invitation system now works properly without database errors.
 
-## Active Technical Debt (Updated 2025-01-31)
+## Account User Session Fix (2025-08-01)
+
+### ✅ **FIXED: Account Users Couldn't See Their Clients**
+
+**Issue**: Account users were unable to see their clients in the order creation dropdown at `/orders/new`.
+
+**Root Cause**: The JWT session for account users was missing the `accountId` field, causing API endpoints to fail with "Account ID not found in session" errors.
+
+**Discovery Process**:
+1. Created diagnostic tools at `/account/debug-client-loading` to test session data
+2. Found that session had `userId` but no `accountId` field
+3. Discovered that for account users, `session.userId` IS their account ID (from accounts table)
+
+**Resolution**: Updated all account API endpoints to use `session.userId` instead of `session.accountId`:
+- `/api/account/clients` - Now correctly fetches clients for account users
+- `/api/account/profile` - GET and PUT methods fixed
+- `/api/account/change-password` - Password change functionality fixed
+
+**Technical Details**:
+```typescript
+// OLD (broken) - Expected accountId in session
+if (!session.accountId) {
+  return NextResponse.json({ error: 'Account ID not found in session' }, { status: 400 });
+}
+const accountClients = await db.query.clients.findMany({
+  where: eq(clients.accountId, session.accountId),
+});
+
+// NEW (fixed) - Uses userId for account users
+const accountId = session.userId; // For account users, userId IS their account ID
+const accountClients = await db.query.clients.findMany({
+  where: eq(clients.accountId, accountId),
+});
+```
+
+**Key Learning**: The authentication system sets both `userId` and `accountId` to the same value during login, but the client-side session only includes `userId`. All account endpoints must use `session.userId` to access account data.
+
+## Active Technical Debt (Updated 2025-08-01)
 
 ### Account Features Integration Debt
 
