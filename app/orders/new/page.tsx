@@ -88,6 +88,9 @@ export default function NewOrderPage() {
   const session = AuthService.getSession();
   const isAccountUser = session?.userType === 'account';
   
+  // Diagnostic logging
+  console.log('[DIAGNOSTIC] NewOrderPage render at', new Date().toISOString());
+  
   // Client management
   const [clients, setClients] = useState<ClientWithSelection[]>([]);
   const [loadingClients, setLoadingClients] = useState(true);
@@ -279,6 +282,14 @@ export default function NewOrderPage() {
   }, [session]);
 
   useEffect(() => {
+    console.log('[DIAGNOSTIC] Main useEffect triggered at', new Date().toISOString());
+    console.log('[DIAGNOSTIC] Dependencies:', { 
+      loadClients: typeof loadClients,
+      loadAccounts: typeof loadAccounts,
+      loadDrafts: typeof loadDrafts,
+      session: session?.userType 
+    });
+    
     loadClients();
     loadDrafts();
     

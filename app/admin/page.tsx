@@ -118,6 +118,14 @@ export default function AdminDashboard() {
       iconColor: 'text-amber-600'
     },
     {
+      title: 'Orders/New Diagnostic',
+      description: 'Diagnose infinite loop issues on the orders/new page',
+      icon: Bug,
+      href: '/admin/orders-new-diagnostic',
+      color: 'bg-red-50 border-red-200 text-red-700',
+      iconColor: 'text-red-600'
+    },
+    {
       title: 'Diagnostics',
       description: 'Run comprehensive system diagnostics and health checks',
       icon: Activity,
