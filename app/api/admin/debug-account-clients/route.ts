@@ -60,14 +60,14 @@ export async function POST(request: NextRequest) {
     };
 
     // 6. Test the different endpoints
-    let internalClientsEndpoint = { error: 'Not tested - requires internal user auth' };
-    let accountClientsEndpoint = { error: 'Not tested' };
-    let dashboardClientsEndpoint = { error: 'Not tested' };
+    let internalClientsEndpoint: any = { error: 'Not tested - requires internal user auth' };
+    let accountClientsEndpoint: any = { error: 'Not tested' };
+    let dashboardClientsEndpoint: any = { error: 'Not tested' };
 
     // Test /api/account/clients
     try {
       // Since we can't easily mock the request context, we'll just check what the logic would return
-      const accountClientsLogic = account?.primaryClient ? [primaryClient] : [];
+      const accountClientsLogic = account?.primaryClientId && primaryClient ? [primaryClient] : [];
       accountClientsEndpoint = { clients: accountClientsLogic };
     } catch (err) {
       accountClientsEndpoint = { error: err instanceof Error ? err.message : 'Failed' };

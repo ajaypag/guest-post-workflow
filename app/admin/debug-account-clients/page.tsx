@@ -8,7 +8,7 @@ import { AuthService } from '@/lib/auth';
 
 export default function DebugAccountClients() {
   return (
-    <AuthWrapper adminOnly>
+    <AuthWrapper>
       <Header />
       <DebugAccountClientsContent />
     </AuthWrapper>
@@ -17,10 +17,18 @@ export default function DebugAccountClients() {
 
 function DebugAccountClientsContent() {
   const router = useRouter();
-  const [loading, setLoading] = useState(true);
+  const [loading, setLoading] = useState(false);
   const [accountUserId, setAccountUserId] = useState('');
   const [diagnostics, setDiagnostics] = useState<any>(null);
   const [error, setError] = useState('');
+  
+  useEffect(() => {
+    // Check if user is admin
+    const session = AuthService.getSession();
+    if (!session || session.role !== 'admin') {
+      router.push('/');
+    }
+  }, [router]);
 
   const runDiagnostics = async () => {
     if (!accountUserId) {
