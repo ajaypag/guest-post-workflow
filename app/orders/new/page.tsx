@@ -89,16 +89,15 @@ export default function NewOrderPage() {
   const [total, setTotal] = useState(0);
   
   // Pricing state
-  const [selectedPackage, setSelectedPackage] = useState<'bronze' | 'silver' | 'gold' | 'custom'>('silver');
+  const [selectedPackage, setSelectedPackage] = useState<'good' | 'better' | 'best' | 'custom'>('better');
   const packagePricing = {
-    bronze: { price: 75, name: 'Bronze', description: 'Basic sites (DR 20-40)' },
-    silver: { price: 125, name: 'Silver', description: 'Quality sites (DR 40-60)' },
-    gold: { price: 200, name: 'Gold', description: 'Premium sites (DR 60+)' },
-    custom: { price: 0, name: 'Custom', description: 'Mix and match' }
+    good: { price: 230, name: 'Good Guest Posts', description: 'DR 20-34' },
+    better: { price: 279, name: 'Better Guest Posts', description: 'DR 35-49' },
+    best: { price: 349, name: 'Best Guest Posts', description: 'DR 50-80' },
+    custom: { price: 0, name: 'Custom Mix', description: 'Mix and match' }
   };
   
-  // Mode state
-  const [orderMode, setOrderMode] = useState<'detailed' | 'simple'>('detailed');
+  // UI state
   const [expandedClients, setExpandedClients] = useState<Set<string>>(new Set());
   const [expandedDomains, setExpandedDomains] = useState<Set<string>>(new Set());
   
@@ -416,144 +415,18 @@ export default function NewOrderPage() {
       <div className="min-h-screen bg-gray-50 flex flex-col">
         <Header />
         
-        {/* Mode Toggle */}
+        {/* Header */}
         <div className="bg-white border-b border-gray-200 px-6 py-4">
           <div className="flex items-center justify-between">
             <div>
               <h1 className="text-2xl font-semibold text-gray-900">Create New Order</h1>
-              <p className="text-sm text-gray-600 mt-1">Build your guest post order</p>
-            </div>
-            <div className="flex items-center space-x-2 bg-gray-100 p-1 rounded-lg">
-              <button
-                onClick={() => setOrderMode('simple')}
-                className={`px-4 py-2 rounded-md text-sm font-medium transition-all ${
-                  orderMode === 'simple' 
-                    ? 'bg-white text-gray-900 shadow-sm' 
-                    : 'text-gray-600 hover:text-gray-900'
-                }`}
-              >
-                Simple Mode
-              </button>
-              <button
-                onClick={() => setOrderMode('detailed')}
-                className={`px-4 py-2 rounded-md text-sm font-medium transition-all ${
-                  orderMode === 'detailed' 
-                    ? 'bg-white text-gray-900 shadow-sm' 
-                    : 'text-gray-600 hover:text-gray-900'
-                }`}
-              >
-                Detailed Mode
-              </button>
+              <p className="text-sm text-gray-600 mt-1">Build your guest post order with target pages and anchor text</p>
             </div>
           </div>
         </div>
         
-        {/* Main Content Area */}
-        {orderMode === 'simple' ? (
-          /* Simple Mode Interface */
-          <div className="flex-1 overflow-y-auto bg-gray-50">
-            <div className="max-w-4xl mx-auto p-8">
-              <div className="bg-white rounded-lg shadow-sm p-6 space-y-6">
-                {/* Step 1: Select Clients */}
-                <div>
-                  <h3 className="text-lg font-medium text-gray-900 mb-4">Step 1: Select Brands</h3>
-                  <div className="space-y-3">
-                    {clients.map(client => (
-                      <label key={client.id} className="flex items-center space-x-3 p-3 border rounded-lg hover:bg-gray-50 cursor-pointer">
-                        <input
-                          type="checkbox"
-                          checked={selectedClients.has(client.id)}
-                          onChange={(e) => toggleClientSelection(client.id, e.target.checked)}
-                          className="h-4 w-4 text-blue-600 focus:ring-blue-500 border-gray-300 rounded"
-                        />
-                        <div className="flex-1">
-                          <p className="font-medium text-gray-900">{client.name}</p>
-                          <p className="text-sm text-gray-500">{client.website}</p>
-                        </div>
-                      </label>
-                    ))}
-                  </div>
-                </div>
-                
-                {/* Step 2: Total Links */}
-                <div>
-                  <h3 className="text-lg font-medium text-gray-900 mb-4">Step 2: How many links do you need?</h3>
-                  <input
-                    type="number"
-                    min="1"
-                    max="100"
-                    value={lineItems.length || 1}
-                    onChange={(e) => {
-                      const totalLinks = parseInt(e.target.value) || 0;
-                      // Auto-distribute links across selected clients
-                      const clientIds = Array.from(selectedClients.keys());
-                      if (clientIds.length > 0) {
-                        const linksPerClient = Math.ceil(totalLinks / clientIds.length);
-                        clientIds.forEach(clientId => {
-                          updateClientLinkCount(clientId, linksPerClient);
-                        });
-                      }
-                    }}
-                    className="w-32 px-4 py-2 text-lg border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500"
-                  />
-                  <p className="text-sm text-gray-500 mt-2">Links will be automatically distributed across selected brands</p>
-                </div>
-                
-                {/* Step 3: Package Selection */}
-                <div>
-                  <h3 className="text-lg font-medium text-gray-900 mb-4">Step 3: Select Package</h3>
-                  <div className="grid grid-cols-3 gap-4">
-                    {Object.entries(packagePricing).filter(([key]) => key !== 'custom').map(([key, pkg]) => (
-                      <button
-                        key={key}
-                        onClick={() => {
-                          setSelectedPackage(key as typeof selectedPackage);
-                          setLineItems(prev => prev.map(item => ({
-                            ...item,
-                            price: pkg.price
-                          })));
-                        }}
-                        className={`p-4 rounded-lg border-2 transition-all ${
-                          selectedPackage === key 
-                            ? 'border-blue-500 bg-blue-50' 
-                            : 'border-gray-200 hover:border-gray-300'
-                        }`}
-                      >
-                        <p className="font-medium text-gray-900">{pkg.name}</p>
-                        <p className="text-2xl font-bold text-gray-900 mt-1">${pkg.price}</p>
-                        <p className="text-sm text-gray-500">per link</p>
-                        <p className="text-xs text-gray-400 mt-2">{pkg.description}</p>
-                      </button>
-                    ))}
-                  </div>
-                </div>
-                
-                {/* Summary */}
-                <div className="pt-6 border-t border-gray-200">
-                  <div className="flex items-center justify-between">
-                    <div>
-                      <p className="text-sm text-gray-500">Total Order</p>
-                      <p className="text-3xl font-bold text-gray-900">{formatCurrency(total)}</p>
-                      <p className="text-sm text-gray-500 mt-1">
-                        {lineItems.length} links × {formatCurrency(packagePricing[selectedPackage].price)} each
-                      </p>
-                    </div>
-                    <button
-                      onClick={handleSubmit}
-                      disabled={lineItems.length === 0 || selectedClients.size === 0}
-                      className="px-8 py-3 bg-blue-600 text-white font-medium rounded-lg hover:bg-blue-700 
-                               transition-colors disabled:bg-gray-300 disabled:cursor-not-allowed"
-                    >
-                      Continue to Site Selection
-                    </button>
-                  </div>
-                </div>
-              </div>
-            </div>
-          </div>
-        ) : (
-          /* Detailed Mode - Three Column Layout */
-          <div className="flex-1 flex gap-4 p-4 overflow-hidden relative bg-gray-100">
+        {/* Main Content Area - Three Column Layout */}
+        <div className="flex-1 flex gap-4 p-4 overflow-hidden relative bg-gray-100">
           {error && (
             <div className="absolute top-4 left-1/2 transform -translate-x-1/2 z-50 bg-red-50 border border-red-200 rounded-lg p-4 flex items-start shadow-lg">
               <AlertCircle className="h-5 w-5 text-red-600 mt-0.5 mr-3" />
@@ -673,7 +546,7 @@ export default function NewOrderPage() {
 
           {/* Middle Column - Order Line Items */}
           <div className="flex-1 bg-white rounded-lg shadow-sm overflow-hidden flex flex-col">
-            <div className="p-4 border-b bg-gray-50">
+            <div className="p-4 border-b border-gray-200">
               <div className="flex items-center justify-between">
                 <div>
                   <h2 className="text-lg font-semibold text-gray-900">Order Details</h2>
@@ -681,117 +554,87 @@ export default function NewOrderPage() {
                     {lineItems.length} items • {lineItems.filter(item => item.targetPageUrl).length} assigned
                   </p>
                 </div>
-                <div className="flex items-center space-x-2">
-                  <select className="text-sm border border-gray-300 rounded px-2 py-1">
-                    <option>Group by Client</option>
-                    <option>Group by Status</option>
-                    <option>No Grouping</option>
-                  </select>
-                  <button
-                    onClick={addEmptyLineItem}
-                    className="px-3 py-1 text-sm bg-blue-600 text-white rounded hover:bg-blue-700 flex items-center"
-                  >
-                    <Plus className="h-4 w-4 mr-1" />
-                    Add Item
-                  </button>
-                </div>
               </div>
             </div>
             
-            <div className="flex-1 overflow-y-auto">
+            <div className="flex-1 overflow-hidden">
               {lineItems.length === 0 ? (
-                <div className="text-center py-8 text-gray-500">
-                  <p>No items added yet.</p>
-                  <p className="text-sm mt-2">Select clients from the left to get started.</p>
+                <div className="text-center py-12 text-gray-500">
+                  <Target className="h-12 w-12 mx-auto mb-3 text-gray-300" />
+                  <p className="text-base">No items added yet</p>
+                  <p className="text-sm mt-2 text-gray-400">Select brands from the left to get started</p>
                 </div>
               ) : (
-                <div>
-                  {/* Group items by client */}
-                  {Object.entries(
-                    lineItems.reduce((acc, item) => {
-                      if (!acc[item.clientName]) acc[item.clientName] = [];
-                      acc[item.clientName].push(item);
-                      return acc;
-                    }, {} as Record<string, typeof lineItems>)
-                  ).map(([clientName, items]) => {
-                    const isExpanded = !expandedClients.has(clientName); // Default to expanded (not in set = expanded)
-                    const assignedCount = items.filter(item => item.targetPageUrl).length;
-                    
-                    return (
-                      <div key={clientName} className="border-b last:border-b-0">
-                        <button
-                          onClick={() => {
-                            setExpandedClients(prev => {
-                              const newSet = new Set(prev);
-                              if (isExpanded) {
-                                newSet.delete(clientName);
-                              } else {
-                                newSet.add(clientName);
-                              }
-                              return newSet;
-                            });
-                          }}
-                          className="w-full px-4 py-2 bg-gray-50 hover:bg-gray-100 flex items-center justify-between sticky top-0 z-10"
-                        >
-                          <div className="flex items-center space-x-2">
-                            {isExpanded ? <ChevronDown className="h-4 w-4" /> : <ChevronRight className="h-4 w-4" />}
-                            <h3 className="font-medium text-sm text-gray-700">{clientName}</h3>
-                            <span className="text-xs text-gray-500">
-                              {items.length} links • {assignedCount} assigned
-                            </span>
-                          </div>
-                          <span className="text-sm font-medium text-gray-900">
-                            {formatCurrency(items.reduce((sum, item) => sum + item.price, 0))}
-                          </span>
-                        </button>
-                        
-                        {isExpanded && (
-                          <div className="divide-y">
-                            {items.map((item) => (
-                              <div
-                                key={item.id}
-                                className="px-4 py-2 hover:bg-gray-50 transition-colors flex items-center space-x-3"
-                              >
-                                <div className="flex-1 min-w-0">
-                                  {item.targetPageUrl ? (
-                                    <div className="flex items-center space-x-3">
-                                      <div className="flex-1 min-w-0">
-                                        <p className="text-sm text-gray-900 truncate">{item.targetPageUrl}</p>
-                                        <input
-                                          type="text"
-                                          value={item.anchorText || ''}
-                                          onChange={(e) => updateLineItem(item.id, { anchorText: e.target.value })}
-                                          placeholder="Anchor text..."
-                                          className="mt-1 w-full px-2 py-1 text-xs border rounded focus:outline-none focus:ring-1 focus:ring-blue-500"
-                                        />
-                                      </div>
-                                      <input
-                                        type="number"
-                                        value={item.price}
-                                        onChange={(e) => updateLineItem(item.id, { price: parseFloat(e.target.value) || 0 })}
-                                        className="w-16 px-2 py-1 text-xs border rounded focus:outline-none focus:ring-1 focus:ring-blue-500"
-                                      />
-                                    </div>
-                                  ) : (
-                                    <div className="flex items-center justify-between">
-                                      <p className="text-sm text-gray-500 italic">⚡ Unassigned - click target to fill</p>
-                                      <span className="text-xs text-gray-400">${item.price}</span>
-                                    </div>
-                                  )}
-                                </div>
-                                <button
-                                  onClick={() => removeLineItem(item.id)}
-                                  className="text-gray-400 hover:text-red-500 flex-shrink-0"
-                                >
-                                  <X className="h-4 w-4" />
-                                </button>
+                <div className="h-full overflow-y-auto">
+                  <table className="w-full">
+                    <thead className="bg-gray-50 border-b border-gray-200 sticky top-0">
+                      <tr>
+                        <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Brand</th>
+                        <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Target Page</th>
+                        <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Anchor Text</th>
+                        <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Package</th>
+                        <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Price</th>
+                        <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider"></th>
+                      </tr>
+                    </thead>
+                    <tbody className="divide-y divide-gray-100">
+                      {lineItems.map((item) => (
+                        <tr key={item.id} className="hover:bg-gray-50 transition-colors">
+                          <td className="px-4 py-3">
+                            <p className="text-sm font-medium text-gray-900">{item.clientName}</p>
+                          </td>
+                          <td className="px-4 py-3">
+                            {item.targetPageUrl ? (
+                              <div className="flex items-center space-x-1">
+                                <p className="text-sm text-gray-600 truncate max-w-xs" title={item.targetPageUrl}>
+                                  {item.targetPageUrl}
+                                </p>
+                                <ExternalLink className="h-3 w-3 text-gray-400" />
                               </div>
-                            ))}
-                          </div>
-                        )}
-                      </div>
-                    );
-                  })}
+                            ) : (
+                              <p className="text-sm text-gray-400 italic">Click a target page →</p>
+                            )}
+                          </td>
+                          <td className="px-4 py-3">
+                            <input
+                              type="text"
+                              value={item.anchorText || ''}
+                              onChange={(e) => updateLineItem(item.id, { anchorText: e.target.value })}
+                              placeholder="Enter anchor text..."
+                              className="w-full px-2 py-1 text-sm border border-gray-200 rounded focus:outline-none focus:ring-1 focus:ring-blue-500 focus:border-blue-500"
+                              disabled={!item.targetPageUrl}
+                            />
+                          </td>
+                          <td className="px-4 py-3">
+                            <select
+                              value={item.price === 230 ? 'good' : item.price === 279 ? 'better' : item.price === 349 ? 'best' : 'custom'}
+                              onChange={(e) => {
+                                const pkg = e.target.value as keyof typeof packagePricing;
+                                updateLineItem(item.id, { price: packagePricing[pkg].price || item.price });
+                              }}
+                              className="w-full px-2 py-1 text-sm border border-gray-200 rounded focus:outline-none focus:ring-1 focus:ring-blue-500"
+                            >
+                              <option value="good">Good (DR 20-34)</option>
+                              <option value="better">Better (DR 35-49)</option>
+                              <option value="best">Best (DR 50-80)</option>
+                              <option value="custom">Custom</option>
+                            </select>
+                          </td>
+                          <td className="px-4 py-3">
+                            <p className="text-sm font-medium text-gray-900">${item.price}</p>
+                          </td>
+                          <td className="px-4 py-3">
+                            <button
+                              onClick={() => removeLineItem(item.id)}
+                              className="text-gray-400 hover:text-red-500 transition-colors"
+                            >
+                              <X className="h-4 w-4" />
+                            </button>
+                          </td>
+                        </tr>
+                      ))}
+                    </tbody>
+                  </table>
                 </div>
               )}
             </div>
@@ -931,148 +774,87 @@ export default function NewOrderPage() {
             </div>
           </div>
         </div>
-        )}
         
-        {/* Fixed Bottom Bar - Only in Detailed Mode */}
-        {orderMode === 'detailed' && (
+        {/* Fixed Bottom Bar */}
         <div className="bg-white border-t border-gray-200 shadow-lg">
-          <div className="max-w-full px-6 py-4">
-            {/* Package Selection */}
-            <div className="mb-4 pb-4 border-b border-gray-200">
-              <label className="block text-xs font-medium text-gray-700 mb-2">Select Package</label>
-              <div className="flex items-center space-x-3">
-                {Object.entries(packagePricing).map(([key, pkg]) => (
-                  <button
-                    key={key}
-                    onClick={() => {
-                      setSelectedPackage(key as typeof selectedPackage);
-                      // Update all line item prices
-                      setLineItems(prev => prev.map(item => ({
-                        ...item,
-                        price: pkg.price || item.price
-                      })));
-                    }}
-                    className={`px-4 py-2 rounded-lg border-2 transition-all ${
-                      selectedPackage === key 
-                        ? 'border-blue-500 bg-blue-50 text-blue-700' 
-                        : 'border-gray-300 hover:border-gray-400'
-                    }`}
-                  >
-                    <div className="text-sm font-medium">{pkg.name}</div>
-                    <div className="text-xs text-gray-500">{pkg.price > 0 ? `$${pkg.price}/link` : 'Variable pricing'}</div>
-                    <div className="text-xs text-gray-400">{pkg.description}</div>
-                  </button>
-                ))}
-              </div>
-            </div>
-            
+          <div className="px-6 py-4">
             <div className="flex items-center justify-between">
-              {/* Left Side - Order Summary Stats */}
-              <div className="flex items-center space-x-8">
-                <div className="flex items-center space-x-2">
-                  <Building className="h-5 w-5 text-gray-400" />
-                  <div>
-                    <p className="text-xs text-gray-500">Clients</p>
-                    <p className="text-lg font-semibold text-gray-900">{getTotalClients()}</p>
+              {/* Left Side - Order Summary Stats and Package Selection */}
+              <div className="flex items-center space-x-6">
+                <div className="flex items-center space-x-4">
+                  <span className="text-sm font-medium text-gray-700">Default Package:</span>
+                  <div className="flex items-center space-x-2 bg-gray-50 p-1 rounded-lg">
+                    {Object.entries(packagePricing).filter(([key]) => key !== 'custom').map(([key, pkg]) => (
+                      <button
+                        key={key}
+                        onClick={() => {
+                          setSelectedPackage(key as typeof selectedPackage);
+                          // Update all line item prices if not custom
+                          if (key !== 'custom') {
+                            setLineItems(prev => prev.map(item => ({
+                              ...item,
+                              price: pkg.price
+                            })));
+                          }
+                        }}
+                        className={`px-3 py-1.5 rounded text-sm font-medium transition-all ${
+                          selectedPackage === key 
+                            ? 'bg-white text-gray-900 shadow-sm' 
+                            : 'text-gray-600 hover:text-gray-900'
+                        }`}
+                        title={`${pkg.name} - ${pkg.description}`}
+                      >
+                        {pkg.name} (${pkg.price})
+                      </button>
+                    ))}
                   </div>
                 </div>
                 
-                <div className="flex items-center space-x-2">
-                  <Link className="h-5 w-5 text-gray-400" />
-                  <div>
-                    <p className="text-xs text-gray-500">Total Links</p>
-                    <p className="text-lg font-semibold text-gray-900">{getTotalLinks()}</p>
-                  </div>
-                </div>
+                <div className="h-8 w-px bg-gray-200"></div>
                 
-                <div className="flex items-center space-x-2">
-                  <Target className="h-5 w-5 text-gray-400" />
-                  <div>
-                    <p className="text-xs text-gray-500">Unique Targets</p>
-                    <p className="text-lg font-semibold text-gray-900">
+                <div className="flex items-center space-x-4 text-sm">
+                  <div className="flex items-center space-x-1">
+                    <Building className="h-4 w-4 text-gray-400" />
+                    <span className="font-medium text-gray-900">{getTotalClients()}</span>
+                    <span className="text-gray-500">brands</span>
+                  </div>
+                  
+                  <div className="flex items-center space-x-1">
+                    <Link className="h-4 w-4 text-gray-400" />
+                    <span className="font-medium text-gray-900">{getTotalLinks()}</span>
+                    <span className="text-gray-500">links</span>
+                  </div>
+                  
+                  <div className="flex items-center space-x-1">
+                    <Target className="h-4 w-4 text-gray-400" />
+                    <span className="font-medium text-gray-900">
                       {new Set(lineItems.map(item => item.targetPageId).filter(Boolean)).size}
-                    </p>
-                  </div>
-                </div>
-                
-                <div className="flex items-center space-x-2">
-                  <Type className="h-5 w-5 text-gray-400" />
-                  <div>
-                    <p className="text-xs text-gray-500">Avg. Price/Link</p>
-                    <p className="text-lg font-semibold text-gray-900">
-                      {lineItems.length > 0 ? formatCurrency(total / lineItems.length) : '$0'}
-                    </p>
+                    </span>
+                    <span className="text-gray-500">targets</span>
                   </div>
                 </div>
               </div>
               
-              {/* Right Side - Actions and Total */}
+              {/* Right Side - Total and Continue */}
               <div className="flex items-center space-x-6">
-                {/* Quick Actions */}
-                <div className="flex items-center space-x-3">
-                  <button
-                    onClick={() => setLineItems([])}
-                    disabled={lineItems.length === 0}
-                    className="px-3 py-2 text-sm text-gray-600 hover:text-gray-900 disabled:opacity-50 disabled:cursor-not-allowed"
-                  >
-                    Clear All
-                  </button>
-                  <button
-                    onClick={() => {
-                      // TODO: Implement save draft
-                      console.log('Saving draft...');
-                    }}
-                    disabled={lineItems.length === 0}
-                    className="px-3 py-2 text-sm text-gray-600 hover:text-gray-900 disabled:opacity-50 disabled:cursor-not-allowed"
-                  >
-                    Save Draft
-                  </button>
+                <div className="text-right">
+                  <p className="text-sm text-gray-500">Order Total</p>
+                  <p className="text-2xl font-bold text-gray-900">{formatCurrency(total)}</p>
                 </div>
                 
-                <div className="h-12 w-px bg-gray-200"></div>
-                
-                {/* Total and Continue */}
-                <div className="flex items-center space-x-4">
-                  <div className="text-right">
-                    <p className="text-sm text-gray-500">Order Total</p>
-                    <p className="text-2xl font-bold text-gray-900">{formatCurrency(total)}</p>
-                  </div>
-                  
-                  <button
-                    onClick={handleSubmit}
-                    disabled={lineItems.length === 0 || lineItems.some(item => !item.clientId)}
-                    className="px-6 py-3 bg-blue-600 text-white font-medium rounded-lg hover:bg-blue-700 
-                             transition-colors flex items-center disabled:bg-gray-300 disabled:cursor-not-allowed"
-                  >
-                    Continue to Site Selection
-                    <ChevronRight className="h-5 w-5 ml-2" />
-                  </button>
-                </div>
-              </div>
-            </div>
-            
-            {/* Progress Indicator */}
-            <div className="mt-4 pt-4 border-t border-gray-100">
-              <div className="flex items-center justify-between text-xs text-gray-500">
-                <div className="flex items-center space-x-2">
-                  <CheckCircle className="h-4 w-4 text-blue-600" />
-                  <span className="font-medium text-gray-900">Step 1: Build Order</span>
-                </div>
-                <ChevronRight className="h-4 w-4" />
-                <div className="flex items-center space-x-2">
-                  <div className="h-4 w-4 rounded-full border-2 border-gray-300"></div>
-                  <span>Step 2: Select Publishing Sites</span>
-                </div>
-                <ChevronRight className="h-4 w-4" />
-                <div className="flex items-center space-x-2">
-                  <div className="h-4 w-4 rounded-full border-2 border-gray-300"></div>
-                  <span>Step 3: Review & Confirm</span>
-                </div>
+                <button
+                  onClick={handleSubmit}
+                  disabled={lineItems.length === 0 || lineItems.some(item => !item.clientId)}
+                  className="px-6 py-3 bg-blue-600 text-white font-medium rounded-lg hover:bg-blue-700 
+                           transition-colors flex items-center disabled:bg-gray-300 disabled:cursor-not-allowed"
+                >
+                  Continue to Site Selection
+                  <ChevronRight className="h-5 w-5 ml-2" />
+                </button>
               </div>
             </div>
           </div>
         </div>
-        )}
         
         {/* Create Client Modal */}
         <CreateClientModal
