@@ -21,13 +21,47 @@ export default function NormalizeUrlsMigrationPage() {
     isComplete: false,
   });
   const [isChecking, setIsChecking] = useState(false);
+  const [schemaError, setSchemaError] = useState<string | null>(null);
+  const [isCreatingSchema, setIsCreatingSchema] = useState(false);
+
+  // Create schema (add normalized_url column)
+  const createSchema = async () => {
+    setIsCreatingSchema(true);
+    setSchemaError(null);
+    try {
+      const response = await fetch('/api/admin/run-normalized-url-migration', {
+        method: 'POST',
+      });
+      const data = await response.json();
+      if (data.success) {
+        // Schema created successfully, check status
+        await checkStatus();
+      } else {
+        setSchemaError(data.error || 'Failed to create schema');
+      }
+    } catch (error) {
+      setSchemaError(`Failed to create schema: ${error}`);
+    } finally {
+      setIsCreatingSchema(false);
+    }
+  };
 
   // Check migration status
   const checkStatus = async () => {
     setIsChecking(true);
     try {
       const response = await fetch('/api/admin/normalize-urls-migration/status');
+      if (!response.ok) {
+        const errorData = await response.json();
+        // Check if it's a column not found error
+        if (response.status === 500 && errorData.error?.includes('column')) {
+          setSchemaError('The normalized_url column does not exist. Please create the schema first.');
+          return;
+        }
+        throw new Error(errorData.error || 'Failed to check status');
+      }
       const data = await response.json();
+      setSchemaError(null);
       setStatus(prev => ({
         ...prev,
         totalPages: data.totalPages,
@@ -126,6 +160,34 @@ export default function NormalizeUrlsMigrationPage() {
   return (
     <div className="container mx-auto py-8 max-w-4xl">
       <h1 className="text-3xl font-bold mb-8">Normalized URL Migration</h1>
+
+      {/* Schema Error Alert */}
+      {schemaError && (
+        <div className="bg-red-50 border border-red-200 rounded-lg p-4 mb-6">
+          <div className="flex">
+            <div className="flex-shrink-0">
+              <svg className="h-5 w-5 text-red-400" viewBox="0 0 20 20" fill="currentColor">
+                <path fillRule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zM8.707 7.293a1 1 0 00-1.414 1.414L8.586 10l-1.293 1.293a1 1 0 101.414 1.414L10 11.414l1.293 1.293a1 1 0 001.414-1.414L11.414 10l1.293-1.293a1 1 0 00-1.414-1.414L10 8.586 8.707 7.293z" clipRule="evenodd" />
+              </svg>
+            </div>
+            <div className="ml-3">
+              <h3 className="text-sm font-medium text-red-800">Database Schema Error</h3>
+              <div className="mt-2 text-sm text-red-700">
+                <p>{schemaError}</p>
+              </div>
+              <div className="mt-4">
+                <button
+                  onClick={createSchema}
+                  disabled={isCreatingSchema}
+                  className="bg-red-100 text-red-800 px-4 py-2 rounded-md text-sm font-medium hover:bg-red-200 disabled:opacity-50 disabled:cursor-not-allowed"
+                >
+                  {isCreatingSchema ? 'Creating Schema...' : 'Create Missing Schema'}
+                </button>
+              </div>
+            </div>
+          </div>
+        </div>
+      )}
 
       <div className="bg-white shadow rounded-lg p-6 mb-6">
         <h2 className="text-xl font-semibold mb-2">Migration Status</h2>
