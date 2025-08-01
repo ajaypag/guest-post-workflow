@@ -642,7 +642,7 @@ export default function NewOrderPage() {
           
           {/* Right Sidebar - Target URLs */}
           <div className="w-80 bg-white rounded-lg shadow-sm overflow-hidden flex flex-col">
-            <div className="p-4 border-b bg-gray-50">
+            <div className="p-4 border-b border-gray-200">
               <div className="flex items-center justify-between mb-3">
                 <div>
                   <h2 className="text-lg font-semibold text-gray-900">Target Pages</h2>
@@ -667,108 +667,114 @@ export default function NewOrderPage() {
                   placeholder="Search domains, keywords..."
                   value={searchQuery}
                   onChange={(e) => setSearchQuery(e.target.value)}
-                  className="w-full pl-10 pr-3 py-2 border border-gray-300 rounded-lg text-sm focus:ring-2 focus:ring-blue-500"
+                  className="w-full pl-10 pr-3 py-2 border border-gray-200 rounded-lg text-sm focus:outline-none focus:ring-1 focus:ring-blue-500 focus:border-blue-500"
                 />
               </div>
             </div>
             
-            <div className="flex-1 overflow-y-auto">
+            <div className="flex-1 overflow-hidden">
               {selectedClients.size === 0 ? (
-                <div className="text-center py-8 text-gray-500">
-                  <Target className="h-8 w-8 mx-auto mb-2 text-gray-400" />
-                  <p className="text-sm mb-1">Select clients first</p>
-                  <p className="text-xs text-gray-400">Choose clients on the left to see their target pages</p>
+                <div className="text-center py-12 text-gray-500">
+                  <Target className="h-12 w-12 mx-auto mb-3 text-gray-300" />
+                  <p className="text-base">No targets available</p>
+                  <p className="text-sm mt-2 text-gray-400">Select brands to see their target pages</p>
+                </div>
+              ) : getFilteredTargets().length === 0 ? (
+                <div className="text-center py-12 text-gray-500">
+                  <Search className="h-12 w-12 mx-auto mb-3 text-gray-300" />
+                  <p className="text-base">No results found</p>
+                  <p className="text-sm mt-2 text-gray-400">Try adjusting your search</p>
                 </div>
               ) : (
-                <div>
-                  {/* Group targets by domain */}
-                  {Object.entries(
-                    getFilteredTargets().reduce((acc, target) => {
-                      if (!acc[target.domain]) acc[target.domain] = [];
-                      acc[target.domain].push(target);
-                      return acc;
-                    }, {} as Record<string, TargetPageWithMetadata[]>)
-                  ).map(([domain, targets]) => {
-                    const isExpanded = !expandedDomains.has(domain); // Default to expanded (not in set = expanded)
-                    const totalUsage = targets.reduce((sum, t) => sum + t.usageCount, 0);
-                    const avgDr = Math.round(targets.reduce((sum, t) => sum + t.dr, 0) / targets.length);
-                    
-                    return (
-                      <div key={domain} className="border-b last:border-b-0">
-                        <button
-                          onClick={() => {
-                            setExpandedDomains(prev => {
-                              const newSet = new Set(prev);
-                              if (isExpanded) {
-                                newSet.delete(domain);
-                              } else {
-                                newSet.add(domain);
-                              }
-                              return newSet;
-                            });
-                          }}
-                          className="w-full px-4 py-3 bg-gray-50 hover:bg-gray-100 flex items-center justify-between sticky top-0 z-10"
-                        >
-                          <div className="flex items-center space-x-2">
-                            {isExpanded ? <ChevronDown className="h-4 w-4" /> : <ChevronRight className="h-4 w-4" />}
-                            <div className="text-left">
-                              <h3 className="font-medium text-sm text-gray-900">{domain}</h3>
-                              <div className="flex items-center space-x-3 text-xs text-gray-500 mt-0.5">
-                                <span>{targets.length} pages</span>
-                                <span>DR {avgDr}</span>
-                                {totalUsage > 0 && <span className="text-blue-600">Used {totalUsage}x</span>}
-                              </div>
-                            </div>
-                          </div>
-                        </button>
-                        
-                        {isExpanded && (
-                          <div className="divide-y">
-                            {targets.map(target => (
-                              <div 
-                                key={`${target.clientId}-${target.id}`} 
-                                className="px-4 py-3 hover:bg-blue-50 cursor-pointer transition-all flex items-center justify-between"
-                                onClick={() => addLineItemFromTarget(target)}
-                              >
-                                <div className="flex-1 min-w-0">
-                                  <p className="text-sm text-gray-900 truncate" title={target.url}>
-                                    {target.url.replace(`https://${target.domain}`, '').replace(`http://${target.domain}`, '') || '/'}
-                                  </p>
-                                  <div className="flex items-center space-x-2 mt-1">
-                                    <span className="text-xs text-gray-500">{target.clientName}</span>
-                                    {target.usageCount > 0 && (
-                                      <span className="text-xs text-blue-600">• Used {target.usageCount}x</span>
-                                    )}
-                                  </div>
-                                  {target.keywordArray && target.keywordArray.length > 0 && (
-                                    <div className="flex flex-wrap gap-1 mt-1">
-                                      {target.keywordArray.slice(0, 2).map((keyword, idx) => (
-                                        <span key={idx} className="inline-flex items-center px-1.5 py-0.5 rounded text-xs bg-gray-100 text-gray-600">
-                                          {keyword}
-                                        </span>
-                                      ))}
-                                      {target.keywordArray.length > 2 && (
-                                        <span className="text-xs text-gray-400">+{target.keywordArray.length - 2}</span>
-                                      )}
-                                    </div>
+                <div className="h-full overflow-y-auto">
+                  <div className="divide-y divide-gray-100">
+                    {/* Group targets by domain */}
+                    {Object.entries(
+                      getFilteredTargets().reduce((acc, target) => {
+                        if (!acc[target.domain]) acc[target.domain] = [];
+                        acc[target.domain].push(target);
+                        return acc;
+                      }, {} as Record<string, TargetPageWithMetadata[]>)
+                    ).map(([domain, targets]) => {
+                      const isExpanded = !expandedDomains.has(domain);
+                      const totalUsage = targets.reduce((sum, t) => sum + t.usageCount, 0);
+                      const avgDr = Math.round(targets.reduce((sum, t) => sum + t.dr, 0) / targets.length);
+                      
+                      return (
+                        <div key={domain}>
+                          <button
+                            onClick={() => {
+                              setExpandedDomains(prev => {
+                                const newSet = new Set(prev);
+                                if (isExpanded) {
+                                  newSet.add(domain);
+                                } else {
+                                  newSet.delete(domain);
+                                }
+                                return newSet;
+                              });
+                            }}
+                            className="w-full px-4 py-3 hover:bg-gray-50 flex items-center justify-between group"
+                          >
+                            <div className="flex items-center space-x-2 flex-1 min-w-0">
+                              <ChevronRight className={`h-4 w-4 text-gray-400 transition-transform ${isExpanded ? 'rotate-90' : ''}`} />
+                              <div className="text-left min-w-0">
+                                <h3 className="font-medium text-sm text-gray-900 truncate">{domain}</h3>
+                                <div className="flex items-center space-x-2 text-xs text-gray-500 mt-0.5">
+                                  <span>{targets.length} {targets.length === 1 ? 'page' : 'pages'}</span>
+                                  <span>•</span>
+                                  <span>DR {avgDr}</span>
+                                  {totalUsage > 0 && (
+                                    <>
+                                      <span>•</span>
+                                      <span className="text-blue-600">Used {totalUsage}x</span>
+                                    </>
                                   )}
                                 </div>
-                                <ChevronRight className="h-4 w-4 text-gray-400 flex-shrink-0" />
                               </div>
-                            ))}
-                          </div>
-                        )}
-                      </div>
-                    );
-                  })}
-                  
-                  {getFilteredTargets().length === 0 && searchQuery && (
-                    <div className="text-center py-8 text-gray-500">
-                      <Search className="h-8 w-8 mx-auto mb-2 text-gray-400" />
-                      <p className="text-sm">No targets found</p>
-                      <p className="text-xs text-gray-400">Try adjusting your search</p>
-                    </div>
-                  )}
+                            </div>
+                          </button>
+                          
+                          {isExpanded && (
+                            <div className="bg-gray-50/50">
+                              {targets.map(target => (
+                                <div 
+                                  key={`${target.clientId}-${target.id}`} 
+                                  className="px-4 py-2.5 hover:bg-blue-50 cursor-pointer transition-colors flex items-center group border-l-2 border-transparent hover:border-blue-400 ml-4"
+                                  onClick={() => addLineItemFromTarget(target)}
+                                >
+                                  <div className="flex-1 min-w-0">
+                                    <p className="text-sm text-gray-700 truncate" title={target.url}>
+                                      {target.url.replace(`https://${target.domain}`, '').replace(`http://${target.domain}`, '') || '/'}
+                                    </p>
+                                    <div className="flex items-center space-x-2 mt-0.5">
+                                      <span className="text-xs text-gray-500">{target.clientName}</span>
+                                      {target.usageCount > 0 && (
+                                        <span className="text-xs text-blue-600">Used {target.usageCount}x</span>
+                                      )}
+                                    </div>
+                                    {target.keywordArray && target.keywordArray.length > 0 && (
+                                      <div className="flex flex-wrap gap-1 mt-1">
+                                        {target.keywordArray.slice(0, 2).map((keyword, idx) => (
+                                          <span key={idx} className="inline-flex items-center px-1.5 py-0.5 rounded text-xs bg-white text-gray-600 border border-gray-200">
+                                            {keyword}
+                                          </span>
+                                        ))}
+                                        {target.keywordArray.length > 2 && (
+                                          <span className="text-xs text-gray-400">+{target.keywordArray.length - 2}</span>
+                                        )}
+                                      </div>
+                                    )}
+                                  </div>
+                                  <Plus className="h-4 w-4 text-gray-400 group-hover:text-blue-600 flex-shrink-0 ml-2" />
+                                </div>
+                              ))}
+                            </div>
+                          )}
+                        </div>
+                      );
+                    })}
+                  </div>
                 </div>
               )}
             </div>
