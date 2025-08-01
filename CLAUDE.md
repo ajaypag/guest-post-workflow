@@ -13,6 +13,12 @@ Production-ready workflow system with PostgreSQL, multi-user auth, and AI agent 
 4. **Build must pass** before deployment - run `npm run build`
 
 ### Recent Changes (Keep in Mind)
+- 🔄 Order Interface Redesign (2025-01-31) - IN PROGRESS
+  - Three-column layout with space-efficient grouped views
+  - Dual-mode: Simple (wizard) vs Detailed (power user)
+  - Placeholder system for connected flow
+  - Package-based pricing tiers
+  - See: `/orders/new` and [docs/architecture/ORDER_INTERFACE_REDESIGN.md](docs/architecture/ORDER_INTERFACE_REDESIGN.md)
 - ✅ V2 Article Generation with ArticleEndCritic (2025-01-19)
 - ✅ Agent retry pattern for text response fix
 - ✅ Dynamic outline-based completion detection
@@ -148,6 +154,14 @@ npm run db:studio       # Browse database
 ```
 
 ## 🚀 Latest Features
+
+### Order Interface Redesign (In Progress)
+- Three-column layout with space-efficient grouped views
+- Dual-mode interface: Simple (wizard) vs Detailed (power user)
+- Placeholder system for connected flow between columns
+- Package-based pricing (Bronze/Silver/Gold/Custom)
+- **Status**: Initial implementation complete, further refinement needed
+- See: `/orders/new` and [docs/architecture/ORDER_INTERFACE_REDESIGN.md](docs/architecture/ORDER_INTERFACE_REDESIGN.md)
 
 ### V2 Article Generation (Production Ready)
 - True LLM orchestration without complex tools

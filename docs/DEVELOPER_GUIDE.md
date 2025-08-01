@@ -29,7 +29,8 @@ Comprehensive technical documentation for the Guest Post Workflow system.
 - [Admin UI Requirements](admin/UI_REQUIREMENTS.md) - Required admin pages
 
 ### Architecture & Design
-- **[ORDER_SYSTEM_IMPLEMENTATION.md](architecture/ORDER_SYSTEM_IMPLEMENTATION.md)** - Complete order system implementation guide (CURRENT PRIORITY)
+- **[ORDER_SYSTEM_IMPLEMENTATION.md](architecture/ORDER_SYSTEM_IMPLEMENTATION.md)** - Complete order system implementation guide
+- **[ORDER_INTERFACE_REDESIGN.md](architecture/ORDER_INTERFACE_REDESIGN.md)** - Three-column order UI redesign (IN PROGRESS)
 - [Client Security Implementation](architecture/CLIENT_SECURITY_IMPLEMENTATION.md) - Security pattern for client management
 - [Account Platform Architecture](architecture/ACCOUNT_PLATFORM_ARCHITECTURE.md) - Platform vision and user experience
 - [Order Schema Design](architecture/ORDER_SCHEMA_DESIGN.md) - Database schema for order-centric system
