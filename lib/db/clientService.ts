@@ -185,16 +185,28 @@ export class ClientService {
   // Add target pages to client
   static async addTargetPages(clientId: string, urls: string[]): Promise<{success: boolean, added: number, duplicates: number}> {
     try {
+      // Normalize URL function
+      const normalizeUrl = (url: string): string => {
+        try {
+          const urlObj = new URL(url);
+          // Force HTTPS, remove www, normalize trailing slash
+          return `https://${urlObj.hostname.replace(/^www\./, '')}${urlObj.pathname.replace(/\/$/, '') || '/'}${urlObj.search}${urlObj.hash}`;
+        } catch {
+          return url; // Return original if invalid
+        }
+      };
+
       // Get existing URLs for this client to avoid duplicates
       const existingPages = await db
         .select({ url: targetPages.url })
         .from(targetPages)
         .where(eq(targetPages.clientId, clientId));
       
-      const existingUrls = new Set(existingPages.map(p => p.url));
+      // Normalize existing URLs for comparison
+      const existingNormalizedUrls = new Set(existingPages.map(p => normalizeUrl(p.url)));
       
-      // Filter out duplicate URLs
-      const uniqueUrls = urls.filter(url => !existingUrls.has(url));
+      // Filter out duplicate URLs using normalized comparison
+      const uniqueUrls = urls.filter(url => !existingNormalizedUrls.has(normalizeUrl(url)));
       
       const duplicatesCount = urls.length - uniqueUrls.length;
       
@@ -208,7 +220,7 @@ export class ClientService {
         id: crypto.randomUUID(),
         clientId,
         url,
-        domain: new URL(url).hostname,
+        domain: new URL(url).hostname.replace(/^www\./, ''), // Normalize domain too
         status: 'active',
         addedAt: now,
       }));
