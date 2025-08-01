@@ -26,20 +26,44 @@ interface ClientWithSelection {
   id: string;
   name: string;
   website: string;
-  targetPages: Array<{ id: string; url: string; }>;
+  description?: string;
+  targetPages: Array<{
+    id: string;
+    url: string;
+    domain: string;
+    status: 'active' | 'completed' | 'inactive';
+    keywords?: string; // Comma-separated keywords from AI
+    description?: string; // AI-generated description
+    addedAt: Date;
+    completedAt?: Date;
+  }>;
   selected: boolean;
   linkCount: number;
+  // Fields from database but not used in UI
+  createdAt?: Date;
+  updatedAt?: Date;
+  createdBy?: string;
+  accountId?: string;
+  archivedAt?: Date | null;
+  archivedBy?: string | null;
+  archiveReason?: string | null;
 }
 
 interface TargetPageWithMetadata {
   id: string;
   url: string;
-  keywords?: string[];
-  dr: number;
-  traffic: number;
+  domain: string;
+  status: 'active' | 'completed' | 'inactive';
+  keywords?: string; // Comma-separated from database
+  keywordArray?: string[]; // Parsed for display
+  description?: string;
+  dr: number; // TODO: Get from actual SEO data
+  traffic: number; // TODO: Get from actual SEO data
   clientId: string;
   clientName: string;
   usageCount: number;
+  addedAt: Date;
+  completedAt?: Date;
 }
 
 export default function NewOrderPage() {
@@ -93,23 +117,43 @@ export default function NewOrderPage() {
         const client = clients.find(c => c.id === clientId);
         if (client && client.targetPages) {
           client.targetPages.forEach(page => {
+            // Only include active target pages
+            if (page.status !== 'active') return;
+            
             const usageCount = lineItems.filter(item => 
               item.clientId === clientId && item.targetPageId === page.id
             ).length;
             
+            // Parse keywords if they exist
+            const keywordArray = page.keywords ? 
+              page.keywords.split(',').map(k => k.trim()).filter(k => k) : 
+              [];
+            
             targets.push({
               id: page.id,
               url: page.url,
-              keywords: [],
-              dr: 70, // TODO: Get real metrics
-              traffic: 10000, // TODO: Get real metrics
+              domain: page.domain,
+              status: page.status,
+              keywords: page.keywords,
+              keywordArray,
+              description: page.description,
+              dr: 70, // TODO: Get real metrics from SEO tools
+              traffic: 10000, // TODO: Get real metrics from SEO tools
               clientId,
               clientName: client.name,
-              usageCount
+              usageCount,
+              addedAt: page.addedAt,
+              completedAt: page.completedAt
             });
           });
         }
       }
+    });
+    
+    // Sort by domain rating (descending) then by usage count (ascending)
+    targets.sort((a, b) => {
+      if (a.dr !== b.dr) return b.dr - a.dr;
+      return a.usageCount - b.usageCount;
     });
     
     setAvailableTargets(targets);
@@ -213,9 +257,13 @@ export default function NewOrderPage() {
   const getFilteredTargets = () => {
     if (!searchQuery) return availableTargets;
     
+    const query = searchQuery.toLowerCase();
     return availableTargets.filter(target => 
-      target.url.toLowerCase().includes(searchQuery.toLowerCase()) ||
-      target.clientName.toLowerCase().includes(searchQuery.toLowerCase())
+      target.url.toLowerCase().includes(query) ||
+      target.domain.toLowerCase().includes(query) ||
+      target.clientName.toLowerCase().includes(query) ||
+      target.description?.toLowerCase().includes(query) ||
+      target.keywordArray?.some(keyword => keyword.toLowerCase().includes(query))
     );
   };
 
@@ -486,7 +534,7 @@ export default function NewOrderPage() {
                 <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 h-4 w-4 text-gray-400" />
                 <input
                   type="text"
-                  placeholder="Search targets..."
+                  placeholder="Search by domain, keywords, description..."
                   value={searchQuery}
                   onChange={(e) => setSearchQuery(e.target.value)}
                   className="w-full pl-10 pr-3 py-2 border border-gray-300 rounded-lg text-sm focus:ring-2 focus:ring-blue-500"
@@ -506,30 +554,57 @@ export default function NewOrderPage() {
                   <div key={`${target.clientId}-${target.id}`} className="border border-gray-200 rounded-lg p-3 hover:border-blue-300 hover:bg-blue-50 cursor-pointer transition-all"
                        onClick={() => addLineItemFromTarget(target)}>
                     <div className="flex items-start justify-between mb-2">
-                      <div className="flex-1">
-                        <h4 className="text-sm font-medium text-gray-900 truncate">{target.url}</h4>
+                      <div className="flex-1 min-w-0">
+                        <h4 className="text-sm font-medium text-gray-900 truncate" title={target.url}>
+                          {target.domain}
+                        </h4>
                         <p className="text-xs text-gray-500">{target.clientName}</p>
+                        {target.description && (
+                          <p className="text-xs text-gray-400 mt-1 line-clamp-2" title={target.description}>
+                            {target.description.substring(0, 80)}...
+                          </p>
+                        )}
                       </div>
                       {target.usageCount > 0 && (
-                        <span className="inline-flex items-center px-2 py-1 rounded-full text-xs bg-blue-100 text-blue-800">
+                        <span className="inline-flex items-center px-2 py-1 rounded-full text-xs bg-blue-100 text-blue-800 ml-2">
                           Used {target.usageCount}x
                         </span>
                       )}
                     </div>
                     
-                    <div className="flex items-center space-x-4 text-xs text-gray-500">
-                      <div className="flex items-center">
-                        <span className="w-2 h-2 bg-green-500 rounded-full mr-1"></span>
-                        DR: {target.dr}
+                    {/* Keywords */}
+                    {target.keywordArray && target.keywordArray.length > 0 && (
+                      <div className="mb-2">
+                        <div className="flex flex-wrap gap-1">
+                          {target.keywordArray.slice(0, 3).map((keyword, idx) => (
+                            <span key={idx} className="inline-flex items-center px-1.5 py-0.5 rounded text-xs bg-gray-100 text-gray-600">
+                              {keyword}
+                            </span>
+                          ))}
+                          {target.keywordArray.length > 3 && (
+                            <span className="text-xs text-gray-400">
+                              +{target.keywordArray.length - 3} more
+                            </span>
+                          )}
+                        </div>
                       </div>
-                      <div className="flex items-center">
-                        <span className="w-2 h-2 bg-blue-500 rounded-full mr-1"></span>
-                        {(target.traffic / 1000).toFixed(0)}k traffic
-                      </div>
-                    </div>
+                    )}
                     
-                    <div className="mt-2 text-xs text-blue-600">
-                      Click to add to order →
+                    <div className="flex items-center justify-between">
+                      <div className="flex items-center space-x-3 text-xs text-gray-500">
+                        <div className="flex items-center">
+                          <span className="w-2 h-2 bg-green-500 rounded-full mr-1"></span>
+                          DR: {target.dr}
+                        </div>
+                        <div className="flex items-center">
+                          <span className="w-2 h-2 bg-blue-500 rounded-full mr-1"></span>
+                          {(target.traffic / 1000).toFixed(0)}k traffic
+                        </div>
+                      </div>
+                      
+                      <div className="text-xs text-blue-600 font-medium">
+                        Click to add →
+                      </div>
                     </div>
                   </div>
                 ))}
