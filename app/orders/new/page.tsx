@@ -910,6 +910,7 @@ export default function NewOrderPage() {
                   )}
                 </div>
               )}
+            </div>
           </div>
         </div>
         )}
