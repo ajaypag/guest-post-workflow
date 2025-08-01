@@ -160,9 +160,32 @@ Return ONLY the selected URLs, one per line. No explanations, no numbering, just
 
       console.log(`✅ AI selected ${selectedUrls.length} URLs`);
 
+      // Normalize URL function for better matching
+      const normalizeUrl = (url: string): string => {
+        try {
+          const urlObj = new URL(url);
+          // Force HTTPS, remove www, normalize trailing slash
+          return `https://${urlObj.hostname.replace(/^www\./, '')}${urlObj.pathname.replace(/\/$/, '') || '/'}${urlObj.search}${urlObj.hash}`;
+        } catch {
+          return url; // Return original if invalid
+        }
+      };
+
       // Match selected URLs back to target pages with their metadata
+      // Use both exact and normalized matching for better accuracy
       const rankedUrls = selectedUrls.map((url, index) => {
-        const targetPage = targetPages.find(page => page.url === url);
+        // First try exact match
+        let targetPage = targetPages.find(page => page.url === url);
+        
+        // If no exact match, try normalized matching
+        if (!targetPage) {
+          const normalizedSelected = normalizeUrl(url);
+          targetPage = targetPages.find(page => {
+            const pageNormalized = normalizeUrl(page.url);
+            return pageNormalized === normalizedSelected;
+          });
+        }
+        
         return {
           url,
           relevanceScore: 95 - (index * 3), // Simple scoring based on position

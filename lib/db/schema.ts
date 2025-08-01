@@ -102,6 +102,7 @@ export const targetPages = pgTable('target_pages', {
   id: uuid('id').primaryKey(), // Remove defaultRandom() to handle in application code
   clientId: uuid('client_id').notNull().references(() => clients.id, { onDelete: 'cascade' }),
   url: varchar('url', { length: 500 }).notNull(),
+  normalizedUrl: varchar('normalized_url', { length: 500 }), // Canonical URL for duplicate checking and AI matching
   domain: varchar('domain', { length: 255 }).notNull(),
   status: varchar('status', { length: 50 }).notNull().default('active'), // 'active' | 'completed' | 'inactive'
   keywords: text('keywords'), // Comma-separated list of AI-generated keywords

@@ -2,6 +2,7 @@ import { eq, and, isNull } from 'drizzle-orm';
 import crypto from 'crypto';
 import { db } from './connection';
 import { clients, clientAssignments, targetPages, type Client, type NewClient, type TargetPage, type NewTargetPage } from './schema';
+import { normalizeUrl, extractNormalizedDomain } from '@/lib/utils/urlUtils';
 
 export class ClientService {
   // Get all clients (excluding archived)
@@ -185,25 +186,18 @@ export class ClientService {
   // Add target pages to client
   static async addTargetPages(clientId: string, urls: string[]): Promise<{success: boolean, added: number, duplicates: number}> {
     try {
-      // Normalize URL function
-      const normalizeUrl = (url: string): string => {
-        try {
-          const urlObj = new URL(url);
-          // Force HTTPS, remove www, normalize trailing slash
-          return `https://${urlObj.hostname.replace(/^www\./, '')}${urlObj.pathname.replace(/\/$/, '') || '/'}${urlObj.search}${urlObj.hash}`;
-        } catch {
-          return url; // Return original if invalid
-        }
-      };
-
-      // Get existing URLs for this client to avoid duplicates
+      // Get existing normalized URLs for this client to avoid duplicates
       const existingPages = await db
-        .select({ url: targetPages.url })
+        .select({ normalizedUrl: targetPages.normalizedUrl })
         .from(targetPages)
         .where(eq(targetPages.clientId, clientId));
       
-      // Normalize existing URLs for comparison
-      const existingNormalizedUrls = new Set(existingPages.map(p => normalizeUrl(p.url)));
+      // Create set of existing normalized URLs (filter out nulls)
+      const existingNormalizedUrls = new Set(
+        existingPages
+          .map(p => p.normalizedUrl)
+          .filter(url => url !== null) as string[]
+      );
       
       // Filter out duplicate URLs using normalized comparison
       const uniqueUrls = urls.filter(url => !existingNormalizedUrls.has(normalizeUrl(url)));
@@ -216,14 +210,18 @@ export class ClientService {
       }
 
       const now = new Date();
-      const newPages: NewTargetPage[] = uniqueUrls.map(url => ({
-        id: crypto.randomUUID(),
-        clientId,
-        url,
-        domain: new URL(url).hostname.replace(/^www\./, ''), // Normalize domain too
-        status: 'active',
-        addedAt: now,
-      }));
+      const newPages: NewTargetPage[] = uniqueUrls.map(url => {
+        const normalized = normalizeUrl(url);
+        return {
+          id: crypto.randomUUID(),
+          clientId,
+          url,
+          normalizedUrl: normalized,
+          domain: extractNormalizedDomain(url),
+          status: 'active',
+          addedAt: now,
+        };
+      });
 
       await db.insert(targetPages).values(newPages);
       console.log(`Added ${uniqueUrls.length} new target pages (${duplicatesCount} duplicates skipped)`);
