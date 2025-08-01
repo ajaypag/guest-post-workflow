@@ -115,6 +115,28 @@ export default function NewOrderPage() {
   const [draftOrderId, setDraftOrderId] = useState<string | null>(null);
   const [lastSaved, setLastSaved] = useState<Date | null>(null);
   const [saveStatus, setSaveStatus] = useState<'idle' | 'saving' | 'saved' | 'error'>('idle');
+  const [existingDrafts, setExistingDrafts] = useState<Array<{
+    id: string;
+    accountName: string;
+    accountEmail: string;
+    totalRetail: number;
+    updatedAt: string;
+  }>>([]);
+  const [showDraftPicker, setShowDraftPicker] = useState(false);
+  
+  // Account selection state (for internal users)
+  const [selectedAccountId, setSelectedAccountId] = useState<string | null>(null);
+  const [selectedAccountEmail, setSelectedAccountEmail] = useState('');
+  const [selectedAccountName, setSelectedAccountName] = useState('');
+  const [selectedAccountCompany, setSelectedAccountCompany] = useState('');
+  const [accountsList, setAccountsList] = useState<Array<{
+    id: string;
+    email: string;
+    contactName: string;
+    companyName: string;
+    status: string;
+  }>>([]);
+  const [loadingAccounts, setLoadingAccounts] = useState(false);
   
   // UI state
   const [expandedClients, setExpandedClients] = useState<Set<string>>(new Set());
@@ -214,9 +236,65 @@ export default function NewOrderPage() {
     // when clients are refreshed and updateAvailableTargets is called
   };
 
+  // Load accounts for internal users
+  const loadAccounts = useCallback(async () => {
+    if (session?.userType !== 'internal') return;
+    
+    try {
+      setLoadingAccounts(true);
+      const response = await fetch('/api/accounts', {
+        credentials: 'include'
+      });
+      
+      if (response.ok) {
+        const data = await response.json();
+        setAccountsList(data.accounts || []);
+      }
+    } catch (error) {
+      console.error('Error loading accounts:', error);
+    } finally {
+      setLoadingAccounts(false);
+    }
+  }, [session]);
+  
+  // Load existing draft orders
+  const loadDrafts = useCallback(async () => {
+    if (!session) return;
+    
+    try {
+      const response = await fetch('/api/orders/drafts', {
+        credentials: 'include'
+      });
+      
+      if (response.ok) {
+        const data = await response.json();
+        if (data.drafts && data.drafts.length > 0) {
+          setExistingDrafts(data.drafts);
+          setShowDraftPicker(true);
+        }
+      }
+    } catch (error) {
+      console.error('Error loading drafts:', error);
+    }
+  }, [session]);
+
   useEffect(() => {
     loadClients();
-  }, [loadClients]);
+    loadDrafts();
+    
+    // Load accounts for internal users
+    if (session?.userType === 'internal') {
+      loadAccounts();
+    }
+    
+    // Set account data for account users
+    if (session?.userType === 'account') {
+      setSelectedAccountId(session.userId);
+      setSelectedAccountEmail(session.email || '');
+      setSelectedAccountName(session.name || '');
+      // Company name would need to be fetched or stored in session
+    }
+  }, [loadClients, loadAccounts, loadDrafts, session]);
 
   const updateAvailableTargets = useCallback(() => {
     const targets: TargetPageWithMetadata[] = [];
@@ -280,12 +358,42 @@ export default function NewOrderPage() {
     try {
       setSaveStatus('saving');
       
-      // Prepare order data
+      // Prepare order data based on user type
+      let accountInfo: {
+        accountId?: string | null;
+        accountEmail: string;
+        accountName: string;
+        accountCompany: string;
+      };
+      
+      if (session.userType === 'account') {
+        // Account users - use their own account info
+        accountInfo = {
+          accountEmail: session.email || '',
+          accountName: session.name || '',
+          accountCompany: selectedAccountCompany || '',
+        };
+      } else if (session.userType === 'internal') {
+        // Internal users - must select an account
+        if (!selectedAccountId || !selectedAccountEmail || !selectedAccountName) {
+          // Don't save if account info is missing
+          setSaveStatus('idle');
+          return;
+        }
+        accountInfo = {
+          accountId: selectedAccountId,
+          accountEmail: selectedAccountEmail,
+          accountName: selectedAccountName,
+          accountCompany: selectedAccountCompany || '',
+        };
+      } else {
+        setSaveStatus('error');
+        return;
+      }
+      
       const orderData = {
-        // Account info (these would come from a form in real implementation)
-        accountEmail: '',
-        accountName: '',
-        accountCompany: '',
+        // Account info
+        ...accountInfo,
         
         // Pricing
         subtotalRetail: subtotal,
@@ -326,6 +434,7 @@ export default function NewOrderPage() {
         const response = await fetch(`/api/orders/drafts/${draftOrderId}`, {
           method: 'PUT',
           headers: { 'Content-Type': 'application/json' },
+          credentials: 'include',
           body: JSON.stringify({ orderData })
         });
         
@@ -340,6 +449,7 @@ export default function NewOrderPage() {
         const response = await fetch('/api/orders/drafts', {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
+          credentials: 'include',
           body: JSON.stringify({ orderData })
         });
         
@@ -361,7 +471,8 @@ export default function NewOrderPage() {
       setSaveStatus('error');
       setTimeout(() => setSaveStatus('idle'), 2000);
     }
-  }, [session, draftOrderId, lineItems, selectedClients, clients, subtotal, total, packagePricing]);
+  }, [session, draftOrderId, lineItems, selectedClients, clients, subtotal, total, packagePricing, 
+      selectedAccountId, selectedAccountEmail, selectedAccountName, selectedAccountCompany]);
   
   // Debounced auto-save
   const debouncedSave = useCallback(
@@ -674,6 +785,123 @@ export default function NewOrderPage() {
             </div>
           </div>
         </div>
+
+        {/* Draft Orders Picker */}
+        {showDraftPicker && existingDrafts.length > 0 && (
+          <div className="bg-blue-50 border-b border-blue-200 px-6 py-4">
+            <div className="flex items-center justify-between">
+              <div className="flex items-center space-x-2">
+                <AlertCircle className="h-5 w-5 text-blue-600" />
+                <p className="text-sm text-blue-800">
+                  You have {existingDrafts.length} draft order{existingDrafts.length > 1 ? 's' : ''}. 
+                  Would you like to continue working on one?
+                </p>
+              </div>
+              <button
+                onClick={() => setShowDraftPicker(false)}
+                className="text-blue-600 hover:text-blue-800 text-sm"
+              >
+                Start Fresh
+              </button>
+            </div>
+            <div className="mt-3 space-y-2">
+              {existingDrafts.map(draft => (
+                <button
+                  key={draft.id}
+                  onClick={() => {
+                    // Load the draft order
+                    router.push(`/orders/${draft.id}/edit`);
+                  }}
+                  className="w-full text-left px-4 py-3 bg-white rounded-md border border-blue-200 hover:border-blue-400 transition-colors"
+                >
+                  <div className="flex items-center justify-between">
+                    <div>
+                      <p className="font-medium text-gray-900">
+                        {draft.accountName || 'Unnamed Order'}
+                      </p>
+                      <p className="text-sm text-gray-600">
+                        {draft.accountEmail} • Last saved {new Date(draft.updatedAt).toLocaleString()}
+                      </p>
+                    </div>
+                    <div className="text-right">
+                      <p className="font-medium text-gray-900">
+                        {formatCurrency(draft.totalRetail / 100)}
+                      </p>
+                    </div>
+                  </div>
+                </button>
+              ))}
+            </div>
+          </div>
+        )}
+
+        {/* Account Selection (Internal Users Only) */}
+        {session?.userType === 'internal' && (
+          <div className="bg-white border-b border-gray-200 px-6 py-4">
+            <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-1">Select Account *</label>
+                <select
+                  value={selectedAccountId || ''}
+                  onChange={(e) => {
+                    const accountId = e.target.value;
+                    setSelectedAccountId(accountId);
+                    // Find selected account and populate fields
+                    const account = accountsList.find(a => a.id === accountId);
+                    if (account) {
+                      setSelectedAccountEmail(account.email);
+                      setSelectedAccountName(account.contactName);
+                      setSelectedAccountCompany(account.companyName || '');
+                    }
+                  }}
+                  className="w-full px-3 py-2 border border-gray-300 rounded-md focus:ring-blue-500 focus:border-blue-500"
+                  required
+                >
+                  <option value="">Choose an account...</option>
+                  {accountsList.map(account => (
+                    <option key={account.id} value={account.id}>
+                      {account.companyName || account.contactName} ({account.email})
+                    </option>
+                  ))}
+                </select>
+              </div>
+              {selectedAccountId && (
+                <>
+                  <div>
+                    <label className="block text-sm font-medium text-gray-700 mb-1">Contact Name</label>
+                    <input
+                      type="text"
+                      value={selectedAccountName}
+                      onChange={(e) => setSelectedAccountName(e.target.value)}
+                      className="w-full px-3 py-2 border border-gray-300 rounded-md bg-gray-50"
+                      readOnly
+                    />
+                  </div>
+                  <div>
+                    <label className="block text-sm font-medium text-gray-700 mb-1">Email</label>
+                    <input
+                      type="email"
+                      value={selectedAccountEmail}
+                      onChange={(e) => setSelectedAccountEmail(e.target.value)}
+                      className="w-full px-3 py-2 border border-gray-300 rounded-md bg-gray-50"
+                      readOnly
+                    />
+                  </div>
+                  <div>
+                    <label className="block text-sm font-medium text-gray-700 mb-1">Company</label>
+                    <input
+                      type="text"
+                      value={selectedAccountCompany}
+                      onChange={(e) => setSelectedAccountCompany(e.target.value)}
+                      className="w-full px-3 py-2 border border-gray-300 rounded-md"
+                      placeholder="Company name (optional)"
+                    />
+                  </div>
+                </>
+              )}
+            </div>
+          </div>
+        )}
         
         {/* Mobile Navigation (shown on small screens) */}
         <div className="md:hidden bg-white border-b border-gray-200">

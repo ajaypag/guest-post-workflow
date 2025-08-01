@@ -2,7 +2,7 @@ import { NextRequest, NextResponse } from 'next/server';
 import { db } from '@/lib/db/connection';
 import { accounts } from '@/lib/db/accountSchema';
 import { orders } from '@/lib/db/orderSchema';
-import { eq, count, sum } from 'drizzle-orm';
+import { eq, count, sum, desc } from 'drizzle-orm';
 import { v4 as uuidv4 } from 'uuid';
 import { AuthServiceServer } from '@/lib/auth-server';
 import bcrypt from 'bcryptjs';

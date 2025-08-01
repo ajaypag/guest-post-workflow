@@ -110,6 +110,14 @@ export default function AdminDashboard() {
       iconColor: 'text-teal-600'
     },
     {
+      title: 'Draft Orders Migration',
+      description: 'Fix draft orders created by account users to use system user',
+      icon: Database,
+      href: '/admin/draft-orders-migration',
+      color: 'bg-amber-50 border-amber-200 text-amber-700',
+      iconColor: 'text-amber-600'
+    },
+    {
       title: 'Diagnostics',
       description: 'Run comprehensive system diagnostics and health checks',
       icon: Activity,

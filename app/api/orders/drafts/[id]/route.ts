@@ -18,17 +18,33 @@ export async function PUT(
     const { id: orderId } = await params;
     const { orderData } = await request.json();
 
-    // Verify the order exists and belongs to this user
-    const [existingOrder] = await db
-      .select()
-      .from(orders)
-      .where(
-        and(
-          eq(orders.id, orderId),
-          eq(orders.createdBy, session.userId),
-          eq(orders.status, 'draft')
-        )
-      );
+    // Verify the order exists and user has access
+    let existingOrder;
+    if (session.userType === 'internal') {
+      // Internal users can access drafts they created
+      [existingOrder] = await db
+        .select()
+        .from(orders)
+        .where(
+          and(
+            eq(orders.id, orderId),
+            eq(orders.createdBy, session.userId),
+            eq(orders.status, 'draft')
+          )
+        );
+    } else if (session.userType === 'account') {
+      // Account users can access drafts for their account
+      [existingOrder] = await db
+        .select()
+        .from(orders)
+        .where(
+          and(
+            eq(orders.id, orderId),
+            eq(orders.accountId, session.userId), // session.userId is accountId for account users
+            eq(orders.status, 'draft')
+          )
+        );
+    }
 
     if (!existingOrder) {
       return NextResponse.json({ error: 'Draft order not found' }, { status: 404 });
@@ -123,16 +139,30 @@ export async function DELETE(
 
     const { id: orderId } = await params;
 
-    // Delete only if it's a draft and belongs to this user
-    await db
-      .delete(orders)
-      .where(
-        and(
-          eq(orders.id, orderId),
-          eq(orders.createdBy, session.userId),
-          eq(orders.status, 'draft')
-        )
-      );
+    // Delete only if it's a draft and user has access
+    if (session.userType === 'internal') {
+      // Internal users can delete drafts they created
+      await db
+        .delete(orders)
+        .where(
+          and(
+            eq(orders.id, orderId),
+            eq(orders.createdBy, session.userId),
+            eq(orders.status, 'draft')
+          )
+        );
+    } else if (session.userType === 'account') {
+      // Account users can delete drafts for their account
+      await db
+        .delete(orders)
+        .where(
+          and(
+            eq(orders.id, orderId),
+            eq(orders.accountId, session.userId), // session.userId is accountId for account users
+            eq(orders.status, 'draft')
+          )
+        );
+    }
 
     return NextResponse.json({ success: true });
 
