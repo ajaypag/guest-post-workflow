@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, useEffect, useCallback } from 'react';
+import { useState, useEffect, useCallback, useRef } from 'react';
 import { useRouter } from 'next/navigation';
 import AuthWrapper from '@/components/AuthWrapper';
 import Header from '@/components/Header';
@@ -283,29 +283,30 @@ export default function NewOrderPage() {
 
   useEffect(() => {
     console.log('[DIAGNOSTIC] Main useEffect triggered at', new Date().toISOString());
-    console.log('[DIAGNOSTIC] Dependencies:', { 
-      loadClients: typeof loadClients,
-      loadAccounts: typeof loadAccounts,
-      loadDrafts: typeof loadDrafts,
-      session: session?.userType 
+    console.log('[DIAGNOSTIC] Session:', { 
+      userType: session?.userType,
+      userId: session?.userId 
     });
+    
+    // Only load data once when session is available
+    if (!session) return;
     
     loadClients();
     loadDrafts();
     
     // Load accounts for internal users
-    if (session?.userType === 'internal') {
+    if (session.userType === 'internal') {
       loadAccounts();
     }
     
     // Set account data for account users
-    if (session?.userType === 'account') {
+    if (session.userType === 'account') {
       setSelectedAccountId(session.userId);
       setSelectedAccountEmail(session.email || '');
       setSelectedAccountName(session.name || '');
       // Company name would need to be fetched or stored in session
     }
-  }, [loadClients, loadAccounts, loadDrafts, session]);
+  }, [session?.userType, session?.userId]); // Only depend on session properties, not functions
 
   const updateAvailableTargets = useCallback(() => {
     const targets: TargetPageWithMetadata[] = [];
@@ -485,10 +486,14 @@ export default function NewOrderPage() {
   }, [session, draftOrderId, lineItems, selectedClients, clients, subtotal, total, packagePricing, 
       selectedAccountId, selectedAccountEmail, selectedAccountName, selectedAccountCompany]);
   
-  // Debounced auto-save
+  // Use ref to avoid recreating debounced function
+  const saveOrderDraftRef = useRef(saveOrderDraft);
+  saveOrderDraftRef.current = saveOrderDraft;
+  
+  // Debounced auto-save - stable reference
   const debouncedSave = useCallback(
-    debounce(() => saveOrderDraft(), 2000),
-    [saveOrderDraft]
+    debounce(() => saveOrderDraftRef.current(), 2000),
+    [] // No dependencies, stable function
   );
   
   // Trigger auto-save when order changes
@@ -496,33 +501,9 @@ export default function NewOrderPage() {
     if (lineItems.length > 0) {
       debouncedSave();
     }
-  }, [lineItems, selectedClients, debouncedSave]);
+  }, [lineItems.length, debouncedSave]); // Only depend on lineItems.length to avoid deep comparison
   
-  // Load draft on mount
-  useEffect(() => {
-    const loadDraft = async () => {
-      if (!session) return;
-      
-      try {
-        const response = await fetch('/api/orders/drafts');
-        if (response.ok) {
-          const { drafts } = await response.json();
-          if (drafts && drafts.length > 0) {
-            // Load the most recent draft
-            const draft = drafts[0];
-            setDraftOrderId(draft.id);
-            
-            // TODO: Restore order state from draft
-            // This would involve parsing the order groups and recreating the UI state
-          }
-        }
-      } catch (error) {
-        console.error('Error loading draft:', error);
-      }
-    };
-    
-    loadDraft();
-  }, [session]);
+  // Draft loading is handled by loadDrafts() in the main useEffect above
 
   const toggleClientSelection = (clientId: string, selected: boolean) => {
     setSelectedClients(prev => {
