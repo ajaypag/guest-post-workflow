@@ -300,13 +300,13 @@ export default function NewOrderPage() {
 
   return (
     <AuthWrapper>
-      <div className="min-h-screen bg-gray-50">
+      <div className="min-h-screen bg-gray-50 flex flex-col">
         <Header />
         
-        {/* Full-screen three-column layout */}
-        <div className="h-[calc(100vh-64px)] flex">
+        {/* Full-screen three-column layout - adjusted for bottom bar */}
+        <div className="flex-1 flex overflow-hidden relative">
           {error && (
-            <div className="absolute top-20 left-1/2 transform -translate-x-1/2 z-50 bg-red-50 border border-red-200 rounded-lg p-4 flex items-start shadow-lg">
+            <div className="absolute top-4 left-1/2 transform -translate-x-1/2 z-50 bg-red-50 border border-red-200 rounded-lg p-4 flex items-start shadow-lg">
               <AlertCircle className="h-5 w-5 text-red-600 mt-0.5 mr-3" />
               <div>
                 <p className="text-red-800">{error}</p>
@@ -385,23 +385,6 @@ export default function NewOrderPage() {
               </div>
             )}
             
-            {/* Totals */}
-            <div className="mt-6 pt-6 border-t border-gray-200">
-              <div className="space-y-2 text-sm">
-                <div className="flex justify-between">
-                  <span className="text-gray-600">Total Links:</span>
-                  <span className="font-medium">{getTotalLinks()}</span>
-                </div>
-                <div className="flex justify-between">
-                  <span className="text-gray-600">Selected Clients:</span>
-                  <span className="font-medium">{getTotalClients()}</span>
-                </div>
-                <div className="flex justify-between text-lg font-semibold pt-2 border-t">
-                  <span>Total Cost:</span>
-                  <span>{formatCurrency(total)}</span>
-                </div>
-              </div>
-            </div>
           </div>
 
           {/* Middle Column - Order Line Items */}
@@ -509,18 +492,6 @@ export default function NewOrderPage() {
               </div>
             )}
             
-            {/* Action Button */}
-            {lineItems.length > 0 && (
-              <div className="mt-6 pt-6 border-t border-gray-200">
-                <button
-                  onClick={handleSubmit}
-                  className="w-full py-3 bg-blue-600 text-white font-medium rounded-lg hover:bg-blue-700 transition-colors flex items-center justify-center"
-                >
-                  Continue to Site Selection
-                  <ChevronRight className="h-5 w-5 ml-2" />
-                </button>
-              </div>
-            )}
           </div>
           
           {/* Right Sidebar - Target URLs */}
@@ -618,6 +589,116 @@ export default function NewOrderPage() {
                 )}
               </div>
             )}
+          </div>
+        </div>
+        
+        {/* Fixed Bottom Bar */}
+        <div className="bg-white border-t border-gray-200 shadow-lg">
+          <div className="max-w-full px-6 py-4">
+            <div className="flex items-center justify-between">
+              {/* Left Side - Order Summary Stats */}
+              <div className="flex items-center space-x-8">
+                <div className="flex items-center space-x-2">
+                  <Building className="h-5 w-5 text-gray-400" />
+                  <div>
+                    <p className="text-xs text-gray-500">Clients</p>
+                    <p className="text-lg font-semibold text-gray-900">{getTotalClients()}</p>
+                  </div>
+                </div>
+                
+                <div className="flex items-center space-x-2">
+                  <Link className="h-5 w-5 text-gray-400" />
+                  <div>
+                    <p className="text-xs text-gray-500">Total Links</p>
+                    <p className="text-lg font-semibold text-gray-900">{getTotalLinks()}</p>
+                  </div>
+                </div>
+                
+                <div className="flex items-center space-x-2">
+                  <Target className="h-5 w-5 text-gray-400" />
+                  <div>
+                    <p className="text-xs text-gray-500">Unique Targets</p>
+                    <p className="text-lg font-semibold text-gray-900">
+                      {new Set(lineItems.map(item => item.targetPageId).filter(Boolean)).size}
+                    </p>
+                  </div>
+                </div>
+                
+                <div className="flex items-center space-x-2">
+                  <Type className="h-5 w-5 text-gray-400" />
+                  <div>
+                    <p className="text-xs text-gray-500">Avg. Price/Link</p>
+                    <p className="text-lg font-semibold text-gray-900">
+                      {lineItems.length > 0 ? formatCurrency(total / lineItems.length) : '$0'}
+                    </p>
+                  </div>
+                </div>
+              </div>
+              
+              {/* Right Side - Actions and Total */}
+              <div className="flex items-center space-x-6">
+                {/* Quick Actions */}
+                <div className="flex items-center space-x-3">
+                  <button
+                    onClick={() => setLineItems([])}
+                    disabled={lineItems.length === 0}
+                    className="px-3 py-2 text-sm text-gray-600 hover:text-gray-900 disabled:opacity-50 disabled:cursor-not-allowed"
+                  >
+                    Clear All
+                  </button>
+                  <button
+                    onClick={() => {
+                      // TODO: Implement save draft
+                      console.log('Saving draft...');
+                    }}
+                    disabled={lineItems.length === 0}
+                    className="px-3 py-2 text-sm text-gray-600 hover:text-gray-900 disabled:opacity-50 disabled:cursor-not-allowed"
+                  >
+                    Save Draft
+                  </button>
+                </div>
+                
+                <div className="h-12 w-px bg-gray-200"></div>
+                
+                {/* Total and Continue */}
+                <div className="flex items-center space-x-4">
+                  <div className="text-right">
+                    <p className="text-sm text-gray-500">Order Total</p>
+                    <p className="text-2xl font-bold text-gray-900">{formatCurrency(total)}</p>
+                  </div>
+                  
+                  <button
+                    onClick={handleSubmit}
+                    disabled={lineItems.length === 0 || lineItems.some(item => !item.clientId)}
+                    className="px-6 py-3 bg-blue-600 text-white font-medium rounded-lg hover:bg-blue-700 
+                             transition-colors flex items-center disabled:bg-gray-300 disabled:cursor-not-allowed"
+                  >
+                    Continue to Site Selection
+                    <ChevronRight className="h-5 w-5 ml-2" />
+                  </button>
+                </div>
+              </div>
+            </div>
+            
+            {/* Progress Indicator */}
+            <div className="mt-4 pt-4 border-t border-gray-100">
+              <div className="flex items-center justify-between text-xs text-gray-500">
+                <div className="flex items-center space-x-2">
+                  <CheckCircle className="h-4 w-4 text-blue-600" />
+                  <span className="font-medium text-gray-900">Step 1: Build Order</span>
+                </div>
+                <ChevronRight className="h-4 w-4" />
+                <div className="flex items-center space-x-2">
+                  <div className="h-4 w-4 rounded-full border-2 border-gray-300"></div>
+                  <span>Step 2: Select Publishing Sites</span>
+                </div>
+                <ChevronRight className="h-4 w-4" />
+                <div className="flex items-center space-x-2">
+                  <div className="h-4 w-4 rounded-full border-2 border-gray-300"></div>
+                  <span>Step 3: Review & Confirm</span>
+                </div>
+              </div>
+            </div>
           </div>
         </div>
       </div>
