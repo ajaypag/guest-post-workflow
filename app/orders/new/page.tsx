@@ -97,6 +97,8 @@ export default function NewOrderPage() {
   
   // Mode state
   const [orderMode, setOrderMode] = useState<'detailed' | 'simple'>('detailed');
+  const [expandedClients, setExpandedClients] = useState<Set<string>>(new Set());
+  const [expandedDomains, setExpandedDomains] = useState<Set<string>>(new Set());
 
   const loadClients = useCallback(async () => {
     try {
@@ -527,7 +529,7 @@ export default function NewOrderPage() {
           </div>
         ) : (
           /* Detailed Mode - Three Column Layout */
-          <div className="flex-1 flex overflow-hidden relative">
+          <div className="flex-1 flex gap-4 p-4 overflow-hidden relative bg-gray-100">
           {error && (
             <div className="absolute top-4 left-1/2 transform -translate-x-1/2 z-50 bg-red-50 border border-red-200 rounded-lg p-4 flex items-start shadow-lg">
               <AlertCircle className="h-5 w-5 text-red-600 mt-0.5 mr-3" />
@@ -544,222 +546,264 @@ export default function NewOrderPage() {
           )}
 
           {/* Left Sidebar - Client Selection */}
-          <div className="w-80 bg-white border-r border-gray-200 p-6 overflow-y-auto">
-            <div className="mb-6">
-              <h2 className="text-xl font-semibold text-gray-900 mb-2">Select Clients</h2>
-              <p className="text-sm text-gray-600">Choose clients and set link counts for your order</p>
-            </div>
-            
-            {loadingClients ? (
-              <div className="flex items-center justify-center py-8">
-                <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-blue-600"></div>
-              </div>
-            ) : (
-              <div className="space-y-3">
-                {/* Add New Client Button */}
+          <div className="w-80 bg-white rounded-lg shadow-sm overflow-hidden flex flex-col">
+            <div className="p-4 border-b bg-gray-50">
+              <div className="flex items-center justify-between">
+                <div>
+                  <h2 className="text-lg font-semibold text-gray-900">Select Brands</h2>
+                  <p className="text-sm text-gray-600 mt-1">
+                    {selectedClients.size} of {clients.length} selected
+                  </p>
+                </div>
                 <button 
                   onClick={() => {
                     // TODO: Implement inline client creation modal
                     console.log('Add new client');
                   }}
-                  className="w-full border-2 border-dashed border-gray-300 rounded-lg p-4 hover:border-blue-400 hover:bg-blue-50 transition-all flex items-center justify-center space-x-2 text-gray-600 hover:text-blue-600"
+                  className="p-1.5 text-blue-600 hover:bg-blue-50 rounded"
+                  title="Add new brand"
                 >
                   <Plus className="h-5 w-5" />
-                  <span className="font-medium">Add New Brand</span>
                 </button>
-                
-                {clients.map(client => {
-                  const clientSelection = selectedClients.get(client.id);
-                  const isSelected = clientSelection?.selected || false;
-                  const linkCount = clientSelection?.linkCount || (isSelected ? 1 : 0);
-                  
-                  return (
-                    <div 
-                      key={client.id} 
-                      className={`border rounded-lg p-4 transition-all ${
-                        isSelected ? 'border-blue-500 bg-blue-50' : 'border-gray-200 hover:border-gray-300'
-                      }`}
-                    >
-                      <div className="flex items-start justify-between">
+              </div>
+            </div>
+            
+            <div className="flex-1 overflow-y-auto p-4">
+              {loadingClients ? (
+                <div className="flex items-center justify-center py-8">
+                  <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-blue-600"></div>
+                </div>
+              ) : (
+                <div className="space-y-2">
+                  {clients.map(client => {
+                    const clientSelection = selectedClients.get(client.id);
+                    const isSelected = clientSelection?.selected || false;
+                    const linkCount = clientSelection?.linkCount || (isSelected ? 1 : 0);
+                    
+                    return (
+                      <div 
+                        key={client.id} 
+                        className={`border rounded-lg p-3 transition-all ${
+                          isSelected ? 'border-blue-500 bg-blue-50' : 'border-gray-200 hover:border-gray-300'
+                        }`}
+                      >
                         <div className="flex items-start space-x-3">
                           <input
                             type="checkbox"
                             checked={isSelected}
                             onChange={(e) => toggleClientSelection(client.id, e.target.checked)}
-                            className="mt-1 h-4 w-4 text-blue-600 focus:ring-blue-500 border-gray-300 rounded"
+                            className="mt-0.5 h-4 w-4 text-blue-600 focus:ring-blue-500 border-gray-300 rounded"
                           />
-                          <div className="flex-1">
-                            <h3 className="font-medium text-gray-900">{client.name}</h3>
-                            <p className="text-sm text-gray-500">{client.website}</p>
-                            <p className="text-xs text-gray-400 mt-1">
-                              {client.targetPages?.length || 0} target pages
-                            </p>
+                          <div className="flex-1 min-w-0">
+                            <h3 className="font-medium text-sm text-gray-900 truncate">{client.name}</h3>
+                            <p className="text-xs text-gray-500 truncate">{client.website}</p>
+                            <div className="flex items-center justify-between mt-2">
+                              <span className="text-xs text-gray-400">
+                                {client.targetPages?.filter(p => p.status === 'active').length || 0} pages
+                              </span>
+                              {isSelected && (
+                                <div className="flex items-center space-x-2">
+                                  <button
+                                    onClick={(e) => {
+                                      e.stopPropagation();
+                                      updateClientLinkCount(client.id, Math.max(0, linkCount - 1));
+                                    }}
+                                    className="p-0.5 text-gray-400 hover:text-gray-600"
+                                  >
+                                    <svg className="h-4 w-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M20 12H4" />
+                                    </svg>
+                                  </button>
+                                  <input
+                                    type="number"
+                                    min="0"
+                                    max="50"
+                                    value={linkCount}
+                                    onChange={(e) => {
+                                      e.stopPropagation();
+                                      updateClientLinkCount(client.id, parseInt(e.target.value) || 0);
+                                    }}
+                                    onClick={(e) => e.stopPropagation()}
+                                    className="w-12 px-1 py-0.5 text-sm text-center border border-blue-300 rounded focus:ring-1 focus:ring-blue-500"
+                                  />
+                                  <button
+                                    onClick={(e) => {
+                                      e.stopPropagation();
+                                      updateClientLinkCount(client.id, linkCount + 1);
+                                    }}
+                                    className="p-0.5 text-gray-400 hover:text-gray-600"
+                                  >
+                                    <svg className="h-4 w-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 4v16m8-8H4" />
+                                    </svg>
+                                  </button>
+                                </div>
+                              )}
+                            </div>
                           </div>
                         </div>
                       </div>
-                      
-                      {isSelected && (
-                        <div className="mt-3 pt-3 border-t border-blue-200">
-                          <label className="block text-sm font-medium text-blue-900 mb-1">
-                            Links for this client
-                          </label>
-                          <input
-                            type="number"
-                            min="0"
-                            max="50"
-                            value={linkCount}
-                            onChange={(e) => updateClientLinkCount(client.id, parseInt(e.target.value) || 0)}
-                            className="w-full px-2 py-1 text-sm border border-blue-300 rounded focus:ring-1 focus:ring-blue-500"
-                            placeholder="0"
-                          />
-                        </div>
-                      )}
-                    </div>
-                  );
-                })}
-              </div>
-            )}
-            
+                    );
+                  })}
+                </div>
+              )}
+            </div>
           </div>
 
           {/* Middle Column - Order Line Items */}
-          <div className="flex-1 bg-white p-6 overflow-y-auto">
-            <div className="mb-6">
-              <h2 className="text-xl font-semibold text-gray-900 mb-2">Order Line Items</h2>
-              <p className="text-sm text-gray-600">Click target URLs on the right to populate order items</p>
-              
-              <div className="mt-4 flex items-center justify-between">
-                <div className="text-sm text-gray-500">
-                  {lineItems.length} items • {formatCurrency(total)} total
+          <div className="flex-1 bg-white rounded-lg shadow-sm overflow-hidden flex flex-col">
+            <div className="p-4 border-b bg-gray-50">
+              <div className="flex items-center justify-between">
+                <div>
+                  <h2 className="text-lg font-semibold text-gray-900">Order Details</h2>
+                  <p className="text-sm text-gray-600 mt-1">
+                    {lineItems.length} items • {lineItems.filter(item => item.targetPageUrl).length} assigned
+                  </p>
                 </div>
-                <button
-                  onClick={addEmptyLineItem}
-                  className="px-3 py-1 text-sm bg-blue-600 text-white rounded hover:bg-blue-700 flex items-center"
-                >
-                  <Plus className="h-4 w-4 mr-1" />
-                  Add Manual Item
-                </button>
+                <div className="flex items-center space-x-2">
+                  <select className="text-sm border border-gray-300 rounded px-2 py-1">
+                    <option>Group by Client</option>
+                    <option>Group by Status</option>
+                    <option>No Grouping</option>
+                  </select>
+                  <button
+                    onClick={addEmptyLineItem}
+                    className="px-3 py-1 text-sm bg-blue-600 text-white rounded hover:bg-blue-700 flex items-center"
+                  >
+                    <Plus className="h-4 w-4 mr-1" />
+                    Add Item
+                  </button>
+                </div>
               </div>
             </div>
-
-            {lineItems.length === 0 ? (
-              <div className="text-center py-12 text-gray-500">
-                <Package className="h-12 w-12 mx-auto mb-3 text-gray-400" />
-                <p className="text-lg font-medium mb-2">No order items yet</p>
-                <p className="text-sm mb-4">Select clients on the left, then click target URLs on the right to build your order</p>
-                <div className="text-xs text-gray-400">
-                  <p>1. ← Select clients with checkboxes</p>
-                  <p>2. → Click target URLs to add line items</p>
-                  <p>3. Edit anchor text and details here</p>
+            
+            <div className="flex-1 overflow-y-auto">
+              {lineItems.length === 0 ? (
+                <div className="text-center py-8 text-gray-500">
+                  <p>No items added yet.</p>
+                  <p className="text-sm mt-2">Select clients from the left to get started.</p>
                 </div>
-              </div>
-            ) : (
-              <div className="space-y-3">
-                {lineItems.map((item, index) => {
-                  const isPlaceholder = !item.targetPageId;
-                  const itemNumber = lineItems.filter(li => li.clientId === item.clientId).findIndex(li => li.id === item.id) + 1;
-                  const totalForClient = lineItems.filter(li => li.clientId === item.clientId).length;
-                  
-                  return (
-                    <div key={item.id} className={`border rounded-lg p-4 transition-colors ${
-                      isPlaceholder 
-                        ? 'border-dashed border-gray-300 bg-gray-50 hover:border-blue-300 hover:bg-blue-50' 
-                        : 'border-gray-200 hover:border-gray-300'
-                    }`}>
-                      <div className="flex items-start justify-between">
-                        <div className="flex-1 grid grid-cols-2 gap-4">
-                          {/* Client Info */}
-                          <div>
-                            <label className="block text-xs font-medium text-gray-700 mb-1">Client</label>
-                            <div className="flex items-center space-x-2">
-                              <Building className="h-4 w-4 text-gray-400" />
-                              <span className="text-sm font-medium">{item.clientName}</span>
-                            </div>
-                            <div className="text-xs text-gray-500 mt-1">
-                              Link {itemNumber} of {totalForClient}
-                            </div>
-                          </div>
-                          
-                          {/* Target Page */}
-                          <div>
-                            <label className="block text-xs font-medium text-gray-700 mb-1">Target Page</label>
-                            {isPlaceholder ? (
-                              <div className="flex items-center space-x-2">
-                                <Target className="h-4 w-4 text-gray-400" />
-                                <span className="text-sm text-gray-500 italic">Click a target URL to assign →</span>
-                              </div>
-                            ) : (
-                              <div className="flex items-center space-x-2">
-                                <ExternalLink className="h-4 w-4 text-gray-400" />
-                                <span className="text-sm truncate">{item.targetPageUrl}</span>
-                              </div>
-                            )}
-                          </div>
-                        </div>
-                      
-                      {/* Actions */}
-                      <div className="flex items-center space-x-2 ml-4">
-                        <span className="text-sm font-medium">{formatCurrency(item.price)}</span>
-                        <button
-                          onClick={() => duplicateLineItem(item.id)}
-                          className="p-1 text-gray-400 hover:text-gray-600"
-                          title="Duplicate"
-                        >
-                          <Copy className="h-4 w-4" />
-                        </button>
-                        <button
-                          onClick={() => removeLineItem(item.id)}
-                          className="p-1 text-red-400 hover:text-red-600"
-                          title="Remove"
-                        >
-                          <Trash2 className="h-4 w-4" />
-                        </button>
-                      </div>
-                    </div>
+              ) : (
+                <div>
+                  {/* Group items by client */}
+                  {Object.entries(
+                    lineItems.reduce((acc, item) => {
+                      if (!acc[item.clientName]) acc[item.clientName] = [];
+                      acc[item.clientName].push(item);
+                      return acc;
+                    }, {} as Record<string, typeof lineItems>)
+                  ).map(([clientName, items]) => {
+                    const isExpanded = !expandedClients.has(clientName); // Default to expanded (not in set = expanded)
+                    const assignedCount = items.filter(item => item.targetPageUrl).length;
                     
-                        {/* Anchor Text */}
-                        {!isPlaceholder && (
-                          <div className="mt-3 pt-3 border-t border-gray-100">
-                            <label className="block text-xs font-medium text-gray-700 mb-1">Anchor Text</label>
-                            <div className="flex items-center space-x-2">
-                              <input
-                                type="text"
-                                value={item.anchorText || ''}
-                                onChange={(e) => updateLineItem(item.id, { anchorText: e.target.value })}
-                                placeholder="Enter anchor text for this link"
-                                className="flex-1 px-3 py-2 border border-gray-300 rounded-lg text-sm focus:ring-2 focus:ring-blue-500"
-                              />
-                              {!item.anchorText && item.clientName && (
+                    return (
+                      <div key={clientName} className="border-b last:border-b-0">
+                        <button
+                          onClick={() => {
+                            setExpandedClients(prev => {
+                              const newSet = new Set(prev);
+                              if (isExpanded) {
+                                newSet.delete(clientName);
+                              } else {
+                                newSet.add(clientName);
+                              }
+                              return newSet;
+                            });
+                          }}
+                          className="w-full px-4 py-2 bg-gray-50 hover:bg-gray-100 flex items-center justify-between sticky top-0 z-10"
+                        >
+                          <div className="flex items-center space-x-2">
+                            {isExpanded ? <ChevronDown className="h-4 w-4" /> : <ChevronRight className="h-4 w-4" />}
+                            <h3 className="font-medium text-sm text-gray-700">{clientName}</h3>
+                            <span className="text-xs text-gray-500">
+                              {items.length} links • {assignedCount} assigned
+                            </span>
+                          </div>
+                          <span className="text-sm font-medium text-gray-900">
+                            {formatCurrency(items.reduce((sum, item) => sum + item.price, 0))}
+                          </span>
+                        </button>
+                        
+                        {isExpanded && (
+                          <div className="divide-y">
+                            {items.map((item) => (
+                              <div
+                                key={item.id}
+                                className="px-4 py-2 hover:bg-gray-50 transition-colors flex items-center space-x-3"
+                              >
+                                <div className="flex-1 min-w-0">
+                                  {item.targetPageUrl ? (
+                                    <div className="flex items-center space-x-3">
+                                      <div className="flex-1 min-w-0">
+                                        <p className="text-sm text-gray-900 truncate">{item.targetPageUrl}</p>
+                                        <input
+                                          type="text"
+                                          value={item.anchorText || ''}
+                                          onChange={(e) => updateLineItem(item.id, { anchorText: e.target.value })}
+                                          placeholder="Anchor text..."
+                                          className="mt-1 w-full px-2 py-1 text-xs border rounded focus:outline-none focus:ring-1 focus:ring-blue-500"
+                                        />
+                                      </div>
+                                      <input
+                                        type="number"
+                                        value={item.price}
+                                        onChange={(e) => updateLineItem(item.id, { price: parseFloat(e.target.value) || 0 })}
+                                        className="w-16 px-2 py-1 text-xs border rounded focus:outline-none focus:ring-1 focus:ring-blue-500"
+                                      />
+                                    </div>
+                                  ) : (
+                                    <div className="flex items-center justify-between">
+                                      <p className="text-sm text-gray-500 italic">⚡ Unassigned - click target to fill</p>
+                                      <span className="text-xs text-gray-400">${item.price}</span>
+                                    </div>
+                                  )}
+                                </div>
                                 <button
-                                  onClick={() => updateLineItem(item.id, { anchorText: generateAnchorText(item.clientName) })}
-                                  className="px-3 py-2 text-xs text-blue-600 hover:text-blue-700 border border-blue-200 rounded-lg"
+                                  onClick={() => removeLineItem(item.id)}
+                                  className="text-gray-400 hover:text-red-500 flex-shrink-0"
                                 >
-                                  Auto-generate
+                                  <X className="h-4 w-4" />
                                 </button>
-                              )}
-                            </div>
+                              </div>
+                            ))}
                           </div>
                         )}
                       </div>
                     );
                   })}
-              </div>
-            )}
-            
+                </div>
+              )}
+            </div>
           </div>
           
           {/* Right Sidebar - Target URLs */}
-          <div className="w-80 bg-white border-l border-gray-200 p-6 overflow-y-auto">
-            <div className="mb-6">
-              <h2 className="text-xl font-semibold text-gray-900 mb-2">Target URLs</h2>
-              <p className="text-sm text-gray-600">Click URLs to add them to your order</p>
+          <div className="w-80 bg-white rounded-lg shadow-sm overflow-hidden flex flex-col">
+            <div className="p-4 border-b bg-gray-50">
+              <div className="flex items-center justify-between mb-3">
+                <div>
+                  <h2 className="text-lg font-semibold text-gray-900">Target Pages</h2>
+                  <p className="text-sm text-gray-600 mt-1">
+                    {availableTargets.length} pages available
+                  </p>
+                </div>
+                <button 
+                  onClick={() => {
+                    // TODO: Implement inline target page creation modal
+                    console.log('Add custom target');
+                  }}
+                  className="p-1.5 text-blue-600 hover:bg-blue-50 rounded"
+                  title="Add custom target"
+                >
+                  <Plus className="h-5 w-5" />
+                </button>
+              </div>
               
               {/* Search */}
-              <div className="mt-4 relative">
+              <div className="relative">
                 <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 h-4 w-4 text-gray-400" />
                 <input
                   type="text"
-                  placeholder="Search by domain, keywords, description..."
+                  placeholder="Search domains, keywords..."
                   value={searchQuery}
                   onChange={(e) => setSearchQuery(e.target.value)}
                   className="w-full pl-10 pr-3 py-2 border border-gray-300 rounded-lg text-sm focus:ring-2 focus:ring-blue-500"
@@ -767,94 +811,105 @@ export default function NewOrderPage() {
               </div>
             </div>
             
-            {selectedClients.size === 0 ? (
-              <div className="text-center py-8 text-gray-500">
-                <Target className="h-8 w-8 mx-auto mb-2 text-gray-400" />
-                <p className="text-sm mb-1">Select clients first</p>
-                <p className="text-xs text-gray-400">Choose clients on the left to see their target pages here</p>
-              </div>
-            ) : (
-              <div className="space-y-4">
-                {/* Add Custom Target Button */}
-                <button 
-                  onClick={() => {
-                    // TODO: Implement inline target page creation modal
-                    console.log('Add custom target');
-                  }}
-                  className="w-full border-2 border-dashed border-gray-300 rounded-lg p-3 hover:border-blue-400 hover:bg-blue-50 transition-all flex items-center justify-center space-x-2 text-gray-600 hover:text-blue-600 text-sm"
-                >
-                  <Plus className="h-4 w-4" />
-                  <span className="font-medium">Add Custom Target URL</span>
-                </button>
-                
-                {getFilteredTargets().map(target => (
-                  <div key={`${target.clientId}-${target.id}`} className="border border-gray-200 rounded-lg p-3 hover:border-blue-300 hover:bg-blue-50 cursor-pointer transition-all"
-                       onClick={() => addLineItemFromTarget(target)}>
-                    <div className="flex items-start justify-between mb-2">
-                      <div className="flex-1 min-w-0">
-                        <h4 className="text-sm font-medium text-gray-900 truncate" title={target.url}>
-                          {target.domain}
-                        </h4>
-                        <p className="text-xs text-gray-500">{target.clientName}</p>
-                        {target.description && (
-                          <p className="text-xs text-gray-400 mt-1 line-clamp-2" title={target.description}>
-                            {target.description.substring(0, 80)}...
-                          </p>
+            <div className="flex-1 overflow-y-auto">
+              {selectedClients.size === 0 ? (
+                <div className="text-center py-8 text-gray-500">
+                  <Target className="h-8 w-8 mx-auto mb-2 text-gray-400" />
+                  <p className="text-sm mb-1">Select clients first</p>
+                  <p className="text-xs text-gray-400">Choose clients on the left to see their target pages</p>
+                </div>
+              ) : (
+                <div>
+                  {/* Group targets by domain */}
+                  {Object.entries(
+                    getFilteredTargets().reduce((acc, target) => {
+                      if (!acc[target.domain]) acc[target.domain] = [];
+                      acc[target.domain].push(target);
+                      return acc;
+                    }, {} as Record<string, TargetPageWithMetadata[]>)
+                  ).map(([domain, targets]) => {
+                    const isExpanded = !expandedDomains.has(domain); // Default to expanded (not in set = expanded)
+                    const totalUsage = targets.reduce((sum, t) => sum + t.usageCount, 0);
+                    const avgDr = Math.round(targets.reduce((sum, t) => sum + t.dr, 0) / targets.length);
+                    
+                    return (
+                      <div key={domain} className="border-b last:border-b-0">
+                        <button
+                          onClick={() => {
+                            setExpandedDomains(prev => {
+                              const newSet = new Set(prev);
+                              if (isExpanded) {
+                                newSet.delete(domain);
+                              } else {
+                                newSet.add(domain);
+                              }
+                              return newSet;
+                            });
+                          }}
+                          className="w-full px-4 py-3 bg-gray-50 hover:bg-gray-100 flex items-center justify-between sticky top-0 z-10"
+                        >
+                          <div className="flex items-center space-x-2">
+                            {isExpanded ? <ChevronDown className="h-4 w-4" /> : <ChevronRight className="h-4 w-4" />}
+                            <div className="text-left">
+                              <h3 className="font-medium text-sm text-gray-900">{domain}</h3>
+                              <div className="flex items-center space-x-3 text-xs text-gray-500 mt-0.5">
+                                <span>{targets.length} pages</span>
+                                <span>DR {avgDr}</span>
+                                {totalUsage > 0 && <span className="text-blue-600">Used {totalUsage}x</span>}
+                              </div>
+                            </div>
+                          </div>
+                        </button>
+                        
+                        {isExpanded && (
+                          <div className="divide-y">
+                            {targets.map(target => (
+                              <div 
+                                key={`${target.clientId}-${target.id}`} 
+                                className="px-4 py-3 hover:bg-blue-50 cursor-pointer transition-all flex items-center justify-between"
+                                onClick={() => addLineItemFromTarget(target)}
+                              >
+                                <div className="flex-1 min-w-0">
+                                  <p className="text-sm text-gray-900 truncate" title={target.url}>
+                                    {target.url.replace(`https://${target.domain}`, '').replace(`http://${target.domain}`, '') || '/'}
+                                  </p>
+                                  <div className="flex items-center space-x-2 mt-1">
+                                    <span className="text-xs text-gray-500">{target.clientName}</span>
+                                    {target.usageCount > 0 && (
+                                      <span className="text-xs text-blue-600">• Used {target.usageCount}x</span>
+                                    )}
+                                  </div>
+                                  {target.keywordArray && target.keywordArray.length > 0 && (
+                                    <div className="flex flex-wrap gap-1 mt-1">
+                                      {target.keywordArray.slice(0, 2).map((keyword, idx) => (
+                                        <span key={idx} className="inline-flex items-center px-1.5 py-0.5 rounded text-xs bg-gray-100 text-gray-600">
+                                          {keyword}
+                                        </span>
+                                      ))}
+                                      {target.keywordArray.length > 2 && (
+                                        <span className="text-xs text-gray-400">+{target.keywordArray.length - 2}</span>
+                                      )}
+                                    </div>
+                                  )}
+                                </div>
+                                <ChevronRight className="h-4 w-4 text-gray-400 flex-shrink-0" />
+                              </div>
+                            ))}
+                          </div>
                         )}
                       </div>
-                      {target.usageCount > 0 && (
-                        <span className="inline-flex items-center px-2 py-1 rounded-full text-xs bg-blue-100 text-blue-800 ml-2">
-                          Used {target.usageCount}x
-                        </span>
-                      )}
+                    );
+                  })}
+                  
+                  {getFilteredTargets().length === 0 && searchQuery && (
+                    <div className="text-center py-8 text-gray-500">
+                      <Search className="h-8 w-8 mx-auto mb-2 text-gray-400" />
+                      <p className="text-sm">No targets found</p>
+                      <p className="text-xs text-gray-400">Try adjusting your search</p>
                     </div>
-                    
-                    {/* Keywords */}
-                    {target.keywordArray && target.keywordArray.length > 0 && (
-                      <div className="mb-2">
-                        <div className="flex flex-wrap gap-1">
-                          {target.keywordArray.slice(0, 3).map((keyword, idx) => (
-                            <span key={idx} className="inline-flex items-center px-1.5 py-0.5 rounded text-xs bg-gray-100 text-gray-600">
-                              {keyword}
-                            </span>
-                          ))}
-                          {target.keywordArray.length > 3 && (
-                            <span className="text-xs text-gray-400">
-                              +{target.keywordArray.length - 3} more
-                            </span>
-                          )}
-                        </div>
-                      </div>
-                    )}
-                    
-                    <div className="flex items-center justify-between">
-                      <div className="flex items-center space-x-3 text-xs text-gray-500">
-                        <div className="flex items-center">
-                          <span className="w-2 h-2 bg-green-500 rounded-full mr-1"></span>
-                          DR: {target.dr}
-                        </div>
-                        <div className="flex items-center">
-                          <span className="w-2 h-2 bg-blue-500 rounded-full mr-1"></span>
-                          {(target.traffic / 1000).toFixed(0)}k traffic
-                        </div>
-                      </div>
-                      
-                      <div className="text-xs text-blue-600 font-medium">
-                        Click to add →
-                      </div>
-                    </div>
-                  </div>
-                ))}
-                
-                {getFilteredTargets().length === 0 && searchQuery && (
-                  <div className="text-center py-8 text-gray-500">
-                    <Search className="h-8 w-8 mx-auto mb-2 text-gray-400" />
-                    <p className="text-sm">No targets found</p>
-                    <p className="text-xs text-gray-400">Try adjusting your search</p>
-                  </div>
-                )}
-              </div>
-            )}
+                  )}
+                </div>
+              )}
           </div>
         </div>
         )}
