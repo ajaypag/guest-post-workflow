@@ -107,6 +107,7 @@ export default function NewOrderPage() {
   // Modal state
   const [showCreateClientModal, setShowCreateClientModal] = useState(false);
   const [showCreateTargetPageModal, setShowCreateTargetPageModal] = useState(false);
+  const [requestingLineItemId, setRequestingLineItemId] = useState<string | null>(null);
   
   // Mobile view state
   const [mobileView, setMobileView] = useState<'clients' | 'order' | 'targets'>('order');
@@ -146,6 +147,52 @@ export default function NewOrderPage() {
   const handleTargetPagesCreated = (newTargetPages: any[]) => {
     // Refresh the client list to include the new target pages
     loadClients();
+    
+    // If called from a line item dropdown, populate that line item and create additional ones
+    if (requestingLineItemId && newTargetPages.length > 0) {
+      const requestingItem = lineItems.find(item => item.id === requestingLineItemId);
+      if (requestingItem) {
+        // Fill the requesting line item with the first new page
+        const firstPage = newTargetPages[0];
+        updateLineItem(requestingLineItemId, {
+          targetPageUrl: firstPage.url,
+          targetPageId: firstPage.id,
+          anchorText: generateAnchorText(requestingItem.clientName)
+        });
+        
+        // Create additional line items for remaining pages
+        if (newTargetPages.length > 1) {
+          const additionalPages = newTargetPages.slice(1);
+          const newItems: OrderLineItem[] = additionalPages.map(page => ({
+            id: `${Date.now()}-${Math.random()}`,
+            clientId: requestingItem.clientId,
+            clientName: requestingItem.clientName,
+            targetPageId: page.id,
+            targetPageUrl: page.url,
+            anchorText: generateAnchorText(requestingItem.clientName),
+            price: packagePricing[selectedPackage].price || 100,
+            selectedPackage: selectedPackage
+          }));
+          
+          setLineItems(prev => [...prev, ...newItems]);
+          
+          // Update the client's link count
+          setSelectedClients(prev => {
+            const newMap = new Map(prev);
+            const existing = newMap.get(requestingItem.clientId);
+            if (existing) {
+              const currentCount = lineItems.filter(item => item.clientId === requestingItem.clientId).length;
+              newMap.set(requestingItem.clientId, { ...existing, linkCount: currentCount + additionalPages.length });
+            }
+            return newMap;
+          });
+        }
+      }
+      
+      // Reset requesting state
+      setRequestingLineItemId(null);
+    }
+    
     // The target pages will automatically show up in the available targets
     // when clients are refreshed and updateAvailableTargets is called
   };
@@ -355,6 +402,13 @@ export default function NewOrderPage() {
   };
 
   const handleTargetPageChange = (lineItemId: string, targetPageUrl: string) => {
+    if (targetPageUrl === '__ADD_NEW__') {
+      // Open modal for adding new target page
+      setRequestingLineItemId(lineItemId);
+      setShowCreateTargetPageModal(true);
+      return;
+    }
+    
     const targetPage = availableTargets.find(tp => tp.url === targetPageUrl);
     updateLineItem(lineItemId, {
       targetPageUrl,
@@ -942,6 +996,9 @@ export default function NewOrderPage() {
                                             {page.url} {page.usageCount > 0 && `(${page.usageCount})`}
                                           </option>
                                         ))}
+                                        <option value="__ADD_NEW__" className="text-blue-600 font-medium">
+                                          + Add new target page...
+                                        </option>
                                       </select>
                                     </td>
                                     <td className="px-4 py-3">
@@ -1091,8 +1148,12 @@ export default function NewOrderPage() {
         {/* Create Target Page Modal */}
         <CreateTargetPageModal
           isOpen={showCreateTargetPageModal}
-          onClose={() => setShowCreateTargetPageModal(false)}
+          onClose={() => {
+            setShowCreateTargetPageModal(false);
+            setRequestingLineItemId(null);
+          }}
           onTargetPagesCreated={handleTargetPagesCreated}
+          preSelectedClientId={requestingLineItemId ? lineItems.find(item => item.id === requestingLineItemId)?.clientId : undefined}
         />
       </div>
     </AuthWrapper>
