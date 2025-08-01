@@ -7,10 +7,33 @@ import { eq, and, desc } from 'drizzle-orm';
 // System user ID for account-created content
 const SYSTEM_USER_ID = '00000000-0000-0000-0000-000000000000';
 
+// Diagnostic tracking
+let getCallCount = 0;
+const getCallLog: { timestamp: number; sessionType?: string }[] = [];
+
 // GET - Get user's draft orders
 export async function GET(request: NextRequest) {
+  // Diagnostic logging
+  getCallCount++;
+  const now = Date.now();
+  console.log(`[DRAFTS API] GET call #${getCallCount} at ${new Date().toISOString()}`);
+  
   try {
     const session = await AuthServiceServer.getSession(request);
+    
+    // Log session info
+    console.log(`[DRAFTS API] Session type: ${session?.userType}, User ID: ${session?.userId?.substring(0, 8)}...`);
+    
+    getCallLog.push({
+      timestamp: now,
+      sessionType: session?.userType
+    });
+    
+    // Calculate recent call rate
+    const recentCalls = getCallLog.filter(log => now - log.timestamp < 5000); // Last 5 seconds
+    if (recentCalls.length > 10) {
+      console.error(`[DRAFTS API] ⚠️ INFINITE LOOP DETECTED: ${recentCalls.length} calls in last 5 seconds!`);
+    }
     if (!session) {
       return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
     }

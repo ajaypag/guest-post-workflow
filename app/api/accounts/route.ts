@@ -72,7 +72,16 @@ export async function POST(request: NextRequest) {
   }
 }
 
+// Diagnostic tracking for infinite loop detection
+let getCallCount = 0;
+const getCallLog: { timestamp: number; sessionType?: string }[] = [];
+
 export async function GET(request: NextRequest) {
+  // Diagnostic logging
+  getCallCount++;
+  const now = Date.now();
+  console.log(`[ACCOUNTS API] GET call #${getCallCount} at ${new Date().toISOString()}`);
+  
   try {
     // Check if this is a simple request (no auth required for new order system)
     const { searchParams } = new URL(request.url);
@@ -106,6 +115,19 @@ export async function GET(request: NextRequest) {
     
     // Original implementation for legacy system
     const session = await AuthServiceServer.getSession(request);
+    console.log(`[ACCOUNTS API] Session type: ${session?.userType}`);
+    
+    getCallLog.push({
+      timestamp: now,
+      sessionType: session?.userType
+    });
+    
+    // Calculate recent call rate
+    const recentCalls = getCallLog.filter(log => now - log.timestamp < 5000); // Last 5 seconds
+    if (recentCalls.length > 10) {
+      console.error(`[ACCOUNTS API] ⚠️ INFINITE LOOP DETECTED: ${recentCalls.length} calls in last 5 seconds!`);
+    }
+    
     if (!session || session.userType !== 'internal') {
       return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
     }

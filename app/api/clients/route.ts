@@ -6,10 +6,31 @@ import { accounts } from '@/lib/db/accountSchema';
 import { clients } from '@/lib/db/schema';
 import { eq } from 'drizzle-orm';
 
+// Diagnostic tracking for infinite loop detection
+let getCallCount = 0;
+const getCallLog: { timestamp: number; sessionType?: string }[] = [];
+
 export async function GET(request: NextRequest) {
+  // Diagnostic logging
+  getCallCount++;
+  const now = Date.now();
+  console.log(`[CLIENTS API] GET call #${getCallCount} at ${new Date().toISOString()}`);
+  
   try {
     // Authenticate user
     const session = await AuthServiceServer.getSession(request);
+    console.log(`[CLIENTS API] Session type: ${session?.userType}`);
+    
+    getCallLog.push({
+      timestamp: now,
+      sessionType: session?.userType
+    });
+    
+    // Calculate recent call rate
+    const recentCalls = getCallLog.filter(log => now - log.timestamp < 5000); // Last 5 seconds
+    if (recentCalls.length > 10) {
+      console.error(`[CLIENTS API] ⚠️ INFINITE LOOP DETECTED: ${recentCalls.length} calls in last 5 seconds!`);
+    }
     if (!session) {
       return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
     }
