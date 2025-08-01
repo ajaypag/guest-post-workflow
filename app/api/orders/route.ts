@@ -22,7 +22,9 @@ export async function GET(request: NextRequest) {
     
     if (session.userType === 'account') {
       // Accounts can only see their own orders
-      orders = await OrderService.getAccountOrders(session.accountId!);
+      // For account users, session.userId is their account ID
+      const accountId = session.accountId || session.userId;
+      orders = await OrderService.getAccountOrders(accountId);
     } else if (accountId && session.userType === 'internal') {
       // Internal users can filter by account
       orders = await OrderService.getAccountOrders(accountId);
@@ -160,7 +162,7 @@ export async function POST(request: NextRequest) {
     // Create the order
     await db.insert(orders).values({
       id: orderId,
-      accountId: accountId || (session.userType === 'account' ? session.accountId : null),
+      accountId: accountId || (session.userType === 'account' ? (session.accountId || session.userId) : null),
       accountEmail: accountEmail.toLowerCase(),
       accountName: accountName,
       accountCompany: accountCompany,
@@ -175,7 +177,7 @@ export async function POST(request: NextRequest) {
       clientReviewFee,
       rushDelivery: rushDelivery || false,
       rushFee,
-      createdBy: session.userId,
+      createdBy: session.userType === 'account' ? '00000000-0000-0000-0000-000000000000' : session.userId,
       internalNotes: session.userType === 'internal' ? internalNotes : null,
       createdAt: now,
       updatedAt: now,
