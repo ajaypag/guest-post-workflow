@@ -182,6 +182,10 @@ export default function NewOrderPage() {
   };
 
   const updateClientLinkCount = (clientId: string, count: number) => {
+    const client = clients.find(c => c.id === clientId);
+    if (!client) return;
+
+    // Update the link count in selected clients
     setSelectedClients(prev => {
       const newMap = new Map(prev);
       const existing = newMap.get(clientId);
@@ -190,20 +194,78 @@ export default function NewOrderPage() {
       }
       return newMap;
     });
+
+    // Update placeholder line items
+    setLineItems(prevItems => {
+      // Get existing items for this client
+      const existingItems = prevItems.filter(item => item.clientId === clientId);
+      const nonClientItems = prevItems.filter(item => item.clientId !== clientId);
+      
+      // Calculate how many placeholders we need
+      const currentCount = existingItems.length;
+      const difference = count - currentCount;
+      
+      if (difference > 0) {
+        // Add placeholder items
+        const newItems: OrderLineItem[] = [];
+        for (let i = 0; i < difference; i++) {
+          newItems.push({
+            id: `${clientId}-placeholder-${Date.now()}-${i}`,
+            clientId,
+            clientName: client.name,
+            targetPageId: undefined,
+            targetPageUrl: undefined,
+            anchorText: undefined,
+            price: 100, // Default price, will be updated based on package
+          });
+        }
+        return [...nonClientItems, ...existingItems, ...newItems];
+      } else if (difference < 0) {
+        // Remove excess items (remove placeholders first, then filled items from the end)
+        const placeholders = existingItems.filter(item => !item.targetPageId);
+        const filledItems = existingItems.filter(item => item.targetPageId);
+        
+        const itemsToKeep = count;
+        const keptItems = [...filledItems.slice(0, itemsToKeep), ...placeholders.slice(0, Math.max(0, itemsToKeep - filledItems.length))].slice(0, itemsToKeep);
+        
+        return [...nonClientItems, ...keptItems];
+      }
+      
+      return prevItems;
+    });
   };
 
   const addLineItemFromTarget = (target: TargetPageWithMetadata) => {
-    const newItem: OrderLineItem = {
-      id: `${Date.now()}-${Math.random()}`,
-      clientId: target.clientId,
-      clientName: target.clientName,
-      targetPageId: target.id,
-      targetPageUrl: target.url,
-      anchorText: generateAnchorText(target.clientName),
-      price: 100 // TODO: Calculate based on metrics
-    };
-    
-    setLineItems(prev => [...prev, newItem]);
+    setLineItems(prev => {
+      // Find first placeholder for this client
+      const placeholderIndex = prev.findIndex(
+        item => item.clientId === target.clientId && !item.targetPageId
+      );
+      
+      if (placeholderIndex !== -1) {
+        // Fill the placeholder
+        const updated = [...prev];
+        updated[placeholderIndex] = {
+          ...updated[placeholderIndex],
+          targetPageId: target.id,
+          targetPageUrl: target.url,
+          anchorText: generateAnchorText(target.clientName),
+        };
+        return updated;
+      } else {
+        // No placeholder, create new item
+        const newItem: OrderLineItem = {
+          id: `${Date.now()}-${Math.random()}`,
+          clientId: target.clientId,
+          clientName: target.clientName,
+          targetPageId: target.id,
+          targetPageUrl: target.url,
+          anchorText: generateAnchorText(target.clientName),
+          price: 100 // TODO: Calculate based on metrics
+        };
+        return [...prev, newItem];
+      }
+    });
   };
 
   const addEmptyLineItem = () => {
@@ -333,6 +395,18 @@ export default function NewOrderPage() {
               </div>
             ) : (
               <div className="space-y-3">
+                {/* Add New Client Button */}
+                <button 
+                  onClick={() => {
+                    // TODO: Implement inline client creation modal
+                    console.log('Add new client');
+                  }}
+                  className="w-full border-2 border-dashed border-gray-300 rounded-lg p-4 hover:border-blue-400 hover:bg-blue-50 transition-all flex items-center justify-center space-x-2 text-gray-600 hover:text-blue-600"
+                >
+                  <Plus className="h-5 w-5" />
+                  <span className="font-medium">Add New Brand</span>
+                </button>
+                
                 {clients.map(client => {
                   const clientSelection = selectedClients.get(client.id);
                   const isSelected = clientSelection?.selected || false;
@@ -420,31 +494,47 @@ export default function NewOrderPage() {
               </div>
             ) : (
               <div className="space-y-3">
-                {lineItems.map((item) => (
-                  <div key={item.id} className="border border-gray-200 rounded-lg p-4 hover:border-gray-300 transition-colors">
-                    <div className="flex items-start justify-between">
-                      <div className="flex-1 grid grid-cols-2 gap-4">
-                        {/* Client Info */}
-                        <div>
-                          <label className="block text-xs font-medium text-gray-700 mb-1">Client</label>
-                          <div className="flex items-center space-x-2">
-                            <Building className="h-4 w-4 text-gray-400" />
-                            <span className="text-sm font-medium">{item.clientName}</span>
+                {lineItems.map((item, index) => {
+                  const isPlaceholder = !item.targetPageId;
+                  const itemNumber = lineItems.filter(li => li.clientId === item.clientId).findIndex(li => li.id === item.id) + 1;
+                  const totalForClient = lineItems.filter(li => li.clientId === item.clientId).length;
+                  
+                  return (
+                    <div key={item.id} className={`border rounded-lg p-4 transition-colors ${
+                      isPlaceholder 
+                        ? 'border-dashed border-gray-300 bg-gray-50 hover:border-blue-300 hover:bg-blue-50' 
+                        : 'border-gray-200 hover:border-gray-300'
+                    }`}>
+                      <div className="flex items-start justify-between">
+                        <div className="flex-1 grid grid-cols-2 gap-4">
+                          {/* Client Info */}
+                          <div>
+                            <label className="block text-xs font-medium text-gray-700 mb-1">Client</label>
+                            <div className="flex items-center space-x-2">
+                              <Building className="h-4 w-4 text-gray-400" />
+                              <span className="text-sm font-medium">{item.clientName}</span>
+                            </div>
+                            <div className="text-xs text-gray-500 mt-1">
+                              Link {itemNumber} of {totalForClient}
+                            </div>
                           </div>
-                          <div className="text-xs text-gray-500 mt-1">
-                            {clients.find(c => c.id === item.clientId)?.website}
+                          
+                          {/* Target Page */}
+                          <div>
+                            <label className="block text-xs font-medium text-gray-700 mb-1">Target Page</label>
+                            {isPlaceholder ? (
+                              <div className="flex items-center space-x-2">
+                                <Target className="h-4 w-4 text-gray-400" />
+                                <span className="text-sm text-gray-500 italic">Click a target URL to assign →</span>
+                              </div>
+                            ) : (
+                              <div className="flex items-center space-x-2">
+                                <ExternalLink className="h-4 w-4 text-gray-400" />
+                                <span className="text-sm truncate">{item.targetPageUrl}</span>
+                              </div>
+                            )}
                           </div>
                         </div>
-                        
-                        {/* Target Page */}
-                        <div>
-                          <label className="block text-xs font-medium text-gray-700 mb-1">Target Page</label>
-                          <div className="flex items-center space-x-2">
-                            <ExternalLink className="h-4 w-4 text-gray-400" />
-                            <span className="text-sm truncate">{item.targetPageUrl}</span>
-                          </div>
-                        </div>
-                      </div>
                       
                       {/* Actions */}
                       <div className="flex items-center space-x-2 ml-4">
@@ -466,29 +556,32 @@ export default function NewOrderPage() {
                       </div>
                     </div>
                     
-                    {/* Anchor Text */}
-                    <div className="mt-3 pt-3 border-t border-gray-100">
-                      <label className="block text-xs font-medium text-gray-700 mb-1">Anchor Text</label>
-                      <div className="flex items-center space-x-2">
-                        <input
-                          type="text"
-                          value={item.anchorText || ''}
-                          onChange={(e) => updateLineItem(item.id, { anchorText: e.target.value })}
-                          placeholder="Enter anchor text for this link"
-                          className="flex-1 px-3 py-2 border border-gray-300 rounded-lg text-sm focus:ring-2 focus:ring-blue-500"
-                        />
-                        {!item.anchorText && item.clientName && (
-                          <button
-                            onClick={() => updateLineItem(item.id, { anchorText: generateAnchorText(item.clientName) })}
-                            className="px-3 py-2 text-xs text-blue-600 hover:text-blue-700 border border-blue-200 rounded-lg"
-                          >
-                            Auto-generate
-                          </button>
+                        {/* Anchor Text */}
+                        {!isPlaceholder && (
+                          <div className="mt-3 pt-3 border-t border-gray-100">
+                            <label className="block text-xs font-medium text-gray-700 mb-1">Anchor Text</label>
+                            <div className="flex items-center space-x-2">
+                              <input
+                                type="text"
+                                value={item.anchorText || ''}
+                                onChange={(e) => updateLineItem(item.id, { anchorText: e.target.value })}
+                                placeholder="Enter anchor text for this link"
+                                className="flex-1 px-3 py-2 border border-gray-300 rounded-lg text-sm focus:ring-2 focus:ring-blue-500"
+                              />
+                              {!item.anchorText && item.clientName && (
+                                <button
+                                  onClick={() => updateLineItem(item.id, { anchorText: generateAnchorText(item.clientName) })}
+                                  className="px-3 py-2 text-xs text-blue-600 hover:text-blue-700 border border-blue-200 rounded-lg"
+                                >
+                                  Auto-generate
+                                </button>
+                              )}
+                            </div>
+                          </div>
                         )}
                       </div>
-                    </div>
-                  </div>
-                ))}
+                    );
+                  })}
               </div>
             )}
             
@@ -521,6 +614,18 @@ export default function NewOrderPage() {
               </div>
             ) : (
               <div className="space-y-4">
+                {/* Add Custom Target Button */}
+                <button 
+                  onClick={() => {
+                    // TODO: Implement inline target page creation modal
+                    console.log('Add custom target');
+                  }}
+                  className="w-full border-2 border-dashed border-gray-300 rounded-lg p-3 hover:border-blue-400 hover:bg-blue-50 transition-all flex items-center justify-center space-x-2 text-gray-600 hover:text-blue-600 text-sm"
+                >
+                  <Plus className="h-4 w-4" />
+                  <span className="font-medium">Add Custom Target URL</span>
+                </button>
+                
                 {getFilteredTargets().map(target => (
                   <div key={`${target.clientId}-${target.id}`} className="border border-gray-200 rounded-lg p-3 hover:border-blue-300 hover:bg-blue-50 cursor-pointer transition-all"
                        onClick={() => addLineItemFromTarget(target)}>
