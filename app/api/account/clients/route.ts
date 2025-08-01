@@ -16,14 +16,12 @@ export async function GET(request: NextRequest) {
       return NextResponse.json({ error: 'Forbidden - Account access only' }, { status: 403 });
     }
 
-    // Get account ID from session
-    if (!session.accountId) {
-      return NextResponse.json({ error: 'Account ID not found in session' }, { status: 400 });
-    }
+    // For account users, session.userId IS their account ID (from accounts table)
+    const accountId = session.userId;
 
     // Get all clients linked to this account via accountId
     const accountClients = await db.query.clients.findMany({
-      where: eq(clients.accountId, session.accountId),
+      where: eq(clients.accountId, accountId),
       with: {
         targetPages: true,
       },
