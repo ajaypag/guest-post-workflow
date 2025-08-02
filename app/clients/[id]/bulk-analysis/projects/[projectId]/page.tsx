@@ -387,6 +387,19 @@ export default function ProjectDetailPage() {
       if (response.ok) {
         const data = await response.json();
         setProject(data.project);
+        
+        // Load default target pages if project was created from an order
+        try {
+          const defaultsResponse = await fetch(`/api/bulk-analysis/projects/${params.projectId}/default-target-pages`);
+          if (defaultsResponse.ok) {
+            const defaultsData = await defaultsResponse.json();
+            if (defaultsData.targetPageIds && defaultsData.targetPageIds.length > 0) {
+              setSelectedTargetPages(defaultsData.targetPageIds);
+            }
+          }
+        } catch (error) {
+          console.log('No default target pages found for project');
+        }
       } else if (response.status === 404) {
         setMessage('❌ Project not found');
         router.push(`/clients/${params.id}/bulk-analysis`);
