@@ -18,8 +18,19 @@ export async function GET(request: NextRequest) {
     const status = searchParams.get('status');
     const accountId = searchParams.get('accountId');
     const clientId = searchParams.get('clientId');
+    const projectId = searchParams.get('projectId');
 
     let orders: any[] = [];
+    
+    // Special handling for project-associated orders
+    if (projectId && session.userType === 'internal') {
+      const result = await OrderService.getOrdersForProject(projectId);
+      return NextResponse.json({ 
+        orders: result.draftOrders,
+        associatedOrders: result.associatedOrders,
+        defaultOrderId: result.defaultOrderId 
+      });
+    }
     
     if (session.userType === 'account') {
       // Accounts can only see their own orders

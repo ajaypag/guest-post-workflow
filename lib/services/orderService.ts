@@ -554,6 +554,85 @@ export class OrderService {
   }
 
   /**
+   * Get orders associated with a project
+   */
+  static async getOrdersForProject(projectId: string): Promise<{
+    associatedOrders: any[];
+    draftOrders: any[];
+    defaultOrderId: string | null;
+  }> {
+    const { orderGroups } = await import('@/lib/db/orderGroupSchema');
+    
+    // Get all order groups that have this project assigned
+    const groupsWithOrders = await db
+      .select({
+        order: orders,
+        orderGroup: orderGroups
+      })
+      .from(orderGroups)
+      .innerJoin(orders, eq(orderGroups.orderId, orders.id))
+      .where(eq(orderGroups.bulkAnalysisProjectId, projectId));
+
+    // Filter orders based on status - exclude completed and cancelled orders
+    const activeOrders = groupsWithOrders.filter(({ order }) => {
+      return order.status !== 'completed' && order.status !== 'cancelled';
+    });
+
+    // Transform the data for the frontend
+    const associatedOrders = activeOrders.map(({ order, orderGroup }) => ({
+      id: order.id,
+      accountName: order.accountName,
+      accountEmail: order.accountEmail,
+      status: order.status,
+      createdAt: order.createdAt.toISOString(),
+      itemCount: orderGroup.linkCount,
+      totalRetail: order.totalRetail
+    }));
+
+    // Also get draft orders for this client (backward compatibility)
+    const clientId = groupsWithOrders[0]?.orderGroup.clientId;
+    let draftOrders: any[] = [];
+    
+    if (clientId) {
+      // Get all draft orders for this client that aren't already associated
+      const associatedOrderIds = groupsWithOrders.map(({ order }) => order.id);
+      
+      const clientDraftOrders = await db
+        .select({
+          order: orders,
+          orderGroup: orderGroups
+        })
+        .from(orders)
+        .innerJoin(orderGroups, eq(orderGroups.orderId, orders.id))
+        .where(
+          and(
+            eq(orderGroups.clientId, clientId),
+            eq(orders.status, 'draft'),
+            associatedOrderIds.length > 0 
+              ? sql`${orders.id} NOT IN (${sql.join(associatedOrderIds.map(id => sql`${id}`), sql`, `)})`
+              : undefined
+          )
+        );
+
+      draftOrders = clientDraftOrders.map(({ order, orderGroup }) => ({
+        id: order.id,
+        accountName: order.accountName,
+        accountEmail: order.accountEmail,
+        status: order.status,
+        createdAt: order.createdAt.toISOString(),
+        itemCount: orderGroup.linkCount,
+        totalRetail: order.totalRetail
+      }));
+    }
+
+    return {
+      associatedOrders,
+      draftOrders,
+      defaultOrderId: associatedOrders.length > 0 ? associatedOrders[0].id : null
+    };
+  }
+
+  /**
    * Get all orders with pagination
    */
   static async getAllOrders(limit: number = 50, offset: number = 0): Promise<Order[]> {

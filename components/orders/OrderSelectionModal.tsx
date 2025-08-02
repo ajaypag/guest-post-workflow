@@ -47,22 +47,22 @@ export default function OrderSelectionModal({
   const loadAssociatedOrders = async () => {
     setLoading(true);
     try {
-      const response = await fetch(`/api/projects/${projectId}/associated-orders`, {
+      const response = await fetch(`/api/orders?projectId=${projectId}`, {
         credentials: 'include',
       });
       
       if (response.ok) {
         const data = await response.json();
         setAssociatedOrders(data.associatedOrders || []);
-        setDraftOrders(data.draftOrders || []);
+        setDraftOrders(data.orders || data.draftOrders || []);
         
         // Auto-select the default associated order if available
         if (data.defaultOrderId) {
           setSelectedOption('existing');
           setSelectedOrderId(data.defaultOrderId);
-        } else if (data.draftOrders && data.draftOrders.length > 0) {
+        } else if ((data.orders || data.draftOrders) && (data.orders || data.draftOrders).length > 0) {
           setSelectedOption('existing');
-          setSelectedOrderId(data.draftOrders[0].id);
+          setSelectedOrderId((data.orders || data.draftOrders)[0].id);
         }
       }
     } catch (error) {
