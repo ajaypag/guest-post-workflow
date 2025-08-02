@@ -90,6 +90,10 @@ export async function PUT(
 
     const { id: orderId } = await params;
     const { orderData } = await request.json();
+    
+    console.log('[DRAFT_ORDERS] PUT - Updating draft:', orderId);
+    console.log('[DRAFT_ORDERS] Session type:', session.userType);
+    console.log('[DRAFT_ORDERS] Received orderData:', JSON.stringify(orderData, null, 2));
 
     // Verify the order exists and user has access
     let existingOrder;

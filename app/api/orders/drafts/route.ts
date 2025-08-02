@@ -67,6 +67,8 @@ export async function POST(request: NextRequest) {
     const { orderData } = await request.json();
     
     // Diagnostic logging
+    console.log('[DRAFT_ORDERS] POST - Creating new draft');
+    console.log('[DRAFT_ORDERS] Session type:', session.userType);
     console.log('[DRAFT_ORDERS] Received orderData:', JSON.stringify(orderData, null, 2));
 
     // Generate a unique ID

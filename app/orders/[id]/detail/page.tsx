@@ -128,7 +128,9 @@ export default function OrderDetailPage() {
       const data = await response.json();
       console.log('[ORDER_DETAIL] Loaded order data:', data);
       console.log('[ORDER_DETAIL] Order groups:', data.orderGroups);
+      console.log('[ORDER_DETAIL] Order groups length:', data.orderGroups?.length || 0);
       if (data.orderGroups && data.orderGroups.length > 0) {
+        console.log('[ORDER_DETAIL] First group:', data.orderGroups[0]);
         console.log('[ORDER_DETAIL] First group targetPages:', data.orderGroups[0].targetPages);
       }
       setOrder(data); // API returns order directly now

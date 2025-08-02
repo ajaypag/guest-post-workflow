@@ -445,6 +445,14 @@ export default function NewOrderPage() {
           })
       };
       
+      console.log('[AUTO_SAVE] Saving order data:', {
+        selectedClientsSize: selectedClients.size,
+        lineItemsCount: lineItems.length,
+        orderGroups: orderData.orderGroups,
+        draftOrderId,
+        sessionType: session.userType
+      });
+      
       if (draftOrderId) {
         // Update existing draft
         const response = await fetch(`/api/orders/drafts/${draftOrderId}`, {
@@ -502,10 +510,16 @@ export default function NewOrderPage() {
   
   // Trigger auto-save when order changes
   useEffect(() => {
-    if (lineItems.length > 0) {
+    // Save when we have either line items or selected clients
+    if (lineItems.length > 0 || selectedClients.size > 0) {
       debouncedSave();
     }
-  }, [lineItems.length, debouncedSave]); // Only depend on lineItems.length to avoid deep comparison
+  }, [
+    lineItems.length, 
+    selectedClients.size, 
+    lineItems, // This will trigger on any change to line items
+    debouncedSave
+  ]);
   
   // Draft loading is handled by loadDrafts() in the main useEffect above
 
