@@ -2,9 +2,20 @@
 
 import { useState, useEffect } from 'react';
 import { useParams, useRouter } from 'next/navigation';
-import { Loader2, Clock, CheckCircle, AlertCircle, Search, Users, FileText, ArrowRight, RefreshCw } from 'lucide-react';
+import { Loader2, Clock, CheckCircle, AlertCircle, Search, Users, FileText, ArrowRight, RefreshCw, ExternalLink, BarChart3, Activity, Target } from 'lucide-react';
 import Link from 'next/link';
 import Header from '@/components/Header';
+
+interface BulkAnalysisProject {
+  id: string;
+  name: string;
+  status: string;
+  domainCount: number;
+  qualifiedCount: number;
+  workflowCount: number;
+  createdAt: string;
+  analyzedCount: number;
+}
 
 interface OrderGroup {
   id: string;
@@ -17,12 +28,18 @@ interface OrderGroup {
   };
   linkCount: number;
   bulkAnalysisProjectId?: string;
+  bulkAnalysisProject?: BulkAnalysisProject;
   submissions?: {
     total: number;
     pending: number;
     approved: number;
     rejected: number;
   };
+  targetPages?: Array<{
+    id: string;
+    url: string;
+    title?: string;
+  }>;
 }
 
 interface OrderData {
@@ -34,6 +51,13 @@ interface OrderData {
   createdAt: string;
   approvedAt?: string;
   orderGroups: OrderGroup[];
+  activityTimeline?: Array<{
+    id: string;
+    type: string;
+    description: string;
+    createdAt: string;
+    metadata?: any;
+  }>;
 }
 
 const getStateDisplay = (status: string, state?: string) => {
@@ -101,35 +125,51 @@ export default function OrderStatusPage() {
       if (!response.ok) throw new Error('Failed to fetch order');
       const data = await response.json();
       
-      // Fetch submission counts for each group
+      // Fetch submission counts and project data for each group
       const groupsWithCounts = await Promise.all(
         data.orderGroups.map(async (group: OrderGroup) => {
+          let updatedGroup = { ...group };
+          
           try {
+            // Fetch submissions
             const submissionsRes = await fetch(
               `/api/orders/${orderId}/groups/${group.id}/submissions`
             );
             if (submissionsRes.ok) {
               const submissionsData = await submissionsRes.json();
-              return {
-                ...group,
-                submissions: {
-                  total: submissionsData.submissions?.length || 0,
-                  pending: submissionsData.submissions?.filter((s: any) => 
-                    s.status === 'pending' || s.status === 'submitted'
-                  ).length || 0,
-                  approved: submissionsData.submissions?.filter((s: any) => 
-                    s.status === 'client_approved'
-                  ).length || 0,
-                  rejected: submissionsData.submissions?.filter((s: any) => 
-                    s.status === 'client_rejected'
-                  ).length || 0
-                }
+              updatedGroup.submissions = {
+                total: submissionsData.submissions?.length || 0,
+                pending: submissionsData.submissions?.filter((s: any) => 
+                  s.status === 'pending' || s.status === 'submitted'
+                ).length || 0,
+                approved: submissionsData.submissions?.filter((s: any) => 
+                  s.status === 'client_approved'
+                ).length || 0,
+                rejected: submissionsData.submissions?.filter((s: any) => 
+                  s.status === 'client_rejected'
+                ).length || 0
               };
+            }
+            
+            // Fetch bulk analysis project data if available
+            if (group.bulkAnalysisProjectId) {
+              try {
+                const projectRes = await fetch(
+                  `/api/clients/${group.clientId}/bulk-analysis/projects/${group.bulkAnalysisProjectId}`
+                );
+                if (projectRes.ok) {
+                  const projectData = await projectRes.json();
+                  updatedGroup.bulkAnalysisProject = projectData;
+                }
+              } catch (error) {
+                console.error('Error fetching project data:', error);
+              }
             }
           } catch (error) {
             console.error('Error fetching submissions:', error);
           }
-          return group;
+          
+          return updatedGroup;
         })
       );
       
@@ -254,50 +294,210 @@ export default function OrderStatusPage() {
           <h2 className="text-lg font-semibold text-gray-900 mb-4">Client Progress</h2>
           <div className="space-y-4">
             {order.orderGroups.map((group) => (
-              <div key={group.id} className="border border-gray-200 rounded-lg p-4">
-                <div className="flex items-center justify-between mb-3">
-                  <div>
-                    <p className="font-medium text-gray-900">{group.client.name}</p>
-                    <p className="text-sm text-gray-600">{group.linkCount} links required</p>
+              <div key={group.id} className="border border-gray-200 rounded-lg overflow-hidden">
+                <div className="p-4">
+                  <div className="flex items-center justify-between mb-3">
+                    <div>
+                      <p className="font-medium text-gray-900">{group.client.name}</p>
+                      <p className="text-sm text-gray-600">{group.client.website}</p>
+                    </div>
+                    <div className="text-right">
+                      <p className="text-lg font-semibold text-gray-900">
+                        {group.submissions?.approved || 0} / {group.linkCount}
+                      </p>
+                      <p className="text-xs text-gray-500">Links Approved</p>
+                    </div>
                   </div>
-                  {group.submissions && group.submissions.total > 0 && (
-                    <div className="text-sm text-gray-600">
-                      <span className="font-medium">{group.submissions.approved}</span> / {group.linkCount} approved
+                  
+                  {/* Progress Bar */}
+                  <div className="mb-4">
+                    <div className="h-2 bg-gray-200 rounded-full overflow-hidden">
+                      <div 
+                        className="h-full bg-blue-600 rounded-full transition-all duration-300"
+                        style={{ width: `${((group.submissions?.approved || 0) / group.linkCount) * 100}%` }}
+                      />
+                    </div>
+                  </div>
+                  
+                  {/* Submission Stats */}
+                  {group.submissions && group.submissions.total > 0 ? (
+                    <div className="grid grid-cols-4 gap-4 mb-4">
+                      <div className="text-center">
+                        <p className="text-2xl font-semibold text-gray-900">{group.submissions.total}</p>
+                        <p className="text-xs text-gray-500">Total Sites</p>
+                      </div>
+                      <div className="text-center">
+                        <p className="text-2xl font-semibold text-yellow-600">{group.submissions.pending}</p>
+                        <p className="text-xs text-gray-500">Pending</p>
+                      </div>
+                      <div className="text-center">
+                        <p className="text-2xl font-semibold text-green-600">{group.submissions.approved}</p>
+                        <p className="text-xs text-gray-500">Approved</p>
+                      </div>
+                      <div className="text-center">
+                        <p className="text-2xl font-semibold text-red-600">{group.submissions.rejected}</p>
+                        <p className="text-xs text-gray-500">Rejected</p>
+                      </div>
+                    </div>
+                  ) : (
+                    <p className="text-sm text-gray-500 text-center py-2">
+                      {order.state === 'analyzing' ? 'Analyzing potential sites...' : 'No sites suggested yet'}
+                    </p>
+                  )}
+                  
+                  {/* Bulk Analysis Project Info */}
+                  {group.bulkAnalysisProject && (
+                    <div className="bg-gray-50 rounded-lg p-3 mb-4">
+                      <div className="flex items-start justify-between">
+                        <div>
+                          <div className="flex items-center gap-2 mb-1">
+                            <BarChart3 className="w-4 h-4 text-gray-600" />
+                            <p className="text-sm font-medium text-gray-900">Bulk Analysis Project</p>
+                          </div>
+                          <p className="text-xs text-gray-600 mb-2">{group.bulkAnalysisProject.name}</p>
+                          <div className="grid grid-cols-3 gap-3 text-xs">
+                            <div>
+                              <p className="text-gray-500">Domains</p>
+                              <p className="font-medium">{group.bulkAnalysisProject.domainCount}</p>
+                            </div>
+                            <div>
+                              <p className="text-gray-500">Analyzed</p>
+                              <p className="font-medium">{group.bulkAnalysisProject.analyzedCount}</p>
+                            </div>
+                            <div>
+                              <p className="text-gray-500">Qualified</p>
+                              <p className="font-medium">{group.bulkAnalysisProject.qualifiedCount}</p>
+                            </div>
+                          </div>
+                        </div>
+                      </div>
+                    </div>
+                  )}
+                  
+                  {/* Target Pages */}
+                  {group.targetPages && group.targetPages.length > 0 && (
+                    <div className="border-t pt-3">
+                      <div className="flex items-center gap-2 mb-2">
+                        <Target className="w-4 h-4 text-gray-600" />
+                        <p className="text-sm font-medium text-gray-900">Target Pages</p>
+                      </div>
+                      <ul className="text-xs text-gray-600 space-y-1">
+                        {group.targetPages.slice(0, 2).map((page, idx) => (
+                          <li key={page.id || idx} className="truncate">
+                            • {page.url}
+                          </li>
+                        ))}
+                        {group.targetPages.length > 2 && (
+                          <li className="text-gray-500">+ {group.targetPages.length - 2} more</li>
+                        )}
+                      </ul>
                     </div>
                   )}
                 </div>
                 
-                {group.submissions && group.submissions.total > 0 ? (
-                  <div className="space-y-2">
-                    <div className="flex gap-2 text-sm">
-                      <span className="text-gray-500">Sites suggested:</span>
-                      <span className="font-medium">{group.submissions.total}</span>
-                    </div>
-                    <div className="flex gap-4 text-sm">
-                      {group.submissions.pending > 0 && (
-                        <span className="text-yellow-600">
-                          {group.submissions.pending} pending review
-                        </span>
-                      )}
-                      {group.submissions.approved > 0 && (
-                        <span className="text-green-600">
-                          {group.submissions.approved} approved
-                        </span>
-                      )}
-                      {group.submissions.rejected > 0 && (
-                        <span className="text-red-600">
-                          {group.submissions.rejected} rejected
-                        </span>
-                      )}
-                    </div>
+                {/* Action Bar */}
+                {group.submissions && group.submissions.pending > 0 && (
+                  <div className="bg-blue-50 px-4 py-2 border-t border-blue-100">
+                    <Link
+                      href={`/account/orders/${orderId}/sites`}
+                      className="text-sm text-blue-600 hover:text-blue-700 font-medium inline-flex items-center"
+                    >
+                      Review pending sites
+                      <ArrowRight className="w-3 h-3 ml-1" />
+                    </Link>
                   </div>
-                ) : (
-                  <p className="text-sm text-gray-500">
-                    {order.state === 'analyzing' ? 'Analyzing potential sites...' : 'No sites suggested yet'}
-                  </p>
                 )}
               </div>
             ))}
+          </div>
+        </div>
+        
+        {/* Activity Timeline */}
+        <div className="bg-white rounded-lg shadow-sm border border-gray-200 p-6 mb-6">
+          <div className="flex items-center gap-2 mb-4">
+            <Activity className="w-5 h-5 text-gray-600" />
+            <h2 className="text-lg font-semibold text-gray-900">Recent Activity</h2>
+          </div>
+          
+          <div className="space-y-4">
+            {/* Order Created */}
+            <div className="flex gap-3">
+              <div className="flex-shrink-0">
+                <div className="w-8 h-8 bg-gray-100 rounded-full flex items-center justify-center">
+                  <CheckCircle className="w-4 h-4 text-gray-600" />
+                </div>
+              </div>
+              <div className="flex-1">
+                <p className="text-sm font-medium text-gray-900">Order created</p>
+                <p className="text-xs text-gray-500">
+                  {new Date(order.createdAt).toLocaleDateString()} at {new Date(order.createdAt).toLocaleTimeString()}
+                </p>
+              </div>
+            </div>
+            
+            {/* Order Confirmed */}
+            {order.approvedAt && (
+              <div className="flex gap-3">
+                <div className="flex-shrink-0">
+                  <div className="w-8 h-8 bg-green-100 rounded-full flex items-center justify-center">
+                    <CheckCircle className="w-4 h-4 text-green-600" />
+                  </div>
+                </div>
+                <div className="flex-1">
+                  <p className="text-sm font-medium text-gray-900">Order confirmed by team</p>
+                  <p className="text-xs text-gray-500">
+                    {new Date(order.approvedAt).toLocaleDateString()} at {new Date(order.approvedAt).toLocaleTimeString()}
+                  </p>
+                </div>
+              </div>
+            )}
+            
+            {/* Analysis Started */}
+            {order.state === 'analyzing' && (
+              <div className="flex gap-3">
+                <div className="flex-shrink-0">
+                  <div className="w-8 h-8 bg-blue-100 rounded-full flex items-center justify-center">
+                    <Search className="w-4 h-4 text-blue-600 animate-pulse" />
+                  </div>
+                </div>
+                <div className="flex-1">
+                  <p className="text-sm font-medium text-gray-900">Site analysis in progress</p>
+                  <p className="text-xs text-gray-500">Finding high-quality placement opportunities</p>
+                </div>
+              </div>
+            )}
+            
+            {/* Sites Ready */}
+            {order.state === 'site_review' && order.orderGroups.some(g => g.submissions && g.submissions.total > 0) && (
+              <div className="flex gap-3">
+                <div className="flex-shrink-0">
+                  <div className="w-8 h-8 bg-purple-100 rounded-full flex items-center justify-center">
+                    <Users className="w-4 h-4 text-purple-600" />
+                  </div>
+                </div>
+                <div className="flex-1">
+                  <p className="text-sm font-medium text-gray-900">Site recommendations ready</p>
+                  <p className="text-xs text-gray-500">
+                    {order.orderGroups.reduce((sum, g) => sum + (g.submissions?.total || 0), 0)} sites available for review
+                  </p>
+                </div>
+              </div>
+            )}
+            
+            {/* Content Creation */}
+            {order.state === 'in_progress' && (
+              <div className="flex gap-3">
+                <div className="flex-shrink-0">
+                  <div className="w-8 h-8 bg-yellow-100 rounded-full flex items-center justify-center">
+                    <FileText className="w-4 h-4 text-yellow-600" />
+                  </div>
+                </div>
+                <div className="flex-1">
+                  <p className="text-sm font-medium text-gray-900">Content creation in progress</p>
+                  <p className="text-xs text-gray-500">Writing and placing your guest posts</p>
+                </div>
+              </div>
+            )}
           </div>
         </div>
         
