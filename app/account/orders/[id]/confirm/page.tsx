@@ -2,7 +2,7 @@
 
 import { useState, useEffect } from 'react';
 import { useParams, useRouter } from 'next/navigation';
-import { Loader2, CheckCircle, ShoppingCart, Users, Target, ArrowRight, AlertCircle } from 'lucide-react';
+import { Loader2, CheckCircle, ShoppingCart, Users, Target, ArrowRight, ArrowLeft, AlertCircle } from 'lucide-react';
 import Link from 'next/link';
 import Header from '@/components/Header';
 
@@ -139,6 +139,17 @@ export default function OrderConfirmationPage() {
       <Header />
       <div className="min-h-screen bg-gray-50">
         <div className="max-w-4xl mx-auto px-4 py-12">
+        {/* Navigation */}
+        <div className="mb-8">
+          <Link
+            href="/account/dashboard"
+            className="inline-flex items-center text-gray-600 hover:text-gray-900"
+          >
+            <ArrowLeft className="h-4 w-4 mr-2" />
+            Back to Dashboard
+          </Link>
+        </div>
+        
         {/* Header */}
         <div className="text-center mb-12">
           <CheckCircle className="w-16 h-16 text-green-500 mx-auto mb-4" />
@@ -254,7 +265,7 @@ export default function OrderConfirmationPage() {
         {/* Actions */}
         <div className="flex items-center justify-between">
           <Link
-            href={`/orders/${orderId}/edit`}
+            href={`/account/orders/${orderId}/edit`}
             className="text-gray-600 hover:text-gray-800"
           >
             ← Back to Edit
