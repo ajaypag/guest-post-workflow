@@ -4,7 +4,7 @@
 
 | Phase | Status | Completion Date | Notes |
 |-------|--------|-----------------|-------|
-| **Phase 1: Order Builder** | ✅ COMPLETED | 2025-01-30 | Multi-client order creation page fully functional |
+| **Phase 1: Order Builder** | ✅ COMPLETED | 2025-01-30 | Multi-client order creation page fully functional with all recent fixes |
 | **Phase 2: Bulk Analysis** | ✅ COMPLETED | 2025-01-30 | Human-driven projects with notification system |
 | **Phase 3: Site Selection** | ✅ COMPLETED | 2025-01-30 | Account-facing site browser with full transparency |
 | **Phase 3.5: Flexible Associations** | ✅ COMPLETED | 2025-08-02 | Projects reusable across orders, unified UI with BulkAnalysisTable |
@@ -18,19 +18,24 @@
 | **Account API Fix** | ✅ COMPLETED | 2025-08-01 | Fixed account users unable to see their clients |
 | **Draft Order System** | ✅ COMPLETED | 2025-08-01 | Draft saving, editing, and loading functionality |
 | **Project-Order Flexibility** | ✅ COMPLETED | 2025-08-02 | Flexible project associations for site reuse across orders |
+| **Order Confirmation Page** | ✅ COMPLETED | 2025-08-02 | Dedicated page with keyword generation before confirming orders |
+| **Target Page Security** | ✅ COMPLETED | 2025-08-02 | Added proper permission checks to target page APIs |
+| **Currency Formatting** | ✅ COMPLETED | 2025-08-02 | Fixed decimal/cents display throughout order flow |
+| **User Assignment** | ✅ COMPLETED | 2025-08-02 | Replaced text input with user dropdown selector |
+| **Order Detail Page** | ✅ COMPLETED | 2025-08-02 | Modern page with multi-client support and proper routing |
 
-### Current Phase: Internal Site Selection & Project Flexibility (2025-08-02)
+### Latest Progress: Order System Refinements (2025-08-02)
 
-After user target selection is complete, the internal team takes over for site selection and bulk analysis. This phase requires:
+Significant improvements to the order system have been completed:
 
-1. **Flexible Project-Order Associations**: Projects should be reusable across multiple orders for maximum efficiency
-2. **Unified UI Integration**: Bulk analysis interface integrated with order-specific site selection
-3. **New Status Layer**: Order-specific site submission statuses (suggested, backup, approved, rejected)
-4. **Internal Workflow**: Leverage existing bulk analysis AI to evaluate and suggest sites
-
-**Current Research Focus**: Analyzing existing architecture constraints and designing flexible many-to-many project-order associations.
-
-**Research Complete**: See [PROJECT_ORDER_FLEXIBILITY_ANALYSIS.md](./PROJECT_ORDER_FLEXIBILITY_ANALYSIS.md) for detailed analysis and solution architecture.
+1. **Order Confirmation Workflow**: New dedicated page at `/orders/[id]/confirm` that ensures target pages have keywords before order confirmation
+2. **Target Page Security**: Fixed major security vulnerability where any authenticated user could access any target page
+3. **Currency Formatting**: Fixed inconsistent decimal/cents display across the entire order flow
+4. **User Interface Improvements**: 
+   - Assignment field now uses proper user dropdown instead of text input
+   - Orders table shows both status and state elegantly when different
+   - Order detail page properly routes to modern multi-client version
+5. **AI Keyword Generation**: Integrated into order confirmation flow to prevent bulk analysis without keywords
 
 ### Completed Features
 
@@ -42,6 +47,9 @@ After user target selection is complete, the internal team takes over for site s
 - ✅ Real-time pricing calculation with volume discounts
 - ✅ API endpoints for order creation and pricing
 - ✅ OrdersTableMultiClient integration
+- ✅ User assignment dropdown with search functionality
+- ✅ Currency formatting consistency (cents stored as integers)
+- ✅ Status and state display in orders table
 
 #### Phase 2: Bulk Analysis Integration
 - ✅ Order confirmation endpoint that creates projects
@@ -50,6 +58,9 @@ After user target selection is complete, the internal team takes over for site s
 - ✅ Dedicated page for viewing all assigned projects
 - ✅ Status tracking for projects (pending, in progress, ready)
 - ✅ Direct integration with order groups
+- ✅ **NEW: Order confirmation page with keyword generation**
+- ✅ **NEW: AI keyword/description generation during confirmation**
+- ✅ **NEW: Prevention of bulk analysis without keywords**
 
 #### Phase 3: Site Selection Interface
 - ✅ Account-facing site browser at `/account/orders/[id]/sites`
@@ -61,6 +72,38 @@ After user target selection is complete, the internal team takes over for site s
 - ✅ API endpoints for fetching and updating selections
 - ✅ Database migration for order_site_selections table
 - ✅ Multi-client order group support
+
+### ✅ **Order Confirmation Workflow** (IMPLEMENTED 2025-08-02)
+
+**Design Decision**: Ensure target pages have keywords before creating bulk analysis projects
+
+#### **Implementation Details**
+- **Path**: `/app/orders/[id]/confirm/page.tsx`
+- **API**: `/app/api/orders/[id]/confirm/route.ts`
+- **Purpose**: Prevent race condition where bulk analysis runs without keywords
+
+#### **Key Features**
+1. **Target Page Status Display**
+   - Shows all target pages with keyword/description status
+   - Visual indicators for pages needing keywords
+   - Real-time progress tracking
+
+2. **Batch Keyword Generation**
+   - Select multiple pages for keyword generation
+   - AI-powered keyword and description generation
+   - Progress indicator during generation
+   - Rate limiting to avoid API overload
+
+3. **User Assignment**
+   - UserSelector dropdown for assigning internal user
+   - Optional - leaves unassigned if not selected
+   - Integrated with bulk analysis project creation
+
+4. **Confirmation Process**
+   - Validates all pages have keywords before allowing confirmation
+   - Creates bulk analysis projects with auto-apply keywords
+   - Updates order status to 'confirmed' and state to 'analyzing'
+   - Redirects to modern order detail page
 
 ### ✅ **SHARED INTERFACE ARCHITECTURE - Site Selection** (IMPLEMENTED 2025-01-30)
 
@@ -127,6 +170,7 @@ const canModifyExisting = userType === 'internal' || userType === 'account';
 ### Known Issues
 - ⚠️ `createdBy` field uses placeholder system user ID until auth implemented
 - 🔴 **"Add Client" button in `/orders/new` returns 404** - Missing client creation endpoint/page
+- ⚠️ **Order editing rules after 'analyzing' state not yet defined** - Need to document what changes are allowed post-confirmation
 
 ### Related Documentation
 - **[BUYER_PORTAL_IMPLEMENTATION.md](./BUYER_PORTAL_IMPLEMENTATION.md)** - Detailed implementation guide for:
@@ -969,6 +1013,7 @@ GROUP BY o.id, oi.client_id;
 | **Manual workflow trigger after payment** | 🟡 MEDIUM | ❌ PENDING | Currently requires button click |
 | **Fix niche assignment logic** | 🟢 LOW | ❌ PENDING | Falls back to 'General' for all domains |
 | **Re-implement account user audit tools** | 🟢 LOW | ❌ PENDING | `/admin/check-account-data` disabled |
+| **Define order editing rules** | 🟡 MEDIUM | ❌ PENDING | What changes allowed after 'analyzing' state? |
 
 ### Technical Debt & Placeholders (CRITICAL FOR FUTURE FIXES)
 
@@ -1145,6 +1190,24 @@ During the authentication audit, we discovered and fixed several critical securi
 - `/api/accounts/search/route.ts` ✓
 - `/api/orders/[id]/items/route.ts` ✓
 - `/api/orders/share/[token]/route.ts` ✓ (intentionally public)
+
+### Quick Fixes Applied (2025-08-02)
+
+**Target Page API Security Fixes:**
+- ✅ Added authentication checks to all target page endpoints
+- ✅ Implemented ownership verification via client relationship
+- ✅ Proper 403 responses for unauthorized access attempts
+
+**Currency Formatting Fixes:**
+- ✅ Fixed formatCurrency usage to always expect cents as input
+- ✅ Removed double division by 100 in multiple components
+- ✅ Consistent currency display across entire order flow
+
+**User Experience Improvements:**
+- ✅ Created UserSelector component for user assignment
+- ✅ Added status/state display in orders table
+- ✅ Fixed order detail page routing after confirmation
+- ✅ Implemented order confirmation page with keyword generation
 
 ### Quick Fixes Applied (2025-01-30)
 
@@ -1625,9 +1688,9 @@ const accountClients = await db.query.clients.findMany({
 
 **Key Learning**: The authentication system sets both `userId` and `accountId` to the same value during login, but the client-side session only includes `userId`. All account endpoints must use `session.userId` to access account data.
 
-## Order Creation Interface Redesign (2025-08-01)
+## Order Creation Interface Redesign (2025-01-31 to 2025-08-02)
 
-### 🚧 **IN PROGRESS: Unified Order Interface** 
+### 🚧 **IN PROGRESS: Three-Column Order Interface** 
 
 **Problem**: The existing order creation page needs to serve both simple users (1 brand, few links) and power users (agencies with many clients) without being confusing or overwhelming.
 
@@ -1756,7 +1819,11 @@ Full-Screen Three-Column Order Interface:
 5. Test with both simple and power user scenarios
 6. Ensure responsive design for different screen sizes
 
-**Current Status**: Three-column design plan complete - ready to implement full-screen unified interface that naturally serves all user types through spatial organization and direct interaction.
+**Current Status**: 
+- Three-column design plan complete and documented
+- Implementation started in `/app/orders/new` 
+- Original implementation backed up to `/app/orders/legacy/original-new-page.tsx`
+- Ready to implement full-screen unified interface without toggles or modes
 
 ### **Three-Column Technical Implementation Details**
 
@@ -1806,7 +1873,40 @@ interface TargetPageWithMetadata {
 
 This approach eliminates the need for any toggles, modes, or progressive disclosure by using spatial separation and direct manipulation to handle complexity naturally.
 
-## Active Technical Debt (Updated 2025-08-01)
+## Recent Bug Fixes (2025-08-02)
+
+### Target Page Security Fix
+**Issue**: Target page APIs had no permission checks, allowing any authenticated user to access any target page
+**Fix**: Added proper permission checks joining with clients table to verify ownership
+**Files Modified**:
+- `/app/api/target-pages/[id]/route.ts`
+- `/app/api/target-pages/[id]/keywords/route.ts`
+- `/app/api/target-pages/[id]/description/route.ts`
+
+### Currency Formatting Consistency
+**Issue**: Some places were dividing by 100 before passing to formatCurrency, causing values like $5.58 instead of $558
+**Fix**: Ensured all currency values are passed as cents (integers) to formatCurrency
+**Files Modified**:
+- `/components/OrdersTableMultiClient.tsx`
+- `/components/orders/PaymentStatus.tsx`
+- `/components/orders/RecordPaymentModal.tsx`
+- Multiple order-related components
+
+### Order Detail Page Routing
+**Issue**: After confirming order as internal user, redirected to legacy page `/orders/[id]` instead of modern `/orders/[id]/detail`
+**Fix**: Updated confirmation flow to redirect to proper detail page
+**Files Modified**:
+- `/app/orders/[id]/confirm/page.tsx`
+- `/app/api/orders/[id]/confirm/route.ts`
+
+### User Assignment Field
+**Issue**: Assignment field was a text input requiring manual user ID entry
+**Fix**: Created UserSelector component with dropdown and search functionality
+**New Files**:
+- `/components/ui/UserSelector.tsx`
+- `/app/api/internal-users/assignable/route.ts`
+
+## Active Technical Debt (Updated 2025-08-02)
 
 ### Account Features Integration Debt
 
@@ -1926,8 +2026,26 @@ metadata: json('metadata').$type<Record<string, any>>(),
 3. **Performance** - Add caching and optimistic updates
 4. **Business logic** - Validate link counts and prevent over-approval
 5. **Security** - Add rate limiting and structured audit trails
+6. **Order Interface** - Complete three-column implementation without modes
+7. **Order Editing Rules** - Define what changes are allowed after 'analyzing' state
 
 These were conscious trade-offs to get a working system quickly that could be refined based on user feedback.
+
+## Summary of Latest Changes (2025-08-02)
+
+### What Was Fixed
+1. **Target Page Security**: Added proper permission checks to prevent unauthorized access
+2. **Currency Formatting**: Fixed decimal display issues throughout the order flow
+3. **User Assignment**: Replaced text input with searchable dropdown
+4. **Order Confirmation**: New dedicated page ensuring keywords exist before bulk analysis
+5. **Order Detail Routing**: Fixed redirect to use modern multi-client detail page
+
+### What's Still Pending
+1. **Three-Column Order Interface**: Design complete, implementation in progress
+2. **Order Editing Rules**: Need to define what can be modified after confirmation
+3. **Real Domain Metrics**: Still using hardcoded values instead of DataForSEO
+4. **Dynamic Pricing**: Still using fixed $100 per site
+5. **Account Dashboard Integration**: Basic implementation needs real integration
 
 ## Related Documentation
 
