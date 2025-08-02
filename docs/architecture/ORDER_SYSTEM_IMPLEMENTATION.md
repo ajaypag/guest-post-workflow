@@ -15,6 +15,21 @@
 | **Archive System** | ✅ COMPLETED | 2025-01-31 | Soft delete with consistent UI/API behavior |
 | **AI Permissions** | ✅ COMPLETED | 2025-01-31 | Granular AI feature access control for accounts |
 | **Account API Fix** | ✅ COMPLETED | 2025-08-01 | Fixed account users unable to see their clients |
+| **Draft Order System** | ✅ COMPLETED | 2025-08-01 | Draft saving, editing, and loading functionality |
+| **Project-Order Flexibility** | 🔬 RESEARCH | 2025-08-02 | Researching flexible project associations for site reuse |
+
+### Current Phase: Internal Site Selection & Project Flexibility (2025-08-02)
+
+After user target selection is complete, the internal team takes over for site selection and bulk analysis. This phase requires:
+
+1. **Flexible Project-Order Associations**: Projects should be reusable across multiple orders for maximum efficiency
+2. **Unified UI Integration**: Bulk analysis interface integrated with order-specific site selection
+3. **New Status Layer**: Order-specific site submission statuses (suggested, backup, approved, rejected)
+4. **Internal Workflow**: Leverage existing bulk analysis AI to evaluate and suggest sites
+
+**Current Research Focus**: Analyzing existing architecture constraints and designing flexible many-to-many project-order associations.
+
+**Research Complete**: See [PROJECT_ORDER_FLEXIBILITY_ANALYSIS.md](./PROJECT_ORDER_FLEXIBILITY_ANALYSIS.md) for detailed analysis and solution architecture.
 
 ### Completed Features
 
@@ -314,74 +329,320 @@ interface AnalysisProgress {
 }
 ```
 
-### Phase 3: Site Selection Interface ✅ COMPLETED (2025-01-30)
+### Phase 3: Internal Site Selection & Project Flexibility 🔄 UPDATED (2025-08-02)
 
-#### 3.1 Full Transparency View
-**File**: `/app/account/orders/[id]/sites/page.tsx` ✅ IMPLEMENTED
+**STATUS**: Phase 3 flow redesigned for flexible project-order associations and client access to bulk analysis data.
+
+#### 3.1 Updated Internal Workflow
+
+**Complete Updated Flow**:
+
+1. **Order Confirmation** → Creates project-order association
+   - Junction table links project to order group: `project_order_associations`
+   - Project can be new (dedicated) or existing (same client only)
+   - Internal user assigned for bulk analysis
+
+2. **Bulk Analysis** → Internal user analyzes domains
+   - Uses existing bulk analysis AI for domain evaluation
+   - Results stored in `bulk_analysis_domains` (reusable across orders for same client)
+   - Domain pool created for client (not order-specific)
+
+3. **Site Curation** → Internal user curates order-specific suggestions
+   - Selects best domains from analysis for this specific order
+   - Creates entries in `order_site_selections` with status "suggested"
+   - Each order gets unique domains (no reuse of same domains)
+   - Project analysis reused, but domain selections are unique per order
+
+4. **Client Access** → Account users get full bulk analysis access
+   - **NEW**: Account users can access project bulk analysis page via order
+   - Can review all analyzed domains, not just suggestions
+   - Can make their own selections from full domain pool
+   - Can modify order (add/remove links, change targets)
+
+#### 3.2 Junction Table Architecture
+
+**New Table**: `project_order_associations`
+```sql
+CREATE TABLE project_order_associations (
+  id uuid PRIMARY KEY DEFAULT gen_random_uuid(),
+  project_id uuid REFERENCES bulk_analysis_projects(id),
+  order_group_id uuid REFERENCES order_groups(id),
+  association_type varchar(50) DEFAULT 'primary', -- 'primary', 'shared'
+  created_at timestamp DEFAULT now(),
+  created_by uuid REFERENCES users(id)
+);
+```
+
+**Key Benefits**:
+- Project analysis reused across multiple orders (same client)
+- Each order gets unique domain selections
+- Full bulk analysis data accessible to clients
+- Flexible associations without schema limitations
+
+#### 3.3 Enhanced Existing Bulk Analysis Project Page with Order Context
+
+**CRITICAL**: NO NEW PAGES. Enhance existing `/clients/[clientId]/bulk-analysis/projects/[projectId]` page.
+
+**Enhanced URL Patterns**:
+```typescript
+// Base URL (existing)
+/clients/[clientId]/bulk-analysis/projects/[projectId]
+
+// With order context (enhanced)  
+/clients/[clientId]/bulk-analysis/projects/[projectId]?orderId=abc123
+
+// With guided domain deep-dive (enhanced)
+/clients/[clientId]/bulk-analysis/projects/[projectId]?orderId=abc123&guided=domainId
+```
+
+**Page Enhancement Requirements**:
+
+##### 3.3.1 Order Context Detection
+```typescript
+// In existing /clients/[clientId]/bulk-analysis/projects/[projectId]/page.tsx
+const searchParams = useSearchParams();
+const orderId = searchParams.get('orderId'); // Order context
+const guidedDomainId = searchParams.get('guided'); // Specific domain focus
+
+// Load order-specific data if orderId present
+if (orderId) {
+  const orderContext = await loadOrderContext(orderId, clientId);
+  // orderContext includes: selections, remaining links, order targets
+}
+```
+
+##### 3.3.2 Order-Specific UI Enhancements
+**Add to existing page when `orderId` query param present**:
+
+1. **Order Context Header**:
+   ```jsx
+   {orderId && (
+     <div className="bg-blue-50 border border-blue-200 rounded-lg p-4 mb-6">
+       <div className="flex items-center justify-between">
+         <div>
+           <h3>Viewing analysis for Order #{orderId}</h3>
+           <p>Client: {client.name} • {orderContext.remainingLinks} links needed</p>
+           <p>Progress: {orderContext.selectedCount}/{orderContext.totalLinks} links selected</p>
+         </div>
+         <button onClick={() => router.back()}>← Back to Order</button>
+       </div>
+     </div>
+   )}
+   ```
+
+2. **Domain Selection Context**:
+   ```jsx
+   // Modify existing domain cards/table
+   <DomainCard 
+     domain={domain}
+     isOrderSuggested={orderContext?.suggestedDomains.includes(domain.id)}
+     isOrderSelected={orderContext?.selectedDomains.includes(domain.id)}
+     orderActions={orderId ? {
+       addToOrder: () => addDomainToOrder(domain.id),
+       removeFromOrder: () => removeDomainFromOrder(domain.id)
+     } : null}
+   />
+   ```
+
+3. **Order-Specific Actions**:
+   ```jsx
+   {orderId && (
+     <div className="sticky bottom-0 bg-white border-t p-4">
+       <div className="flex items-center justify-between">
+         <span>Order Progress: {selectedCount}/{totalLinks} links</span>
+         <div className="space-x-2">
+           <button onClick={modifyOrderLinkCount}>Modify Link Count</button>
+           <button onClick={changeOrderTargets}>Change Targets</button>
+           <button onClick={saveSelections}>Save Selections</button>
+         </div>
+       </div>
+     </div>
+   )}
+   ```
+
+##### 3.3.3 Guided Domain Deep-Dive
+**When `guided` query param present**:
+
+1. **Auto-scroll and Highlight**:
+   ```typescript
+   useEffect(() => {
+     if (guidedDomainId) {
+       // Scroll to specific domain
+       const domainElement = document.getElementById(`domain-${guidedDomainId}`);
+       domainElement?.scrollIntoView({ behavior: 'smooth' });
+       
+       // Highlight domain
+       setHighlightedDomain(guidedDomainId);
+       
+       // Show domain details modal/panel
+       setShowDomainDetails(guidedDomainId);
+     }
+   }, [guidedDomainId]);
+   ```
+
+2. **Domain Suggestion Context**:
+   ```jsx
+   {guidedDomainId === domain.id && (
+     <div className="bg-yellow-50 border-l-4 border-yellow-400 p-4 mb-4">
+       <h4>Why this domain was suggested for your order:</h4>
+       <ul>
+         <li>✓ Matches target keywords: {domain.matchingKeywords}</li>
+         <li>✓ High authority: DR {domain.dr}</li>
+         <li>✓ Relevant traffic: {domain.traffic}/month</li>
+         <li>✓ Content alignment: {domain.contentScore}% match</li>
+       </ul>
+     </div>
+   )}
+   ```
+
+##### 3.3.4 User Type Permissions
+```typescript
+// Modify existing permission checks
+const userCapabilities = {
+  // Existing internal user capabilities
+  canEditProject: session.userType === 'internal',
+  canDeleteProject: session.userType === 'internal',
+  canBulkOperations: session.userType === 'internal',
+  canSeeInternalNotes: session.userType === 'internal',
+  
+  // Order-specific capabilities
+  canSelectForOrder: !!orderId,
+  canModifyOrder: session.userType === 'account' && !!orderId,
+  canViewFullAnalysis: true, // Both user types
+  canOverrideSuggestions: session.userType === 'account' && !!orderId,
+};
+
+// Hide/show UI elements based on capabilities
+{userCapabilities.canEditProject && <ProjectSettingsButton />}
+{userCapabilities.canModifyOrder && <ModifyOrderButton />}
+{!userCapabilities.canSeeInternalNotes && <HideInternalNotes />}
+```
+
+##### 3.3.5 Navigation Integration
+**From Order Pages**:
+
+1. **Order Summary Page**:
+   ```jsx
+   // Order shows suggestions with links to detailed analysis
+   <div className="suggestion-card">
+     <h4>{domain.name}</h4>
+     <p>Suggested for {client.name}</p>
+     <button onClick={() => router.push(
+       `/clients/${clientId}/bulk-analysis/projects/${projectId}?orderId=${orderId}&guided=${domainId}`
+     )}>
+       View Details
+     </button>
+   </div>
+   ```
+
+2. **Order Site Selection Page**:
+   ```jsx
+   // Full analysis link
+   <button onClick={() => router.push(
+     `/clients/${clientId}/bulk-analysis/projects/${projectId}?orderId=${orderId}`
+   )}>
+     View Full Analysis ({domainCount} domains)
+   </button>
+   ```
+
+##### 3.3.6 Data Loading Enhancements
+```typescript
+// Enhance existing data loading
+async function loadProjectData(projectId: string, orderId?: string) {
+  const project = await getProject(projectId);
+  
+  if (orderId) {
+    // Load order-specific context
+    const orderContext = await db.query.orderSiteSelections.findMany({
+      where: and(
+        eq(orderSiteSelections.orderGroupId, orderGroupId),
+        eq(orderSiteSelections.domainId, in(project.domains.map(d => d.id)))
+      )
+    });
+    
+    return {
+      ...project,
+      orderContext: {
+        orderId,
+        selectedDomains: orderContext.filter(s => s.status === 'approved'),
+        suggestedDomains: orderContext.filter(s => s.status === 'suggested'),
+        remainingLinks: linkCount - orderContext.length
+      }
+    };
+  }
+  
+  return project;
+}
+```
+
+##### 3.3.7 API Enhancements
+**Existing API**: `/api/clients/[clientId]/bulk-analysis/projects/[projectId]`
+**Enhanced to support order context**:
 
 ```typescript
-interface SiteSelectionView {
-  orderGroup: OrderGroup;
-  sites: {
-    suggested: AnalyzedDomain[]; // From website DB + analysis
-    all: AnalyzedDomain[];       // ALL analyzed sites
-    selected: SiteSelection[];   // Current selections
-  };
-  filters: {
-    status: 'all' | 'high_quality' | 'good' | 'marginal';
-    minDR?: number;
-    minTraffic?: number;
-    niche?: string;
+// GET with optional order context
+export async function GET(request: NextRequest, { params, searchParams }) {
+  const orderId = searchParams.get('orderId');
+  
+  const project = await getProject(params.projectId);
+  
+  if (orderId) {
+    // Include order-specific data
+    const orderSelections = await getOrderSelections(orderId, params.clientId);
+    return { ...project, orderContext: orderSelections };
+  }
+  
+  return project;
+}
+
+// POST for order-specific actions
+export async function POST(request: NextRequest, { params }) {
+  const { action, orderId, domains } = await request.json();
+  
+  if (action === 'addToOrder' && orderId) {
+    await addDomainsToOrder(orderId, domains);
+  }
+  
+  if (action === 'modifyOrder' && orderId) {
+    await modifyOrderDetails(orderId, request.body);
+  }
+}
+```
+
+**IMPLEMENTATION PRIORITY**:
+1. ✅ Query param detection and order context loading
+2. ✅ Order-specific UI elements (header, progress, actions)  
+3. ✅ User permission modifications for account users
+4. ✅ Guided domain deep-dive functionality
+5. ✅ API enhancements for order context
+6. ✅ Navigation integration from order pages
+
+**NO NEW PAGES CREATED**. All functionality added to existing `/clients/[clientId]/bulk-analysis/projects/[projectId]` page with conditional rendering based on query parameters and user type.
+
+#### 3.4 Updated Site Selection API
+
+**Enhanced Endpoint**: `/api/orders/[id]/groups/[groupId]/site-selections`
+
+```typescript
+// GET - Now includes full project data access
+interface GetSitesResponse {
+  project: BulkAnalysisProject; // Full project data
+  allAnalyzedDomains: BulkAnalysisDomain[]; // Complete domain pool
+  suggestedDomains: BulkAnalysisDomain[]; // Team curated suggestions
+  currentSelections: OrderSiteSelection[]; // Current order selections
+  orderFlexibility: {
+    canModifyLinkCount: boolean;
+    canChangeTargets: boolean;
+    canSelectFromFullPool: boolean;
   };
 }
 ```
 
-#### 3.2 Site Browser Component
-```typescript
-<SiteBrowser>
-  <Tabs defaultValue="suggested">
-    <TabsList>
-      <TabsTrigger value="suggested">
-        Suggested ({suggestedCount})
-      </TabsTrigger>
-      <TabsTrigger value="all">
-        Browse All ({totalAnalyzed})
-      </TabsTrigger>
-    </TabsList>
-    
-    <TabsContent value="suggested">
-      <SiteGrid sites={suggestedSites} />
-    </TabsContent>
-    
-    <TabsContent value="all">
-      <FilterBar>
-        <Select options={['High Quality', 'Good', 'Marginal']} />
-        <RangeSlider label="DR" min={0} max={100} />
-        <RangeSlider label="Traffic" min={0} max={1000000} />
-      </FilterBar>
-      <SiteGrid sites={filteredSites} />
-    </TabsContent>
-  </Tabs>
-  
-  <SelectionSummary>
-    <h3>Selected: {selections.length} / {requiredLinks}</h3>
-    <TargetPageAssignment 
-      selections={selections}
-      targetPages={orderGroup.targetPages}
-    />
-  </SelectionSummary>
-</SiteBrowser>
-```
+**Key Change**: Account users now get access to full bulk analysis project data, not just curated suggestions.
 
-#### 3.3 Site Selection API
-**Endpoint**: `/api/orders/[id]/groups/[groupId]/site-selections` ✅ IMPLEMENTED
+### Phase 4: Account User Review Interface ⚠️ NOT REVIEWED YET
 
-```typescript
-// GET - Fetch all available sites
-interface GetSitesResponse {
-  suggested: {
-    fromWebsiteDB: AnalyzedDomain[];
-    fromAnalysis: AnalyzedDomain[];
+**NOTE**: Phase 4 implementation has not been closely reviewed yet. Focus remains on Phase 3 flexible project associations and client bulk analysis access.
   };
   all: AnalyzedDomain[];
   currentSelections: SiteSelection[];
