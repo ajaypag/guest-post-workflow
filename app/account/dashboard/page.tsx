@@ -18,6 +18,7 @@ import {
   TrendingUp,
   Calendar,
   DollarSign,
+  Trash2,
   ExternalLink,
   Settings,
   Plus
@@ -496,12 +497,43 @@ function AccountDashboardContent({ user }: AccountDashboardProps) {
                           {formatCurrency(order.totalRetail)}
                         </td>
                         <td className="px-6 py-4 whitespace-nowrap text-sm">
-                          <button
-                            onClick={() => router.push(`/orders/${order.id}/detail`)}
-                            className="text-blue-600 hover:text-blue-800"
-                          >
-                            View Details
-                          </button>
+                          <div className="flex items-center gap-3">
+                            <button
+                              onClick={() => router.push(`/orders/${order.id}/detail`)}
+                              className="text-blue-600 hover:text-blue-800"
+                            >
+                              View Details
+                            </button>
+                            {order.status === 'draft' && (
+                              <button
+                                onClick={async () => {
+                                  if (confirm('Are you sure you want to delete this draft order? This action cannot be undone.')) {
+                                    try {
+                                      const response = await fetch(`/api/orders/${order.id}`, {
+                                        method: 'DELETE',
+                                        headers: { 'Content-Type': 'application/json' }
+                                      });
+                                      
+                                      if (response.ok) {
+                                        // Refresh the orders list
+                                        window.location.reload();
+                                      } else {
+                                        const data = await response.json();
+                                        alert(data.error || 'Failed to delete order');
+                                      }
+                                    } catch (error) {
+                                      console.error('Error deleting order:', error);
+                                      alert('Error deleting order');
+                                    }
+                                  }
+                                }}
+                                className="text-red-600 hover:text-red-800"
+                                title="Delete draft order"
+                              >
+                                <Trash2 className="h-4 w-4" />
+                              </button>
+                            )}
+                          </div>
                         </td>
                       </tr>
                     ))

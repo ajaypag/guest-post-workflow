@@ -310,7 +310,7 @@ export function OrdersTableMultiClient({
                             )}
                           </button>
                         )}
-                        {/* Delete button for draft orders */}
+                        {/* Delete button for draft orders - available to all users for their own orders */}
                         {(order.state || order.status) === 'draft' && (
                           <button
                             onClick={async () => {
