@@ -824,8 +824,8 @@ export default function EditOrderPage({ params }: { params: Promise<{ id: string
     // Save draft before navigating
     await saveOrderDraft();
     
-    // Navigate to site selection page
-    router.push(`/account/orders/${draftOrderId}/sites`);
+    // Navigate to order confirmation page
+    router.push(`/account/orders/${draftOrderId}/confirm`);
   };
 
   return (
