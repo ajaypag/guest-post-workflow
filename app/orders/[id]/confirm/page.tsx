@@ -81,7 +81,7 @@ export default function OrderConfirmPage() {
           type: 'warning', 
           text: 'This order is not pending confirmation. Redirecting...' 
         });
-        setTimeout(() => router.push(`/orders/${params.id}`), 2000);
+        setTimeout(() => router.push(`/orders/${params.id}/detail`), 2000);
         return;
       }
       
@@ -264,7 +264,7 @@ export default function OrderConfirmPage() {
       
       // Redirect to order detail page after 2 seconds
       setTimeout(() => {
-        router.push(`/orders/${params.id}`);
+        router.push(`/orders/${params.id}/detail`);
       }, 2000);
       
     } catch (error: any) {
@@ -495,7 +495,7 @@ export default function OrderConfirmPage() {
           {/* Actions */}
           <div className="flex gap-4">
             <button
-              onClick={() => router.push(`/orders/${order.id}`)}
+              onClick={() => router.push(`/orders/${order.id}/detail`)}
               className="flex-1 px-4 py-2 border border-gray-300 text-gray-700 rounded-lg hover:bg-gray-50"
             >
               Cancel

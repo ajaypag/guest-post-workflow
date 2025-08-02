@@ -387,13 +387,16 @@ export default function OrderDetailPage() {
                           </div>
                           <div className="text-right">
                             <p className="font-medium text-gray-900">{group.linkCount} links</p>
-                            {group.bulkAnalysisProjectId && (
+                            {group.bulkAnalysisProjectId ? (
                               <Link
                                 href={`/clients/${group.clientId}/bulk-analysis/projects/${group.bulkAnalysisProjectId}`}
-                                className="text-sm text-blue-600 hover:underline"
+                                className="inline-flex items-center text-sm text-blue-600 hover:underline"
                               >
-                                View Project
+                                <TrendingUp className="h-3 w-3 mr-1" />
+                                View Analysis
                               </Link>
+                            ) : (
+                              <span className="text-sm text-gray-500">No project yet</span>
                             )}
                           </div>
                         </div>
@@ -581,10 +584,21 @@ export default function OrderDetailPage() {
               {/* Quick Actions */}
               {order.status === 'confirmed' && order.state === 'analyzing' && (
                 <div className="bg-blue-50 rounded-lg p-4">
-                  <p className="text-sm text-blue-900 font-medium mb-2">Bulk Analysis In Progress</p>
-                  <p className="text-sm text-blue-700">
-                    Our team is finding suitable sites for this order. Check the bulk analysis projects for progress.
+                  <p className="text-sm text-blue-900 font-medium mb-2">Next Steps: Site Selection</p>
+                  <p className="text-sm text-blue-700 mb-3">
+                    This order is ready for site selection. Visit the bulk analysis projects to find and approve sites.
                   </p>
+                  <div className="space-y-2">
+                    {order.orderGroups.filter(g => g.bulkAnalysisProjectId).map(group => (
+                      <Link
+                        key={group.id}
+                        href={`/clients/${group.clientId}/bulk-analysis/projects/${group.bulkAnalysisProjectId}`}
+                        className="block w-full px-3 py-2 bg-white rounded-md text-sm font-medium text-blue-600 hover:bg-blue-50 hover:text-blue-700 transition-colors"
+                      >
+                        Analyze sites for {group.client.name} →
+                      </Link>
+                    ))}
+                  </div>
                 </div>
               )}
             </div>
