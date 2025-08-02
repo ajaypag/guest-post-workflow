@@ -2,7 +2,7 @@ import { pgTable, uuid, timestamp, varchar, text, index, uniqueIndex, jsonb } fr
 import { relations } from 'drizzle-orm';
 import { orders } from './orderSchema';
 import { orderGroups } from './orderGroupSchema';
-import { bulkAnalysisProjects } from './bulkAnalysisSchema';
+import { bulkAnalysisProjects, bulkAnalysisDomains } from './bulkAnalysisSchema';
 import { users } from './schema';
 
 /**
@@ -64,7 +64,11 @@ export const orderSiteSubmissions = pgTable('order_site_submissions', {
   
   // Client review
   clientReviewedAt: timestamp('client_reviewed_at'),
+  clientReviewedBy: uuid('client_reviewed_by').references(() => users.id),
   clientReviewNotes: text('client_review_notes'),
+  
+  // Completion tracking
+  completedAt: timestamp('completed_at'),
   
   // Final placement details
   publishedUrl: text('published_url'),
@@ -77,6 +81,19 @@ export const orderSiteSubmissions = pgTable('order_site_submissions', {
     specialInstructions?: string;
     qualityScore?: number;
     clientPriority?: 'high' | 'medium' | 'low';
+    statusHistory?: Array<{
+      status: string;
+      timestamp: Date;
+      updatedBy: string;
+      notes?: string;
+    }>;
+    reviewHistory?: Array<{
+      action: 'approve' | 'reject';
+      timestamp: Date;
+      reviewedBy: string;
+      reviewerType: 'internal' | 'account';
+      notes?: string;
+    }>;
   }>(),
   
   createdAt: timestamp('created_at').notNull().defaultNow(),
@@ -118,8 +135,16 @@ export const orderSiteSubmissionsRelations = relations(orderSiteSubmissions, ({ 
     fields: [orderSiteSubmissions.orderGroupId],
     references: [orderGroups.id],
   }),
+  domain: one(bulkAnalysisDomains, {
+    fields: [orderSiteSubmissions.domainId],
+    references: [bulkAnalysisDomains.id],
+  }),
   submittedByUser: one(users, {
     fields: [orderSiteSubmissions.submittedBy],
+    references: [users.id],
+  }),
+  clientReviewedByUser: one(users, {
+    fields: [orderSiteSubmissions.clientReviewedBy],
     references: [users.id],
   }),
 }));
