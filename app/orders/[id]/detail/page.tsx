@@ -275,13 +275,13 @@ export default function OrderDetailPage() {
               </div>
               
               <div className="flex items-center gap-3">
-                {user?.userType === 'internal' && order.status === 'draft' && (
+                {order.status === 'draft' && (
                   <Link
                     href={`/orders/${order.id}/edit`}
                     className="inline-flex items-center px-4 py-2 border border-gray-300 rounded-md text-gray-700 hover:bg-gray-50"
                   >
                     <Edit className="h-4 w-4 mr-2" />
-                    Edit
+                    Continue Editing
                   </Link>
                 )}
                 {user?.userType === 'internal' && order.status === 'pending_confirmation' && (

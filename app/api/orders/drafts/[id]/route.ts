@@ -153,21 +153,20 @@ export async function PUT(
       .where(eq(orders.id, orderId));
 
     // Handle order groups if present
-    if (orderData.groups && orderData.groups.length > 0) {
+    if (orderData.orderGroups && orderData.orderGroups.length > 0) {
       // Delete existing groups for this order
       await db.delete(orderGroups).where(eq(orderGroups.orderId, orderId));
 
       // Insert new groups
-      for (const group of orderData.groups) {
+      for (const group of orderData.orderGroups) {
         const [insertedGroup] = await db.insert(orderGroups).values({
           orderId: orderId,
           clientId: group.clientId,
           linkCount: group.linkCount,
-          targetPages: group.selections.map((sel: any) => ({ 
-            url: sel.targetPageUrl || '', 
-            pageId: sel.targetPageId 
-          })),
-          anchorTexts: group.selections.map((sel: any) => sel.anchorText || ''),
+          targetPages: group.targetPages || [],
+          anchorTexts: group.anchorTexts || [],
+          requirementOverrides: {},
+          groupStatus: 'pending'
         }).returning();
 
         // Insert site selections

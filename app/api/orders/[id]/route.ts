@@ -146,14 +146,37 @@ export async function DELETE(
       return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
     }
 
-    // Only internal users can delete orders
-    if (session.userType !== 'internal') {
-      return NextResponse.json({ error: 'Forbidden' }, { status: 403 });
-    }
-
     const { id } = await params;
 
-    // Delete the order (items will be cascade deleted)
+    // First, fetch the order to check its status and ownership
+    const order = await db.query.orders.findFirst({
+      where: eq(orders.id, id),
+    });
+
+    if (!order) {
+      return NextResponse.json({ error: 'Order not found' }, { status: 404 });
+    }
+
+    // Check permissions
+    if (session.userType === 'account') {
+      // Account users can only delete their own draft orders
+      if (order.accountId !== session.userId) {
+        return NextResponse.json({ error: 'Forbidden' }, { status: 403 });
+      }
+      // Only allow deletion of draft orders in configuring state
+      if (order.status !== 'draft') {
+        return NextResponse.json({ 
+          error: 'Only draft orders can be deleted' 
+        }, { status: 400 });
+      }
+    } else if (session.userType !== 'internal') {
+      // Only internal users and accounts can delete orders
+      return NextResponse.json({ error: 'Forbidden' }, { status: 403 });
+    }
+    
+    // For internal users, they can delete any order (no status check)
+
+    // Delete the order (items and orderGroups will be cascade deleted)
     await db.delete(orders).where(eq(orders.id, id));
 
     return NextResponse.json({ success: true });

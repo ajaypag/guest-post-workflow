@@ -405,18 +405,30 @@ export default function NewOrderPage() {
         totalWholesale: Math.round(total * 0.6), // Estimate wholesale cost
         profitMargin: Math.round(total * 0.4),
         
-        // Groups for the new order structure
-        groups: Array.from(selectedClients.entries())
+        // Groups for the new order structure - API expects 'orderGroups'
+        orderGroups: Array.from(selectedClients.entries())
           .filter(([_, data]) => data.selected && data.linkCount > 0)
           .map(([clientId, data]) => {
             const client = clients.find(c => c.id === clientId);
             const clientItems = lineItems.filter(item => item.clientId === clientId);
             const groupSubtotal = clientItems.reduce((sum, item) => sum + item.price, 0);
             
+            // Extract target pages from line items
+            const targetPages = clientItems
+              .filter(item => item.targetPageUrl)
+              .map(item => ({
+                url: item.targetPageUrl,
+                pageId: item.targetPageId
+              }));
+            
             return {
               clientId,
               clientName: client?.name || '',
               linkCount: data.linkCount,
+              targetPages: targetPages,
+              anchorTexts: clientItems
+                .filter(item => item.anchorText)
+                .map(item => item.anchorText),
               packageType: clientItems[0]?.selectedPackage || 'better',
               packagePrice: packagePricing[clientItems[0]?.selectedPackage || 'better'].price,
               subtotal: groupSubtotal,

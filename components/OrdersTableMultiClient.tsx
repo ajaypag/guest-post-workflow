@@ -1,7 +1,7 @@
 'use client';
 
 import React, { useState } from 'react';
-import { Package, ChevronDown, ChevronRight, Users, Link as LinkIcon, Eye, Copy, Check } from 'lucide-react';
+import { Package, ChevronDown, ChevronRight, Users, Link as LinkIcon, Eye, Copy, Check, Trash2 } from 'lucide-react';
 import Link from 'next/link';
 
 interface OrderGroup {
@@ -308,6 +308,35 @@ export function OrdersTableMultiClient({
                             ) : (
                               <Copy className="h-4 w-4" />
                             )}
+                          </button>
+                        )}
+                        {/* Delete button for draft orders */}
+                        {(order.state || order.status) === 'draft' && (
+                          <button
+                            onClick={async () => {
+                              if (confirm('Are you sure you want to delete this draft order? This action cannot be undone.')) {
+                                try {
+                                  const response = await fetch(`/api/orders/${order.id}`, {
+                                    method: 'DELETE',
+                                    headers: { 'Content-Type': 'application/json' }
+                                  });
+                                  
+                                  if (response.ok) {
+                                    onRefresh();
+                                  } else {
+                                    const data = await response.json();
+                                    alert(data.error || 'Failed to delete order');
+                                  }
+                                } catch (error) {
+                                  console.error('Error deleting order:', error);
+                                  alert('Error deleting order');
+                                }
+                              }
+                            }}
+                            className="text-red-600 hover:text-red-800"
+                            title="Delete draft order"
+                          >
+                            <Trash2 className="h-4 w-4" />
                           </button>
                         )}
                         <Link href={`/orders/${order.id}/detail`}>
