@@ -847,7 +847,8 @@ export default function NewOrderPage() {
         }
         
         const { order } = await draftResponse.json();
-        router.push(`/account/orders/${order.id}/confirm`);
+        // Redirect to unified order page for review (will show order summary)
+        router.push(`/account/orders/${order.id}`);
         return;
       }
       

@@ -14,15 +14,14 @@ import {
   ThumbsUp, ThumbsDown, MessageSquare, RefreshCw, Send
 } from 'lucide-react';
 
-// Import column components - placeholders for now
-const OrderDetailsColumn = () => <div>OrderDetailsColumn placeholder</div>;
-const ClientSelectionColumn = () => <div>ClientSelectionColumn placeholder</div>;
-const TargetPageColumn = () => <div>TargetPageColumn placeholder</div>;
-const OrderSummaryColumn = () => <div>OrderSummaryColumn placeholder</div>;
-const SiteResearchColumn = () => <div>SiteResearchColumn placeholder</div>;
-const SiteSuggestionsColumn = () => <div>SiteSuggestionsColumn placeholder</div>;
-const SiteReviewColumn = () => <div>SiteReviewColumn placeholder</div>;
-const WorkflowProgressColumn = () => <div>WorkflowProgressColumn placeholder</div>;
+// Import column components
+import OrderDetailsColumn from '@/components/orders/columns/OrderDetailsColumn';
+import ClientSelectionColumn from '@/components/orders/columns/ClientSelectionColumn';
+import TargetPageColumn from '@/components/orders/columns/TargetPageColumn';
+import OrderSummaryColumn from '@/components/orders/columns/OrderSummaryColumn';
+import SiteReviewColumn from '@/components/orders/columns/SiteReviewColumn';
+import WorkflowProgressColumn from '@/components/orders/columns/WorkflowProgressColumn';
+import OrderStatusColumn from '@/components/orders/columns/OrderStatusColumn';
 
 interface OrderData {
   id: string;
@@ -58,20 +57,19 @@ type ColumnType = 'left' | 'middle' | 'right';
 interface ColumnConfig {
   left: React.ComponentType<any> | null;
   middle: React.ComponentType<any> | null;
-  right: React.ComponentType<any> | null;
+  right: React.ComponentType<any>;
   leftTitle?: string;
   middleTitle?: string;
   rightTitle?: string;
 }
 
-// Define column configurations for each status/user type combination
+// Define column configurations for external users only
 const getColumnConfig = (
   status: string, 
-  state: string | undefined, 
-  userType: 'internal' | 'account' | null,
+  state: string | undefined,
   isNewOrder: boolean
 ): ColumnConfig => {
-  // New order creation
+  // New order creation (external user flow)
   if (isNewOrder) {
     return {
       left: ClientSelectionColumn,
@@ -83,7 +81,7 @@ const getColumnConfig = (
     };
   }
 
-  // Existing order views
+  // Existing order views for external users
   const configs: Record<string, ColumnConfig> = {
     // Draft - ready to confirm
     'draft': {
@@ -94,92 +92,82 @@ const getColumnConfig = (
       rightTitle: 'Order Details'
     },
     
-    // Pending confirmation - internal user confirms
-    'pending_confirmation': userType === 'internal' ? {
-      left: OrderSummaryColumn,
+    // Pending confirmation - waiting for internal team
+    'pending_confirmation': {
+      left: OrderStatusColumn,
       middle: null,
       right: OrderDetailsColumn,
-      leftTitle: 'Order Summary',
-      rightTitle: 'Order Details'
-    } : {
-      left: OrderSummaryColumn,
-      middle: null,
-      right: OrderDetailsColumn,
-      leftTitle: 'Order Summary',
+      leftTitle: 'Order Status',
       rightTitle: 'Order Details'
     },
     
-    // Confirmed - internal user does site research
+    // Confirmed - internal team is finding sites
     'confirmed': {
-      left: OrderDetailsColumn,
-      middle: SiteResearchColumn,
-      right: SiteSuggestionsColumn,
-      leftTitle: 'Order Details',
-      middleTitle: 'Site Research',
-      rightTitle: 'Site Suggestions'
+      left: OrderStatusColumn,
+      middle: null,
+      right: OrderDetailsColumn,
+      leftTitle: 'Order Progress',
+      rightTitle: 'Order Details'
     },
     
-    // Sites ready - client reviews
-    'sites_ready': userType === 'account' ? {
-      left: OrderDetailsColumn,
-      middle: SiteReviewColumn,
-      right: null,
-      leftTitle: 'Order Details',
-      middleTitle: 'Review Sites',
-    } : {
-      left: OrderDetailsColumn,
-      middle: SiteSuggestionsColumn,
-      right: null,
-      leftTitle: 'Order Details',
-      middleTitle: 'Submitted Sites',
+    // Sites ready - client can review
+    'sites_ready': {
+      left: SiteReviewColumn,
+      middle: null,
+      right: OrderDetailsColumn,
+      leftTitle: 'Review & Approve Sites',
+      rightTitle: 'Order Details'
     },
     
-    // Client reviewing
-    'client_reviewing': userType === 'account' ? {
-      left: OrderDetailsColumn,
-      middle: SiteReviewColumn,
-      right: null,
-      leftTitle: 'Order Details',
-      middleTitle: 'Review Sites',
-    } : {
-      left: OrderDetailsColumn,
-      middle: SiteSuggestionsColumn,
-      right: null,
-      leftTitle: 'Order Details',
-      middleTitle: 'Sites Under Review',
+    // Client reviewing sites
+    'client_reviewing': {
+      left: SiteReviewColumn,
+      middle: null,
+      right: OrderDetailsColumn,
+      leftTitle: 'Review & Approve Sites',
+      rightTitle: 'Order Details'
     },
     
-    // Paid/In Progress - workflow tracking
+    // Client approved - awaiting payment
+    'client_approved': {
+      left: OrderStatusColumn,
+      middle: null,
+      right: OrderDetailsColumn,
+      leftTitle: 'Awaiting Payment',
+      rightTitle: 'Order Details'
+    },
+    
+    // Paid/In Progress - content creation
     'paid': {
-      left: OrderDetailsColumn,
-      middle: WorkflowProgressColumn,
-      right: null,
-      leftTitle: 'Order Details',
-      middleTitle: 'Content Creation Progress',
+      left: WorkflowProgressColumn,
+      middle: null,
+      right: OrderDetailsColumn,
+      leftTitle: 'Content Creation Progress',
+      rightTitle: 'Order Details'
     },
     
     'in_progress': {
-      left: OrderDetailsColumn,
-      middle: WorkflowProgressColumn,
-      right: null,
-      leftTitle: 'Order Details',
-      middleTitle: 'Content Creation Progress',
+      left: WorkflowProgressColumn,
+      middle: null,
+      right: OrderDetailsColumn,
+      leftTitle: 'Content Creation Progress',
+      rightTitle: 'Order Details'
     },
     
     // Completed
     'completed': {
-      left: OrderDetailsColumn,
-      middle: WorkflowProgressColumn,
-      right: null,
-      leftTitle: 'Order Details',
-      middleTitle: 'Completed Deliverables',
+      left: WorkflowProgressColumn,
+      middle: null,
+      right: OrderDetailsColumn,
+      leftTitle: 'Completed Deliverables',
+      rightTitle: 'Order Details'
     }
   };
 
   return configs[status] || configs['draft'];
 };
 
-export default function UnifiedOrderPage() {
+export default function UnifiedAccountOrderPage() {
   const params = useParams();
   const router = useRouter();
   const orderId = params.id as string;
@@ -197,23 +185,32 @@ export default function UnifiedOrderPage() {
   useEffect(() => {
     const loadSession = async () => {
       const userSession = await AuthService.getSession();
+      
+      // Ensure only external users can access this page
+      if (userSession?.userType !== 'account') {
+        router.push('/auth/login');
+        return;
+      }
+      
       setSession(userSession);
     };
     loadSession();
   }, []);
   
   useEffect(() => {
-    if (!isNewOrder && orderId) {
+    if (!isNewOrder && orderId && session) {
       loadOrder();
+      
       // Auto-refresh for status monitoring
       const interval = setInterval(() => {
-        if (order && ['pending_confirmation', 'confirmed', 'sites_ready', 'client_reviewing'].includes(order.status)) {
+        if (order && ['pending_confirmation', 'confirmed', 'sites_ready', 'client_reviewing', 'client_approved'].includes(order.status)) {
           loadOrder(true);
         }
       }, 30000);
+      
       return () => clearInterval(interval);
     }
-  }, [orderId, isNewOrder]);
+  }, [orderId, isNewOrder, session]);
   
   const loadOrder = async (isRefresh = false) => {
     try {
@@ -229,20 +226,15 @@ export default function UnifiedOrderPage() {
           setError('Order not found');
           return;
         }
+        if (response.status === 403) {
+          setError('You do not have permission to view this order');
+          return;
+        }
         throw new Error('Failed to load order');
       }
       
       const data = await response.json();
       setOrder(data);
-      
-      // Redirect logic for account users
-      if (session?.userType === 'account') {
-        // If order is not yet ready for client review, redirect to status page
-        if (!['sites_ready', 'client_reviewing', 'client_approved', 'paid', 'in_progress', 'completed'].includes(data.status)) {
-          router.push(`/account/orders/${orderId}/status`);
-          return;
-        }
-      }
       
     } catch (error) {
       console.error('Error loading order:', error);
@@ -257,7 +249,6 @@ export default function UnifiedOrderPage() {
   const columnConfig = getColumnConfig(
     order?.status || 'draft',
     order?.state,
-    session?.userType,
     isNewOrder
   );
   
@@ -273,7 +264,7 @@ export default function UnifiedOrderPage() {
     const columns = [];
     if (columnConfig.left) columns.push('left');
     if (columnConfig.middle) columns.push('middle');
-    if (columnConfig.right) columns.push('right');
+    columns.push('right'); // Right column always exists for external users
     return columns;
   };
   
@@ -304,9 +295,15 @@ export default function UnifiedOrderPage() {
           <Header />
           <div className="max-w-7xl mx-auto px-4 py-8">
             <div className="bg-white rounded-lg shadow-md p-8">
-              <div className="flex items-center text-red-600">
-                <AlertCircle className="h-6 w-6 mr-2" />
-                <span>{error}</span>
+              <div className="flex flex-col items-center">
+                <AlertCircle className="h-12 w-12 text-red-500 mb-4" />
+                <p className="text-gray-900 font-medium mb-2">{error}</p>
+                <button
+                  onClick={() => router.push('/account/orders')}
+                  className="mt-4 text-blue-600 hover:text-blue-700"
+                >
+                  Back to Orders
+                </button>
               </div>
             </div>
           </div>
@@ -326,7 +323,7 @@ export default function UnifiedOrderPage() {
             <div className="max-w-7xl mx-auto flex items-center justify-between">
               <div className="flex items-center space-x-4">
                 <button
-                  onClick={() => router.push('/orders')}
+                  onClick={() => router.push('/account/orders')}
                   className="text-gray-600 hover:text-gray-900"
                 >
                   <ArrowLeft className="h-5 w-5" />
@@ -336,7 +333,7 @@ export default function UnifiedOrderPage() {
                     Order #{order.id.slice(0, 8)}
                   </h1>
                   <p className="text-sm text-gray-600">
-                    {order.accountName} {order.accountCompany && `• ${order.accountCompany}`}
+                    Created {new Date(order.createdAt).toLocaleDateString()}
                   </p>
                 </div>
               </div>
@@ -347,13 +344,19 @@ export default function UnifiedOrderPage() {
                   order.status === 'completed' ? 'bg-green-100 text-green-800' :
                   order.status === 'cancelled' ? 'bg-red-100 text-red-800' :
                   order.status === 'paid' || order.status === 'in_progress' ? 'bg-blue-100 text-blue-800' :
+                  order.status === 'sites_ready' || order.status === 'client_reviewing' ? 'bg-purple-100 text-purple-800' :
                   'bg-yellow-100 text-yellow-800'
                 }`}>
-                  {order.status.replace(/_/g, ' ').replace(/\b\w/g, l => l.toUpperCase())}
+                  {order.status === 'pending_confirmation' ? 'Awaiting Confirmation' :
+                   order.status === 'confirmed' ? 'Finding Sites' :
+                   order.status === 'sites_ready' ? 'Sites Ready for Review' :
+                   order.status === 'client_reviewing' ? 'Reviewing Sites' :
+                   order.status === 'client_approved' ? 'Awaiting Payment' :
+                   order.status.replace(/_/g, ' ').replace(/\b\w/g, l => l.toUpperCase())}
                 </div>
                 
                 {/* Refresh button for certain statuses */}
-                {['pending_confirmation', 'confirmed', 'sites_ready'].includes(order.status) && (
+                {['pending_confirmation', 'confirmed', 'sites_ready', 'client_reviewing'].includes(order.status) && (
                   <button
                     onClick={() => loadOrder(true)}
                     className={`p-2 text-gray-600 hover:text-gray-900 ${refreshing ? 'animate-spin' : ''}`}
@@ -398,7 +401,7 @@ export default function UnifiedOrderPage() {
         
         {/* Main Content Area - Adaptive Columns */}
         <div className="flex-1 flex overflow-hidden">
-          <div className="flex-1 flex gap-4 p-4 max-w-full">
+          <div className="flex-1 flex gap-4 p-4 max-w-7xl mx-auto w-full">
             {/* Left Column */}
             {columnConfig.left && (
               <div className={`bg-white rounded-lg shadow-sm flex flex-col ${
@@ -433,22 +436,20 @@ export default function UnifiedOrderPage() {
               </div>
             )}
             
-            {/* Right Column */}
-            {columnConfig.right && (
-              <div className={`bg-white rounded-lg shadow-sm flex flex-col ${
-                visibleColumns.length === 3 ? 'w-full md:w-1/3' : 
-                visibleColumns.length === 2 ? 'w-full md:w-1/2' : 
-                'w-full'
-              } ${mobileView === 'right' ? 'block md:block' : 'hidden md:block'}`}>
-                <columnConfig.right
-                  order={order}
-                  isNewOrder={isNewOrder}
-                  session={session}
-                  onOrderUpdate={handleOrderUpdate}
-                  onNavigate={(view: string) => setMobileView(view as any)}
-                />
-              </div>
-            )}
+            {/* Right Column - Always Present (Order Details) */}
+            <div className={`bg-white rounded-lg shadow-sm flex flex-col ${
+              visibleColumns.length === 3 ? 'w-full md:w-1/3' : 
+              visibleColumns.length === 2 ? 'w-full md:w-1/2' : 
+              'w-full'
+            } ${mobileView === 'right' ? 'block md:block' : 'hidden md:block'}`}>
+              <columnConfig.right
+                order={order}
+                isNewOrder={isNewOrder}
+                session={session}
+                onOrderUpdate={handleOrderUpdate}
+                onNavigate={(view: string) => setMobileView(view as any)}
+              />
+            </div>
           </div>
         </div>
       </div>
