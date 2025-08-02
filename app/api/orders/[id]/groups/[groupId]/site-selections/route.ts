@@ -1,6 +1,10 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { db } from '@/lib/db/connection';
-import { orders, orderGroups, clients, bulkAnalysisProjects, bulkAnalysisDomains, orderSiteSelections } from '@/lib/db/schema';
+import { orders } from '@/lib/db/orderSchema';
+import { orderGroups } from '@/lib/db/orderGroupSchema';
+import { bulkAnalysisProjects, bulkAnalysisDomains } from '@/lib/db/bulkAnalysisSchema';
+import { orderSiteSelections } from '@/lib/db/schema';
+import { projectOrderAssociations, orderSiteSubmissions } from '@/lib/db/projectOrderAssociationsSchema';
 import { eq, and, inArray, sql } from 'drizzle-orm';
 import { AuthServiceServer } from '@/lib/auth-server';
 
@@ -50,13 +54,26 @@ export async function GET(
       return NextResponse.json({ error: 'Order group not found' }, { status: 404 });
     }
 
-    // Get analyzed domains from the bulk analysis project
+    // Get analyzed domains through flexible project associations
     let analyzedDomainsList: any[] = [];
     
-    if (orderGroup.bulkAnalysisProjectId) {
-      // Get all analyzed domains from the bulk analysis project
+    // Find associated projects for this order group
+    const associations = await db.query.projectOrderAssociations.findMany({
+      where: and(
+        eq(projectOrderAssociations.orderGroupId, groupId),
+        eq(projectOrderAssociations.orderId, orderId)
+      ),
+      with: {
+        project: true
+      }
+    });
+    
+    if (associations.length > 0) {
+      // Get all analyzed domains from associated projects
+      // Note: If multiple projects are associated, this gets domains from all of them
+      const projectIds = associations.map(a => a.projectId);
       analyzedDomainsList = await db.query.bulkAnalysisDomains.findMany({
-        where: eq(bulkAnalysisDomains.projectId, orderGroup.bulkAnalysisProjectId)
+        where: inArray(bulkAnalysisDomains.projectId, projectIds)
       });
     }
 
@@ -88,35 +105,48 @@ export async function GET(
       return domain.status === 'high_quality' || domain.status === 'good';
     });
 
-    // Get current selections for this order group
-    const currentSelections = await db.query.orderSiteSelections.findMany({
-      where: eq(orderSiteSelections.orderGroupId, groupId),
-      with: {
-        domain: true
-      }
+    // Get current submissions for this order group
+    const currentSubmissions = await db.query.orderSiteSubmissions.findMany({
+      where: eq(orderSiteSubmissions.orderGroupId, groupId)
     });
+    
+    // Get domain details for submissions
+    const domainIds = currentSubmissions.map(s => s.domainId);
+    const domainsWithSubmissions = domainIds.length > 0 
+      ? await db.query.bulkAnalysisDomains.findMany({
+          where: inArray(bulkAnalysisDomains.id, domainIds)
+        })
+      : [];
+    
+    // Create a map for easy lookup
+    const domainMap = new Map(domainsWithSubmissions.map(d => [d.id, d]));
 
-    // Transform selections to expected format
-    const transformedSelections = currentSelections.map(selection => ({
-      id: selection.id,
-      domainId: selection.domainId,
-      domain: {
-        id: selection.domain.id,
-        domain: selection.domain.domain,
-        dr: 70, // TODO: Get from DataForSEO or other metrics
-        traffic: 10000, // TODO: Get from DataForSEO or other metrics
-        niche: 'General',
-        status: selection.domain.qualificationStatus === 'high_quality' ? 'high_quality' : 
-                selection.domain.qualificationStatus === 'good_quality' ? 'good' :
-                selection.domain.qualificationStatus === 'marginal_quality' ? 'marginal' : 'disqualified',
-        price: 100,
-        projectId: selection.domain.projectId,
-        notes: selection.domain.notes
-      },
-      targetPageUrl: selection.targetPageUrl,
-      anchorText: selection.anchorText,
-      status: selection.status
-    }));
+    // Transform submissions to expected format
+    const transformedSelections = currentSubmissions.map(submission => {
+      const domain = domainMap.get(submission.domainId);
+      return {
+        id: submission.id,
+        domainId: submission.domainId,
+        domain: domain ? {
+          id: domain.id,
+          domain: domain.domain,
+          dr: 70, // TODO: Get from DataForSEO or other metrics
+          traffic: 10000, // TODO: Get from DataForSEO or other metrics
+          niche: 'General',
+          status: domain.qualificationStatus === 'high_quality' ? 'high_quality' : 
+                  domain.qualificationStatus === 'good_quality' ? 'good' :
+                  domain.qualificationStatus === 'marginal_quality' ? 'marginal' : 'disqualified',
+          price: 100,
+          projectId: domain.projectId,
+          notes: domain.notes
+        } : null,
+        targetPageUrl: submission.metadata?.targetPageUrl,
+        anchorText: submission.metadata?.anchorText,
+        submissionStatus: submission.submissionStatus,
+        clientReviewedAt: submission.clientReviewedAt,
+        clientReviewNotes: submission.clientReviewNotes
+      };
+    }).filter(s => s.domain !== null);
 
     return NextResponse.json({
       suggested: suggestedSites,

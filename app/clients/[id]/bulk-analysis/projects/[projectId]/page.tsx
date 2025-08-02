@@ -173,6 +173,21 @@ export default function ProjectDetailPage() {
     domains: BulkAnalysisDomain[];
   }>({ isOpen: false, domains: [] });
   
+  // Order context state - for when accessed from an order
+  const orderId = searchParams.get('orderId');
+  const orderGroupId = searchParams.get('orderGroupId');
+  const [orderContext, setOrderContext] = useState<{
+    order: any | null;
+    orderGroup: any | null;
+    isLoading: boolean;
+    error: string | null;
+  }>({ 
+    order: null, 
+    orderGroup: null, 
+    isLoading: !!(orderId && orderGroupId),
+    error: null 
+  });
+  
   // Calculate sorted and filtered domains
   const sortedFilteredDomains = useMemo(() => {
     // Filter domains
@@ -260,10 +275,10 @@ export default function ProjectDetailPage() {
   }, [params.id, params.projectId]);
 
   useEffect(() => {
-    if (client && project) {
+    if (client && project && !orderContext.isLoading) {
       loadDomains();
     }
-  }, [client, project]);
+  }, [client, project, orderContext.isLoading]);
 
   // Track if user came via guided parameter
   const [cameFromGuidedLink, setCameFromGuidedLink] = useState(false);
@@ -286,6 +301,58 @@ export default function ProjectDetailPage() {
       }
     }
   }, [searchParams, domains]);
+
+  // Load order context if present
+  useEffect(() => {
+    if (orderId && orderGroupId && !orderContext.isLoading) {
+      loadOrderContext();
+    }
+  }, [orderId, orderGroupId]);
+
+  const loadOrderContext = async () => {
+    if (!orderId || !orderGroupId) return;
+    
+    try {
+      setOrderContext(prev => ({ ...prev, isLoading: true, error: null }));
+      
+      // Fetch order details
+      const orderResponse = await fetch(`/api/orders/${orderId}`);
+      if (!orderResponse.ok) {
+        throw new Error('Failed to load order');
+      }
+      const orderData = await orderResponse.json();
+      
+      // Fetch order group details
+      const groupResponse = await fetch(`/api/orders/${orderId}/groups/${orderGroupId}`);
+      if (!groupResponse.ok) {
+        throw new Error('Failed to load order group');
+      }
+      const groupData = await groupResponse.json();
+      
+      setOrderContext({
+        order: orderData.order,
+        orderGroup: groupData.orderGroup,
+        isLoading: false,
+        error: null
+      });
+      
+      // Associate project with order if not already associated
+      if (project) {
+        await fetch(`/api/projects/${params.projectId}/associate-order`, {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ orderId, orderGroupId })
+        });
+      }
+    } catch (error) {
+      console.error('Error loading order context:', error);
+      setOrderContext(prev => ({
+        ...prev,
+        isLoading: false,
+        error: error instanceof Error ? error.message : 'Failed to load order context'
+      }));
+    }
+  };
 
   const loadClient = async () => {
     try {
@@ -323,9 +390,24 @@ export default function ProjectDetailPage() {
 
   const loadDomains = async () => {
     try {
-      const response = await fetch(
-        `/api/clients/${params.id}/bulk-analysis?projectId=${params.projectId}`
-      );
+      // Don't load domains until order context is loaded (if needed)
+      if (orderId && orderGroupId && orderContext.isLoading) {
+        return;
+      }
+      
+      let response;
+      if (orderId && orderGroupId && !orderContext.error) {
+        // Load domains associated with the order
+        response = await fetch(
+          `/api/orders/${orderId}/groups/${orderGroupId}/associated-domains`
+        );
+      } else {
+        // Load all domains for the project
+        response = await fetch(
+          `/api/clients/${params.id}/bulk-analysis?projectId=${params.projectId}`
+        );
+      }
+      
       if (response.ok) {
         const data = await response.json();
         // Add clientId to each domain
@@ -1517,6 +1599,39 @@ export default function ProjectDetailPage() {
               </div>
             </div>
           </div>
+
+          {/* Order Context Indicator */}
+          {orderContext.order && orderContext.orderGroup && (
+            <div className="mb-6 p-4 bg-blue-50 border border-blue-200 rounded-lg">
+              <div className="flex items-center justify-between">
+                <div className="flex items-center">
+                  <AlertCircle className="w-5 h-5 text-blue-600 mr-2" />
+                  <span className="text-blue-800 font-medium">
+                    Viewing domains for order: {orderContext.order.name} - {orderContext.orderGroup.name}
+                  </span>
+                </div>
+                <Link
+                  href={`/orders/${orderId}`}
+                  className="text-blue-600 hover:text-blue-700 text-sm font-medium flex items-center"
+                >
+                  View Order
+                  <ArrowRight className="w-4 h-4 ml-1" />
+                </Link>
+              </div>
+            </div>
+          )}
+          
+          {/* Order Context Error */}
+          {orderContext.error && (
+            <div className="mb-6 p-4 bg-red-50 border border-red-200 rounded-lg">
+              <div className="flex items-center">
+                <XCircle className="w-5 h-5 text-red-600 mr-2" />
+                <span className="text-red-800">
+                  Failed to load order context: {orderContext.error}
+                </span>
+              </div>
+            </div>
+          )}
 
           {message && (
             <div className={`mb-6 p-4 rounded-lg ${
