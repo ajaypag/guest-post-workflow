@@ -311,7 +311,7 @@ export function OrdersTableMultiClient({
                           </button>
                         )}
                         {/* Delete button for draft orders - available to all users for their own orders */}
-                        {(order.state || order.status) === 'draft' && (
+                        {order.status === 'draft' && (
                           <button
                             onClick={async () => {
                               if (confirm('Are you sure you want to delete this draft order? This action cannot be undone.')) {

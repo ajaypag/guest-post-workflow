@@ -97,8 +97,7 @@ export async function POST(request: NextRequest) {
         accountName: accountDetails.name,
         accountCompany: accountDetails.company,
         status: 'draft',
-        // Don't set state for draft orders - let it remain null
-        // state: 'configuring',
+        state: 'configuring',
         subtotalRetail: basePrice,
         discountPercent: discountPercent.toString(),
         discountAmount,

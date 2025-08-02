@@ -80,14 +80,14 @@ export default function DebugOrderStatusPage() {
         </table>
       </div>
       
-      <div className="mt-6 p-4 bg-yellow-50 rounded-lg">
-        <h2 className="font-bold mb-2">Delete Button Logic:</h2>
+      <div className="mt-6 p-4 bg-green-50 rounded-lg">
+        <h2 className="font-bold mb-2">Delete Button Logic (FIXED):</h2>
         <ul className="list-disc list-inside text-sm space-y-1">
-          <li>Delete button shows when: <code className="bg-gray-100 px-1">(order.state || order.status) === 'draft'</code></li>
-          <li>Current check in code: <code className="bg-gray-100 px-1">{`{(order.state || order.status) === 'draft' && (<button>...)}`}</code></li>
-          <li className="text-red-600 font-semibold">⚠️ ISSUE: Orders have both 'status' and 'state' fields!</li>
-          <li>New orders might use 'state' field (default: 'configuring')</li>
-          <li>Old orders might use 'status' field (default: 'draft')</li>
+          <li className="text-green-600 font-semibold">✅ Delete button now shows when: <code className="bg-gray-100 px-1">order.status === 'draft'</code></li>
+          <li>Fixed check in code: <code className="bg-gray-100 px-1">{`{order.status === 'draft' && (<button>...)}`}</code></li>
+          <li className="mt-2">Understanding the fields:</li>
+          <li className="ml-4">• <strong>status</strong>: High-level order status (draft, confirmed, paid, etc.)</li>
+          <li className="ml-4">• <strong>state</strong>: Sub-granular workflow state (configuring, analyzing, reviewing, etc.)</li>
         </ul>
       </div>
       
