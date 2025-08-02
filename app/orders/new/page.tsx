@@ -743,6 +743,9 @@ export default function NewOrderPage() {
   };
 
   const handleSubmit = async () => {
+    console.log('[ORDER_NEW] handleSubmit called');
+    console.log('[ORDER_NEW] Current lineItems:', lineItems);
+    
     // Validate line items
     const invalidItems = lineItems.filter(item => !item.clientId);
     
@@ -787,6 +790,9 @@ export default function NewOrderPage() {
         
         return groups;
       }, []);
+      
+      console.log('[ORDER_NEW] Prepared orderGroups:', JSON.stringify(orderGroups, null, 2));
+      console.log('[ORDER_NEW] Session type:', session?.userType);
       
       // For account users, we need to create a draft first
       if (session?.userType === 'account') {

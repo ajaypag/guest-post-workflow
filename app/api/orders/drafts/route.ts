@@ -65,6 +65,9 @@ export async function POST(request: NextRequest) {
     }
 
     const { orderData } = await request.json();
+    
+    // Diagnostic logging
+    console.log('[DRAFT_ORDERS] Received orderData:', JSON.stringify(orderData, null, 2));
 
     // Generate a unique ID
     const orderId = crypto.randomUUID();
@@ -113,16 +116,28 @@ export async function POST(request: NextRequest) {
 
       // Create order groups if provided
       if (orderData.orderGroups && orderData.orderGroups.length > 0) {
-        const orderGroupsToInsert = orderData.orderGroups.map((group: any) => ({
-          orderId: newOrder.id,
-          clientId: group.clientId,
-          linkCount: group.linkCount,
-          targetPages: group.targetPages || [],
-          anchorTexts: group.anchorTexts || [],
-          requirementOverrides: {},
-          groupStatus: 'pending'
-        }));
+        console.log('[DRAFT_ORDERS] Creating order groups:', orderData.orderGroups);
+        
+        const orderGroupsToInsert = orderData.orderGroups.map((group: any) => {
+          console.log('[DRAFT_ORDERS] Processing group:', {
+            clientId: group.clientId,
+            targetPages: group.targetPages,
+            targetPagesType: typeof group.targetPages,
+            targetPagesIsArray: Array.isArray(group.targetPages)
+          });
+          
+          return {
+            orderId: newOrder.id,
+            clientId: group.clientId,
+            linkCount: group.linkCount,
+            targetPages: group.targetPages || [],
+            anchorTexts: group.anchorTexts || [],
+            requirementOverrides: {},
+            groupStatus: 'pending'
+          };
+        });
 
+        console.log('[DRAFT_ORDERS] Inserting order groups:', orderGroupsToInsert);
         await tx.insert(orderGroups).values(orderGroupsToInsert);
       }
 
