@@ -451,7 +451,7 @@ function CreateOrderContent() {
       }
 
       const data = await response.json();
-      router.push(`/orders/${data.order.id}`);
+      router.push(`/orders/${data.order.id}/detail`);
     } catch (error) {
       console.error('Error creating order:', error);
       alert('Failed to create order');

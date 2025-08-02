@@ -357,7 +357,7 @@ function OrderBuilderContent() {
       const { order } = await orderResponse.json();
       
       // Redirect to order detail page
-      router.push(`/orders/${order.id}`);
+      router.push(`/orders/${order.id}/detail`);
       
     } catch (error: any) {
       console.error('Error creating order:', error);

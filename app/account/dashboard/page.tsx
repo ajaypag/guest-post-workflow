@@ -497,7 +497,7 @@ function AccountDashboardContent({ user }: AccountDashboardProps) {
                         </td>
                         <td className="px-6 py-4 whitespace-nowrap text-sm">
                           <button
-                            onClick={() => router.push(`/orders/${order.id}`)}
+                            onClick={() => router.push(`/orders/${order.id}/detail`)}
                             className="text-blue-600 hover:text-blue-800"
                           >
                             View Details

@@ -188,7 +188,7 @@ export function OrdersTable({
                 </td>
 
                 <td className="px-6 py-4 whitespace-nowrap text-right">
-                  <Link href={`/orders/${order.id}`}>
+                  <Link href={`/orders/${order.id}/detail`}>
                     <button className="text-blue-600 hover:text-blue-900 text-sm font-medium">
                       View
                     </button>

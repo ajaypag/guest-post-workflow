@@ -1355,7 +1355,7 @@ export default function ProjectDetailPage() {
       
       setMessage('✅ Domains added to order successfully!');
       // Navigate to order detail page
-      router.push(`/orders/${orderId}`);
+      router.push(`/orders/${orderId}/detail`);
       
     } catch (error: any) {
       console.error('Error adding to order:', error);
@@ -1620,7 +1620,7 @@ export default function ProjectDetailPage() {
                   </span>
                 </div>
                 <Link
-                  href={`/orders/${orderId}`}
+                  href={`/orders/${orderId}/detail`}
                   className="text-blue-600 hover:text-blue-700 text-sm font-medium flex items-center"
                 >
                   View Order
