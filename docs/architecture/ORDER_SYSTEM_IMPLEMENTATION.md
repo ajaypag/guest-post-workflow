@@ -7,6 +7,7 @@
 | **Phase 1: Order Builder** | ✅ COMPLETED | 2025-01-30 | Multi-client order creation page fully functional |
 | **Phase 2: Bulk Analysis** | ✅ COMPLETED | 2025-01-30 | Human-driven projects with notification system |
 | **Phase 3: Site Selection** | ✅ COMPLETED | 2025-01-30 | Account-facing site browser with full transparency |
+| **Phase 3.5: Flexible Associations** | ✅ COMPLETED | 2025-08-02 | Projects reusable across orders, unified UI with BulkAnalysisTable |
 | **Phase 4: Account Dashboard** | 🚧 IN PROGRESS | - | Auth complete, dashboard pending, needs integration work (see BUYER_PORTAL_IMPLEMENTATION.md) |
 | **Phase 5: Workflow Gen** | ✅ COMPLETED | 2025-01-30 | Payment-aware workflow generation |
 | **Phase 6: Share Tokens** | ❌ NOT STARTED | - | Public preview and conversion flow |
@@ -16,7 +17,7 @@
 | **AI Permissions** | ✅ COMPLETED | 2025-01-31 | Granular AI feature access control for accounts |
 | **Account API Fix** | ✅ COMPLETED | 2025-08-01 | Fixed account users unable to see their clients |
 | **Draft Order System** | ✅ COMPLETED | 2025-08-01 | Draft saving, editing, and loading functionality |
-| **Project-Order Flexibility** | 🔬 RESEARCH | 2025-08-02 | Researching flexible project associations for site reuse |
+| **Project-Order Flexibility** | ✅ COMPLETED | 2025-08-02 | Flexible project associations for site reuse across orders |
 
 ### Current Phase: Internal Site Selection & Project Flexibility (2025-08-02)
 
@@ -1826,9 +1827,112 @@ This approach eliminates the need for any toggles, modes, or progressive disclos
 - [ ] Refine account user experience and flows
 - [ ] Test complete end-to-end account journey
 
+## Phase 3.5 Implementation Progress (2025-08-02)
+
+### What We Built
+
+Successfully implemented flexible project-order associations allowing bulk analysis projects to be reused across multiple orders, with unified interfaces leveraging existing components.
+
+### Key Accomplishments
+
+1. **Database Architecture**
+   - Created `projectOrderAssociations` schema for many-to-many relationships
+   - Replaced rigid `orderSiteSelections` with flexible `orderSiteSubmissions`
+   - Full audit trail with timestamps and metadata tracking
+
+2. **API Endpoints**
+   - Internal user status management endpoint
+   - Account user review actions endpoint  
+   - Unified submission fetching with security boundaries
+
+3. **UI Integration**
+   - **Bulk Analysis Enhancement**: Order context awareness with ?orderId parameter
+   - **Order Site Review**: Complete rewrite using BulkAnalysisTable component
+   - **Guided Domain Functionality**: Preserved existing deep-dive features
+   - Three-tab interface: Pending | All | Approved
+
+4. **Security Implementation**
+   - Comprehensive permission checks at all levels
+   - Cross-client data isolation enforced
+   - Full audit trail for all actions
+
+### Placeholders & Technical Debt
+
+#### API Response Type Safety
+- Used `any` types in several places instead of proper interfaces
+- Domain conversion has loose typing
+- API responses aren't fully typed
+
+#### Error Handling
+- Basic try/catch with console.error
+- No retry logic for failed API calls
+- No graceful degradation if bulk analysis project missing
+
+#### Performance Optimizations
+- No caching of domain data between tabs
+- Fetches all data on every tab switch
+- No debouncing on status updates
+- Missing optimistic UI updates
+
+#### Feature Completeness
+```typescript
+// Placeholder handlers
+const handleCreateWorkflow = (domain: BulkAnalysisDomain) => {
+  console.log('Create workflow:', domain);
+};
+const handleDeleteDomain = async (domainId: string) => {
+  console.log('Delete domain:', domainId);
+};
+```
+
+#### Business Logic Gaps
+- No validation that approved count matches required links
+- No prevention of over-approval
+- No bulk approval/rejection capabilities
+- No export functionality for approved sites
+
+#### Security Shortcuts
+- Permission checks are basic (just userType checks)
+- No rate limiting on API endpoints
+- Audit trail in metadata is unstructured JSON
+
+#### Database Schema Compromises
+```typescript
+metadata: json('metadata').$type<Record<string, any>>(),
+// Should be properly typed for status history, review history, etc.
+```
+
+#### Missing Integration Features
+- No email notifications when status changes
+- No webhooks for external systems
+- No activity feed or timeline view
+- No bulk import/export capabilities
+
+#### Code Organization
+- Inline type definitions instead of shared types file
+- Duplicated logic between endpoints
+- No service layer abstraction (direct DB queries in routes)
+- Mixed concerns in API routes
+
+#### State Management
+- Local component state instead of global state management
+- Multiple API calls that could be consolidated
+- Tab state resets on page refresh
+
+### Most Critical to Address Next
+
+1. **Type safety** - Add proper interfaces for all API responses
+2. **Error handling** - Implement proper error boundaries and user feedback
+3. **Performance** - Add caching and optimistic updates
+4. **Business logic** - Validate link counts and prevent over-approval
+5. **Security** - Add rate limiting and structured audit trails
+
+These were conscious trade-offs to get a working system quickly that could be refined based on user feedback.
+
 ## Related Documentation
 
 - [Database Schema](../architecture/DATABASE.md) - Full database structure
 - [API Routes](../api/README.md) - API endpoint documentation
 - [User Types](./USER_TYPES.md) - User type definitions and permissions
 - [Client Security Implementation](./CLIENT_SECURITY_IMPLEMENTATION.md) - Similar security pattern for client management
+- [Phase 3 Implementation Summary](./PHASE_3_IMPLEMENTATION_SUMMARY.md) - Detailed implementation summary
