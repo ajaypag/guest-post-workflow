@@ -292,18 +292,18 @@ export default function ProjectOrderAssociationsMigrationPage() {
                         <div className="flex gap-4">
                           <button
                             onClick={() => runMigration('migrate')}
-                            disabled={!status.readyToMigrate || migrating || status.orderGroupsToMigrate === 0}
+                            disabled={!status.readyToMigrate || migrating || (status.orderGroupsToMigrate === 0 && status.tableExists)}
                             className="inline-flex items-center px-4 py-2 border border-transparent text-sm font-medium rounded-md shadow-sm text-white bg-blue-600 hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500 disabled:opacity-50 disabled:cursor-not-allowed"
                           >
                             {migrating ? (
                               <>
                                 <Loader2 className="mr-2 h-4 w-4 animate-spin" />
-                                Migrating...
+                                {status.tableExists ? 'Migrating...' : 'Creating Tables...'}
                               </>
                             ) : (
                               <>
                                 <Database className="mr-2 h-4 w-4" />
-                                Run Migration
+                                {!status.tableExists ? 'Create Tables' : 'Run Migration'}
                               </>
                             )}
                           </button>
@@ -343,6 +343,28 @@ export default function ProjectOrderAssociationsMigrationPage() {
                           </div>
                         )}
                       </div>
+
+                      {status.orderGroupsToMigrate === 0 && status.existingAssociations === 0 && (
+                        <div className="bg-yellow-50 border border-yellow-200 rounded-md p-4">
+                          <div className="flex">
+                            <AlertCircle className="h-5 w-5 text-yellow-400" />
+                            <div className="ml-3">
+                              <h3 className="text-sm font-medium text-yellow-800">No Data to Migrate</h3>
+                              <div className="mt-1 text-sm text-yellow-700">
+                                <p>No order groups have bulkAnalysisProjectId set. This could mean:</p>
+                                <ul className="list-disc list-inside mt-2">
+                                  <li>No bulk analysis projects have been created yet</li>
+                                  <li>Order groups haven't been linked to projects</li>
+                                  <li>The system is using a different association method</li>
+                                </ul>
+                                <p className="mt-2">
+                                  Check <a href="/api/admin/debug-order-groups" className="underline text-yellow-800 hover:text-yellow-900" target="_blank">debug endpoint</a> for more details.
+                                </p>
+                              </div>
+                            </div>
+                          </div>
+                        </div>
+                      )}
 
                       {status.orderGroupsToMigrate === 0 && status.existingAssociations > 0 && (
                         <div className="bg-green-50 border border-green-200 rounded-md p-4">

@@ -15,7 +15,13 @@ export async function GET(request: NextRequest) {
     }
 
     // Check if tables exist
-    const tablesExist = await checkTablesExist();
+    let tablesExist = await checkTablesExist();
+    
+    // If tables don't exist, create them automatically
+    if (!tablesExist.projectOrderAssociations || !tablesExist.orderSiteSubmissions) {
+      await createTablesIfNotExists();
+      tablesExist = await checkTablesExist();
+    }
     
     // Count existing associations
     const existingAssociations = tablesExist.projectOrderAssociations 
