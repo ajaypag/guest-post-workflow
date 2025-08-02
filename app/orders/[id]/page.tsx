@@ -102,7 +102,7 @@ export default function OrderDetailPage() {
       }
 
       const data = await response.json();
-      setOrder(data.order);
+      setOrder(data); // API returns order directly now
     } catch (error) {
       console.error('Error loading order:', error);
     } finally {
