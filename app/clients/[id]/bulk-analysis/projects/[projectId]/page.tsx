@@ -3277,7 +3277,7 @@ anotherdomain.com"
             const searchParams = new URLSearchParams();
             searchParams.set('domains', JSON.stringify(domainIds));
             searchParams.set('clientId', params.id as string);
-            router.push(`/orders/builder?${searchParams.toString()}`);
+            router.push(`/orders/new`);
           }
           setOrderSelectionModal({ isOpen: false, domains: [] });
         }}
