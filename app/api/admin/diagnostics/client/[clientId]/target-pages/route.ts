@@ -5,9 +5,10 @@ import { eq } from 'drizzle-orm';
 
 export async function GET(
   request: NextRequest,
-  { params }: { params: { clientId: string } }
+  context: { params: Promise<{ clientId: string }> }
 ) {
   try {
+    const params = await context.params;
     const clientId = params.clientId;
     
     // Get client info
@@ -35,8 +36,9 @@ export async function GET(
         usageInfo: clientTargetPages.map(p => ({
           id: p.id,
           url: p.url,
-          title: p.title,
-          usage_count: p.usage_count,
+          domain: p.domain,
+          keywords: p.keywords,
+          description: p.description,
           status: p.status
         }))
       }

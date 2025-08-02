@@ -93,8 +93,8 @@ export default function OrderFlowDiagnosticsPage() {
             success: false,
             data: {
               raw: group.targetPages,
-              parsed: null,
-              issues: []
+              parsed: null as any,
+              issues: [] as string[]
             }
           };
 
@@ -246,7 +246,7 @@ export default function OrderFlowDiagnosticsPage() {
   };
 
   return (
-    <AuthWrapper adminOnly>
+    <AuthWrapper requireAdmin={true}>
       <div className="container mx-auto p-6">
         <Header />
         <h1 className="text-2xl font-bold mb-6">Order Flow Diagnostics</h1>

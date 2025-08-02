@@ -1,13 +1,15 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { db } from '@/lib/db/connection';
 import { orders, orderGroups, clients, targetPages } from '@/lib/db/schema';
+import { orderItems } from '@/lib/db/orderSchema';
 import { eq } from 'drizzle-orm';
 
 export async function GET(
   request: NextRequest,
-  { params }: { params: { orderId: string } }
+  context: { params: Promise<{ orderId: string }> }
 ) {
   try {
+    const params = await context.params;
     const orderId = params.orderId;
     
     // Get the order
@@ -35,8 +37,7 @@ export async function GET(
         client: {
           id: clients.id,
           name: clients.name,
-          website: clients.website,
-          niche: clients.niche
+          website: clients.website
         }
       })
       .from(orderGroups)
@@ -44,7 +45,6 @@ export async function GET(
       .where(eq(orderGroups.orderId, orderId));
     
     // Get order items if any
-    const { orderItems } = await import('@/lib/db/orderItemSchema');
     const orderItemsData = await db
       .select()
       .from(orderItems)
