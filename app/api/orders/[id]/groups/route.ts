@@ -26,9 +26,16 @@ export async function GET(
       return NextResponse.json({ error: 'Order not found' }, { status: 404 });
     }
     
-    // Check permissions - only internal users can view order groups
-    if (session.userType !== 'internal') {
-      return NextResponse.json({ error: 'Access denied' }, { status: 403 });
+    // Check permissions based on user type
+    if (session.userType === 'internal') {
+      // Internal users can view any order
+    } else if (session.userType === 'account') {
+      // Account users can only view their own orders
+      if (order.accountId !== session.userId) {
+        return NextResponse.json({ error: 'Forbidden - You can only view your own orders' }, { status: 403 });
+      }
+    } else {
+      return NextResponse.json({ error: 'Unauthorized - Invalid user type' }, { status: 401 });
     }
     
     // Get order groups with client details

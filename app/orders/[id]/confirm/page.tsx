@@ -51,6 +51,7 @@ export default function OrderConfirmPage() {
   const [targetPageStatuses, setTargetPageStatuses] = useState<TargetPageStatus[]>([]);
   const [loading, setLoading] = useState(true);
   const [generatingKeywords, setGeneratingKeywords] = useState(false);
+  const [currentProcessingPage, setCurrentProcessingPage] = useState<string | null>(null);
   const [confirmingOrder, setConfirmingOrder] = useState(false);
   const [selectedPages, setSelectedPages] = useState<Set<string>>(new Set());
   const [assignedTo, setAssignedTo] = useState<string>('');
@@ -67,7 +68,8 @@ export default function OrderConfirmPage() {
       // Load order
       const orderResponse = await fetch(`/api/orders/${params.id}`);
       if (!orderResponse.ok) {
-        throw new Error('Failed to load order');
+        const errorData = await orderResponse.json().catch(() => ({}));
+        throw new Error(errorData.error || `Failed to load order (${orderResponse.status})`);
       }
       const orderData = await orderResponse.json();
       setOrder(orderData);
@@ -146,10 +148,19 @@ export default function OrderConfirmPage() {
     
     let successCount = 0;
     let failureCount = 0;
+    let currentIndex = 0;
+    const totalPages = selectedPages.size;
     
     for (const pageId of selectedPages) {
       const page = targetPageStatuses.find(p => p.id === pageId);
       if (!page) continue;
+      
+      currentIndex++;
+      setCurrentProcessingPage(page.url);
+      setMessage({ 
+        type: 'info', 
+        text: `Processing ${currentIndex}/${totalPages}: ${page.url}` 
+      });
       
       try {
         // Generate keywords
@@ -161,7 +172,8 @@ export default function OrderConfirmPage() {
           });
           
           if (!keywordResponse.ok) {
-            throw new Error('Failed to generate keywords');
+            const errorData = await keywordResponse.json().catch(() => ({}));
+            throw new Error(errorData.error || `Failed to generate keywords (${keywordResponse.status})`);
           }
         }
         
@@ -174,18 +186,32 @@ export default function OrderConfirmPage() {
           });
           
           if (!descResponse.ok) {
-            console.error('Failed to generate description, but continuing...');
+            const errorData = await descResponse.json().catch(() => ({}));
+            console.error(`Failed to generate description for ${page.url}:`, errorData.error || descResponse.statusText);
+            // Continue with other pages even if description fails
           }
         }
         
         successCount++;
-      } catch (error) {
+        
+        // Add a small delay between API calls to avoid rate limits
+        if (currentIndex < totalPages) {
+          await new Promise(resolve => setTimeout(resolve, 500)); // 500ms delay
+        }
+      } catch (error: any) {
         console.error(`Failed to generate content for ${page.url}:`, error);
         failureCount++;
+        // Store the error for display
+        const errorMessage = error.message || 'Unknown error';
+        setMessage({ 
+          type: 'error', 
+          text: `Error processing ${page.url}: ${errorMessage}` 
+        });
       }
     }
     
     setGeneratingKeywords(false);
+    setCurrentProcessingPage(null);
     
     if (failureCount === 0) {
       setMessage({ 
@@ -438,7 +464,7 @@ export default function OrderConfirmPage() {
                   {generatingKeywords ? (
                     <>
                       <Loader2 className="h-4 w-4 mr-2 animate-spin" />
-                      Generating...
+                      {currentProcessingPage ? 'Processing...' : 'Generating...'}
                     </>
                   ) : (
                     <>

@@ -96,8 +96,7 @@ export async function POST(
                     await tx
                       .update(targetPages)
                       .set({ 
-                        keywords: keywordsString,
-                        updatedAt: new Date()
+                        keywords: keywordsString
                       })
                       .where(eq(targetPages.id, page.id));
                     
@@ -122,8 +121,7 @@ export async function POST(
                     await tx
                       .update(targetPages)
                       .set({ 
-                        description: descResult.description,
-                        updatedAt: new Date()
+                        description: descResult.description
                       })
                       .where(eq(targetPages.id, page.id));
                     
