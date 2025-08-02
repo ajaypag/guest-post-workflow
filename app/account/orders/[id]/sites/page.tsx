@@ -76,7 +76,7 @@ export default function SiteSelectionPage() {
   const [selectedDomains, setSelectedDomains] = useState<Set<string>>(new Set());
   const [session, setSession] = useState<any>(null);
   
-  const selectedGroup = order?.orderGroups.find(g => g.id === selectedGroupId);
+  const selectedGroup = order?.orderGroups?.find(g => g.id === selectedGroupId);
   const requiredLinks = selectedGroup?.linkCount || 0;
   const approvedCount = submissions.filter(s => s.status === 'client_approved').length;
   
