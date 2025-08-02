@@ -17,6 +17,7 @@ export async function GET(request: NextRequest) {
     const { searchParams } = new URL(request.url);
     const status = searchParams.get('status');
     const accountId = searchParams.get('accountId');
+    const clientId = searchParams.get('clientId');
 
     let orders: any[] = [];
     
@@ -28,6 +29,9 @@ export async function GET(request: NextRequest) {
     } else if (accountId && session.userType === 'internal') {
       // Internal users can filter by account
       orders = await OrderService.getAccountOrders(accountId);
+    } else if (clientId && status && session.userType === 'internal') {
+      // Internal users can filter by client and status
+      orders = await OrderService.getClientOrdersByStatus(clientId, status);
     } else if (status && session.userType === 'internal') {
       // Internal users can filter by status
       orders = await OrderService.getOrdersByStatus(status);

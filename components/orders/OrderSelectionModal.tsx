@@ -10,6 +10,7 @@ interface Order {
   createdAt: string;
   itemCount: number;
   totalRetail: number;
+  status?: string;
 }
 
 interface OrderSelectionModalProps {
@@ -17,24 +18,59 @@ interface OrderSelectionModalProps {
   onClose: () => void;
   onSelectOrder: (orderId: string | null) => void;
   clientId: string;
+  projectId?: string; // Optional project ID to show associated orders
 }
 
 export default function OrderSelectionModal({ 
   isOpen, 
   onClose, 
   onSelectOrder,
-  clientId 
+  clientId,
+  projectId 
 }: OrderSelectionModalProps) {
   const [selectedOption, setSelectedOption] = useState<'existing' | 'new'>('new');
   const [selectedOrderId, setSelectedOrderId] = useState<string>('');
   const [draftOrders, setDraftOrders] = useState<Order[]>([]);
+  const [associatedOrders, setAssociatedOrders] = useState<Order[]>([]);
   const [loading, setLoading] = useState(false);
 
   useEffect(() => {
     if (isOpen) {
-      loadDraftOrders();
+      if (projectId) {
+        loadAssociatedOrders();
+      } else {
+        loadDraftOrders();
+      }
     }
-  }, [isOpen, clientId]);
+  }, [isOpen, clientId, projectId]);
+
+  const loadAssociatedOrders = async () => {
+    setLoading(true);
+    try {
+      const response = await fetch(`/api/projects/${projectId}/associated-orders`, {
+        credentials: 'include',
+      });
+      
+      if (response.ok) {
+        const data = await response.json();
+        setAssociatedOrders(data.associatedOrders || []);
+        setDraftOrders(data.draftOrders || []);
+        
+        // Auto-select the default associated order if available
+        if (data.defaultOrderId) {
+          setSelectedOption('existing');
+          setSelectedOrderId(data.defaultOrderId);
+        } else if (data.draftOrders && data.draftOrders.length > 0) {
+          setSelectedOption('existing');
+          setSelectedOrderId(data.draftOrders[0].id);
+        }
+      }
+    } catch (error) {
+      console.error('Error loading associated orders:', error);
+    } finally {
+      setLoading(false);
+    }
+  };
 
   const loadDraftOrders = async () => {
     setLoading(true);
@@ -107,6 +143,65 @@ export default function OrderSelectionModal({
             </div>
           ) : (
             <div className="space-y-4">
+              {/* Associated Orders - Show first if available */}
+              {associatedOrders.length > 0 && (
+                <>
+                  <div className="mb-4">
+                    <p className="text-sm font-medium text-gray-700 mb-2">
+                      This project is associated with the following orders:
+                    </p>
+                    <div className="space-y-2">
+                      {associatedOrders.map((order) => (
+                        <label
+                          key={order.id}
+                          className={`flex items-start p-4 border-2 rounded-lg cursor-pointer transition-colors hover:bg-gray-50 ${
+                            selectedOption === 'existing' && selectedOrderId === order.id
+                              ? 'border-blue-500 bg-blue-50'
+                              : 'border-gray-200'
+                          }`}
+                        >
+                          <input
+                            type="radio"
+                            name="orderOption"
+                            value={order.id}
+                            checked={selectedOption === 'existing' && selectedOrderId === order.id}
+                            onChange={() => {
+                              setSelectedOption('existing');
+                              setSelectedOrderId(order.id);
+                            }}
+                            className="mt-1 text-blue-600 focus:ring-blue-500"
+                          />
+                          <div className="ml-3 flex-1">
+                            <div className="flex items-center gap-2">
+                              <FileText className="h-4 w-4 text-blue-600" />
+                              <span className="font-medium text-gray-900">
+                                {order.accountName || order.accountEmail}
+                              </span>
+                              <span className="text-xs bg-blue-100 text-blue-700 px-2 py-0.5 rounded">
+                                Associated Order
+                              </span>
+                            </div>
+                            <div className="text-sm text-gray-600 mt-1">
+                              <p>{order.itemCount || 0} domains • {formatCurrency(order.totalRetail)}</p>
+                              <p className="text-xs">Status: <span className="capitalize">{order.status || 'draft'}</span></p>
+                            </div>
+                          </div>
+                        </label>
+                      ))}
+                    </div>
+                  </div>
+
+                  <div className="relative">
+                    <div className="absolute inset-0 flex items-center">
+                      <div className="w-full border-t border-gray-300"></div>
+                    </div>
+                    <div className="relative flex justify-center text-sm">
+                      <span className="bg-white px-2 text-gray-500">or</span>
+                    </div>
+                  </div>
+                </>
+              )}
+
               {/* New Order Option */}
               <label className="flex items-start p-4 border-2 rounded-lg cursor-pointer transition-colors hover:bg-gray-50">
                 <input

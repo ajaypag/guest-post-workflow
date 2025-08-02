@@ -3266,6 +3266,7 @@ anotherdomain.com"
         isOpen={orderSelectionModal.isOpen}
         onClose={() => setOrderSelectionModal({ isOpen: false, domains: [] })}
         clientId={params.id as string}
+        projectId={params.projectId as string}
         onSelectOrder={(orderId) => {
           if (orderId) {
             // Add to existing order

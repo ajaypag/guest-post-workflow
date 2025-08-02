@@ -506,6 +506,54 @@ export class OrderService {
   }
 
   /**
+   * Get orders for a client by status with order groups
+   */
+  static async getClientOrdersByStatus(clientId: string, status: string): Promise<any[]> {
+    const { orderGroups } = await import('@/lib/db/orderGroupSchema');
+    
+    // Find all orders for this client with the specified status
+    const clientOrders = await db
+      .select({
+        order: orders,
+        orderGroup: orderGroups
+      })
+      .from(orders)
+      .innerJoin(orderGroups, eq(orderGroups.orderId, orders.id))
+      .where(
+        and(
+          eq(orderGroups.clientId, clientId),
+          eq(orders.status, status)
+        )
+      )
+      .orderBy(desc(orders.createdAt));
+
+    // Transform and fetch additional data
+    const ordersWithGroups = await Promise.all(
+      clientOrders.map(async ({ order }) => {
+        const groups = await this.getOrderGroups(order.id);
+        
+        // Count total items if groups are empty (legacy orders)
+        let itemCount = 0;
+        if (groups.length === 0) {
+          const items = await db.query.orderItems.findMany({
+            where: eq(orderItems.orderId, order.id),
+          });
+          itemCount = items.length;
+        }
+        
+        return {
+          ...order,
+          totalLinks: groups.reduce((sum, g) => sum + g.linkCount, 0) || itemCount,
+          itemCount: itemCount, // For backwards compatibility
+          orderGroups: groups
+        };
+      })
+    );
+
+    return ordersWithGroups;
+  }
+
+  /**
    * Get all orders with pagination
    */
   static async getAllOrders(limit: number = 50, offset: number = 0): Promise<Order[]> {
