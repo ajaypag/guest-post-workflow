@@ -94,6 +94,7 @@ export default function ProjectDetailPage() {
     { value: 'disqualified', label: 'Disqualified' }
   ];
   
+  
   // DataForSEO modal state
   const [dataForSeoModal, setDataForSeoModal] = useState<{
     isOpen: boolean;
@@ -372,9 +373,9 @@ export default function ProjectDetailPage() {
       }
       setClient(clientData);
       
-      // Get target pages
+      // Get target pages - show all active pages, even without keywords
       const pages = (clientData as any)?.targetPages || [];
-      setTargetPages(pages.filter((p: any) => p.status === 'active' && p.keywords));
+      setTargetPages(pages.filter((p: any) => p.status === 'active'));
     } catch (error) {
       console.error('Error loading client:', error);
       router.push('/clients');
@@ -1719,8 +1720,8 @@ export default function ProjectDetailPage() {
             {targetPages.length === 0 ? (
               <div className="text-center py-8 text-gray-500">
                 <AlertCircle className="w-12 h-12 mx-auto mb-3 text-gray-400" />
-                <p>No active target pages with keywords found.</p>
-                <p className="text-sm mt-2">Please add target pages and generate keywords first.</p>
+                <p>No active target pages found for this client.</p>
+                <p className="text-sm mt-2">Please add target pages to the client first.</p>
               </div>
             ) : (
               <>

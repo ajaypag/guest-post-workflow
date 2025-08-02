@@ -7,6 +7,9 @@ import { clients, targetPages } from '@/lib/db/schema';
 import { eq } from 'drizzle-orm';
 import { v4 as uuidv4 } from 'uuid';
 import { AuthServiceServer } from '@/lib/auth-server';
+import { generateKeywords, formatKeywordsForStorage } from '@/lib/services/keywordGenerationService';
+import { generateDescription } from '@/lib/services/descriptionGenerationService';
+import { ClientService } from '@/lib/db/clientService';
 
 export async function POST(
   request: NextRequest,
@@ -78,6 +81,62 @@ export async function POST(
               .where(eq(targetPages.clientId, orderGroup.clientId));
               
             const relevantPages = pages.filter(p => targetPageIds.includes(p.id));
+            
+            // Generate keywords for pages that don't have them
+            for (const page of relevantPages) {
+              if (!page.keywords || page.keywords.trim() === '') {
+                try {
+                  console.log(`🤖 Generating keywords for target page: ${page.url}`);
+                  const keywordResult = await generateKeywords(page.url);
+                  
+                  if (keywordResult.success && keywordResult.keywords.length > 0) {
+                    const keywordsString = formatKeywordsForStorage(keywordResult.keywords);
+                    
+                    // Update the target page with generated keywords
+                    await tx
+                      .update(targetPages)
+                      .set({ 
+                        keywords: keywordsString,
+                        updatedAt: new Date()
+                      })
+                      .where(eq(targetPages.id, page.id));
+                    
+                    // Update the page object for immediate use
+                    page.keywords = keywordsString;
+                    console.log(`✅ Generated ${keywordResult.keywords.length} keywords for ${page.url}`);
+                  }
+                } catch (error) {
+                  console.error(`Failed to generate keywords for ${page.url}:`, error);
+                  // Continue with other pages even if one fails
+                }
+              }
+              
+              // Generate description if missing
+              if (!page.description || page.description.trim() === '') {
+                try {
+                  console.log(`🤖 Generating description for target page: ${page.url}`);
+                  const descResult = await generateDescription(page.url);
+                  
+                  if (descResult.success && descResult.description) {
+                    // Update the target page with generated description
+                    await tx
+                      .update(targetPages)
+                      .set({ 
+                        description: descResult.description,
+                        updatedAt: new Date()
+                      })
+                      .where(eq(targetPages.id, page.id));
+                    
+                    console.log(`✅ Generated description for ${page.url}`);
+                  }
+                } catch (error) {
+                  console.error(`Failed to generate description for ${page.url}:`, error);
+                  // Continue with other pages even if one fails
+                }
+              }
+            }
+            
+            // Now collect all keywords (including newly generated ones)
             const allKeywords = relevantPages
               .map(p => p.keywords || '')
               .filter(k => k.trim() !== '')

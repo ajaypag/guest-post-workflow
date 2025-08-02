@@ -1,7 +1,7 @@
 'use client';
 
 import React, { useState } from 'react';
-import { Package, ChevronDown, ChevronRight, Users, Link as LinkIcon, Eye, Copy, Check, Trash2 } from 'lucide-react';
+import { Package, ChevronDown, ChevronRight, Users, Link as LinkIcon, Eye, Copy, Check, Trash2, CheckCircle } from 'lucide-react';
 import Link from 'next/link';
 
 interface OrderGroup {
@@ -273,29 +273,13 @@ export function OrdersTableMultiClient({
                     <td className="px-6 py-4 whitespace-nowrap text-right">
                       <div className="flex items-center justify-end gap-2">
                         {isInternal && order.status === 'pending_confirmation' && (
-                          <button
-                            onClick={async () => {
-                              if (confirm('Confirm this order? This will create bulk analysis projects for each client.')) {
-                                try {
-                                  const response = await fetch(`/api/orders/${order.id}/confirm`, {
-                                    method: 'POST',
-                                    headers: { 'Content-Type': 'application/json' },
-                                    body: JSON.stringify({ assignedTo: null })
-                                  });
-                                  if (response.ok) {
-                                    window.location.reload();
-                                  } else {
-                                    alert('Failed to confirm order');
-                                  }
-                                } catch (error) {
-                                  alert('Error confirming order');
-                                }
-                              }
-                            }}
-                            className="bg-green-600 hover:bg-green-700 text-white px-3 py-1 rounded text-sm font-medium"
+                          <Link
+                            href={`/orders/${order.id}/confirm`}
+                            className="inline-flex items-center px-3 py-1.5 bg-green-600 text-white text-sm rounded-md hover:bg-green-700"
                           >
-                            Confirm
-                          </button>
+                            <CheckCircle className="h-4 w-4 mr-1" />
+                            Review & Confirm
+                          </Link>
                         )}
                         {isInternal && order.shareToken && (
                           <button
