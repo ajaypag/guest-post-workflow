@@ -53,6 +53,16 @@ export default function ProjectDetailPage() {
   const params = useParams();
   const router = useRouter();
   const searchParams = useSearchParams();
+  
+  // Extract order context from query params
+  const orderId = searchParams.get('orderId');
+  const orderGroupId = searchParams.get('orderGroupId');
+  const [orderContext, setOrderContext] = useState<{
+    order: any | null;
+    orderGroup: any | null;
+    isLoading: boolean;
+  }>({ order: null, orderGroup: null, isLoading: false });
+  
   const [client, setClient] = useState<Client | null>(null);
   const [project, setProject] = useState<BulkAnalysisProject | null>(null);
   const [targetPages, setTargetPages] = useState<TargetPage[]>([]);
@@ -65,6 +75,7 @@ export default function ProjectDetailPage() {
   const [existingDomains, setExistingDomains] = useState<{ domain: string; status: string }[]>([]);
   const [selectedPositionRange, setSelectedPositionRange] = useState('1-50');
   const [userType, setUserType] = useState<string>('');
+  const [session, setSession] = useState<any>(null);
   
   // Manual keyword input mode
   const [keywordInputMode, setKeywordInputMode] = useState<'target-pages' | 'manual'>('target-pages');
@@ -251,19 +262,27 @@ export default function ProjectDetailPage() {
 
   useEffect(() => {
     // Get user type from session
-    const session = sessionStorage.getSession();
-    if (session) {
-      setUserType(session.userType || 'internal');
+    const sessionData = sessionStorage.getSession();
+    if (sessionData) {
+      setSession(sessionData);
+      setUserType(sessionData.userType || 'internal');
     }
     loadClient();
     loadProject();
   }, [params.id, params.projectId]);
+  
+  // Load order context if orderId is present
+  useEffect(() => {
+    if (orderId && orderGroupId) {
+      loadOrderContext();
+    }
+  }, [orderId, orderGroupId]);
 
   useEffect(() => {
     if (client && project) {
       loadDomains();
     }
-  }, [client, project]);
+  }, [client, project, orderContext.orderGroup]);
 
   // Track if user came via guided parameter
   const [cameFromGuidedLink, setCameFromGuidedLink] = useState(false);
@@ -318,12 +337,56 @@ export default function ProjectDetailPage() {
       setMessage('❌ Failed to load project');
     }
   };
+  
+  const loadOrderContext = async () => {
+    if (!orderId || !orderGroupId) return;
+    
+    try {
+      setOrderContext(prev => ({ ...prev, isLoading: true }));
+      
+      // Fetch order details
+      const orderResponse = await fetch(`/api/orders/${orderId}`, {
+        credentials: 'include'
+      });
+      
+      if (!orderResponse.ok) {
+        console.error('Failed to load order context');
+        return;
+      }
+      
+      const orderData = await orderResponse.json();
+      
+      // Find the specific order group
+      const orderGroup = orderData.order.orderGroups?.find((g: any) => g.id === orderGroupId);
+      
+      setOrderContext({
+        order: orderData.order,
+        orderGroup: orderGroup || null,
+        isLoading: false
+      });
+    } catch (error) {
+      console.error('Error loading order context:', error);
+      setOrderContext({ order: null, orderGroup: null, isLoading: false });
+    }
+  };
 
   const loadDomains = async () => {
     try {
-      const response = await fetch(
-        `/api/clients/${params.id}/bulk-analysis?projectId=${params.projectId}`
-      );
+      let response;
+      
+      // If we have order context, load domains through order association
+      if (orderId && orderGroupId && orderContext.orderGroup) {
+        response = await fetch(
+          `/api/orders/${orderId}/groups/${orderGroupId}/associated-domains`,
+          { credentials: 'include' }
+        );
+      } else {
+        // Standard domain loading for project
+        response = await fetch(
+          `/api/clients/${params.id}/bulk-analysis?projectId=${params.projectId}`
+        );
+      }
+      
       if (response.ok) {
         const data = await response.json();
         // Add clientId to each domain
@@ -1234,6 +1297,20 @@ export default function ProjectDetailPage() {
       setLoading(true);
       setMessage('Adding domains to order...');
       
+      // If we're in order context and have a project, create association
+      if (orderGroupId && project?.id) {
+        const associateResponse = await fetch(`/api/projects/${project.id}/associate-order`, {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          credentials: 'include',
+          body: JSON.stringify({ orderId, orderGroupId })
+        });
+        
+        if (!associateResponse.ok) {
+          console.error('Failed to associate project with order');
+        }
+      }
+      
       // Create domain mappings with target pages
       const domainMappings = domains.map(domain => {
         // Find the selected target page for this domain
@@ -1484,6 +1561,45 @@ export default function ProjectDetailPage() {
     <AuthWrapper>
       <div className="min-h-screen bg-gray-50">
         <Header />
+        
+        {/* Order Context Banner */}
+        {orderId && orderContext.order && (
+          <div className="bg-blue-50 border-b border-blue-200">
+            <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-3">
+              <div className="flex items-center justify-between">
+                <div className="flex items-center space-x-4">
+                  <div className="bg-blue-100 rounded-full p-2">
+                    <FileText className="w-5 h-5 text-blue-600" />
+                  </div>
+                  <div>
+                    <p className="text-sm font-medium text-blue-900">
+                      Viewing in Order Context
+                    </p>
+                    <p className="text-xs text-blue-700">
+                      Order #{orderContext.order.orderNumber} - {orderContext.orderGroup?.client?.name || 'Loading...'}
+                    </p>
+                  </div>
+                </div>
+                <div className="flex items-center space-x-2">
+                  <Link
+                    href={`/orders/${orderId}`}
+                    className="text-sm text-blue-600 hover:text-blue-800 font-medium"
+                  >
+                    View Order
+                  </Link>
+                  {session?.userType === 'account' && (
+                    <Link
+                      href={`/account/orders/${orderId}/sites?groupId=${orderGroupId}`}
+                      className="text-sm text-blue-600 hover:text-blue-800 font-medium"
+                    >
+                      Review Sites
+                    </Link>
+                  )}
+                </div>
+              </div>
+            </div>
+          </div>
+        )}
         
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
           {/* Header */}
@@ -2932,11 +3048,16 @@ anotherdomain.com"
                       onDeleteDomain={deleteDomain}
                       onAnalyzeWithDataForSeo={analyzeWithDataForSeo}
                       onAddToOrder={(domains) => {
-                        // Open order selection modal
-                        setOrderSelectionModal({
-                          isOpen: true,
-                          domains: domains
-                        });
+                        // If we're in order context, add directly to the current order
+                        if (orderId && orderGroupId) {
+                          handleAddToExistingOrder(orderId, domains);
+                        } else {
+                          // Open order selection modal
+                          setOrderSelectionModal({
+                            isOpen: true,
+                            domains: domains
+                          });
+                        }
                       }}
                       onUpdateNotes={async (domainId, notes) => {
                         // Save notes
