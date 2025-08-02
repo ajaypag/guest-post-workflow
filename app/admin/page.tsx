@@ -54,14 +54,6 @@ export default function AdminDashboard() {
       iconColor: 'text-purple-600'
     },
     {
-      title: 'Project-Order Associations Migration',
-      description: 'Migrate from rigid 1:1 to flexible many-to-many project associations',
-      icon: Database,
-      href: '/admin/project-order-associations-migration',
-      color: 'bg-indigo-50 border-indigo-200 text-indigo-700',
-      iconColor: 'text-indigo-600'
-    },
-    {
       title: 'DataForSEO Migration',
       description: 'Manage database migration for DataForSEO integration and keyword analysis',
       icon: Search,
