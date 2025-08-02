@@ -944,7 +944,7 @@ export default function NewOrderPage() {
                     </div>
                     <div className="text-right">
                       <p className="font-medium text-gray-900">
-                        {formatCurrency(draft.totalRetail / 100)}
+                        {formatCurrency(draft.totalRetail)}
                       </p>
                     </div>
                   </div>

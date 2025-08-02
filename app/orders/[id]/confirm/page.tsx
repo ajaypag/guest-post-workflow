@@ -6,6 +6,7 @@ import Link from 'next/link';
 import AuthWrapper from '@/components/AuthWrapper';
 import Header from '@/components/Header';
 import { formatCurrency } from '@/lib/utils/formatting';
+import { UserSelector } from '@/components/ui/UserSelector';
 import {
   ArrowLeft,
   CheckCircle,
@@ -480,16 +481,12 @@ export default function OrderConfirmPage() {
           {/* Assign To (Optional) */}
           <div className="bg-white rounded-lg shadow-sm p-6 mb-6">
             <h2 className="text-lg font-semibold mb-4">Assignment (Optional)</h2>
-            <div className="flex items-center gap-3">
-              <User className="h-5 w-5 text-gray-400" />
-              <input
-                type="text"
-                value={assignedTo}
-                onChange={(e) => setAssignedTo(e.target.value)}
-                placeholder="Enter user ID to assign bulk analysis projects to"
-                className="flex-1 px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500"
-              />
-            </div>
+            <UserSelector
+              value={assignedTo}
+              onChange={setAssignedTo}
+              placeholder="Select a user to assign bulk analysis projects to"
+              className="w-full"
+            />
             <p className="text-xs text-gray-500 mt-2">
               Leave empty to create unassigned projects
             </p>

@@ -2,6 +2,7 @@
 
 import React from 'react';
 import { DollarSign, Clock, CheckCircle, AlertCircle, XCircle } from 'lucide-react';
+import { formatCurrency } from '@/lib/utils/formatting';
 
 interface PaymentStatusProps {
   status: 'pending' | 'paid' | 'overdue' | 'refunded' | 'partial';
@@ -100,7 +101,7 @@ export default function PaymentStatus({
       )}
       {showAmount && amount !== undefined && (
         <span className="text-opacity-75">
-          • ${(amount / 100).toFixed(2)}
+          • ${formatCurrency(amount)}
         </span>
       )}
     </div>
@@ -146,7 +147,7 @@ export function PaymentStatusCard({ order }: { order: any }) {
         <div className="flex justify-between items-center">
           <span className="text-gray-600">Total Amount:</span>
           <span className="font-semibold text-lg">
-            ${(order.totalRetail / 100).toFixed(2)}
+            ${formatCurrency(order.totalRetail)}
           </span>
         </div>
         
@@ -154,7 +155,7 @@ export function PaymentStatusCard({ order }: { order: any }) {
           <div className="flex justify-between items-center">
             <span className="text-gray-600">Amount Paid:</span>
             <span className="text-green-600 font-medium">
-              ${(order.amountPaid / 100).toFixed(2)}
+              ${formatCurrency(order.amountPaid)}
             </span>
           </div>
         )}
@@ -163,7 +164,7 @@ export function PaymentStatusCard({ order }: { order: any }) {
           <div className="flex justify-between items-center">
             <span className="text-gray-600">Remaining:</span>
             <span className="text-orange-600 font-medium">
-              ${(order.amountRemaining / 100).toFixed(2)}
+              ${formatCurrency(order.amountRemaining)}
             </span>
           </div>
         )}

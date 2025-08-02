@@ -5,6 +5,7 @@ import { useParams, useRouter } from 'next/navigation';
 import { Loader2, CheckCircle, ShoppingCart, Users, Target, ArrowRight, ArrowLeft, AlertCircle } from 'lucide-react';
 import Link from 'next/link';
 import Header from '@/components/Header';
+import { formatCurrency } from '@/lib/utils/formatting';
 
 interface OrderGroup {
   id: string;
@@ -182,7 +183,7 @@ export default function OrderConfirmationPage() {
               </div>
               <div className="text-center">
                 <Target className="w-8 h-8 text-purple-500 mx-auto mb-2" />
-                <p className="text-2xl font-bold text-gray-900">${(order.totalRetail / 100).toLocaleString()}</p>
+                <p className="text-2xl font-bold text-gray-900">{formatCurrency(order.totalRetail)}</p>
                 <p className="text-sm text-gray-600">Total Price</p>
               </div>
             </div>

@@ -247,9 +247,17 @@ export function OrdersTableMultiClient({
                     </td>
 
                     <td className="px-6 py-4 whitespace-nowrap">
-                      <span className={`inline-flex items-center px-2 py-0.5 rounded text-xs font-medium ${getStatusColor(orderStatus)}`}>
-                        {getStatusLabel(orderStatus)}
-                      </span>
+                      <div className="space-y-1">
+                        <span className={`inline-flex items-center px-2 py-0.5 rounded text-xs font-medium ${getStatusColor(order.status)}`}>
+                          {getStatusLabel(order.status)}
+                        </span>
+                        {order.state && order.state !== order.status && (
+                          <div className="flex items-center gap-1">
+                            <span className="text-xs text-gray-500">State:</span>
+                            <span className="text-xs font-medium text-gray-700">{order.state}</span>
+                          </div>
+                        )}
+                      </div>
                     </td>
 
                     <td className="px-6 py-4 whitespace-nowrap text-right">
