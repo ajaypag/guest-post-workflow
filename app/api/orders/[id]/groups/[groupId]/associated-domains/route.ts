@@ -2,7 +2,7 @@ import { NextRequest, NextResponse } from 'next/server';
 import { db } from '@/lib/db/connection';
 import { projectOrderAssociations } from '@/lib/db/projectOrderAssociationsSchema';
 import { orderGroups } from '@/lib/db/orderGroupSchema';
-import { bulkAnalysisDomains } from '@/lib/db/bulkAnalysisSchema';
+import { bulkAnalysisDomains, bulkAnalysisProjects } from '@/lib/db/bulkAnalysisSchema';
 import { eq, and } from 'drizzle-orm';
 import { AuthServiceServer } from '@/lib/auth-server';
 
@@ -52,6 +52,19 @@ export async function GET(
     
     // Get the project ID from associations (should be consistent for the group)
     const projectId = associations[0].projectId;
+    
+    // Verify project belongs to the same client as the order
+    const project = await db.query.bulkAnalysisProjects.findFirst({
+      where: eq(bulkAnalysisProjects.id, projectId)
+    });
+    
+    if (!project || project.clientId !== orderGroup.clientId) {
+      console.error('Security violation: Project client mismatch', {
+        projectClientId: project?.clientId,
+        orderClientId: orderGroup.clientId
+      });
+      return NextResponse.json({ error: 'Security error: Invalid project association' }, { status: 403 });
+    }
     
     // Get all domains for this project
     const domains = await db.query.bulkAnalysisDomains.findMany({

@@ -338,11 +338,20 @@ export default function ProjectDetailPage() {
       
       // Associate project with order if not already associated
       if (project) {
-        await fetch(`/api/projects/${params.projectId}/associate-order`, {
+        const associateResponse = await fetch(`/api/projects/${params.projectId}/associate-order`, {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
           body: JSON.stringify({ orderId, orderGroupId })
         });
+        
+        if (!associateResponse.ok) {
+          const errorData = await associateResponse.json();
+          console.error('Failed to associate project with order:', errorData);
+          // If client mismatch, show error
+          if (errorData.error?.includes('Client mismatch')) {
+            throw new Error('Security error: This project belongs to a different client');
+          }
+        }
       }
     } catch (error) {
       console.error('Error loading order context:', error);

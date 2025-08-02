@@ -215,22 +215,31 @@ export async function POST(
       return NextResponse.json({ error: 'Order group not found' }, { status: 404 });
     }
 
-    // Check if this is a new selection creation (no bulk analysis project yet)
-    if (session.userType === 'account' && !orderGroup.bulkAnalysisProjectId) {
+    // Get associated projects to check if any sites have been suggested
+    const associations = await db.query.projectOrderAssociations.findMany({
+      where: and(
+        eq(projectOrderAssociations.orderGroupId, groupId),
+        eq(projectOrderAssociations.orderId, orderId)
+      )
+    });
+    
+    // Check if this is a new selection creation (no associated projects yet)
+    if (session.userType === 'account' && associations.length === 0) {
       // Account users can only modify existing suggestions, not create new ones
       return NextResponse.json({ 
         error: 'Forbidden - Account users cannot create new site selections. Please wait for site suggestions from the team.' 
       }, { status: 403 });
     }
 
-    // Start a transaction to update selections
+    // Start a transaction to update submissions
     await db.transaction(async (tx) => {
       // For account users, validate they're only modifying suggested sites
       if (session.userType === 'account' && body.selections) {
-        // Get the bulk analysis project to verify suggested domains
-        if (orderGroup.bulkAnalysisProjectId) {
+        // Get all valid domains from associated projects
+        if (associations.length > 0) {
+          const projectIds = associations.map(a => a.projectId);
           const validDomainIds = await tx.query.bulkAnalysisDomains.findMany({
-            where: eq(bulkAnalysisDomains.projectId, orderGroup.bulkAnalysisProjectId),
+            where: inArray(bulkAnalysisDomains.projectId, projectIds),
             columns: { id: true }
           });
           
@@ -243,25 +252,28 @@ export async function POST(
         }
       }
 
-      // Delete existing selections for this order group
-      await tx.delete(orderSiteSelections).where(eq(orderSiteSelections.orderGroupId, groupId));
+      // Delete existing submissions for this order group
+      await tx.delete(orderSiteSubmissions).where(eq(orderSiteSubmissions.orderGroupId, groupId));
 
-      // Insert new selections
+      // Insert new submissions
       if (body.selections && body.selections.length > 0) {
-        const newSelections = body.selections.map((selection: any) => ({
-          id: crypto.randomUUID(),
+        const newSubmissions = body.selections.map((selection: any) => ({
           orderGroupId: groupId,
           domainId: selection.domainId,
-          targetPageUrl: selection.targetPageUrl,
-          anchorText: selection.anchorText,
-          status: selection.status || 'approved',
-          reviewedAt: new Date(),
-          reviewedBy: session.userId,
-          createdAt: new Date(),
-          updatedAt: new Date()
+          submissionStatus: selection.status === 'approved' ? 'client_approved' : 
+                           selection.status === 'rejected' ? 'client_rejected' : 'pending',
+          metadata: {
+            targetPageUrl: selection.targetPageUrl,
+            anchorText: selection.anchorText,
+            specialInstructions: selection.specialInstructions
+          },
+          clientReviewedAt: selection.status === 'approved' || selection.status === 'rejected' ? new Date() : null,
+          clientReviewNotes: selection.reviewNotes,
+          submittedBy: session.userType === 'internal' ? session.userId : null,
+          submittedAt: session.userType === 'internal' ? new Date() : null
         }));
 
-        await tx.insert(orderSiteSelections).values(newSelections);
+        await tx.insert(orderSiteSubmissions).values(newSubmissions);
       }
     });
 
