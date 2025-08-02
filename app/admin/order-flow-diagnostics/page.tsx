@@ -1,11 +1,11 @@
 'use client';
 
-import { useState, useEffect } from 'react';
+import { useState, useEffect, Suspense } from 'react';
 import { useSearchParams } from 'next/navigation';
 import AuthWrapper from '@/components/AuthWrapper';
 import Header from '@/components/Header';
 
-export default function OrderFlowDiagnosticsPage() {
+function OrderFlowDiagnosticsContent() {
   const searchParams = useSearchParams();
   const [orderId, setOrderId] = useState(searchParams.get('orderId') || '');
   const [results, setResults] = useState<any[]>([]);
@@ -343,5 +343,13 @@ export default function OrderFlowDiagnosticsPage() {
         </div>
       </div>
     </AuthWrapper>
+  );
+}
+
+export default function OrderFlowDiagnosticsPage() {
+  return (
+    <Suspense fallback={<div>Loading...</div>}>
+      <OrderFlowDiagnosticsContent />
+    </Suspense>
   );
 }
