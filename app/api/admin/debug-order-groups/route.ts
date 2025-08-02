@@ -3,7 +3,7 @@ import { db } from '@/lib/db/connection';
 import { orderGroups } from '@/lib/db/orderGroupSchema';
 import { bulkAnalysisProjects } from '@/lib/db/bulkAnalysisSchema';
 import { orders } from '@/lib/db/orderSchema';
-import { isNotNull, isNull, eq } from 'drizzle-orm';
+import { isNotNull, isNull, eq, and } from 'drizzle-orm';
 import { sql } from 'drizzle-orm';
 import { AuthServiceServer } from '@/lib/auth-server';
 
@@ -40,7 +40,7 @@ export async function GET(request: NextRequest) {
         orderId: orderGroups.orderId,
         clientId: orderGroups.clientId,
         bulkAnalysisProjectId: orderGroups.bulkAnalysisProjectId,
-        status: orderGroups.status,
+        groupStatus: orderGroups.groupStatus,
         createdAt: orderGroups.createdAt,
       })
       .from(orderGroups)
@@ -53,7 +53,7 @@ export async function GET(request: NextRequest) {
         orderId: orderGroups.orderId,
         clientId: orderGroups.clientId,
         bulkAnalysisProjectId: orderGroups.bulkAnalysisProjectId,
-        status: orderGroups.status,
+        groupStatus: orderGroups.groupStatus,
         createdAt: orderGroups.createdAt,
       })
       .from(orderGroups)
