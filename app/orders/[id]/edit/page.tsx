@@ -2,6 +2,7 @@
 
 import { useState, useEffect, useCallback, useRef } from 'react';
 import { useRouter } from 'next/navigation';
+import Link from 'next/link';
 import AuthWrapper from '@/components/AuthWrapper';
 import Header from '@/components/Header';
 import { AuthService } from '@/lib/auth';
@@ -10,8 +11,9 @@ import CreateClientModal from '@/components/ui/CreateClientModal';
 import CreateTargetPageModal from '@/components/ui/CreateTargetPageModal';
 import { 
   Building, Package, Plus, X, ChevronDown, ChevronUp, ChevronRight,
-  Search, Target, Link, Type, CheckCircle,
-  AlertCircle, Copy, Trash2, User, Globe, ExternalLink
+  Search, Target, Link as LinkIcon, Type, CheckCircle,
+  AlertCircle, Copy, Trash2, User, Globe, ExternalLink,
+  ArrowLeft
 } from 'lucide-react';
 
 type PackageType = 'good' | 'better' | 'best';
@@ -836,9 +838,18 @@ export default function EditOrderPage({ params }: { params: Promise<{ id: string
         {/* Header */}
         <div className="bg-white border-b border-gray-200 px-6 py-4">
           <div className="flex items-center justify-between">
-            <div>
-              <h1 className="text-2xl font-semibold text-gray-900">Edit Draft Order</h1>
-              <p className="text-sm text-gray-600 mt-1">Update your guest post order with target pages and anchor text</p>
+            <div className="flex items-center gap-4">
+              <Link
+                href="/orders"
+                className="inline-flex items-center text-gray-600 hover:text-gray-900"
+              >
+                <ArrowLeft className="h-4 w-4 mr-2" />
+                Back to Orders
+              </Link>
+              <div>
+                <h1 className="text-2xl font-semibold text-gray-900">Edit Draft Order</h1>
+                <p className="text-sm text-gray-600 mt-1">Update your guest post order with target pages and anchor text</p>
+              </div>
             </div>
           </div>
         </div>
@@ -1500,7 +1511,7 @@ export default function EditOrderPage({ params }: { params: Promise<{ id: string
                   </div>
                   
                   <div className="flex items-center space-x-1">
-                    <Link className="h-4 w-4 text-gray-400" />
+                    <LinkIcon className="h-4 w-4 text-gray-400" />
                     <span className="font-medium text-gray-900">{getTotalLinks()}</span>
                     <span className="text-gray-500">links</span>
                   </div>

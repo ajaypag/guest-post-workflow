@@ -7,6 +7,7 @@ import BulkAnalysisTable from '@/components/BulkAnalysisTable';
 import { BulkAnalysisDomain } from '@/types/bulk-analysis';
 import { AuthService } from '@/lib/auth';
 import Link from 'next/link';
+import Header from '@/components/Header';
 
 interface OrderGroup {
   id: string;
@@ -338,26 +339,34 @@ export default function SiteSelectionPage() {
   
   if (loading) {
     return (
-      <div className="min-h-screen bg-gray-50 flex items-center justify-center">
-        <Loader2 className="w-8 h-8 animate-spin text-gray-500" />
-      </div>
+      <>
+        <Header />
+        <div className="min-h-screen bg-gray-50 flex items-center justify-center">
+          <Loader2 className="w-8 h-8 animate-spin text-gray-500" />
+        </div>
+      </>
     );
   }
   
   if (!order) {
     return (
-      <div className="min-h-screen bg-gray-50 flex items-center justify-center">
-        <div className="text-center">
-          <AlertCircle className="w-12 h-12 text-red-500 mx-auto mb-4" />
-          <p className="text-gray-600">Order not found</p>
+      <>
+        <Header />
+        <div className="min-h-screen bg-gray-50 flex items-center justify-center">
+          <div className="text-center">
+            <AlertCircle className="w-12 h-12 text-red-500 mx-auto mb-4" />
+            <p className="text-gray-600">Order not found</p>
+          </div>
         </div>
-      </div>
+      </>
     );
   }
   
   return (
-    <div className="min-h-screen bg-gray-50">
-      <div className="bg-white border-b">
+    <>
+      <Header />
+      <div className="min-h-screen bg-gray-50">
+        <div className="bg-white border-b">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-4">
           <div className="flex items-center justify-between">
             <div className="flex items-center gap-4">
@@ -515,5 +524,6 @@ export default function SiteSelectionPage() {
         </div>
       </div>
     </div>
+    </>
   );
 }

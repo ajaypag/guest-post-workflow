@@ -4,6 +4,7 @@ import { useState, useEffect } from 'react';
 import { useParams, useRouter } from 'next/navigation';
 import { Loader2, CheckCircle, ShoppingCart, Users, Target, ArrowRight, AlertCircle } from 'lucide-react';
 import Link from 'next/link';
+import Header from '@/components/Header';
 
 interface OrderGroup {
   id: string;
@@ -104,23 +105,29 @@ export default function OrderConfirmationPage() {
   
   if (loading) {
     return (
-      <div className="min-h-screen bg-gray-50 flex items-center justify-center">
-        <Loader2 className="w-8 h-8 animate-spin text-gray-500" />
-      </div>
+      <>
+        <Header />
+        <div className="min-h-screen bg-gray-50 flex items-center justify-center">
+          <Loader2 className="w-8 h-8 animate-spin text-gray-500" />
+        </div>
+      </>
     );
   }
   
   if (!order) {
     return (
-      <div className="min-h-screen bg-gray-50 flex items-center justify-center">
-        <div className="text-center">
-          <AlertCircle className="w-12 h-12 text-red-500 mx-auto mb-4" />
-          <p className="text-gray-600">{error || 'Order not found'}</p>
-          <Link href="/account/dashboard" className="mt-4 inline-block text-blue-600 hover:text-blue-700">
-            Back to Dashboard
-          </Link>
+      <>
+        <Header />
+        <div className="min-h-screen bg-gray-50 flex items-center justify-center">
+          <div className="text-center">
+            <AlertCircle className="w-12 h-12 text-red-500 mx-auto mb-4" />
+            <p className="text-gray-600">{error || 'Order not found'}</p>
+            <Link href="/account/dashboard" className="mt-4 inline-block text-blue-600 hover:text-blue-700">
+              Back to Dashboard
+            </Link>
+          </div>
         </div>
-      </div>
+      </>
     );
   }
   
@@ -128,8 +135,10 @@ export default function OrderConfirmationPage() {
   const totalClients = order.orderGroups.length;
   
   return (
-    <div className="min-h-screen bg-gray-50">
-      <div className="max-w-4xl mx-auto px-4 py-12">
+    <>
+      <Header />
+      <div className="min-h-screen bg-gray-50">
+        <div className="max-w-4xl mx-auto px-4 py-12">
         {/* Header */}
         <div className="text-center mb-12">
           <CheckCircle className="w-16 h-16 text-green-500 mx-auto mb-4" />
@@ -277,5 +286,6 @@ export default function OrderConfirmationPage() {
         </div>
       </div>
     </div>
+    </>
   );
 }

@@ -4,6 +4,7 @@ import { useState, useEffect } from 'react';
 import { useParams, useRouter } from 'next/navigation';
 import { Loader2, Clock, CheckCircle, AlertCircle, Search, Users, FileText, ArrowRight, RefreshCw } from 'lucide-react';
 import Link from 'next/link';
+import Header from '@/components/Header';
 
 interface OrderGroup {
   id: string;
@@ -147,23 +148,29 @@ export default function OrderStatusPage() {
   
   if (loading) {
     return (
-      <div className="min-h-screen bg-gray-50 flex items-center justify-center">
-        <Loader2 className="w-8 h-8 animate-spin text-gray-500" />
-      </div>
+      <>
+        <Header />
+        <div className="min-h-screen bg-gray-50 flex items-center justify-center">
+          <Loader2 className="w-8 h-8 animate-spin text-gray-500" />
+        </div>
+      </>
     );
   }
   
   if (!order) {
     return (
-      <div className="min-h-screen bg-gray-50 flex items-center justify-center">
-        <div className="text-center">
-          <AlertCircle className="w-12 h-12 text-red-500 mx-auto mb-4" />
-          <p className="text-gray-600">Order not found</p>
-          <Link href="/account/dashboard" className="mt-4 inline-block text-blue-600 hover:text-blue-700">
-            Back to Dashboard
-          </Link>
+      <>
+        <Header />
+        <div className="min-h-screen bg-gray-50 flex items-center justify-center">
+          <div className="text-center">
+            <AlertCircle className="w-12 h-12 text-red-500 mx-auto mb-4" />
+            <p className="text-gray-600">Order not found</p>
+            <Link href="/account/dashboard" className="mt-4 inline-block text-blue-600 hover:text-blue-700">
+              Back to Dashboard
+            </Link>
+          </div>
         </div>
-      </div>
+      </>
     );
   }
   
@@ -173,7 +180,9 @@ export default function OrderStatusPage() {
     order.orderGroups.some(g => g.submissions && g.submissions.total > 0);
   
   return (
-    <div className="min-h-screen bg-gray-50">
+    <>
+      <Header />
+      <div className="min-h-screen bg-gray-50">
       <div className="max-w-6xl mx-auto px-4 py-8">
         {/* Header */}
         <div className="bg-white rounded-lg shadow-sm border border-gray-200 p-6 mb-6">
@@ -358,5 +367,6 @@ export default function OrderStatusPage() {
         )}
       </div>
     </div>
+    </>
   );
 }
