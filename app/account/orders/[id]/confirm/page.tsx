@@ -15,7 +15,6 @@ interface OrderGroup {
     niche?: string;
   };
   linkCount: number;
-  pricePerLink: number;
   targetPages: any[];
   requirementOverrides?: {
     minDR?: number;
@@ -28,7 +27,8 @@ interface OrderGroup {
 interface OrderData {
   id: string;
   accountId: string;
-  totalPrice: number;
+  totalRetail: number;
+  totalWholesale: number;
   status: string;
   orderGroups: OrderGroup[];
 }
@@ -157,7 +157,7 @@ export default function OrderConfirmationPage() {
               </div>
               <div className="text-center">
                 <Target className="w-8 h-8 text-purple-500 mx-auto mb-2" />
-                <p className="text-2xl font-bold text-gray-900">${order.totalPrice.toLocaleString()}</p>
+                <p className="text-2xl font-bold text-gray-900">${(order.totalRetail / 100).toLocaleString()}</p>
                 <p className="text-sm text-gray-600">Total Price</p>
               </div>
             </div>
@@ -177,7 +177,6 @@ export default function OrderConfirmationPage() {
                     </div>
                     <div className="text-right">
                       <p className="font-medium text-gray-900">{group.linkCount} links</p>
-                      <p className="text-sm text-gray-600">${group.pricePerLink}/link</p>
                     </div>
                   </div>
                   
