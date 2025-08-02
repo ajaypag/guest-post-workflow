@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from 'next/server';
 import { db } from '@/lib/db/connection';
 import { projectOrderAssociations } from '@/lib/db/projectOrderAssociationsSchema';
 import { bulkAnalysisProjects } from '@/lib/db/bulkAnalysisSchema';
+import { orderGroups } from '@/lib/db/orderGroupSchema';
 import { eq, and } from 'drizzle-orm';
 import { AuthServiceServer } from '@/lib/auth-server';
 
@@ -23,13 +24,34 @@ export async function POST(
       return NextResponse.json({ error: 'Missing required fields' }, { status: 400 });
     }
     
-    // Check if project exists
+    // Check if project exists and get its client
     const project = await db.query.bulkAnalysisProjects.findFirst({
       where: eq(bulkAnalysisProjects.id, params.projectId)
     });
     
     if (!project) {
       return NextResponse.json({ error: 'Project not found' }, { status: 404 });
+    }
+    
+    // Get the order group to verify client match
+    const orderGroup = await db.query.orderGroups.findFirst({
+      where: eq(orderGroups.id, orderGroupId),
+      with: {
+        order: true
+      }
+    });
+    
+    if (!orderGroup) {
+      return NextResponse.json({ error: 'Order group not found' }, { status: 404 });
+    }
+    
+    // CRITICAL: Verify client match to prevent cross-client data issues
+    if (project.clientId !== orderGroup.clientId) {
+      return NextResponse.json({ 
+        error: 'Client mismatch: Project and order belong to different clients',
+        projectClientId: project.clientId,
+        orderClientId: orderGroup.clientId
+      }, { status: 400 });
     }
     
     // Check if association already exists

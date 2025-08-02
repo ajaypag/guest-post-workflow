@@ -61,7 +61,13 @@ export default function ProjectDetailPage() {
     order: any | null;
     orderGroup: any | null;
     isLoading: boolean;
-  }>({ order: null, orderGroup: null, isLoading: false });
+    error: string | null;
+  }>({ 
+    order: null, 
+    orderGroup: null, 
+    isLoading: !!(orderId && orderGroupId), // Set loading if we have order params
+    error: null 
+  });
   
   const [client, setClient] = useState<Client | null>(null);
   const [project, setProject] = useState<BulkAnalysisProject | null>(null);
@@ -279,10 +285,15 @@ export default function ProjectDetailPage() {
   }, [orderId, orderGroupId]);
 
   useEffect(() => {
+    // Only load domains after we know if we have order context or not
     if (client && project) {
+      // If we have orderId/orderGroupId params, wait for order context to load
+      if (orderId && orderGroupId && orderContext.isLoading) {
+        return; // Wait for order context to finish loading
+      }
       loadDomains();
     }
-  }, [client, project, orderContext.orderGroup]);
+  }, [client, project, orderContext.isLoading, orderContext.orderGroup]);
 
   // Track if user came via guided parameter
   const [cameFromGuidedLink, setCameFromGuidedLink] = useState(false);
@@ -342,7 +353,7 @@ export default function ProjectDetailPage() {
     if (!orderId || !orderGroupId) return;
     
     try {
-      setOrderContext(prev => ({ ...prev, isLoading: true }));
+      setOrderContext(prev => ({ ...prev, isLoading: true, error: null }));
       
       // Fetch order details
       const orderResponse = await fetch(`/api/orders/${orderId}`, {
@@ -359,14 +370,30 @@ export default function ProjectDetailPage() {
       // Find the specific order group
       const orderGroup = orderData.order.orderGroups?.find((g: any) => g.id === orderGroupId);
       
+      if (!orderGroup) {
+        setOrderContext({
+          order: null,
+          orderGroup: null,
+          isLoading: false,
+          error: 'Order group not found in this order'
+        });
+        return;
+      }
+      
       setOrderContext({
         order: orderData.order,
-        orderGroup: orderGroup || null,
-        isLoading: false
+        orderGroup: orderGroup,
+        isLoading: false,
+        error: null
       });
     } catch (error) {
       console.error('Error loading order context:', error);
-      setOrderContext({ order: null, orderGroup: null, isLoading: false });
+      setOrderContext({ 
+        order: null, 
+        orderGroup: null, 
+        isLoading: false,
+        error: 'Failed to load order context. You can still browse domains.'
+      });
     }
   };
 
@@ -1563,7 +1590,7 @@ export default function ProjectDetailPage() {
         <Header />
         
         {/* Order Context Banner */}
-        {orderId && orderContext.order && (
+        {orderId && orderContext.order && !orderContext.error && (
           <div className="bg-blue-50 border-b border-blue-200">
             <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-3">
               <div className="flex items-center justify-between">
@@ -1596,6 +1623,20 @@ export default function ProjectDetailPage() {
                     </Link>
                   )}
                 </div>
+              </div>
+            </div>
+          </div>
+        )}
+        
+        {/* Order Context Error */}
+        {orderId && orderContext.error && (
+          <div className="bg-yellow-50 border-b border-yellow-200">
+            <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-3">
+              <div className="flex items-center space-x-3">
+                <AlertCircle className="w-5 h-5 text-yellow-600 flex-shrink-0" />
+                <p className="text-sm text-yellow-800">
+                  {orderContext.error}
+                </p>
               </div>
             </div>
           </div>
