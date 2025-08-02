@@ -57,7 +57,9 @@ function OrdersPageContent() {
   const statusOptions = [
     { value: 'all', label: 'All Statuses' },
     { value: 'draft', label: 'Draft' },
+    { value: 'pending_confirmation', label: 'Pending Confirmation' },
     { value: 'pending_approval', label: 'Pending Approval' },
+    { value: 'confirmed', label: 'Confirmed' },
     { value: 'approved', label: 'Approved' },
     { value: 'invoiced', label: 'Invoiced' },
     { value: 'paid', label: 'Paid' },
@@ -126,6 +128,8 @@ function OrdersPageContent() {
   const getStatusColor = (status: string) => {
     switch (status) {
       case 'draft': return 'bg-gray-100 text-gray-800';
+      case 'pending_confirmation': return 'bg-amber-100 text-amber-800';
+      case 'confirmed': return 'bg-indigo-100 text-indigo-800';
       case 'pending_approval': return 'bg-yellow-100 text-yellow-800';
       case 'approved': return 'bg-blue-100 text-blue-800';
       case 'invoiced': return 'bg-purple-100 text-purple-800';
@@ -144,8 +148,9 @@ function OrdersPageContent() {
   const orderStats = {
     total: orders.length,
     draft: orders.filter(o => o.status === 'draft').length,
+    pendingConfirmation: orders.filter(o => o.status === 'pending_confirmation').length,
     pending: orders.filter(o => o.status === 'pending_approval').length,
-    active: orders.filter(o => ['approved', 'paid', 'in_progress'].includes(o.status)).length,
+    active: orders.filter(o => ['confirmed', 'approved', 'paid', 'in_progress'].includes(o.status)).length,
     completed: orders.filter(o => o.status === 'completed').length,
     totalValue: orders.reduce((sum, order) => sum + order.totalRetail, 0),
   };

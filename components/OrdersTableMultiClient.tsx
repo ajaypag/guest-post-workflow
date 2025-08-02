@@ -80,6 +80,8 @@ export function OrdersTableMultiClient({
   const getStatusLabel = (status: string) => {
     const statusLabels: { [key: string]: string } = {
       'draft': 'Draft',
+      'pending_confirmation': 'Pending Confirmation',
+      'confirmed': 'Confirmed',
       'pending_review': 'Pending Review',
       'pending_approval': 'Pending Approval',
       'approved': 'Approved',
@@ -270,6 +272,31 @@ export function OrdersTableMultiClient({
 
                     <td className="px-6 py-4 whitespace-nowrap text-right">
                       <div className="flex items-center justify-end gap-2">
+                        {isInternal && order.status === 'pending_confirmation' && (
+                          <button
+                            onClick={async () => {
+                              if (confirm('Confirm this order? This will create bulk analysis projects for each client.')) {
+                                try {
+                                  const response = await fetch(`/api/orders/${order.id}/confirm`, {
+                                    method: 'POST',
+                                    headers: { 'Content-Type': 'application/json' },
+                                    body: JSON.stringify({ assignedTo: null })
+                                  });
+                                  if (response.ok) {
+                                    window.location.reload();
+                                  } else {
+                                    alert('Failed to confirm order');
+                                  }
+                                } catch (error) {
+                                  alert('Error confirming order');
+                                }
+                              }
+                            }}
+                            className="bg-green-600 hover:bg-green-700 text-white px-3 py-1 rounded text-sm font-medium"
+                          >
+                            Confirm
+                          </button>
+                        )}
                         {isInternal && order.shareToken && (
                           <button
                             onClick={() => copyShareLink(order.shareToken!)}
