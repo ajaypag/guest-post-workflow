@@ -139,7 +139,9 @@ export default function OrderSelectionModal({
           {loading ? (
             <div className="py-8 text-center">
               <Loader2 className="h-8 w-8 animate-spin text-gray-400 mx-auto" />
-              <p className="mt-2 text-gray-600">Loading draft orders...</p>
+              <p className="mt-2 text-gray-600">
+                {projectId ? 'Loading orders...' : 'Loading draft orders...'}
+              </p>
             </div>
           ) : (
             <div className="space-y-4">

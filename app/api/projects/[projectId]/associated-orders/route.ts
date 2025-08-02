@@ -1,10 +1,20 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { db } from '@/lib/db/connection';
-import { projectOrderAssociations } from '@/lib/db/projectOrderAssociationsSchema';
 import { orders } from '@/lib/db/orderSchema';
 import { orderGroups } from '@/lib/db/orderGroupSchema';
 import { eq, and, ne, or, notInArray } from 'drizzle-orm';
 import { AuthServiceServer } from '@/lib/auth-server';
+
+// Define Order type to match the frontend expectations
+interface Order {
+  id: string;
+  accountName: string;
+  accountEmail: string;
+  createdAt: string;
+  itemCount: number;
+  totalRetail: number;
+  status?: string;
+}
 
 export async function GET(
   request: NextRequest,
@@ -18,46 +28,40 @@ export async function GET(
       return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
     }
 
-    // Get all orders associated with this project
-    const associations = await db
+    // Get all order groups that have this project assigned
+    const groupsWithOrders = await db
       .select({
-        association: projectOrderAssociations,
         order: orders,
         orderGroup: orderGroups
       })
-      .from(projectOrderAssociations)
-      .innerJoin(orders, eq(projectOrderAssociations.orderId, orders.id))
-      .innerJoin(orderGroups, eq(projectOrderAssociations.orderGroupId, orderGroups.id))
-      .where(eq(projectOrderAssociations.projectId, params.projectId));
+      .from(orderGroups)
+      .innerJoin(orders, eq(orderGroups.orderId, orders.id))
+      .where(eq(orderGroups.bulkAnalysisProjectId, params.projectId));
 
     // Filter orders based on status - exclude completed and cancelled orders
-    const activeOrders = associations.filter(({ order }) => {
+    const activeOrders = groupsWithOrders.filter(({ order }) => {
       return order.status !== 'completed' && order.status !== 'cancelled';
     });
 
     // Transform the data for the frontend
-    const associatedOrders = activeOrders.map(({ association, order, orderGroup }) => ({
+    const associatedOrders = activeOrders.map(({ order, orderGroup }) => ({
       id: order.id,
       accountName: order.accountName,
       accountEmail: order.accountEmail,
       status: order.status,
-      state: order.state,
-      createdAt: order.createdAt,
+      createdAt: order.createdAt.toISOString(),
       itemCount: orderGroup.linkCount, // Use itemCount for compatibility with OrderSelectionModal
-      totalRetail: order.totalRetail,
-      associationType: association.associationType,
-      orderGroupId: orderGroup.id,
-      clientId: orderGroup.clientId
+      totalRetail: order.totalRetail
     }));
 
     // Also get draft orders for this client (backward compatibility)
-    // First get the client ID from the first association
-    const clientId = associations[0]?.orderGroup.clientId;
-    let draftOrders: any[] = [];
+    // First get the client ID from the first order group
+    const clientId = groupsWithOrders[0]?.orderGroup.clientId;
+    let draftOrders: Order[] = [];
     
     if (clientId) {
       // Get all draft orders for this client that aren't already associated
-      const associatedOrderIds = associations.map(a => a.order.id);
+      const associatedOrderIds = groupsWithOrders.map(({ order }) => order.id);
       
       const whereConditions = [
         eq(orderGroups.clientId, clientId),
@@ -82,12 +86,9 @@ export async function GET(
         accountName: order.accountName,
         accountEmail: order.accountEmail,
         status: order.status,
-        state: order.state,
-        createdAt: order.createdAt,
+        createdAt: order.createdAt.toISOString(),
         itemCount: orderGroup.linkCount, // Use itemCount for compatibility with OrderSelectionModal
-        totalRetail: order.totalRetail,
-        orderGroupId: orderGroup.id,
-        clientId: orderGroup.clientId
+        totalRetail: order.totalRetail
       }));
     }
 
