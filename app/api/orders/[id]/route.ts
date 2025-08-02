@@ -2,6 +2,8 @@ import { NextRequest, NextResponse } from 'next/server';
 import { AuthServiceServer } from '@/lib/auth-server';
 import { db } from '@/lib/db/connection';
 import { orders } from '@/lib/db/orderSchema';
+import { orderGroups } from '@/lib/db/orderGroupSchema';
+import { clients } from '@/lib/db/schema';
 import { eq } from 'drizzle-orm';
 
 export async function GET(
@@ -21,18 +23,37 @@ export async function GET(
       where: eq(orders.id, id),
       with: {
         account: true,
-        items: true,
+        items: true
       },
     });
-
+    
     if (!order) {
       return NextResponse.json({ error: 'Order not found' }, { status: 404 });
     }
+    
+    // Manually fetch orderGroups
+    const orderGroupsData = await db
+      .select({
+        orderGroup: orderGroups,
+        client: clients
+      })
+      .from(orderGroups)
+      .leftJoin(clients, eq(orderGroups.clientId, clients.id))
+      .where(eq(orderGroups.orderId, id));
+    
+    // Transform the data
+    const orderWithGroups = {
+      ...order,
+      orderGroups: orderGroupsData.map(({ orderGroup, client }) => ({
+        ...orderGroup,
+        client
+      }))
+    };
 
     // Check permissions
     if (session.userType === 'account') {
       // Accounts can only see their own orders
-      if (order.accountId !== session.accountId && order.accountEmail !== session.email) {
+      if (order.accountId !== session.userId) {
         return NextResponse.json({ error: 'Forbidden' }, { status: 403 });
       }
     } else if (session.userType !== 'internal') {
@@ -40,7 +61,7 @@ export async function GET(
       return NextResponse.json({ error: 'Forbidden' }, { status: 403 });
     }
 
-    return NextResponse.json({ order });
+    return NextResponse.json(orderWithGroups);
   } catch (error) {
     console.error('Error fetching order:', error);
     return NextResponse.json(
@@ -82,11 +103,30 @@ export async function PUT(
       where: eq(orders.id, id),
       with: {
         account: true,
-        items: true,
+        items: true
       },
     });
+    
+    // Manually fetch orderGroups
+    const orderGroupsData = await db
+      .select({
+        orderGroup: orderGroups,
+        client: clients
+      })
+      .from(orderGroups)
+      .leftJoin(clients, eq(orderGroups.clientId, clients.id))
+      .where(eq(orderGroups.orderId, id));
+    
+    // Transform the data
+    const orderWithGroups = {
+      ...updatedOrder,
+      orderGroups: orderGroupsData.map(({ orderGroup, client }) => ({
+        ...orderGroup,
+        client
+      }))
+    };
 
-    return NextResponse.json({ order: updatedOrder });
+    return NextResponse.json(orderWithGroups);
   } catch (error) {
     console.error('Error updating order:', error);
     return NextResponse.json(
