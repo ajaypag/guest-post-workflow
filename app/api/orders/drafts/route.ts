@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from 'next/server';
 import { AuthServiceServer } from '@/lib/auth-server';
 import { db } from '@/lib/db/connection';
 import { orders } from '@/lib/db/schema';
+import { orderGroups } from '@/lib/db/orderGroupSchema';
 import { eq, and, desc } from 'drizzle-orm';
 
 // System user ID for account-created content
@@ -103,14 +104,33 @@ export async function POST(request: NextRequest) {
       orderValues.accountCompany = orderData.accountCompany || null;
     }
     
-    // Create new draft order
-    const [newOrder] = await db
-      .insert(orders)
-      .values(orderValues)
-      .returning();
+    // Create new draft order in a transaction
+    const result = await db.transaction(async (tx) => {
+      const [newOrder] = await tx
+        .insert(orders)
+        .values(orderValues)
+        .returning();
+
+      // Create order groups if provided
+      if (orderData.orderGroups && orderData.orderGroups.length > 0) {
+        const orderGroupsToInsert = orderData.orderGroups.map((group: any) => ({
+          orderId: newOrder.id,
+          clientId: group.clientId,
+          linkCount: group.linkCount,
+          targetPages: group.targetPages || [],
+          anchorTexts: group.anchorTexts || [],
+          requirementOverrides: {},
+          groupStatus: 'pending'
+        }));
+
+        await tx.insert(orderGroups).values(orderGroupsToInsert);
+      }
+
+      return newOrder;
+    });
 
     return NextResponse.json({ 
-      orderId: newOrder.id,
+      order: result,
       success: true 
     });
 

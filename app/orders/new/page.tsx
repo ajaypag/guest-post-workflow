@@ -100,6 +100,7 @@ export default function NewOrderPage() {
   // UI state
   const [searchQuery, setSearchQuery] = useState('');
   const [error, setError] = useState('');
+  const [submitting, setSubmitting] = useState(false);
   const [subtotal, setSubtotal] = useState(0);
   const [total, setTotal] = useState(0);
   
@@ -750,8 +751,100 @@ export default function NewOrderPage() {
       return;
     }
     
-    // Submit order logic here
-    // TODO: Implement order submission
+    // Check if all items have target pages selected
+    const missingTargets = lineItems.filter(item => !item.targetPageId);
+    if (missingTargets.length > 0) {
+      setError(`Please select target pages for all ${missingTargets.length} link${missingTargets.length > 1 ? 's' : ''}`);
+      return;
+    }
+    
+    setSubmitting(true);
+    setError('');
+    
+    try {
+      // Prepare order data
+      const orderGroups = lineItems.reduce((groups: any[], item) => {
+        const existingGroup = groups.find(g => g.clientId === item.clientId);
+        
+        if (existingGroup) {
+          existingGroup.targetPages.push({
+            pageId: item.targetPageId,
+            url: item.targetPageUrl
+          });
+          existingGroup.anchorTexts.push(item.anchorText || '');
+          existingGroup.linkCount++;
+        } else {
+          groups.push({
+            clientId: item.clientId!,
+            linkCount: 1,
+            targetPages: [{
+              pageId: item.targetPageId,
+              url: item.targetPageUrl
+            }],
+            anchorTexts: [item.anchorText || '']
+          });
+        }
+        
+        return groups;
+      }, []);
+      
+      // For account users, we need to create a draft first
+      if (session?.userType === 'account') {
+        // Create draft order
+        const draftResponse = await fetch('/api/orders/drafts', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          credentials: 'include',
+          body: JSON.stringify({
+            orderData: {
+              accountId: session.userId,
+              accountEmail: session.email || '',
+              accountName: session.name || '',
+              accountCompany: '', // Would need to get from account profile
+              orderType: 'guest_post',
+              orderGroups
+            }
+          })
+        });
+        
+        if (!draftResponse.ok) {
+          const error = await draftResponse.json();
+          throw new Error(error.error || 'Failed to create draft order');
+        }
+        
+        const { order } = await draftResponse.json();
+        router.push(`/account/orders/${order.id}/confirm`);
+        return;
+      }
+      
+      // For internal users, use the existing endpoint
+      const response = await fetch('/api/orders/new', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        credentials: 'include',
+        body: JSON.stringify({
+          orderType: 'guest_post',
+          subtotal,
+          total,
+          orderGroups
+        })
+      });
+      
+      if (!response.ok) {
+        const error = await response.json();
+        throw new Error(error.error || 'Failed to create order');
+      }
+      
+      const { order } = await response.json();
+      
+      // Navigate to order detail for internal users
+      router.push(`/orders/${order.id}/detail`);
+    } catch (error) {
+      console.error('Error creating order:', error);
+      setError(error instanceof Error ? error.message : 'Failed to create order');
+    } finally {
+      setSubmitting(false);
+    }
   };
 
   return (
@@ -1498,13 +1591,22 @@ export default function NewOrderPage() {
                 
                 <button
                   onClick={handleSubmit}
-                  disabled={lineItems.length === 0 || lineItems.some(item => !item.clientId)}
+                  disabled={lineItems.length === 0 || lineItems.some(item => !item.clientId) || submitting}
                   className="px-4 md:px-6 py-2 md:py-3 bg-blue-600 text-white font-medium rounded-lg hover:bg-blue-700 
                            transition-colors flex items-center disabled:bg-gray-300 disabled:cursor-not-allowed flex-1 md:flex-initial justify-center"
                 >
-                  <span className="hidden md:inline">Continue to Site Selection</span>
-                  <span className="md:hidden">Continue</span>
-                  <ChevronRight className="h-5 w-5 ml-2" />
+                  {submitting ? (
+                    <>
+                      <Loader2 className="h-5 w-5 animate-spin mr-2" />
+                      <span>Creating order...</span>
+                    </>
+                  ) : (
+                    <>
+                      <span className="hidden md:inline">Continue to Site Selection</span>
+                      <span className="md:hidden">Continue</span>
+                      <ChevronRight className="h-5 w-5 ml-2" />
+                    </>
+                  )}
                 </button>
               </div>
             </div>
