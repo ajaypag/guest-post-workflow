@@ -38,8 +38,8 @@ export async function POST(
         throw new Error('Order not found');
       }
       
-      if (order.status !== 'draft') {
-        throw new Error('Order must be in draft status to confirm');
+      if (order.status !== 'pending_confirmation') {
+        throw new Error('Order must be in pending_confirmation status to confirm');
       }
       
       // Get all order groups with their clients
