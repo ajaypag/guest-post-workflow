@@ -80,7 +80,8 @@ export async function POST(request: NextRequest) {
       // Order details
       orderType: 'guest_post',
       status: 'draft',
-      state: 'configuring',
+      // Don't set state for draft orders - it should remain null
+      // state: 'configuring',
       
       // Pricing defaults
       subtotalRetail: 0,
