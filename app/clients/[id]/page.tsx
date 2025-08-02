@@ -10,7 +10,7 @@ import { Client, TargetPage } from '@/types/user';
 import { 
   ArrowLeft, Plus, Trash2, CheckCircle, XCircle, Clock, 
   Edit, Globe, ExternalLink, Check, Settings, ChevronDown, ChevronUp,
-  FileText, Target, AlertCircle, BarChart2
+  FileText, Target, AlertCircle, BarChart2, Users
 } from 'lucide-react';
 import { KeywordPreferencesSelector } from '@/components/ui/KeywordPreferencesSelector';
 import { getClientKeywordPreferences, setClientKeywordPreferences, KeywordPreferences } from '@/types/keywordPreferences';
@@ -25,6 +25,7 @@ export default function ClientDetailPage() {
   const router = useRouter();
   const searchParams = useSearchParams();
   const [client, setClient] = useState<Client | null>(null);
+  const [accountInfo, setAccountInfo] = useState<{ name: string; email: string } | null>(null);
   const [selectedPages, setSelectedPages] = useState<string[]>([]);
   const [showAddForm, setShowAddForm] = useState(false);
   const [bulkAction, setBulkAction] = useState<'active' | 'inactive' | 'completed' | 'delete' | 'generate-keywords' | 'generate-descriptions' | ''>('');
@@ -37,6 +38,11 @@ export default function ClientDetailPage() {
   const [newlyAddedPages, setNewlyAddedPages] = useState<any[]>([]);
   const [bulkKeywordProgress, setBulkKeywordProgress] = useState({ current: 0, total: 0 });
   const [userType, setUserType] = useState<string>('');
+  const [aiPermissions, setAiPermissions] = useState({
+    canUseAiKeywords: false,
+    canUseAiDescriptions: false,
+    canUseAiContentGeneration: false
+  });
   
   // Bulk URL Update states
   const [showBulkUrlUpdate, setShowBulkUrlUpdate] = useState(false);
@@ -50,6 +56,15 @@ export default function ClientDetailPage() {
     const session = sessionStorage.getSession();
     if (session) {
       setUserType(session.userType || 'internal');
+      
+      // For internal users, grant all permissions
+      if (session.userType === 'internal') {
+        setAiPermissions({
+          canUseAiKeywords: true,
+          canUseAiDescriptions: true,
+          canUseAiContentGeneration: true
+        });
+      }
     }
     loadClient();
   }, [params.id]);
@@ -72,12 +87,41 @@ export default function ClientDetailPage() {
 
   const loadClient = async () => {
     try {
-      const clientData = await clientStorage.getClient(params.id as string);
+      // Use API instead of clientStorage to get the new fields
+      const response = await fetch(`/api/clients/${params.id}`);
+      if (!response.ok) {
+        router.push('/clients');
+        return;
+      }
+      
+      const data = await response.json();
+      const clientData = data.client;
+      
       if (!clientData) {
         router.push('/clients');
         return;
       }
+      
       setClient(clientData);
+      
+      // Load account info if client has accountId
+      if ((clientData as any).accountId) {
+        const accountResponse = await fetch(`/api/accounts/${(clientData as any).accountId}`);
+        if (accountResponse.ok) {
+          const accountData = await accountResponse.json();
+          setAccountInfo(accountData.account);
+          
+          // Load AI permissions for account users
+          const session = sessionStorage.getSession();
+          if (session && session.userType === 'account') {
+            setAiPermissions({
+              canUseAiKeywords: accountData.account.canUseAiKeywords || false,
+              canUseAiDescriptions: accountData.account.canUseAiDescriptions || false,
+              canUseAiContentGeneration: accountData.account.canUseAiContentGeneration || false
+            });
+          }
+        }
+      }
     } catch (error) {
       console.error('Error loading client:', error);
       router.push('/clients');
@@ -578,13 +622,13 @@ export default function ClientDetailPage() {
           {/* Header */}
           <div className="mb-8">
             <div className="flex items-center mb-4">
-              <Link
-                href="/clients"
+              <button
+                onClick={() => router.push(userType === 'account' ? '/account/dashboard' : '/clients')}
                 className="inline-flex items-center text-gray-600 hover:text-gray-900 mr-4"
               >
                 <ArrowLeft className="w-4 h-4 mr-2" />
-                Back to Clients
-              </Link>
+                {userType === 'account' ? 'Back to Dashboard' : 'Back to Clients'}
+              </button>
             </div>
             
             <div className="flex justify-between items-start">
@@ -600,22 +644,46 @@ export default function ClientDetailPage() {
                   {client.website}
                   <ExternalLink className="w-3 h-3 ml-1" />
                 </a>
+                <div className="mt-2">
+                  {(client as any).accountId ? (
+                    accountInfo ? (
+                      <span className="inline-flex items-center px-3 py-1 text-sm font-medium text-blue-700 bg-blue-50 rounded-full">
+                        <Users className="w-4 h-4 mr-1" />
+                        Owned by: {accountInfo.name || accountInfo.email}
+                      </span>
+                    ) : (
+                      <span className="inline-flex items-center px-3 py-1 text-sm font-medium text-gray-600 bg-gray-100 rounded-full">
+                        <Users className="w-4 h-4 mr-1" />
+                        Loading account...
+                      </span>
+                    )
+                  ) : (
+                    <span className="inline-flex items-center px-3 py-1 text-sm font-medium text-orange-700 bg-orange-50 rounded-full">
+                      <AlertCircle className="w-4 h-4 mr-1" />
+                      No Account - This client needs to be assigned
+                    </span>
+                  )}
+                </div>
               </div>
               
               <div className="flex space-x-3">
-                <Link
-                  href={`/workflow/new?clientId=${client.id}`}
-                  className="inline-flex items-center px-4 py-2 bg-green-600 text-white text-sm font-medium rounded-md hover:bg-green-700"
-                >
-                  Create Workflow
-                </Link>
-                <Link
-                  href={`/clients/${client.id}/bulk-analysis`}
-                  className="inline-flex items-center px-4 py-2 bg-indigo-600 text-white text-sm font-medium rounded-md hover:bg-indigo-700"
-                >
-                  <BarChart2 className="w-4 h-4 mr-2" />
-                  Bulk Analysis
-                </Link>
+                {userType === 'internal' && (
+                  <>
+                    <Link
+                      href={`/workflow/new?clientId=${client.id}`}
+                      className="inline-flex items-center px-4 py-2 bg-green-600 text-white text-sm font-medium rounded-md hover:bg-green-700"
+                    >
+                      Create Workflow
+                    </Link>
+                    <Link
+                      href={`/clients/${client.id}/bulk-analysis`}
+                      className="inline-flex items-center px-4 py-2 bg-indigo-600 text-white text-sm font-medium rounded-md hover:bg-indigo-700"
+                    >
+                      <BarChart2 className="w-4 h-4 mr-2" />
+                      Bulk Analysis
+                    </Link>
+                  </>
+                )}
                 <button
                   onClick={() => setShowKeywordPrefs(true)}
                   className="inline-flex items-center px-4 py-2 bg-purple-600 text-white text-sm font-medium rounded-md hover:bg-purple-700"
@@ -749,7 +817,7 @@ export default function ClientDetailPage() {
           )}
 
           {/* Keyword Generation Prompt */}
-          {showKeywordPrompt && (
+          {showKeywordPrompt && (aiPermissions.canUseAiKeywords || aiPermissions.canUseAiDescriptions) && (
             <div className="bg-white rounded-lg shadow p-6 mb-6 border-l-4 border-purple-500">
               <h3 className="text-lg font-medium mb-4 text-purple-800">Generate Keywords & Descriptions for Target Pages?</h3>
               <p className="text-sm text-gray-600 mb-4">
@@ -837,7 +905,9 @@ export default function ClientDetailPage() {
                       <option value="active">Mark as Active</option>
                       <option value="inactive">Mark as Inactive</option>
                       <option value="completed">Mark as Completed</option>
-                      <option value="generate-keywords">Generate Keywords & Descriptions</option>
+                      {(aiPermissions.canUseAiKeywords || aiPermissions.canUseAiDescriptions) && (
+                        <option value="generate-keywords">Generate Keywords & Descriptions</option>
+                      )}
                       <option value="delete">Delete</option>
                     </select>
                     <button
@@ -908,13 +978,15 @@ export default function ClientDetailPage() {
                               targetPageId={page.id}
                               onKeywordsUpdate={handleKeywordsUpdate}
                             />
-                            <KeywordGenerationButton
-                              targetPageId={page.id}
-                              targetUrl={page.url}
-                              onSuccess={handleKeywordSuccess}
-                              onError={handleKeywordError}
-                              size="sm"
-                            />
+                            {aiPermissions.canUseAiKeywords && (
+                              <KeywordGenerationButton
+                                targetPageId={page.id}
+                                targetUrl={page.url}
+                                onSuccess={handleKeywordSuccess}
+                                onError={handleKeywordError}
+                                size="sm"
+                              />
+                            )}
                           </div>
 
                           {/* Description Section */}
@@ -925,13 +997,15 @@ export default function ClientDetailPage() {
                               targetPageId={page.id}
                               onDescriptionUpdate={handleDescriptionUpdate}
                             />
-                            <DescriptionGenerationButton
-                              targetPageId={page.id}
-                              targetUrl={page.url}
-                              onSuccess={handleDescriptionSuccess}
-                              onError={handleDescriptionError}
-                              size="sm"
-                            />
+                            {aiPermissions.canUseAiDescriptions && (
+                              <DescriptionGenerationButton
+                                targetPageId={page.id}
+                                targetUrl={page.url}
+                                onSuccess={handleDescriptionSuccess}
+                                onError={handleDescriptionError}
+                                size="sm"
+                              />
+                            )}
                           </div>
                         </div>
                         

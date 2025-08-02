@@ -1,4 +1,4 @@
-import AuthWrapper from '@/components/AuthWrapper';
+import InternalPageWrapper from '@/components/InternalPageWrapper';
 import Header from '@/components/Header';
 import WorkflowList from '@/components/WorkflowList';
 import QuickActions from '@/components/QuickActions';
@@ -6,7 +6,7 @@ import AssignedProjectsNotification from '@/components/AssignedProjectsNotificat
 
 export default function Home() {
   return (
-    <AuthWrapper>
+    <InternalPageWrapper>
       <div className="min-h-screen bg-gray-50">
         <Header />
         <main className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
@@ -31,6 +31,6 @@ export default function Home() {
           <WorkflowList />
         </main>
       </div>
-    </AuthWrapper>
+    </InternalPageWrapper>
   );
 }

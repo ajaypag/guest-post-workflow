@@ -1,7 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { AuthServiceServer } from '@/lib/auth-server';
 import { db } from '@/lib/db/connection';
-import { accounts } from '@/lib/db/accountSchema';
+import { clients } from '@/lib/db/schema';
 import { eq } from 'drizzle-orm';
 
 export async function GET(request: NextRequest) {
@@ -16,26 +16,18 @@ export async function GET(request: NextRequest) {
       return NextResponse.json({ error: 'Forbidden - Account access only' }, { status: 403 });
     }
 
-    // Get account with primary client using accountId from session
-    if (!session.accountId) {
-      return NextResponse.json({ error: 'Account ID not found in session' }, { status: 400 });
-    }
+    // For account users, session.userId IS their account ID (from accounts table)
+    const accountId = session.userId;
 
-    const account = await db.query.accounts.findFirst({
-      where: eq(accounts.id, session.accountId),
+    // Get all clients linked to this account via accountId
+    const accountClients = await db.query.clients.findMany({
+      where: eq(clients.accountId, accountId),
       with: {
-        primaryClient: {
-          with: {
-            targetPages: true,
-          },
-        },
+        targetPages: true,
       },
     });
 
-    // Return primary client as array for compatibility
-    const clientsData = account?.primaryClient ? [account.primaryClient] : [];
-
-    return NextResponse.json({ clients: clientsData });
+    return NextResponse.json({ clients: accountClients });
   } catch (error) {
     console.error('Error fetching account clients:', error);
     return NextResponse.json(

@@ -1,13 +1,19 @@
-import { eq, and } from 'drizzle-orm';
-import crypto from 'crypto';
+import { eq, and, isNull } from 'drizzle-orm';
+import * as crypto from 'crypto';
 import { db } from './connection';
 import { clients, clientAssignments, targetPages, type Client, type NewClient, type TargetPage, type NewTargetPage } from './schema';
+import { normalizeUrl, extractNormalizedDomain } from '@/lib/utils/urlUtils';
 
 export class ClientService {
-  // Get all clients
-  static async getAllClients(): Promise<Client[]> {
+  // Get all clients (excluding archived)
+  static async getAllClients(includeArchived: boolean = false): Promise<Client[]> {
     try {
-      const clientList = await db.select().from(clients);
+      const query = db.select().from(clients);
+      
+      // Filter out archived clients by default
+      const clientList = includeArchived 
+        ? await query
+        : await query.where(isNull(clients.archivedAt));
       
       // Add target pages to each client
       const clientsWithPages = await Promise.all(
@@ -93,7 +99,7 @@ export class ClientService {
   static async createClient(clientData: Omit<NewClient, 'id' | 'createdAt' | 'updatedAt'>): Promise<Client> {
     try {
       const now = new Date();
-      const insertData = {
+      const insertData: any = {
         id: crypto.randomUUID(),
         ...clientData,
         // Default to 'client' type if not specified
@@ -101,6 +107,18 @@ export class ClientService {
         createdAt: now,
         updatedAt: now
       };
+      
+      // Handle optional fields that might be passed in
+      if ('accountId' in clientData) {
+        insertData.accountId = clientData.accountId;
+      }
+      if ('shareToken' in clientData) {
+        insertData.shareToken = clientData.shareToken;
+      }
+      if ('invitationId' in clientData) {
+        insertData.invitationId = clientData.invitationId;
+      }
+      
       const result = await db.insert(clients).values(insertData).returning();
       return result[0];
     } catch (error) {
@@ -166,23 +184,51 @@ export class ClientService {
   }
 
   // Add target pages to client
-  static async addTargetPages(clientId: string, urls: string[]): Promise<boolean> {
+  static async addTargetPages(clientId: string, urls: string[]): Promise<{success: boolean, added: number, duplicates: number}> {
     try {
+      // Get existing normalized URLs for this client to avoid duplicates
+      const existingPages = await db
+        .select({ normalizedUrl: targetPages.normalizedUrl })
+        .from(targetPages)
+        .where(eq(targetPages.clientId, clientId));
+      
+      // Create set of existing normalized URLs (filter out nulls)
+      const existingNormalizedUrls = new Set(
+        existingPages
+          .map(p => p.normalizedUrl)
+          .filter(url => url !== null) as string[]
+      );
+      
+      // Filter out duplicate URLs using normalized comparison
+      const uniqueUrls = urls.filter(url => !existingNormalizedUrls.has(normalizeUrl(url)));
+      
+      const duplicatesCount = urls.length - uniqueUrls.length;
+      
+      if (uniqueUrls.length === 0) {
+        console.log('No new URLs to add - all URLs already exist');
+        return { success: true, added: 0, duplicates: duplicatesCount };
+      }
+
       const now = new Date();
-      const newPages: NewTargetPage[] = urls.map(url => ({
-        id: crypto.randomUUID(),
-        clientId,
-        url,
-        domain: new URL(url).hostname,
-        status: 'active',
-        addedAt: now,
-      }));
+      const newPages: NewTargetPage[] = uniqueUrls.map(url => {
+        const normalized = normalizeUrl(url);
+        return {
+          id: crypto.randomUUID(),
+          clientId,
+          url,
+          normalizedUrl: normalized,
+          domain: extractNormalizedDomain(url),
+          status: 'active',
+          addedAt: now,
+        };
+      });
 
       await db.insert(targetPages).values(newPages);
-      return true;
+      console.log(`Added ${uniqueUrls.length} new target pages (${duplicatesCount} duplicates skipped)`);
+      return { success: true, added: uniqueUrls.length, duplicates: duplicatesCount };
     } catch (error) {
       console.error('Error adding target pages:', error);
-      return false;
+      return { success: false, added: 0, duplicates: 0 };
     }
   }
 
@@ -383,6 +429,58 @@ export class ClientService {
       return result[0] || null;
     } catch (error) {
       console.error('🔴 Error converting prospect to client:', error);
+      return null;
+    }
+  }
+
+  // Get clients by account ID
+  static async getClientsByAccount(accountId: string, includeArchived: boolean = false): Promise<Client[]> {
+    try {
+      // Filter out archived clients by default
+      const clientList = includeArchived 
+        ? await db
+            .select()
+            .from(clients)
+            .where(eq(clients.accountId as any, accountId))
+        : await db
+            .select()
+            .from(clients)
+            .where(and(
+              eq(clients.accountId as any, accountId),
+              isNull(clients.archivedAt)
+            ));
+      
+      // Add target pages to each client
+      const clientsWithPages = await Promise.all(
+        clientList.map(async (client) => {
+          const pages = await this.getTargetPages(client.id);
+          return { ...client, targetPages: pages } as any;
+        })
+      );
+      
+      return clientsWithPages;
+    } catch (error) {
+      console.error('Error loading account clients:', error);
+      return [];
+    }
+  }
+
+  // Get client by share token
+  static async getClientByShareToken(shareToken: string): Promise<Client | null> {
+    try {
+      const result = await db
+        .select()
+        .from(clients)
+        .where(eq(clients.shareToken as any, shareToken));
+      
+      const client = result[0];
+      if (!client) return null;
+      
+      // Add target pages to the client
+      const pages = await this.getTargetPages(client.id);
+      return { ...client, targetPages: pages } as any;
+    } catch (error) {
+      console.error('Error loading client by share token:', error);
       return null;
     }
   }

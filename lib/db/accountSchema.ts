@@ -55,6 +55,12 @@ export const accounts = pgTable('accounts', {
   onboardingSteps: text('onboarding_steps').default('{}'), // JSON tracking individual steps
   onboardingCompletedAt: timestamp('onboarding_completed_at'),
   
+  // AI Feature Permissions
+  aiPermissions: text('ai_permissions').default('{}'), // JSON object with specific permissions
+  canUseAiKeywords: boolean('can_use_ai_keywords').default(false),
+  canUseAiDescriptions: boolean('can_use_ai_descriptions').default(false),
+  canUseAiContentGeneration: boolean('can_use_ai_content_generation').default(false),
+  
   // Timestamps
   createdAt: timestamp('created_at').notNull().defaultNow(),
   updatedAt: timestamp('updated_at').notNull().defaultNow(),

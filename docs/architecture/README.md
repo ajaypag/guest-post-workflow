@@ -12,6 +12,10 @@
 
 ## Supporting Documents
 
+### 🔒 Security & Authentication
+- **[CLIENT_SECURITY_IMPLEMENTATION.md](./CLIENT_SECURITY_IMPLEMENTATION.md)** - Security pattern for client management and shared interfaces
+- **[USER_TYPES.md](./USER_TYPES.md)** - User type definitions and permissions
+
 ### 🚀 Implementation Reference
 - **[ORDER_SYSTEM_REPLACEMENT_PLAN.md](./ORDER_SYSTEM_REPLACEMENT_PLAN.md)** - Initial planning document (see ORDER_SYSTEM_IMPLEMENTATION.md for current approach)
 

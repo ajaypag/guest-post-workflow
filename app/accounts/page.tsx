@@ -1,11 +1,10 @@
 'use client';
 
-import { useState, useEffect } from 'react';
+import { useState, useEffect, Suspense } from 'react';
 import { useRouter } from 'next/navigation';
 import Link from 'next/link';
-import AuthWrapper from '@/components/AuthWrapper';
+import InternalPageWrapper from '@/components/InternalPageWrapper';
 import Header from '@/components/Header';
-import { sessionStorage } from '@/lib/userStorage';
 import { 
   Users, 
   Building2, 
@@ -17,8 +16,13 @@ import {
   CheckCircle,
   Clock,
   Search,
-  Filter
+  Filter,
+  MoreVertical,
+  Key,
+  AlertCircle,
+  Wand2
 } from 'lucide-react';
+import AIPermissionsModal from '@/components/AIPermissionsModal';
 
 interface Account {
   id: string;
@@ -35,24 +39,26 @@ interface Account {
   };
   orderCount?: number;
   totalRevenue?: number;
+  canUseAiKeywords?: boolean;
+  canUseAiDescriptions?: boolean;
+  canUseAiContentGeneration?: boolean;
 }
 
-export default function AccountsPage() {
+function AccountsPageContent() {
   const router = useRouter();
   const [accounts, setAccounts] = useState<Account[]>([]);
   const [loading, setLoading] = useState(true);
   const [searchTerm, setSearchTerm] = useState('');
   const [statusFilter, setStatusFilter] = useState<string>('all');
   const [sortBy, setSortBy] = useState<'recent' | 'name' | 'revenue'>('recent');
+  const [resettingPassword, setResettingPassword] = useState<string | null>(null);
+  const [notification, setNotification] = useState<{
+    type: 'success' | 'error';
+    message: string;
+  } | null>(null);
+  const [showPermissionsModal, setShowPermissionsModal] = useState<Account | null>(null);
 
   useEffect(() => {
-    // Check if user is internal
-    const session = sessionStorage.getSession();
-    if (!session || session.userType !== 'internal') {
-      router.push('/');
-      return;
-    }
-    
     loadAccounts();
   }, []);
 
@@ -75,15 +81,52 @@ export default function AccountsPage() {
       const response = await fetch(`/api/accounts/${accountId}/status`, {
         method: 'PATCH',
         headers: { 'Content-Type': 'application/json' },
+        credentials: 'include',
         body: JSON.stringify({ status: newStatus })
       });
 
       if (response.ok) {
         await loadAccounts();
+        showNotification('success', `Account status updated to ${newStatus}`);
+      } else {
+        const error = await response.json();
+        showNotification('error', error.error || 'Failed to update status');
       }
     } catch (error) {
       console.error('Error updating account status:', error);
+      showNotification('error', 'Failed to update account status');
     }
+  };
+
+  const resetPassword = async (accountId: string, accountEmail: string) => {
+    if (!confirm(`Send password reset email to ${accountEmail}?`)) {
+      return;
+    }
+
+    setResettingPassword(accountId);
+    try {
+      const response = await fetch(`/api/accounts/${accountId}/reset-password`, {
+        method: 'POST',
+        credentials: 'include'
+      });
+
+      if (response.ok) {
+        showNotification('success', 'Password reset email sent successfully');
+      } else {
+        const error = await response.json();
+        showNotification('error', error.error || 'Failed to send reset email');
+      }
+    } catch (error) {
+      console.error('Error resetting password:', error);
+      showNotification('error', 'Failed to reset password');
+    } finally {
+      setResettingPassword(null);
+    }
+  };
+
+  const showNotification = (type: 'success' | 'error', message: string) => {
+    setNotification({ type, message });
+    setTimeout(() => setNotification(null), 5000);
   };
 
   const getStatusBadge = (status: string) => {
@@ -155,30 +198,45 @@ export default function AccountsPage() {
 
   if (loading) {
     return (
-      <AuthWrapper>
-        <div className="min-h-screen bg-gray-50">
-          <Header />
-          <div className="max-w-7xl mx-auto px-4 py-8">
-            <div className="animate-pulse">
-              <div className="h-8 bg-gray-200 rounded w-1/4 mb-8"></div>
-              <div className="space-y-4">
-                {[1, 2, 3].map(i => (
-                  <div key={i} className="h-24 bg-gray-200 rounded"></div>
-                ))}
-              </div>
+      <div className="min-h-screen bg-gray-50">
+        <Header />
+        <div className="max-w-7xl mx-auto px-4 py-8">
+          <div className="animate-pulse">
+            <div className="h-8 bg-gray-200 rounded w-1/4 mb-8"></div>
+            <div className="space-y-4">
+              {[1, 2, 3].map(i => (
+                <div key={i} className="h-24 bg-gray-200 rounded"></div>
+              ))}
             </div>
           </div>
         </div>
-      </AuthWrapper>
+      </div>
     );
   }
 
   return (
-    <AuthWrapper>
-      <div className="min-h-screen bg-gray-50">
-        <Header />
+    <div className="min-h-screen bg-gray-50">
+      <Header />
         
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
+          {/* Notification */}
+          {notification && (
+            <div className={`mb-4 p-4 rounded-md ${
+              notification.type === 'success' 
+                ? 'bg-green-50 text-green-800 border border-green-200' 
+                : 'bg-red-50 text-red-800 border border-red-200'
+            }`}>
+              <div className="flex">
+                {notification.type === 'success' ? (
+                  <CheckCircle className="w-5 h-5 mr-2" />
+                ) : (
+                  <AlertCircle className="w-5 h-5 mr-2" />
+                )}
+                <span>{notification.message}</span>
+              </div>
+            </div>
+          )}
+
           {/* Header */}
           <div className="mb-8">
             <h1 className="text-2xl font-bold text-gray-900">Account Management</h1>
@@ -300,6 +358,9 @@ export default function AccountsPage() {
                     Revenue
                   </th>
                   <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                    AI Features
+                  </th>
+                  <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
                     Last Login
                   </th>
                   <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
@@ -352,6 +413,31 @@ export default function AccountsPage() {
                       </div>
                     </td>
                     <td className="px-6 py-4 whitespace-nowrap">
+                      <div className="flex gap-1">
+                        {(account.canUseAiKeywords || account.canUseAiDescriptions || account.canUseAiContentGeneration) ? (
+                          <>
+                            {account.canUseAiKeywords && (
+                              <span className="inline-flex items-center px-2 py-0.5 rounded text-xs font-medium bg-blue-100 text-blue-800" title="AI Keywords">
+                                K
+                              </span>
+                            )}
+                            {account.canUseAiDescriptions && (
+                              <span className="inline-flex items-center px-2 py-0.5 rounded text-xs font-medium bg-purple-100 text-purple-800" title="AI Descriptions">
+                                D
+                              </span>
+                            )}
+                            {account.canUseAiContentGeneration && (
+                              <span className="inline-flex items-center px-2 py-0.5 rounded text-xs font-medium bg-green-100 text-green-800" title="AI Content">
+                                C
+                              </span>
+                            )}
+                          </>
+                        ) : (
+                          <span className="text-xs text-gray-400">None</span>
+                        )}
+                      </div>
+                    </td>
+                    <td className="px-6 py-4 whitespace-nowrap">
                       <div className="text-sm text-gray-500">
                         {account.lastLoginAt ? (
                           <>
@@ -375,6 +461,30 @@ export default function AccountsPage() {
                           </Link>
                         )}
                         
+                        {/* Password Reset */}
+                        <button
+                          onClick={() => resetPassword(account.id, account.email)}
+                          disabled={resettingPassword === account.id}
+                          className="text-blue-600 hover:text-blue-900 disabled:opacity-50"
+                          title="Reset Password"
+                        >
+                          {resettingPassword === account.id ? (
+                            <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-blue-600"></div>
+                          ) : (
+                            <Key className="w-4 h-4" />
+                          )}
+                        </button>
+                        
+                        {/* AI Permissions */}
+                        <button
+                          onClick={() => setShowPermissionsModal(account)}
+                          className="text-purple-600 hover:text-purple-900"
+                          title="AI Permissions"
+                        >
+                          <Wand2 className="w-4 h-4" />
+                        </button>
+                        
+                        {/* Status Actions */}
                         {account.status === 'pending' && (
                           <button
                             onClick={() => updateAccountStatus(account.id, 'active')}
@@ -419,7 +529,28 @@ export default function AccountsPage() {
             )}
           </div>
         </div>
+
+        {/* AI Permissions Modal */}
+        {showPermissionsModal && (
+          <AIPermissionsModal
+            account={showPermissionsModal}
+            onClose={() => setShowPermissionsModal(null)}
+            onUpdate={() => {
+              loadAccounts();
+              setShowPermissionsModal(null);
+            }}
+          />
+        )}
       </div>
-    </AuthWrapper>
+  );
+}
+
+export default function AccountsPage() {
+  return (
+    <InternalPageWrapper requireAdmin={true}>
+      <Suspense fallback={<div>Loading...</div>}>
+        <AccountsPageContent />
+      </Suspense>
+    </InternalPageWrapper>
   );
 }

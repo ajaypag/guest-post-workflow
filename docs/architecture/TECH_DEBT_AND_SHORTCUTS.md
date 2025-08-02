@@ -31,6 +31,16 @@ This document tracks technical debt, shortcuts, and architectural compromises ma
 **Workaround**: Manual database insertion
 **Fix**: Complete invite system implementation
 
+### 3. AuthWrapper Security Issue ⚠️
+**Impact**: Account users can access internal pages (e.g., `/` dashboard)
+**Current**: `AuthWrapper` only checks authentication, not user type
+**Risk**: Account users see internal operations, data, and tools
+**Workaround**: None - security vulnerability
+**Fix Required**:
+- Create `InternalAuthWrapper` that checks `userType === 'internal'`
+- Update all internal pages to use new wrapper
+- Audit all routes for proper access control
+
 ## 🟡 MEDIUM Priority Tech Debt
 
 ### Authentication & Security

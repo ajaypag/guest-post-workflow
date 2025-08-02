@@ -277,6 +277,8 @@ export default function ProjectDetailPage() {
       if (guidedDomain) {
         // Mark that we came from a guided link
         setCameFromGuidedLink(true);
+        // Set the specific domain for guided triage
+        setCurrentSortedFilteredDomains([guidedDomain]);
         // Automatically open guided triage with this domain selected
         setShowGuidedTriage(true);
         // Set search to show only this domain

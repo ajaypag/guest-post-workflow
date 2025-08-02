@@ -7,24 +7,20 @@ import AuthWrapper from '@/components/AuthWrapper';
 import Header from '@/components/Header';
 import { clientStorage, sessionStorage } from '@/lib/userStorage';
 import { Client } from '@/types/user';
-import { Building2, Plus, Users, Globe, CheckCircle, XCircle, Clock, Edit, Trash2, X, BarChart2 } from 'lucide-react';
+import { Building2, Plus, Users, Globe, CheckCircle, XCircle, Clock, Edit, Archive, ArchiveRestore, X, BarChart2, AlertCircle, ArrowLeft } from 'lucide-react';
 
 function ClientsPageContent() {
   const router = useRouter();
   const searchParams = useSearchParams();
   const [clients, setClients] = useState<Client[]>([]);
-  const [showNewClientForm, setShowNewClientForm] = useState(false);
   const [editingClient, setEditingClient] = useState<Client | null>(null);
   const [userType, setUserType] = useState<string>('');
-  const [newClient, setNewClient] = useState({
-    name: '',
-    website: '',
-    targetPages: '',
-    clientType: 'client' as 'prospect' | 'client'
-  });
+  const [accountName, setAccountName] = useState<{ [key: string]: string }>({});
+  const [showArchived, setShowArchived] = useState(false);
   const [editClient, setEditClient] = useState({
     name: '',
-    website: ''
+    website: '',
+    description: ''
   });
 
   useEffect(() => {
@@ -35,109 +31,117 @@ function ClientsPageContent() {
     }
     
     loadClients();
-    
-    // Check URL parameters to auto-open form
-    const shouldShowForm = searchParams.get('new') === 'true';
-    const clientType = searchParams.get('type') as 'prospect' | 'client';
-    
-    if (shouldShowForm) {
-      setShowNewClientForm(true);
-      if (clientType) {
-        setNewClient(prev => ({ ...prev, clientType }));
-      }
-      // Clear URL parameters after opening form
-      router.replace('/clients', { scroll: false });
-    }
-  }, [searchParams]);
+  }, [searchParams, showArchived]);
 
   const loadClients = async () => {
     const session = sessionStorage.getSession();
     if (!session) return;
 
     try {
-      const allClients = await clientStorage.getAllClients();
-      setClients(allClients);
+      const url = showArchived ? '/api/clients?includeArchived=true' : '/api/clients';
+      const response = await fetch(url);
+      if (response.ok) {
+        const data = await response.json();
+        const clientsList = data.clients || [];
+        setClients(clientsList);
+        
+        // Load account names for clients with accountIds
+        const accountIds = clientsList
+          .filter((client: any) => client.accountId)
+          .map((client: any) => client.accountId);
+        
+        if (accountIds.length > 0) {
+          const uniqueAccountIds = [...new Set(accountIds)];
+          const accountsResponse = await fetch('/api/accounts?ids=' + uniqueAccountIds.join(','));
+          if (accountsResponse.ok) {
+            const accountsData = await accountsResponse.json();
+            const accountMap: { [key: string]: string } = {};
+            accountsData.accounts?.forEach((account: any) => {
+              accountMap[account.id] = account.name || account.email;
+            });
+            setAccountName(accountMap);
+          }
+        }
+      }
     } catch (error) {
       console.error('Error loading clients:', error);
     }
   };
 
-  const handleCreateClient = async (e: React.FormEvent) => {
-    e.preventDefault();
-    const session = sessionStorage.getSession();
-    if (!session) return;
-
-    try {
-      // Parse target pages from textarea (one URL per line)
-      const urls = newClient.targetPages
-        .split('\n')
-        .map(url => url.trim())
-        .filter(url => url.length > 0);
-
-      const client = await clientStorage.createClient({
-        name: newClient.name,
-        website: newClient.website,
-        targetPages: [],
-        assignedUsers: [session.userId],
-        createdBy: session.userId,
-        clientType: newClient.clientType
-      });
-
-      // Add target pages if provided
-      if (urls.length > 0) {
-        await clientStorage.addTargetPages(client.id, urls);
-      }
-
-      setNewClient({ name: '', website: '', targetPages: '', clientType: 'client' });
-      setShowNewClientForm(false);
-      
-      // If target pages were added, redirect to client page with prompt flag
-      if (urls.length > 0) {
-        router.push(`/clients/${client.id}?promptKeywords=true`);
-      } else {
-        await loadClients();
-      }
-    } catch (error: any) {
-      alert('Error creating client: ' + error.message);
-    }
-  };
 
   const handleEditClient = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!editingClient) return;
 
     try {
-      const updatedClient = await clientStorage.updateClient(editingClient.id, {
-        name: editClient.name,
-        website: editClient.website
+      const response = await fetch(`/api/clients/${editingClient.id}`, {
+        method: 'PUT',
+        headers: { 'Content-Type': 'application/json' },
+        credentials: 'include',
+        body: JSON.stringify({
+          name: editClient.name,
+          website: editClient.website,
+          description: editClient.description
+        })
       });
       
-      if (updatedClient) {
+      if (response.ok) {
         setEditingClient(null);
-        setEditClient({ name: '', website: '' });
+        setEditClient({ name: '', website: '', description: '' });
         await loadClients();
       } else {
-        alert('Failed to update client');
+        const error = await response.json();
+        alert(error.error || 'Failed to update client');
       }
     } catch (error: any) {
       alert('Error updating client: ' + error.message);
     }
   };
 
-  const handleDeleteClient = async (client: Client) => {
-    if (!confirm(`Are you sure you want to delete "${client.name}"? This action cannot be undone.`)) {
+  const handleArchiveClient = async (client: Client) => {
+    const reason = prompt(`Archive "${client.name}"?\n\nPlease provide a reason (optional):`);
+    if (reason === null) {
+      return; // User cancelled
+    }
+
+    try {
+      const response = await fetch(`/api/clients/${client.id}/archive`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        credentials: 'include',
+        body: JSON.stringify({ reason: reason || 'No reason provided' })
+      });
+      
+      if (response.ok) {
+        await loadClients();
+      } else {
+        const error = await response.json();
+        alert(error.error || 'Failed to archive client');
+      }
+    } catch (error: any) {
+      alert('Error archiving client: ' + error.message);
+    }
+  };
+
+  const handleRestoreClient = async (client: Client) => {
+    if (!confirm(`Restore "${client.name}" from archive?`)) {
       return;
     }
 
     try {
-      const success = await clientStorage.deleteClient(client.id);
-      if (success) {
+      const response = await fetch(`/api/clients/${client.id}/archive`, {
+        method: 'DELETE',
+        credentials: 'include'
+      });
+      
+      if (response.ok) {
         await loadClients();
       } else {
-        alert('Failed to delete client');
+        const error = await response.json();
+        alert(error.error || 'Failed to restore client');
       }
     } catch (error: any) {
-      alert('Error deleting client: ' + error.message);
+      alert('Error restoring client: ' + error.message);
     }
   };
 
@@ -145,13 +149,14 @@ function ClientsPageContent() {
     setEditingClient(client);
     setEditClient({
       name: client.name,
-      website: client.website
+      website: client.website,
+      description: (client as any).description || ''
     });
   };
 
   const cancelEdit = () => {
     setEditingClient(null);
-    setEditClient({ name: '', website: '' });
+    setEditClient({ name: '', website: '', description: '' });
   };
 
   const getStatusCounts = (client: Client) => {
@@ -169,126 +174,56 @@ function ClientsPageContent() {
         
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
           <div className="mb-8">
+            {userType === 'account' && (
+              <button
+                onClick={() => router.push('/account/dashboard')}
+                className="mb-4 inline-flex items-center text-gray-600 hover:text-gray-900"
+              >
+                <ArrowLeft className="w-4 h-4 mr-1" />
+                Back to Dashboard
+              </button>
+            )}
             <div className="flex justify-between items-center">
               <div>
-                <h1 className="text-2xl font-bold text-gray-900">Client Management</h1>
+                <h1 className="text-2xl font-bold text-gray-900">
+                  {userType === 'account' ? 'Your Brands' : 'Client Management'}
+                </h1>
                 <p className="text-gray-600 mt-1">
-                  Manage your clients and their target pages
+                  {userType === 'account' 
+                    ? 'Manage your brands and their target pages'
+                    : 'Manage your clients and their target pages'}
                 </p>
               </div>
-              <button
-                onClick={() => setShowNewClientForm(true)}
-                className="inline-flex items-center px-4 py-2 bg-blue-600 text-white text-sm font-medium rounded-md hover:bg-blue-700"
-              >
-                <Plus className="w-4 h-4 mr-2" />
-                New Client
-              </button>
+              <div className="flex items-center gap-2">
+                <label className="inline-flex items-center">
+                  <input
+                    type="checkbox"
+                    checked={showArchived}
+                    onChange={(e) => setShowArchived(e.target.checked)}
+                    className="rounded border-gray-300 text-blue-600 focus:ring-blue-500"
+                  />
+                  <span className="ml-2 text-sm text-gray-600">Show Archived</span>
+                </label>
+                {userType === 'internal' && (
+                  <Link
+                    href="/admin/orphaned-clients"
+                    className="inline-flex items-center px-4 py-2 bg-orange-600 text-white text-sm font-medium rounded-md hover:bg-orange-700"
+                  >
+                    <AlertCircle className="w-4 h-4 mr-2" />
+                    Orphaned Clients
+                  </Link>
+                )}
+                <Link
+                  href="/clients/new"
+                  className="inline-flex items-center px-4 py-2 bg-blue-600 text-white text-sm font-medium rounded-md hover:bg-blue-700"
+                >
+                  <Plus className="w-4 h-4 mr-2" />
+                  {userType === 'account' ? 'New Brand' : 'New Client'}
+                </Link>
+              </div>
             </div>
           </div>
 
-          {/* New Client Form */}
-          {showNewClientForm && (
-            <div className="bg-white rounded-lg shadow p-6 mb-6">
-              <h3 className="text-lg font-medium mb-4">Create New Client</h3>
-              <form onSubmit={handleCreateClient} className="space-y-4">
-                {/* Client Type Selector */}
-                <div className="mb-4">
-                  <label className="block text-sm font-medium text-gray-700 mb-2">
-                    Client Type
-                  </label>
-                  <div className="flex space-x-4">
-                    <label className="flex items-center">
-                      <input
-                        type="radio"
-                        value="prospect"
-                        checked={newClient.clientType === 'prospect'}
-                        onChange={(e) => setNewClient({ ...newClient, clientType: 'prospect' })}
-                        className="mr-2"
-                      />
-                      <span className="text-sm">
-                        <span className="font-medium">Prospect</span>
-                        <span className="text-gray-500 ml-1">(Limited to 2 projects, no workflows)</span>
-                      </span>
-                    </label>
-                    <label className="flex items-center">
-                      <input
-                        type="radio"
-                        value="client"
-                        checked={newClient.clientType === 'client'}
-                        onChange={(e) => setNewClient({ ...newClient, clientType: 'client' })}
-                        className="mr-2"
-                      />
-                      <span className="text-sm">
-                        <span className="font-medium">Client</span>
-                        <span className="text-gray-500 ml-1">(Full access)</span>
-                      </span>
-                    </label>
-                  </div>
-                </div>
-                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                  <div>
-                    <label className="block text-sm font-medium text-gray-700 mb-1">
-                      Client Name
-                    </label>
-                    <input
-                      type="text"
-                      required
-                      value={newClient.name}
-                      onChange={(e) => setNewClient({ ...newClient, name: e.target.value })}
-                      className="w-full px-3 py-2 border border-gray-300 rounded-md focus:ring-blue-500 focus:border-blue-500"
-                      placeholder="Acme Corp"
-                    />
-                  </div>
-                  <div>
-                    <label className="block text-sm font-medium text-gray-700 mb-1">
-                      Website
-                    </label>
-                    <input
-                      type="url"
-                      required
-                      value={newClient.website}
-                      onChange={(e) => setNewClient({ ...newClient, website: e.target.value })}
-                      className="w-full px-3 py-2 border border-gray-300 rounded-md focus:ring-blue-500 focus:border-blue-500"
-                      placeholder="https://example.com"
-                    />
-                  </div>
-                </div>
-                <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-1">
-                    Target Pages (one URL per line)
-                  </label>
-                  <textarea
-                    value={newClient.targetPages}
-                    onChange={(e) => setNewClient({ ...newClient, targetPages: e.target.value })}
-                    className="w-full px-3 py-2 border border-gray-300 rounded-md focus:ring-blue-500 focus:border-blue-500"
-                    rows={4}
-                    placeholder="https://example.com/blog&#10;https://anotherdomain.com/articles&#10;https://techblog.com"
-                  />
-                  <p className="mt-1 text-xs text-gray-500">
-                    These are the pages you want to build backlinks to. Enter one URL per line.
-                  </p>
-                  <p className="text-xs text-gray-500 mt-1">
-                    Optional: Add initial target pages. You can add more later.
-                  </p>
-                </div>
-                <div className="flex space-x-3">
-                  <button
-                    type="submit"
-                    className="px-4 py-2 bg-blue-600 text-white text-sm font-medium rounded-md hover:bg-blue-700"
-                  >
-                    Create Client
-                  </button>
-                  <button
-                    type="button"
-                    onClick={() => setShowNewClientForm(false)}
-                    className="px-4 py-2 bg-gray-200 text-gray-800 text-sm font-medium rounded-md hover:bg-gray-300"
-                  >
-                    Cancel
-                  </button>
-                </div>
-              </form>
-            </div>
-          )}
 
           {/* Edit Client Form */}
           {editingClient && (
@@ -303,31 +238,45 @@ function ClientsPageContent() {
                 </button>
               </div>
               <form onSubmit={handleEditClient} className="space-y-4">
-                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                  <div>
-                    <label className="block text-sm font-medium text-gray-700 mb-1">
-                      Client Name
-                    </label>
-                    <input
-                      type="text"
-                      required
-                      value={editClient.name}
-                      onChange={(e) => setEditClient({ ...editClient, name: e.target.value })}
-                      className="w-full px-3 py-2 border border-gray-300 rounded-md focus:ring-blue-500 focus:border-blue-500"
-                      placeholder="Acme Corp"
-                    />
+                <div className="space-y-4">
+                  <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                    <div>
+                      <label className="block text-sm font-medium text-gray-700 mb-1">
+                        {userType === 'account' ? 'Brand Name' : 'Client Name'}
+                      </label>
+                      <input
+                        type="text"
+                        required
+                        value={editClient.name}
+                        onChange={(e) => setEditClient({ ...editClient, name: e.target.value })}
+                        className="w-full px-3 py-2 border border-gray-300 rounded-md focus:ring-blue-500 focus:border-blue-500"
+                        placeholder="Acme Corp"
+                      />
+                    </div>
+                    <div>
+                      <label className="block text-sm font-medium text-gray-700 mb-1">
+                        Website
+                      </label>
+                      <input
+                        type="url"
+                        required
+                        value={editClient.website}
+                        onChange={(e) => setEditClient({ ...editClient, website: e.target.value })}
+                        className="w-full px-3 py-2 border border-gray-300 rounded-md focus:ring-blue-500 focus:border-blue-500"
+                        placeholder="https://example.com"
+                      />
+                    </div>
                   </div>
                   <div>
                     <label className="block text-sm font-medium text-gray-700 mb-1">
-                      Website
+                      Description
                     </label>
-                    <input
-                      type="url"
-                      required
-                      value={editClient.website}
-                      onChange={(e) => setEditClient({ ...editClient, website: e.target.value })}
+                    <textarea
+                      value={editClient.description}
+                      onChange={(e) => setEditClient({ ...editClient, description: e.target.value })}
                       className="w-full px-3 py-2 border border-gray-300 rounded-md focus:ring-blue-500 focus:border-blue-500"
-                      placeholder="https://example.com"
+                      rows={3}
+                      placeholder="Brief description of the client/brand..."
                     />
                   </div>
                 </div>
@@ -354,22 +303,44 @@ function ClientsPageContent() {
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
             {clients.map((client) => {
               const stats = getStatusCounts(client);
+              const isArchived = !!(client as any).archivedAt;
               return (
-                <div key={client.id} className="bg-white rounded-lg shadow hover:shadow-md transition-shadow">
+                <div key={client.id} className={`bg-white rounded-lg shadow hover:shadow-md transition-shadow ${isArchived ? 'opacity-75' : ''}`}>
                   <div className="p-6">
                     <div className="flex items-start justify-between">
                       <div className="flex items-center">
                         <Building2 className="w-5 h-5 text-gray-400 mr-2" />
-                        <div>
+                        <div className="flex-1">
                           <h3 className="text-lg font-medium text-gray-900">{client.name}</h3>
-                          <div className="mt-1">
-                            <span className={`inline-flex px-2 py-1 text-xs font-medium rounded-full ${
-                              (client as any).clientType === 'prospect' 
-                                ? 'bg-yellow-100 text-yellow-800' 
-                                : 'bg-green-100 text-green-800'
-                            }`}>
-                              {(client as any).clientType === 'prospect' ? 'Prospect' : 'Client'}
-                            </span>
+                          <div className="mt-1 flex items-center gap-2">
+                            {userType === 'internal' && (
+                              <>
+                                <span className={`inline-flex px-2 py-1 text-xs font-medium rounded-full ${
+                                  (client as any).clientType === 'prospect' 
+                                    ? 'bg-yellow-100 text-yellow-800' 
+                                    : 'bg-green-100 text-green-800'
+                                }`}>
+                                  {(client as any).clientType === 'prospect' ? 'Prospect' : 'Client'}
+                                </span>
+                                {(client as any).accountId ? (
+                                  <span className="inline-flex items-center px-2 py-1 text-xs font-medium text-blue-700 bg-blue-50 rounded-full">
+                                    <Users className="w-3 h-3 mr-1" />
+                                    {accountName[(client as any).accountId] || 'Account'}
+                                  </span>
+                                ) : (
+                                  <span className="inline-flex items-center px-2 py-1 text-xs font-medium text-orange-700 bg-orange-50 rounded-full">
+                                    <AlertCircle className="w-3 h-3 mr-1" />
+                                    No Account
+                                  </span>
+                                )}
+                              </>
+                            )}
+                            {isArchived && (
+                              <span className="inline-flex items-center px-2 py-1 text-xs font-medium text-gray-700 bg-gray-100 rounded-full">
+                                <Archive className="w-3 h-3 mr-1" />
+                                Archived
+                              </span>
+                            )}
                           </div>
                         </div>
                       </div>
@@ -381,13 +352,23 @@ function ClientsPageContent() {
                         >
                           <Edit className="w-4 h-4" />
                         </button>
-                        <button
-                          onClick={() => handleDeleteClient(client)}
-                          className="text-gray-400 hover:text-red-600 transition-colors"
-                          title="Delete client"
-                        >
-                          <Trash2 className="w-4 h-4" />
-                        </button>
+                        {isArchived ? (
+                          <button
+                            onClick={() => handleRestoreClient(client)}
+                            className="text-gray-400 hover:text-green-600 transition-colors"
+                            title="Restore client"
+                          >
+                            <ArchiveRestore className="w-4 h-4" />
+                          </button>
+                        ) : (
+                          <button
+                            onClick={() => handleArchiveClient(client)}
+                            className="text-gray-400 hover:text-orange-600 transition-colors"
+                            title="Archive client"
+                          >
+                            <Archive className="w-4 h-4" />
+                          </button>
+                        )}
                       </div>
                     </div>
                     
@@ -439,13 +420,15 @@ function ClientsPageContent() {
                       >
                         Manage Target Pages
                       </Link>
-                      <Link
-                        href={`/clients/${client.id}/bulk-analysis`}
-                        className="w-full inline-flex justify-center items-center px-4 py-2 bg-purple-600 text-white text-sm font-medium rounded-md hover:bg-purple-700"
-                      >
-                        <BarChart2 className="w-4 h-4 mr-2" />
-                        Bulk Domain Analysis
-                      </Link>
+                      {userType === 'internal' && (
+                        <Link
+                          href={`/clients/${client.id}/bulk-analysis`}
+                          className="w-full inline-flex justify-center items-center px-4 py-2 bg-purple-600 text-white text-sm font-medium rounded-md hover:bg-purple-700"
+                        >
+                          <BarChart2 className="w-4 h-4 mr-2" />
+                          Bulk Domain Analysis
+                        </Link>
+                      )}
                     </div>
                   </div>
                 </div>
@@ -456,15 +439,21 @@ function ClientsPageContent() {
           {clients.length === 0 && (
             <div className="text-center py-12">
               <Building2 className="w-12 h-12 text-gray-400 mx-auto mb-4" />
-              <h3 className="text-lg font-medium text-gray-900 mb-2">No clients yet</h3>
-              <p className="text-gray-600 mb-4">Get started by creating your first client.</p>
-              <button
-                onClick={() => setShowNewClientForm(true)}
+              <h3 className="text-lg font-medium text-gray-900 mb-2">
+                {userType === 'account' ? 'No brands yet' : 'No clients yet'}
+              </h3>
+              <p className="text-gray-600 mb-4">
+                {userType === 'account' 
+                  ? 'Add your first brand to start creating guest post orders.'
+                  : 'Get started by creating your first client.'}
+              </p>
+              <Link
+                href="/clients/new"
                 className="inline-flex items-center px-4 py-2 bg-blue-600 text-white text-sm font-medium rounded-md hover:bg-blue-700"
               >
                 <Plus className="w-4 h-4 mr-2" />
-                Create First Client
-              </button>
+                {userType === 'account' ? 'Add Your First Brand' : 'Create First Client'}
+              </Link>
             </div>
           )}
         </div>

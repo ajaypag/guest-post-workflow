@@ -13,6 +13,12 @@ Production-ready workflow system with PostgreSQL, multi-user auth, and AI agent 
 4. **Build must pass** before deployment - run `npm run build`
 
 ### Recent Changes (Keep in Mind)
+- 🔄 Order Interface Redesign (2025-01-31) - IN PROGRESS
+  - Three-column layout with space-efficient grouped views
+  - Dual-mode: Simple (wizard) vs Detailed (power user)
+  - Placeholder system for connected flow
+  - Package-based pricing tiers
+  - See: `/orders/new` and [docs/architecture/ORDER_INTERFACE_REDESIGN.md](docs/architecture/ORDER_INTERFACE_REDESIGN.md)
 - ✅ V2 Article Generation with ArticleEndCritic (2025-01-19)
 - ✅ Agent retry pattern for text response fix
 - ✅ Dynamic outline-based completion detection
@@ -149,6 +155,14 @@ npm run db:studio       # Browse database
 
 ## 🚀 Latest Features
 
+### Order Interface Redesign (In Progress)
+- Three-column layout with space-efficient grouped views
+- Dual-mode interface: Simple (wizard) vs Detailed (power user)
+- Placeholder system for connected flow between columns
+- Package-based pricing (Bronze/Silver/Gold/Custom)
+- **Status**: Initial implementation complete, further refinement needed
+- See: `/orders/new` and [docs/architecture/ORDER_INTERFACE_REDESIGN.md](docs/architecture/ORDER_INTERFACE_REDESIGN.md)
+
 ### V2 Article Generation (Production Ready)
 - True LLM orchestration without complex tools
 - ArticleEndCritic with o4-mini for completion detection  
@@ -161,6 +175,19 @@ npm run db:studio       # Browse database
 - 🔄 `agenticArticleService.ts` (in progress)
 - ⏳ `agenticFormattingQAService.ts` (planned)
 
+## 🔒 Security & Authentication
+
+**When implementing auth/permissions for shared interfaces**:
+1. Check [CLIENT_SECURITY_IMPLEMENTATION.md](docs/architecture/CLIENT_SECURITY_IMPLEMENTATION.md)
+2. Follow the pattern from [ORDER_SYSTEM_IMPLEMENTATION.md](docs/architecture/ORDER_SYSTEM_IMPLEMENTATION.md)
+3. Key pattern:
+```typescript
+if (session.userType === 'internal') {
+  // Full access
+} else if (session.userType === 'account') {
+  // Check ownership (accountId === userId)
+}
+```
 
 ## 📚 Full Documentation
 
@@ -169,6 +196,7 @@ For detailed guides on all topics:
 - **[Building Agents](docs/agents/)** - Agent patterns and examples
 - **[Database Rules](docs/db/)** - Schema patterns and pitfalls
 - **[Architecture](docs/architecture/)** - System design and patterns
+- **[Security](docs/architecture/CLIENT_SECURITY_IMPLEMENTATION.md)** - Auth patterns for shared interfaces
 
 ---
 

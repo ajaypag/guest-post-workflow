@@ -13,6 +13,9 @@ export const orders = pgTable('orders', {
   accountName: varchar('account_name', { length: 255 }).notNull(),
   accountCompany: varchar('account_company', { length: 255 }),
   
+  // Order type for supporting different order types
+  orderType: varchar('order_type', { length: 50 }).notNull().default('guest_post'),
+  
   // Status tracking
   status: varchar('status', { length: 50 }).notNull().default('draft'),
   state: varchar('state', { length: 50 }).default('configuring'),
@@ -61,12 +64,13 @@ export const orders = pgTable('orders', {
   accountIdIdx: index('idx_orders_account_id').on(table.accountId),
   statusIdx: index('idx_orders_status').on(table.status),
   stateIdx: index('idx_orders_state').on(table.state),
+  orderTypeIdx: index('idx_orders_order_type').on(table.orderType),
   shareTokenIdx: index('idx_orders_share_token').on(table.shareToken),
   createdByIdx: index('idx_orders_created_by').on(table.createdBy),
 }));
 
-// Order items - individual domains in an order
-export const orderItems = pgTable('order_items', {
+// Guest post items - individual domains in a guest post order
+export const guestPostItems = pgTable('guest_post_items', {
   id: uuid('id').primaryKey(),
   orderId: uuid('order_id').notNull().references(() => orders.id, { onDelete: 'cascade' }),
   domainId: uuid('domain_id').notNull().references(() => bulkAnalysisDomains.id),
@@ -105,11 +109,14 @@ export const orderItems = pgTable('order_items', {
   createdAt: timestamp('created_at').notNull(),
   updatedAt: timestamp('updated_at').notNull(),
 }, (table) => ({
-  orderIdIdx: index('idx_order_items_order_id').on(table.orderId),
-  domainIdIdx: index('idx_order_items_domain_id').on(table.domainId),
-  workflowIdIdx: index('idx_order_items_workflow_id').on(table.workflowId),
-  statusIdx: index('idx_order_items_status').on(table.status),
+  orderIdIdx: index('idx_guest_post_items_order_id').on(table.orderId),
+  domainIdIdx: index('idx_guest_post_items_domain_id').on(table.domainId),
+  workflowIdIdx: index('idx_guest_post_items_workflow_id').on(table.workflowId),
+  statusIdx: index('idx_guest_post_items_status').on(table.status),
 }));
+
+// Legacy export for backward compatibility (will be removed after migration)
+export const orderItems = guestPostItems;
 
 // Share tokens for pre-account access
 export const orderShareTokens = pgTable('order_share_tokens', {
@@ -204,8 +211,11 @@ export const orderStatusHistory = pgTable('order_status_history', {
 // Type exports
 export type Order = typeof orders.$inferSelect;
 export type NewOrder = typeof orders.$inferInsert;
-export type OrderItem = typeof orderItems.$inferSelect;
-export type NewOrderItem = typeof orderItems.$inferInsert;
+export type GuestPostItem = typeof guestPostItems.$inferSelect;
+export type NewGuestPostItem = typeof guestPostItems.$inferInsert;
+// Legacy exports for backward compatibility (will be removed later)
+export type OrderItem = GuestPostItem;
+export type NewOrderItem = NewGuestPostItem;
 export type DomainSuggestion = typeof domainSuggestions.$inferSelect;
 export type NewDomainSuggestion = typeof domainSuggestions.$inferInsert;
 export type PricingRule = typeof pricingRules.$inferSelect;
@@ -225,22 +235,25 @@ export const ordersRelations = relations(orders, ({ one, many }) => ({
     fields: [orders.assignedTo],
     references: [users.id],
   }),
-  items: many(orderItems),
+  items: many(guestPostItems),
   statusHistory: many(orderStatusHistory),
   // Note: order groups relation defined in orderGroupSchema
 }));
 
-export const orderItemsRelations = relations(orderItems, ({ one }) => ({
+export const guestPostItemsRelations = relations(guestPostItems, ({ one }) => ({
   order: one(orders, {
-    fields: [orderItems.orderId],
+    fields: [guestPostItems.orderId],
     references: [orders.id],
   }),
   domain: one(bulkAnalysisDomains, {
-    fields: [orderItems.domainId],
+    fields: [guestPostItems.domainId],
     references: [bulkAnalysisDomains.id],
   }),
   workflow: one(workflows, {
-    fields: [orderItems.workflowId],
+    fields: [guestPostItems.workflowId],
     references: [workflows.id],
   }),
 }));
+
+// Legacy export for backward compatibility
+export const orderItemsRelations = guestPostItemsRelations;
