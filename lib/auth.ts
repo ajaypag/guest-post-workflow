@@ -140,7 +140,7 @@ export class AuthService {
         name: session.name || session.email,
         role: session.role || 'viewer',
         userType: 'account'
-      } as User;
+      } as any as User;
     }
     
     // For internal users, fetch from the users API

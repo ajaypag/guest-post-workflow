@@ -11,7 +11,7 @@ import CreateTargetPageModal from '@/components/ui/CreateTargetPageModal';
 import { 
   Building, Package, Plus, X, ChevronDown, ChevronUp, ChevronRight,
   Search, Target, Link, Type, CheckCircle,
-  AlertCircle, Copy, Trash2, User, Globe, ExternalLink
+  AlertCircle, Copy, Trash2, User, Globe, ExternalLink, Loader2
 } from 'lucide-react';
 
 type PackageType = 'good' | 'better' | 'best';
