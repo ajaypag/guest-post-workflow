@@ -53,6 +53,11 @@ export default function OrderConfirmationPage() {
       const response = await fetch(`/api/orders/${orderId}`);
       if (!response.ok) throw new Error('Failed to fetch order');
       const data = await response.json();
+      console.log('[ORDER_CONFIRM] Loaded order:', data);
+      console.log('[ORDER_CONFIRM] Order groups:', data.orderGroups);
+      if (data.orderGroups && data.orderGroups.length > 0) {
+        console.log('[ORDER_CONFIRM] First group targetPages:', data.orderGroups[0].targetPages);
+      }
       
       // Verify it's in draft status
       if (data.status !== 'draft') {
@@ -180,12 +185,12 @@ export default function OrderConfirmationPage() {
                     </div>
                   </div>
                   
-                  {group.targetPages.length > 0 && (
+                  {group.targetPages && Array.isArray(group.targetPages) && group.targetPages.length > 0 && (
                     <div className="mt-3 pt-3 border-t border-gray-200">
                       <p className="text-sm font-medium text-gray-700 mb-1">Target Pages:</p>
                       <ul className="text-sm text-gray-600 space-y-1">
-                        {group.targetPages.slice(0, 3).map((page, idx) => (
-                          <li key={idx}>• {page.url}</li>
+                        {group.targetPages.slice(0, 3).map((page: any, idx: number) => (
+                          <li key={idx}>• {page.url || page}</li>
                         ))}
                         {group.targetPages.length > 3 && (
                           <li className="text-gray-500">+ {group.targetPages.length - 3} more</li>

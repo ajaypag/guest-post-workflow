@@ -126,6 +126,11 @@ export default function OrderDetailPage() {
       }
 
       const data = await response.json();
+      console.log('[ORDER_DETAIL] Loaded order data:', data);
+      console.log('[ORDER_DETAIL] Order groups:', data.orderGroups);
+      if (data.orderGroups && data.orderGroups.length > 0) {
+        console.log('[ORDER_DETAIL] First group targetPages:', data.orderGroups[0].targetPages);
+      }
       setOrder(data); // API returns order directly now
     } catch (error) {
       console.error('Error loading order:', error);
@@ -391,12 +396,12 @@ export default function OrderDetailPage() {
                           </div>
                         </div>
                         
-                        {group.targetPages.length > 0 && (
+                        {group.targetPages && Array.isArray(group.targetPages) && group.targetPages.length > 0 && (
                           <div className="mt-3 pt-3 border-t border-gray-200">
                             <p className="text-sm font-medium text-gray-700 mb-1">Target Pages:</p>
                             <ul className="text-sm text-gray-600 space-y-1">
                               {group.targetPages.slice(0, 3).map((page, idx) => (
-                                <li key={idx}>• {page.url}</li>
+                                <li key={idx}>• {page.url || page}</li>
                               ))}
                               {group.targetPages.length > 3 && (
                                 <li className="text-gray-500">+ {group.targetPages.length - 3} more</li>
