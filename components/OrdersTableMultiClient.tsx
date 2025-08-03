@@ -1,8 +1,10 @@
 'use client';
 
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { Package, ChevronDown, ChevronRight, Users, Link as LinkIcon, Eye, Copy, Check, Trash2, CheckCircle } from 'lucide-react';
 import Link from 'next/link';
+import { AuthService } from '@/lib/auth';
+import { AuthSession } from '@/lib/types/auth';
 
 interface OrderGroup {
   id: string;
@@ -76,6 +78,12 @@ export function OrdersTableMultiClient({
 }: OrdersTableProps) {
   const [expandedOrders, setExpandedOrders] = useState<Set<string>>(new Set());
   const [copiedToken, setCopiedToken] = useState<string | null>(null);
+  const [session, setSession] = useState<AuthSession | null>(null);
+
+  useEffect(() => {
+    const currentSession = AuthService.getSession();
+    setSession(currentSession);
+  }, []);
 
   const getStatusLabel = (status: string) => {
     const statusLabels: { [key: string]: string } = {
@@ -334,11 +342,16 @@ export function OrdersTableMultiClient({
                             )}
                           </button>
                         )}
-                        {/* Delete button for draft orders - available to all users for their own orders */}
-                        {order.status === 'draft' && (
+                        {/* Delete button - draft orders for all users, any order for admins */}
+                        {(order.status === 'draft' || (isInternal && session?.role === 'admin')) && (
                           <button
                             onClick={async () => {
-                              if (confirm('Are you sure you want to delete this draft order? This action cannot be undone.')) {
+                              const isAdmin = isInternal && session?.role === 'admin';
+                              const confirmMessage = isAdmin && order.status !== 'draft'
+                                ? `⚠️ ADMIN ACTION: Are you sure you want to delete this ${order.status} order?\n\nOrder ID: ${order.id}\nAccount: ${order.accountEmail}\nValue: ${formatCurrency(order.totalRetail)}\n\nThis will permanently delete the order and all related data. This action cannot be undone.`
+                                : 'Are you sure you want to delete this draft order? This action cannot be undone.';
+                              
+                              if (confirm(confirmMessage)) {
                                 try {
                                   const response = await fetch(`/api/orders/${order.id}`, {
                                     method: 'DELETE',
@@ -346,6 +359,10 @@ export function OrdersTableMultiClient({
                                   });
                                   
                                   if (response.ok) {
+                                    const data = await response.json();
+                                    if (isAdmin && order.status !== 'draft') {
+                                      console.log('Admin deleted order:', data.deletedOrder);
+                                    }
                                     onRefresh();
                                   } else {
                                     const data = await response.json();
@@ -357,8 +374,8 @@ export function OrdersTableMultiClient({
                                 }
                               }
                             }}
-                            className="text-red-600 hover:text-red-800"
-                            title="Delete draft order"
+                            className={order.status !== 'draft' && isAdmin ? "text-red-700 hover:text-red-900" : "text-red-600 hover:text-red-800"}
+                            title={order.status !== 'draft' && isAdmin ? "Admin delete order" : "Delete draft order"}
                           >
                             <Trash2 className="h-4 w-4" />
                           </button>

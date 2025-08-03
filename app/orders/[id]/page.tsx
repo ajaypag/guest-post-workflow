@@ -11,7 +11,7 @@ import {
   ArrowLeft, Loader2, CheckCircle, Clock, Search, Users, FileText, 
   RefreshCw, ExternalLink, Globe, LinkIcon, Eye, Edit, Package,
   Target, ChevronRight, AlertCircle, Activity, Building, User, DollarSign,
-  Download, Share2, XCircle, CreditCard
+  Download, Share2, XCircle, CreditCard, Trash2
 } from 'lucide-react';
 
 interface LineItem {
@@ -383,6 +383,48 @@ export default function OrderDetailPage() {
                     <Edit className="h-4 w-4 mr-2" />
                     Edit Order
                   </Link>
+                )}
+                {/* Admin delete button */}
+                {(order.status === 'draft' || (user?.userType === 'internal' && user?.role === 'admin')) && (
+                  <button
+                    onClick={async () => {
+                      const isAdmin = user?.userType === 'internal' && user?.role === 'admin';
+                      const confirmMessage = isAdmin && order.status !== 'draft'
+                        ? `⚠️ ADMIN ACTION: Are you sure you want to delete this ${order.status} order?\n\nOrder ID: ${order.id}\nAccount: ${order.accountEmail}\nValue: ${formatCurrency(order.totalPrice)}\n\nThis will permanently delete the order and all related data. This action cannot be undone.`
+                        : 'Are you sure you want to delete this draft order? This action cannot be undone.';
+                      
+                      if (confirm(confirmMessage)) {
+                        try {
+                          const response = await fetch(`/api/orders/${order.id}`, {
+                            method: 'DELETE',
+                            headers: { 'Content-Type': 'application/json' }
+                          });
+                          
+                          if (response.ok) {
+                            const data = await response.json();
+                            if (isAdmin && order.status !== 'draft') {
+                              console.log('Admin deleted order:', data.deletedOrder);
+                            }
+                            router.push('/orders');
+                          } else {
+                            const data = await response.json();
+                            alert(data.error || 'Failed to delete order');
+                          }
+                        } catch (error) {
+                          console.error('Error deleting order:', error);
+                          alert('Error deleting order');
+                        }
+                      }
+                    }}
+                    className={`inline-flex items-center px-3 py-2 border ${
+                      order.status !== 'draft' && user?.role === 'admin' 
+                        ? 'border-red-300 text-red-700 hover:bg-red-50' 
+                        : 'border-red-300 text-red-600 hover:bg-red-50'
+                    } rounded-md`}
+                  >
+                    <Trash2 className="h-4 w-4 mr-2" />
+                    Delete Order
+                  </button>
                 )}
               </div>
             </div>

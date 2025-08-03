@@ -1,10 +1,11 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { AuthServiceServer } from '@/lib/auth-server';
 import { db } from '@/lib/db/connection';
-import { orders } from '@/lib/db/orderSchema';
-import { orderGroups } from '@/lib/db/orderGroupSchema';
-import { clients } from '@/lib/db/schema';
-import { eq } from 'drizzle-orm';
+import { orders, orderItems } from '@/lib/db/orderSchema';
+import { orderGroups, orderSiteSelections } from '@/lib/db/orderGroupSchema';
+import { clients, users } from '@/lib/db/schema';
+import { eq, inArray } from 'drizzle-orm';
+import { orderSiteSubmissions, projectOrderAssociations } from '@/lib/db/projectOrderAssociationsSchema';
 
 export async function GET(
   request: NextRequest,
@@ -217,9 +218,16 @@ export async function DELETE(
 
     const { id } = await params;
 
-    // First, fetch the order to check its status and ownership
+    // First, fetch the order with all related data to check ownership and log deletion
     const order = await db.query.orders.findFirst({
       where: eq(orders.id, id),
+      with: {
+        orderGroups: {
+          with: {
+            bulkAnalysisProject: true
+          }
+        }
+      }
     });
 
     if (!order) {
@@ -232,23 +240,90 @@ export async function DELETE(
       if (order.accountId !== session.userId) {
         return NextResponse.json({ error: 'Forbidden' }, { status: 403 });
       }
-      // Only allow deletion of draft orders in configuring state
+      // Only allow deletion of draft orders
       if (order.status !== 'draft') {
         return NextResponse.json({ 
           error: 'Only draft orders can be deleted' 
         }, { status: 400 });
       }
-    } else if (session.userType !== 'internal') {
-      // Only internal users and accounts can delete orders
+    } else if (session.userType === 'internal') {
+      // Internal users need admin role to delete non-draft orders
+      const user = await db.query.users.findFirst({
+        where: eq(users.id, session.userId)
+      });
+      
+      if (!user) {
+        return NextResponse.json({ error: 'User not found' }, { status: 404 });
+      }
+      
+      // Only admins can delete non-draft orders
+      if (order.status !== 'draft' && user.role !== 'admin') {
+        return NextResponse.json({ 
+          error: 'Only admin users can delete non-draft orders' 
+        }, { status: 403 });
+      }
+      
+      // Log admin deletion for audit trail
+      if (user.role === 'admin' && order.status !== 'draft') {
+        console.log(`ADMIN DELETE: User ${user.email} (${user.id}) deleting ${order.status} order ${id}`);
+        console.log(`Order details: Account: ${order.accountEmail}, Total: ${order.totalRetail}, Created: ${order.createdAt}`);
+      }
+    } else {
+      // Other user types cannot delete orders
       return NextResponse.json({ error: 'Forbidden' }, { status: 403 });
     }
     
-    // For internal users, they can delete any order (no status check)
+    // Use transaction to ensure all related data is deleted properly
+    await db.transaction(async (tx) => {
+      // Delete related data that might not have cascade delete set up properly
+      
+      // 1. Delete order site submissions (if any)
+      if (order.orderGroups) {
+        const orderGroupIds = order.orderGroups.map(g => g.id);
+        if (orderGroupIds.length > 0) {
+          await tx.delete(orderSiteSubmissions)
+            .where(inArray(orderSiteSubmissions.orderGroupId, orderGroupIds));
+        }
+      }
+      
+      // 2. Delete order site selections (if any)
+      if (order.orderGroups) {
+        const orderGroupIds = order.orderGroups.map(g => g.id);
+        if (orderGroupIds.length > 0) {
+          await tx.delete(orderSiteSelections)
+            .where(inArray(orderSiteSelections.orderGroupId, orderGroupIds));
+        }
+      }
+      
+      // 3. Delete project-order associations
+      await tx.delete(projectOrderAssociations)
+        .where(eq(projectOrderAssociations.orderId, id));
+      
+      // 4. Delete order items (should cascade, but being explicit)
+      await tx.delete(orderItems)
+        .where(eq(orderItems.orderId, id));
+      
+      // 5. Delete order groups (should cascade, but being explicit)
+      await tx.delete(orderGroups)
+        .where(eq(orderGroups.orderId, id));
+      
+      // 6. Finally, delete the order itself
+      await tx.delete(orders)
+        .where(eq(orders.id, id));
+      
+      // Note: We're NOT deleting bulk analysis projects as they might be 
+      // associated with other orders or be useful for historical reference
+    });
 
-    // Delete the order (items and orderGroups will be cascade deleted)
-    await db.delete(orders).where(eq(orders.id, id));
-
-    return NextResponse.json({ success: true });
+    return NextResponse.json({ 
+      success: true,
+      deletedOrder: {
+        id: order.id,
+        status: order.status,
+        accountEmail: order.accountEmail,
+        totalRetail: order.totalRetail
+      }
+    });
   } catch (error) {
     console.error('Error deleting order:', error);
     return NextResponse.json(
