@@ -1341,25 +1341,37 @@ export default function ProjectDetailPage() {
       setLoading(true);
       setMessage('Adding domains to order...');
       
-      // Create domain mappings with target pages
-      const domainMappings = domains.map(domain => {
-        // Find the selected target page for this domain
-        const targetPageId = domain.selectedTargetPageId || targetPages[0]?.id || null;
-        
-        return {
-          bulkAnalysisDomainId: domain.id,
-          targetPageId: targetPageId,
-          domain: domain.domain
-        };
-      });
+      // First, we need to get the order details to find the correct order group
+      const orderResponse = await fetch(`/api/orders/${orderId}`);
+      if (!orderResponse.ok) {
+        throw new Error('Failed to fetch order details');
+      }
       
-      const response = await fetch(`/api/orders/${orderId}/items`, {
+      const orderData = await orderResponse.json();
+      
+      // Find the order group for this client
+      const orderGroup = orderData.orderGroups?.find((group: any) => group.clientId === params.id);
+      
+      if (!orderGroup) {
+        throw new Error('No order group found for this client in the selected order');
+      }
+      
+      // Create site selections for the order group
+      const selections = domains.map(domain => ({
+        domainId: domain.id,
+        status: 'pending', // Domains start as pending, client will need to approve
+        targetPageUrl: targetPages[0]?.url || '', // Use first target page as default
+        anchorText: '', // Client can specify this later
+        specialInstructions: ''
+      }));
+      
+      const response = await fetch(`/api/orders/${orderId}/groups/${orderGroup.id}/site-selections`, {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
         },
         credentials: 'include',
-        body: JSON.stringify({ domainMappings })
+        body: JSON.stringify({ selections })
       });
       
       if (!response.ok) {
@@ -1368,8 +1380,8 @@ export default function ProjectDetailPage() {
       }
       
       setMessage('✅ Domains added to order successfully!');
-      // Navigate to order detail page
-      router.push(`/orders/${orderId}/detail`);
+      // Navigate to internal order management page
+      router.push(`/orders/${orderId}/internal`);
       
     } catch (error: any) {
       console.error('Error adding to order:', error);

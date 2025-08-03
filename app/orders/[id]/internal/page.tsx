@@ -12,8 +12,25 @@ import {
   RefreshCw, ExternalLink, Globe, LinkIcon, Eye, Package,
   Target, ChevronRight, AlertCircle, Activity, Building, User, DollarSign,
   Download, Share2, XCircle, CreditCard, Trash2, Zap, PlayCircle,
-  ClipboardCheck, Send, Database, Search
+  ClipboardCheck, Send, Database, Search, Plus
 } from 'lucide-react';
+
+interface SiteSubmission {
+  id: string;
+  domainId: string;
+  domain?: {
+    id: string;
+    domain: string;
+    qualificationStatus?: string;
+  };
+  submissionStatus: string;
+  metadata?: {
+    targetPageUrl?: string;
+    anchorText?: string;
+  };
+  clientReviewedAt?: string;
+  clientReviewNotes?: string;
+}
 
 interface OrderGroup {
   id: string;
@@ -39,6 +56,7 @@ interface OrderGroup {
     pending: number;
     total: number;
   };
+  siteSubmissions?: SiteSubmission[];
 }
 
 interface Account {
@@ -112,11 +130,34 @@ export default function InternalOrderManagementPage() {
       const data = await response.json();
       console.log('Order data received:', data);
       console.log('Order groups:', data.orderGroups);
-      if (data.orderGroups) {
-        data.orderGroups.forEach((group: any) => {
-          console.log(`Group ${group.id}: bulkAnalysisProjectId = ${group.bulkAnalysisProjectId}`);
-        });
+      
+      // Load site submissions for each order group
+      if (data.orderGroups && data.orderGroups.length > 0) {
+        const groupsWithSubmissions = await Promise.all(
+          data.orderGroups.map(async (group: OrderGroup) => {
+            console.log(`Group ${group.id}: bulkAnalysisProjectId = ${group.bulkAnalysisProjectId}`);
+            
+            try {
+              const submissionsResponse = await fetch(`/api/orders/${orderId}/groups/${group.id}/site-selections`);
+              if (submissionsResponse.ok) {
+                const submissionsData = await submissionsResponse.json();
+                console.log(`Site submissions for group ${group.id}:`, submissionsData);
+                return {
+                  ...group,
+                  siteSubmissions: submissionsData.currentSelections || []
+                };
+              }
+            } catch (err) {
+              console.error(`Error loading site submissions for group ${group.id}:`, err);
+            }
+            
+            return group;
+          })
+        );
+        
+        data.orderGroups = groupsWithSubmissions;
       }
+      
       setOrder(data);
     } catch (err) {
       console.error('Error loading order:', err);
@@ -597,6 +638,46 @@ export default function InternalOrderManagementPage() {
                               View Bulk Analysis
                               <ExternalLink className="h-3 w-3 ml-1" />
                             </Link>
+                          </div>
+                        )}
+                        
+                        {/* Site Submissions */}
+                        {group.siteSubmissions && group.siteSubmissions.length > 0 && (
+                          <div className="mt-2 pt-2 border-t border-gray-100">
+                            <div className="flex items-center justify-between mb-1">
+                              <p className="text-xs text-gray-500">Site Submissions</p>
+                              <Link
+                                href={`/orders/${order.id}/groups/${group.id}/sites`}
+                                className="text-xs text-blue-600 hover:text-blue-800"
+                              >
+                                Manage
+                              </Link>
+                            </div>
+                            <div className="space-y-1">
+                              {group.siteSubmissions.slice(0, 3).map((submission, idx) => (
+                                <div key={submission.id} className="text-xs">
+                                  <div className="flex items-center justify-between">
+                                    <span className="text-gray-700 truncate">
+                                      {submission.domain?.domain || submission.domainId}
+                                    </span>
+                                    <span className={`px-1.5 py-0.5 rounded text-xs ${
+                                      submission.submissionStatus === 'client_approved' ? 'bg-green-100 text-green-800' :
+                                      submission.submissionStatus === 'client_rejected' ? 'bg-red-100 text-red-800' :
+                                      'bg-yellow-100 text-yellow-800'
+                                    }`}>
+                                      {submission.submissionStatus === 'client_approved' ? 'Approved' :
+                                       submission.submissionStatus === 'client_rejected' ? 'Rejected' :
+                                       'Pending'}
+                                    </span>
+                                  </div>
+                                </div>
+                              ))}
+                              {group.siteSubmissions.length > 3 && (
+                                <p className="text-xs text-gray-500">
+                                  +{group.siteSubmissions.length - 3} more sites
+                                </p>
+                              )}
+                            </div>
                           </div>
                         )}
                       </div>
