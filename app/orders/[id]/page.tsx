@@ -423,17 +423,30 @@ export default function OrderDetailPage() {
                       </tr>
                     </thead>
                     <tbody className="bg-white divide-y divide-gray-200">
-                      {lineItems.map((item, index) => {
-                        const isFirstInGroup = index === 0 || lineItems[index - 1].clientId !== item.clientId;
-                        return (
+                      {/* Group line items by client */}
+                      {Object.entries(
+                        lineItems.reduce((acc, item) => {
+                          if (!acc[item.clientId]) {
+                            acc[item.clientId] = {
+                              clientName: item.clientName,
+                              items: [],
+                              totalPrice: 0
+                            };
+                          }
+                          acc[item.clientId].items.push(item);
+                          acc[item.clientId].totalPrice += item.price;
+                          return acc;
+                        }, {} as Record<string, { clientName: string; items: LineItem[]; totalPrice: number }>)
+                      ).map(([clientId, { clientName, items, totalPrice }]) => (
+                        items.map((item, index) => (
                           <tr key={item.id} className="hover:bg-gray-50">
                             <td className="px-6 py-4">
-                              {isFirstInGroup && (
+                              {index === 0 && (
                                 <div className="text-sm font-medium text-gray-900 mb-1">
-                                  {item.clientName}
+                                  {clientName}
                                 </div>
                               )}
-                              <div className={`text-sm text-gray-600 ${isFirstInGroup ? '' : 'mt-2'}`}>
+                              <div className={`text-sm text-gray-600 ${index === 0 ? '' : 'mt-2'}`}>
                                 {item.targetPageUrl || 'No target page selected'}
                               </div>
                             </td>
@@ -499,11 +512,12 @@ export default function OrderDetailPage() {
                               </td>
                             )}
                             <td className="px-6 py-4 text-right text-sm font-medium text-gray-900">
-                              {formatCurrency(item.price)}
+                              {/* Only show price on the first item in the group */}
+                              {index === 0 ? formatCurrency(totalPrice) : ''}
                             </td>
                           </tr>
-                        );
-                      })}
+                        ))
+                      ))}
                     </tbody>
                     <tfoot className="bg-gray-50">
                       <tr>
