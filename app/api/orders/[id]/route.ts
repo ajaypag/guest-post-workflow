@@ -102,10 +102,21 @@ export async function PUT(
       if (existingOrder.accountId !== session.userId) {
         return NextResponse.json({ error: 'Forbidden' }, { status: 403 });
       }
-      // Only allow updating draft orders
-      if (existingOrder.status !== 'draft') {
+      // Define which statuses allow editing by account users
+      // Orders are editable up until payment is received
+      const editableStatuses = [
+        'draft',                  // Creating order
+        'pending_confirmation',   // Submitted but not confirmed
+        'confirmed',             // Internal confirmed, analyzing
+        'sites_ready',           // Sites selected for review
+        'client_reviewing',      // Client reviewing sites
+        'client_approved',       // Client approved sites
+        'invoiced'              // Invoice sent but not paid
+      ];
+      
+      if (!editableStatuses.includes(existingOrder.status)) {
         return NextResponse.json({ 
-          error: 'Only draft orders can be edited' 
+          error: `Orders cannot be edited after payment. Current status: '${existingOrder.status}'` 
         }, { status: 400 });
       }
     } else if (session.userType !== 'internal') {
