@@ -126,6 +126,7 @@ export default function EditOrderPage({ params }: { params: Promise<{ id: string
     updatedAt: string;
   }>>([]);
   const [loadingDraft, setLoadingDraft] = useState(true);
+  const [isNewOrder, setIsNewOrder] = useState(false);
   
   // Account selection state (for internal users)
   const [selectedAccountId, setSelectedAccountId] = useState<string | null>(null);
@@ -288,6 +289,12 @@ export default function EditOrderPage({ params }: { params: Promise<{ id: string
         // Set order status
         setOrderStatus(order.status || 'draft');
         setOrderState(order.state || 'configuring');
+        
+        // Determine if this is a new order (just created from /orders/new)
+        const isNew = order.status === 'draft' && 
+                     (!order.orderGroups || order.orderGroups.length === 0) &&
+                     new Date(order.createdAt).getTime() > Date.now() - 60000; // Created within last minute
+        setIsNewOrder(isNew);
         
         // Load order groups into line items
         if (order.orderGroups && order.orderGroups.length > 0) {
@@ -928,18 +935,18 @@ export default function EditOrderPage({ params }: { params: Promise<{ id: string
           <div className="flex items-center justify-between">
             <div className="flex items-center gap-4">
               <Link
-                href={`/orders/${draftOrderId || ''}`}
+                href={isNewOrder ? '/orders' : `/orders/${draftOrderId || ''}`}
                 className="inline-flex items-center text-gray-600 hover:text-gray-900"
               >
                 <ArrowLeft className="h-4 w-4 mr-2" />
-                Back to Order
+                {isNewOrder ? 'Back to Orders' : 'Back to Order'}
               </Link>
               <div>
                 <h1 className="text-2xl font-semibold text-gray-900">
-                  Edit Order {draftOrderId && `#${draftOrderId.slice(0, 8)}`}
+                  {isNewOrder ? 'Create New Order' : `Edit Order ${draftOrderId ? '#' + draftOrderId.slice(0, 8) : ''}`}
                 </h1>
                 <p className="text-sm text-gray-600 mt-1">
-                  Update your guest post order details
+                  {isNewOrder ? 'Build your guest post campaign' : 'Update your guest post order details'}
                 </p>
               </div>
             </div>
@@ -1640,7 +1647,7 @@ export default function EditOrderPage({ params }: { params: Promise<{ id: string
                 
                 <div className="flex items-center gap-3">
                   <Link
-                    href={`/orders/${draftOrderId || ''}`}
+                    href={isNewOrder ? '/orders' : `/orders/${draftOrderId || ''}`}
                     className="px-4 md:px-6 py-2 md:py-3 border border-gray-300 text-gray-700 font-medium rounded-lg hover:bg-gray-50 
                              transition-colors flex items-center"
                   >
@@ -1653,8 +1660,8 @@ export default function EditOrderPage({ params }: { params: Promise<{ id: string
                              transition-colors flex items-center disabled:bg-gray-300 disabled:cursor-not-allowed"
                   >
                     <CheckCircle className="h-5 w-5 mr-2" />
-                    <span className="hidden md:inline">Save Changes</span>
-                    <span className="md:hidden">Save</span>
+                    <span className="hidden md:inline">{isNewOrder ? 'Review & Submit Order' : 'Save Changes'}</span>
+                    <span className="md:hidden">{isNewOrder ? 'Submit' : 'Save'}</span>
                   </button>
                 </div>
               </div>
@@ -1686,7 +1693,7 @@ export default function EditOrderPage({ params }: { params: Promise<{ id: string
             <div className="bg-white rounded-lg max-w-2xl w-full max-h-[90vh] overflow-y-auto">
               <div className="p-6">
                 <div className="flex items-center justify-between mb-6">
-                  <h2 className="text-2xl font-bold text-gray-900">Confirm Order Updates</h2>
+                  <h2 className="text-2xl font-bold text-gray-900">{isNewOrder ? 'Confirm Your Order' : 'Confirm Order Updates'}</h2>
                   <button
                     onClick={() => setShowConfirmModal(false)}
                     className="text-gray-400 hover:text-gray-600"
@@ -1756,10 +1763,21 @@ export default function EditOrderPage({ params }: { params: Promise<{ id: string
                 <div className="bg-blue-50 rounded-lg p-4 mb-6">
                   <h3 className="font-semibold text-blue-900 mb-2">What Happens Next?</h3>
                   <ul className="text-sm text-blue-800 space-y-1">
-                    <li>• Your order changes will be saved</li>
-                    <li>• {orderStatus === 'draft' ? 'You can submit the order when ready' : 'Our team will be notified of the updates'}</li>
-                    <li>• You can continue to make changes as needed</li>
-                    <li>• Track your order progress from the order details page</li>
+                    {isNewOrder ? (
+                      <>
+                        <li>• Your order will be created as a draft</li>
+                        <li>• You can review and submit when ready</li>
+                        <li>• Our team will begin site selection after submission</li>
+                        <li>• You'll receive email updates on progress</li>
+                      </>
+                    ) : (
+                      <>
+                        <li>• Your order changes will be saved</li>
+                        <li>• {orderStatus === 'draft' ? 'You can submit the order when ready' : 'Our team will be notified of the updates'}</li>
+                        <li>• You can continue to make changes as needed</li>
+                        <li>• Track your order progress from the order details page</li>
+                      </>
+                    )}
                   </ul>
                 </div>
                 
@@ -1785,7 +1803,7 @@ export default function EditOrderPage({ params }: { params: Promise<{ id: string
                     ) : (
                       <>
                         <CheckCircle className="h-4 w-4 mr-2" />
-                        Save & {orderStatus === 'draft' ? 'Submit' : 'Update'} Order
+                        {isNewOrder ? 'Create Order' : `Save & ${orderStatus === 'draft' ? 'Submit' : 'Update'} Order`}
                       </>
                     )}
                   </button>
