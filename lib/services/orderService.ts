@@ -15,6 +15,7 @@ import {
 import { bulkAnalysisDomains } from '@/lib/db/bulkAnalysisSchema';
 import { websites } from '@/lib/db/websiteSchema';
 import { workflows } from '@/lib/db/schema';
+import { accounts } from '@/lib/db/accountSchema';
 import { eq, and, gte, lte, or, sql, desc, isNull } from 'drizzle-orm';
 import { v4 as uuidv4 } from 'uuid';
 import crypto from 'crypto';
@@ -436,6 +437,9 @@ export class OrderService {
     const accountOrders = await db.query.orders.findMany({
       where: eq(orders.accountId, accountId),
       orderBy: desc(orders.createdAt),
+      with: {
+        account: true
+      }
     });
 
     // Fetch order groups for each order
@@ -454,6 +458,10 @@ export class OrderService {
         
         return {
           ...order,
+          // Add account fields for backward compatibility
+          accountEmail: order.account?.email || '',
+          accountName: order.account?.contactName || order.account?.companyName || '',
+          accountCompany: order.account?.companyName || null,
           totalLinks: groups.reduce((sum, g) => sum + g.linkCount, 0) || itemCount,
           itemCount: itemCount, // For backwards compatibility
           orderGroups: groups
@@ -471,6 +479,9 @@ export class OrderService {
     const statusOrders = await db.query.orders.findMany({
       where: eq(orders.status, status),
       orderBy: desc(orders.createdAt),
+      with: {
+        account: true
+      }
     });
 
     // Fetch order groups for each order
@@ -489,6 +500,10 @@ export class OrderService {
         
         return {
           ...order,
+          // Add account fields for backward compatibility
+          accountEmail: order.account?.email || '',
+          accountName: order.account?.contactName || order.account?.companyName || '',
+          accountCompany: order.account?.companyName || null,
           totalLinks: groups.reduce((sum, g) => sum + g.linkCount, 0) || itemCount,
           itemCount: itemCount, // For backwards compatibility
           orderGroups: groups
@@ -509,10 +524,12 @@ export class OrderService {
     const clientOrders = await db
       .select({
         order: orders,
-        orderGroup: orderGroups
+        orderGroup: orderGroups,
+        account: accounts
       })
       .from(orders)
       .innerJoin(orderGroups, eq(orderGroups.orderId, orders.id))
+      .leftJoin(accounts, eq(orders.accountId, accounts.id))
       .where(
         and(
           eq(orderGroups.clientId, clientId),
@@ -523,7 +540,7 @@ export class OrderService {
 
     // Transform and fetch additional data
     const ordersWithGroups = await Promise.all(
-      clientOrders.map(async ({ order }) => {
+      clientOrders.map(async ({ order, account }) => {
         const groups = await this.getOrderGroups(order.id);
         
         // Count total items if groups are empty (legacy orders)
@@ -537,6 +554,10 @@ export class OrderService {
         
         return {
           ...order,
+          // Add account fields for backward compatibility
+          accountEmail: account?.email || '',
+          accountName: account?.contactName || account?.companyName || '',
+          accountCompany: account?.companyName || null,
           totalLinks: groups.reduce((sum, g) => sum + g.linkCount, 0) || itemCount,
           itemCount: itemCount, // For backwards compatibility
           orderGroups: groups
@@ -643,7 +664,7 @@ export class OrderService {
    * Get orders with item counts and order groups
    */
   static async getOrdersWithItemCounts(): Promise<any[]> {
-    // First get all orders with item counts
+    // First get all orders with item counts and account info
     const ordersWithCounts = await db
       .select({
         id: orders.id,
@@ -677,10 +698,15 @@ export class OrderService {
         createdAt: orders.createdAt,
         updatedAt: orders.updatedAt,
         itemCount: sql<number>`cast(count(${orderItems.id}) as int)`,
+        // Account fields for backward compatibility
+        accountEmail: accounts.email,
+        accountName: sql<string>`COALESCE(${accounts.contactName}, ${accounts.companyName}, '')`,
+        accountCompany: accounts.companyName,
       })
       .from(orders)
       .leftJoin(orderItems, eq(orders.id, orderItems.orderId))
-      .groupBy(orders.id)
+      .leftJoin(accounts, eq(orders.accountId, accounts.id))
+      .groupBy(orders.id, accounts.id, accounts.email, accounts.contactName, accounts.companyName)
       .orderBy(desc(orders.createdAt));
 
     // Now fetch order groups for each order
