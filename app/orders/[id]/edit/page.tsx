@@ -9,6 +9,7 @@ import { AuthService } from '@/lib/auth';
 import { formatCurrency } from '@/lib/utils/formatting';
 import CreateClientModal from '@/components/ui/CreateClientModal';
 import CreateTargetPageModal from '@/components/ui/CreateTargetPageModal';
+import OrderProgressView from '@/components/orders/OrderProgressView';
 import { 
   Building, Package, Plus, X, ChevronDown, ChevronUp, ChevronRight,
   Search, Target, Link as LinkIcon, Type, CheckCircle,
@@ -149,6 +150,7 @@ export default function EditOrderPage({ params }: { params: Promise<{ id: string
   const [showCreateClientModal, setShowCreateClientModal] = useState(false);
   const [showCreateTargetPageModal, setShowCreateTargetPageModal] = useState(false);
   const [requestingLineItemId, setRequestingLineItemId] = useState<string | null>(null);
+  const [accountDetails, setAccountDetails] = useState<{ email: string; name: string; company?: string } | null>(null);
   
   // Mobile view state
   const [mobileView, setMobileView] = useState<'clients' | 'order' | 'targets'>('order');
@@ -283,6 +285,10 @@ export default function EditOrderPage({ params }: { params: Promise<{ id: string
         setSelectedAccountName(order.accountName || '');
         setSelectedAccountCompany(order.accountCompany || '');
         
+        // Set order status
+        setOrderStatus(order.status || 'draft');
+        setOrderState(order.state || 'configuring');
+        
         // Load order groups into line items
         if (order.orderGroups && order.orderGroups.length > 0) {
           const newLineItems: OrderLineItem[] = [];
@@ -331,6 +337,15 @@ export default function EditOrderPage({ params }: { params: Promise<{ id: string
         }
         
         setLastSaved(new Date(order.updatedAt));
+        
+        // Store account details for the progress view
+        if (order.accountEmail) {
+          setAccountDetails({
+            email: order.accountEmail,
+            name: order.accountName || '',
+            company: order.accountCompany
+          });
+        }
       } else {
         setError('Failed to load draft order');
         router.push('/orders');
@@ -832,6 +847,10 @@ export default function EditOrderPage({ params }: { params: Promise<{ id: string
 
   const [showConfirmModal, setShowConfirmModal] = useState(false);
   const [isSubmitting, setIsSubmitting] = useState(false);
+  
+  // Order status tracking  
+  const [orderStatus, setOrderStatus] = useState('draft');
+  const [orderState, setOrderState] = useState('configuring');
 
   const handleSubmit = async () => {
     // Validate line items
@@ -875,12 +894,26 @@ export default function EditOrderPage({ params }: { params: Promise<{ id: string
         throw new Error(data.error || 'Failed to submit order');
       }
       
-      // Redirect to appropriate page based on user type
-      if (isAccountUser) {
-        router.push(`/account/orders/${draftOrderId}/status`);
-      } else {
-        router.push(`/orders/${draftOrderId}/confirm`);
+      // Update the order state locally
+      const updatedOrder = await response.json();
+      setOrderStatus(updatedOrder.status || 'pending_confirmation');
+      setOrderState(updatedOrder.state || 'pending');
+      
+      // Close modal and transform the page
+      setShowConfirmModal(false);
+      setIsSubmitting(false);
+      
+      // Reload order data to get the latest status
+      if (draftOrderId) {
+        await loadDraftOrder(draftOrderId, clients);
       }
+      
+      // Store account details for the progress view
+      setAccountDetails({
+        email: selectedAccountEmail,
+        name: selectedAccountName,
+        company: selectedAccountCompany
+      });
     } catch (error: any) {
       console.error('Error submitting order:', error);
       setError(error.message || 'Failed to submit order');
@@ -888,6 +921,9 @@ export default function EditOrderPage({ params }: { params: Promise<{ id: string
       setShowConfirmModal(false);
     }
   };
+
+  // Check if order is confirmed (not draft)
+  const isConfirmed = orderStatus !== 'draft';
 
   return (
     <AuthWrapper>
@@ -906,14 +942,34 @@ export default function EditOrderPage({ params }: { params: Promise<{ id: string
                 Back to Orders
               </Link>
               <div>
-                <h1 className="text-2xl font-semibold text-gray-900">Edit Draft Order</h1>
-                <p className="text-sm text-gray-600 mt-1">Update your guest post order with target pages and anchor text</p>
+                <h1 className="text-2xl font-semibold text-gray-900">
+                  {isConfirmed ? `Order #${draftOrderId?.slice(0, 8)}` : 'Edit Draft Order'}
+                </h1>
+                <p className="text-sm text-gray-600 mt-1">
+                  {isConfirmed ? 'Track your guest post order progress' : 'Update your guest post order with target pages and anchor text'}
+                </p>
               </div>
             </div>
           </div>
         </div>
 
 
+        {/* Render OrderProgressView for confirmed orders */}
+        {isConfirmed && accountDetails ? (
+          <OrderProgressView
+            orderId={draftOrderId || ''}
+            orderStatus={orderStatus}
+            orderState={orderState}
+            lineItems={lineItems}
+            clients={clients}
+            subtotal={subtotal}
+            total={total}
+            accountEmail={accountDetails.email}
+            accountName={accountDetails.name}
+            accountCompany={accountDetails.company || ''}
+          />
+        ) : (
+          <>
         {/* Account Selection (Internal Users Only) */}
         {session?.userType === 'internal' && (
           <div className="bg-white border-b border-gray-200 px-6 py-4">
@@ -1738,6 +1794,8 @@ export default function EditOrderPage({ params }: { params: Promise<{ id: string
               </div>
             </div>
           </div>
+        )}
+        </>
         )}
       </div>
     </AuthWrapper>
