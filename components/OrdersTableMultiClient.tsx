@@ -22,12 +22,17 @@ interface OrderGroup {
   };
 }
 
+interface Account {
+  id: string;
+  email: string;
+  contactName?: string;
+  companyName?: string;
+}
+
 interface Order {
   id: string;
   accountId?: string;
-  accountEmail: string;
-  accountName: string;
-  accountCompany?: string;
+  account?: Account;
   state?: string;
   status: string; // For backwards compatibility
   totalLinks?: number;
@@ -236,11 +241,11 @@ export function OrdersTableMultiClient({
 
                     <td className="px-6 py-4 whitespace-nowrap">
                       <div>
-                        <div className="font-medium text-sm">{order.accountName}</div>
-                        {order.accountCompany && (
-                          <div className="text-xs text-gray-500">{order.accountCompany}</div>
+                        <div className="font-medium text-sm">{order.account?.contactName || order.account?.companyName || 'Unknown'}</div>
+                        {order.account?.companyName && order.account?.contactName && (
+                          <div className="text-xs text-gray-500">{order.account.companyName}</div>
                         )}
-                        <div className="text-xs text-gray-500">{order.accountEmail}</div>
+                        <div className="text-xs text-gray-500">{order.account?.email || 'No email'}</div>
                       </div>
                     </td>
 
@@ -348,7 +353,7 @@ export function OrdersTableMultiClient({
                             onClick={async () => {
                               const isAdmin = isInternal && session?.role === 'admin';
                               const confirmMessage = isAdmin && order.status !== 'draft'
-                                ? `⚠️ ADMIN ACTION: Are you sure you want to delete this ${order.status} order?\n\nOrder ID: ${order.id}\nAccount: ${order.accountEmail}\nValue: ${formatCurrency(order.totalRetail)}\n\nThis will permanently delete the order and all related data. This action cannot be undone.`
+                                ? `⚠️ ADMIN ACTION: Are you sure you want to delete this ${order.status} order?\n\nOrder ID: ${order.id}\nAccount: ${order.account?.email || 'Unknown'}\nValue: ${formatCurrency(order.totalRetail)}\n\nThis will permanently delete the order and all related data. This action cannot be undone.`
                                 : 'Are you sure you want to delete this draft order? This action cannot be undone.';
                               
                               if (confirm(confirmMessage)) {

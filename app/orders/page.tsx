@@ -8,13 +8,18 @@ import Header from '@/components/Header';
 import { AuthService } from '@/lib/auth';
 import Link from 'next/link';
 
+interface Account {
+  id: string;
+  email: string;
+  contactName?: string;
+  companyName?: string;
+}
+
 interface Order {
   id: string;
   clientId: string;
   accountId?: string;
-  accountEmail: string;
-  accountName: string;
-  accountCompany?: string;
+  account?: Account;
   status: string;
   state?: string;
   totalLinks?: number;
@@ -115,10 +120,14 @@ function OrdersPageContent() {
   const filteredOrders = orders.filter(order => {
     if (searchTerm) {
       const searchLower = searchTerm.toLowerCase();
+      const accountName = order.account?.contactName || order.account?.companyName || '';
+      const accountEmail = order.account?.email || '';
+      const accountCompany = order.account?.companyName || '';
+      
       return (
-        order.accountName.toLowerCase().includes(searchLower) ||
-        order.accountEmail.toLowerCase().includes(searchLower) ||
-        (order.accountCompany?.toLowerCase().includes(searchLower)) ||
+        accountName.toLowerCase().includes(searchLower) ||
+        accountEmail.toLowerCase().includes(searchLower) ||
+        accountCompany.toLowerCase().includes(searchLower) ||
         order.id.toLowerCase().includes(searchLower)
       );
     }

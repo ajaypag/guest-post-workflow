@@ -3,10 +3,16 @@
 import React, { useState, useEffect } from 'react';
 import { X, Plus, FileText, Loader2 } from 'lucide-react';
 
+interface Account {
+  id: string;
+  email: string;
+  contactName?: string;
+  companyName?: string;
+}
+
 interface Order {
   id: string;
-  accountName: string;
-  accountEmail: string;
+  account?: Account;
   createdAt: string;
   itemCount: number;
   totalRetail: number;
@@ -177,7 +183,7 @@ export default function OrderSelectionModal({
                             <div className="flex items-center gap-2">
                               <FileText className="h-4 w-4 text-blue-600" />
                               <span className="font-medium text-gray-900">
-                                {order.accountName || order.accountEmail}
+                                {order.account?.contactName || order.account?.companyName || order.account?.email || 'Unknown'}
                               </span>
                               <span className="text-xs bg-blue-100 text-blue-700 px-2 py-0.5 rounded">
                                 Associated Order
@@ -262,7 +268,7 @@ export default function OrderSelectionModal({
                           <div className="flex items-center gap-2">
                             <FileText className="h-4 w-4 text-gray-600" />
                             <span className="font-medium text-gray-900">
-                              {order.accountName || order.accountEmail}
+                              {order.account?.contactName || order.account?.companyName || order.account?.email || 'Unknown'}
                             </span>
                           </div>
                           <div className="text-sm text-gray-600 mt-1">

@@ -66,14 +66,19 @@ interface SiteSubmission {
   specialInstructions?: string;
 }
 
+interface Account {
+  id: string;
+  email: string;
+  contactName?: string;
+  companyName?: string;
+}
+
 interface OrderDetail {
   id: string;
   accountId: string;
+  account?: Account;
   status: string;
   state?: string;
-  accountEmail: string;
-  accountName: string;
-  accountCompany?: string;
   subtotal: number;
   totalPrice: number;
   totalWholesale?: number;
@@ -390,7 +395,7 @@ export default function OrderDetailPage() {
                     onClick={async () => {
                       const isAdmin = user?.userType === 'internal' && user?.role === 'admin';
                       const confirmMessage = isAdmin && order.status !== 'draft'
-                        ? `⚠️ ADMIN ACTION: Are you sure you want to delete this ${order.status} order?\n\nOrder ID: ${order.id}\nAccount: ${order.accountEmail}\nValue: ${formatCurrency(order.totalPrice)}\n\nThis will permanently delete the order and all related data. This action cannot be undone.`
+                        ? `⚠️ ADMIN ACTION: Are you sure you want to delete this ${order.status} order?\n\nOrder ID: ${order.id}\nAccount: ${order.account?.email || 'Unknown'}\nValue: ${formatCurrency(order.totalPrice)}\n\nThis will permanently delete the order and all related data. This action cannot be undone.`
                         : 'Are you sure you want to delete this draft order? This action cannot be undone.';
                       
                       if (confirm(confirmMessage)) {
@@ -566,16 +571,16 @@ export default function OrderDetailPage() {
                 <dl className="space-y-3">
                   <div>
                     <dt className="text-sm text-gray-500">Account Name</dt>
-                    <dd className="text-sm font-medium text-gray-900">{order.accountName}</dd>
+                    <dd className="text-sm font-medium text-gray-900">{order.account?.contactName || order.account?.companyName || 'Unknown'}</dd>
                   </div>
                   <div>
                     <dt className="text-sm text-gray-500">Email</dt>
-                    <dd className="text-sm font-medium text-gray-900">{order.accountEmail}</dd>
+                    <dd className="text-sm font-medium text-gray-900">{order.account?.email || 'No email'}</dd>
                   </div>
-                  {order.accountCompany && (
+                  {order.account?.companyName && order.account?.contactName && (
                     <div>
                       <dt className="text-sm text-gray-500">Company</dt>
-                      <dd className="text-sm font-medium text-gray-900">{order.accountCompany}</dd>
+                      <dd className="text-sm font-medium text-gray-900">{order.account.companyName}</dd>
                     </div>
                   )}
                 </dl>

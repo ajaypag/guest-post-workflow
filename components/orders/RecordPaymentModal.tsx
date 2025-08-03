@@ -8,7 +8,11 @@ interface RecordPaymentModalProps {
   order: {
     id: string;
     totalRetail: number;
-    accountName: string;
+    account?: {
+      contactName?: string;
+      companyName?: string;
+      email?: string;
+    };
   };
   isOpen: boolean;
   onClose: () => void;
@@ -93,7 +97,7 @@ export default function RecordPaymentModal({
 
           <div className="mb-4 p-3 bg-blue-50 border border-blue-200 rounded-lg">
             <p className="text-sm text-blue-800">
-              <strong>Client:</strong> {order.accountName}<br />
+              <strong>Client:</strong> {order.account?.contactName || order.account?.companyName || 'Unknown'}<br />
               <strong>Order Total:</strong> ${formatCurrency(order.totalRetail)}
             </p>
           </div>

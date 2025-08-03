@@ -458,10 +458,7 @@ export class OrderService {
         
         return {
           ...order,
-          // Add account fields for backward compatibility
-          accountEmail: order.account?.email || '',
-          accountName: order.account?.contactName || order.account?.companyName || '',
-          accountCompany: order.account?.companyName || null,
+          account: order.account,
           totalLinks: groups.reduce((sum, g) => sum + g.linkCount, 0) || itemCount,
           itemCount: itemCount, // For backwards compatibility
           orderGroups: groups
@@ -500,10 +497,7 @@ export class OrderService {
         
         return {
           ...order,
-          // Add account fields for backward compatibility
-          accountEmail: order.account?.email || '',
-          accountName: order.account?.contactName || order.account?.companyName || '',
-          accountCompany: order.account?.companyName || null,
+          account: order.account,
           totalLinks: groups.reduce((sum, g) => sum + g.linkCount, 0) || itemCount,
           itemCount: itemCount, // For backwards compatibility
           orderGroups: groups
@@ -554,10 +548,7 @@ export class OrderService {
         
         return {
           ...order,
-          // Add account fields for backward compatibility
-          accountEmail: account?.email || '',
-          accountName: account?.contactName || account?.companyName || '',
-          accountCompany: account?.companyName || null,
+          account: account,
           totalLinks: groups.reduce((sum, g) => sum + g.linkCount, 0) || itemCount,
           itemCount: itemCount, // For backwards compatibility
           orderGroups: groups
@@ -698,10 +689,8 @@ export class OrderService {
         createdAt: orders.createdAt,
         updatedAt: orders.updatedAt,
         itemCount: sql<number>`cast(count(${orderItems.id}) as int)`,
-        // Account fields for backward compatibility
-        accountEmail: accounts.email,
-        accountName: sql<string>`COALESCE(${accounts.contactName}, ${accounts.companyName}, '')`,
-        accountCompany: accounts.companyName,
+        // Account data
+        account: accounts,
       })
       .from(orders)
       .leftJoin(orderItems, eq(orders.id, orderItems.orderId))

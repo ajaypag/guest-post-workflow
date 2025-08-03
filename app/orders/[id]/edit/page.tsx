@@ -282,9 +282,9 @@ export default function EditOrderPage({ params }: { params: Promise<{ id: string
         if (order.accountId && session.userType === 'internal') {
           setSelectedAccountId(order.accountId);
         }
-        setSelectedAccountEmail(order.accountEmail || '');
-        setSelectedAccountName(order.accountName || '');
-        setSelectedAccountCompany(order.accountCompany || '');
+        setSelectedAccountEmail(order.account?.email || '');
+        setSelectedAccountName(order.account?.contactName || order.account?.companyName || '');
+        setSelectedAccountCompany(order.account?.companyName || '');
         
         // Set order status
         setOrderStatus(order.status || 'draft');
@@ -346,11 +346,11 @@ export default function EditOrderPage({ params }: { params: Promise<{ id: string
         setLastSaved(new Date(order.updatedAt));
         
         // Store account details for the progress view
-        if (order.accountEmail) {
+        if (order.account?.email) {
           setAccountDetails({
-            email: order.accountEmail,
-            name: order.accountName || '',
-            company: order.accountCompany
+            email: order.account.email,
+            name: order.account.contactName || order.account.companyName || '',
+            company: order.account.companyName
           });
         }
       } else {
