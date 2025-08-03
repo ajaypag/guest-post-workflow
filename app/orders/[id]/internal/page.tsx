@@ -5,7 +5,7 @@ import { useParams, useRouter } from 'next/navigation';
 import Link from 'next/link';
 import AuthWrapper from '@/components/AuthWrapper';
 import Header from '@/components/Header';
-import { AuthService } from '@/lib/auth';
+import { AuthService, type AuthSession } from '@/lib/auth';
 import { formatCurrency } from '@/lib/utils/formatting';
 import { 
   ArrowLeft, Loader2, CheckCircle, Clock, Users, FileText, 
@@ -82,27 +82,20 @@ export default function InternalOrderManagementPage() {
   const [order, setOrder] = useState<OrderDetail | null>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
-  const [user, setUser] = useState<any>(null);
-  const [actionLoading, setActionLoading] = useState<string | null>(null);
+  const [session, setSession] = useState<AuthSession | null>(null);
+  const [message, setMessage] = useState<{ type: 'info' | 'success' | 'error' | 'warning'; text: string } | null>(null);
+  const [actionLoading, setActionLoading] = useState<Record<string, boolean>>({});
 
   useEffect(() => {
     const checkAuth = async () => {
-      // Check session for userType first
-      const session = AuthService.getSession();
-      if (!session || session.userType !== 'internal') {
+      // Check session for userType
+      const currentSession = AuthService.getSession();
+      if (!currentSession || currentSession.userType !== 'internal') {
         router.push('/orders');
         return;
       }
       
-      // Get the full user object
-      const currentUser = await AuthService.getCurrentUser();
-      if (!currentUser) {
-        router.push('/orders');
-        return;
-      }
-      
-      // Add userType from session to user object for consistency
-      setUser({ ...currentUser, userType: session.userType });
+      setSession(currentSession);
       loadOrder();
     };
     
@@ -135,7 +128,7 @@ export default function InternalOrderManagementPage() {
   const handleConfirmOrder = async () => {
     if (!order) return;
     
-    setActionLoading('confirm');
+    setActionLoading(prev => ({ ...prev, confirm: true }));
     try {
       const response = await fetch(`/api/orders/${orderId}/confirm`, {
         method: 'POST',
@@ -148,18 +141,24 @@ export default function InternalOrderManagementPage() {
       }
       
       const data = await response.json();
-      alert(`Order confirmed successfully! Created ${data.projectsCreated} bulk analysis projects.`);
+      setMessage({
+        type: 'success',
+        text: `Order confirmed successfully! Created ${data.projectsCreated} bulk analysis projects.`
+      });
       await loadOrder();
     } catch (err) {
       console.error('Error confirming order:', err);
-      alert(err instanceof Error ? err.message : 'Failed to confirm order');
+      setMessage({
+        type: 'error',
+        text: err instanceof Error ? err.message : 'Failed to confirm order'
+      });
     } finally {
-      setActionLoading(null);
+      setActionLoading(prev => ({ ...prev, confirm: false }));
     }
   };
 
   const handleMarkSitesReady = async () => {
-    setActionLoading('sites_ready');
+    setActionLoading(prev => ({ ...prev, sites_ready: true }));
     try {
       const response = await fetch(`/api/orders/${orderId}/update-state`, {
         method: 'POST',
@@ -171,23 +170,32 @@ export default function InternalOrderManagementPage() {
         throw new Error('Failed to update order state');
       }
       
-      alert('Sites marked as ready for client review');
+      setMessage({
+        type: 'success',
+        text: 'Sites marked as ready for client review'
+      });
       await loadOrder();
     } catch (err) {
       console.error('Error updating order state:', err);
-      alert('Failed to update order state');
+      setMessage({
+        type: 'error',
+        text: 'Failed to update order state'
+      });
     } finally {
-      setActionLoading(null);
+      setActionLoading(prev => ({ ...prev, sites_ready: false }));
     }
   };
 
   const handleGenerateWorkflows = async () => {
     if (!order || order.status !== 'paid') {
-      alert('Order must be paid before generating workflows');
+      setMessage({
+        type: 'warning',
+        text: 'Order must be paid before generating workflows'
+      });
       return;
     }
     
-    setActionLoading('generate_workflows');
+    setActionLoading(prev => ({ ...prev, generate_workflows: true }));
     try {
       const response = await fetch(`/api/orders/${orderId}/generate-workflows`, {
         method: 'POST',
@@ -200,13 +208,19 @@ export default function InternalOrderManagementPage() {
       }
       
       const data = await response.json();
-      alert(`Successfully generated ${data.workflowsCreated} workflows!`);
+      setMessage({
+        type: 'success',
+        text: `Successfully generated ${data.workflowsCreated} workflows!`
+      });
       await loadOrder();
     } catch (err) {
       console.error('Error generating workflows:', err);
-      alert(err instanceof Error ? err.message : 'Failed to generate workflows');
+      setMessage({
+        type: 'error',
+        text: err instanceof Error ? err.message : 'Failed to generate workflows'
+      });
     } finally {
-      setActionLoading(null);
+      setActionLoading(prev => ({ ...prev, generate_workflows: false }));
     }
   };
 
@@ -308,6 +322,22 @@ export default function InternalOrderManagementPage() {
             </div>
           </div>
 
+          {/* Message */}
+          {message && (
+            <div className={`mb-6 p-4 rounded-lg flex items-start gap-3 ${
+              message.type === 'error' ? 'bg-red-50 text-red-800' :
+              message.type === 'warning' ? 'bg-yellow-50 text-yellow-800' :
+              message.type === 'success' ? 'bg-green-50 text-green-800' :
+              'bg-blue-50 text-blue-800'
+            }`}>
+              {message.type === 'error' ? <AlertCircle className="h-5 w-5 mt-0.5" /> :
+               message.type === 'warning' ? <AlertCircle className="h-5 w-5 mt-0.5" /> :
+               message.type === 'success' ? <CheckCircle className="h-5 w-5 mt-0.5" /> :
+               <AlertCircle className="h-5 w-5 mt-0.5" />}
+              <div className="flex-1">{message.text}</div>
+            </div>
+          )}
+
           {/* Main Grid */}
           <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
             {/* Left Column - Order Info */}
@@ -383,10 +413,10 @@ export default function InternalOrderManagementPage() {
                       </p>
                       <button
                         onClick={handleConfirmOrder}
-                        disabled={actionLoading === 'confirm'}
+                        disabled={actionLoading.confirm}
                         className="w-full px-4 py-2 bg-blue-600 text-white rounded-md hover:bg-blue-700 disabled:opacity-50"
                       >
-                        {actionLoading === 'confirm' ? (
+                        {actionLoading.confirm ? (
                           <span className="flex items-center justify-center gap-2">
                             <Loader2 className="h-4 w-4 animate-spin" />
                             Confirming...
@@ -437,10 +467,10 @@ export default function InternalOrderManagementPage() {
                       </p>
                       <button
                         onClick={handleMarkSitesReady}
-                        disabled={actionLoading === 'sites_ready'}
+                        disabled={actionLoading.sites_ready}
                         className="w-full px-4 py-2 bg-green-600 text-white rounded-md hover:bg-green-700 disabled:opacity-50"
                       >
-                        {actionLoading === 'sites_ready' ? (
+                        {actionLoading.sites_ready ? (
                           <span className="flex items-center justify-center gap-2">
                             <Loader2 className="h-4 w-4 animate-spin" />
                             Updating...
@@ -464,10 +494,10 @@ export default function InternalOrderManagementPage() {
                       </p>
                       <button
                         onClick={handleGenerateWorkflows}
-                        disabled={actionLoading === 'generate_workflows'}
+                        disabled={actionLoading.generate_workflows}
                         className="w-full px-4 py-2 bg-purple-600 text-white rounded-md hover:bg-purple-700 disabled:opacity-50"
                       >
-                        {actionLoading === 'generate_workflows' ? (
+                        {actionLoading.generate_workflows ? (
                           <span className="flex items-center justify-center gap-2">
                             <Loader2 className="h-4 w-4 animate-spin" />
                             Generating...
