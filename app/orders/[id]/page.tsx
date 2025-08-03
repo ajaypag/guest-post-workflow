@@ -27,6 +27,7 @@ interface LineItem {
   draftUrl?: string;
   publishedUrl?: string;
   bulkAnalysisId?: string;
+  workflowId?: string;
 }
 
 interface OrderGroup {
@@ -59,9 +60,21 @@ interface OrderDetail {
   accountCompany?: string;
   subtotal: number;
   totalPrice: number;
+  totalWholesale?: number;
+  profitMargin?: number;
+  discountAmount?: number;
+  discountPercent?: string;
+  includesClientReview?: boolean;
+  clientReviewFee?: number;
+  rushDelivery?: boolean;
+  rushFee?: number;
+  internalNotes?: string;
+  accountNotes?: string;
   createdAt: string;
   updatedAt: string;
   approvedAt?: string;
+  paidAt?: string;
+  completedAt?: string;
   orderGroups?: OrderGroup[];
 }
 
@@ -303,17 +316,41 @@ export default function OrderDetailPage() {
                 <div className="mt-6 pt-6 border-t">
                   <h3 className="text-sm font-medium text-gray-900 mb-3">Quick Actions</h3>
                   <div className="space-y-2">
+                    {order.state === 'analyzing' && order.orderGroups?.some(g => g.bulkAnalysisProjectId) && (
+                      <div className="space-y-2">
+                        {order.orderGroups.filter(g => g.bulkAnalysisProjectId).map(group => (
+                          <Link
+                            key={group.id}
+                            href={`/clients/${group.clientId}/bulk-analysis/projects/${group.bulkAnalysisProjectId}`}
+                            className="block w-full px-3 py-2 bg-blue-600 text-white text-sm rounded-md hover:bg-blue-700 text-center"
+                          >
+                            Analyze {group.client.name}
+                          </Link>
+                        ))}
+                      </div>
+                    )}
                     {order.state === 'site_review' && (
-                      <button className="w-full px-3 py-2 bg-blue-600 text-white text-sm rounded-md hover:bg-blue-700 flex items-center justify-center">
+                      <Link
+                        href={`/account/orders/${order.id}/sites`}
+                        className="block w-full px-3 py-2 bg-purple-600 text-white text-sm rounded-md hover:bg-purple-700 flex items-center justify-center"
+                      >
                         <Users className="h-4 w-4 mr-2" />
                         Review Sites
-                      </button>
+                      </Link>
                     )}
-                    {order.state === 'in_progress' && (
-                      <button className="w-full px-3 py-2 bg-green-600 text-white text-sm rounded-md hover:bg-green-700 flex items-center justify-center">
-                        <FileText className="h-4 w-4 mr-2" />
-                        View Drafts
-                      </button>
+                    {order.status === 'completed' && lineItems.some(item => item.workflowId) && (
+                      <div className="space-y-2">
+                        <p className="text-xs text-gray-500 mb-1">View Articles:</p>
+                        {lineItems.filter(item => item.workflowId).map((item, idx) => (
+                          <Link
+                            key={idx}
+                            href={`/workflows/${item.workflowId}`}
+                            className="block w-full px-3 py-2 bg-green-600 text-white text-sm rounded-md hover:bg-green-700 text-center truncate"
+                          >
+                            {item.clientName} - {item.targetPageUrl || 'Article'}
+                          </Link>
+                        ))}
+                      </div>
                     )}
                   </div>
                 </div>
@@ -452,9 +489,19 @@ export default function OrderDetailPage() {
                                 </td>
                                 <td className="px-6 py-4 text-center">
                                   {item.bulkAnalysisId ? (
-                                    <button className="inline-flex items-center text-sm text-blue-600 hover:text-blue-800">
+                                    <Link
+                                      href={`/clients/${item.clientId}/bulk-analysis/projects/${item.bulkAnalysisId}`}
+                                      className="inline-flex items-center text-sm text-blue-600 hover:text-blue-800"
+                                    >
                                       <Eye className="h-3 w-3" />
-                                    </button>
+                                    </Link>
+                                  ) : item.workflowId ? (
+                                    <Link
+                                      href={`/workflows/${item.workflowId}`}
+                                      className="inline-flex items-center text-sm text-blue-600 hover:text-blue-800"
+                                    >
+                                      <FileText className="h-3 w-3" />
+                                    </Link>
                                   ) : (
                                     <span className="text-sm text-gray-400">-</span>
                                   )}
@@ -535,6 +582,103 @@ export default function OrderDetailPage() {
                   </div>
                 </div>
               </div>
+              
+              {/* Notes Section - Full Width */}
+              {(order.internalNotes || order.accountNotes) && (
+                <div className="lg:col-span-2 mt-6">
+                  <div className="bg-white rounded-lg border border-gray-200 shadow-sm p-6">
+                    <h3 className="text-lg font-semibold mb-4 flex items-center">
+                      <FileText className="h-5 w-5 mr-2 text-gray-400" />
+                      Notes
+                    </h3>
+                    <div className="space-y-4">
+                      {user?.userType === 'internal' && order.internalNotes && (
+                        <div>
+                          <h4 className="text-sm font-medium text-gray-700 mb-1">Internal Notes</h4>
+                          <p className="text-sm text-gray-600 whitespace-pre-wrap bg-gray-50 p-3 rounded">{order.internalNotes}</p>
+                        </div>
+                      )}
+                      {order.accountNotes && (
+                        <div>
+                          <h4 className="text-sm font-medium text-gray-700 mb-1">Account Notes</h4>
+                          <p className="text-sm text-gray-600 whitespace-pre-wrap bg-blue-50 p-3 rounded">{order.accountNotes}</p>
+                        </div>
+                      )}
+                    </div>
+                  </div>
+                </div>
+              )}
+              
+              {/* Pricing Details for Internal Users */}
+              {user?.userType === 'internal' && (
+                <div className="lg:col-span-2 mt-6">
+                  <div className="bg-white rounded-lg border border-gray-200 shadow-sm p-6">
+                    <h3 className="text-lg font-semibold mb-4 flex items-center">
+                      <DollarSign className="h-5 w-5 mr-2 text-gray-400" />
+                      Pricing Details
+                    </h3>
+                    <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                      <div>
+                        <h4 className="text-sm font-medium text-gray-700 mb-3">Customer Pricing</h4>
+                        <dl className="space-y-2">
+                          <div className="flex justify-between text-sm">
+                            <dt className="text-gray-600">Subtotal</dt>
+                            <dd className="font-medium">{formatCurrency(order.subtotal || order.totalPrice)}</dd>
+                          </div>
+                          {order.discountAmount && order.discountAmount > 0 && (
+                            <div className="flex justify-between text-sm">
+                              <dt className="text-gray-600">Discount ({order.discountPercent || '0'}%)</dt>
+                              <dd className="font-medium text-green-600">-{formatCurrency(order.discountAmount)}</dd>
+                            </div>
+                          )}
+                          {order.includesClientReview && (
+                            <div className="flex justify-between text-sm">
+                              <dt className="text-gray-600">Client Review</dt>
+                              <dd className="font-medium">{formatCurrency(order.clientReviewFee || 0)}</dd>
+                            </div>
+                          )}
+                          {order.rushDelivery && (
+                            <div className="flex justify-between text-sm">
+                              <dt className="text-gray-600">Rush Delivery</dt>
+                              <dd className="font-medium">{formatCurrency(order.rushFee || 0)}</dd>
+                            </div>
+                          )}
+                          <div className="flex justify-between text-sm pt-2 border-t">
+                            <dt className="font-medium">Total Revenue</dt>
+                            <dd className="font-bold">{formatCurrency(order.totalPrice)}</dd>
+                          </div>
+                        </dl>
+                      </div>
+                      <div>
+                        <h4 className="text-sm font-medium text-gray-700 mb-3">Profit Analysis</h4>
+                        <dl className="space-y-2">
+                          <div className="flex justify-between text-sm">
+                            <dt className="text-gray-600">Wholesale Cost</dt>
+                            <dd className="font-medium">{formatCurrency(order.totalWholesale || 0)}</dd>
+                          </div>
+                          <div className="flex justify-between text-sm">
+                            <dt className="text-gray-600">Revenue</dt>
+                            <dd className="font-medium">{formatCurrency(order.totalPrice)}</dd>
+                          </div>
+                          <div className="flex justify-between text-sm pt-2 border-t">
+                            <dt className="font-medium">Gross Profit</dt>
+                            <dd className="font-bold text-green-600">{formatCurrency(order.profitMargin || (order.totalPrice - (order.totalWholesale || 0)))}</dd>
+                          </div>
+                          <div className="flex justify-between text-sm">
+                            <dt className="text-gray-600">Margin</dt>
+                            <dd className="font-medium">
+                              {order.totalWholesale ? 
+                                `${Math.round(((order.totalPrice - order.totalWholesale) / order.totalPrice) * 100)}%` : 
+                                'N/A'
+                              }
+                            </dd>
+                          </div>
+                        </dl>
+                      </div>
+                    </div>
+                  </div>
+                </div>
+              )}
             </div>
           </div>
         </div>

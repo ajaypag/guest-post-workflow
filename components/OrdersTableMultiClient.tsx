@@ -331,7 +331,7 @@ export function OrdersTableMultiClient({
                             <Trash2 className="h-4 w-4" />
                           </button>
                         )}
-                        <Link href={`/orders/${order.id}/detail`}>
+                        <Link href={`/orders/${order.id}`}>
                           <button className="text-blue-600 hover:text-blue-900 text-sm font-medium flex items-center gap-1">
                             <Eye className="h-4 w-4" />
                             View
