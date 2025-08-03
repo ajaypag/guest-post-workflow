@@ -482,6 +482,13 @@ export default function EditOrderPage({ params }: { params: Promise<{ id: string
         return;
       }
       
+      console.log('[AUTO_SAVE] Preparing to save order:', {
+        selectedClientsSize: selectedClients.size,
+        lineItemsCount: lineItems.length,
+        draftOrderId,
+        sessionType: session.userType
+      });
+      
       const orderData = {
         // Account info
         ...accountInfo,
@@ -492,33 +499,38 @@ export default function EditOrderPage({ params }: { params: Promise<{ id: string
         totalWholesale: Math.round(total * 0.6), // Estimate wholesale cost
         profitMargin: Math.round(total * 0.4),
         
-        // Groups for the new order structure
-        groups: Array.from(selectedClients.entries())
+        // Groups for the new order structure - API expects 'orderGroups'
+        orderGroups: Array.from(selectedClients.entries())
           .filter(([_, data]) => data.selected && data.linkCount > 0)
           .map(([clientId, data]) => {
             const client = clients.find(c => c.id === clientId);
             const clientItems = lineItems.filter(item => item.clientId === clientId);
-            const groupSubtotal = clientItems.reduce((sum, item) => sum + item.price, 0);
+            
+            // Extract target pages and anchor texts from line items
+            const targetPages = clientItems
+              .filter(item => item.targetPageUrl)
+              .map(item => ({
+                url: item.targetPageUrl,
+                pageId: item.targetPageId
+              }));
+            
+            const anchorTexts = clientItems
+              .filter(item => item.anchorText)
+              .map(item => item.anchorText);
             
             return {
               clientId,
               clientName: client?.name || '',
               linkCount: data.linkCount,
+              targetPages: targetPages,
+              anchorTexts: anchorTexts,
               packageType: clientItems[0]?.selectedPackage || 'better',
               packagePrice: packagePricing[clientItems[0]?.selectedPackage || 'better'].price,
-              subtotal: groupSubtotal,
-              selections: clientItems.map(item => ({
-                domainId: '', // Will be filled when domain selection is implemented
-                targetPageId: item.targetPageId || '',
-                domain: '', // Will be filled when domain selection is implemented
-                domainRating: 0,
-                traffic: 0,
-                retailPrice: item.price,
-                wholesalePrice: Math.round(item.price * 0.6),
-              }))
             };
           })
       };
+      
+      console.log('[AUTO_SAVE] Order data being sent:', orderData);
       
       if (draftOrderId) {
         // Update existing order
@@ -530,9 +542,12 @@ export default function EditOrderPage({ params }: { params: Promise<{ id: string
         });
         
         if (response.ok) {
+          console.log('[AUTO_SAVE] Successfully saved order');
           setSaveStatus('saved');
           setLastSaved(new Date());
         } else {
+          const errorData = await response.json();
+          console.error('[AUTO_SAVE] Failed to save order:', errorData);
           setSaveStatus('error');
         }
       }
@@ -563,9 +578,10 @@ export default function EditOrderPage({ params }: { params: Promise<{ id: string
   // Trigger auto-save when order changes
   useEffect(() => {
     if (lineItems.length > 0) {
+      console.log('[AUTO_SAVE] Triggering auto-save due to changes');
       debouncedSave();
     }
-  }, [lineItems.length, debouncedSave]); // Only depend on lineItems.length to avoid deep comparison
+  }, [lineItems, selectedClients, debouncedSave]); // Trigger on any line items or client selection changes
   
   // Draft loading is handled by loadDrafts() in the main useEffect above
 
