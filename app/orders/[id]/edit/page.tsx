@@ -482,6 +482,7 @@ export default function EditOrderPage({ params }: { params: Promise<{ id: string
       if (session.userType === 'account') {
         // Account users - use their own account info
         accountInfo = {
+          accountId: session.userId, // Include accountId for account users
           accountEmail: session.email || '',
           accountName: session.name || '',
           accountCompany: selectedAccountCompany || '',
