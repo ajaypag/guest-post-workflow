@@ -42,16 +42,44 @@ export async function GET(
       .leftJoin(clients, eq(orderGroups.clientId, clients.id))
       .where(eq(orderGroups.orderId, id));
     
+    // Fetch site selections for each group
+    const groupsWithSelections = await Promise.all(
+      orderGroupsData.map(async ({ orderGroup, client }) => {
+        // Count site selections
+        const siteSelections = await db.query.orderSiteSelections.findMany({
+          where: eq(orderSiteSelections.orderGroupId, orderGroup.id)
+        });
+        
+        return {
+          id: orderGroup.id,
+          orderId: orderGroup.orderId,
+          clientId: orderGroup.clientId,
+          linkCount: orderGroup.linkCount,
+          targetPages: orderGroup.targetPages,
+          anchorTexts: orderGroup.anchorTexts,
+          requirementOverrides: orderGroup.requirementOverrides,
+          groupStatus: orderGroup.groupStatus,
+          bulkAnalysisProjectId: orderGroup.bulkAnalysisProjectId,
+          createdAt: orderGroup.createdAt,
+          updatedAt: orderGroup.updatedAt,
+          client,
+          // Extract packageType and packagePrice from requirementOverrides
+          packageType: orderGroup.requirementOverrides?.packageType || 'better',
+          packagePrice: orderGroup.requirementOverrides?.packagePrice || 0,
+          // Add site selection counts
+          siteSelections: {
+            approved: siteSelections.filter(s => s.status === 'approved').length,
+            pending: siteSelections.filter(s => s.status === 'suggested').length,
+            total: siteSelections.length
+          }
+        };
+      })
+    );
+    
     // Transform the data
     const orderWithGroups = {
       ...order,
-      orderGroups: orderGroupsData.map(({ orderGroup, client }) => ({
-        ...orderGroup,
-        client,
-        // Extract packageType and packagePrice from requirementOverrides
-        packageType: orderGroup.requirementOverrides?.packageType || 'better',
-        packagePrice: orderGroup.requirementOverrides?.packagePrice || 0
-      }))
+      orderGroups: groupsWithSelections
     };
 
     // Check permissions
@@ -184,16 +212,44 @@ export async function PUT(
       .leftJoin(clients, eq(orderGroups.clientId, clients.id))
       .where(eq(orderGroups.orderId, id));
     
+    // Fetch site selections for each group
+    const groupsWithSelections = await Promise.all(
+      orderGroupsData.map(async ({ orderGroup, client }) => {
+        // Count site selections
+        const siteSelections = await db.query.orderSiteSelections.findMany({
+          where: eq(orderSiteSelections.orderGroupId, orderGroup.id)
+        });
+        
+        return {
+          id: orderGroup.id,
+          orderId: orderGroup.orderId,
+          clientId: orderGroup.clientId,
+          linkCount: orderGroup.linkCount,
+          targetPages: orderGroup.targetPages,
+          anchorTexts: orderGroup.anchorTexts,
+          requirementOverrides: orderGroup.requirementOverrides,
+          groupStatus: orderGroup.groupStatus,
+          bulkAnalysisProjectId: orderGroup.bulkAnalysisProjectId,
+          createdAt: orderGroup.createdAt,
+          updatedAt: orderGroup.updatedAt,
+          client,
+          // Extract packageType and packagePrice from requirementOverrides
+          packageType: orderGroup.requirementOverrides?.packageType || 'better',
+          packagePrice: orderGroup.requirementOverrides?.packagePrice || 0,
+          // Add site selection counts
+          siteSelections: {
+            approved: siteSelections.filter(s => s.status === 'approved').length,
+            pending: siteSelections.filter(s => s.status === 'suggested').length,
+            total: siteSelections.length
+          }
+        };
+      })
+    );
+    
     // Transform the data
     const orderWithGroups = {
       ...updatedOrder,
-      orderGroups: orderGroupsData.map(({ orderGroup, client }) => ({
-        ...orderGroup,
-        client,
-        // Extract packageType and packagePrice from requirementOverrides
-        packageType: orderGroup.requirementOverrides?.packageType || 'better',
-        packagePrice: orderGroup.requirementOverrides?.packagePrice || 0
-      }))
+      orderGroups: groupsWithSelections
     };
 
     return NextResponse.json(orderWithGroups);

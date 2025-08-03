@@ -391,6 +391,14 @@ export function OrdersTableMultiClient({
                             View
                           </button>
                         </Link>
+                        {isInternal && (
+                          <Link href={`/orders/${order.id}/internal`}>
+                            <button className="text-purple-600 hover:text-purple-900 text-sm font-medium flex items-center gap-1">
+                              <Activity className="h-4 w-4" />
+                              Manage
+                            </button>
+                          </Link>
+                        )}
                       </div>
                     </td>
                   </tr>
