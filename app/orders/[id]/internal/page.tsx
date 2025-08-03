@@ -110,6 +110,13 @@ export default function InternalOrderManagementPage() {
       }
       
       const data = await response.json();
+      console.log('Order data received:', data);
+      console.log('Order groups:', data.orderGroups);
+      if (data.orderGroups) {
+        data.orderGroups.forEach((group: any) => {
+          console.log(`Group ${group.id}: bulkAnalysisProjectId = ${group.bulkAnalysisProjectId}`);
+        });
+      }
       setOrder(data);
     } catch (err) {
       console.error('Error loading order:', err);
@@ -402,7 +409,7 @@ export default function InternalOrderManagementPage() {
                 
                 <div className="space-y-4">
                   {/* Order Confirmation */}
-                  {order.status === 'draft' && (
+                  {order.status === 'pending_confirmation' && (
                     <div className="p-4 bg-yellow-50 rounded-lg">
                       <h3 className="font-medium text-gray-900 mb-2 flex items-center gap-2">
                         <ClipboardCheck className="h-5 w-5 text-yellow-600" />
@@ -429,29 +436,35 @@ export default function InternalOrderManagementPage() {
                   )}
                   
                   {/* Bulk Analysis Projects */}
-                  {order.orderGroups && order.orderGroups.some(g => g.bulkAnalysisProjectId) && (
+                  {order.orderGroups && order.orderGroups.length > 0 && (
                     <div className="p-4 bg-blue-50 rounded-lg">
                       <h3 className="font-medium text-gray-900 mb-2 flex items-center gap-2">
                         <Search className="h-5 w-5 text-blue-600" />
                         Bulk Analysis Projects
                       </h3>
-                      <div className="space-y-2">
-                        {order.orderGroups.filter(g => g.bulkAnalysisProjectId).map(group => (
-                          <Link
-                            key={group.id}
-                            href={`/clients/${group.clientId}/bulk-analysis/projects/${group.bulkAnalysisProjectId}`}
-                            className="block w-full px-3 py-2 bg-white border border-blue-200 text-blue-700 text-sm rounded-md hover:bg-blue-50"
-                          >
-                            <div className="flex items-center justify-between">
-                              <span>{group.client.name}</span>
-                              <ExternalLink className="h-4 w-4" />
-                            </div>
-                            <span className="text-xs text-gray-600">
-                              {group.linkCount} links • {group.siteSelections?.approved || 0} approved
-                            </span>
-                          </Link>
-                        ))}
-                      </div>
+                      {order.orderGroups.some(g => g.bulkAnalysisProjectId) ? (
+                        <div className="space-y-2">
+                          {order.orderGroups.filter(g => g.bulkAnalysisProjectId).map(group => (
+                            <Link
+                              key={group.id}
+                              href={`/clients/${group.clientId}/bulk-analysis/projects/${group.bulkAnalysisProjectId}`}
+                              className="block w-full px-3 py-2 bg-white border border-blue-200 text-blue-700 text-sm rounded-md hover:bg-blue-50"
+                            >
+                              <div className="flex items-center justify-between">
+                                <span>{group.client.name}</span>
+                                <ExternalLink className="h-4 w-4" />
+                              </div>
+                              <span className="text-xs text-gray-600">
+                                {group.linkCount} links • {group.siteSelections?.approved || 0} approved
+                              </span>
+                            </Link>
+                          ))}
+                        </div>
+                      ) : (
+                        <p className="text-sm text-gray-600">
+                          No bulk analysis projects created yet. Confirm the order to create projects.
+                        </p>
+                      )}
                     </div>
                   )}
                   
@@ -570,6 +583,19 @@ export default function InternalOrderManagementPage() {
                   </div>
                 ) : (
                   <p className="text-gray-500 text-sm">No client groups in this order</p>
+                )}
+                
+                {/* Diagnostic Link for Debugging */}
+                {session?.role === 'admin' && (
+                  <div className="mt-4 pt-4 border-t border-gray-200">
+                    <Link 
+                      href={`/admin/order-project-diagnostics?orderId=${order.id}`}
+                      className="text-sm text-blue-600 hover:text-blue-800 flex items-center gap-1"
+                    >
+                      <Database className="h-4 w-4" />
+                      Run Order Diagnostics
+                    </Link>
+                  </div>
                 )}
               </div>
             </div>
