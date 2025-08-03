@@ -99,21 +99,9 @@ export async function POST(request: NextRequest) {
     }
 
     // Link any existing orders by email
-    const existingOrders = await db.query.orders.findMany({
-      where: and(
-        eq(orders.accountEmail, email.toLowerCase()),
-        isNull(orders.accountId)
-      ),
-    });
-
-    for (const existingOrder of existingOrders) {
-      await db.update(orders)
-        .set({
-          accountId: accountId,
-          updatedAt: now,
-        })
-        .where(eq(orders.id, existingOrder.id));
-    }
+    // NOTE: This functionality has been removed as we no longer store email in the orders table
+    // Orders must be explicitly linked through the share token flow or by admin assignment
+    const existingOrders: any[] = [];
 
     // Send welcome email
     try {

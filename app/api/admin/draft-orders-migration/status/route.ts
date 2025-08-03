@@ -46,8 +46,6 @@ export async function GET(request: NextRequest) {
       draftOrders: accountDraftOrders.map(order => ({
         id: order.id,
         accountId: order.accountId,
-        accountEmail: order.accountEmail,
-        accountName: order.accountName,
         createdBy: order.createdBy,
         status: order.status,
         updatedAt: order.updatedAt

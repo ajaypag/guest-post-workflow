@@ -96,17 +96,11 @@ export async function POST(request: NextRequest) {
     if (session.userType === 'internal') {
       // Internal users creating drafts - they need to specify account info
       orderValues.createdBy = session.userId;
-      orderValues.accountEmail = orderData.accountEmail || '';
-      orderValues.accountName = orderData.accountName || '';
-      orderValues.accountCompany = orderData.accountCompany || null;
       orderValues.accountId = orderData.accountId || null;
     } else if (session.userType === 'account') {
       // Account users creating their own orders
       orderValues.createdBy = SYSTEM_USER_ID; // Use system user for FK constraint
       orderValues.accountId = session.userId; // session.userId is accountId for account users
-      orderValues.accountEmail = session.email || '';
-      orderValues.accountName = session.name || '';
-      orderValues.accountCompany = orderData.accountCompany || null;
     }
     
     // Create new draft order in a transaction

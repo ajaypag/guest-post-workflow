@@ -131,9 +131,8 @@ export async function PUT(
     await db
       .update(orders)
       .set({
-        accountEmail: orderData.accountEmail,
-        accountName: orderData.accountName,
-        accountCompany: orderData.accountCompany,
+        // Account ID might be updated if internal user is updating
+        ...(session.userType === 'internal' && orderData.accountId ? { accountId: orderData.accountId } : {}),
         
         // Pricing
         subtotalRetail: orderData.subtotalRetail || 0,

@@ -50,7 +50,7 @@ export async function POST(request: NextRequest) {
           .where(eq(orders.id, order.id));
         
         migratedCount++;
-        console.log(`Migrated order ${order.id} for account ${order.accountEmail}`);
+        console.log(`Migrated order ${order.id} for account ${order.accountId}`);
       } catch (error: any) {
         const errorMsg = `Failed to migrate order ${order.id}: ${error.message}`;
         console.error(errorMsg);

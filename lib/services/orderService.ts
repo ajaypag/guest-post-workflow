@@ -20,10 +20,7 @@ import { v4 as uuidv4 } from 'uuid';
 import crypto from 'crypto';
 
 export interface CreateOrderInput {
-  accountEmail: string;
-  accountName: string;
-  accountCompany?: string;
-  accountId?: string;
+  accountId: string;
   createdBy: string;
   assignedTo?: string;
   internalNotes?: string;
@@ -57,10 +54,7 @@ export class OrderService {
 
     const [order] = await db.insert(orders).values({
       id: orderId,
-      accountId: input.accountId || null,
-      accountEmail: input.accountEmail,
-      accountName: input.accountName,
-      accountCompany: input.accountCompany || null,
+      accountId: input.accountId,
       status: 'draft',
       createdBy: input.createdBy,
       assignedTo: input.assignedTo || null,
@@ -399,7 +393,7 @@ export class OrderService {
       if (item.workflowId) continue; // Already has workflow
 
       // Create workflow title
-      const workflowTitle = `${order.accountCompany || order.accountName} - ${item.domain}`;
+      const workflowTitle = `${order.account?.companyName || order.account?.contactName || 'Account'} - ${item.domain}`;
 
       // Create workflow
       const workflowId = uuidv4();
@@ -581,8 +575,8 @@ export class OrderService {
     // Transform the data for the frontend
     const associatedOrders = activeOrders.map(({ order, orderGroup }) => ({
       id: order.id,
-      accountName: order.accountName,
-      accountEmail: order.accountEmail,
+      accountName: 'Unknown', // TODO: Add account relation when needed
+      accountEmail: 'Unknown', // TODO: Add account relation when needed
       status: order.status,
       createdAt: order.createdAt.toISOString(),
       itemCount: orderGroup.linkCount,
@@ -616,8 +610,8 @@ export class OrderService {
 
       draftOrders = clientDraftOrders.map(({ order, orderGroup }) => ({
         id: order.id,
-        accountName: order.accountName,
-        accountEmail: order.accountEmail,
+        accountName: 'Unknown', // TODO: Add account relation when needed
+        accountEmail: 'Unknown', // TODO: Add account relation when needed
         status: order.status,
         createdAt: order.createdAt.toISOString(),
         itemCount: orderGroup.linkCount,
@@ -654,9 +648,6 @@ export class OrderService {
       .select({
         id: orders.id,
         accountId: orders.accountId,
-        accountEmail: orders.accountEmail,
-        accountName: orders.accountName,
-        accountCompany: orders.accountCompany,
         status: orders.status,
         state: orders.state,
         subtotalRetail: orders.subtotalRetail,

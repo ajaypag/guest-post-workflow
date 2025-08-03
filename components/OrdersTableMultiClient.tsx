@@ -374,8 +374,8 @@ export function OrdersTableMultiClient({
                                 }
                               }
                             }}
-                            className={order.status !== 'draft' && isAdmin ? "text-red-700 hover:text-red-900" : "text-red-600 hover:text-red-800"}
-                            title={order.status !== 'draft' && isAdmin ? "Admin delete order" : "Delete draft order"}
+                            className={order.status !== 'draft' && isInternal && session?.role === 'admin' ? "text-red-700 hover:text-red-900" : "text-red-600 hover:text-red-800"}
+                            title={order.status !== 'draft' && isInternal && session?.role === 'admin' ? "Admin delete order" : "Delete draft order"}
                           >
                             <Trash2 className="h-4 w-4" />
                           </button>

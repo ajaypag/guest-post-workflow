@@ -351,8 +351,8 @@ export default function OrderConfirmPage() {
             <h2 className="text-lg font-semibold mb-4">Order Summary</h2>
             <div className="grid grid-cols-2 gap-4 text-sm">
               <div>
-                <p className="text-gray-500">Advertiser</p>
-                <p className="font-medium">{order.advertiserName}</p>
+                <p className="text-gray-500">Account</p>
+                <p className="font-medium">{order.account?.companyName || order.account?.contactName || 'N/A'}</p>
               </div>
               <div>
                 <p className="text-gray-500">Total Amount</p>

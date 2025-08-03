@@ -9,9 +9,7 @@ export const orders = pgTable('orders', {
   id: uuid('id').primaryKey(),
   // Note: clientId removed - now in order_groups
   accountId: uuid('account_id').references(() => accounts.id),
-  accountEmail: varchar('account_email', { length: 255 }).notNull(),
-  accountName: varchar('account_name', { length: 255 }).notNull(),
-  accountCompany: varchar('account_company', { length: 255 }),
+  // Note: accountEmail, accountName, accountCompany removed - use account relation
   
   // Order type for supporting different order types
   orderType: varchar('order_type', { length: 50 }).notNull().default('guest_post'),

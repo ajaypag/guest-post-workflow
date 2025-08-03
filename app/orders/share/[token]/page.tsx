@@ -22,10 +22,13 @@ interface OrderItem {
 interface Order {
   id: string;
   clientId: string;
-  advertiserId?: string;
-  advertiserEmail: string;
-  advertiserName: string;
-  advertiserCompany?: string;
+  accountId?: string;
+  account?: {
+    id: string;
+    email: string;
+    contactName: string;
+    companyName?: string;
+  };
   status: string;
   subtotalRetail: number;
   discountPercent: string;
@@ -37,7 +40,7 @@ interface Order {
   rushFee: number;
   shareToken?: string;
   shareExpiresAt?: string;
-  advertiserNotes?: string;
+  accountNotes?: string;
   createdAt: string;
   items: OrderItem[];
 }
@@ -93,7 +96,7 @@ export default function OrderSharePage() {
     if (!order) return;
     
     // If advertiser already has an account, handle approval
-    if (order.advertiserId) {
+    if (order.accountId) {
       setApproving(true);
       try {
         const response = await fetch(`/api/orders/share/${params.token}/approve`, {
@@ -177,7 +180,7 @@ export default function OrderSharePage() {
               <AlertCircle className="h-5 w-5 text-blue-600 mr-2" />
               <p className="text-blue-800">
                 This order has already been {order.status.replace('_', ' ')}. 
-                {order.advertiserId && ' Please log in to view the current status.'}
+                {order.accountId && ' Please log in to view the current status.'}
               </p>
             </div>
           </div>
@@ -186,23 +189,23 @@ export default function OrderSharePage() {
         <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
           {/* Main Content */}
           <div className="lg:col-span-2 space-y-6">
-            {/* Advertiser Info */}
+            {/* Account Info */}
             <div className="bg-white rounded-lg border border-gray-200 shadow-sm">
               <div className="p-6">
                 <h2 className="text-lg font-semibold text-gray-900 mb-4">Order Information</h2>
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                   <div>
                     <p className="text-sm text-gray-600">Contact Name</p>
-                    <p className="font-medium text-gray-900">{order.advertiserName}</p>
+                    <p className="font-medium text-gray-900">{order.account?.contactName || 'N/A'}</p>
                   </div>
                   <div>
                     <p className="text-sm text-gray-600">Email</p>
-                    <p className="font-medium text-gray-900">{order.advertiserEmail}</p>
+                    <p className="font-medium text-gray-900">{order.account?.email || 'N/A'}</p>
                   </div>
-                  {order.advertiserCompany && (
+                  {order.account?.companyName && (
                     <div>
                       <p className="text-sm text-gray-600">Company</p>
-                      <p className="font-medium text-gray-900">{order.advertiserCompany}</p>
+                      <p className="font-medium text-gray-900">{order.account.companyName}</p>
                     </div>
                   )}
                   <div>
@@ -265,11 +268,11 @@ export default function OrderSharePage() {
             </div>
 
             {/* Notes */}
-            {order.advertiserNotes && (
+            {order.accountNotes && (
               <div className="bg-white rounded-lg border border-gray-200 shadow-sm">
                 <div className="p-6">
                   <h2 className="text-lg font-semibold text-gray-900 mb-4">Additional Notes</h2>
-                  <p className="text-gray-700 whitespace-pre-wrap">{order.advertiserNotes}</p>
+                  <p className="text-gray-700 whitespace-pre-wrap">{order.accountNotes}</p>
                 </div>
               </div>
             )}
@@ -337,7 +340,7 @@ export default function OrderSharePage() {
                       ) : (
                         <>
                           <CheckCircle className="h-5 w-5" />
-                          {order.advertiserId ? 'Approve Order' : 'Create Account & Approve'}
+                          {order.accountId ? 'Approve Order' : 'Create Account & Approve'}
                         </>
                       )}
                     </button>
@@ -347,7 +350,7 @@ export default function OrderSharePage() {
                     </button>
                   </div>
                   
-                  {!order.advertiserId && (
+                  {!order.accountId && (
                     <p className="mt-4 text-sm text-gray-600 text-center">
                       Creating an account will allow you to track your order status and manage future orders.
                     </p>

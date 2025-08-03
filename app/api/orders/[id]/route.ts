@@ -218,16 +218,14 @@ export async function DELETE(
 
     const { id } = await params;
 
-    // First, fetch the order with all related data to check ownership and log deletion
+    // First, fetch the order to check ownership
     const order = await db.query.orders.findFirst({
       where: eq(orders.id, id),
-      with: {
-        orderGroups: {
-          with: {
-            bulkAnalysisProject: true
-          }
-        }
-      }
+    });
+    
+    // Separately fetch order groups for cascade deletion
+    const orderGroupsData = await db.query.orderGroups.findMany({
+      where: eq(orderGroups.orderId, id),
     });
 
     if (!order) {
@@ -266,7 +264,7 @@ export async function DELETE(
       // Log admin deletion for audit trail
       if (user.role === 'admin' && order.status !== 'draft') {
         console.log(`ADMIN DELETE: User ${user.email} (${user.id}) deleting ${order.status} order ${id}`);
-        console.log(`Order details: Account: ${order.accountEmail}, Total: ${order.totalRetail}, Created: ${order.createdAt}`);
+        console.log(`Order details: Account ID: ${order.accountId}, Total: ${order.totalRetail}, Created: ${order.createdAt}`);
       }
     } else {
       // Other user types cannot delete orders
@@ -278,21 +276,17 @@ export async function DELETE(
       // Delete related data that might not have cascade delete set up properly
       
       // 1. Delete order site submissions (if any)
-      if (order.orderGroups) {
-        const orderGroupIds = order.orderGroups.map(g => g.id);
-        if (orderGroupIds.length > 0) {
-          await tx.delete(orderSiteSubmissions)
-            .where(inArray(orderSiteSubmissions.orderGroupId, orderGroupIds));
-        }
+      if (orderGroupsData.length > 0) {
+        const orderGroupIds = orderGroupsData.map(g => g.id);
+        await tx.delete(orderSiteSubmissions)
+          .where(inArray(orderSiteSubmissions.orderGroupId, orderGroupIds));
       }
       
       // 2. Delete order site selections (if any)
-      if (order.orderGroups) {
-        const orderGroupIds = order.orderGroups.map(g => g.id);
-        if (orderGroupIds.length > 0) {
-          await tx.delete(orderSiteSelections)
-            .where(inArray(orderSiteSelections.orderGroupId, orderGroupIds));
-        }
+      if (orderGroupsData.length > 0) {
+        const orderGroupIds = orderGroupsData.map(g => g.id);
+        await tx.delete(orderSiteSelections)
+          .where(inArray(orderSiteSelections.orderGroupId, orderGroupIds));
       }
       
       // 3. Delete project-order associations
@@ -320,7 +314,7 @@ export async function DELETE(
       deletedOrder: {
         id: order.id,
         status: order.status,
-        accountEmail: order.accountEmail,
+        accountId: order.accountId,
         totalRetail: order.totalRetail
       }
     });

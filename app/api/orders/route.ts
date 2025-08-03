@@ -102,16 +102,10 @@ export async function POST(request: NextRequest) {
       if (session.userType === 'account') {
         // Account users creating their own orders
         orderValues.accountId = session.accountId || session.userId;
-        orderValues.accountEmail = data.accountEmail || session.email || '';
-        orderValues.accountName = data.accountName || session.name || '';
-        orderValues.accountCompany = data.accountCompany || null;
         orderValues.createdBy = '00000000-0000-0000-0000-000000000000'; // System user ID
       } else if (session.userType === 'internal') {
         // Internal users creating orders - they'll need to select account later
         orderValues.createdBy = session.userId;
-        orderValues.accountEmail = data.accountEmail || '';
-        orderValues.accountName = data.accountName || '';
-        orderValues.accountCompany = data.accountCompany || null;
         orderValues.accountId = data.accountId || null;
       }
       
@@ -131,9 +125,6 @@ export async function POST(request: NextRequest) {
       domains: domainIds, // Legacy support
       domainMappings, // New format with target page mappings
       accountId,
-      accountEmail,
-      accountName,
-      accountCompany,
       includesClientReview,
       rushDelivery,
       internalNotes,
@@ -158,9 +149,9 @@ export async function POST(request: NextRequest) {
       );
     }
 
-    if (!accountEmail || !accountName) {
+    if (!accountId) {
       return NextResponse.json(
-        { error: 'Account email and name are required' },
+        { error: 'Account ID is required' },
         { status: 400 }
       );
     }
@@ -233,9 +224,6 @@ export async function POST(request: NextRequest) {
     await db.insert(orders).values({
       id: orderId,
       accountId: accountId || (session.userType === 'account' ? (session.accountId || session.userId) : null),
-      accountEmail: accountEmail.toLowerCase(),
-      accountName: accountName,
-      accountCompany: accountCompany,
       status: 'draft',
       subtotalRetail,
       discountPercent: discountPercent.toString(),
