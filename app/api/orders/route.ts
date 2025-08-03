@@ -71,6 +71,61 @@ export async function POST(request: NextRequest) {
     }
 
     const data = await request.json();
+    
+    // Check if this is a simple draft order creation (new flow)
+    if (data.status === 'draft' && !data.clientId && !data.domains && !data.domainMappings) {
+      // Simple draft order creation
+      const orderId = uuidv4();
+      const now = new Date();
+      
+      // Prepare order values based on user type
+      let orderValues: any = {
+        id: orderId,
+        status: 'draft',
+        state: data.state || 'configuring',
+        orderType: data.orderType || 'guest_post',
+        subtotalRetail: 0,
+        discountPercent: '0',
+        discountAmount: 0,
+        totalRetail: 0,
+        totalWholesale: 0,
+        profitMargin: 0,
+        includesClientReview: false,
+        clientReviewFee: 0,
+        rushDelivery: false,
+        rushFee: 0,
+        createdAt: now,
+        updatedAt: now,
+      };
+      
+      // Set account info and createdBy based on user type
+      if (session.userType === 'account') {
+        // Account users creating their own orders
+        orderValues.accountId = session.accountId || session.userId;
+        orderValues.accountEmail = data.accountEmail || session.email || '';
+        orderValues.accountName = data.accountName || session.name || '';
+        orderValues.accountCompany = data.accountCompany || null;
+        orderValues.createdBy = '00000000-0000-0000-0000-000000000000'; // System user ID
+      } else if (session.userType === 'internal') {
+        // Internal users creating orders - they'll need to select account later
+        orderValues.createdBy = session.userId;
+        orderValues.accountEmail = data.accountEmail || '';
+        orderValues.accountName = data.accountName || '';
+        orderValues.accountCompany = data.accountCompany || null;
+        orderValues.accountId = data.accountId || null;
+      }
+      
+      // Create the order
+      await db.insert(orders).values(orderValues);
+      
+      return NextResponse.json({
+        success: true,
+        orderId: orderId,
+        order: orderValues
+      });
+    }
+    
+    // Original bulk analysis order creation logic
     const {
       clientId,
       domains: domainIds, // Legacy support

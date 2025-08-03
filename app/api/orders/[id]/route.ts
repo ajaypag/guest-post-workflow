@@ -81,22 +81,70 @@ export async function PUT(
       return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
     }
 
-    // Only internal users can update orders
-    if (session.userType !== 'internal') {
+    const { id } = await params;
+    const data = await request.json();
+    
+    // First fetch the order to check ownership
+    const existingOrder = await db.query.orders.findFirst({
+      where: eq(orders.id, id),
+    });
+    
+    if (!existingOrder) {
+      return NextResponse.json({ error: 'Order not found' }, { status: 404 });
+    }
+    
+    // Check permissions
+    if (session.userType === 'account') {
+      // Account users can only update their own orders
+      if (existingOrder.accountId !== session.userId) {
+        return NextResponse.json({ error: 'Forbidden' }, { status: 403 });
+      }
+      // Only allow updating draft orders
+      if (existingOrder.status !== 'draft') {
+        return NextResponse.json({ 
+          error: 'Only draft orders can be edited' 
+        }, { status: 400 });
+      }
+    } else if (session.userType !== 'internal') {
+      // Only internal users and account owners can update orders
       return NextResponse.json({ error: 'Forbidden' }, { status: 403 });
     }
 
-    const { id } = await params;
-    const data = await request.json();
-
-    // Update the order
-    await db
-      .update(orders)
-      .set({
-        ...data,
-        updatedAt: new Date(),
-      })
-      .where(eq(orders.id, id));
+    // Start a transaction to update order and groups
+    await db.transaction(async (tx) => {
+      // Update the order fields (excluding orderGroups)
+      const { orderGroups: newOrderGroups, ...orderData } = data;
+      
+      await tx
+        .update(orders)
+        .set({
+          ...orderData,
+          updatedAt: new Date(),
+        })
+        .where(eq(orders.id, id));
+      
+      // If orderGroups are provided, update them
+      if (newOrderGroups && Array.isArray(newOrderGroups)) {
+        // Delete existing order groups
+        await tx.delete(orderGroups).where(eq(orderGroups.orderId, id));
+        
+        // Insert new order groups
+        for (const group of newOrderGroups) {
+          await tx.insert(orderGroups).values({
+            id: crypto.randomUUID(),
+            orderId: id,
+            clientId: group.clientId,
+            linkCount: group.linkCount || 1,
+            targetPages: group.targetPages || [],
+            anchorTexts: group.anchorTexts || [],
+            requirementOverrides: group.requirementOverrides || {},
+            groupStatus: group.groupStatus || 'pending',
+            createdAt: new Date(),
+            updatedAt: new Date()
+          });
+        }
+      }
+    });
 
     // Fetch the updated order
     const updatedOrder = await db.query.orders.findFirst({

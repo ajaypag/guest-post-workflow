@@ -13,7 +13,7 @@ import {
   Building, Package, Plus, X, ChevronDown, ChevronUp, ChevronRight,
   Search, Target, Link as LinkIcon, Type, CheckCircle,
   AlertCircle, Copy, Trash2, User, Globe, ExternalLink,
-  ArrowLeft
+  ArrowLeft, Loader2
 } from 'lucide-react';
 
 type PackageType = 'good' | 'better' | 'best';
@@ -265,13 +265,12 @@ export default function EditOrderPage({ params }: { params: Promise<{ id: string
     
     try {
       setLoadingDraft(true);
-      const response = await fetch(`/api/orders/drafts/${orderId}`, {
+      const response = await fetch(`/api/orders/${orderId}`, {
         credentials: 'include'
       });
       
       if (response.ok) {
-        const data = await response.json();
-        const order = data.order;
+        const order = await response.json();
         
         // Set the draft order ID
         setDraftOrderId(order.id);
@@ -285,30 +284,46 @@ export default function EditOrderPage({ params }: { params: Promise<{ id: string
         setSelectedAccountCompany(order.accountCompany || '');
         
         // Load order groups into line items
-        if (order.groups && order.groups.length > 0) {
+        if (order.orderGroups && order.orderGroups.length > 0) {
           const newLineItems: OrderLineItem[] = [];
           const newSelectedClients = new Map<string, { selected: boolean; linkCount: number }>();
           
-          order.groups.forEach((group: any) => {
+          order.orderGroups.forEach((group: any) => {
             // Mark client as selected
             newSelectedClients.set(group.clientId, { 
               selected: true, 
               linkCount: group.linkCount 
             });
             
-            // Create line items from selections
-            group.selections.forEach((selection: any) => {
-              newLineItems.push({
-                id: `${Date.now()}-${Math.random()}`,
-                clientId: group.clientId,
-                clientName: clientList.find(c => c.id === group.clientId)?.name || 'Unknown Client',
-                targetPageId: selection.targetPageId,
-                targetPageUrl: selection.targetPageUrl,
-                anchorText: selection.anchorText,
-                price: packagePricing[selectedPackage].price,
-                selectedPackage: selectedPackage
+            // Create line items from target pages
+            if (group.targetPages && group.targetPages.length > 0) {
+              group.targetPages.forEach((targetPage: any, index: number) => {
+                newLineItems.push({
+                  id: `${Date.now()}-${Math.random()}-${index}`,
+                  clientId: group.clientId,
+                  clientName: group.client?.name || clientList.find(c => c.id === group.clientId)?.name || 'Unknown Client',
+                  targetPageId: targetPage.pageId || targetPage.id,
+                  targetPageUrl: targetPage.url,
+                  anchorText: group.anchorTexts?.[index] || '',
+                  price: packagePricing[selectedPackage].price,
+                  selectedPackage: selectedPackage
+                });
               });
-            });
+            } else {
+              // Create placeholder line items based on link count
+              for (let i = 0; i < group.linkCount; i++) {
+                newLineItems.push({
+                  id: `${Date.now()}-${Math.random()}-${i}`,
+                  clientId: group.clientId,
+                  clientName: group.client?.name || clientList.find(c => c.id === group.clientId)?.name || 'Unknown Client',
+                  targetPageId: undefined,
+                  targetPageUrl: undefined,
+                  anchorText: undefined,
+                  price: packagePricing[selectedPackage].price,
+                  selectedPackage: selectedPackage
+                });
+              }
+            }
           });
           
           setLineItems(newLineItems);
@@ -506,38 +521,23 @@ export default function EditOrderPage({ params }: { params: Promise<{ id: string
       };
       
       if (draftOrderId) {
-        // Update existing draft
-        const response = await fetch(`/api/orders/drafts/${draftOrderId}`, {
+        // Update existing order
+        const response = await fetch(`/api/orders/${draftOrderId}`, {
           method: 'PUT',
           headers: { 'Content-Type': 'application/json' },
           credentials: 'include',
-          body: JSON.stringify({ orderData })
+          body: JSON.stringify(orderData)
         });
         
         if (response.ok) {
-          setSaveStatus('saved');
-          setLastSaved(new Date());
-        } else {
-          setSaveStatus('error');
-        }
-      } else if (lineItems.length > 0) {
-        // Create new draft only if there are items
-        const response = await fetch('/api/orders/drafts', {
-          method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
-          credentials: 'include',
-          body: JSON.stringify({ orderData })
-        });
-        
-        if (response.ok) {
-          const { orderId } = await response.json();
-          setDraftOrderId(orderId);
           setSaveStatus('saved');
           setLastSaved(new Date());
         } else {
           setSaveStatus('error');
         }
       }
+      // Note: Removed auto-creation of new drafts
+      // New orders should be created via /orders/new page
       
       // Reset status after 2 seconds
       setTimeout(() => setSaveStatus('idle'), 2000);
@@ -814,6 +814,9 @@ export default function EditOrderPage({ params }: { params: Promise<{ id: string
     setTotal(sub); // Add discounts, fees, etc. here
   };
 
+  const [showConfirmModal, setShowConfirmModal] = useState(false);
+  const [isSubmitting, setIsSubmitting] = useState(false);
+
   const handleSubmit = async () => {
     // Validate line items
     const invalidItems = lineItems.filter(item => !item.clientId);
@@ -823,11 +826,51 @@ export default function EditOrderPage({ params }: { params: Promise<{ id: string
       return;
     }
     
-    // Save draft before navigating
+    // For account users, validate they have target pages selected
+    if (isAccountUser) {
+      const itemsWithoutTargetPages = lineItems.filter(item => !item.targetPageUrl);
+      if (itemsWithoutTargetPages.length > 0) {
+        setError('Please select target pages for all line items');
+        return;
+      }
+    }
+    
+    // Save draft before showing confirmation
     await saveOrderDraft();
     
-    // Navigate to order confirmation page
-    router.push(`/account/orders/${draftOrderId}/confirm`);
+    // Show confirmation modal
+    setShowConfirmModal(true);
+  };
+  
+  const handleConfirmOrder = async () => {
+    try {
+      setIsSubmitting(true);
+      
+      // Submit the order (move from draft to pending_confirmation)
+      const response = await fetch(`/api/orders/${draftOrderId}/submit`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        credentials: 'include',
+        body: JSON.stringify({})
+      });
+      
+      if (!response.ok) {
+        const data = await response.json();
+        throw new Error(data.error || 'Failed to submit order');
+      }
+      
+      // Redirect to appropriate page based on user type
+      if (isAccountUser) {
+        router.push(`/account/orders/${draftOrderId}/status`);
+      } else {
+        router.push(`/orders/${draftOrderId}/confirm`);
+      }
+    } catch (error: any) {
+      console.error('Error submitting order:', error);
+      setError(error.message || 'Failed to submit order');
+      setIsSubmitting(false);
+      setShowConfirmModal(false);
+    }
   };
 
   return (
@@ -1539,8 +1582,8 @@ export default function EditOrderPage({ params }: { params: Promise<{ id: string
                   className="px-4 md:px-6 py-2 md:py-3 bg-blue-600 text-white font-medium rounded-lg hover:bg-blue-700 
                            transition-colors flex items-center disabled:bg-gray-300 disabled:cursor-not-allowed flex-1 md:flex-initial justify-center"
                 >
-                  <span className="hidden md:inline">Continue to Site Selection</span>
-                  <span className="md:hidden">Continue</span>
+                  <span className="hidden md:inline">{isAccountUser ? 'Review & Submit Order' : 'Continue to Site Selection'}</span>
+                  <span className="md:hidden">{isAccountUser ? 'Submit' : 'Continue'}</span>
                   <ChevronRight className="h-5 w-5 ml-2" />
                 </button>
               </div>
@@ -1565,6 +1608,121 @@ export default function EditOrderPage({ params }: { params: Promise<{ id: string
           onTargetPagesCreated={handleTargetPagesCreated}
           preSelectedClientId={requestingLineItemId ? lineItems.find(item => item.id === requestingLineItemId)?.clientId : undefined}
         />
+        
+        {/* Order Confirmation Modal */}
+        {showConfirmModal && (
+          <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4">
+            <div className="bg-white rounded-lg max-w-2xl w-full max-h-[90vh] overflow-y-auto">
+              <div className="p-6">
+                <div className="flex items-center justify-between mb-6">
+                  <h2 className="text-2xl font-bold text-gray-900">Confirm Order</h2>
+                  <button
+                    onClick={() => setShowConfirmModal(false)}
+                    className="text-gray-400 hover:text-gray-600"
+                  >
+                    <X className="h-6 w-6" />
+                  </button>
+                </div>
+                
+                {/* Order Summary */}
+                <div className="mb-6">
+                  <h3 className="font-semibold text-gray-900 mb-3">Order Summary</h3>
+                  <div className="bg-gray-50 rounded-lg p-4 space-y-3">
+                    <div className="flex justify-between">
+                      <span className="text-gray-600">Total Links:</span>
+                      <span className="font-medium">{lineItems.length}</span>
+                    </div>
+                    <div className="flex justify-between">
+                      <span className="text-gray-600">Number of Clients:</span>
+                      <span className="font-medium">{new Set(lineItems.map(item => item.clientId)).size}</span>
+                    </div>
+                    <div className="pt-3 border-t border-gray-200">
+                      <div className="flex justify-between text-lg font-semibold">
+                        <span>Total Price:</span>
+                        <span>${total}</span>
+                      </div>
+                    </div>
+                  </div>
+                </div>
+                
+                {/* Client Details */}
+                <div className="mb-6">
+                  <h3 className="font-semibold text-gray-900 mb-3">Order Details</h3>
+                  <div className="space-y-3">
+                    {Array.from(new Set(lineItems.map(item => item.clientId))).map(clientId => {
+                      const clientItems = lineItems.filter(item => item.clientId === clientId);
+                      const clientName = clientItems[0]?.clientName || 'Unknown Client';
+                      return (
+                        <div key={clientId} className="bg-gray-50 rounded-lg p-4">
+                          <div className="flex justify-between items-start mb-2">
+                            <div>
+                              <p className="font-medium text-gray-900">{clientName}</p>
+                              <p className="text-sm text-gray-600">{clientItems.length} links</p>
+                            </div>
+                          </div>
+                          {isAccountUser && (
+                            <div className="mt-2 space-y-1">
+                              <p className="text-sm text-gray-600 font-medium">Target Pages:</p>
+                              {clientItems.slice(0, 3).map((item, idx) => (
+                                <p key={idx} className="text-sm text-gray-600 ml-2">
+                                  • {item.targetPageUrl || 'No target page selected'}
+                                </p>
+                              ))}
+                              {clientItems.length > 3 && (
+                                <p className="text-sm text-gray-500 ml-2">
+                                  + {clientItems.length - 3} more
+                                </p>
+                              )}
+                            </div>
+                          )}
+                        </div>
+                      );
+                    })}
+                  </div>
+                </div>
+                
+                {/* What Happens Next */}
+                <div className="bg-blue-50 rounded-lg p-4 mb-6">
+                  <h3 className="font-semibold text-blue-900 mb-2">What Happens Next?</h3>
+                  <ul className="text-sm text-blue-800 space-y-1">
+                    <li>• Our team will review your order and begin the process</li>
+                    <li>• You'll receive an email confirmation</li>
+                    <li>• {isAccountUser ? 'Site recommendations will be available within 2-3 business days' : 'We\'ll begin analyzing potential link placements'}</li>
+                    <li>• You can track progress in your dashboard</li>
+                  </ul>
+                </div>
+                
+                {/* Actions */}
+                <div className="flex gap-4">
+                  <button
+                    onClick={() => setShowConfirmModal(false)}
+                    disabled={isSubmitting}
+                    className="flex-1 px-4 py-2 border border-gray-300 text-gray-700 rounded-lg hover:bg-gray-50 disabled:opacity-50"
+                  >
+                    Back to Edit
+                  </button>
+                  <button
+                    onClick={handleConfirmOrder}
+                    disabled={isSubmitting}
+                    className="flex-1 px-4 py-2 bg-green-600 text-white rounded-lg hover:bg-green-700 disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center"
+                  >
+                    {isSubmitting ? (
+                      <>
+                        <Loader2 className="h-4 w-4 mr-2 animate-spin" />
+                        Confirming...
+                      </>
+                    ) : (
+                      <>
+                        <CheckCircle className="h-4 w-4 mr-2" />
+                        Confirm Order
+                      </>
+                    )}
+                  </button>
+                </div>
+              </div>
+            </div>
+          </div>
+        )}
       </div>
     </AuthWrapper>
   );
