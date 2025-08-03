@@ -129,11 +129,10 @@ async function testOrderEditFlow() {
     
     // 7. Test if the order detail page would show the correct data
     console.log('\n7️⃣ Testing order detail page data extraction...');
-    const detailPageGroups = updatedGroups.map(({ orderGroup: group, client }) => ({
+    const detailPageGroups = updatedGroups.map((group) => ({
       ...group,
-      client,
-      packageType: group.requirementOverrides?.packageType || 'better',
-      packagePrice: group.requirementOverrides?.packagePrice || 0
+      packageType: (group.requirementOverrides as any)?.packageType || 'better',
+      packagePrice: (group.requirementOverrides as any)?.packagePrice || 0
     }));
     
     console.log('\nOrder detail page would show:');
