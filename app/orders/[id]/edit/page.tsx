@@ -881,42 +881,38 @@ export default function EditOrderPage({ params }: { params: Promise<{ id: string
     try {
       setIsSubmitting(true);
       
-      // Submit the order (move from draft to pending_confirmation)
-      const response = await fetch(`/api/orders/${draftOrderId}/submit`, {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        credentials: 'include',
-        body: JSON.stringify({})
-      });
+      // First save the current changes
+      await saveOrderDraft();
       
-      if (!response.ok) {
-        const data = await response.json();
-        throw new Error(data.error || 'Failed to submit order');
+      // If this is a draft order and we're submitting it
+      if (orderStatus === 'draft') {
+        // Submit the order (move from draft to pending_confirmation)
+        const response = await fetch(`/api/orders/${draftOrderId}/submit`, {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          credentials: 'include',
+          body: JSON.stringify({})
+        });
+        
+        if (!response.ok) {
+          const data = await response.json();
+          throw new Error(data.error || 'Failed to submit order');
+        }
       }
       
-      // Update the order state locally
-      const updatedOrder = await response.json();
-      setOrderStatus(updatedOrder.status || 'pending_confirmation');
-      setOrderState(updatedOrder.state || 'pending');
-      
-      // Close modal and transform the page
+      // Close modal and redirect back to order details
       setShowConfirmModal(false);
       setIsSubmitting(false);
       
-      // Reload order data to get the latest status
-      if (draftOrderId) {
-        await loadDraftOrder(draftOrderId, clients);
-      }
+      // Show success message briefly then redirect
+      setSaveStatus('saved');
+      setTimeout(() => {
+        router.push(`/orders/${draftOrderId}`);
+      }, 1000);
       
-      // Store account details for the progress view
-      setAccountDetails({
-        email: selectedAccountEmail,
-        name: selectedAccountName,
-        company: selectedAccountCompany
-      });
     } catch (error: any) {
-      console.error('Error submitting order:', error);
-      setError(error.message || 'Failed to submit order');
+      console.error('Error updating order:', error);
+      setError(error.message || 'Failed to update order');
       setIsSubmitting(false);
       setShowConfirmModal(false);
     }
@@ -932,20 +928,33 @@ export default function EditOrderPage({ params }: { params: Promise<{ id: string
           <div className="flex items-center justify-between">
             <div className="flex items-center gap-4">
               <Link
-                href="/orders"
+                href={`/orders/${draftOrderId || ''}`}
                 className="inline-flex items-center text-gray-600 hover:text-gray-900"
               >
                 <ArrowLeft className="h-4 w-4 mr-2" />
-                Back to Orders
+                Back to Order
               </Link>
               <div>
                 <h1 className="text-2xl font-semibold text-gray-900">
-                  Edit Draft Order
+                  Edit Order {draftOrderId && `#${draftOrderId.slice(0, 8)}`}
                 </h1>
                 <p className="text-sm text-gray-600 mt-1">
-                  Update your guest post order with target pages and anchor text
+                  Update your guest post order details
                 </p>
               </div>
+            </div>
+            <div className="flex items-center gap-2">
+              {saveStatus !== 'idle' && (
+                <span className={`text-xs px-2 py-1 rounded ${
+                  saveStatus === 'saving' ? 'bg-yellow-100 text-yellow-700' :
+                  saveStatus === 'saved' ? 'bg-green-100 text-green-700' :
+                  'bg-red-100 text-red-700'
+                }`}>
+                  {saveStatus === 'saving' ? 'Saving...' :
+                   saveStatus === 'saved' ? 'Saved' :
+                   'Save failed'}
+                </span>
+              )}
             </div>
           </div>
         </div>
@@ -1629,16 +1638,25 @@ export default function EditOrderPage({ params }: { params: Promise<{ id: string
                   <p className="text-2xl font-bold text-gray-900">${total}</p>
                 </div>
                 
-                <button
-                  onClick={handleSubmit}
-                  disabled={lineItems.length === 0 || lineItems.some(item => !item.clientId)}
-                  className="px-4 md:px-6 py-2 md:py-3 bg-blue-600 text-white font-medium rounded-lg hover:bg-blue-700 
-                           transition-colors flex items-center disabled:bg-gray-300 disabled:cursor-not-allowed flex-1 md:flex-initial justify-center"
-                >
-                  <span className="hidden md:inline">{isAccountUser ? 'Review & Submit Order' : 'Continue to Site Selection'}</span>
-                  <span className="md:hidden">{isAccountUser ? 'Submit' : 'Continue'}</span>
-                  <ChevronRight className="h-5 w-5 ml-2" />
-                </button>
+                <div className="flex items-center gap-3">
+                  <Link
+                    href={`/orders/${draftOrderId || ''}`}
+                    className="px-4 md:px-6 py-2 md:py-3 border border-gray-300 text-gray-700 font-medium rounded-lg hover:bg-gray-50 
+                             transition-colors flex items-center"
+                  >
+                    Cancel
+                  </Link>
+                  <button
+                    onClick={handleSubmit}
+                    disabled={lineItems.length === 0 || lineItems.some(item => !item.clientId)}
+                    className="px-4 md:px-6 py-2 md:py-3 bg-blue-600 text-white font-medium rounded-lg hover:bg-blue-700 
+                             transition-colors flex items-center disabled:bg-gray-300 disabled:cursor-not-allowed"
+                  >
+                    <CheckCircle className="h-5 w-5 mr-2" />
+                    <span className="hidden md:inline">Save Changes</span>
+                    <span className="md:hidden">Save</span>
+                  </button>
+                </div>
               </div>
             </div>
           </div>
@@ -1668,7 +1686,7 @@ export default function EditOrderPage({ params }: { params: Promise<{ id: string
             <div className="bg-white rounded-lg max-w-2xl w-full max-h-[90vh] overflow-y-auto">
               <div className="p-6">
                 <div className="flex items-center justify-between mb-6">
-                  <h2 className="text-2xl font-bold text-gray-900">Confirm Order</h2>
+                  <h2 className="text-2xl font-bold text-gray-900">Confirm Order Updates</h2>
                   <button
                     onClick={() => setShowConfirmModal(false)}
                     className="text-gray-400 hover:text-gray-600"
@@ -1738,10 +1756,10 @@ export default function EditOrderPage({ params }: { params: Promise<{ id: string
                 <div className="bg-blue-50 rounded-lg p-4 mb-6">
                   <h3 className="font-semibold text-blue-900 mb-2">What Happens Next?</h3>
                   <ul className="text-sm text-blue-800 space-y-1">
-                    <li>• Our team will review your order and begin the process</li>
-                    <li>• You'll receive an email confirmation</li>
-                    <li>• {isAccountUser ? 'Site recommendations will be available within 2-3 business days' : 'We\'ll begin analyzing potential link placements'}</li>
-                    <li>• You can track progress in your dashboard</li>
+                    <li>• Your order changes will be saved</li>
+                    <li>• {orderStatus === 'draft' ? 'You can submit the order when ready' : 'Our team will be notified of the updates'}</li>
+                    <li>• You can continue to make changes as needed</li>
+                    <li>• Track your order progress from the order details page</li>
                   </ul>
                 </div>
                 
@@ -1752,7 +1770,7 @@ export default function EditOrderPage({ params }: { params: Promise<{ id: string
                     disabled={isSubmitting}
                     className="flex-1 px-4 py-2 border border-gray-300 text-gray-700 rounded-lg hover:bg-gray-50 disabled:opacity-50"
                   >
-                    Back to Edit
+                    Continue Editing
                   </button>
                   <button
                     onClick={handleConfirmOrder}
@@ -1762,12 +1780,12 @@ export default function EditOrderPage({ params }: { params: Promise<{ id: string
                     {isSubmitting ? (
                       <>
                         <Loader2 className="h-4 w-4 mr-2 animate-spin" />
-                        Confirming...
+                        Saving...
                       </>
                     ) : (
                       <>
                         <CheckCircle className="h-4 w-4 mr-2" />
-                        Confirm Order
+                        Save & {orderStatus === 'draft' ? 'Submit' : 'Update'} Order
                       </>
                     )}
                   </button>
