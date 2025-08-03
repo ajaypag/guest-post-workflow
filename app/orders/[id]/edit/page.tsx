@@ -922,9 +922,6 @@ export default function EditOrderPage({ params }: { params: Promise<{ id: string
     }
   };
 
-  // Check if order is confirmed (not draft)
-  const isConfirmed = orderStatus !== 'draft';
-
   return (
     <AuthWrapper>
       <div className="min-h-screen bg-gray-50 flex flex-col">
@@ -943,10 +940,10 @@ export default function EditOrderPage({ params }: { params: Promise<{ id: string
               </Link>
               <div>
                 <h1 className="text-2xl font-semibold text-gray-900">
-                  {isConfirmed ? `Order #${draftOrderId?.slice(0, 8)}` : 'Edit Draft Order'}
+                  Edit Draft Order
                 </h1>
                 <p className="text-sm text-gray-600 mt-1">
-                  {isConfirmed ? 'Track your guest post order progress' : 'Update your guest post order with target pages and anchor text'}
+                  Update your guest post order with target pages and anchor text
                 </p>
               </div>
             </div>
@@ -954,22 +951,6 @@ export default function EditOrderPage({ params }: { params: Promise<{ id: string
         </div>
 
 
-        {/* Render OrderProgressView for confirmed orders */}
-        {isConfirmed && accountDetails ? (
-          <OrderProgressView
-            orderId={draftOrderId || ''}
-            orderStatus={orderStatus}
-            orderState={orderState}
-            lineItems={lineItems}
-            clients={clients}
-            subtotal={subtotal}
-            total={total}
-            accountEmail={accountDetails.email}
-            accountName={accountDetails.name}
-            accountCompany={accountDetails.company || ''}
-          />
-        ) : (
-          <>
         {/* Account Selection (Internal Users Only) */}
         {session?.userType === 'internal' && (
           <div className="bg-white border-b border-gray-200 px-6 py-4">
@@ -1794,8 +1775,6 @@ export default function EditOrderPage({ params }: { params: Promise<{ id: string
               </div>
             </div>
           </div>
-        )}
-        </>
         )}
       </div>
     </AuthWrapper>

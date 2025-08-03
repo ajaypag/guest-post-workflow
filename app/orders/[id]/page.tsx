@@ -6,68 +6,104 @@ import Link from 'next/link';
 import AuthWrapper from '@/components/AuthWrapper';
 import Header from '@/components/Header';
 import { AuthService } from '@/lib/auth';
-import { formatCurrency, formatDate } from '@/lib/utils/formatting';
-import {
-  ArrowLeft,
-  Edit,
-  Download,
-  Share2,
-  Clock,
-  CheckCircle,
-  XCircle,
-  AlertCircle,
-  Package,
-  DollarSign,
-  User,
-  Building,
-  Globe,
-  FileText,
-  Loader2,
-  CreditCard
+import { formatCurrency } from '@/lib/utils/formatting';
+import { 
+  ArrowLeft, Loader2, CheckCircle, Clock, Search, Users, FileText, 
+  RefreshCw, ExternalLink, Globe, LinkIcon, Eye, Edit, Package,
+  Target, ChevronRight, AlertCircle, Activity, Building, User, DollarSign,
+  Download, Share2, XCircle, CreditCard
 } from 'lucide-react';
-import PaymentStatus, { PaymentStatusCard } from '@/components/orders/PaymentStatus';
-import RecordPaymentModal from '@/components/orders/RecordPaymentModal';
-import WorkflowGenerationButton from '@/components/orders/WorkflowGenerationButton';
 
-interface OrderDetail {
+interface LineItem {
   id: string;
   clientId: string;
-  status: string;
-  state: string;
-  advertiserEmail: string;
-  advertiserName: string;
-  advertiserCompany?: string;
-  subtotalRetail: number;
-  discountPercent: string;
-  discountAmount: number;
-  totalRetail: number;
-  totalWholesale: number;
-  profitMargin: number;
-  includesClientReview: boolean;
-  clientReviewFee: number;
-  rushDelivery: boolean;
-  rushFee: number;
-  internalNotes?: string;
-  paidAt?: string | null;
-  invoicedAt?: string | null;
-  createdAt: string;
-  updatedAt: string;
-  client?: {
+  clientName: string;
+  targetPageId?: string;
+  targetPageUrl?: string;
+  anchorText?: string;
+  price: number;
+  selectedPackage?: string;
+  guestPostSite?: string;
+  draftUrl?: string;
+  publishedUrl?: string;
+  bulkAnalysisId?: string;
+}
+
+interface OrderGroup {
+  id: string;
+  clientId: string;
+  client: {
     id: string;
     name: string;
     website: string;
   };
-  items?: Array<{
-    id: string;
-    domain: string;
-    domainRating: number;
-    traffic?: string;
-    retailPrice: number;
-    wholesalePrice: number;
-    status: string;
-    workflowId?: string;
+  linkCount: number;
+  bulkAnalysisProjectId?: string;
+  targetPages?: Array<{
+    id?: string;
+    url: string;
+    pageId?: string;
   }>;
+  anchorTexts?: string[];
+  packageType?: string;
+  packagePrice?: number;
 }
+
+interface OrderDetail {
+  id: string;
+  accountId: string;
+  status: string;
+  state?: string;
+  accountEmail: string;
+  accountName: string;
+  accountCompany?: string;
+  subtotal: number;
+  totalPrice: number;
+  createdAt: string;
+  updatedAt: string;
+  approvedAt?: string;
+  orderGroups?: OrderGroup[];
+}
+
+const getStateDisplay = (status: string, state?: string) => {
+  if (status === 'draft') return { label: 'Draft', color: 'bg-gray-100 text-gray-700' };
+  if (status === 'pending_confirmation') return { label: 'Awaiting Confirmation', color: 'bg-yellow-100 text-yellow-700' };
+  if (status === 'cancelled') return { label: 'Cancelled', color: 'bg-red-100 text-red-700' };
+  if (status === 'completed') return { label: 'Completed', color: 'bg-green-100 text-green-700' };
+  
+  // For confirmed orders, show the state
+  switch (state) {
+    case 'analyzing':
+      return { label: 'Finding Sites', color: 'bg-blue-100 text-blue-700' };
+    case 'site_review':
+      return { label: 'Ready for Review', color: 'bg-purple-100 text-purple-700' };
+    case 'in_progress':
+      return { label: 'In Progress', color: 'bg-yellow-100 text-yellow-700' };
+    default:
+      return { label: 'Processing', color: 'bg-gray-100 text-gray-700' };
+  }
+};
+
+const getProgressSteps = (status: string, state?: string) => {
+  const steps = [
+    { id: 'confirmed', label: 'Order Confirmed', icon: CheckCircle, description: 'Your order has been received' },
+    { id: 'analyzing', label: 'Finding Sites', icon: Search, description: 'Our team is identifying suitable sites' },
+    { id: 'site_review', label: 'Review Sites', icon: Users, description: 'Site recommendations ready for your review' },
+    { id: 'in_progress', label: 'Creating Content', icon: FileText, description: 'Writing and placing your links' },
+    { id: 'completed', label: 'Completed', icon: CheckCircle, description: 'All links have been placed' }
+  ];
+  
+  let currentStep = 0;
+  if (status === 'confirmed' || status === 'pending_confirmation') {
+    currentStep = 1;
+    if (state === 'analyzing') currentStep = 1;
+    if (state === 'site_review') currentStep = 2;
+    if (state === 'in_progress') currentStep = 3;
+  }
+  if (status === 'completed') currentStep = 4;
+  
+  return { steps, currentStep };
+};
 
 export default function OrderDetailPage() {
   const params = useParams();
@@ -75,7 +111,8 @@ export default function OrderDetailPage() {
   const [order, setOrder] = useState<OrderDetail | null>(null);
   const [loading, setLoading] = useState(true);
   const [user, setUser] = useState<any>(null);
-  const [showPaymentModal, setShowPaymentModal] = useState(false);
+  const [refreshing, setRefreshing] = useState(false);
+  const [lineItems, setLineItems] = useState<LineItem[]>([]);
 
   useEffect(() => {
     loadUser();
@@ -102,41 +139,46 @@ export default function OrderDetailPage() {
       }
 
       const data = await response.json();
-      setOrder(data); // API returns order directly now
+      setOrder(data);
+      
+      // Transform orderGroups into lineItems for the table
+      if (data.orderGroups && data.orderGroups.length > 0) {
+        const items: LineItem[] = [];
+        data.orderGroups.forEach((group: OrderGroup) => {
+          // Create a line item for each link in the group
+          for (let i = 0; i < group.linkCount; i++) {
+            items.push({
+              id: `${group.id}-${i}`,
+              clientId: group.clientId,
+              clientName: group.client?.name || 'Unknown Client',
+              targetPageUrl: group.targetPages?.[i]?.url || '',
+              targetPageId: group.targetPages?.[i]?.pageId,
+              anchorText: group.anchorTexts?.[i] || '',
+              price: group.packagePrice || 0,
+              selectedPackage: group.packageType || 'better',
+              guestPostSite: '',
+              draftUrl: '',
+              publishedUrl: '',
+              bulkAnalysisId: group.bulkAnalysisProjectId
+            });
+          }
+        });
+        setLineItems(items);
+      }
     } catch (error) {
       console.error('Error loading order:', error);
     } finally {
       setLoading(false);
     }
   };
-
-  const getStatusIcon = (status: string) => {
-    switch (status) {
-      case 'completed':
-        return <CheckCircle className="h-5 w-5 text-green-600" />;
-      case 'cancelled':
-        return <XCircle className="h-5 w-5 text-red-600" />;
-      case 'in_progress':
-        return <Clock className="h-5 w-5 text-blue-600" />;
-      default:
-        return <AlertCircle className="h-5 w-5 text-gray-600" />;
-    }
+  
+  const handleRefresh = async () => {
+    setRefreshing(true);
+    await loadOrder();
+    setTimeout(() => setRefreshing(false), 1000);
   };
 
-  const getStatusColor = (status: string) => {
-    switch (status) {
-      case 'completed':
-        return 'bg-green-100 text-green-800';
-      case 'cancelled':
-        return 'bg-red-100 text-red-800';
-      case 'in_progress':
-        return 'bg-blue-100 text-blue-800';
-      case 'pending_approval':
-        return 'bg-yellow-100 text-yellow-800';
-      default:
-        return 'bg-gray-100 text-gray-800';
-    }
-  };
+  const isOrderEditable = order && (order.status === 'draft' || order.status === 'pending_confirmation');
 
   if (loading) {
     return (
@@ -167,11 +209,14 @@ export default function OrderDetailPage() {
     );
   }
 
+  const { steps, currentStep } = getProgressSteps(order?.status || '', order?.state);
+  const stateDisplay = getStateDisplay(order?.status || '', order?.state);
+
   return (
     <AuthWrapper>
       <Header />
       <div className="container mx-auto px-4 py-8">
-        <div className="max-w-6xl mx-auto">
+        <div className="max-w-7xl mx-auto">
           {/* Header */}
           <div className="mb-6">
             <div className="flex items-center justify-between">
@@ -184,271 +229,327 @@ export default function OrderDetailPage() {
                   Back to Orders
                 </Link>
                 <h1 className="text-2xl font-bold text-gray-900">Order #{order.id.slice(0, 8)}</h1>
-                <span className={`px-3 py-1 rounded-full text-sm font-medium ${getStatusColor(order.status)}`}>
-                  {order.status.replace(/_/g, ' ').replace(/\b\w/g, l => l.toUpperCase())}
+                <span className={`px-3 py-1 rounded-full text-sm font-medium ${stateDisplay.color}`}>
+                  {stateDisplay.label}
                 </span>
               </div>
               
               <div className="flex items-center gap-3">
-                {user?.userType === 'internal' && (
+                <button
+                  onClick={handleRefresh}
+                  disabled={refreshing}
+                  className="inline-flex items-center px-3 py-2 border border-gray-300 rounded-md text-gray-700 hover:bg-gray-50 disabled:opacity-50"
+                >
+                  <RefreshCw className={`w-4 h-4 mr-2 ${refreshing ? 'animate-spin' : ''}`} />
+                  Refresh
+                </button>
+                {isOrderEditable && (
                   <Link
                     href={`/orders/${order.id}/edit`}
-                    className="inline-flex items-center px-4 py-2 border border-gray-300 rounded-md text-gray-700 hover:bg-gray-50"
+                    className="inline-flex items-center px-4 py-2 bg-blue-600 text-white rounded-md hover:bg-blue-700"
                   >
                     <Edit className="h-4 w-4 mr-2" />
-                    Edit
+                    Edit Order
                   </Link>
                 )}
-                <button className="inline-flex items-center px-4 py-2 border border-gray-300 rounded-md text-gray-700 hover:bg-gray-50">
-                  <Download className="h-4 w-4 mr-2" />
-                  Export
-                </button>
-                <button className="inline-flex items-center px-4 py-2 border border-gray-300 rounded-md text-gray-700 hover:bg-gray-50">
-                  <Share2 className="h-4 w-4 mr-2" />
-                  Share
-                </button>
               </div>
             </div>
           </div>
 
+          {/* Three Column Layout */}
           <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
-            {/* Main Content */}
-            <div className="lg:col-span-2 space-y-6">
-              {/* Client Information */}
+            {/* Left Column - Progress Steps */}
+            <div className="lg:col-span-1">
               <div className="bg-white rounded-lg border border-gray-200 shadow-sm p-6">
-                <h2 className="text-lg font-semibold mb-4 flex items-center">
-                  <Building className="h-5 w-5 mr-2 text-gray-400" />
-                  Client Information
-                </h2>
-                {order.client ? (
-                  <div className="space-y-2">
-                    <p className="text-gray-900 font-medium">{order.client.name}</p>
-                    <a href={order.client.website} target="_blank" rel="noopener noreferrer" className="text-blue-600 hover:underline">
-                      {order.client.website}
-                    </a>
-                  </div>
-                ) : (
-                  <p className="text-gray-500">Client information not available</p>
-                )}
-              </div>
-
-              {/* Advertiser Information */}
-              <div className="bg-white rounded-lg border border-gray-200 shadow-sm p-6">
-                <h2 className="text-lg font-semibold mb-4 flex items-center">
-                  <User className="h-5 w-5 mr-2 text-gray-400" />
-                  Advertiser Information
-                </h2>
-                <div className="space-y-2">
-                  <div>
-                    <span className="text-gray-600">Name:</span>
-                    <span className="ml-2 text-gray-900">{order.advertiserName}</span>
-                  </div>
-                  <div>
-                    <span className="text-gray-600">Email:</span>
-                    <span className="ml-2 text-gray-900">{order.advertiserEmail}</span>
-                  </div>
-                  {order.advertiserCompany && (
-                    <div>
-                      <span className="text-gray-600">Company:</span>
-                      <span className="ml-2 text-gray-900">{order.advertiserCompany}</span>
-                    </div>
-                  )}
-                </div>
-              </div>
-
-              {/* Order Items */}
-              <div className="bg-white rounded-lg border border-gray-200 shadow-sm p-6">
-                <h2 className="text-lg font-semibold mb-4 flex items-center">
-                  <Globe className="h-5 w-5 mr-2 text-gray-400" />
-                  Domains ({order.items?.length || 0})
-                </h2>
-                {order.items && order.items.length > 0 ? (
-                  <div className="space-y-3">
-                    {order.items.map((item) => (
-                      <div key={item.id} className="flex items-center justify-between p-3 bg-gray-50 rounded-lg">
-                        <div>
-                          <p className="font-medium text-gray-900">{item.domain}</p>
-                          <div className="mt-1 flex items-center gap-4 text-sm text-gray-600">
-                            <span>DR: {item.domainRating}</span>
-                            {item.traffic && <span>Traffic: {item.traffic}</span>}
-                            <span className={`px-2 py-0.5 rounded text-xs font-medium ${
-                              item.status === 'completed' ? 'bg-green-100 text-green-800' :
-                              item.status === 'in_progress' ? 'bg-blue-100 text-blue-800' :
-                              'bg-gray-100 text-gray-800'
+                <h2 className="text-lg font-semibold mb-4">Order Progress</h2>
+                <div className="space-y-4">
+                  {steps.map((step, index) => {
+                    const Icon = step.icon;
+                    const isCompleted = index < currentStep;
+                    const isCurrent = index === currentStep;
+                    
+                    return (
+                      <div key={step.id} className="relative">
+                        <div className="flex items-start gap-3">
+                          <div className={`
+                            w-8 h-8 rounded-full flex items-center justify-center flex-shrink-0
+                            ${isCompleted ? 'bg-green-500' : isCurrent ? 'bg-blue-500' : 'bg-gray-300'}
+                          `}>
+                            <Icon className="w-4 h-4 text-white" />
+                          </div>
+                          <div className="flex-1">
+                            <p className={`text-sm font-medium ${
+                              isCompleted || isCurrent ? 'text-gray-900' : 'text-gray-500'
                             }`}>
-                              {item.status.replace(/_/g, ' ')}
-                            </span>
+                              {step.label}
+                            </p>
+                            <p className="text-xs text-gray-500 mt-1">
+                              {step.description}
+                            </p>
                           </div>
                         </div>
-                        <div className="text-right">
-                          <p className="font-medium text-gray-900">{formatCurrency(item.retailPrice)}</p>
-                          {item.workflowId && (
-                            <Link
-                              href={`/workflows/${item.workflowId}`}
-                              className="text-sm text-blue-600 hover:underline"
-                            >
-                              View Workflow
-                            </Link>
-                          )}
-                        </div>
+                        {index < steps.length - 1 && (
+                          <div className={`
+                            absolute left-4 top-8 w-0.5 h-8
+                            ${isCompleted ? 'bg-green-500' : 'bg-gray-300'}
+                          `} />
+                        )}
                       </div>
-                    ))}
-                  </div>
-                ) : (
-                  <p className="text-gray-500">No domains in this order</p>
-                )}
-              </div>
-
-              {/* Internal Notes */}
-              {user?.userType === 'internal' && order.internalNotes && (
-                <div className="bg-white rounded-lg border border-gray-200 shadow-sm p-6">
-                  <h2 className="text-lg font-semibold mb-4 flex items-center">
-                    <FileText className="h-5 w-5 mr-2 text-gray-400" />
-                    Internal Notes
-                  </h2>
-                  <p className="text-gray-700 whitespace-pre-wrap">{order.internalNotes}</p>
+                    );
+                  })}
                 </div>
-              )}
+                
+                {/* Quick Actions based on state */}
+                <div className="mt-6 pt-6 border-t">
+                  <h3 className="text-sm font-medium text-gray-900 mb-3">Quick Actions</h3>
+                  <div className="space-y-2">
+                    {order.state === 'site_review' && (
+                      <button className="w-full px-3 py-2 bg-blue-600 text-white text-sm rounded-md hover:bg-blue-700 flex items-center justify-center">
+                        <Users className="h-4 w-4 mr-2" />
+                        Review Sites
+                      </button>
+                    )}
+                    {order.state === 'in_progress' && (
+                      <button className="w-full px-3 py-2 bg-green-600 text-white text-sm rounded-md hover:bg-green-700 flex items-center justify-center">
+                        <FileText className="h-4 w-4 mr-2" />
+                        View Drafts
+                      </button>
+                    )}
+                  </div>
+                </div>
+              </div>
+              
+              {/* Account Information */}
+              <div className="bg-white rounded-lg border border-gray-200 shadow-sm p-6 mt-6">
+                <h3 className="text-lg font-semibold text-gray-900 mb-4">Account Information</h3>
+                <dl className="space-y-3">
+                  <div>
+                    <dt className="text-sm text-gray-500">Account Name</dt>
+                    <dd className="text-sm font-medium text-gray-900">{order.accountName}</dd>
+                  </div>
+                  <div>
+                    <dt className="text-sm text-gray-500">Email</dt>
+                    <dd className="text-sm font-medium text-gray-900">{order.accountEmail}</dd>
+                  </div>
+                  {order.accountCompany && (
+                    <div>
+                      <dt className="text-sm text-gray-500">Company</dt>
+                      <dd className="text-sm font-medium text-gray-900">{order.accountCompany}</dd>
+                    </div>
+                  )}
+                </dl>
+              </div>
             </div>
 
-            {/* Sidebar */}
-            <div className="space-y-6">
-              {/* Payment Status Card */}
-              <PaymentStatusCard order={order} />
-
-              {/* Pricing Summary */}
-              <div className="bg-white rounded-lg border border-gray-200 shadow-sm p-6">
-                <h2 className="text-lg font-semibold mb-4 flex items-center">
-                  <DollarSign className="h-5 w-5 mr-2 text-gray-400" />
-                  Pricing Summary
-                </h2>
-                <div className="space-y-3">
-                  <div className="flex justify-between text-sm">
-                    <span className="text-gray-600">Subtotal</span>
-                    <span className="text-gray-900">{formatCurrency(order.subtotalRetail)}</span>
-                  </div>
-                  {order.discountAmount > 0 && (
-                    <div className="flex justify-between text-sm">
-                      <span className="text-gray-600">Discount ({order.discountPercent}%)</span>
-                      <span className="text-green-600">-{formatCurrency(order.discountAmount)}</span>
+            {/* Middle/Right Columns - Order Details Table */}
+            <div className="lg:col-span-2">
+              <div className="bg-white rounded-lg shadow-sm border border-gray-200 overflow-hidden">
+                <div className="p-6 border-b border-gray-200">
+                  <div className="flex items-center justify-between">
+                    <div>
+                      <h2 className="text-lg font-semibold text-gray-900">Order Details</h2>
+                      <p className="text-sm text-gray-600 mt-1">
+                        {order.status === 'confirmed' ? 'Tracking your link placement progress' : 'Review your order details'}
+                      </p>
                     </div>
-                  )}
-                  {order.includesClientReview && (
-                    <div className="flex justify-between text-sm">
-                      <span className="text-gray-600">Client Review</span>
-                      <span className="text-gray-900">{formatCurrency(order.clientReviewFee)}</span>
-                    </div>
-                  )}
-                  {order.rushDelivery && (
-                    <div className="flex justify-between text-sm">
-                      <span className="text-gray-600">Rush Delivery</span>
-                      <span className="text-gray-900">{formatCurrency(order.rushFee)}</span>
-                    </div>
-                  )}
-                  <div className="border-t pt-3">
-                    <div className="flex justify-between font-semibold">
-                      <span>Total</span>
-                      <span>{formatCurrency(order.totalRetail)}</span>
+                    <div className="text-right">
+                      <p className="text-2xl font-bold text-gray-900">{formatCurrency(order.totalPrice)}</p>
+                      <p className="text-sm text-gray-600">Total Order Value</p>
                     </div>
                   </div>
-                  {user?.userType === 'internal' && (
-                    <>
-                      <div className="border-t pt-3 space-y-2">
-                        <div className="flex justify-between text-sm">
-                          <span className="text-gray-600">Wholesale Cost</span>
-                          <span className="text-gray-900">{formatCurrency(order.totalWholesale)}</span>
-                        </div>
-                        <div className="flex justify-between text-sm font-medium">
-                          <span className="text-gray-600">Profit Margin</span>
-                          <span className="text-green-600">{formatCurrency(order.profitMargin)}</span>
-                        </div>
-                      </div>
-                    </>
-                  )}
+                </div>
+                
+                <div className="overflow-x-auto">
+                  <table className="min-w-full divide-y divide-gray-200">
+                    <thead className="bg-gray-50">
+                      <tr>
+                        <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                          Client / Target Page
+                        </th>
+                        <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                          Anchor Text
+                        </th>
+                        {order.status === 'confirmed' && (
+                          <>
+                            <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                              Guest Post Site
+                            </th>
+                            <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                              Draft
+                            </th>
+                            <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                              Published
+                            </th>
+                            <th className="px-6 py-3 text-center text-xs font-medium text-gray-500 uppercase tracking-wider">
+                              Analysis
+                            </th>
+                          </>
+                        )}
+                        <th className="px-6 py-3 text-right text-xs font-medium text-gray-500 uppercase tracking-wider">
+                          Price
+                        </th>
+                      </tr>
+                    </thead>
+                    <tbody className="bg-white divide-y divide-gray-200">
+                      {lineItems.map((item, index) => {
+                        const isFirstInGroup = index === 0 || lineItems[index - 1].clientId !== item.clientId;
+                        return (
+                          <tr key={item.id} className="hover:bg-gray-50">
+                            <td className="px-6 py-4">
+                              {isFirstInGroup && (
+                                <div className="text-sm font-medium text-gray-900 mb-1">
+                                  {item.clientName}
+                                </div>
+                              )}
+                              <div className={`text-sm text-gray-600 ${isFirstInGroup ? '' : 'mt-2'}`}>
+                                {item.targetPageUrl || 'No target page selected'}
+                              </div>
+                            </td>
+                            <td className="px-6 py-4 text-sm text-gray-900">
+                              {item.anchorText || '-'}
+                            </td>
+                            {order.status === 'confirmed' && (
+                              <>
+                                <td className="px-6 py-4">
+                                  {item.guestPostSite ? (
+                                    <div className="flex items-center space-x-2">
+                                      <Globe className="h-4 w-4 text-gray-400" />
+                                      <span className="text-sm text-gray-900">{item.guestPostSite}</span>
+                                    </div>
+                                  ) : (
+                                    <span className="text-sm text-gray-400">Pending</span>
+                                  )}
+                                </td>
+                                <td className="px-6 py-4">
+                                  {item.draftUrl ? (
+                                    <a
+                                      href={item.draftUrl}
+                                      target="_blank"
+                                      rel="noopener noreferrer"
+                                      className="inline-flex items-center text-sm text-blue-600 hover:text-blue-800"
+                                    >
+                                      View
+                                      <ExternalLink className="h-3 w-3 ml-1" />
+                                    </a>
+                                  ) : (
+                                    <span className="text-sm text-gray-400">-</span>
+                                  )}
+                                </td>
+                                <td className="px-6 py-4">
+                                  {item.publishedUrl ? (
+                                    <a
+                                      href={item.publishedUrl}
+                                      target="_blank"
+                                      rel="noopener noreferrer"
+                                      className="inline-flex items-center text-sm text-green-600 hover:text-green-800"
+                                    >
+                                      <LinkIcon className="h-3 w-3 mr-1" />
+                                      Live
+                                    </a>
+                                  ) : (
+                                    <span className="text-sm text-gray-400">-</span>
+                                  )}
+                                </td>
+                                <td className="px-6 py-4 text-center">
+                                  {item.bulkAnalysisId ? (
+                                    <button className="inline-flex items-center text-sm text-blue-600 hover:text-blue-800">
+                                      <Eye className="h-3 w-3" />
+                                    </button>
+                                  ) : (
+                                    <span className="text-sm text-gray-400">-</span>
+                                  )}
+                                </td>
+                              </>
+                            )}
+                            <td className="px-6 py-4 text-right text-sm font-medium text-gray-900">
+                              {formatCurrency(item.price)}
+                            </td>
+                          </tr>
+                        );
+                      })}
+                    </tbody>
+                    <tfoot className="bg-gray-50">
+                      <tr>
+                        <td colSpan={order.status === 'confirmed' ? 6 : 2} className="px-6 py-4 text-right text-sm font-medium text-gray-900">
+                          Total
+                        </td>
+                        <td className="px-6 py-4 text-right text-sm font-bold text-gray-900">
+                          {formatCurrency(order.totalPrice)}
+                        </td>
+                      </tr>
+                    </tfoot>
+                  </table>
                 </div>
               </div>
-
-              {/* Timeline */}
-              <div className="bg-white rounded-lg border border-gray-200 shadow-sm p-6">
-                <h2 className="text-lg font-semibold mb-4">Timeline</h2>
-                <div className="space-y-3">
-                  <div className="flex items-start gap-3">
-                    <Clock className="h-4 w-4 text-gray-400 mt-0.5" />
-                    <div>
-                      <p className="text-sm font-medium text-gray-900">Created</p>
-                      <p className="text-sm text-gray-600">{formatDate(order.createdAt)}</p>
-                    </div>
-                  </div>
-                  {order.updatedAt !== order.createdAt && (
+              
+              {/* Additional Information Cards */}
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-6 mt-6">
+                {/* Timeline */}
+                <div className="bg-white rounded-lg border border-gray-200 shadow-sm p-6">
+                  <h3 className="text-lg font-semibold mb-4">Timeline</h3>
+                  <div className="space-y-3">
                     <div className="flex items-start gap-3">
                       <Clock className="h-4 w-4 text-gray-400 mt-0.5" />
                       <div>
-                        <p className="text-sm font-medium text-gray-900">Last Updated</p>
-                        <p className="text-sm text-gray-600">{formatDate(order.updatedAt)}</p>
+                        <p className="text-sm font-medium text-gray-900">Created</p>
+                        <p className="text-sm text-gray-600">{new Date(order.createdAt).toLocaleDateString()}</p>
                       </div>
                     </div>
-                  )}
+                    {order.approvedAt && (
+                      <div className="flex items-start gap-3">
+                        <CheckCircle className="h-4 w-4 text-green-500 mt-0.5" />
+                        <div>
+                          <p className="text-sm font-medium text-gray-900">Confirmed</p>
+                          <p className="text-sm text-gray-600">{new Date(order.approvedAt).toLocaleDateString()}</p>
+                        </div>
+                      </div>
+                    )}
+                  </div>
                 </div>
-              </div>
-
-              {/* Actions */}
-              <div className="bg-white rounded-lg border border-gray-200 shadow-sm p-6">
-                <h2 className="text-lg font-semibold mb-4">Actions</h2>
-                <div className="space-y-2">
-                  {order.status === 'draft' && user?.userType === 'internal' && (
-                    <button className="w-full px-4 py-2 bg-blue-600 text-white rounded-md hover:bg-blue-700">
-                      Submit for Approval
-                    </button>
-                  )}
-                  {order.status === 'pending_approval' && user?.userType === 'account' && (
-                    <>
-                      <button className="w-full px-4 py-2 bg-green-600 text-white rounded-md hover:bg-green-700">
-                        Approve Order
-                      </button>
-                      <button className="w-full px-4 py-2 border border-red-300 text-red-700 rounded-md hover:bg-red-50">
-                        Request Changes
-                      </button>
-                    </>
-                  )}
-                  {order.status === 'confirmed' && user?.userType === 'internal' && !order.paidAt && (
-                    <button 
-                      onClick={() => setShowPaymentModal(true)}
-                      className="w-full px-4 py-2 bg-green-600 text-white rounded-md hover:bg-green-700 flex items-center justify-center gap-2"
-                    >
-                      <CreditCard className="h-4 w-4" />
-                      Record Payment
-                    </button>
-                  )}
-                  {order.status === 'confirmed' && order.paidAt && (
-                    <WorkflowGenerationButton 
-                      order={order}
-                      isPaid={true}
-                      onSuccess={() => loadOrder()}
-                    />
-                  )}
+                
+                {/* Recent Activity */}
+                <div className="bg-white rounded-lg border border-gray-200 shadow-sm p-6">
+                  <div className="flex items-center gap-2 mb-4">
+                    <Activity className="h-5 w-5 text-gray-600" />
+                    <h3 className="text-lg font-semibold text-gray-900">Recent Activity</h3>
+                  </div>
+                  <div className="space-y-3">
+                    {order.state === 'analyzing' && (
+                      <div className="flex items-start gap-3">
+                        <div className="w-2 h-2 bg-blue-500 rounded-full mt-1.5 animate-pulse" />
+                        <div>
+                          <p className="text-sm font-medium text-gray-900">Analyzing sites</p>
+                          <p className="text-xs text-gray-500">Finding placement opportunities</p>
+                        </div>
+                      </div>
+                    )}
+                    {order.state === 'site_review' && (
+                      <div className="flex items-start gap-3">
+                        <div className="w-2 h-2 bg-purple-500 rounded-full mt-1.5" />
+                        <div>
+                          <p className="text-sm font-medium text-gray-900">Sites ready for review</p>
+                          <p className="text-xs text-gray-500">Awaiting your approval</p>
+                        </div>
+                      </div>
+                    )}
+                  </div>
                 </div>
               </div>
             </div>
           </div>
         </div>
       </div>
-
-      {/* Payment Recording Modal */}
-      {order && showPaymentModal && (
-        <RecordPaymentModal
-          order={{
-            id: order.id,
-            totalRetail: order.totalRetail,
-            accountName: order.advertiserName
-          }}
-          isOpen={showPaymentModal}
-          onClose={() => setShowPaymentModal(false)}
-          onSuccess={() => {
-            setShowPaymentModal(false);
-            loadOrder(); // Reload to show updated payment status
-          }}
-        />
-      )}
     </AuthWrapper>
   );
+}
+
+// Helper function to format dates
+function formatDate(dateString: string) {
+  return new Date(dateString).toLocaleDateString('en-US', {
+    year: 'numeric',
+    month: 'long',
+    day: 'numeric',
+    hour: '2-digit',
+    minute: '2-digit'
+  });
 }
