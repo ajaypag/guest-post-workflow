@@ -380,20 +380,10 @@ export default function OrderDetailPage() {
 
             {/* Middle/Right Columns - Order Details Table */}
             <div className="lg:col-span-2">
+              {/* Order Details Table - Using the same format as OrderProgressView */}
               <div className="bg-white rounded-lg shadow-sm border border-gray-200 overflow-hidden">
                 <div className="p-6 border-b border-gray-200">
-                  <div className="flex items-center justify-between">
-                    <div>
-                      <h2 className="text-lg font-semibold text-gray-900">Order Details</h2>
-                      <p className="text-sm text-gray-600 mt-1">
-                        {order.status === 'confirmed' ? 'Tracking your link placement progress' : 'Review your order details'}
-                      </p>
-                    </div>
-                    <div className="text-right">
-                      <p className="text-2xl font-bold text-gray-900">{formatCurrency(order.totalPrice)}</p>
-                      <p className="text-sm text-gray-600">Total Order Value</p>
-                    </div>
-                  </div>
+                  <h2 className="text-lg font-semibold text-gray-900">Order Details</h2>
                 </div>
                 
                 <div className="overflow-x-auto">
@@ -406,21 +396,26 @@ export default function OrderDetailPage() {
                         <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
                           Anchor Text
                         </th>
-                        {order.status === 'confirmed' && (
-                          <>
-                            <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                              Guest Post Site
-                            </th>
-                            <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                              Draft
-                            </th>
-                            <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                              Published
-                            </th>
-                            <th className="px-6 py-3 text-center text-xs font-medium text-gray-500 uppercase tracking-wider">
-                              Analysis
-                            </th>
-                          </>
+                        {/* Progressive disclosure - only show additional columns when relevant */}
+                        {(order.state === 'site_review' || order.state === 'in_progress' || order.status === 'completed') && (
+                          <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                            Guest Post Site
+                          </th>
+                        )}
+                        {(order.state === 'in_progress' || order.status === 'completed') && (
+                          <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                            Draft URL
+                          </th>
+                        )}
+                        {order.status === 'completed' && (
+                          <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                            Published URL
+                          </th>
+                        )}
+                        {order.status === 'confirmed' && order.state === 'analyzing' && (
+                          <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                            Analysis
+                          </th>
                         )}
                         <th className="px-6 py-3 text-right text-xs font-medium text-gray-500 uppercase tracking-wider">
                           Price
@@ -445,68 +440,63 @@ export default function OrderDetailPage() {
                             <td className="px-6 py-4 text-sm text-gray-900">
                               {item.anchorText || '-'}
                             </td>
-                            {order.status === 'confirmed' && (
-                              <>
-                                <td className="px-6 py-4">
-                                  {item.guestPostSite ? (
-                                    <div className="flex items-center space-x-2">
-                                      <Globe className="h-4 w-4 text-gray-400" />
-                                      <span className="text-sm text-gray-900">{item.guestPostSite}</span>
-                                    </div>
-                                  ) : (
-                                    <span className="text-sm text-gray-400">Pending</span>
-                                  )}
-                                </td>
-                                <td className="px-6 py-4">
-                                  {item.draftUrl ? (
-                                    <a
-                                      href={item.draftUrl}
-                                      target="_blank"
-                                      rel="noopener noreferrer"
-                                      className="inline-flex items-center text-sm text-blue-600 hover:text-blue-800"
-                                    >
-                                      View
-                                      <ExternalLink className="h-3 w-3 ml-1" />
-                                    </a>
-                                  ) : (
-                                    <span className="text-sm text-gray-400">-</span>
-                                  )}
-                                </td>
-                                <td className="px-6 py-4">
-                                  {item.publishedUrl ? (
-                                    <a
-                                      href={item.publishedUrl}
-                                      target="_blank"
-                                      rel="noopener noreferrer"
-                                      className="inline-flex items-center text-sm text-green-600 hover:text-green-800"
-                                    >
-                                      <LinkIcon className="h-3 w-3 mr-1" />
-                                      Live
-                                    </a>
-                                  ) : (
-                                    <span className="text-sm text-gray-400">-</span>
-                                  )}
-                                </td>
-                                <td className="px-6 py-4 text-center">
-                                  {item.bulkAnalysisId ? (
-                                    <Link
-                                      href={`/clients/${item.clientId}/bulk-analysis/projects/${item.bulkAnalysisId}`}
-                                      className="inline-flex items-center text-sm text-blue-600 hover:text-blue-800"
-                                    >
-                                      <Eye className="h-3 w-3" />
-                                    </Link>
-                                  ) : item.workflowId ? (
-                                    <Link
-                                      href={`/workflows/${item.workflowId}`}
-                                      className="inline-flex items-center text-sm text-blue-600 hover:text-blue-800"
-                                    >
-                                      <FileText className="h-3 w-3" />
-                                    </Link>
-                                  ) : (
-                                    <span className="text-sm text-gray-400">-</span>
-                                  )}
-                                </td>
-                              </>
+                            {(order.state === 'site_review' || order.state === 'in_progress' || order.status === 'completed') && (
+                              <td className="px-6 py-4">
+                                {item.guestPostSite ? (
+                                  <div className="flex items-center space-x-2">
+                                    <Globe className="h-4 w-4 text-gray-400" />
+                                    <span className="text-sm text-gray-900">{item.guestPostSite}</span>
+                                  </div>
+                                ) : (
+                                  <span className="text-sm text-gray-400">Pending</span>
+                                )}
+                              </td>
+                            )}
+                            {(order.state === 'in_progress' || order.status === 'completed') && (
+                              <td className="px-6 py-4">
+                                {item.draftUrl ? (
+                                  <a
+                                    href={item.draftUrl}
+                                    target="_blank"
+                                    rel="noopener noreferrer"
+                                    className="inline-flex items-center text-sm text-blue-600 hover:text-blue-800"
+                                  >
+                                    View Draft
+                                    <ExternalLink className="h-3 w-3 ml-1" />
+                                  </a>
+                                ) : (
+                                  <span className="text-sm text-gray-400">-</span>
+                                )}
+                              </td>
+                            )}
+                            {order.status === 'completed' && (
+                              <td className="px-6 py-4">
+                                {item.publishedUrl ? (
+                                  <a
+                                    href={item.publishedUrl}
+                                    target="_blank"
+                                    rel="noopener noreferrer"
+                                    className="inline-flex items-center text-sm text-green-600 hover:text-green-800"
+                                  >
+                                    <LinkIcon className="h-3 w-3 mr-1" />
+                                    Live
+                                  </a>
+                                ) : (
+                                  <span className="text-sm text-gray-400">-</span>
+                                )}
+                              </td>
+                            )}
+                            {order.status === 'confirmed' && order.state === 'analyzing' && (
+                              <td className="px-6 py-4">
+                                {item.bulkAnalysisId ? (
+                                  <button className="inline-flex items-center text-sm text-blue-600 hover:text-blue-800">
+                                    <Eye className="h-3 w-3 mr-1" />
+                                    View
+                                  </button>
+                                ) : (
+                                  <span className="text-sm text-gray-400">-</span>
+                                )}
+                              </td>
                             )}
                             <td className="px-6 py-4 text-right text-sm font-medium text-gray-900">
                               {formatCurrency(item.price)}
@@ -517,7 +507,13 @@ export default function OrderDetailPage() {
                     </tbody>
                     <tfoot className="bg-gray-50">
                       <tr>
-                        <td colSpan={order.status === 'confirmed' ? 6 : 2} className="px-6 py-4 text-right text-sm font-medium text-gray-900">
+                        <td colSpan={
+                          order.status === 'completed' ? 6 :
+                          order.state === 'in_progress' ? 5 :
+                          order.state === 'site_review' ? 4 :
+                          order.state === 'analyzing' ? 4 :
+                          3
+                        } className="px-6 py-4 text-right text-sm font-medium text-gray-900">
                           Total
                         </td>
                         <td className="px-6 py-4 text-right text-sm font-bold text-gray-900">
