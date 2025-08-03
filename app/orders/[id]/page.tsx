@@ -446,6 +446,38 @@ export default function OrderDetailPage() {
                             Analyze {group.client.name}
                           </Link>
                         ))}
+                        {user?.userType === 'internal' && (
+                          <button
+                            onClick={async () => {
+                              if (confirm('Mark sites as ready for client review? This will notify the client that sites are available.')) {
+                                try {
+                                  const response = await fetch(`/api/orders/${order.id}/state`, {
+                                    method: 'POST',
+                                    headers: { 'Content-Type': 'application/json' },
+                                    body: JSON.stringify({ 
+                                      state: 'site_review',
+                                      notes: 'Sites ready for client review'
+                                    })
+                                  });
+                                  
+                                  if (response.ok) {
+                                    await loadOrder();
+                                    await loadSiteSubmissions();
+                                  } else {
+                                    const data = await response.json();
+                                    alert(data.error || 'Failed to update order state');
+                                  }
+                                } catch (error) {
+                                  console.error('Error updating order state:', error);
+                                  alert('Error updating order state');
+                                }
+                              }
+                            }}
+                            className="block w-full px-3 py-2 bg-purple-600 text-white text-sm rounded-md hover:bg-purple-700 text-center"
+                          >
+                            Mark Sites Ready for Review
+                          </button>
+                        )}
                       </div>
                     )}
                     {order.state === 'site_review' && Object.keys(siteSubmissions).length > 0 && (

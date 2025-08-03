@@ -289,6 +289,38 @@ export function OrdersTableMultiClient({
                             Review & Confirm
                           </Link>
                         )}
+                        {isInternal && order.status === 'confirmed' && order.state === 'analyzing' && (
+                          <button
+                            onClick={async () => {
+                              if (confirm('Mark sites as ready for client review? This will notify the client that sites are available.')) {
+                                try {
+                                  const response = await fetch(`/api/orders/${order.id}/state`, {
+                                    method: 'POST',
+                                    headers: { 'Content-Type': 'application/json' },
+                                    body: JSON.stringify({ 
+                                      state: 'site_review',
+                                      notes: 'Sites ready for client review'
+                                    })
+                                  });
+                                  
+                                  if (response.ok) {
+                                    onRefresh();
+                                  } else {
+                                    const data = await response.json();
+                                    alert(data.error || 'Failed to update order state');
+                                  }
+                                } catch (error) {
+                                  console.error('Error updating order state:', error);
+                                  alert('Error updating order state');
+                                }
+                              }
+                            }}
+                            className="inline-flex items-center px-3 py-1.5 bg-purple-600 text-white text-sm rounded-md hover:bg-purple-700"
+                          >
+                            <Users className="h-4 w-4 mr-1" />
+                            Sites Ready
+                          </button>
+                        )}
                         {isInternal && order.shareToken && (
                           <button
                             onClick={() => copyShareLink(order.shareToken!)}
