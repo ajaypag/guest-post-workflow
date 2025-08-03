@@ -50,6 +50,22 @@ interface OrderGroup {
   packagePrice?: number;
 }
 
+interface SiteSubmission {
+  id: string;
+  orderGroupId: string;
+  domainId: string;
+  domain: string;
+  domainRating?: number;
+  traffic?: number;
+  price: number;
+  status: 'pending' | 'submitted' | 'approved' | 'rejected';
+  submissionStatus?: string;
+  clientApprovedAt?: string;
+  clientRejectedAt?: string;
+  clientReviewNotes?: string;
+  specialInstructions?: string;
+}
+
 interface OrderDetail {
   id: string;
   accountId: string;
@@ -126,11 +142,20 @@ export default function OrderDetailPage() {
   const [user, setUser] = useState<any>(null);
   const [refreshing, setRefreshing] = useState(false);
   const [lineItems, setLineItems] = useState<LineItem[]>([]);
+  const [siteSubmissions, setSiteSubmissions] = useState<Record<string, SiteSubmission[]>>({});
+  const [loadingSubmissions, setLoadingSubmissions] = useState(false);
+  const [expandedSubmission, setExpandedSubmission] = useState<string | null>(null);
 
   useEffect(() => {
     loadUser();
     loadOrder();
   }, [params.id]);
+
+  useEffect(() => {
+    if (order?.state === 'site_review' && order.orderGroups) {
+      loadSiteSubmissions();
+    }
+  }, [order?.state, order?.orderGroups]);
 
   const loadUser = async () => {
     const currentUser = await AuthService.getCurrentUser();
@@ -185,9 +210,79 @@ export default function OrderDetailPage() {
     }
   };
   
+  const loadSiteSubmissions = async () => {
+    if (!order?.orderGroups) return;
+    
+    setLoadingSubmissions(true);
+    try {
+      const submissionsByGroup: Record<string, SiteSubmission[]> = {};
+      
+      for (const group of order.orderGroups) {
+        try {
+          const response = await fetch(`/api/orders/${order.id}/groups/${group.id}/submissions`);
+          if (response.ok) {
+            const data = await response.json();
+            submissionsByGroup[group.id] = data.submissions || [];
+          }
+        } catch (error) {
+          console.error(`Error loading submissions for group ${group.id}:`, error);
+        }
+      }
+      
+      setSiteSubmissions(submissionsByGroup);
+    } catch (error) {
+      console.error('Error loading site submissions:', error);
+    } finally {
+      setLoadingSubmissions(false);
+    }
+  };
+
+  const handleApproveSubmission = async (groupId: string, submissionId: string) => {
+    try {
+      const response = await fetch(
+        `/api/orders/${order!.id}/groups/${groupId}/submissions/${submissionId}/review`,
+        {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ action: 'approve' })
+        }
+      );
+      
+      if (response.ok) {
+        // Reload submissions
+        await loadSiteSubmissions();
+      }
+    } catch (error) {
+      console.error('Error approving submission:', error);
+    }
+  };
+
+  const handleRejectSubmission = async (groupId: string, submissionId: string, reason?: string) => {
+    try {
+      const response = await fetch(
+        `/api/orders/${order!.id}/groups/${groupId}/submissions/${submissionId}/review`,
+        {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ action: 'reject', notes: reason })
+        }
+      );
+      
+      if (response.ok) {
+        // Reload submissions
+        await loadSiteSubmissions();
+      }
+    } catch (error) {
+      console.error('Error rejecting submission:', error);
+    }
+  };
+
   const handleRefresh = async () => {
     setRefreshing(true);
     await loadOrder();
+    if (order?.state === 'site_review') {
+      await loadSiteSubmissions();
+    }
     setTimeout(() => setRefreshing(false), 1000);
   };
 
@@ -353,14 +448,25 @@ export default function OrderDetailPage() {
                         ))}
                       </div>
                     )}
-                    {order.state === 'site_review' && (
-                      <Link
-                        href={`/account/orders/${order.id}/sites`}
-                        className="block w-full px-3 py-2 bg-purple-600 text-white text-sm rounded-md hover:bg-purple-700 flex items-center justify-center"
-                      >
-                        <Users className="h-4 w-4 mr-2" />
-                        Review Sites
-                      </Link>
+                    {order.state === 'site_review' && Object.keys(siteSubmissions).length > 0 && (
+                      <div className="space-y-2">
+                        <p className="text-xs text-gray-500 mb-1">Review Sites:</p>
+                        {Object.entries(siteSubmissions).map(([groupId, submissions]) => {
+                          const group = order.orderGroups?.find(g => g.id === groupId);
+                          const pendingCount = submissions.filter(s => s.status === 'pending').length;
+                          if (!group || pendingCount === 0) return null;
+                          
+                          return (
+                            <button
+                              key={groupId}
+                              onClick={() => setExpandedSubmission(expandedSubmission === groupId ? null : groupId)}
+                              className="w-full px-3 py-2 bg-purple-600 text-white text-sm rounded-md hover:bg-purple-700 text-center"
+                            >
+                              {group.client.name} ({pendingCount} sites)
+                            </button>
+                          );
+                        })}
+                      </div>
                     )}
                     {order.status === 'completed' && lineItems.some(item => item.workflowId) && (
                       <div className="space-y-2">
@@ -404,6 +510,44 @@ export default function OrderDetailPage() {
 
             {/* Middle/Right Columns - Order Details Table */}
             <div className="lg:col-span-2">
+              {/* Site Review Summary Card */}
+              {order.state === 'site_review' && Object.keys(siteSubmissions).length > 0 && (
+                <div className="bg-purple-50 border border-purple-200 rounded-lg p-6 mb-6">
+                  <div className="flex items-start justify-between">
+                    <div>
+                      <h3 className="text-lg font-semibold text-purple-900 flex items-center gap-2">
+                        <Users className="h-5 w-5" />
+                        Site Review Required
+                      </h3>
+                      <p className="text-sm text-purple-700 mt-1">
+                        Review and approve recommended sites for your guest posts
+                      </p>
+                      <div className="flex items-center gap-6 mt-3 text-sm">
+                        {Object.entries(siteSubmissions).map(([groupId, submissions]) => {
+                          const group = order.orderGroups?.find(g => g.id === groupId);
+                          if (!group) return null;
+                          const pending = submissions.filter(s => s.status === 'pending').length;
+                          const approved = submissions.filter(s => s.status === 'approved').length;
+                          const rejected = submissions.filter(s => s.status === 'rejected').length;
+                          
+                          return (
+                            <div key={groupId} className="flex items-center gap-2">
+                              <span className="font-medium">{group.client.name}:</span>
+                              {pending > 0 && <span className="text-yellow-700">{pending} pending</span>}
+                              {approved > 0 && <span className="text-green-700">{approved} approved</span>}
+                              {rejected > 0 && <span className="text-red-700">{rejected} rejected</span>}
+                            </div>
+                          );
+                        })}
+                      </div>
+                    </div>
+                    {loadingSubmissions && (
+                      <RefreshCw className="h-4 w-4 animate-spin text-purple-600" />
+                    )}
+                  </div>
+                </div>
+              )}
+              
               {/* Order Details Table with Proper Client Grouping */}
               <div className="bg-white rounded-lg shadow-sm border border-gray-200 overflow-hidden">
                 <div className="p-6 border-b border-gray-200">
@@ -448,7 +592,12 @@ export default function OrderDetailPage() {
                     </thead>
                     <tbody className="bg-white divide-y divide-gray-200">
                       {/* Group line items by client */}
-                      {Object.entries(groupedLineItems).map(([clientId, { clientName, items, totalPrice }]) => (
+                      {Object.entries(groupedLineItems).map(([clientId, { clientName, items, totalPrice }]) => {
+                        // Find the orderGroup for this client
+                        const orderGroup = order.orderGroups?.find(g => g.clientId === clientId);
+                        const groupId = orderGroup?.id;
+                        
+                        return (
                         <>
                           {/* Client group header row */}
                           <tr key={`${clientId}-header`} className="bg-gray-50">
@@ -532,8 +681,70 @@ export default function OrderDetailPage() {
                               </td>
                             </tr>
                           ))}
+                          
+                          {/* Site submissions for this client when in site_review state */}
+                          {order.state === 'site_review' && groupId && siteSubmissions[groupId] && expandedSubmission === groupId && (
+                            <>
+                              <tr className="bg-purple-50">
+                                <td colSpan={getColumnCount()} className="px-6 py-3">
+                                  <div className="text-sm font-medium text-purple-900">Site Recommendations</div>
+                                  <div className="text-xs text-purple-700 mt-1">
+                                    {siteSubmissions[groupId].filter(s => s.status === 'pending').length} sites pending review
+                                  </div>
+                                </td>
+                              </tr>
+                              {siteSubmissions[groupId].filter(s => s.status === 'pending').map((submission) => (
+                                <tr key={submission.id} className="bg-purple-50 hover:bg-purple-100">
+                                  <td className="px-6 py-4 pl-12">
+                                    <div className="flex items-start gap-3">
+                                      <Globe className="h-5 w-5 text-purple-600 mt-0.5" />
+                                      <div className="flex-1">
+                                        <div className="text-sm font-medium text-gray-900">{submission.domain}</div>
+                                        <div className="flex items-center gap-4 mt-1 text-xs text-gray-600">
+                                          {submission.domainRating && (
+                                            <span>DR: {submission.domainRating}</span>
+                                          )}
+                                          {submission.traffic && (
+                                            <span>Traffic: {submission.traffic.toLocaleString()}</span>
+                                          )}
+                                          <span className="font-medium">{formatCurrency(submission.price)}</span>
+                                        </div>
+                                      </div>
+                                    </div>
+                                  </td>
+                                  <td colSpan={getColumnCount() - 2} className="px-6 py-4">
+                                    {submission.specialInstructions && (
+                                      <textarea
+                                        placeholder="Special instructions for this site..."
+                                        className="w-full px-3 py-2 text-sm border border-gray-300 rounded-md focus:ring-purple-500 focus:border-purple-500"
+                                        rows={2}
+                                        defaultValue={submission.specialInstructions}
+                                      />
+                                    )}
+                                  </td>
+                                  <td className="px-6 py-4 text-right">
+                                    <div className="flex items-center justify-end gap-2">
+                                      <button
+                                        onClick={() => handleRejectSubmission(groupId, submission.id)}
+                                        className="px-3 py-1 text-sm text-red-700 bg-red-100 rounded-md hover:bg-red-200"
+                                      >
+                                        <XCircle className="h-4 w-4" />
+                                      </button>
+                                      <button
+                                        onClick={() => handleApproveSubmission(groupId, submission.id)}
+                                        className="px-3 py-1 text-sm text-green-700 bg-green-100 rounded-md hover:bg-green-200"
+                                      >
+                                        <CheckCircle className="h-4 w-4" />
+                                      </button>
+                                    </div>
+                                  </td>
+                                </tr>
+                              ))}
+                            </>
+                          )}
                         </>
-                      ))}
+                        );
+                      })}
                     </tbody>
                     <tfoot className="bg-gray-50">
                       <tr>
@@ -595,7 +806,11 @@ export default function OrderDetailPage() {
                         <div className="w-2 h-2 bg-purple-500 rounded-full mt-1.5" />
                         <div>
                           <p className="text-sm font-medium text-gray-900">Sites ready for review</p>
-                          <p className="text-xs text-gray-500">Awaiting your approval</p>
+                          <p className="text-xs text-gray-500">
+                            {Object.values(siteSubmissions).reduce((sum, subs) => 
+                              sum + subs.filter(s => s.status === 'pending').length, 0
+                            )} sites awaiting approval
+                          </p>
                         </div>
                       </div>
                     )}
