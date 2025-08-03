@@ -1,7 +1,7 @@
 'use client';
 
 import React, { useState, useEffect } from 'react';
-import { Package, ChevronDown, ChevronRight, Users, Link as LinkIcon, Eye, Copy, Check, Trash2, CheckCircle } from 'lucide-react';
+import { Package, ChevronDown, ChevronRight, Users, Link as LinkIcon, Eye, Copy, Check, Trash2, CheckCircle, Activity } from 'lucide-react';
 import Link from 'next/link';
 import { AuthService } from '@/lib/auth';
 import { AuthSession } from '@/lib/types/auth';
