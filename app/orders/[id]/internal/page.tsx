@@ -18,7 +18,7 @@ import {
 interface OrderGroup {
   id: string;
   clientId: string;
-  client: {
+  client?: {
     id: string;
     name: string;
     website: string;
@@ -435,36 +435,44 @@ export default function InternalOrderManagementPage() {
                     </div>
                   )}
                   
-                  {/* Bulk Analysis Projects */}
-                  {order.orderGroups && order.orderGroups.length > 0 && (
+                  {/* Bulk Analysis Projects - Always show if there are projects */}
+                  {order.orderGroups && order.orderGroups.some(g => g.bulkAnalysisProjectId) && (
                     <div className="p-4 bg-blue-50 rounded-lg">
                       <h3 className="font-medium text-gray-900 mb-2 flex items-center gap-2">
                         <Search className="h-5 w-5 text-blue-600" />
                         Bulk Analysis Projects
                       </h3>
-                      {order.orderGroups.some(g => g.bulkAnalysisProjectId) ? (
-                        <div className="space-y-2">
-                          {order.orderGroups.filter(g => g.bulkAnalysisProjectId).map(group => (
+                      <div className="space-y-2">
+                        {order.orderGroups.filter(g => g.bulkAnalysisProjectId).map(group => {
+                          console.log('Rendering project link for group:', group.id, 'projectId:', group.bulkAnalysisProjectId);
+                          const projectUrl = `/clients/${group.clientId}/bulk-analysis/projects/${group.bulkAnalysisProjectId}`;
+                          console.log('Project URL:', projectUrl);
+                          return (
                             <Link
                               key={group.id}
-                              href={`/clients/${group.clientId}/bulk-analysis/projects/${group.bulkAnalysisProjectId}`}
+                              href={projectUrl}
                               className="block w-full px-3 py-2 bg-white border border-blue-200 text-blue-700 text-sm rounded-md hover:bg-blue-50"
                             >
                               <div className="flex items-center justify-between">
-                                <span>{group.client.name}</span>
+                                <span>{group.client?.name || 'Unknown Client'}</span>
                                 <ExternalLink className="h-4 w-4" />
                               </div>
                               <span className="text-xs text-gray-600">
                                 {group.linkCount} links • {group.siteSelections?.approved || 0} approved
                               </span>
                             </Link>
-                          ))}
-                        </div>
-                      ) : (
-                        <p className="text-sm text-gray-600">
-                          No bulk analysis projects created yet. Confirm the order to create projects.
-                        </p>
-                      )}
+                          );
+                        })}
+                      </div>
+                    </div>
+                  )}
+                  
+                  {/* Show message if no projects exist */}
+                  {order.orderGroups && order.orderGroups.length > 0 && !order.orderGroups.some(g => g.bulkAnalysisProjectId) && (
+                    <div className="p-4 bg-gray-50 rounded-lg">
+                      <p className="text-sm text-gray-600">
+                        No bulk analysis projects created yet. Confirm the order to create projects.
+                      </p>
                     </div>
                   )}
                   
@@ -537,10 +545,10 @@ export default function InternalOrderManagementPage() {
                         <div className="flex items-start justify-between mb-2">
                           <div>
                             <h3 className="font-medium text-gray-900">
-                              {group.client.name}
+                              {group.client?.name || 'Unknown Client'}
                             </h3>
                             <p className="text-sm text-gray-600">
-                              {group.client.website}
+                              {group.client?.website || ''}
                             </p>
                           </div>
                           <span className="text-sm font-medium text-gray-900">
@@ -576,6 +584,19 @@ export default function InternalOrderManagementPage() {
                                 {page.url}
                               </p>
                             ))}
+                          </div>
+                        )}
+                        
+                        {group.bulkAnalysisProjectId && (
+                          <div className="mt-2 pt-2 border-t border-gray-100">
+                            <Link
+                              href={`/clients/${group.clientId}/bulk-analysis/projects/${group.bulkAnalysisProjectId}`}
+                              className="inline-flex items-center text-sm text-blue-600 hover:text-blue-800"
+                            >
+                              <Database className="h-4 w-4 mr-1" />
+                              View Bulk Analysis
+                              <ExternalLink className="h-3 w-3 ml-1" />
+                            </Link>
                           </div>
                         )}
                       </div>
