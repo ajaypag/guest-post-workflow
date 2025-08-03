@@ -127,8 +127,6 @@ export default function EditOrderPage({ params }: { params: Promise<{ id: string
   }>>([]);
   const [loadingDraft, setLoadingDraft] = useState(true);
   const [isNewOrder, setIsNewOrder] = useState(false);
-  const [hasChanges, setHasChanges] = useState(false);
-  const [originalOrderData, setOriginalOrderData] = useState<any>(null);
   
   // Account selection state (for internal users)
   const [selectedAccountId, setSelectedAccountId] = useState<string | null>(null);
@@ -297,11 +295,6 @@ export default function EditOrderPage({ params }: { params: Promise<{ id: string
                      (!order.orderGroups || order.orderGroups.length === 0) &&
                      new Date(order.createdAt).getTime() > Date.now() - 60000; // Created within last minute
         setIsNewOrder(isNew);
-        
-        // For new orders, always consider them as having changes
-        if (isNew) {
-          setHasChanges(true);
-        }
         
         // Load order groups into line items
         if (order.orderGroups && order.orderGroups.length > 0) {
@@ -1664,9 +1657,8 @@ export default function EditOrderPage({ params }: { params: Promise<{ id: string
                   <button
                     onClick={handleSubmit}
                     disabled={lineItems.length === 0 || lineItems.some(item => !item.clientId)}
-                    className="px-4 md:px-6 py-2 md:py-3 bg-blue-600 text-white font-medium rounded-lg 
-                             transition-colors flex items-center disabled:bg-gray-300 disabled:cursor-not-allowed
-                             disabled:hover:bg-gray-300 hover:bg-blue-700"
+                    className="px-4 md:px-6 py-2 md:py-3 bg-blue-600 text-white font-medium rounded-lg hover:bg-blue-700 
+                             transition-colors flex items-center disabled:bg-gray-300 disabled:cursor-not-allowed"
                   >
                     <CheckCircle className="h-5 w-5 mr-2" />
                     <span className="hidden md:inline">{isNewOrder ? 'Review & Submit Order' : 'Save Changes'}</span>
