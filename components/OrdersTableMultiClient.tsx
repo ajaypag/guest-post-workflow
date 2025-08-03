@@ -452,7 +452,7 @@ export function OrdersTableMultiClient({
                                   </td>
                                   <td className="px-6 py-3 whitespace-nowrap text-right">
                                     {group.bulkAnalysisProjectId ? (
-                                      <Link href={`/bulk-analysis/projects/${group.bulkAnalysisProjectId}`}>
+                                      <Link href={`/clients/${group.clientId}/bulk-analysis/projects/${group.bulkAnalysisProjectId}`}>
                                         <button className="text-blue-600 hover:text-blue-900 text-xs">
                                           View Analysis
                                         </button>
