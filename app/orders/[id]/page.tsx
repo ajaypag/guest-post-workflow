@@ -291,7 +291,8 @@ export default function OrderDetailPage() {
     setTimeout(() => setRefreshing(false), 1000);
   };
 
-  const isOrderEditable = order && (order.status === 'draft' || order.status === 'pending_confirmation');
+  // Allow editing until the order is paid
+  const isOrderEditable = order && order.status !== 'paid' && order.status !== 'in_progress' && order.status !== 'completed' && order.status !== 'cancelled';
 
   if (loading) {
     return (
@@ -387,6 +388,15 @@ export default function OrderDetailPage() {
                   >
                     <Edit className="h-4 w-4 mr-2" />
                     Edit Order
+                  </Link>
+                )}
+                {user?.userType === 'internal' && (
+                  <Link
+                    href={`/orders/${order.id}/internal`}
+                    className="inline-flex items-center px-4 py-2 bg-purple-600 text-white rounded-md hover:bg-purple-700"
+                  >
+                    <Activity className="h-4 w-4 mr-2" />
+                    Manage Order
                   </Link>
                 )}
                 {/* Admin delete button */}
