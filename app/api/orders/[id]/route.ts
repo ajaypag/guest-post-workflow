@@ -46,7 +46,10 @@ export async function GET(
       ...order,
       orderGroups: orderGroupsData.map(({ orderGroup, client }) => ({
         ...orderGroup,
-        client
+        client,
+        // Extract packageType and packagePrice from requirementOverrides
+        packageType: orderGroup.requirementOverrides?.packageType || 'better',
+        packagePrice: orderGroup.requirementOverrides?.packagePrice || 0
       }))
     };
 
@@ -137,7 +140,11 @@ export async function PUT(
             linkCount: group.linkCount || 1,
             targetPages: group.targetPages || [],
             anchorTexts: group.anchorTexts || [],
-            requirementOverrides: group.requirementOverrides || {},
+            requirementOverrides: {
+              ...(group.requirementOverrides || {}),
+              packageType: group.packageType,
+              packagePrice: group.packagePrice
+            },
             groupStatus: group.groupStatus || 'pending',
             createdAt: new Date(),
             updatedAt: new Date()
@@ -170,7 +177,10 @@ export async function PUT(
       ...updatedOrder,
       orderGroups: orderGroupsData.map(({ orderGroup, client }) => ({
         ...orderGroup,
-        client
+        client,
+        // Extract packageType and packagePrice from requirementOverrides
+        packageType: orderGroup.requirementOverrides?.packageType || 'better',
+        packagePrice: orderGroup.requirementOverrides?.packagePrice || 0
       }))
     };
 

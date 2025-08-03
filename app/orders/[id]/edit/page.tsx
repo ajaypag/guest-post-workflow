@@ -516,9 +516,9 @@ export default function EditOrderPage({ params }: { params: Promise<{ id: string
         // Account info
         ...accountInfo,
         
-        // Pricing
-        subtotalRetail: subtotal,
-        totalRetail: total,
+        // Pricing - use correct field names expected by API
+        subtotal: subtotal,
+        totalPrice: total,
         totalWholesale: Math.round(total * 0.6), // Estimate wholesale cost
         profitMargin: Math.round(total * 0.4),
         
