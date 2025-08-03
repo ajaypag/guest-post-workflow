@@ -21,7 +21,9 @@ export async function POST(request: NextRequest) {
       AND column_name IN ('account_email', 'account_name', 'account_company')
     `);
 
-    const existingColumns = (columnsQuery as unknown as any[]).map((row: any) => row.column_name);
+    const existingColumns = Array.isArray(columnsQuery) ? 
+      columnsQuery.map((row: any) => row.column_name) : 
+      (columnsQuery as any).rows?.map((row: any) => row.column_name) || [];
     
     if (existingColumns.length === 0) {
       return NextResponse.json({
@@ -77,7 +79,9 @@ export async function POST(request: NextRequest) {
       AND column_name IN ('account_email', 'account_name', 'account_company')
     `);
 
-    const remainingColumns = (verificationQuery as unknown as any[]).map((row: any) => row.column_name);
+    const remainingColumns = Array.isArray(verificationQuery) ? 
+      verificationQuery.map((row: any) => row.column_name) : 
+      (verificationQuery as any).rows?.map((row: any) => row.column_name) || [];
     
     if (remainingColumns.length > 0) {
       return NextResponse.json({

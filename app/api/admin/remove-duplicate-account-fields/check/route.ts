@@ -22,7 +22,9 @@ export async function GET(request: NextRequest) {
       AND column_name IN ('account_email', 'account_name', 'account_company')
     `);
 
-    const existingColumns = (columnsQuery as unknown as any[]).map((row: any) => row.column_name);
+    const existingColumns = Array.isArray(columnsQuery) ? 
+      columnsQuery.map((row: any) => row.column_name) : 
+      (columnsQuery as any).rows?.map((row: any) => row.column_name) || [];
     const columnsExist = {
       accountEmail: existingColumns.includes('account_email'),
       accountName: existingColumns.includes('account_name'),
@@ -47,7 +49,7 @@ export async function GET(request: NextRequest) {
         SELECT COUNT(*) as count
         FROM orders 
         WHERE account_id IS NOT NULL
-        ${existingColumns.length > 0 ? sql`AND (${sql.join(existingColumns.map(col => sql`${sql.identifier(col)} IS NOT NULL`), sql` OR `)})` : sql``}
+        ${existingColumns.length > 0 ? sql`AND (${sql.join(existingColumns.map((col: string) => sql`${sql.identifier(col)} IS NOT NULL`), sql` OR `)})` : sql``}
       `);
       ordersWithDuplicateData = parseInt((countQuery as any)[0]?.count || '0');
     }
@@ -75,7 +77,9 @@ export async function GET(request: NextRequest) {
       AND table_schema = 'public'
       AND column_name IN ('id', 'email', 'contact_name', 'company_name')
     `);
-    const accountsColumns = (accountsTableQuery as unknown as any[]).map((row: any) => row.column_name);
+    const accountsColumns = Array.isArray(accountsTableQuery) ? 
+      accountsTableQuery.map((row: any) => row.column_name) : 
+      (accountsTableQuery as any).rows?.map((row: any) => row.column_name) || [];
     
     if (accountsColumns.includes('id') && accountsColumns.includes('email')) {
       checks.push('Accounts table has required fields');
