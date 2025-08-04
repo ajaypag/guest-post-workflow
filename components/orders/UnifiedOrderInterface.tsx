@@ -884,23 +884,7 @@ export default function UnifiedOrderInterface({
       // First save the current changes
       await saveOrderDraft();
       
-      // If this is a draft order and we're submitting it
-      if (orderStatus === 'draft' && draftOrderId) {
-        // Submit the order (move from draft to pending_confirmation)
-        const response = await fetch(`/api/orders/${draftOrderId}/submit`, {
-          method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
-          credentials: 'include',
-          body: JSON.stringify({})
-        });
-        
-        if (!response.ok) {
-          const data = await response.json();
-          throw new Error(data.error || 'Failed to submit order');
-        }
-      }
-      
-      // Call the onSubmit prop if provided
+      // If we have an onSubmit prop, use it (for existing orders)
       if (onSubmit) {
         const orderData = {
           subtotal: subtotal,
@@ -935,6 +919,25 @@ export default function UnifiedOrderInterface({
         };
         
         await onSubmit(orderData);
+      } else if (orderStatus === 'draft' && draftOrderId) {
+        // Fallback for new draft orders without onSubmit prop
+        const response = await fetch(`/api/orders/${draftOrderId}/submit`, {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          credentials: 'include',
+          body: JSON.stringify({})
+        });
+        
+        if (!response.ok) {
+          const data = await response.json();
+          throw new Error(data.error || 'Failed to submit order');
+        }
+        
+        // Redirect to success page for new orders
+        window.location.href = `/orders/${draftOrderId}/success`;
+        return;
+      } else {
+        throw new Error('Cannot submit order: No submit handler available');
       }
       
       // Close modal
