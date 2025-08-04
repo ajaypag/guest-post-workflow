@@ -252,18 +252,18 @@ export default async function CategoryPage({ params }: { params: Promise<{ categ
             <div className="flex gap-3">
               <Shield className="w-6 h-6 text-blue-600 flex-shrink-0 mt-0.5" />
               <div>
-                <h3 className="font-semibold text-gray-900 mb-1">Quality Analysis</h3>
+                <h3 className="font-semibold text-gray-900 mb-1">Direct Keyword Overlap</h3>
                 <p className="text-sm text-gray-600">
-                  We verify each site's relevance and ranking potential for {categoryName.toLowerCase()}.
+                  We verify that each site actually ranks for keywords your site relates to.
                 </p>
               </div>
             </div>
             <div className="flex gap-3">
               <PenTool className="w-6 h-6 text-blue-600 flex-shrink-0 mt-0.5" />
               <div>
-                <h3 className="font-semibold text-gray-900 mb-1">Expert Content</h3>
+                <h3 className="font-semibold text-gray-900 mb-1">Research-Driven Content</h3>
                 <p className="text-sm text-gray-600">
-                  1000-1500 word articles that rank and survive AI detection.
+                  2000-3000 word articles with original research, stats, images, and genuine learning value.
                 </p>
               </div>
             </div>
@@ -436,15 +436,15 @@ export default async function CategoryPage({ params }: { params: Promise<{ categ
               <ul className="space-y-2">
                 <li className="flex items-start gap-2">
                   <CheckCircle className="w-5 h-5 text-green-600 mt-0.5 flex-shrink-0" />
-                  <span className="text-gray-700">Relevance analysis specific to {categoryName.toLowerCase()}</span>
+                  <span className="text-gray-700">Direct keyword overlap verification - does the site rank for keywords YOUR site relates to?</span>
                 </li>
                 <li className="flex items-start gap-2">
                   <CheckCircle className="w-5 h-5 text-green-600 mt-0.5 flex-shrink-0" />
-                  <span className="text-gray-700">Topic research with ranking potential</span>
+                  <span className="text-gray-700">Deep research with original stats, data, and industry insights</span>
                 </li>
                 <li className="flex items-start gap-2">
                   <CheckCircle className="w-5 h-5 text-green-600 mt-0.5 flex-shrink-0" />
-                  <span className="text-gray-700">1000-1500 word expert article</span>
+                  <span className="text-gray-700">2000-3000 word articles with genuine learning value</span>
                 </li>
                 <li className="flex items-start gap-2">
                   <CheckCircle className="w-5 h-5 text-green-600 mt-0.5 flex-shrink-0" />

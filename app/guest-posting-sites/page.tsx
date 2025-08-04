@@ -354,15 +354,15 @@ export default async function GuestPostingSitesPage() {
               <div className="w-12 h-12 bg-blue-100 rounded-lg flex items-center justify-center mx-auto mb-3">
                 <Target className="w-6 h-6 text-blue-600" />
               </div>
-              <h3 className="font-semibold mb-1">AI Site Selection</h3>
-              <p className="text-sm text-gray-600">Find sites that rank for YOUR keywords</p>
+              <h3 className="font-semibold mb-1">Direct Keyword Overlap</h3>
+              <p className="text-sm text-gray-600">Sites that actually rank for YOUR keywords</p>
             </div>
             <div className="text-center">
               <div className="w-12 h-12 bg-purple-100 rounded-lg flex items-center justify-center mx-auto mb-3">
                 <PenTool className="w-6 h-6 text-purple-600" />
               </div>
-              <h3 className="font-semibold mb-1">Expert Content</h3>
-              <p className="text-sm text-gray-600">1000-1500 words that actually rank</p>
+              <h3 className="font-semibold mb-1">Research-Driven Content</h3>
+              <p className="text-sm text-gray-600">2000-3000 words with stats, data, learning value</p>
             </div>
             <div className="text-center">
               <div className="w-12 h-12 bg-orange-100 rounded-lg flex items-center justify-center mx-auto mb-3">
