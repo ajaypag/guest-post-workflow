@@ -21,8 +21,8 @@ import {
 import Link from 'next/link';
 
 export const metadata: Metadata = {
-  title: 'Transparent Guest Posting Service - Wholesale Cost + $79 Per Link',
-  description: 'Skip the middleman markup. We show you the exact wholesale cost of guest posts and charge a flat $79 service fee for quality analysis, content creation, and placement.',
+  title: 'AI-Powered Guest Post Service - Find Sites That Actually Rank | PostFlow',
+  description: 'Our AI analyzes 13,000+ sites to find the 5-10 with genuine topical authority for YOUR keywords. Transparent pricing: wholesale cost + $79. No markups, just results.',
 };
 
 async function getWebsites() {
@@ -150,11 +150,11 @@ export default async function GuestPostingSitesPage() {
       <section className="bg-gradient-to-br from-blue-50 to-white py-16">
         <div className="max-w-4xl mx-auto px-4 sm:px-6 lg:px-8 text-center">
           <h1 className="text-4xl md:text-5xl font-bold text-gray-900 mb-6">
-            The End of Overpriced Link Building
+            Stop Wasting Money on Links That Don't Rank
           </h1>
           <p className="text-xl text-gray-600 mb-8">
-            See the exact wholesale cost. Pay just $79 for our service. 
-            <br />We handle quality analysis, content creation, and placement.
+            Our AI finds the 5-10 sites (out of 13,000+) with genuine topical authority for YOUR keywords.
+            <br />Transparent pricing: Wholesale cost + $79. No markups, no games.
           </p>
           
           {/* Value Props */}
@@ -166,8 +166,8 @@ export default async function GuestPostingSitesPage() {
             </div>
             <div className="bg-white p-6 rounded-lg shadow-sm">
               <Shield className="w-8 h-8 text-blue-600 mx-auto mb-3" />
-              <h3 className="font-semibold mb-2">Quality Analysis</h3>
-              <p className="text-sm text-gray-600">We verify relevance and ranking potential</p>
+              <h3 className="font-semibold mb-2">AI Topical Analysis</h3>
+              <p className="text-sm text-gray-600">Find sites that rank for YOUR keywords</p>
             </div>
             <div className="bg-white p-6 rounded-lg shadow-sm">
               <PenTool className="w-8 h-8 text-purple-600 mx-auto mb-3" />
@@ -187,21 +187,147 @@ export default async function GuestPostingSitesPage() {
       <section className="py-12 max-w-4xl mx-auto px-4 sm:px-6 lg:px-8">
         <div className="prose prose-lg max-w-none">
           <h2 className="text-3xl font-bold text-gray-900 mb-6">
-            Why Traditional Link Building is Broken
+            The Hidden Problem: 99% of Guest Posts Fail
           </h2>
           <p className="text-gray-600 mb-4">
-            The old model is dying. Agencies charge $300-500 per link, pay bloggers $60, 
-            and pocket the difference. But in today's AI-driven search landscape, this 
-            approach no longer works.
+            Here's what nobody talks about: You can get a link on a DR70 health site, but if 
+            you're selling gardening tools, Google knows it's irrelevant. Even worse – that 
+            "health" site might only rank for ultra-specific long-tail terms like "best organic 
+            prenatal vitamins for vegans in 2024."
           </p>
           <p className="text-gray-600 mb-8">
-            <strong>The real challenge isn't finding websites</strong> – it's identifying 
-            topics that will rank, ensuring thematic relevance, and creating content that 
-            survives AI detection. That's where we come in.
+            <strong>The real challenge isn't finding high DR sites</strong> – it's understanding 
+            which sites have topical authority for YOUR keywords and what content angles will 
+            actually rank. Our AI analyzes 13,000+ sites to find the 5-10 that can genuinely 
+            move the needle for your specific business.
           </p>
 
           <h3 className="text-2xl font-bold text-gray-900 mb-4">
-            Our Transparent Approach
+            How We Find Your Perfect 5-10 Sites (Out of 13,000+)
+          </h3>
+          <p className="text-gray-600 mb-6">
+            Our AI-powered analysis goes beyond basic metrics. For each of your target keywords, 
+            we analyze:
+          </p>
+
+          <div className="grid md:grid-cols-3 gap-6 mb-8">
+            <div className="bg-white rounded-lg border border-gray-200 p-4">
+              <h4 className="font-semibold text-gray-900 mb-2 flex items-center">
+                <Target className="w-5 h-5 text-blue-600 mr-2" />
+                Topical Match Score
+              </h4>
+              <ul className="text-sm text-gray-600 space-y-1">
+                <li>• <strong>Direct:</strong> Already ranks for your keywords</li>
+                <li>• <strong>Related:</strong> Ranks for sibling topics</li>
+                <li>• <strong>Both:</strong> Maximum authority signals</li>
+              </ul>
+            </div>
+            
+            <div className="bg-white rounded-lg border border-gray-200 p-4">
+              <h4 className="font-semibold text-gray-900 mb-2 flex items-center">
+                <TrendingUp className="w-5 h-5 text-green-600 mr-2" />
+                Authority Assessment
+              </h4>
+              <ul className="text-sm text-gray-600 space-y-1">
+                <li>• <strong>Strong:</strong> Top 30 rankings (pages 1-3)</li>
+                <li>• <strong>Moderate:</strong> Positions 31-60</li>
+                <li>• <strong>Weak:</strong> Positions 61-100</li>
+              </ul>
+            </div>
+            
+            <div className="bg-white rounded-lg border border-gray-200 p-4">
+              <h4 className="font-semibold text-gray-900 mb-2 flex items-center">
+                <PenTool className="w-5 h-5 text-purple-600 mr-2" />
+                Content Strategy
+              </h4>
+              <ul className="text-sm text-gray-600 space-y-1">
+                <li>• <strong>Short-tail:</strong> Can rank broadly</li>
+                <li>• <strong>Long-tail:</strong> Needs modifiers</li>
+                <li>• <strong>Ultra-specific:</strong> Niche angles</li>
+              </ul>
+            </div>
+          </div>
+
+          <div className="bg-yellow-50 border-l-4 border-yellow-500 p-6 my-8">
+            <h4 className="font-semibold text-gray-900 mb-2">Example: Why Most Link Building Fails</h4>
+            <p className="text-gray-700 mb-3">
+              Let's say you're selling project management software. A typical link building agency might get you:
+            </p>
+            <ul className="space-y-2 text-gray-700">
+              <li>• DR70 health blog → <span className="text-red-600">Zero ranking value</span> (wrong topic)</li>
+              <li>• DR65 general business site → <span className="text-orange-600">Minimal value</span> (too broad)</li>
+              <li>• DR45 project management blog → <span className="text-green-600">Maximum value</span> (perfect topical match)</li>
+            </ul>
+            <p className="text-gray-700 mt-3">
+              <strong>Our AI identifies that DR45 site as a "Strong/Direct" match</strong> because it already ranks 
+              for your exact keywords. That single link will outperform 10 links from high DR but topically 
+              irrelevant sites.
+            </p>
+          </div>
+
+          <h3 className="text-2xl font-bold text-gray-900 mb-4">
+            See Your Actual AI Analysis Results
+          </h3>
+          <p className="text-gray-600 mb-6">
+            When you submit your keywords, our AI analyzes all 13,000+ sites and provides a detailed report 
+            showing exactly why each site was selected or rejected. No black box – you see everything.
+          </p>
+
+          <div className="bg-gray-50 rounded-lg p-6 mb-8">
+            <h4 className="font-semibold text-gray-900 mb-4">Sample AI Analysis Output</h4>
+            <div className="space-y-4">
+              <div className="bg-white rounded p-4 border border-gray-200">
+                <div className="flex justify-between items-start mb-2">
+                  <h5 className="font-medium">techtools.com</h5>
+                  <span className="px-2 py-1 bg-green-100 text-green-800 text-xs rounded">Qualified</span>
+                </div>
+                <div className="grid grid-cols-3 gap-4 text-sm">
+                  <div>
+                    <span className="text-gray-600">Overlap:</span>
+                    <span className="font-medium ml-1">Direct</span>
+                  </div>
+                  <div>
+                    <span className="text-gray-600">Authority:</span>
+                    <span className="font-medium ml-1">Strong</span>
+                  </div>
+                  <div>
+                    <span className="text-gray-600">Strategy:</span>
+                    <span className="font-medium ml-1">Short-tail</span>
+                  </div>
+                </div>
+                <p className="text-xs text-gray-600 mt-2">
+                  Evidence: Ranks #12 for "project management software", #8 for "task tracking tools"
+                </p>
+              </div>
+              
+              <div className="bg-white rounded p-4 border border-gray-200">
+                <div className="flex justify-between items-start mb-2">
+                  <h5 className="font-medium">businessnews.com</h5>
+                  <span className="px-2 py-1 bg-red-100 text-red-800 text-xs rounded">Disqualified</span>
+                </div>
+                <div className="grid grid-cols-3 gap-4 text-sm">
+                  <div>
+                    <span className="text-gray-600">Overlap:</span>
+                    <span className="font-medium ml-1">None</span>
+                  </div>
+                  <div>
+                    <span className="text-gray-600">Authority:</span>
+                    <span className="font-medium ml-1">N/A</span>
+                  </div>
+                  <div>
+                    <span className="text-gray-600">Strategy:</span>
+                    <span className="font-medium ml-1">-</span>
+                  </div>
+                </div>
+                <p className="text-xs text-gray-600 mt-2">
+                  Evidence: No rankings found for any project management related keywords
+                </p>
+              </div>
+            </div>
+          </div>
+
+          <h3 className="text-2xl font-bold text-gray-900 mb-4">
+            Our Transparent Pricing Model
           </h3>
           <p className="text-gray-600 mb-6">
             Inspired by Mark Cuban's Cost Plus Drugs model, we show you the exact wholesale 
@@ -214,23 +340,19 @@ export default async function GuestPostingSitesPage() {
             <ul className="space-y-2 text-gray-700">
               <li className="flex items-start gap-2">
                 <CheckCircle className="w-5 h-5 text-green-600 mt-0.5 flex-shrink-0" />
-                <span>Quality and relevance analysis for your niche</span>
+                <span><strong>AI-Powered Site Selection</strong> - From 13,000+ sites, we identify the 5-10 with genuine topical authority for your keywords</span>
               </li>
               <li className="flex items-start gap-2">
                 <CheckCircle className="w-5 h-5 text-green-600 mt-0.5 flex-shrink-0" />
-                <span>Topic research with ranking potential assessment</span>
+                <span><strong>Content Strategy Optimization</strong> - We determine if each site needs short-tail, long-tail, or ultra-specific content angles</span>
               </li>
               <li className="flex items-start gap-2">
                 <CheckCircle className="w-5 h-5 text-green-600 mt-0.5 flex-shrink-0" />
-                <span>Expert article writing (1000-1500 words)</span>
+                <span><strong>Expert Article Creation</strong> - 1000-1500 words written specifically for the site's ranking ability</span>
               </li>
               <li className="flex items-start gap-2">
                 <CheckCircle className="w-5 h-5 text-green-600 mt-0.5 flex-shrink-0" />
-                <span>Outreach, negotiation, and placement</span>
-              </li>
-              <li className="flex items-start gap-2">
-                <CheckCircle className="w-5 h-5 text-green-600 mt-0.5 flex-shrink-0" />
-                <span>Quality assurance and link verification</span>
+                <span><strong>Full Placement Service</strong> - Professional outreach, negotiation, and quality assurance</span>
               </li>
             </ul>
           </div>
@@ -378,10 +500,10 @@ export default async function GuestPostingSitesPage() {
                 1
               </div>
               <div>
-                <h3 className="font-semibold text-lg mb-2">Browse & Select Sites</h3>
+                <h3 className="font-semibold text-lg mb-2">Submit Your Target Keywords</h3>
                 <p className="text-gray-600">
-                  Search our database of {totalCount.toLocaleString()} verified websites. 
-                  See real wholesale costs with no hidden markups.
+                  Tell us what keywords you want to rank for. Our AI analyzes all {totalCount.toLocaleString()} sites 
+                  in our database to find which ones have genuine topical authority for YOUR specific keywords.
                 </p>
               </div>
             </div>
@@ -391,10 +513,11 @@ export default async function GuestPostingSitesPage() {
                 2
               </div>
               <div>
-                <h3 className="font-semibold text-lg mb-2">We Analyze & Strategize</h3>
+                <h3 className="font-semibold text-lg mb-2">AI Identifies Your Perfect 5-10 Sites</h3>
                 <p className="text-gray-600">
-                  Our team verifies site quality, identifies ranking opportunities, 
-                  and develops topics with strong thematic overlap to your brand.
+                  Out of 13,000+ options, our AI finds the handful that can actually move the needle. 
+                  You see exactly why each site was chosen: their current rankings, topical overlap, 
+                  and recommended content strategy.
                 </p>
               </div>
             </div>
@@ -474,6 +597,29 @@ export default async function GuestPostingSitesPage() {
                 Our model is built around providing full service. The $79 fee covers 
                 our expertise in topic selection, content creation, and relationship 
                 management – the hardest parts of modern link building.
+              </p>
+            </div>
+
+            <div>
+              <h3 className="font-semibold text-lg mb-2">
+                How does the AI topical analysis work?
+              </h3>
+              <p className="text-gray-600">
+                We analyze each site's current rankings for thousands of keywords. Our AI identifies 
+                which sites already rank for your target keywords (direct match) or related topics 
+                (sibling match). Sites with no topical overlap are automatically excluded, regardless 
+                of their DR.
+              </p>
+            </div>
+
+            <div>
+              <h3 className="font-semibold text-lg mb-2">
+                Why is a DR45 site sometimes better than a DR70 site?
+              </h3>
+              <p className="text-gray-600">
+                Google values topical relevance over raw domain authority. A DR45 site that already 
+                ranks for your keywords has proven topical authority. A DR70 site in an unrelated 
+                niche provides little to no ranking value, regardless of its metrics.
               </p>
             </div>
 
