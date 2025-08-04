@@ -671,15 +671,24 @@ export default function InternalOrderManagementPage() {
     if (!order) return 'initial';
     if (order.status === 'completed') return 'completed';
     if (order.state === 'in_progress') return 'content_creation';
-    if (order.state === 'sites_ready' || order.state === 'site_review' || order.state === 'client_reviewing') {
-      // Check if most sites are approved - if so, we're past selection phase
-      const totalSubmissions = Object.values(siteSubmissions).flat().length;
+    
+    // Check if we have any site submissions - if so, we're past initial selection
+    const totalSubmissions = Object.values(siteSubmissions).flat().length;
+    
+    if (totalSubmissions > 0) {
+      // If we have sites, determine if we're in selection or post-approval phase
       const approvedSubmissions = Object.values(siteSubmissions).flat().filter(s => s.submissionStatus === 'client_approved').length;
-      if (totalSubmissions > 0 && approvedSubmissions / totalSubmissions > 0.5) {
+      
+      // If more than half are approved, we're in post-approval consolidation phase
+      if (approvedSubmissions / totalSubmissions > 0.5) {
         return 'post_approval';
       }
-      return 'site_selection';
+      
+      // Otherwise, we're still in site selection but with consolidated view
+      return 'site_selection_with_sites';
     }
+    
+    // No sites yet - show traditional separate columns
     return 'initial';
   };
 
@@ -687,14 +696,14 @@ export default function InternalOrderManagementPage() {
 
   const getColumnConfig = () => {
     switch (workflowStage) {
-      case 'site_selection':
+      case 'site_selection_with_sites':
         return {
-          showSeparateDetails: true,
+          showSeparateDetails: false,
           showGuestPostSite: true,
           showDraftUrl: false,
           showPublishedUrl: false,
-          showStatus: false,
-          columns: ['client', 'anchor', 'site', 'price', 'tools']
+          showStatus: true,
+          columns: ['client', 'link_details', 'site', 'status', 'tools']
         };
       case 'post_approval':
         return {
