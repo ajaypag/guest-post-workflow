@@ -49,33 +49,23 @@ async function getWebsites() {
       .select({ count: sql<number>`count(*)` })
       .from(websites);
 
-    // Get all niches from PostgreSQL arrays
+    // Get niches with at least 10 websites (minimum threshold for page creation)
     const nichesResult = await db.execute(sql`
-      SELECT UNNEST(niche) as niche_name
+      SELECT 
+        UNNEST(niche) as niche_name,
+        COUNT(*) as website_count
       FROM websites
       WHERE niche IS NOT NULL AND array_length(niche, 1) > 0
+      GROUP BY niche_name
+      HAVING COUNT(*) >= 10
+      ORDER BY website_count DESC
+      LIMIT 20
     `);
     
-    // Count niches
-    const nicheCount = new Map<string, number>();
-    nichesResult.rows.forEach((row: any) => {
-      if (row.niche_name) {
-        const trimmed = row.niche_name.trim();
-        if (trimmed) {
-          nicheCount.set(trimmed, (nicheCount.get(trimmed) || 0) + 1);
-        }
-      }
-    });
-    
-    // Convert to array and sort by count
-    const topNiches = Array.from(nicheCount.entries())
-      .filter(([_, count]) => count >= 5)
-      .sort((a, b) => b[1] - a[1])
-      .slice(0, 20)
-      .map(([name, count]) => ({
-        name,
-        count
-      }));
+    const topNiches = nichesResult.rows.map((row: any) => ({
+      name: row.niche_name,
+      count: parseInt(row.website_count)
+    }));
 
     return {
       websites: websiteResults.map(site => ({

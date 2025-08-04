@@ -23,24 +23,20 @@ import { generateNicheQueries } from '@/lib/utils/queryGenerator';
 // This function runs at BUILD TIME to generate all niche pages
 export async function generateStaticParams() {
   try {
-    // Get all unique niches from PostgreSQL arrays
+    // Get niches with at least 10 websites (minimum threshold)
     const websitesResult = await db.execute(sql`
-      SELECT DISTINCT UNNEST(niche) as niche_name
+      SELECT 
+        UNNEST(niche) as niche_name,
+        COUNT(*) as website_count
       FROM websites
       WHERE niche IS NOT NULL 
         AND array_length(niche, 1) > 0
+      GROUP BY niche_name
+      HAVING COUNT(*) >= 10
     `);
     
-    // Extract unique niches
-    const uniqueNiches = new Set<string>();
-    websitesResult.rows.forEach((row: any) => {
-      if (row.niche_name) {
-        uniqueNiches.add(row.niche_name.trim());
-      }
-    });
-    
-    return Array.from(uniqueNiches).map(nicheName => ({
-      niche: nicheName
+    return websitesResult.rows.map((row: any) => ({
+      niche: row.niche_name
         .toLowerCase()
         .replace(/[&\s]+/g, '-')
         .replace(/[^a-z0-9-]/g, '')
