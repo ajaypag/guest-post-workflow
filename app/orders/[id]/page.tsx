@@ -16,6 +16,13 @@ interface OrderData {
   created_by: string;
   account_id: string;
   order_groups?: any[];
+  account?: {
+    email: string;
+    contactName?: string;
+    companyName?: string;
+  };
+  createdAt: string;
+  updatedAt: string;
 }
 
 export default function OrderPage() {
@@ -26,6 +33,8 @@ export default function OrderPage() {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [session, setSession] = useState<AuthSession | null>(null);
+  const [siteSubmissions, setSiteSubmissions] = useState<Record<string, any[]>>({});
+  const [isNewOrder, setIsNewOrder] = useState(false);
 
   useEffect(() => {
     // Get session
@@ -36,7 +45,9 @@ export default function OrderPage() {
   useEffect(() => {
     const fetchOrder = async () => {
       try {
-        const response = await fetch(`/api/orders/${orderId}`);
+        const response = await fetch(`/api/orders/${orderId}`, {
+          credentials: 'include'
+        });
         if (!response.ok) {
           if (response.status === 404) {
             setError('Order not found');
@@ -46,6 +57,35 @@ export default function OrderPage() {
         }
         const data = await response.json();
         setOrderData(data);
+        
+        // Determine if this is a new order (just created from /orders/new)
+        const isNew = data.status === 'draft' && 
+                     (!data.order_groups || data.order_groups.length === 0) &&
+                     new Date(data.createdAt).getTime() > Date.now() - 60000; // Created within last minute
+        setIsNewOrder(isNew);
+        
+        // Load site submissions if confirmed order
+        if (data.status === 'confirmed' && data.order_groups) {
+          const submissionsMap: Record<string, any[]> = {};
+          
+          // Fetch site submissions for each order group
+          for (const group of data.order_groups) {
+            try {
+              const submissionsResponse = await fetch(
+                `/api/orders/${orderId}/groups/${group.id}/site-submissions`,
+                { credentials: 'include' }
+              );
+              if (submissionsResponse.ok) {
+                const submissions = await submissionsResponse.json();
+                submissionsMap[group.id] = submissions;
+              }
+            } catch (err) {
+              console.error('Error loading site submissions for group:', group.id, err);
+            }
+          }
+          
+          setSiteSubmissions(submissionsMap);
+        }
       } catch (err) {
         setError('Error loading order');
         console.error('Error fetching order:', err);
@@ -64,6 +104,7 @@ export default function OrderPage() {
       const response = await fetch(`/api/orders/${orderId}`, {
         method: 'PUT',
         headers: { 'Content-Type': 'application/json' },
+        credentials: 'include',
         body: JSON.stringify(orderFormData),
       });
       
@@ -82,22 +123,30 @@ export default function OrderPage() {
 
   const handleSubmit = async (orderFormData: any) => {
     try {
-      // For draft orders, confirm them
+      // First save the current changes
+      await handleSave(orderFormData);
+      
+      // If this is a draft order and we're submitting it
       if (orderData?.status === 'draft') {
-        const response = await fetch(`/api/orders/${orderId}/confirm`, {
+        // Submit the order (move from draft to pending_confirmation)
+        const response = await fetch(`/api/orders/${orderId}/submit`, {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
+          credentials: 'include',
+          body: JSON.stringify({})
         });
         
         if (!response.ok) {
-          throw new Error('Failed to confirm order');
+          const data = await response.json();
+          throw new Error(data.error || 'Failed to submit order');
         }
         
-        // Redirect to success page or refresh
+        // Redirect to success page
         router.push(`/orders/${orderId}/success`);
       } else {
-        // For other statuses, just save
-        await handleSave(orderFormData);
+        // For other statuses, the save is already complete
+        // Refresh the page to show updated data
+        window.location.reload();
       }
     } catch (err) {
       console.error('Error submitting order:', err);
@@ -152,8 +201,11 @@ export default function OrderPage() {
       <div className="min-h-screen">
         <UnifiedOrderInterface
           orderId={orderId}
+          orderGroups={orderData.order_groups}
+          siteSubmissions={siteSubmissions}
           userType={userType}
           orderStatus={orderData.status}
+          orderState={orderData.state}
           isPaid={orderData.payment_status === 'paid'}
           onSave={handleSave}
           onSubmit={handleSubmit}
