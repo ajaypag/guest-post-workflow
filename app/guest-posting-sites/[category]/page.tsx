@@ -11,7 +11,10 @@ import {
   Zap,
   ArrowRight,
   ArrowLeft,
-  Building2
+  Building2,
+  DollarSign,
+  Shield,
+  PenTool
 } from 'lucide-react';
 import Link from 'next/link';
 
@@ -76,8 +79,8 @@ export async function generateMetadata({ params }: { params: Promise<{ category:
   }
   
   return {
-    title: `${categoryName} Guest Posting Sites - High-Quality Websites`,
-    description: `Find verified ${categoryName.toLowerCase()} websites accepting guest posts. Domain ratings, traffic data, and pricing included.`,
+    title: `${categoryName} Guest Posting Service - Wholesale + $79 Per Link`,
+    description: `Transparent ${categoryName.toLowerCase()} guest posting. See exact wholesale costs, pay just $79 for content creation and placement.`,
   };
 }
 
@@ -156,7 +159,7 @@ export default async function CategoryPage({ params }: { params: Promise<{ categ
               </div>
               <div>
                 <div className="text-lg font-semibold text-gray-900">PostFlow</div>
-                <div className="text-xs text-gray-500 -mt-1">Guest Post Database</div>
+                <div className="text-xs text-gray-500 -mt-1">Transparent Link Building</div>
               </div>
             </Link>
             
@@ -172,7 +175,7 @@ export default async function CategoryPage({ params }: { params: Promise<{ categ
                 href="/signup/marketing" 
                 className="flex items-center gap-2 px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 text-sm font-medium transition-colors"
               >
-                Get Full Access
+                Get Started
                 <ArrowRight className="w-4 h-4" />
               </Link>
             </div>
@@ -187,7 +190,7 @@ export default async function CategoryPage({ params }: { params: Promise<{ categ
           <nav className="flex items-center space-x-2 text-sm text-gray-600">
             <Link href="/guest-posting-sites" className="hover:text-gray-900 flex items-center gap-1">
               <ArrowLeft className="w-3 h-3" />
-              All Sites
+              All Categories
             </Link>
             <span className="text-gray-400">/</span>
             <span className="text-gray-900 font-medium">{categoryName}</span>
@@ -196,58 +199,61 @@ export default async function CategoryPage({ params }: { params: Promise<{ categ
 
         {/* Page Header */}
         <div className="mb-6">
-          <h1 className="text-3xl font-bold mb-2">{categoryName} Guest Posting Sites</h1>
+          <h1 className="text-3xl font-bold mb-2">{categoryName} Guest Posting Service</h1>
           <p className="text-gray-600">
-            Browse {totalCount} verified {categoryName.toLowerCase()} websites accepting guest posts
+            {totalCount} {categoryName.toLowerCase()} websites • Wholesale prices + $79 service fee
           </p>
         </div>
 
-        {/* Actions Bar */}
-        <div className="bg-white rounded-lg shadow-sm border p-4 mb-6">
-          <div className="flex flex-wrap items-center gap-4">
-            {/* Search */}
-            <div className="flex-1 min-w-[300px]">
-              <div className="relative">
-                <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400 w-5 h-5" />
-                <input
-                  type="text"
-                  placeholder={`Search ${categoryName.toLowerCase()} websites...`}
-                  className="w-full pl-10 pr-4 py-2 border rounded-lg focus:ring-2 focus:ring-blue-500"
-                  disabled
-                />
+        {/* Value Proposition Box */}
+        <div className="bg-blue-50 border border-blue-200 rounded-lg p-6 mb-8">
+          <div className="grid md:grid-cols-3 gap-6">
+            <div className="flex gap-3">
+              <DollarSign className="w-6 h-6 text-blue-600 flex-shrink-0 mt-0.5" />
+              <div>
+                <h3 className="font-semibold text-gray-900 mb-1">Transparent Pricing</h3>
+                <p className="text-sm text-gray-600">
+                  See exact wholesale costs. No hidden markups or percentage games.
+                </p>
               </div>
             </div>
-
-            {/* Filter Toggle */}
-            <button
-              className="flex items-center gap-2 px-4 py-2 border rounded-lg hover:bg-gray-50"
-              disabled
-            >
-              <Filter className="w-4 h-4" />
-              Filters
-            </button>
-
-            {/* CTA */}
-            <Link
-              href="/signup/marketing"
-              className="flex items-center gap-2 px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 font-medium"
-            >
-              <Building2 className="w-4 h-4" />
-              Get Full Access
-            </Link>
+            <div className="flex gap-3">
+              <Shield className="w-6 h-6 text-blue-600 flex-shrink-0 mt-0.5" />
+              <div>
+                <h3 className="font-semibold text-gray-900 mb-1">Quality Analysis</h3>
+                <p className="text-sm text-gray-600">
+                  We verify each site's relevance and ranking potential for {categoryName.toLowerCase()}.
+                </p>
+              </div>
+            </div>
+            <div className="flex gap-3">
+              <PenTool className="w-6 h-6 text-blue-600 flex-shrink-0 mt-0.5" />
+              <div>
+                <h3 className="font-semibold text-gray-900 mb-1">Expert Content</h3>
+                <p className="text-sm text-gray-600">
+                  1000-1500 word articles that rank and survive AI detection.
+                </p>
+              </div>
+            </div>
           </div>
         </div>
 
-        {/* Websites Table - Same style as main page */}
+        {/* Websites Table */}
         <div className="bg-white rounded-lg shadow-sm border overflow-hidden">
+          <div className="px-4 py-3 bg-gray-50 border-b">
+            <p className="text-sm text-gray-700">
+              <span className="font-medium">{categoryName} websites from our network.</span> 
+              {" "}Wholesale costs shown • Add $79 per link for our complete service
+            </p>
+          </div>
           <table className="w-full">
             <thead className="bg-gray-50 border-b">
               <tr>
                 <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase">Domain</th>
                 <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase">DR</th>
                 <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase">Traffic</th>
-                <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase">Cost</th>
-                <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase">Access</th>
+                <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase">Wholesale Cost</th>
+                <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase">Your Total</th>
                 <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase">Categories</th>
                 <th className="px-4 py-3 text-right text-xs font-medium text-gray-500 uppercase">Action</th>
               </tr>
@@ -272,25 +278,13 @@ export default async function CategoryPage({ params }: { params: Promise<{ categ
                     </div>
                   </td>
                   <td className="px-4 py-3">
-                    <div className="flex items-center gap-1">
-                      <span className="text-gray-500">
-                        {getCostIndicator(site.guestPostCost)}
-                      </span>
-                      {site.guestPostCost && (
-                        <span className="text-sm text-gray-600">
-                          ${parseFloat(site.guestPostCost.toString())}
-                        </span>
-                      )}
+                    <div className="font-medium">
+                      {site.guestPostCost ? `$${parseFloat(site.guestPostCost.toString())}` : 'Free'}
                     </div>
                   </td>
                   <td className="px-4 py-3">
-                    <div className="flex gap-1">
-                      {site.hasGuestPost && (
-                        <span className="inline-flex items-center gap-1 text-xs px-2 py-1 bg-green-100 text-green-700 rounded">
-                          <CheckCircle className="w-3 h-3" />
-                          GP
-                        </span>
-                      )}
+                    <div className="font-medium text-green-600">
+                      ${(site.guestPostCost ? parseFloat(site.guestPostCost.toString()) : 0) + 79}
                     </div>
                   </td>
                   <td className="px-4 py-3">
@@ -317,7 +311,7 @@ export default async function CategoryPage({ params }: { params: Promise<{ categ
                       href="/signup/marketing"
                       className="text-sm px-3 py-1 bg-blue-600 text-white rounded hover:bg-blue-700 inline-block"
                     >
-                      View Details
+                      Get Started
                     </Link>
                   </td>
                 </tr>
@@ -335,32 +329,81 @@ export default async function CategoryPage({ params }: { params: Promise<{ categ
           {/* Table Footer */}
           {websiteResults.length > 0 && (
             <div className="px-4 py-3 border-t bg-gray-50">
-              <div className="text-sm text-gray-700">
-                Showing 1 to {websiteResults.length} of {totalCount} results in {categoryName}
-                <span className="ml-2 text-gray-500">
-                  • Sign up to see all results with contact information
-                </span>
+              <div className="flex items-center justify-between">
+                <p className="text-sm text-gray-700">
+                  Showing 1 to {websiteResults.length} of {totalCount} {categoryName} websites
+                </p>
+                <p className="text-sm text-gray-600">
+                  Wholesale prices shown • Add $79 for our service
+                </p>
               </div>
             </div>
           )}
         </div>
 
-        {/* CTA Section - Same as main page */}
+        {/* Service Details Section */}
+        <div className="mt-12 bg-white rounded-lg shadow-sm border p-8">
+          <h2 className="text-2xl font-bold text-gray-900 mb-6">
+            How We Handle {categoryName} Guest Posts
+          </h2>
+          
+          <div className="grid md:grid-cols-2 gap-8">
+            <div>
+              <h3 className="font-semibold text-lg mb-3">What's Included in Our $79 Service:</h3>
+              <ul className="space-y-2">
+                <li className="flex items-start gap-2">
+                  <CheckCircle className="w-5 h-5 text-green-600 mt-0.5 flex-shrink-0" />
+                  <span className="text-gray-700">Relevance analysis specific to {categoryName.toLowerCase()}</span>
+                </li>
+                <li className="flex items-start gap-2">
+                  <CheckCircle className="w-5 h-5 text-green-600 mt-0.5 flex-shrink-0" />
+                  <span className="text-gray-700">Topic research with ranking potential</span>
+                </li>
+                <li className="flex items-start gap-2">
+                  <CheckCircle className="w-5 h-5 text-green-600 mt-0.5 flex-shrink-0" />
+                  <span className="text-gray-700">1000-1500 word expert article</span>
+                </li>
+                <li className="flex items-start gap-2">
+                  <CheckCircle className="w-5 h-5 text-green-600 mt-0.5 flex-shrink-0" />
+                  <span className="text-gray-700">Outreach and negotiation</span>
+                </li>
+                <li className="flex items-start gap-2">
+                  <CheckCircle className="w-5 h-5 text-green-600 mt-0.5 flex-shrink-0" />
+                  <span className="text-gray-700">Placement and link verification</span>
+                </li>
+              </ul>
+            </div>
+            
+            <div>
+              <h3 className="font-semibold text-lg mb-3">Why {categoryName} Links Matter:</h3>
+              <p className="text-gray-700 mb-4">
+                {categoryName} is a competitive niche where quality and relevance are crucial. 
+                Our team ensures every link adds real value to your SEO strategy.
+              </p>
+              <p className="text-gray-700">
+                We don't just place links – we create content that ranks and drives traffic 
+                while building your authority in the {categoryName.toLowerCase()} space.
+              </p>
+            </div>
+          </div>
+        </div>
+
+        {/* CTA Section */}
         {websiteResults.length > 0 && (
           <div className="mt-8 bg-gradient-to-r from-blue-50 to-purple-50 rounded-lg p-8 border border-blue-100">
             <div className="max-w-2xl mx-auto text-center">
               <h3 className="text-2xl font-bold text-gray-900 mb-2">
-                Get Full Access to {totalCount} {categoryName} Websites
+                Ready to Build Quality {categoryName} Links?
               </h3>
               <p className="text-gray-600 mb-6">
-                Unlock contact emails, advanced filters, and export all {categoryName.toLowerCase()} sites
+                Transparent pricing • Expert content • Full placement service
               </p>
               <div className="flex flex-col sm:flex-row gap-4 justify-center">
                 <Link
                   href="/signup/marketing"
                   className="flex items-center justify-center gap-2 px-6 py-3 bg-blue-600 text-white font-medium rounded-lg hover:bg-blue-700 transition-colors"
                 >
-                  Get Started Free
+                  Start Your Campaign
                   <ArrowRight className="w-4 h-4" />
                 </Link>
                 <Link
