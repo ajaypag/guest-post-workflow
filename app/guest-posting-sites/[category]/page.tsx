@@ -216,48 +216,48 @@ export default async function CategoryPage({ params }: { params: Promise<{ categ
       </header>
 
       {/* Hero Section */}
-      <div className="bg-gradient-to-br from-blue-600 to-purple-700 text-white">
+      <div className="bg-white border-b">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-16">
           {/* Breadcrumb */}
-          <nav className="flex items-center space-x-2 text-sm mb-6 text-blue-100">
-            <Link href="/guest-posting-sites" className="hover:text-white flex items-center gap-1">
+          <nav className="flex items-center space-x-2 text-sm mb-6 text-gray-600">
+            <Link href="/guest-posting-sites" className="hover:text-gray-900 flex items-center gap-1">
               <ArrowLeft className="w-3 h-3" />
               All Categories
             </Link>
-            <span className="text-blue-300">/</span>
-            <span className="text-white font-medium">{categoryName}</span>
+            <span className="text-gray-400">/</span>
+            <span className="text-gray-900 font-medium">{categoryName}</span>
           </nav>
 
           <div className="grid lg:grid-cols-2 gap-12 items-center">
             {/* Left: Main Content */}
             <div>
-              <h1 className="text-4xl md:text-5xl font-bold mb-4">
+              <h1 className="text-4xl md:text-5xl font-bold text-gray-900 mb-4">
                 {categoryName} Guest Posting Sites
               </h1>
-              <p className="text-xl text-blue-100 mb-6">
+              <p className="text-xl text-gray-600 mb-6">
                 {totalCount} verified {categoryName.toLowerCase()} websites with transparent pricing
               </p>
               
               {/* Key Benefits */}
               <div className="space-y-3 mb-8">
                 <div className="flex items-center gap-3">
-                  <CheckCircle className="w-5 h-5 text-green-400 flex-shrink-0" />
-                  <span>Direct keyword overlap verification</span>
+                  <CheckCircle className="w-5 h-5 text-green-600 flex-shrink-0" />
+                  <span className="text-gray-700">Direct keyword overlap verification</span>
                 </div>
                 <div className="flex items-center gap-3">
-                  <CheckCircle className="w-5 h-5 text-green-400 flex-shrink-0" />
-                  <span>Wholesale prices + $79 service fee</span>
+                  <CheckCircle className="w-5 h-5 text-green-600 flex-shrink-0" />
+                  <span className="text-gray-700">Wholesale prices + $79 service fee</span>
                 </div>
                 <div className="flex items-center gap-3">
-                  <CheckCircle className="w-5 h-5 text-green-400 flex-shrink-0" />
-                  <span>2000-3000 word research-driven content</span>
+                  <CheckCircle className="w-5 h-5 text-green-600 flex-shrink-0" />
+                  <span className="text-gray-700">2000-3000 word research-driven content</span>
                 </div>
               </div>
             </div>
 
             {/* Right: URL Input Tool */}
-            <div className="bg-white rounded-xl p-6 text-gray-900">
-              <h3 className="text-xl font-semibold mb-3">Get Your {categoryName} Sites</h3>
+            <div className="bg-gray-50 border rounded-xl p-6">
+              <h3 className="text-xl font-semibold text-gray-900 mb-3">Get Your {categoryName} Sites</h3>
               <p className="text-gray-600 mb-4">
                 Enter your target URL to see which {categoryName.toLowerCase()} sites match your content
               </p>
@@ -266,7 +266,7 @@ export default async function CategoryPage({ params }: { params: Promise<{ categ
                 <input
                   type="url"
                   placeholder="https://your-website.com/target-page"
-                  className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                  className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent bg-white"
                 />
                 <button className="w-full px-6 py-3 bg-blue-600 text-white rounded-lg hover:bg-blue-700 font-medium transition-colors">
                   Analyze My Page
