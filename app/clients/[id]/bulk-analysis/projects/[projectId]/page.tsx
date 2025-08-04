@@ -3258,9 +3258,19 @@ anotherdomain.com"
             setShowGuidedTriage(false);
             loadDomains(); // Reload to see updates
             
-            // If user came from guided link, go back to where they came from
+            // If user came from guided link, navigate properly
             if (cameFromGuidedLink) {
-              router.back();
+              // Check if we have an order context to go back to
+              if (orderContext?.order?.id) {
+                router.push(`/orders/${orderContext.order.id}/internal`);
+              } else {
+                // Fallback to going back or to the projects list
+                if (window.history.length > 1) {
+                  router.back();
+                } else {
+                  router.push(`/clients/${params.id}/bulk-analysis`);
+                }
+              }
             }
           }}
           onUpdateStatus={async (domainId: string, status: 'high_quality' | 'good_quality' | 'marginal_quality' | 'disqualified', isManual?: boolean) => {
@@ -3268,9 +3278,17 @@ anotherdomain.com"
             
             // If user came from guided link and just qualified the domain they were guided to
             if (cameFromGuidedLink && domainId === searchParams.get('guided')) {
-              // Short delay to show the update, then go back
+              // Short delay to show the update, then navigate back
               setTimeout(() => {
-                router.back();
+                if (orderContext?.order?.id) {
+                  router.push(`/orders/${orderContext.order.id}/internal`);
+                } else {
+                  if (window.history.length > 1) {
+                    router.back();
+                  } else {
+                    router.push(`/clients/${params.id}/bulk-analysis`);
+                  }
+                }
               }, 500);
             }
           }}
