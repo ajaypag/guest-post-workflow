@@ -162,7 +162,10 @@ export async function PUT(
         orderId: id, 
         hasStatus: 'status' in data, 
         statusValue: status,
-        existingStatus: existingOrder.status
+        existingStatus: existingOrder.status,
+        hasOrderGroups: 'orderGroups' in data,
+        orderGroupsCount: newOrderGroups ? newOrderGroups.length : 0,
+        orderGroupsData: newOrderGroups
       });
       
       await tx
