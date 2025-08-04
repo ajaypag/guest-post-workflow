@@ -8,12 +8,15 @@ export default function DebugAirtablePage() {
   const router = useRouter();
   const [loading, setLoading] = useState(false);
   const [results, setResults] = useState<any>(null);
+  const [searchDomain, setSearchDomain] = useState('');
 
   const runDebug = async () => {
     setLoading(true);
     try {
       const response = await fetch('/api/admin/debug-airtable-sync', {
-        method: 'POST'
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ searchDomain: searchDomain || null })
       });
       const data = await response.json();
       setResults(data);
@@ -48,8 +51,20 @@ export default function DebugAirtablePage() {
           </p>
         </div>
 
-        {/* Debug Button */}
+        {/* Debug Controls */}
         <div className="bg-white rounded-lg shadow-sm border p-6 mb-6">
+          <div className="mb-4">
+            <label className="block text-sm font-medium text-gray-700 mb-2">
+              Search for specific website (optional)
+            </label>
+            <input
+              type="text"
+              placeholder="e.g. example.com"
+              value={searchDomain}
+              onChange={(e) => setSearchDomain(e.target.value)}
+              className="w-full max-w-md px-3 py-2 border rounded-lg"
+            />
+          </div>
           <button
             onClick={runDebug}
             disabled={loading}
@@ -140,9 +155,33 @@ export default function DebugAirtablePage() {
                   ))}
                 </div>
 
+                {/* Raw Airtable Data */}
+                {results.rawAirtableData && (
+                  <div className="mt-6">
+                    <h3 className="font-medium mb-2">Raw Airtable API Response:</h3>
+                    <div className="space-y-2">
+                      {results.rawAirtableData.map((record: any, index: number) => (
+                        <div key={index} className="border rounded p-3 text-sm">
+                          <div className="font-medium">{record.domain}</div>
+                          <div className="grid grid-cols-2 gap-2 mt-2 text-xs">
+                            <div>
+                              <span className="text-gray-500">Type Field:</span> {JSON.stringify(record.typeField)} 
+                              <span className="ml-2 text-gray-400">({record.typeFieldType}, array: {record.isTypeArray ? 'yes' : 'no'})</span>
+                            </div>
+                            <div>
+                              <span className="text-gray-500">Niche Field:</span> {JSON.stringify(record.nicheField)}
+                              <span className="ml-2 text-gray-400">({record.nicheFieldType}, array: {record.isNicheArray ? 'yes' : 'no'})</span>
+                            </div>
+                          </div>
+                        </div>
+                      ))}
+                    </div>
+                  </div>
+                )}
+
                 {/* Raw JSON */}
                 <details className="mt-6">
-                  <summary className="cursor-pointer font-medium text-gray-700">Raw JSON Response</summary>
+                  <summary className="cursor-pointer font-medium text-gray-700">Full Raw JSON Response</summary>
                   <pre className="mt-2 p-4 bg-gray-100 rounded text-xs overflow-auto">
                     {JSON.stringify(results, null, 2)}
                   </pre>
