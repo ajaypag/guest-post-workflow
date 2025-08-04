@@ -807,14 +807,18 @@ export default function InternalOrderManagementPage() {
             <div className="flex items-center gap-2">
               {showPoolView && availableForTarget.length > 1 && (
                 <button
-                  className="p-1 hover:bg-gray-100 rounded"
+                  className="flex items-center gap-1 p-1 hover:bg-gray-100 rounded"
                   onClick={() => setEditingLineItem(editingLineItem?.groupId === groupId && editingLineItem?.index === index ? null : { groupId, index })}
+                  title={`${availableForTarget.length} alternative domains available`}
                 >
                   {editingLineItem?.groupId === groupId && editingLineItem?.index === index ? (
                     <ChevronDown className="w-4 h-4 text-gray-600" />
                   ) : (
                     <ChevronRight className="w-4 h-4 text-gray-600" />
                   )}
+                  <span className="text-xs text-gray-500 font-medium">
+                    {availableForTarget.length} alternatives
+                  </span>
                 </button>
               )}
               <div className="text-sm">
@@ -1489,112 +1493,194 @@ export default function InternalOrderManagementPage() {
                                   )}
                                 </tr>
                                 
-                                {/* Expandable subrows for domain comparison */}
+                                {/* Expandable bulk analysis mini-table */}
                                 {editingLineItem?.groupId === groupId && 
                                  editingLineItem?.index === index && 
                                  showPoolView && 
-                                 availableForTarget.length > 1 && 
-                                 availableForTarget.map((submission, subIndex) => (
-                                  <tr key={`${groupId}-${index}-sub-${subIndex}`} className="bg-gray-50/50 border-l-4 border-indigo-200">
-                                    <td className="px-6 py-2 pl-16">
-                                      <div className="flex items-center gap-2">
-                                        {submission.id === displaySubmission?.id ? (
-                                          <CheckCircle className="w-4 h-4 text-green-600" />
-                                        ) : (
-                                          <div className="w-4 h-4" />
-                                        )}
-                                        <Globe className="h-4 w-4 text-gray-500" />
-                                        <span className="text-sm font-medium text-gray-900">
-                                          {submission.domain?.domain}
-                                        </span>
-                                        {submission.id === displaySubmission?.id && (
-                                          <span className="text-xs bg-green-100 text-green-700 px-2 py-0.5 rounded-full">
-                                            Current
-                                          </span>
-                                        )}
-                                      </div>
-                                    </td>
-                                    <td className="px-6 py-2">
-                                      <div className="text-sm">
-                                        {targetPageUrl ? (() => {
-                                          try {
-                                            return new URL(targetPageUrl).pathname;
-                                          } catch {
-                                            return targetPageUrl.length > 20 ? targetPageUrl.substring(0, 20) + '...' : targetPageUrl;
-                                          }
-                                        })() : 'No target page'}
-                                      </div>
-                                      <div className="text-xs text-gray-500">
-                                        "{anchorText || 'No anchor text'}"
-                                      </div>
-                                    </td>
-                                    <td className="px-6 py-2">
-                                      <div className="flex flex-col gap-1">
-                                        <div className="flex items-center gap-3 text-xs">
-                                          {submission.domainRating && (
-                                            <span className="font-medium">DR: {submission.domainRating}</span>
-                                          )}
-                                          {submission.traffic && (
-                                            <span>Traffic: {submission.traffic.toLocaleString()}</span>
-                                          )}
+                                 availableForTarget.length > 1 && (
+                                  <tr className="bg-white border-l-4 border-indigo-200">
+                                    <td colSpan={getColumnCount()} className="px-6 py-4">
+                                      <div className="bg-gray-50 rounded-lg p-4">
+                                        <div className="mb-3">
+                                          <h4 className="text-sm font-medium text-gray-900 mb-1">
+                                            Domain Comparison ({availableForTarget.length} options)
+                                          </h4>
+                                          <p className="text-xs text-gray-600">
+                                            Compare all available domains for this link placement
+                                          </p>
                                         </div>
-                                        {submission.metadata?.overlapStatus && (
-                                          <span className={`inline-flex items-center px-1.5 py-0.5 rounded-full text-xs w-fit ${
-                                            submission.metadata.overlapStatus === 'both' ? 'bg-purple-100 text-purple-700' :
-                                            submission.metadata.overlapStatus === 'direct' ? 'bg-green-100 text-green-700' :
-                                            submission.metadata.overlapStatus === 'related' ? 'bg-blue-100 text-blue-700' :
-                                            'bg-gray-100 text-gray-600'
-                                          }`}>
-                                            <Sparkles className="w-3 h-3 mr-1" />
-                                            {submission.metadata.overlapStatus === 'both' ? 'STRONGEST' :
-                                             submission.metadata.overlapStatus === 'direct' ? 'VERY STRONG' :
-                                             submission.metadata.overlapStatus === 'related' ? 'DECENT' :
-                                             'NO MATCH'}
-                                          </span>
-                                        )}
+                                        
+                                        <div className="overflow-hidden border border-gray-200 rounded-lg">
+                                          <table className="min-w-full divide-y divide-gray-200">
+                                            <thead className="bg-gray-100">
+                                              <tr>
+                                                <th className="px-3 py-2 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                                                  Domain
+                                                </th>
+                                                <th className="px-3 py-2 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                                                  Keywords
+                                                </th>
+                                                <th className="px-3 py-2 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                                                  Authority
+                                                </th>
+                                                <th className="px-3 py-2 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                                                  Overlap
+                                                </th>
+                                                <th className="px-3 py-2 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                                                  Quality
+                                                </th>
+                                                <th className="px-3 py-2 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                                                  Actions
+                                                </th>
+                                              </tr>
+                                            </thead>
+                                            <tbody className="bg-white divide-y divide-gray-200">
+                                              {availableForTarget.map((submission, subIndex) => (
+                                                <tr key={`${groupId}-${index}-sub-${subIndex}`} className={submission.id === displaySubmission?.id ? 'bg-green-50' : 'hover:bg-gray-50'}>
+                                                  <td className="px-3 py-2 whitespace-nowrap">
+                                                    <div className="flex items-center gap-2">
+                                                      {submission.id === displaySubmission?.id ? (
+                                                        <CheckCircle className="w-4 h-4 text-green-600" />
+                                                      ) : (
+                                                        <div className="w-4 h-4" />
+                                                      )}
+                                                      <div>
+                                                        <div className="text-sm font-medium text-gray-900">
+                                                          {submission.domain?.domain}
+                                                        </div>
+                                                        {submission.id === displaySubmission?.id && (
+                                                          <span className="text-xs text-green-600 font-medium">Current selection</span>
+                                                        )}
+                                                      </div>
+                                                    </div>
+                                                  </td>
+                                                  <td className="px-3 py-2 whitespace-nowrap">
+                                                    <div className="text-xs">
+                                                      {submission.domain?.keywordCount ? (
+                                                        <span className="font-medium text-gray-900">{submission.domain.keywordCount} kw</span>
+                                                      ) : (
+                                                        <span className="text-gray-500">No data</span>
+                                                      )}
+                                                      {submission.domain?.evidence && (
+                                                        <div className="text-xs text-gray-500 mt-0.5">
+                                                          {submission.domain.evidence.direct_count > 0 && `${submission.domain.evidence.direct_count} direct`}
+                                                          {submission.domain.evidence.direct_count > 0 && submission.domain.evidence.related_count > 0 && ', '}
+                                                          {submission.domain.evidence.related_count > 0 && `${submission.domain.evidence.related_count} related`}
+                                                        </div>
+                                                      )}
+                                                    </div>
+                                                  </td>
+                                                  <td className="px-3 py-2 whitespace-nowrap">
+                                                    <div className="text-xs">
+                                                      {submission.domain?.authorityDirect && submission.domain.authorityDirect !== 'n/a' && (
+                                                        <div className={`inline-block px-1.5 py-0.5 rounded text-xs font-medium mb-1 ${
+                                                          submission.domain.authorityDirect === 'strong' ? 'bg-green-100 text-green-700' :
+                                                          submission.domain.authorityDirect === 'moderate' ? 'bg-yellow-100 text-yellow-700' :
+                                                          'bg-red-100 text-red-700'
+                                                        }`}>
+                                                          Direct: {submission.domain.authorityDirect}
+                                                        </div>
+                                                      )}
+                                                      {submission.domain?.authorityRelated && submission.domain.authorityRelated !== 'n/a' && (
+                                                        <div className={`inline-block px-1.5 py-0.5 rounded text-xs font-medium ${
+                                                          submission.domain.authorityRelated === 'strong' ? 'bg-green-100 text-green-700' :
+                                                          submission.domain.authorityRelated === 'moderate' ? 'bg-yellow-100 text-yellow-700' :
+                                                          'bg-red-100 text-red-700'
+                                                        }`}>
+                                                          Related: {submission.domain.authorityRelated}
+                                                        </div>
+                                                      )}
+                                                    </div>
+                                                  </td>
+                                                  <td className="px-3 py-2 whitespace-nowrap">
+                                                    {submission.domain?.overlapStatus && (
+                                                      <span className={`inline-flex items-center px-2 py-1 rounded-full text-xs font-medium ${
+                                                        submission.domain.overlapStatus === 'both' ? 'bg-purple-100 text-purple-700' :
+                                                        submission.domain.overlapStatus === 'direct' ? 'bg-green-100 text-green-700' :
+                                                        submission.domain.overlapStatus === 'related' ? 'bg-blue-100 text-blue-700' :
+                                                        'bg-gray-100 text-gray-600'
+                                                      }`}>
+                                                        <Sparkles className="w-3 h-3 mr-1" />
+                                                        {submission.domain.overlapStatus === 'both' ? 'STRONGEST' :
+                                                         submission.domain.overlapStatus === 'direct' ? 'VERY STRONG' :
+                                                         submission.domain.overlapStatus === 'related' ? 'DECENT' :
+                                                         'NO MATCH'}
+                                                      </span>
+                                                    )}
+                                                  </td>
+                                                  <td className="px-3 py-2 whitespace-nowrap">
+                                                    <div className="flex flex-col gap-1">
+                                                      {submission.domain?.qualificationStatus && (
+                                                        <span className={`inline-flex items-center px-1.5 py-0.5 rounded text-xs font-medium ${
+                                                          submission.domain.qualificationStatus === 'high_quality' ? 'bg-green-100 text-green-700' :
+                                                          submission.domain.qualificationStatus === 'good_quality' ? 'bg-blue-100 text-blue-700' :
+                                                          submission.domain.qualificationStatus === 'marginal_quality' ? 'bg-yellow-100 text-yellow-700' :
+                                                          'bg-gray-100 text-gray-600'
+                                                        }`}>
+                                                          {submission.domain.qualificationStatus === 'high_quality' ? '★★★' :
+                                                           submission.domain.qualificationStatus === 'good_quality' ? '★★' :
+                                                           submission.domain.qualificationStatus === 'marginal_quality' ? '★' :
+                                                           '○'}
+                                                        </span>
+                                                      )}
+                                                      {submission.domain?.hasDataForSeoResults && (
+                                                        <span className="text-xs text-indigo-600 flex items-center">
+                                                          <Search className="w-3 h-3 mr-1" />
+                                                          SEO data
+                                                        </span>
+                                                      )}
+                                                    </div>
+                                                  </td>
+                                                  <td className="px-3 py-2 whitespace-nowrap">
+                                                    <div className="flex items-center gap-1">
+                                                      {submission.id !== displaySubmission?.id && (
+                                                        <>
+                                                          <button 
+                                                            className="text-xs bg-blue-100 text-blue-700 hover:bg-blue-200 px-2 py-1 rounded transition-colors"
+                                                            onClick={async () => {
+                                                              if (displaySubmission) {
+                                                                await handleAssignTargetPage(displaySubmission.id, '', groupId);
+                                                              }
+                                                              await handleAssignTargetPage(submission.id, targetPageUrl || '', groupId);
+                                                              setEditingLineItem(null);
+                                                            }}
+                                                          >
+                                                            Switch
+                                                          </button>
+                                                          <button 
+                                                            className="text-xs bg-green-100 text-green-700 hover:bg-green-200 px-2 py-1 rounded transition-colors"
+                                                            onClick={async () => {
+                                                              // Add as new link - this would need API endpoint to create new line item
+                                                              console.log('Add as new link:', submission.id);
+                                                              // TODO: Implement add as new link functionality
+                                                            }}
+                                                          >
+                                                            Add as New Link
+                                                          </button>
+                                                        </>
+                                                      )}
+                                                      {group.bulkAnalysisProjectId && submission.domainId && (
+                                                        <a
+                                                          href={`/clients/${group.clientId}/bulk-analysis/projects/${group.bulkAnalysisProjectId}?guided=${submission.domainId}`}
+                                                          className="text-xs text-indigo-600 hover:text-indigo-800 flex items-center"
+                                                          title="View detailed analysis"
+                                                          target="_blank"
+                                                          rel="noopener noreferrer"
+                                                        >
+                                                          <ExternalLink className="w-3 h-3" />
+                                                        </a>
+                                                      )}
+                                                    </div>
+                                                  </td>
+                                                </tr>
+                                              ))}
+                                            </tbody>
+                                          </table>
+                                        </div>
                                       </div>
                                     </td>
-                                    <td className="px-6 py-2">
-                                      <span className={`inline-flex items-center px-2 py-1 rounded-full text-xs ${
-                                        submission.id === displaySubmission?.id ? 'bg-green-100 text-green-800' : 'bg-gray-100 text-gray-600'
-                                      }`}>
-                                        {submission.id === displaySubmission?.id ? 'Selected' : 'Available'}
-                                      </span>
-                                    </td>
-                                    {columnConfig.columns.length > 4 && (
-                                      <td className="px-6 py-2">
-                                        <div className="flex items-center gap-2">
-                                          {submission.id !== displaySubmission?.id && (
-                                            <>
-                                              <button 
-                                                className="text-xs bg-blue-100 text-blue-700 hover:bg-blue-200 px-2 py-1 rounded transition-colors"
-                                                onClick={async () => {
-                                                  if (displaySubmission) {
-                                                    await handleAssignTargetPage(displaySubmission.id, '', groupId);
-                                                  }
-                                                  await handleAssignTargetPage(submission.id, targetPageUrl || '', groupId);
-                                                  setEditingLineItem(null);
-                                                }}
-                                              >
-                                                Switch
-                                              </button>
-                                              <button 
-                                                className="text-xs bg-green-100 text-green-700 hover:bg-green-200 px-2 py-1 rounded transition-colors"
-                                                onClick={async () => {
-                                                  // Add as new link - this would need API endpoint to create new line item
-                                                  console.log('Add as new link:', submission.id);
-                                                  // TODO: Implement add as new link functionality
-                                                }}
-                                              >
-                                                Add as New Link
-                                              </button>
-                                            </>
-                                          )}
-                                        </div>
-                                      </td>
-                                    )}
                                   </tr>
-                                ))}
+                                )}
                               </React.Fragment>
                             );
                           })}
@@ -1604,25 +1690,30 @@ export default function InternalOrderManagementPage() {
                             <>
                               <tr className="bg-gray-50 border-t-2 border-gray-200">
                                 <td colSpan={getColumnCount()} className="px-6 py-3">
-                                  <div className="flex items-center justify-between">
-                                    <div className="flex items-center gap-2">
-                                      <Package className="h-4 w-4 text-gray-600" />
-                                      <div>
-                                        <div className="text-sm font-medium text-gray-900">
-                                          Site Pool ({unassignedSubmissions.length} unassigned)
-                                        </div>
-                                        <div className="text-xs text-gray-600 mt-0.5">
-                                          Additional suggestions available for selection
-                                        </div>
-                                      </div>
-                                    </div>
+                                  <div className="flex items-center gap-2">
                                     <button
                                       onClick={() => setExpandedGroup(isExpanded ? null : groupId)}
-                                      className="text-sm text-gray-600 hover:text-gray-800 flex items-center gap-1"
+                                      className="flex items-center gap-1 p-1 hover:bg-gray-100 rounded"
+                                      title={`${unassignedSubmissions.length} unassigned domains available`}
                                     >
-                                      {isExpanded ? 'Hide' : 'Show'} Pool
-                                      {isExpanded ? <ChevronRight className="h-3 w-3 rotate-90" /> : <ChevronRight className="h-3 w-3" />}
+                                      {isExpanded ? (
+                                        <ChevronDown className="w-4 h-4 text-gray-600" />
+                                      ) : (
+                                        <ChevronRight className="w-4 h-4 text-gray-600" />
+                                      )}
+                                      <span className="text-xs text-gray-500 font-medium">
+                                        {unassignedSubmissions.length} unassigned
+                                      </span>
                                     </button>
+                                    <Package className="h-4 w-4 text-gray-600" />
+                                    <div>
+                                      <div className="text-sm font-medium text-gray-900">
+                                        Site Pool
+                                      </div>
+                                      <div className="text-xs text-gray-600 mt-0.5">
+                                        Additional suggestions available for selection
+                                      </div>
+                                    </div>
                                   </div>
                                 </td>
                               </tr>

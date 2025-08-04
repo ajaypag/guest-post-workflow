@@ -91,7 +91,18 @@ export async function GET(
           id: domain.id,
           domain: domain.domain,
           qualificationStatus: domain.qualificationStatus,
-          notes: domain.notes
+          notes: domain.notes,
+          // Include bulk analysis data for mini-table
+          overlapStatus: domain.overlapStatus,
+          authorityDirect: domain.authorityDirect,
+          authorityRelated: domain.authorityRelated,
+          topicScope: domain.topicScope,
+          topicReasoning: domain.topicReasoning,
+          aiQualificationReasoning: domain.aiQualificationReasoning,
+          evidence: domain.evidence,
+          keywordCount: domain.keywordCount,
+          hasDataForSeoResults: domain.hasDataForSeoResults,
+          dataForSeoResultsCount: domain.dataForSeoResultsCount
         } : null,
         status: submission.submissionStatus,
         targetPageUrl: submission.metadata?.targetPageUrl,
