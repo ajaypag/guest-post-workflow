@@ -19,16 +19,10 @@ function getResendClient(): Resend {
 }
 
 // Email configuration
-// TODO: After verifying postflow.outreachlabs.net domain in Resend:
-// 1. Remove the temporary override below
-// 2. The env vars will automatically be used:
-//    - EMAIL_FROM=noreply@postflow.outreachlabs.net
-//    - EMAIL_REPLY_TO=support@postflow.outreachlabs.net
 export const EMAIL_CONFIG = {
-  // TEMPORARY: Override env vars to use Resend test email until domain is verified
-  FROM_EMAIL: 'onboarding@resend.dev', // process.env.EMAIL_FROM || 'onboarding@resend.dev',
+  FROM_EMAIL: process.env.EMAIL_FROM || 'noreply@postflow.outreachlabs.net',
   FROM_NAME: process.env.EMAIL_FROM_NAME || 'PostFlow',
-  REPLY_TO: 'onboarding@resend.dev', // process.env.EMAIL_REPLY_TO || 'onboarding@resend.dev',
+  REPLY_TO: process.env.EMAIL_REPLY_TO || 'support@postflow.outreachlabs.net',
 };
 
 // Email types
