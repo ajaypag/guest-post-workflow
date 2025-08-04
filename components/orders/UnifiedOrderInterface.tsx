@@ -154,6 +154,10 @@ interface UnifiedOrderInterfaceProps {
   onSave?: (orderData: any) => Promise<void>;
   onSubmit?: (orderData: any) => Promise<void>;
   onModeChange?: (mode: OrderMode) => void;
+  // Internal-specific handlers
+  onMarkSitesReady?: () => Promise<void>;
+  onGenerateWorkflows?: () => Promise<void>;
+  onSwitchDomain?: (submissionId: string, groupId: string) => Promise<void>;
 }
 
 export default function UnifiedOrderInterface({
@@ -167,7 +171,10 @@ export default function UnifiedOrderInterface({
   isPaid,
   onSave,
   onSubmit,
-  onModeChange
+  onModeChange,
+  onMarkSitesReady,
+  onGenerateWorkflows,
+  onSwitchDomain
 }: UnifiedOrderInterfaceProps) {
   const router = useRouter();
   const session = AuthService.getSession();
@@ -1012,6 +1019,49 @@ export default function UnifiedOrderInterface({
             )}
           </div>
         </div>
+        
+        {/* Internal Action Bar */}
+        {userType === 'internal' && orderStatus === 'confirmed' && (
+          <div className="mt-4 pb-4 border-t pt-4 flex items-center gap-3">
+            {/* Mark Sites Ready */}
+            {orderState === 'analyzing' && onMarkSitesReady && (
+              <button
+                onClick={onMarkSitesReady}
+                className="inline-flex items-center px-4 py-2 bg-green-600 text-white text-sm font-medium rounded-md hover:bg-green-700 transition-colors"
+              >
+                <CheckCircle className="h-4 w-4 mr-2" />
+                Mark Sites Ready
+              </button>
+            )}
+            
+            {/* Generate Workflows */}
+            {isPaid && onGenerateWorkflows && (
+              <button
+                onClick={onGenerateWorkflows}
+                className="inline-flex items-center px-4 py-2 bg-purple-600 text-white text-sm font-medium rounded-md hover:bg-purple-700 transition-colors"
+              >
+                <Zap className="h-4 w-4 mr-2" />
+                Generate Workflows
+              </button>
+            )}
+            
+            {/* Order State Indicator */}
+            <div className="ml-auto flex items-center gap-2">
+              <span className="text-sm text-gray-500">Order State:</span>
+              <span className={`px-3 py-1 rounded-full text-sm font-medium ${
+                orderState === 'analyzing' ? 'bg-blue-100 text-blue-700' :
+                orderState === 'site_review' ? 'bg-purple-100 text-purple-700' :
+                orderState === 'in_progress' ? 'bg-yellow-100 text-yellow-700' :
+                'bg-gray-100 text-gray-700'
+              }`}>
+                {orderState === 'analyzing' ? 'Analyzing Sites' :
+                 orderState === 'site_review' ? 'Site Review' :
+                 orderState === 'in_progress' ? 'In Progress' :
+                 orderState || 'Unknown'}
+              </span>
+            </div>
+          </div>
+        )}
       </div>
       {/* Mobile Navigation */}
       <div className="md:hidden bg-white border-b border-gray-200 p-4">
@@ -1062,6 +1112,101 @@ export default function UnifiedOrderInterface({
               >
                 Dismiss
               </button>
+            </div>
+          </div>
+        )}
+        
+        {/* Internal Activity Feed - Show for internal users on confirmed orders */}
+        {userType === 'internal' && orderStatus === 'confirmed' && (
+          <div className="w-full md:w-80 bg-white rounded-lg shadow-sm p-4 mb-4 md:mb-0">
+            <div className="flex items-center gap-2 mb-4">
+              <Clock className="h-5 w-5 text-gray-600" />
+              <h3 className="text-lg font-semibold text-gray-900">Internal Activity</h3>
+            </div>
+            
+            {/* Site Review Summary */}
+            {(orderState === 'site_review' || orderState === 'sites_ready') && Object.keys(siteSubmissions).length > 0 && (
+              <div className="mb-4 p-3 bg-purple-50 rounded-lg border border-purple-200">
+                <h4 className="text-sm font-medium text-purple-900 mb-2">Site Review Status</h4>
+                <div className="space-y-2">
+                  {orderGroups.map(group => {
+                    const submissions = siteSubmissions[group.id] || [];
+                    const pending = submissions.filter(s => s.status === 'pending').length;
+                    const approved = submissions.filter(s => s.submissionStatus === 'client_approved').length;
+                    const rejected = submissions.filter(s => s.submissionStatus === 'client_rejected').length;
+                    
+                    return (
+                      <div key={group.id} className="text-xs">
+                        <div className="font-medium text-purple-800">{group.client.name}</div>
+                        <div className="flex items-center gap-3 mt-1 text-purple-600">
+                          <span>{pending} pending</span>
+                          <span className="text-green-600">{approved} approved</span>
+                          {rejected > 0 && <span className="text-red-600">{rejected} rejected</span>}
+                        </div>
+                      </div>
+                    );
+                  })}
+                </div>
+              </div>
+            )}
+            
+            {/* State-based Activity */}
+            <div className="space-y-3">
+              {orderState === 'analyzing' && (
+                <div className="flex items-start gap-3">
+                  <div className="w-2 h-2 bg-blue-500 rounded-full mt-1.5 animate-pulse" />
+                  <div>
+                    <p className="text-sm font-medium text-gray-900">Site analysis in progress</p>
+                    <p className="text-xs text-gray-500">Finding placement opportunities</p>
+                  </div>
+                </div>
+              )}
+              
+              {orderState === 'site_review' && (
+                <div className="flex items-start gap-3">
+                  <div className="w-2 h-2 bg-purple-500 rounded-full mt-1.5" />
+                  <div>
+                    <p className="text-sm font-medium text-gray-900">Client review active</p>
+                    <p className="text-xs text-gray-500">
+                      {Object.values(siteSubmissions).reduce((sum, subs) => 
+                        sum + subs.filter(s => s.status === 'pending').length, 0
+                      )} sites awaiting decision
+                    </p>
+                  </div>
+                </div>
+              )}
+              
+              {orderState === 'in_progress' && (
+                <div className="flex items-start gap-3">
+                  <div className="w-2 h-2 bg-yellow-500 rounded-full mt-1.5" />
+                  <div>
+                    <p className="text-sm font-medium text-gray-900">Content creation active</p>
+                    <p className="text-xs text-gray-500">Workflows in progress</p>
+                  </div>
+                </div>
+              )}
+              
+              {/* Bulk Analysis Links */}
+              {orderGroups.some(g => g.bulkAnalysisProjectId) && (
+                <div className="mt-4 pt-4 border-t border-gray-200">
+                  <h4 className="text-sm font-medium text-gray-700 mb-2">Bulk Analysis Projects</h4>
+                  <div className="space-y-2">
+                    {orderGroups.filter(g => g.bulkAnalysisProjectId).map(group => (
+                      <a
+                        key={group.id}
+                        href={`/clients/${group.clientId}/bulk-analysis/projects/${group.bulkAnalysisProjectId}`}
+                        target="_blank"
+                        rel="noopener noreferrer"
+                        className="flex items-center gap-2 text-sm text-blue-600 hover:text-blue-800"
+                      >
+                        <Database className="h-4 w-4" />
+                        {group.client.name}
+                        <ExternalLink className="h-3 w-3" />
+                      </a>
+                    ))}
+                  </div>
+                </div>
+              )}
             </div>
           </div>
         )}
@@ -1914,15 +2059,15 @@ export default function UnifiedOrderInterface({
                                                       </td>
                                                       <td className="px-3 py-2">
                                                         <div className="flex items-center gap-2">
-                                                          {submission.id !== finalDisplaySubmission?.id && !isPaid && (
+                                                          {submission.id !== finalDisplaySubmission?.id && !isPaid && userType === 'internal' && onSwitchDomain && (
                                                             <button
                                                               onClick={() => {
                                                                 // Switch to this domain
-                                                                console.log('Switch to domain:', submission.id);
+                                                                onSwitchDomain(submission.id, groupId);
                                                               }}
                                                               className="text-xs text-blue-600 hover:text-blue-800 px-2 py-1 rounded border"
                                                             >
-                                                              Select
+                                                              Switch
                                                             </button>
                                                           )}
                                                           {userType === 'external' && (

@@ -194,6 +194,77 @@ export default function OrderPage() {
       ? 'account' 
       : 'external';
 
+  // Internal action handlers
+  const handleMarkSitesReady = async () => {
+    try {
+      const response = await fetch(`/api/orders/${orderId}/state`, {
+        method: 'PUT',
+        headers: { 'Content-Type': 'application/json' },
+        credentials: 'include',
+        body: JSON.stringify({ state: 'sites_ready' })
+      });
+      
+      if (!response.ok) {
+        throw new Error('Failed to update order state');
+      }
+      
+      // Refresh order data
+      const data = await response.json();
+      setOrderData(data);
+    } catch (err) {
+      console.error('Error marking sites ready:', err);
+      alert('Failed to mark sites as ready');
+    }
+  };
+  
+  const handleGenerateWorkflows = async () => {
+    try {
+      const response = await fetch(`/api/orders/${orderId}/workflows/generate`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        credentials: 'include'
+      });
+      
+      if (!response.ok) {
+        throw new Error('Failed to generate workflows');
+      }
+      
+      alert('Workflows generated successfully');
+      // Refresh page to show updated state
+      window.location.reload();
+    } catch (err) {
+      console.error('Error generating workflows:', err);
+      alert('Failed to generate workflows');
+    }
+  };
+  
+  const handleSwitchDomain = async (submissionId: string, groupId: string) => {
+    try {
+      const response = await fetch(`/api/orders/${orderId}/groups/${groupId}/site-selections/${submissionId}/switch`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        credentials: 'include'
+      });
+      
+      if (!response.ok) {
+        throw new Error('Failed to switch domain');
+      }
+      
+      // Refresh site submissions
+      const submissionsResponse = await fetch(
+        `/api/orders/${orderId}/groups/${groupId}/site-submissions`,
+        { credentials: 'include' }
+      );
+      if (submissionsResponse.ok) {
+        const submissions = await submissionsResponse.json();
+        setSiteSubmissions(prev => ({ ...prev, [groupId]: submissions }));
+      }
+    } catch (err) {
+      console.error('Error switching domain:', err);
+      alert('Failed to switch domain');
+    }
+  };
+
   return (
     <AuthWrapper>
       <Header />
@@ -209,6 +280,9 @@ export default function OrderPage() {
           isPaid={orderData.payment_status === 'paid'}
           onSave={handleSave}
           onSubmit={handleSubmit}
+          onMarkSitesReady={userType === 'internal' ? handleMarkSitesReady : undefined}
+          onGenerateWorkflows={userType === 'internal' ? handleGenerateWorkflows : undefined}
+          onSwitchDomain={userType === 'internal' ? handleSwitchDomain : undefined}
         />
       </div>
     </AuthWrapper>
