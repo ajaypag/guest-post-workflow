@@ -1,11 +1,19 @@
 'use client';
 
 import { useState } from 'react';
-import UnifiedOrderTable from '@/components/orders/UnifiedOrderTable';
+import UnifiedOrderInterface from '@/components/orders/UnifiedOrderInterface';
 import AuthWrapper from '@/components/AuthWrapper';
 import Header from '@/components/Header';
 
-// Import the proper types
+// Mock data types for the unified interface
+interface MockOrder {
+  id: string;
+  status: 'draft' | 'confirmed' | 'in_progress' | 'completed';
+  state: 'draft' | 'site_review' | 'in_progress';
+  isPaid: boolean;
+  groups: OrderGroup[];
+}
+
 interface OrderGroup {
   id: string;
   clientId: string;
@@ -117,10 +125,14 @@ const mockSiteSubmissions = {
 };
 
 export default function TestUnifiedTablePage() {
-  const [orderState, setOrderState] = useState<'draft' | 'site_review' | 'in_progress'>('draft');
+  const [order, setOrder] = useState<MockOrder>({
+    id: 'test-order-123',
+    status: 'confirmed',
+    state: 'draft',
+    isPaid: false,
+    groups: mockOrderGroups
+  });
   const [userType, setUserType] = useState<'internal' | 'external'>('external');
-  const [isPaid, setIsPaid] = useState(false);
-  const [orderGroups, setOrderGroups] = useState<OrderGroup[]>(mockOrderGroups);
 
   return (
     <AuthWrapper>
@@ -137,8 +149,8 @@ export default function TestUnifiedTablePage() {
                 <div>
                   <label className="block text-sm font-medium text-gray-700 mb-1">Order State</label>
                   <select
-                    value={orderState}
-                    onChange={(e) => setOrderState(e.target.value as any)}
+                    value={order.state}
+                    onChange={(e) => setOrder(prev => ({ ...prev, state: e.target.value as any }))}
                     className="w-full px-3 py-2 border border-gray-300 rounded-md"
                   >
                     <option value="draft">Draft</option>
@@ -163,8 +175,8 @@ export default function TestUnifiedTablePage() {
                   <label className="flex items-center">
                     <input
                       type="checkbox"
-                      checked={isPaid}
-                      onChange={(e) => setIsPaid(e.target.checked)}
+                      checked={order.isPaid}
+                      onChange={(e) => setOrder(prev => ({ ...prev, isPaid: e.target.checked }))}
                       className="mr-2"
                     />
                     <span className="text-sm font-medium text-gray-700">Order Paid</span>
@@ -174,57 +186,65 @@ export default function TestUnifiedTablePage() {
             </div>
           </div>
 
-          {/* Unified Table */}
-          <UnifiedOrderTable
-            orderGroups={orderGroups}
-            siteSubmissions={orderState === 'site_review' ? mockSiteSubmissions : {}}
+          {/* Unified Order Interface */}
+          <UnifiedOrderInterface
+            order={order}
+            siteSubmissions={order.state === 'site_review' ? mockSiteSubmissions : {}}
             userType={userType}
-            orderStatus="confirmed"
-            orderState={orderState}
-            isPaid={isPaid}
+            onUpdateOrder={(updates) => {
+              console.log('Update order:', updates);
+              setOrder(prev => ({ ...prev, ...updates }));
+            }}
             onUpdateGroup={(groupId, updates) => {
               console.log('Update group:', groupId, updates);
-              setOrderGroups(prev => prev.map(group => 
-                group.id === groupId ? { ...group, ...updates } as OrderGroup : group
-              ));
+              setOrder(prev => ({
+                ...prev,
+                groups: prev.groups.map(group => 
+                  group.id === groupId ? { ...group, ...updates } as OrderGroup : group
+                )
+              }));
             }}
             onAddRow={(clientId) => {
               console.log('Add row for client:', clientId);
-              // Find the group and add a link
-              setOrderGroups(prev => prev.map(group => {
-                if (group.clientId === clientId) {
-                  return {
-                    ...group,
-                    linkCount: group.linkCount + 1,
-                    targetPages: [...(group.targetPages || []), { id: `new-${Date.now()}`, url: '', pageId: `new-${Date.now()}` }],
-                    anchorTexts: [...(group.anchorTexts || []), '']
-                  } as OrderGroup;
-                }
-                return group;
+              setOrder(prev => ({
+                ...prev,
+                groups: prev.groups.map(group => {
+                  if (group.clientId === clientId) {
+                    return {
+                      ...group,
+                      linkCount: group.linkCount + 1,
+                      targetPages: [...(group.targetPages || []), { id: `new-${Date.now()}`, url: '', pageId: `new-${Date.now()}` }],
+                      anchorTexts: [...(group.anchorTexts || []), '']
+                    } as OrderGroup;
+                  }
+                  return group;
+                })
               }));
             }}
             onRemoveRow={(groupId, linkIndex) => {
               console.log('Remove row:', groupId, linkIndex);
-              setOrderGroups(prev => prev.map(group => {
-                if (group.id === groupId) {
-                  const newTargetPages = [...(group.targetPages || [])];
-                  const newAnchorTexts = [...(group.anchorTexts || [])];
-                  newTargetPages.splice(linkIndex, 1);
-                  newAnchorTexts.splice(linkIndex, 1);
-                  
-                  return {
-                    ...group,
-                    linkCount: Math.max(1, group.linkCount - 1),
-                    targetPages: newTargetPages,
-                    anchorTexts: newAnchorTexts
-                  } as OrderGroup;
-                }
-                return group;
+              setOrder(prev => ({
+                ...prev,
+                groups: prev.groups.map(group => {
+                  if (group.id === groupId) {
+                    const newTargetPages = [...(group.targetPages || [])];
+                    const newAnchorTexts = [...(group.anchorTexts || [])];
+                    newTargetPages.splice(linkIndex, 1);
+                    newAnchorTexts.splice(linkIndex, 1);
+                    
+                    return {
+                      ...group,
+                      linkCount: Math.max(1, group.linkCount - 1),
+                      targetPages: newTargetPages,
+                      anchorTexts: newAnchorTexts
+                    } as OrderGroup;
+                  }
+                  return group;
+                })
               }));
             }}
             onSwitchDomain={(submissionId, groupId) => {
               console.log('Switch domain:', submissionId, groupId);
-              // Mock domain switching logic
               alert(`Would switch domain ${submissionId} in group ${groupId}`);
             }}
           />
@@ -233,7 +253,12 @@ export default function TestUnifiedTablePage() {
           <div className="mt-6 p-4 bg-gray-100 rounded-lg">
             <h3 className="font-medium mb-2">Debug Info:</h3>
             <pre className="text-xs text-gray-600">
-              {JSON.stringify({ orderState, userType, isPaid, linkCount: orderGroups.reduce((sum, g) => sum + g.linkCount, 0) }, null, 2)}
+              {JSON.stringify({ 
+                orderState: order.state, 
+                userType, 
+                isPaid: order.isPaid, 
+                linkCount: order.groups.reduce((sum, g) => sum + g.linkCount, 0) 
+              }, null, 2)}
             </pre>
           </div>
         </div>
