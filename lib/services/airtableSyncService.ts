@@ -266,6 +266,27 @@ export class AirtableSyncService {
       params.push(filters.categories);
     }
     
+    // Airtable metadata filters
+    if (filters.airtableUpdatedAfter) {
+      conditions.push(`w.airtable_updated_at >= $${paramIndex++}`);
+      params.push(filters.airtableUpdatedAfter);
+    }
+    
+    if (filters.airtableUpdatedBefore) {
+      conditions.push(`w.airtable_updated_at <= $${paramIndex++}`);
+      params.push(filters.airtableUpdatedBefore);
+    }
+    
+    if (filters.lastSyncedAfter) {
+      conditions.push(`w.last_synced_at >= $${paramIndex++}`);
+      params.push(filters.lastSyncedAfter);
+    }
+    
+    if (filters.lastSyncedBefore) {
+      conditions.push(`w.last_synced_at <= $${paramIndex++}`);
+      params.push(filters.lastSyncedBefore);
+    }
+    
     // Handle qualification filters
     let joinClause = '';
     if (filters.clientId && (filters.onlyQualified || filters.onlyUnqualified)) {
