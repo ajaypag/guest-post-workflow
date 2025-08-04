@@ -1345,9 +1345,9 @@ export default function UnifiedOrderInterface({
     }
   }, [userType, orderStatus, orderGroups, checkTargetPageStatuses]);
 
-  // Track unsaved changes
+  // Track unsaved changes - only when there are actual items like the working edit page
   useEffect(() => {
-    if (currentMode === 'draft' && !isPaid) {
+    if (currentMode === 'draft' && !isPaid && lineItems.length > 0) {
       setHasUnsavedChanges(true);
     }
   }, [selectedClients, lineItems, currentMode, isPaid]);
