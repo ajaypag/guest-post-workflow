@@ -13,8 +13,11 @@ export async function POST(request: NextRequest) {
 
     console.log('Fixing order_site_submissions table schema...');
 
-    // Check if column already exists
-    const columnExists = await db.execute(sql`
+    // Check for all potentially missing columns
+    const missingColumns = [];
+    
+    // Check client_reviewed_by
+    const clientReviewedByExists = await db.execute(sql`
       SELECT EXISTS (
         SELECT 1 
         FROM information_schema.columns 
@@ -22,38 +25,60 @@ export async function POST(request: NextRequest) {
         AND column_name = 'client_reviewed_by'
       ) as exists
     `);
+    
+    if (!clientReviewedByExists.rows[0]?.exists) {
+      missingColumns.push({
+        name: 'client_reviewed_by',
+        sql: 'ADD COLUMN client_reviewed_by UUID REFERENCES users(id)'
+      });
+    }
 
-    if (columnExists.rows[0]?.exists) {
+    // Check completed_at
+    const completedAtExists = await db.execute(sql`
+      SELECT EXISTS (
+        SELECT 1 
+        FROM information_schema.columns 
+        WHERE table_name = 'order_site_submissions' 
+        AND column_name = 'completed_at'
+      ) as exists
+    `);
+    
+    if (!completedAtExists.rows[0]?.exists) {
+      missingColumns.push({
+        name: 'completed_at',
+        sql: 'ADD COLUMN completed_at TIMESTAMP'
+      });
+    }
+
+    if (missingColumns.length === 0) {
       return NextResponse.json({
-        message: 'Column client_reviewed_by already exists',
+        message: 'All columns already exist',
         alreadyFixed: true
       });
     }
 
-    // Add the missing column
-    console.log('Adding client_reviewed_by column...');
-    
-    await db.execute(sql`
-      ALTER TABLE order_site_submissions 
-      ADD COLUMN client_reviewed_by UUID REFERENCES users(id)
-    `);
+    // Add all missing columns
+    const addedColumns = [];
+    for (const column of missingColumns) {
+      console.log(`Adding ${column.name} column...`);
+      
+      try {
+        await db.execute(sql.raw(`ALTER TABLE order_site_submissions ${column.sql}`));
+        addedColumns.push(column.name);
+        console.log(`Successfully added ${column.name}`);
+      } catch (colError: any) {
+        console.error(`Failed to add ${column.name}:`, colError);
+        // Continue with other columns even if one fails
+      }
+    }
 
-    console.log('Column added successfully');
-
-    // Verify the column was added
-    const verifyResult = await db.execute(sql`
-      SELECT column_name 
-      FROM information_schema.columns 
-      WHERE table_name = 'order_site_submissions' 
-      AND column_name = 'client_reviewed_by'
-    `);
-
-    if (verifyResult.rows.length === 0) {
-      throw new Error('Column was not added successfully');
+    if (addedColumns.length === 0) {
+      throw new Error('No columns were successfully added');
     }
 
     return NextResponse.json({
-      message: 'Successfully added client_reviewed_by column to order_site_submissions table',
+      message: `Successfully added ${addedColumns.length} column(s): ${addedColumns.join(', ')}`,
+      addedColumns,
       success: true
     });
 
@@ -63,7 +88,9 @@ export async function POST(request: NextRequest) {
       { 
         error: 'Failed to fix schema', 
         details: error?.message || 'Unknown error',
-        hint: 'You may need to run this SQL manually: ALTER TABLE order_site_submissions ADD COLUMN client_reviewed_by UUID REFERENCES users(id);'
+        hint: 'You may need to run these SQL commands manually:\n' +
+              'ALTER TABLE order_site_submissions ADD COLUMN client_reviewed_by UUID REFERENCES users(id);\n' +
+              'ALTER TABLE order_site_submissions ADD COLUMN completed_at TIMESTAMP;'
       },
       { status: 500 }
     );

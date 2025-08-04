@@ -189,8 +189,13 @@ export default function FixOrderSubmissionsSchemaPage() {
                               SQL to fix (will be run automatically):
                             </p>
                             <pre className="bg-gray-900 text-gray-100 p-3 rounded-lg text-xs overflow-x-auto">
-{`ALTER TABLE order_site_submissions 
+{result.missingColumns.includes('client_reviewed_by') && 
+`ALTER TABLE order_site_submissions 
 ADD COLUMN client_reviewed_by UUID REFERENCES users(id);`}
+{result.missingColumns.includes('client_reviewed_by') && result.missingColumns.includes('completed_at') && '\n'}
+{result.missingColumns.includes('completed_at') && 
+`ALTER TABLE order_site_submissions 
+ADD COLUMN completed_at TIMESTAMP;`}
                             </pre>
                           </div>
                         </div>
