@@ -287,8 +287,8 @@ export class AirtableService {
       totalTraffic: fields['Total Traffic'] || null,
       guestPostCost: fields['Guest Post Cost V2'] || null,
       categories: fields.Category || [],
-      type: fields.Type || [],
-      websiteType: fields['Website Type'] || [], // SaaS, Blog, News, eCommerce, etc.
+      type: fields.Type || [], // Keep existing for backward compatibility
+      websiteType: fields.Type || [], // Map Type field to websiteType (SaaS, Blog, News, eCommerce, etc.)
       niche: fields.Niche || [], // Multiple niches
       contacts, // Now populated from PostFlow lookup fields
       publishedOpportunities: fields['Count of Published Opportunities'] || 0,
