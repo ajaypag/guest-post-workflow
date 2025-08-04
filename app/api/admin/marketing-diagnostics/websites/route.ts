@@ -76,11 +76,11 @@ export async function GET() {
     
     return NextResponse.json({
       exists: true,
-      totalCount: parseInt(counts.rows[0]?.total_count || '0'),
-      qualityCount: parseInt(counts.rows[0]?.quality_count || '0'),
-      withCategories: parseInt(counts.rows[0]?.with_categories || '0'),
-      withDomainRating: parseInt(counts.rows[0]?.with_domain_rating || '0'),
-      withTraffic: parseInt(counts.rows[0]?.with_traffic || '0'),
+      totalCount: parseInt(String(counts.rows[0]?.total_count) || '0'),
+      qualityCount: parseInt(String(counts.rows[0]?.quality_count) || '0'),
+      withCategories: parseInt(String(counts.rows[0]?.with_categories) || '0'),
+      withDomainRating: parseInt(String(counts.rows[0]?.with_domain_rating) || '0'),
+      withTraffic: parseInt(String(counts.rows[0]?.with_traffic) || '0'),
       columns: columns.rows,
       sampleData: samples.rows,
       specificDomains: specificDomains.rows,

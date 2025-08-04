@@ -56,7 +56,7 @@ export async function GET() {
     }
     
     return NextResponse.json({
-      totalCategories: parseInt(totalCategories.rows[0]?.total || '0'),
+      totalCategories: parseInt(String(totalCategories.rows[0]?.total) || '0'),
       topCategories: categories.rows,
       publicCategories: publicCategories.rows,
       publicCategoryCount: publicCategories.rows.length,
