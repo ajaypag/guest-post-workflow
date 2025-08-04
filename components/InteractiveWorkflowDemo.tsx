@@ -43,155 +43,155 @@ interface WorkflowStep {
 const workflowSteps: WorkflowStep[] = [
   {
     id: 'domain-selection',
-    name: 'Site Selection & Analysis',
-    description: 'AI analyzes target site\'s topical authority and keyword clusters',
+    name: 'Guest Post Site Selection',
+    description: 'Manual selection and validation of target publication website',
     icon: <Globe className="w-5 h-5" />,
-    inputs: ['Target publication website'],
-    outputs: ['Site analysis', 'Topic clusters', 'Editorial guidelines'],
-    aiAssisted: true,
+    inputs: ['Target publication domain'],
+    outputs: ['Guest post website URL', 'Research notes'],
+    aiAssisted: false,
     duration: '5-10 min',
     demoContent: {
       inputExample: 'businesstools.com',
-      outputExample: 'DR 45 • Ranks for "project management software" • 47+ PM tool articles • Accepts comprehensive reviews',
-      processDescription: 'Our AI maps the site\'s existing authority clusters, finds where your content would naturally fit, and extracts editorial patterns.'
+      outputExample: 'Target publication: businesstools.com • Editorial focus: B2B productivity tools • Guest post guidelines captured',
+      processDescription: 'Pure manual data entry step. You specify which publication site you want to target for the guest post. This becomes the foundation for all strategic analysis in subsequent steps.'
     }
   },
   {
     id: 'keyword-research',
-    name: 'Strategic Keyword Mapping',
-    description: 'Extract keywords from YOUR page, find overlap with target site\'s rankings',
+    name: 'Client URL & Keyword Analysis',
+    description: 'Load client target pages with AI-generated keywords and analyze topical overlap',
     icon: <Search className="w-5 h-5" />,
-    inputs: ['Your target page URL', 'Site analysis'],
-    outputs: ['Keyword overlap map', 'Strategic anchors', 'Content angle'],
+    inputs: ['Client database target pages', 'Selected URLs for linking'],
+    outputs: ['Target page selection', 'Keyword strategy', 'Topical overlap analysis'],
     aiAssisted: true,
     duration: '10-15 min',
     demoContent: {
-      inputExample: 'yoursite.com/project-management-software',
-      outputExample: 'Direct overlap: "project management software" • Related: "PM tools", "team collaboration" • Recommended angle: comparison guide',
-      processDescription: 'Instead of guessing, we find the exact keywords both sites rank for and build a strategic content angle around proven overlap.'
+      inputExample: 'Client has 15 target pages with pre-generated keywords • Select 2-3 URLs for strategic linking',
+      outputExample: 'Selected: /project-management-software (47 keywords) • AI Overlap Score: 8.3/10 • Ahrefs export ready',
+      processDescription: 'Complex system loading client URLs from database with AI-generated keyword profiles. AI analyzes topical overlap between guest post site and your client URLs, ranking strategic fit with confidence scores.'
     }
   },
   {
     id: 'topic-generation',
-    name: 'Topic & Angle Development',
-    description: 'Create content angles that serve both audiences naturally',
+    name: 'Strategic Topic Development',
+    description: 'Custom GPT generates topics with natural linking opportunities and keyword validation',
     icon: <Brain className="w-5 h-5" />,
-    inputs: ['Keyword overlap', 'Site editorial style', 'Your brand positioning'],
-    outputs: ['Article topic', 'Content outline', 'Value proposition'],
+    inputs: ['Guest post site analysis', 'Client URL summaries', 'Keyword preferences'],
+    outputs: ['Strategic topic ideas', 'Link placement strategy', 'Volume-validated keywords'],
     aiAssisted: true,
     duration: '15-20 min',
     demoContent: {
-      inputExample: 'Business tools site + PM software overlap',
-      outputExample: '"7 project management tools remote teams rely on for virtual collaboration" - fits their remote work content cluster',
-      processDescription: 'We craft topics that feel native to their audience while naturally showcasing your solution - no awkward shoehorning.'
+      inputExample: 'businesstools.com audience + client PM software URLs + "business-focus" preference',
+      outputExample: '"7 project management tools remote teams actually use" • Natural homepage link • "pm software" (2.4K volume)',
+      processDescription: 'Integrates with custom "Guest Post Topic Machine" GPT. Auto-generates prompts incorporating guest post site, client URLs, and keyword preferences. Includes Ahrefs volume verification workflow and strategic anchor text planning.'
     }
   },
   {
     id: 'deep-research',
-    name: 'Research & Data Gathering',
-    description: 'Comprehensive research with stats, examples, and original insights',
+    name: 'Comprehensive Research & Outline',
+    description: 'ChatGPT o3 Deep Research tool generates detailed content outline with sources',
     icon: <BarChart3 className="w-5 h-5" />,
-    inputs: ['Article topic', 'Industry context', 'Competitor analysis'],
-    outputs: ['Research report', 'Statistics bank', 'Expert quotes', 'Case studies'],
+    inputs: ['Finalized topic', 'Research prompts', 'Client context'],
+    outputs: ['Research outline', 'Source citations', 'Content structure'],
     aiAssisted: true,
     duration: '30-45 min',
     demoContent: {
-      inputExample: 'PM tools for remote teams topic',
-      outputExample: '15 industry stats • 3 remote work case studies • Integration data • Pricing comparisons • User testimonials',
-      processDescription: 'This is where we build the substance. Real data, genuine insights, and valuable information that makes the content worth reading.'
+      inputExample: 'PM tools topic + ChatGPT o3 Deep Research activation',
+      outputExample: '15-section outline • 23 industry statistics • 8 case studies • 12 expert quotes • Source links verified',
+      processDescription: 'Uses ChatGPT\'s premium Deep Research tool with o3 model. Generates comprehensive research outlines with verified sources, statistics, and expert insights. Can use manual ChatGPT process or autonomous AI agent workflow.'
     }
   },
   {
     id: 'article-draft',
-    name: 'Content Creation',
-    description: '2000-3000 word articles with genuine learning value',
+    name: 'AI Article Generation (V2)',
+    description: 'OpenAI Agents SDK with o3-2025-04-16 creates articles section-by-section with quality control',
     icon: <PenTool className="w-5 h-5" />,
-    inputs: ['Research report', 'Content outline', 'Brand voice guidelines'],
-    outputs: ['Full article draft', 'Strategic link placement', 'Call-to-action'],
+    inputs: ['Research outline', 'Brand guidelines vector store', 'Writing style requirements'],
+    outputs: ['Complete article draft', 'Section-by-section generation log', 'Article completion validation'],
     aiAssisted: true,
     duration: '45-60 min',
     demoContent: {
-      inputExample: 'All research + outline + brand voice',
-      outputExample: '2,847-word comprehensive guide with natural brand mention and homepage link using brand anchor',
-      processDescription: 'AI writes the first draft, but it\'s informed by all the strategic research. Natural brand integration, valuable content, proper structure.'
+      inputExample: 'Detailed outline + brand voice guidelines + narrative writing style requirements',
+      outputExample: '2,847-word article • 8 sections • Real-time streaming • ArticleEndCritic validates completion against outline',
+      processDescription: '3-phase OpenAI Agents conversation: Planning → Title/Intro → Section looping. Uses o3-2025-04-16 with vector store access to brand guidelines. ArticleEndCritic (o4-mini) detects completion. Supports 40+ sections with delimiter parsing and real-time streaming.'
     }
   },
   {
     id: 'content-audit',
-    name: 'Quality & Strategy Audit',
-    description: 'Expert review of content quality, link placement, and strategic fit',
+    name: 'Semantic SEO Audit',
+    description: 'AI analyzes each section for semantic SEO optimization using knowledge base',
     icon: <Eye className="w-5 h-5" />,
-    inputs: ['Article draft', 'Site guidelines', 'Link strategy'],
-    outputs: ['Quality assessment', 'Strategic feedback', 'Improvement recommendations'],
+    inputs: ['Complete article draft', 'Semantic SEO knowledge base', 'Brand voice requirements'],
+    outputs: ['Section-by-section analysis', 'SEO improvements', 'Optimized content'],
     aiAssisted: true,
     duration: '20-30 min',
     demoContent: {
-      inputExample: 'Complete article draft',
-      outputExample: 'Content quality: 8.5/10 • Link placement: Natural • Strategic fit: Excellent • 3 minor improvements suggested',
-      processDescription: 'AI audits the content for quality, readability, strategic alignment, and natural link placement. Human experts validate the assessment.'
+      inputExample: '2,847-word article parsed into 8 auditable sections',
+      outputExample: 'Section 1: Strengths (3) + Weaknesses (2) + Optimized version • Citation limit: 3 total • Pattern variety tracked',
+      processDescription: 'OpenAI Agents SDK with semantic SEO vector store access. Parses article hierarchically, audits each section for SEO optimization while preserving brand voice. Limits citations to 3 maximum, tracks editing patterns to avoid repetition.'
     }
   },
   {
     id: 'final-polish',
-    name: 'Editorial Polish & Optimization',
-    description: 'Final refinements for maximum impact and editorial approval',
+    name: 'Brand Alignment & Polish',
+    description: 'AI reviews against brand guide and writing guidelines for final optimization',
     icon: <CheckCircle className="w-5 h-5" />,
-    inputs: ['Audited draft', 'Quality feedback', 'Editorial requirements'],
-    outputs: ['Publication-ready article', 'Meta descriptions', 'Image suggestions'],
+    inputs: ['SEO-audited article', 'Brand guide vector store', 'Semantic SEO tips'],
+    outputs: ['Brand-aligned content', 'Final polish analysis', 'Publication-ready article'],
     aiAssisted: true,
     duration: '15-25 min',
     demoContent: {
-      inputExample: 'Quality-audited article + feedback',
-      outputExample: 'Polished 2,847-word article ready for submission • SEO-optimized • Editor-friendly formatting',
-      processDescription: 'Final optimization pass - readability improvements, SEO elements, formatting for publication, and editorial compliance.'
+      inputExample: 'Audited article + brand guide access + "words to avoid" filtering',
+      outputExample: 'Strengths: Natural brand voice, good flow • Weaknesses: 2 brand guide violations • Polished final version',
+      processDescription: 'Uses o3-2025-04-16 with brand guide vector store. Section-by-section analysis with delimiter parsing. Identifies strengths/weaknesses against brand guidelines, applies final polish while preserving structure. Filters prohibited words and maintains semantic SEO improvements.'
     }
   },
   {
     id: 'link-orchestration',
-    name: 'Outreach & Placement',
-    description: 'Expert outreach, negotiation, and live link verification',
+    name: 'AI Link & Media Orchestration',
+    description: 'Multi-phase AI system handles internal links, client mentions, images, and outreach preparation',
     icon: <Send className="w-5 h-5" />,
-    inputs: ['Final article', 'Publisher contact info', 'Pitch strategy'],
-    outputs: ['Publisher response', 'Negotiated terms', 'Live placement confirmation'],
-    aiAssisted: false,
-    duration: '2-5 days',
+    inputs: ['Polished article', 'Client link strategy', 'Internal link database'],
+    outputs: ['Complete article with links', 'Image strategy', 'Outreach materials', 'Publisher URLs'],
+    aiAssisted: true,
+    duration: '25-35 min',
     demoContent: {
-      inputExample: 'Publication-ready article + publisher contact',
-      outputExample: 'Article accepted • $150 placement fee negotiated • Live link confirmed and verified',
-      processDescription: 'Human experts handle all publisher communication, negotiate terms, manage revisions, and verify the final live placement.'
+      inputExample: 'Final article + client homepage target + internal link opportunities',
+      outputExample: '3 internal links inserted • Natural client mention + homepage link • Image strategy • Publisher pitch ready',
+      processDescription: '3-phase OpenAI Agents orchestration: Phase 1 (parallel: internal links + client mentions), Phase 2 (client link with natural conversation flow), Phase 3 (parallel: images + link requests + URL suggestions). Database session tracking with error recovery.'
     }
   }
 ];
 
 const bulkAnalysisSteps = [
   {
-    name: 'Domain Input & Analysis',
-    description: 'Upload competitor domains or let AI discover them',
+    name: 'Competitor Domain Input',
+    description: 'Upload competitor domains for comprehensive analysis',
     icon: <Building2 className="w-5 h-5" />,
-    process: 'AI analyzes each domain\'s content strategy, keyword focus, and topical authority'
+    process: 'Manual domain entry or CSV upload. System validates domains and prepares them for DataForSEO API analysis.'
   },
   {
-    name: 'Keyword Extraction',
-    description: 'Extract ranking keywords from each domain',
+    name: 'DataForSEO Keyword Extraction',
+    description: 'Extract ranking keywords and positions via API',
     icon: <Search className="w-5 h-5" />,
-    process: 'DataForSEO API pulls real ranking data, organized by topic clusters'
+    process: 'DataForSEO API pulls ranking keywords, search volumes, positions, and traffic estimates. Results stored in PostgreSQL with caching for efficiency.'
   },
   {
-    name: 'Opportunity Mapping',
-    description: 'Find guest posting sites that overlap with competitor keywords',
+    name: 'Guest Post Site Matching',
+    description: 'Cross-reference competitor keywords with 13,000+ guest posting sites',
     icon: <Target className="w-5 h-5" />,
-    process: 'Cross-reference competitor keywords with our database of 13,000+ guest posting sites'
+    process: 'PostgreSQL queries match competitor keywords against our guest posting database by niche categories and topical relevance.'
   },
   {
-    name: 'Strategic Prioritization',
-    description: 'Rank opportunities by strategic value and effort',
+    name: 'Opportunity Scoring & Ranking',
+    description: 'AI-powered strategic scoring and workflow generation',
     icon: <TrendingUp className="w-5 h-5" />,
-    process: 'AI scores each opportunity based on keyword overlap strength, site authority, and content fit'
+    process: 'Machine learning algorithm scores opportunities based on domain authority, keyword overlap strength, niche relevance, and guest post feasibility. Auto-generates guest post workflows for top opportunities.'
   }
 ];
 
 export default function InteractiveWorkflowDemo() {
-  const [activeTab, setActiveTab] = useState<'workflow' | 'bulk'>('workflow');
+  const [activeTab, setActiveTab] = useState<'workflow' | 'bulk'>('bulk');
   const [selectedStep, setSelectedStep] = useState<string>('domain-selection');
   const [isPlaying, setIsPlaying] = useState(false);
 
@@ -237,16 +237,6 @@ export default function InteractiveWorkflowDemo() {
       {/* Tab Navigation */}
       <div className="flex border-b">
         <button
-          onClick={() => setActiveTab('workflow')}
-          className={`flex-1 px-6 py-3 text-sm font-medium border-b-2 transition-colors ${
-            activeTab === 'workflow'
-              ? 'border-blue-500 text-blue-600 bg-blue-50'
-              : 'border-transparent text-gray-500 hover:text-gray-700'
-          }`}
-        >
-          Guest Post Workflow (8 Steps)
-        </button>
-        <button
           onClick={() => setActiveTab('bulk')}
           className={`flex-1 px-6 py-3 text-sm font-medium border-b-2 transition-colors ${
             activeTab === 'bulk'
@@ -255,6 +245,16 @@ export default function InteractiveWorkflowDemo() {
           }`}
         >
           Bulk Analysis System
+        </button>
+        <button
+          onClick={() => setActiveTab('workflow')}
+          className={`flex-1 px-6 py-3 text-sm font-medium border-b-2 transition-colors ${
+            activeTab === 'workflow'
+              ? 'border-blue-500 text-blue-600 bg-blue-50'
+              : 'border-transparent text-gray-500 hover:text-gray-700'
+          }`}
+        >
+          Guest Post Workflow (8 Steps)
         </button>
       </div>
 

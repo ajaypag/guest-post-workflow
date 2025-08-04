@@ -359,8 +359,8 @@ export default function MarketingHomepage() {
               See Our Actual Process In Action
             </h2>
             <p className="text-xl text-gray-600 max-w-3xl mx-auto">
-              Click through our 8-step workflow and bulk analysis system. 
-              See exactly how we use AI for efficiency while maintaining human expertise for quality.
+              This isn't marketing fluff - click through our actual production system. 
+              Real AI prompts, database queries, and the technical architecture behind each step.
             </p>
           </div>
 
