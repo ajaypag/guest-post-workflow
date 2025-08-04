@@ -115,6 +115,7 @@ export class AirtableService {
         'Guest Post Cost V2',
         'Category',
         'Type',
+        'Niche', // Explicitly request Niche field
         'Status',
         'Guest Post Access?',
         'Link Insert Access?',
