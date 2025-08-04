@@ -52,8 +52,8 @@ export default function NewOrderPage() {
 
         const result = await response.json();
         
-        // Redirect to edit page
-        router.push(`/orders/${result.orderId}/edit`);
+        // Redirect to unified interface
+        router.push(`/orders/${result.orderId}`);
       } catch (error) {
         console.error('Error creating order:', error);
         // Redirect to orders list with error
