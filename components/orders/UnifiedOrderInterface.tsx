@@ -220,10 +220,10 @@ export default function UnifiedOrderInterface({
   // Determine what mode to show based on order state and available data
   const getAppropriateMode = useCallback((): OrderMode => {
     if (orderStatus === 'draft') return 'draft';
-    if (orderState === 'site_review' && Object.keys(siteSubmissions).length > 0) return 'site_management';
+    if (orderState === 'site_review' || (Object.keys(siteSubmissions).length > 0 && !isPaid)) return 'site_management';
     if (orderState === 'in_progress' || orderStatus === 'completed') return 'site_management';
     return currentMode;
-  }, [orderStatus, orderState, siteSubmissions, currentMode]);
+  }, [orderStatus, orderState, siteSubmissions, currentMode, isPaid]);
 
   // Mode switching
   const switchMode = (newMode: OrderMode) => {
@@ -631,10 +631,11 @@ export default function UnifiedOrderInterface({
           </div>
         )}
 
-        {/* Left Column - Client Selection */}
-        <div className={`w-full md:w-64 bg-white rounded-lg shadow-sm flex flex-col h-full ${
-          mobileView === 'clients' ? 'block md:block' : 'hidden md:block'
-        }`}>
+        {/* Left Column - Client Selection (hidden in site management mode) */}
+        {currentMode !== 'site_management' && (
+          <div className={`w-full md:w-64 bg-white rounded-lg shadow-sm flex flex-col h-full ${
+            mobileView === 'clients' ? 'block md:block' : 'hidden md:block'
+          }`}>
           <div className="p-4 border-b bg-gray-50">
             <div className="flex items-center justify-between">
               <div>
@@ -730,12 +731,14 @@ export default function UnifiedOrderInterface({
               </div>
             )}
           </div>
-        </div>
+          </div>
+        )}
 
-        {/* Middle Column - Target Pages (Stage 1 - keeping simple structure for now) */}
-        <div className={`w-full md:w-80 bg-white rounded-lg shadow-sm flex flex-col h-full ${
-          mobileView === 'targets' ? 'block md:block' : 'hidden md:block'
-        }`}>
+        {/* Middle Column - Target Pages (hidden in site management mode) */}
+        {currentMode !== 'site_management' && (
+          <div className={`w-full md:w-80 bg-white rounded-lg shadow-sm flex flex-col h-full ${
+            mobileView === 'targets' ? 'block md:block' : 'hidden md:block'
+          }`}>
           <div className="p-4 border-b border-gray-200">
             <div className="flex items-center justify-between mb-3">
               <div>
@@ -867,7 +870,8 @@ export default function UnifiedOrderInterface({
               </div>
             )}
           </div>
-        </div>
+          </div>
+        )}
 
         {/* Right Column - Order Management (ADAPTIVE - will switch between modes) */}
         <div className={`flex-1 bg-white rounded-lg shadow-sm flex flex-col h-full ${
@@ -952,30 +956,44 @@ export default function UnifiedOrderInterface({
                               </div>
                             </td>
                             <td className="px-4 py-3">
-                              <div className="flex items-center space-x-2">
-                                <Target className="h-4 w-4 text-gray-400" />
-                                <input
-                                  type="text"
-                                  value={item.targetPageUrl || ''}
-                                  onChange={(e) => updateLineItem(item.id, { targetPageUrl: e.target.value })}
-                                  placeholder="Enter target URL..."
-                                  className="flex-1 text-sm border-0 bg-transparent focus:ring-0 focus:outline-none p-0"
-                                  disabled={isPaid}
-                                />
-                              </div>
+                              <select
+                                value={item.targetPageUrl || ''}
+                                onChange={(e) => {
+                                  const url = e.target.value;
+                                  if (url === '__ADD_NEW__') {
+                                    setShowCreateTargetPageModal(true);
+                                    return;
+                                  }
+                                  const targetPage = availableTargets.find(tp => tp.url === url);
+                                  updateLineItem(item.id, {
+                                    targetPageUrl: url,
+                                    targetPageId: targetPage?.id
+                                  });
+                                }}
+                                className="w-full px-3 py-1.5 border border-gray-300 rounded text-sm"
+                                disabled={isPaid}
+                              >
+                                <option value="">Select target page...</option>
+                                {availableTargets
+                                  .filter(target => target.clientId === item.clientId)
+                                  .map(target => (
+                                    <option key={target.id} value={target.url}>
+                                      {target.url}
+                                    </option>
+                                  ))
+                                }
+                                <option value="__ADD_NEW__">+ Add New Target Page</option>
+                              </select>
                             </td>
                             <td className="px-4 py-3">
-                              <div className="flex items-center space-x-2">
-                                <LinkIcon className="h-4 w-4 text-gray-400" />
-                                <input
-                                  type="text"
-                                  value={item.anchorText || ''}
-                                  onChange={(e) => updateLineItem(item.id, { anchorText: e.target.value })}
-                                  placeholder="Enter anchor text..."
-                                  className="flex-1 text-sm border-0 bg-transparent focus:ring-0 focus:outline-none p-0"
-                                  disabled={isPaid}
-                                />
-                              </div>
+                              <input
+                                type="text"
+                                value={item.anchorText || ''}
+                                onChange={(e) => updateLineItem(item.id, { anchorText: e.target.value })}
+                                placeholder="Enter anchor text..."
+                                className="w-full px-3 py-1.5 border border-gray-300 rounded text-sm"
+                                disabled={isPaid || !item.targetPageUrl}
+                              />
                             </td>
                             <td className="px-4 py-3">
                               <select
@@ -987,12 +1005,14 @@ export default function UnifiedOrderInterface({
                                     price: packagePricing[pkg].price 
                                   });
                                 }}
-                                className="text-sm border border-gray-200 rounded px-2 py-1 bg-white"
+                                className="w-full px-3 py-1.5 border border-gray-300 rounded text-sm"
                                 disabled={isPaid}
                               >
-                                <option value="good">Good</option>
-                                <option value="better">Better</option>
-                                <option value="best">Best</option>
+                                {Object.entries(packagePricing).map(([key, pkg]) => (
+                                  <option key={key} value={key}>
+                                    {pkg.name} (${pkg.price})
+                                  </option>
+                                ))}
                               </select>
                             </td>
                             <td className="px-4 py-3 text-right">
@@ -1431,6 +1451,126 @@ export default function UnifiedOrderInterface({
                                   </React.Fragment>
                                 );
                               })}
+                            </React.Fragment>
+                          );
+                        })}
+                        
+                        {/* Unassigned Pool View - Show domains that haven't been assigned to target pages */}
+                        {orderGroups.map(group => {
+                          const groupId = group.id;
+                          const isGroupExpanded = expandedGroup === groupId;
+                          const groupSubmissions = siteSubmissions[groupId] || [];
+                          
+                          // Get unassigned submissions for this group
+                          const unassignedSubmissions = groupSubmissions.filter(s => 
+                            !s.targetPageUrl && !s.metadata?.targetPageUrl && s.submissionStatus !== 'client_rejected'
+                          );
+                          
+                          if (unassignedSubmissions.length === 0) return null;
+                          
+                          return (
+                            <React.Fragment key={`unassigned-${groupId}`}>
+                              {/* Unassigned pool header */}
+                              <tr className="bg-blue-50 border-t-2 border-blue-200">
+                                <td colSpan={userType === 'internal' ? 5 : 4} className="px-6 py-3">
+                                  <div className="flex items-center gap-2">
+                                    <button
+                                      onClick={() => setExpandedGroup(isGroupExpanded ? null : groupId)}
+                                      className="flex items-center gap-1 p-1 hover:bg-blue-100 rounded"
+                                      title={`${unassignedSubmissions.length} unassigned domains available`}
+                                    >
+                                      {isGroupExpanded ? (
+                                        <ChevronDown className="w-4 h-4 text-blue-600" />
+                                      ) : (
+                                        <ChevronRight className="w-4 h-4 text-blue-600" />
+                                      )}
+                                      <span className="text-sm text-blue-700 font-medium">
+                                        {group.client.name} - Unassigned Pool ({unassignedSubmissions.length} domains)
+                                      </span>
+                                    </button>
+                                    <div className="flex items-center gap-2 text-xs text-blue-600">
+                                      <Database className="h-3 w-3" />
+                                      <span>Available for assignment</span>
+                                    </div>
+                                  </div>
+                                </td>
+                              </tr>
+                              
+                              {/* Expandable unassigned domains */}
+                              {isGroupExpanded && (
+                                <tr>
+                                  <td colSpan={userType === 'internal' ? 5 : 4} className="px-6 py-4 bg-blue-25">
+                                    <div className="grid grid-cols-1 lg:grid-cols-2 gap-3">
+                                      {unassignedSubmissions.map((submission) => (
+                                        <div key={submission.id} className="bg-white p-3 rounded-lg border border-blue-200 hover:border-blue-300">
+                                          <div className="flex items-center justify-between">
+                                            <div className="flex-1">
+                                              <div className="flex items-center gap-2 mb-1">
+                                                <div className="text-sm font-medium text-gray-900">
+                                                  {submission.domain?.domain || 'Unknown'}
+                                                </div>
+                                                <span className={`inline-flex items-center px-2 py-1 rounded-full text-xs font-medium ${
+                                                  submission.selectionPool === 'primary'
+                                                    ? 'bg-green-100 text-green-800'
+                                                    : 'bg-yellow-100 text-yellow-800'
+                                                }`}>
+                                                  {submission.selectionPool === 'primary' ? 'Primary' : 'Alternative'}
+                                                </span>
+                                              </div>
+                                              <div className="flex items-center gap-4 text-xs text-gray-600">
+                                                {submission.domainRating && (
+                                                  <span>DR: {submission.domainRating}</span>
+                                                )}
+                                                {submission.traffic && (
+                                                  <span>Traffic: {submission.traffic.toLocaleString()}</span>
+                                                )}
+                                                <span className="font-medium">{formatCurrency(submission.price)}</span>
+                                              </div>
+                                            </div>
+                                            <div className="flex items-center gap-2">
+                                              {userType === 'internal' && !isPaid && (
+                                                <>
+                                                  <button
+                                                    onClick={() => {
+                                                      // Assign to target page logic
+                                                      console.log('Assign domain:', submission.id);
+                                                    }}
+                                                    className="text-xs bg-blue-600 text-white hover:bg-blue-700 px-2 py-1 rounded transition-colors"
+                                                  >
+                                                    Assign
+                                                  </button>
+                                                  <button
+                                                    onClick={() => {
+                                                      // Add as new link logic
+                                                      console.log('Add as new link:', submission.id);
+                                                    }}
+                                                    className="text-xs bg-green-600 text-white hover:bg-green-700 px-2 py-1 rounded transition-colors"
+                                                  >
+                                                    Add as New Link
+                                                  </button>
+                                                </>
+                                              )}
+                                              {group.bulkAnalysisProjectId && submission.domainId && (
+                                                <a
+                                                  href={`/clients/${group.clientId}/bulk-analysis/projects/${group.bulkAnalysisProjectId}?guided=${submission.domainId}`}
+                                                  className="text-xs bg-indigo-100 text-indigo-700 hover:bg-indigo-200 px-2 py-1 rounded transition-colors flex items-center gap-1"
+                                                  title="View detailed bulk analysis"
+                                                  target="_blank"
+                                                  rel="noopener noreferrer"
+                                                  onClick={(e) => e.stopPropagation()}
+                                                >
+                                                  <ExternalLink className="w-3 h-3" />
+                                                  Analysis
+                                                </a>
+                                              )}
+                                            </div>
+                                          </div>
+                                        </div>
+                                      ))}
+                                    </div>
+                                  </td>
+                                </tr>
+                              )}
                             </React.Fragment>
                           );
                         })}
