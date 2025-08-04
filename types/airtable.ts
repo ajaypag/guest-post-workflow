@@ -18,8 +18,7 @@ export interface AirtableWebsite extends AirtableRecord {
     'Total Traffic': number;
     'Guest Post Cost V2': number;
     Category: string[];
-    Type: string[];
-    'Website Type': string[]; // SaaS, Blog, News, eCommerce, etc.
+    Type: string[]; // SaaS, Blog, News, eCommerce, etc.
     Niche: string[]; // Multiple niches
     'Guest Post Contact': string[];
     'Count of Published Opportunities': number;
