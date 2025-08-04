@@ -1,5 +1,5 @@
 import { NextResponse } from 'next/server';
-import { db } from '@/lib/db';
+import { db } from '@/lib/db/connection';
 import { sql } from 'drizzle-orm';
 
 export async function GET() {
@@ -17,7 +17,7 @@ export async function GET() {
       ORDER BY count DESC
     `);
 
-    const categories = categoriesResult.rows.map(row => ({
+    const categories = categoriesResult.rows.map((row: any) => ({
       name: row.category,
       count: parseInt(row.count),
       slug: row.category

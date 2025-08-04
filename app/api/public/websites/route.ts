@@ -1,5 +1,5 @@
 import { NextRequest, NextResponse } from 'next/server';
-import { db } from '@/lib/db';
+import { db } from '@/lib/db/connection';
 import { websites } from '@/lib/db/websiteSchema';
 import { sql, and, ilike, gte, lte, eq } from 'drizzle-orm';
 

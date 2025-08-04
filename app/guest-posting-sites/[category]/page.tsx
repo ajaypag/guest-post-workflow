@@ -1,6 +1,6 @@
 import { Metadata } from 'next';
 import { notFound } from 'next/navigation';
-import { db } from '@/lib/db';
+import { db } from '@/lib/db/connection';
 import { websites } from '@/lib/db/websiteSchema';
 import { sql } from 'drizzle-orm';
 
@@ -14,7 +14,7 @@ export async function generateStaticParams() {
       AND overall_quality IN ('Excellent', 'Good', 'Fair')
   `);
   
-  return categories.rows.map((row) => ({
+  return categories.rows.map((row: any) => ({
     category: row.category
       .toLowerCase()
       .replace(/[&\s]+/g, '-')
@@ -32,7 +32,7 @@ async function getCategoryFromSlug(slug: string): Promise<string | null> {
     WHERE categories IS NOT NULL
   `);
   
-  const match = allCategories.rows.find(row => {
+  const match = allCategories.rows.find((row: any) => {
     const categorySlug = row.category
       .toLowerCase()
       .replace(/[&\s]+/g, '-')
@@ -42,11 +42,12 @@ async function getCategoryFromSlug(slug: string): Promise<string | null> {
     return categorySlug === slug;
   });
   
-  return match ? match.category : null;
+  return match ? (match as any).category : null;
 }
 
-export async function generateMetadata({ params }: { params: { category: string } }): Promise<Metadata> {
-  const categoryName = await getCategoryFromSlug(params.category);
+export async function generateMetadata({ params }: { params: Promise<{ category: string }> }): Promise<Metadata> {
+  const { category } = await params;
+  const categoryName = await getCategoryFromSlug(category);
   
   if (!categoryName) {
     return { title: 'Category Not Found' };
@@ -58,8 +59,9 @@ export async function generateMetadata({ params }: { params: { category: string 
   };
 }
 
-export default async function CategoryPage({ params }: { params: { category: string } }) {
-  const categoryName = await getCategoryFromSlug(params.category);
+export default async function CategoryPage({ params }: { params: Promise<{ category: string }> }) {
+  const { category } = await params;
+  const categoryName = await getCategoryFromSlug(category);
   
   if (!categoryName) {
     notFound();

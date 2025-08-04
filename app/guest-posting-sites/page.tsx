@@ -1,5 +1,5 @@
 import { Metadata } from 'next';
-import { db } from '@/lib/db';
+import { db } from '@/lib/db/connection';
 import { websites } from '@/lib/db/websiteSchema';
 import { sql } from 'drizzle-orm';
 
@@ -58,7 +58,7 @@ async function getWebsites() {
         hasGuestPost: site.hasGuestPost,
       })),
       totalCount: countResult[0]?.count || 0,
-      categories: categoriesResult.rows.map(row => ({
+      categories: categoriesResult.rows.map((row: any) => ({
         name: row.category,
         count: parseInt(row.count),
       })),
