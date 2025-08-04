@@ -199,6 +199,42 @@ export default function InternalOrderManagementPage() {
   const [selectedPages, setSelectedPages] = useState<Set<string>>(new Set());
   const [generatingKeywords, setGeneratingKeywords] = useState(false);
   const [currentProcessingPage, setCurrentProcessingPage] = useState<string | null>(null);
+  const [editingLineItem, setEditingLineItem] = useState<{ groupId: string; index: number } | null>(null);
+  const [assigningDomain, setAssigningDomain] = useState<string | null>(null);
+
+  // Auto-dismiss success messages after 5 seconds
+  useEffect(() => {
+    if (message?.type === 'success') {
+      const timer = setTimeout(() => {
+        setMessage(null);
+      }, 5000);
+      return () => clearTimeout(timer);
+    }
+  }, [message]);
+
+  // Handle closing edit dropdown on click outside or ESC
+  useEffect(() => {
+    const handleClickOutside = (e: MouseEvent) => {
+      if (editingLineItem && !(e.target as HTMLElement).closest('.edit-dropdown')) {
+        setEditingLineItem(null);
+      }
+    };
+    
+    const handleEscape = (e: KeyboardEvent) => {
+      if (e.key === 'Escape' && editingLineItem) {
+        setEditingLineItem(null);
+      }
+    };
+    
+    if (editingLineItem) {
+      document.addEventListener('mousedown', handleClickOutside);
+      document.addEventListener('keydown', handleEscape);
+      return () => {
+        document.removeEventListener('mousedown', handleClickOutside);
+        document.removeEventListener('keydown', handleEscape);
+      };
+    }
+  }, [editingLineItem]);
 
   useEffect(() => {
     const checkAuth = async () => {
@@ -485,34 +521,52 @@ export default function InternalOrderManagementPage() {
 
   const handleAssignTargetPage = async (submissionId: string, targetPageUrl: string, groupId: string) => {
     try {
+      setAssigningDomain(submissionId);
+      
+      // Create an AbortController for timeout
+      const controller = new AbortController();
+      const timeoutId = setTimeout(() => controller.abort(), 15000); // 15 second timeout
+      
       // Use the new target URL update endpoint
       const response = await fetch(`/api/orders/${orderId}/groups/${groupId}/site-selections/${submissionId}/target-url`, {
         method: 'PATCH',
         headers: { 'Content-Type': 'application/json' },
         credentials: 'include',
+        signal: controller.signal,
         body: JSON.stringify({ 
           targetPageUrl,
           anchorText: null // Can be set later
         })
-      });
+      }).finally(() => clearTimeout(timeoutId));
       
       if (!response.ok) {
-        throw new Error('Failed to update target page assignment');
+        const errorData = await response.json().catch(() => ({ error: 'Unknown error' }));
+        throw new Error(errorData.error || 'Failed to update target page assignment');
       }
       
       // Reload submissions to show the update
       await loadSiteSubmissions();
       setMessage({
         type: 'success',
-        text: 'Domain assigned to target page successfully'
+        text: targetPageUrl ? 'Domain assigned to target page successfully' : 'Domain unassigned successfully'
       });
       
-    } catch (error) {
+    } catch (error: any) {
       console.error('Error assigning target page:', error);
+      
+      let errorMessage = 'Failed to assign target page';
+      if (error.name === 'AbortError') {
+        errorMessage = 'Request timed out. Please try again.';
+      } else if (error instanceof Error) {
+        errorMessage = error.message;
+      }
+      
       setMessage({
         type: 'error',
-        text: 'Failed to assign target page'
+        text: `Error: ${errorMessage}`
       });
+    } finally {
+      setAssigningDomain(null);
     }
   };
 
@@ -1115,22 +1169,59 @@ export default function InternalOrderManagementPage() {
                                           </div>
                                         </div>
                                         {showPoolView && availableForTarget.length > 1 && (
-                                          <button
-                                            className="text-xs text-blue-600 hover:text-blue-800"
-                                            onClick={() => {
-                                              // TODO: Show dropdown to change selection
-                                              console.log('Change selection for line item', index);
-                                            }}
-                                          >
-                                            Change
-                                          </button>
+                                          editingLineItem?.groupId === groupId && editingLineItem?.index === index ? (
+                                            <div className="flex items-center gap-2 edit-dropdown">
+                                              {assigningDomain && (
+                                                <Loader2 className="h-3 w-3 animate-spin text-gray-500" />
+                                              )}
+                                              <select
+                                                className="text-xs border-gray-300 rounded-md"
+                                                defaultValue={displaySubmission.id}
+                                                disabled={!!assigningDomain}
+                                                onChange={async (e) => {
+                                                  if (e.target.value && e.target.value !== displaySubmission.id) {
+                                                    // Clear target URL from current submission
+                                                    await handleAssignTargetPage(displaySubmission.id, '', groupId);
+                                                    // Assign target URL to new submission
+                                                    await handleAssignTargetPage(e.target.value, targetPageUrl || '', groupId);
+                                                    setEditingLineItem(null);
+                                                  }
+                                                }}
+                                              >
+                                                <option value="">Select domain...</option>
+                                                {availableForTarget.map(sub => (
+                                                  <option key={sub.id} value={sub.id}>
+                                                    {sub.domain?.domain} 
+                                                    {sub.domainRating ? ` (DR: ${sub.domainRating})` : ''}
+                                                  </option>
+                                                ))}
+                                              </select>
+                                              <button
+                                                className="text-xs text-gray-600 hover:text-gray-800"
+                                                onClick={() => setEditingLineItem(null)}
+                                              >
+                                                Cancel
+                                              </button>
+                                            </div>
+                                          ) : (
+                                            <button
+                                              className="text-xs text-blue-600 hover:text-blue-800"
+                                              onClick={() => setEditingLineItem({ groupId, index })}
+                                            >
+                                              Change
+                                            </button>
+                                          )
                                         )}
                                       </div>
                                     ) : availableForTarget.length > 0 ? (
                                       <div className="flex items-center gap-2">
+                                        {assigningDomain && (
+                                          <Loader2 className="h-4 w-4 animate-spin text-gray-500" />
+                                        )}
                                         <select
                                           className="text-sm border-gray-300 rounded-md flex-1"
                                           defaultValue=""
+                                          disabled={!!assigningDomain}
                                           onChange={async (e) => {
                                             if (e.target.value && targetPageUrl) {
                                               // Update the selected domain's target URL
