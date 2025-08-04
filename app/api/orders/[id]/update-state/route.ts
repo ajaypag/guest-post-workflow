@@ -62,12 +62,7 @@ export async function POST(
     const updatedOrder = await db.query.orders.findFirst({
       where: eq(orders.id, id),
       with: {
-        account: true,
-        orderGroups: {
-          with: {
-            client: true
-          }
-        }
+        account: true
       },
     });
 

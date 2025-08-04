@@ -458,6 +458,56 @@ export default function InternalOrderManagementPage() {
     }
   };
 
+  const handleAssignTargetPage = async (submissionId: string, targetPageUrl: string, groupId: string) => {
+    try {
+      // Get current submissions
+      const currentSubmissions = siteSubmissions[groupId] || [];
+      
+      // Update the specific submission with the new target page
+      const updatedSubmissions = currentSubmissions.map(sub => 
+        sub.id === submissionId 
+          ? { ...sub, metadata: { ...sub.metadata, targetPageUrl } }
+          : sub
+      );
+      
+      // Prepare the update payload
+      const selections = updatedSubmissions.map(sub => ({
+        domainId: sub.domainId,
+        status: sub.submissionStatus === 'client_approved' ? 'approved' : 
+                sub.submissionStatus === 'client_rejected' ? 'rejected' : 'pending',
+        targetPageUrl: sub.metadata?.targetPageUrl || '',
+        anchorText: sub.metadata?.anchorText || '',
+        specialInstructions: sub.metadata?.specialInstructions || '',
+        reviewNotes: sub.clientReviewNotes || ''
+      }));
+      
+      // Send update to API
+      const response = await fetch(`/api/orders/${orderId}/groups/${groupId}/site-selections`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ selections })
+      });
+      
+      if (!response.ok) {
+        throw new Error('Failed to update target page assignment');
+      }
+      
+      // Reload submissions
+      await loadSiteSubmissions();
+      setMessage({
+        type: 'success',
+        text: 'Domain assigned to target page successfully'
+      });
+      
+    } catch (error) {
+      console.error('Error assigning target page:', error);
+      setMessage({
+        type: 'error',
+        text: 'Failed to assign target page'
+      });
+    }
+  };
+
   const handleGenerateWorkflows = async () => {
     if (!order || order.status !== 'paid') {
       setMessage({
@@ -1016,6 +1066,80 @@ export default function InternalOrderManagementPage() {
                               </tr>
                             );
                           })}
+                          
+                          {/* Orphaned domains (no target URL) for this client */}
+                          {siteSubmissions[groupId] && (() => {
+                            const orphanedDomains = siteSubmissions[groupId].filter(sub => 
+                              !sub.metadata?.targetPageUrl || sub.metadata.targetPageUrl === ''
+                            );
+                            return orphanedDomains.length > 0 ? (
+                              <>
+                                <tr className="bg-yellow-50">
+                                  <td colSpan={getColumnCount()} className="px-6 py-3">
+                                    <div className="flex items-center justify-between">
+                                      <div className="flex items-center gap-2">
+                                        <AlertCircle className="h-4 w-4 text-yellow-600" />
+                                        <div>
+                                          <div className="text-sm font-medium text-yellow-900">Unassigned Domains</div>
+                                          <div className="text-xs text-yellow-700 mt-1">
+                                            {orphanedDomains.length} domain{orphanedDomains.length > 1 ? 's' : ''} need to be paired with target pages
+                                          </div>
+                                        </div>
+                                      </div>
+                                    </div>
+                                  </td>
+                                </tr>
+                                {orphanedDomains.map((submission) => (
+                                  <tr key={submission.id} className="bg-yellow-50 hover:bg-yellow-100">
+                                    <td className="px-6 py-4 pl-12">
+                                      <div className="flex items-start gap-3">
+                                        <Globe className="h-5 w-5 text-yellow-600 mt-0.5" />
+                                        <div className="flex-1">
+                                          <div className="text-sm font-medium text-gray-900">{submission.domain}</div>
+                                          <div className="flex items-center gap-4 mt-1 text-xs text-gray-600">
+                                            {submission.domainRating && (
+                                              <span>DR: {submission.domainRating}</span>
+                                            )}
+                                            {submission.traffic && (
+                                              <span>Traffic: {submission.traffic.toLocaleString()}</span>
+                                            )}
+                                          </div>
+                                        </div>
+                                      </div>
+                                    </td>
+                                    <td className="px-6 py-4">
+                                      <select 
+                                        className="text-sm border-gray-300 rounded-md"
+                                        defaultValue=""
+                                        onChange={async (e) => {
+                                          if (e.target.value) {
+                                            await handleAssignTargetPage(submission.id, e.target.value, groupId);
+                                          }
+                                        }}
+                                      >
+                                        <option value="">Select target page...</option>
+                                        {group.targetPages?.map((page, idx) => (
+                                          <option key={idx} value={page.url}>
+                                            {page.url}
+                                          </option>
+                                        ))}
+                                      </select>
+                                    </td>
+                                    {(Object.keys(siteSubmissions).length > 0 || order.state === 'sites_ready' || order.state === 'site_review' || order.state === 'client_reviewing' || order.state === 'in_progress' || order.status === 'completed') && (
+                                      <td colSpan={getColumnCount() - 3} className="px-6 py-4">
+                                        <span className="text-xs text-yellow-600">Needs target page assignment</span>
+                                      </td>
+                                    )}
+                                    <td className="px-6 py-4 text-right">
+                                      <span className="text-sm font-medium text-gray-900">
+                                        {formatCurrency(submission.price)}
+                                      </span>
+                                    </td>
+                                  </tr>
+                                ))}
+                              </>
+                            ) : null;
+                          })()}
                           
                           {/* Site submissions for this client when in site_review state */}
                           {(order.state === 'sites_ready' || order.state === 'site_review' || order.state === 'client_reviewing') && siteSubmissions[groupId] && siteSubmissions[groupId].length > 0 && (
