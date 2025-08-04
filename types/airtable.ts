@@ -89,6 +89,8 @@ export interface WebsiteFilters {
   hasGuestPost?: boolean;
   hasLinkInsert?: boolean;
   categories?: string[];
+  websiteTypes?: string[]; // SaaS, Blog, News, eCommerce, etc.
+  niches?: string[]; // Multiple niches
   searchTerm?: string;
   forceAllRecords?: boolean; // Skip view filtering for full sync
   // Airtable metadata filters

@@ -270,6 +270,16 @@ export class AirtableSyncService {
       params.push(filters.categories);
     }
     
+    if (filters.websiteTypes && filters.websiteTypes.length > 0) {
+      conditions.push(`w.website_type && $${paramIndex++}`);
+      params.push(filters.websiteTypes);
+    }
+    
+    if (filters.niches && filters.niches.length > 0) {
+      conditions.push(`w.niche && $${paramIndex++}`);
+      params.push(filters.niches);
+    }
+    
     // Airtable metadata filters
     if (filters.airtableUpdatedAfter) {
       conditions.push(`w.airtable_updated_at >= $${paramIndex++}`);
