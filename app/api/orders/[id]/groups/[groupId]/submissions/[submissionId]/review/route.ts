@@ -85,7 +85,7 @@ export async function POST(
             ...(submission.metadata?.reviewHistory || []),
             {
               action,
-              timestamp: new Date(),
+              timestamp: new Date().toISOString(),
               reviewedBy: session.userId,
               reviewerType: session.userType as 'internal' | 'account',
               notes

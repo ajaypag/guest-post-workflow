@@ -51,6 +51,23 @@ interface SiteSubmission {
     targetPageUrl?: string;
     anchorText?: string;
     specialInstructions?: string;
+    suggestedBy?: string;
+    suggestedAt?: string;
+    suggestedReason?: string;
+    batchId?: string;
+    projectId?: string;
+    qualificationStatus?: string;
+    hasDataForSeoResults?: boolean;
+    notes?: string;
+    lastUpdatedBy?: string;
+    lastUpdatedAt?: string;
+    statusHistory?: Array<{
+      status: string;
+      timestamp: string;
+      updatedBy: string;
+      notes?: string;
+    }>;
+    [key: string]: any;
   };
 }
 
@@ -468,39 +485,22 @@ export default function InternalOrderManagementPage() {
 
   const handleAssignTargetPage = async (submissionId: string, targetPageUrl: string, groupId: string) => {
     try {
-      // Get current submissions
-      const currentSubmissions = siteSubmissions[groupId] || [];
-      
-      // Update the specific submission with the new target page
-      const updatedSubmissions = currentSubmissions.map(sub => 
-        sub.id === submissionId 
-          ? { ...sub, targetPageUrl }
-          : sub
-      );
-      
-      // Prepare the update payload
-      const selections = updatedSubmissions.map(sub => ({
-        domainId: sub.domainId,
-        status: sub.status === 'client_approved' ? 'approved' : 
-                sub.status === 'client_rejected' ? 'rejected' : 'pending',
-        targetPageUrl: sub.targetPageUrl || '',
-        anchorText: sub.anchorText || '',
-        specialInstructions: sub.specialInstructions || '',
-        reviewNotes: sub.clientReviewNotes || ''
-      }));
-      
-      // Send update to API
-      const response = await fetch(`/api/orders/${orderId}/groups/${groupId}/site-selections`, {
-        method: 'POST',
+      // Use the new target URL update endpoint
+      const response = await fetch(`/api/orders/${orderId}/groups/${groupId}/site-selections/${submissionId}/target-url`, {
+        method: 'PATCH',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ selections })
+        credentials: 'include',
+        body: JSON.stringify({ 
+          targetPageUrl,
+          anchorText: null // Can be set later
+        })
       });
       
       if (!response.ok) {
         throw new Error('Failed to update target page assignment');
       }
       
-      // Reload submissions
+      // Reload submissions to show the update
       await loadSiteSubmissions();
       setMessage({
         type: 'success',
@@ -981,6 +981,20 @@ export default function InternalOrderManagementPage() {
                       {order.orderGroups && order.orderGroups.map(group => {
                         const groupId = group.id;
                         const isExpanded = expandedGroup === groupId;
+                        const groupSubmissions = siteSubmissions[groupId] || [];
+                        
+                        // Calculate statistics for this group
+                        const totalSuggestions = groupSubmissions.length;
+                        const approvedCount = groupSubmissions.filter(s => s.submissionStatus === 'client_approved').length;
+                        const pendingCount = groupSubmissions.filter(s => s.submissionStatus === 'pending').length;
+                        const rejectedCount = groupSubmissions.filter(s => s.submissionStatus === 'client_rejected').length;
+                        
+                        // Determine which submissions are assigned to line items
+                        const assignedSubmissions = groupSubmissions.filter(s => s.targetPageUrl || s.metadata?.targetPageUrl);
+                        const unassignedSubmissions = groupSubmissions.filter(s => !s.targetPageUrl && !s.metadata?.targetPageUrl);
+                        
+                        // Check if we should show pool view (more suggestions than needed or has unassigned)
+                        const showPoolView = totalSuggestions > group.linkCount || unassignedSubmissions.length > 0;
                         
                         return (
                         <>
@@ -988,9 +1002,38 @@ export default function InternalOrderManagementPage() {
                           <tr key={`${groupId}-header`} className="bg-gray-50">
                             <td colSpan={getColumnCount()} className="px-6 py-3">
                               <div className="flex items-center justify-between">
-                                <div>
-                                  <div className="text-sm font-semibold text-gray-900">{group.client.name}</div>
-                                  <div className="text-xs text-gray-500 mt-1">{group.linkCount} link{group.linkCount > 1 ? 's' : ''}</div>
+                                <div className="flex items-center gap-6">
+                                  <div>
+                                    <div className="text-sm font-semibold text-gray-900">{group.client.name}</div>
+                                    <div className="text-xs text-gray-500 mt-1">
+                                      {group.linkCount} link{group.linkCount > 1 ? 's' : ''} needed
+                                    </div>
+                                  </div>
+                                  {totalSuggestions > 0 && (
+                                    <div className="flex items-center gap-3 text-xs">
+                                      <span className="text-gray-500">
+                                        {totalSuggestions} site{totalSuggestions !== 1 ? 's' : ''} suggested
+                                      </span>
+                                      {approvedCount > 0 && (
+                                        <span className="flex items-center gap-1 text-green-600">
+                                          <CheckCircle className="h-3 w-3" />
+                                          {approvedCount} approved
+                                        </span>
+                                      )}
+                                      {pendingCount > 0 && (
+                                        <span className="flex items-center gap-1 text-yellow-600">
+                                          <Clock className="h-3 w-3" />
+                                          {pendingCount} pending
+                                        </span>
+                                      )}
+                                      {rejectedCount > 0 && (
+                                        <span className="flex items-center gap-1 text-red-600">
+                                          <XCircle className="h-3 w-3" />
+                                          {rejectedCount} rejected
+                                        </span>
+                                      )}
+                                    </div>
+                                  )}
                                 </div>
                                 {group.bulkAnalysisProjectId && (
                                   <Link
@@ -1008,41 +1051,105 @@ export default function InternalOrderManagementPage() {
                           {/* Line items for this client */}
                           {[...Array(group.linkCount)].map((_, index) => {
                             const targetPageUrl = group.targetPages?.[index]?.url;
-                            // Find site submission for this target page
-                            const siteSuggestion = siteSubmissions[groupId]?.find(sub => 
-                              sub.targetPageUrl === targetPageUrl
+                            const anchorText = group.anchorTexts?.[index];
+                            
+                            // Find site submissions for this line item
+                            const exactMatch = groupSubmissions.find(sub => 
+                              (sub.targetPageUrl === targetPageUrl || sub.metadata?.targetPageUrl === targetPageUrl) &&
+                              sub.submissionStatus === 'client_approved'
                             );
+                            
+                            // If no exact approved match, look for any suggestion for this target
+                            const suggestedMatch = !exactMatch ? groupSubmissions.find(sub => 
+                              (sub.targetPageUrl === targetPageUrl || sub.metadata?.targetPageUrl === targetPageUrl)
+                            ) : null;
+                            
+                            // Get available suggestions for this target (for dropdown)
+                            const availableForTarget = groupSubmissions.filter(sub => {
+                              // Include if suggested for this target or unassigned
+                              const isForThisTarget = sub.targetPageUrl === targetPageUrl || 
+                                                     sub.metadata?.targetPageUrl === targetPageUrl;
+                              const isUnassigned = !sub.targetPageUrl && !sub.metadata?.targetPageUrl;
+                              const isNotRejected = sub.submissionStatus !== 'client_rejected';
+                              
+                              return (isForThisTarget || isUnassigned) && isNotRejected;
+                            });
+                            
+                            const displaySubmission = exactMatch || suggestedMatch;
                             
                             return (
                               <tr key={`${groupId}-${index}`} className="hover:bg-gray-50">
                                 <td className="px-6 py-4 pl-12">
-                                  <div className="text-sm text-gray-600">
-                                    {targetPageUrl || 'No target page selected'}
+                                  <div className="text-sm">
+                                    <div className="text-gray-900">Link {index + 1}</div>
+                                    <div className="text-gray-500 text-xs mt-0.5">
+                                      {targetPageUrl || 'No target page selected'}
+                                    </div>
                                   </div>
                                 </td>
                                 <td className="px-6 py-4 text-sm text-gray-900">
-                                  {group.anchorTexts?.[index] || '-'}
+                                  {anchorText || '-'}
                                 </td>
                                 {(Object.keys(siteSubmissions).length > 0 || order.state === 'sites_ready' || order.state === 'site_review' || order.state === 'client_reviewing' || order.state === 'in_progress' || order.status === 'completed') && (
                                   <td className="px-6 py-4">
-                                    {siteSuggestion ? (
+                                    {displaySubmission ? (
                                       <div className="flex items-center gap-2">
                                         <Globe className="h-4 w-4 text-blue-600" />
-                                        <div>
-                                          <div className="text-sm font-medium text-gray-900">{siteSuggestion.domain?.domain || 'Unknown'}</div>
-                                          <div className="text-xs text-gray-500">
-                                            {siteSuggestion.submissionStatus === 'client_approved' ? (
-                                              <span className="text-green-600">Approved</span>
-                                            ) : siteSuggestion.submissionStatus === 'client_rejected' ? (
-                                              <span className="text-red-600">Rejected</span>
-                                            ) : (
-                                              <span className="text-yellow-600">Suggested</span>
+                                        <div className="flex-1">
+                                          <div className="text-sm font-medium text-gray-900">
+                                            {displaySubmission.domain?.domain || 'Unknown'}
+                                          </div>
+                                          <div className="flex items-center gap-2 mt-1">
+                                            <span className={`text-xs ${
+                                              displaySubmission.submissionStatus === 'client_approved' ? 'text-green-600' :
+                                              displaySubmission.submissionStatus === 'client_rejected' ? 'text-red-600' :
+                                              'text-yellow-600'
+                                            }`}>
+                                              {displaySubmission.submissionStatus === 'client_approved' ? '✓ Approved' :
+                                               displaySubmission.submissionStatus === 'client_rejected' ? '✗ Rejected' :
+                                               '⏳ Pending'}
+                                            </span>
+                                            {displaySubmission.domainRating && (
+                                              <span className="text-xs text-gray-500">DR: {displaySubmission.domainRating}</span>
                                             )}
                                           </div>
                                         </div>
+                                        {showPoolView && availableForTarget.length > 1 && (
+                                          <button
+                                            className="text-xs text-blue-600 hover:text-blue-800"
+                                            onClick={() => {
+                                              // TODO: Show dropdown to change selection
+                                              console.log('Change selection for line item', index);
+                                            }}
+                                          >
+                                            Change
+                                          </button>
+                                        )}
+                                      </div>
+                                    ) : availableForTarget.length > 0 ? (
+                                      <div className="flex items-center gap-2">
+                                        <select
+                                          className="text-sm border-gray-300 rounded-md flex-1"
+                                          defaultValue=""
+                                          onChange={async (e) => {
+                                            if (e.target.value && targetPageUrl) {
+                                              // Update the selected domain's target URL
+                                              await handleAssignTargetPage(e.target.value, targetPageUrl, groupId);
+                                            }
+                                          }}
+                                        >
+                                          <option value="">Select from pool ({availableForTarget.length} available)</option>
+                                          {availableForTarget.map(sub => (
+                                            <option key={sub.id} value={sub.id}>
+                                              {sub.domain?.domain} 
+                                              {sub.domainRating ? ` (DR: ${sub.domainRating})` : ''}
+                                              {sub.metadata?.targetPageUrl && sub.metadata.targetPageUrl !== targetPageUrl ? ' - suggested for other' : ''}
+                                            </option>
+                                          ))}
+                                        </select>
                                       </div>
                                     ) : (
-                                      <span className="text-sm text-gray-400">No site suggested</span>
+                                      <span className="text-sm text-gray-400">No sites available</span>
                                     )}
                                   </td>
                                 )}
@@ -1075,145 +1182,82 @@ export default function InternalOrderManagementPage() {
                             );
                           })}
                           
-                          {/* Orphaned domains (no target URL) for this client */}
-                          {siteSubmissions[groupId] && (() => {
-                            const orphanedDomains = siteSubmissions[groupId].filter(sub => 
-                              !sub.targetPageUrl || sub.targetPageUrl === ''
-                            );
-                            return orphanedDomains.length > 0 ? (
-                              <>
-                                <tr className="bg-yellow-50">
-                                  <td colSpan={getColumnCount()} className="px-6 py-3">
-                                    <div className="flex items-center justify-between">
-                                      <div className="flex items-center gap-2">
-                                        <AlertCircle className="h-4 w-4 text-yellow-600" />
-                                        <div>
-                                          <div className="text-sm font-medium text-yellow-900">Unassigned Domains</div>
-                                          <div className="text-xs text-yellow-700 mt-1">
-                                            {orphanedDomains.length} domain{orphanedDomains.length > 1 ? 's' : ''} need to be paired with target pages
-                                          </div>
-                                        </div>
-                                      </div>
-                                    </div>
-                                  </td>
-                                </tr>
-                                {orphanedDomains.map((submission) => (
-                                  <tr key={submission.id} className="bg-yellow-50 hover:bg-yellow-100">
-                                    <td className="px-6 py-4 pl-12">
-                                      <div className="flex items-start gap-3">
-                                        <Globe className="h-5 w-5 text-yellow-600 mt-0.5" />
-                                        <div className="flex-1">
-                                          <div className="text-sm font-medium text-gray-900">{submission.domain?.domain || 'Unknown'}</div>
-                                          <div className="flex items-center gap-4 mt-1 text-xs text-gray-600">
-                                            {submission.domainRating && (
-                                              <span>DR: {submission.domainRating}</span>
-                                            )}
-                                            {submission.traffic && (
-                                              <span>Traffic: {submission.traffic.toLocaleString()}</span>
-                                            )}
-                                          </div>
-                                        </div>
-                                      </div>
-                                    </td>
-                                    <td className="px-6 py-4">
-                                      <select 
-                                        className="text-sm border-gray-300 rounded-md"
-                                        defaultValue=""
-                                        onChange={async (e) => {
-                                          if (e.target.value) {
-                                            await handleAssignTargetPage(submission.id, e.target.value, groupId);
-                                          }
-                                        }}
-                                      >
-                                        <option value="">Select target page...</option>
-                                        {group.targetPages?.map((page, idx) => (
-                                          <option key={idx} value={page.url}>
-                                            {page.url}
-                                          </option>
-                                        ))}
-                                      </select>
-                                    </td>
-                                    {(Object.keys(siteSubmissions).length > 0 || order.state === 'sites_ready' || order.state === 'site_review' || order.state === 'client_reviewing' || order.state === 'in_progress' || order.status === 'completed') && (
-                                      <td colSpan={getColumnCount() - 3} className="px-6 py-4">
-                                        <span className="text-xs text-yellow-600">Needs target page assignment</span>
-                                      </td>
-                                    )}
-                                    <td className="px-6 py-4 text-right">
-                                      <span className="text-sm font-medium text-gray-900">
-                                        {formatCurrency(submission.price)}
-                                      </span>
-                                    </td>
-                                  </tr>
-                                ))}
-                              </>
-                            ) : null;
-                          })()}
-                          
-                          {/* Site submissions for this client when in site_review state */}
-                          {(order.state === 'sites_ready' || order.state === 'site_review' || order.state === 'client_reviewing') && siteSubmissions[groupId] && siteSubmissions[groupId].length > 0 && (
+                          {/* Site Pool View - Only show when we have pool paradigm */}
+                          {showPoolView && groupSubmissions.length > 0 && (
                             <>
-                              <tr className="bg-purple-50">
+                              <tr className="bg-gray-50 border-t-2 border-gray-200">
                                 <td colSpan={getColumnCount()} className="px-6 py-3">
                                   <div className="flex items-center justify-between">
-                                    <div>
-                                      <div className="text-sm font-medium text-purple-900">Site Submissions</div>
-                                      <div className="text-xs text-purple-700 mt-1">
-                                        {siteSubmissions[groupId].length} sites submitted for review
+                                    <div className="flex items-center gap-2">
+                                      <Package className="h-4 w-4 text-gray-600" />
+                                      <div>
+                                        <div className="text-sm font-medium text-gray-900">
+                                          Site Pool ({unassignedSubmissions.length} unassigned)
+                                        </div>
+                                        <div className="text-xs text-gray-600 mt-0.5">
+                                          Additional suggestions available for selection
+                                        </div>
                                       </div>
                                     </div>
                                     <button
                                       onClick={() => setExpandedGroup(isExpanded ? null : groupId)}
-                                      className="text-sm text-purple-600 hover:text-purple-800"
+                                      className="text-sm text-gray-600 hover:text-gray-800 flex items-center gap-1"
                                     >
-                                      {isExpanded ? 'Hide' : 'Show'} Details
+                                      {isExpanded ? 'Hide' : 'Show'} Pool
+                                      {isExpanded ? <ChevronRight className="h-3 w-3 rotate-90" /> : <ChevronRight className="h-3 w-3" />}
                                     </button>
                                   </div>
                                 </td>
                               </tr>
-                              {isExpanded && siteSubmissions[groupId].map((submission) => (
-                                <tr key={submission.id} className="bg-purple-50 hover:bg-purple-100">
-                                  <td className="px-6 py-4 pl-12">
-                                    <div className="flex items-start gap-3">
-                                      <Globe className="h-5 w-5 text-purple-600 mt-0.5" />
-                                      <div className="flex-1">
-                                        <div className="text-sm font-medium text-gray-900">{submission.domain?.domain || 'Unknown'}</div>
-                                        <div className="flex items-center gap-4 mt-1 text-xs text-gray-600">
-                                          {submission.domainRating && (
-                                            <span>DR: {submission.domainRating}</span>
-                                          )}
-                                          {submission.traffic && (
-                                            <span>Traffic: {submission.traffic.toLocaleString()}</span>
-                                          )}
-                                          <span className="font-medium">{formatCurrency(submission.price)}</span>
+                              {isExpanded && (
+                                <tr>
+                                  <td colSpan={getColumnCount()} className="px-6 py-4 bg-gray-50">
+                                    <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
+                                      {unassignedSubmissions.map((submission) => (
+                                        <div key={submission.id} className="bg-white p-3 rounded-lg border border-gray-200 hover:border-gray-300">
+                                          <div className="flex items-start justify-between">
+                                            <div className="flex items-start gap-3">
+                                              <Globe className="h-5 w-5 text-gray-500 mt-0.5" />
+                                              <div className="flex-1">
+                                                <div className="text-sm font-medium text-gray-900">
+                                                  {submission.domain?.domain || 'Unknown'}
+                                                </div>
+                                                <div className="flex items-center gap-3 mt-1 text-xs text-gray-600">
+                                                  {submission.domainRating && (
+                                                    <span className="font-medium">DR: {submission.domainRating}</span>
+                                                  )}
+                                                  {submission.traffic && (
+                                                    <span>Traffic: {submission.traffic.toLocaleString()}</span>
+                                                  )}
+                                                  {submission.price && (
+                                                    <span className="font-medium text-gray-900">{formatCurrency(submission.price)}</span>
+                                                  )}
+                                                </div>
+                                                {submission.metadata?.suggestedReason && (
+                                                  <div className="text-xs text-gray-500 mt-1 italic">
+                                                    {submission.metadata.suggestedReason}
+                                                  </div>
+                                                )}
+                                              </div>
+                                            </div>
+                                            <div className="ml-3">
+                                              <span className={`inline-flex px-2 py-1 text-xs rounded-full ${
+                                                submission.submissionStatus === 'client_approved' ? 'bg-green-100 text-green-800' :
+                                                submission.submissionStatus === 'client_rejected' ? 'bg-red-100 text-red-800' :
+                                                'bg-yellow-100 text-yellow-800'
+                                              }`}>
+                                                {submission.submissionStatus === 'client_approved' ? 'Approved' :
+                                                 submission.submissionStatus === 'client_rejected' ? 'Rejected' :
+                                                 'Pending'}
+                                              </span>
+                                            </div>
+                                          </div>
                                         </div>
-                                      </div>
+                                      ))}
                                     </div>
-                                  </td>
-                                  <td colSpan={getColumnCount() - 2} className="px-6 py-4">
-                                    <div className="flex items-center gap-2">
-                                      <span className={`px-2 py-1 rounded text-xs font-medium ${
-                                        submission.status === 'approved' ? 'bg-green-100 text-green-800' :
-                                        submission.status === 'rejected' ? 'bg-red-100 text-red-800' :
-                                        'bg-yellow-100 text-yellow-800'
-                                      }`}>
-                                        {submission.status === 'approved' ? 'Client Approved' :
-                                         submission.status === 'rejected' ? 'Client Rejected' :
-                                         'Pending Review'}
-                                      </span>
-                                      {submission.clientReviewNotes && (
-                                        <span className="text-xs text-gray-600 italic">
-                                          "{submission.clientReviewNotes}"
-                                        </span>
-                                      )}
-                                    </div>
-                                  </td>
-                                  <td className="px-6 py-4 text-right">
-                                    <span className="text-sm font-medium text-gray-900">
-                                      {formatCurrency(submission.price)}
-                                    </span>
                                   </td>
                                 </tr>
-                              ))}
+                              )}
                             </>
                           )}
                         </>

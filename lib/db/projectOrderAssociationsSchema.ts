@@ -81,19 +81,35 @@ export const orderSiteSubmissions = pgTable('order_site_submissions', {
     specialInstructions?: string;
     qualityScore?: number;
     clientPriority?: 'high' | 'medium' | 'low';
+    // Suggestion tracking
+    suggestedBy?: string;
+    suggestedAt?: string;
+    suggestedReason?: string;
+    batchId?: string;
+    // From bulk analysis
+    projectId?: string;
+    qualificationStatus?: string;
+    hasDataForSeoResults?: boolean;
+    notes?: string;
+    // Update tracking
+    lastUpdatedBy?: string;
+    lastUpdatedAt?: string;
+    // History tracking
     statusHistory?: Array<{
       status: string;
-      timestamp: Date;
+      timestamp: string;
       updatedBy: string;
       notes?: string;
     }>;
     reviewHistory?: Array<{
       action: 'approve' | 'reject';
-      timestamp: Date;
+      timestamp: string;
       reviewedBy: string;
       reviewerType: 'internal' | 'account';
       notes?: string;
     }>;
+    // Allow additional fields for flexibility
+    [key: string]: any;
   }>(),
   
   createdAt: timestamp('created_at').notNull().defaultNow(),
