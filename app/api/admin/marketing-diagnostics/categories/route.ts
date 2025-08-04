@@ -17,11 +17,14 @@ export async function GET() {
       LIMIT 20
     `);
     
-    // Get total unique categories
+    // Get total unique categories - using subquery for PostgreSQL compatibility
     const totalCategories = await db.execute(sql`
-      SELECT COUNT(DISTINCT UNNEST(categories)) as total
-      FROM websites
-      WHERE categories IS NOT NULL
+      SELECT COUNT(DISTINCT category) as total
+      FROM (
+        SELECT UNNEST(categories) as category
+        FROM websites
+        WHERE categories IS NOT NULL
+      ) as unnested
     `);
     
     // Check categories that would be shown publicly

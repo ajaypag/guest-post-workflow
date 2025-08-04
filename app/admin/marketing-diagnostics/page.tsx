@@ -25,10 +25,10 @@ export default function MarketingDiagnosticsPage() {
       };
 
       try {
-        // 1. Check environment
+        // 1. Check environment (client-side)
         results.environment = {
-          nodeEnv: process.env.NODE_ENV,
-          hasDbUrl: !!process.env.DATABASE_URL,
+          nodeEnv: process.env.NODE_ENV || 'production',
+          hasDbUrl: 'Check server response below',
           baseUrl: window.location.origin,
           timestamp: new Date().toISOString()
         };
@@ -113,7 +113,7 @@ export default function MarketingDiagnosticsPage() {
         <h2 className="text-xl font-semibold mb-4">Environment</h2>
         <div className="space-y-2">
           <p><strong>Node Environment:</strong> {diagnostics.environment.nodeEnv}</p>
-          <p><strong>Database URL Configured:</strong> {diagnostics.environment.hasDbUrl ? '✅ Yes' : '❌ No'}</p>
+          <p><strong>Database URL Configured:</strong> {diagnostics.database.hasDbUrl ? '✅ Yes' : '❌ No'}</p>
           <p><strong>Base URL:</strong> {diagnostics.environment.baseUrl}</p>
           <p><strong>Timestamp:</strong> {diagnostics.environment.timestamp}</p>
         </div>
