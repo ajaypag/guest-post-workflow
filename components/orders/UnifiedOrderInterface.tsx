@@ -1348,10 +1348,11 @@ export default function UnifiedOrderInterface({
 
   // Auto-save trigger
   useEffect(() => {
-    if (currentMode === 'draft' && !isPaid) {
+    // Only auto-save if we have actual data loaded (prevents wiping on page load)
+    if (currentMode === 'draft' && !isPaid && orderGroups !== null) {
       debouncedSave();
     }
-  }, [selectedClients, lineItems, currentMode, isPaid, debouncedSave]);
+  }, [selectedClients, lineItems, currentMode, isPaid, debouncedSave, orderGroups]);
 
   return (
     <div className="h-screen flex flex-col bg-gray-100">
