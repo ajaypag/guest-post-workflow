@@ -34,7 +34,7 @@ export async function generateStaticParams() {
         .replace(/[&\s]+/g, '-')
         .replace(/[^a-z0-9-]/g, '')
         .replace(/-+/g, '-')
-        .replace(/^-|-$/g, '')
+        .replace(/^-|-$/g, '') + '-blogs'
     }));
   } catch (error) {
     // During build time, database might not be available
@@ -59,7 +59,7 @@ async function getCategoryFromSlug(slug: string): Promise<string | null> {
         .replace(/[&\s]+/g, '-')
         .replace(/[^a-z0-9-]/g, '')
         .replace(/-+/g, '-')
-        .replace(/^-|-$/g, '');
+        .replace(/^-|-$/g, '') + '-blogs';
       return categorySlug === slug;
     });
     
@@ -79,8 +79,8 @@ export async function generateMetadata({ params }: { params: Promise<{ category:
   }
   
   return {
-    title: `${categoryName} Guest Posting Service - Wholesale + $79 Per Link`,
-    description: `Transparent ${categoryName.toLowerCase()} guest posting. See exact wholesale costs, pay just $79 for content creation and placement.`,
+    title: `${categoryName} Guest Posting Sites - Wholesale + $79 Per Link`,
+    description: `Find ${categoryName.toLowerCase()} guest posting sites with transparent pricing. See exact wholesale costs, pay just $79 for content creation and placement.`,
   };
 }
 
@@ -109,6 +109,7 @@ export default async function CategoryPage({ params }: { params: Promise<{ categ
   
   let websiteResults: any[] = [];
   let totalCount = 0;
+  let relatedCategories: any[] = [];
   
   try {
     // Get websites for this specific category
@@ -138,6 +139,32 @@ export default async function CategoryPage({ params }: { params: Promise<{ categ
     `);
     
     totalCount = Number(countResult.rows[0]?.count) || 0;
+
+    // Get related categories (those with highest site overlap)
+    const relatedCategoriesResult = await db.execute(sql`
+      SELECT 
+        UNNEST(categories) as category,
+        COUNT(*) as count
+      FROM websites
+      WHERE categories IS NOT NULL 
+        AND categories != '{}'
+        AND UNNEST(categories) != ${categoryName}
+      GROUP BY category
+      HAVING COUNT(*) >= 3
+      ORDER BY count DESC
+      LIMIT 8
+    `);
+    
+    relatedCategories = relatedCategoriesResult.rows.map((row: any) => ({
+      name: row.category,
+      count: parseInt(row.count),
+      slug: row.category
+        .toLowerCase()
+        .replace(/[&\s]+/g, '-')
+        .replace(/[^a-z0-9-]/g, '')
+        .replace(/-+/g, '-')
+        .replace(/^-|-$/g, '') + '-blogs'
+    }));
   } catch (error) {
     console.warn('Could not fetch category data, database not available:', error);
     // Return empty results during build time
@@ -199,7 +226,7 @@ export default async function CategoryPage({ params }: { params: Promise<{ categ
 
         {/* Page Header */}
         <div className="mb-6">
-          <h1 className="text-3xl font-bold mb-2">{categoryName} Guest Posting Service</h1>
+          <h1 className="text-3xl font-bold mb-2">{categoryName} Guest Posting Sites</h1>
           <p className="text-gray-600">
             {totalCount} {categoryName.toLowerCase()} websites • Wholesale prices + $79 service fee
           </p>
@@ -341,6 +368,30 @@ export default async function CategoryPage({ params }: { params: Promise<{ categ
           )}
         </div>
 
+        {/* Related Categories Section */}
+        {relatedCategories.length > 0 && (
+          <div className="mt-12 bg-white rounded-lg shadow-sm border p-6">
+            <h2 className="text-xl font-bold text-gray-900 mb-4">
+              Related Guest Post Categories
+            </h2>
+            <p className="text-gray-600 mb-4">
+              Expand your link building strategy with sites in complementary niches:
+            </p>
+            <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
+              {relatedCategories.map(cat => (
+                <Link
+                  key={cat.slug}
+                  href={`/guest-posting-sites/${cat.slug}`}
+                  className="block p-3 border border-gray-200 rounded-lg hover:border-blue-300 hover:bg-blue-50 transition-colors"
+                >
+                  <div className="font-medium text-sm text-gray-900">{cat.name}</div>
+                  <div className="text-xs text-gray-500">{cat.count} sites</div>
+                </Link>
+              ))}
+            </div>
+          </div>
+        )}
+
         {/* Service Details Section */}
         <div className="mt-12 bg-white rounded-lg shadow-sm border p-8">
           <h2 className="text-2xl font-bold text-gray-900 mb-6">
@@ -380,10 +431,21 @@ export default async function CategoryPage({ params }: { params: Promise<{ categ
                 {categoryName} is a competitive niche where quality and relevance are crucial. 
                 Our team ensures every link adds real value to your SEO strategy.
               </p>
-              <p className="text-gray-700">
+              <p className="text-gray-700 mb-4">
                 We don't just place links – we create content that ranks and drives traffic 
                 while building your authority in the {categoryName.toLowerCase()} space.
               </p>
+              
+              {/* Internal linking for SEO */}
+              <div className="bg-gray-50 p-4 rounded-lg">
+                <h4 className="font-medium text-gray-900 mb-2">Build a Comprehensive Link Strategy:</h4>
+                <ul className="text-sm text-gray-700 space-y-1">
+                  <li>• <Link href="/guest-posting-sites" className="text-blue-600 hover:text-blue-800">Browse all 13,000+ guest posting sites</Link></li>
+                  <li>• Combine {categoryName.toLowerCase()} links with complementary niches</li>
+                  <li>• Focus on sites with genuine topical authority</li>
+                  <li>• Build links gradually over 3-6 months</li>
+                </ul>
+              </div>
             </div>
           </div>
         </div>

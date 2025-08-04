@@ -168,7 +168,7 @@ export default async function GuestPostingSitesPage() {
               {categories.map(cat => (
                 <Link
                   key={cat.name}
-                  href={`/guest-posting-sites/${cat.name.toLowerCase().replace(/[&\s]+/g, '-').replace(/[^a-z0-9-]/g, '')}`}
+                  href={`/guest-posting-sites/${cat.name.toLowerCase().replace(/[&\s]+/g, '-').replace(/[^a-z0-9-]/g, '')}-blogs`}
                   className="inline-flex items-center px-3 py-1.5 bg-gray-100 text-gray-700 rounded-lg hover:bg-gray-200 text-sm font-medium transition-colors"
                 >
                   {cat.name}
