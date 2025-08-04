@@ -1,7 +1,9 @@
-import { Metadata } from 'next';
+'use client';
+
+import { useEffect, useState } from 'react';
+import { sql } from 'drizzle-orm';
 import { db } from '@/lib/db/connection';
 import { websites } from '@/lib/db/websiteSchema';
-import { sql } from 'drizzle-orm';
 import { 
   Globe, 
   TrendingUp, 
@@ -24,46 +26,29 @@ import {
 import Link from 'next/link';
 import InteractiveWorkflowDemo from '@/components/InteractiveWorkflowDemo';
 
-export const metadata: Metadata = {
-  title: 'PostFlow - AI-Assisted Link Building Without Agency Markup | Transparent Pricing',
-  description: 'The anti-agency link building service. Expert curation meets AI efficiency. Wholesale pricing + $79 flat fee. No markup games, just results.',
-};
+export default function MarketingHomepage() {
+  const [stats, setStats] = useState({
+    totalSites: 13000,
+    totalNiches: 100
+  });
 
-// Get real-time numbers for hero section
-async function getStats() {
-  try {
-    // Get total website count
-    const totalSites = await db
-      .select({ count: sql<number>`count(*)` })
-      .from(websites);
-    
-    // Get total niches with 10+ sites
-    const nicheCount = await db.execute(sql`
-      SELECT COUNT(DISTINCT niche_name) as count
-      FROM (
-        SELECT UNNEST(niche) as niche_name, COUNT(*) as site_count
-        FROM websites
-        WHERE niche IS NOT NULL AND array_length(niche, 1) > 0
-        GROUP BY niche_name
-        HAVING COUNT(*) >= 10
-      ) niche_stats
-    `);
-
-    return {
-      totalSites: totalSites[0]?.count || 13000,
-      totalNiches: nicheCount.rows[0]?.count || 100
+  useEffect(() => {
+    // Fetch stats on client side
+    const fetchStats = async () => {
+      try {
+        const response = await fetch('/api/marketing/stats');
+        if (response.ok) {
+          const data = await response.json();
+          setStats(data);
+        }
+      } catch (error) {
+        console.warn('Could not fetch real-time stats:', error);
+        // Keep default values
+      }
     };
-  } catch (error) {
-    console.warn('Could not fetch real-time stats:', error);
-    return {
-      totalSites: 13000,
-      totalNiches: 100
-    };
-  }
-}
 
-export default async function MarketingHomepage() {
-  const stats = await getStats();
+    fetchStats();
+  }, []);
 
   return (
     <div className="min-h-screen bg-white">
