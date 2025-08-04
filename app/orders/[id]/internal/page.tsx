@@ -703,7 +703,7 @@ export default function InternalOrderManagementPage() {
           showDraftUrl: false,
           showPublishedUrl: false,
           showStatus: true,
-          columns: ['client', 'link_details', 'site', 'status', 'tools']
+          columns: ['client', 'link_details', 'site', 'status']
         };
       case 'post_approval':
         return {
@@ -712,7 +712,7 @@ export default function InternalOrderManagementPage() {
           showDraftUrl: false,
           showPublishedUrl: false,
           showStatus: true,
-          columns: ['client', 'link_details', 'site', 'status', 'tools']
+          columns: ['client', 'link_details', 'site', 'status']
         };
       case 'content_creation':
         return {
@@ -721,7 +721,7 @@ export default function InternalOrderManagementPage() {
           showDraftUrl: true,
           showPublishedUrl: false,
           showStatus: true,
-          columns: ['client', 'link_details', 'site', 'content_status', 'draft_url', 'tools']
+          columns: ['client', 'link_details', 'site', 'content_status', 'draft_url']
         };
       case 'completed':
         return {
@@ -730,7 +730,7 @@ export default function InternalOrderManagementPage() {
           showDraftUrl: false,
           showPublishedUrl: true,
           showStatus: false,
-          columns: ['client', 'link_details', 'site', 'published_url', 'completion', 'tools']
+          columns: ['client', 'link_details', 'site', 'published_url', 'completion']
         };
       default:
         return {
@@ -951,15 +951,9 @@ export default function InternalOrderManagementPage() {
         return (
           <td className="px-6 py-4">
             <div className="flex items-center gap-2">
-              {group.bulkAnalysisProjectId && (
-                <Link
-                  href={`/clients/${group.clientId}/bulk-analysis/projects/${group.bulkAnalysisProjectId}`}
-                  className="inline-flex items-center text-xs text-blue-600 hover:text-blue-800"
-                >
-                  <Database className="h-3 w-3 mr-1" />
-                  Analysis
-                </Link>
-              )}
+              {/* Tools for individual line items - currently empty but ready for future tools */}
+              {/* Bulk Analysis is handled at group level to avoid redundancy */}
+              <span className="text-xs text-gray-400">-</span>
             </div>
           </td>
         );
