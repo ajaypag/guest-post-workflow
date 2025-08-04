@@ -216,6 +216,8 @@ export default function UnifiedOrderInterface({
   // Modal state
   const [showCreateClientModal, setShowCreateClientModal] = useState(false);
   const [showCreateTargetPageModal, setShowCreateTargetPageModal] = useState(false);
+  const [showConfirmModal, setShowConfirmModal] = useState(false);
+  const [isSubmitting, setIsSubmitting] = useState(false);
 
   // Determine what mode to show based on order state and available data
   const getAppropriateMode = useCallback((): OrderMode => {
@@ -535,6 +537,82 @@ export default function UnifiedOrderInterface({
       setTimeout(() => setSaveStatus('idle'), 2000);
     }
   }, [session, lineItems, selectedClients, clients, subtotal, total, packagePricing, onSave]);
+
+  // Submit handlers
+  const handleSubmitClick = async () => {
+    // Validate required fields
+    if (lineItems.length === 0) {
+      alert('Please add at least one line item');
+      return;
+    }
+
+    const itemsWithoutTargetPages = lineItems.filter(item => !item.targetPageUrl);
+    if (itemsWithoutTargetPages.length > 0) {
+      alert('Please select target pages for all line items');
+      return;
+    }
+    
+    // Save draft before showing confirmation
+    await saveOrderDraft();
+    
+    // Show confirmation modal
+    setShowConfirmModal(true);
+  };
+  
+  const handleConfirmOrder = async () => {
+    try {
+      setIsSubmitting(true);
+      
+      // First save the current changes
+      await saveOrderDraft();
+      
+      // Submit through the onSubmit prop
+      if (onSubmit) {
+        const orderData = {
+          subtotal: subtotal,
+          totalPrice: total,
+          orderGroups: Array.from(selectedClients.entries())
+            .filter(([_, data]) => data.selected && data.linkCount > 0)
+            .map(([clientId, data]) => {
+              const client = clients.find(c => c.id === clientId);
+              const clientItems = lineItems.filter(item => item.clientId === clientId);
+              
+              const targetPages = clientItems
+                .filter(item => item.targetPageUrl)
+                .map(item => ({
+                  url: item.targetPageUrl,
+                  pageId: item.targetPageId
+                }));
+              
+              const anchorTexts = clientItems
+                .filter(item => item.anchorText)
+                .map(item => item.anchorText);
+              
+              return {
+                clientId,
+                clientName: client?.name || '',
+                linkCount: data.linkCount,
+                targetPages: targetPages,
+                anchorTexts: anchorTexts,
+                packageType: clientItems[0]?.selectedPackage || 'better',
+                packagePrice: packagePricing[clientItems[0]?.selectedPackage || 'better'].price,
+              };
+            })
+        };
+        
+        await onSubmit(orderData);
+      }
+      
+      // Close modal
+      setShowConfirmModal(false);
+      setIsSubmitting(false);
+      
+    } catch (error) {
+      console.error('Error submitting order:', error);
+      alert('Failed to submit order. Please try again.');
+      setIsSubmitting(false);
+    }
+  };
 
   // Debounced auto-save
   const saveOrderDraftRef = useRef(saveOrderDraft);
@@ -1860,30 +1938,7 @@ export default function UnifiedOrderInterface({
               <div className="flex items-center space-x-2">
                 {currentMode === 'draft' && !isPaid && (
                   <button
-                    onClick={() => {
-                      if (onSubmit) {
-                        onSubmit({
-                          subtotal,
-                          totalPrice: total,
-                          orderGroups: Array.from(selectedClients.entries())
-                            .filter(([_, data]) => data.selected && data.linkCount > 0)
-                            .map(([clientId, data]) => {
-                              const client = clients.find(c => c.id === clientId);
-                              const clientItems = lineItems.filter(item => item.clientId === clientId);
-                              
-                              return {
-                                clientId,
-                                clientName: client?.name || '',
-                                linkCount: data.linkCount,
-                                targetPages: clientItems.map(item => ({ url: item.targetPageUrl, pageId: item.targetPageId })),
-                                anchorTexts: clientItems.map(item => item.anchorText),
-                                packageType: clientItems[0]?.selectedPackage || 'better',
-                                packagePrice: packagePricing[clientItems[0]?.selectedPackage || 'better'].price,
-                              };
-                            })
-                        });
-                      }
-                    }}
+                    onClick={handleSubmitClick}
                     className="px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 text-sm font-medium"
                     disabled={lineItems.length === 0}
                   >
@@ -1917,6 +1972,117 @@ export default function UnifiedOrderInterface({
             setShowCreateTargetPageModal(false);
           }}
         />
+      )}
+
+      {/* Order Confirmation Modal */}
+      {showConfirmModal && (
+        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4">
+          <div className="bg-white rounded-lg max-w-2xl w-full max-h-[90vh] overflow-y-auto">
+            <div className="p-6">
+              <div className="flex items-center justify-between mb-6">
+                <h2 className="text-2xl font-bold text-gray-900">Confirm Your Order</h2>
+                <button
+                  onClick={() => setShowConfirmModal(false)}
+                  className="text-gray-400 hover:text-gray-600"
+                  disabled={isSubmitting}
+                >
+                  <X className="h-6 w-6" />
+                </button>
+              </div>
+              
+              {/* Order Summary */}
+              <div className="mb-6">
+                <h3 className="font-semibold text-gray-900 mb-3">Order Summary</h3>
+                <div className="bg-gray-50 rounded-lg p-4 space-y-3">
+                  <div className="flex justify-between">
+                    <span className="text-gray-600">Total Links:</span>
+                    <span className="font-medium">{lineItems.length}</span>
+                  </div>
+                  <div className="flex justify-between">
+                    <span className="text-gray-600">Number of Clients:</span>
+                    <span className="font-medium">{new Set(lineItems.map(item => item.clientId)).size}</span>
+                  </div>
+                  <div className="pt-3 border-t border-gray-200">
+                    <div className="flex justify-between text-lg font-semibold">
+                      <span>Total Price:</span>
+                      <span>{formatCurrency(total)}</span>
+                    </div>
+                  </div>
+                </div>
+              </div>
+              
+              {/* Client Details */}
+              <div className="mb-6">
+                <h3 className="font-semibold text-gray-900 mb-3">Order Details</h3>
+                <div className="space-y-3">
+                  {Array.from(new Set(lineItems.map(item => item.clientId))).map(clientId => {
+                    const clientItems = lineItems.filter(item => item.clientId === clientId);
+                    const clientName = clientItems[0]?.clientName || 'Unknown Client';
+                    return (
+                      <div key={clientId} className="bg-gray-50 rounded-lg p-4">
+                        <div className="flex justify-between items-start mb-2">
+                          <div>
+                            <p className="font-medium text-gray-900">{clientName}</p>
+                            <p className="text-sm text-gray-600">{clientItems.length} links</p>
+                          </div>
+                        </div>
+                        <div className="mt-2 space-y-1">
+                          <p className="text-sm text-gray-600 font-medium">Target Pages:</p>
+                          {clientItems.slice(0, 3).map((item, idx) => (
+                            <p key={idx} className="text-sm text-gray-600 ml-2">
+                              • {item.targetPageUrl || 'No target page selected'}
+                            </p>
+                          ))}
+                          {clientItems.length > 3 && (
+                            <p className="text-sm text-gray-500 ml-2">
+                              + {clientItems.length - 3} more
+                            </p>
+                          )}
+                        </div>
+                      </div>
+                    );
+                  })}
+                </div>
+              </div>
+              
+              {/* What Happens Next */}
+              <div className="bg-blue-50 rounded-lg p-4 mb-6">
+                <h3 className="font-semibold text-blue-900 mb-2">What Happens Next?</h3>
+                <ul className="text-sm text-blue-800 space-y-1">
+                  <li>• Your order will be submitted for processing</li>
+                  <li>• Our team will analyze and find suitable guest post sites</li>
+                  <li>• You'll receive site recommendations for review</li>
+                  <li>• Once approved, we'll begin content creation and outreach</li>
+                </ul>
+              </div>
+              
+              {/* Action Buttons */}
+              <div className="flex justify-end space-x-3">
+                <button
+                  onClick={() => setShowConfirmModal(false)}
+                  className="px-4 py-2 border border-gray-300 rounded-md text-gray-700 hover:bg-gray-50"
+                  disabled={isSubmitting}
+                >
+                  Cancel
+                </button>
+                <button
+                  onClick={handleConfirmOrder}
+                  disabled={isSubmitting}
+                  className="px-4 py-2 bg-blue-600 text-white rounded-md hover:bg-blue-700 disabled:opacity-50 disabled:cursor-not-allowed flex items-center"
+                >
+                  {isSubmitting ? (
+                    <>
+                      <Loader2 className="w-4 h-4 mr-2 animate-spin" />
+                      Submitting...
+                    </>
+                  ) : (
+                    'Confirm Order'
+                  )}
+                </button>
+              </div>
+            </div>
+          </div>
+        </div>
       )}
     </div>
   );
