@@ -1,7 +1,7 @@
 'use client';
 
 import { useState } from 'react';
-import AdminWrapper from '@/components/AdminWrapper';
+import AuthWrapper from '@/components/AuthWrapper';
 import Header from '@/components/Header';
 import { CheckCircle, AlertCircle, Loader2, Database } from 'lucide-react';
 
@@ -72,7 +72,7 @@ export default function PoolSystemMigrationPage() {
   });
 
   return (
-    <AdminWrapper>
+    <AuthWrapper>
       <div className="min-h-screen bg-gray-50">
         <Header />
         <div className="max-w-4xl mx-auto py-8 px-4">
@@ -222,6 +222,6 @@ export default function PoolSystemMigrationPage() {
           </div>
         </div>
       </div>
-    </AdminWrapper>
+    </AuthWrapper>
   );
 }
