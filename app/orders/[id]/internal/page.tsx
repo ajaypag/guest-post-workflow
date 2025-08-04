@@ -47,6 +47,9 @@ interface SiteSubmission {
   specialInstructions?: string;
   targetPageUrl?: string;
   anchorText?: string;
+  createdAt?: string;
+  selectionPool?: 'primary' | 'alternative';
+  poolRank?: number;
   metadata?: {
     targetPageUrl?: string;
     anchorText?: string;
@@ -529,6 +532,41 @@ export default function InternalOrderManagementPage() {
       });
     } finally {
       setActionLoading(prev => ({ ...prev, sites_ready: false }));
+    }
+  };
+
+  const handleSwitchDomain = async (submissionId: string, groupId: string) => {
+    try {
+      setAssigningDomain(submissionId);
+      
+      const response = await fetch(`/api/orders/${orderId}/groups/${groupId}/site-selections/${submissionId}/switch`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        credentials: 'include'
+      });
+      
+      if (!response.ok) {
+        const errorData = await response.json().catch(() => ({ error: 'Unknown error' }));
+        throw new Error(errorData.error || 'Failed to switch domain');
+      }
+      
+      const result = await response.json();
+      
+      // Reload submissions to show the update
+      await loadSiteSubmissions();
+      setMessage({
+        type: 'success',
+        text: result.message || 'Domain switched successfully'
+      });
+      
+    } catch (error: any) {
+      console.error('Error switching domain:', error);
+      setMessage({
+        type: 'error',
+        text: error.message || 'Failed to switch domain'
+      });
+    } finally {
+      setAssigningDomain(null);
     }
   };
 
@@ -1453,15 +1491,27 @@ export default function InternalOrderManagementPage() {
                             const anchorText = group.anchorTexts?.[index];
                             
                             // Find site submissions for this line item
-                            const exactMatch = groupSubmissions.find(sub => 
-                              (sub.targetPageUrl === targetPageUrl || sub.metadata?.targetPageUrl === targetPageUrl) &&
-                              sub.submissionStatus === 'client_approved'
+                            // Get all submissions that match this target page URL
+                            const matchingSubmissions = groupSubmissions.filter(sub => 
+                              sub.targetPageUrl === targetPageUrl || sub.metadata?.targetPageUrl === targetPageUrl
                             );
                             
-                            // If no exact approved match, look for any suggestion for this target
-                            const suggestedMatch = !exactMatch ? groupSubmissions.find(sub => 
-                              (sub.targetPageUrl === targetPageUrl || sub.metadata?.targetPageUrl === targetPageUrl)
-                            ) : null;
+                            // NEW: Pool-based selection logic
+                            // Get primary submissions for this target URL
+                            const primarySubmissions = matchingSubmissions
+                              .filter(sub => sub.selectionPool === 'primary')
+                              .sort((a, b) => (a.poolRank || 1) - (b.poolRank || 1));
+                            
+                            // Get the display submission based on the current line item index
+                            // This ensures each slot shows a different primary domain
+                            const displaySubmission = primarySubmissions[index] || null;
+                            
+                            // If no primary for this slot, show any available alternative
+                            const alternativeSubmissions = matchingSubmissions
+                              .filter(sub => sub.selectionPool === 'alternative')
+                              .sort((a, b) => (a.poolRank || 1) - (b.poolRank || 1));
+                            
+                            const suggestedMatch = !displaySubmission ? alternativeSubmissions[0] : null;
                             
                             // Get available suggestions for this target (for dropdown)
                             const availableForTarget = groupSubmissions.filter(sub => {
@@ -1474,7 +1524,7 @@ export default function InternalOrderManagementPage() {
                               return (isForThisTarget || isUnassigned) && isNotRejected;
                             });
                             
-                            const displaySubmission = exactMatch || suggestedMatch;
+                            const finalDisplaySubmission = displaySubmission || suggestedMatch;
                             
                             return (
                               <React.Fragment key={`${groupId}-${index}`}>
@@ -1485,7 +1535,7 @@ export default function InternalOrderManagementPage() {
                                       index,
                                       targetPageUrl,
                                       anchorText,
-                                      displaySubmission,
+                                      displaySubmission: finalDisplaySubmission,
                                       availableForTarget,
                                       showPoolView,
                                       groupId
@@ -1536,10 +1586,10 @@ export default function InternalOrderManagementPage() {
                                             </thead>
                                             <tbody className="bg-white divide-y divide-gray-200">
                                               {availableForTarget.map((submission, subIndex) => (
-                                                <tr key={`${groupId}-${index}-sub-${subIndex}`} className={submission.id === displaySubmission?.id ? 'bg-green-50' : 'hover:bg-gray-50'}>
+                                                <tr key={`${groupId}-${index}-sub-${subIndex}`} className={submission.id === finalDisplaySubmission?.id ? 'bg-green-50' : 'hover:bg-gray-50'}>
                                                   <td className="px-3 py-2 whitespace-nowrap">
                                                     <div className="flex items-center gap-2">
-                                                      {submission.id === displaySubmission?.id ? (
+                                                      {submission.id === finalDisplaySubmission?.id ? (
                                                         <CheckCircle className="w-4 h-4 text-green-600" />
                                                       ) : (
                                                         <div className="w-4 h-4" />
@@ -1558,7 +1608,7 @@ export default function InternalOrderManagementPage() {
                                                             <ExternalLink className="w-3 h-3 text-gray-400" />
                                                           </a>
                                                         </div>
-                                                        {submission.id === displaySubmission?.id && (
+                                                        {submission.id === finalDisplaySubmission?.id && (
                                                           <span className="text-xs text-green-600 font-medium">Current selection</span>
                                                         )}
                                                       </div>
@@ -1643,7 +1693,7 @@ export default function InternalOrderManagementPage() {
                                                   </td>
                                                   <td className="px-3 py-2 whitespace-nowrap">
                                                     <div className="flex items-center gap-1">
-                                                      {submission.id !== displaySubmission?.id && (
+                                                      {submission.id !== finalDisplaySubmission?.id && (
                                                         <>
                                                           <button 
                                                             className="text-xs bg-blue-100 text-blue-700 hover:bg-blue-200 px-2 py-1 rounded transition-colors"
@@ -1651,12 +1701,8 @@ export default function InternalOrderManagementPage() {
                                                               e.preventDefault();
                                                               e.stopPropagation();
                                                               try {
-                                                                // Simply assign the new domain to this target page
-                                                                // Don't unassign the old one - it will remain as an alternative
-                                                                await handleAssignTargetPage(submission.id, targetPageUrl || '', groupId);
-                                                                
-                                                                // Reload submissions to get fresh data
-                                                                await loadSiteSubmissions();
+                                                                // Use the new pool-aware switch function
+                                                                await handleSwitchDomain(submission.id, groupId);
                                                                 
                                                                 // Don't close the expanded row - keep it open for user to see the change
                                                                 // setEditingLineItem(null);
@@ -1664,8 +1710,15 @@ export default function InternalOrderManagementPage() {
                                                                 console.error('Error switching domain:', error);
                                                               }
                                                             }}
+                                                            disabled={!!assigningDomain}
                                                           >
-                                                            Switch
+                                                            {assigningDomain === submission.id ? (
+                                                              <Loader2 className="h-3 w-3 animate-spin" />
+                                                            ) : submission.selectionPool === 'primary' ? (
+                                                              'Make Alternative'
+                                                            ) : (
+                                                              'Make Primary'
+                                                            )}
                                                           </button>
                                                           <button 
                                                             className="text-xs bg-green-100 text-green-700 hover:bg-green-200 px-2 py-1 rounded transition-colors"
