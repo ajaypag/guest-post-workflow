@@ -223,9 +223,27 @@ export async function PUT(
             targetPagesCount: group.targetPages?.length || 0
           });
           
-          await tx.insert(orderGroups).values(insertData);
+          try {
+            const insertResult = await tx.insert(orderGroups).values(insertData);
+            console.log('✅ INSERT SUCCESS for group:', groupId, 'result:', insertResult);
+          } catch (insertError) {
+            console.error('💥 INSERT FAILED for group:', groupId, 'error:', insertError);
+            throw insertError;
+          }
         }
         console.log('COMPLETED inserting order groups');
+        
+        // VERIFY the inserts actually worked
+        const verifyGroups = await tx.select().from(orderGroups).where(eq(orderGroups.orderId, id));
+        console.log('🔍 VERIFICATION - Groups in database after insert:', verifyGroups.length);
+        verifyGroups.forEach((group, index) => {
+          console.log(`📋 Verified Group ${index + 1}:`, {
+            id: group.id,
+            clientId: group.clientId,
+            linkCount: group.linkCount,
+            targetPagesCount: group.targetPages?.length || 0
+          });
+        });
       } else {
         console.log('NO order groups to insert - newOrderGroups:', newOrderGroups);
       }
