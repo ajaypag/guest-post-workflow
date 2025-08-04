@@ -215,7 +215,7 @@ export default async function NichePage({ params }: { params: Promise<{ niche: s
   
   try {
     // Get websites for this specific niche (using LIKE since niche is comma-separated)
-    websiteResults = await db.execute(sql`
+    const websiteResultsQuery = await db.execute(sql`
       SELECT 
         id,
         domain,
@@ -231,6 +231,8 @@ export default async function NichePage({ params }: { params: Promise<{ niche: s
       ORDER BY domain_rating DESC NULLS LAST
       LIMIT 100
     `);
+    
+    websiteResults = websiteResultsQuery.rows;
     
     // Get count for this niche
     const countResult = await db.execute(sql`
@@ -387,7 +389,7 @@ export default async function NichePage({ params }: { params: Promise<{ niche: s
               </tr>
             </thead>
             <tbody className="divide-y divide-gray-200">
-              {websiteResults.rows.map((site: any) => (
+              {websiteResults.map((site: any) => (
                 <tr key={site.id} className="hover:bg-gray-50 transition-colors">
                   <td className="px-4 py-3">
                     <div>
@@ -450,7 +452,7 @@ export default async function NichePage({ params }: { params: Promise<{ niche: s
                   </td>
                 </tr>
               ))}
-              {websiteResults.rows.length === 0 && (
+              {websiteResults.length === 0 && (
                 <tr>
                   <td colSpan={7} className="px-6 py-12 text-center text-gray-500">
                     No websites found in this niche
@@ -461,11 +463,11 @@ export default async function NichePage({ params }: { params: Promise<{ niche: s
           </table>
           
           {/* Table Footer */}
-          {websiteResults.rows.length > 0 && (
+          {websiteResults.length > 0 && (
             <div className="px-4 py-3 border-t bg-gray-50">
               <div className="flex items-center justify-between">
                 <p className="text-sm text-gray-700">
-                  Showing {websiteResults.rows.length} of {totalCount} {nicheName} websites
+                  Showing {websiteResults.length} of {totalCount} {nicheName} websites
                 </p>
                 <Link
                   href="/signup/marketing"
