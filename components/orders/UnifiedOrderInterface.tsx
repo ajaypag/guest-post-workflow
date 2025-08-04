@@ -734,7 +734,7 @@ export default function UnifiedOrderInterface({
     }
   };
 
-  // Auto-save functionality (from /edit page)
+  // Manual save functionality 
   const saveOrderDraft = useCallback(async () => {
     if (!session) return;
     
@@ -827,6 +827,9 @@ export default function UnifiedOrderInterface({
         if (response.ok) {
           setSaveStatus('saved');
           setLastSaved(new Date());
+          setHasUnsavedChanges(false);
+          lastSaveTimeRef.current = Date.now();
+          setShowSavePrompt(false);
         } else {
           const errorData = await response.json();
           console.error('Failed to save order:', errorData);
@@ -1235,14 +1238,10 @@ export default function UnifiedOrderInterface({
     </div>
   );
 
-  // Debounced auto-save
-  const saveOrderDraftRef = useRef(saveOrderDraft);
-  saveOrderDraftRef.current = saveOrderDraft;
-  
-  const debouncedSave = useCallback(
-    debounce(() => saveOrderDraftRef.current(), 2000),
-    []
-  );
+  // Manual save state
+  const [hasUnsavedChanges, setHasUnsavedChanges] = useState(false);
+  const [showSavePrompt, setShowSavePrompt] = useState(false);
+  const lastSaveTimeRef = useRef<number>(Date.now());
 
   // Effects
   // Auto-dismiss success messages after 5 seconds
@@ -1346,13 +1345,40 @@ export default function UnifiedOrderInterface({
     }
   }, [userType, orderStatus, orderGroups, checkTargetPageStatuses]);
 
-  // Auto-save trigger
+  // Track unsaved changes
   useEffect(() => {
-    // Only auto-save if we have actual data loaded (prevents wiping on page load)
-    if (currentMode === 'draft' && !isPaid && orderGroups !== null) {
-      debouncedSave();
+    if (currentMode === 'draft' && !isPaid) {
+      setHasUnsavedChanges(true);
     }
-  }, [selectedClients, lineItems, currentMode, isPaid, debouncedSave, orderGroups]);
+  }, [selectedClients, lineItems, currentMode, isPaid]);
+
+  // Periodic save prompt
+  useEffect(() => {
+    if (!hasUnsavedChanges || currentMode !== 'draft' || isPaid) return;
+
+    const interval = setInterval(() => {
+      const timeSinceLastSave = Date.now() - lastSaveTimeRef.current;
+      if (timeSinceLastSave >= 60000) { // 60 seconds
+        setShowSavePrompt(true);
+      }
+    }, 10000); // Check every 10 seconds
+
+    return () => clearInterval(interval);
+  }, [hasUnsavedChanges, currentMode, isPaid]);
+
+  // Warn before leaving with unsaved changes
+  useEffect(() => {
+    const handleBeforeUnload = (e: BeforeUnloadEvent) => {
+      if (hasUnsavedChanges && currentMode === 'draft' && !isPaid) {
+        e.preventDefault();
+        e.returnValue = 'You have unsaved changes. Are you sure you want to leave?';
+        return e.returnValue;
+      }
+    };
+
+    window.addEventListener('beforeunload', handleBeforeUnload);
+    return () => window.removeEventListener('beforeunload', handleBeforeUnload);
+  }, [hasUnsavedChanges, currentMode, isPaid]);
 
   return (
     <div className="h-screen flex flex-col bg-gray-100">
@@ -1376,16 +1402,48 @@ export default function UnifiedOrderInterface({
               </p>
             </div>
           </div>
-          <div className="flex items-center gap-2">
-            {saveStatus !== 'idle' && currentMode === 'draft' && (
-              <span className={`text-xs px-2 py-1 rounded ${
-                saveStatus === 'saving' ? 'bg-yellow-100 text-yellow-700' :
-                saveStatus === 'saved' ? 'bg-green-100 text-green-700' :
-                'bg-red-100 text-red-700'
-              }`}>
-                {saveStatus === 'saving' ? 'Saving...' :
-                 saveStatus === 'saved' ? 'Saved' :
-                 'Save failed'}
+          <div className="flex items-center gap-3">
+            {/* Manual Save Button */}
+            {currentMode === 'draft' && !isPaid && (
+              <button
+                onClick={saveOrderDraft}
+                disabled={saveStatus === 'saving'}
+                className={`inline-flex items-center px-3 py-2 text-sm font-medium rounded-md transition-colors ${
+                  hasUnsavedChanges 
+                    ? 'bg-blue-600 hover:bg-blue-700 text-white' 
+                    : 'bg-gray-100 text-gray-400 cursor-not-allowed'
+                }`}
+              >
+                {saveStatus === 'saving' ? (
+                  <>
+                    <Loader2 className="h-4 w-4 mr-2 animate-spin" />
+                    Saving...
+                  </>
+                ) : (
+                  <>
+                    <Database className="h-4 w-4 mr-2" />
+                    {hasUnsavedChanges ? 'Save Draft' : 'Saved'}
+                  </>
+                )}
+              </button>
+            )}
+
+            {/* Save Status Indicator */}
+            {hasUnsavedChanges && currentMode === 'draft' && (
+              <span className="text-xs px-2 py-1 rounded bg-orange-100 text-orange-700">
+                Unsaved changes
+              </span>
+            )}
+            
+            {saveStatus === 'saved' && !hasUnsavedChanges && currentMode === 'draft' && (
+              <span className="text-xs px-2 py-1 rounded bg-green-100 text-green-700">
+                All changes saved
+              </span>
+            )}
+            
+            {saveStatus === 'error' && currentMode === 'draft' && (
+              <span className="text-xs px-2 py-1 rounded bg-red-100 text-red-700">
+                Save failed
               </span>
             )}
           </div>
@@ -3660,6 +3718,46 @@ export default function UnifiedOrderInterface({
                   )}
                 </button>
               </div>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Periodic Save Prompt Modal */}
+      {showSavePrompt && (
+        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
+          <div className="bg-white rounded-lg p-6 max-w-md w-full mx-4">
+            <div className="flex items-center mb-4">
+              <Clock className="h-6 w-6 text-orange-500 mr-3" />
+              <h3 className="text-lg font-semibold text-gray-900">Save Your Progress</h3>
+            </div>
+            <p className="text-gray-600 mb-6">
+              You have unsaved changes. Would you like to save your progress now?
+            </p>
+            <div className="flex gap-3 justify-end">
+              <button
+                onClick={() => setShowSavePrompt(false)}
+                className="px-4 py-2 text-gray-600 hover:text-gray-800 transition-colors"
+              >
+                Not now
+              </button>
+              <button
+                onClick={async () => {
+                  await saveOrderDraft();
+                  setShowSavePrompt(false);
+                }}
+                disabled={saveStatus === 'saving'}
+                className="px-4 py-2 bg-blue-600 text-white rounded-md hover:bg-blue-700 disabled:opacity-50 disabled:cursor-not-allowed flex items-center"
+              >
+                {saveStatus === 'saving' ? (
+                  <>
+                    <Loader2 className="w-4 h-4 mr-2 animate-spin" />
+                    Saving...
+                  </>
+                ) : (
+                  'Save Now'
+                )}
+              </button>
             </div>
           </div>
         </div>
