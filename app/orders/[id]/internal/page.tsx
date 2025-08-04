@@ -612,7 +612,7 @@ export default function InternalOrderManagementPage() {
     return (
       <AuthWrapper>
         <Header />
-        <div className="container mx-auto px-4 py-8">
+        <div className="px-4 sm:px-6 lg:px-8 py-8">
           <div className="flex items-center justify-center h-64">
             <Loader2 className="h-8 w-8 animate-spin text-gray-400" />
           </div>
@@ -625,7 +625,7 @@ export default function InternalOrderManagementPage() {
     return (
       <AuthWrapper>
         <Header />
-        <div className="container mx-auto px-4 py-8">
+        <div className="px-4 sm:px-6 lg:px-8 py-8">
           <div className="text-center">
             <p className="text-gray-500">{error || 'Order not found'}</p>
             <Link href="/orders" className="mt-4 text-blue-600 hover:underline">
@@ -668,8 +668,8 @@ export default function InternalOrderManagementPage() {
   return (
     <AuthWrapper>
       <Header />
-      <div className="container mx-auto px-4 py-8">
-        <div className="max-w-7xl mx-auto">
+      <div className="min-h-screen bg-gray-50">
+        <div className="px-4 sm:px-6 lg:px-8 py-8">
           {/* Header */}
           <div className="mb-6">
             <div className="flex items-center justify-between">
@@ -991,13 +991,14 @@ export default function InternalOrderManagementPage() {
               )}
               
               {/* Order Details Table with Proper Client Grouping */}
-              <div className="bg-white rounded-lg shadow-sm border border-gray-200 overflow-hidden">
+              <div className="bg-white rounded-lg shadow-sm border border-gray-200">
                 <div className="p-6 border-b border-gray-200">
                   <h2 className="text-lg font-semibold text-gray-900">Order Details</h2>
                 </div>
                 
-                <div className="overflow-x-auto">
-                  <table className="min-w-full divide-y divide-gray-200">
+                <div className="overflow-x-auto -mx-6">
+                  <div className="inline-block min-w-full px-6 align-middle">
+                    <table className="min-w-full divide-y divide-gray-200">
                     <thead className="bg-gray-50">
                       <tr>
                         <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
@@ -1166,6 +1167,27 @@ export default function InternalOrderManagementPage() {
                                             {displaySubmission.domainRating && (
                                               <span className="text-xs text-gray-500">DR: {displaySubmission.domainRating}</span>
                                             )}
+                                            {displaySubmission.traffic && (
+                                              <span className="text-xs text-gray-500">Traffic: {displaySubmission.traffic.toLocaleString()}</span>
+                                            )}
+                                            {displaySubmission.metadata?.hasDataForSeoResults && (
+                                              <span className="text-xs text-indigo-600" title="Has keyword ranking data">
+                                                <Search className="inline h-3 w-3" />
+                                              </span>
+                                            )}
+                                            {displaySubmission.metadata?.qualificationStatus && (
+                                              <span className={`text-xs ${
+                                                displaySubmission.metadata.qualificationStatus === 'high_quality' ? 'text-green-600' :
+                                                displaySubmission.metadata.qualificationStatus === 'good_quality' ? 'text-blue-600' :
+                                                displaySubmission.metadata.qualificationStatus === 'marginal_quality' ? 'text-yellow-600' :
+                                                'text-gray-600'
+                                              }`}>
+                                                {displaySubmission.metadata.qualificationStatus === 'high_quality' ? '★★★' :
+                                                 displaySubmission.metadata.qualificationStatus === 'good_quality' ? '★★' :
+                                                 displaySubmission.metadata.qualificationStatus === 'marginal_quality' ? '★' :
+                                                 '○'}
+                                              </span>
+                                            )}
                                           </div>
                                         </div>
                                         {showPoolView && availableForTarget.length > 1 && (
@@ -1303,7 +1325,7 @@ export default function InternalOrderManagementPage() {
                               {isExpanded && (
                                 <tr>
                                   <td colSpan={getColumnCount()} className="px-6 py-4 bg-gray-50">
-                                    <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
+                                    <div className="grid grid-cols-1 lg:grid-cols-2 gap-3">
                                       {unassignedSubmissions.map((submission) => (
                                         <div key={submission.id} className="bg-white p-3 rounded-lg border border-gray-200 hover:border-gray-300">
                                           <div className="flex items-start justify-between">
@@ -1319,6 +1341,25 @@ export default function InternalOrderManagementPage() {
                                                   )}
                                                   {submission.traffic && (
                                                     <span>Traffic: {submission.traffic.toLocaleString()}</span>
+                                                  )}
+                                                  {submission.metadata?.hasDataForSeoResults && (
+                                                    <span className="text-indigo-600" title="Has keyword ranking data">
+                                                      <Search className="inline h-3 w-3 mr-1" />
+                                                      SEO Data
+                                                    </span>
+                                                  )}
+                                                  {submission.metadata?.qualificationStatus && (
+                                                    <span className={`font-medium ${
+                                                      submission.metadata.qualificationStatus === 'high_quality' ? 'text-green-600' :
+                                                      submission.metadata.qualificationStatus === 'good_quality' ? 'text-blue-600' :
+                                                      submission.metadata.qualificationStatus === 'marginal_quality' ? 'text-yellow-600' :
+                                                      'text-gray-600'
+                                                    }`}>
+                                                      {submission.metadata.qualificationStatus === 'high_quality' ? '★★★' :
+                                                       submission.metadata.qualificationStatus === 'good_quality' ? '★★' :
+                                                       submission.metadata.qualificationStatus === 'marginal_quality' ? '★' :
+                                                       '○'}
+                                                    </span>
                                                   )}
                                                   {submission.price && (
                                                     <span className="font-medium text-gray-900">{formatCurrency(submission.price)}</span>
@@ -1365,12 +1406,13 @@ export default function InternalOrderManagementPage() {
                         </td>
                       </tr>
                     </tfoot>
-                  </table>
+                    </table>
+                  </div>
                 </div>
               </div>
               
               {/* Additional Information Cards */}
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-6 mt-6">
+              <div className="grid grid-cols-1 lg:grid-cols-2 gap-6 mt-6">
                 {/* Timeline */}
                 <div className="bg-white rounded-lg border border-gray-200 shadow-sm p-6">
                   <h3 className="text-lg font-semibold mb-4">Timeline</h3>
@@ -1469,7 +1511,7 @@ export default function InternalOrderManagementPage() {
                     <DollarSign className="h-5 w-5 mr-2 text-gray-400" />
                     Pricing Analysis
                   </h3>
-                  <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                  <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
                     <div>
                       <h4 className="text-sm font-medium text-gray-700 mb-3">Customer Pricing</h4>
                       <dl className="space-y-2">
