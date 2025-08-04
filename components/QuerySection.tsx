@@ -3,6 +3,7 @@
 import { useState } from 'react';
 import { Search, Copy, CheckCircle, ExternalLink } from 'lucide-react';
 import { GeneratedQuery, getQueryUrl } from '@/lib/utils/queryGenerator';
+import Link from 'next/link';
 
 interface QuerySectionProps {
   categoryName: string;
@@ -95,16 +96,19 @@ export default function QuerySection({ categoryName, queries }: QuerySectionProp
         )}
       </div>
       
-      {/* SEO Benefits Box */}
-      <div className="px-6 py-4 border-t bg-gray-50">
-        <div className="text-sm text-gray-700">
-          <p className="font-medium mb-2">Pro Tips for {categoryName} Guest Post Prospecting:</p>
-          <ul className="space-y-1 text-xs">
-            <li>• Start with basic "write for us" queries, then move to advanced operators</li>
-            <li>• Look for recent guest posts to confirm sites are actively publishing</li>
-            <li>• Check domain authority and traffic using tools like Ahrefs or SEMrush</li>
-            <li>• Save promising sites to build your own {categoryName.toLowerCase()} prospect list</li>
-          </ul>
+      {/* CTA Box */}
+      <div className="px-6 py-4 border-t bg-gradient-to-r from-blue-50 to-green-50">
+        <div className="text-center">
+          <p className="font-medium text-gray-900 mb-2">Ready to Skip the Manual Search?</p>
+          <p className="text-sm text-gray-600 mb-3">
+            Just give us your target URL - we'll handle keyword extraction, site analysis, content creation, and placement.
+          </p>
+          <Link 
+            href="/signup/marketing"
+            className="inline-block px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 text-sm font-medium transition-colors"
+          >
+            Start Your {categoryName} Campaign
+          </Link>
         </div>
       </div>
     </div>

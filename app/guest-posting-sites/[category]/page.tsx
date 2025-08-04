@@ -373,8 +373,30 @@ export default async function CategoryPage({ params }: { params: Promise<{ categ
           )}
         </div>
 
+        {/* Transition to Manual Search */}
+        <div className="mt-12 bg-gradient-to-r from-yellow-50 to-orange-50 rounded-lg p-6 border border-yellow-200">
+          <h2 className="text-xl font-bold text-gray-900 mb-3">
+            Prefer to Find {categoryName} Sites Yourself?
+          </h2>
+          <p className="text-gray-700 mb-4">
+            While our AI service handles everything automatically (just give us your target URL), 
+            some businesses prefer to build their own prospect lists. Here are proven Google search 
+            queries to find {categoryName.toLowerCase()} guest posting opportunities:
+          </p>
+          <div className="flex items-center gap-4 text-sm">
+            <div className="flex items-center gap-2">
+              <div className="w-2 h-2 bg-green-500 rounded-full"></div>
+              <span className="text-gray-600">25+ ready-to-use search queries</span>
+            </div>
+            <div className="flex items-center gap-2">
+              <div className="w-2 h-2 bg-blue-500 rounded-full"></div>
+              <span className="text-gray-600">Copy & search with one click</span>
+            </div>
+          </div>
+        </div>
+
         {/* Search Queries Section */}
-        <div className="mt-12">
+        <div className="mt-6">
           <QuerySection categoryName={categoryName} queries={searchQueries} />
         </div>
 
@@ -447,13 +469,13 @@ export default async function CategoryPage({ params }: { params: Promise<{ categ
               </p>
               
               {/* Internal linking for SEO */}
-              <div className="bg-gray-50 p-4 rounded-lg">
-                <h4 className="font-medium text-gray-900 mb-2">Build a Comprehensive Link Strategy:</h4>
+              <div className="bg-blue-50 p-4 rounded-lg">
+                <h4 className="font-medium text-gray-900 mb-2">Our Simple Process:</h4>
                 <ul className="text-sm text-gray-700 space-y-1">
-                  <li>• <Link href="/guest-posting-sites" className="text-blue-600 hover:text-blue-800">Browse all 13,000+ guest posting sites</Link></li>
-                  <li>• Combine {categoryName.toLowerCase()} links with complementary niches</li>
-                  <li>• Focus on sites with genuine topical authority</li>
-                  <li>• Build links gradually over 3-6 months</li>
+                  <li>• <strong>1.</strong> You provide your target page URL</li>
+                  <li>• <strong>2.</strong> Our AI extracts keywords and finds relevant {categoryName.toLowerCase()} sites</li>
+                  <li>• <strong>3.</strong> We create expert content and handle all outreach</li>
+                  <li>• <strong>4.</strong> You get high-quality {categoryName.toLowerCase()} backlinks that rank</li>
                 </ul>
               </div>
             </div>
