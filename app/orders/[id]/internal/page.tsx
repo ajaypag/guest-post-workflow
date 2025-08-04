@@ -909,10 +909,79 @@ export default function InternalOrderManagementPage() {
                     )}
                   </div>
                 </div>
-                {/* Change dropdown logic would go here */}
+                {showPoolView && availableForTarget.length > 1 && (
+                  editingLineItem?.groupId === groupId && editingLineItem?.index === index ? (
+                    <div className="flex items-center gap-2 edit-dropdown">
+                      {assigningDomain && (
+                        <Loader2 className="h-3 w-3 animate-spin text-gray-500" />
+                      )}
+                      <select
+                        className="text-xs border-gray-300 rounded-md"
+                        defaultValue={displaySubmission.id}
+                        disabled={!!assigningDomain}
+                        onChange={async (e) => {
+                          if (e.target.value && e.target.value !== displaySubmission.id) {
+                            // Clear target URL from current submission
+                            await handleAssignTargetPage(displaySubmission.id, '', groupId);
+                            // Assign target URL to new submission
+                            await handleAssignTargetPage(e.target.value, targetPageUrl || '', groupId);
+                            setEditingLineItem(null);
+                          }
+                        }}
+                      >
+                        <option value="">Select domain...</option>
+                        {availableForTarget.map(sub => (
+                          <option key={sub.id} value={sub.id}>
+                            {sub.domain?.domain} 
+                            {sub.domainRating ? ` (DR: ${sub.domainRating})` : ''}
+                          </option>
+                        ))}
+                      </select>
+                      <button
+                        className="text-xs text-gray-600 hover:text-gray-800"
+                        onClick={() => setEditingLineItem(null)}
+                      >
+                        Cancel
+                      </button>
+                    </div>
+                  ) : (
+                    <button
+                      className="text-xs text-blue-600 hover:text-blue-800"
+                      onClick={() => setEditingLineItem({ groupId, index })}
+                    >
+                      Change
+                    </button>
+                  )
+                )}
+              </div>
+            ) : availableForTarget.length > 0 ? (
+              <div className="flex items-center gap-2">
+                {assigningDomain && (
+                  <Loader2 className="h-4 w-4 animate-spin text-gray-500" />
+                )}
+                <select
+                  className="text-sm border-gray-300 rounded-md flex-1"
+                  defaultValue=""
+                  disabled={!!assigningDomain}
+                  onChange={async (e) => {
+                    if (e.target.value && targetPageUrl) {
+                      // Update the selected domain's target URL
+                      await handleAssignTargetPage(e.target.value, targetPageUrl, groupId);
+                    }
+                  }}
+                >
+                  <option value="">Select from pool ({availableForTarget.length} available)</option>
+                  {availableForTarget.map(sub => (
+                    <option key={sub.id} value={sub.id}>
+                      {sub.domain?.domain} 
+                      {sub.domainRating ? ` (DR: ${sub.domainRating})` : ''}
+                      {sub.metadata?.targetPageUrl && sub.metadata.targetPageUrl !== targetPageUrl ? ' - suggested for other' : ''}
+                    </option>
+                  ))}
+                </select>
               </div>
             ) : (
-              <span className="text-sm text-gray-500">No site selected</span>
+              <span className="text-sm text-gray-400">No sites available</span>
             )}
           </td>
         ) : null;
