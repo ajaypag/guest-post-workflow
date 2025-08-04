@@ -22,7 +22,7 @@ function getResendClient(): Resend {
 export const EMAIL_CONFIG = {
   FROM_EMAIL: process.env.EMAIL_FROM || 'noreply@postflow.outreachlabs.net',
   FROM_NAME: process.env.EMAIL_FROM_NAME || 'PostFlow',
-  REPLY_TO: process.env.EMAIL_REPLY_TO || 'support@postflow.outreachlabs.net',
+  REPLY_TO: process.env.EMAIL_REPLY_TO || 'info@linkio.com',
 };
 
 // Email types

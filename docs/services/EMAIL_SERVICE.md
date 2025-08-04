@@ -190,7 +190,7 @@ EMAIL_REPLY_TO=support@postflow.outreachlabs.net  # Optional: Reply-to address
 
 ### Current Setup (Production)
 - **From Address**: `noreply@postflow.outreachlabs.net` (verified domain)
-- **Reply To**: `support@postflow.outreachlabs.net`
+- **Reply To**: `info@linkio.com`
 - **Status**: ✅ Production ready with custom domain
 - **Limitation**: None - full email functionality available
 
@@ -199,7 +199,7 @@ Set these to customize email addresses:
 ```env
 EMAIL_FROM=noreply@postflow.outreachlabs.net  # Default from address
 EMAIL_FROM_NAME=PostFlow                      # From name
-EMAIL_REPLY_TO=support@postflow.outreachlabs.net  # Reply-to address
+EMAIL_REPLY_TO=info@linkio.com               # Reply-to address
 ```
 
 ## Database Schema
