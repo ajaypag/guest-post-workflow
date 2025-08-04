@@ -1223,9 +1223,9 @@ export default function InternalOrderManagementPage() {
                                                   'bg-gray-100 text-gray-600'
                                                 }`}
                                                 title={`AI Analysis: ${
-                                                  displaySubmission.metadata.overlapStatus === 'direct' ? 'Direct keyword match - site ranks for your core keywords' :
-                                                  displaySubmission.metadata.overlapStatus === 'related' ? 'Related topic match - site ranks for related keywords' :
-                                                  displaySubmission.metadata.overlapStatus === 'both' ? 'Perfect match - site ranks for both core and related keywords' :
+                                                  displaySubmission.metadata.overlapStatus === 'both' ? 'STRONGEST: Perfect match - site ranks for both core and related keywords' :
+                                                  displaySubmission.metadata.overlapStatus === 'direct' ? 'VERY STRONG: Direct keyword match - site ranks for your core keywords' :
+                                                  displaySubmission.metadata.overlapStatus === 'related' ? 'DECENT: Related topic match - site ranks for related keywords' :
                                                   'No keyword overlap detected'
                                                 }${displaySubmission.metadata.topicScope ? ` | Content strategy: ${displaySubmission.metadata.topicScope.replace('_', ' ')}` : ''}`}
                                               >
@@ -1428,9 +1428,9 @@ export default function InternalOrderManagementPage() {
                                                         'bg-gray-100 text-gray-600'
                                                       }`}
                                                       title={`AI Analysis: ${
-                                                        submission.metadata.overlapStatus === 'direct' ? 'Direct keyword match - site ranks for your core keywords' :
-                                                        submission.metadata.overlapStatus === 'related' ? 'Related topic match - site ranks for related keywords' :
-                                                        submission.metadata.overlapStatus === 'both' ? 'Perfect match - site ranks for both core and related keywords' :
+                                                        submission.metadata.overlapStatus === 'both' ? 'STRONGEST: Perfect match - site ranks for both core and related keywords' :
+                                                        submission.metadata.overlapStatus === 'direct' ? 'VERY STRONG: Direct keyword match - site ranks for your core keywords' :
+                                                        submission.metadata.overlapStatus === 'related' ? 'DECENT: Related topic match - site ranks for related keywords' :
                                                         'No keyword overlap detected'
                                                       }${submission.metadata.topicScope ? ` | Content strategy: ${submission.metadata.topicScope.replace('_', ' ')}` : ''}`}
                                                     >
