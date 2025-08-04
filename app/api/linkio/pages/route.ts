@@ -11,18 +11,24 @@ export async function GET(request: Request) {
     const status = searchParams.get('status');
     const priority = searchParams.get('priority');
     
-    let query = db.select().from(linkioPages);
-    
     const conditions = [];
     if (pageType) conditions.push(eq(linkioPages.pageType, pageType as any));
     if (status) conditions.push(eq(linkioPages.recreationStatus, status as any));
     if (priority !== null) conditions.push(eq(linkioPages.priority, parseInt(priority)));
     
+    let pages;
     if (conditions.length > 0) {
-      query = query.where(and(...conditions));
+      pages = await db
+        .select()
+        .from(linkioPages)
+        .where(and(...conditions))
+        .orderBy(desc(linkioPages.priority), desc(linkioPages.createdAt));
+    } else {
+      pages = await db
+        .select()
+        .from(linkioPages)
+        .orderBy(desc(linkioPages.priority), desc(linkioPages.createdAt));
     }
-    
-    const pages = await query.orderBy(desc(linkioPages.priority), desc(linkioPages.createdAt));
     
     return NextResponse.json({ pages });
   } catch (error) {
