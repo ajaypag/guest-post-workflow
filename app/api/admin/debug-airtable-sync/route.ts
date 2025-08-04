@@ -9,17 +9,37 @@ export async function POST(request: NextRequest) {
     // Get raw Airtable data first
     const baseUrl = 'https://api.airtable.com/v0';
     const baseId = process.env.AIRTABLE_BASE_ID;
-    const tableId = process.env.AIRTABLE_WEBSITES_TABLE_ID || 'Websites';
+    const tableId = process.env.AIRTABLE_WEBSITES_TABLE_ID || 'tblT8P0fPHV5fdrT5';
     const apiKey = process.env.AIRTABLE_API_KEY;
+    const viewId = 'viwWrgaGb55n8iaVk'; // PostFlow view
     
-    // Fetch raw data from Airtable
-    const rawResponse = await fetch(`${baseUrl}/${baseId}/${tableId}?maxRecords=5`, {
+    // Test 1: Fetch raw data WITHOUT view filter
+    const rawResponseNoView = await fetch(`${baseUrl}/${baseId}/${tableId}?maxRecords=5${searchDomain ? `&filterByFormula=SEARCH("${searchDomain}", {Website})` : ''}`, {
       headers: {
         'Authorization': `Bearer ${apiKey}`,
         'Content-Type': 'application/json'
       }
     });
-    const rawData = await rawResponse.json();
+    const rawDataNoView = await rawResponseNoView.json();
+    
+    // Test 2: Fetch raw data WITH view filter
+    const rawResponseWithView = await fetch(`${baseUrl}/${baseId}/${tableId}?view=${viewId}&maxRecords=5${searchDomain ? `&filterByFormula=SEARCH("${searchDomain}", {Website})` : ''}`, {
+      headers: {
+        'Authorization': `Bearer ${apiKey}`,
+        'Content-Type': 'application/json'
+      }
+    });
+    const rawDataWithView = await rawResponseWithView.json();
+    
+    // Test 3: Get field metadata
+    const fieldsUrl = `${baseUrl}/${baseId}/${tableId}`;
+    const fieldsResponse = await fetch(fieldsUrl + '?maxRecords=1', {
+      headers: {
+        'Authorization': `Bearer ${apiKey}`,
+        'Content-Type': 'application/json'
+      }
+    });
+    const fieldsData = await fieldsResponse.json();
     
     // Get processed data
     const filters = searchDomain ? { searchTerm: searchDomain } : {};
@@ -54,15 +74,37 @@ export async function POST(request: NextRequest) {
         withWebsiteType: debugInfo.filter(w => w.hasWebsiteType).length,
         withNiche: debugInfo.filter(w => w.hasNiche).length
       },
-      rawAirtableData: rawData.records?.slice(0, 2).map((r: any) => ({
-        domain: r.fields.Website,
-        typeField: r.fields.Type,
-        nicheField: r.fields.Niche,
-        typeFieldType: typeof r.fields.Type,
-        nicheFieldType: typeof r.fields.Niche,
-        isTypeArray: Array.isArray(r.fields.Type),
-        isNicheArray: Array.isArray(r.fields.Niche)
-      }))
+      rawAirtableData: {
+        withoutView: rawDataNoView.records?.slice(0, 2).map((r: any) => ({
+          domain: r.fields.Website,
+          allFields: Object.keys(r.fields),
+          typeField: r.fields.Type,
+          nicheField: r.fields.Niche,
+          typeFieldType: typeof r.fields.Type,
+          nicheFieldType: typeof r.fields.Niche,
+          isTypeArray: Array.isArray(r.fields.Type),
+          isNicheArray: Array.isArray(r.fields.Niche),
+          // Check all possible variations of Niche field
+          nicheVariations: {
+            'Niche': r.fields.Niche,
+            'niche': r.fields.niche,
+            'NICHE': r.fields.NICHE,
+            'Niches': r.fields.Niches,
+            'niches': r.fields.niches
+          }
+        })),
+        withView: rawDataWithView.records?.slice(0, 2).map((r: any) => ({
+          domain: r.fields.Website,
+          allFields: Object.keys(r.fields),
+          nicheField: r.fields.Niche
+        })),
+        fieldsSample: fieldsData.records?.[0] ? Object.keys(fieldsData.records[0].fields) : [],
+        viewComparison: {
+          withoutViewCount: rawDataNoView.records?.length || 0,
+          withViewCount: rawDataWithView.records?.length || 0,
+          viewId: viewId
+        }
+      }
     });
     
   } catch (error: any) {
