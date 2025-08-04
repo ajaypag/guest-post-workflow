@@ -5,7 +5,22 @@ export async function POST(request: NextRequest) {
   console.log('🔍 Debug: Testing Airtable data extraction...');
   
   try {
-    // Get first few websites from Airtable
+    // Get raw Airtable data first
+    const baseUrl = 'https://api.airtable.com/v0';
+    const baseId = process.env.AIRTABLE_BASE_ID;
+    const tableId = process.env.AIRTABLE_WEBSITES_TABLE_ID || 'Websites';
+    const apiKey = process.env.AIRTABLE_API_KEY;
+    
+    // Fetch raw data from Airtable
+    const rawResponse = await fetch(`${baseUrl}/${baseId}/${tableId}?maxRecords=5`, {
+      headers: {
+        'Authorization': `Bearer ${apiKey}`,
+        'Content-Type': 'application/json'
+      }
+    });
+    const rawData = await rawResponse.json();
+    
+    // Get processed data
     const result = await AirtableService.searchWebsites({}, 5, undefined);
     
     const debugInfo = result.websites.map(website => ({
@@ -36,7 +51,16 @@ export async function POST(request: NextRequest) {
         withType: debugInfo.filter(w => w.hasType).length,
         withWebsiteType: debugInfo.filter(w => w.hasWebsiteType).length,
         withNiche: debugInfo.filter(w => w.hasNiche).length
-      }
+      },
+      rawAirtableData: rawData.records?.slice(0, 2).map((r: any) => ({
+        domain: r.fields.Website,
+        typeField: r.fields.Type,
+        nicheField: r.fields.Niche,
+        typeFieldType: typeof r.fields.Type,
+        nicheFieldType: typeof r.fields.Niche,
+        isTypeArray: Array.isArray(r.fields.Type),
+        isNicheArray: Array.isArray(r.fields.Niche)
+      }))
     });
     
   } catch (error: any) {

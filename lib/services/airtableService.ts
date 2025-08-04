@@ -289,7 +289,7 @@ export class AirtableService {
       categories: fields.Category || [],
       type: fields.Type || [], // Keep existing for backward compatibility
       websiteType: fields.Type || [], // Map Type field to websiteType (SaaS, Blog, News, eCommerce, etc.)
-      niche: fields.Niche || [], // Multiple niches
+      niche: this.parseArrayField(fields.Niche), // Parse comma-separated string or array
       contacts, // Now populated from PostFlow lookup fields
       publishedOpportunities: fields['Count of Published Opportunities'] || 0,
       status: fields.Status || 'Unknown',
@@ -297,6 +297,25 @@ export class AirtableService {
       hasLinkInsert: fields['Link Insert Access?'] === 'Yes',
       overallQuality: fields['Overall Website Quality']
     };
+  }
+
+  /**
+   * Parse a field that might be a comma-separated string or an array
+   */
+  private static parseArrayField(field: any): string[] {
+    if (!field) return [];
+    
+    // If it's already an array, return it
+    if (Array.isArray(field)) {
+      return field;
+    }
+    
+    // If it's a string, split by comma and trim
+    if (typeof field === 'string') {
+      return field.split(',').map(item => item.trim()).filter(item => item.length > 0);
+    }
+    
+    return [];
   }
 
   /**
