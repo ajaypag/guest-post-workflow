@@ -11,7 +11,7 @@ import {
   Search, Target, Link as LinkIcon, Type, CheckCircle,
   AlertCircle, Copy, Trash2, User, Globe, ExternalLink,
   ArrowLeft, Loader2, Clock, Database, Edit, Eye, Zap,
-  XCircle, PlayCircle, FileText
+  XCircle, PlayCircle, FileText, Activity, Users
 } from 'lucide-react';
 
 type PackageType = 'good' | 'better' | 'best';
@@ -195,6 +195,7 @@ export default function UnifiedOrderInterface({
   // UI state (from /edit page)
   const [searchQuery, setSearchQuery] = useState('');
   const [error, setError] = useState('');
+  const [message, setMessage] = useState<{ type: 'info' | 'success' | 'error' | 'warning'; text: string } | null>(null);
   const [subtotal, setSubtotal] = useState(0);
   const [total, setTotal] = useState(0);
   const [mobileView, setMobileView] = useState<'clients' | 'targets' | 'order'>('clients');
@@ -938,6 +939,16 @@ export default function UnifiedOrderInterface({
   );
 
   // Effects
+  // Auto-dismiss success messages after 5 seconds
+  useEffect(() => {
+    if (message?.type === 'success') {
+      const timer = setTimeout(() => {
+        setMessage(null);
+      }, 5000);
+      return () => clearTimeout(timer);
+    }
+  }, [message]);
+
   useEffect(() => {
     // Initial data loading
     const loadInitialData = async () => {
@@ -1099,9 +1110,44 @@ export default function UnifiedOrderInterface({
         </div>
       </div>
       
-      {/* Main Content Area - Three Column Layout (Desktop) / Single Column (Mobile) */}
-      <div className="flex-1 flex flex-col md:flex-row gap-4 p-4 overflow-hidden bg-gray-100" style={{height: 'calc(100vh - 64px - 80px)'}}>
-        {error && (
+      {/* Main Content Area - Dynamic Layout based on user type and order status */}
+      <div className="flex-1 p-4 overflow-hidden bg-gray-100">
+        {/* Message System */}
+        {message && (
+          <div className={`absolute top-4 left-1/2 transform -translate-x-1/2 z-50 rounded-lg p-4 flex items-start shadow-lg ${
+            message.type === 'error' ? 'bg-red-50 border border-red-200' :
+            message.type === 'warning' ? 'bg-yellow-50 border border-yellow-200' :
+            message.type === 'success' ? 'bg-green-50 border border-green-200' :
+            'bg-blue-50 border border-blue-200'
+          }`}>
+            {message.type === 'error' ? <AlertCircle className="h-5 w-5 text-red-600 mt-0.5 mr-3" /> :
+             message.type === 'warning' ? <AlertCircle className="h-5 w-5 text-yellow-600 mt-0.5 mr-3" /> :
+             message.type === 'success' ? <CheckCircle className="h-5 w-5 text-green-600 mt-0.5 mr-3" /> :
+             <AlertCircle className="h-5 w-5 text-blue-600 mt-0.5 mr-3" />}
+            <div>
+              <p className={
+                message.type === 'error' ? 'text-red-800' :
+                message.type === 'warning' ? 'text-yellow-800' :
+                message.type === 'success' ? 'text-green-800' :
+                'text-blue-800'
+              }>{message.text}</p>
+              <button 
+                onClick={() => setMessage(null)}
+                className={`text-sm mt-1 ${
+                  message.type === 'error' ? 'text-red-600 hover:text-red-800' :
+                  message.type === 'warning' ? 'text-yellow-600 hover:text-yellow-800' :
+                  message.type === 'success' ? 'text-green-600 hover:text-green-800' :
+                  'text-blue-600 hover:text-blue-800'
+                }`}
+              >
+                Dismiss
+              </button>
+            </div>
+          </div>
+        )}
+        
+        {/* Legacy Error Display - Keep for backwards compatibility */}
+        {error && !message && (
           <div className="absolute top-4 left-1/2 transform -translate-x-1/2 z-50 bg-red-50 border border-red-200 rounded-lg p-4 flex items-start shadow-lg">
             <AlertCircle className="h-5 w-5 text-red-600 mt-0.5 mr-3" />
             <div>
@@ -1116,103 +1162,257 @@ export default function UnifiedOrderInterface({
           </div>
         )}
         
-        {/* Internal Activity Feed - Show for internal users on confirmed orders */}
-        {userType === 'internal' && orderStatus === 'confirmed' && (
-          <div className="w-full md:w-80 bg-white rounded-lg shadow-sm p-4 mb-4 md:mb-0">
-            <div className="flex items-center gap-2 mb-4">
-              <Clock className="h-5 w-5 text-gray-600" />
-              <h3 className="text-lg font-semibold text-gray-900">Internal Activity</h3>
-            </div>
-            
-            {/* Site Review Summary */}
-            {(orderState === 'site_review' || orderState === 'sites_ready') && Object.keys(siteSubmissions).length > 0 && (
-              <div className="mb-4 p-3 bg-purple-50 rounded-lg border border-purple-200">
-                <h4 className="text-sm font-medium text-purple-900 mb-2">Site Review Status</h4>
-                <div className="space-y-2">
-                  {orderGroups.map(group => {
-                    const submissions = siteSubmissions[group.id] || [];
-                    const pending = submissions.filter(s => s.status === 'pending').length;
-                    const approved = submissions.filter(s => s.submissionStatus === 'client_approved').length;
-                    const rejected = submissions.filter(s => s.submissionStatus === 'client_rejected').length;
+        {/* Three Column Layout for Internal Users viewing confirmed orders */}
+        {userType === 'internal' && orderStatus === 'confirmed' ? (
+          <div className="grid grid-cols-1 lg:grid-cols-3 gap-6 h-full">
+            {/* Left Column - Progress Steps + Internal Actions + Account Info */}
+            <div className="lg:col-span-1 space-y-6 overflow-y-auto">
+              {/* Order Progress Steps */}
+              <div className="bg-white rounded-lg border border-gray-200 shadow-sm p-6">
+                <h2 className="text-lg font-semibold mb-4">Order Progress</h2>
+                <div className="space-y-4">
+                  {(() => {
+                    const steps = [
+                      { id: 'confirmed', label: 'Order Confirmed', icon: CheckCircle, description: 'Order has been received and confirmed' },
+                      { id: 'analyzing', label: 'Finding Sites', icon: Search, description: 'Team is identifying suitable sites' },
+                      { id: 'site_review', label: 'Review Sites', icon: Users, description: 'Sites ready for client review' },
+                      { id: 'in_progress', label: 'Creating Content', icon: FileText, description: 'Writing and placing links' },
+                      { id: 'completed', label: 'Completed', icon: CheckCircle, description: 'All links have been placed' }
+                    ];
                     
-                    return (
-                      <div key={group.id} className="text-xs">
-                        <div className="font-medium text-purple-800">{group.client.name}</div>
-                        <div className="flex items-center gap-3 mt-1 text-purple-600">
-                          <span>{pending} pending</span>
-                          <span className="text-green-600">{approved} approved</span>
-                          {rejected > 0 && <span className="text-red-600">{rejected} rejected</span>}
+                    let currentStep = 0;
+                    if (orderStatus === 'confirmed' || orderStatus === 'pending_confirmation') {
+                      currentStep = 1;
+                      if (orderState === 'analyzing') currentStep = 1;
+                      if (orderState === 'sites_ready' || orderState === 'site_review' || orderState === 'client_reviewing') currentStep = 2;
+                      if (orderState === 'selections_confirmed' || orderState === 'payment_received' || orderState === 'workflows_generated' || orderState === 'in_progress') currentStep = 3;
+                    }
+                    if (isPaid) currentStep = 3;
+                    if (orderStatus === 'completed') currentStep = 4;
+                    
+                    return steps.map((step, index) => {
+                      const Icon = step.icon;
+                      const isCompleted = index < currentStep;
+                      const isCurrent = index === currentStep;
+                      
+                      return (
+                        <div key={step.id} className="relative">
+                          <div className="flex items-start gap-3">
+                            <div className={`
+                              w-8 h-8 rounded-full flex items-center justify-center flex-shrink-0
+                              ${isCompleted ? 'bg-green-500' : isCurrent ? 'bg-blue-500' : 'bg-gray-300'}
+                            `}>
+                              <Icon className="w-4 h-4 text-white" />
+                            </div>
+                            <div className="flex-1">
+                              <p className={`text-sm font-medium ${
+                                isCompleted || isCurrent ? 'text-gray-900' : 'text-gray-500'
+                              }`}>
+                                {step.label}
+                              </p>
+                              <p className="text-xs text-gray-500 mt-1">
+                                {step.description}
+                              </p>
+                            </div>
+                          </div>
+                          {index < steps.length - 1 && (
+                            <div className={`
+                              absolute left-4 top-8 w-0.5 h-8
+                              ${isCompleted ? 'bg-green-500' : 'bg-gray-300'}
+                            `} />
+                          )}
                         </div>
+                      );
+                    });
+                  })()}
+                </div>
+                
+                {/* Internal Actions Box */}
+                <div className="mt-6 pt-6 border-t">
+                  <h3 className="text-sm font-medium text-gray-900 mb-3">Internal Actions</h3>
+                  <div className="space-y-2">
+                    {/* Mark Sites Ready was already in header, but we can duplicate here for convenience */}
+                    {orderState === 'analyzing' && onMarkSitesReady && (
+                      <button
+                        onClick={onMarkSitesReady}
+                        className="w-full px-3 py-2 bg-green-600 text-white text-sm rounded-md hover:bg-green-700"
+                      >
+                        Mark Sites Ready
+                      </button>
+                    )}
+                    
+                    {/* Generate Workflows */}
+                    {isPaid && onGenerateWorkflows && (
+                      <button
+                        onClick={onGenerateWorkflows}
+                        className="w-full px-3 py-2 bg-purple-600 text-white text-sm rounded-md hover:bg-purple-700"
+                      >
+                        Generate Workflows
+                      </button>
+                    )}
+                    
+                    {/* Bulk Analysis Links */}
+                    {orderState === 'analyzing' && orderGroups?.some(g => g.bulkAnalysisProjectId) && (
+                      <div className="space-y-2">
+                        {orderGroups.filter(g => g.bulkAnalysisProjectId).map(group => (
+                          <a
+                            key={group.id}
+                            href={`/clients/${group.clientId}/bulk-analysis/projects/${group.bulkAnalysisProjectId}`}
+                            target="_blank"
+                            rel="noopener noreferrer"
+                            className="block w-full px-3 py-2 bg-blue-600 text-white text-sm rounded-md hover:bg-blue-700 text-center"
+                          >
+                            Analyze {group.client.name}
+                          </a>
+                        ))}
                       </div>
-                    );
-                  })}
+                    )}
+                  </div>
                 </div>
               </div>
-            )}
+              
+              {/* Account Information */}
+              <div className="bg-white rounded-lg border border-gray-200 shadow-sm p-6">
+                <h3 className="text-lg font-semibold text-gray-900 mb-4">Account Information</h3>
+                <dl className="space-y-3">
+                  <div>
+                    <dt className="text-sm text-gray-500">Account Name</dt>
+                    <dd className="text-sm font-medium text-gray-900">{selectedAccountName || 'Unknown'}</dd>
+                  </div>
+                  <div>
+                    <dt className="text-sm text-gray-500">Email</dt>
+                    <dd className="text-sm font-medium text-gray-900">{selectedAccountEmail || 'No email'}</dd>
+                  </div>
+                  {selectedAccountCompany && (
+                    <div>
+                      <dt className="text-sm text-gray-500">Company</dt>
+                      <dd className="text-sm font-medium text-gray-900">{selectedAccountCompany}</dd>
+                    </div>
+                  )}
+                </dl>
+              </div>
+              
+              {/* Internal Activity */}
+              <div className="bg-white rounded-lg border border-gray-200 shadow-sm p-6">
+                <div className="flex items-center gap-2 mb-4">
+                  <Activity className="h-5 w-5 text-gray-600" />
+                  <h3 className="text-lg font-semibold text-gray-900">Internal Activity</h3>
+                </div>
+                <div className="space-y-3">
+                  {orderState === 'analyzing' && (
+                    <div className="flex items-start gap-3">
+                      <div className="w-2 h-2 bg-blue-500 rounded-full mt-1.5 animate-pulse" />
+                      <div>
+                        <p className="text-sm font-medium text-gray-900">Site analysis in progress</p>
+                        <p className="text-xs text-gray-500">Finding placement opportunities</p>
+                      </div>
+                    </div>
+                  )}
+                  
+                  {(orderState === 'sites_ready' || orderState === 'site_review') && (
+                    <div className="flex items-start gap-3">
+                      <div className="w-2 h-2 bg-purple-500 rounded-full mt-1.5" />
+                      <div>
+                        <p className="text-sm font-medium text-gray-900">Client review active</p>
+                        <p className="text-xs text-gray-500">
+                          {Object.values(siteSubmissions).reduce((sum, subs) => 
+                            sum + subs.filter(s => s.status === 'pending').length, 0
+                          )} sites awaiting decision
+                        </p>
+                      </div>
+                    </div>
+                  )}
+                  
+                  {orderState === 'in_progress' && (
+                    <div className="flex items-start gap-3">
+                      <div className="w-2 h-2 bg-yellow-500 rounded-full mt-1.5" />
+                      <div>
+                        <p className="text-sm font-medium text-gray-900">Content creation active</p>
+                        <p className="text-xs text-gray-500">Workflows in progress</p>
+                      </div>
+                    </div>
+                  )}
+                </div>
+              </div>
+            </div>
             
-            {/* State-based Activity */}
-            <div className="space-y-3">
-              {orderState === 'analyzing' && (
-                <div className="flex items-start gap-3">
-                  <div className="w-2 h-2 bg-blue-500 rounded-full mt-1.5 animate-pulse" />
-                  <div>
-                    <p className="text-sm font-medium text-gray-900">Site analysis in progress</p>
-                    <p className="text-xs text-gray-500">Finding placement opportunities</p>
+            {/* Middle/Right Columns - Order Details Table */}
+            <div className="lg:col-span-2">
+              {/* Site Review Summary Card */}
+              {(orderState === 'sites_ready' || orderState === 'site_review' || orderState === 'client_reviewing') && Object.keys(siteSubmissions).length > 0 && (
+                <div className="bg-purple-50 border border-purple-200 rounded-lg p-6 mb-6">
+                  <div className="flex items-start justify-between">
+                    <div>
+                      <h3 className="text-lg font-semibold text-purple-900 flex items-center gap-2">
+                        <Users className="h-5 w-5" />
+                        Site Review Status
+                      </h3>
+                      <p className="text-sm text-purple-700 mt-1">
+                        Monitor client's site selection progress
+                      </p>
+                      <div className="flex items-center gap-6 mt-3 text-sm">
+                        {Object.entries(siteSubmissions).map(([groupId, submissions]) => {
+                          const group = orderGroups?.find(g => g.id === groupId);
+                          if (!group) return null;
+                          const pending = submissions.filter(s => s.status === 'pending').length;
+                          const approved = submissions.filter(s => s.submissionStatus === 'client_approved').length;
+                          const rejected = submissions.filter(s => s.submissionStatus === 'client_rejected').length;
+                          
+                          return (
+                            <div key={groupId} className="flex items-center gap-2">
+                              <span className="font-medium">{group.client.name}:</span>
+                              {pending > 0 && <span className="text-yellow-700">{pending} pending</span>}
+                              {approved > 0 && <span className="text-green-700">{approved} approved</span>}
+                              {rejected > 0 && <span className="text-red-700">{rejected} rejected</span>}
+                            </div>
+                          );
+                        })}
+                      </div>
+                    </div>
                   </div>
                 </div>
               )}
               
-              {orderState === 'site_review' && (
-                <div className="flex items-start gap-3">
-                  <div className="w-2 h-2 bg-purple-500 rounded-full mt-1.5" />
-                  <div>
-                    <p className="text-sm font-medium text-gray-900">Client review active</p>
-                    <p className="text-xs text-gray-500">
-                      {Object.values(siteSubmissions).reduce((sum, subs) => 
-                        sum + subs.filter(s => s.status === 'pending').length, 0
-                      )} sites awaiting decision
-                    </p>
-                  </div>
+              {/* Order Details Table */}
+              <div className="bg-white rounded-lg shadow-sm border border-gray-200">
+                <div className="p-6 border-b border-gray-200">
+                  <h2 className="text-lg font-semibold text-gray-900">Order Details</h2>
                 </div>
-              )}
-              
-              {orderState === 'in_progress' && (
-                <div className="flex items-start gap-3">
-                  <div className="w-2 h-2 bg-yellow-500 rounded-full mt-1.5" />
-                  <div>
-                    <p className="text-sm font-medium text-gray-900">Content creation active</p>
-                    <p className="text-xs text-gray-500">Workflows in progress</p>
-                  </div>
+                
+                <div className="overflow-x-auto">
+                  <table className="min-w-full divide-y divide-gray-200">
+                    <thead className="bg-gray-50">
+                      <tr>
+                        <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                          Client / Target Page
+                        </th>
+                        <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                          Link Details
+                        </th>
+                        <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                          Guest Post Site
+                        </th>
+                        <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                          Status
+                        </th>
+                        <th className="px-6 py-3 text-right text-xs font-medium text-gray-500 uppercase tracking-wider">
+                          Actions
+                        </th>
+                      </tr>
+                    </thead>
+                    <tbody className="bg-white divide-y divide-gray-200">
+                      {/* TODO: Add table rows with internal view */}
+                    </tbody>
+                  </table>
                 </div>
-              )}
-              
-              {/* Bulk Analysis Links */}
-              {orderGroups.some(g => g.bulkAnalysisProjectId) && (
-                <div className="mt-4 pt-4 border-t border-gray-200">
-                  <h4 className="text-sm font-medium text-gray-700 mb-2">Bulk Analysis Projects</h4>
-                  <div className="space-y-2">
-                    {orderGroups.filter(g => g.bulkAnalysisProjectId).map(group => (
-                      <a
-                        key={group.id}
-                        href={`/clients/${group.clientId}/bulk-analysis/projects/${group.bulkAnalysisProjectId}`}
-                        target="_blank"
-                        rel="noopener noreferrer"
-                        className="flex items-center gap-2 text-sm text-blue-600 hover:text-blue-800"
-                      >
-                        <Database className="h-4 w-4" />
-                        {group.client.name}
-                        <ExternalLink className="h-3 w-3" />
-                      </a>
-                    ))}
-                  </div>
-                </div>
-              )}
+              </div>
             </div>
           </div>
-        )}
-
-        {/* Left Column - Client Selection (hidden in site management mode) */}
-        {currentMode !== 'site_management' && (
+        ) : (
+          /* Standard Three Column Layout for Draft/External Users */
+          <div className="flex-1 flex flex-col md:flex-row gap-4 overflow-hidden" style={{height: 'calc(100vh - 64px - 80px)'}}>
+            {/* Left Column - Client Selection (hidden in site management mode) */}
+            {currentMode !== 'site_management' && (
           <div className={`w-full md:w-64 bg-white rounded-lg shadow-sm flex flex-col h-full ${
             mobileView === 'clients' ? 'block md:block' : 'hidden md:block'
           }`}>
@@ -2596,6 +2796,8 @@ export default function UnifiedOrderInterface({
             </div>
           </div>
         </div>
+          </div>
+        )}
       </div>
 
       {/* Modals */}
