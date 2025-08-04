@@ -4,7 +4,7 @@ import { useState, useEffect } from 'react';
 import { 
   FileText, 
   Globe, 
-  Tool, 
+  Wrench, 
   BookOpen, 
   FileSearch,
   Plus,
@@ -40,7 +40,7 @@ interface Stats {
 const pageTypeIcons = {
   landing_page: Globe,
   blog_post: FileText,
-  tool_page: Tool,
+  tool_page: Wrench,
   resource_page: BookOpen,
   case_study: FileSearch,
   other: FileText
