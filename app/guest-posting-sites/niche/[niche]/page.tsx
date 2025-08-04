@@ -422,8 +422,8 @@ export default async function NichePage({ params }: { params: Promise<{ niche: s
                       <div className="flex gap-1 flex-wrap">
                         {site.niche
                           .split(',')
-                          .map(n => n.trim())
-                          .filter(n => n && n !== nicheName)
+                          .map((n: string) => n.trim())
+                          .filter((n: string) => n && n !== nicheName)
                           .slice(0, 2)
                           .map((otherNiche: string, i: number) => (
                             <Link
@@ -434,9 +434,9 @@ export default async function NichePage({ params }: { params: Promise<{ niche: s
                               {otherNiche}
                             </Link>
                           ))}
-                        {site.niche.split(',').map(n => n.trim()).filter(n => n && n !== nicheName).length > 2 && (
+                        {site.niche.split(',').map((n: string) => n.trim()).filter((n: string) => n && n !== nicheName).length > 2 && (
                           <span className="text-xs text-gray-500">
-                            +{site.niche.split(',').map(n => n.trim()).filter(n => n && n !== nicheName).length - 2}
+                            +{site.niche.split(',').map((n: string) => n.trim()).filter((n: string) => n && n !== nicheName).length - 2}
                           </span>
                         )}
                       </div>
