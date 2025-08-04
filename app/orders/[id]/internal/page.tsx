@@ -10,7 +10,7 @@ import { formatCurrency } from '@/lib/utils/formatting';
 import { 
   ArrowLeft, Loader2, CheckCircle, Clock, Users, FileText, 
   RefreshCw, ExternalLink, Globe, LinkIcon, Eye, Package,
-  Target, ChevronRight, AlertCircle, Activity, Building, User, DollarSign,
+  Target, ChevronRight, ChevronUp, ChevronDown, AlertCircle, Activity, Building, User, DollarSign,
   Download, Share2, XCircle, CreditCard, Trash2, Zap, PlayCircle,
   ClipboardCheck, Send, Database, Search, Plus, Edit, KeyRound, Sparkles
 } from 'lucide-react';
