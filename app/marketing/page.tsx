@@ -26,8 +26,13 @@ import {
 import Link from 'next/link';
 import InteractiveWorkflowDemo from '@/components/InteractiveWorkflowDemo';
 
+interface Stats {
+  totalSites: number;
+  totalNiches: number;
+}
+
 export default function MarketingHomepage() {
-  const [stats, setStats] = useState({
+  const [stats, setStats] = useState<Stats>({
     totalSites: 13000,
     totalNiches: 100
   });
