@@ -19,6 +19,8 @@ export interface AirtableWebsite extends AirtableRecord {
     'Guest Post Cost V2': number;
     Category: string[];
     Type: string[];
+    'Website Type': string[]; // SaaS, Blog, News, eCommerce, etc.
+    Niche: string[]; // Multiple niches
     'Guest Post Contact': string[];
     'Count of Published Opportunities': number;
     Status: string;
@@ -65,6 +67,8 @@ export interface ProcessedWebsite {
   guestPostCost: number | null;
   categories: string[];
   type: string[];
+  websiteType: string[]; // SaaS, Blog, News, eCommerce, etc.
+  niche: string[]; // Multiple niches
   contacts: ProcessedContact[];
   publishedOpportunities: number;
   status: string;

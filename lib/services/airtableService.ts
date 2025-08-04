@@ -288,6 +288,8 @@ export class AirtableService {
       guestPostCost: fields['Guest Post Cost V2'] || null,
       categories: fields.Category || [],
       type: fields.Type || [],
+      websiteType: fields['Website Type'] || [], // SaaS, Blog, News, eCommerce, etc.
+      niche: fields.Niche || [], // Multiple niches
       contacts, // Now populated from PostFlow lookup fields
       publishedOpportunities: fields['Count of Published Opportunities'] || 0,
       status: fields.Status || 'Unknown',
