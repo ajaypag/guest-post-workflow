@@ -97,8 +97,13 @@ export default function OrderProgressView({
 
   const handleRefresh = async () => {
     setRefreshing(true);
-    // Refresh logic would go here
-    setTimeout(() => setRefreshing(false), 1000);
+    try {
+      // Force page refresh to get latest data
+      window.location.reload();
+    } catch (error) {
+      console.error('Error refreshing:', error);
+      setRefreshing(false);
+    }
   };
 
   // Group line items by client

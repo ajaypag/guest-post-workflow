@@ -236,6 +236,7 @@ export default function UnifiedOrderInterface({
   const [isNewOrder, setIsNewOrder] = useState(!orderId);
   const [draftOrderId, setDraftOrderId] = useState<string | null>(orderId || null);
   const [requestingLineItemId, setRequestingLineItemId] = useState<string | null>(null);
+  const [loadingDraft, setLoadingDraft] = useState(false);
 
   // Determine what mode to show based on order state and available data
   const getAppropriateMode = useCallback((): OrderMode => {
@@ -330,7 +331,7 @@ export default function UnifiedOrderInterface({
     if (!orderId) return;
     
     try {
-      setLoadingClients(true);
+      setLoadingDraft(true);
       const response = await fetch(`/api/orders/${orderId}`, {
         credentials: 'include'
       });
@@ -350,8 +351,8 @@ export default function UnifiedOrderInterface({
       if (session?.userType === 'internal' && orderData.accountId) {
         setSelectedAccountId(orderData.accountId);
         setSelectedAccountEmail(orderData.accountEmail || '');
-        setSelectedAccountName(orderData.accountName || '');
-        setSelectedAccountCompany(orderData.accountCompany || '');
+        setSelectedAccountName(orderData.accountName || orderData.contactName || '');
+        setSelectedAccountCompany(orderData.accountCompany || orderData.companyName || '');
       }
       
       // Initialize order groups if available
@@ -388,7 +389,7 @@ export default function UnifiedOrderInterface({
       console.error('Failed to load order:', error);
       setError('Failed to load order');
     } finally {
-      setLoadingClients(false);
+      setLoadingDraft(false);
     }
   }, [orderId, session?.userType, packagePricing]);
 
@@ -616,6 +617,11 @@ export default function UnifiedOrderInterface({
       `Check out ${clientName}`
     ];
     return variations[Math.floor(Math.random() * variations.length)];
+  };
+
+  // Get target pages for a specific client
+  const getClientTargetPages = (clientId: string) => {
+    return availableTargets.filter(target => target.clientId === clientId);
   };
 
   // Handle target pages created from modal
@@ -1370,12 +1376,10 @@ export default function UnifiedOrderInterface({
           
           {/* Account Selection for Internal Users */}
           {currentMode === 'draft' && userType === 'internal' && (
-            <div className="p-4 border-b border-gray-200 bg-gray-50">
-              <div className="space-y-3">
+            <div className="p-4 border-b border-gray-200 bg-white">
+              <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
                 <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-1">
-                    Select Account *
-                  </label>
+                  <label className="block text-sm font-medium text-gray-700 mb-1">Select Account *</label>
                   <select
                     value={selectedAccountId || ''}
                     onChange={(e) => {
@@ -1388,7 +1392,7 @@ export default function UnifiedOrderInterface({
                         setSelectedAccountCompany(account.company || '');
                       }
                     }}
-                    className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-blue-500 focus:border-blue-500"
+                    className="w-full px-3 py-2 border border-gray-300 rounded-md text-sm focus:outline-none focus:ring-blue-500 focus:border-blue-500"
                     disabled={loadingAccounts}
                   >
                     <option value="">Select an account...</option>
@@ -1400,13 +1404,36 @@ export default function UnifiedOrderInterface({
                     ))}
                   </select>
                 </div>
-                {selectedAccountId && (
-                  <div className="text-sm text-gray-600">
-                    <p><strong>Account:</strong> {selectedAccountName}</p>
-                    <p><strong>Email:</strong> {selectedAccountEmail}</p>
-                    {selectedAccountCompany && <p><strong>Company:</strong> {selectedAccountCompany}</p>}
-                  </div>
-                )}
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-1">Account Email</label>
+                  <input
+                    type="email"
+                    value={selectedAccountEmail}
+                    readOnly
+                    className="w-full px-3 py-2 border border-gray-300 rounded-md text-sm bg-gray-50"
+                    placeholder="Selected account email"
+                  />
+                </div>
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-1">Contact Name</label>
+                  <input
+                    type="text"
+                    value={selectedAccountName}
+                    readOnly
+                    className="w-full px-3 py-2 border border-gray-300 rounded-md text-sm bg-gray-50"
+                    placeholder="Selected account name"
+                  />
+                </div>
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-1">Company</label>
+                  <input
+                    type="text"
+                    value={selectedAccountCompany}
+                    readOnly
+                    className="w-full px-3 py-2 border border-gray-300 rounded-md text-sm bg-gray-50"
+                    placeholder="Company name"
+                  />
+                </div>
               </div>
             </div>
           )}
@@ -2364,12 +2391,14 @@ export default function UnifiedOrderInterface({
                             key={key}
                             onClick={() => {
                               setSelectedPackage(key as PackageType);
-                              // Update all line item prices
-                              setLineItems(prev => prev.map(item => ({
-                                ...item,
-                                selectedPackage: key as PackageType,
-                                price: pkg.price
-                              })));
+                              // Update all line item prices if not custom
+                              if (key !== 'custom') {
+                                setLineItems(prev => prev.map(item => ({
+                                  ...item,
+                                  selectedPackage: key as PackageType,
+                                  price: pkg.price
+                                })));
+                              }
                             }}
                             className={`px-3 py-1.5 text-sm font-medium rounded-md transition-colors ${
                               selectedPackage === key
@@ -2447,6 +2476,11 @@ export default function UnifiedOrderInterface({
             handleTargetPagesCreated(newTargetPages);
             setShowCreateTargetPageModal(false);
           }}
+          preSelectedClientId={
+            requestingLineItemId 
+              ? lineItems.find(item => item.id === requestingLineItemId)?.clientId 
+              : undefined
+          }
         />
       )}
 
@@ -2456,7 +2490,7 @@ export default function UnifiedOrderInterface({
           <div className="bg-white rounded-lg max-w-2xl w-full max-h-[90vh] overflow-y-auto">
             <div className="p-6">
               <div className="flex items-center justify-between mb-6">
-                <h2 className="text-2xl font-bold text-gray-900">Confirm Your Order</h2>
+                <h2 className="text-2xl font-bold text-gray-900">{isNewOrder ? 'Confirm Your Order' : 'Confirm Order Updates'}</h2>
                 <button
                   onClick={() => setShowConfirmModal(false)}
                   className="text-gray-400 hover:text-gray-600"
@@ -2525,10 +2559,21 @@ export default function UnifiedOrderInterface({
               <div className="bg-blue-50 rounded-lg p-4 mb-6">
                 <h3 className="font-semibold text-blue-900 mb-2">What Happens Next?</h3>
                 <ul className="text-sm text-blue-800 space-y-1">
-                  <li>• Your order will be submitted for processing</li>
-                  <li>• Our team will analyze and find suitable guest post sites</li>
-                  <li>• You'll receive site recommendations for review</li>
-                  <li>• Once approved, we'll begin content creation and outreach</li>
+                  {isNewOrder ? (
+                    <>
+                      <li>• Your order will be created as a draft</li>
+                      <li>• You can continue editing until you submit it</li>
+                      <li>• Once submitted, our team will start finding suitable sites</li>
+                      <li>• You'll receive an email notification when sites are ready for review</li>
+                    </>
+                  ) : (
+                    <>
+                      <li>• Your order updates will be saved</li>
+                      <li>• {orderStatus === 'draft' ? 'You can submit the order when ready' : 'Our team will be notified of the updates'}</li>
+                      <li>• Any changes to target pages or quantities will be processed</li>
+                      <li>• You'll receive confirmation once changes are applied</li>
+                    </>
+                  )}
                 </ul>
               </div>
               
