@@ -39,6 +39,11 @@ interface SiteSubmission {
   clientRejectedAt?: string;
   clientReviewNotes?: string;
   specialInstructions?: string;
+  metadata?: {
+    targetPageUrl?: string;
+    anchorText?: string;
+    specialInstructions?: string;
+  };
 }
 
 interface OrderGroup {
@@ -187,7 +192,8 @@ export default function InternalOrderManagementPage() {
   }, [orderId]);
 
   useEffect(() => {
-    if (order?.state === 'sites_ready' || order?.state === 'site_review' || order?.state === 'client_reviewing') {
+    // Always load site submissions to show suggestions
+    if (order?.orderGroups) {
       loadSiteSubmissions();
     }
     if (order?.status === 'pending_confirmation') {
@@ -539,7 +545,7 @@ export default function InternalOrderManagementPage() {
   const getColumnCount = () => {
     if (!order) return 4;
     let count = 3; // Base columns: Client/Target, Anchor, Price
-    if (order.state === 'sites_ready' || order.state === 'site_review' || order.state === 'client_reviewing' || order.state === 'in_progress' || order.status === 'completed') count++;
+    if (Object.keys(siteSubmissions).length > 0 || order.state === 'sites_ready' || order.state === 'site_review' || order.state === 'client_reviewing' || order.state === 'in_progress' || order.status === 'completed') count++;
     if (order.state === 'in_progress' || order.status === 'completed') count++;
     if (order.status === 'completed') count++;
     if (order.status === 'confirmed' && order.state === 'analyzing') count++;
@@ -889,7 +895,7 @@ export default function InternalOrderManagementPage() {
                           Anchor Text
                         </th>
                         {/* Progressive disclosure - only show additional columns when relevant */}
-                        {(order.state === 'sites_ready' || order.state === 'site_review' || order.state === 'client_reviewing' || order.state === 'in_progress' || order.status === 'completed') && (
+                        {(Object.keys(siteSubmissions).length > 0 || order.state === 'sites_ready' || order.state === 'site_review' || order.state === 'client_reviewing' || order.state === 'in_progress' || order.status === 'completed') && (
                           <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
                             Guest Post Site
                           </th>
@@ -942,48 +948,74 @@ export default function InternalOrderManagementPage() {
                             </td>
                           </tr>
                           {/* Line items for this client */}
-                          {[...Array(group.linkCount)].map((_, index) => (
-                            <tr key={`${groupId}-${index}`} className="hover:bg-gray-50">
-                              <td className="px-6 py-4 pl-12">
-                                <div className="text-sm text-gray-600">
-                                  {group.targetPages?.[index]?.url || 'No target page selected'}
-                                </div>
-                              </td>
-                              <td className="px-6 py-4 text-sm text-gray-900">
-                                {group.anchorTexts?.[index] || '-'}
-                              </td>
-                              {(order.state === 'sites_ready' || order.state === 'site_review' || order.state === 'client_reviewing' || order.state === 'in_progress' || order.status === 'completed') && (
-                                <td className="px-6 py-4">
-                                  <span className="text-sm text-gray-400">Pending</span>
+                          {[...Array(group.linkCount)].map((_, index) => {
+                            const targetPageUrl = group.targetPages?.[index]?.url;
+                            // Find site submission for this target page
+                            const siteSuggestion = siteSubmissions[groupId]?.find(sub => 
+                              sub.metadata?.targetPageUrl === targetPageUrl
+                            );
+                            
+                            return (
+                              <tr key={`${groupId}-${index}`} className="hover:bg-gray-50">
+                                <td className="px-6 py-4 pl-12">
+                                  <div className="text-sm text-gray-600">
+                                    {targetPageUrl || 'No target page selected'}
+                                  </div>
                                 </td>
-                              )}
-                              {(order.state === 'in_progress' || order.status === 'completed') && (
-                                <td className="px-6 py-4">
-                                  <span className="text-sm text-gray-400">-</span>
+                                <td className="px-6 py-4 text-sm text-gray-900">
+                                  {group.anchorTexts?.[index] || '-'}
                                 </td>
-                              )}
-                              {order.status === 'completed' && (
-                                <td className="px-6 py-4">
-                                  <span className="text-sm text-gray-400">-</span>
-                                </td>
-                              )}
-                              <td className="px-6 py-4">
-                                {index === 0 && group.bulkAnalysisProjectId && (
-                                  <Link
-                                    href={`/clients/${group.clientId}/bulk-analysis/projects/${group.bulkAnalysisProjectId}`}
-                                    className="inline-flex items-center text-sm text-blue-600 hover:text-blue-800"
-                                  >
-                                    <Search className="h-3 w-3 mr-1" />
-                                    Analyze
-                                  </Link>
+                                {(Object.keys(siteSubmissions).length > 0 || order.state === 'sites_ready' || order.state === 'site_review' || order.state === 'client_reviewing' || order.state === 'in_progress' || order.status === 'completed') && (
+                                  <td className="px-6 py-4">
+                                    {siteSuggestion ? (
+                                      <div className="flex items-center gap-2">
+                                        <Globe className="h-4 w-4 text-blue-600" />
+                                        <div>
+                                          <div className="text-sm font-medium text-gray-900">{siteSuggestion.domain}</div>
+                                          <div className="text-xs text-gray-500">
+                                            {siteSuggestion.submissionStatus === 'client_approved' ? (
+                                              <span className="text-green-600">Approved</span>
+                                            ) : siteSuggestion.submissionStatus === 'client_rejected' ? (
+                                              <span className="text-red-600">Rejected</span>
+                                            ) : (
+                                              <span className="text-yellow-600">Suggested</span>
+                                            )}
+                                          </div>
+                                        </div>
+                                      </div>
+                                    ) : (
+                                      <span className="text-sm text-gray-400">No site suggested</span>
+                                    )}
+                                  </td>
                                 )}
-                              </td>
-                              <td className="px-6 py-4 text-right text-sm font-medium text-gray-900">
-                                {/* Only show price on the first item in the group */}
-                                {index === 0 ? formatCurrency(group.packagePrice || 0) : ''}
-                              </td>
-                            </tr>
-                          ))}
+                                {(order.state === 'in_progress' || order.status === 'completed') && (
+                                  <td className="px-6 py-4">
+                                    <span className="text-sm text-gray-400">-</span>
+                                  </td>
+                                )}
+                                {order.status === 'completed' && (
+                                  <td className="px-6 py-4">
+                                    <span className="text-sm text-gray-400">-</span>
+                                  </td>
+                                )}
+                                <td className="px-6 py-4">
+                                  {index === 0 && group.bulkAnalysisProjectId && (
+                                    <Link
+                                      href={`/clients/${group.clientId}/bulk-analysis/projects/${group.bulkAnalysisProjectId}`}
+                                      className="inline-flex items-center text-sm text-blue-600 hover:text-blue-800"
+                                    >
+                                      <Search className="h-3 w-3 mr-1" />
+                                      Analyze
+                                    </Link>
+                                  )}
+                                </td>
+                                <td className="px-6 py-4 text-right text-sm font-medium text-gray-900">
+                                  {/* Only show price on the first item in the group */}
+                                  {index === 0 ? formatCurrency(group.packagePrice || 0) : ''}
+                                </td>
+                              </tr>
+                            );
+                          })}
                           
                           {/* Site submissions for this client when in site_review state */}
                           {(order.state === 'sites_ready' || order.state === 'site_review' || order.state === 'client_reviewing') && siteSubmissions[groupId] && siteSubmissions[groupId].length > 0 && (
