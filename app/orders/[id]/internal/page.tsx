@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, useEffect } from 'react';
+import React, { useState, useEffect } from 'react';
 import { useParams, useRouter } from 'next/navigation';
 import Link from 'next/link';
 import AuthWrapper from '@/components/AuthWrapper';
@@ -910,48 +910,22 @@ export default function InternalOrderManagementPage() {
                   </div>
                 </div>
                 {showPoolView && availableForTarget.length > 1 && (
-                  editingLineItem?.groupId === groupId && editingLineItem?.index === index ? (
-                    <div className="flex items-center gap-2 edit-dropdown">
-                      {assigningDomain && (
-                        <Loader2 className="h-3 w-3 animate-spin text-gray-500" />
-                      )}
-                      <select
-                        className="text-xs border-gray-300 rounded-md"
-                        defaultValue={displaySubmission.id}
-                        disabled={!!assigningDomain}
-                        onChange={async (e) => {
-                          if (e.target.value && e.target.value !== displaySubmission.id) {
-                            // Clear target URL from current submission
-                            await handleAssignTargetPage(displaySubmission.id, '', groupId);
-                            // Assign target URL to new submission
-                            await handleAssignTargetPage(e.target.value, targetPageUrl || '', groupId);
-                            setEditingLineItem(null);
-                          }
-                        }}
-                      >
-                        <option value="">Select domain...</option>
-                        {availableForTarget.map(sub => (
-                          <option key={sub.id} value={sub.id}>
-                            {sub.domain?.domain} 
-                            {sub.domainRating ? ` (DR: ${sub.domainRating})` : ''}
-                          </option>
-                        ))}
-                      </select>
-                      <button
-                        className="text-xs text-gray-600 hover:text-gray-800"
-                        onClick={() => setEditingLineItem(null)}
-                      >
-                        Cancel
-                      </button>
-                    </div>
-                  ) : (
-                    <button
-                      className="text-xs text-blue-600 hover:text-blue-800"
-                      onClick={() => setEditingLineItem({ groupId, index })}
-                    >
-                      Change
-                    </button>
-                  )
+                  <button
+                    className="text-xs text-blue-600 hover:text-blue-800 flex items-center gap-1"
+                    onClick={() => setEditingLineItem(editingLineItem?.groupId === groupId && editingLineItem?.index === index ? null : { groupId, index })}
+                  >
+                    {editingLineItem?.groupId === groupId && editingLineItem?.index === index ? (
+                      <>
+                        <ChevronUp className="w-3 h-3" />
+                        Hide Options
+                      </>
+                    ) : (
+                      <>
+                        <ChevronDown className="w-3 h-3" />
+                        Show Options ({availableForTarget.length - 1} more)
+                      </>
+                    )}
+                  </button>
                 )}
               </div>
             ) : availableForTarget.length > 0 ? (
@@ -1503,20 +1477,98 @@ export default function InternalOrderManagementPage() {
                             const displaySubmission = exactMatch || suggestedMatch;
                             
                             return (
-                              <tr key={`${groupId}-${index}`} className="hover:bg-gray-50">
-                                {columnConfig.columns.map((column) => 
-                                  renderTableCell(column, {
-                                    group,
-                                    index,
-                                    targetPageUrl,
-                                    anchorText,
-                                    displaySubmission,
-                                    availableForTarget,
-                                    showPoolView,
-                                    groupId
-                                  })
+                              <React.Fragment key={`${groupId}-${index}`}>
+                                <tr className="hover:bg-gray-50">
+                                  {columnConfig.columns.map((column) => 
+                                    renderTableCell(column, {
+                                      group,
+                                      index,
+                                      targetPageUrl,
+                                      anchorText,
+                                      displaySubmission,
+                                      availableForTarget,
+                                      showPoolView,
+                                      groupId
+                                    })
+                                  )}
+                                </tr>
+                                
+                                {/* Expandable subrow for domain options */}
+                                {editingLineItem?.groupId === groupId && 
+                                 editingLineItem?.index === index && 
+                                 showPoolView && 
+                                 availableForTarget.length > 1 && (
+                                  <tr className="bg-gray-50">
+                                    <td colSpan={columnConfig.columns.length} className="px-6 py-3">
+                                      <div className="space-y-2">
+                                        <div className="text-xs font-medium text-gray-700 mb-3">
+                                          Available domains for this link:
+                                        </div>
+                                        <div className="grid grid-cols-1 gap-2 max-h-48 overflow-y-auto">
+                                          {availableForTarget
+                                            .filter(sub => sub.id !== displaySubmission?.id)
+                                            .map((submission) => (
+                                            <div
+                                              key={submission.id}
+                                              className="flex items-center justify-between p-3 bg-white rounded border border-gray-200 hover:border-blue-300 cursor-pointer"
+                                              onClick={async () => {
+                                                if (displaySubmission) {
+                                                  // Clear target URL from current submission
+                                                  await handleAssignTargetPage(displaySubmission.id, '', groupId);
+                                                }
+                                                // Assign target URL to new submission
+                                                await handleAssignTargetPage(submission.id, targetPageUrl || '', groupId);
+                                                setEditingLineItem(null);
+                                              }}
+                                            >
+                                              <div className="flex items-center gap-3">
+                                                <Globe className="h-4 w-4 text-blue-600" />
+                                                <div>
+                                                  <div className="text-sm font-medium text-gray-900">
+                                                    {submission.domain?.domain}
+                                                  </div>
+                                                  <div className="flex items-center gap-3 text-xs text-gray-600">
+                                                    {submission.domainRating && (
+                                                      <span>DR: {submission.domainRating}</span>
+                                                    )}
+                                                    {submission.traffic && (
+                                                      <span>Traffic: {submission.traffic.toLocaleString()}</span>
+                                                    )}
+                                                    {submission.metadata?.overlapStatus && (
+                                                      <span className={`inline-flex items-center px-1.5 py-0.5 rounded-full text-xs ${
+                                                        submission.metadata.overlapStatus === 'both' ? 'bg-purple-100 text-purple-700' :
+                                                        submission.metadata.overlapStatus === 'direct' ? 'bg-green-100 text-green-700' :
+                                                        submission.metadata.overlapStatus === 'related' ? 'bg-blue-100 text-blue-700' :
+                                                        'bg-gray-100 text-gray-600'
+                                                      }`}>
+                                                        <Sparkles className="w-3 h-3 mr-1" />
+                                                        {submission.metadata.overlapStatus === 'both' ? 'STRONGEST' :
+                                                         submission.metadata.overlapStatus === 'direct' ? 'VERY STRONG' :
+                                                         submission.metadata.overlapStatus === 'related' ? 'DECENT' :
+                                                         'NO MATCH'}
+                                                      </span>
+                                                    )}
+                                                  </div>
+                                                </div>
+                                              </div>
+                                              <div className="flex items-center gap-2">
+                                                {submission.price && (
+                                                  <span className="text-sm font-medium text-gray-900">
+                                                    {formatCurrency(submission.price)}
+                                                  </span>
+                                                )}
+                                                <button className="text-xs text-blue-600 hover:text-blue-800 px-2 py-1 border border-blue-200 rounded">
+                                                  Select
+                                                </button>
+                                              </div>
+                                            </div>
+                                          ))}
+                                        </div>
+                                      </div>
+                                    </td>
+                                  </tr>
                                 )}
-                              </tr>
+                              </React.Fragment>
                             );
                           })}
                           
