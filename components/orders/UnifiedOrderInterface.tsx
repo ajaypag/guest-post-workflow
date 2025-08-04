@@ -881,6 +881,9 @@ export default function UnifiedOrderInterface({
     try {
       setIsSubmitting(true);
       
+      // Disable auto-save during submission to prevent race conditions
+      setSaveStatus('idle');
+      
       // First save the current changes
       await saveOrderDraft();
       
