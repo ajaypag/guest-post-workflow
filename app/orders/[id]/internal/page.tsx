@@ -61,6 +61,19 @@ interface SiteSubmission {
     notes?: string;
     lastUpdatedBy?: string;
     lastUpdatedAt?: string;
+    // AI Qualification fields
+    overlapStatus?: 'direct' | 'related' | 'both' | 'none';
+    authorityDirect?: 'strong' | 'moderate' | 'weak' | 'n/a';
+    authorityRelated?: 'strong' | 'moderate' | 'weak' | 'n/a';
+    topicScope?: 'short_tail' | 'long_tail' | 'ultra_long_tail';
+    topicReasoning?: string;
+    aiQualificationReasoning?: string;
+    evidence?: {
+      direct_count: number;
+      direct_median_position: number | null;
+      related_count: number;
+      related_median_position: number | null;
+    };
     statusHistory?: Array<{
       status: string;
       timestamp: string;
@@ -1151,8 +1164,21 @@ export default function InternalOrderManagementPage() {
                                       <div className="flex items-center gap-2">
                                         <Globe className="h-4 w-4 text-blue-600" />
                                         <div className="flex-1">
-                                          <div className="text-sm font-medium text-gray-900">
-                                            {displaySubmission.domain?.domain || 'Unknown'}
+                                          <div className="flex items-center gap-2">
+                                            <div className="text-sm font-medium text-gray-900">
+                                              {displaySubmission.domain?.domain || 'Unknown'}
+                                            </div>
+                                            {group.bulkAnalysisProjectId && displaySubmission.domainId && (
+                                              <a
+                                                href={`/clients/${group.clientId}/bulk-analysis/projects/${group.bulkAnalysisProjectId}?guided=${displaySubmission.domainId}`}
+                                                className="inline-flex items-center px-1.5 py-0.5 text-xs bg-indigo-100 text-indigo-700 hover:bg-indigo-200 rounded transition-colors"
+                                                title="View detailed domain analysis"
+                                                onClick={(e) => e.stopPropagation()}
+                                              >
+                                                <ExternalLink className="w-3 h-3 mr-0.5" />
+                                                Analysis
+                                              </a>
+                                            )}
                                           </div>
                                           <div className="flex items-center gap-2 mt-1">
                                             <span className={`text-xs ${
@@ -1186,6 +1212,25 @@ export default function InternalOrderManagementPage() {
                                                  displaySubmission.metadata.qualificationStatus === 'good_quality' ? '★★' :
                                                  displaySubmission.metadata.qualificationStatus === 'marginal_quality' ? '★' :
                                                  '○'}
+                                              </span>
+                                            )}
+                                            {displaySubmission.metadata?.overlapStatus && (
+                                              <span 
+                                                className={`inline-flex items-center px-1.5 py-0.5 text-xs rounded-full cursor-help ${
+                                                  displaySubmission.metadata.overlapStatus === 'direct' ? 'bg-green-100 text-green-700' :
+                                                  displaySubmission.metadata.overlapStatus === 'related' ? 'bg-blue-100 text-blue-700' :
+                                                  displaySubmission.metadata.overlapStatus === 'both' ? 'bg-purple-100 text-purple-700' :
+                                                  'bg-gray-100 text-gray-600'
+                                                }`}
+                                                title={`AI Analysis: ${
+                                                  displaySubmission.metadata.overlapStatus === 'direct' ? 'Direct keyword match - site ranks for your core keywords' :
+                                                  displaySubmission.metadata.overlapStatus === 'related' ? 'Related topic match - site ranks for related keywords' :
+                                                  displaySubmission.metadata.overlapStatus === 'both' ? 'Perfect match - site ranks for both core and related keywords' :
+                                                  'No keyword overlap detected'
+                                                }${displaySubmission.metadata.topicScope ? ` | Content strategy: ${displaySubmission.metadata.topicScope.replace('_', ' ')}` : ''}`}
+                                              >
+                                                <Sparkles className="w-3 h-3 mr-0.5" />
+                                                AI
                                               </span>
                                             )}
                                           </div>
@@ -1332,8 +1377,21 @@ export default function InternalOrderManagementPage() {
                                             <div className="flex items-start gap-3">
                                               <Globe className="h-5 w-5 text-gray-500 mt-0.5" />
                                               <div className="flex-1">
-                                                <div className="text-sm font-medium text-gray-900">
-                                                  {submission.domain?.domain || 'Unknown'}
+                                                <div className="flex items-center gap-2 mb-1">
+                                                  <div className="text-sm font-medium text-gray-900">
+                                                    {submission.domain?.domain || 'Unknown'}
+                                                  </div>
+                                                  {group.bulkAnalysisProjectId && submission.domainId && (
+                                                    <a
+                                                      href={`/clients/${group.clientId}/bulk-analysis/projects/${group.bulkAnalysisProjectId}?guided=${submission.domainId}`}
+                                                      className="inline-flex items-center px-1.5 py-0.5 text-xs bg-indigo-100 text-indigo-700 hover:bg-indigo-200 rounded transition-colors"
+                                                      title="View detailed domain analysis"
+                                                      onClick={(e) => e.stopPropagation()}
+                                                    >
+                                                      <ExternalLink className="w-3 h-3 mr-0.5" />
+                                                      Analysis
+                                                    </a>
+                                                  )}
                                                 </div>
                                                 <div className="flex items-center gap-3 mt-1 text-xs text-gray-600">
                                                   {submission.domainRating && (
@@ -1359,6 +1417,25 @@ export default function InternalOrderManagementPage() {
                                                        submission.metadata.qualificationStatus === 'good_quality' ? '★★' :
                                                        submission.metadata.qualificationStatus === 'marginal_quality' ? '★' :
                                                        '○'}
+                                                    </span>
+                                                  )}
+                                                  {submission.metadata?.overlapStatus && (
+                                                    <span 
+                                                      className={`inline-flex items-center px-1.5 py-0.5 text-xs rounded-full cursor-help ${
+                                                        submission.metadata.overlapStatus === 'direct' ? 'bg-green-100 text-green-700' :
+                                                        submission.metadata.overlapStatus === 'related' ? 'bg-blue-100 text-blue-700' :
+                                                        submission.metadata.overlapStatus === 'both' ? 'bg-purple-100 text-purple-700' :
+                                                        'bg-gray-100 text-gray-600'
+                                                      }`}
+                                                      title={`AI Analysis: ${
+                                                        submission.metadata.overlapStatus === 'direct' ? 'Direct keyword match - site ranks for your core keywords' :
+                                                        submission.metadata.overlapStatus === 'related' ? 'Related topic match - site ranks for related keywords' :
+                                                        submission.metadata.overlapStatus === 'both' ? 'Perfect match - site ranks for both core and related keywords' :
+                                                        'No keyword overlap detected'
+                                                      }${submission.metadata.topicScope ? ` | Content strategy: ${submission.metadata.topicScope.replace('_', ' ')}` : ''}`}
+                                                    >
+                                                      <Sparkles className="w-3 h-3 mr-0.5" />
+                                                      AI
                                                     </span>
                                                   )}
                                                   {submission.price && (
