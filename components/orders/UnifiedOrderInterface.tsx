@@ -11,7 +11,7 @@ import {
   Search, Target, Link as LinkIcon, Type, CheckCircle,
   AlertCircle, Copy, Trash2, User, Globe, ExternalLink,
   ArrowLeft, Loader2, Clock, Database, Edit, Eye, Zap,
-  XCircle, PlayCircle, FileText, Activity, Users
+  XCircle, PlayCircle, FileText, Activity, Users, DollarSign, Sparkles
 } from 'lucide-react';
 
 type PackageType = 'good' | 'better' | 'best';
@@ -142,6 +142,16 @@ interface SiteSubmission {
   };
 }
 
+interface TargetPageStatus {
+  id: string;
+  url: string;
+  hasKeywords: boolean;
+  hasDescription: boolean;
+  keywordCount: number;
+  clientName: string;
+  orderGroupId: string;
+}
+
 interface UnifiedOrderInterfaceProps {
   orderId?: string;
   initialMode?: OrderMode;
@@ -199,6 +209,12 @@ export default function UnifiedOrderInterface({
   const [subtotal, setSubtotal] = useState(0);
   const [total, setTotal] = useState(0);
   const [mobileView, setMobileView] = useState<'clients' | 'targets' | 'order'>('clients');
+  
+  // Target page keywords workflow state (from /internal page)
+  const [targetPageStatuses, setTargetPageStatuses] = useState<TargetPageStatus[]>([]);
+  const [selectedPages, setSelectedPages] = useState<Set<string>>(new Set());
+  const [generatingKeywords, setGeneratingKeywords] = useState(false);
+  const [currentProcessingPage, setCurrentProcessingPage] = useState<string | null>(null);
   
   // Pricing state (from /edit page)
   const [selectedPackage, setSelectedPackage] = useState<PackageType>('better');
@@ -929,6 +945,287 @@ export default function UnifiedOrderInterface({
     }
   };
 
+  // Target page keywords workflow functions (from /internal page)
+  const checkTargetPageStatuses = useCallback(async () => {
+    if (!orderGroups) return;
+    
+    const statuses: TargetPageStatus[] = [];
+    
+    for (const group of orderGroups) {
+      for (const targetPage of group.targetPages || []) {
+        if (targetPage.pageId) {
+          try {
+            const response = await fetch(`/api/target-pages/${targetPage.pageId}`);
+            if (response.ok) {
+              const pageData = await response.json();
+              statuses.push({
+                id: pageData.id,
+                url: pageData.url,
+                hasKeywords: !!(pageData.keywords && pageData.keywords.trim() !== ''),
+                hasDescription: !!(pageData.description && pageData.description.trim() !== ''),
+                keywordCount: pageData.keywords ? pageData.keywords.split(',').filter((k: string) => k.trim()).length : 0,
+                clientName: group.client.name,
+                orderGroupId: group.id
+              });
+            }
+          } catch (error) {
+            console.error(`Failed to load target page ${targetPage.pageId}:`, error);
+          }
+        }
+      }
+    }
+    
+    setTargetPageStatuses(statuses);
+    
+    // Auto-select pages that need keywords
+    const pagesNeedingKeywords = statuses.filter(p => !p.hasKeywords).map(p => p.id);
+    setSelectedPages(new Set(pagesNeedingKeywords));
+  }, [orderGroups]);
+
+  const generateKeywordsForSelected = async () => {
+    if (selectedPages.size === 0) {
+      setMessage({ type: 'warning', text: 'Please select target pages to generate keywords for' });
+      return;
+    }
+    
+    setGeneratingKeywords(true);
+    setMessage({ type: 'info', text: `Generating keywords for ${selectedPages.size} target pages...` });
+    
+    let successCount = 0;
+    let failureCount = 0;
+    let currentIndex = 0;
+    const totalPages = selectedPages.size;
+    
+    for (const pageId of selectedPages) {
+      const page = targetPageStatuses.find(p => p.id === pageId);
+      if (!page) continue;
+      
+      currentIndex++;
+      setCurrentProcessingPage(page.url);
+      setMessage({ 
+        type: 'info', 
+        text: `Processing ${currentIndex}/${totalPages}: ${page.url}` 
+      });
+      
+      try {
+        // Generate keywords
+        if (!page.hasKeywords) {
+          const keywordResponse = await fetch(`/api/target-pages/${pageId}/keywords`, {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ targetUrl: page.url })
+          });
+          
+          if (!keywordResponse.ok) {
+            const errorData = await keywordResponse.json().catch(() => ({}));
+            throw new Error(errorData.error || `Failed to generate keywords (${keywordResponse.status})`);
+          }
+        }
+        
+        // Generate description
+        if (!page.hasDescription) {
+          const descResponse = await fetch(`/api/target-pages/${pageId}/description`, {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ targetUrl: page.url })
+          });
+          
+          if (!descResponse.ok) {
+            const errorData = await descResponse.json().catch(() => ({}));
+            console.error(`Failed to generate description for ${page.url}:`, errorData.error || descResponse.statusText);
+            // Continue with other pages even if description fails
+          }
+        }
+        
+        successCount++;
+        
+        // Add a small delay between API calls to avoid rate limits
+        if (currentIndex < totalPages) {
+          await new Promise(resolve => setTimeout(resolve, 500)); // 500ms delay
+        }
+      } catch (error: any) {
+        console.error(`Failed to generate content for ${page.url}:`, error);
+        failureCount++;
+      }
+    }
+    
+    setGeneratingKeywords(false);
+    setCurrentProcessingPage(null);
+    
+    if (failureCount === 0) {
+      setMessage({ 
+        type: 'success', 
+        text: `Successfully generated keywords for ${successCount} target pages` 
+      });
+    } else {
+      setMessage({ 
+        type: 'warning', 
+        text: `Generated keywords for ${successCount} pages, ${failureCount} failed` 
+      });
+    }
+    
+    // Reload target page statuses
+    await checkTargetPageStatuses();
+  };
+
+  const handleConfirmOrderWithKeywordCheck = async () => {
+    if (!orderGroups) return;
+    
+    // Check if all target pages have keywords
+    const pagesWithoutKeywords = targetPageStatuses.filter(p => !p.hasKeywords);
+    if (pagesWithoutKeywords.length > 0) {
+      setMessage({ 
+        type: 'warning', 
+        text: `${pagesWithoutKeywords.length} target pages still need keywords. Please generate them first.` 
+      });
+      return;
+    }
+    
+    // Proceed with normal order confirmation
+    await handleConfirmOrder();
+  };
+
+  // Progressive UI system with workflow stages (from /internal page)
+  const getWorkflowStage = useCallback(() => {
+    if (!orderGroups || !siteSubmissions) return 'initial';
+    if (orderState === 'completed') return 'completed';
+    if (orderState === 'in_progress') return 'content_creation';
+    
+    // Check if we have any site submissions - if so, we're past initial selection
+    const totalSubmissions = Object.values(siteSubmissions).flat().length;
+    
+    if (totalSubmissions > 0) {
+      // If we have sites, determine if we're in selection or post-approval phase
+      const approvedSubmissions = Object.values(siteSubmissions).flat()
+        .filter(s => s.status === 'client_approved').length;
+      
+      // If more than half are approved, we're in post-approval consolidation phase
+      if (approvedSubmissions / totalSubmissions > 0.5) {
+        return 'post_approval';
+      }
+      
+      // Otherwise, we're still in site selection but with consolidated view
+      return 'site_selection_with_sites';
+    }
+    
+    // No sites yet - show traditional separate columns
+    return 'initial';
+  }, [orderGroups, siteSubmissions, orderState]);
+
+  const getColumnConfig = useCallback(() => {
+    const workflowStage = getWorkflowStage();
+    
+    switch (workflowStage) {
+      case 'site_selection_with_sites':
+        return {
+          showSeparateDetails: false,
+          showGuestPostSite: true,
+          showDraftUrl: false,
+          showPublishedUrl: false,
+          showStatus: true,
+          columns: ['client', 'link_details', 'site', 'status']
+        };
+      case 'post_approval':
+        return {
+          showSeparateDetails: false,
+          showGuestPostSite: true,
+          showDraftUrl: false,
+          showPublishedUrl: false,
+          showStatus: true,
+          columns: ['client', 'link_details', 'site', 'status']
+        };
+      case 'content_creation':
+        return {
+          showSeparateDetails: false,
+          showGuestPostSite: true,
+          showDraftUrl: true,
+          showPublishedUrl: false,
+          showStatus: true,
+          columns: ['client', 'link_details', 'site', 'content_status', 'draft_url']
+        };
+      case 'completed':
+        return {
+          showSeparateDetails: false,
+          showGuestPostSite: true,
+          showDraftUrl: false,
+          showPublishedUrl: true,
+          showStatus: false,
+          columns: ['client', 'link_details', 'site', 'published_url', 'completion']
+        };
+      default:
+        return {
+          showSeparateDetails: true,
+          showGuestPostSite: false,
+          showDraftUrl: false,
+          showPublishedUrl: false,
+          showStatus: false,
+          columns: ['client', 'anchor', 'price', 'tools']
+        };
+    }
+  }, [getWorkflowStage]);
+
+  // Refresh functionality for real-time updates (from /internal page)
+  const handleRefresh = useCallback(async () => {
+    if (!orderId) {
+      // For draft orders, just reload the page
+      window.location.reload();
+      return;
+    }
+
+    try {
+      // Reload order data by triggering the parent component's refresh
+      // This would typically call the same APIs that loaded the initial data
+      if (orderStatus === 'pending_confirmation') {
+        await checkTargetPageStatuses();
+      }
+      
+      // For site submissions, we'd typically reload them here
+      // This is a simplified refresh - in a full implementation, 
+      // we'd have separate loading states and API calls
+      window.location.reload();
+    } catch (error) {
+      console.error('Error refreshing data:', error);
+      setMessage({ 
+        type: 'error', 
+        text: 'Failed to refresh data. Please try again.' 
+      });
+    }
+  }, [orderId, orderStatus, checkTargetPageStatuses]);
+
+  // Consolidated component for Link Details (from /internal page)
+  const LinkDetailsCell = ({ targetPageUrl, anchorText, price }: { 
+    targetPageUrl?: string; 
+    anchorText?: string; 
+    price?: number; 
+  }) => (
+    <div className="space-y-1.5">
+      <div className="flex items-center gap-2 text-sm">
+        <Globe className="h-3 w-3 text-gray-400 flex-shrink-0" />
+        <span className="text-gray-900 font-medium truncate max-w-[200px]" title={targetPageUrl}>
+          {targetPageUrl ? (() => {
+            try {
+              return new URL(targetPageUrl).pathname;
+            } catch {
+              return targetPageUrl.length > 30 ? targetPageUrl.substring(0, 30) + '...' : targetPageUrl;
+            }
+          })() : 'No target page'}
+        </span>
+      </div>
+      <div className="flex items-center gap-2 text-sm">
+        <LinkIcon className="h-3 w-3 text-gray-400 flex-shrink-0" />
+        <span className="text-gray-700 truncate max-w-[200px]" title={anchorText}>
+          "{anchorText || 'No anchor text'}"
+        </span>
+      </div>
+      <div className="flex items-center gap-2 text-sm">
+        <DollarSign className="h-3 w-3 text-gray-400 flex-shrink-0" />
+        <span className="text-gray-900 font-medium">
+          {price ? formatCurrency(price) : 'Price TBD'}
+        </span>
+      </div>
+    </div>
+  );
+
   // Debounced auto-save
   const saveOrderDraftRef = useRef(saveOrderDraft);
   saveOrderDraftRef.current = saveOrderDraft;
@@ -987,6 +1284,13 @@ export default function UnifiedOrderInterface({
     }
   }, [getAppropriateMode, currentMode]);
 
+  // Target page status checking for internal users when order is pending_confirmation
+  useEffect(() => {
+    if (userType === 'internal' && orderStatus === 'pending_confirmation' && orderGroups) {
+      checkTargetPageStatuses();
+    }
+  }, [userType, orderStatus, orderGroups, checkTargetPageStatuses]);
+
   // Auto-save trigger
   useEffect(() => {
     if (currentMode === 'draft' && !isPaid) {
@@ -1032,7 +1336,7 @@ export default function UnifiedOrderInterface({
         </div>
         
         {/* Internal Action Bar */}
-        {userType === 'internal' && orderStatus === 'confirmed' && (
+        {userType === 'internal' && (orderStatus === 'confirmed' || orderStatus === 'pending_confirmation') && (
           <div className="mt-4 pb-4 border-t pt-4 flex items-center gap-3">
             {/* Mark Sites Ready */}
             {orderState === 'analyzing' && onMarkSitesReady && (
@@ -1162,8 +1466,8 @@ export default function UnifiedOrderInterface({
           </div>
         )}
         
-        {/* Three Column Layout for Internal Users viewing confirmed orders */}
-        {userType === 'internal' && orderStatus === 'confirmed' ? (
+        {/* Three Column Layout for Internal Users viewing confirmed or pending confirmation orders */}
+        {userType === 'internal' && (orderStatus === 'confirmed' || orderStatus === 'pending_confirmation') ? (
           <div className="grid grid-cols-1 lg:grid-cols-3 gap-6 h-full">
             {/* Left Column - Progress Steps + Internal Actions + Account Info */}
             <div className="lg:col-span-1 space-y-6 overflow-y-auto">
@@ -1188,7 +1492,7 @@ export default function UnifiedOrderInterface({
                       if (orderState === 'selections_confirmed' || orderState === 'payment_received' || orderState === 'workflows_generated' || orderState === 'in_progress') currentStep = 3;
                     }
                     if (isPaid) currentStep = 3;
-                    if (orderStatus === 'completed') currentStep = 4;
+                    if (orderState === 'completed') currentStep = 4;
                     
                     return steps.map((step, index) => {
                       const Icon = step.icon;
@@ -1231,6 +1535,108 @@ export default function UnifiedOrderInterface({
                 <div className="mt-6 pt-6 border-t">
                   <h3 className="text-sm font-medium text-gray-900 mb-3">Internal Actions</h3>
                   <div className="space-y-2">
+                    
+                    {/* Order Confirmation with Target Page Status - Only for pending_confirmation */}
+                    {orderStatus === 'pending_confirmation' && (
+                      <>
+                        {/* Target Pages Status Section */}
+                        {targetPageStatuses.length > 0 && (
+                          <div className="mb-4">
+                            <div className="flex items-center justify-between mb-2">
+                              <h4 className="text-xs font-medium text-gray-700">Target Pages Status</h4>
+                              <div className="flex items-center gap-3 text-xs">
+                                <span className="flex items-center gap-1">
+                                  <CheckCircle className="h-3 w-3 text-green-600" />
+                                  {targetPageStatuses.filter(p => p.hasKeywords).length} Ready
+                                </span>
+                                <span className="flex items-center gap-1">
+                                  <AlertCircle className="h-3 w-3 text-yellow-600" />
+                                  {targetPageStatuses.filter(p => !p.hasKeywords).length} Need Keywords
+                                </span>
+                              </div>
+                            </div>
+                            
+                            <div className="space-y-1 max-h-40 overflow-y-auto">
+                              {targetPageStatuses.map((page) => (
+                                <div key={page.id} className={`flex items-center gap-2 p-2 rounded text-xs ${
+                                  page.hasKeywords ? 'bg-gray-50' : 'bg-yellow-50'
+                                }`}>
+                                  <input
+                                    type="checkbox"
+                                    checked={selectedPages.has(page.id)}
+                                    onChange={(e) => {
+                                      const newSelected = new Set(selectedPages);
+                                      if (e.target.checked) {
+                                        newSelected.add(page.id);
+                                      } else {
+                                        newSelected.delete(page.id);
+                                      }
+                                      setSelectedPages(newSelected);
+                                    }}
+                                    className="rounded text-blue-600"
+                                  />
+                                  <div className="flex-1 min-w-0">
+                                    <div className="flex items-center gap-2">
+                                      {page.hasKeywords ? (
+                                        <CheckCircle className="h-3 w-3 text-green-600 flex-shrink-0" />
+                                      ) : (
+                                        <AlertCircle className="h-3 w-3 text-yellow-600 flex-shrink-0" />
+                                      )}
+                                      <span className="font-medium text-gray-900">{page.clientName}</span>
+                                    </div>
+                                    <div 
+                                      className="text-gray-600 truncate"
+                                      title={page.url}
+                                    >
+                                      {page.url}
+                                    </div>
+                                    {page.hasKeywords && (
+                                      <div className="text-green-600">
+                                        {page.keywordCount} keywords generated
+                                      </div>
+                                    )}
+                                  </div>
+                                </div>
+                              ))}
+                            </div>
+                            
+                            {targetPageStatuses.some(p => !p.hasKeywords) && (
+                              <button
+                                onClick={generateKeywordsForSelected}
+                                disabled={generatingKeywords || selectedPages.size === 0}
+                                className="w-full mt-3 px-3 py-2 bg-blue-600 text-white text-sm rounded-md hover:bg-blue-700 disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center gap-2"
+                              >
+                                {generatingKeywords ? (
+                                  <>
+                                    <Loader2 className="h-3 w-3 animate-spin" />
+                                    {currentProcessingPage ? `Processing ${currentProcessingPage}...` : 'Generating Keywords...'}
+                                  </>
+                                ) : (
+                                  <>
+                                    <Type className="h-3 w-3" />
+                                    Generate Keywords ({selectedPages.size} selected)
+                                  </>
+                                )}
+                              </button>
+                            )}
+                            
+                            {/* Confirm Order Button - only enabled if all pages have keywords */}
+                            <button
+                              onClick={handleConfirmOrderWithKeywordCheck}
+                              disabled={targetPageStatuses.some(p => !p.hasKeywords)}
+                              className="w-full mt-3 px-3 py-2 bg-green-600 text-white text-sm rounded-md hover:bg-green-700 disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center gap-2"
+                            >
+                              <CheckCircle className="h-3 w-3" />
+                              {targetPageStatuses.some(p => !p.hasKeywords) ? 
+                                `Confirm Order (${targetPageStatuses.filter(p => !p.hasKeywords).length} pages need keywords)` :
+                                'Confirm Order'
+                              }
+                            </button>
+                          </div>
+                        )}
+                      </>
+                    )}
+                    
                     {/* Mark Sites Ready was already in header, but we can duplicate here for convenience */}
                     {orderState === 'analyzing' && onMarkSitesReady && (
                       <button
@@ -1373,37 +1779,281 @@ export default function UnifiedOrderInterface({
                 </div>
               )}
               
-              {/* Order Details Table */}
+              {/* Dynamic Order Details Table based on workflow stage */}
               <div className="bg-white rounded-lg shadow-sm border border-gray-200">
-                <div className="p-6 border-b border-gray-200">
-                  <h2 className="text-lg font-semibold text-gray-900">Order Details</h2>
+                <div className="p-6 border-b border-gray-200 flex items-center justify-between">
+                  <div>
+                    <h2 className="text-lg font-semibold text-gray-900">Order Details</h2>
+                    <p className="text-sm text-gray-500 mt-1">
+                      Stage: {getWorkflowStage().replace('_', ' ').replace(/\b\w/g, l => l.toUpperCase())}
+                    </p>
+                  </div>
+                  {/* Refresh button for real-time updates */}
+                  <button
+                    onClick={handleRefresh}
+                    className="flex items-center gap-2 px-3 py-1.5 text-sm text-gray-600 hover:text-gray-900 border border-gray-300 rounded-md hover:bg-gray-50"
+                  >
+                    <Database className="h-4 w-4" />
+                    Refresh
+                  </button>
                 </div>
                 
                 <div className="overflow-x-auto">
-                  <table className="min-w-full divide-y divide-gray-200">
-                    <thead className="bg-gray-50">
-                      <tr>
-                        <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                          Client / Target Page
-                        </th>
-                        <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                          Link Details
-                        </th>
-                        <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                          Guest Post Site
-                        </th>
-                        <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                          Status
-                        </th>
-                        <th className="px-6 py-3 text-right text-xs font-medium text-gray-500 uppercase tracking-wider">
-                          Actions
-                        </th>
-                      </tr>
-                    </thead>
-                    <tbody className="bg-white divide-y divide-gray-200">
-                      {/* TODO: Add table rows with internal view */}
-                    </tbody>
-                  </table>
+                  {(() => {
+                    const columnConfig = getColumnConfig();
+                    const workflowStage = getWorkflowStage();
+                    
+                    // Define column headers
+                    const columnHeaders: Record<string, string> = {
+                      'client': 'Client / Target Page',
+                      'anchor': 'Anchor Text',
+                      'link_details': 'Link Details',
+                      'site': 'Guest Post Site',
+                      'price': 'Price',
+                      'status': 'Status',
+                      'content_status': 'Content Status',
+                      'draft_url': 'Draft URL',
+                      'published_url': 'Published URL',
+                      'completion': 'Completion',
+                      'tools': 'Actions'
+                    };
+
+                    return (
+                      <table className="min-w-full divide-y divide-gray-200">
+                        <thead className="bg-gray-50">
+                          <tr>
+                            {columnConfig.columns.map((column) => (
+                              <th
+                                key={column}
+                                className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider"
+                              >
+                                {columnHeaders[column] || column}
+                              </th>
+                            ))}
+                          </tr>
+                        </thead>
+                        <tbody className="bg-white divide-y divide-gray-200">
+                          {orderGroups && orderGroups.length > 0 ? (
+                            orderGroups.map((group) => {
+                              // Get site submissions for this group
+                              const groupSubmissions = siteSubmissions?.[group.id] || [];
+                              
+                              // Render rows based on workflow stage
+                              if (workflowStage === 'initial' || groupSubmissions.length === 0) {
+                                // Initial stage - show traditional separate columns
+                                return group.targetPages?.map((targetPage, index) => (
+                                  <tr key={`${group.id}-${index}`}>
+                                    {columnConfig.columns.map((column) => (
+                                      <td key={column} className="px-6 py-4 whitespace-nowrap">
+                                        {(() => {
+                                          switch (column) {
+                                            case 'client':
+                                              return (
+                                                <div>
+                                                  <div className="text-sm font-medium text-gray-900">{group.client.name}</div>
+                                                  <div className="text-sm text-gray-500">{targetPage.url}</div>
+                                                </div>
+                                              );
+                                            case 'anchor':
+                                              return (
+                                                <div className="text-sm text-gray-900">
+                                                  {group.anchorTexts?.[index] || 'TBD'}
+                                                </div>
+                                              );
+                                            case 'price':
+                                              return (
+                                                <div className="text-sm font-medium text-gray-900">
+                                                  {group.packagePrice ? formatCurrency(group.packagePrice) : 'TBD'}
+                                                </div>
+                                              );
+                                            case 'tools':
+                                              return (
+                                                <div className="flex items-center gap-2">
+                                                  <button className="text-blue-600 hover:text-blue-900 text-sm">
+                                                    Edit
+                                                  </button>
+                                                </div>
+                                              );
+                                            default:
+                                              return <span className="text-sm text-gray-500">-</span>;
+                                          }
+                                        })()}
+                                      </td>
+                                    ))}
+                                  </tr>
+                                )) || [];
+                              } else {
+                                // Advanced stages - show consolidated view with site submissions
+                                return groupSubmissions.map((submission) => (
+                                  <tr key={submission.id}>
+                                    {columnConfig.columns.map((column) => (
+                                      <td key={column} className="px-6 py-4 whitespace-nowrap">
+                                        {(() => {
+                                          switch (column) {
+                                            case 'client':
+                                              return (
+                                                <div>
+                                                  <div className="text-sm font-medium text-gray-900">{group.client.name}</div>
+                                                  <div className="text-sm text-gray-500">{submission.targetPageUrl || 'No target page'}</div>
+                                                </div>
+                                              );
+                                            case 'link_details':
+                                              return (
+                                                <LinkDetailsCell 
+                                                  targetPageUrl={submission.targetPageUrl}
+                                                  anchorText={submission.anchorText}
+                                                  price={submission.price}
+                                                />
+                                              );
+                                            case 'site':
+                                              return (
+                                                <div className="space-y-1">
+                                                  <div className="flex items-center gap-2">
+                                                    <div className="text-sm font-medium text-gray-900">
+                                                      {submission.domain?.domain || 'Unknown'}
+                                                    </div>
+                                                    
+                                                    {/* AI Qualification Status with Star Ratings */}
+                                                    {submission.metadata?.qualificationStatus && (
+                                                      <span className={`font-medium ${
+                                                        submission.metadata.qualificationStatus === 'high_quality' ? 'text-green-600' :
+                                                        submission.metadata.qualificationStatus === 'good_quality' ? 'text-blue-600' :
+                                                        submission.metadata.qualificationStatus === 'marginal_quality' ? 'text-yellow-600' :
+                                                        'text-gray-600'
+                                                      }`} title={`Quality: ${(submission.metadata.qualificationStatus as string).replace('_', ' ')}`}>
+                                                        {submission.metadata.qualificationStatus === 'high_quality' ? '★★★' :
+                                                         submission.metadata.qualificationStatus === 'good_quality' ? '★★' :
+                                                         submission.metadata.qualificationStatus === 'marginal_quality' ? '★' :
+                                                         '○'}
+                                                      </span>
+                                                    )}
+
+                                                    {/* AI Analysis Badge with Overlap Status */}
+                                                    {submission.metadata?.overlapStatus && (
+                                                      <span className={`inline-flex items-center px-1.5 py-0.5 text-xs rounded-full border ${
+                                                        submission.metadata.overlapStatus === 'direct' ? 'bg-green-50 text-green-700 border-green-200' :
+                                                        submission.metadata.overlapStatus === 'related' ? 'bg-blue-50 text-blue-700 border-blue-200' :
+                                                        submission.metadata.overlapStatus === 'both' ? 'bg-purple-50 text-purple-700 border-purple-200' :
+                                                        'bg-gray-50 text-gray-700 border-gray-200'
+                                                      }`} title={`AI Analysis: ${(submission.metadata.overlapStatus as string).replace('_', ' ')} overlap${submission.metadata.aiQualificationReasoning ? '\n\n' + submission.metadata.aiQualificationReasoning : ''}`}>
+                                                        <Sparkles className="w-3 h-3 mr-0.5" />
+                                                        AI
+                                                      </span>
+                                                    )}
+
+                                                    {/* SEO Data Indicator */}
+                                                    {submission.metadata?.hasDataForSeoResults && (
+                                                      <span className="text-indigo-600" title="Has keyword ranking data">
+                                                        <Search className="inline h-3 w-3 mr-1" />
+                                                        <span className="text-xs">SEO Data</span>
+                                                      </span>
+                                                    )}
+
+                                                    {/* Pool indicators */}
+                                                    {submission.selectionPool && (
+                                                      <span className={`inline-flex px-1.5 py-0.5 text-xs font-medium rounded ${
+                                                        submission.selectionPool === 'primary' 
+                                                          ? 'bg-blue-100 text-blue-800' 
+                                                          : 'bg-gray-100 text-gray-800'
+                                                      }`}>
+                                                        {submission.selectionPool === 'primary' ? 'Primary' : 'Alt'}
+                                                        {submission.poolRank && ` #${submission.poolRank}`}
+                                                      </span>
+                                                    )}
+                                                  </div>
+                                                  
+                                                  <div className="text-sm text-gray-500">
+                                                    DR: {submission.domainRating || 'N/A'} | Traffic: {submission.traffic || 'N/A'}
+                                                  </div>
+
+                                                  {/* AI Analysis Metadata Details */}
+                                                  {submission.metadata && (submission.metadata.topicScope || submission.metadata.authorityDirect || submission.metadata.authorityRelated) && (
+                                                    <div className="text-xs text-gray-500 space-y-0.5">
+                                                      {submission.metadata.topicScope && (
+                                                        <div>Topic: {(submission.metadata.topicScope as string).replace('_', ' ')}</div>
+                                                      )}
+                                                      {(submission.metadata.authorityDirect || submission.metadata.authorityRelated) && (
+                                                        <div className="flex gap-2">
+                                                          {submission.metadata.authorityDirect && (
+                                                            <span>Direct: {submission.metadata.authorityDirect}</span>
+                                                          )}
+                                                          {submission.metadata.authorityRelated && (
+                                                            <span>Related: {submission.metadata.authorityRelated}</span>
+                                                          )}
+                                                        </div>
+                                                      )}
+                                                      {(submission.metadata.direct_count || submission.metadata.related_count) && (
+                                                        <div className="flex gap-2">
+                                                          {submission.metadata.direct_count && (
+                                                            <span>Direct: {submission.metadata.direct_count} keywords</span>
+                                                          )}
+                                                          {submission.metadata.related_count && (
+                                                            <span>Related: {submission.metadata.related_count} keywords</span>
+                                                          )}
+                                                        </div>
+                                                      )}
+                                                    </div>
+                                                  )}
+
+                                                  {/* Switch domain button for internal users */}
+                                                  {userType === 'internal' && onSwitchDomain && (
+                                                    <button
+                                                      onClick={() => onSwitchDomain(submission.id, group.id)}
+                                                      className="text-xs text-blue-600 hover:text-blue-900"
+                                                    >
+                                                      Switch Domain
+                                                    </button>
+                                                  )}
+                                                </div>
+                                              );
+                                            case 'status':
+                                              return (
+                                                <span className={`inline-flex px-2 py-1 text-xs font-semibold rounded-full ${
+                                                  submission.status === 'client_approved' ? 'bg-green-100 text-green-800' :
+                                                  submission.status === 'client_rejected' ? 'bg-red-100 text-red-800' :
+                                                  submission.status === 'pending' ? 'bg-yellow-100 text-yellow-800' :
+                                                  'bg-gray-100 text-gray-800'
+                                                }`}>
+                                                  {submission.status?.replace('_', ' ') || 'Unknown'}
+                                                </span>
+                                              );
+                                            case 'content_status':
+                                              return <span className="text-sm text-gray-500">In Progress</span>;
+                                            case 'draft_url':
+                                              return (
+                                                <a href="#" className="text-blue-600 hover:text-blue-900 text-sm">
+                                                  View Draft
+                                                </a>
+                                              );
+                                            case 'published_url':
+                                              return (
+                                                <a href="#" className="text-green-600 hover:text-green-900 text-sm">
+                                                  View Published
+                                                </a>
+                                              );
+                                            case 'completion':
+                                              return <span className="text-sm text-green-600">Complete</span>;
+                                            default:
+                                              return <span className="text-sm text-gray-500">-</span>;
+                                          }
+                                        })()}
+                                      </td>
+                                    ))}
+                                  </tr>
+                                ));
+                              }
+                            }).flat()
+                          ) : (
+                            <tr>
+                              <td colSpan={columnConfig.columns.length} className="px-6 py-12 text-center text-gray-500">
+                                No order details available
+                              </td>
+                            </tr>
+                          )}
+                        </tbody>
+                      </table>
+                    );
+                  })()}
                 </div>
               </div>
             </div>
