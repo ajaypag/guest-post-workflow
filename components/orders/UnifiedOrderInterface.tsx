@@ -736,6 +736,13 @@ export default function UnifiedOrderInterface({
 
   // Manual save functionality 
   const saveOrderDraft = useCallback(async () => {
+    console.log('🔍 SAVE DEBUG - saveOrderDraft called with:', {
+      lineItemsCount: lineItems.length,
+      selectedClientsSize: selectedClients.size,
+      hasOrderGroups: orderGroups?.length || 0,
+      stackTrace: new Error().stack
+    });
+    
     if (!session) return;
     
     try {
