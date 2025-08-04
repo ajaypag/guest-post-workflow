@@ -37,6 +37,8 @@ interface Website {
   guestPostCost: number | null;
   categories: string[];
   type: string[];
+  websiteType: string[]; // SaaS, Blog, News, eCommerce, etc.
+  niche: string[]; // Multiple niches
   status: string;
   hasGuestPost: boolean;
   hasLinkInsert: boolean;

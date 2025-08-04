@@ -108,11 +108,11 @@ export class AirtableSyncService {
       const websiteResult = await client.query(`
         INSERT INTO websites (
           airtable_id, domain, domain_rating, total_traffic,
-          guest_post_cost, categories, type, status,
+          guest_post_cost, categories, type, website_type, niche, status,
           has_guest_post, has_link_insert, published_opportunities,
           overall_quality, airtable_created_at, airtable_updated_at,
           last_synced_at
-        ) VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, NOW(), NOW(), NOW())
+        ) VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13, $14, NOW(), NOW(), NOW())
         ON CONFLICT (airtable_id) DO UPDATE SET
           domain = EXCLUDED.domain,
           domain_rating = EXCLUDED.domain_rating,
@@ -120,6 +120,8 @@ export class AirtableSyncService {
           guest_post_cost = EXCLUDED.guest_post_cost,
           categories = EXCLUDED.categories,
           type = EXCLUDED.type,
+          website_type = EXCLUDED.website_type,
+          niche = EXCLUDED.niche,
           status = EXCLUDED.status,
           has_guest_post = EXCLUDED.has_guest_post,
           has_link_insert = EXCLUDED.has_link_insert,
@@ -136,6 +138,8 @@ export class AirtableSyncService {
         website.guestPostCost,
         website.categories,
         website.type,
+        website.websiteType,
+        website.niche,
         website.status,
         website.hasGuestPost,
         website.hasLinkInsert,

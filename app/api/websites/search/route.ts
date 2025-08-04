@@ -49,6 +49,8 @@ export async function POST(request: NextRequest) {
       guestPostCost: w.guest_post_cost ? parseFloat(w.guest_post_cost) : null,
       categories: w.categories || [],
       type: w.type || [],
+      websiteType: w.website_type || [], // SaaS, Blog, News, eCommerce, etc.
+      niche: w.niche || [], // Multiple niches
       status: w.status,
       hasGuestPost: w.has_guest_post,
       hasLinkInsert: w.has_link_insert,
