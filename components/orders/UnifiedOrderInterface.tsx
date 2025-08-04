@@ -218,6 +218,24 @@ export default function UnifiedOrderInterface({
   const [showCreateTargetPageModal, setShowCreateTargetPageModal] = useState(false);
   const [showConfirmModal, setShowConfirmModal] = useState(false);
   const [isSubmitting, setIsSubmitting] = useState(false);
+  
+  // Account selection state (for internal users)
+  const [accountsList, setAccountsList] = useState<Array<{
+    id: string;
+    email: string;
+    name: string;
+    company?: string;
+  }>>([]);
+  const [selectedAccountId, setSelectedAccountId] = useState<string | null>(null);
+  const [selectedAccountEmail, setSelectedAccountEmail] = useState<string>('');
+  const [selectedAccountName, setSelectedAccountName] = useState<string>('');
+  const [selectedAccountCompany, setSelectedAccountCompany] = useState<string>('');
+  const [loadingAccounts, setLoadingAccounts] = useState(false);
+  
+  // Order state management
+  const [isNewOrder, setIsNewOrder] = useState(!orderId);
+  const [draftOrderId, setDraftOrderId] = useState<string | null>(orderId || null);
+  const [requestingLineItemId, setRequestingLineItemId] = useState<string | null>(null);
 
   // Determine what mode to show based on order state and available data
   const getAppropriateMode = useCallback((): OrderMode => {
@@ -237,7 +255,8 @@ export default function UnifiedOrderInterface({
   const loadClients = useCallback(async () => {
     try {
       setLoadingClients(true);
-      const response = await fetch('/api/clients', { credentials: 'include' });
+      const url = isAccountUser ? '/api/account/clients' : '/api/clients';
+      const response = await fetch(url, { credentials: 'include' });
       if (response.ok) {
         const clientsData = await response.json();
         setClients(clientsData.map((client: any) => ({ ...client, selected: false, linkCount: 0 })));
@@ -248,7 +267,30 @@ export default function UnifiedOrderInterface({
     } finally {
       setLoadingClients(false);
     }
-  }, []);
+  }, [isAccountUser]);
+
+  // Load accounts (for internal users)
+  const loadAccounts = useCallback(async () => {
+    if (isAccountUser) return;
+    
+    try {
+      setLoadingAccounts(true);
+      const response = await fetch('/api/accounts', {
+        headers: { 'Content-Type': 'application/json' },
+        credentials: 'include'
+      });
+      
+      if (response.ok) {
+        const accounts = await response.json();
+        setAccountsList(accounts);
+      }
+    } catch (error) {
+      console.error('Failed to load accounts:', error);
+      setError('Failed to load accounts');
+    } finally {
+      setLoadingAccounts(false);
+    }
+  }, [isAccountUser]);
 
   // Initialize from order groups
   const initializeFromOrderGroups = useCallback(() => {
@@ -282,6 +324,73 @@ export default function UnifiedOrderInterface({
     setSelectedClients(newSelectedClients);
     setLineItems(newLineItems);
   }, [orderGroups]);
+
+  // Load draft order
+  const loadDraftOrder = useCallback(async () => {
+    if (!orderId) return;
+    
+    try {
+      setLoadingClients(true);
+      const response = await fetch(`/api/orders/${orderId}`, {
+        credentials: 'include'
+      });
+      
+      if (!response.ok) {
+        setError('Failed to load order');
+        return;
+      }
+      
+      const orderData = await response.json();
+      
+      // Set order state
+      setIsNewOrder(false);
+      setDraftOrderId(orderData.id);
+      
+      // Load account info if internal user
+      if (session?.userType === 'internal' && orderData.accountId) {
+        setSelectedAccountId(orderData.accountId);
+        setSelectedAccountEmail(orderData.accountEmail || '');
+        setSelectedAccountName(orderData.accountName || '');
+        setSelectedAccountCompany(orderData.accountCompany || '');
+      }
+      
+      // Initialize order groups if available
+      if (orderData.orderGroups && orderData.orderGroups.length > 0) {
+        const newSelectedClients = new Map<string, { selected: boolean; linkCount: number }>();
+        const newLineItems: OrderLineItem[] = [];
+        
+        orderData.orderGroups.forEach((group: any) => {
+          newSelectedClients.set(group.clientId, {
+            selected: true,
+            linkCount: group.linkCount
+          });
+          
+          // Create line items from the group
+          for (let i = 0; i < group.linkCount; i++) {
+            newLineItems.push({
+              id: `${group.id}-${i}`,
+              clientId: group.clientId,
+              clientName: group.clientName || group.client?.name || '',
+              targetPageId: group.targetPages?.[i]?.pageId,
+              targetPageUrl: group.targetPages?.[i]?.url || '',
+              anchorText: group.anchorTexts?.[i] || '',
+              price: group.packagePrice || packagePricing[(group.packageType as PackageType) || 'better'].price,
+              selectedPackage: (group.packageType as PackageType) || 'better'
+            });
+          }
+        });
+        
+        setSelectedClients(newSelectedClients);
+        setLineItems(newLineItems);
+      }
+      
+    } catch (error) {
+      console.error('Failed to load order:', error);
+      setError('Failed to load order');
+    } finally {
+      setLoadingClients(false);
+    }
+  }, [orderId, session?.userType, packagePricing]);
 
   // Calculate pricing (from /edit page)
   const calculatePricing = useCallback((items: OrderLineItem[]) => {
@@ -486,16 +595,69 @@ export default function UnifiedOrderInterface({
     );
   };
 
+  // Helper functions for order stats
+  const getTotalLinks = () => lineItems.length;
+  
+  const getTotalClients = () => {
+    return new Set(lineItems.map(item => item.clientId)).size;
+  };
+  
+  const getTotalTargets = () => {
+    return new Set(lineItems.filter(item => item.targetPageUrl).map(item => item.targetPageUrl)).size;
+  };
+
   // Auto-save functionality (from /edit page)
   const saveOrderDraft = useCallback(async () => {
-    if (!session || !onSave) return;
+    if (!session) return;
     
     try {
       setSaveStatus('saving');
       
+      // Prepare order data based on user type
+      let accountInfo: {
+        accountId?: string | null;
+        accountEmail: string;
+        accountName: string;
+        accountCompany: string;
+      };
+      
+      if (session.userType === 'account') {
+        // Account users - use their own account info
+        accountInfo = {
+          accountId: session.userId,
+          accountEmail: session.email || '',
+          accountName: session.name || '',
+          accountCompany: selectedAccountCompany || '',
+        };
+      } else if (session.userType === 'internal') {
+        // Internal users - must select an account
+        if (!selectedAccountId || !selectedAccountEmail || !selectedAccountName) {
+          // Don't save if account info is missing
+          setSaveStatus('idle');
+          return;
+        }
+        accountInfo = {
+          accountId: selectedAccountId,
+          accountEmail: selectedAccountEmail,
+          accountName: selectedAccountName,
+          accountCompany: selectedAccountCompany || '',
+        };
+      } else {
+        setSaveStatus('error');
+        return;
+      }
+      
       const orderData = {
+        // Account info
+        ...accountInfo,
+        
+        // Pricing - use correct field names expected by API
         subtotal: subtotal,
         totalPrice: total,
+        totalWholesale: Math.round(total * 0.6), // Estimate wholesale cost
+        profitMargin: Math.round(total * 0.4),
+        
+        // Groups for the new order structure - API expects 'orderGroups'
         orderGroups: Array.from(selectedClients.entries())
           .filter(([_, data]) => data.selected && data.linkCount > 0)
           .map(([clientId, data]) => {
@@ -525,9 +687,24 @@ export default function UnifiedOrderInterface({
           })
       };
       
-      await onSave(orderData);
-      setSaveStatus('saved');
-      setLastSaved(new Date());
+      if (draftOrderId) {
+        // Update existing order
+        const response = await fetch(`/api/orders/${draftOrderId}`, {
+          method: 'PUT',
+          headers: { 'Content-Type': 'application/json' },
+          credentials: 'include',
+          body: JSON.stringify(orderData)
+        });
+        
+        if (response.ok) {
+          setSaveStatus('saved');
+          setLastSaved(new Date());
+        } else {
+          const errorData = await response.json();
+          console.error('Failed to save order:', errorData);
+          setSaveStatus('error');
+        }
+      }
       
       setTimeout(() => setSaveStatus('idle'), 2000);
       
@@ -536,20 +713,33 @@ export default function UnifiedOrderInterface({
       setSaveStatus('error');
       setTimeout(() => setSaveStatus('idle'), 2000);
     }
-  }, [session, lineItems, selectedClients, clients, subtotal, total, packagePricing, onSave]);
+  }, [session, lineItems, selectedClients, clients, subtotal, total, packagePricing, 
+      selectedAccountId, selectedAccountEmail, selectedAccountName, selectedAccountCompany, draftOrderId]);
 
   // Submit handlers
   const handleSubmitClick = async () => {
+    // Validate account selection for internal users
+    if (userType === 'internal' && !selectedAccountId) {
+      setError('Please select an account before submitting the order');
+      alert('Please select an account before submitting the order');
+      return;
+    }
+    
     // Validate required fields
     if (lineItems.length === 0) {
+      setError('Please add at least one line item');
       alert('Please add at least one line item');
       return;
     }
 
-    const itemsWithoutTargetPages = lineItems.filter(item => !item.targetPageUrl);
-    if (itemsWithoutTargetPages.length > 0) {
-      alert('Please select target pages for all line items');
-      return;
+    // For account users, validate target pages
+    if (isAccountUser) {
+      const itemsWithoutTargetPages = lineItems.filter(item => !item.targetPageUrl);
+      if (itemsWithoutTargetPages.length > 0) {
+        setError('Please select target pages for all line items');
+        alert('Please select target pages for all line items');
+        return;
+      }
     }
     
     // Save draft before showing confirmation
@@ -566,7 +756,23 @@ export default function UnifiedOrderInterface({
       // First save the current changes
       await saveOrderDraft();
       
-      // Submit through the onSubmit prop
+      // If this is a draft order and we're submitting it
+      if (orderStatus === 'draft' && draftOrderId) {
+        // Submit the order (move from draft to pending_confirmation)
+        const response = await fetch(`/api/orders/${draftOrderId}/submit`, {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          credentials: 'include',
+          body: JSON.stringify({})
+        });
+        
+        if (!response.ok) {
+          const data = await response.json();
+          throw new Error(data.error || 'Failed to submit order');
+        }
+      }
+      
+      // Call the onSubmit prop if provided
       if (onSubmit) {
         const orderData = {
           subtotal: subtotal,
@@ -625,12 +831,27 @@ export default function UnifiedOrderInterface({
 
   // Effects
   useEffect(() => {
-    loadClients();
-  }, [loadClients]);
-
-  useEffect(() => {
-    initializeFromOrderGroups();
-  }, [initializeFromOrderGroups]);
+    // Initial data loading
+    const loadInitialData = async () => {
+      // Load accounts if internal user
+      if (session?.userType === 'internal') {
+        await loadAccounts();
+      }
+      
+      // Load clients
+      await loadClients();
+      
+      // Load draft order if orderId provided
+      if (orderId) {
+        await loadDraftOrder();
+      } else {
+        // Initialize from orderGroups if provided
+        initializeFromOrderGroups();
+      }
+    };
+    
+    loadInitialData();
+  }, [session?.userType, orderId, loadAccounts, loadClients, loadDraftOrder, initializeFromOrderGroups]);
 
   useEffect(() => {
     calculatePricing(lineItems);
@@ -1000,6 +1221,65 @@ export default function UnifiedOrderInterface({
               )}
             </div>
           </div>
+          
+          {/* Error Display */}
+          {error && (
+            <div className="p-4 bg-red-50 border-b border-red-200">
+              <div className="flex items-center">
+                <AlertCircle className="h-5 w-5 text-red-400 mr-2" />
+                <p className="text-sm text-red-800">{error}</p>
+                <button
+                  onClick={() => setError('')}
+                  className="ml-auto text-red-400 hover:text-red-600"
+                >
+                  <X className="h-4 w-4" />
+                </button>
+              </div>
+            </div>
+          )}
+          
+          {/* Account Selection for Internal Users */}
+          {currentMode === 'draft' && userType === 'internal' && (
+            <div className="p-4 border-b border-gray-200 bg-gray-50">
+              <div className="space-y-3">
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-1">
+                    Select Account *
+                  </label>
+                  <select
+                    value={selectedAccountId || ''}
+                    onChange={(e) => {
+                      const accountId = e.target.value;
+                      const account = accountsList.find(a => a.id === accountId);
+                      if (account) {
+                        setSelectedAccountId(account.id);
+                        setSelectedAccountEmail(account.email);
+                        setSelectedAccountName(account.name);
+                        setSelectedAccountCompany(account.company || '');
+                      }
+                    }}
+                    className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-blue-500 focus:border-blue-500"
+                    disabled={loadingAccounts}
+                  >
+                    <option value="">Select an account...</option>
+                    {accountsList.map(account => (
+                      <option key={account.id} value={account.id}>
+                        {account.name} ({account.email})
+                        {account.company && ` - ${account.company}`}
+                      </option>
+                    ))}
+                  </select>
+                </div>
+                {selectedAccountId && (
+                  <div className="text-sm text-gray-600">
+                    <p><strong>Account:</strong> {selectedAccountName}</p>
+                    <p><strong>Email:</strong> {selectedAccountEmail}</p>
+                    {selectedAccountCompany && <p><strong>Company:</strong> {selectedAccountCompany}</p>}
+                  </div>
+                )}
+              </div>
+            </div>
+          )}
           
           <div className="flex-1 overflow-hidden">
             {currentMode === 'draft' && (
@@ -1929,22 +2209,75 @@ export default function UnifiedOrderInterface({
             )}
           </div>
           
-          {/* Footer with totals and actions */}
-          <div className="border-t border-gray-200 p-4 bg-gray-50">
-            <div className="flex items-center justify-between">
-              <div className="text-sm text-gray-600">
-                Total: <span className="font-semibold text-gray-900">{formatCurrency(total)}</span>
-              </div>
-              <div className="flex items-center space-x-2">
-                {currentMode === 'draft' && !isPaid && (
-                  <button
-                    onClick={handleSubmitClick}
-                    className="px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 text-sm font-medium"
-                    disabled={lineItems.length === 0}
-                  >
-                    Submit Order
-                  </button>
-                )}
+          {/* Fixed Bottom Bar */}
+          <div className="bg-white border-t border-gray-200 shadow-lg">
+            <div className="px-4 md:px-6 py-4">
+              <div className="flex flex-col md:flex-row items-center justify-between gap-4">
+                {/* Left Side - Order Summary Stats and Package Selection */}
+                <div className="flex flex-col md:flex-row items-center gap-4 md:space-x-6 w-full md:w-auto">
+                  {currentMode === 'draft' && (
+                    <div className="hidden md:flex items-center space-x-4">
+                      <span className="text-sm font-medium text-gray-700">Default Package:</span>
+                      <div className="flex items-center space-x-2 bg-gray-50 p-1 rounded-lg">
+                        {Object.entries(packagePricing).map(([key, pkg]) => (
+                          <button
+                            key={key}
+                            onClick={() => {
+                              setSelectedPackage(key as PackageType);
+                              // Update all line item prices
+                              setLineItems(prev => prev.map(item => ({
+                                ...item,
+                                selectedPackage: key as PackageType,
+                                price: pkg.price
+                              })));
+                            }}
+                            className={`px-3 py-1.5 text-sm font-medium rounded-md transition-colors ${
+                              selectedPackage === key
+                                ? 'bg-white text-blue-600 shadow-sm'
+                                : 'text-gray-600 hover:text-gray-900'
+                            }`}
+                          >
+                            {pkg.name}
+                          </button>
+                        ))}
+                      </div>
+                    </div>
+                  )}
+                  
+                  {/* Order Stats */}
+                  <div className="flex items-center space-x-4 text-sm text-gray-600">
+                    <div className="flex items-center space-x-1">
+                      <Building className="h-4 w-4 text-gray-400" />
+                      <span>{getTotalClients()} brands</span>
+                    </div>
+                    <div className="flex items-center space-x-1">
+                      <LinkIcon className="h-4 w-4 text-gray-400" />
+                      <span>{getTotalLinks()} links</span>
+                    </div>
+                    <div className="flex items-center space-x-1">
+                      <Target className="h-4 w-4 text-gray-400" />
+                      <span>{getTotalTargets()} targets</span>
+                    </div>
+                  </div>
+                </div>
+
+                {/* Right Side - Total and Action Buttons */}
+                <div className="flex items-center space-x-4">
+                  <div className="text-right">
+                    <p className="text-sm text-gray-600">Total</p>
+                    <p className="text-xl font-bold text-gray-900">{formatCurrency(total)}</p>
+                  </div>
+                  
+                  {currentMode === 'draft' && !isPaid && (
+                    <button
+                      onClick={handleSubmitClick}
+                      className="px-6 py-2.5 bg-blue-600 text-white rounded-lg hover:bg-blue-700 text-sm font-medium shadow-sm transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+                      disabled={lineItems.length === 0 || (userType === 'internal' && !selectedAccountId)}
+                    >
+                      Submit Order
+                    </button>
+                  )}
+                </div>
               </div>
             </div>
           </div>
