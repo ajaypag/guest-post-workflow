@@ -36,6 +36,7 @@ async function getWebsites() {
         totalTraffic: websites.totalTraffic,
         guestPostCost: websites.guestPostCost,
         categories: websites.categories,
+        niche: websites.niche,
         overallQuality: websites.overallQuality,
         hasGuestPost: websites.hasGuestPost,
       })
@@ -48,18 +49,35 @@ async function getWebsites() {
       .select({ count: sql<number>`count(*)` })
       .from(websites);
 
-    // Get categories
-    const categoriesResult = await db.execute(sql`
-      SELECT 
-        UNNEST(categories) as category,
-        COUNT(*) as count
+    // Get all niches from comma-separated values
+    const nichesResult = await db.execute(sql`
+      SELECT niche
       FROM websites
-      WHERE categories IS NOT NULL 
-      GROUP BY category
-      HAVING COUNT(*) >= 5
-      ORDER BY count DESC
-      LIMIT 12
+      WHERE niche IS NOT NULL AND niche != ''
     `);
+    
+    // Count niches
+    const nicheCount = new Map<string, number>();
+    nichesResult.rows.forEach((row: any) => {
+      if (row.niche && typeof row.niche === 'string') {
+        row.niche.split(',').forEach((n: string) => {
+          const trimmed = n.trim();
+          if (trimmed) {
+            nicheCount.set(trimmed, (nicheCount.get(trimmed) || 0) + 1);
+          }
+        });
+      }
+    });
+    
+    // Convert to array and sort by count
+    const topNiches = Array.from(nicheCount.entries())
+      .filter(([_, count]) => count >= 5)
+      .sort((a, b) => b[1] - a[1])
+      .slice(0, 20)
+      .map(([name, count]) => ({
+        name,
+        count
+      }));
 
     return {
       websites: websiteResults.map(site => ({
@@ -69,21 +87,19 @@ async function getWebsites() {
         totalTraffic: site.totalTraffic,
         guestPostCost: site.guestPostCost ? parseFloat(site.guestPostCost.toString()) : null,
         categories: site.categories || [],
+        niche: site.niche,
         overallQuality: site.overallQuality,
         hasGuestPost: site.hasGuestPost,
       })),
       totalCount: countResult[0]?.count || 0,
-      categories: categoriesResult.rows.map((row: any) => ({
-        name: row.category,
-        count: parseInt(row.count),
-      })),
+      niches: topNiches,
     };
   } catch (error) {
     console.warn('Could not fetch websites data, database not available during build:', error);
     return {
       websites: [],
       totalCount: 13000, // Fallback number for build time
-      categories: [],
+      niches: [],
     };
   }
 }
@@ -104,7 +120,7 @@ function getTrafficDisplay(traffic: number | null) {
 }
 
 export default async function GuestPostingSitesPage() {
-  const { websites, totalCount, categories } = await getWebsites();
+  const { websites, totalCount, niches } = await getWebsites();
 
   return (
     <div className="min-h-screen bg-gray-50">
@@ -175,10 +191,10 @@ export default async function GuestPostingSitesPage() {
                 </div>
               </div>
 
-              {/* Browse by Category CTA */}
+              {/* Browse by Niche CTA */}
               <div className="flex gap-3">
-                <a href="#categories" className="px-6 py-3 bg-blue-600 text-white rounded-lg hover:bg-blue-700 font-medium transition-colors">
-                  Browse by Category
+                <a href="#niches" className="px-6 py-3 bg-blue-600 text-white rounded-lg hover:bg-blue-700 font-medium transition-colors">
+                  Browse by Niche
                 </a>
                 <a href="#all-sites" className="px-6 py-3 border border-gray-300 text-gray-700 rounded-lg hover:bg-gray-50 font-medium transition-colors">
                   View All Sites
@@ -212,30 +228,30 @@ export default async function GuestPostingSitesPage() {
         </div>
       </section>
 
-      {/* Categories Section - Primary Hub */}
-      <section id="categories" className="py-16 bg-gray-50">
+      {/* Niches Section - Primary Hub */}
+      <section id="niches" className="py-16 bg-gray-50">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
           <div className="text-center mb-12">
             <h2 className="text-3xl font-bold text-gray-900 mb-3">
-              Browse by Category
+              Browse by Niche
             </h2>
             <p className="text-lg text-gray-600">
-              Find niche-specific guest posting opportunities with targeted content strategies
+              Find highly-specific guest posting opportunities in your exact niche
             </p>
           </div>
 
-          {/* Category Grid */}
+          {/* Niche Grid */}
           <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-6 mb-12">
-            {categories.map(cat => (
+            {niches.map(niche => (
               <Link
-                key={cat.name}
-                href={`/guest-posting-sites/${cat.name.toLowerCase().replace(/[&\s]+/g, '-').replace(/[^a-z0-9-]/g, '')}-blogs`}
+                key={niche.name}
+                href={`/guest-posting-sites/niche/${niche.name.toLowerCase().replace(/[&\s]+/g, '-').replace(/[^a-z0-9-]/g, '').replace(/-+/g, '-').replace(/^-|-$/g, '')}`}
                 className="group block p-6 bg-white border border-gray-200 rounded-xl hover:border-blue-300 hover:shadow-md transition-all"
               >
                 <div className="text-center">
-                  <div className="text-3xl font-bold text-gray-900 mb-1">{cat.count}</div>
+                  <div className="text-3xl font-bold text-gray-900 mb-1">{niche.count}</div>
                   <div className="font-medium text-gray-900 group-hover:text-blue-600 transition-colors">
-                    {cat.name}
+                    {niche.name}
                   </div>
                   <div className="text-sm text-gray-500 mt-1">
                     Guest posting sites
@@ -290,7 +306,7 @@ export default async function GuestPostingSitesPage() {
                   <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase">Traffic</th>
                   <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase">Wholesale Cost</th>
                   <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase">Your Total</th>
-                  <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase">Categories</th>
+                  <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase">Niches</th>
                   <th className="px-4 py-3 text-right text-xs font-medium text-gray-500 uppercase">Action</th>
                 </tr>
               </thead>
@@ -324,19 +340,25 @@ export default async function GuestPostingSitesPage() {
                       </div>
                     </td>
                     <td className="px-4 py-3">
-                      {site.categories.length > 0 && (
-                        <div className="flex gap-1">
-                          {site.categories.slice(0, 2).map((cat: string, i: number) => (
-                            <span 
-                              key={i}
-                              className="text-xs px-2 py-0.5 bg-gray-100 text-gray-600 rounded"
-                            >
-                              {cat}
-                            </span>
-                          ))}
-                          {site.categories.length > 2 && (
+                      {site.niche && typeof site.niche === 'string' && (
+                        <div className="flex gap-1 flex-wrap">
+                          {site.niche
+                            .split(',')
+                            .map(n => n.trim())
+                            .filter(n => n)
+                            .slice(0, 2)
+                            .map((nicheName: string, i: number) => (
+                              <Link
+                                key={i}
+                                href={`/guest-posting-sites/niche/${nicheName.toLowerCase().replace(/[&\s]+/g, '-').replace(/[^a-z0-9-]/g, '').replace(/-+/g, '-').replace(/^-|-$/g, '')}`}
+                                className="text-xs px-2 py-0.5 bg-blue-100 text-blue-700 rounded hover:bg-blue-200"
+                              >
+                                {nicheName}
+                              </Link>
+                            ))}
+                          {site.niche.split(',').map(n => n.trim()).filter(n => n).length > 2 && (
                             <span className="text-xs text-gray-500">
-                              +{site.categories.length - 2}
+                              +{site.niche.split(',').map(n => n.trim()).filter(n => n).length - 2}
                             </span>
                           )}
                         </div>
