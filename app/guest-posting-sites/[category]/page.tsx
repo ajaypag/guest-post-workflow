@@ -6,43 +6,55 @@ import { sql } from 'drizzle-orm';
 
 // This function runs at BUILD TIME to generate all category pages
 export async function generateStaticParams() {
-  const categories = await db.execute(sql`
-    SELECT DISTINCT UNNEST(categories) as category
-    FROM websites
-    WHERE categories IS NOT NULL 
-      AND categories != '{}'
-      AND overall_quality IN ('Excellent', 'Good', 'Fair')
-  `);
-  
-  return categories.rows.map((row: any) => ({
-    category: row.category
-      .toLowerCase()
-      .replace(/[&\s]+/g, '-')
-      .replace(/[^a-z0-9-]/g, '')
-      .replace(/-+/g, '-')
-      .replace(/^-|-$/g, '')
-  }));
+  try {
+    const categories = await db.execute(sql`
+      SELECT DISTINCT UNNEST(categories) as category
+      FROM websites
+      WHERE categories IS NOT NULL 
+        AND categories != '{}'
+        AND overall_quality IN ('Excellent', 'Good', 'Fair')
+    `);
+    
+    return categories.rows.map((row: any) => ({
+      category: row.category
+        .toLowerCase()
+        .replace(/[&\s]+/g, '-')
+        .replace(/[^a-z0-9-]/g, '')
+        .replace(/-+/g, '-')
+        .replace(/^-|-$/g, '')
+    }));
+  } catch (error) {
+    // During build time, database might not be available
+    // Return empty array to allow build to succeed
+    console.warn('Could not generate static params, database not available:', error);
+    return [];
+  }
 }
 
 // Helper to convert slug back to category name
 async function getCategoryFromSlug(slug: string): Promise<string | null> {
-  const allCategories = await db.execute(sql`
-    SELECT DISTINCT UNNEST(categories) as category
-    FROM websites
-    WHERE categories IS NOT NULL
-  `);
-  
-  const match = allCategories.rows.find((row: any) => {
-    const categorySlug = row.category
-      .toLowerCase()
-      .replace(/[&\s]+/g, '-')
-      .replace(/[^a-z0-9-]/g, '')
-      .replace(/-+/g, '-')
-      .replace(/^-|-$/g, '');
-    return categorySlug === slug;
-  });
-  
-  return match ? (match as any).category : null;
+  try {
+    const allCategories = await db.execute(sql`
+      SELECT DISTINCT UNNEST(categories) as category
+      FROM websites
+      WHERE categories IS NOT NULL
+    `);
+    
+    const match = allCategories.rows.find((row: any) => {
+      const categorySlug = row.category
+        .toLowerCase()
+        .replace(/[&\s]+/g, '-')
+        .replace(/[^a-z0-9-]/g, '')
+        .replace(/-+/g, '-')
+        .replace(/^-|-$/g, '');
+      return categorySlug === slug;
+    });
+    
+    return match ? (match as any).category : null;
+  } catch (error) {
+    console.warn('Could not get category from slug, database not available:', error);
+    return slug.replace(/-/g, ' ').replace(/\b\w/g, l => l.toUpperCase());
+  }
 }
 
 export async function generateMetadata({ params }: { params: Promise<{ category: string }> }): Promise<Metadata> {
@@ -67,35 +79,43 @@ export default async function CategoryPage({ params }: { params: Promise<{ categ
     notFound();
   }
   
-  // Get websites for this specific category
-  const websiteResults = await db
-    .select({
-      id: websites.id,
-      domain: websites.domain,
-      domainRating: websites.domainRating,
-      totalTraffic: websites.totalTraffic,
-      guestPostCost: websites.guestPostCost,
-      categories: websites.categories,
-      overallQuality: websites.overallQuality,
-      hasGuestPost: websites.hasGuestPost,
-    })
-    .from(websites)
-    .where(
-      sql`${websites.categories} @> ARRAY[${categoryName}]::text[] 
-      AND ${websites.overallQuality} IN ('Excellent', 'Good', 'Fair')`
-    )
-    .orderBy(sql`${websites.domainRating} DESC NULLS LAST`)
-    .limit(100);
+  let websiteResults: any[] = [];
+  let totalCount = 0;
   
-  // Get count for this category
-  const countResult = await db.execute(sql`
-    SELECT COUNT(*) as count
-    FROM websites
-    WHERE categories @> ARRAY[${categoryName}]::text[]
-    AND overall_quality IN ('Excellent', 'Good', 'Fair')
-  `);
-  
-  const totalCount = countResult.rows[0]?.count || 0;
+  try {
+    // Get websites for this specific category
+    websiteResults = await db
+      .select({
+        id: websites.id,
+        domain: websites.domain,
+        domainRating: websites.domainRating,
+        totalTraffic: websites.totalTraffic,
+        guestPostCost: websites.guestPostCost,
+        categories: websites.categories,
+        overallQuality: websites.overallQuality,
+        hasGuestPost: websites.hasGuestPost,
+      })
+      .from(websites)
+      .where(
+        sql`${websites.categories} @> ARRAY[${categoryName}]::text[] 
+        AND ${websites.overallQuality} IN ('Excellent', 'Good', 'Fair')`
+      )
+      .orderBy(sql`${websites.domainRating} DESC NULLS LAST`)
+      .limit(100);
+    
+    // Get count for this category
+    const countResult = await db.execute(sql`
+      SELECT COUNT(*) as count
+      FROM websites
+      WHERE categories @> ARRAY[${categoryName}]::text[]
+      AND overall_quality IN ('Excellent', 'Good', 'Fair')
+    `);
+    
+    totalCount = Number(countResult.rows[0]?.count) || 0;
+  } catch (error) {
+    console.warn('Could not fetch category data, database not available:', error);
+    // Return empty results during build time
+  }
   
   return (
     <div className="min-h-screen bg-gray-50">
