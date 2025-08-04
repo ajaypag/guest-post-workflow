@@ -55,7 +55,7 @@ export async function POST(request: Request) {
             results.push({ url: page.url, status: 'exists' });
           }
         } catch (error) {
-          results.push({ url: page.url, status: 'error', error: error.message });
+          results.push({ url: page.url, status: 'error', error: error instanceof Error ? error.message : 'Unknown error' });
         }
       }
       
