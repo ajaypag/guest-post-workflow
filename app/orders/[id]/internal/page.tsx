@@ -862,7 +862,18 @@ export default function InternalOrderManagementPage() {
               <div className="text-sm">
                 <div className="text-gray-900">Link {index + 1}</div>
                 <div className="text-gray-500 text-xs mt-0.5">
-                  {targetPageUrl ? 'Target page assigned' : 'No target page selected'}
+                  {targetPageUrl ? (
+                    <span className="truncate max-w-[200px] block" title={targetPageUrl}>
+                      {(() => {
+                        try {
+                          const url = new URL(targetPageUrl);
+                          return url.pathname === '/' ? url.hostname : url.pathname;
+                        } catch {
+                          return targetPageUrl.length > 40 ? targetPageUrl.substring(0, 40) + '...' : targetPageUrl;
+                        }
+                      })()}
+                    </span>
+                  ) : 'No target page selected'}
                 </div>
               </div>
             </div>
