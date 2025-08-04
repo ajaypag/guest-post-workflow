@@ -34,8 +34,16 @@ export async function POST(
         throw new Error('Access denied. You can only submit your own orders.');
       }
       
+      console.log('SUBMIT DEBUG:', {
+        orderId: orderId,
+        foundStatus: order.status,
+        createdAt: order.createdAt,
+        updatedAt: order.updatedAt,
+        accountId: order.accountId
+      });
+      
       if (order.status !== 'draft') {
-        throw new Error('Order must be in draft status to submit');
+        throw new Error(`Order must be in draft status to submit. Current status: '${order.status}'`);
       }
       
       // Update order status to pending_confirmation

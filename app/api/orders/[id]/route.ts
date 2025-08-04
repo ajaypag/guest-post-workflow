@@ -155,8 +155,15 @@ export async function PUT(
 
     // Start a transaction to update order and groups
     await db.transaction(async (tx) => {
-      // Update the order fields (excluding orderGroups)
-      const { orderGroups: newOrderGroups, ...orderData } = data;
+      // Update the order fields (excluding orderGroups and status)
+      const { orderGroups: newOrderGroups, status, ...orderData } = data;
+      
+      console.log('PUT /api/orders/[id] - Received data:', { 
+        orderId: id, 
+        hasStatus: 'status' in data, 
+        statusValue: status,
+        existingStatus: existingOrder.status
+      });
       
       await tx
         .update(orders)

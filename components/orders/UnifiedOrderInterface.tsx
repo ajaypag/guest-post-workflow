@@ -3511,6 +3511,11 @@ export default function UnifiedOrderInterface({
             // Reload clients from server to get full data including target pages
             loadClients();
             setShowCreateClientModal(false);
+            
+            // Auto-select the newly created client
+            setTimeout(() => {
+              handleClientToggle(client.id);
+            }, 100); // Small delay to ensure clients are loaded first
           }}
         />
       )}
