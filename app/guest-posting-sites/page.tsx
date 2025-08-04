@@ -243,7 +243,7 @@ export default async function GuestPostingSitesPage() {
             {niches.map(niche => (
               <Link
                 key={niche.name}
-                href={`/guest-posting-sites/niche/${niche.name.toLowerCase().replace(/[&\s]+/g, '-').replace(/[^a-z0-9-]/g, '').replace(/-+/g, '-').replace(/^-|-$/g, '')}`}
+                href={`/guest-posting-sites/${niche.name.toLowerCase().replace(/[&\s]+/g, '-').replace(/[^a-z0-9-]/g, '').replace(/-+/g, '-').replace(/^-|-$/g, '')}-blogs`}
                 className="group block p-6 bg-white border border-gray-200 rounded-xl hover:border-blue-300 hover:shadow-md transition-all"
               >
                 <div className="text-center">
@@ -345,7 +345,7 @@ export default async function GuestPostingSitesPage() {
                             .map((nicheName: string, i: number) => (
                               <Link
                                 key={i}
-                                href={`/guest-posting-sites/niche/${nicheName.toLowerCase().replace(/[&\s]+/g, '-').replace(/[^a-z0-9-]/g, '').replace(/-+/g, '-').replace(/^-|-$/g, '')}`}
+                                href={`/guest-posting-sites/${nicheName.toLowerCase().replace(/[&\s]+/g, '-').replace(/[^a-z0-9-]/g, '').replace(/-+/g, '-').replace(/^-|-$/g, '')}-blogs`}
                                 className="text-xs px-2 py-0.5 bg-blue-100 text-blue-700 rounded hover:bg-blue-200"
                               >
                                 {nicheName}

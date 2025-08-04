@@ -45,7 +45,7 @@ export async function generateStaticParams() {
         .replace(/[&\s]+/g, '-')
         .replace(/[^a-z0-9-]/g, '')
         .replace(/-+/g, '-')
-        .replace(/^-|-$/g, '')
+        .replace(/^-|-$/g, '') + '-blogs'
     }));
   } catch (error) {
     console.warn('Could not generate static params, database not available:', error);
@@ -56,6 +56,9 @@ export async function generateStaticParams() {
 // Helper to convert slug back to niche name
 async function getNicheFromSlug(slug: string): Promise<string | null> {
   try {
+    // Remove '-blogs' suffix from slug
+    const cleanSlug = slug.replace(/-blogs$/, '');
+    
     // Get all unique niches from PostgreSQL arrays
     const websitesResult = await db.execute(sql`
       SELECT DISTINCT UNNEST(niche) as niche_name
@@ -79,7 +82,7 @@ async function getNicheFromSlug(slug: string): Promise<string | null> {
         .replace(/[^a-z0-9-]/g, '')
         .replace(/-+/g, '-')
         .replace(/^-|-$/g, '');
-      if (nicheSlug === slug) {
+      if (nicheSlug === cleanSlug) {
         return nicheName;
       }
     }
@@ -87,8 +90,9 @@ async function getNicheFromSlug(slug: string): Promise<string | null> {
     return null;
   } catch (error) {
     console.warn('Could not get niche from slug, database not available:', error);
-    // Convert slug back to title case
-    return slug.replace(/-/g, ' ').replace(/\b\w/g, l => l.toUpperCase());
+    // Convert slug back to title case (remove -blogs suffix)
+    const cleanSlug = slug.replace(/-blogs$/, '');
+    return cleanSlug.replace(/-/g, ' ').replace(/\b\w/g, l => l.toUpperCase());
   }
 }
 
@@ -145,7 +149,7 @@ async function getRelatedNiches(nicheName: string, currentSlug: string) {
           .replace(/[&\s]+/g, '-')
           .replace(/[^a-z0-9-]/g, '')
           .replace(/-+/g, '-')
-          .replace(/^-|-$/g, '')
+          .replace(/^-|-$/g, '') + '-blogs'
       }))
       .filter(niche => niche.slug !== currentSlug);
   } catch (error) {
@@ -411,7 +415,7 @@ export default async function NichePage({ params }: { params: Promise<{ niche: s
                           .map((otherNiche: string, i: number) => (
                             <Link
                               key={i}
-                              href={`/guest-posting-sites/niche/${otherNiche.toLowerCase().replace(/[&\s]+/g, '-').replace(/[^a-z0-9-]/g, '').replace(/-+/g, '-').replace(/^-|-$/g, '')}`}
+                              href={`/guest-posting-sites/${otherNiche.toLowerCase().replace(/[&\s]+/g, '-').replace(/[^a-z0-9-]/g, '').replace(/-+/g, '-').replace(/^-|-$/g, '')}-blogs`}
                               className="text-xs px-2 py-0.5 bg-gray-100 text-gray-600 rounded hover:bg-gray-200"
                             >
                               {otherNiche}
@@ -494,7 +498,7 @@ export default async function NichePage({ params }: { params: Promise<{ niche: s
               {relatedNiches.map(relatedNiche => (
                 <Link
                   key={relatedNiche.slug}
-                  href={`/guest-posting-sites/niche/${relatedNiche.slug}`}
+                  href={`/guest-posting-sites/${relatedNiche.slug}`}
                   className="group block p-6 bg-white border border-gray-200 rounded-xl hover:border-blue-300 hover:shadow-md transition-all"
                 >
                   <div className="text-center">
