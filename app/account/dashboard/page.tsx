@@ -18,8 +18,10 @@ import {
   TrendingUp,
   Calendar,
   DollarSign,
+  Trash2,
   ExternalLink,
-  Settings
+  Settings,
+  Plus
 } from 'lucide-react';
 
 interface Order {
@@ -30,6 +32,7 @@ interface Order {
   itemCount: number;
   completedCount: number;
 }
+
 
 interface Client {
   id: string;
@@ -64,12 +67,13 @@ function AccountDashboardContent({ user }: AccountDashboardProps) {
   const router = useRouter();
   const [loading, setLoading] = useState(true);
   const [orders, setOrders] = useState<Order[]>([]);
-  const [client, setClient] = useState<Client | null>(null);
+  const [clients, setClients] = useState<Client[]>([]);
   const [stats, setStats] = useState({
     totalOrders: 0,
     activeOrders: 0,
     completedOrders: 0,
     totalSpent: 0,
+    totalBrands: 0,
   });
   const [onboardingData, setOnboardingData] = useState({
     completed: false,
@@ -101,22 +105,27 @@ function AccountDashboardContent({ user }: AccountDashboardProps) {
         const activeOrders = orderData.filter((o: any) => ['draft', 'approved', 'in_progress'].includes(o.status)).length;
         const completedOrders = orderData.filter((o: any) => o.status === 'completed').length;
         
-        setStats({
+        setStats(prev => ({
+          ...prev,
           totalOrders: orderData.length,
           activeOrders,
           completedOrders,
           totalSpent,
-        });
+        }));
       }
       
-      // Load associated client data
+      // Load account brands
       const clientResponse = await fetch('/api/accounts/client', {
         credentials: 'include',
       });
       
       if (clientResponse.ok) {
-        const { client: clientData } = await clientResponse.json();
-        setClient(clientData);
+        const { clients: clientData, totalBrands } = await clientResponse.json();
+        setClients(clientData || []);
+        setStats(prev => ({
+          ...prev,
+          totalBrands: totalBrands || 0,
+        }));
       }
       
       // Load onboarding status
@@ -230,13 +239,22 @@ function AccountDashboardContent({ user }: AccountDashboardProps) {
           )}
 
           {/* Stats Grid */}
-          <div className="grid grid-cols-1 md:grid-cols-4 gap-6 mb-8">
+          <div className="grid grid-cols-2 md:grid-cols-5 gap-4 mb-8">
+            <div className="bg-white rounded-lg shadow-md p-6">
+              <div className="flex items-center justify-between mb-4">
+                <div className="p-3 bg-purple-100 rounded-lg">
+                  <Building className="h-6 w-6 text-purple-600" />
+                </div>
+              </div>
+              <div className="text-2xl font-bold text-gray-900">{stats.totalBrands}</div>
+              <p className="text-sm text-gray-600">Active Brands</p>
+            </div>
+
             <div className="bg-white rounded-lg shadow-md p-6">
               <div className="flex items-center justify-between mb-4">
                 <div className="p-3 bg-blue-100 rounded-lg">
                   <Package className="h-6 w-6 text-blue-600" />
                 </div>
-                <span className="text-sm text-gray-500">Total</span>
               </div>
               <div className="text-2xl font-bold text-gray-900">{stats.totalOrders}</div>
               <p className="text-sm text-gray-600">Total Orders</p>
@@ -247,7 +265,6 @@ function AccountDashboardContent({ user }: AccountDashboardProps) {
                 <div className="p-3 bg-yellow-100 rounded-lg">
                   <Clock className="h-6 w-6 text-yellow-600" />
                 </div>
-                <span className="text-sm text-gray-500">Active</span>
               </div>
               <div className="text-2xl font-bold text-gray-900">{stats.activeOrders}</div>
               <p className="text-sm text-gray-600">In Progress</p>
@@ -258,7 +275,6 @@ function AccountDashboardContent({ user }: AccountDashboardProps) {
                 <div className="p-3 bg-green-100 rounded-lg">
                   <CheckCircle className="h-6 w-6 text-green-600" />
                 </div>
-                <span className="text-sm text-gray-500">Complete</span>
               </div>
               <div className="text-2xl font-bold text-gray-900">{stats.completedOrders}</div>
               <p className="text-sm text-gray-600">Completed</p>
@@ -266,63 +282,143 @@ function AccountDashboardContent({ user }: AccountDashboardProps) {
 
             <div className="bg-white rounded-lg shadow-md p-6">
               <div className="flex items-center justify-between mb-4">
-                <div className="p-3 bg-purple-100 rounded-lg">
-                  <DollarSign className="h-6 w-6 text-purple-600" />
+                <div className="p-3 bg-indigo-100 rounded-lg">
+                  <DollarSign className="h-6 w-6 text-indigo-600" />
                 </div>
-                <span className="text-sm text-gray-500">Spent</span>
               </div>
               <div className="text-2xl font-bold text-gray-900">
                 {formatCurrency(stats.totalSpent)}
               </div>
-              <p className="text-sm text-gray-600">Total Investment</p>
+              <p className="text-sm text-gray-600">Total Spent</p>
             </div>
           </div>
 
-          {/* Client Info */}
-          {client && (
+          {/* Brand Summary */}
+          {clients.length > 0 ? (
             <div className="bg-white rounded-lg shadow-md p-6 mb-8">
-              <h2 className="text-xl font-semibold text-gray-900 mb-4 flex items-center">
-                <Building className="h-5 w-5 mr-2 text-gray-600" />
-                Your Brand Information
-              </h2>
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+              <div className="flex justify-between items-start mb-4">
                 <div>
-                  <p className="text-sm text-gray-600">Company</p>
-                  <p className="font-medium text-gray-900">{client.name}</p>
+                  <h2 className="text-xl font-semibold text-gray-900 mb-2">Your Brands</h2>
+                  <p className="text-sm text-gray-600">
+                    You have {stats.totalBrands} active {stats.totalBrands === 1 ? 'brand' : 'brands'} registered
+                  </p>
                 </div>
-                <div>
-                  <p className="text-sm text-gray-600">Website</p>
-                  <a 
-                    href={client.website}
-                    target="_blank"
-                    rel="noopener noreferrer"
-                    className="font-medium text-blue-600 hover:text-blue-800 flex items-center"
-                  >
-                    {client.website}
-                    <ExternalLink className="h-4 w-4 ml-1" />
-                  </a>
-                </div>
-                {client.targetPages && client.targetPages.length > 0 && (
-                  <div className="md:col-span-2">
-                    <p className="text-sm text-gray-600 mb-2">Target Pages</p>
-                    <div className="space-y-1">
-                      {client.targetPages.map((page) => (
-                        <a
-                          key={page.id}
-                          href={page.url}
-                          target="_blank"
-                          rel="noopener noreferrer"
-                          className="block text-blue-600 hover:text-blue-800 text-sm"
-                        >
-                          {page.url}
-                        </a>
-                      ))}
-                    </div>
+                <button
+                  onClick={() => router.push('/clients')}
+                  className="inline-flex items-center px-4 py-2 border border-gray-300 rounded-lg hover:bg-gray-50 text-sm font-medium text-gray-700"
+                >
+                  Manage All Brands
+                  <ExternalLink className="h-4 w-4 ml-2" />
+                </button>
+              </div>
+              <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+                {clients.slice(0, 3).map((client) => (
+                  <div key={client.id} className="border border-gray-200 rounded-lg p-4">
+                    <h3 className="font-medium text-gray-900 mb-1">{client.name}</h3>
+                    <a 
+                      href={client.website}
+                      target="_blank"
+                      rel="noopener noreferrer"
+                      className="text-sm text-blue-600 hover:text-blue-800"
+                    >
+                      {client.website}
+                    </a>
+                    <p className="text-xs text-gray-500 mt-2">
+                      {client.targetPages?.length || 0} target pages
+                    </p>
+                  </div>
+                ))}
+                {clients.length > 3 && (
+                  <div className="border border-gray-200 rounded-lg p-4 flex items-center justify-center">
+                    <p className="text-sm text-gray-600">
+                      +{clients.length - 3} more {clients.length - 3 === 1 ? 'brand' : 'brands'}
+                    </p>
                   </div>
                 )}
               </div>
             </div>
+          ) : (
+            <div className="bg-yellow-50 border border-yellow-200 rounded-lg p-6 mb-8">
+              <div className="flex items-start">
+                <AlertCircle className="h-5 w-5 text-yellow-600 mt-0.5 mr-3" />
+                <div className="flex-1">
+                  <h3 className="text-sm font-medium text-yellow-800">No Brands Found</h3>
+                  <p className="text-sm text-yellow-700 mt-1">
+                    You need to add at least one brand before creating orders.
+                  </p>
+                  <button
+                    onClick={() => router.push('/clients/new')}
+                    className="mt-3 inline-flex items-center px-3 py-1.5 bg-yellow-600 text-white text-sm font-medium rounded hover:bg-yellow-700"
+                  >
+                    <Plus className="h-4 w-4 mr-1" />
+                    Add Your First Brand
+                  </button>
+                </div>
+              </div>
+            </div>
           )}
+
+          {/* Quick Actions */}
+          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6 mb-8">
+            <button
+              onClick={() => router.push('/clients')}
+              className="bg-white rounded-lg shadow-md p-6 hover:shadow-lg transition-shadow text-left"
+            >
+              <div className="flex items-center justify-between mb-4">
+                <div className="p-3 bg-purple-100 rounded-lg">
+                  <Building className="h-6 w-6 text-purple-600" />
+                </div>
+                <ExternalLink className="h-5 w-5 text-gray-400" />
+              </div>
+              <h3 className="text-lg font-semibold text-gray-900 mb-1">
+                {clients.length > 0 ? 'Manage Brands' : 'Add First Brand'}
+              </h3>
+              <p className="text-sm text-gray-600">
+                {clients.length > 0 
+                  ? 'View and manage all your brands' 
+                  : 'Get started by adding your first brand'}
+              </p>
+            </button>
+
+            <button
+              onClick={() => router.push(clients.length > 0 ? '/orders/new' : '/clients/new')}
+              className="bg-white rounded-lg shadow-md p-6 hover:shadow-lg transition-shadow text-left"
+              disabled={clients.length === 0}
+            >
+              <div className="flex items-center justify-between mb-4">
+                <div className={`p-3 rounded-lg ${clients.length > 0 ? 'bg-green-100' : 'bg-gray-100'}`}>
+                  <Plus className={`h-6 w-6 ${clients.length > 0 ? 'text-green-600' : 'text-gray-400'}`} />
+                </div>
+                <ExternalLink className="h-5 w-5 text-gray-400" />
+              </div>
+              <h3 className={`text-lg font-semibold mb-1 ${clients.length > 0 ? 'text-gray-900' : 'text-gray-400'}`}>
+                New Order
+              </h3>
+              <p className="text-sm text-gray-600">
+                {clients.length > 0 
+                  ? 'Start a new guest post campaign' 
+                  : 'Add a brand first to create orders'}
+              </p>
+            </button>
+
+            <button
+              onClick={() => router.push('/orders')}
+              className="bg-white rounded-lg shadow-md p-6 hover:shadow-lg transition-shadow text-left"
+            >
+              <div className="flex items-center justify-between mb-4">
+                <div className="p-3 bg-blue-100 rounded-lg">
+                  <ShoppingCart className="h-6 w-6 text-blue-600" />
+                </div>
+                <ExternalLink className="h-5 w-5 text-gray-400" />
+              </div>
+              <h3 className="text-lg font-semibold text-gray-900 mb-1">View Orders</h3>
+              <p className="text-sm text-gray-600">
+                {orders.length > 0 
+                  ? 'Track all your guest post orders' 
+                  : 'Your order history will appear here'}
+              </p>
+            </button>
+          </div>
 
           {/* Recent Orders */}
           <div className="bg-white rounded-lg shadow-md">
@@ -401,12 +497,43 @@ function AccountDashboardContent({ user }: AccountDashboardProps) {
                           {formatCurrency(order.totalRetail)}
                         </td>
                         <td className="px-6 py-4 whitespace-nowrap text-sm">
-                          <button
-                            onClick={() => router.push(`/orders/${order.id}`)}
-                            className="text-blue-600 hover:text-blue-800"
-                          >
-                            View Details
-                          </button>
+                          <div className="flex items-center gap-3">
+                            <button
+                              onClick={() => router.push(`/orders/${order.id}/detail`)}
+                              className="text-blue-600 hover:text-blue-800"
+                            >
+                              View Details
+                            </button>
+                            {order.status === 'draft' && (
+                              <button
+                                onClick={async () => {
+                                  if (confirm('Are you sure you want to delete this draft order? This action cannot be undone.')) {
+                                    try {
+                                      const response = await fetch(`/api/orders/${order.id}`, {
+                                        method: 'DELETE',
+                                        headers: { 'Content-Type': 'application/json' }
+                                      });
+                                      
+                                      if (response.ok) {
+                                        // Refresh the orders list
+                                        window.location.reload();
+                                      } else {
+                                        const data = await response.json();
+                                        alert(data.error || 'Failed to delete order');
+                                      }
+                                    } catch (error) {
+                                      console.error('Error deleting order:', error);
+                                      alert('Error deleting order');
+                                    }
+                                  }
+                                }}
+                                className="text-red-600 hover:text-red-800"
+                                title="Delete draft order"
+                              >
+                                <Trash2 className="h-4 w-4" />
+                              </button>
+                            )}
+                          </div>
                         </td>
                       </tr>
                     ))

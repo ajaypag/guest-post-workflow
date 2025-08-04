@@ -93,9 +93,6 @@ export async function POST(request: NextRequest) {
       const [newOrder] = await tx.insert(orders).values({
         id: orderId,
         accountId: accountId, // Now properly using accounts table
-        accountEmail: accountDetails.email,
-        accountName: accountDetails.name,
-        accountCompany: accountDetails.company,
         status: 'draft',
         state: 'configuring',
         subtotalRetail: basePrice,

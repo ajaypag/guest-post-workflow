@@ -212,11 +212,11 @@ async function generateAndStoreInvoice(tx: any, order: any, payment: any) {
 async function sendPaymentConfirmationEmail(order: any, payment: any, invoice: any) {
   try {
     const emailData = {
-      to: order.account?.email || order.accountEmail,
+      to: order.account?.email || '',
       subject: `Payment Confirmed - Order #${order.id.slice(0, 8)}`,
       html: `
         <h2>Payment Confirmation</h2>
-        <p>Dear ${order.account?.contactName || order.accountName},</p>
+        <p>Dear ${order.account?.contactName || order.account?.companyName || 'Customer'},</p>
         
         <p>We have successfully received your payment for order #${order.id.slice(0, 8)}.</p>
         
@@ -244,7 +244,7 @@ async function sendPaymentConfirmationEmail(order: any, payment: any, invoice: a
       `
     };
 
-    await EmailService.sendPaymentConfirmation(order.account?.email || order.accountEmail, {
+    await EmailService.sendPaymentConfirmation(order.account?.email || '', {
       orderNumber: order.id.slice(0, 8),
       amount: (payment.amount / 100).toFixed(2),
       paymentMethod: payment.method.replace(/_/g, ' '),
@@ -252,7 +252,7 @@ async function sendPaymentConfirmationEmail(order: any, payment: any, invoice: a
       invoiceNumber: invoice?.invoiceNumber,
     });
 
-    console.log('Payment confirmation email sent to:', order.account?.email || order.accountEmail);
+    console.log('Payment confirmation email sent to:', order.account?.email);
   } catch (error) {
     console.error('Failed to send payment confirmation email:', error);
     // Don't throw - email failure shouldn't break payment recording

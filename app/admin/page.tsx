@@ -102,6 +102,30 @@ export default function AdminDashboard() {
       iconColor: 'text-violet-600'
     },
     {
+      title: 'Normalized URL Migration',
+      description: 'Add normalized URLs to target pages for better duplicate detection',
+      icon: Database,
+      href: '/admin/normalize-urls-migration',
+      color: 'bg-teal-50 border-teal-200 text-teal-700',
+      iconColor: 'text-teal-600'
+    },
+    {
+      title: 'Draft Orders Migration',
+      description: 'Fix draft orders created by account users to use system user',
+      icon: Database,
+      href: '/admin/draft-orders-migration',
+      color: 'bg-amber-50 border-amber-200 text-amber-700',
+      iconColor: 'text-amber-600'
+    },
+    {
+      title: 'Orders/New Diagnostic',
+      description: 'Diagnose infinite loop issues on the orders/new page',
+      icon: Bug,
+      href: '/admin/orders-new-diagnostic',
+      color: 'bg-red-50 border-red-200 text-red-700',
+      iconColor: 'text-red-600'
+    },
+    {
       title: 'Diagnostics',
       description: 'Run comprehensive system diagnostics and health checks',
       icon: Activity,

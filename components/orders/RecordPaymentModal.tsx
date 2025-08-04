@@ -2,12 +2,17 @@
 
 import React, { useState } from 'react';
 import { X, DollarSign, CreditCard, Check, AlertCircle } from 'lucide-react';
+import { formatCurrency } from '@/lib/utils/formatting';
 
 interface RecordPaymentModalProps {
   order: {
     id: string;
     totalRetail: number;
-    accountName: string;
+    account?: {
+      contactName?: string;
+      companyName?: string;
+      email?: string;
+    };
   };
   isOpen: boolean;
   onClose: () => void;
@@ -23,7 +28,7 @@ export default function RecordPaymentModal({
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [formData, setFormData] = useState({
-    amount: order.totalRetail / 100, // Convert cents to dollars
+    amount: order.totalRetail, // Amount in cents
     paymentMethod: 'bank_transfer',
     transactionId: '',
     notes: ''
@@ -43,7 +48,7 @@ export default function RecordPaymentModal({
           'Content-Type': 'application/json'
         },
         body: JSON.stringify({
-          amount: Math.round(formData.amount * 100), // Convert to cents
+          amount: formData.amount, // Already in cents
           paymentMethod: formData.paymentMethod,
           transactionId: formData.transactionId,
           notes: formData.notes
@@ -92,8 +97,8 @@ export default function RecordPaymentModal({
 
           <div className="mb-4 p-3 bg-blue-50 border border-blue-200 rounded-lg">
             <p className="text-sm text-blue-800">
-              <strong>Client:</strong> {order.accountName}<br />
-              <strong>Order Total:</strong> ${(order.totalRetail / 100).toFixed(2)}
+              <strong>Client:</strong> {order.account?.contactName || order.account?.companyName || 'Unknown'}<br />
+              <strong>Order Total:</strong> ${formatCurrency(order.totalRetail)}
             </p>
           </div>
 
@@ -108,8 +113,8 @@ export default function RecordPaymentModal({
                   type="number"
                   step="0.01"
                   required
-                  value={formData.amount}
-                  onChange={(e) => setFormData({ ...formData, amount: parseFloat(e.target.value) })}
+                  value={(formData.amount / 100).toFixed(2)}
+                  onChange={(e) => setFormData({ ...formData, amount: Math.round(parseFloat(e.target.value) * 100) })}
                   className="w-full pl-10 pr-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-purple-500 focus:border-transparent"
                   placeholder="0.00"
                 />

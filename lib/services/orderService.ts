@@ -15,15 +15,13 @@ import {
 import { bulkAnalysisDomains } from '@/lib/db/bulkAnalysisSchema';
 import { websites } from '@/lib/db/websiteSchema';
 import { workflows } from '@/lib/db/schema';
+import { accounts } from '@/lib/db/accountSchema';
 import { eq, and, gte, lte, or, sql, desc, isNull } from 'drizzle-orm';
 import { v4 as uuidv4 } from 'uuid';
 import crypto from 'crypto';
 
 export interface CreateOrderInput {
-  accountEmail: string;
-  accountName: string;
-  accountCompany?: string;
-  accountId?: string;
+  accountId: string;
   createdBy: string;
   assignedTo?: string;
   internalNotes?: string;
@@ -57,10 +55,7 @@ export class OrderService {
 
     const [order] = await db.insert(orders).values({
       id: orderId,
-      accountId: input.accountId || null,
-      accountEmail: input.accountEmail,
-      accountName: input.accountName,
-      accountCompany: input.accountCompany || null,
+      accountId: input.accountId,
       status: 'draft',
       createdBy: input.createdBy,
       assignedTo: input.assignedTo || null,
@@ -399,7 +394,7 @@ export class OrderService {
       if (item.workflowId) continue; // Already has workflow
 
       // Create workflow title
-      const workflowTitle = `${order.accountCompany || order.accountName} - ${item.domain}`;
+      const workflowTitle = `${order.account?.companyName || order.account?.contactName || 'Account'} - ${item.domain}`;
 
       // Create workflow
       const workflowId = uuidv4();
@@ -442,6 +437,9 @@ export class OrderService {
     const accountOrders = await db.query.orders.findMany({
       where: eq(orders.accountId, accountId),
       orderBy: desc(orders.createdAt),
+      with: {
+        account: true
+      }
     });
 
     // Fetch order groups for each order
@@ -460,6 +458,7 @@ export class OrderService {
         
         return {
           ...order,
+          account: order.account,
           totalLinks: groups.reduce((sum, g) => sum + g.linkCount, 0) || itemCount,
           itemCount: itemCount, // For backwards compatibility
           orderGroups: groups
@@ -477,6 +476,9 @@ export class OrderService {
     const statusOrders = await db.query.orders.findMany({
       where: eq(orders.status, status),
       orderBy: desc(orders.createdAt),
+      with: {
+        account: true
+      }
     });
 
     // Fetch order groups for each order
@@ -495,6 +497,7 @@ export class OrderService {
         
         return {
           ...order,
+          account: order.account,
           totalLinks: groups.reduce((sum, g) => sum + g.linkCount, 0) || itemCount,
           itemCount: itemCount, // For backwards compatibility
           orderGroups: groups
@@ -503,6 +506,152 @@ export class OrderService {
     );
 
     return ordersWithGroups;
+  }
+
+  /**
+   * Get orders for a client by status with order groups
+   */
+  static async getClientOrdersByStatus(clientId: string, status: string): Promise<any[]> {
+    const { orderGroups } = await import('@/lib/db/orderGroupSchema');
+    
+    // Find all orders for this client with the specified status
+    const clientOrders = await db
+      .select({
+        order: orders,
+        orderGroup: orderGroups,
+        account: accounts
+      })
+      .from(orders)
+      .innerJoin(orderGroups, eq(orderGroups.orderId, orders.id))
+      .leftJoin(accounts, eq(orders.accountId, accounts.id))
+      .where(
+        and(
+          eq(orderGroups.clientId, clientId),
+          eq(orders.status, status)
+        )
+      )
+      .orderBy(desc(orders.createdAt));
+
+    // Transform and fetch additional data
+    const ordersWithGroups = await Promise.all(
+      clientOrders.map(async ({ order, account }) => {
+        const groups = await this.getOrderGroups(order.id);
+        
+        // Count total items if groups are empty (legacy orders)
+        let itemCount = 0;
+        if (groups.length === 0) {
+          const items = await db.query.orderItems.findMany({
+            where: eq(orderItems.orderId, order.id),
+          });
+          itemCount = items.length;
+        }
+        
+        return {
+          ...order,
+          account: account,
+          totalLinks: groups.reduce((sum, g) => sum + g.linkCount, 0) || itemCount,
+          itemCount: itemCount, // For backwards compatibility
+          orderGroups: groups
+        };
+      })
+    );
+
+    return ordersWithGroups;
+  }
+
+  /**
+   * Get orders associated with a project
+   */
+  static async getOrdersForProject(projectId: string): Promise<{
+    associatedOrders: any[];
+    draftOrders: any[];
+    defaultOrderId: string | null;
+  }> {
+    const { orderGroups } = await import('@/lib/db/orderGroupSchema');
+    
+    // Get all order groups that have this project assigned
+    const groupsWithOrders = await db
+      .select({
+        order: orders,
+        orderGroup: orderGroups,
+        account: accounts
+      })
+      .from(orderGroups)
+      .innerJoin(orders, eq(orderGroups.orderId, orders.id))
+      .leftJoin(accounts, eq(orders.accountId, accounts.id))
+      .where(eq(orderGroups.bulkAnalysisProjectId, projectId));
+
+    // Filter orders based on status - exclude completed and cancelled orders
+    const activeOrders = groupsWithOrders.filter(({ order }) => {
+      return order.status !== 'completed' && order.status !== 'cancelled';
+    });
+
+    // Transform the data for the frontend
+    const associatedOrders = activeOrders.map(({ order, orderGroup, account }) => ({
+      id: order.id,
+      account: account ? {
+        id: account.id,
+        email: account.email,
+        contactName: account.contactName,
+        companyName: account.companyName
+      } : null,
+      accountName: account?.contactName || account?.companyName || account?.email || 'Unknown',
+      accountEmail: account?.email || 'Unknown',
+      status: order.status,
+      createdAt: order.createdAt.toISOString(),
+      itemCount: orderGroup.linkCount,
+      totalRetail: order.totalRetail
+    }));
+
+    // Also get draft orders for this client (backward compatibility)
+    const clientId = groupsWithOrders[0]?.orderGroup.clientId;
+    let draftOrders: any[] = [];
+    
+    if (clientId) {
+      // Get all draft orders for this client that aren't already associated
+      const associatedOrderIds = groupsWithOrders.map(({ order }) => order.id);
+      
+      const clientDraftOrders = await db
+        .select({
+          order: orders,
+          orderGroup: orderGroups,
+          account: accounts
+        })
+        .from(orders)
+        .innerJoin(orderGroups, eq(orderGroups.orderId, orders.id))
+        .leftJoin(accounts, eq(orders.accountId, accounts.id))
+        .where(
+          and(
+            eq(orderGroups.clientId, clientId),
+            eq(orders.status, 'draft'),
+            associatedOrderIds.length > 0 
+              ? sql`${orders.id} NOT IN (${sql.join(associatedOrderIds.map(id => sql`${id}`), sql`, `)})`
+              : undefined
+          )
+        );
+
+      draftOrders = clientDraftOrders.map(({ order, orderGroup, account }) => ({
+        id: order.id,
+        account: account ? {
+          id: account.id,
+          email: account.email,
+          contactName: account.contactName,
+          companyName: account.companyName
+        } : null,
+        accountName: account?.contactName || account?.companyName || account?.email || 'Unknown',
+        accountEmail: account?.email || 'Unknown',
+        status: order.status,
+        createdAt: order.createdAt.toISOString(),
+        itemCount: orderGroup.linkCount,
+        totalRetail: order.totalRetail
+      }));
+    }
+
+    return {
+      associatedOrders,
+      draftOrders,
+      defaultOrderId: associatedOrders.length > 0 ? associatedOrders[0].id : null
+    };
   }
 
   /**
@@ -522,14 +671,11 @@ export class OrderService {
    * Get orders with item counts and order groups
    */
   static async getOrdersWithItemCounts(): Promise<any[]> {
-    // First get all orders with item counts
+    // First get all orders with item counts and account info
     const ordersWithCounts = await db
       .select({
         id: orders.id,
         accountId: orders.accountId,
-        accountEmail: orders.accountEmail,
-        accountName: orders.accountName,
-        accountCompany: orders.accountCompany,
         status: orders.status,
         state: orders.state,
         subtotalRetail: orders.subtotalRetail,
@@ -559,10 +705,13 @@ export class OrderService {
         createdAt: orders.createdAt,
         updatedAt: orders.updatedAt,
         itemCount: sql<number>`cast(count(${orderItems.id}) as int)`,
+        // Account data
+        account: accounts,
       })
       .from(orders)
       .leftJoin(orderItems, eq(orders.id, orderItems.orderId))
-      .groupBy(orders.id)
+      .leftJoin(accounts, eq(orders.accountId, accounts.id))
+      .groupBy(orders.id, accounts.id, accounts.email, accounts.contactName, accounts.companyName)
       .orderBy(desc(orders.createdAt));
 
     // Now fetch order groups for each order

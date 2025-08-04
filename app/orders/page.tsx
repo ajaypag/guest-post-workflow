@@ -8,13 +8,18 @@ import Header from '@/components/Header';
 import { AuthService } from '@/lib/auth';
 import Link from 'next/link';
 
+interface Account {
+  id: string;
+  email: string;
+  contactName?: string;
+  companyName?: string;
+}
+
 interface Order {
   id: string;
   clientId: string;
   accountId?: string;
-  accountEmail: string;
-  accountName: string;
-  accountCompany?: string;
+  account?: Account;
   status: string;
   state?: string;
   totalLinks?: number;
@@ -57,7 +62,9 @@ function OrdersPageContent() {
   const statusOptions = [
     { value: 'all', label: 'All Statuses' },
     { value: 'draft', label: 'Draft' },
+    { value: 'pending_confirmation', label: 'Pending Confirmation' },
     { value: 'pending_approval', label: 'Pending Approval' },
+    { value: 'confirmed', label: 'Confirmed' },
     { value: 'approved', label: 'Approved' },
     { value: 'invoiced', label: 'Invoiced' },
     { value: 'paid', label: 'Paid' },
@@ -113,10 +120,14 @@ function OrdersPageContent() {
   const filteredOrders = orders.filter(order => {
     if (searchTerm) {
       const searchLower = searchTerm.toLowerCase();
+      const accountName = order.account?.contactName || order.account?.companyName || '';
+      const accountEmail = order.account?.email || '';
+      const accountCompany = order.account?.companyName || '';
+      
       return (
-        order.accountName.toLowerCase().includes(searchLower) ||
-        order.accountEmail.toLowerCase().includes(searchLower) ||
-        (order.accountCompany?.toLowerCase().includes(searchLower)) ||
+        accountName.toLowerCase().includes(searchLower) ||
+        accountEmail.toLowerCase().includes(searchLower) ||
+        accountCompany.toLowerCase().includes(searchLower) ||
         order.id.toLowerCase().includes(searchLower)
       );
     }
@@ -126,6 +137,8 @@ function OrdersPageContent() {
   const getStatusColor = (status: string) => {
     switch (status) {
       case 'draft': return 'bg-gray-100 text-gray-800';
+      case 'pending_confirmation': return 'bg-amber-100 text-amber-800';
+      case 'confirmed': return 'bg-indigo-100 text-indigo-800';
       case 'pending_approval': return 'bg-yellow-100 text-yellow-800';
       case 'approved': return 'bg-blue-100 text-blue-800';
       case 'invoiced': return 'bg-purple-100 text-purple-800';
@@ -144,8 +157,9 @@ function OrdersPageContent() {
   const orderStats = {
     total: orders.length,
     draft: orders.filter(o => o.status === 'draft').length,
+    pendingConfirmation: orders.filter(o => o.status === 'pending_confirmation').length,
     pending: orders.filter(o => o.status === 'pending_approval').length,
-    active: orders.filter(o => ['approved', 'paid', 'in_progress'].includes(o.status)).length,
+    active: orders.filter(o => ['confirmed', 'approved', 'paid', 'in_progress'].includes(o.status)).length,
     completed: orders.filter(o => o.status === 'completed').length,
     totalValue: orders.reduce((sum, order) => sum + order.totalRetail, 0),
   };
@@ -169,7 +183,7 @@ function OrdersPageContent() {
             </p>
           </div>
           {userType === 'internal' && (
-            <Link href="/orders/create">
+            <Link href="/orders/new">
               <button className="bg-blue-600 hover:bg-blue-700 text-white px-4 py-2 rounded-md flex items-center gap-2 font-medium">
                 <Plus className="h-4 w-4" />
                 New Order

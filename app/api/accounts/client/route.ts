@@ -4,6 +4,7 @@ import { accounts } from '@/lib/db/accountSchema';
 import { clients, targetPages } from '@/lib/db/schema';
 import { eq } from 'drizzle-orm';
 import { AuthServiceServer } from '@/lib/auth-server';
+import { ClientService } from '@/lib/db/clientService';
 
 export async function GET(request: NextRequest) {
   try {
@@ -12,26 +13,36 @@ export async function GET(request: NextRequest) {
       return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
     }
 
-    // Get account details
+    // Get all clients/brands for this account
+    const accountClients = await ClientService.getClientsByAccount(session.userId);
+    
+    // Also check for legacy primaryClientId
     const account = await db.query.accounts.findFirst({
       where: eq(accounts.id, session.userId),
     });
-
-    if (!account || !account.primaryClientId) {
-      return NextResponse.json({ client: null });
+    
+    if (account && account.primaryClientId) {
+      // Check if primary client is already in the list
+      const hasPrimary = accountClients.some(c => c.id === account.primaryClientId);
+      if (!hasPrimary) {
+        const primaryClient = await db.query.clients.findFirst({
+          where: eq(clients.id, account.primaryClientId),
+          with: {
+            targetPages: true,
+          },
+        });
+        if (primaryClient) {
+          accountClients.push(primaryClient as any);
+        }
+      }
     }
 
-    // Get associated client with target pages
-    const client = await db.query.clients.findFirst({
-      where: eq(clients.id, account.primaryClientId),
-      with: {
-        targetPages: true,
-      },
+    return NextResponse.json({ 
+      clients: accountClients,
+      totalBrands: accountClients.length 
     });
-
-    return NextResponse.json({ client });
   } catch (error) {
-    console.error('Error fetching account client:', error);
+    console.error('Error fetching account clients:', error);
     return NextResponse.json(
       { error: 'Failed to fetch client data' },
       { status: 500 }

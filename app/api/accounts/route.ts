@@ -2,7 +2,7 @@ import { NextRequest, NextResponse } from 'next/server';
 import { db } from '@/lib/db/connection';
 import { accounts } from '@/lib/db/accountSchema';
 import { orders } from '@/lib/db/orderSchema';
-import { eq, count, sum } from 'drizzle-orm';
+import { eq, count, sum, desc } from 'drizzle-orm';
 import { v4 as uuidv4 } from 'uuid';
 import { AuthServiceServer } from '@/lib/auth-server';
 import bcrypt from 'bcryptjs';
@@ -77,6 +77,7 @@ export async function GET(request: NextRequest) {
     // Check if this is a simple request (no auth required for new order system)
     const { searchParams } = new URL(request.url);
     const simple = searchParams.get('simple') === 'true';
+    const ids = searchParams.get('ids');
     
     if (simple) {
       // Simple mode for new order system - return accounts
@@ -93,8 +94,19 @@ export async function GET(request: NextRequest) {
       return NextResponse.json(accountsList);
     }
     
+    // Support filtering by IDs
+    if (ids) {
+      const { inArray } = await import('drizzle-orm');
+      const idArray = ids.split(',');
+      const accountsList = await db.query.accounts.findMany({
+        where: inArray(accounts.id, idArray),
+      });
+      return NextResponse.json({ accounts: accountsList });
+    }
+    
     // Original implementation for legacy system
     const session = await AuthServiceServer.getSession(request);
+    
     if (!session || session.userType !== 'internal') {
       return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
     }

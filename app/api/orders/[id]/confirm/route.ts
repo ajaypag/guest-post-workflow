@@ -3,10 +3,13 @@ import { db } from '@/lib/db/connection';
 import { orders } from '@/lib/db/orderSchema';
 import { orderGroups } from '@/lib/db/orderGroupSchema';
 import { bulkAnalysisProjects } from '@/lib/db/bulkAnalysisSchema';
-import { clients } from '@/lib/db/schema';
+import { clients, targetPages } from '@/lib/db/schema';
 import { eq } from 'drizzle-orm';
 import { v4 as uuidv4 } from 'uuid';
 import { AuthServiceServer } from '@/lib/auth-server';
+import { generateKeywords, formatKeywordsForStorage } from '@/lib/services/keywordGenerationService';
+import { generateDescription } from '@/lib/services/descriptionGenerationService';
+import { ClientService } from '@/lib/db/clientService';
 
 export async function POST(
   request: NextRequest,
@@ -38,8 +41,8 @@ export async function POST(
         throw new Error('Order not found');
       }
       
-      if (order.status !== 'draft') {
-        throw new Error('Order must be in draft status to confirm');
+      if (order.status !== 'pending_confirmation') {
+        throw new Error('Order must be in pending_confirmation status to confirm');
       }
       
       // Get all order groups with their clients
@@ -64,6 +67,86 @@ export async function POST(
           const projectName = `Order #${orderId.slice(0, 8)} - ${client.name}`;
           const projectDescription = `Bulk analysis for ${orderGroup.linkCount} links ordered for ${client.name}`;
           
+          // Extract target page IDs from order group
+          const targetPageIds = orderGroup.targetPages
+            ?.filter((tp: any) => tp.pageId)
+            .map((tp: any) => tp.pageId) || [];
+          
+          // Get target page keywords for auto-apply
+          let autoApplyKeywords: string[] = [];
+          if (targetPageIds.length > 0) {
+            const pages = await tx
+              .select()
+              .from(targetPages)
+              .where(eq(targetPages.clientId, orderGroup.clientId));
+              
+            const relevantPages = pages.filter(p => targetPageIds.includes(p.id));
+            
+            // Generate keywords for pages that don't have them
+            for (const page of relevantPages) {
+              if (!page.keywords || page.keywords.trim() === '') {
+                try {
+                  console.log(`🤖 Generating keywords for target page: ${page.url}`);
+                  const keywordResult = await generateKeywords(page.url);
+                  
+                  if (keywordResult.success && keywordResult.keywords.length > 0) {
+                    const keywordsString = formatKeywordsForStorage(keywordResult.keywords);
+                    
+                    // Update the target page with generated keywords
+                    await tx
+                      .update(targetPages)
+                      .set({ 
+                        keywords: keywordsString
+                      })
+                      .where(eq(targetPages.id, page.id));
+                    
+                    // Update the page object for immediate use
+                    page.keywords = keywordsString;
+                    console.log(`✅ Generated ${keywordResult.keywords.length} keywords for ${page.url}`);
+                  }
+                } catch (error) {
+                  console.error(`Failed to generate keywords for ${page.url}:`, error);
+                  // Continue with other pages even if one fails
+                }
+              }
+              
+              // Generate description if missing
+              if (!page.description || page.description.trim() === '') {
+                try {
+                  console.log(`🤖 Generating description for target page: ${page.url}`);
+                  const descResult = await generateDescription(page.url);
+                  
+                  if (descResult.success && descResult.description) {
+                    // Update the target page with generated description
+                    await tx
+                      .update(targetPages)
+                      .set({ 
+                        description: descResult.description
+                      })
+                      .where(eq(targetPages.id, page.id));
+                    
+                    console.log(`✅ Generated description for ${page.url}`);
+                  }
+                } catch (error) {
+                  console.error(`Failed to generate description for ${page.url}:`, error);
+                  // Continue with other pages even if one fails
+                }
+              }
+            }
+            
+            // Now collect all keywords (including newly generated ones)
+            const allKeywords = relevantPages
+              .map(p => p.keywords || '')
+              .filter(k => k.trim() !== '')
+              .join(', ')
+              .split(',')
+              .map(k => k.trim())
+              .filter(k => k !== '');
+            
+            // Remove duplicates
+            autoApplyKeywords = [...new Set(allKeywords)];
+          }
+          
           // Create the project
           const [project] = await tx
             .insert(bulkAnalysisProjects)
@@ -75,8 +158,8 @@ export async function POST(
               icon: '📊',
               color: '#3B82F6',
               status: 'active',
-              autoApplyKeywords: [], // Will be populated from target pages
-              tags: ['order', `${orderGroup.linkCount} links`, `order-group:${orderGroup.id}`],
+              autoApplyKeywords,
+              tags: ['order', `${orderGroup.linkCount} links`, `order-group:${orderGroup.id}`, ...targetPageIds.map((id: string) => `target-page:${id}`)],
               createdBy: assignedTo || '00000000-0000-0000-0000-000000000000',
               createdAt: new Date(),
               updatedAt: new Date(),
@@ -93,14 +176,19 @@ export async function POST(
             })
             .where(eq(orderGroups.id, orderGroup.id));
             
-          return project;
+          return { project, targetPageIds };
         }
         
         return null;
       });
       
-      const projects = await Promise.all(projectPromises);
-      const createdProjects = projects.filter(p => p !== null);
+      const projectResults = await Promise.all(projectPromises);
+      const createdProjects = projectResults
+        .filter(p => p !== null)
+        .map(p => p!.project);
+      const projectTargetPages = projectResults
+        .filter(p => p !== null)
+        .map(p => ({ projectId: p!.project.id, targetPageIds: p!.targetPageIds }));
       
       // Update order status to confirmed
       const [updatedOrder] = await tx
@@ -119,7 +207,8 @@ export async function POST(
         success: true,
         order: updatedOrder,
         projectsCreated: createdProjects.length,
-        projects: createdProjects
+        projects: createdProjects,
+        projectTargetPages // Include this for frontend to use when creating domains
       });
     });
     

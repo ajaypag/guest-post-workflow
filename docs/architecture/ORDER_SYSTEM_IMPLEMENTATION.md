@@ -4,14 +4,38 @@
 
 | Phase | Status | Completion Date | Notes |
 |-------|--------|-----------------|-------|
-| **Phase 1: Order Builder** | ✅ COMPLETED | 2025-01-30 | Multi-client order creation page fully functional |
+| **Phase 1: Order Builder** | ✅ COMPLETED | 2025-01-30 | Multi-client order creation page fully functional with all recent fixes |
 | **Phase 2: Bulk Analysis** | ✅ COMPLETED | 2025-01-30 | Human-driven projects with notification system |
 | **Phase 3: Site Selection** | ✅ COMPLETED | 2025-01-30 | Account-facing site browser with full transparency |
-| **Phase 4: Account Dashboard** | 🚧 IN PROGRESS | - | Auth complete, dashboard pending, needs integration work |
+| **Phase 3.5: Flexible Associations** | ✅ COMPLETED | 2025-08-02 | Projects reusable across orders, unified UI with BulkAnalysisTable |
+| **Phase 4: Account Dashboard** | 🚧 IN PROGRESS | - | Auth complete, dashboard pending, needs integration work (see BUYER_PORTAL_IMPLEMENTATION.md) |
 | **Phase 5: Workflow Gen** | ✅ COMPLETED | 2025-01-30 | Payment-aware workflow generation |
 | **Phase 6: Share Tokens** | ❌ NOT STARTED | - | Public preview and conversion flow |
 | **Payment System** | ✅ COMPLETED | 2025-01-31 | Manual payment recording with invoices |
 | **Email Integration** | ✅ COMPLETED | 2025-01-31 | Payment confirmations, invitations ready |
+| **Archive System** | ✅ COMPLETED | 2025-01-31 | Soft delete with consistent UI/API behavior |
+| **AI Permissions** | ✅ COMPLETED | 2025-01-31 | Granular AI feature access control for accounts |
+| **Account API Fix** | ✅ COMPLETED | 2025-08-01 | Fixed account users unable to see their clients |
+| **Draft Order System** | ✅ COMPLETED | 2025-08-01 | Draft saving, editing, and loading functionality |
+| **Project-Order Flexibility** | ✅ COMPLETED | 2025-08-02 | Flexible project associations for site reuse across orders |
+| **Order Confirmation Page** | ✅ COMPLETED | 2025-08-02 | Dedicated page with keyword generation before confirming orders |
+| **Target Page Security** | ✅ COMPLETED | 2025-08-02 | Added proper permission checks to target page APIs |
+| **Currency Formatting** | ✅ COMPLETED | 2025-08-02 | Fixed decimal/cents display throughout order flow |
+| **User Assignment** | ✅ COMPLETED | 2025-08-02 | Replaced text input with user dropdown selector |
+| **Order Detail Page** | ✅ COMPLETED | 2025-08-02 | Modern page with multi-client support and proper routing |
+
+### Latest Progress: Order System Refinements (2025-08-02)
+
+Significant improvements to the order system have been completed:
+
+1. **Order Confirmation Workflow**: New dedicated page at `/orders/[id]/confirm` that ensures target pages have keywords before order confirmation
+2. **Target Page Security**: Fixed major security vulnerability where any authenticated user could access any target page
+3. **Currency Formatting**: Fixed inconsistent decimal/cents display across the entire order flow
+4. **User Interface Improvements**: 
+   - Assignment field now uses proper user dropdown instead of text input
+   - Orders table shows both status and state elegantly when different
+   - Order detail page properly routes to modern multi-client version
+5. **AI Keyword Generation**: Integrated into order confirmation flow to prevent bulk analysis without keywords
 
 ### Completed Features
 
@@ -23,6 +47,9 @@
 - ✅ Real-time pricing calculation with volume discounts
 - ✅ API endpoints for order creation and pricing
 - ✅ OrdersTableMultiClient integration
+- ✅ User assignment dropdown with search functionality
+- ✅ Currency formatting consistency (cents stored as integers)
+- ✅ Status and state display in orders table
 
 #### Phase 2: Bulk Analysis Integration
 - ✅ Order confirmation endpoint that creates projects
@@ -31,6 +58,9 @@
 - ✅ Dedicated page for viewing all assigned projects
 - ✅ Status tracking for projects (pending, in progress, ready)
 - ✅ Direct integration with order groups
+- ✅ **NEW: Order confirmation page with keyword generation**
+- ✅ **NEW: AI keyword/description generation during confirmation**
+- ✅ **NEW: Prevention of bulk analysis without keywords**
 
 #### Phase 3: Site Selection Interface
 - ✅ Account-facing site browser at `/account/orders/[id]/sites`
@@ -42,6 +72,38 @@
 - ✅ API endpoints for fetching and updating selections
 - ✅ Database migration for order_site_selections table
 - ✅ Multi-client order group support
+
+### ✅ **Order Confirmation Workflow** (IMPLEMENTED 2025-08-02)
+
+**Design Decision**: Ensure target pages have keywords before creating bulk analysis projects
+
+#### **Implementation Details**
+- **Path**: `/app/orders/[id]/confirm/page.tsx`
+- **API**: `/app/api/orders/[id]/confirm/route.ts`
+- **Purpose**: Prevent race condition where bulk analysis runs without keywords
+
+#### **Key Features**
+1. **Target Page Status Display**
+   - Shows all target pages with keyword/description status
+   - Visual indicators for pages needing keywords
+   - Real-time progress tracking
+
+2. **Batch Keyword Generation**
+   - Select multiple pages for keyword generation
+   - AI-powered keyword and description generation
+   - Progress indicator during generation
+   - Rate limiting to avoid API overload
+
+3. **User Assignment**
+   - UserSelector dropdown for assigning internal user
+   - Optional - leaves unassigned if not selected
+   - Integrated with bulk analysis project creation
+
+4. **Confirmation Process**
+   - Validates all pages have keywords before allowing confirmation
+   - Creates bulk analysis projects with auto-apply keywords
+   - Updates order status to 'confirmed' and state to 'analyzing'
+   - Redirects to modern order detail page
 
 ### ✅ **SHARED INTERFACE ARCHITECTURE - Site Selection** (IMPLEMENTED 2025-01-30)
 
@@ -108,6 +170,14 @@ const canModifyExisting = userType === 'internal' || userType === 'account';
 ### Known Issues
 - ⚠️ `createdBy` field uses placeholder system user ID until auth implemented
 - 🔴 **"Add Client" button in `/orders/new` returns 404** - Missing client creation endpoint/page
+- ⚠️ **Order editing rules after 'analyzing' state not yet defined** - Need to document what changes are allowed post-confirmation
+
+### Related Documentation
+- **[BUYER_PORTAL_IMPLEMENTATION.md](./BUYER_PORTAL_IMPLEMENTATION.md)** - Detailed implementation guide for:
+  - Client/brand architecture and account integration
+  - Order creation workflow redesign
+  - Three client creation scenarios
+  - Step-by-step implementation plan
 
 ### Required Migrations
 - ✅ **Phase 2**: Run migration at `/admin/order-groups-migration` (completed)
@@ -304,74 +374,320 @@ interface AnalysisProgress {
 }
 ```
 
-### Phase 3: Site Selection Interface ✅ COMPLETED (2025-01-30)
+### Phase 3: Internal Site Selection & Project Flexibility 🔄 UPDATED (2025-08-02)
 
-#### 3.1 Full Transparency View
-**File**: `/app/account/orders/[id]/sites/page.tsx` ✅ IMPLEMENTED
+**STATUS**: Phase 3 flow redesigned for flexible project-order associations and client access to bulk analysis data.
+
+#### 3.1 Updated Internal Workflow
+
+**Complete Updated Flow**:
+
+1. **Order Confirmation** → Creates project-order association
+   - Junction table links project to order group: `project_order_associations`
+   - Project can be new (dedicated) or existing (same client only)
+   - Internal user assigned for bulk analysis
+
+2. **Bulk Analysis** → Internal user analyzes domains
+   - Uses existing bulk analysis AI for domain evaluation
+   - Results stored in `bulk_analysis_domains` (reusable across orders for same client)
+   - Domain pool created for client (not order-specific)
+
+3. **Site Curation** → Internal user curates order-specific suggestions
+   - Selects best domains from analysis for this specific order
+   - Creates entries in `order_site_selections` with status "suggested"
+   - Each order gets unique domains (no reuse of same domains)
+   - Project analysis reused, but domain selections are unique per order
+
+4. **Client Access** → Account users get full bulk analysis access
+   - **NEW**: Account users can access project bulk analysis page via order
+   - Can review all analyzed domains, not just suggestions
+   - Can make their own selections from full domain pool
+   - Can modify order (add/remove links, change targets)
+
+#### 3.2 Junction Table Architecture
+
+**New Table**: `project_order_associations`
+```sql
+CREATE TABLE project_order_associations (
+  id uuid PRIMARY KEY DEFAULT gen_random_uuid(),
+  project_id uuid REFERENCES bulk_analysis_projects(id),
+  order_group_id uuid REFERENCES order_groups(id),
+  association_type varchar(50) DEFAULT 'primary', -- 'primary', 'shared'
+  created_at timestamp DEFAULT now(),
+  created_by uuid REFERENCES users(id)
+);
+```
+
+**Key Benefits**:
+- Project analysis reused across multiple orders (same client)
+- Each order gets unique domain selections
+- Full bulk analysis data accessible to clients
+- Flexible associations without schema limitations
+
+#### 3.3 Enhanced Existing Bulk Analysis Project Page with Order Context
+
+**CRITICAL**: NO NEW PAGES. Enhance existing `/clients/[clientId]/bulk-analysis/projects/[projectId]` page.
+
+**Enhanced URL Patterns**:
+```typescript
+// Base URL (existing)
+/clients/[clientId]/bulk-analysis/projects/[projectId]
+
+// With order context (enhanced)  
+/clients/[clientId]/bulk-analysis/projects/[projectId]?orderId=abc123
+
+// With guided domain deep-dive (enhanced)
+/clients/[clientId]/bulk-analysis/projects/[projectId]?orderId=abc123&guided=domainId
+```
+
+**Page Enhancement Requirements**:
+
+##### 3.3.1 Order Context Detection
+```typescript
+// In existing /clients/[clientId]/bulk-analysis/projects/[projectId]/page.tsx
+const searchParams = useSearchParams();
+const orderId = searchParams.get('orderId'); // Order context
+const guidedDomainId = searchParams.get('guided'); // Specific domain focus
+
+// Load order-specific data if orderId present
+if (orderId) {
+  const orderContext = await loadOrderContext(orderId, clientId);
+  // orderContext includes: selections, remaining links, order targets
+}
+```
+
+##### 3.3.2 Order-Specific UI Enhancements
+**Add to existing page when `orderId` query param present**:
+
+1. **Order Context Header**:
+   ```jsx
+   {orderId && (
+     <div className="bg-blue-50 border border-blue-200 rounded-lg p-4 mb-6">
+       <div className="flex items-center justify-between">
+         <div>
+           <h3>Viewing analysis for Order #{orderId}</h3>
+           <p>Client: {client.name} • {orderContext.remainingLinks} links needed</p>
+           <p>Progress: {orderContext.selectedCount}/{orderContext.totalLinks} links selected</p>
+         </div>
+         <button onClick={() => router.back()}>← Back to Order</button>
+       </div>
+     </div>
+   )}
+   ```
+
+2. **Domain Selection Context**:
+   ```jsx
+   // Modify existing domain cards/table
+   <DomainCard 
+     domain={domain}
+     isOrderSuggested={orderContext?.suggestedDomains.includes(domain.id)}
+     isOrderSelected={orderContext?.selectedDomains.includes(domain.id)}
+     orderActions={orderId ? {
+       addToOrder: () => addDomainToOrder(domain.id),
+       removeFromOrder: () => removeDomainFromOrder(domain.id)
+     } : null}
+   />
+   ```
+
+3. **Order-Specific Actions**:
+   ```jsx
+   {orderId && (
+     <div className="sticky bottom-0 bg-white border-t p-4">
+       <div className="flex items-center justify-between">
+         <span>Order Progress: {selectedCount}/{totalLinks} links</span>
+         <div className="space-x-2">
+           <button onClick={modifyOrderLinkCount}>Modify Link Count</button>
+           <button onClick={changeOrderTargets}>Change Targets</button>
+           <button onClick={saveSelections}>Save Selections</button>
+         </div>
+       </div>
+     </div>
+   )}
+   ```
+
+##### 3.3.3 Guided Domain Deep-Dive
+**When `guided` query param present**:
+
+1. **Auto-scroll and Highlight**:
+   ```typescript
+   useEffect(() => {
+     if (guidedDomainId) {
+       // Scroll to specific domain
+       const domainElement = document.getElementById(`domain-${guidedDomainId}`);
+       domainElement?.scrollIntoView({ behavior: 'smooth' });
+       
+       // Highlight domain
+       setHighlightedDomain(guidedDomainId);
+       
+       // Show domain details modal/panel
+       setShowDomainDetails(guidedDomainId);
+     }
+   }, [guidedDomainId]);
+   ```
+
+2. **Domain Suggestion Context**:
+   ```jsx
+   {guidedDomainId === domain.id && (
+     <div className="bg-yellow-50 border-l-4 border-yellow-400 p-4 mb-4">
+       <h4>Why this domain was suggested for your order:</h4>
+       <ul>
+         <li>✓ Matches target keywords: {domain.matchingKeywords}</li>
+         <li>✓ High authority: DR {domain.dr}</li>
+         <li>✓ Relevant traffic: {domain.traffic}/month</li>
+         <li>✓ Content alignment: {domain.contentScore}% match</li>
+       </ul>
+     </div>
+   )}
+   ```
+
+##### 3.3.4 User Type Permissions
+```typescript
+// Modify existing permission checks
+const userCapabilities = {
+  // Existing internal user capabilities
+  canEditProject: session.userType === 'internal',
+  canDeleteProject: session.userType === 'internal',
+  canBulkOperations: session.userType === 'internal',
+  canSeeInternalNotes: session.userType === 'internal',
+  
+  // Order-specific capabilities
+  canSelectForOrder: !!orderId,
+  canModifyOrder: session.userType === 'account' && !!orderId,
+  canViewFullAnalysis: true, // Both user types
+  canOverrideSuggestions: session.userType === 'account' && !!orderId,
+};
+
+// Hide/show UI elements based on capabilities
+{userCapabilities.canEditProject && <ProjectSettingsButton />}
+{userCapabilities.canModifyOrder && <ModifyOrderButton />}
+{!userCapabilities.canSeeInternalNotes && <HideInternalNotes />}
+```
+
+##### 3.3.5 Navigation Integration
+**From Order Pages**:
+
+1. **Order Summary Page**:
+   ```jsx
+   // Order shows suggestions with links to detailed analysis
+   <div className="suggestion-card">
+     <h4>{domain.name}</h4>
+     <p>Suggested for {client.name}</p>
+     <button onClick={() => router.push(
+       `/clients/${clientId}/bulk-analysis/projects/${projectId}?orderId=${orderId}&guided=${domainId}`
+     )}>
+       View Details
+     </button>
+   </div>
+   ```
+
+2. **Order Site Selection Page**:
+   ```jsx
+   // Full analysis link
+   <button onClick={() => router.push(
+     `/clients/${clientId}/bulk-analysis/projects/${projectId}?orderId=${orderId}`
+   )}>
+     View Full Analysis ({domainCount} domains)
+   </button>
+   ```
+
+##### 3.3.6 Data Loading Enhancements
+```typescript
+// Enhance existing data loading
+async function loadProjectData(projectId: string, orderId?: string) {
+  const project = await getProject(projectId);
+  
+  if (orderId) {
+    // Load order-specific context
+    const orderContext = await db.query.orderSiteSelections.findMany({
+      where: and(
+        eq(orderSiteSelections.orderGroupId, orderGroupId),
+        eq(orderSiteSelections.domainId, in(project.domains.map(d => d.id)))
+      )
+    });
+    
+    return {
+      ...project,
+      orderContext: {
+        orderId,
+        selectedDomains: orderContext.filter(s => s.status === 'approved'),
+        suggestedDomains: orderContext.filter(s => s.status === 'suggested'),
+        remainingLinks: linkCount - orderContext.length
+      }
+    };
+  }
+  
+  return project;
+}
+```
+
+##### 3.3.7 API Enhancements
+**Existing API**: `/api/clients/[clientId]/bulk-analysis/projects/[projectId]`
+**Enhanced to support order context**:
 
 ```typescript
-interface SiteSelectionView {
-  orderGroup: OrderGroup;
-  sites: {
-    suggested: AnalyzedDomain[]; // From website DB + analysis
-    all: AnalyzedDomain[];       // ALL analyzed sites
-    selected: SiteSelection[];   // Current selections
-  };
-  filters: {
-    status: 'all' | 'high_quality' | 'good' | 'marginal';
-    minDR?: number;
-    minTraffic?: number;
-    niche?: string;
+// GET with optional order context
+export async function GET(request: NextRequest, { params, searchParams }) {
+  const orderId = searchParams.get('orderId');
+  
+  const project = await getProject(params.projectId);
+  
+  if (orderId) {
+    // Include order-specific data
+    const orderSelections = await getOrderSelections(orderId, params.clientId);
+    return { ...project, orderContext: orderSelections };
+  }
+  
+  return project;
+}
+
+// POST for order-specific actions
+export async function POST(request: NextRequest, { params }) {
+  const { action, orderId, domains } = await request.json();
+  
+  if (action === 'addToOrder' && orderId) {
+    await addDomainsToOrder(orderId, domains);
+  }
+  
+  if (action === 'modifyOrder' && orderId) {
+    await modifyOrderDetails(orderId, request.body);
+  }
+}
+```
+
+**IMPLEMENTATION PRIORITY**:
+1. ✅ Query param detection and order context loading
+2. ✅ Order-specific UI elements (header, progress, actions)  
+3. ✅ User permission modifications for account users
+4. ✅ Guided domain deep-dive functionality
+5. ✅ API enhancements for order context
+6. ✅ Navigation integration from order pages
+
+**NO NEW PAGES CREATED**. All functionality added to existing `/clients/[clientId]/bulk-analysis/projects/[projectId]` page with conditional rendering based on query parameters and user type.
+
+#### 3.4 Updated Site Selection API
+
+**Enhanced Endpoint**: `/api/orders/[id]/groups/[groupId]/site-selections`
+
+```typescript
+// GET - Now includes full project data access
+interface GetSitesResponse {
+  project: BulkAnalysisProject; // Full project data
+  allAnalyzedDomains: BulkAnalysisDomain[]; // Complete domain pool
+  suggestedDomains: BulkAnalysisDomain[]; // Team curated suggestions
+  currentSelections: OrderSiteSelection[]; // Current order selections
+  orderFlexibility: {
+    canModifyLinkCount: boolean;
+    canChangeTargets: boolean;
+    canSelectFromFullPool: boolean;
   };
 }
 ```
 
-#### 3.2 Site Browser Component
-```typescript
-<SiteBrowser>
-  <Tabs defaultValue="suggested">
-    <TabsList>
-      <TabsTrigger value="suggested">
-        Suggested ({suggestedCount})
-      </TabsTrigger>
-      <TabsTrigger value="all">
-        Browse All ({totalAnalyzed})
-      </TabsTrigger>
-    </TabsList>
-    
-    <TabsContent value="suggested">
-      <SiteGrid sites={suggestedSites} />
-    </TabsContent>
-    
-    <TabsContent value="all">
-      <FilterBar>
-        <Select options={['High Quality', 'Good', 'Marginal']} />
-        <RangeSlider label="DR" min={0} max={100} />
-        <RangeSlider label="Traffic" min={0} max={1000000} />
-      </FilterBar>
-      <SiteGrid sites={filteredSites} />
-    </TabsContent>
-  </Tabs>
-  
-  <SelectionSummary>
-    <h3>Selected: {selections.length} / {requiredLinks}</h3>
-    <TargetPageAssignment 
-      selections={selections}
-      targetPages={orderGroup.targetPages}
-    />
-  </SelectionSummary>
-</SiteBrowser>
-```
+**Key Change**: Account users now get access to full bulk analysis project data, not just curated suggestions.
 
-#### 3.3 Site Selection API
-**Endpoint**: `/api/orders/[id]/groups/[groupId]/site-selections` ✅ IMPLEMENTED
+### Phase 4: Account User Review Interface ⚠️ NOT REVIEWED YET
 
-```typescript
-// GET - Fetch all available sites
-interface GetSitesResponse {
-  suggested: {
-    fromWebsiteDB: AnalyzedDomain[];
-    fromAnalysis: AnalyzedDomain[];
+**NOTE**: Phase 4 implementation has not been closely reviewed yet. Focus remains on Phase 3 flexible project associations and client bulk analysis access.
   };
   all: AnalyzedDomain[];
   currentSelections: SiteSelection[];
@@ -689,14 +1005,53 @@ GROUP BY o.id, oi.client_id;
 | **Implement payment recording system** | 🔴 HIGH | ✅ COMPLETED | Full payment flow with invoices |
 | **Add email notifications for payments** | 🔴 HIGH | ✅ COMPLETED | Confirmation emails sent |
 | **Fix TypeScript compilation errors** | 🔴 HIGH | ✅ COMPLETED | Field name mismatches resolved |
+| **Implement client archive system** | 🔴 HIGH | ✅ COMPLETED | Soft delete with UI and API |
+| **Implement AI permissions for accounts** | 🔴 HIGH | ✅ COMPLETED | Granular control over AI features |
 | **Fix createdBy user reference** | 🟡 MEDIUM | ❌ PENDING | Needs proper auth system |
 | **Integrate real domain metrics from DataForSEO** | 🟡 MEDIUM | ❌ PENDING | Currently hardcoded as DR:70, traffic:10000 |
 | **Implement dynamic pricing calculation** | 🟡 MEDIUM | ❌ PENDING | Currently hardcoded as $100 per site |
 | **Manual workflow trigger after payment** | 🟡 MEDIUM | ❌ PENDING | Currently requires button click |
 | **Fix niche assignment logic** | 🟢 LOW | ❌ PENDING | Falls back to 'General' for all domains |
 | **Re-implement account user audit tools** | 🟢 LOW | ❌ PENDING | `/admin/check-account-data` disabled |
+| **Define order editing rules** | 🟡 MEDIUM | ❌ PENDING | What changes allowed after 'analyzing' state? |
 
 ### Technical Debt & Placeholders (CRITICAL FOR FUTURE FIXES)
+
+#### Archive System Technical Debt (Added 2025-01-31)
+
+**COMPLETED:**
+- ✅ **Consistent Archive Behavior**: Archive/restore works identically for internal and account users
+- ✅ **UI Implementation**: Archive modal, visual indicators, and list filtering
+- ✅ **Permission Checking**: Proper authorization for archive operations
+- ✅ **TypeScript Types**: Added archive fields to Client interface
+
+**REMAINING TECHNICAL DEBT:**
+
+**1. Foreign Key Constraint Issue**
+- **Current**: Account users' archive actions show `archivedBy` as NULL
+- **Reason**: FK constraint to users table prevents storing account IDs
+- **Impact**: Can't track which account user performed archive action
+- **Solution**: Consider polymorphic reference or separate archive_log table
+
+**2. No Audit Log Table**
+- **Current**: Archive operations only logged to console
+- **Missing**: Permanent audit trail for compliance/debugging
+- **Impact**: Can't review archive history or restore metadata
+
+**3. No Bulk Operations**
+- **Current**: Must archive/restore clients one at a time
+- **Missing**: Bulk selection and archive functionality
+- **Impact**: Time-consuming for users with many clients
+
+**4. No Cascade Behavior**
+- **Current**: Archiving client doesn't affect related data
+- **Missing**: Option to archive/hide related orders, workflows
+- **Impact**: Archived clients still show in order history
+
+**5. Hard-coded System User**
+- **Current**: Using UUID constant for system operations
+- **Missing**: Dynamic system user lookup
+- **Impact**: Breaks if system user ID changes
 
 #### Payment System Technical Debt (Added 2025-01-31)
 
@@ -835,6 +1190,24 @@ During the authentication audit, we discovered and fixed several critical securi
 - `/api/accounts/search/route.ts` ✓
 - `/api/orders/[id]/items/route.ts` ✓
 - `/api/orders/share/[token]/route.ts` ✓ (intentionally public)
+
+### Quick Fixes Applied (2025-08-02)
+
+**Target Page API Security Fixes:**
+- ✅ Added authentication checks to all target page endpoints
+- ✅ Implemented ownership verification via client relationship
+- ✅ Proper 403 responses for unauthorized access attempts
+
+**Currency Formatting Fixes:**
+- ✅ Fixed formatCurrency usage to always expect cents as input
+- ✅ Removed double division by 100 in multiple components
+- ✅ Consistent currency display across entire order flow
+
+**User Experience Improvements:**
+- ✅ Created UserSelector component for user assignment
+- ✅ Added status/state display in orders table
+- ✅ Fixed order detail page routing after confirmation
+- ✅ Implemented order confirmation page with keyword generation
 
 ### Quick Fixes Applied (2025-01-30)
 
@@ -1136,6 +1509,122 @@ GET /api/accounts/onboarding
 
 This onboarding system ensures new account users understand the platform and complete essential setup steps, improving user activation and reducing support burden.
 
+## Archive System Implementation (Added 2025-01-31)
+
+### ✅ **IMPLEMENTATION COMPLETE**
+
+**Purpose**: Provide soft delete functionality for clients with consistent behavior across all interfaces.
+
+### **Features Implemented**
+
+1. **Database Schema** (Migration: `/admin/client-archive-migration`)
+   - `archivedAt` (TIMESTAMP) - Archive timestamp (null = active)
+   - `archivedBy` (UUID) - User who archived (NULL for account users due to FK)
+   - `archiveReason` (TEXT) - Optional reason for archiving
+   
+2. **API Endpoints**
+   - `POST /api/clients/[id]/archive` - Archive a client
+   - `POST /api/clients/[id]/restore` - Restore an archived client
+   - Consistent behavior for both internal and account users
+   
+3. **UI Implementation**
+   - Archive button with confirmation modal on client detail pages
+   - Visual indicators for archived clients (gray text, archive icon)
+   - "Include Archived" toggle in client lists
+   - Archive/restore tracked in audit logs
+
+4. **Permission Model**
+   - Internal users: Can archive/restore any client
+   - Account users: Can only archive/restore their own clients
+   - Proper error messages for permission violations
+
+### **Technical Details**
+
+```typescript
+// Archive operation
+await db.update(clients)
+  .set({
+    archivedAt: new Date(),
+    archivedBy: isInternalUser ? session.userId : null, // FK constraint
+    archiveReason: reason || null,
+    updatedAt: new Date()
+  })
+  .where(eq(clients.id, clientId));
+```
+
+### **Known Limitations**
+- Account users' archive actions show `archivedBy` as NULL due to foreign key constraint
+- Archive operations logged in console but not in separate audit table
+- No bulk archive functionality
+- No automatic archive of related data (orders, workflows)
+
+## AI Permissions System (Added 2025-01-31)
+
+### ✅ **IMPLEMENTATION COMPLETE**
+
+**Purpose**: Control account user access to AI-powered features with granular permissions.
+
+### **Features Implemented**
+
+1. **Database Schema** (Migration: `/api/admin/add-ai-permissions`)
+   - `canUseAiKeywords` (BOOLEAN) - AI keyword generation permission
+   - `canUseAiDescriptions` (BOOLEAN) - AI description generation permission  
+   - `canUseAiContentGeneration` (BOOLEAN) - Future AI content features
+   - `aiPermissions` (JSONB) - Extensible permissions object
+
+2. **Admin Management UI**
+   - AI Permissions modal in accounts management page
+   - Visual indicators (K/D/C badges) for enabled features
+   - Purple wand icon to access permission settings
+   - Real-time permission updates
+
+3. **Client Pages Integration**
+   - AI features hidden by default for account users
+   - Features conditionally rendered based on permissions
+   - Internal users always have full access
+   - Permission checks on page load
+
+4. **API Endpoint**
+   - `PATCH /api/accounts/[id]/permissions` - Update AI permissions
+   - Internal-only endpoint with proper authentication
+   - Tracks who updated permissions and when
+
+### **Permission Model**
+
+```typescript
+// Internal users - always full access
+if (session.userType === 'internal') {
+  setAiPermissions({
+    canUseAiKeywords: true,
+    canUseAiDescriptions: true,
+    canUseAiContentGeneration: true
+  });
+}
+
+// Account users - check database permissions
+else if (session.userType === 'account') {
+  const account = await fetchAccountData(session.accountId);
+  setAiPermissions({
+    canUseAiKeywords: account.canUseAiKeywords || false,
+    canUseAiDescriptions: account.canUseAiDescriptions || false,
+    canUseAiContentGeneration: account.canUseAiContentGeneration || false
+  });
+}
+```
+
+### **UI Behavior**
+- Keyword generation button hidden without permission
+- Description generation button hidden without permission
+- Bulk AI operations hidden without permission
+- Clear visual feedback when features are restricted
+
+### **Future Extensibility**
+The `aiPermissions` JSONB field allows for future granular permissions:
+- Rate limiting per feature
+- Usage quotas
+- Model selection permissions
+- Advanced feature toggles
+
 ## Critical Database Schema Fix (2025-01-31)
 
 ### Invitations Table Schema Mismatch ✅ RESOLVED
@@ -1162,7 +1651,262 @@ ERROR: column "target_table" does not exist
 
 **Result**: Account invitation system now works properly without database errors.
 
-## Active Technical Debt (Updated 2025-01-31)
+## Account User Session Fix (2025-08-01)
+
+### ✅ **FIXED: Account Users Couldn't See Their Clients**
+
+**Issue**: Account users were unable to see their clients in the order creation dropdown at `/orders/new`.
+
+**Root Cause**: The JWT session for account users was missing the `accountId` field, causing API endpoints to fail with "Account ID not found in session" errors.
+
+**Discovery Process**:
+1. Created diagnostic tools at `/account/debug-client-loading` to test session data
+2. Found that session had `userId` but no `accountId` field
+3. Discovered that for account users, `session.userId` IS their account ID (from accounts table)
+
+**Resolution**: Updated all account API endpoints to use `session.userId` instead of `session.accountId`:
+- `/api/account/clients` - Now correctly fetches clients for account users
+- `/api/account/profile` - GET and PUT methods fixed
+- `/api/account/change-password` - Password change functionality fixed
+
+**Technical Details**:
+```typescript
+// OLD (broken) - Expected accountId in session
+if (!session.accountId) {
+  return NextResponse.json({ error: 'Account ID not found in session' }, { status: 400 });
+}
+const accountClients = await db.query.clients.findMany({
+  where: eq(clients.accountId, session.accountId),
+});
+
+// NEW (fixed) - Uses userId for account users
+const accountId = session.userId; // For account users, userId IS their account ID
+const accountClients = await db.query.clients.findMany({
+  where: eq(clients.accountId, accountId),
+});
+```
+
+**Key Learning**: The authentication system sets both `userId` and `accountId` to the same value during login, but the client-side session only includes `userId`. All account endpoints must use `session.userId` to access account data.
+
+## Order Creation Interface Redesign (2025-01-31 to 2025-08-02)
+
+### 🚧 **IN PROGRESS: Three-Column Order Interface** 
+
+**Problem**: The existing order creation page needs to serve both simple users (1 brand, few links) and power users (agencies with many clients) without being confusing or overwhelming.
+
+**Core Design Principle**: **One interface, not two** - No toggles, no modes, no progressive disclosure.
+
+### **Issues with Common UI Patterns**
+
+**1. Mode Toggles = Design Failure**
+- Toggles mean you couldn't design one interface that works for everyone
+- Forces users to choose between "simple" and "advanced" when they just want to order
+- Creates maintenance burden - two interfaces to maintain
+- Fragments the user experience
+
+**2. Progressive Disclosure = Patronizing**
+- Hiding features from users who want to order is counterproductive
+- Users ordering links want to see their options upfront, not have things revealed
+- "This is for babies" - if someone is ordering, they're not beginners
+- Creates confusion about what's available
+
+**3. The Real Challenge**
+An order form should:
+- Show all capabilities immediately
+- Make simple tasks simple without hiding advanced features
+- Scale naturally from 1 link to 50 links
+- Work for single clients and multi-client agencies
+- Feel natural and obvious, not clever or complex
+
+### **Required Solution Approach**
+
+**Core Requirement**: Design a single interface that naturally accommodates:
+- **Simple User**: 1 brand, 5 links, wants it easy
+- **Power User**: Agency with 30 clients, 50+ links, needs granular control
+- **Everyone In Between**: Without making them choose modes or wait for reveals
+
+**Key Features Needed**:
+1. **Granular anchor text control** - Some users want specific anchor text per link
+2. **Smart auto-fill** - Leverage existing target pages effectively  
+3. **Bulk operations** - Easy for agencies to add many links at once
+4. **Line item system** - Clear view of exactly what's being ordered
+5. **Natural flow** - From simple to detailed as needed, without modes
+
+### **Current Implementation Status**
+
+**Files Modified**:
+- `/app/orders/new/page.tsx` - Main order creation interface
+- `/app/orders/legacy/original-new-page.tsx` - Moved old implementation
+
+**Current Approach Issues**:
+- Still includes toggle between "simple" and "advanced" modes
+- Still uses progressive disclosure patterns (hiding Quick Add after first use)
+- Creates two different user experiences instead of one unified flow
+
+### **Unified Interface Design Plan**
+
+**Analysis of User Workflows**:
+1. **Simple User (1 client, 5 links)**: Wants quick bulk addition for one brand
+2. **Power User (30 clients, 50 links)**: Wants granular control + efficient bulk operations  
+3. **Mixed User**: Same person doing both depending on the order size
+
+### **Solution Architecture: Three-Column Full-Screen Layout**
+
+**Core Principle**: Use the entire screen with three specialized columns that work together dynamically - no cramped forms or hidden features.
+
+**Design Strategy**:
+1. **Left Column**: Client selection with checkboxes and link counts
+2. **Middle Column**: Dynamic order line items that populate based on selections
+3. **Right Column**: Target URLs for selected clients with metadata
+4. **Natural Flow**: Select clients → See their targets → Build specific line items by clicking
+5. **Full Screen**: Utilizes entire viewport for maximum information density
+
+**Key Components**:
+```
+Full-Screen Three-Column Order Interface:
+┌─────────────────────────────────────────────────────────────────────────────────────┐
+│                           Create New Order                                          │
+├───────────────┬─────────────────────────────────────┬───────────────────────────────┤
+│ LEFT SIDEBAR  │            MIDDLE COLUMN            │         RIGHT SIDEBAR         │
+│ Client List   │         Order Line Items            │      Target URLs             │
+├───────────────┼─────────────────────────────────────┼───────────────────────────────┤
+│ ☑️ ClientA    │ ┌─────────────────────────────────┐ │ ClientA Target Pages:         │
+│   [5] links   │ │ Row 1: ClientA → PageA → $100  │ │ • PageA (DR:70, 10k traffic) │
+│               │ └─────────────────────────────────┘ │ • PageB (DR:65, 5k traffic)  │
+│ ☑️ ClientB    │ ┌─────────────────────────────────┐ │ • PageC (DR:80, 15k traffic) │
+│   [3] links   │ │ Row 2: ClientA → PageB → $100  │ │                               │
+│               │ └─────────────────────────────────┘ │ ClientB Target Pages:         │
+│ ☐ ClientC     │ ┌─────────────────────────────────┐ │ • PageX (DR:75, 8k traffic)  │
+│   [0] links   │ │ Row 3: ClientB → PageX → $100  │ │ • PageY (DR:60, 12k traffic) │
+│               │ └─────────────────────────────────┘ │                               │
+│ ☐ ClientD     │                                     │ [Empty - select clients       │
+│   [0] links   │ [Click target URLs on right →]     │  to see target pages]         │
+│               │ [to populate rows here]             │                               │
+│ Total: 8 links│                                     │ [Clickable URLs populate      │
+│ Total: $800   │                                     │  middle column rows]          │
+└───────────────┴─────────────────────────────────────┴───────────────────────────────┘
+```
+
+**User Experience Flow**:
+
+**For Simple Users (1 client, 5 links)**:
+1. **Left**: Check ClientA, set links to 5
+2. **Right**: See ClientA's target pages appear with metadata
+3. **Middle**: Click target pages 5 times to populate 5 order rows
+4. **Result**: 5 specific line items ready for ordering
+5. **Granular Control**: Edit anchor text in any row if desired
+
+**For Power Users (agencies, complex orders)**:
+1. **Left**: Check multiple clients (ClientA: 10, ClientB: 15, ClientC: 25)
+2. **Right**: See all selected clients' target pages with filtering/search
+3. **Middle**: Click target pages strategically to build specific combinations
+4. **Efficiency**: Click same target multiple times for bulk assignment
+5. **Granular Control**: Fine-tune each line item individually
+
+**Natural Scaling**: Interface works identically for 5 links or 50 links - no mode switching needed.
+
+**Key Interactions**:
+- **Left Sidebar**: Checkbox client → See their targets on right → Count updates total
+- **Right Sidebar**: Click target URL → Populates new row in middle → Can click again for duplicates
+- **Middle Column**: Full granular control - edit anchor text, swap targets, remove rows
+- **Dynamic Updates**: All columns update in real-time as selections change
+
+**Implementation Plan**:
+1. ✅ Document the problems with current approach
+2. ✅ Create unified interface design plan  
+3. ✅ **Updated to three-column full-screen approach**
+4. 🔄 **NEXT: Implement three-column layout without toggles/progressive disclosure**
+5. Test with both simple and power user scenarios
+6. Ensure responsive design for different screen sizes
+
+**Current Status**: 
+- Three-column design plan complete and documented
+- Implementation started in `/app/orders/new` 
+- Original implementation backed up to `/app/orders/legacy/original-new-page.tsx`
+- Ready to implement full-screen unified interface without toggles or modes
+
+### **Three-Column Technical Implementation Details**
+
+**Component Structure**:
+```typescript
+interface OrderBuilderState {
+  selectedClients: Map<string, { selected: boolean; linkCount: number }>;
+  availableTargets: Map<string, TargetPage[]>; // Keyed by clientId
+  orderLineItems: OrderLineItem[];
+  totalCost: number;
+}
+
+interface TargetPageWithMetadata {
+  id: string;
+  url: string;
+  keywords: string[];
+  dr: number;
+  traffic: number;
+  clientId: string;
+  clientName: string;
+}
+```
+
+**Key Features**:
+1. **Smart Target Filtering**: Right sidebar shows only targets for selected clients
+2. **Real-time Totals**: Left sidebar updates counts as middle column changes
+3. **Duplicate Management**: Same target can be used multiple times for different anchor texts
+4. **Visual Feedback**: Clear indication of which targets have been used and how many times
+5. **Bulk Operations**: Shift+click or bulk select targets for rapid population
+
+**Responsive Considerations**:
+- **Desktop**: Full three-column layout (1200px+)
+- **Tablet**: Stack to two columns (left+middle, right becomes modal/drawer)
+- **Mobile**: Single column with tab navigation between client/target/order views
+
+**Advanced Interactions**:
+- **Drag & Drop**: Drag targets from right sidebar to middle column
+- **Keyboard Shortcuts**: Quick client selection, target search, row navigation
+- **Bulk Assignment**: Select multiple targets and assign to multiple rows at once
+- **Template Saves**: Save common client+target combinations for future orders
+
+**Data Flow**:
+1. **Client Selection** (Left) → Triggers target loading for right sidebar
+2. **Target Click** (Right) → Creates new line item in middle column
+3. **Line Item Edit** (Middle) → Updates totals in left sidebar and order state
+4. **Real-time Sync**: All three columns stay synchronized through shared state
+
+This approach eliminates the need for any toggles, modes, or progressive disclosure by using spatial separation and direct manipulation to handle complexity naturally.
+
+## Recent Bug Fixes (2025-08-02)
+
+### Target Page Security Fix
+**Issue**: Target page APIs had no permission checks, allowing any authenticated user to access any target page
+**Fix**: Added proper permission checks joining with clients table to verify ownership
+**Files Modified**:
+- `/app/api/target-pages/[id]/route.ts`
+- `/app/api/target-pages/[id]/keywords/route.ts`
+- `/app/api/target-pages/[id]/description/route.ts`
+
+### Currency Formatting Consistency
+**Issue**: Some places were dividing by 100 before passing to formatCurrency, causing values like $5.58 instead of $558
+**Fix**: Ensured all currency values are passed as cents (integers) to formatCurrency
+**Files Modified**:
+- `/components/OrdersTableMultiClient.tsx`
+- `/components/orders/PaymentStatus.tsx`
+- `/components/orders/RecordPaymentModal.tsx`
+- Multiple order-related components
+
+### Order Detail Page Routing
+**Issue**: After confirming order as internal user, redirected to legacy page `/orders/[id]` instead of modern `/orders/[id]/detail`
+**Fix**: Updated confirmation flow to redirect to proper detail page
+**Files Modified**:
+- `/app/orders/[id]/confirm/page.tsx`
+- `/app/api/orders/[id]/confirm/route.ts`
+
+### User Assignment Field
+**Issue**: Assignment field was a text input requiring manual user ID entry
+**Fix**: Created UserSelector component with dropdown and search functionality
+**New Files**:
+- `/components/ui/UserSelector.tsx`
+- `/app/api/internal-users/assignable/route.ts`
+
+## Active Technical Debt (Updated 2025-08-02)
 
 ### Account Features Integration Debt
 
@@ -1182,3 +1926,131 @@ ERROR: column "target_table" does not exist
 - [ ] Replace placeholder data with real metrics and functionality
 - [ ] Refine account user experience and flows
 - [ ] Test complete end-to-end account journey
+
+## Phase 3.5 Implementation Progress (2025-08-02)
+
+### What We Built
+
+Successfully implemented flexible project-order associations allowing bulk analysis projects to be reused across multiple orders, with unified interfaces leveraging existing components.
+
+### Key Accomplishments
+
+1. **Database Architecture**
+   - Created `projectOrderAssociations` schema for many-to-many relationships
+   - Replaced rigid `orderSiteSelections` with flexible `orderSiteSubmissions`
+   - Full audit trail with timestamps and metadata tracking
+
+2. **API Endpoints**
+   - Internal user status management endpoint
+   - Account user review actions endpoint  
+   - Unified submission fetching with security boundaries
+
+3. **UI Integration**
+   - **Bulk Analysis Enhancement**: Order context awareness with ?orderId parameter
+   - **Order Site Review**: Complete rewrite using BulkAnalysisTable component
+   - **Guided Domain Functionality**: Preserved existing deep-dive features
+   - Three-tab interface: Pending | All | Approved
+
+4. **Security Implementation**
+   - Comprehensive permission checks at all levels
+   - Cross-client data isolation enforced
+   - Full audit trail for all actions
+
+### Placeholders & Technical Debt
+
+#### API Response Type Safety
+- Used `any` types in several places instead of proper interfaces
+- Domain conversion has loose typing
+- API responses aren't fully typed
+
+#### Error Handling
+- Basic try/catch with console.error
+- No retry logic for failed API calls
+- No graceful degradation if bulk analysis project missing
+
+#### Performance Optimizations
+- No caching of domain data between tabs
+- Fetches all data on every tab switch
+- No debouncing on status updates
+- Missing optimistic UI updates
+
+#### Feature Completeness
+```typescript
+// Placeholder handlers
+const handleCreateWorkflow = (domain: BulkAnalysisDomain) => {
+  console.log('Create workflow:', domain);
+};
+const handleDeleteDomain = async (domainId: string) => {
+  console.log('Delete domain:', domainId);
+};
+```
+
+#### Business Logic Gaps
+- No validation that approved count matches required links
+- No prevention of over-approval
+- No bulk approval/rejection capabilities
+- No export functionality for approved sites
+
+#### Security Shortcuts
+- Permission checks are basic (just userType checks)
+- No rate limiting on API endpoints
+- Audit trail in metadata is unstructured JSON
+
+#### Database Schema Compromises
+```typescript
+metadata: json('metadata').$type<Record<string, any>>(),
+// Should be properly typed for status history, review history, etc.
+```
+
+#### Missing Integration Features
+- No email notifications when status changes
+- No webhooks for external systems
+- No activity feed or timeline view
+- No bulk import/export capabilities
+
+#### Code Organization
+- Inline type definitions instead of shared types file
+- Duplicated logic between endpoints
+- No service layer abstraction (direct DB queries in routes)
+- Mixed concerns in API routes
+
+#### State Management
+- Local component state instead of global state management
+- Multiple API calls that could be consolidated
+- Tab state resets on page refresh
+
+### Most Critical to Address Next
+
+1. **Type safety** - Add proper interfaces for all API responses
+2. **Error handling** - Implement proper error boundaries and user feedback
+3. **Performance** - Add caching and optimistic updates
+4. **Business logic** - Validate link counts and prevent over-approval
+5. **Security** - Add rate limiting and structured audit trails
+6. **Order Interface** - Complete three-column implementation without modes
+7. **Order Editing Rules** - Define what changes are allowed after 'analyzing' state
+
+These were conscious trade-offs to get a working system quickly that could be refined based on user feedback.
+
+## Summary of Latest Changes (2025-08-02)
+
+### What Was Fixed
+1. **Target Page Security**: Added proper permission checks to prevent unauthorized access
+2. **Currency Formatting**: Fixed decimal display issues throughout the order flow
+3. **User Assignment**: Replaced text input with searchable dropdown
+4. **Order Confirmation**: New dedicated page ensuring keywords exist before bulk analysis
+5. **Order Detail Routing**: Fixed redirect to use modern multi-client detail page
+
+### What's Still Pending
+1. **Three-Column Order Interface**: Design complete, implementation in progress
+2. **Order Editing Rules**: Need to define what can be modified after confirmation
+3. **Real Domain Metrics**: Still using hardcoded values instead of DataForSEO
+4. **Dynamic Pricing**: Still using fixed $100 per site
+5. **Account Dashboard Integration**: Basic implementation needs real integration
+
+## Related Documentation
+
+- [Database Schema](../architecture/DATABASE.md) - Full database structure
+- [API Routes](../api/README.md) - API endpoint documentation
+- [User Types](./USER_TYPES.md) - User type definitions and permissions
+- [Client Security Implementation](./CLIENT_SECURITY_IMPLEMENTATION.md) - Similar security pattern for client management
+- [Phase 3 Implementation Summary](./PHASE_3_IMPLEMENTATION_SUMMARY.md) - Detailed implementation summary

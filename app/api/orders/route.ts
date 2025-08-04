@@ -17,15 +17,32 @@ export async function GET(request: NextRequest) {
     const { searchParams } = new URL(request.url);
     const status = searchParams.get('status');
     const accountId = searchParams.get('accountId');
+    const clientId = searchParams.get('clientId');
+    const projectId = searchParams.get('projectId');
 
     let orders: any[] = [];
     
+    // Special handling for project-associated orders
+    if (projectId && session.userType === 'internal') {
+      const result = await OrderService.getOrdersForProject(projectId);
+      return NextResponse.json({ 
+        orders: result.draftOrders,
+        associatedOrders: result.associatedOrders,
+        defaultOrderId: result.defaultOrderId 
+      });
+    }
+    
     if (session.userType === 'account') {
       // Accounts can only see their own orders
-      orders = await OrderService.getAccountOrders(session.accountId!);
+      // For account users, session.userId is their account ID
+      const accountId = session.accountId || session.userId;
+      orders = await OrderService.getAccountOrders(accountId);
     } else if (accountId && session.userType === 'internal') {
       // Internal users can filter by account
       orders = await OrderService.getAccountOrders(accountId);
+    } else if (clientId && status && session.userType === 'internal') {
+      // Internal users can filter by client and status
+      orders = await OrderService.getClientOrdersByStatus(clientId, status);
     } else if (status && session.userType === 'internal') {
       // Internal users can filter by status
       orders = await OrderService.getOrdersByStatus(status);
@@ -54,13 +71,60 @@ export async function POST(request: NextRequest) {
     }
 
     const data = await request.json();
+    
+    // Check if this is a simple draft order creation (new flow)
+    if (data.status === 'draft' && !data.clientId && !data.domains && !data.domainMappings) {
+      // Simple draft order creation
+      const orderId = uuidv4();
+      const now = new Date();
+      
+      // Prepare order values based on user type
+      let orderValues: any = {
+        id: orderId,
+        status: 'draft',
+        state: data.state || 'configuring',
+        orderType: data.orderType || 'guest_post',
+        subtotalRetail: 0,
+        discountPercent: '0',
+        discountAmount: 0,
+        totalRetail: 0,
+        totalWholesale: 0,
+        profitMargin: 0,
+        includesClientReview: false,
+        clientReviewFee: 0,
+        rushDelivery: false,
+        rushFee: 0,
+        createdAt: now,
+        updatedAt: now,
+      };
+      
+      // Set account info and createdBy based on user type
+      if (session.userType === 'account') {
+        // Account users creating their own orders
+        orderValues.accountId = session.accountId || session.userId;
+        orderValues.createdBy = '00000000-0000-0000-0000-000000000000'; // System user ID
+      } else if (session.userType === 'internal') {
+        // Internal users creating orders - they'll need to select account later
+        orderValues.createdBy = session.userId;
+        orderValues.accountId = data.accountId || null;
+      }
+      
+      // Create the order
+      await db.insert(orders).values(orderValues);
+      
+      return NextResponse.json({
+        success: true,
+        orderId: orderId,
+        order: orderValues
+      });
+    }
+    
+    // Original bulk analysis order creation logic
     const {
       clientId,
       domains: domainIds, // Legacy support
       domainMappings, // New format with target page mappings
-      accountEmail,
-      accountName,
-      accountCompany,
+      accountId,
       includesClientReview,
       rushDelivery,
       internalNotes,
@@ -85,9 +149,9 @@ export async function POST(request: NextRequest) {
       );
     }
 
-    if (!accountEmail || !accountName) {
+    if (!accountId) {
       return NextResponse.json(
-        { error: 'Account email and name are required' },
+        { error: 'Account ID is required' },
         { status: 400 }
       );
     }
@@ -159,10 +223,7 @@ export async function POST(request: NextRequest) {
     // Create the order
     await db.insert(orders).values({
       id: orderId,
-      accountId: session.userType === 'account' ? session.accountId : null,
-      accountEmail: accountEmail.toLowerCase(),
-      accountName: accountName,
-      accountCompany: accountCompany,
+      accountId: accountId || (session.userType === 'account' ? (session.accountId || session.userId) : null),
       status: 'draft',
       subtotalRetail,
       discountPercent: discountPercent.toString(),
@@ -174,7 +235,7 @@ export async function POST(request: NextRequest) {
       clientReviewFee,
       rushDelivery: rushDelivery || false,
       rushFee,
-      createdBy: session.userId,
+      createdBy: session.userType === 'account' ? '00000000-0000-0000-0000-000000000000' : session.userId,
       internalNotes: session.userType === 'internal' ? internalNotes : null,
       createdAt: now,
       updatedAt: now,

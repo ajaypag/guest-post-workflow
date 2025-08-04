@@ -15,9 +15,12 @@ export async function GET(request: NextRequest) {
       );
     }
     
+    // For account users, session.userId IS their account ID
+    const accountId = session.userId;
+    
     // Get account details
     const account = await db.query.accounts.findFirst({
-      where: eq(accounts.id, session.accountId!)
+      where: eq(accounts.id, accountId)
     });
     
     if (!account) {
@@ -76,6 +79,9 @@ export async function PUT(request: NextRequest) {
       }
     }
     
+    // For account users, session.userId IS their account ID
+    const accountId = session.userId;
+    
     // Update account
     await db.update(accounts)
       .set({
@@ -85,11 +91,11 @@ export async function PUT(request: NextRequest) {
         website,
         updatedAt: new Date()
       })
-      .where(eq(accounts.id, session.accountId!));
+      .where(eq(accounts.id, accountId));
     
     // Get updated account
     const updatedAccount = await db.query.accounts.findFirst({
-      where: eq(accounts.id, session.accountId!)
+      where: eq(accounts.id, accountId)
     });
     
     return NextResponse.json({

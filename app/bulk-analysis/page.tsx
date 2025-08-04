@@ -20,7 +20,9 @@ import {
   ChevronRight,
   ExternalLink,
   Loader2,
-  BarChart2
+  BarChart2,
+  Package,
+  Calendar
 } from 'lucide-react';
 
 interface ExtendedClient extends Client {
@@ -30,6 +32,26 @@ interface ExtendedClient extends Client {
   domainCount?: number;
   workflowCount?: number;
   lastActivityAt?: Date;
+}
+
+interface BulkAnalysisProject {
+  id: string;
+  clientId: string;
+  name: string;
+  description?: string;
+  color?: string;
+  icon?: string;
+  status: string;
+  domainCount: number;
+  qualifiedCount: number;
+  workflowCount: number;
+  lastActivityAt?: string;
+  createdAt: string;
+  client: {
+    id: string;
+    name: string;
+    website: string;
+  };
 }
 
 export default function BulkAnalysisDashboard() {

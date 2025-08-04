@@ -571,6 +571,92 @@ export class EmailService {
   }
 
   /**
+   * Send account welcome email with onboarding steps
+   */
+  static async sendAccountWelcomeWithOnboarding(data: {
+    email: string;
+    name: string;
+    company?: string;
+  }): Promise<{ success: boolean; id?: string; error?: string }> {
+    const html = `
+      <div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto;">
+        <div style="background: linear-gradient(to right, #2563EB, #1D4ED8); color: white; padding: 40px 30px; border-radius: 8px 8px 0 0;">
+          <h1 style="margin: 0; font-size: 28px;">Welcome to PostFlow!</h1>
+          <p style="margin: 10px 0 0 0; opacity: 0.9;">Your guest posting journey starts here</p>
+        </div>
+        
+        <div style="padding: 30px; background: white; border: 1px solid #E5E7EB; border-top: none; border-radius: 0 0 8px 8px;">
+          <p style="font-size: 16px; color: #374151; margin: 0 0 20px 0;">
+            Hi ${data.name},
+          </p>
+          
+          <p style="font-size: 16px; color: #374151; margin: 0 0 30px 0;">
+            Welcome to PostFlow! Your account has been created successfully${data.company ? ` for ${data.company}` : ''}.
+          </p>
+          
+          <div style="background: #F3F4F6; padding: 20px; border-radius: 8px; margin: 0 0 30px 0;">
+            <h2 style="margin: 0 0 15px 0; font-size: 20px; color: #1F2937;">Get Started with Your Dashboard</h2>
+            <p style="margin: 0 0 20px 0; color: #4B5563;">Complete these steps to make the most of PostFlow:</p>
+            
+            <div style="margin: 0 0 15px 0;">
+              <div style="display: flex; align-items: center; margin-bottom: 10px;">
+                <div style="width: 24px; height: 24px; background: #E5E7EB; border-radius: 50%; margin-right: 10px;"></div>
+                <span style="color: #374151; font-weight: 600;">Complete Your Profile</span>
+              </div>
+              <p style="margin: 0 0 0 34px; color: #6B7280; font-size: 14px;">Add your company details and contact information</p>
+            </div>
+            
+            <div style="margin: 0 0 15px 0;">
+              <div style="display: flex; align-items: center; margin-bottom: 10px;">
+                <div style="width: 24px; height: 24px; background: #E5E7EB; border-radius: 50%; margin-right: 10px;"></div>
+                <span style="color: #374151; font-weight: 600;">Set Up Your First Brand</span>
+              </div>
+              <p style="margin: 0 0 0 34px; color: #6B7280; font-size: 14px;">Add your website and target pages for link building</p>
+            </div>
+            
+            <div style="margin: 0 0 15px 0;">
+              <div style="display: flex; align-items: center; margin-bottom: 10px;">
+                <div style="width: 24px; height: 24px; background: #E5E7EB; border-radius: 50%; margin-right: 10px;"></div>
+                <span style="color: #374151; font-weight: 600;">Create Your First Order</span>
+              </div>
+              <p style="margin: 0 0 0 34px; color: #6B7280; font-size: 14px;">Start your first guest posting campaign</p>
+            </div>
+          </div>
+          
+          <div style="text-align: center; margin: 30px 0;">
+            <a href="${process.env.NEXTAUTH_URL}/account/dashboard" 
+               style="display: inline-block; background: #2563EB; color: white; padding: 14px 32px; text-decoration: none; border-radius: 8px; font-weight: 600; font-size: 16px;">
+              Go to Dashboard
+            </a>
+          </div>
+          
+          <div style="background: #F9FAFB; padding: 20px; border-radius: 8px; margin: 30px 0 0 0;">
+            <p style="margin: 0; color: #6B7280; font-size: 14px;">
+              <strong>Need help?</strong> Our team is here to assist you. Reply to this email 
+              or visit our <a href="${process.env.NEXTAUTH_URL}/help" style="color: #2563EB; text-decoration: none;">help center</a>.
+            </p>
+          </div>
+        </div>
+        
+        <div style="text-align: center; padding: 20px; color: #9CA3AF; font-size: 12px;">
+          <p style="margin: 0;">© ${new Date().getFullYear()} PostFlow. All rights reserved.</p>
+          <p style="margin: 5px 0 0 0;">
+            <a href="${process.env.NEXTAUTH_URL}/terms" style="color: #9CA3AF; text-decoration: none;">Terms</a> · 
+            <a href="${process.env.NEXTAUTH_URL}/privacy" style="color: #9CA3AF; text-decoration: none;">Privacy</a>
+          </p>
+        </div>
+      </div>
+    `;
+
+    return this.send('account_welcome', {
+      to: data.email,
+      subject: 'Welcome to PostFlow - Get Started Today',
+      html,
+      text: `Welcome to PostFlow, ${data.name}! Your account has been created successfully. Visit ${process.env.NEXTAUTH_URL}/account/dashboard to get started with your onboarding checklist.`,
+    });
+  }
+
+  /**
    * Send account invitation email
    */
   static async sendAccountInvitation(email: string, data: {
@@ -612,6 +698,48 @@ export class EmailService {
       subject: `You're invited to join PostFlow${data.companyName ? ` - ${data.companyName}` : ''}`,
       html,
       text: `You've been invited to create an account on PostFlow. Visit ${data.inviteUrl} to accept the invitation.`,
+    });
+  }
+
+  /**
+   * Send password reset email
+   */
+  static async sendPasswordResetEmail(data: {
+    to: string;
+    contactName: string;
+    resetUrl: string;
+    expiresIn: string;
+  }): Promise<{ success: boolean; id?: string; error?: string }> {
+    const html = `
+      <div style="font-family: Arial, sans-serif; line-height: 1.6; color: #333;">
+        <h2>Password Reset Request</h2>
+        <p>Hi ${data.contactName},</p>
+        
+        <p>We received a request to reset your password for your PostFlow account. If you didn't make this request, you can safely ignore this email.</p>
+        
+        <p>To reset your password, click the button below:</p>
+        
+        <div style="margin: 30px 0;">
+          <a href="${data.resetUrl}" style="background-color: #0066cc; color: white; padding: 12px 24px; text-decoration: none; border-radius: 4px; display: inline-block;">Reset Password</a>
+        </div>
+        
+        <p style="color: #666; font-size: 14px;">This link will expire in ${data.expiresIn}. If the link has expired, you can request a new password reset from your administrator.</p>
+        
+        <p>If you're having trouble clicking the button, copy and paste this URL into your browser:</p>
+        <p style="color: #666; font-size: 14px; word-break: break-all;">${data.resetUrl}</p>
+        
+        <p>Best regards,<br>The PostFlow Team</p>
+        
+        <hr style="margin: 30px 0; border: none; border-top: 1px solid #eee;">
+        <p style="color: #999; font-size: 12px;">This is an automated message. Please do not reply to this email.</p>
+      </div>
+    `;
+
+    return this.send('password-reset', {
+      to: data.to,
+      subject: 'Reset Your PostFlow Password',
+      html,
+      text: `Hi ${data.contactName}, We received a request to reset your password. Visit ${data.resetUrl} to reset your password. This link will expire in ${data.expiresIn}.`,
     });
   }
 

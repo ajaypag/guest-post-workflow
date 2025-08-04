@@ -3,6 +3,7 @@ import { ClientService } from '@/lib/db/clientService';
 import { AuthServiceServer } from '@/lib/auth-server';
 import { db } from '@/lib/db/connection';
 import { accounts } from '@/lib/db/accountSchema';
+import { clients } from '@/lib/db/schema';
 import { eq } from 'drizzle-orm';
 
 export async function GET(
@@ -12,22 +13,13 @@ export async function GET(
   try {
     const { id } = await params;
     
-    // Check authentication
+    // Authenticate user
     const session = await AuthServiceServer.getSession(request);
     if (!session) {
       return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
     }
     
-    // If account, verify they have access to this client
-    if (session.userType === 'account') {
-      const account = await db.query.accounts.findFirst({
-        where: eq(accounts.id, session.userId),
-      });
-      
-      if (!account || account.primaryClientId !== id) {
-        return NextResponse.json({ error: 'Forbidden' }, { status: 403 });
-      }
-    }
+    // First get the client
     const client = await ClientService.getClient(id);
     if (!client) {
       return NextResponse.json(
@@ -35,6 +27,19 @@ export async function GET(
         { status: 404 }
       );
     }
+    
+    // Check access - both internal and account users allowed with different permissions
+    if (session.userType === 'internal') {
+      // Internal users: Full access to any client
+    } else if (session.userType === 'account') {
+      // Account users: Only access clients they own
+      if (client.accountId !== session.userId) {
+        return NextResponse.json({ error: 'Forbidden - Account access denied' }, { status: 403 });
+      }
+    } else {
+      return NextResponse.json({ error: 'Unauthorized - Invalid user type' }, { status: 401 });
+    }
+    
     return NextResponse.json({ client });
   } catch (error) {
     console.error('Error fetching client:', error);
@@ -51,29 +56,18 @@ export async function PUT(
 ) {
   try {
     const { id } = await params;
-    
-    // Check authentication
-    const session = await AuthServiceServer.getSession(request);
-    if (!session) {
-      return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
-    }
-    
-    // If account, verify they have access to this client
-    if (session.userType === 'account') {
-      const account = await db.query.accounts.findFirst({
-        where: eq(accounts.id, session.userId),
-      });
-      
-      if (!account || account.primaryClientId !== id) {
-        return NextResponse.json({ error: 'Forbidden' }, { status: 403 });
-      }
-    }
     const updates = await request.json();
     
     console.log('🟨 PUT /api/clients/[id] - ID:', id);
     console.log('🟨 PUT /api/clients/[id] - Updates:', updates);
     
-    // First check if client exists
+    // Authenticate user
+    const session = await AuthServiceServer.getSession(request);
+    if (!session) {
+      return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
+    }
+    
+    // First check if client exists and get current data
     const existingClient = await ClientService.getClient(id);
     console.log('🟨 Existing client found:', !!existingClient);
     
@@ -83,6 +77,25 @@ export async function PUT(
         { error: 'Client not found in database' },
         { status: 404 }
       );
+    }
+    
+    // Check access - both internal and account users allowed with different permissions
+    if (session.userType === 'internal') {
+      // Internal users: Can update any client
+    } else if (session.userType === 'account') {
+      // Account users: Only update clients they own
+      if (existingClient.accountId !== session.userId) {
+        return NextResponse.json({ error: 'Forbidden - Account access denied' }, { status: 403 });
+      }
+      
+      // Account users cannot change ownership
+      if (updates.accountId && updates.accountId !== session.userId) {
+        return NextResponse.json({ 
+          error: 'Forbidden - Cannot transfer brand ownership' 
+        }, { status: 403 });
+      }
+    } else {
+      return NextResponse.json({ error: 'Unauthorized - Invalid user type' }, { status: 401 });
     }
     
     const client = await ClientService.updateClient(id, updates);
@@ -114,17 +127,39 @@ export async function DELETE(
   try {
     const { id } = await params;
     
-    // Check authentication - only internal users can delete clients
+    // Authenticate user
     const session = await AuthServiceServer.getSession(request);
-    if (!session || session.userType !== 'internal') {
+    if (!session) {
       return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
     }
+    
+    // First check if client exists
+    const existingClient = await ClientService.getClient(id);
+    if (!existingClient) {
+      return NextResponse.json(
+        { error: 'Client not found' },
+        { status: 404 }
+      );
+    }
+    
+    // Check access - both internal and account users allowed with different permissions
+    if (session.userType === 'internal') {
+      // Internal users: Can delete any client
+    } else if (session.userType === 'account') {
+      // Account users: Only delete clients they own
+      if (existingClient.accountId !== session.userId) {
+        return NextResponse.json({ error: 'Forbidden - Account access denied' }, { status: 403 });
+      }
+    } else {
+      return NextResponse.json({ error: 'Unauthorized - Invalid user type' }, { status: 401 });
+    }
+    
     const success = await ClientService.deleteClient(id);
     
     if (!success) {
       return NextResponse.json(
-        { error: 'Client not found' },
-        { status: 404 }
+        { error: 'Failed to delete client' },
+        { status: 500 }
       );
     }
     

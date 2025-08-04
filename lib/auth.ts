@@ -132,6 +132,18 @@ export class AuthService {
     const session = this.getSession();
     if (!session) return null;
     
+    // For account users, we already have the user data in the session
+    if (session.userType === 'account') {
+      return {
+        id: session.userId,
+        email: session.email,
+        name: session.name || session.email,
+        role: session.role || 'viewer',
+        userType: 'account'
+      } as any as User;
+    }
+    
+    // For internal users, fetch from the users API
     try {
       const response = await fetch(`/api/users/${session.userId}`);
       if (!response.ok) return null;

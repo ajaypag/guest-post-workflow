@@ -146,10 +146,13 @@ export default function LoginPage() {
 
             <div className="text-center">
               <p className="text-sm text-gray-600">
-                This is an invite-only platform
-              </p>
-              <p className="text-xs text-gray-500 mt-1">
-                Contact your administrator for access
+                Don't have an account?{' '}
+                <a 
+                  href="/signup" 
+                  className="text-purple-600 hover:text-purple-700 font-medium transition-colors"
+                >
+                  Sign up
+                </a>
               </p>
             </div>
           </form>

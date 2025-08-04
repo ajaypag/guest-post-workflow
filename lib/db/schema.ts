@@ -76,9 +76,15 @@ export const clients = pgTable('clients', {
   description: text('description').default(''),
   clientType: varchar('client_type', { length: 50 }).default('client'), // 'prospect' | 'client'
   createdBy: uuid('created_by').notNull().references(() => users.id),
+  accountId: uuid('account_id'), // Link to account that owns this client
+  shareToken: varchar('share_token', { length: 255 }).unique(), // For public claim links
+  invitationId: uuid('invitation_id'), // Link to invitation if created via invitation
   convertedFromProspectAt: timestamp('converted_from_prospect_at'),
   conversionNotes: text('conversion_notes'),
   defaultRequirements: text('default_requirements').default('{}'), // JSONB column for order-centric architecture
+  archivedAt: timestamp('archived_at'), // Soft delete timestamp
+  archivedBy: uuid('archived_by').references(() => users.id), // Who archived the client
+  archiveReason: text('archive_reason'), // Reason for archiving (audit trail)
   createdAt: timestamp('created_at').notNull(), // Remove defaultNow() to handle in application code
   updatedAt: timestamp('updated_at').notNull(), // Remove defaultNow() to handle in application code
 });
@@ -96,6 +102,7 @@ export const targetPages = pgTable('target_pages', {
   id: uuid('id').primaryKey(), // Remove defaultRandom() to handle in application code
   clientId: uuid('client_id').notNull().references(() => clients.id, { onDelete: 'cascade' }),
   url: varchar('url', { length: 500 }).notNull(),
+  normalizedUrl: varchar('normalized_url', { length: 500 }), // Canonical URL for duplicate checking and AI matching
   domain: varchar('domain', { length: 255 }).notNull(),
   status: varchar('status', { length: 50 }).notNull().default('active'), // 'active' | 'completed' | 'inactive'
   keywords: text('keywords'), // Comma-separated list of AI-generated keywords

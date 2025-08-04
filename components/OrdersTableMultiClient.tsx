@@ -1,8 +1,10 @@
 'use client';
 
-import React, { useState } from 'react';
-import { Package, ChevronDown, ChevronRight, Users, Link as LinkIcon, Eye, Copy, Check } from 'lucide-react';
+import React, { useState, useEffect } from 'react';
+import { Package, ChevronDown, ChevronRight, Users, Link as LinkIcon, Eye, Copy, Check, Trash2, CheckCircle, Activity } from 'lucide-react';
 import Link from 'next/link';
+import { AuthService } from '@/lib/auth';
+import { AuthSession } from '@/lib/types/auth';
 
 interface OrderGroup {
   id: string;
@@ -20,12 +22,17 @@ interface OrderGroup {
   };
 }
 
+interface Account {
+  id: string;
+  email: string;
+  contactName?: string;
+  companyName?: string;
+}
+
 interface Order {
   id: string;
   accountId?: string;
-  accountEmail: string;
-  accountName: string;
-  accountCompany?: string;
+  account?: Account;
   state?: string;
   status: string; // For backwards compatibility
   totalLinks?: number;
@@ -76,10 +83,18 @@ export function OrdersTableMultiClient({
 }: OrdersTableProps) {
   const [expandedOrders, setExpandedOrders] = useState<Set<string>>(new Set());
   const [copiedToken, setCopiedToken] = useState<string | null>(null);
+  const [session, setSession] = useState<AuthSession | null>(null);
+
+  useEffect(() => {
+    const currentSession = AuthService.getSession();
+    setSession(currentSession);
+  }, []);
 
   const getStatusLabel = (status: string) => {
     const statusLabels: { [key: string]: string } = {
       'draft': 'Draft',
+      'pending_confirmation': 'Pending Confirmation',
+      'confirmed': 'Confirmed',
       'pending_review': 'Pending Review',
       'pending_approval': 'Pending Approval',
       'approved': 'Approved',
@@ -226,11 +241,11 @@ export function OrdersTableMultiClient({
 
                     <td className="px-6 py-4 whitespace-nowrap">
                       <div>
-                        <div className="font-medium text-sm">{order.accountName}</div>
-                        {order.accountCompany && (
-                          <div className="text-xs text-gray-500">{order.accountCompany}</div>
+                        <div className="font-medium text-sm">{order.account?.contactName || order.account?.companyName || 'Unknown'}</div>
+                        {order.account?.companyName && order.account?.contactName && (
+                          <div className="text-xs text-gray-500">{order.account.companyName}</div>
                         )}
-                        <div className="text-xs text-gray-500">{order.accountEmail}</div>
+                        <div className="text-xs text-gray-500">{order.account?.email || 'No email'}</div>
                       </div>
                     </td>
 
@@ -245,9 +260,17 @@ export function OrdersTableMultiClient({
                     </td>
 
                     <td className="px-6 py-4 whitespace-nowrap">
-                      <span className={`inline-flex items-center px-2 py-0.5 rounded text-xs font-medium ${getStatusColor(orderStatus)}`}>
-                        {getStatusLabel(orderStatus)}
-                      </span>
+                      <div className="space-y-1">
+                        <span className={`inline-flex items-center px-2 py-0.5 rounded text-xs font-medium ${getStatusColor(order.status)}`}>
+                          {getStatusLabel(order.status)}
+                        </span>
+                        {order.state && order.state !== order.status && (
+                          <div className="flex items-center gap-1">
+                            <span className="text-xs text-gray-500">State:</span>
+                            <span className="text-xs font-medium text-gray-700">{order.state}</span>
+                          </div>
+                        )}
+                      </div>
                     </td>
 
                     <td className="px-6 py-4 whitespace-nowrap text-right">
@@ -270,6 +293,47 @@ export function OrdersTableMultiClient({
 
                     <td className="px-6 py-4 whitespace-nowrap text-right">
                       <div className="flex items-center justify-end gap-2">
+                        {isInternal && order.status === 'pending_confirmation' && (
+                          <Link
+                            href={`/orders/${order.id}/confirm`}
+                            className="inline-flex items-center px-3 py-1.5 bg-green-600 text-white text-sm rounded-md hover:bg-green-700"
+                          >
+                            <CheckCircle className="h-4 w-4 mr-1" />
+                            Review & Confirm
+                          </Link>
+                        )}
+                        {isInternal && order.status === 'confirmed' && order.state === 'analyzing' && (
+                          <button
+                            onClick={async () => {
+                              if (confirm('Mark sites as ready for client review? This will notify the client that sites are available.')) {
+                                try {
+                                  const response = await fetch(`/api/orders/${order.id}/state`, {
+                                    method: 'POST',
+                                    headers: { 'Content-Type': 'application/json' },
+                                    body: JSON.stringify({ 
+                                      state: 'site_review',
+                                      notes: 'Sites ready for client review'
+                                    })
+                                  });
+                                  
+                                  if (response.ok) {
+                                    onRefresh();
+                                  } else {
+                                    const data = await response.json();
+                                    alert(data.error || 'Failed to update order state');
+                                  }
+                                } catch (error) {
+                                  console.error('Error updating order state:', error);
+                                  alert('Error updating order state');
+                                }
+                              }
+                            }}
+                            className="inline-flex items-center px-3 py-1.5 bg-purple-600 text-white text-sm rounded-md hover:bg-purple-700"
+                          >
+                            <Users className="h-4 w-4 mr-1" />
+                            Sites Ready
+                          </button>
+                        )}
                         {isInternal && order.shareToken && (
                           <button
                             onClick={() => copyShareLink(order.shareToken!)}
@@ -283,12 +347,58 @@ export function OrdersTableMultiClient({
                             )}
                           </button>
                         )}
+                        {/* Delete button - draft orders for all users, any order for admins */}
+                        {(order.status === 'draft' || (isInternal && session?.role === 'admin')) && (
+                          <button
+                            onClick={async () => {
+                              const isAdmin = isInternal && session?.role === 'admin';
+                              const confirmMessage = isAdmin && order.status !== 'draft'
+                                ? `⚠️ ADMIN ACTION: Are you sure you want to delete this ${order.status} order?\n\nOrder ID: ${order.id}\nAccount: ${order.account?.email || 'Unknown'}\nValue: ${formatCurrency(order.totalRetail)}\n\nThis will permanently delete the order and all related data. This action cannot be undone.`
+                                : 'Are you sure you want to delete this draft order? This action cannot be undone.';
+                              
+                              if (confirm(confirmMessage)) {
+                                try {
+                                  const response = await fetch(`/api/orders/${order.id}`, {
+                                    method: 'DELETE',
+                                    headers: { 'Content-Type': 'application/json' }
+                                  });
+                                  
+                                  if (response.ok) {
+                                    const data = await response.json();
+                                    if (isAdmin && order.status !== 'draft') {
+                                      console.log('Admin deleted order:', data.deletedOrder);
+                                    }
+                                    onRefresh();
+                                  } else {
+                                    const data = await response.json();
+                                    alert(data.error || 'Failed to delete order');
+                                  }
+                                } catch (error) {
+                                  console.error('Error deleting order:', error);
+                                  alert('Error deleting order');
+                                }
+                              }
+                            }}
+                            className={order.status !== 'draft' && isInternal && session?.role === 'admin' ? "text-red-700 hover:text-red-900" : "text-red-600 hover:text-red-800"}
+                            title={order.status !== 'draft' && isInternal && session?.role === 'admin' ? "Admin delete order" : "Delete draft order"}
+                          >
+                            <Trash2 className="h-4 w-4" />
+                          </button>
+                        )}
                         <Link href={`/orders/${order.id}`}>
                           <button className="text-blue-600 hover:text-blue-900 text-sm font-medium flex items-center gap-1">
                             <Eye className="h-4 w-4" />
                             View
                           </button>
                         </Link>
+                        {isInternal && (
+                          <Link href={`/orders/${order.id}/internal`}>
+                            <button className="text-purple-600 hover:text-purple-900 text-sm font-medium flex items-center gap-1">
+                              <Activity className="h-4 w-4" />
+                              Manage
+                            </button>
+                          </Link>
+                        )}
                       </div>
                     </td>
                   </tr>
@@ -342,7 +452,7 @@ export function OrdersTableMultiClient({
                                   </td>
                                   <td className="px-6 py-3 whitespace-nowrap text-right">
                                     {group.bulkAnalysisProjectId ? (
-                                      <Link href={`/bulk-analysis/projects/${group.bulkAnalysisProjectId}`}>
+                                      <Link href={`/clients/${group.clientId}/bulk-analysis/projects/${group.bulkAnalysisProjectId}`}>
                                         <button className="text-blue-600 hover:text-blue-900 text-xs">
                                           View Analysis
                                         </button>

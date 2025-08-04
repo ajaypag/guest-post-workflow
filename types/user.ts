@@ -21,6 +21,10 @@ export interface Client {
   clientType?: 'prospect' | 'client';
   convertedFromProspectAt?: Date;
   conversionNotes?: string;
+  // Archive fields
+  archivedAt?: Date | null;
+  archivedBy?: string | null; // User ID - null for account users due to FK constraint
+  archiveReason?: string | null;
 }
 
 export interface TargetPage {

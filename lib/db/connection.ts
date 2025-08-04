@@ -3,6 +3,7 @@ import { Pool } from 'pg';
 import * as schema from './schema';
 import * as orderGroupSchema from './orderGroupSchema';
 import * as paymentSchema from './paymentSchema';
+import * as projectOrderAssociationsSchema from './projectOrderAssociationsSchema';
 
 // Database configuration
 const connectionString = process.env.DATABASE_URL || 
@@ -19,6 +20,7 @@ const allSchemas = {
   ...schema,
   ...orderGroupSchema,
   ...paymentSchema,
+  ...projectOrderAssociationsSchema,
 };
 
 // Create Drizzle instance

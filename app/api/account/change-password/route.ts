@@ -34,9 +34,12 @@ export async function POST(request: NextRequest) {
       );
     }
     
+    // For account users, session.userId IS their account ID
+    const accountId = session.userId;
+    
     // Get account with password
     const account = await db.query.accounts.findFirst({
-      where: eq(accounts.id, session.accountId!)
+      where: eq(accounts.id, accountId)
     });
     
     if (!account) {
@@ -75,7 +78,7 @@ export async function POST(request: NextRequest) {
         password: hashedPassword,
         updatedAt: new Date()
       })
-      .where(eq(accounts.id, session.accountId!));
+      .where(eq(accounts.id, accountId));
     
     return NextResponse.json({
       message: 'Password changed successfully'
