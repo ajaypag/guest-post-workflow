@@ -48,10 +48,7 @@ export async function GET(request: NextRequest) {
       conditions.push(lte(websites.totalTraffic, trafficMax));
     }
 
-    // Only show quality sites
-    conditions.push(
-      sql`${websites.overallQuality} IN ('Excellent', 'Good', 'Fair')`
-    );
+    // No quality filtering - show all websites
 
     const whereClause = conditions.length > 0 ? and(...conditions) : undefined;
     

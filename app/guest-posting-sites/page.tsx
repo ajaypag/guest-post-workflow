@@ -23,7 +23,6 @@ async function getWebsites() {
         hasGuestPost: websites.hasGuestPost,
       })
       .from(websites)
-      .where(sql`${websites.overallQuality} IN ('Excellent', 'Good', 'Fair')`)
       .orderBy(sql`${websites.domainRating} DESC NULLS LAST`)
       .limit(30);
 
@@ -31,7 +30,8 @@ async function getWebsites() {
     const countResult = await db
       .select({ count: sql<number>`count(*)` })
       .from(websites)
-      .where(sql`${websites.overallQuality} IN ('Excellent', 'Good', 'Fair')`);
+      .where(sql`${websites.overallQuality} LIKE '%High Authority%' 
+        OR ${websites.overallQuality} LIKE '%Needs a Manual Check%'`);
 
     // Get categories
     const categoriesResult = await db.execute(sql`
@@ -40,7 +40,6 @@ async function getWebsites() {
         COUNT(*) as count
       FROM websites
       WHERE categories IS NOT NULL 
-        AND overall_quality IN ('Excellent', 'Good', 'Fair')
       GROUP BY category
       HAVING COUNT(*) >= 5
       ORDER BY count DESC

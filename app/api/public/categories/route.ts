@@ -12,7 +12,6 @@ export async function GET() {
       FROM websites
       WHERE categories IS NOT NULL 
         AND categories != '{}'
-        AND overall_quality IN ('Excellent', 'Good', 'Fair')
       GROUP BY category
       ORDER BY count DESC
     `);

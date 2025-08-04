@@ -12,8 +12,7 @@ export async function generateStaticParams() {
       FROM websites
       WHERE categories IS NOT NULL 
         AND categories != '{}'
-        AND overall_quality IN ('Excellent', 'Good', 'Fair')
-    `);
+      `);
     
     return categories.rows.map((row: any) => ({
       category: row.category
@@ -97,8 +96,7 @@ export default async function CategoryPage({ params }: { params: Promise<{ categ
       })
       .from(websites)
       .where(
-        sql`${websites.categories} @> ARRAY[${categoryName}]::text[] 
-        AND ${websites.overallQuality} IN ('Excellent', 'Good', 'Fair')`
+        sql`${websites.categories} @> ARRAY[${categoryName}]::text[]`
       )
       .orderBy(sql`${websites.domainRating} DESC NULLS LAST`)
       .limit(100);
@@ -108,7 +106,6 @@ export default async function CategoryPage({ params }: { params: Promise<{ categ
       SELECT COUNT(*) as count
       FROM websites
       WHERE categories @> ARRAY[${categoryName}]::text[]
-      AND overall_quality IN ('Excellent', 'Good', 'Fair')
     `);
     
     totalCount = Number(countResult.rows[0]?.count) || 0;
