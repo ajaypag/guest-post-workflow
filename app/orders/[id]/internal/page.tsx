@@ -243,7 +243,10 @@ export default function InternalOrderManagementPage() {
     try {
       const response = await fetch(`/api/orders/${orderId}/confirm`, {
         method: 'POST',
-        headers: { 'Content-Type': 'application/json' }
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          assignedTo: session?.userId || undefined
+        })
       });
       
       if (!response.ok) {
