@@ -1651,10 +1651,13 @@ export default function InternalOrderManagementPage() {
                                                               e.preventDefault();
                                                               e.stopPropagation();
                                                               try {
-                                                                if (displaySubmission) {
-                                                                  await handleAssignTargetPage(displaySubmission.id, '', groupId);
-                                                                }
+                                                                // Simply assign the new domain to this target page
+                                                                // Don't unassign the old one - it will remain as an alternative
                                                                 await handleAssignTargetPage(submission.id, targetPageUrl || '', groupId);
+                                                                
+                                                                // Reload submissions to get fresh data
+                                                                await loadSiteSubmissions();
+                                                                
                                                                 // Don't close the expanded row - keep it open for user to see the change
                                                                 // setEditingLineItem(null);
                                                               } catch (error) {
