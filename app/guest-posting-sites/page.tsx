@@ -324,9 +324,9 @@ export default async function GuestPostingSitesPage() {
               Even worse – most "high DR" sites only rank for ultra-specific long-tail keywords.
             </p>
             <p className="text-gray-700">
-              <strong>Our AI solution:</strong> We analyze all 13,000+ sites to find the 5-10 with 
-              genuine topical authority for YOUR specific keywords. One relevant link beats 10 
-              irrelevant ones.
+              <strong>Our solution:</strong> We analyze domains against YOUR target page keywords to find 
+              sites with genuine topical overlap. Our AI qualification system evaluates each site's 
+              ranking potential for your specific content.
             </p>
           </div>
         </div>
@@ -344,9 +344,9 @@ export default async function GuestPostingSitesPage() {
               <div className="w-10 h-10 bg-blue-600 text-white rounded-full flex items-center justify-center font-semibold mx-auto mb-3">
                 1
               </div>
-              <h3 className="font-semibold mb-2">Submit Keywords</h3>
+              <h3 className="font-semibold mb-2">Add Target URLs</h3>
               <p className="text-sm text-gray-600">
-                Tell us what keywords you want to rank for
+                Import your brand pages that need backlinks
               </p>
             </div>
             
@@ -354,9 +354,9 @@ export default async function GuestPostingSitesPage() {
               <div className="w-10 h-10 bg-blue-600 text-white rounded-full flex items-center justify-center font-semibold mx-auto mb-3">
                 2
               </div>
-              <h3 className="font-semibold mb-2">AI Analysis</h3>
+              <h3 className="font-semibold mb-2">AI Keyword Extraction</h3>
               <p className="text-sm text-gray-600">
-                We identify sites with topical authority
+                Our AI extracts keywords from your pages automatically
               </p>
             </div>
             
@@ -364,9 +364,9 @@ export default async function GuestPostingSitesPage() {
               <div className="w-10 h-10 bg-blue-600 text-white rounded-full flex items-center justify-center font-semibold mx-auto mb-3">
                 3
               </div>
-              <h3 className="font-semibold mb-2">Content Creation</h3>
+              <h3 className="font-semibold mb-2">Domain Analysis</h3>
               <p className="text-sm text-gray-600">
-                Expert writers create ranking content
+                We analyze sites for topical overlap with your keywords
               </p>
             </div>
             
@@ -374,9 +374,9 @@ export default async function GuestPostingSitesPage() {
               <div className="w-10 h-10 bg-blue-600 text-white rounded-full flex items-center justify-center font-semibold mx-auto mb-3">
                 4
               </div>
-              <h3 className="font-semibold mb-2">Placement</h3>
+              <h3 className="font-semibold mb-2">16-Step Workflow</h3>
               <p className="text-sm text-gray-600">
-                We handle outreach and publishing
+                From research to final placement and email templates
               </p>
             </div>
           </div>
@@ -402,41 +402,43 @@ export default async function GuestPostingSitesPage() {
           
           <div className="bg-gray-50 rounded-lg p-6">
             <p className="text-sm text-gray-600 mb-4">
-              Example: If you're selling project management software, here's what our AI finds:
+              Example: Your target page is about project management software. Our AI analyzes each domain:
             </p>
             
             <div className="space-y-3">
               <div className="bg-white rounded p-4 border border-gray-200">
                 <div className="flex justify-between items-start mb-2">
                   <div>
-                    <span className="font-medium">projectmanager.com</span>
+                    <span className="font-medium">businesstools.com</span>
                     <span className="text-sm text-gray-500 ml-2">DR 45</span>
                   </div>
-                  <span className="px-2 py-1 bg-green-100 text-green-800 text-xs rounded">Qualified</span>
+                  <span className="px-2 py-1 bg-green-100 text-green-800 text-xs rounded">High Quality</span>
                 </div>
-                <p className="text-sm text-gray-600">
-                  ✓ Ranks #8 for "project management software" 
-                  <br />✓ Strong topical authority in your exact niche
-                </p>
+                <div className="text-xs text-gray-600 space-y-1">
+                  <div><strong>Overlap:</strong> Direct - ranks for your target keywords</div>
+                  <div><strong>Authority:</strong> Strong (positions 12-28)</div>
+                  <div><strong>Strategy:</strong> Short-tail content works</div>
+                </div>
               </div>
               
               <div className="bg-white rounded p-4 border border-gray-200">
                 <div className="flex justify-between items-start mb-2">
                   <div>
-                    <span className="font-medium">healthyliving.com</span>
+                    <span className="font-medium">generalbusiness.com</span>
                     <span className="text-sm text-gray-500 ml-2">DR 70</span>
                   </div>
-                  <span className="px-2 py-1 bg-red-100 text-red-800 text-xs rounded">Disqualified</span>
+                  <span className="px-2 py-1 bg-yellow-100 text-yellow-800 text-xs rounded">Good Quality</span>
                 </div>
-                <p className="text-sm text-gray-600">
-                  ✗ Zero rankings for business/software keywords
-                  <br />✗ Wrong niche despite high DR
-                </p>
+                <div className="text-xs text-gray-600 space-y-1">
+                  <div><strong>Overlap:</strong> Related - ranks for business topics</div>
+                  <div><strong>Authority:</strong> Moderate (positions 31-45)</div>
+                  <div><strong>Strategy:</strong> Long-tail with modifiers needed</div>
+                </div>
               </div>
             </div>
             
             <p className="text-sm text-gray-700 mt-4 font-medium">
-              Result: The DR45 site will drive more ranking value than the DR70 site
+              Our AI provides detailed reasoning for each qualification decision
             </p>
           </div>
         </div>
@@ -455,9 +457,9 @@ export default async function GuestPostingSitesPage() {
                 Why $79 service fee on top of wholesale cost?
               </h3>
               <p className="text-gray-600">
-                The $79 covers AI site analysis, content creation (1000-1500 words), 
-                outreach, negotiation, and placement. You're getting full service, not 
-                just a list of sites.
+                The $79 covers our complete 16-step workflow: AI keyword extraction, domain 
+                qualification, deep research with GPT-o3, article creation, semantic SEO 
+                optimization, client integration, and professional outreach templates.
               </p>
             </div>
 
@@ -466,9 +468,9 @@ export default async function GuestPostingSitesPage() {
                 How is this different from other services?
               </h3>
               <p className="text-gray-600">
-                Most services mark up wholesale costs by 200-500%. We show you the exact 
-                wholesale price and add a flat $79. Plus, our AI ensures you only get 
-                links from topically relevant sites.
+                Most services mark up wholesale costs by 200-500%. We show exact wholesale 
+                prices and charge a flat $79. Our AI analyzes your actual target pages to 
+                find sites with genuine topical overlap, not just high DR numbers.
               </p>
             </div>
 
@@ -477,8 +479,9 @@ export default async function GuestPostingSitesPage() {
                 Do I need to provide content?
               </h3>
               <p className="text-gray-600">
-                No. Our expert writers create unique, valuable content designed to rank. 
-                Every article is tailored to the site's audience and your link goals.
+                No. Just provide your target page URLs. Our AI extracts keywords, qualifies 
+                sites, and runs the complete workflow from topic generation through final 
+                article creation using GPT-o3 advanced reasoning.
               </p>
             </div>
 
@@ -487,8 +490,9 @@ export default async function GuestPostingSitesPage() {
                 What's your turnaround time?
               </h3>
               <p className="text-gray-600">
-                Most placements are completed within 14-21 days. This includes content 
-                creation, outreach, revisions, and publishing.
+                Content creation through our 16-step workflow typically takes 3-5 business 
+                days. Publisher outreach and placement adds another 10-14 days depending 
+                on the site's response time.
               </p>
             </div>
           </div>
