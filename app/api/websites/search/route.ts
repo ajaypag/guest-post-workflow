@@ -56,7 +56,9 @@ export async function POST(request: NextRequest) {
       overallQuality: w.overall_quality,
       contacts: w.contacts || [],
       qualification: w.qualification,
-      lastSyncedAt: w.last_synced_at
+      lastSyncedAt: w.last_synced_at,
+      airtableCreatedAt: w.airtable_created_at,
+      airtableUpdatedAt: w.airtable_updated_at
     }));
     
     return NextResponse.json({

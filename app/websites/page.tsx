@@ -43,6 +43,8 @@ interface Website {
   publishedOpportunities: number;
   overallQuality: string | null;
   lastSyncedAt: string;
+  airtableCreatedAt?: string;
+  airtableUpdatedAt?: string;
   contacts: Array<{
     id: string;
     email: string;
@@ -74,6 +76,11 @@ interface Filters {
   status?: string;
   qualificationStatus?: 'all' | 'qualified' | 'unqualified';
   clientId?: string;
+  // Airtable metadata filters
+  airtableUpdatedAfter?: string;
+  airtableUpdatedBefore?: string;
+  lastSyncedAfter?: string;
+  lastSyncedBefore?: string;
 }
 
 function WebsitesPageContent() {
@@ -118,7 +125,11 @@ function WebsitesPageContent() {
             categories: filters.categories,
             hasGuestPost: filters.hasGuestPost,
             hasLinkInsert: filters.hasLinkInsert,
-            status: filters.status
+            status: filters.status,
+            airtableUpdatedAfter: filters.airtableUpdatedAfter,
+            airtableUpdatedBefore: filters.airtableUpdatedBefore,
+            lastSyncedAfter: filters.lastSyncedAfter,
+            lastSyncedBefore: filters.lastSyncedBefore
           },
           limit: 50,
           offset: page * 50,
@@ -516,6 +527,74 @@ function WebsitesPageContent() {
                   </select>
                 </div>
               )}
+            </div>
+          )}
+
+          {/* Airtable Metadata Filters */}
+          {showFilters && (
+            <div className="mt-4">
+              <label className="block text-sm font-medium text-gray-700 mb-2">
+                Airtable Metadata Filters
+              </label>
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                {/* Airtable Updated Date Range */}
+                <div>
+                  <label className="block text-sm font-medium text-gray-600 mb-1">
+                    Airtable Updated Date
+                  </label>
+                  <div className="flex gap-2">
+                    <input
+                      type="date"
+                      placeholder="From"
+                      className="w-1/2 px-3 py-1.5 border rounded text-sm"
+                      value={filters.airtableUpdatedAfter || ''}
+                      onChange={(e) => setFilters(prev => ({ 
+                        ...prev, 
+                        airtableUpdatedAfter: e.target.value || undefined 
+                      }))}
+                    />
+                    <input
+                      type="date"
+                      placeholder="To"
+                      className="w-1/2 px-3 py-1.5 border rounded text-sm"
+                      value={filters.airtableUpdatedBefore || ''}
+                      onChange={(e) => setFilters(prev => ({ 
+                        ...prev, 
+                        airtableUpdatedBefore: e.target.value || undefined 
+                      }))}
+                    />
+                  </div>
+                </div>
+
+                {/* Last Synced Date Range */}
+                <div>
+                  <label className="block text-sm font-medium text-gray-600 mb-1">
+                    Last Synced Date
+                  </label>
+                  <div className="flex gap-2">
+                    <input
+                      type="date"
+                      placeholder="From"
+                      className="w-1/2 px-3 py-1.5 border rounded text-sm"
+                      value={filters.lastSyncedAfter || ''}
+                      onChange={(e) => setFilters(prev => ({ 
+                        ...prev, 
+                        lastSyncedAfter: e.target.value || undefined 
+                      }))}
+                    />
+                    <input
+                      type="date"
+                      placeholder="To"
+                      className="w-1/2 px-3 py-1.5 border rounded text-sm"
+                      value={filters.lastSyncedBefore || ''}
+                      onChange={(e) => setFilters(prev => ({ 
+                        ...prev, 
+                        lastSyncedBefore: e.target.value || undefined 
+                      }))}
+                    />
+                  </div>
+                </div>
+              </div>
             </div>
           )}
 

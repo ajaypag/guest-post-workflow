@@ -87,4 +87,9 @@ export interface WebsiteFilters {
   categories?: string[];
   searchTerm?: string;
   forceAllRecords?: boolean; // Skip view filtering for full sync
+  // Airtable metadata filters
+  airtableUpdatedAfter?: string; // ISO date string
+  airtableUpdatedBefore?: string; // ISO date string
+  lastSyncedAfter?: string; // ISO date string
+  lastSyncedBefore?: string; // ISO date string
 }
