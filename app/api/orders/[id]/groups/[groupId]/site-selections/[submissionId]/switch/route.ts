@@ -48,7 +48,7 @@ export async function POST(
         const alternativeToPromote = await tx.query.orderSiteSubmissions.findFirst({
           where: and(
             eq(orderSiteSubmissions.orderGroupId, groupId),
-            sql`(metadata->>'targetPageUrl' = ${targetUrl} OR target_page_url = ${targetUrl})`,
+            sql`metadata->>'targetPageUrl' = ${targetUrl}`,
             eq(orderSiteSubmissions.selectionPool, 'alternative')
           ),
           orderBy: [orderSiteSubmissions.poolRank]
@@ -64,7 +64,7 @@ export async function POST(
           SELECT COALESCE(MAX(pool_rank), 0) as max_rank
           FROM order_site_submissions
           WHERE order_group_id = ${groupId}
-          AND (metadata->>'targetPageUrl' = ${targetUrl} OR target_page_url = ${targetUrl})
+          AND metadata->>'targetPageUrl' = ${targetUrl}
           AND selection_pool = 'alternative'
         `);
 
@@ -93,7 +93,7 @@ export async function POST(
             SELECT id, ROW_NUMBER() OVER (ORDER BY pool_rank) as new_rank
             FROM order_site_submissions
             WHERE order_group_id = ${groupId}
-            AND (metadata->>'targetPageUrl' = ${targetUrl} OR target_page_url = ${targetUrl})
+            AND metadata->>'targetPageUrl' = ${targetUrl}
             AND selection_pool = 'alternative'
           )
           UPDATE order_site_submissions
@@ -114,7 +114,7 @@ export async function POST(
         const primaryToSwap = await tx.query.orderSiteSubmissions.findFirst({
           where: and(
             eq(orderSiteSubmissions.orderGroupId, groupId),
-            sql`(metadata->>'targetPageUrl' = ${targetUrl} OR target_page_url = ${targetUrl})`,
+            sql`metadata->>'targetPageUrl' = ${targetUrl}`,
             eq(orderSiteSubmissions.selectionPool, 'primary')
           ),
           orderBy: [orderSiteSubmissions.poolRank]
