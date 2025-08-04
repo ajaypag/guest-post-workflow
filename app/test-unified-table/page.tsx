@@ -5,7 +5,34 @@ import UnifiedOrderTable from '@/components/orders/UnifiedOrderTable';
 import AuthWrapper from '@/components/AuthWrapper';
 import Header from '@/components/Header';
 
-// Mock data for testing
+// Import the proper types
+interface OrderGroup {
+  id: string;
+  clientId: string;
+  client: {
+    id: string;
+    name: string;
+    website: string;
+  };
+  linkCount: number;
+  bulkAnalysisProjectId?: string;
+  targetPages?: Array<{
+    id?: string;
+    url: string;
+    pageId?: string;
+  }>;
+  anchorTexts?: string[];
+  packageType?: string;
+  packagePrice?: number;
+  groupStatus?: string;
+  siteSelections?: {
+    approved: number;
+    pending: number;
+    total: number;
+  };
+}
+
+// Mock data for testing - matching the exact OrderGroup interface
 const mockOrderGroups = [
   {
     id: 'group-1',
@@ -16,14 +43,21 @@ const mockOrderGroups = [
       website: 'https://linkbuilding.com'
     },
     linkCount: 3,
+    bulkAnalysisProjectId: undefined,
     targetPages: [
-      { id: 'page-1', url: '/best-link-building-services/' },
-      { id: 'page-2', url: '/link-building-strategies/' },
-      { id: 'page-3', url: '/quality-backlinks/' }
+      { id: 'page-1', url: '/best-link-building-services/', pageId: 'page-1' },
+      { id: 'page-2', url: '/link-building-strategies/', pageId: 'page-2' },
+      { id: 'page-3', url: '/quality-backlinks/', pageId: 'page-3' }
     ],
     anchorTexts: ['best link building', 'link building strategies', 'quality backlinks'],
     packageType: 'better',
-    packagePrice: 279
+    packagePrice: 279,
+    groupStatus: 'active',
+    siteSelections: {
+      approved: 1,
+      pending: 2,
+      total: 3
+    }
   },
   {
     id: 'group-2', 
@@ -34,15 +68,22 @@ const mockOrderGroups = [
       website: 'https://seoagency.com'
     },
     linkCount: 2,
+    bulkAnalysisProjectId: undefined,
     targetPages: [
-      { id: 'page-4', url: '/seo-services/' },
-      { id: 'page-5', url: '/content-marketing/' }
+      { id: 'page-4', url: '/seo-services/', pageId: 'page-4' },
+      { id: 'page-5', url: '/content-marketing/', pageId: 'page-5' }
     ],
     anchorTexts: ['SEO services', 'content marketing'],
     packageType: 'best',
-    packagePrice: 349
+    packagePrice: 349,
+    groupStatus: 'active',
+    siteSelections: {
+      approved: 0,
+      pending: 2,
+      total: 2
+    }
   }
-];
+] as OrderGroup[];
 
 const mockSiteSubmissions = {
   'group-1': [
@@ -79,7 +120,7 @@ export default function TestUnifiedTablePage() {
   const [orderState, setOrderState] = useState<'draft' | 'site_review' | 'in_progress'>('draft');
   const [userType, setUserType] = useState<'internal' | 'external'>('external');
   const [isPaid, setIsPaid] = useState(false);
-  const [orderGroups, setOrderGroups] = useState(mockOrderGroups);
+  const [orderGroups, setOrderGroups] = useState<OrderGroup[]>(mockOrderGroups);
 
   return (
     <AuthWrapper>
@@ -144,7 +185,7 @@ export default function TestUnifiedTablePage() {
             onUpdateGroup={(groupId, updates) => {
               console.log('Update group:', groupId, updates);
               setOrderGroups(prev => prev.map(group => 
-                group.id === groupId ? { ...group, ...updates } : group
+                group.id === groupId ? { ...group, ...updates } as OrderGroup : group
               ));
             }}
             onAddRow={(clientId) => {
@@ -155,9 +196,9 @@ export default function TestUnifiedTablePage() {
                   return {
                     ...group,
                     linkCount: group.linkCount + 1,
-                    targetPages: [...(group.targetPages || []), { id: `new-${Date.now()}`, url: '' }],
+                    targetPages: [...(group.targetPages || []), { id: `new-${Date.now()}`, url: '', pageId: `new-${Date.now()}` }],
                     anchorTexts: [...(group.anchorTexts || []), '']
-                  };
+                  } as OrderGroup;
                 }
                 return group;
               }));
@@ -176,7 +217,7 @@ export default function TestUnifiedTablePage() {
                     linkCount: Math.max(1, group.linkCount - 1),
                     targetPages: newTargetPages,
                     anchorTexts: newAnchorTexts
-                  };
+                  } as OrderGroup;
                 }
                 return group;
               }));
