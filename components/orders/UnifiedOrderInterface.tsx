@@ -606,6 +606,101 @@ export default function UnifiedOrderInterface({
     return new Set(lineItems.filter(item => item.targetPageUrl).map(item => item.targetPageUrl)).size;
   };
 
+  // Generate anchor text variations
+  const generateAnchorText = (clientName: string) => {
+    const variations = [
+      clientName,
+      `Visit ${clientName}`,
+      `Learn more about ${clientName}`,
+      `${clientName} services`,
+      `Check out ${clientName}`
+    ];
+    return variations[Math.floor(Math.random() * variations.length)];
+  };
+
+  // Handle target pages created from modal
+  const handleTargetPagesCreated = (newTargetPages: any[]) => {
+    // Refresh the client list to include the new target pages
+    loadClients();
+    
+    // If called from a line item dropdown, populate that line item and create additional ones
+    if (requestingLineItemId && newTargetPages.length > 0) {
+      const requestingItem = lineItems.find(item => item.id === requestingLineItemId);
+      if (requestingItem) {
+        // Fill the requesting line item with the first new page
+        const firstPage = newTargetPages[0];
+        updateLineItem(requestingLineItemId, {
+          targetPageUrl: firstPage.url,
+          targetPageId: firstPage.id,
+          anchorText: generateAnchorText(requestingItem.clientName)
+        });
+        
+        // Create additional line items for remaining pages
+        if (newTargetPages.length > 1) {
+          const additionalPages = newTargetPages.slice(1);
+          const newItems: OrderLineItem[] = additionalPages.map(page => ({
+            id: `${Date.now()}-${Math.random()}`,
+            clientId: requestingItem.clientId,
+            clientName: requestingItem.clientName,
+            targetPageId: page.id,
+            targetPageUrl: page.url,
+            anchorText: generateAnchorText(requestingItem.clientName),
+            price: packagePricing[selectedPackage].price,
+            selectedPackage: selectedPackage
+          }));
+          
+          setLineItems(prev => [...prev, ...newItems]);
+          
+          // Update the client's link count
+          setSelectedClients(prev => {
+            const newMap = new Map(prev);
+            const existing = newMap.get(requestingItem.clientId);
+            if (existing) {
+              const currentCount = lineItems.filter(item => item.clientId === requestingItem.clientId).length;
+              newMap.set(requestingItem.clientId, { 
+                ...existing, 
+                linkCount: currentCount + additionalPages.length 
+              });
+            }
+            return newMap;
+          });
+        }
+      }
+      
+      // Reset requesting state
+      setRequestingLineItemId(null);
+    }
+    
+    // The target pages will automatically show up in the available targets
+    // when clients are refreshed and updateAvailableTargets is called
+  };
+
+  // Duplicate line item
+  const duplicateLineItem = (itemId: string) => {
+    const item = lineItems.find(i => i.id === itemId);
+    if (!item) return;
+    
+    const newItem: OrderLineItem = {
+      ...item,
+      id: `${Date.now()}-${Math.random()}`
+    };
+    
+    setLineItems(prev => [...prev, newItem]);
+    
+    // Update client count
+    const currentSelection = selectedClients.get(item.clientId);
+    if (currentSelection) {
+      setSelectedClients(prev => {
+        const newMap = new Map(prev);
+        newMap.set(item.clientId, {
+          ...currentSelection,
+          linkCount: currentSelection.linkCount + 1
+        });
+        return newMap;
+      });
+    }
+  };
+
   // Auto-save functionality (from /edit page)
   const saveOrderDraft = useCallback(async () => {
     if (!session) return;
@@ -877,6 +972,41 @@ export default function UnifiedOrderInterface({
 
   return (
     <div className="h-screen flex flex-col bg-gray-100">
+      {/* Breadcrumb Navigation */}
+      <div className="bg-white border-b border-gray-200 px-6 py-4">
+        <div className="flex items-center justify-between">
+          <div className="flex items-center gap-4">
+            <button
+              onClick={() => router.push(isNewOrder ? '/orders' : `/orders/${draftOrderId || ''}`)}
+              className="inline-flex items-center text-gray-600 hover:text-gray-900 transition-colors"
+            >
+              <ArrowLeft className="h-4 w-4 mr-2" />
+              {isNewOrder ? 'Back to Orders' : 'Back to Order'}
+            </button>
+            <div>
+              <h1 className="text-2xl font-semibold text-gray-900">
+                {isNewOrder ? 'Create New Order' : `Edit Order ${draftOrderId ? '#' + draftOrderId.slice(0, 8) : ''}`}
+              </h1>
+              <p className="text-sm text-gray-600 mt-1">
+                {isNewOrder ? 'Build your guest post campaign' : 'Update your guest post order details'}
+              </p>
+            </div>
+          </div>
+          <div className="flex items-center gap-2">
+            {saveStatus !== 'idle' && currentMode === 'draft' && (
+              <span className={`text-xs px-2 py-1 rounded ${
+                saveStatus === 'saving' ? 'bg-yellow-100 text-yellow-700' :
+                saveStatus === 'saved' ? 'bg-green-100 text-green-700' :
+                'bg-red-100 text-red-700'
+              }`}>
+                {saveStatus === 'saving' ? 'Saving...' :
+                 saveStatus === 'saved' ? 'Saved' :
+                 'Save failed'}
+              </span>
+            )}
+          </div>
+        </div>
+      </div>
       {/* Mobile Navigation */}
       <div className="md:hidden bg-white border-b border-gray-200 p-4">
         <div className="flex space-x-1">
@@ -1319,6 +1449,7 @@ export default function UnifiedOrderInterface({
                                 onChange={(e) => {
                                   const url = e.target.value;
                                   if (url === '__ADD_NEW__') {
+                                    setRequestingLineItemId(item.id);
                                     setShowCreateTargetPageModal(true);
                                     return;
                                   }
@@ -1380,13 +1511,22 @@ export default function UnifiedOrderInterface({
                             </td>
                             <td className="px-4 py-3">
                               {!isPaid && (
-                                <button
-                                  onClick={() => removeLineItem(item.id)}
-                                  className="text-red-600 hover:text-red-800"
-                                  title="Remove item"
-                                >
-                                  <Trash2 className="h-4 w-4" />
-                                </button>
+                                <div className="flex items-center justify-end space-x-2">
+                                  <button
+                                    onClick={() => duplicateLineItem(item.id)}
+                                    className="text-gray-600 hover:text-gray-800"
+                                    title="Duplicate item"
+                                  >
+                                    <Copy className="h-4 w-4" />
+                                  </button>
+                                  <button
+                                    onClick={() => removeLineItem(item.id)}
+                                    className="text-red-600 hover:text-red-800"
+                                    title="Remove item"
+                                  >
+                                    <Trash2 className="h-4 w-4" />
+                                  </button>
+                                </div>
                               )}
                             </td>
                           </tr>
@@ -2299,9 +2439,12 @@ export default function UnifiedOrderInterface({
       {showCreateTargetPageModal && (
         <CreateTargetPageModal
           isOpen={showCreateTargetPageModal}
-          onClose={() => setShowCreateTargetPageModal(false)}
-          onTargetPagesCreated={() => {
-            loadClients(); // Reload to get updated target pages
+          onClose={() => {
+            setShowCreateTargetPageModal(false);
+            setRequestingLineItemId(null);
+          }}
+          onTargetPagesCreated={(newTargetPages) => {
+            handleTargetPagesCreated(newTargetPages);
             setShowCreateTargetPageModal(false);
           }}
         />
