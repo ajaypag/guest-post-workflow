@@ -82,6 +82,18 @@ export async function GET(
       orderGroups: groupsWithSelections
     };
 
+    console.log('GET /api/orders/[id] - Returning order data:', {
+      orderId: id,
+      status: orderWithGroups.status,
+      orderGroupsCount: groupsWithSelections?.length || 0,
+      orderGroupsPreview: groupsWithSelections?.map(g => ({
+        id: g.id,
+        clientName: g.client?.name,
+        linkCount: g.linkCount,  
+        targetPagesCount: g.targetPages?.length || 0
+      }))
+    });
+
     // Check permissions
     if (session.userType === 'account') {
       // Accounts can only see their own orders
@@ -178,13 +190,16 @@ export async function PUT(
       
       // If orderGroups are provided, update them
       if (newOrderGroups && Array.isArray(newOrderGroups)) {
+        console.log('DELETING existing order groups for orderId:', id);
         // Delete existing order groups
         await tx.delete(orderGroups).where(eq(orderGroups.orderId, id));
         
+        console.log('INSERTING new order groups:', newOrderGroups.length, 'groups');
         // Insert new order groups
         for (const group of newOrderGroups) {
-          await tx.insert(orderGroups).values({
-            id: crypto.randomUUID(),
+          const groupId = crypto.randomUUID();
+          const insertData = {
+            id: groupId,
             orderId: id,
             clientId: group.clientId,
             linkCount: group.linkCount || 1,
@@ -198,8 +213,21 @@ export async function PUT(
             groupStatus: group.groupStatus || 'pending',
             createdAt: new Date(),
             updatedAt: new Date()
+          };
+          
+          console.log('INSERTING order group:', {
+            groupId,
+            clientId: group.clientId,
+            clientName: group.clientName,
+            linkCount: group.linkCount,
+            targetPagesCount: group.targetPages?.length || 0
           });
+          
+          await tx.insert(orderGroups).values(insertData);
         }
+        console.log('COMPLETED inserting order groups');
+      } else {
+        console.log('NO order groups to insert - newOrderGroups:', newOrderGroups);
       }
     });
 
