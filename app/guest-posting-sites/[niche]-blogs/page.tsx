@@ -305,24 +305,24 @@ export default async function NichePage({ params }: { params: Promise<{ niche: s
               <div className="space-y-3 mb-8">
                 <div className="flex items-center gap-3">
                   <CheckCircle className="w-5 h-5 text-green-600 flex-shrink-0" />
-                  <span className="text-gray-700">Sites specifically focused on {nicheName.toLowerCase()} topics</span>
+                  <span className="text-gray-700">Expert-curated {nicheName.toLowerCase()} sites with proven relevance</span>
                 </div>
                 <div className="flex items-center gap-3">
                   <CheckCircle className="w-5 h-5 text-green-600 flex-shrink-0" />
-                  <span className="text-gray-700">Transparent wholesale pricing + $79 service</span>
+                  <span className="text-gray-700">Wholesale pricing + $79 flat fee (no agency markup)</span>
                 </div>
                 <div className="flex items-center gap-3">
                   <CheckCircle className="w-5 h-5 text-green-600 flex-shrink-0" />
-                  <span className="text-gray-700">Expert {nicheName.toLowerCase()} content creation included</span>
+                  <span className="text-gray-700">Complete {nicheName.toLowerCase()} content creation and placement</span>
                 </div>
               </div>
             </div>
 
             {/* Right: URL Input Tool */}
             <div className="bg-gray-50 border rounded-xl p-6">
-              <h3 className="text-xl font-semibold text-gray-900 mb-3">Find Your Perfect {nicheName} Sites</h3>
+              <h3 className="text-xl font-semibold text-gray-900 mb-3">Get Expert {nicheName} Recommendations</h3>
               <p className="text-gray-600 mb-4">
-                Enter your URL to discover {nicheName.toLowerCase()} sites with keyword overlap
+                Share your URL - we'll curate the perfect {nicheName.toLowerCase()} sites for you
               </p>
               
               <div className="space-y-3">
@@ -332,12 +332,12 @@ export default async function NichePage({ params }: { params: Promise<{ niche: s
                   className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent bg-white"
                 />
                 <button className="w-full px-6 py-3 bg-blue-600 text-white rounded-lg hover:bg-blue-700 font-medium transition-colors">
-                  Find Matching Sites
+                  Get Expert Recommendations
                 </button>
               </div>
               
               <p className="text-xs text-gray-500 text-center mt-3">
-                AI-powered analysis finds sites that rank for your keywords
+                Our experts verify sites that rank for your keywords
               </p>
             </div>
           </div>

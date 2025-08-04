@@ -170,22 +170,22 @@ export default async function GuestPostingSitesPage() {
                 {totalCount.toLocaleString()} Guest Posting Sites
               </h1>
               <p className="text-xl text-gray-600 mb-6">
-                Transparent pricing • Direct keyword overlap • Research-driven content
+                Fully managed service • Transparent wholesale pricing • Expert curation
               </p>
               
               {/* Key Benefits */}
               <div className="space-y-3 mb-8">
                 <div className="flex items-center gap-3">
                   <CheckCircle className="w-5 h-5 text-green-600 flex-shrink-0" />
-                  <span className="text-gray-700">See exact wholesale costs + $79 service fee</span>
+                  <span className="text-gray-700">Transparent wholesale costs + $79 flat service fee (no crazy markups)</span>
                 </div>
                 <div className="flex items-center gap-3">
                   <CheckCircle className="w-5 h-5 text-green-600 flex-shrink-0" />
-                  <span className="text-gray-700">Sites that actually rank for YOUR keywords</span>
+                  <span className="text-gray-700">Expert-curated sites with proven keyword overlap</span>
                 </div>
                 <div className="flex items-center gap-3">
                   <CheckCircle className="w-5 h-5 text-green-600 flex-shrink-0" />
-                  <span className="text-gray-700">2000-3000 word articles with genuine learning value</span>
+                  <span className="text-gray-700">Complete content creation and placement - we handle everything</span>
                 </div>
               </div>
 
@@ -202,9 +202,9 @@ export default async function GuestPostingSitesPage() {
 
             {/* Right: URL Input Tool */}
             <div className="bg-gray-50 border rounded-xl p-6">
-              <h3 className="text-xl font-semibold text-gray-900 mb-3">Find Sites for Your Content</h3>
+              <h3 className="text-xl font-semibold text-gray-900 mb-3">Get Expert Site Recommendations</h3>
               <p className="text-gray-600 mb-4">
-                Enter your target URL to get personalized site recommendations
+                Enter your target URL - our experts will curate the perfect sites for you
               </p>
               
               <div className="space-y-3">
@@ -214,12 +214,12 @@ export default async function GuestPostingSitesPage() {
                   className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent bg-white"
                 />
                 <button className="w-full px-6 py-3 bg-blue-600 text-white rounded-lg hover:bg-blue-700 font-medium transition-colors">
-                  Analyze My Page
+                  Get Expert Recommendations
                 </button>
               </div>
               
               <p className="text-xs text-gray-500 text-center mt-3">
-                Our AI finds sites with direct keyword overlap
+                Our experts find sites with proven keyword relevance
               </p>
             </div>
           </div>
@@ -292,8 +292,8 @@ export default async function GuestPostingSitesPage() {
           <div className="bg-white rounded-lg shadow-sm border overflow-hidden">
             <div className="px-4 py-3 bg-blue-50 border-b border-blue-100">
               <p className="text-sm text-blue-900">
-                💡 <span className="font-medium">Transparent pricing:</span> Wholesale cost + $79 service fee. 
-                No markups or hidden fees.
+                💡 <span className="font-medium">Fully managed service:</span> Wholesale cost + $79 flat fee. 
+                No crazy agency markups (300-500% savings vs competitors).
               </p>
             </div>
             <table className="w-full">
@@ -396,25 +396,25 @@ export default async function GuestPostingSitesPage() {
           <div className="bg-gradient-to-br from-gray-50 to-blue-50 rounded-2xl p-8 md:p-12">
             <div className="text-center mb-12">
               <h2 className="text-3xl font-bold text-gray-900 mb-3">
-                The Smart Way to Build Guest Post Links
+                Fully Managed Link Building Without the Markup
               </h2>
               <p className="text-lg text-gray-600">
-                Why keyword relevance beats domain rating every time
+                Expert curation meets transparent pricing - no agency games
               </p>
             </div>
 
             <div className="grid lg:grid-cols-2 gap-12">
               {/* Left: The Problem */}
               <div>
-                <h3 className="text-xl font-semibold mb-6">The Traditional Approach (Broken)</h3>
+                <h3 className="text-xl font-semibold mb-6">Traditional Agencies (Broken)</h3>
                 <div className="space-y-4">
                   <div className="flex items-start gap-3">
                     <div className="w-6 h-6 bg-red-100 rounded-full flex items-center justify-center flex-shrink-0 mt-0.5">
                       <span className="text-red-600 text-sm font-bold">✕</span>
                     </div>
                     <div>
-                      <div className="font-medium text-gray-900">Chase High DR Numbers</div>
-                      <div className="text-sm text-gray-600">Get links from DR70+ sites that Google ignores</div>
+                      <div className="font-medium text-gray-900">Chase Vanity DR Metrics</div>
+                      <div className="text-sm text-gray-600">Focus on high DR numbers instead of relevance</div>
                     </div>
                   </div>
                   <div className="flex items-start gap-3">
@@ -422,8 +422,8 @@ export default async function GuestPostingSitesPage() {
                       <span className="text-red-600 text-sm font-bold">✕</span>
                     </div>
                     <div>
-                      <div className="font-medium text-gray-900">Pay 300-500% Markups</div>
-                      <div className="text-sm text-gray-600">Agencies charge $300 for a $60 placement</div>
+                      <div className="font-medium text-gray-900">Crazy Agency Markups</div>
+                      <div className="text-sm text-gray-600">Pay $300+ for what costs $60 wholesale</div>
                     </div>
                   </div>
                   <div className="flex items-start gap-3">
@@ -431,8 +431,8 @@ export default async function GuestPostingSitesPage() {
                       <span className="text-red-600 text-sm font-bold">✕</span>
                     </div>
                     <div>
-                      <div className="font-medium text-gray-900">Generic 500-Word Articles</div>
-                      <div className="text-sm text-gray-600">Thin content that adds no value</div>
+                      <div className="font-medium text-gray-900">Thin, Generic Content</div>
+                      <div className="text-sm text-gray-600">500-word fluff pieces with no real value</div>
                     </div>
                   </div>
                   <div className="flex items-start gap-3">
@@ -440,8 +440,8 @@ export default async function GuestPostingSitesPage() {
                       <span className="text-red-600 text-sm font-bold">✕</span>
                     </div>
                     <div>
-                      <div className="font-medium text-gray-900">Wrong Niche Placement</div>
-                      <div className="text-sm text-gray-600">Tech links on food blogs = wasted money</div>
+                      <div className="font-medium text-gray-900">Zero Quality Control</div>
+                      <div className="text-sm text-gray-600">Your tech startup linked from random food blogs</div>
                     </div>
                   </div>
                 </div>
@@ -449,34 +449,34 @@ export default async function GuestPostingSitesPage() {
 
               {/* Right: Our Solution */}
               <div>
-                <h3 className="text-xl font-semibold mb-6">Our Approach (What Works)</h3>
+                <h3 className="text-xl font-semibold mb-6">Our Approach (Fully Managed)</h3>
                 <div className="space-y-4">
                   <div className="flex items-start gap-3">
                     <CheckCircle className="w-6 h-6 text-green-600 flex-shrink-0 mt-0.5" />
                     <div>
-                      <div className="font-medium text-gray-900">Direct Keyword Overlap</div>
-                      <div className="text-sm text-gray-600">AI finds sites that rank for YOUR exact keywords</div>
+                      <div className="font-medium text-gray-900">Expert Site Curation</div>
+                      <div className="text-sm text-gray-600">We manually verify sites that rank for YOUR keywords</div>
                     </div>
                   </div>
                   <div className="flex items-start gap-3">
                     <CheckCircle className="w-6 h-6 text-green-600 flex-shrink-0 mt-0.5" />
                     <div>
-                      <div className="font-medium text-gray-900">Transparent Pricing</div>
-                      <div className="text-sm text-gray-600">See wholesale costs + flat $79 service fee</div>
+                      <div className="font-medium text-gray-900">Transparent Wholesale Pricing</div>
+                      <div className="text-sm text-gray-600">Real costs + $79 flat fee (no markup games)</div>
                     </div>
                   </div>
                   <div className="flex items-start gap-3">
                     <CheckCircle className="w-6 h-6 text-green-600 flex-shrink-0 mt-0.5" />
                     <div>
-                      <div className="font-medium text-gray-900">2000-3000 Word Articles</div>
-                      <div className="text-sm text-gray-600">Research, stats, images - real learning value</div>
+                      <div className="font-medium text-gray-900">Complete Content Creation</div>
+                      <div className="text-sm text-gray-600">2000-3000 word expert articles - we handle everything</div>
                     </div>
                   </div>
                   <div className="flex items-start gap-3">
                     <CheckCircle className="w-6 h-6 text-green-600 flex-shrink-0 mt-0.5" />
                     <div>
-                      <div className="font-medium text-gray-900">16-Step Quality Process</div>
-                      <div className="text-sm text-gray-600">From keyword extraction to placement verification</div>
+                      <div className="font-medium text-gray-900">16-Step AI-Assisted Process</div>
+                      <div className="text-sm text-gray-600">AI handles analysis, humans handle final approval and relationships</div>
                     </div>
                   </div>
                 </div>
@@ -485,15 +485,15 @@ export default async function GuestPostingSitesPage() {
 
             {/* How It Works */}
             <div className="mt-12 pt-12 border-t">
-              <h3 className="text-xl font-semibold text-center mb-8">Our 4-Step Process</h3>
+              <h3 className="text-xl font-semibold text-center mb-8">How Our Concierge Service Works</h3>
               <div className="grid md:grid-cols-4 gap-6">
                 <div className="text-center">
                   <div className="w-12 h-12 bg-blue-600 text-white rounded-full flex items-center justify-center font-semibold mx-auto mb-3">
                     1
                   </div>
-                  <h4 className="font-semibold mb-2">Add Target URLs</h4>
+                  <h4 className="font-semibold mb-2">Tell Us Your Goals</h4>
                   <p className="text-sm text-gray-600">
-                    Import pages that need backlinks
+                    Share your target pages and objectives
                   </p>
                 </div>
                 
@@ -501,9 +501,9 @@ export default async function GuestPostingSitesPage() {
                   <div className="w-12 h-12 bg-blue-600 text-white rounded-full flex items-center justify-center font-semibold mx-auto mb-3">
                     2
                   </div>
-                  <h4 className="font-semibold mb-2">AI Keyword Extraction</h4>
+                  <h4 className="font-semibold mb-2">Expert Site Curation</h4>
                   <p className="text-sm text-gray-600">
-                    Automatically extract your page keywords
+                    We research and curate perfect sites for you
                   </p>
                 </div>
                 
@@ -511,9 +511,9 @@ export default async function GuestPostingSitesPage() {
                   <div className="w-12 h-12 bg-blue-600 text-white rounded-full flex items-center justify-center font-semibold mx-auto mb-3">
                     3
                   </div>
-                  <h4 className="font-semibold mb-2">Smart Site Matching</h4>
+                  <h4 className="font-semibold mb-2">Content Creation</h4>
                   <p className="text-sm text-gray-600">
-                    Find sites with direct keyword overlap
+                    Professional writers create valuable content
                   </p>
                 </div>
                 
@@ -521,9 +521,9 @@ export default async function GuestPostingSitesPage() {
                   <div className="w-12 h-12 bg-blue-600 text-white rounded-full flex items-center justify-center font-semibold mx-auto mb-3">
                     4
                   </div>
-                  <h4 className="font-semibold mb-2">Complete Execution</h4>
+                  <h4 className="font-semibold mb-2">Full Service Delivery</h4>
                   <p className="text-sm text-gray-600">
-                    Content creation through placement
+                    Outreach, negotiation, and live placement
                   </p>
                 </div>
               </div>
@@ -532,17 +532,17 @@ export default async function GuestPostingSitesPage() {
         </div>
       </section>
 
-      {/* AI Qualification Example */}
+      {/* Expert Curation Example */}
       <section className="py-16 bg-gray-50">
         <div className="max-w-4xl mx-auto px-4 sm:px-6 lg:px-8">
           <h2 className="text-3xl font-bold text-gray-900 mb-8 text-center">
-            See Our AI in Action
+            See Our AI-Assisted Curation in Action
           </h2>
           
           <div className="bg-white rounded-xl p-8 shadow-sm border">
             <p className="text-gray-600 mb-6">
               <strong className="text-gray-900">Example:</strong> Your target page is about "project management software". 
-              Here's how our AI qualifies potential guest posting sites:
+              Here's how our AI analyzes potential sites (with expert final approval):
             </p>
             
             <div className="space-y-4">
@@ -559,19 +559,19 @@ export default async function GuestPostingSitesPage() {
                   <div className="flex items-start gap-2">
                     <CheckCircle className="w-4 h-4 text-green-600 flex-shrink-0 mt-0.5" />
                     <div>
-                      <strong className="text-gray-900">Direct Overlap:</strong> Ranks position 15 for "project management software"
+                      <strong className="text-gray-900">Proven Relevance:</strong> Actively ranks for "project management software"
                     </div>
                   </div>
                   <div className="flex items-start gap-2">
                     <CheckCircle className="w-4 h-4 text-green-600 flex-shrink-0 mt-0.5" />
                     <div>
-                      <strong className="text-gray-900">Topical Authority:</strong> 47 articles about project management tools
+                      <strong className="text-gray-900">Editorial Standards:</strong> 47 high-quality articles about PM tools
                     </div>
                   </div>
                   <div className="flex items-start gap-2">
                     <CheckCircle className="w-4 h-4 text-green-600 flex-shrink-0 mt-0.5" />
                     <div>
-                      <strong className="text-gray-900">Content Strategy:</strong> Short-tail keywords work well on this domain
+                      <strong className="text-gray-900">Perfect Fit:</strong> Accepts comprehensive software reviews
                     </div>
                   </div>
                 </div>
@@ -592,7 +592,7 @@ export default async function GuestPostingSitesPage() {
                       <span className="text-yellow-600 text-xs">~</span>
                     </div>
                     <div>
-                      <strong className="text-gray-900">Related Overlap:</strong> Ranks for "business software" (broader term)
+                      <strong className="text-gray-900">Topic Adjacent:</strong> Covers broader business software category
                     </div>
                   </div>
                   <div className="flex items-start gap-2">
@@ -600,13 +600,13 @@ export default async function GuestPostingSitesPage() {
                       <span className="text-yellow-600 text-xs">~</span>
                     </div>
                     <div>
-                      <strong className="text-gray-900">General Authority:</strong> Covers many business topics, less focused
+                      <strong className="text-gray-900">Broader Audience:</strong> Less focused but still business-relevant
                     </div>
                   </div>
                   <div className="flex items-start gap-2">
                     <CheckCircle className="w-4 h-4 text-green-600 flex-shrink-0 mt-0.5" />
                     <div>
-                      <strong className="text-gray-900">Content Strategy:</strong> Long-tail content with modifiers recommended
+                      <strong className="text-gray-900">Strategic Approach:</strong> Requires more targeted content angle
                     </div>
                   </div>
                 </div>
@@ -627,10 +627,10 @@ export default async function GuestPostingSitesPage() {
       <section className="py-16 bg-white border-t">
         <div className="max-w-4xl mx-auto px-4 sm:px-6 lg:px-8 text-center">
           <h2 className="text-3xl font-bold text-gray-900 mb-4">
-            Ready to Build Links That Actually Work?
+            Ready for Fully Managed Link Building?
           </h2>
           <p className="text-xl text-gray-600 mb-8">
-            Join hundreds of businesses getting quality links at transparent prices
+            Join hundreds of businesses getting expert service without agency markups
           </p>
           
           {/* Trust Indicators */}
@@ -645,7 +645,7 @@ export default async function GuestPostingSitesPage() {
             </div>
             <div className="text-center">
               <div className="text-3xl font-bold text-gray-900 mb-1">16-Step</div>
-              <div className="text-sm text-gray-500">Quality Process</div>
+              <div className="text-sm text-gray-500">AI-Assisted Process</div>
             </div>
           </div>
           
