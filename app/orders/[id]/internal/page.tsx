@@ -12,8 +12,18 @@ import {
   RefreshCw, ExternalLink, Globe, LinkIcon, Eye, Package,
   Target, ChevronRight, AlertCircle, Activity, Building, User, DollarSign,
   Download, Share2, XCircle, CreditCard, Trash2, Zap, PlayCircle,
-  ClipboardCheck, Send, Database, Search, Plus, Edit
+  ClipboardCheck, Send, Database, Search, Plus, Edit, KeyRound, Sparkles
 } from 'lucide-react';
+
+interface TargetPageStatus {
+  id: string;
+  url: string;
+  hasKeywords: boolean;
+  hasDescription: boolean;
+  keywordCount: number;
+  clientName: string;
+  orderGroupId: string;
+}
 
 interface SiteSubmission {
   id: string;
@@ -155,6 +165,10 @@ export default function InternalOrderManagementPage() {
   const [loadingSubmissions, setLoadingSubmissions] = useState(false);
   const [expandedGroup, setExpandedGroup] = useState<string | null>(null);
   const [refreshing, setRefreshing] = useState(false);
+  const [targetPageStatuses, setTargetPageStatuses] = useState<TargetPageStatus[]>([]);
+  const [selectedPages, setSelectedPages] = useState<Set<string>>(new Set());
+  const [generatingKeywords, setGeneratingKeywords] = useState(false);
+  const [currentProcessingPage, setCurrentProcessingPage] = useState<string | null>(null);
 
   useEffect(() => {
     const checkAuth = async () => {
@@ -176,7 +190,10 @@ export default function InternalOrderManagementPage() {
     if (order?.state === 'sites_ready' || order?.state === 'site_review' || order?.state === 'client_reviewing') {
       loadSiteSubmissions();
     }
-  }, [order?.state, order?.orderGroups]);
+    if (order?.status === 'pending_confirmation') {
+      checkTargetPageStatuses();
+    }
+  }, [order?.state, order?.orderGroups, order?.status]);
 
   const loadOrder = async () => {
     try {
@@ -227,17 +244,152 @@ export default function InternalOrderManagementPage() {
     }
   };
 
+  const checkTargetPageStatuses = async () => {
+    if (!order?.orderGroups) return;
+    
+    const statuses: TargetPageStatus[] = [];
+    
+    for (const group of order.orderGroups) {
+      for (const targetPage of group.targetPages || []) {
+        if (targetPage.pageId) {
+          try {
+            const response = await fetch(`/api/target-pages/${targetPage.pageId}`);
+            if (response.ok) {
+              const pageData = await response.json();
+              statuses.push({
+                id: pageData.id,
+                url: pageData.url,
+                hasKeywords: !!(pageData.keywords && pageData.keywords.trim() !== ''),
+                hasDescription: !!(pageData.description && pageData.description.trim() !== ''),
+                keywordCount: pageData.keywords ? pageData.keywords.split(',').filter((k: string) => k.trim()).length : 0,
+                clientName: group.client.name,
+                orderGroupId: group.id
+              });
+            }
+          } catch (error) {
+            console.error(`Failed to load target page ${targetPage.pageId}:`, error);
+          }
+        }
+      }
+    }
+    
+    setTargetPageStatuses(statuses);
+    
+    // Auto-select pages that need keywords
+    const pagesNeedingKeywords = statuses.filter(p => !p.hasKeywords).map(p => p.id);
+    setSelectedPages(new Set(pagesNeedingKeywords));
+  };
+
   const handleRefresh = async () => {
     setRefreshing(true);
     await loadOrder();
     if (order?.state === 'sites_ready' || order?.state === 'site_review' || order?.state === 'client_reviewing') {
       await loadSiteSubmissions();
     }
+    if (order?.status === 'pending_confirmation') {
+      await checkTargetPageStatuses();
+    }
     setTimeout(() => setRefreshing(false), 1000);
+  };
+
+  const generateKeywordsForSelected = async () => {
+    if (selectedPages.size === 0) {
+      setMessage({ type: 'warning', text: 'Please select target pages to generate keywords for' });
+      return;
+    }
+    
+    setGeneratingKeywords(true);
+    setMessage({ type: 'info', text: `Generating keywords for ${selectedPages.size} target pages...` });
+    
+    let successCount = 0;
+    let failureCount = 0;
+    let currentIndex = 0;
+    const totalPages = selectedPages.size;
+    
+    for (const pageId of selectedPages) {
+      const page = targetPageStatuses.find(p => p.id === pageId);
+      if (!page) continue;
+      
+      currentIndex++;
+      setCurrentProcessingPage(page.url);
+      setMessage({ 
+        type: 'info', 
+        text: `Processing ${currentIndex}/${totalPages}: ${page.url}` 
+      });
+      
+      try {
+        // Generate keywords
+        if (!page.hasKeywords) {
+          const keywordResponse = await fetch(`/api/target-pages/${pageId}/keywords`, {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ targetUrl: page.url })
+          });
+          
+          if (!keywordResponse.ok) {
+            const errorData = await keywordResponse.json().catch(() => ({}));
+            throw new Error(errorData.error || `Failed to generate keywords (${keywordResponse.status})`);
+          }
+        }
+        
+        // Generate description
+        if (!page.hasDescription) {
+          const descResponse = await fetch(`/api/target-pages/${pageId}/description`, {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ targetUrl: page.url })
+          });
+          
+          if (!descResponse.ok) {
+            const errorData = await descResponse.json().catch(() => ({}));
+            console.error(`Failed to generate description for ${page.url}:`, errorData.error || descResponse.statusText);
+            // Continue with other pages even if description fails
+          }
+        }
+        
+        successCount++;
+        
+        // Add a small delay between API calls to avoid rate limits
+        if (currentIndex < totalPages) {
+          await new Promise(resolve => setTimeout(resolve, 500)); // 500ms delay
+        }
+      } catch (error: any) {
+        console.error(`Failed to generate content for ${page.url}:`, error);
+        failureCount++;
+      }
+    }
+    
+    setGeneratingKeywords(false);
+    setCurrentProcessingPage(null);
+    
+    if (failureCount === 0) {
+      setMessage({ 
+        type: 'success', 
+        text: `Successfully generated keywords for ${successCount} target pages` 
+      });
+    } else {
+      setMessage({ 
+        type: 'warning', 
+        text: `Generated keywords for ${successCount} pages, ${failureCount} failed` 
+      });
+    }
+    
+    // Reload target page statuses
+    await checkTargetPageStatuses();
   };
 
   const handleConfirmOrder = async () => {
     if (!order) return;
+    
+    // Check if all target pages have keywords
+    const pagesWithoutKeywords = targetPageStatuses.filter(p => !p.hasKeywords);
+    if (pagesWithoutKeywords.length > 0) {
+      setMessage({ 
+        type: 'warning', 
+        text: `${pagesWithoutKeywords.length} target pages still need keywords. Please generate them first.` 
+      });
+      return;
+    }
     
     setActionLoading(prev => ({ ...prev, confirm: true }));
     try {
@@ -500,22 +652,108 @@ export default function InternalOrderManagementPage() {
                 <div className="mt-6 pt-6 border-t">
                   <h3 className="text-sm font-medium text-gray-900 mb-3">Internal Actions</h3>
                   <div className="space-y-2">
-                    {/* Order Confirmation */}
+                    {/* Order Confirmation with Target Page Status */}
                     {order.status === 'pending_confirmation' && (
-                      <button
-                        onClick={handleConfirmOrder}
-                        disabled={actionLoading.confirm}
-                        className="w-full px-3 py-2 bg-blue-600 text-white text-sm rounded-md hover:bg-blue-700 disabled:opacity-50"
-                      >
-                        {actionLoading.confirm ? (
-                          <span className="flex items-center justify-center gap-2">
-                            <Loader2 className="h-4 w-4 animate-spin" />
-                            Confirming...
-                          </span>
-                        ) : (
-                          'Confirm Order'
+                      <>
+                        {/* Target Pages Status Section */}
+                        {targetPageStatuses.length > 0 && (
+                          <div className="mb-4">
+                            <div className="flex items-center justify-between mb-2">
+                              <h4 className="text-xs font-medium text-gray-700">Target Pages Status</h4>
+                              <div className="flex items-center gap-3 text-xs">
+                                <span className="flex items-center gap-1">
+                                  <CheckCircle className="h-3 w-3 text-green-600" />
+                                  {targetPageStatuses.filter(p => p.hasKeywords).length} Ready
+                                </span>
+                                <span className="flex items-center gap-1">
+                                  <AlertCircle className="h-3 w-3 text-yellow-600" />
+                                  {targetPageStatuses.filter(p => !p.hasKeywords).length} Need Keywords
+                                </span>
+                              </div>
+                            </div>
+                            
+                            <div className="space-y-1 max-h-40 overflow-y-auto">
+                              {targetPageStatuses.map((page) => (
+                                <div key={page.id} className={`flex items-center gap-2 p-2 rounded text-xs ${
+                                  page.hasKeywords ? 'bg-gray-50' : 'bg-yellow-50'
+                                }`}>
+                                  <input
+                                    type="checkbox"
+                                    checked={selectedPages.has(page.id)}
+                                    onChange={(e) => {
+                                      const newSelected = new Set(selectedPages);
+                                      if (e.target.checked) {
+                                        newSelected.add(page.id);
+                                      } else {
+                                        newSelected.delete(page.id);
+                                      }
+                                      setSelectedPages(newSelected);
+                                    }}
+                                    disabled={page.hasKeywords}
+                                    className="rounded text-indigo-600 h-3 w-3"
+                                  />
+                                  <div className="flex-1 min-w-0">
+                                    <div className="truncate text-gray-700">{page.url}</div>
+                                    <div className="flex items-center gap-2 text-xs">
+                                      <span className="text-gray-500">{page.clientName}</span>
+                                      {page.hasKeywords ? (
+                                        <span className="text-green-600 flex items-center gap-1">
+                                          <KeyRound className="h-3 w-3" />
+                                          {page.keywordCount}
+                                        </span>
+                                      ) : (
+                                        <span className="text-yellow-600">No keywords</span>
+                                      )}
+                                    </div>
+                                  </div>
+                                </div>
+                              ))}
+                            </div>
+                            
+                            {targetPageStatuses.some(p => !p.hasKeywords) && (
+                              <button
+                                onClick={generateKeywordsForSelected}
+                                disabled={generatingKeywords || selectedPages.size === 0}
+                                className="mt-2 w-full px-3 py-2 bg-purple-600 text-white text-xs rounded-md hover:bg-purple-700 disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center gap-2"
+                              >
+                                {generatingKeywords ? (
+                                  <>
+                                    <Loader2 className="h-3 w-3 animate-spin" />
+                                    {currentProcessingPage ? 'Processing...' : 'Generating...'}
+                                  </>
+                                ) : (
+                                  <>
+                                    <Sparkles className="h-3 w-3" />
+                                    Generate Keywords ({selectedPages.size})
+                                  </>
+                                )}
+                              </button>
+                            )}
+                          </div>
                         )}
-                      </button>
+                        
+                        {/* Confirm Order Button */}
+                        <button
+                          onClick={handleConfirmOrder}
+                          disabled={actionLoading.confirm || targetPageStatuses.some(p => !p.hasKeywords)}
+                          className="w-full px-3 py-2 bg-blue-600 text-white text-sm rounded-md hover:bg-blue-700 disabled:opacity-50 disabled:cursor-not-allowed"
+                        >
+                          {actionLoading.confirm ? (
+                            <span className="flex items-center justify-center gap-2">
+                              <Loader2 className="h-4 w-4 animate-spin" />
+                              Confirming...
+                            </span>
+                          ) : (
+                            'Confirm Order'
+                          )}
+                        </button>
+                        
+                        {targetPageStatuses.some(p => !p.hasKeywords) && (
+                          <p className="text-xs text-yellow-600 mt-1">
+                            Generate keywords for all target pages before confirming
+                          </p>
+                        )}
+                      </>
                     )}
                     
                     {/* Bulk Analysis Links */}
