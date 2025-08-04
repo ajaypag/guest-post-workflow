@@ -1545,8 +1545,18 @@ export default function InternalOrderManagementPage() {
                                                         <div className="w-4 h-4" />
                                                       )}
                                                       <div>
-                                                        <div className="text-sm font-medium text-gray-900">
-                                                          {submission.domain?.domain}
+                                                        <div className="text-sm font-medium">
+                                                          <a
+                                                            href={`https://${submission.domain?.domain}`}
+                                                            target="_blank"
+                                                            rel="noopener noreferrer"
+                                                            className="text-gray-900 hover:text-blue-600 hover:underline flex items-center gap-1"
+                                                            onClick={(e) => e.stopPropagation()}
+                                                            title={`Visit ${submission.domain?.domain}`}
+                                                          >
+                                                            {submission.domain?.domain}
+                                                            <ExternalLink className="w-3 h-3 text-gray-400" />
+                                                          </a>
                                                         </div>
                                                         {submission.id === displaySubmission?.id && (
                                                           <span className="text-xs text-green-600 font-medium">Current selection</span>
@@ -1637,19 +1647,28 @@ export default function InternalOrderManagementPage() {
                                                         <>
                                                           <button 
                                                             className="text-xs bg-blue-100 text-blue-700 hover:bg-blue-200 px-2 py-1 rounded transition-colors"
-                                                            onClick={async () => {
-                                                              if (displaySubmission) {
-                                                                await handleAssignTargetPage(displaySubmission.id, '', groupId);
+                                                            onClick={async (e) => {
+                                                              e.preventDefault();
+                                                              e.stopPropagation();
+                                                              try {
+                                                                if (displaySubmission) {
+                                                                  await handleAssignTargetPage(displaySubmission.id, '', groupId);
+                                                                }
+                                                                await handleAssignTargetPage(submission.id, targetPageUrl || '', groupId);
+                                                                // Don't close the expanded row - keep it open for user to see the change
+                                                                // setEditingLineItem(null);
+                                                              } catch (error) {
+                                                                console.error('Error switching domain:', error);
                                                               }
-                                                              await handleAssignTargetPage(submission.id, targetPageUrl || '', groupId);
-                                                              setEditingLineItem(null);
                                                             }}
                                                           >
                                                             Switch
                                                           </button>
                                                           <button 
                                                             className="text-xs bg-green-100 text-green-700 hover:bg-green-200 px-2 py-1 rounded transition-colors"
-                                                            onClick={async () => {
+                                                            onClick={async (e) => {
+                                                              e.preventDefault();
+                                                              e.stopPropagation();
                                                               // Add as new link - this would need API endpoint to create new line item
                                                               console.log('Add as new link:', submission.id);
                                                               // TODO: Implement add as new link functionality
@@ -1662,12 +1681,14 @@ export default function InternalOrderManagementPage() {
                                                       {group.bulkAnalysisProjectId && submission.domainId && (
                                                         <a
                                                           href={`/clients/${group.clientId}/bulk-analysis/projects/${group.bulkAnalysisProjectId}?guided=${submission.domainId}`}
-                                                          className="text-xs text-indigo-600 hover:text-indigo-800 flex items-center"
-                                                          title="View detailed analysis"
+                                                          className="text-xs bg-indigo-100 text-indigo-700 hover:bg-indigo-200 px-2 py-1 rounded transition-colors flex items-center gap-1"
+                                                          title="View detailed bulk analysis"
                                                           target="_blank"
                                                           rel="noopener noreferrer"
+                                                          onClick={(e) => e.stopPropagation()}
                                                         >
-                                                          <ExternalLink className="w-3 h-3" />
+                                                          <Database className="w-3 h-3" />
+                                                          Analysis
                                                         </a>
                                                       )}
                                                     </div>
