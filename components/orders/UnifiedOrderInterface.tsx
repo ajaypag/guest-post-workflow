@@ -736,13 +736,6 @@ export default function UnifiedOrderInterface({
 
   // Manual save functionality 
   const saveOrderDraft = useCallback(async () => {
-    console.log('🔍 SAVE DEBUG - saveOrderDraft called with:', {
-      lineItemsCount: lineItems.length,
-      selectedClientsSize: selectedClients.size,
-      hasOrderGroups: orderGroups?.length || 0,
-      stackTrace: new Error().stack
-    });
-    
     if (!session) return;
     
     try {
@@ -1249,6 +1242,7 @@ export default function UnifiedOrderInterface({
   const [hasUnsavedChanges, setHasUnsavedChanges] = useState(false);
   const [showSavePrompt, setShowSavePrompt] = useState(false);
   const lastSaveTimeRef = useRef<number>(Date.now());
+  const [dataInitialized, setDataInitialized] = useState(false);
 
   // Effects
   // Auto-dismiss success messages after 5 seconds
@@ -1313,18 +1307,60 @@ export default function UnifiedOrderInterface({
           });
           
           if (response.ok) {
-            const order = await response.json();
-            // Initialize order data
-            setDraftOrderId(order.id);
-            // ... other initialization logic
+            const orderData = await response.json();
+            console.log('🔍 Loaded order from API:', {
+              id: orderData.id,
+              orderGroupsCount: orderData.orderGroups?.length || 0
+            });
+            
+            // Initialize order data from fresh API response
+            setDraftOrderId(orderData.id);
+            
+            // Convert fresh order groups to client selections and line items
+            if (orderData.orderGroups && orderData.orderGroups.length > 0) {
+              const newSelectedClients = new Map<string, { selected: boolean; linkCount: number }>();
+              const newLineItems: OrderLineItem[] = [];
+              
+              orderData.orderGroups.forEach((group: any) => {
+                // Make sure we have the client data
+                const clientData = clients.find(c => c.id === group.clientId);
+                if (!clientData) {
+                  console.warn('Client not found for group:', group.clientId);
+                  return;
+                }
+                
+                newSelectedClients.set(group.clientId, {
+                  selected: true,
+                  linkCount: group.linkCount || 1
+                });
+                
+                for (let i = 0; i < (group.linkCount || 1); i++) {
+                  newLineItems.push({
+                    id: `${group.clientId}-${i}`,
+                    clientId: group.clientId,
+                    clientName: clientData.name,
+                    targetPageId: group.targetPages?.[i]?.pageId,
+                    targetPageUrl: group.targetPages?.[i]?.url || '',
+                    anchorText: group.anchorTexts?.[i] || '',
+                    price: group.packagePrice || 279,
+                    selectedPackage: (group.packageType as PackageType) || 'better'
+                  });
+                }
+              });
+              
+              setSelectedClients(newSelectedClients);
+              setLineItems(newLineItems);
+            }
+            setDataInitialized(true);
           }
         } catch (error) {
           console.error('Failed to load draft order:', error);
         }
-      } else if (orderGroups) {
-        // Initialize from orderGroups if provided
-        initializeFromOrderGroups();
+      } else {
+        // New order - no data to load
+        setDataInitialized(true);
       }
+      // Never use orderGroups prop - always load fresh from API
     };
     
     loadInitialData();
@@ -1414,9 +1450,9 @@ export default function UnifiedOrderInterface({
             {currentMode === 'draft' && !isPaid && (
               <button
                 onClick={saveOrderDraft}
-                disabled={saveStatus === 'saving'}
+                disabled={saveStatus === 'saving' || !dataInitialized}
                 className={`inline-flex items-center px-3 py-2 text-sm font-medium rounded-md transition-colors ${
-                  hasUnsavedChanges 
+                  hasUnsavedChanges && dataInitialized
                     ? 'bg-blue-600 hover:bg-blue-700 text-white' 
                     : 'bg-gray-100 text-gray-400 cursor-not-allowed'
                 }`}
