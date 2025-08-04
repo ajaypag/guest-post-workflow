@@ -159,23 +159,73 @@ export default function DebugAirtablePage() {
                 {results.rawAirtableData && (
                   <div className="mt-6">
                     <h3 className="font-medium mb-2">Raw Airtable API Response:</h3>
-                    <div className="space-y-2">
-                      {results.rawAirtableData.map((record: any, index: number) => (
-                        <div key={index} className="border rounded p-3 text-sm">
-                          <div className="font-medium">{record.domain}</div>
-                          <div className="grid grid-cols-2 gap-2 mt-2 text-xs">
-                            <div>
-                              <span className="text-gray-500">Type Field:</span> {JSON.stringify(record.typeField)} 
-                              <span className="ml-2 text-gray-400">({record.typeFieldType}, array: {record.isTypeArray ? 'yes' : 'no'})</span>
+                    
+                    {/* Without View */}
+                    <div className="mb-4">
+                      <h4 className="text-sm font-medium text-gray-700 mb-2">Without View Filter:</h4>
+                      <div className="space-y-2">
+                        {results.rawAirtableData.withoutView?.map((record: any, index: number) => (
+                          <div key={index} className="border rounded p-3 text-sm">
+                            <div className="font-medium">{record.domain}</div>
+                            <div className="text-xs text-gray-500 mt-1">
+                              Available fields: {record.allFields?.join(', ')}
                             </div>
-                            <div>
-                              <span className="text-gray-500">Niche Field:</span> {JSON.stringify(record.nicheField)}
-                              <span className="ml-2 text-gray-400">({record.nicheFieldType}, array: {record.isNicheArray ? 'yes' : 'no'})</span>
+                            <div className="grid grid-cols-2 gap-2 mt-2 text-xs">
+                              <div>
+                                <span className="text-gray-500">Type Field:</span> {JSON.stringify(record.typeField)} 
+                                <span className="ml-2 text-gray-400">({record.typeFieldType}, array: {record.isTypeArray ? 'yes' : 'no'})</span>
+                              </div>
+                              <div>
+                                <span className="text-gray-500">Niche Field:</span> {JSON.stringify(record.nicheField)}
+                                <span className="ml-2 text-gray-400">({record.nicheFieldType}, array: {record.isNicheArray ? 'yes' : 'no'})</span>
+                              </div>
                             </div>
+                            {record.nicheVariations && (
+                              <div className="mt-2 text-xs">
+                                <div className="text-gray-500">Niche variations check:</div>
+                                {Object.entries(record.nicheVariations).map(([key, value]: [string, any]) => (
+                                  <div key={key} className="ml-2">
+                                    <span className="text-gray-600">{key}:</span> {JSON.stringify(value)}
+                                  </div>
+                                ))}
+                              </div>
+                            )}
                           </div>
-                        </div>
-                      ))}
+                        ))}
+                      </div>
                     </div>
+                    
+                    {/* With View */}
+                    {results.rawAirtableData.withView && (
+                      <div className="mb-4">
+                        <h4 className="text-sm font-medium text-gray-700 mb-2">With PostFlow View Filter:</h4>
+                        <div className="space-y-2">
+                          {results.rawAirtableData.withView?.map((record: any, index: number) => (
+                            <div key={index} className="border rounded p-3 text-sm">
+                              <div className="font-medium">{record.domain}</div>
+                              <div className="text-xs text-gray-500 mt-1">
+                                Available fields: {record.allFields?.join(', ')}
+                              </div>
+                              <div className="text-xs mt-1">
+                                <span className="text-gray-500">Niche Field:</span> {JSON.stringify(record.nicheField)}
+                              </div>
+                            </div>
+                          ))}
+                        </div>
+                      </div>
+                    )}
+                    
+                    {/* View Comparison */}
+                    {results.rawAirtableData.viewComparison && (
+                      <div className="bg-gray-50 rounded p-3 text-sm">
+                        <div className="font-medium text-gray-700">View Comparison:</div>
+                        <div className="text-xs mt-1">
+                          <div>Records without view: {results.rawAirtableData.viewComparison.withoutViewCount}</div>
+                          <div>Records with view: {results.rawAirtableData.viewComparison.withViewCount}</div>
+                          <div>View ID: {results.rawAirtableData.viewComparison.viewId}</div>
+                        </div>
+                      </div>
+                    )}
                   </div>
                 )}
 
