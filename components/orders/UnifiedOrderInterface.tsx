@@ -1772,12 +1772,7 @@ export default function UnifiedOrderInterface({
         <CreateTargetPageModal
           isOpen={showCreateTargetPageModal}
           onClose={() => setShowCreateTargetPageModal(false)}
-          clients={Array.from(selectedClients.entries())
-            .filter(([_, data]) => data.selected)
-            .map(([clientId]) => clients.find(c => c.id === clientId))
-            .filter(Boolean) as ClientWithSelection[]
-          }
-          onTargetPageCreated={() => {
+          onTargetPagesCreated={() => {
             loadClients(); // Reload to get updated target pages
             setShowCreateTargetPageModal(false);
           }}

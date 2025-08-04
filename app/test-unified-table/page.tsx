@@ -99,27 +99,39 @@ const mockSiteSubmissions = {
       id: 'sub-1',
       orderGroupId: 'group-1',
       domainId: 'domain-1',
-      domain: { id: 'domain-1', domain: 'example.com' },
+      domain: { 
+        id: 'domain-1', 
+        domain: 'example.com',
+        qualificationStatus: 'qualified',
+        notes: 'High quality domain'
+      },
       domainRating: 65,
       traffic: 50000,
       price: 279,
       status: 'pending' as const,
       selectionPool: 'primary' as const,
       poolRank: 1,
-      metadata: { targetPageUrl: '/best-link-building-services/' }
+      targetPageUrl: '/best-link-building-services/',
+      anchorText: 'best link building'
     },
     {
       id: 'sub-2',
       orderGroupId: 'group-1', 
       domainId: 'domain-2',
-      domain: { id: 'domain-2', domain: 'alternative.com' },
+      domain: { 
+        id: 'domain-2', 
+        domain: 'alternative.com',
+        qualificationStatus: 'qualified',
+        notes: 'Good alternative option'
+      },
       domainRating: 58,
       traffic: 35000,
       price: 250,
       status: 'pending' as const,
       selectionPool: 'alternative' as const,
       poolRank: 1,
-      metadata: { targetPageUrl: '/best-link-building-services/' }
+      targetPageUrl: '/best-link-building-services/',
+      anchorText: 'best link building'
     }
   ]
 };
@@ -188,64 +200,21 @@ export default function TestUnifiedTablePage() {
 
           {/* Unified Order Interface */}
           <UnifiedOrderInterface
-            order={order}
+            orderId={order.id}
+            orderGroups={order.groups}
             siteSubmissions={order.state === 'site_review' ? mockSiteSubmissions : {}}
             userType={userType}
-            onUpdateOrder={(updates) => {
-              console.log('Update order:', updates);
-              setOrder(prev => ({ ...prev, ...updates }));
+            orderStatus={order.status}
+            orderState={order.state}
+            isPaid={order.isPaid}
+            onSave={async (orderData) => {
+              console.log('Save order:', orderData);
             }}
-            onUpdateGroup={(groupId, updates) => {
-              console.log('Update group:', groupId, updates);
-              setOrder(prev => ({
-                ...prev,
-                groups: prev.groups.map(group => 
-                  group.id === groupId ? { ...group, ...updates } as OrderGroup : group
-                )
-              }));
+            onSubmit={async (orderData) => {
+              console.log('Submit order:', orderData);
             }}
-            onAddRow={(clientId) => {
-              console.log('Add row for client:', clientId);
-              setOrder(prev => ({
-                ...prev,
-                groups: prev.groups.map(group => {
-                  if (group.clientId === clientId) {
-                    return {
-                      ...group,
-                      linkCount: group.linkCount + 1,
-                      targetPages: [...(group.targetPages || []), { id: `new-${Date.now()}`, url: '', pageId: `new-${Date.now()}` }],
-                      anchorTexts: [...(group.anchorTexts || []), '']
-                    } as OrderGroup;
-                  }
-                  return group;
-                })
-              }));
-            }}
-            onRemoveRow={(groupId, linkIndex) => {
-              console.log('Remove row:', groupId, linkIndex);
-              setOrder(prev => ({
-                ...prev,
-                groups: prev.groups.map(group => {
-                  if (group.id === groupId) {
-                    const newTargetPages = [...(group.targetPages || [])];
-                    const newAnchorTexts = [...(group.anchorTexts || [])];
-                    newTargetPages.splice(linkIndex, 1);
-                    newAnchorTexts.splice(linkIndex, 1);
-                    
-                    return {
-                      ...group,
-                      linkCount: Math.max(1, group.linkCount - 1),
-                      targetPages: newTargetPages,
-                      anchorTexts: newAnchorTexts
-                    } as OrderGroup;
-                  }
-                  return group;
-                })
-              }));
-            }}
-            onSwitchDomain={(submissionId, groupId) => {
-              console.log('Switch domain:', submissionId, groupId);
-              alert(`Would switch domain ${submissionId} in group ${groupId}`);
+            onModeChange={(mode) => {
+              console.log('Mode changed:', mode);
             }}
           />
           
