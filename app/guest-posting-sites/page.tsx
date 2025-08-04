@@ -49,23 +49,21 @@ async function getWebsites() {
       .select({ count: sql<number>`count(*)` })
       .from(websites);
 
-    // Get all niches from comma-separated values
+    // Get all niches from PostgreSQL arrays
     const nichesResult = await db.execute(sql`
-      SELECT niche
+      SELECT UNNEST(niche) as niche_name
       FROM websites
-      WHERE niche IS NOT NULL AND niche != ''
+      WHERE niche IS NOT NULL AND array_length(niche, 1) > 0
     `);
     
     // Count niches
     const nicheCount = new Map<string, number>();
     nichesResult.rows.forEach((row: any) => {
-      if (row.niche && typeof row.niche === 'string') {
-        row.niche.split(',').forEach((n: string) => {
-          const trimmed = n.trim();
-          if (trimmed) {
-            nicheCount.set(trimmed, (nicheCount.get(trimmed) || 0) + 1);
-          }
-        });
+      if (row.niche_name) {
+        const trimmed = row.niche_name.trim();
+        if (trimmed) {
+          nicheCount.set(trimmed, (nicheCount.get(trimmed) || 0) + 1);
+        }
       }
     });
     
@@ -340,12 +338,9 @@ export default async function GuestPostingSitesPage() {
                       </div>
                     </td>
                     <td className="px-4 py-3">
-                      {site.niche && typeof site.niche === 'string' && (
+                      {site.niche && Array.isArray(site.niche) && site.niche.length > 0 && (
                         <div className="flex gap-1 flex-wrap">
                           {site.niche
-                            .split(',')
-                            .map(n => n.trim())
-                            .filter(n => n)
                             .slice(0, 2)
                             .map((nicheName: string, i: number) => (
                               <Link
@@ -356,9 +351,9 @@ export default async function GuestPostingSitesPage() {
                                 {nicheName}
                               </Link>
                             ))}
-                          {site.niche.split(',').map(n => n.trim()).filter(n => n).length > 2 && (
+                          {site.niche.length > 2 && (
                             <span className="text-xs text-gray-500">
-                              +{site.niche.split(',').map(n => n.trim()).filter(n => n).length - 2}
+                              +{site.niche.length - 2}
                             </span>
                           )}
                         </div>

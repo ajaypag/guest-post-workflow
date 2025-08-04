@@ -23,24 +23,19 @@ import { generateNicheQueries } from '@/lib/utils/queryGenerator';
 // This function runs at BUILD TIME to generate all niche pages
 export async function generateStaticParams() {
   try {
-    // Since niche is comma-separated, we need to get all websites and extract unique niches
+    // Get all unique niches from PostgreSQL arrays
     const websitesResult = await db.execute(sql`
-      SELECT niche
+      SELECT DISTINCT UNNEST(niche) as niche_name
       FROM websites
       WHERE niche IS NOT NULL 
-        AND niche != ''
+        AND array_length(niche, 1) > 0
     `);
     
-    // Extract unique niches from comma-separated values
+    // Extract unique niches
     const uniqueNiches = new Set<string>();
     websitesResult.rows.forEach((row: any) => {
-      if (row.niche && typeof row.niche === 'string') {
-        row.niche.split(',').forEach((n: string) => {
-          const trimmed = n.trim();
-          if (trimmed) {
-            uniqueNiches.add(trimmed);
-          }
-        });
+      if (row.niche_name) {
+        uniqueNiches.add(row.niche_name.trim());
       }
     });
     
@@ -61,23 +56,18 @@ export async function generateStaticParams() {
 // Helper to convert slug back to niche name
 async function getNicheFromSlug(slug: string): Promise<string | null> {
   try {
-    // Get all websites with niches
+    // Get all unique niches from PostgreSQL arrays
     const websitesResult = await db.execute(sql`
-      SELECT niche
+      SELECT DISTINCT UNNEST(niche) as niche_name
       FROM websites
-      WHERE niche IS NOT NULL AND niche != ''
+      WHERE niche IS NOT NULL AND array_length(niche, 1) > 0
     `);
     
-    // Extract unique niches and find matching one
+    // Extract unique niches
     const uniqueNiches = new Set<string>();
     websitesResult.rows.forEach((row: any) => {
-      if (row.niche && typeof row.niche === 'string') {
-        row.niche.split(',').forEach((n: string) => {
-          const trimmed = n.trim();
-          if (trimmed) {
-            uniqueNiches.add(trimmed);
-          }
-        });
+      if (row.niche_name) {
+        uniqueNiches.add(row.niche_name.trim());
       }
     });
     
@@ -109,7 +99,7 @@ async function getRelatedNiches(nicheName: string, currentSlug: string) {
     const websitesWithNiche = await db.execute(sql`
       SELECT categories
       FROM websites
-      WHERE niche LIKE ${'%' + nicheName + '%'}
+      WHERE ${nicheName} = ANY(niche)
         AND categories IS NOT NULL
     `);
     
@@ -126,24 +116,19 @@ async function getRelatedNiches(nicheName: string, currentSlug: string) {
     
     // Get all websites that share these categories
     const relatedWebsites = await db.execute(sql`
-      SELECT niche
+      SELECT UNNEST(niche) as niche_name
       FROM websites
       WHERE categories && ARRAY[${sql.raw(categories.map(c => `'${c}'`).join(','))}]::text[]
         AND niche IS NOT NULL
-        AND niche != ''
-        AND niche NOT LIKE ${'%' + nicheName + '%'}
+        AND array_length(niche, 1) > 0
+        AND NOT (${nicheName} = ANY(niche))
     `);
     
     // Count occurrences of each niche
     const nicheCount = new Map<string, number>();
     relatedWebsites.rows.forEach((row: any) => {
-      if (row.niche && typeof row.niche === 'string') {
-        row.niche.split(',').forEach((n: string) => {
-          const trimmed = n.trim();
-          if (trimmed && trimmed !== nicheName) {
-            nicheCount.set(trimmed, (nicheCount.get(trimmed) || 0) + 1);
-          }
-        });
+      if (row.niche_name && row.niche_name !== nicheName) {
+        nicheCount.set(row.niche_name.trim(), (nicheCount.get(row.niche_name.trim()) || 0) + 1);
       }
     });
     
@@ -214,7 +199,7 @@ export default async function NichePage({ params }: { params: Promise<{ niche: s
   const searchQueries = generateNicheQueries(nicheName);
   
   try {
-    // Get websites for this specific niche (using LIKE since niche is comma-separated)
+    // Get websites for this specific niche (using PostgreSQL array contains)
     const websiteResultsQuery = await db.execute(sql`
       SELECT 
         id,
@@ -227,7 +212,7 @@ export default async function NichePage({ params }: { params: Promise<{ niche: s
         overall_quality as "overallQuality",
         has_guest_post as "hasGuestPost"
       FROM websites
-      WHERE niche LIKE ${'%' + nicheName + '%'}
+      WHERE ${nicheName} = ANY(niche)
       ORDER BY domain_rating DESC NULLS LAST
       LIMIT 100
     `);
@@ -238,7 +223,7 @@ export default async function NichePage({ params }: { params: Promise<{ niche: s
     const countResult = await db.execute(sql`
       SELECT COUNT(*) as count
       FROM websites
-      WHERE niche LIKE ${'%' + nicheName + '%'}
+      WHERE ${nicheName} = ANY(niche)
     `);
     
     totalCount = Number(countResult.rows[0]?.count) || 0;
@@ -418,11 +403,9 @@ export default async function NichePage({ params }: { params: Promise<{ niche: s
                     </div>
                   </td>
                   <td className="px-4 py-3">
-                    {site.niche && typeof site.niche === 'string' && (
+                    {site.niche && Array.isArray(site.niche) && (
                       <div className="flex gap-1 flex-wrap">
                         {site.niche
-                          .split(',')
-                          .map((n: string) => n.trim())
                           .filter((n: string) => n && n !== nicheName)
                           .slice(0, 2)
                           .map((otherNiche: string, i: number) => (
@@ -434,9 +417,9 @@ export default async function NichePage({ params }: { params: Promise<{ niche: s
                               {otherNiche}
                             </Link>
                           ))}
-                        {site.niche.split(',').map((n: string) => n.trim()).filter((n: string) => n && n !== nicheName).length > 2 && (
+                        {site.niche.filter((n: string) => n && n !== nicheName).length > 2 && (
                           <span className="text-xs text-gray-500">
-                            +{site.niche.split(',').map((n: string) => n.trim()).filter((n: string) => n && n !== nicheName).length - 2}
+                            +{site.niche.filter((n: string) => n && n !== nicheName).length - 2}
                           </span>
                         )}
                       </div>
