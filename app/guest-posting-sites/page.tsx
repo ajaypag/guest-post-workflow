@@ -146,15 +146,63 @@ export default async function GuestPostingSitesPage() {
         </div>
       </header>
 
-      {/* Minimal Hero - Get right to the point */}
-      <section className="bg-white py-8 border-b">
+      {/* Hero with dual options */}
+      <section className="bg-white py-12 border-b">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-          <h1 className="text-3xl font-bold text-gray-900 mb-2">
-            Guest Posting Sites List
-          </h1>
-          <p className="text-lg text-gray-600">
-            Browse {totalCount.toLocaleString()} verified guest posting opportunities with transparent pricing
-          </p>
+          <div className="text-center mb-8">
+            <h1 className="text-4xl font-bold text-gray-900 mb-3">
+              Guest Posting Sites List
+            </h1>
+            <p className="text-xl text-gray-600 mb-6">
+              Browse {totalCount.toLocaleString()} verified opportunities with transparent pricing
+            </p>
+            
+            {/* Dual approach */}
+            <div className="bg-blue-50 rounded-lg p-6 border border-blue-200 max-w-3xl mx-auto">
+              <h2 className="text-lg font-semibold text-gray-900 mb-4">Two Ways to Find Your Perfect Sites</h2>
+              
+              <div className="grid md:grid-cols-2 gap-6">
+                {/* Option 1: Browse */}
+                <div className="text-center p-4 bg-white rounded-lg border">
+                  <div className="w-12 h-12 bg-green-100 rounded-lg flex items-center justify-center mx-auto mb-3">
+                    <Search className="w-6 h-6 text-green-600" />
+                  </div>
+                  <h3 className="font-medium text-gray-900 mb-2">Browse Our Database</h3>
+                  <p className="text-sm text-gray-600">
+                    Explore sites by category, see pricing, and filter by metrics
+                  </p>
+                </div>
+                
+                {/* Option 2: URL Input */}
+                <div className="text-center p-4 bg-white rounded-lg border">
+                  <div className="w-12 h-12 bg-blue-100 rounded-lg flex items-center justify-center mx-auto mb-3">
+                    <Target className="w-6 h-6 text-blue-600" />
+                  </div>
+                  <h3 className="font-medium text-gray-900 mb-2">Get Dedicated Suggestions</h3>
+                  <p className="text-sm text-gray-600 mb-3">
+                    Paste your target URL, get sites that match your content
+                  </p>
+                </div>
+              </div>
+              
+              {/* URL Input */}
+              <div className="mt-6 pt-4 border-t border-blue-200">
+                <div className="flex flex-col sm:flex-row gap-3 max-w-2xl mx-auto">
+                  <input
+                    type="url"
+                    placeholder="https://your-website.com/page-that-needs-backlinks"
+                    className="flex-1 px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                  />
+                  <button className="px-6 py-3 bg-blue-600 text-white rounded-lg hover:bg-blue-700 font-medium transition-colors whitespace-nowrap">
+                    Get My Site Matches
+                  </button>
+                </div>
+                <p className="text-xs text-gray-500 text-center mt-2">
+                  Our AI will analyze your page and suggest the most relevant guest posting opportunities
+                </p>
+              </div>
+            </div>
+          </div>
         </div>
       </section>
 
