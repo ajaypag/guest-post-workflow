@@ -269,6 +269,7 @@ export async function POST(
           },
           clientReviewedAt: selection.status === 'approved' || selection.status === 'rejected' ? new Date() : null,
           clientReviewNotes: selection.reviewNotes,
+          clientReviewedBy: (selection.status === 'approved' || selection.status === 'rejected') && session.userType === 'account' ? session.userId : null,
           submittedBy: session.userType === 'internal' ? session.userId : null,
           submittedAt: session.userType === 'internal' ? new Date() : null
         }));

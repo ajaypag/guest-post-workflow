@@ -573,10 +573,12 @@ export class OrderService {
     const groupsWithOrders = await db
       .select({
         order: orders,
-        orderGroup: orderGroups
+        orderGroup: orderGroups,
+        account: accounts
       })
       .from(orderGroups)
       .innerJoin(orders, eq(orderGroups.orderId, orders.id))
+      .leftJoin(accounts, eq(orders.accountId, accounts.id))
       .where(eq(orderGroups.bulkAnalysisProjectId, projectId));
 
     // Filter orders based on status - exclude completed and cancelled orders
@@ -585,10 +587,16 @@ export class OrderService {
     });
 
     // Transform the data for the frontend
-    const associatedOrders = activeOrders.map(({ order, orderGroup }) => ({
+    const associatedOrders = activeOrders.map(({ order, orderGroup, account }) => ({
       id: order.id,
-      accountName: 'Unknown', // TODO: Add account relation when needed
-      accountEmail: 'Unknown', // TODO: Add account relation when needed
+      account: account ? {
+        id: account.id,
+        email: account.email,
+        contactName: account.contactName,
+        companyName: account.companyName
+      } : null,
+      accountName: account?.contactName || account?.companyName || account?.email || 'Unknown',
+      accountEmail: account?.email || 'Unknown',
       status: order.status,
       createdAt: order.createdAt.toISOString(),
       itemCount: orderGroup.linkCount,
@@ -606,10 +614,12 @@ export class OrderService {
       const clientDraftOrders = await db
         .select({
           order: orders,
-          orderGroup: orderGroups
+          orderGroup: orderGroups,
+          account: accounts
         })
         .from(orders)
         .innerJoin(orderGroups, eq(orderGroups.orderId, orders.id))
+        .leftJoin(accounts, eq(orders.accountId, accounts.id))
         .where(
           and(
             eq(orderGroups.clientId, clientId),
@@ -620,10 +630,16 @@ export class OrderService {
           )
         );
 
-      draftOrders = clientDraftOrders.map(({ order, orderGroup }) => ({
+      draftOrders = clientDraftOrders.map(({ order, orderGroup, account }) => ({
         id: order.id,
-        accountName: 'Unknown', // TODO: Add account relation when needed
-        accountEmail: 'Unknown', // TODO: Add account relation when needed
+        account: account ? {
+          id: account.id,
+          email: account.email,
+          contactName: account.contactName,
+          companyName: account.companyName
+        } : null,
+        accountName: account?.contactName || account?.companyName || account?.email || 'Unknown',
+        accountEmail: account?.email || 'Unknown',
         status: order.status,
         createdAt: order.createdAt.toISOString(),
         itemCount: orderGroup.linkCount,
