@@ -13,6 +13,7 @@ import {
   Target, ChevronRight, AlertCircle, Activity, Building, User, DollarSign,
   Download, Share2, XCircle, CreditCard, Trash2
 } from 'lucide-react';
+import UnifiedOrderTable from '@/components/orders/UnifiedOrderTable';
 
 interface LineItem {
   id: string;
