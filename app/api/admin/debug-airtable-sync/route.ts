@@ -5,6 +5,7 @@ export async function POST(request: NextRequest) {
   console.log('🔍 Debug: Testing Airtable data extraction...');
   
   try {
+    const { searchDomain } = await request.json().catch(() => ({ searchDomain: null }));
     // Get raw Airtable data first
     const baseUrl = 'https://api.airtable.com/v0';
     const baseId = process.env.AIRTABLE_BASE_ID;
@@ -21,7 +22,8 @@ export async function POST(request: NextRequest) {
     const rawData = await rawResponse.json();
     
     // Get processed data
-    const result = await AirtableService.searchWebsites({}, 5, undefined);
+    const filters = searchDomain ? { searchTerm: searchDomain } : {};
+    const result = await AirtableService.searchWebsites(filters, 5, undefined);
     
     const debugInfo = result.websites.map(website => ({
       id: website.id,
