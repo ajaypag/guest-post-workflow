@@ -29,16 +29,24 @@ interface SiteSubmission {
   id: string;
   orderGroupId: string;
   domainId: string;
-  domain: string;
+  domain: {
+    id: string;
+    domain: string;
+    qualificationStatus?: string;
+    notes?: string;
+  } | null;
   domainRating?: number;
   traffic?: number;
   price: number;
-  status: 'pending' | 'submitted' | 'approved' | 'rejected';
+  status: 'pending' | 'submitted' | 'approved' | 'rejected' | 'client_approved' | 'client_rejected';
   submissionStatus?: string;
   clientApprovedAt?: string;
   clientRejectedAt?: string;
+  clientReviewedAt?: string;
   clientReviewNotes?: string;
   specialInstructions?: string;
+  targetPageUrl?: string;
+  anchorText?: string;
   metadata?: {
     targetPageUrl?: string;
     anchorText?: string;
@@ -466,18 +474,18 @@ export default function InternalOrderManagementPage() {
       // Update the specific submission with the new target page
       const updatedSubmissions = currentSubmissions.map(sub => 
         sub.id === submissionId 
-          ? { ...sub, metadata: { ...sub.metadata, targetPageUrl } }
+          ? { ...sub, targetPageUrl }
           : sub
       );
       
       // Prepare the update payload
       const selections = updatedSubmissions.map(sub => ({
         domainId: sub.domainId,
-        status: sub.submissionStatus === 'client_approved' ? 'approved' : 
-                sub.submissionStatus === 'client_rejected' ? 'rejected' : 'pending',
-        targetPageUrl: sub.metadata?.targetPageUrl || '',
-        anchorText: sub.metadata?.anchorText || '',
-        specialInstructions: sub.metadata?.specialInstructions || '',
+        status: sub.status === 'client_approved' ? 'approved' : 
+                sub.status === 'client_rejected' ? 'rejected' : 'pending',
+        targetPageUrl: sub.targetPageUrl || '',
+        anchorText: sub.anchorText || '',
+        specialInstructions: sub.specialInstructions || '',
         reviewNotes: sub.clientReviewNotes || ''
       }));
       
@@ -1002,7 +1010,7 @@ export default function InternalOrderManagementPage() {
                             const targetPageUrl = group.targetPages?.[index]?.url;
                             // Find site submission for this target page
                             const siteSuggestion = siteSubmissions[groupId]?.find(sub => 
-                              sub.metadata?.targetPageUrl === targetPageUrl
+                              sub.targetPageUrl === targetPageUrl
                             );
                             
                             return (
@@ -1021,7 +1029,7 @@ export default function InternalOrderManagementPage() {
                                       <div className="flex items-center gap-2">
                                         <Globe className="h-4 w-4 text-blue-600" />
                                         <div>
-                                          <div className="text-sm font-medium text-gray-900">{siteSuggestion.domain}</div>
+                                          <div className="text-sm font-medium text-gray-900">{siteSuggestion.domain?.domain || 'Unknown'}</div>
                                           <div className="text-xs text-gray-500">
                                             {siteSuggestion.submissionStatus === 'client_approved' ? (
                                               <span className="text-green-600">Approved</span>
@@ -1070,7 +1078,7 @@ export default function InternalOrderManagementPage() {
                           {/* Orphaned domains (no target URL) for this client */}
                           {siteSubmissions[groupId] && (() => {
                             const orphanedDomains = siteSubmissions[groupId].filter(sub => 
-                              !sub.metadata?.targetPageUrl || sub.metadata.targetPageUrl === ''
+                              !sub.targetPageUrl || sub.targetPageUrl === ''
                             );
                             return orphanedDomains.length > 0 ? (
                               <>
@@ -1095,7 +1103,7 @@ export default function InternalOrderManagementPage() {
                                       <div className="flex items-start gap-3">
                                         <Globe className="h-5 w-5 text-yellow-600 mt-0.5" />
                                         <div className="flex-1">
-                                          <div className="text-sm font-medium text-gray-900">{submission.domain}</div>
+                                          <div className="text-sm font-medium text-gray-900">{submission.domain?.domain || 'Unknown'}</div>
                                           <div className="flex items-center gap-4 mt-1 text-xs text-gray-600">
                                             {submission.domainRating && (
                                               <span>DR: {submission.domainRating}</span>
@@ -1168,7 +1176,7 @@ export default function InternalOrderManagementPage() {
                                     <div className="flex items-start gap-3">
                                       <Globe className="h-5 w-5 text-purple-600 mt-0.5" />
                                       <div className="flex-1">
-                                        <div className="text-sm font-medium text-gray-900">{submission.domain}</div>
+                                        <div className="text-sm font-medium text-gray-900">{submission.domain?.domain || 'Unknown'}</div>
                                         <div className="flex items-center gap-4 mt-1 text-xs text-gray-600">
                                           {submission.domainRating && (
                                             <span>DR: {submission.domainRating}</span>
