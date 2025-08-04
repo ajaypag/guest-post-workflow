@@ -56,6 +56,11 @@ export async function generateStaticParams() {
 // Helper to convert slug back to niche name
 async function getNicheFromSlug(slug: string): Promise<string | null> {
   try {
+    // Safety check for undefined slug
+    if (!slug || typeof slug !== 'string') {
+      return null;
+    }
+    
     // Remove '-blogs' suffix from slug
     const cleanSlug = slug.replace(/-blogs$/, '');
     
@@ -90,6 +95,10 @@ async function getNicheFromSlug(slug: string): Promise<string | null> {
     return null;
   } catch (error) {
     console.warn('Could not get niche from slug, database not available:', error);
+    // Safety check for fallback
+    if (!slug || typeof slug !== 'string') {
+      return 'Unknown Niche';
+    }
     // Convert slug back to title case (remove -blogs suffix)
     const cleanSlug = slug.replace(/-blogs$/, '');
     return cleanSlug.replace(/-/g, ' ').replace(/\b\w/g, l => l.toUpperCase());
@@ -160,6 +169,12 @@ async function getRelatedNiches(nicheName: string, currentSlug: string) {
 
 export async function generateMetadata({ params }: { params: Promise<{ niche: string }> }): Promise<Metadata> {
   const { niche } = await params;
+  
+  // Safety check for niche parameter
+  if (!niche || typeof niche !== 'string') {
+    return { title: 'Niche Not Found' };
+  }
+  
   const nicheName = await getNicheFromSlug(niche);
   
   if (!nicheName) {
@@ -189,6 +204,12 @@ function getTrafficDisplay(traffic: number | null) {
 
 export default async function NichePage({ params }: { params: Promise<{ niche: string }> }) {
   const { niche } = await params;
+  
+  // Safety check for niche parameter
+  if (!niche || typeof niche !== 'string') {
+    notFound();
+  }
+  
   const nicheName = await getNicheFromSlug(niche);
   
   if (!nicheName) {
