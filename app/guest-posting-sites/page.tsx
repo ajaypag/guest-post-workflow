@@ -177,7 +177,7 @@ export default async function GuestPostingSitesPage() {
               <div className="space-y-3 mb-8">
                 <div className="flex items-center gap-3">
                   <CheckCircle className="w-5 h-5 text-green-600 flex-shrink-0" />
-                  <span className="text-gray-700">Transparent wholesale costs + $79 flat service fee (no crazy markups)</span>
+                  <span className="text-gray-700">Wholesale site costs + $79 full-service fee (research, writing, outreach & placement)</span>
                 </div>
                 <div className="flex items-center gap-3">
                   <CheckCircle className="w-5 h-5 text-green-600 flex-shrink-0" />
@@ -292,8 +292,8 @@ export default async function GuestPostingSitesPage() {
           <div className="bg-white rounded-lg shadow-sm border overflow-hidden">
             <div className="px-4 py-3 bg-blue-50 border-b border-blue-100">
               <p className="text-sm text-blue-900">
-                💡 <span className="font-medium">Fully managed service:</span> Wholesale cost + $79 flat fee. 
-                No crazy agency markups (300-500% savings vs competitors).
+                💡 <span className="font-medium">$79 gets you everything:</span> Content research & writing, publisher outreach, negotiation & live placement. 
+                Just pay wholesale site cost + our flat service fee.
               </p>
             </div>
             <table className="w-full">
@@ -303,7 +303,7 @@ export default async function GuestPostingSitesPage() {
                   <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase">DR</th>
                   <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase">Traffic</th>
                   <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase">Wholesale Cost</th>
-                  <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase">Your Total</th>
+                  <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase">Full Service Price</th>
                   <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase">Niches</th>
                   <th className="px-4 py-3 text-right text-xs font-medium text-gray-500 uppercase">Action</th>
                 </tr>

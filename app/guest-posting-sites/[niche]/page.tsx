@@ -330,7 +330,7 @@ export default async function NichePage({ params }: { params: Promise<{ niche: s
                 </div>
                 <div className="flex items-center gap-3">
                   <CheckCircle className="w-5 h-5 text-green-600 flex-shrink-0" />
-                  <span className="text-gray-700">Wholesale pricing + $79 flat fee (no agency markup)</span>
+                  <span className="text-gray-700">Wholesale site cost + $79 full-service fee (we handle everything)</span>
                 </div>
                 <div className="flex items-center gap-3">
                   <CheckCircle className="w-5 h-5 text-green-600 flex-shrink-0" />
@@ -383,7 +383,7 @@ export default async function NichePage({ params }: { params: Promise<{ niche: s
           <div className="px-4 py-3 bg-gray-50 border-b">
             <p className="text-sm text-gray-700">
               <span className="font-medium">{totalCount} {nicheName} websites</span> 
-              {" "}• Wholesale prices shown • Add $79 for our complete service
+              {" "}• Wholesale costs shown • +$79 full service (content creation, outreach & placement)
             </p>
           </div>
           <table className="w-full">
@@ -393,7 +393,7 @@ export default async function NichePage({ params }: { params: Promise<{ niche: s
                 <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase">DR</th>
                 <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase">Traffic</th>
                 <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase">Wholesale</th>
-                <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase">Your Total</th>
+                <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase">Full Service Price</th>
                 <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase">Other Niches</th>
                 <th className="px-4 py-3 text-right text-xs font-medium text-gray-500 uppercase">Action</th>
               </tr>
