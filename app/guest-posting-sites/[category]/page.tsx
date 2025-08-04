@@ -215,63 +215,87 @@ export default async function CategoryPage({ params }: { params: Promise<{ categ
         </div>
       </header>
 
-      {/* Page Content */}
-      <div className="p-6 max-w-7xl mx-auto">
-        {/* Breadcrumb */}
-        <div className="mb-6">
-          <nav className="flex items-center space-x-2 text-sm text-gray-600">
-            <Link href="/guest-posting-sites" className="hover:text-gray-900 flex items-center gap-1">
+      {/* Hero Section */}
+      <div className="bg-gradient-to-br from-blue-600 to-purple-700 text-white">
+        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-16">
+          {/* Breadcrumb */}
+          <nav className="flex items-center space-x-2 text-sm mb-6 text-blue-100">
+            <Link href="/guest-posting-sites" className="hover:text-white flex items-center gap-1">
               <ArrowLeft className="w-3 h-3" />
               All Categories
             </Link>
-            <span className="text-gray-400">/</span>
-            <span className="text-gray-900 font-medium">{categoryName}</span>
+            <span className="text-blue-300">/</span>
+            <span className="text-white font-medium">{categoryName}</span>
           </nav>
-        </div>
 
-        {/* Page Header */}
-        <div className="mb-6">
-          <h1 className="text-3xl font-bold mb-2">{categoryName} Guest Posting Sites</h1>
-          <p className="text-gray-600">
-            {totalCount} {categoryName.toLowerCase()} websites • Wholesale prices + $79 service fee
-          </p>
-        </div>
-
-        {/* Value Proposition Box */}
-        <div className="bg-blue-50 border border-blue-200 rounded-lg p-6 mb-8">
-          <div className="grid md:grid-cols-3 gap-6">
-            <div className="flex gap-3">
-              <DollarSign className="w-6 h-6 text-blue-600 flex-shrink-0 mt-0.5" />
-              <div>
-                <h3 className="font-semibold text-gray-900 mb-1">Transparent Pricing</h3>
-                <p className="text-sm text-gray-600">
-                  See exact wholesale costs. No hidden markups or percentage games.
-                </p>
+          <div className="grid lg:grid-cols-2 gap-12 items-center">
+            {/* Left: Main Content */}
+            <div>
+              <h1 className="text-4xl md:text-5xl font-bold mb-4">
+                {categoryName} Guest Posting Sites
+              </h1>
+              <p className="text-xl text-blue-100 mb-6">
+                {totalCount} verified {categoryName.toLowerCase()} websites with transparent pricing
+              </p>
+              
+              {/* Key Benefits */}
+              <div className="space-y-3 mb-8">
+                <div className="flex items-center gap-3">
+                  <CheckCircle className="w-5 h-5 text-green-400 flex-shrink-0" />
+                  <span>Direct keyword overlap verification</span>
+                </div>
+                <div className="flex items-center gap-3">
+                  <CheckCircle className="w-5 h-5 text-green-400 flex-shrink-0" />
+                  <span>Wholesale prices + $79 service fee</span>
+                </div>
+                <div className="flex items-center gap-3">
+                  <CheckCircle className="w-5 h-5 text-green-400 flex-shrink-0" />
+                  <span>2000-3000 word research-driven content</span>
+                </div>
               </div>
             </div>
-            <div className="flex gap-3">
-              <Shield className="w-6 h-6 text-blue-600 flex-shrink-0 mt-0.5" />
-              <div>
-                <h3 className="font-semibold text-gray-900 mb-1">Direct Keyword Overlap</h3>
-                <p className="text-sm text-gray-600">
-                  We verify that each site actually ranks for keywords your site relates to.
-                </p>
+
+            {/* Right: URL Input Tool */}
+            <div className="bg-white rounded-xl p-6 text-gray-900">
+              <h3 className="text-xl font-semibold mb-3">Get Your {categoryName} Sites</h3>
+              <p className="text-gray-600 mb-4">
+                Enter your target URL to see which {categoryName.toLowerCase()} sites match your content
+              </p>
+              
+              <div className="space-y-3">
+                <input
+                  type="url"
+                  placeholder="https://your-website.com/target-page"
+                  className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                />
+                <button className="w-full px-6 py-3 bg-blue-600 text-white rounded-lg hover:bg-blue-700 font-medium transition-colors">
+                  Analyze My Page
+                </button>
               </div>
-            </div>
-            <div className="flex gap-3">
-              <PenTool className="w-6 h-6 text-blue-600 flex-shrink-0 mt-0.5" />
-              <div>
-                <h3 className="font-semibold text-gray-900 mb-1">Research-Driven Content</h3>
-                <p className="text-sm text-gray-600">
-                  2000-3000 word articles with original research, stats, images, and genuine learning value.
-                </p>
-              </div>
+              
+              <p className="text-xs text-gray-500 text-center mt-3">
+                Our AI finds sites that actually rank for your keywords
+              </p>
             </div>
           </div>
         </div>
+      </div>
 
-        {/* Websites Table */}
-        <div className="bg-white rounded-lg shadow-sm border overflow-hidden">
+      {/* Page Content */}
+      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-12">
+
+        {/* Section 1: Available Sites */}
+        <section className="mb-16">
+          <div className="text-center mb-8">
+            <h2 className="text-3xl font-bold text-gray-900 mb-3">
+              Available {categoryName} Sites
+            </h2>
+            <p className="text-lg text-gray-600">
+              Browse {totalCount} verified {categoryName.toLowerCase()} websites with transparent pricing
+            </p>
+          </div>
+
+          <div className="bg-white rounded-lg shadow-sm border overflow-hidden">
           <div className="px-4 py-3 bg-gray-50 border-b">
             <p className="text-sm text-gray-700">
               <span className="font-medium">{categoryName} websites from our network.</span> 
@@ -371,145 +395,160 @@ export default async function CategoryPage({ params }: { params: Promise<{ categ
               </div>
             </div>
           )}
-        </div>
-
-        {/* Transition to Manual Search */}
-        <div className="mt-12 bg-gradient-to-r from-yellow-50 to-orange-50 rounded-lg p-6 border border-yellow-200">
-          <h2 className="text-xl font-bold text-gray-900 mb-3">
-            Prefer to Find {categoryName} Sites Yourself?
-          </h2>
-          <p className="text-gray-700 mb-4">
-            While our AI service handles everything automatically (just give us your target URL), 
-            some businesses prefer to build their own prospect lists. Here are proven Google search 
-            queries to find {categoryName.toLowerCase()} guest posting opportunities:
-          </p>
-          <div className="flex items-center gap-4 text-sm">
-            <div className="flex items-center gap-2">
-              <div className="w-2 h-2 bg-green-500 rounded-full"></div>
-              <span className="text-gray-600">25+ ready-to-use search queries</span>
-            </div>
-            <div className="flex items-center gap-2">
-              <div className="w-2 h-2 bg-blue-500 rounded-full"></div>
-              <span className="text-gray-600">Copy & search with one click</span>
-            </div>
           </div>
-        </div>
+        </section>
 
-        {/* Search Queries Section */}
-        <div className="mt-6">
-          <QuerySection categoryName={categoryName} queries={searchQueries} />
-        </div>
-
-        {/* Related Categories Section */}
-        {relatedCategories.length > 0 && (
-          <div className="mt-12 bg-white rounded-lg shadow-sm border p-6">
-            <h2 className="text-xl font-bold text-gray-900 mb-4">
-              Related Guest Post Categories
+        {/* Section 2: DIY Search Queries */}
+        <section className="mb-16">
+          <div className="text-center mb-8">
+            <h2 className="text-3xl font-bold text-gray-900 mb-3">
+              Or Find {categoryName} Sites Yourself
             </h2>
-            <p className="text-gray-600 mb-4">
-              Expand your link building strategy with sites in complementary niches:
+            <p className="text-lg text-gray-600">
+              Use these proven Google search queries to discover {categoryName.toLowerCase()} guest posting opportunities
             </p>
-            <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
+          </div>
+
+          <QuerySection categoryName={categoryName} queries={searchQueries} />
+        </section>
+
+        {/* Section 3: Related Categories with Internal Linking */}
+        {relatedCategories.length > 0 && (
+          <section className="mb-16">
+            <div className="text-center mb-8">
+              <h2 className="text-3xl font-bold text-gray-900 mb-3">
+                Expand Your {categoryName} Link Strategy
+              </h2>
+              <p className="text-lg text-gray-600">
+                Build a diverse backlink profile with sites in complementary niches
+              </p>
+            </div>
+
+            <div className="grid grid-cols-2 md:grid-cols-4 gap-6">
               {relatedCategories.map(cat => (
                 <Link
                   key={cat.slug}
                   href={`/guest-posting-sites/${cat.slug}`}
-                  className="block p-3 border border-gray-200 rounded-lg hover:border-blue-300 hover:bg-blue-50 transition-colors"
+                  className="group block p-6 bg-white border border-gray-200 rounded-xl hover:border-blue-300 hover:shadow-md transition-all"
                 >
-                  <div className="font-medium text-sm text-gray-900">{cat.name}</div>
-                  <div className="text-xs text-gray-500">{cat.count} sites</div>
+                  <div className="text-center">
+                    <div className="text-2xl font-bold text-gray-900 mb-1">{cat.count}</div>
+                    <div className="font-medium text-gray-900 group-hover:text-blue-600 transition-colors">
+                      {cat.name}
+                    </div>
+                    <div className="text-sm text-gray-500 mt-1">
+                      Guest posting sites
+                    </div>
+                  </div>
                 </Link>
               ))}
             </div>
-          </div>
+
+            <div className="mt-8 text-center">
+              <Link
+                href="/guest-posting-sites"
+                className="inline-flex items-center gap-2 px-6 py-3 border border-gray-300 text-gray-700 rounded-lg hover:bg-gray-50 transition-colors"
+              >
+                Browse All Categories
+                <ArrowRight className="w-4 h-4" />
+              </Link>
+            </div>
+          </section>
         )}
 
-        {/* Service Details Section */}
-        <div className="mt-12 bg-white rounded-lg shadow-sm border p-8">
-          <h2 className="text-2xl font-bold text-gray-900 mb-6">
-            How We Handle {categoryName} Guest Posts
-          </h2>
-          
-          <div className="grid md:grid-cols-2 gap-8">
-            <div>
-              <h3 className="font-semibold text-lg mb-3">What's Included in Our $79 Service:</h3>
-              <ul className="space-y-2">
-                <li className="flex items-start gap-2">
-                  <CheckCircle className="w-5 h-5 text-green-600 mt-0.5 flex-shrink-0" />
-                  <span className="text-gray-700">Direct keyword overlap verification - does the site rank for keywords YOUR site relates to?</span>
-                </li>
-                <li className="flex items-start gap-2">
-                  <CheckCircle className="w-5 h-5 text-green-600 mt-0.5 flex-shrink-0" />
-                  <span className="text-gray-700">Deep research with original stats, data, and industry insights</span>
-                </li>
-                <li className="flex items-start gap-2">
-                  <CheckCircle className="w-5 h-5 text-green-600 mt-0.5 flex-shrink-0" />
-                  <span className="text-gray-700">2000-3000 word articles with genuine learning value</span>
-                </li>
-                <li className="flex items-start gap-2">
-                  <CheckCircle className="w-5 h-5 text-green-600 mt-0.5 flex-shrink-0" />
-                  <span className="text-gray-700">Outreach and negotiation</span>
-                </li>
-                <li className="flex items-start gap-2">
-                  <CheckCircle className="w-5 h-5 text-green-600 mt-0.5 flex-shrink-0" />
-                  <span className="text-gray-700">Placement and link verification</span>
-                </li>
-              </ul>
+        {/* Section 4: Educational Content + Process */}
+        <section className="mb-16">
+          <div className="bg-gradient-to-br from-gray-50 to-blue-50 rounded-2xl p-8 md:p-12">
+            <div className="text-center mb-12">
+              <h2 className="text-3xl font-bold text-gray-900 mb-3">
+                How We Handle {categoryName} Guest Posts
+              </h2>
+              <p className="text-lg text-gray-600">
+                The difference between random outreach and strategic link building
+              </p>
             </div>
-            
-            <div>
-              <h3 className="font-semibold text-lg mb-3">Why {categoryName} Links Matter:</h3>
-              <p className="text-gray-700 mb-4">
-                {categoryName} is a competitive niche where quality and relevance are crucial. 
-                Our team ensures every link adds real value to your SEO strategy.
-              </p>
-              <p className="text-gray-700 mb-4">
-                We don't just place links – we create content that ranks and drives traffic 
-                while building your authority in the {categoryName.toLowerCase()} space.
-              </p>
-              
-              {/* Internal linking for SEO */}
-              <div className="bg-blue-50 p-4 rounded-lg">
-                <h4 className="font-medium text-gray-900 mb-2">Our Simple Process:</h4>
-                <ul className="text-sm text-gray-700 space-y-1">
-                  <li>• <strong>1.</strong> You provide your target page URL</li>
-                  <li>• <strong>2.</strong> Our AI extracts keywords and finds relevant {categoryName.toLowerCase()} sites</li>
-                  <li>• <strong>3.</strong> We create expert content and handle all outreach</li>
-                  <li>• <strong>4.</strong> You get high-quality {categoryName.toLowerCase()} backlinks that rank</li>
-                </ul>
+
+            <div className="grid lg:grid-cols-2 gap-12">
+              {/* Left: Process */}
+              <div>
+                <h3 className="text-xl font-semibold mb-6">Our 4-Step Process</h3>
+                <div className="space-y-6">
+                  <div className="flex gap-4">
+                    <div className="w-8 h-8 bg-blue-600 text-white rounded-full flex items-center justify-center font-semibold text-sm">1</div>
+                    <div>
+                      <h4 className="font-medium text-gray-900 mb-1">URL Analysis</h4>
+                      <p className="text-sm text-gray-600">Extract keywords from your target page automatically</p>
+                    </div>
+                  </div>
+                  <div className="flex gap-4">
+                    <div className="w-8 h-8 bg-blue-600 text-white rounded-full flex items-center justify-center font-semibold text-sm">2</div>
+                    <div>
+                      <h4 className="font-medium text-gray-900 mb-1">Direct Keyword Overlap</h4>
+                      <p className="text-sm text-gray-600">Find {categoryName.toLowerCase()} sites that actually rank for YOUR keywords</p>
+                    </div>
+                  </div>
+                  <div className="flex gap-4">
+                    <div className="w-8 h-8 bg-blue-600 text-white rounded-full flex items-center justify-center font-semibold text-sm">3</div>
+                    <div>
+                      <h4 className="font-medium text-gray-900 mb-1">Research-Driven Content</h4>
+                      <p className="text-sm text-gray-600">2000-3000 words with original data, stats, and genuine learning value</p>
+                    </div>
+                  </div>
+                  <div className="flex gap-4">
+                    <div className="w-8 h-8 bg-blue-600 text-white rounded-full flex items-center justify-center font-semibold text-sm">4</div>
+                    <div>
+                      <h4 className="font-medium text-gray-900 mb-1">Full Placement</h4>
+                      <p className="text-sm text-gray-600">Handle outreach, negotiation, and link verification</p>
+                    </div>
+                  </div>
+                </div>
+              </div>
+
+              {/* Right: What Makes Us Different */}
+              <div>
+                <h3 className="text-xl font-semibold mb-6">What Makes {categoryName} Links Effective</h3>
+                <div className="space-y-4 mb-8">
+                  <div className="flex items-start gap-3">
+                    <CheckCircle className="w-5 h-5 text-green-600 mt-0.5 flex-shrink-0" />
+                    <div>
+                      <div className="font-medium text-gray-900">Keyword Relevance</div>
+                      <div className="text-sm text-gray-600">Sites must rank for keywords your page relates to</div>
+                    </div>
+                  </div>
+                  <div className="flex items-start gap-3">
+                    <CheckCircle className="w-5 h-5 text-green-600 mt-0.5 flex-shrink-0" />
+                    <div>
+                      <div className="font-medium text-gray-900">Content Quality</div>
+                      <div className="text-sm text-gray-600">Articles people actually read and learn from</div>
+                    </div>
+                  </div>
+                  <div className="flex items-start gap-3">
+                    <CheckCircle className="w-5 h-5 text-green-600 mt-0.5 flex-shrink-0" />
+                    <div>
+                      <div className="font-medium text-gray-900">Transparent Pricing</div>
+                      <div className="text-sm text-gray-600">Wholesale cost + $79. No hidden markups</div>
+                    </div>
+                  </div>
+                </div>
+
+                {/* CTA */}
+                <div className="bg-white rounded-lg p-6 border">
+                  <h4 className="font-medium text-gray-900 mb-3">Ready to Start?</h4>
+                  <p className="text-sm text-gray-600 mb-4">
+                    Get personalized {categoryName.toLowerCase()} site recommendations for your content
+                  </p>
+                  <Link
+                    href="/signup/marketing"
+                    className="block w-full text-center px-6 py-3 bg-blue-600 text-white rounded-lg hover:bg-blue-700 font-medium transition-colors"
+                  >
+                    Analyze My {categoryName} Opportunities
+                  </Link>
+                </div>
               </div>
             </div>
           </div>
-        </div>
+        </section>
 
-        {/* CTA Section */}
-        {websiteResults.length > 0 && (
-          <div className="mt-8 bg-gradient-to-r from-blue-50 to-purple-50 rounded-lg p-8 border border-blue-100">
-            <div className="max-w-2xl mx-auto text-center">
-              <h3 className="text-2xl font-bold text-gray-900 mb-2">
-                Ready to Build Quality {categoryName} Links?
-              </h3>
-              <p className="text-gray-600 mb-6">
-                Transparent pricing • Expert content • Full placement service
-              </p>
-              <div className="flex flex-col sm:flex-row gap-4 justify-center">
-                <Link
-                  href="/signup/marketing"
-                  className="flex items-center justify-center gap-2 px-6 py-3 bg-blue-600 text-white font-medium rounded-lg hover:bg-blue-700 transition-colors"
-                >
-                  Start Your Campaign
-                  <ArrowRight className="w-4 h-4" />
-                </Link>
-                <Link
-                  href="/account/login"
-                  className="flex items-center justify-center gap-2 px-6 py-3 border border-gray-300 bg-white text-gray-700 font-medium rounded-lg hover:bg-gray-50 transition-colors"
-                >
-                  Already have an account? Sign in
-                </Link>
-              </div>
-            </div>
-          </div>
-        )}
       </div>
     </div>
   );
