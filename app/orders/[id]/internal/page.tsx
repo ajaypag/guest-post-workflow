@@ -1498,9 +1498,9 @@ export default function InternalOrderManagementPage() {
                                  editingLineItem?.index === index && 
                                  showPoolView && 
                                  availableForTarget.length > 1 && (
-                                  <tr className="bg-white border-l-4 border-indigo-200">
+                                  <tr className="bg-white border-l-4 border-indigo-200 edit-dropdown">
                                     <td colSpan={getColumnCount()} className="px-6 py-4">
-                                      <div className="bg-gray-50 rounded-lg p-4">
+                                      <div className="bg-gray-50 rounded-lg p-4 edit-dropdown">
                                         <div className="mb-3">
                                           <h4 className="text-sm font-medium text-gray-900 mb-1">
                                             Domain Comparison ({availableForTarget.length} options)
