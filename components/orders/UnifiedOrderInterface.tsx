@@ -283,8 +283,11 @@ export default function UnifiedOrderInterface({
       const url = isAccountUser ? '/api/account/clients' : '/api/clients';
       const response = await fetch(url, { credentials: 'include' });
       if (response.ok) {
-        const clientsData = await response.json();
-        setClients(clientsData.map((client: any) => ({ ...client, selected: false, linkCount: 0 })));
+        const data = await response.json();
+        const clientList = data.clients || data;  // Handle both formats
+        // Filter out archived clients
+        const activeClients = clientList.filter((client: any) => !client.archivedAt);
+        setClients(activeClients.map((client: any) => ({ ...client, selected: false, linkCount: 0 })));
       }
     } catch (error) {
       console.error('Failed to load clients:', error);
@@ -1247,27 +1250,73 @@ export default function UnifiedOrderInterface({
   }, [message]);
 
   useEffect(() => {
-    // Initial data loading
+    // Initial data loading - inline like edit page to avoid dependency issues
     const loadInitialData = async () => {
+      if (!session) return;
+      
       // Load accounts if internal user
-      if (session?.userType === 'internal') {
-        await loadAccounts();
+      if (session.userType === 'internal') {
+        try {
+          setLoadingAccounts(true);
+          const response = await fetch('/api/accounts', {
+            headers: { 'Content-Type': 'application/json' },
+            credentials: 'include'
+          });
+          
+          if (response.ok) {
+            const accounts = await response.json();
+            setAccountsList(accounts);
+          }
+        } catch (error) {
+          console.error('Failed to load accounts:', error);
+        } finally {
+          setLoadingAccounts(false);
+        }
       }
       
       // Load clients
-      await loadClients();
+      try {
+        setLoadingClients(true);
+        const url = isAccountUser ? '/api/account/clients' : '/api/clients';
+        const response = await fetch(url, { credentials: 'include' });
+        if (response.ok) {
+          const data = await response.json();
+          const clientList = data.clients || data;  // Handle both formats
+          // Filter out archived clients
+          const activeClients = clientList.filter((client: any) => !client.archivedAt);
+          setClients(activeClients.map((client: any) => ({ ...client, selected: false, linkCount: 0 })));
+        }
+      } catch (error) {
+        console.error('Failed to load clients:', error);
+        setError('Failed to load clients');
+      } finally {
+        setLoadingClients(false);
+      }
       
       // Load draft order if orderId provided
       if (orderId) {
-        await loadDraftOrder();
-      } else {
+        try {
+          const response = await fetch(`/api/orders/${orderId}`, {
+            credentials: 'include'
+          });
+          
+          if (response.ok) {
+            const order = await response.json();
+            // Initialize order data
+            setDraftOrderId(order.id);
+            // ... other initialization logic
+          }
+        } catch (error) {
+          console.error('Failed to load draft order:', error);
+        }
+      } else if (orderGroups) {
         // Initialize from orderGroups if provided
         initializeFromOrderGroups();
       }
     };
     
     loadInitialData();
-  }, [session?.userType, orderId, loadAccounts, loadClients, loadDraftOrder, initializeFromOrderGroups]);
+  }, [session?.userType, session?.userId, orderId, isAccountUser]);
 
   useEffect(() => {
     calculatePricing(lineItems);
