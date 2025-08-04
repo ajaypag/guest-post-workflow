@@ -756,23 +756,29 @@ export default function InternalOrderManagementPage() {
     anchorText?: string; 
     price?: number; 
   }) => (
-    <div className="space-y-1">
-      <div className="flex items-center gap-1 text-sm">
-        <Globe className="h-3 w-3 text-gray-400" />
-        <span className="text-gray-900 font-medium truncate max-w-xs" title={targetPageUrl}>
-          {targetPageUrl || 'Not specified'}
+    <div className="space-y-1.5">
+      <div className="flex items-center gap-2 text-sm">
+        <Globe className="h-3 w-3 text-gray-400 flex-shrink-0" />
+        <span className="text-gray-900 font-medium truncate max-w-[200px]" title={targetPageUrl}>
+          {targetPageUrl ? (() => {
+            try {
+              return new URL(targetPageUrl).pathname;
+            } catch {
+              return targetPageUrl.length > 30 ? targetPageUrl.substring(0, 30) + '...' : targetPageUrl;
+            }
+          })() : 'No target page'}
         </span>
       </div>
-      <div className="flex items-center gap-1 text-sm">
-        <LinkIcon className="h-3 w-3 text-gray-400" />
-        <span className="text-gray-700 truncate max-w-xs" title={anchorText}>
-          {anchorText || 'Not specified'}
+      <div className="flex items-center gap-2 text-sm">
+        <LinkIcon className="h-3 w-3 text-gray-400 flex-shrink-0" />
+        <span className="text-gray-700 truncate max-w-[200px]" title={anchorText}>
+          "{anchorText || 'No anchor text'}"
         </span>
       </div>
-      <div className="flex items-center gap-1 text-sm">
-        <DollarSign className="h-3 w-3 text-gray-400" />
+      <div className="flex items-center gap-2 text-sm">
+        <DollarSign className="h-3 w-3 text-gray-400 flex-shrink-0" />
         <span className="text-gray-900 font-medium">
-          {price ? formatCurrency(price) : 'TBD'}
+          {price ? formatCurrency(price) : 'Price TBD'}
         </span>
       </div>
     </div>
@@ -801,7 +807,7 @@ export default function InternalOrderManagementPage() {
             <div className="text-sm">
               <div className="text-gray-900">Link {index + 1}</div>
               <div className="text-gray-500 text-xs mt-0.5">
-                {targetPageUrl || 'No target page selected'}
+                {targetPageUrl ? 'Target page assigned' : 'No target page selected'}
               </div>
             </div>
           </td>
