@@ -3508,7 +3508,8 @@ export default function UnifiedOrderInterface({
           isOpen={showCreateClientModal}
           onClose={() => setShowCreateClientModal(false)}
           onClientCreated={(client) => {
-            setClients(prev => [...prev, { ...client, selected: false, linkCount: 0 }]);
+            // Reload clients from server to get full data including target pages
+            loadClients();
             setShowCreateClientModal(false);
           }}
         />
