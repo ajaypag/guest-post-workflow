@@ -164,6 +164,19 @@ export async function PUT(
       // Only internal users and account owners can update orders
       return NextResponse.json({ error: 'Forbidden' }, { status: 403 });
     }
+    
+    // DEFENSIVE API CHECK: Prevent saving empty orderGroups to existing orders
+    if (existingOrder.status !== 'draft' && (!data.orderGroups || data.orderGroups.length === 0)) {
+      console.error('🚨 API BLOCKED: Attempting to save empty orderGroups to non-draft order', {
+        orderId: id,
+        existingStatus: existingOrder.status,
+        orderGroupsCount: data.orderGroups?.length || 0
+      });
+      return NextResponse.json(
+        { error: 'Cannot save empty order groups to existing order' },
+        { status: 400 }
+      );
+    }
 
     // Start a transaction to update order and groups
     await db.transaction(async (tx) => {

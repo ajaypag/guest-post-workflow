@@ -736,7 +736,29 @@ export default function UnifiedOrderInterface({
 
   // Manual save functionality 
   const saveOrderDraft = useCallback(async () => {
-    if (!session) return;
+    // DEFENSIVE CHECK 1: Block if no session
+    if (!session) {
+      console.warn('⚠️ SAVE BLOCKED: No session');
+      return;
+    }
+    
+    // DEFENSIVE CHECK 2: Block if data not initialized
+    if (!dataInitialized) {
+      console.warn('⚠️ SAVE BLOCKED: Data not initialized yet');
+      return;
+    }
+    
+    // DEFENSIVE CHECK 3: Block if trying to save empty data on existing order
+    if (orderId && lineItems.length === 0) {
+      console.error('🚨 SAVE BLOCKED: Attempting to save empty data to existing order!', {
+        orderId,
+        lineItemsCount: lineItems.length,
+        selectedClientsSize: selectedClients.size
+      });
+      setError('Cannot save empty order data');
+      setSaveStatus('error');
+      return;
+    }
     
     try {
       setSaveStatus('saving');
@@ -816,6 +838,14 @@ export default function UnifiedOrderInterface({
       };
       
       if (draftOrderId) {
+        // DEFENSIVE CHECK 4: Final check before API call
+        if (orderData.orderGroups.length === 0) {
+          console.error('🚨 API SAVE BLOCKED: Empty orderGroups detected!', orderData);
+          setError('Cannot save order without items');
+          setSaveStatus('error');
+          return;
+        }
+        
         // Update existing order
         const response = await fetch(`/api/orders/${draftOrderId}`, {
           method: 'PUT',
@@ -849,6 +879,14 @@ export default function UnifiedOrderInterface({
 
   // Submit handlers
   const handleSubmitClick = async () => {
+    // DEFENSIVE CHECK 6: Block submit if no data
+    if (!dataInitialized || lineItems.length === 0) {
+      console.error('🚨 SUBMIT BLOCKED: No data to submit');
+      setError('Cannot submit empty order');
+      alert('Cannot submit empty order');
+      return;
+    }
+    
     // Validate account selection for internal users
     if (userType === 'internal' && !selectedAccountId) {
       setError('Please select an account before submitting the order');
@@ -1390,10 +1428,21 @@ export default function UnifiedOrderInterface({
 
   // Track unsaved changes - only when there are actual items like the working edit page
   useEffect(() => {
+    // Only track changes after data is initialized
+    if (!dataInitialized) return;
+    
+    console.log('📊 State Change Detected:', {
+      dataInitialized,
+      currentMode,
+      isPaid,
+      lineItemsLength: lineItems.length,
+      selectedClientsSize: selectedClients.size
+    });
+    
     if (currentMode === 'draft' && !isPaid && lineItems.length > 0) {
       setHasUnsavedChanges(true);
     }
-  }, [selectedClients, lineItems, currentMode, isPaid]);
+  }, [selectedClients, lineItems, currentMode, isPaid, dataInitialized]);
 
   // Periodic save prompt
   useEffect(() => {
@@ -1422,6 +1471,19 @@ export default function UnifiedOrderInterface({
     window.addEventListener('beforeunload', handleBeforeUnload);
     return () => window.removeEventListener('beforeunload', handleBeforeUnload);
   }, [hasUnsavedChanges, currentMode, isPaid]);
+
+  // DEFENSIVE CHECK 5: Don't render until data is loaded for existing orders
+  if (orderId && !dataInitialized) {
+    return (
+      <div className="h-screen flex items-center justify-center bg-gray-100">
+        <div className="text-center">
+          <Loader2 className="h-12 w-12 animate-spin text-blue-600 mx-auto mb-4" />
+          <p className="text-gray-600">Loading order data...</p>
+          <p className="text-sm text-gray-500 mt-2">Please wait while we load your order</p>
+        </div>
+      </div>
+    );
+  }
 
   return (
     <div className="h-screen flex flex-col bg-gray-100">
