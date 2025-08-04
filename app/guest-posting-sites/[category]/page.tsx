@@ -17,6 +17,8 @@ import {
   PenTool
 } from 'lucide-react';
 import Link from 'next/link';
+import QuerySection from '@/components/QuerySection';
+import { generateNicheQueries } from '@/lib/utils/queryGenerator';
 
 // This function runs at BUILD TIME to generate all category pages
 export async function generateStaticParams() {
@@ -110,6 +112,9 @@ export default async function CategoryPage({ params }: { params: Promise<{ categ
   let websiteResults: any[] = [];
   let totalCount = 0;
   let relatedCategories: any[] = [];
+  
+  // Generate search queries for this niche
+  const searchQueries = generateNicheQueries(categoryName);
   
   try {
     // Get websites for this specific category
@@ -366,6 +371,11 @@ export default async function CategoryPage({ params }: { params: Promise<{ categ
               </div>
             </div>
           )}
+        </div>
+
+        {/* Search Queries Section */}
+        <div className="mt-12">
+          <QuerySection categoryName={categoryName} queries={searchQueries} />
         </div>
 
         {/* Related Categories Section */}
