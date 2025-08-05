@@ -271,23 +271,121 @@ export default function ChatwootTestPage() {
           )}
 
           {/* Instructions */}
-          <div className="mt-8 p-4 bg-blue-50 rounded-lg">
-            <h4 className="font-semibold text-blue-900 mb-2">Setup Instructions:</h4>
-            <ol className="text-sm text-blue-800 space-y-1 list-decimal list-inside">
-              <li>First test the connection to verify your Chatwoot configuration</li>
-              <li>Send a test email to any email address</li>
-              <li>Check the status to see if there are any replies</li>
-              <li>View the conversation in Chatwoot for full details</li>
-            </ol>
-            
-            <h4 className="font-semibold text-blue-900 mt-4 mb-2">Required Environment Variables:</h4>
-            <ul className="text-sm text-blue-800 space-y-1 font-mono">
-              <li>• CHATWOOT_API_URL</li>
-              <li>• CHATWOOT_API_KEY</li>
-              <li>• CHATWOOT_ACCOUNT_ID</li>
-              <li>• CHATWOOT_INBOX_ID</li>
-              <li>• CHATWOOT_APP_URL (for conversation links)</li>
-            </ul>
+          <div className="mt-8 space-y-6">
+            {/* Chatwoot Setup Guide */}
+            <div className="p-6 bg-amber-50 border border-amber-200 rounded-lg">
+              <h3 className="text-lg font-semibold text-amber-900 mb-4">📋 Chatwoot Setup Guide</h3>
+              
+              <div className="space-y-4 text-sm text-amber-800">
+                <div>
+                  <h4 className="font-semibold mb-2">Step 1: Get Your API Access Token</h4>
+                  <ol className="list-decimal list-inside space-y-1 ml-4">
+                    <li>Log into your Chatwoot instance</li>
+                    <li>Click on your profile icon (bottom left)</li>
+                    <li>Go to "Profile Settings"</li>
+                    <li>Click on "Access Token" tab</li>
+                    <li>Copy your access token (or create one if needed)</li>
+                  </ol>
+                </div>
+
+                <div>
+                  <h4 className="font-semibold mb-2">Step 2: Find Your Account ID</h4>
+                  <ol className="list-decimal list-inside space-y-1 ml-4">
+                    <li>Look at your Chatwoot URL when logged in</li>
+                    <li>It should be: <code className="bg-amber-100 px-1">https://your-chatwoot.com/app/accounts/[ACCOUNT_ID]/...</code></li>
+                    <li>The number after /accounts/ is your Account ID (usually 1)</li>
+                  </ol>
+                </div>
+
+                <div>
+                  <h4 className="font-semibold mb-2">Step 3: Create or Find an Email Inbox</h4>
+                  <ol className="list-decimal list-inside space-y-1 ml-4">
+                    <li>Go to Settings → Inboxes</li>
+                    <li>Look for an Email-type inbox OR create one:</li>
+                    <li className="ml-4">• Click "Add Inbox"</li>
+                    <li className="ml-4">• Choose "Email" as channel</li>
+                    <li className="ml-4">• Configure SMTP settings (Gmail, SendGrid, etc.)</li>
+                    <li className="ml-4">• Save and note the Inbox ID</li>
+                    <li>To find Inbox ID: Click on the inbox → Look at URL → <code className="bg-amber-100 px-1">/inboxes/[INBOX_ID]/settings</code></li>
+                  </ol>
+                </div>
+
+                <div>
+                  <h4 className="font-semibold mb-2">Step 4: Get Your Chatwoot URLs</h4>
+                  <ul className="list-disc list-inside space-y-1 ml-4">
+                    <li><strong>API URL:</strong> Usually <code className="bg-amber-100 px-1">https://your-chatwoot-domain.com</code></li>
+                    <li><strong>App URL:</strong> Same as API URL (for generating conversation links)</li>
+                  </ul>
+                </div>
+              </div>
+            </div>
+
+            {/* Environment Variables */}
+            <div className="p-6 bg-blue-50 border border-blue-200 rounded-lg">
+              <h3 className="text-lg font-semibold text-blue-900 mb-4">🔧 Coolify Environment Variables</h3>
+              
+              <div className="text-sm text-blue-800">
+                <p className="mb-3">Add these to your Coolify application environment variables:</p>
+                
+                <div className="bg-white rounded-lg p-4 font-mono text-xs border border-blue-200">
+                  <div className="space-y-2">
+                    <div className="flex">
+                      <span className="text-blue-600 w-48">CHATWOOT_API_URL=</span>
+                      <span className="text-gray-600">https://your-chatwoot-instance.com</span>
+                    </div>
+                    <div className="flex">
+                      <span className="text-blue-600 w-48">CHATWOOT_API_KEY=</span>
+                      <span className="text-gray-600">[Your Access Token from Step 1]</span>
+                    </div>
+                    <div className="flex">
+                      <span className="text-blue-600 w-48">CHATWOOT_ACCOUNT_ID=</span>
+                      <span className="text-gray-600">[Your Account ID from Step 2]</span>
+                    </div>
+                    <div className="flex">
+                      <span className="text-blue-600 w-48">CHATWOOT_INBOX_ID=</span>
+                      <span className="text-gray-600">[Your Email Inbox ID from Step 3]</span>
+                    </div>
+                    <div className="flex">
+                      <span className="text-blue-600 w-48">CHATWOOT_APP_URL=</span>
+                      <span className="text-gray-600">https://your-chatwoot-instance.com</span>
+                    </div>
+                  </div>
+                </div>
+
+                <div className="mt-4 p-3 bg-blue-100 rounded">
+                  <p className="font-semibold mb-1">⚡ How to update in Coolify:</p>
+                  <ol className="list-decimal list-inside space-y-1 text-xs">
+                    <li>Go to your PostFlow application in Coolify</li>
+                    <li>Click on "Environment Variables" tab</li>
+                    <li>Add each variable above</li>
+                    <li>Click "Save" and "Redeploy"</li>
+                  </ol>
+                </div>
+              </div>
+            </div>
+
+            {/* Important Notes */}
+            <div className="p-6 bg-red-50 border border-red-200 rounded-lg">
+              <h3 className="text-lg font-semibold text-red-900 mb-3">⚠️ Important Notes</h3>
+              
+              <ul className="list-disc list-inside space-y-2 text-sm text-red-800">
+                <li><strong>Email Inbox Required:</strong> You must use an Email-type inbox in Chatwoot, not a Website/Live Chat inbox</li>
+                <li><strong>SMTP Configuration:</strong> Your Chatwoot email inbox needs working SMTP settings to actually send emails</li>
+                <li><strong>API Access:</strong> Make sure your API token has full access (not read-only)</li>
+                <li><strong>Webhook URL:</strong> After testing works, set up webhook in Chatwoot pointing to: <code className="bg-red-100 px-1">https://your-postflow-domain.com/api/webhooks/chatwoot</code></li>
+              </ul>
+            </div>
+
+            {/* Quick Test */}
+            <div className="p-4 bg-green-50 border border-green-200 rounded-lg">
+              <h4 className="font-semibold text-green-900 mb-2">✅ Quick Test After Setup:</h4>
+              <ol className="text-sm text-green-800 space-y-1 list-decimal list-inside">
+                <li>Click "Test Connection" above - should show inbox details</li>
+                <li>Send a test email to yourself</li>
+                <li>Check your email and Chatwoot inbox</li>
+                <li>Reply to the email and click "Check Status" to see the reply tracked</li>
+              </ol>
+            </div>
           </div>
         </div>
       </div>
