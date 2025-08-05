@@ -96,6 +96,7 @@ interface OrderDetail {
   createdAt: string;
   updatedAt: string;
   approvedAt?: string;
+  invoicedAt?: string;
   paidAt?: string;
   completedAt?: string;
   orderGroups?: OrderGroup[];
@@ -467,24 +468,20 @@ export default function OrderDetailPage() {
                         )}
                       </div>
                     )}
-                    {order.state === 'site_review' && Object.keys(siteSubmissions).length > 0 && (
+                    {(order.state === 'site_review' || order.state === 'client_reviewing') && (
                       <div className="space-y-2">
-                        <p className="text-xs text-gray-500 mb-1">Review Sites:</p>
-                        {Object.entries(siteSubmissions).map(([groupId, submissions]) => {
-                          const group = order.orderGroups?.find(g => g.id === groupId);
-                          const pendingCount = submissions.filter(s => s.status === 'pending').length;
-                          if (!group || pendingCount === 0) return null;
-                          
-                          return (
-                            <button
-                              key={groupId}
-                              onClick={() => setExpandedSubmission(expandedSubmission === groupId ? null : groupId)}
-                              className="w-full px-3 py-2 bg-purple-600 text-white text-sm rounded-md hover:bg-purple-700 text-center"
-                            >
-                              {group.client.name} ({pendingCount} sites)
-                            </button>
-                          );
-                        })}
+                        <Link
+                          href={`/orders/${order.id}/review`}
+                          className="block w-full px-4 py-3 bg-purple-600 text-white text-sm rounded-md hover:bg-purple-700 text-center font-medium"
+                        >
+                          <Users className="w-4 h-4 mx-auto mb-1" />
+                          Review & Approve Sites
+                          {Object.values(siteSubmissions).flat().filter(s => s.status === 'pending').length > 0 && (
+                            <div className="text-xs text-purple-200 mt-1">
+                              {Object.values(siteSubmissions).flat().filter(s => s.status === 'pending').length} sites pending
+                            </div>
+                          )}
+                        </Link>
                       </div>
                     )}
                     {order.status === 'completed' && lineItems.some(item => item.workflowId) && (
@@ -499,6 +496,38 @@ export default function OrderDetailPage() {
                             {item.clientName} - {item.targetPageUrl || 'Article'}
                           </Link>
                         ))}
+                      </div>
+                    )}
+                    
+                    {/* Invoice Link */}
+                    {order.invoicedAt && (
+                      <div className="space-y-2">
+                        <Link
+                          href={`/orders/${order.id}/invoice`}
+                          className="block w-full px-4 py-3 bg-green-600 text-white text-sm rounded-md hover:bg-green-700 text-center font-medium"
+                        >
+                          <FileText className="w-4 h-4 mx-auto mb-1" />
+                          View Invoice
+                          <div className="text-xs text-green-200 mt-1">
+                            {formatCurrency(order.totalPrice)}
+                          </div>
+                        </Link>
+                      </div>
+                    )}
+
+                    {/* Confirm Order Link */}
+                    {order.status === 'pending_confirmation' && (
+                      <div className="space-y-2">
+                        <Link
+                          href={`/orders/${order.id}/confirm`}
+                          className="block w-full px-4 py-3 bg-orange-600 text-white text-sm rounded-md hover:bg-orange-700 text-center font-medium"
+                        >
+                          <CheckCircle className="w-4 h-4 mx-auto mb-1" />
+                          Confirm Order
+                          <div className="text-xs text-orange-200 mt-1">
+                            Ready for confirmation
+                          </div>
+                        </Link>
                       </div>
                     )}
                   </div>
