@@ -4,7 +4,6 @@ import React, { useState, useEffect } from 'react';
 import { useRouter } from 'next/navigation';
 import AccountAuthWrapper from '@/components/AccountAuthWrapper';
 import Header from '@/components/Header';
-import OnboardingChecklist from '@/components/OnboardingChecklist';
 import { formatCurrency } from '@/lib/utils/formatting';
 import {
   Package,
@@ -75,11 +74,6 @@ function AccountDashboardContent({ user }: AccountDashboardProps) {
     totalSpent: 0,
     totalBrands: 0,
   });
-  const [onboardingData, setOnboardingData] = useState({
-    completed: false,
-    steps: {},
-    showChecklist: true
-  });
 
   useEffect(() => {
     if (user) {
@@ -128,19 +122,6 @@ function AccountDashboardContent({ user }: AccountDashboardProps) {
         }));
       }
       
-      // Load onboarding status
-      const onboardingResponse = await fetch('/api/accounts/onboarding', {
-        credentials: 'include',
-      });
-      
-      if (onboardingResponse.ok) {
-        const onboarding = await onboardingResponse.json();
-        setOnboardingData({
-          completed: onboarding.onboardingCompleted || false,
-          steps: onboarding.onboardingSteps || {},
-          showChecklist: !onboarding.onboardingCompleted
-        });
-      }
       
     } catch (error) {
       console.error('Error loading dashboard data:', error);
@@ -222,21 +203,6 @@ function AccountDashboardContent({ user }: AccountDashboardProps) {
             </button>
           </div>
 
-          {/* Onboarding Checklist for new users */}
-          {onboardingData.showChecklist && !onboardingData.completed && (
-            <div className="mb-8">
-              <OnboardingChecklist
-                accountId={user?.id || ''}
-                onboardingSteps={onboardingData.steps}
-                onClose={() => setOnboardingData(prev => ({ ...prev, showChecklist: false }))}
-                onComplete={() => {
-                  setOnboardingData(prev => ({ ...prev, completed: true, showChecklist: false }));
-                  // Optionally reload dashboard data
-                  loadDashboardData();
-                }}
-              />
-            </div>
-          )}
 
           {/* Stats Grid */}
           <div className="grid grid-cols-2 md:grid-cols-5 gap-4 mb-8">
@@ -499,10 +465,10 @@ function AccountDashboardContent({ user }: AccountDashboardProps) {
                         <td className="px-6 py-4 whitespace-nowrap text-sm">
                           <div className="flex items-center gap-3">
                             <button
-                              onClick={() => router.push(`/orders/${order.id}/detail`)}
+                              onClick={() => router.push(`/orders/${order.id}`)}
                               className="text-blue-600 hover:text-blue-800"
                             >
-                              View Details
+                              View Order
                             </button>
                             {order.status === 'draft' && (
                               <button
