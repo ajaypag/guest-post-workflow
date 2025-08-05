@@ -427,9 +427,9 @@ export default function OrderSiteReviewTable({
                   )}
                 </div>
                 <div className="flex items-center gap-2 flex-wrap">
-                  {/* DR and Traffic */}
+                  {/* DR and Traffic - TODO: Fetch from websites table */}
                   <span className="text-xs text-gray-500">
-                    DR: {displaySubmission.domainRating || 'N/A'} | Traffic: {displaySubmission.traffic?.toLocaleString() || '0'}
+                    DR: N/A | Traffic: N/A
                   </span>
                   {/* Qualification Status */}
                   {displaySubmission.metadata?.qualificationStatus && (
@@ -481,7 +481,6 @@ export default function OrderSiteReviewTable({
                   {availableForTarget.map(sub => (
                     <option key={sub.id} value={sub.id}>
                       {sub.domain?.domain} 
-                      {sub.domainRating ? ` (DR: ${sub.domainRating})` : ''}
                       {sub.metadata?.targetPageUrl && sub.metadata.targetPageUrl !== targetPageUrl ? ' - suggested for other' : ''}
                     </option>
                   ))}
@@ -1050,9 +1049,9 @@ export default function OrderSiteReviewTable({
                                               )}
                                             </div>
                                             <div className="flex items-center gap-2 text-xs text-gray-500">
-                                              <span>DR: {submission.domainRating || 'N/A'}</span>
+                                              <span>DR: N/A</span>
                                               <span>•</span>
-                                              <span>Traffic: {submission.traffic?.toLocaleString() || '0'}</span>
+                                              <span>Traffic: N/A</span>
                                               {submission.metadata?.hasDataForSeoResults && (
                                                 <>
                                                   <span>•</span>
