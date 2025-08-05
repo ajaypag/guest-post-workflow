@@ -166,6 +166,7 @@ export default function OrderSiteReviewTable({
     switch (workflowStage) {
       case 'site_selection_with_sites':
         baseColumns = ['client', 'link_details', 'site', 'status', 
+          ...(permissions.canApproveReject && !permissions.canViewInternalTools ? ['actions'] : []),
           ...(permissions.canViewInternalTools ? ['tools'] : [])];
         break;
       case 'post_approval':
@@ -235,6 +236,7 @@ export default function OrderSiteReviewTable({
       case 'published_url': return 'Published URL';
       case 'completion': return 'Completion';
       case 'tools': return 'Internal Tools';
+      case 'actions': return 'Actions';
       default: return column;
     }
   };
@@ -820,10 +822,16 @@ export default function OrderSiteReviewTable({
                                   <div className="bg-gray-50 rounded-lg p-4 edit-dropdown">
                                     <div className="mb-3">
                                       <h4 className="text-sm font-medium text-gray-900 mb-1">
-                                        Domain Comparison ({availableForTarget.length} options)
+                                        {availableForTarget.length > 1 
+                                          ? `Domain Comparison (${availableForTarget.length} options)`
+                                          : 'Domain Analysis'
+                                        }
                                       </h4>
                                       <p className="text-xs text-gray-600">
-                                        Compare all available domains for this link placement
+                                        {availableForTarget.length > 1
+                                          ? 'Compare all available domains for this link placement'
+                                          : 'View detailed analysis and metrics for this domain'
+                                        }
                                       </p>
                                     </div>
                                     
@@ -1010,7 +1018,7 @@ export default function OrderSiteReviewTable({
                                                       )}
                                                     </>
                                                   )}
-                                                  {group.bulkAnalysisProjectId && submission.domainId && permissions.canViewInternalTools && (
+                                                  {group.bulkAnalysisProjectId && submission.domainId && (
                                                     <a
                                                       href={`/clients/${group.clientId}/bulk-analysis/projects/${group.bulkAnalysisProjectId}?guided=${submission.domainId}`}
                                                       className="text-xs bg-indigo-100 text-indigo-700 hover:bg-indigo-200 px-2 py-1 rounded transition-colors flex items-center gap-1"
