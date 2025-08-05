@@ -11,14 +11,20 @@ export async function POST(
   context: { params: Promise<{ id: string; groupId: string; submissionId: string }> }
 ) {
   const params = await context.params;
+  let action: string | undefined;
+  let notes: string | undefined;
+  let session: any;
+  
   try {
     // Get user session
-    const session = await AuthServiceServer.getSession();
+    session = await AuthServiceServer.getSession();
     if (!session) {
       return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
     }
     
-    const { action, notes } = await request.json();
+    const body = await request.json();
+    action = body.action;
+    notes = body.notes;
     
     // Validate action
     if (!['approve', 'reject'].includes(action)) {
@@ -113,7 +119,7 @@ export async function POST(
     console.error('Error reviewing submission:', error);
     console.error('Request params:', params);
     console.error('Request body:', { action, notes });
-    console.error('Session:', { userId: session.userId, userType: session.userType });
+    console.error('Session:', { userId: session?.userId, userType: session?.userType });
     return NextResponse.json({ 
       error: 'Internal server error',
       message: error instanceof Error ? error.message : 'Unknown error'
