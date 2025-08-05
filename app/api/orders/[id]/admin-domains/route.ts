@@ -28,9 +28,12 @@ export async function GET(
       return NextResponse.json({ error: 'Order not found' }, { status: 404 });
     }
 
-    // Get order groups with target pages
+    // Get order groups with target pages and client details
     const orderGroupsList = await db.query.orderGroups.findMany({
-      where: eq(orderGroups.orderId, orderId)
+      where: eq(orderGroups.orderId, orderId),
+      with: {
+        client: true
+      }
     });
 
     // Get all submissions for this order with domain details

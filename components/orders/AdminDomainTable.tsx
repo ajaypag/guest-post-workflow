@@ -287,13 +287,13 @@ export default function AdminDomainTable({ orderId, onRefresh }: AdminDomainTabl
                       >
                         {orderGroups.map(group => (
                           <option key={group.id} value={group.id}>
-                            {group.client.name}
+                            {group.client?.name || 'Unknown Client'}
                           </option>
                         ))}
                       </select>
                     ) : (
                       <span className="text-sm text-gray-900">
-                        {submission.orderGroup.client.name}
+                        {submission.orderGroup?.client?.name || 'Unknown Client'}
                       </span>
                     )}
                   </td>
