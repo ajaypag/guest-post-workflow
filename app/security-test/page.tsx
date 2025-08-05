@@ -46,6 +46,7 @@ export default function SecurityTestPage() {
         { path: '/api/admin/feature-flags', method: 'GET', description: 'Feature flags', expectedStatus: 401 },
         { path: '/api/admin/invitations', method: 'GET', description: 'View invitations', expectedStatus: 401 },
         { path: '/api/admin/comprehensive-diagnostics', method: 'GET', description: 'Full diagnostics', expectedStatus: 401 },
+        { path: '/api/security-scan', method: 'GET', description: 'Security scanning tool', expectedStatus: 401 },
       ]
     },
     {
@@ -84,6 +85,10 @@ export default function SecurityTestPage() {
         { path: '/api/airtable/sync', method: 'POST', description: 'Airtable sync', expectedStatus: 401 },
         { path: '/api/dataforseo/test', method: 'GET', description: 'DataForSEO testing', expectedStatus: 401 },
         { path: '/api/accounts?simple=true', method: 'GET', description: 'Account data access', expectedStatus: 401 },
+        { path: '/api/contacts/export', method: 'POST', description: 'Contact data export', expectedStatus: 401 },
+        { path: '/api/contacts/search', method: 'POST', description: 'Contact database search', expectedStatus: 401 },
+        { path: '/api/keywords/generate', method: 'POST', description: 'AI keyword generation', expectedStatus: 401 },
+        { path: '/api/domains/available', method: 'GET', description: 'Domain availability check', expectedStatus: 401 },
       ]
     },
     {

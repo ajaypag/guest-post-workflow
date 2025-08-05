@@ -34,7 +34,7 @@ export async function middleware(request: NextRequest) {
   // === ADMIN PROTECTION ===
   
   // Protect admin API routes (require internal users)
-  if (path.startsWith('/api/admin')) {
+  if (path.startsWith('/api/admin') || path === '/api/security-scan') {
     try {
       // Get token from cookies or Authorization header
       let token: string | undefined;
@@ -139,6 +139,9 @@ export async function middleware(request: NextRequest) {
       path.startsWith('/api/airtable/') ||     // Airtable data access
       path.startsWith('/api/dataforseo/') ||   // DataForSEO API calls
       path.startsWith('/api/target-pages/') || // Keyword generation with AI
+      path.startsWith('/api/contacts/') ||     // Contact data access
+      path.startsWith('/api/keywords/') ||     // AI keyword generation
+      path.startsWith('/api/domains/') ||      // Domain availability checks
       (path.startsWith('/api/accounts') && path !== '/api/accounts/signup')) {
     
     try {

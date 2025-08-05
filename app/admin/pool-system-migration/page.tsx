@@ -1,6 +1,6 @@
 'use client';
 
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import AuthWrapper from '@/components/AuthWrapper';
 import Header from '@/components/Header';
 import { CheckCircle, AlertCircle, Loader2, Database } from 'lucide-react';
@@ -67,9 +67,9 @@ export default function PoolSystemMigrationPage() {
   };
 
   // Check status on mount
-  useState(() => {
+  useEffect(() => {
     checkStatus();
-  });
+  }, []);
 
   return (
     <AuthWrapper>
