@@ -47,7 +47,7 @@ export default function ExternalOrderReviewPage() {
       for (const group of orderData.orderGroups) {
         console.log('[REVIEW PAGE] Fetching submissions for group:', group.id);
         const submissionsRes = await fetch(
-          `/api/orders/${orderId}/groups/${group.id}/submissions`
+          `/api/orders/${orderId}/groups/${group.id}/submissions?includeCompleted=true`
         );
         if (submissionsRes.ok) {
           const data = await submissionsRes.json();

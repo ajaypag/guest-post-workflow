@@ -210,7 +210,8 @@ export default function OrderSiteReviewTable({
               if (!onSelectionChange) return;
               
               const allVisible = Object.values(siteSubmissions).flat()
-                .filter(sub => sub.status === 'pending');
+                .filter(sub => sub.status === 'pending' || 
+                  (userType === 'account' && workflowStage === 'site_selection_with_sites'));
               
               if (e.target.checked) {
                 allVisible.forEach(sub => onSelectionChange(sub.id, true));
@@ -220,7 +221,8 @@ export default function OrderSiteReviewTable({
             }}
             checked={selectedSubmissions && selectedSubmissions.size > 0 && 
               Object.values(siteSubmissions).flat()
-                .filter(sub => sub.status === 'pending')
+                .filter(sub => sub.status === 'pending' || 
+                  (userType === 'account' && workflowStage === 'site_selection_with_sites'))
                 .every(sub => selectedSubmissions.has(sub.id))}
           />
         </div>
@@ -347,7 +349,10 @@ export default function OrderSiteReviewTable({
         return (
           <td className="px-6 py-4 w-12">
             <div className="flex items-center justify-center">
-              {displaySubmission && displaySubmission.status === 'pending' && (
+              {displaySubmission && (
+                (displaySubmission.status === 'pending' || 
+                 (userType === 'account' && workflowStage === 'site_selection_with_sites'))
+              ) && (
                 <input
                   type="checkbox"
                   className="w-4 h-4 text-blue-600 border-gray-300 rounded focus:ring-blue-500"
@@ -771,21 +776,53 @@ export default function OrderSiteReviewTable({
                   {/* Expanded Content */}
                   {isExpanded && (
                     <>
-                      {/* Render rows based on link count */}
-                      {Array.from({ length: group.linkCount }, (_, index) => {
-                        const targetPageUrl = group.targetPages?.[index]?.url;
-                        const anchorText = group.anchorTexts?.[index];
-                        
-                        // Pool-based selection logic
-                        const matchingSubmissions = groupSubmissions.filter(sub => 
-                          sub.targetPageUrl === targetPageUrl || sub.metadata?.targetPageUrl === targetPageUrl
-                        );
-                        
-                        const primarySubmissions = matchingSubmissions
-                          .filter(sub => sub.selectionPool === 'primary')
-                          .sort((a, b) => (a.poolRank || 1) - (b.poolRank || 1));
-                        
-                        const displaySubmission = primarySubmissions[index] || null;
+                      {/* External review mode - show all submissions */}
+                      {userType === 'account' && workflowStage === 'site_selection_with_sites' ? (
+                        groupSubmissions.map((submission, index) => {
+                          const targetPageUrl = submission.targetPageUrl || submission.metadata?.targetPageUrl;
+                          const anchorText = submission.anchorText || submission.metadata?.anchorText;
+                          
+                          return (
+                            <tr key={`${group.id}-submission-${submission.id}`} className="border-b border-gray-100">
+                              {renderTableCell('selection', {
+                                group,
+                                index,
+                                targetPageUrl,
+                                anchorText,
+                                displaySubmission: submission,
+                                availableForTarget: [submission],
+                                groupId: group.id
+                              })}
+                              {columnConfig.columns.filter(col => col !== 'selection').map(column => 
+                                renderTableCell(column, {
+                                  group,
+                                  index,
+                                  targetPageUrl,
+                                  anchorText,
+                                  displaySubmission: submission,
+                                  availableForTarget: [submission],
+                                  groupId: group.id
+                                })
+                              )}
+                            </tr>
+                          );
+                        })
+                      ) : (
+                        /* Internal user mode - organize by target pages */
+                        Array.from({ length: group.linkCount }, (_, index) => {
+                          const targetPageUrl = group.targetPages?.[index]?.url;
+                          const anchorText = group.anchorTexts?.[index];
+                          
+                          // Pool-based selection logic
+                          const matchingSubmissions = groupSubmissions.filter(sub => 
+                            sub.targetPageUrl === targetPageUrl || sub.metadata?.targetPageUrl === targetPageUrl
+                          );
+                          
+                          const primarySubmissions = matchingSubmissions
+                            .filter(sub => sub.selectionPool === 'primary')
+                            .sort((a, b) => (a.poolRank || 1) - (b.poolRank || 1));
+                          
+                          const displaySubmission = primarySubmissions[index] || null;
                         
                         const availableForTarget = groupSubmissions.filter(sub => {
                           const isForThisTarget = sub.targetPageUrl === targetPageUrl || 
@@ -1045,7 +1082,8 @@ export default function OrderSiteReviewTable({
                             )}
                           </React.Fragment>
                         );
-                      })}
+                      })
+                      )}
                       
                       {/* Site Pool View - Only show when we have pool paradigm */}
                       {showPoolView && groupSubmissions.length > 0 && unassignedSubmissions.length > 0 && (
