@@ -120,7 +120,9 @@ export default function OrderSiteReviewTable({
   onReject,
   onRefresh
 }: OrderSiteReviewTableProps) {
-  const [expandedGroup, setExpandedGroup] = useState<string | null>(null);
+  const [expandedGroups, setExpandedGroups] = useState<Set<string>>(
+    new Set(orderGroups.map(g => g.id))
+  );
   const [editingLineItem, setEditingLineItem] = useState<{ groupId: string; index: number } | null>(null);
   const [assigningDomain, setAssigningDomain] = useState<string | null>(null);
   const [actionLoading, setActionLoading] = useState<Record<string, boolean>>({});
@@ -222,7 +224,7 @@ export default function OrderSiteReviewTable({
             {(() => {
               try {
                 const url = new URL(targetPageUrl);
-                return url.pathname === '/' ? url.hostname : url.pathname;
+                return url.pathname;
               } catch {
                 return targetPageUrl;
               }
@@ -333,7 +335,14 @@ export default function OrderSiteReviewTable({
                 <div className="font-medium text-gray-900">{group.client.name}</div>
                 {targetPageUrl && (
                   <div className="text-xs text-gray-500 truncate max-w-[200px]" title={targetPageUrl}>
-                    {targetPageUrl}
+                    {(() => {
+                      try {
+                        const url = new URL(targetPageUrl);
+                        return url.pathname;
+                      } catch {
+                        return targetPageUrl;
+                      }
+                    })()}
                   </div>
                 )}
               </div>
@@ -364,6 +373,16 @@ export default function OrderSiteReviewTable({
                        rel="noopener noreferrer"
                        className="text-blue-600 hover:text-blue-800 hover:underline font-medium relative"
                        onMouseEnter={(e) => {
+                         // Debug: Log what data we have
+                         console.log('Domain hover data:', {
+                           id: displaySubmission.id,
+                           domain: displaySubmission.domain?.domain,
+                           notes: displaySubmission.domain?.notes,
+                           aiReasoning: displaySubmission.metadata?.aiQualificationReasoning,
+                           topicReasoning: displaySubmission.metadata?.topicReasoning,
+                           metadata: displaySubmission.metadata
+                         });
+                         
                          if (displaySubmission.domain?.notes || displaySubmission.metadata?.aiQualificationReasoning || displaySubmission.metadata?.topicReasoning) {
                            const rect = e.currentTarget.getBoundingClientRect();
                            setTooltipPosition({ x: rect.left, y: rect.bottom + 5 });
@@ -600,7 +619,7 @@ export default function OrderSiteReviewTable({
           <tbody className="bg-white divide-y divide-gray-200">
             {orderGroups.map((group) => {
               const groupSubmissions = siteSubmissions[group.id] || [];
-              const isExpanded = expandedGroup === group.id;
+              const isExpanded = expandedGroups.has(group.id);
               
               // Calculate assigned vs unassigned submissions
               const assignedSubmissions = groupSubmissions.filter(s => s.targetPageUrl || s.metadata?.targetPageUrl);
@@ -616,7 +635,15 @@ export default function OrderSiteReviewTable({
                     <td colSpan={columnConfig.columns.length} className="px-6 py-3">
                       <div className="flex items-center justify-between">
                         <button
-                          onClick={() => setExpandedGroup(isExpanded ? null : group.id)}
+                          onClick={() => {
+                            const newExpanded = new Set(expandedGroups);
+                            if (isExpanded) {
+                              newExpanded.delete(group.id);
+                            } else {
+                              newExpanded.add(group.id);
+                            }
+                            setExpandedGroups(newExpanded);
+                          }}
                           className="flex items-center gap-6 text-left flex-1"
                         >
                           <div className="flex items-center gap-3">
@@ -939,6 +966,7 @@ export default function OrderSiteReviewTable({
                                                     >
                                                       <Database className="w-3 h-3" />
                                                       Analysis
+                                                      <ExternalLink className="w-3 h-3" />
                                                     </a>
                                                   )}
                                                 </div>
@@ -963,7 +991,15 @@ export default function OrderSiteReviewTable({
                             <td colSpan={columnConfig.columns.length} className="px-6 py-3">
                               <div className="flex items-center gap-2">
                                 <button
-                                  onClick={() => setExpandedGroup(isExpanded ? null : group.id)}
+                                  onClick={() => {
+                            const newExpanded = new Set(expandedGroups);
+                            if (isExpanded) {
+                              newExpanded.delete(group.id);
+                            } else {
+                              newExpanded.add(group.id);
+                            }
+                            setExpandedGroups(newExpanded);
+                          }}
                                   className="flex items-center gap-1 p-1 hover:bg-gray-100 rounded"
                                   title={`${unassignedSubmissions.length} unassigned domains available`}
                                 >

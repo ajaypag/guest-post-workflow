@@ -104,6 +104,9 @@ export async function GET(
           hasDataForSeoResults: domain.hasDataForSeoResults,
           dataForSeoResultsCount: domain.dataForSeoResultsCount
         } : null,
+        domainRating: submission.domainRating,
+        traffic: submission.traffic,
+        price: submission.retailPrice,
         status: submission.submissionStatus,
         targetPageUrl: submission.metadata?.targetPageUrl,
         anchorText: submission.metadata?.anchorText,
