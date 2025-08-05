@@ -2,7 +2,7 @@
 
 import { useEffect, useState } from 'react';
 import { useParams, useRouter } from 'next/navigation';
-import { ArrowLeft, Download, CreditCard, Printer } from 'lucide-react';
+import { ArrowLeft } from 'lucide-react';
 
 interface InvoiceData {
   invoiceNumber: string;
@@ -75,9 +75,6 @@ export default function InvoicePage() {
     }).format(cents / 100);
   };
 
-  const handlePrint = () => {
-    window.print();
-  };
 
   if (loading) {
     return (
@@ -131,21 +128,7 @@ export default function InvoicePage() {
           </button>
           
           <div className="flex gap-3">
-            <button
-              onClick={handlePrint}
-              className="flex items-center gap-2 px-4 py-2 border border-gray-300 rounded-lg hover:bg-gray-50"
-            >
-              <Printer className="w-4 h-4" />
-              Print
-            </button>
-            {!isPaid && (
-              <button
-                className="flex items-center gap-2 px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700"
-              >
-                <CreditCard className="w-4 h-4" />
-                Pay Invoice
-              </button>
-            )}
+            {/* Removed print and payment buttons */}
           </div>
         </div>
 
@@ -169,7 +152,7 @@ export default function InvoicePage() {
           <div className="grid grid-cols-2 gap-8 mb-8">
             <div>
               <h3 className="font-semibold text-gray-900 mb-2">From:</h3>
-              <p className="text-gray-600">OutreachLabs</p>
+              <p className="text-gray-600">Linkio</p>
               <p className="text-gray-600">Guest Post Services</p>
             </div>
             
@@ -249,10 +232,18 @@ export default function InvoicePage() {
           </div>
 
           {/* Payment Status */}
-          {isPaid && order.paidAt && (
+          {isPaid && order.paidAt ? (
             <div className="mt-8 pt-8 border-t border-gray-200">
               <p className="text-sm text-gray-600">
                 Payment received on {new Date(order.paidAt).toLocaleDateString()}
+              </p>
+            </div>
+          ) : (
+            <div className="mt-8 pt-8 border-t border-gray-200 bg-blue-50 p-4 rounded-lg">
+              <p className="text-sm font-semibold text-blue-900 mb-2">Payment Information</p>
+              <p className="text-sm text-blue-800">
+                Our team will contact you shortly with payment options and instructions. 
+                Payment is due within 2 business days of invoice date.
               </p>
             </div>
           )}
@@ -260,7 +251,7 @@ export default function InvoicePage() {
           {/* Footer */}
           <div className="mt-12 pt-8 border-t border-gray-200 text-center text-sm text-gray-500">
             <p>Thank you for your business!</p>
-            <p className="mt-2">Questions? Contact us at support@outreachlabs.com</p>
+            <p className="mt-2">Questions? Contact us at info@linkio.com</p>
           </div>
         </div>
       </div>

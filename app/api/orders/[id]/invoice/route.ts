@@ -4,6 +4,7 @@ import { orders } from '@/lib/db/orderSchema';
 import { orderSiteSubmissions } from '@/lib/db/projectOrderAssociationsSchema';
 import { orderGroups } from '@/lib/db/orderGroupSchema';
 import { accounts } from '@/lib/db/accountSchema';
+import { bulkAnalysisDomains } from '@/lib/db/bulkAnalysisSchema';
 import { eq, and } from 'drizzle-orm';
 import { AuthServiceServer } from '@/lib/auth-server';
 
@@ -41,7 +42,17 @@ export async function POST(
       }
     }
 
-    if (action === 'generate_invoice') {
+    if (action === 'generate_invoice' || action === 'regenerate_invoice') {
+      // Check if regenerating
+      const isRegenerate = action === 'regenerate_invoice';
+      
+      // If regenerating, check if invoice exists
+      if (isRegenerate && !order.invoicedAt) {
+        return NextResponse.json({ 
+          error: 'Cannot regenerate - no invoice exists yet' 
+        }, { status: 400 });
+      }
+      
       // Get order groups and submissions separately
       const orderGroupsList = await db.query.orderGroups.findMany({
         where: eq(orderGroups.orderId, orderId)
@@ -95,16 +106,24 @@ export async function POST(
         where: eq(accounts.id, order.accountId!)
       });
 
-      // Build invoice items
+      // Build invoice items - list each site individually
       const items = [];
       
-      // Add main service item
-      items.push({
-        description: `Guest Post Services - ${approvedSubmissions.length} approved sites`,
-        quantity: approvedSubmissions.length,
-        unitPrice: Math.floor(subtotal / approvedSubmissions.length),
-        total: subtotal
-      });
+      // Add each approved site as a line item
+      const pricePerSite = Math.floor(subtotal / approvedSubmissions.length);
+      for (const submission of approvedSubmissions) {
+        // Get domain info
+        const domain = await db.query.bulkAnalysisDomains.findFirst({
+          where: eq(bulkAnalysisDomains.id, submission.domainId)
+        });
+        
+        items.push({
+          description: `Guest Post - ${domain?.domain || 'Site'}`,
+          quantity: 1,
+          unitPrice: pricePerSite,
+          total: pricePerSite
+        });
+      }
 
       // Add optional services
       if (clientReviewFee > 0) {
@@ -129,7 +148,7 @@ export async function POST(
       const invoiceData = {
         invoiceNumber,
         issueDate: now.toISOString().split('T')[0],
-        dueDate: new Date(now.getTime() + 30 * 24 * 60 * 60 * 1000).toISOString().split('T')[0], // 30 days from now
+        dueDate: new Date(now.getTime() + 2 * 24 * 60 * 60 * 1000).toISOString().split('T')[0], // 2 days from now
         items,
         subtotal: subtotal + clientReviewFee + rushFee,
         discount: discountAmount,
@@ -156,7 +175,7 @@ export async function POST(
       return NextResponse.json({
         success: true,
         order: updatedOrder[0],
-        message: 'Invoice generated successfully',
+        message: isRegenerate ? 'Invoice regenerated successfully' : 'Invoice generated successfully',
         approvedSites: approvedSubmissions.length
       });
 

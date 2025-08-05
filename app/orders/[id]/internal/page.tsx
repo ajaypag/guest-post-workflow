@@ -609,6 +609,45 @@ export default function InternalOrderManagementPage() {
     }
   };
 
+  const handleRegenerateInvoice = async () => {
+    if (!order) return;
+    
+    if (!confirm('Are you sure you want to regenerate the invoice? This will overwrite the existing invoice.')) {
+      return;
+    }
+    
+    setActionLoading(prev => ({ ...prev, regenerate_invoice: true }));
+    try {
+      const response = await fetch(`/api/orders/${orderId}/invoice`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ action: 'regenerate_invoice' })
+      });
+      
+      if (!response.ok) {
+        const error = await response.json();
+        throw new Error(error.error || 'Failed to regenerate invoice');
+      }
+      
+      const result = await response.json();
+      setMessage({
+        type: 'success',
+        text: `Invoice regenerated successfully for ${result.approvedSites} approved sites`
+      });
+      
+      // Reload order data
+      await loadOrder();
+    } catch (error) {
+      console.error('Error regenerating invoice:', error);
+      setMessage({
+        type: 'error',
+        text: error instanceof Error ? error.message : 'Failed to regenerate invoice'
+      });
+    } finally {
+      setActionLoading(prev => ({ ...prev, regenerate_invoice: false }));
+    }
+  };
+
   const handleMarkPaid = async () => {
     if (!order) return;
     
@@ -1376,15 +1415,38 @@ export default function InternalOrderManagementPage() {
 
                     {/* View Invoice - after invoice generated */}
                     {order.invoicedAt && (
-                      <button
-                        onClick={() => router.push(`/orders/${orderId}/invoice`)}
-                        className="w-full px-3 py-2 bg-blue-600 text-white text-sm rounded-md hover:bg-blue-700"
-                      >
-                        <span className="flex items-center justify-center gap-2">
-                          <FileText className="h-4 w-4" />
-                          View Invoice
-                        </span>
-                      </button>
+                      <>
+                        <button
+                          onClick={() => router.push(`/orders/${orderId}/invoice`)}
+                          className="w-full px-3 py-2 bg-blue-600 text-white text-sm rounded-md hover:bg-blue-700"
+                        >
+                          <span className="flex items-center justify-center gap-2">
+                            <FileText className="h-4 w-4" />
+                            View Invoice
+                          </span>
+                        </button>
+                        
+                        {/* Regenerate Invoice - for corrections */}
+                        {!order.paidAt && (
+                          <button
+                            onClick={handleRegenerateInvoice}
+                            disabled={actionLoading.regenerate_invoice}
+                            className="w-full px-3 py-2 bg-amber-600 text-white text-sm rounded-md hover:bg-amber-700 disabled:opacity-50"
+                          >
+                            {actionLoading.regenerate_invoice ? (
+                              <span className="flex items-center justify-center gap-2">
+                                <Loader2 className="h-4 w-4 animate-spin" />
+                                Regenerating...
+                              </span>
+                            ) : (
+                              <span className="flex items-center justify-center gap-2">
+                                <RefreshCw className="h-4 w-4" />
+                                Regenerate Invoice
+                              </span>
+                            )}
+                          </button>
+                        )}
+                      </>
                     )}
                     
                     {/* Mark as Paid - after invoice generated */}
