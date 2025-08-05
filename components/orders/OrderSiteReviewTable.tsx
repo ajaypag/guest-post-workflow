@@ -161,42 +161,69 @@ export default function OrderSiteReviewTable({
 
   // Column configuration based on workflow stage and permissions
   const getColumnConfig = useCallback(() => {
-    // Dynamic columns based on workflow stage
+    // Base columns based on workflow stage
+    let baseColumns: string[];
     switch (workflowStage) {
       case 'site_selection_with_sites':
-        return {
-          columns: ['client', 'link_details', 'site', 'status', 
-            ...(permissions.canViewInternalTools ? ['tools'] : [])]
-        };
+        baseColumns = ['client', 'link_details', 'site', 'status', 
+          ...(permissions.canViewInternalTools ? ['tools'] : [])];
+        break;
       case 'post_approval':
-        return {
-          columns: ['client', 'link_details', 'site', 'status',
-            ...(permissions.canViewInternalTools ? ['tools'] : [])]
-        };
+        baseColumns = ['client', 'link_details', 'site', 'status',
+          ...(permissions.canViewInternalTools ? ['tools'] : [])];
+        break;
       case 'content_creation':
-        return {
-          columns: ['client', 'link_details', 'site', 'content_status', 'draft_url',
-            ...(permissions.canViewInternalTools ? ['tools'] : [])]
-        };
+        baseColumns = ['client', 'link_details', 'site', 'content_status', 'draft_url',
+          ...(permissions.canViewInternalTools ? ['tools'] : [])];
+        break;
       case 'completed':
-        return {
-          columns: ['client', 'link_details', 'site', 'published_url', 'completion']
-        };
+        baseColumns = ['client', 'link_details', 'site', 'published_url', 'completion'];
+        break;
       default:
         // Initial stage - separate columns
-        return {
-          columns: ['client', 'anchor', 
-            ...(permissions.canViewPricing ? ['price'] : []),
-            ...(permissions.canViewInternalTools ? ['tools'] : [])]
-        };
+        baseColumns = ['client', 'anchor', 
+          ...(permissions.canViewPricing ? ['price'] : []),
+          ...(permissions.canViewInternalTools ? ['tools'] : [])];
     }
-  }, [permissions, userType, workflowStage]);
+    
+    // Add selection column at the beginning if selection functionality is provided
+    const columns = selectedSubmissions && onSelectionChange 
+      ? ['selection', ...baseColumns]
+      : baseColumns;
+    
+    return { columns };
+  }, [permissions, userType, workflowStage, selectedSubmissions, onSelectionChange]);
 
   const columnConfig = getColumnConfig();
 
   // Column header renderer
   const getColumnHeader = (column: string) => {
     switch (column) {
+      case 'selection': return (
+        <div className="flex items-center justify-center">
+          <input
+            type="checkbox"
+            className="w-4 h-4 text-blue-600 border-gray-300 rounded focus:ring-blue-500"
+            onChange={(e) => {
+              // Select/deselect all visible submissions
+              if (!onSelectionChange) return;
+              
+              const allVisible = Object.values(siteSubmissions).flat()
+                .filter(sub => sub.status === 'pending');
+              
+              if (e.target.checked) {
+                allVisible.forEach(sub => onSelectionChange(sub.id, true));
+              } else {
+                allVisible.forEach(sub => onSelectionChange(sub.id, false));
+              }
+            }}
+            checked={selectedSubmissions && selectedSubmissions.size > 0 && 
+              Object.values(siteSubmissions).flat()
+                .filter(sub => sub.status === 'pending')
+                .every(sub => selectedSubmissions.has(sub.id))}
+          />
+        </div>
+      );
       case 'client': return 'Client / Target Page';
       case 'anchor': return 'Anchor Text';
       case 'link_details': return 'Link Details';
@@ -314,6 +341,25 @@ export default function OrderSiteReviewTable({
     const { group, index, targetPageUrl, anchorText, displaySubmission, availableForTarget, groupId } = data;
 
     switch (column) {
+      case 'selection':
+        return (
+          <td className="px-6 py-4 w-12">
+            <div className="flex items-center justify-center">
+              {displaySubmission && displaySubmission.status === 'pending' && (
+                <input
+                  type="checkbox"
+                  className="w-4 h-4 text-blue-600 border-gray-300 rounded focus:ring-blue-500"
+                  checked={selectedSubmissions?.has(displaySubmission.id) || false}
+                  onChange={(e) => {
+                    if (onSelectionChange && displaySubmission) {
+                      onSelectionChange(displaySubmission.id, e.target.checked);
+                    }
+                  }}
+                />
+              )}
+            </div>
+          </td>
+        );
       case 'client':
         return (
           <td className="px-6 py-4 pl-8">

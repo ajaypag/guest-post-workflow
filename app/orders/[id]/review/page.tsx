@@ -106,6 +106,52 @@ export default function ExternalOrderReviewPage() {
     }
   };
 
+  const handleSwitchPool = async (submissionId: string, groupId: string) => {
+    try {
+      const response = await fetch(
+        `/api/orders/${orderId}/groups/${groupId}/site-selections`,
+        {
+          method: 'PUT',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            selections: [{ submissionId, action: 'switch_pool' }]
+          })
+        }
+      );
+      
+      if (!response.ok) throw new Error('Failed to switch pool');
+      
+      await fetchOrder();
+    } catch (error) {
+      console.error('Error switching pool:', error);
+    }
+  };
+
+  const handleAssignTargetPage = async (submissionId: string, targetPageUrl: string, groupId: string) => {
+    try {
+      const response = await fetch(
+        `/api/orders/${orderId}/groups/${groupId}/site-selections`,
+        {
+          method: 'PUT',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            selections: [{ 
+              submissionId, 
+              action: 'assign_target_page',
+              targetPageUrl 
+            }]
+          })
+        }
+      );
+      
+      if (!response.ok) throw new Error('Failed to assign target page');
+      
+      await fetchOrder();
+    } catch (error) {
+      console.error('Error assigning target page:', error);
+    }
+  };
+
   const handleBulkAction = async (action: 'approve' | 'reject') => {
     if (selectedSubmissions.size === 0) return;
     
@@ -259,16 +305,18 @@ export default function ExternalOrderReviewPage() {
               canApproveReject: true,
               canViewPricing: true,
               canViewInternalTools: false,
-              canSwitchPools: false,
-              canAssignTargetPages: false,
-              canRebalancePools: false,
+              canSwitchPools: true,
+              canAssignTargetPages: true,
+              canRebalancePools: true,
               canGenerateWorkflows: false,
               canMarkSitesReady: false,
-              canEditDomainAssignments: false
+              canEditDomainAssignments: true
             }}
             workflowStage="site_selection_with_sites"
             onApprove={handleApprove}
             onReject={handleReject}
+            onSwitchPool={handleSwitchPool}
+            onAssignTargetPage={handleAssignTargetPage}
             onRefresh={fetchOrder}
             selectedSubmissions={selectedSubmissions}
             onSelectionChange={(submissionId, selected) => {
