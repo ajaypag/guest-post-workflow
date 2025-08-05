@@ -81,14 +81,6 @@ export default function AdminDashboard() {
       iconColor: 'text-orange-600'
     },
     {
-      title: 'Order Project Diagnostics',
-      description: 'Analyze order and project relationships',
-      icon: FileSearch,
-      href: '/admin/order-project-diagnostics',
-      color: 'bg-amber-50 border-amber-200 text-amber-700',
-      iconColor: 'text-amber-600'
-    },
-    {
       title: 'Order Status Diagnostics',
       description: 'Check order status and group integrity',
       icon: Activity,
