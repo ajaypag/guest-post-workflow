@@ -1,0 +1,463 @@
+# Resource Page Link Building
+
+
+		<div data-elementor-type="single-post" data-elementor-id="22301" class="elementor elementor-22301 post-24759 post type-post status-publish format-standard has-post-thumbnail hentry category-guides" data-elementor-post-type="elementor_library">
+					<section class="elementor-section elementor-top-section elementor-element elementor-element-0a5a477 blog-top-sec elementor-reverse-tablet elementor-hidden-mobile elementor-section-boxed elementor-section-height-default elementor-section-height-default wpr-particle-no wpr-jarallax-no wpr-parallax-no wpr-sticky-section-no" data-id="0a5a477" data-element_type="section" data-settings="{&quot;background_background&quot;:&quot;classic&quot;}">
+						<div class="elementor-container elementor-column-gap-default">
+					<div class="elementor-column elementor-col-50 elementor-top-column elementor-element elementor-element-dc44219" data-id="dc44219" data-element_type="column">
+			<div class="elementor-widget-wrap elementor-element-populated">
+						<div class="elementor-element elementor-element-f9dfb75 blog-text-p elementor-widget elementor-widget-heading" data-id="f9dfb75" data-element_type="widget" data-widget_type="heading.default">
+				<div class="elementor-widget-container">
+					<h1 class="elementor-heading-title elementor-size-default"><span>Resource Page</span> Link Building</h1>				</div>
+				</div>
+				<div class="elementor-element elementor-element-ae6ac55 author-name-sec elementor-widget elementor-widget-text-editor" data-id="ae6ac55" data-element_type="widget" data-widget_type="text-editor.default">
+				<div class="elementor-widget-container">
+									Ajay Paghdal								</div>
+				</div>
+				<div class="elementor-element elementor-element-96e642d elementor-widget elementor-widget-text-editor" data-id="96e642d" data-element_type="widget" data-widget_type="text-editor.default">
+				<div class="elementor-widget-container">
+									Founder and Marketer for Linkio.								</div>
+				</div>
+					</div>
+		</div>
+				<div class="elementor-column elementor-col-50 elementor-top-column elementor-element elementor-element-1310d58" data-id="1310d58" data-element_type="column">
+			<div class="elementor-widget-wrap elementor-element-populated">
+						<div class="elementor-element elementor-element-71d60e8 elementor-widget elementor-widget-image" data-id="71d60e8" data-element_type="widget" data-widget_type="image.default">
+				<div class="elementor-widget-container">
+															<img loading="lazy" width="840" height="441" src="https://www.linkio.com/wp-content/uploads/2020/11/Resource-link-building-featured-image-1024x537.png" class="attachment-large size-large wp-image-13834" alt="" srcset="https://www.linkio.com/wp-content/uploads/2020/11/Resource-link-building-featured-image-1024x537.png 1024w, https://www.linkio.com/wp-content/uploads/2020/11/Resource-link-building-featured-image-300x157.png 300w, https://www.linkio.com/wp-content/uploads/2020/11/Resource-link-building-featured-image-768x403.png 768w, https://www.linkio.com/wp-content/uploads/2020/11/Resource-link-building-featured-image-304x159.png 304w, https://www.linkio.com/wp-content/uploads/2020/11/Resource-link-building-featured-image.png 1200w" sizes="(max-width: 709px) 85vw, (max-width: 909px) 67vw, (max-width: 1362px) 62vw, 840px">															</div>
+				</div>
+					</div>
+		</div>
+					</div>
+		</section>
+				<section class="elementor-section elementor-top-section elementor-element elementor-element-88bd7c3 blog-top-sec elementor-hidden-desktop elementor-hidden-tablet elementor-section-boxed elementor-section-height-default elementor-section-height-default wpr-particle-no wpr-jarallax-no wpr-parallax-no wpr-sticky-section-no" data-id="88bd7c3" data-element_type="section" data-settings="{&quot;background_background&quot;:&quot;classic&quot;}">
+						<div class="elementor-container elementor-column-gap-default">
+					<div class="elementor-column elementor-col-50 elementor-top-column elementor-element elementor-element-e587baa" data-id="e587baa" data-element_type="column">
+			<div class="elementor-widget-wrap elementor-element-populated">
+						<div class="elementor-element elementor-element-993e39e blog-text-p elementor-widget elementor-widget-heading" data-id="993e39e" data-element_type="widget" data-widget_type="heading.default">
+				<div class="elementor-widget-container">
+					<h1 class="elementor-heading-title elementor-size-default"><span>Resource Page</span> Link Building</h1>				</div>
+				</div>
+					</div>
+		</div>
+				<div class="elementor-column elementor-col-50 elementor-top-column elementor-element elementor-element-82ca0ea" data-id="82ca0ea" data-element_type="column">
+			<div class="elementor-widget-wrap elementor-element-populated">
+						<div class="elementor-element elementor-element-785a015 elementor-widget elementor-widget-image" data-id="785a015" data-element_type="widget" data-widget_type="image.default">
+				<div class="elementor-widget-container">
+															<img loading="lazy" width="840" height="441" src="https://www.linkio.com/wp-content/uploads/2020/11/Resource-link-building-featured-image-1024x537.png" class="attachment-large size-large wp-image-13834" alt="" srcset="https://www.linkio.com/wp-content/uploads/2020/11/Resource-link-building-featured-image-1024x537.png 1024w, https://www.linkio.com/wp-content/uploads/2020/11/Resource-link-building-featured-image-300x157.png 300w, https://www.linkio.com/wp-content/uploads/2020/11/Resource-link-building-featured-image-768x403.png 768w, https://www.linkio.com/wp-content/uploads/2020/11/Resource-link-building-featured-image-304x159.png 304w, https://www.linkio.com/wp-content/uploads/2020/11/Resource-link-building-featured-image.png 1200w" sizes="(max-width: 709px) 85vw, (max-width: 909px) 67vw, (max-width: 1362px) 62vw, 840px">															</div>
+				</div>
+				<div class="elementor-element elementor-element-8651d27 author-name-sec elementor-widget elementor-widget-text-editor" data-id="8651d27" data-element_type="widget" data-widget_type="text-editor.default">
+				<div class="elementor-widget-container">
+									Ajay Paghdal								</div>
+				</div>
+				<div class="elementor-element elementor-element-525505e elementor-widget elementor-widget-text-editor" data-id="525505e" data-element_type="widget" data-widget_type="text-editor.default">
+				<div class="elementor-widget-container">
+									Founder and Marketer for Linkio.								</div>
+				</div>
+					</div>
+		</div>
+					</div>
+		</section>
+				<section class="elementor-section elementor-top-section elementor-element elementor-element-898afd2 elementor-section-boxed elementor-section-height-default elementor-section-height-default wpr-particle-no wpr-jarallax-no wpr-parallax-no wpr-sticky-section-no" data-id="898afd2" data-element_type="section">
+						<div class="elementor-container elementor-column-gap-default">
+					<div class="elementor-column elementor-col-50 elementor-top-column elementor-element elementor-element-1a2d18d table-content-sec" data-id="1a2d18d" data-element_type="column">
+			<div class="elementor-widget-wrap elementor-element-populated">
+						<div class="elementor-element elementor-element-ed7d018 contents-sidebar elementor-widget elementor-widget-shortcode" data-id="ed7d018" data-element_type="widget" data-widget_type="shortcode.default">
+				<div class="elementor-widget-container">
+							<div class="elementor-shortcode"><div class="lwptoc table-of-contents lwptoc-right lwptoc-inherit" data-smooth-scroll="1" data-smooth-scroll-offset="20" style="width:100%"><div class="lwptoc_i">    <div class="lwptoc_header">
+        <b class="lwptoc_title" style="font-weight:600;">Table of Contents</b>            </div>
+<div class="lwptoc_items lwptoc_items-visible">
+    <ul class="lwptoc_itemWrap"><li class="lwptoc_item">    <a href="#what-is-resource-page-link-building">
+                <span class="lwptoc_item_label">What is Resource Page Link Building?</span>
+    </a>
+    </li><li class="lwptoc_item">    <a href="#types-of-resource-pages">
+                <span class="lwptoc_item_label">Types of Resource Pages</span>
+    </a>
+    </li><li class="lwptoc_item">    <a href="#how-does-it-work">
+                <span class="lwptoc_item_label">How Does It Work?</span>
+    </a>
+    </li><li class="lwptoc_item">    <a href="#having-resource-worthy-content">
+                <span class="lwptoc_item_label">Having Resource-Worthy Content</span>
+    </a>
+    </li><li class="lwptoc_item">    <a href="#the-step-by-step-resource-page-link-building">
+                <span class="lwptoc_item_label">The Step-by-Step Resource Page Link Building</span>
+    </a>
+    </li><li class="lwptoc_item">    <a href="#tips-for-a-more-successful-campaign">
+                <span class="lwptoc_item_label">Tips for a More Successful Campaign</span>
+    </a>
+    </li><li class="lwptoc_item">    <a href="#pros-cons-of-resource-page-link-building">
+                <span class="lwptoc_item_label">Pros &amp; Cons of Resource Page Link Building</span>
+    </a>
+    </li><li class="lwptoc_item">    <a href="#things-to-avoid-while-building-resource-page-links">
+                <span class="lwptoc_item_label">Things to Avoid while Building Resource Page Links</span>
+    </a>
+    </li><li class="lwptoc_item">    <a href="#helpful-tools">
+                <span class="lwptoc_item_label">Helpful Tools</span>
+    </a>
+    </li><li class="lwptoc_item">    <a href="#conclusion">
+                <span class="lwptoc_item_label">Conclusion</span>
+    </a>
+    </li></ul></div>
+</div></div></div>
+						</div>
+				</div>
+					</div>
+		</div>
+				<div class="elementor-column elementor-col-50 elementor-top-column elementor-element elementor-element-94866f7 body-blog-section" data-id="94866f7" data-element_type="column">
+			<div class="elementor-widget-wrap elementor-element-populated">
+						<div class="elementor-element elementor-element-f65f34d elementor-widget elementor-widget-shortcode" data-id="f65f34d" data-element_type="widget" data-widget_type="shortcode.default">
+				<div class="elementor-widget-container">
+							<div data-elementor-type="wp-post" data-elementor-id="24759" class="elementor elementor-24759" data-elementor-post-type="post">
+						<section class="elementor-section elementor-top-section elementor-element elementor-element-13ad87e elementor-section-boxed elementor-section-height-default elementor-section-height-default wpr-particle-no wpr-jarallax-no wpr-parallax-no wpr-sticky-section-no" data-id="13ad87e" data-element_type="section">
+						<div class="elementor-container elementor-column-gap-default">
+					<div class="elementor-column elementor-col-100 elementor-top-column elementor-element elementor-element-2879afb" data-id="2879afb" data-element_type="column">
+			<div class="elementor-widget-wrap elementor-element-populated">
+						<div class="elementor-element elementor-element-5745435 elementor-widget elementor-widget-text-editor" data-id="5745435" data-element_type="widget" data-widget_type="text-editor.default">
+				<div class="elementor-widget-container">
+									<p>Resource page link building is one of the most popular link building strategies out there. It is also one of the easiest link building strategies to carry out. It doesn’t involve any tricks and for some prospects, you won’t even need to perform outreach, since they have a page submission form built right into their website.</p><p>This article is all about resource page link building, its ins, and outs, some useful tips, and even a step-by-step guide for running a resource page link building campaign of your own.</p><p>But before we can really dig into it, we need to answer a simple question.</p><div class="sec-title"><h2 id="pre-stage-of-getting-your-spreadsheet-with-link-prospects-ready"><span id="what-is-resource-page-link-building">What is Resource Page Link Building?</span></h2><p>Resource page link building is the process of acquiring backlinks by submitting your content to resource pages. What really sets this link building method apart from other ones is the fact that you don’t need to do any kind of negotiation with the resource page owners, since the whole point of a resource page is to link to other niche-related sites with useful information.</p><p>It’s easy compared to other link building methods, and the links you get will be from authoritative, high-quality websites (if you filter your prospects well, of course).</p><p>Not only is it awesome for your SEO, but also useful for people who are just looking for credible information on a certain topic. It’s a win-win situation for all parties involved: you get a strong link, the resource page owner receives a helpful addition to their site, and a portion of their visitors pretty much become yours.</p><p>With that said, we should take a look at the types of resource pages.</p><div class="sec-title"><h2 id="what-kind-of-referring-pages-should-you-get-rid-of"><span id="types-of-resource-pages">Types of Resource Pages</span></h2><p>Generally speaking, there are three types of resource pages. Some would argue that there are only two, and they wouldn’t be wrong either. Let me explain.</p><p><b>“Normal” resource pages&nbsp;</b>are websites that collect and link to external pages on niche-specific topics. Some resource pages focus only on one niche, while others cover a much wider array of topics.</p><p><a href="https://www.musicoutfitters.com/resources.htm">musicoutfitters.com&nbsp;</a>is a good example of a “traditional resource page.</p><p><img fetchpriority="high" decoding="async" class="alignnone size-medium wp-image-12356" src="https://www.linkio.com/wp-content/uploads/2020/10/11.png" sizes="(max-width: 709px) 85vw, (max-width: 909px) 67vw, (max-width: 1362px) 62vw, 840px" srcset="https://www.linkio.com/wp-content/uploads/2020/10/11.png 1583w, https://www.linkio.com/wp-content/uploads/2020/10/11-300x139.png 300w, https://www.linkio.com/wp-content/uploads/2020/10/11-1024x474.png 1024w, https://www.linkio.com/wp-content/uploads/2020/10/11-768x355.png 768w, https://www.linkio.com/wp-content/uploads/2020/10/11-1536x710.png 1536w, https://www.linkio.com/wp-content/uploads/2020/10/11-304x141.png 304w, https://www.linkio.com/wp-content/uploads/2020/10/11-1200x555.png 1200w" alt="" width="1583" height="732"></p><p><b>&nbsp;“Mini” resource pages&nbsp;</b>can be blog posts or other pages that don’t necessarily qualify as a full-on resource page and have a smaller external resource section instead.</p><p>For example, this blog post by TroyPoint about&nbsp;<a href="https://troypoint.com/free-online-movie-streaming-sites/">The 25 Best Free Online Movie Streaming Sites in October 2020</a>&nbsp;qualifies perfectly as a mini resource page.</p><p>And while this type of resource pages has a “mini” in its name, you should never underestimate the value of a link from one, especially if it’s on a larger blog or news portal.</p><p>And finally, we have<b>&nbsp;resource centers</b>. That name isn’t mentioned very often, and those sites are few and far between. These are just resource pages that list other resource pages.</p><div class="sec-title"><h2 id="which-good-looking-urls-are-pseudo-link-prospects"><span id="how-does-it-work">How Does It Work?</span></h2><p>There are two ways of submitting your site to a resource page. I already mentioned that some resource pages will have a built-in form that you can use to submit your site quickly and painlessly.</p><p>But a lot of resource pages won’t have that form. What do you do in that case? You guessed it, with outreach. You should check your prospects’ sites for their preferred method of communication, but most of the time it will be a separate email address dedicated to submissions.</p><p>Sometimes, though, a prospect will list their social media profile or even phone number as a contact point for submissions. In those cases, you should reach them through there. Don’t just go for the generic&nbsp;info @ domain.com&nbsp;pretty much every site has in its footer as there is a good chance your message will just get lost</p><div class="sec-title"><h2 id="should-you-gain-backlinks-from-domains-with-low-authority"><span id="having-resource-worthy-content">Having Resource-Worthy Content</span></h2><p>There is one thing you need to have on your site in order to succeed with any link building campaign, not just resource pages. Even if you’re not currently focusing on building links, you absolutely need to have it and keep making it.</p><p>Can you guess what I’m talking about?</p><p>Of course, it’s none other than good, link-worthy content. Remember: the point of a resource page is to gather up valuable pages in one spot so that whoever is doing research on that topic can find it all in a single place. Sure, resource page link building is generally easier than other strategies, but in order for your site to get accepted, it needs to provide value to the resource page.</p><p>It also has to be relevant. After all, would it make sense for a page with the best home recipes to link to a page about web development? It’s best to filter out your prospects, depending on the type of content you produce, but you can also do it vice versa, and make custom content specifically for your list of prospects.</p><div class="sec-title"><h2 id="can-link-prospects-providing-nofollow-backlinks-be-of-any-value"><span id="the-step-by-step-resource-page-link-building">The Step-by-Step Resource Page Link Building</span></h2><p>Now that we’ve discussed what resource pages are, and what you need to get started with resource page link building, let’s discuss the entire process in finer detail.</p><p>If you’re familiar with other types of link building, you already know what the first step is going to be.</p><p>That’s right, building up your prospects list.</p><h3>Find Resource Page Link Building Opportunities</h3><p>As I mentioned above, your link prospects should be relevant to your niche. But how do you actually look for them? Do you just type “ your niche resource pages” into Google and hope for the best?</p><p>Well, that’s one way of doing it. The results are probably not going to be particularly satisfying, though.</p><p>You will have much more luck using Google’s search operators, which I will list in the next section.</p><p>But finding websites is just half of the job. You also need to find your prospects’ emails. If there’s one in the site’s footer, consider yourself lucky. If there are none, you will actually have to go through their pages looking for it, or use an email scraping tool like Hunter.io to do it for you.</p><p>The latter option is much faster, especially if your prospect list consists of dozens or even hundreds of addresses. Want to know how to do link prospecting to face less competition on your way? We’ve got a guide dedicated to just that.</p><h3>Resource Page Search Operators</h3><p>Google search operators are modifiers that help you find very specific things, much more easily. I honestly don’t know where we would be if those weren’t a thing.</p><p>Probably on the second page of Google.</p><p>All jokes aside, even though search operators can be confusing at first (especially considering just how many variations of them exist), they make our lives a whole lot easier.</p><p>Just paste them into your search bar and watch them do their magic helping you find very specific things that would take hours upon hours to find manually.</p><p>I have cherry-picked the most relevant search operators for finding resource page link building prospects. Here they are:</p><blockquote><p>“Keyword”+”related urls”+&amp;num=100<br>“Keyword”+”resource pages”+&amp;num=100<br>“Keyword”+ “helpful links”+&amp;num=100<br>“Keyword”+ “useful links”+&amp;num=100<br>“Keyword”+ useful resources+&amp;num=100<br>“Keyword”+favorite links+&amp;num=100<br>“Keyword”+favorite sites+&amp;num=100<br>“Keyword”+intitle:resources+&amp;num=100<br>“Keyword”+inurl:links+&amp;num=100<br>“Keyword”+inurl:links site:.edu+&amp;num=100<br>“Keyword”+inurl:links site:.gov+&amp;num=100<br>“Keyword”+inurl:resources+&amp;num=100<br>“Keyword”+”other links”+&amp;num=100<br>“Keyword”+inurl:links inurl:lib*+&amp;num=100<br>“Keyword”+inurl:links library site:.edu+&amp;num=100<br>“Keyword”+inurl:links library site:.org+&amp;num=100<br>“Keyword”+inurl:links site:.org+&amp;num=100<br>“Keyword”+inurl:resources inurl:lib*+&amp;num=100<br>“Keyword”+inurl:resources site:.edu+&amp;num=100<br>“Keyword”+inurl:resources site:.gov+&amp;num=100<br>“Keyword”+inurl:resources site:.org+&amp;num=100<br>“Keyword”+links+&amp;num=100<br>“Keyword”+related sites+&amp;num=100<br>“Keyword”+related urls+&amp;num=100<br>“Keyword”+resources+&amp;num=100<br>“Keyword”+intitle:\”list * * sites\”+&amp;num=100<br>“Keyword”+list * sites+&amp;num=100<br>“Keyword”+intitle:\”recommended links\”+&amp;num=100<br>“Keyword”+intitle:\”recommended sites\”+&amp;num=100<br>“”Keyword resources”++&amp;num=100<br>“Keyword”+intitle:top+&amp;num=100<br>“Keyword”+intitle:\”useful links\”+&amp;num=100</p></blockquote><h3>Filter Your Prospects for Quality</h3><p>The most convenient way of keeping track of your prospects is with a spreadsheet. That way, you can have the website name in one column, right next to their email address.</p><p>When you’re done filling up your prospect list, it’s time to double-check them all for quality. Of course, you can skip this step entirely, but you really shouldn’t. Low-quality links from poor websites can actually harm your SEO instead of improving it, so you need to make sure your prospects’ sites don’t fall into the scammy/shady category.</p><p>We actually have a link prospect filtering tool of our own that you can use to speed things up, and an article about the major controversies surrounding sorting out prospects. You can import your prospect list into it and use a variety of filtering options to remove all irrelevant URLs.</p><p>Mostly, you need to be looking out for the frequency at which your prospects’ sites get updated (and whether they are still being updated at all). You also need to make sure the resource page you’re looking at actually links to external sites.</p><p>Some resources will only refer to internal pages, so the probability of getting them to link to you is somewhere around zero percent.</p><p>You also need to make sure your prospects link to topically-relevant pages because if it’s just a mixed bag of random links, chances are it is not a very good website to build links on.</p><p>Finally, there are the SEO metrics. How many visitors do your prospects get each month? What is their domain rating? How long have they been on the web? All these things and more you can check with SEO tools, which I am going to cover in more detail further on.</p><h3>Craft Your Email Pitch</h3><p>After you’ve filtered out your prospects, you should prepare your outreach email pitch. Of course, the best approach is to write a custom email for each prospect, but if you’ve got hundreds of emails to send out, that’s simply not realistic.</p><p>Generally, email templates are great to use as long as you customize them well and give a bit of a personal touch to each one you send. Just make sure you don’t copy-paste and send everyone the same thing.</p><p>The general rules of writing a good resource page outreach email are:</p><ul><li>Be polite! It should go without saying, but the simple lack of a “please” and “thank you” can make you look… a bit rude.</li><li>Be brief and to the point. The less of your prospects’ time you waste – the better.</li><li>Be clear as to who you are, and why you think your site would make a good addition to their resource page.</li><li>Make sure to include the exact URL you want the link to point to! This way, you will be making the life of the person responsible for accepting submission just that extra little bit easier.</li></ul><h3>Outreach Email Templates</h3><p>Did you know that we have a collection of 80+ <a href="https://www.linkio.com/email-outreach-templates/">cold email outreach templates</a> for all types of different link building strategies?</p><p>Here are the ones suitable for resource page link building. Feel free to grab and use them, but make sure you change them up enough so that your prospects can’t even tell it was a template in the first place!</p><p><strong>Template 1</strong></p><blockquote><p>Hello {{prospect.first_name}},</p><p>I came across your resource page {{resource page link}} while gathering some information on {{topic}}.</p><p>Great list, I had no idea about some of the resources before I found them on your site.</p><p>If you’re interested, I have an article of my own on {{topic}} that I think would make a great addition to your page. Here it is: {{Your post’s URL}}.</p><p>I think your readers would enjoy it because {{elaborate why}} and it would fit right in.</p><p>Thank you for your time,</p><p>{{inbox.name}}</p></blockquote><p>Template 2</p><blockquote><p>Hello {{prospect.first_name}},</p><p>My name is {{inbox.name}}, and I just found your resource page for {{audience}}.</p><p>{{resource page link}}</p><p>I’m from {{your company’s name}} and we {{tell them about what you do and what you can offer}}.</p><p>{{Your post’s URL}}</p><p>It might make a good addition to your resource page and provide good value for your visitors.</p><p>Let me know if I can do anything else for you.</p><p>Thank you,</p><p>{{inbox.name}}</p></blockquote><p><strong>Template 3</strong></p><blockquote><p>Hey, {{prospect.first_name}}!</p><p>I was digging around for information on {{topic}} today and came across your resource page: {{link to resource page}}</p><p>What an awesome list of resources! I didn’t even know about some of them.</p><p>If you’re interested, I actually just wrote a guide on {{topic}}: {{your URL}}</p><p>It might make a great addition to your page.</p><p>Either way, keep up the great work! Thanks for your time.</p><p>Cheers,</p><p>{{inbox.signature}}</p></blockquote><p><strong>Template 4</strong></p><blockquote><p>Hi {{prospect.first_name}},</p><p>I’m getting in touch today to introduce you to {{resource}}, which I think could be of real value to your readers.</p><p>{{Summary of what the resource is}}</p><p>You can view the {{Resource}} yourself at: {{Link}}</p><p>I noticed that you link out to a number of other really great resources on {{URL of page that links out}}, and thought that this could be great to sit alongside these.</p><p>I thought that this might be of real interest and useful to your readers because:</p><p>{{Reason 1}}<br>{{Reason 2}}<br>{{Reason 3}}</p><p>If you need any more information from me, please just let me know. You know where I am.</p><p>{{Email Signature}}</p></blockquote><h3>Send out Your Emails</h3><p>At this point, the only thing left is to send out your pitches and wait for your responses. As long as you have quality content that fits the theme of any given resource page, the conversion rate should be pretty high.</p><p>If you don’t have the time to do outreach by yourself, there are reputable agencies that can help. Read about pricing, offerings and reviews here at our&nbsp;<a href="https://www.linkio.com/best-blogger-outreach-services/">blogger outreach services</a>&nbsp;page.</p><h2><span id="tips-for-a-more-successful-campaign">Tips for a More Successful Campaign</span></h2><p>The conversion rate for this link building strategy should be pretty high by default since resource pages are literally made for you to submit your site to. Still, there are a few things that you can do to achieve even better results, faster.</p><p>Make sure you’re reaching out to the person actually responsible for receiving submissions.</p><p>I’ve talked about avoiding the generic info@domain.com commonly found in the site’s footer, and it’s true that sometimes you can ask for the right person to contact, but in reality, it will be much quicker if the first person you reached was the right one.</p><p>If your prospect has information about their preferred contact method, use it.</p><p>Don’t be afraid to reach out to sites that are not necessarily centered around collecting resources. Blogs with external resource sections are also a great source of powerful links.</p><p>Make sure you filter out low-quality resources to avoid links that can actually harm your SEO.</p><p>Run a backlink check of your prospect’s site and take note of any broken links they might have. Before submitting your own one, point those out to the owner. This will help instantly boost your relationship with the prospect, show your genuine interest, and provide even more value to your prospect.</p><h2><span id="pros-cons-of-resource-page-link-building">Pros &amp; Cons of Resource Page Link Building</span></h2><p>Resource page link building is on the easier and more effective side of link building strategies, but, of course, it has its own disadvantages.</p><h3>Pros:</h3><ul><li>High conversion rate, prospects are literally asking for you to submit your site.</li><li>Sometimes outreach isn’t even necessary, thanks to built-in submission forms.</li><li>High-quality backlinks from authoritative resources with strong backlink profiles.</li><li>You can acquire a number of links with a single, good piece of content.</li></ul><h3>Cons:</h3><ul><li>There aren’t that many resource pages around.</li><li>If you don’t filter out low-quality resources, you run the risk of actually harming your SEO, and not boosting it.</li><li>Some of the links can have the “NoFollow” attribute.</li><li>Resource page link building can really boost your SEO, but you shouldn’t pick it as your primary link building method, and use it in combination with other ones.</li></ul><h2><span id="things-to-avoid-while-building-resource-page-links">Things to Avoid while Building Resource Page Links</span></h2><p>I’ve put a pretty big accent on the filtering step of the whole resource page link building process. But how do you actually determine if a prospect is not worth your time and effort?</p><p>Look at the sites they are linking out to. If it’s just a bunch of random links to sites that have seemingly no connection, that’s a tell-tale sign of a link scheme. Make sure your prospects actually collect niche-related resources, and yours fits in organically.</p><p>Remember: a real resource page will never ask you to pay money in order to submit your site. This falls into the “purchased” links category, and those are punishable by Google.</p><h2><span id="helpful-tools">Helpful Tools</span></h2><p>Besides our own tool for filtering prospects, there is quite a lot of software that can help you in your link building endeavors.</p><p>Ahrefs is one of the best all-in-one SEO solutions for checking your prospects’ backlink profiles along with important SEO metrics.</p><p>I mentioned it before, but Hunter.io is awesome for finding anyone’s email address. Just paste in your prospect’s domain name, and it will do its magic to find all addresses, related to it.</p><p>NinjaOutreach has an awesome tool for automating your outreach campaign, organizing it, tracking each conversation, and even sending automatic follow-ups. Using good old Gmail can be a mess, and emails often get buried underneath hundreds of other messages.</p><h2><span id="conclusion">Conclusion</span></h2><p>Resource page link building is relatively easy to perform, has a high conversion rate, and only requires a solid piece of niche-related content from you.</p><p>For many SEOs, it has become the go-to link building strategy. Make sure you filter out your prospect list well, and you will see success with it as well!</p><p>But you have to remember that a healthy backlink profile consists of lots of different link types, and you should use this tactic in combination with other ones.</p></div></div></div></div></div>								</div>
+				</div>
+					</div>
+		</div>
+					</div>
+		</section>
+				</div>
+				<div class="elementor-shortcode"></div>
+						</div>
+				</div>
+					</div>
+		</div>
+					</div>
+		</section>
+				<section class="elementor-section elementor-top-section elementor-element elementor-element-421273d elementor-section-full_width elementor-section-stretched related-post-sec elementor-section-height-default elementor-section-height-default wpr-particle-no wpr-jarallax-no wpr-parallax-no wpr-sticky-section-no" data-id="421273d" data-element_type="section" data-settings="{&quot;background_background&quot;:&quot;classic&quot;,&quot;stretch_section&quot;:&quot;section-stretched&quot;}">
+						<div class="elementor-container elementor-column-gap-default">
+					<div class="elementor-column elementor-col-100 elementor-top-column elementor-element elementor-element-e4b6e4d" data-id="e4b6e4d" data-element_type="column">
+			<div class="elementor-widget-wrap elementor-element-populated">
+						<div class="elementor-element elementor-element-4ca3b26 elementor-widget elementor-widget-heading" data-id="4ca3b26" data-element_type="widget" data-widget_type="heading.default">
+				<div class="elementor-widget-container">
+					<h2 class="elementor-heading-title elementor-size-default">SEO and Link Building <strong style="background-color: #04558c;color: #fff;border-radius: 12px;padding:0px 10px">Resources</strong></h2>				</div>
+				</div>
+				<div class="elementor-element elementor-element-4a69ea3 seo-author-sec elementor-widget elementor-widget-shortcode" data-id="4a69ea3" data-element_type="widget" data-widget_type="shortcode.default">
+				<div class="elementor-widget-container">
+							<div class="elementor-shortcode">		<div class="wppsac-wrap wppsac-slick-carousel-wrp wppsac-clearfix " data-conf="{&quot;slides_to_show&quot;:&quot;5&quot;,&quot;slides_to_scroll&quot;:&quot;1&quot;,&quot;dots&quot;:&quot;true&quot;,&quot;arrows&quot;:&quot;true&quot;,&quot;autoplay&quot;:&quot;true&quot;,&quot;autoplay_interval&quot;:3000,&quot;speed&quot;:500,&quot;rtl&quot;:&quot;false&quot;,&quot;lazyload&quot;:&quot;&quot;}">
+			<div id="wppsac-post-carousel-1" class="wppsac-post-slider-init wppsac-post-carousel design-1">
+				<div class="wppsac-carousel-slides">
+	
+	<div class="wppsac-post-content-position">
+				<div class="wppsac-post-categories"><ul class="wppsac-post-categories-list"><li><a href="https://www.linkio.com/category/case-studies/">Case Studies</a></li></ul></div>
+		
+		<h2 class="wppsac-post-title">
+			<a href="https://www.linkio.com/from-zero-to-breakthrough-the-marketing-tactic-that-made-it-happen/">From Zero to Breakthrough: The Marketing Tactic That Made It Happen</a>
+		</h2>
+
+				<div class="wppsac-post-date">
+						<span>By Outreach Labs</span>
+			 / July 30, 2025		</div>
+				<div class="wppsac-post-content">
+			<div class="wppsac-sub-content">When startups succeed, we often see glossy headlines and viral success stories. What we rarely hear about is the strategic...</div>
+
+						<a class="wppsac-readmorebtn" href="https://www.linkio.com/from-zero-to-breakthrough-the-marketing-tactic-that-made-it-happen/">Read More</a>
+					</div>
+			</div>
+</div><div class="wppsac-carousel-slides">
+	
+	<div class="wppsac-post-content-position">
+				<div class="wppsac-post-categories"><ul class="wppsac-post-categories-list"><li><a href="https://www.linkio.com/category/case-studies/">Case Studies</a></li></ul></div>
+		
+		<h2 class="wppsac-post-title">
+			<a href="https://www.linkio.com/how-startups-are-winning-with-real-tactics-that-actually-convert/">How Startups Are Winning with Real Tactics That Actually Convert</a>
+		</h2>
+
+				<div class="wppsac-post-date">
+						<span>By Outreach Labs</span>
+			 / July 29, 2025		</div>
+				<div class="wppsac-post-content">
+			<div class="wppsac-sub-content">Forget the billboards and six-figure ad buys, today’s savviest startups are winning market share with lean, strategic moves that punch...</div>
+
+						<a class="wppsac-readmorebtn" href="https://www.linkio.com/how-startups-are-winning-with-real-tactics-that-actually-convert/">Read More</a>
+					</div>
+			</div>
+</div><div class="wppsac-carousel-slides">
+	
+	<div class="wppsac-post-content-position">
+				<div class="wppsac-post-categories"><ul class="wppsac-post-categories-list"><li><a href="https://www.linkio.com/category/case-studies/">Case Studies</a></li></ul></div>
+		
+		<h2 class="wppsac-post-title">
+			<a href="https://www.linkio.com/how-to-track-multiple-vehicles-with-vehicle-tracking-software/">How to Track Multiple Vehicles With Vehicle Tracking Software?</a>
+		</h2>
+
+				<div class="wppsac-post-date">
+						<span>By Outreach Labs</span>
+			 / June 27, 2025		</div>
+				<div class="wppsac-post-content">
+			<div class="wppsac-sub-content">Managing a fleet of vehicles presents numerous logistical challenges. Maintaining oversight of multiple vehicles simultaneously can be a complex task....</div>
+
+						<a class="wppsac-readmorebtn" href="https://www.linkio.com/how-to-track-multiple-vehicles-with-vehicle-tracking-software/">Read More</a>
+					</div>
+			</div>
+</div><div class="wppsac-carousel-slides">
+		<div class="wppsac-post-image-bg">
+		<a href="https://www.linkio.com/how-to-create-a-content-marketing-strategy-for-ecommerce/">
+			<img class="wppsac-post-image" src="https://www.linkio.com/wp-content/uploads/2024/12/unnamed.jpg" alt="How to Create a Content Marketing Strategy for eCommerce">
+		</a>
+	</div>
+	
+	<div class="wppsac-post-content-position">
+				<div class="wppsac-post-categories"><ul class="wppsac-post-categories-list"><li><a href="https://www.linkio.com/category/case-studies/">Case Studies</a></li></ul></div>
+		
+		<h2 class="wppsac-post-title">
+			<a href="https://www.linkio.com/how-to-create-a-content-marketing-strategy-for-ecommerce/">How to Create a Content Marketing Strategy for eCommerce</a>
+		</h2>
+
+				<div class="wppsac-post-date">
+						<span>By Munim Ali</span>
+			 / April 30, 2025		</div>
+				<div class="wppsac-post-content">
+			<div class="wppsac-sub-content">How to Create an eCommerce Content Marketing Strategy Do you know that content marketing leaders experience 7.8x more site traffic...</div>
+
+						<a class="wppsac-readmorebtn" href="https://www.linkio.com/how-to-create-a-content-marketing-strategy-for-ecommerce/">Read More</a>
+					</div>
+			</div>
+</div><div class="wppsac-carousel-slides">
+	
+	<div class="wppsac-post-content-position">
+				<div class="wppsac-post-categories"><ul class="wppsac-post-categories-list"><li><a href="https://www.linkio.com/category/case-studies/">Case Studies</a></li></ul></div>
+		
+		<h2 class="wppsac-post-title">
+			<a href="https://www.linkio.com/how-to-choose-the-best-seo-software-for-your-business/">How to Choose the Best SEO Software for Your Business&nbsp;</a>
+		</h2>
+
+				<div class="wppsac-post-date">
+						<span>By Munim Ali</span>
+			 / April 25, 2025		</div>
+				<div class="wppsac-post-content">
+			<div class="wppsac-sub-content">You can write the best content in the world, but if no one finds it, does it even matter? NO...</div>
+
+						<a class="wppsac-readmorebtn" href="https://www.linkio.com/how-to-choose-the-best-seo-software-for-your-business/">Read More</a>
+					</div>
+			</div>
+</div><div class="wppsac-carousel-slides">
+		<div class="wppsac-post-image-bg">
+		<a href="https://www.linkio.com/best-rank-tracking-tools-for-local-businesses-what-actually-matters/">
+			<img class="wppsac-post-image" src="https://www.linkio.com/wp-content/uploads/2025/04/rank-tracking-tools.png" alt="Best Rank Tracking Tools for Local Businesses: What Actually Matters?">
+		</a>
+	</div>
+	
+	<div class="wppsac-post-content-position">
+				<div class="wppsac-post-categories"><ul class="wppsac-post-categories-list"><li><a href="https://www.linkio.com/category/guides/">Guides</a></li></ul></div>
+		
+		<h2 class="wppsac-post-title">
+			<a href="https://www.linkio.com/best-rank-tracking-tools-for-local-businesses-what-actually-matters/">Best Rank Tracking Tools for Local Businesses: What Actually Matters?</a>
+		</h2>
+
+				<div class="wppsac-post-date">
+						<span>By Ajay Paghdal</span>
+			 / April 8, 2025		</div>
+				<div class="wppsac-post-content">
+			<div class="wppsac-sub-content">Here's the thing: there’s an overwhelming flood of rank tracking tools promising to boost your local SEO game. Most claim...</div>
+
+						<a class="wppsac-readmorebtn" href="https://www.linkio.com/best-rank-tracking-tools-for-local-businesses-what-actually-matters/">Read More</a>
+					</div>
+			</div>
+</div><div class="wppsac-carousel-slides">
+	
+	<div class="wppsac-post-content-position">
+				<div class="wppsac-post-categories"><ul class="wppsac-post-categories-list"><li><a href="https://www.linkio.com/category/case-studies/">Case Studies</a></li></ul></div>
+		
+		<h2 class="wppsac-post-title">
+			<a href="https://www.linkio.com/best-digital-marketing-tips-from-experts/">Best Digital Marketing Tips From Experts</a>
+		</h2>
+
+				<div class="wppsac-post-date">
+						<span>By Munim Ali</span>
+			 / December 20, 2024		</div>
+				<div class="wppsac-post-content">
+			<div class="wppsac-sub-content">Picture this: A total of 5.52 billion people around the world have access to the Internet as of October 2024....</div>
+
+						<a class="wppsac-readmorebtn" href="https://www.linkio.com/best-digital-marketing-tips-from-experts/">Read More</a>
+					</div>
+			</div>
+</div><div class="wppsac-carousel-slides">
+		<div class="wppsac-post-image-bg">
+		<a href="https://www.linkio.com/why-every-business-needs-a-website/">
+			<img class="wppsac-post-image" src="https://www.linkio.com/wp-content/uploads/2023/09/Add-a-heading-2.png" alt="Why Every Business Needs a Website">
+		</a>
+	</div>
+	
+	<div class="wppsac-post-content-position">
+				<div class="wppsac-post-categories"><ul class="wppsac-post-categories-list"><li><a href="https://www.linkio.com/category/guides/">Guides</a></li></ul></div>
+		
+		<h2 class="wppsac-post-title">
+			<a href="https://www.linkio.com/why-every-business-needs-a-website/">Why Every Business Needs a Website</a>
+		</h2>
+
+				<div class="wppsac-post-date">
+						<span>By Dmitri</span>
+			 / September 29, 2023		</div>
+				<div class="wppsac-post-content">
+			<div class="wppsac-sub-content">Regardless of the size and industry of your business, if you want to ensure your business's success, you should create...</div>
+
+						<a class="wppsac-readmorebtn" href="https://www.linkio.com/why-every-business-needs-a-website/">Read More</a>
+					</div>
+			</div>
+</div><div class="wppsac-carousel-slides">
+		<div class="wppsac-post-image-bg">
+		<a href="https://www.linkio.com/using-seo-for-lead-generation-everything-you-need-to-know/">
+			<img class="wppsac-post-image" src="https://www.linkio.com/wp-content/uploads/2023/09/Add-a-heading-1.png" alt="Using SEO For Lead Generation – Everything You Need To Know">
+		</a>
+	</div>
+	
+	<div class="wppsac-post-content-position">
+				<div class="wppsac-post-categories"><ul class="wppsac-post-categories-list"><li><a href="https://www.linkio.com/category/guides/">Guides</a></li></ul></div>
+		
+		<h2 class="wppsac-post-title">
+			<a href="https://www.linkio.com/using-seo-for-lead-generation-everything-you-need-to-know/">Using SEO For Lead Generation – Everything You Need To Know</a>
+		</h2>
+
+				<div class="wppsac-post-date">
+						<span>By Munim Ali</span>
+			 / September 13, 2023		</div>
+				<div class="wppsac-post-content">
+			<div class="wppsac-sub-content">Pulling in quality leads is no walk in the park, especially in a crowded online marketplace. SEO for lead generation...</div>
+
+						<a class="wppsac-readmorebtn" href="https://www.linkio.com/using-seo-for-lead-generation-everything-you-need-to-know/">Read More</a>
+					</div>
+			</div>
+</div><div class="wppsac-carousel-slides">
+		<div class="wppsac-post-image-bg">
+		<a href="https://www.linkio.com/the-best-books-to-learn-seo-recommended-by-pros/">
+			<img class="wppsac-post-image" src="https://www.linkio.com/wp-content/uploads/2023/08/Add-a-heading.png" alt="The Best Books To Learn SEO Recommended by Pros">
+		</a>
+	</div>
+	
+	<div class="wppsac-post-content-position">
+				<div class="wppsac-post-categories"><ul class="wppsac-post-categories-list"><li><a href="https://www.linkio.com/category/listicles/">Listicles</a></li></ul></div>
+		
+		<h2 class="wppsac-post-title">
+			<a href="https://www.linkio.com/the-best-books-to-learn-seo-recommended-by-pros/">The Best Books To Learn SEO Recommended by Pros</a>
+		</h2>
+
+				<div class="wppsac-post-date">
+						<span>By Munim Ali</span>
+			 / August 22, 2023		</div>
+				<div class="wppsac-post-content">
+			<div class="wppsac-sub-content">What a turn of events! As you’ve landed on this page, you are just one book away from mastering SEO....</div>
+
+						<a class="wppsac-readmorebtn" href="https://www.linkio.com/the-best-books-to-learn-seo-recommended-by-pros/">Read More</a>
+					</div>
+			</div>
+</div>			</div>
+		</div>
+	</div>
+						</div>
+				</div>
+					</div>
+		</div>
+					</div>
+		</section>
+				<section class="elementor-section elementor-top-section elementor-element elementor-element-a7207ee elementor-hidden-desktop elementor-hidden-tablet elementor-hidden-mobile elementor-section-boxed elementor-section-height-default elementor-section-height-default wpr-particle-no wpr-jarallax-no wpr-parallax-no wpr-sticky-section-no" data-id="a7207ee" data-element_type="section">
+						<div class="elementor-container elementor-column-gap-default">
+					<div class="elementor-column elementor-col-100 elementor-top-column elementor-element elementor-element-e65ba9f" data-id="e65ba9f" data-element_type="column">
+			<div class="elementor-widget-wrap elementor-element-populated">
+						<section class="elementor-section elementor-inner-section elementor-element elementor-element-b2564ed elementor-section-boxed elementor-section-height-default elementor-section-height-default wpr-particle-no wpr-jarallax-no wpr-parallax-no wpr-sticky-section-no" data-id="b2564ed" data-element_type="section">
+						<div class="elementor-container elementor-column-gap-default">
+					<div class="elementor-column elementor-col-100 elementor-inner-column elementor-element elementor-element-7a8c338" data-id="7a8c338" data-element_type="column" data-settings="{&quot;background_background&quot;:&quot;classic&quot;}">
+			<div class="elementor-widget-wrap elementor-element-populated">
+						<section class="elementor-section elementor-inner-section elementor-element elementor-element-29bb2a4 elementor-section-boxed elementor-section-height-default elementor-section-height-default wpr-particle-no wpr-jarallax-no wpr-parallax-no wpr-sticky-section-no" data-id="29bb2a4" data-element_type="section">
+						<div class="elementor-container elementor-column-gap-default">
+					<div class="elementor-column elementor-col-50 elementor-inner-column elementor-element elementor-element-a209dbe" data-id="a209dbe" data-element_type="column">
+			<div class="elementor-widget-wrap elementor-element-populated">
+						<div class="elementor-element elementor-element-21c2455 curious-section elementor-widget elementor-widget-heading" data-id="21c2455" data-element_type="widget" data-widget_type="heading.default">
+				<div class="elementor-widget-container">
+					<h6 class="elementor-heading-title elementor-size-default">Curious?</h6>				</div>
+				</div>
+				<div class="elementor-element elementor-element-466e1b8 curious-section elementor-widget elementor-widget-heading" data-id="466e1b8" data-element_type="widget" data-widget_type="heading.default">
+				<div class="elementor-widget-container">
+					<h6 class="elementor-heading-title elementor-size-default"> Let's talk LINKIO</h6>				</div>
+				</div>
+				<div class="elementor-element elementor-element-7b0be85 curious-section elementor-widget__width-initial elementor-widget elementor-widget-heading" data-id="7b0be85" data-element_type="widget" data-widget_type="heading.default">
+				<div class="elementor-widget-container">
+					<h6 class="elementor-heading-title elementor-size-default">We love talking LINKIO. Let us know about your project and we'll send you a free proposal</h6>				</div>
+				</div>
+					</div>
+		</div>
+				<div class="elementor-column elementor-col-50 elementor-inner-column elementor-element elementor-element-b1545c9" data-id="b1545c9" data-element_type="column">
+			<div class="elementor-widget-wrap elementor-element-populated">
+						<div class="elementor-element elementor-element-da43fba elementor-widget elementor-widget-image" data-id="da43fba" data-element_type="widget" data-widget_type="image.default">
+				<div class="elementor-widget-container">
+															<img loading="lazy" width="153" height="300" src="https://www.linkio.com/wp-content/uploads/2022/07/seo-proposal-right-icon-153x300-1.png" class="attachment-large size-large wp-image-22434" alt="" srcset="https://www.linkio.com/wp-content/uploads/2022/07/seo-proposal-right-icon-153x300-1.png 153w, https://www.linkio.com/wp-content/uploads/2022/07/seo-proposal-right-icon-153x300-1-104x203.png 104w, https://www.linkio.com/wp-content/uploads/2022/07/elementor/thumbs/seo-proposal-right-icon-153x300-1-150x150.png 200w" sizes="(max-width: 153px) 85vw, 153px">															</div>
+				</div>
+					</div>
+		</div>
+					</div>
+		</section>
+					</div>
+		</div>
+					</div>
+		</section>
+					</div>
+		</div>
+					</div>
+		</section>
+				<section class="elementor-section elementor-top-section elementor-element elementor-element-364fec1 footer-lets-sec elementor-section-boxed elementor-section-height-default elementor-section-height-default wpr-particle-no wpr-jarallax-no wpr-parallax-no wpr-sticky-section-no" data-id="364fec1" data-element_type="section">
+						<div class="elementor-container elementor-column-gap-default">
+					<div class="elementor-column elementor-col-66 elementor-top-column elementor-element elementor-element-b20b1ee" data-id="b20b1ee" data-element_type="column" data-settings="{&quot;background_background&quot;:&quot;classic&quot;}">
+			<div class="elementor-widget-wrap elementor-element-populated">
+						<div class="elementor-element elementor-element-43e5188 curious-section elementor-widget elementor-widget-heading" data-id="43e5188" data-element_type="widget" data-widget_type="heading.default">
+				<div class="elementor-widget-container">
+					<h6 class="elementor-heading-title elementor-size-default">Curious?</h6>				</div>
+				</div>
+				<div class="elementor-element elementor-element-d57a557 curious-section elementor-widget elementor-widget-heading" data-id="d57a557" data-element_type="widget" data-widget_type="heading.default">
+				<div class="elementor-widget-container">
+					<h6 class="elementor-heading-title elementor-size-default"> Let's talk LINKIO</h6>				</div>
+				</div>
+				<div class="elementor-element elementor-element-00c453d curious-section elementor-widget__width-initial elementor-widget elementor-widget-heading" data-id="00c453d" data-element_type="widget" data-widget_type="heading.default">
+				<div class="elementor-widget-container">
+					<h6 class="elementor-heading-title elementor-size-default">We love talking LINKIO. Let us know about your project and we'll send you a free proposal</h6>				</div>
+				</div>
+				<section class="elementor-section elementor-inner-section elementor-element elementor-element-ecf8170 elementor-reverse-mobile elementor-section-boxed elementor-section-height-default elementor-section-height-default wpr-particle-no wpr-jarallax-no wpr-parallax-no wpr-sticky-section-no" data-id="ecf8170" data-element_type="section">
+						<div class="elementor-container elementor-column-gap-default">
+					<div class="elementor-column elementor-col-50 elementor-inner-column elementor-element elementor-element-82ba7d6" data-id="82ba7d6" data-element_type="column">
+			<div class="elementor-widget-wrap elementor-element-populated">
+						<div class="elementor-element elementor-element-50d5047 blo-getin-touch elementor-widget elementor-widget-button" data-id="50d5047" data-element_type="widget" data-widget_type="button.default">
+				<div class="elementor-widget-container">
+									<div class="elementor-button-wrapper">
+					<a class="elementor-button elementor-button-link elementor-size-sm" href="mailto:info@www.linkio.com">
+						<span class="elementor-button-content-wrapper">
+						<span class="elementor-button-icon">
+				<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 29 29" width="29" height="29"><title>image-2</title><defs><image width="29" height="22" id="img1"></image></defs><use id="Background" href="#img1" x="0" y="4"></use></svg>			</span>
+									<span class="elementor-button-text">Get in touch</span>
+					</span>
+					</a>
+				</div>
+								</div>
+				</div>
+					</div>
+		</div>
+				<div class="elementor-column elementor-col-50 elementor-inner-column elementor-element elementor-element-8482aea" data-id="8482aea" data-element_type="column">
+			<div class="elementor-widget-wrap elementor-element-populated">
+						<div class="elementor-element elementor-element-d52d440 author2-name-sec elementor-widget elementor-widget-text-editor" data-id="d52d440" data-element_type="widget" data-widget_type="text-editor.default">
+				<div class="elementor-widget-container">
+									Ajay Paghdal								</div>
+				</div>
+				<div class="elementor-element elementor-element-a60703e elementor-widget elementor-widget-text-editor" data-id="a60703e" data-element_type="widget" data-widget_type="text-editor.default">
+				<div class="elementor-widget-container">
+									Founder and Marketer for Linkio.								</div>
+				</div>
+					</div>
+		</div>
+					</div>
+		</section>
+					</div>
+		</div>
+				<div class="elementor-column elementor-col-33 elementor-top-column elementor-element elementor-element-0365ff0 elementor-hidden-mobile" data-id="0365ff0" data-element_type="column" data-settings="{&quot;background_background&quot;:&quot;classic&quot;}">
+			<div class="elementor-widget-wrap elementor-element-populated">
+						<div class="elementor-element elementor-element-7e02fef elementor-hidden-mobile elementor-widget elementor-widget-image" data-id="7e02fef" data-element_type="widget" data-widget_type="image.default">
+				<div class="elementor-widget-container">
+															<img src="https://www.linkio.com/wp-content/uploads/elementor/thumbs/seo-proposal-right-icon-153x300-1-psj1do2k2bchd312ryr0wp8ahizt0ugnss6ykhouhc.png" title="seo-proposal-right-icon-153×300" alt="seo-proposal-right-icon-153x300" loading="lazy">															</div>
+				</div>
+					</div>
+		</div>
+					</div>
+		</section>
+				</div>
+		

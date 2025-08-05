@@ -1,0 +1,457 @@
+# How to Sort and Filter Link Prospects
+
+
+		<div data-elementor-type="single-post" data-elementor-id="22301" class="elementor elementor-22301 post-25634 post type-post status-publish format-standard has-post-thumbnail hentry category-guides" data-elementor-post-type="elementor_library">
+					<section class="elementor-section elementor-top-section elementor-element elementor-element-0a5a477 blog-top-sec elementor-reverse-tablet elementor-hidden-mobile elementor-section-boxed elementor-section-height-default elementor-section-height-default wpr-particle-no wpr-jarallax-no wpr-parallax-no wpr-sticky-section-no" data-id="0a5a477" data-element_type="section" data-settings="{&quot;background_background&quot;:&quot;classic&quot;}">
+						<div class="elementor-container elementor-column-gap-default">
+					<div class="elementor-column elementor-col-50 elementor-top-column elementor-element elementor-element-dc44219" data-id="dc44219" data-element_type="column">
+			<div class="elementor-widget-wrap elementor-element-populated">
+						<div class="elementor-element elementor-element-f9dfb75 blog-text-p elementor-widget elementor-widget-heading" data-id="f9dfb75" data-element_type="widget" data-widget_type="heading.default">
+				<div class="elementor-widget-container">
+					<h1 class="elementor-heading-title elementor-size-default">How to Sort and Filter Link Prospects</h1>				</div>
+				</div>
+				<div class="elementor-element elementor-element-ae6ac55 author-name-sec elementor-widget elementor-widget-text-editor" data-id="ae6ac55" data-element_type="widget" data-widget_type="text-editor.default">
+				<div class="elementor-widget-container">
+									Ajay Paghdal								</div>
+				</div>
+				<div class="elementor-element elementor-element-96e642d elementor-widget elementor-widget-text-editor" data-id="96e642d" data-element_type="widget" data-widget_type="text-editor.default">
+				<div class="elementor-widget-container">
+									Founder and Marketer for Linkio.								</div>
+				</div>
+					</div>
+		</div>
+				<div class="elementor-column elementor-col-50 elementor-top-column elementor-element elementor-element-1310d58" data-id="1310d58" data-element_type="column">
+			<div class="elementor-widget-wrap elementor-element-populated">
+						<div class="elementor-element elementor-element-71d60e8 elementor-widget elementor-widget-image" data-id="71d60e8" data-element_type="widget" data-widget_type="image.default">
+				<div class="elementor-widget-container">
+															<img fetchpriority="high" width="840" height="440" src="https://www.linkio.com/wp-content/uploads/2020/11/sorting-link-prospects-fi-1024x536.png" class="attachment-large size-large wp-image-12773" alt="" srcset="https://www.linkio.com/wp-content/uploads/2020/11/sorting-link-prospects-fi-1024x536.png 1024w, https://www.linkio.com/wp-content/uploads/2020/11/sorting-link-prospects-fi-300x157.png 300w, https://www.linkio.com/wp-content/uploads/2020/11/sorting-link-prospects-fi-768x402.png 768w, https://www.linkio.com/wp-content/uploads/2020/11/sorting-link-prospects-fi-304x159.png 304w, https://www.linkio.com/wp-content/uploads/2020/11/sorting-link-prospects-fi.png 1200w" sizes="(max-width: 709px) 85vw, (max-width: 909px) 67vw, (max-width: 1362px) 62vw, 840px">															</div>
+				</div>
+					</div>
+		</div>
+					</div>
+		</section>
+				<section class="elementor-section elementor-top-section elementor-element elementor-element-88bd7c3 blog-top-sec elementor-hidden-desktop elementor-hidden-tablet elementor-section-boxed elementor-section-height-default elementor-section-height-default wpr-particle-no wpr-jarallax-no wpr-parallax-no wpr-sticky-section-no" data-id="88bd7c3" data-element_type="section" data-settings="{&quot;background_background&quot;:&quot;classic&quot;}">
+						<div class="elementor-container elementor-column-gap-default">
+					<div class="elementor-column elementor-col-50 elementor-top-column elementor-element elementor-element-e587baa" data-id="e587baa" data-element_type="column">
+			<div class="elementor-widget-wrap elementor-element-populated">
+						<div class="elementor-element elementor-element-993e39e blog-text-p elementor-widget elementor-widget-heading" data-id="993e39e" data-element_type="widget" data-widget_type="heading.default">
+				<div class="elementor-widget-container">
+					<h1 class="elementor-heading-title elementor-size-default">How to Sort and Filter Link Prospects</h1>				</div>
+				</div>
+					</div>
+		</div>
+				<div class="elementor-column elementor-col-50 elementor-top-column elementor-element elementor-element-82ca0ea" data-id="82ca0ea" data-element_type="column">
+			<div class="elementor-widget-wrap elementor-element-populated">
+						<div class="elementor-element elementor-element-785a015 elementor-widget elementor-widget-image" data-id="785a015" data-element_type="widget" data-widget_type="image.default">
+				<div class="elementor-widget-container">
+															<img fetchpriority="high" width="840" height="440" src="https://www.linkio.com/wp-content/uploads/2020/11/sorting-link-prospects-fi-1024x536.png" class="attachment-large size-large wp-image-12773" alt="" srcset="https://www.linkio.com/wp-content/uploads/2020/11/sorting-link-prospects-fi-1024x536.png 1024w, https://www.linkio.com/wp-content/uploads/2020/11/sorting-link-prospects-fi-300x157.png 300w, https://www.linkio.com/wp-content/uploads/2020/11/sorting-link-prospects-fi-768x402.png 768w, https://www.linkio.com/wp-content/uploads/2020/11/sorting-link-prospects-fi-304x159.png 304w, https://www.linkio.com/wp-content/uploads/2020/11/sorting-link-prospects-fi.png 1200w" sizes="(max-width: 709px) 85vw, (max-width: 909px) 67vw, (max-width: 1362px) 62vw, 840px">															</div>
+				</div>
+				<div class="elementor-element elementor-element-8651d27 author-name-sec elementor-widget elementor-widget-text-editor" data-id="8651d27" data-element_type="widget" data-widget_type="text-editor.default">
+				<div class="elementor-widget-container">
+									Ajay Paghdal								</div>
+				</div>
+				<div class="elementor-element elementor-element-525505e elementor-widget elementor-widget-text-editor" data-id="525505e" data-element_type="widget" data-widget_type="text-editor.default">
+				<div class="elementor-widget-container">
+									Founder and Marketer for Linkio.								</div>
+				</div>
+					</div>
+		</div>
+					</div>
+		</section>
+				<section class="elementor-section elementor-top-section elementor-element elementor-element-898afd2 elementor-section-boxed elementor-section-height-default elementor-section-height-default wpr-particle-no wpr-jarallax-no wpr-parallax-no wpr-sticky-section-no" data-id="898afd2" data-element_type="section">
+						<div class="elementor-container elementor-column-gap-default">
+					<div class="elementor-column elementor-col-50 elementor-top-column elementor-element elementor-element-1a2d18d table-content-sec" data-id="1a2d18d" data-element_type="column">
+			<div class="elementor-widget-wrap elementor-element-populated">
+						<div class="elementor-element elementor-element-ed7d018 contents-sidebar elementor-widget elementor-widget-shortcode" data-id="ed7d018" data-element_type="widget" data-widget_type="shortcode.default">
+				<div class="elementor-widget-container">
+							<div class="elementor-shortcode"><div class="lwptoc table-of-contents lwptoc-right lwptoc-inherit" data-smooth-scroll="1" data-smooth-scroll-offset="20" style="width:100%"><div class="lwptoc_i">    <div class="lwptoc_header">
+        <b class="lwptoc_title" style="font-weight:600;">Table of Contents</b>            </div>
+<div class="lwptoc_items lwptoc_items-visible">
+    <ul class="lwptoc_itemWrap"><li class="lwptoc_item">    <a href="#pre-stage-of-getting-your-spreadsheet-with-link-prospects-ready">
+                <span class="lwptoc_item_label">Pre-stage of getting your spreadsheet with link prospects ready</span>
+    </a>
+    </li><li class="lwptoc_item">    <a href="#what-kind-of-referring-pages-should-you-get-rid-of">
+                <span class="lwptoc_item_label">What kind of referring pages should you get rid of?</span>
+    </a>
+    </li><li class="lwptoc_item">    <a href="#which-good-looking-urls-are-pseudo-link-prospects">
+                <span class="lwptoc_item_label">Which good-looking URLs are pseudo link prospects?</span>
+    </a>
+    </li><li class="lwptoc_item">    <a href="#should-you-gain-backlinks-from-domains-with-low-authority">
+                <span class="lwptoc_item_label">Should you gain backlinks from domains with low authority?</span>
+    </a>
+    </li><li class="lwptoc_item">    <a href="#can-link-prospects-providing-nofollow-backlinks-be-of-any-value">
+                <span class="lwptoc_item_label">Can link prospects providing nofollow backlinks be of any value?</span>
+    </a>
+    </li><li class="lwptoc_item">    <a href="#should-you-deal-with-blogs-that-havent-been-updated-since-last-year-or-earlier">
+                <span class="lwptoc_item_label">Should you deal with blogs that haven’t been updated since last year or earlier?</span>
+    </a>
+    </li><li class="lwptoc_item">    <a href="#what-should-you-do-if-your-target-referring-page-is-a-guest-post">
+                <span class="lwptoc_item_label">What should you do if your target referring page is a guest post?</span>
+    </a>
+    </li><li class="lwptoc_item">    <a href="#final-word">
+                <span class="lwptoc_item_label">Final Word</span>
+    </a>
+    </li></ul></div>
+</div></div></div>
+						</div>
+				</div>
+					</div>
+		</div>
+				<div class="elementor-column elementor-col-50 elementor-top-column elementor-element elementor-element-94866f7 body-blog-section" data-id="94866f7" data-element_type="column">
+			<div class="elementor-widget-wrap elementor-element-populated">
+						<div class="elementor-element elementor-element-f65f34d elementor-widget elementor-widget-shortcode" data-id="f65f34d" data-element_type="widget" data-widget_type="shortcode.default">
+				<div class="elementor-widget-container">
+							<div data-elementor-type="wp-post" data-elementor-id="25634" class="elementor elementor-25634" data-elementor-post-type="post">
+						<section class="elementor-section elementor-top-section elementor-element elementor-element-cffae4c elementor-section-boxed elementor-section-height-default elementor-section-height-default wpr-particle-no wpr-jarallax-no wpr-parallax-no wpr-sticky-section-no" data-id="cffae4c" data-element_type="section">
+						<div class="elementor-container elementor-column-gap-default">
+					<div class="elementor-column elementor-col-100 elementor-top-column elementor-element elementor-element-ae40c66" data-id="ae40c66" data-element_type="column">
+			<div class="elementor-widget-wrap elementor-element-populated">
+						<div class="elementor-element elementor-element-12507fd elementor-widget elementor-widget-text-editor" data-id="12507fd" data-element_type="widget" data-widget_type="text-editor.default">
+				<div class="elementor-widget-container">
+									<p>Got stuck sorting out your link prospects?</p><p>Every other guide out there suggests that you should rely on the domain authority, relevance, traffic, and social signals. The higher, the better.</p><p>While there’s absolutely nothing wrong with such advice, it’s the tip of the iceberg.</p><p>Once you dig deeper into your spreadsheet with link prospects, you’ll run into a bunch of controversies that no one explains how to deal with.</p><p>Should you cross ALL the low-authority domains off your list? What if you’re just starting out, and influencers ignore your outreach emails?</p><p>Are nofollow links ALWAYS no-go options? How about the fact that a backlink profile looks natural to Google only when it contains both dofollow and nofollow links?</p><p>Is there a way to distinguish bloggers with a genuine interest in content from time-wasters?</p><p>I could go on with arguable points like these… But let me shed some light on them instead.</p><p>This chapter talks about how to sort out link prospects in your sheet and beyond it.</p><p>No superficial info – I’ll guide you through the process from the inside, where confusion arises all the time.</p><p>We also have a free backlink filtering tool that will save you hours on sorting through your list of prospects. You can test drive it here or use the dedicated page for a more clutter-free workspace.</p><h2><span id="pre-stage-of-getting-your-spreadsheet-with-link-prospects-ready">Pre-stage of getting your spreadsheet with link prospects ready</span></h2><p>But first things first. If you haven’t prepared a spreadsheet with your link prospects yet, follow these three easy steps.</p><p>0.1. Go to your&nbsp;<a href="https://ahrefs.com/backlink-checker" target="_blank" rel="noopener" data-cke-saved-href="https://ahrefs.com/backlink-checker">backlink checker</a>&nbsp;and export backlinks to your competing pages.</p><p>Just like in the previous chapter, I’ll stick with the example of needing link prospects for my compilation of keyword tools.</p><p>For my research, I exported backlinks to 33 similar compilations, which totals 3383 URLs.</p><p>0.2. Combine many spreadsheets into one following this easy,&nbsp;<a href="https://www.youtube.com/watch?v=F8U7Mq5skoE" target="_blank" rel="noopener" data-cke-saved-href="https://www.youtube.com/watch?v=F8U7Mq5skoE">two-minute guide</a>.</p><p>0.3. Depending on your backlink checker (I use Ahrefs, as it’s probably the <a href="https://betterzila.com/best-rated-seo-platform-for-saas/" target="_blank" rel="noopener">best platform for SEO for SaaS</a> at the moment, especially when it comes to link building), your sheet will contain a lot of columns to make you dizzy.</p><p>I suggest that you keep columns with the following metrics (or their analogs if you use a different tool):</p><ul><li><strong>DR</strong>&nbsp;(how strong a backlink profile of <a href="https://www.weoutreach.com/referring-domains/">an entire referring domain is</a>);</li><li><strong>UR</strong>&nbsp;(how strong a backlink profile of a single referring page is);</li><li><strong>Referring Page URL;</strong></li><li><strong>Referring Page Title;</strong></li><li><strong>Link URL</strong>&nbsp;(the URL of your competing page);</li><li><strong>TextPre</strong>&nbsp;(a snippet of text that precedes a backlink anchor);</li><li><strong>Link Anchor</strong>&nbsp;(a clickable snippet of text in a hyperlink);</li><li><strong>TextPost</strong>&nbsp;(a snippet of text that follows a backlink anchor);</li><li><strong>Type</strong>&nbsp;(dofollow or nofollow);</li><li><strong>Language;</strong></li><li><strong>Traffic</strong>&nbsp;(how much traffic a referring page receives from Google’s organic search monthly);</li><li><strong>Linked Domains</strong>&nbsp;(how many domains your target links out to via dofollow backlinks).</li></ul><p><img decoding="async" src="https://www.linkio.com/wp-content/uploads/2020/05/linked-domains.png" alt="" data-cke-saved-src="https://www.linkio.com/wp-content/uploads/2020/05/linked-domains.png"></p><p>As for the rest, feel free to remove them. With too many columns in your sheet, you won’t know where to look first. It’s distracting.</p><p>Now that you have all the necessary data in one place, let’s start.</p><h2><span id="what-kind-of-referring-pages-should-you-get-rid-of">What kind of referring pages should you get rid of?</span></h2><p>Dealing with your actual link prospects isn’t the first step, as you might have expected.</p><p>You’ll be surprised to see how much trash your spreadsheet contains.</p><p>The crawler of your backlink checker can go into the deepest corners of the web and find links where you’d never imagine.</p><p>My point is not all the URLs you see in your sheet are actual link prospects. Let’s put on gloves and clean it up.</p><p>Check out what kind of referring pages you should get rid of at this stage.</p><p><strong>Spoiler.</strong>&nbsp;Having filtered out referring pages in my sheet, I kept only almost 31% of them.</p><p><img decoding="async" src="https://www.linkio.com/wp-content/uploads/2020/05/spoiler.png" alt="" data-cke-saved-src="https://www.linkio.com/wp-content/uploads/2020/05/spoiler.png"></p><h3>1.1. URLs of referring pages in foreign languages</h3><p>A German-speaking writer shouldn’t suggest to the German-speaking audience that they check a post in Italian. Logically, most of them won’t understand the copy.</p><p>That’s why you don’t need to contact authors of foreign-language posts with a link request. To find and remove them, sort your spreadsheet by language in a corresponding column.</p><p><img decoding="async" src="https://www.linkio.com/wp-content/uploads/2020/05/foreign-language.png" alt="" data-cke-saved-src="https://www.linkio.com/wp-content/uploads/2020/05/foreign-language.png"></p><p>At times, that column can be empty or even contain your target language code (<em>en</em>&nbsp;– English in my case), but pages are still foreign.</p><p>To detect such cases, scroll through the sheet and double-check the titles of your referring pages.</p><p><img decoding="async" src="https://www.linkio.com/wp-content/uploads/2020/05/double-check.png" alt="" data-cke-saved-src="https://www.linkio.com/wp-content/uploads/2020/05/double-check.png"></p><p><strong>Note.</strong>&nbsp;If you promote a product rather than content, you can gain backlinks from foreign-language pages. But make sure you have a localized version of your product page.</p><h3>1.2. URLs of duplicate referring pages</h3><p>This is the biggest category of unwanted URLs you’ll have in your spreadsheet – 40% in my case.</p><p>The web is full of duplicate pages, which end up in backlink databases eventually.</p><p>The reasons for such a web pollution phenomenon vary.</p><p>Some writers repost their content on platforms like&nbsp;<em>growthhackers.com and medium.com.</em>&nbsp;It’s called content syndication in marketing and is a good strategy indeed.</p><p>Others repost someone else’s content because they don’t have time, resources, or skills (excuses vary individually:) to produce their own.</p><p>Some bloggers don’t even repost the entire copy. They just publish the first few paragraphs of the original or write a short overview of it. You can treat such cases as duplicates too.</p><p><img decoding="async" src="https://www.linkio.com/wp-content/uploads/2020/05/paragraphs.png" alt="" data-cke-saved-src="https://www.linkio.com/wp-content/uploads/2020/05/paragraphs.png"></p><p>While sorting out your sheet, you can come across reposts of</p><ul><li>referring pages;</li><li>competing pages;</li><li>other pages on competitors’ blogs.</li></ul><p>Since people who do reposts aren’t actual authors, there’s no need to reach out to them. They won’t edit the original.</p><p>It’s like changing interviewee’s quotes in journalism – unethical and can have consequences if the word gets out.</p><p>All you can do here is identify duplicates and remove them asap. Here are three quick ways to do it right in your sheet. No need to click through each URL.</p><p><strong>Note.</strong>&nbsp;When removing duplicates, make sure you keep the original. As a rule, it will have a higher DR than reposts.</p><h3>1.2.1. Sort the data by title (Referring Page Title column).</h3><p><img decoding="async" src="https://www.linkio.com/wp-content/uploads/2020/05/reffering-page.png" alt="" data-cke-saved-src="https://www.linkio.com/wp-content/uploads/2020/05/reffering-page.png"></p><p>You may notice minor variations in titles of the same reposted page. It happens because some authors update their articles over time.</p><p>As shown below, there were 8 tools on the list at first. Later, the author added a few more and rephrased the title a bit.</p><p><img decoding="async" src="https://www.linkio.com/wp-content/uploads/2020/05/rephrased.png" alt="" data-cke-saved-src="https://www.linkio.com/wp-content/uploads/2020/05/rephrased.png"></p><p><strong>&nbsp;</strong><strong>Tip.</strong>&nbsp;When you update your content, add minor changes to the title. Leave the main keyword as is, but rephrase the surrounding text. It will help you diversify your backlink anchors in the long run.</p><p>In the previous step, you should have removed domains with the same name yet different TLDs for foreign languages.</p><p>I’m referring to cases like hostinger.pt for Portuguese, hostinger.ru for Russian, hostinger.co.id for Indonesian, etc.</p><p>At this stage, you may still find domains with the same name and language yet different TLDs. Keep the URL with higher DR &amp; UR metrics and delete the rest.</p><p><img decoding="async" src="https://www.linkio.com/wp-content/uploads/2020/05/page-url.png" alt="" data-cke-saved-src="https://www.linkio.com/wp-content/uploads/2020/05/page-url.png"></p><h3>1.2.2. Sort the data by surrounding text (TextPre and TextPost columns).</h3><p>Many people who do reposts have a nasty habit of editing original titles. The most common scenario is adding blog names to the beginning of page titles.</p><p><img decoding="async" src="https://www.linkio.com/wp-content/uploads/2020/05/reffering-page-title.png" alt="" data-cke-saved-src="https://www.linkio.com/wp-content/uploads/2020/05/reffering-page-title.png"></p><p>Due to such edits, you won’t be able to identify duplicates if you sort URLs by title.</p><p>The good thing is there’s another way out.</p><p>While page titles differ, backlink anchors and surrounding text remain the same, just like the rest of the content.</p><p>So, you need to sort your sheet by the text preceding the anchor (TextPre) to see more identicals.</p><p><img decoding="async" src="https://www.linkio.com/wp-content/uploads/2020/05/TextPre.png" alt="" data-cke-saved-src="https://www.linkio.com/wp-content/uploads/2020/05/TextPre.png"></p><p><strong>Note.</strong>&nbsp;Wonder why you should sort by the preceding text rather than anchors?</p><p>The thing is identical anchors don’t always signify duplicate content.</p><p>Anchors can match when authors refer to brand names, entire post titles, or use natural language like “<em>click here</em>” or even keywords.</p><p>But if the surrounding text differs, these are different articles.</p><p><img decoding="async" src="https://www.linkio.com/wp-content/uploads/2020/05/link-anchor.png" alt="" data-cke-saved-src="https://www.linkio.com/wp-content/uploads/2020/05/link-anchor.png"></p><p>When a link stands at the beginning of a new paragraph, there’ll be no preceding text. In such cases, sort the data by the text following the anchor. (TextPost).</p><p><img decoding="async" src="https://www.linkio.com/wp-content/uploads/2020/05/TextPost.png" alt="" data-cke-saved-src="https://www.linkio.com/wp-content/uploads/2020/05/TextPost.png"></p><p>To find more duplicates, check if anchors and surrounding text contain any of the following phrases:</p><ul><li>source;</li><li>original;</li><li>appeared first, etc.</li></ul><p><img decoding="async" src="https://www.linkio.com/wp-content/uploads/2020/05/appered-source.png" alt="" data-cke-saved-src="https://www.linkio.com/wp-content/uploads/2020/05/appered-source.png"></p><p><strong>Note.</strong>&nbsp;Phrases like “Source” don’t necessarily indicate duplicates.</p><p>Writers can use them to attribute to resources whose stats or quotes they borrowed for their articles.</p><p>Better double-check such cases by clicking through referring pages.</p><h3>1.2.3. Check your spreadsheet for the names of popular blogging platforms.</h3><p>Have you noticed that tons of duplicate URLs are hosted on BlogSpot? I bet you have.</p><p>This is a popular&nbsp;<a href="https://www.founderjar.com/best-blogging-platforms/" target="_blank" rel="noopener" data-cke-saved-href="https://www.founderjar.com/best-blogging-platforms/">blogging platform</a>&nbsp;where writers repost articles originally published on their blogs.</p><p>If you still have any URLs hosted there, feel free to remove them.</p><p>Even if they’re not duplicates, their metrics are still too miserable to get any value from. Check out URLs with a zero or near-zero DR below.</p><p><img decoding="async" src="https://www.linkio.com/wp-content/uploads/2020/05/dr-reffreing-page-url.png" alt="" data-cke-saved-src="https://www.linkio.com/wp-content/uploads/2020/05/dr-reffreing-page-url.png"></p><p>In fact, there’s no need to reach out to owners of such BlogSpot pages. You can easily register there yourself and publish as many posts as you like.</p><p>BlogSpot isn’t the only platform of this kind.</p><p>In the example below, you can see that Startup Institute reposts content on Squarespace. So do Magnetika and others.</p><p><img decoding="async" src="https://www.linkio.com/wp-content/uploads/2020/05/dr-reffreing-page-url-2.png" alt="" data-cke-saved-src="https://www.linkio.com/wp-content/uploads/2020/05/dr-reffreing-page-url-2.png"></p><p>Here are more examples of such blogging platforms. Their names are mostly “blog” derivatives (<em>bluxe<strong>blog</strong></em>,&nbsp;<em>t<strong>blog</strong>z</em>,&nbsp;<em><strong>blog</strong>olize</em>), which will help you identify them at a glance.</p><p><img decoding="async" src="https://www.linkio.com/wp-content/uploads/2020/05/dr-reffreing-page-url-3.png" alt="" data-cke-saved-src="https://www.linkio.com/wp-content/uploads/2020/05/dr-reffreing-page-url-3.png"></p><p><strong>Note.</strong>&nbsp;As you can see, many results have a high DR unlike pages hosted on BlogSpot and Squarespace.</p><p>Don’t let it mislead you. The reason for such an overrated DR is the imperfection of the tool I use, not the high quality of those pages.</p><p>Ahrefs treats each subdomain on BlogSpot and Squarespace as a standalone domain, which makes sense.</p><p>But they don’t seem to keep track of all the blogging platforms out there, so they can’t estimate DR correctly in such cases.</p><p>No matter what the tool you use says, these are all low-quality pages you need to delete.</p><h3>1.3. URLs of referring pages that look like trash</h3><p>Once you get done with all kinds of duplicates, you’ll notice more trash in your spreadsheet.</p><p>The rule of thumb is to delete everything that doesn’t look like a normal URL of a content page.</p><h3>1.3.1. Remove URL shorteners.</h3><p><img decoding="async" src="https://www.linkio.com/wp-content/uploads/2020/05/shorteners.png" alt="" data-cke-saved-src="https://www.linkio.com/wp-content/uploads/2020/05/shorteners.png"></p><h3>1.3.2. Remove URLs with an IP instead of a domain name</h3><p>If you sort your sheet by the name of the referring page URL, such results will be at the top.</p><p><img decoding="async" src="https://www.linkio.com/wp-content/uploads/2020/05/domain-name.png" alt="" data-cke-saved-src="https://www.linkio.com/wp-content/uploads/2020/05/domain-name.png"></p><h3>1.3.3. Remove URLs of feeds, social networks, and content curation platforms.</h3><p>Such URLs typically include “<em>feed</em>,” “<em>rss</em>,” “<em>@</em>”, or user names.</p><p><img decoding="async" src="https://www.linkio.com/wp-content/uploads/2020/05/curation-platforms.png" alt="" data-cke-saved-src="https://www.linkio.com/wp-content/uploads/2020/05/curation-platforms.png"></p><h3>1.3.4. Remove URLs that look like abracadabra.</h3><p><img decoding="async" src="https://www.linkio.com/wp-content/uploads/2020/05/abracadabra.png" alt="" data-cke-saved-src="https://www.linkio.com/wp-content/uploads/2020/05/abracadabra.png"></p><h3>1.3.5. Remove URLs that are not meaningful content pages</h3><p>For easier identification, check your sheet for /<em>site</em>/, /<em>search</em>/, /<em>find</em>/, /<em>comment</em>/, /<em>tag</em>/,&nbsp;<em>sign-up</em>,&nbsp;<em>login</em>&nbsp;and the like.</p><p>Some referring pages can also have “domain.com” at the end of their URLs, as shown at the bottom of this screenshot.</p><p><img decoding="async" src="https://www.linkio.com/wp-content/uploads/2020/05/meaningful.png" alt="" data-cke-saved-src="https://www.linkio.com/wp-content/uploads/2020/05/meaningful.png"></p><p><strong>Note.</strong>&nbsp;In rare cases, sites use /<em>tag</em>/ in the URL structure of blog posts. Don’t remove them from your list of link prospects.</p><p><img decoding="async" src="https://www.linkio.com/wp-content/uploads/2020/05/tag.png" alt="" data-cke-saved-src="https://www.linkio.com/wp-content/uploads/2020/05/tag.png"></p><p>Pages related to coupons and promo codes are also subject to removal. Check URLs for anything like “<em>coupon</em>,” “<em>promo</em>,” “<em>deal</em>,” “<em>discount</em>,” “<em>voucher</em>,” etc.</p><p><img decoding="async" src="https://www.linkio.com/wp-content/uploads/2020/05/coupon.png" alt="" data-cke-saved-src="https://www.linkio.com/wp-content/uploads/2020/05/coupon.png"></p><p>These are common examples of link trash for the SEO industry. You may find some other schemes, depending on your niche.</p><h3>1.4. URLs of referring pages from forums and communities.</h3><p>To make it clear, I don’t mind building links on forums, communities, and Q&amp;A sites.</p><p>But since there’s no need to contact anyone with a link request, you should remove such URLs from your outreach list.</p><p>They generally contain “<em>forum</em>,” “<em>thread</em>,” “<em>community</em>,” “<em>discussion</em>,” etc.</p><p><img decoding="async" src="https://www.linkio.com/wp-content/uploads/2020/05/forum.png" alt="" data-cke-saved-src="https://www.linkio.com/wp-content/uploads/2020/05/forum.png"></p><h3>1.5. URLs of any pages but blog posts</h3><p>These are homepages, about pages, portfolios, product pages, etc.</p><p>To identify such URLs, check your sheet for /<em>about</em>/, /<em>portfolio</em>/, /<em>product</em>/, /<em>service</em>/, or simply by eye in the case of homepages.</p><p><img decoding="async" src="https://www.linkio.com/wp-content/uploads/2020/05/any-pages.png" alt="" data-cke-saved-src="https://www.linkio.com/wp-content/uploads/2020/05/any-pages.png"></p><p>People prefer linking to their partners and customer testimonials from homepages.</p><p>I hate to be the one who brings you bad news. But if you’re not a well-known figure in your niche, your testimonials aren’t in demand, sorry.</p><p><img decoding="async" src="https://www.linkio.com/wp-content/uploads/2020/05/testimonials.png" alt="" data-cke-saved-src="https://www.linkio.com/wp-content/uploads/2020/05/testimonials.png"></p><h3>1.6. URLs of podcasts, webinars, and interviews</h3><p>This type of content is somewhat time-sensitive, at least from a link prospecting angle.</p><p>If someone recommended your competitor’s article in an interview a while ago, you can’t go back in time and change it.</p><p>What’s done is done.</p><p>No one is going to edit an audio or video file, which makes it pointless to edit its transcript.</p><p>You can identify such pages by “<em>episode</em>,” “<em>podcast</em>,” “<em>webinar</em>,” “<em>interview</em>,” or interviewee’s name in URLs.</p><p><img decoding="async" src="https://www.linkio.com/wp-content/uploads/2020/05/episode.png" alt="" data-cke-saved-src="https://www.linkio.com/wp-content/uploads/2020/05/episode.png"></p><p><strong>Note.</strong>&nbsp;You can reach out to interviewees and show your content. If they still talk about your topic, they may give you a mention in their future interviews.</p><p>Or you can contact podcasters and arrange to participate in one of their upcoming episodes.</p><p>But you won’t be able to gain a backlink from past podcasts you have in the sheet.</p><h2><span id="which-good-looking-urls-are-pseudo-link-prospects">Which good-looking URLs are pseudo link prospects?</span></h2><p>Got done with duplicates and other meaningless pages?</p><p>Take a one-minute break and welcome a new portion of trash masked behind good-looking URLs.</p><p>This time, the analysis of link prospects will go beyond your spreadsheet. You’ll need to click through URLs and practice analytical thinking.</p><p>Here’s what kind of referring pages will drop out at this stage.</p><h3>2.1. Non-openers</h3><p>Check out the URLs below. In terms of structure and wording, they look pretty normal, don’t they?</p><p><img decoding="async" src="https://www.linkio.com/wp-content/uploads/2020/05/Non-openers.png" alt="" data-cke-saved-src="https://www.linkio.com/wp-content/uploads/2020/05/Non-openers.png"></p><p>But good looks can be deceiving, especially in link prospecting. None of those URLs open for one reason or another:</p><ul><li>the server is down (error 521);</li><li>the page could not be found (error 404);</li><li>the IP address could not be found;</li><li>the domain name has expired;</li><li>the website took too long to respond;</li><li>the website couldn’t provide a secure connection.</li></ul><p>Curious about how those pages got to your spreadsheet if they don’t open?</p><p>Here’s how it works.</p><p>The bot of your tool re-crawls URLs once in a while to check if links are still there. Since its database contains millions of URLs, it can’t re-crawl every URL every day.</p><p>Due to such a delay, the bot can’t learn about such issues immediately, so non-openers remain in the database for a while.</p><p><strong>Note.</strong>&nbsp;Some issues can be temporary. Double-check later if any of those pages got back to normal.</p><h3>2.2. URLs of referring pages with third-rate content</h3><p>Let me clarify the idea of&nbsp;<a href="https://www.linkio.com/blogger-outreach/" data-cke-saved-href="https://www.linkio.com/blogger-outreach/">blogger outreach</a>&nbsp;to loot competitors’ backlinks.</p><p>When you want someone to replace a backlink to your competitor’s article with a link to yours, that person should deeply care about the content.</p><p>Content enthusiasts usually publish long-form guides, unique life hacks, studies based on their personal experience, etc.</p><p>Are bloggers who post a few paragraphs of basic info content enthusiasts? I doubt it. At least, not to the extent of wishing to replace a current backlink with a better one.</p><p><img decoding="async" src="https://www.linkio.com/wp-content/uploads/2020/05/niche.png" alt="" data-cke-saved-src="https://www.linkio.com/wp-content/uploads/2020/05/niche.png"></p><p>Nine times out of ten, a site that publishes short articles is nothing but a&nbsp;<a href="https://en.wikipedia.org/wiki/Content_farm" target="_blank" rel="noopener" data-cke-saved-href="https://en.wikipedia.org/wiki/Content_farm">content farm</a>.</p><p>Such companies hire a lot of low-paid writers who produce loads of third-rate content.</p><p>Since there’s an SEO rule to link out to a few websites from each post, those writers pick the first page they find in Google. Whatever.</p><p>They don’t respond to link requests or charge fees when they do.</p><p>Content farms usually don’t reveal their writers’ identities and publish articles under an unidentified admin in the bio section.</p><p><img decoding="async" src="https://www.linkio.com/wp-content/uploads/2020/05/admin-bio.png" alt="" data-cke-saved-src="https://www.linkio.com/wp-content/uploads/2020/05/admin-bio.png"></p><p><strong>Note.</strong>&nbsp;Don’t make decisions based on the word count only.</p><p>Some writers are skilled enough to fit their original ideas into a short piece of text.</p><p>Skim through the text to figure out if the info is basic indeed and can be found in every other post in Google.</p><h3>2.3. URLs of referring pages with rewrites</h3><p>Analyzing link prospects, you’ll notice that some articles sound familiar to you. The so-called feeling of deja vu.</p><p>Such pages are close to duplicates, but they aren’t. I wish they were… That way, you’d be able to identify them as quickly as you did earlier, by sorting your sheet by the text surrounding anchors.</p><p>What can disclose rewritten content is a double bio on the page.</p><p><img decoding="async" src="https://www.linkio.com/wp-content/uploads/2020/05/double-bio.png" alt="" data-cke-saved-src="https://www.linkio.com/wp-content/uploads/2020/05/double-bio.png"></p><p>Or you can spot the same table of contents in different articles.</p><p><img decoding="async" src="https://www.linkio.com/wp-content/uploads/2020/05/same-table-of-contents.png" alt="" data-cke-saved-src="https://www.linkio.com/wp-content/uploads/2020/05/same-table-of-contents.png"></p><p>Check out the example below. It’s not even a good-quality rewrite.</p><p>They just used a tool that automatically replaces words from the original with synonyms. The structure of sentences remains unchanged, though.</p><p><img decoding="async" src="https://www.linkio.com/wp-content/uploads/2020/05/re-written-content.png" alt="" data-cke-saved-src="https://www.linkio.com/wp-content/uploads/2020/05/re-written-content.png"></p><h3>2.4. URLs of referring pages with mumbo jumbo</h3><p>While gaining backlinks from short articles can be debatable, you don’t need them from awful copy for sure.</p><p>I’m referring to articles with tons of grammatical errors. Commonly written by bad English speakers, they all sound like gibberish.</p><p><img decoding="async" src="https://www.linkio.com/wp-content/uploads/2020/05/awful-copy.png" alt="" data-cke-saved-src="https://www.linkio.com/wp-content/uploads/2020/05/awful-copy.png"></p><h3>2.5. URLs of referring pages with awful typography</h3><p>Besides awful copy, you can stumble upon pages with awful typography. It devalues the content and your link prospects accordingly.</p><p>Now, riddle me that. How many paragraphs are there in the screenshot below? One?</p><p>It may blow your mind, but there are three more paragraphs under the first one. You need to strain your eyes to see them.</p><p><img decoding="async" src="https://www.linkio.com/wp-content/uploads/2020/05/invisible-typography.png" alt="" data-cke-saved-src="https://www.linkio.com/wp-content/uploads/2020/05/invisible-typography.png"></p><p>This is the first time I’ve seen headings smaller than the text in paragraphs. ¯\_(ツ)_/¯</p><p><img decoding="async" src="https://www.linkio.com/wp-content/uploads/2020/05/small-subheadings.png" alt="" data-cke-saved-src="https://www.linkio.com/wp-content/uploads/2020/05/small-subheadings.png"></p><p>Another example is a weird-looking menu that takes up the entire screen space. You can call it anything but user-friendly navigation.</p><p><img decoding="async" src="https://www.linkio.com/wp-content/uploads/2020/05/poor-navigation.png" alt="" data-cke-saved-src="https://www.linkio.com/wp-content/uploads/2020/05/poor-navigation.png"></p><p>What makes it all especially ridiculous is the fact that those guys provide web design and development services.</p><p>How about creating a user-friendly menu for your site, huh?</p><h2><span id="should-you-gain-backlinks-from-domains-with-low-authority">Should you gain backlinks from domains with low authority?</span></h2><p>The main stumbling point in link prospecting is whether you should deal with domains that have a low authority score.</p><p>To answer this question, let’s figure out what this metric is all about.</p><p>Many SEO tools have it but call it in different ways: Domain Authority, Domain Rating, Trust Flow, etc. Learn how they describe their metrics.</p><p><strong><a href="https://majestic.com/help/glossary#TrustFlow" target="_blank" rel="noopener" data-cke-saved-href="https://majestic.com/help/glossary#TrustFlow">Trust Flow</a>&nbsp;(TF) by Majestic</strong></p><p><img decoding="async" src="https://www.linkio.com/wp-content/uploads/2020/05/majestic-trust-flow.png" alt="" data-cke-saved-src="https://www.linkio.com/wp-content/uploads/2020/05/majestic-trust-flow.png"></p><p><strong><a href="https://moz.com/learn/seo/domain-authority" target="_blank" rel="noopener" data-cke-saved-href="https://moz.com/learn/seo/domain-authority">Domain Authority</a>&nbsp;(DA) by Moz</strong></p><p><img decoding="async" src="https://www.linkio.com/wp-content/uploads/2020/05/moz-domain-authority.png" alt="" data-cke-saved-src="https://www.linkio.com/wp-content/uploads/2020/05/moz-domain-authority.png"></p><p><strong><a href="https://help.ahrefs.com/en/articles/1409408-what-is-domain-rating-dr" target="_blank" rel="noopener" data-cke-saved-href="https://help.ahrefs.com/en/articles/1409408-what-is-domain-rating-dr">Domain Rating</a>&nbsp;(DR) by Ahrefs</strong></p><p><img decoding="async" src="https://www.linkio.com/wp-content/uploads/2020/05/ahrefs-domain-rating.png" alt="" data-cke-saved-src="https://www.linkio.com/wp-content/uploads/2020/05/ahrefs-domain-rating.png"></p><p>While the names of this metric differ at each company, it’s based on the same thing – backlinks and nothing else.</p><p>The problem is you can’t get a clear idea about the entire domain quality from one angle only.</p><p>To understand its true value, you should analyze more metrics and people behind it.</p><h3>3.1. Metrics-based approach</h3><p>If your SEO tool has a&nbsp;<a href="https://ahrefs.com/batch-analysis" target="_blank" rel="noopener" data-cke-saved-href="https://ahrefs.com/batch-analysis">batch analysis feature</a>, you’re lucky. It’ll save you a lot of time.</p><p>You won’t have to analyze a lot of domains with a low DR one by one. Instead, add them all to your tool to get the necessary data in one go.</p><p>Here are the metrics that will tell you if a site is a worthy link prospect.</p><p><strong>Organic Traffic.</strong>&nbsp;Let me remind you of the main&nbsp;<a href="https://getresultslinkbuilding.com/" target="_blank" rel="noopener" data-cke-saved-href="https://getresultslinkbuilding.com/">purpose of link building</a>&nbsp;– the growth of search rankings and traffic.</p><p>Backlinks serve as proof that sites are good enough to rank in the top 10, from where they’ll attract more visitors.</p><p>If Google ranks some sites high without tons of backlinks, that’s freaking awesome! Such sites don’t suck at all, as their low DR suggests.</p><p>Some of them can get hundreds and even thousands of monthly visitors.</p><p><img decoding="async" src="https://www.linkio.com/wp-content/uploads/2020/05/low-dr-much-traffic.png" alt="" data-cke-saved-src="https://www.linkio.com/wp-content/uploads/2020/05/low-dr-much-traffic.png"></p><p>To compare, not all sites with a medium-to-high DR can boast of such traffic stats.</p><p>Regardless of their heavy backlinks profiles, they drive only a few hundred visitors per month. That’s when this metric doesn’t indicate true domain quality.</p><p><img decoding="async" src="https://www.linkio.com/wp-content/uploads/2020/05/high-dr-less-traffic.png" alt="" data-cke-saved-src="https://www.linkio.com/wp-content/uploads/2020/05/high-dr-less-traffic.png"></p><p><strong>Organic Keywords.</strong>&nbsp;Some sites with a low DR aren’t of low quality – they are just new. Their owners haven’t earned many backlinks yet to increase their authority.</p><p>Ranking in the top 10, from where most traffic comes,&nbsp;<a href="https://ahrefs.com/blog/how-long-does-it-take-to-rank/" target="_blank" rel="noopener" data-cke-saved-href="https://ahrefs.com/blog/how-long-does-it-take-to-rank/">doesn’t happen overnight</a>&nbsp;either. That’s why newcomers don’t even get a hundred visitors per month, as a rule.</p><p>On the other hand, some of them can rank for hundreds of keywords in the top 100. If Google approves ranking a site, it’s not a piece of crap for sure.</p><p>Besides traffic, always check how many organic keywords your link prospects with a low DR have.</p><p><img decoding="async" src="https://www.linkio.com/wp-content/uploads/2020/05/low-dr-many-keywords.png" alt="" data-cke-saved-src="https://www.linkio.com/wp-content/uploads/2020/05/low-dr-many-keywords.png"></p><p>The sites above are still far from their goal, but they’re already on their way. It’s just a matter of time before they see a traffic boost.</p><p><strong>Linked Domains.</strong>&nbsp;A high DR gives the impression that such a site can send you a lot of link juice. But is it always true?</p><p>The thing is a website’s link juice spreads among all the domains it links out to via dofollow links.</p><p>The more linked domains your prospect has, the less link juice you’ll receive.</p><p>Assuming that DR stands for the entire amount of a website’s link juice, here’s how it works on the example of&nbsp;<em>crownmediatech.com</em>:</p><p>8 (DR) / 6 (linked domains) = 1.33</p><p><strong>Note.</strong>&nbsp;It’s not the exact formula of Google’s algorithm, but still gives a clear idea about link juice distribution.</p><p><img decoding="async" src="https://www.linkio.com/wp-content/uploads/2020/05/low-dr-few-linked-domains.png" alt="" data-cke-saved-src="https://www.linkio.com/wp-content/uploads/2020/05/low-dr-few-linked-domains.png"></p><p>Now, let’s compare how much link juice&nbsp;<em>activerain.com</em>&nbsp;with a high DR provides:</p><p>81 (DR) / 330,967 (linked domains) = 0.24</p><p><img decoding="async" src="https://www.linkio.com/wp-content/uploads/2020/05/high-dr-many-linked-domains.png" alt="" data-cke-saved-src="https://www.linkio.com/wp-content/uploads/2020/05/high-dr-many-linked-domains.png"></p><p>As you can see,&nbsp;<em>crownmediatech.com</em>&nbsp;with DR 8 can send more link juice than&nbsp;<em>activerain.com</em>&nbsp;with DR 81:</p><p>1.33 vs 0.24.</p><p>To conclude, you don’t always need to approach sites with a high DR to get a lot of link juice your way.</p><h4>3.2. Bloggers-based approach</h4><p>No doubt, metrics can give useful clues about a website’s overall performance. But link prospecting isn’t a math lesson to use figures only.</p><p>What if your prospects fall short of all the key metrics?</p><p>Don’t erase them from your spreadsheet straightaway! Learn more about people behind your target domains to understand if they can be of any value to you.</p><p>You may find a few hidden gems among them.</p><p><strong>Prospect.</strong>&nbsp;Let’s take&nbsp;<em>sammyseo.com</em>&nbsp;as an example. It looks like a no-go in terms of metrics: no traffic, 3 organic keywords, and near-zero DR.</p><p><img decoding="async" src="https://www.linkio.com/wp-content/uploads/2020/05/sammyseo.com-stats.png" alt="" data-cke-saved-src="https://www.linkio.com/wp-content/uploads/2020/05/sammyseo.com-stats.png"></p><p>While this domain sucks, its owner doesn’t. According to LinkedIn, Sam Partland is a director of DigiSearch and was previously the head of growth at Urban.com.au.</p><p>No wonder he’s not too active with his blog.</p><p><img decoding="async" src="https://www.linkio.com/wp-content/uploads/2020/05/sam-partland-linkedin.png" alt="" data-cke-saved-src="https://www.linkio.com/wp-content/uploads/2020/05/sam-partland-linkedin.png"></p><p>With such an impressive work record, Sam is the right guy to build relationships with. The chances are he’ll reward you with a backlink from a better performing domain, digisearch.com, one day.</p><p><img decoding="async" src="https://www.linkio.com/wp-content/uploads/2020/05/digisearch.com-stats.png" alt="" data-cke-saved-src="https://www.linkio.com/wp-content/uploads/2020/05/digisearch.com-stats.png"></p><p>Besides LinkedIn, Twitter can also give you insights into your link prospects’ background.</p><p>Sam’s following isn’t big, but let’s scroll down a bit.</p><p>One of his latest posts got a retweet from a niche influencer with 66.2K followers, which proves he has a knack for SEO.</p><p><img decoding="async" src="https://www.linkio.com/wp-content/uploads/2020/05/sam-partland-twitter.png" alt="" data-cke-saved-src="https://www.linkio.com/wp-content/uploads/2020/05/sam-partland-twitter.png"></p><p><strong>Prospect.</strong>&nbsp;Another example is marcomm.io that doesn’t look promising due to its miserable metrics.</p><p><img decoding="async" src="https://www.linkio.com/wp-content/uploads/2020/05/marcomm.io-stats.png" alt="" data-cke-saved-src="https://www.linkio.com/wp-content/uploads/2020/05/marcomm.io-stats.png"></p><p>Let’s check a LinkedIn profile of its co-founder, Michelle Burson. She launched this site about a year and a half ago with her partner.</p><p>Just like many other startups, MarComm founders probably don’t have resources for heavy link building. And there’s no other way to grow a DR.</p><p>But while their domain is relatively new, Michelle isn’t a newbie in the business. She’s been a marketing manager since 2007 and eventually founded her own company. Way to go!</p><p>You should welcome people like her on your outreach list.</p><p><img decoding="async" src="https://www.linkio.com/wp-content/uploads/2020/05/michelle-burson-linkedin.png" alt="" data-cke-saved-src="https://www.linkio.com/wp-content/uploads/2020/05/michelle-burson-linkedin.png"></p><p><strong>No-go.</strong>&nbsp;Another underperforming domain that came my way is&nbsp;<em>elccopywriting.com</em>.</p><p><img decoding="async" src="https://www.linkio.com/wp-content/uploads/2020/05/elccopywriting.com-stats.png" alt="" data-cke-saved-src="https://www.linkio.com/wp-content/uploads/2020/05/elccopywriting.com-stats.png"></p><p>The first thing that catches the eye on the homepage is its niche. Erika who owns the blog does content writing for beauty and personal care.</p><p><img decoding="async" src="https://www.linkio.com/wp-content/uploads/2020/05/elccopywriting.com-homepage.png" alt="" data-cke-saved-src="https://www.linkio.com/wp-content/uploads/2020/05/elccopywriting.com-homepage.png"></p><p>Unless it’s your target niche, making friends with her won’t get you anywhere.</p><p>Whether she links to you from her blog or guest posts on beauty sites, such backlinks will be irrelevant to your domain.</p><p><strong>No-go.</strong>&nbsp;<em>Renovatiocms.com</em>&nbsp;doesn’t look promising regarding both the key SEO metrics and visual appeal.</p><p><img decoding="async" src="https://www.linkio.com/wp-content/uploads/2020/05/renovatiocms.com-stats.png" alt="" data-cke-saved-src="https://www.linkio.com/wp-content/uploads/2020/05/renovatiocms.com-stats.png"></p><p>The outdated design suggests this site is not new. Enter&nbsp;<a href="https://web.archive.org/" target="_blank" rel="noopener" data-cke-saved-href="https://web.archive.org/">archive.org</a>&nbsp;to find out how long it’s been around.</p><p><img decoding="async" src="https://www.linkio.com/wp-content/uploads/2020/05/renovatiocms.com-archive.org_.png" alt="" data-cke-saved-src="https://www.linkio.com/wp-content/uploads/2020/05/renovatiocms.com-archive.org_.png"></p><p>Well, the history dates back to 2010. If no one from their marketing department has grown its DR for 10 years, most likely no one will 🙂</p><p>The bottom line is, you should analyze your link prospects from different angles to make the right decision. It’ll be good practice for your analytical thinking.</p><p><strong>Note.</strong>&nbsp;While sites with a low DR don’t look promising, their owners usually turn out more responsive.</p><p>Unlike bigwigs, they haven’t become cocky yet, and building connections with new people is on their priority list.</p><p><strong>Tip.</strong>&nbsp;Your choice of link prospects should depend on the quality of articles you’re going to promote.</p><p>Have you discovered anything eye-opening as a result of a massive study? Such content definitely deserves the attention of thought leaders.</p><p>If all you have is a banal rewrite of well-known facts, it makes no sense to approach the big league.</p><p>They already know everything you’re trying to knock into their heads, and won’t waste time on you. Better focus on weaker domains in such a case.</p><h2><span id="can-link-prospects-providing-nofollow-backlinks-be-of-any-value">Can link prospects providing nofollow backlinks be of any value?</span></h2><p>The value of nofollow links is a matter of dispute in SEO circles. To cut a long story short, let’s consider the pros and cons of such links.</p><p><strong>Con.</strong>&nbsp;They don’t pass any link juice and therefore can’t improve search rankings. You can build hundreds of nofollow links, but neither your domain authority nor organic traffic will grow as a result.</p><p><strong>Pro #1.</strong>&nbsp;Technically, nofollow links don’t have a direct impact on rankings. But they can still bring you visitors who, in turn, can link to you via dofollow links.</p><p><strong>Pro #2.</strong>&nbsp;Google thinks a natural backlink profile should consist of both nofollow and dofollow links.</p><p>Do they have a point? Let’s think. How high are the chances that everyone will link to you via dofollow links without any actions on your part?</p><p>Not much chance!</p><p>Gaining only dofollow links will look like some sort of manipulation to Google.</p><p>And all the manipulations have the same ending – penalties, from a decline in rankings to the entire ban from organic search. This is not what you need, believe me.</p><p><strong>Verdict.</strong>&nbsp;Based on the above reasoning, you should reach out to bloggers that link out via nofollow links, but not all of them…</p><p>Regardless of the pros, the con is still weighty.</p><p>Nofollow links can’t help with organic traffic, and if they have no referral traffic potential, they are absolutely useless.</p><p>I suggest that you limit your prospects’ list of nofollow links to pages driving organic traffic.</p><p>The logic is simple here.</p><p>If someone clicks to a page from Google search, they may click to your link too. If no one visits that page, getting referral traffic is out of the question.</p><p>Sort pages with nofollow links by traffic and remove URLs that don’t have any.</p><p><img decoding="async" src="https://www.linkio.com/wp-content/uploads/2020/05/nofollow-links.png" alt="" data-cke-saved-src="https://www.linkio.com/wp-content/uploads/2020/05/nofollow-links.png"></p><p>No worries, you won’t have too many link prospects of this kind. So, it won’t take too long to send them outreach emails.</p><p>According to my study, no more than 5% of pages with nofollow links usually have organic traffic.</p><p><img decoding="async" src="https://www.linkio.com/wp-content/uploads/2020/05/nofollow-links-traffic-chart.png" alt="" data-cke-saved-src="https://www.linkio.com/wp-content/uploads/2020/05/nofollow-links-traffic-chart.png"></p><h2><span id="should-you-deal-with-blogs-that-havent-been-updated-since-last-year-or-earlier">Should you deal with blogs that haven’t been updated since last year or earlier?</span></h2><p>Once you clean all the trash off your sheet, you’ll need to add one more column with the last blog update. It will help you identify abandoned domains and remove them.</p><p><img decoding="async" src="https://www.linkio.com/wp-content/uploads/2020/05/last-update-column.png" alt="" data-cke-saved-src="https://www.linkio.com/wp-content/uploads/2020/05/last-update-column.png"></p><p>The main contenders for removal above are blogs with no updates for a year or so.</p><p>But just like any rule, this one has exceptions.</p><p>The lack of new content since last year doesn’t always mean there’s no life behind that domain.</p><p>Also, some blogs don’t show publication dates at all, which makes it hard to tell anything about their publishing schedules.</p><p>Here are a few hacks to figure out if your target domain is still alive, and you can expect a reply.</p><h3>5.1. Active live chat</h3><p>The last post on&nbsp;<em>samadeyinka.com</em>&nbsp;was published in November 2019 🙁</p><p>Too early to give up on it!</p><p>Look at the lower right corner of the layout. There’s a live chat saying that Sam Adeyinka typically replies within a few hours. The blogger is still active regardless of such a long delay in his editorial calendar.</p><p><img decoding="async" src="https://www.linkio.com/wp-content/uploads/2020/05/samadeyinka.com-chat.png" alt="" data-cke-saved-src="https://www.linkio.com/wp-content/uploads/2020/05/samadeyinka.com-chat.png"></p><p><strong>Note.</strong>&nbsp;Pay attention to the date when the chat was last active.</p><p>On&nbsp;<em>peppyacademy.com,</em>&nbsp;no one has used their live chat since fall, 2019. Neither have they published new content.</p><p>You’ll need to look for other signals of bloggers’ activity, which brings us to the next hack.</p><p><img decoding="async" src="https://www.linkio.com/wp-content/uploads/2020/05/peppyacademy.com-chat.png" alt="" data-cke-saved-src="https://www.linkio.com/wp-content/uploads/2020/05/peppyacademy.com-chat.png"></p><h3>5.2. Recent blog comments</h3><p>The next place to check is a comments section at the bottom of blog posts if it’s not disabled.</p><p>Readers comment on&nbsp;<em>makealivingwriting.com</em>&nbsp;and, most importantly, Carol Tice who owns the blog responds to them.</p><p><img decoding="async" src="https://www.linkio.com/wp-content/uploads/2020/05/makealivingwriting.com-comments.png" alt="" data-cke-saved-src="https://www.linkio.com/wp-content/uploads/2020/05/makealivingwriting.com-comments.png"></p><h3>5.3. Post titles with the current year mentions</h3><p>Check the titles of the latest blog posts for the current year.</p><p>Although&nbsp;<em>youcanmakemoneyonlinenow.com</em>&nbsp;has no publication dates, they posted an article about marketing trends for 2020. Looks like they’ve been active this year.</p><p><img decoding="async" src="https://www.linkio.com/wp-content/uploads/2020/05/youcanmakemoneyonlinenow.com-publishing-dates.png" alt="" data-cke-saved-src="https://www.linkio.com/wp-content/uploads/2020/05/youcanmakemoneyonlinenow.com-publishing-dates.png"></p><h3>5.4. Archives in the sidebar</h3><p>On some blogs, layouts have a sidebar with monthly archives of content. There, you can check the last month when new articles were published.</p><p><img decoding="async" src="https://www.linkio.com/wp-content/uploads/2020/05/archives-column.png" alt="" data-cke-saved-src="https://www.linkio.com/wp-content/uploads/2020/05/archives-column.png"></p><h4>5.5. Fresh copyright date</h4><p>Scroll down to the footer to see if blog owners have updated the year in a copyright notice.</p><p>Is it still 2018 there? The chances of hearing back from them in 2020 are slim to none. Feel free to remove such link prospects from your sheet.</p><p>If they’ve edited the year like guys from&nbsp;<em>bullsolutions.co.uk</em>&nbsp;have, you can try your luck with them.</p><p><img decoding="async" src="https://www.linkio.com/wp-content/uploads/2020/05/bullsolutions.co_.uk-copyright.png" alt="" data-cke-saved-src="https://www.linkio.com/wp-content/uploads/2020/05/bullsolutions.co_.uk-copyright.png"></p><h3>5.6. Active social media profiles</h3><p>Are there no signs of life on your target domain? Head over to their social media profiles to check if things are different there.</p><p>The last article on&nbsp;<em>blurbpointmedia.com</em>&nbsp;dates back to March 2019, but their official Twitter account is quite active.</p><p>Read carefully what the tweet below says. Noticed? Now, they have a different domain&nbsp;<em>blurbpoint.com,</em>&nbsp;where they post more often.</p><p>That’s what you can discover if you do a quick analysis of your link prospects.</p><p><img decoding="async" src="https://www.linkio.com/wp-content/uploads/2020/05/blurbpointmedia.com-twitter.png" alt="" data-cke-saved-src="https://www.linkio.com/wp-content/uploads/2020/05/blurbpointmedia.com-twitter.png"></p><h3>5.7. Current occupation of blog owners</h3><p>When you have seemingly abandoned personal blogs on your list, look for answers on LinkedIn.</p><p>A common scenario is that their owners got a full-time job and have no time for their side projects anymore.</p><p>Brandi M Fleeks hasn’t updated&nbsp;<em>bellavitacontent.com</em>&nbsp;for more than a year, but she hasn’t abandoned it.</p><p>According to LinkedIn, she just switched to a different project a year ago. Her personal blog is still her property.</p><p><img decoding="async" src="https://www.linkio.com/wp-content/uploads/2020/05/brandi-m-fleeks-linkedin.png" alt="" data-cke-saved-src="https://www.linkio.com/wp-content/uploads/2020/05/brandi-m-fleeks-linkedin.png"></p><h2><span id="what-should-you-do-if-your-target-referring-page-is-a-guest-post">What should you do if your target referring page is a guest post?</span></h2><p>The next columns to add should include your link prospect’s details, particularly the name, position, company, and whether that person is an in-house employee or a guest writer.</p><p>You’ll see that a bunch of pages on your list are guest posts.</p><p><img decoding="async" src="https://www.linkio.com/wp-content/uploads/2020/05/guest-author-columns.png" alt="" data-cke-saved-src="https://www.linkio.com/wp-content/uploads/2020/05/guest-author-columns.png"></p><p>Since guest authors don’t own those domains, they have no access to the admin panel. It’s beyond their power to edit their posts and embed your link there, even if they want to.</p><p>Shall you reach out to guest contributors anyways? It all depends on your purpose.</p><p><strong>Purpose #1.</strong>&nbsp;Gaining a backlink to your blog post (from that specific page).</p><p>Most likely, it’s a no. Especially if you’re not ready to reward guest writers in return.</p><p>No one will bother to contact blog editors and ask them for a link change. They already got what they wanted from those domains, and your weak backlink profile is your problem.</p><p>Editors aren’t dumb either. They smell link manipulations a mile off and don’t tolerate such things.</p><p>It’s all like chasing windmills – long and useless.</p><p><strong>Purpose #2.</strong>&nbsp;Gaining a backlink to your product (from that specific page).</p><p>If there are guest posts strategically important for your business, be ready to sweat a bit.</p><p>A common example of such content is a compilation of competing products. Sure thing you want to get yours featured there too.</p><p>In such a case, you need to contact guest authors with an offer to test your tool. Make sure you create free accounts for them.</p><p>No response? Then, reach out directly to blog editors or owners if editors don’t reply either. Don’t forget to provide free access for them.</p><p><strong>Purpose #3.</strong>&nbsp;Gaining backlinks from guest writers’ upcoming posts.</p><p>Face it, getting your backlinks embedded in older guest posts is almost impossible.</p><p>But why not reach out to people who do guest posting and make friends with them?</p><p>They <a href="https://www.vaslou.com/how-to-publish-more-content" target="_blank" rel="noopener">publish content</a> on multiple resources – guest blogs, sites they write on behalf, their personal resources, etc. These are all your potential link targets.</p><p>The more people will check out your content, the more links you’ll earn in the long run.</p><p><strong>Note.</strong>&nbsp;Check LinkedIn profiles of in-house writers to make sure they still work there. In rare cases, people remain in the same company for ages.</p><p>For example, Zoe Stoller created content for Splat last year.</p><p><img decoding="async" src="https://www.linkio.com/wp-content/uploads/2020/05/splatworld-content.png" alt="" data-cke-saved-src="https://www.linkio.com/wp-content/uploads/2020/05/splatworld-content.png"></p><p>But things changed in September 2019. She migrated to a different company and is still there.</p><p><img decoding="async" src="https://www.linkio.com/wp-content/uploads/2020/05/zoe-stroller-linkedin.png" alt="" data-cke-saved-src="https://www.linkio.com/wp-content/uploads/2020/05/zoe-stroller-linkedin.png"></p><p>Just like guest writers, former employees can’t edit their posts anymore.</p><p>But as Zoe is a content lead at Foyr now, you have an opportunity to get a backlink from that resource.</p><p><strong>Exception.</strong>&nbsp;If you bump into guest posts by your competitor’s team, feel free to remove such link prospects. They won’t help you.</p><p>On the other hand, you can approach owners of those domains to submit your own guest posts.</p><h2><span id="final-word">Final Word</span></h2><p>As soon as you finish sorting out your link prospects and remove the trash, you’ll come to a logical conclusion. They are not infinite, so you can’t approach them carelessly and waste your opportunities.</p><p>Invest some time in polishing your outreach emails to get link prospects on your side. This is exactly what the next chapter of this blogger outreach guide will teach you.</p>								</div>
+				</div>
+					</div>
+		</div>
+					</div>
+		</section>
+				</div>
+				<div class="elementor-shortcode"></div>
+						</div>
+				</div>
+					</div>
+		</div>
+					</div>
+		</section>
+				<section class="elementor-section elementor-top-section elementor-element elementor-element-421273d elementor-section-full_width elementor-section-stretched related-post-sec elementor-section-height-default elementor-section-height-default wpr-particle-no wpr-jarallax-no wpr-parallax-no wpr-sticky-section-no" data-id="421273d" data-element_type="section" data-settings="{&quot;background_background&quot;:&quot;classic&quot;,&quot;stretch_section&quot;:&quot;section-stretched&quot;}">
+						<div class="elementor-container elementor-column-gap-default">
+					<div class="elementor-column elementor-col-100 elementor-top-column elementor-element elementor-element-e4b6e4d" data-id="e4b6e4d" data-element_type="column">
+			<div class="elementor-widget-wrap elementor-element-populated">
+						<div class="elementor-element elementor-element-4ca3b26 elementor-widget elementor-widget-heading" data-id="4ca3b26" data-element_type="widget" data-widget_type="heading.default">
+				<div class="elementor-widget-container">
+					<h2 class="elementor-heading-title elementor-size-default">SEO and Link Building <strong style="background-color: #04558c;color: #fff;border-radius: 12px;padding:0px 10px">Resources</strong></h2>				</div>
+				</div>
+				<div class="elementor-element elementor-element-4a69ea3 seo-author-sec elementor-widget elementor-widget-shortcode" data-id="4a69ea3" data-element_type="widget" data-widget_type="shortcode.default">
+				<div class="elementor-widget-container">
+							<div class="elementor-shortcode">		<div class="wppsac-wrap wppsac-slick-carousel-wrp wppsac-clearfix " data-conf="{&quot;slides_to_show&quot;:&quot;5&quot;,&quot;slides_to_scroll&quot;:&quot;1&quot;,&quot;dots&quot;:&quot;true&quot;,&quot;arrows&quot;:&quot;true&quot;,&quot;autoplay&quot;:&quot;true&quot;,&quot;autoplay_interval&quot;:3000,&quot;speed&quot;:500,&quot;rtl&quot;:&quot;false&quot;,&quot;lazyload&quot;:&quot;&quot;}">
+			<div id="wppsac-post-carousel-1" class="wppsac-post-slider-init wppsac-post-carousel design-1">
+				<div class="wppsac-carousel-slides">
+	
+	<div class="wppsac-post-content-position">
+				<div class="wppsac-post-categories"><ul class="wppsac-post-categories-list"><li><a href="https://www.linkio.com/category/case-studies/">Case Studies</a></li></ul></div>
+		
+		<h2 class="wppsac-post-title">
+			<a href="https://www.linkio.com/from-zero-to-breakthrough-the-marketing-tactic-that-made-it-happen/">From Zero to Breakthrough: The Marketing Tactic That Made It Happen</a>
+		</h2>
+
+				<div class="wppsac-post-date">
+						<span>By Outreach Labs</span>
+			 / July 30, 2025		</div>
+				<div class="wppsac-post-content">
+			<div class="wppsac-sub-content">When startups succeed, we often see glossy headlines and viral success stories. What we rarely hear about is the strategic...</div>
+
+						<a class="wppsac-readmorebtn" href="https://www.linkio.com/from-zero-to-breakthrough-the-marketing-tactic-that-made-it-happen/">Read More</a>
+					</div>
+			</div>
+</div><div class="wppsac-carousel-slides">
+	
+	<div class="wppsac-post-content-position">
+				<div class="wppsac-post-categories"><ul class="wppsac-post-categories-list"><li><a href="https://www.linkio.com/category/case-studies/">Case Studies</a></li></ul></div>
+		
+		<h2 class="wppsac-post-title">
+			<a href="https://www.linkio.com/how-startups-are-winning-with-real-tactics-that-actually-convert/">How Startups Are Winning with Real Tactics That Actually Convert</a>
+		</h2>
+
+				<div class="wppsac-post-date">
+						<span>By Outreach Labs</span>
+			 / July 29, 2025		</div>
+				<div class="wppsac-post-content">
+			<div class="wppsac-sub-content">Forget the billboards and six-figure ad buys, today’s savviest startups are winning market share with lean, strategic moves that punch...</div>
+
+						<a class="wppsac-readmorebtn" href="https://www.linkio.com/how-startups-are-winning-with-real-tactics-that-actually-convert/">Read More</a>
+					</div>
+			</div>
+</div><div class="wppsac-carousel-slides">
+	
+	<div class="wppsac-post-content-position">
+				<div class="wppsac-post-categories"><ul class="wppsac-post-categories-list"><li><a href="https://www.linkio.com/category/case-studies/">Case Studies</a></li></ul></div>
+		
+		<h2 class="wppsac-post-title">
+			<a href="https://www.linkio.com/how-to-track-multiple-vehicles-with-vehicle-tracking-software/">How to Track Multiple Vehicles With Vehicle Tracking Software?</a>
+		</h2>
+
+				<div class="wppsac-post-date">
+						<span>By Outreach Labs</span>
+			 / June 27, 2025		</div>
+				<div class="wppsac-post-content">
+			<div class="wppsac-sub-content">Managing a fleet of vehicles presents numerous logistical challenges. Maintaining oversight of multiple vehicles simultaneously can be a complex task....</div>
+
+						<a class="wppsac-readmorebtn" href="https://www.linkio.com/how-to-track-multiple-vehicles-with-vehicle-tracking-software/">Read More</a>
+					</div>
+			</div>
+</div><div class="wppsac-carousel-slides">
+		<div class="wppsac-post-image-bg">
+		<a href="https://www.linkio.com/how-to-create-a-content-marketing-strategy-for-ecommerce/">
+			<img class="wppsac-post-image" src="https://www.linkio.com/wp-content/uploads/2024/12/unnamed.jpg" alt="How to Create a Content Marketing Strategy for eCommerce">
+		</a>
+	</div>
+	
+	<div class="wppsac-post-content-position">
+				<div class="wppsac-post-categories"><ul class="wppsac-post-categories-list"><li><a href="https://www.linkio.com/category/case-studies/">Case Studies</a></li></ul></div>
+		
+		<h2 class="wppsac-post-title">
+			<a href="https://www.linkio.com/how-to-create-a-content-marketing-strategy-for-ecommerce/">How to Create a Content Marketing Strategy for eCommerce</a>
+		</h2>
+
+				<div class="wppsac-post-date">
+						<span>By Munim Ali</span>
+			 / April 30, 2025		</div>
+				<div class="wppsac-post-content">
+			<div class="wppsac-sub-content">How to Create an eCommerce Content Marketing Strategy Do you know that content marketing leaders experience 7.8x more site traffic...</div>
+
+						<a class="wppsac-readmorebtn" href="https://www.linkio.com/how-to-create-a-content-marketing-strategy-for-ecommerce/">Read More</a>
+					</div>
+			</div>
+</div><div class="wppsac-carousel-slides">
+	
+	<div class="wppsac-post-content-position">
+				<div class="wppsac-post-categories"><ul class="wppsac-post-categories-list"><li><a href="https://www.linkio.com/category/case-studies/">Case Studies</a></li></ul></div>
+		
+		<h2 class="wppsac-post-title">
+			<a href="https://www.linkio.com/how-to-choose-the-best-seo-software-for-your-business/">How to Choose the Best SEO Software for Your Business&nbsp;</a>
+		</h2>
+
+				<div class="wppsac-post-date">
+						<span>By Munim Ali</span>
+			 / April 25, 2025		</div>
+				<div class="wppsac-post-content">
+			<div class="wppsac-sub-content">You can write the best content in the world, but if no one finds it, does it even matter? NO...</div>
+
+						<a class="wppsac-readmorebtn" href="https://www.linkio.com/how-to-choose-the-best-seo-software-for-your-business/">Read More</a>
+					</div>
+			</div>
+</div><div class="wppsac-carousel-slides">
+		<div class="wppsac-post-image-bg">
+		<a href="https://www.linkio.com/best-rank-tracking-tools-for-local-businesses-what-actually-matters/">
+			<img class="wppsac-post-image" src="https://www.linkio.com/wp-content/uploads/2025/04/rank-tracking-tools.png" alt="Best Rank Tracking Tools for Local Businesses: What Actually Matters?">
+		</a>
+	</div>
+	
+	<div class="wppsac-post-content-position">
+				<div class="wppsac-post-categories"><ul class="wppsac-post-categories-list"><li><a href="https://www.linkio.com/category/guides/">Guides</a></li></ul></div>
+		
+		<h2 class="wppsac-post-title">
+			<a href="https://www.linkio.com/best-rank-tracking-tools-for-local-businesses-what-actually-matters/">Best Rank Tracking Tools for Local Businesses: What Actually Matters?</a>
+		</h2>
+
+				<div class="wppsac-post-date">
+						<span>By Ajay Paghdal</span>
+			 / April 8, 2025		</div>
+				<div class="wppsac-post-content">
+			<div class="wppsac-sub-content">Here's the thing: there’s an overwhelming flood of rank tracking tools promising to boost your local SEO game. Most claim...</div>
+
+						<a class="wppsac-readmorebtn" href="https://www.linkio.com/best-rank-tracking-tools-for-local-businesses-what-actually-matters/">Read More</a>
+					</div>
+			</div>
+</div><div class="wppsac-carousel-slides">
+	
+	<div class="wppsac-post-content-position">
+				<div class="wppsac-post-categories"><ul class="wppsac-post-categories-list"><li><a href="https://www.linkio.com/category/case-studies/">Case Studies</a></li></ul></div>
+		
+		<h2 class="wppsac-post-title">
+			<a href="https://www.linkio.com/best-digital-marketing-tips-from-experts/">Best Digital Marketing Tips From Experts</a>
+		</h2>
+
+				<div class="wppsac-post-date">
+						<span>By Munim Ali</span>
+			 / December 20, 2024		</div>
+				<div class="wppsac-post-content">
+			<div class="wppsac-sub-content">Picture this: A total of 5.52 billion people around the world have access to the Internet as of October 2024....</div>
+
+						<a class="wppsac-readmorebtn" href="https://www.linkio.com/best-digital-marketing-tips-from-experts/">Read More</a>
+					</div>
+			</div>
+</div><div class="wppsac-carousel-slides">
+		<div class="wppsac-post-image-bg">
+		<a href="https://www.linkio.com/why-every-business-needs-a-website/">
+			<img class="wppsac-post-image" src="https://www.linkio.com/wp-content/uploads/2023/09/Add-a-heading-2.png" alt="Why Every Business Needs a Website">
+		</a>
+	</div>
+	
+	<div class="wppsac-post-content-position">
+				<div class="wppsac-post-categories"><ul class="wppsac-post-categories-list"><li><a href="https://www.linkio.com/category/guides/">Guides</a></li></ul></div>
+		
+		<h2 class="wppsac-post-title">
+			<a href="https://www.linkio.com/why-every-business-needs-a-website/">Why Every Business Needs a Website</a>
+		</h2>
+
+				<div class="wppsac-post-date">
+						<span>By Dmitri</span>
+			 / September 29, 2023		</div>
+				<div class="wppsac-post-content">
+			<div class="wppsac-sub-content">Regardless of the size and industry of your business, if you want to ensure your business's success, you should create...</div>
+
+						<a class="wppsac-readmorebtn" href="https://www.linkio.com/why-every-business-needs-a-website/">Read More</a>
+					</div>
+			</div>
+</div><div class="wppsac-carousel-slides">
+		<div class="wppsac-post-image-bg">
+		<a href="https://www.linkio.com/using-seo-for-lead-generation-everything-you-need-to-know/">
+			<img class="wppsac-post-image" src="https://www.linkio.com/wp-content/uploads/2023/09/Add-a-heading-1.png" alt="Using SEO For Lead Generation – Everything You Need To Know">
+		</a>
+	</div>
+	
+	<div class="wppsac-post-content-position">
+				<div class="wppsac-post-categories"><ul class="wppsac-post-categories-list"><li><a href="https://www.linkio.com/category/guides/">Guides</a></li></ul></div>
+		
+		<h2 class="wppsac-post-title">
+			<a href="https://www.linkio.com/using-seo-for-lead-generation-everything-you-need-to-know/">Using SEO For Lead Generation – Everything You Need To Know</a>
+		</h2>
+
+				<div class="wppsac-post-date">
+						<span>By Munim Ali</span>
+			 / September 13, 2023		</div>
+				<div class="wppsac-post-content">
+			<div class="wppsac-sub-content">Pulling in quality leads is no walk in the park, especially in a crowded online marketplace. SEO for lead generation...</div>
+
+						<a class="wppsac-readmorebtn" href="https://www.linkio.com/using-seo-for-lead-generation-everything-you-need-to-know/">Read More</a>
+					</div>
+			</div>
+</div><div class="wppsac-carousel-slides">
+		<div class="wppsac-post-image-bg">
+		<a href="https://www.linkio.com/the-best-books-to-learn-seo-recommended-by-pros/">
+			<img class="wppsac-post-image" src="https://www.linkio.com/wp-content/uploads/2023/08/Add-a-heading.png" alt="The Best Books To Learn SEO Recommended by Pros">
+		</a>
+	</div>
+	
+	<div class="wppsac-post-content-position">
+				<div class="wppsac-post-categories"><ul class="wppsac-post-categories-list"><li><a href="https://www.linkio.com/category/listicles/">Listicles</a></li></ul></div>
+		
+		<h2 class="wppsac-post-title">
+			<a href="https://www.linkio.com/the-best-books-to-learn-seo-recommended-by-pros/">The Best Books To Learn SEO Recommended by Pros</a>
+		</h2>
+
+				<div class="wppsac-post-date">
+						<span>By Munim Ali</span>
+			 / August 22, 2023		</div>
+				<div class="wppsac-post-content">
+			<div class="wppsac-sub-content">What a turn of events! As you’ve landed on this page, you are just one book away from mastering SEO....</div>
+
+						<a class="wppsac-readmorebtn" href="https://www.linkio.com/the-best-books-to-learn-seo-recommended-by-pros/">Read More</a>
+					</div>
+			</div>
+</div>			</div>
+		</div>
+	</div>
+						</div>
+				</div>
+					</div>
+		</div>
+					</div>
+		</section>
+				<section class="elementor-section elementor-top-section elementor-element elementor-element-a7207ee elementor-hidden-desktop elementor-hidden-tablet elementor-hidden-mobile elementor-section-boxed elementor-section-height-default elementor-section-height-default wpr-particle-no wpr-jarallax-no wpr-parallax-no wpr-sticky-section-no" data-id="a7207ee" data-element_type="section">
+						<div class="elementor-container elementor-column-gap-default">
+					<div class="elementor-column elementor-col-100 elementor-top-column elementor-element elementor-element-e65ba9f" data-id="e65ba9f" data-element_type="column">
+			<div class="elementor-widget-wrap elementor-element-populated">
+						<section class="elementor-section elementor-inner-section elementor-element elementor-element-b2564ed elementor-section-boxed elementor-section-height-default elementor-section-height-default wpr-particle-no wpr-jarallax-no wpr-parallax-no wpr-sticky-section-no" data-id="b2564ed" data-element_type="section">
+						<div class="elementor-container elementor-column-gap-default">
+					<div class="elementor-column elementor-col-100 elementor-inner-column elementor-element elementor-element-7a8c338" data-id="7a8c338" data-element_type="column" data-settings="{&quot;background_background&quot;:&quot;classic&quot;}">
+			<div class="elementor-widget-wrap elementor-element-populated">
+						<section class="elementor-section elementor-inner-section elementor-element elementor-element-29bb2a4 elementor-section-boxed elementor-section-height-default elementor-section-height-default wpr-particle-no wpr-jarallax-no wpr-parallax-no wpr-sticky-section-no" data-id="29bb2a4" data-element_type="section">
+						<div class="elementor-container elementor-column-gap-default">
+					<div class="elementor-column elementor-col-50 elementor-inner-column elementor-element elementor-element-a209dbe" data-id="a209dbe" data-element_type="column">
+			<div class="elementor-widget-wrap elementor-element-populated">
+						<div class="elementor-element elementor-element-21c2455 curious-section elementor-widget elementor-widget-heading" data-id="21c2455" data-element_type="widget" data-widget_type="heading.default">
+				<div class="elementor-widget-container">
+					<h6 class="elementor-heading-title elementor-size-default">Curious?</h6>				</div>
+				</div>
+				<div class="elementor-element elementor-element-466e1b8 curious-section elementor-widget elementor-widget-heading" data-id="466e1b8" data-element_type="widget" data-widget_type="heading.default">
+				<div class="elementor-widget-container">
+					<h6 class="elementor-heading-title elementor-size-default"> Let's talk LINKIO</h6>				</div>
+				</div>
+				<div class="elementor-element elementor-element-7b0be85 curious-section elementor-widget__width-initial elementor-widget elementor-widget-heading" data-id="7b0be85" data-element_type="widget" data-widget_type="heading.default">
+				<div class="elementor-widget-container">
+					<h6 class="elementor-heading-title elementor-size-default">We love talking LINKIO. Let us know about your project and we'll send you a free proposal</h6>				</div>
+				</div>
+					</div>
+		</div>
+				<div class="elementor-column elementor-col-50 elementor-inner-column elementor-element elementor-element-b1545c9" data-id="b1545c9" data-element_type="column">
+			<div class="elementor-widget-wrap elementor-element-populated">
+						<div class="elementor-element elementor-element-da43fba elementor-widget elementor-widget-image" data-id="da43fba" data-element_type="widget" data-widget_type="image.default">
+				<div class="elementor-widget-container">
+															<img loading="lazy" width="153" height="300" src="https://www.linkio.com/wp-content/uploads/2022/07/seo-proposal-right-icon-153x300-1.png" class="attachment-large size-large wp-image-22434" alt="" srcset="https://www.linkio.com/wp-content/uploads/2022/07/seo-proposal-right-icon-153x300-1.png 153w, https://www.linkio.com/wp-content/uploads/2022/07/seo-proposal-right-icon-153x300-1-104x203.png 104w, https://www.linkio.com/wp-content/uploads/2022/07/elementor/thumbs/seo-proposal-right-icon-153x300-1-150x150.png 200w" sizes="(max-width: 153px) 85vw, 153px">															</div>
+				</div>
+					</div>
+		</div>
+					</div>
+		</section>
+					</div>
+		</div>
+					</div>
+		</section>
+					</div>
+		</div>
+					</div>
+		</section>
+				<section class="elementor-section elementor-top-section elementor-element elementor-element-364fec1 footer-lets-sec elementor-section-boxed elementor-section-height-default elementor-section-height-default wpr-particle-no wpr-jarallax-no wpr-parallax-no wpr-sticky-section-no" data-id="364fec1" data-element_type="section">
+						<div class="elementor-container elementor-column-gap-default">
+					<div class="elementor-column elementor-col-66 elementor-top-column elementor-element elementor-element-b20b1ee" data-id="b20b1ee" data-element_type="column" data-settings="{&quot;background_background&quot;:&quot;classic&quot;}">
+			<div class="elementor-widget-wrap elementor-element-populated">
+						<div class="elementor-element elementor-element-43e5188 curious-section elementor-widget elementor-widget-heading" data-id="43e5188" data-element_type="widget" data-widget_type="heading.default">
+				<div class="elementor-widget-container">
+					<h6 class="elementor-heading-title elementor-size-default">Curious?</h6>				</div>
+				</div>
+				<div class="elementor-element elementor-element-d57a557 curious-section elementor-widget elementor-widget-heading" data-id="d57a557" data-element_type="widget" data-widget_type="heading.default">
+				<div class="elementor-widget-container">
+					<h6 class="elementor-heading-title elementor-size-default"> Let's talk LINKIO</h6>				</div>
+				</div>
+				<div class="elementor-element elementor-element-00c453d curious-section elementor-widget__width-initial elementor-widget elementor-widget-heading" data-id="00c453d" data-element_type="widget" data-widget_type="heading.default">
+				<div class="elementor-widget-container">
+					<h6 class="elementor-heading-title elementor-size-default">We love talking LINKIO. Let us know about your project and we'll send you a free proposal</h6>				</div>
+				</div>
+				<section class="elementor-section elementor-inner-section elementor-element elementor-element-ecf8170 elementor-reverse-mobile elementor-section-boxed elementor-section-height-default elementor-section-height-default wpr-particle-no wpr-jarallax-no wpr-parallax-no wpr-sticky-section-no" data-id="ecf8170" data-element_type="section">
+						<div class="elementor-container elementor-column-gap-default">
+					<div class="elementor-column elementor-col-50 elementor-inner-column elementor-element elementor-element-82ba7d6" data-id="82ba7d6" data-element_type="column">
+			<div class="elementor-widget-wrap elementor-element-populated">
+						<div class="elementor-element elementor-element-50d5047 blo-getin-touch elementor-widget elementor-widget-button" data-id="50d5047" data-element_type="widget" data-widget_type="button.default">
+				<div class="elementor-widget-container">
+									<div class="elementor-button-wrapper">
+					<a class="elementor-button elementor-button-link elementor-size-sm" href="mailto:info@www.linkio.com">
+						<span class="elementor-button-content-wrapper">
+						<span class="elementor-button-icon">
+				<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 29 29" width="29" height="29"><title>image-2</title><defs><image width="29" height="22" id="img1"></image></defs><use id="Background" href="#img1" x="0" y="4"></use></svg>			</span>
+									<span class="elementor-button-text">Get in touch</span>
+					</span>
+					</a>
+				</div>
+								</div>
+				</div>
+					</div>
+		</div>
+				<div class="elementor-column elementor-col-50 elementor-inner-column elementor-element elementor-element-8482aea" data-id="8482aea" data-element_type="column">
+			<div class="elementor-widget-wrap elementor-element-populated">
+						<div class="elementor-element elementor-element-d52d440 author2-name-sec elementor-widget elementor-widget-text-editor" data-id="d52d440" data-element_type="widget" data-widget_type="text-editor.default">
+				<div class="elementor-widget-container">
+									Ajay Paghdal								</div>
+				</div>
+				<div class="elementor-element elementor-element-a60703e elementor-widget elementor-widget-text-editor" data-id="a60703e" data-element_type="widget" data-widget_type="text-editor.default">
+				<div class="elementor-widget-container">
+									Founder and Marketer for Linkio.								</div>
+				</div>
+					</div>
+		</div>
+					</div>
+		</section>
+					</div>
+		</div>
+				<div class="elementor-column elementor-col-33 elementor-top-column elementor-element elementor-element-0365ff0 elementor-hidden-mobile" data-id="0365ff0" data-element_type="column" data-settings="{&quot;background_background&quot;:&quot;classic&quot;}">
+			<div class="elementor-widget-wrap elementor-element-populated">
+						<div class="elementor-element elementor-element-7e02fef elementor-hidden-mobile elementor-widget elementor-widget-image" data-id="7e02fef" data-element_type="widget" data-widget_type="image.default">
+				<div class="elementor-widget-container">
+															<img src="https://www.linkio.com/wp-content/uploads/elementor/thumbs/seo-proposal-right-icon-153x300-1-psj1do2k2bchd312ryr0wp8ahizt0ugnss6ykhouhc.png" title="seo-proposal-right-icon-153×300" alt="seo-proposal-right-icon-153x300" loading="lazy">															</div>
+				</div>
+					</div>
+		</div>
+					</div>
+		</section>
+				</div>
+		

@@ -1,0 +1,15 @@
+{
+  "batchId": "batch-2025-08-05-1754412998880",
+  "scrapedAt": "2025-08-05T16:56:38.880Z",
+  "totalUrls": 1,
+  "posts": [
+    {
+      "index": 1,
+      "folderName": "001-seo-webinars",
+      "url": "https://www.linkio.com/seo-webinars/",
+      "title": "SEO Webinars (On-Page, Off-Page and More)",
+      "imagesCount": 10,
+      "status": "success"
+    }
+  ]
+}

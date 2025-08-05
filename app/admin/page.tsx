@@ -1,7 +1,7 @@
 'use client';
 
 import React from 'react';
-import { Database, Activity, Wrench, Users, BarChart3, Settings, AlertTriangle, Bug, FileSearch, Search, Mail, Image } from 'lucide-react';
+import { Database, Activity, Wrench, Users, BarChart3, Settings, AlertTriangle, Bug, FileSearch, Search, Mail } from 'lucide-react';
 
 export default function AdminDashboard() {
   const adminTools = [
@@ -196,14 +196,6 @@ export default function AdminDashboard() {
       href: '/admin/streaming-diagnostics',
       color: 'bg-cyan-50 border-cyan-200 text-cyan-700',
       iconColor: 'text-cyan-600'
-    },
-    {
-      title: 'Blog Image Upload',
-      description: 'Upload and manage images for blog posts',
-      icon: Image,
-      href: '/admin/image-upload',
-      color: 'bg-amber-50 border-amber-200 text-amber-700',
-      iconColor: 'text-amber-600'
     },
     {
       title: 'User Management',
