@@ -227,15 +227,23 @@ export default function AnchorTextOptimizer() {
               <span className="text-gray-600">Anchor Text Optimizer</span>
             </div>
             
-            <Link 
-              href="https://app.linkio.com/users/sign_up?_ga=2.195646757.845028537.1754360403-387936753.1754360403"
-              target="_blank"
-              rel="noopener noreferrer"
-              className="flex items-center gap-2 px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 text-sm font-medium"
-            >
-              Get Started Free
-              <ExternalLink className="w-4 h-4" />
-            </Link>
+            <div className="flex items-center gap-3">
+              <Link 
+                href="/anchor-text-optimizer/pricing"
+                className="text-gray-600 hover:text-gray-900 text-sm font-medium"
+              >
+                Pricing
+              </Link>
+              <Link 
+                href="https://app.linkio.com/users/sign_up?_ga=2.195646757.845028537.1754360403-387936753.1754360403"
+                target="_blank"
+                rel="noopener noreferrer"
+                className="flex items-center gap-2 px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 text-sm font-medium"
+              >
+                Get Started Free
+                <ExternalLink className="w-4 h-4" />
+              </Link>
+            </div>
           </div>
         </div>
       </header>
@@ -262,11 +270,17 @@ export default function AnchorTextOptimizer() {
                 Start Free Trial
                 <ArrowRight className="w-5 h-5" />
               </Link>
+              <Link 
+                href="/anchor-text-optimizer/pricing"
+                className="inline-flex items-center gap-2 px-6 py-3 border-2 border-blue-600 text-blue-600 rounded-lg hover:bg-blue-50 font-medium"
+              >
+                View Pricing
+              </Link>
               <button 
                 onClick={() => document.getElementById('analyzer')?.scrollIntoView({ behavior: 'smooth' })}
                 className="inline-flex items-center gap-2 px-6 py-3 border-2 border-gray-300 text-gray-700 rounded-lg hover:bg-gray-50 font-medium"
               >
-                Try the Free Tool
+                Try Free Tool
               </button>
             </div>
           </div>
