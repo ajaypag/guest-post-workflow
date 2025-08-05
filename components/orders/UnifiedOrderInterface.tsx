@@ -1281,6 +1281,8 @@ export default function UnifiedOrderInterface({
   const [showSavePrompt, setShowSavePrompt] = useState(false);
   const lastSaveTimeRef = useRef<number>(Date.now());
   const [dataInitialized, setDataInitialized] = useState(false);
+  const [hasOrderDataLoaded, setHasOrderDataLoaded] = useState(false);
+  const [loadedOrderGroups, setLoadedOrderGroups] = useState<any[]>([]);
 
   // Effects
   // Auto-dismiss success messages after 5 seconds
@@ -1354,42 +1356,13 @@ export default function UnifiedOrderInterface({
             // Initialize order data from fresh API response
             setDraftOrderId(orderData.id);
             
-            // Convert fresh order groups to client selections and line items
-            if (orderData.orderGroups && orderData.orderGroups.length > 0) {
-              const newSelectedClients = new Map<string, { selected: boolean; linkCount: number }>();
-              const newLineItems: OrderLineItem[] = [];
-              
-              orderData.orderGroups.forEach((group: any) => {
-                // Make sure we have the client data
-                const clientData = clients.find(c => c.id === group.clientId);
-                if (!clientData) {
-                  console.warn('Client not found for group:', group.clientId);
-                  return;
-                }
-                
-                newSelectedClients.set(group.clientId, {
-                  selected: true,
-                  linkCount: group.linkCount || 1
-                });
-                
-                for (let i = 0; i < (group.linkCount || 1); i++) {
-                  newLineItems.push({
-                    id: `${group.clientId}-${i}`,
-                    clientId: group.clientId,
-                    clientName: clientData.name,
-                    targetPageId: group.targetPages?.[i]?.pageId,
-                    targetPageUrl: group.targetPages?.[i]?.url || '',
-                    anchorText: group.anchorTexts?.[i] || '',
-                    price: group.packagePrice || 279,
-                    selectedPackage: (group.packageType as PackageType) || 'better'
-                  });
-                }
-              });
-              
-              setSelectedClients(newSelectedClients);
-              setLineItems(newLineItems);
-            }
-            setDataInitialized(true);
+            // Store the order data for processing after clients load
+            console.log('🔍 Storing order data for processing after clients load');
+            setLoadedOrderGroups(orderData.orderGroups || []);
+            
+            // Mark that we have order data ready
+            setHasOrderDataLoaded(true);
+            // Don't mark as initialized yet - wait for data processing
           }
         } catch (error) {
           console.error('Failed to load draft order:', error);
@@ -1403,6 +1376,65 @@ export default function UnifiedOrderInterface({
     
     loadInitialData();
   }, [session?.userType, session?.userId, orderId, isAccountUser]);
+
+  // Process loaded order data after clients are available
+  useEffect(() => {
+    if (hasOrderDataLoaded && clients.length > 0) {
+      // Handle case with no order groups
+      if (loadedOrderGroups.length === 0) {
+        console.log('🔍 No order groups to process, marking as initialized');
+        setDataInitialized(true);
+        setHasOrderDataLoaded(false);
+        return;
+      }
+      console.log('🔍 Processing order data now that clients are loaded');
+      
+      const newSelectedClients = new Map<string, { selected: boolean; linkCount: number }>();
+      const newLineItems: OrderLineItem[] = [];
+      
+      loadedOrderGroups.forEach((group: any) => {
+        // Now we can safely find client data
+        const clientData = clients.find(c => c.id === group.clientId);
+        if (!clientData) {
+          console.warn('Client not found for group:', group.clientId);
+          return;
+        }
+        
+        newSelectedClients.set(group.clientId, {
+          selected: true,
+          linkCount: group.linkCount || 1
+        });
+        
+        for (let i = 0; i < (group.linkCount || 1); i++) {
+          newLineItems.push({
+            id: `${group.clientId}-${i}`,
+            clientId: group.clientId,
+            clientName: clientData.name,
+            targetPageId: group.targetPages?.[i]?.pageId,
+            targetPageUrl: group.targetPages?.[i]?.url || '',
+            anchorText: group.anchorTexts?.[i] || '',
+            price: group.packagePrice || 279,
+            selectedPackage: (group.packageType as PackageType) || 'better'
+          });
+        }
+      });
+      
+      console.log('🔍 Setting processed data:', {
+        clientsCount: newSelectedClients.size,
+        lineItemsCount: newLineItems.length
+      });
+      
+      setSelectedClients(newSelectedClients);
+      setLineItems(newLineItems);
+      
+      // Clear the flag so we don't process again
+      setHasOrderDataLoaded(false);
+      
+      // NOW mark as initialized after data is properly loaded
+      setDataInitialized(true);
+      console.log('✅ Data initialization complete!');
+    }
+  }, [hasOrderDataLoaded, clients, loadedOrderGroups]);
 
   useEffect(() => {
     calculatePricing(lineItems);
