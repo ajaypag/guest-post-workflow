@@ -222,6 +222,14 @@ export default function AdminDashboard() {
       iconColor: 'text-blue-600'
     },
     {
+      title: 'Chatwoot Email Test',
+      description: 'Test Chatwoot email sending and status tracking functionality',
+      icon: Mail,
+      href: '/admin/chatwoot-test',
+      color: 'bg-purple-50 border-purple-200 text-purple-700',
+      iconColor: 'text-purple-600'
+    },
+    {
       title: 'User System Migration',
       description: 'Migrate user system to support invite-only registration and multiple user types',
       icon: Users,
