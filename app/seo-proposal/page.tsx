@@ -1,8 +1,8 @@
 import BlogPostTemplate from '@/components/BlogPostTemplate';
 
 export const metadata = {
-  title: 'SEO Proposal Template | PostFlow',
-  description: 'Professional SEO proposal template to win clients',
+  title: "SEO Proposal Template | PostFlow",
+  description: "Professional SEO proposal template to win clients",
 };
 
 export default function SeoProposalPage() {
@@ -41,7 +41,7 @@ export default function SeoProposalPage() {
 
       
       <div className="prose prose-lg max-w-none">
-        <p># How to Make An SEO Proposal (+ Templates)</p>
+        <h1>How to Make An SEO Proposal (+ Templates)</h1>
 
         <ul className="list-disc pl-6 space-y-2">
           <li>Introduction</li>
@@ -385,17 +385,17 @@ READ MORE</p>
 
         <h2 id="the-best-books-to-learn-seo-recommended-by-pros">The Best Books To Learn SEO Recommended by Pros</h2>
 
-        <p>###### Curious?</p>
+        <h6>Curious?</h6>
 
-        <p>###### Let's talk LINKIO</p>
+        <h6>Let\'s talk LINKIO</h6>
 
-        <p>###### We love talking LINKIO. Let us know about your project and we'll send you a free proposal</p>
+        <h6>We love talking LINKIO. Let us know about your project and we\'ll send you a free proposal</h6>
 
-        <p>###### Curious?</p>
+        <h6>Curious?</h6>
 
-        <p>###### Let's talk LINKIO</p>
+        <h6>Let\'s talk LINKIO</h6>
 
-        <p>###### We love talking LINKIO. Let us know about your project and we'll send you a free proposal</p>
+        <h6>We love talking LINKIO. Let us know about your project and we\'ll send you a free proposal</h6>
       </div>
     </BlogPostTemplate>
   );

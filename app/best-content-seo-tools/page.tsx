@@ -1,8 +1,8 @@
 import BlogPostTemplate from '@/components/BlogPostTemplate';
 
 export const metadata = {
-  title: 'Best Content Seo Tools | PostFlow',
-  description: 'Learn more about best content seo tools',
+  title: "Best Content Seo Tools | PostFlow",
+  description: "Learn more about best content seo tools",
 };
 
 export default function BestContentSeoToolsPage() {
@@ -38,7 +38,7 @@ export default function BestContentSeoToolsPage() {
 
       
       <div className="prose prose-lg max-w-none">
-        <p># Best Content SEO Tools</p>
+        <h1>Best Content SEO Tools</h1>
 
         <ul className="list-disc pl-6 space-y-2">
           <li>What is on-page and off-page SEO?</li>
@@ -60,7 +60,7 @@ Both of these techniques are important for the success of an SEO campaign.</p>
 
         <h2 id="best-on-page-and-off-page-seo-tools">Best On-Page and Off-Page SEO Tools</h2>
 
-        <p>### 1. Narrato</p>
+        <h3>1. Narrato</h3>
 
         <p>This all-in-one tool for content creators comes with a great AI writing and SEO tool that’s excellent for optimizing your content for greater visibility even as you write. Narrato’s SEO brief generator analyzes the top-ranking content for a search term or topic, and provides you with recommendations for –
 • Keywords to include and keyword counts
@@ -275,17 +275,17 @@ Pricing: Plagiarism Remover offers a free version with basic rewriting features.
 
         <h2 id="the-best-books-to-learn-seo-recommended-by-pros">The Best Books To Learn SEO Recommended by Pros</h2>
 
-        <p>###### Curious?</p>
+        <h6>Curious?</h6>
 
-        <p>###### Let's talk LINKIO</p>
+        <h6>Let\'s talk LINKIO</h6>
 
-        <p>###### We love talking LINKIO. Let us know about your project and we'll send you a free proposal</p>
+        <h6>We love talking LINKIO. Let us know about your project and we\'ll send you a free proposal</h6>
 
-        <p>###### Curious?</p>
+        <h6>Curious?</h6>
 
-        <p>###### Let's talk LINKIO</p>
+        <h6>Let\'s talk LINKIO</h6>
 
-        <p>###### We love talking LINKIO. Let us know about your project and we'll send you a free proposal</p>
+        <h6>We love talking LINKIO. Let us know about your project and we\'ll send you a free proposal</h6>
       </div>
     </BlogPostTemplate>
   );

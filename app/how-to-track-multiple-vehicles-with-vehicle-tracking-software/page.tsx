@@ -1,8 +1,8 @@
 import BlogPostTemplate from '@/components/BlogPostTemplate';
 
 export const metadata = {
-  title: 'How To Track Multiple Vehicles With Vehicle Tracking Software | PostFlow',
-  description: 'Learn more about how to track multiple vehicles with vehicle tracking software',
+  title: "How To Track Multiple Vehicles With Vehicle Tracking Software | PostFlow",
+  description: "Learn more about how to track multiple vehicles with vehicle tracking software",
 };
 
 export default function HowToTrackMultipleVehiclesWithVehicleTrackingSoftwarePage() {
@@ -37,7 +37,7 @@ export default function HowToTrackMultipleVehiclesWithVehicleTrackingSoftwarePag
 
       
       <div className="prose prose-lg max-w-none">
-        <p># How to Track Multiple Vehicles With Vehicle Tracking Software?</p>
+        <h1>How to Track Multiple Vehicles With Vehicle Tracking Software?</h1>
 
         <ul className="list-disc pl-6 space-y-2">
           <li>What is Vehicle Tracking Software? The DEFINITION</li>
@@ -179,17 +179,17 @@ Get in touch today!</p>
 
         <h2 id="the-best-books-to-learn-seo-recommended-by-pros">The Best Books To Learn SEO Recommended by Pros</h2>
 
-        <p>###### Curious?</p>
+        <h6>Curious?</h6>
 
-        <p>###### Let's talk LINKIO</p>
+        <h6>Let\'s talk LINKIO</h6>
 
-        <p>###### We love talking LINKIO. Let us know about your project and we'll send you a free proposal</p>
+        <h6>We love talking LINKIO. Let us know about your project and we\'ll send you a free proposal</h6>
 
-        <p>###### Curious?</p>
+        <h6>Curious?</h6>
 
-        <p>###### Let's talk LINKIO</p>
+        <h6>Let\'s talk LINKIO</h6>
 
-        <p>###### We love talking LINKIO. Let us know about your project and we'll send you a free proposal</p>
+        <h6>We love talking LINKIO. Let us know about your project and we\'ll send you a free proposal</h6>
       </div>
     </BlogPostTemplate>
   );

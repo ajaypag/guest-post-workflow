@@ -1,8 +1,8 @@
 import BlogPostTemplate from '@/components/BlogPostTemplate';
 
 export const metadata = {
-  title: 'Top Seo Agencies | PostFlow',
-  description: 'Learn more about top seo agencies',
+  title: "Top Seo Agencies | PostFlow",
+  description: "Learn more about top seo agencies",
 };
 
 export default function TopSeoAgenciesPage() {
@@ -47,7 +47,7 @@ export default function TopSeoAgenciesPage() {
 
       
       <div className="prose prose-lg max-w-none">
-        <p># Top SEO Agencies (10 Best Ranked)</p>
+        <h1>Top SEO Agencies (10 Best Ranked)</h1>
 
         <ul className="list-disc pl-6 space-y-2">
           <li>Best SEO Agencies Criteria</li>
@@ -76,7 +76,7 @@ If you’re looking for help with your SEO, then one of these top agencies is a 
 
         <h2 id="top-10-seo-agencies">Top 10 SEO Agencies</h2>
 
-        <p>## First Page Digital</p>
+        <h2>First Page Digital</h2>
 
         <p>First Page Digital is a Singapore-based SEO agency that specializes in content, on-site technical optimization, and link building. The agency has a strong team of over 50 digital marketers who focus on quality over quantity, and have a proven track record of success with numerous clients across a range of industries. First Page Digital has a minimum monthly retainer of $1000 USD with an average of $5000 USD.</p>
 
@@ -125,7 +125,7 @@ With years of success, EZ Rankings had earned some of the prominent industry awa
 
         <h2 id="rest-of-the-seo-agencies-we-evaluated">Rest of the SEO Agencies We Evaluated</h2>
 
-        <p>### Kiwi Website Design</p>
+        <h3>Kiwi Website Design</h3>
 
         <p>Kiwi Website Design is a digital marketing agency that specializes in SEO and helping New Zealand businesses improve their online presence. The agency employs 10 people and has a minimum monthly retainer of $10000 USD, with an average of $25000 USD. Notable accomplishments include helping a Top Rated Asian Grocery Store in New Zealand rank No.1 for keywords like “asian supermarket”, “asian grocery store”, and “asian grocery”. The organic traffic boosted from 122 visits a day to 1523 visits a day. Kiwi Website Design’s biggest strength is their ability to audit the technical issues on a website and execute a plan for a better user and search experience.</p>
 
@@ -188,7 +188,7 @@ Whether your goal is to improve search ranks, build link equity, or get individu
 
         <h2 id="hiring-an-seo-firm-faqs">Hiring an SEO Firm FAQs</h2>
 
-        <p>### Why Hire An SEO Company?</p>
+        <h3>Why Hire An SEO Company?</h3>
 
         <p>Reputable and experienced SEO firms will provide professional, tried, and tested strategies that will aid your business to rank organically over time. If you found an SEO company that promises you instant rank on page 1 in just a few hours, be wary. Generally, keyword rankings that are highly targeted and effective take time. SEO is often referred to for its slow-burning nature due to this reason. ROI can be achieved over many months. Additionally, SEO firms also benefit from the most effective tools available (which cost money for non-technical people), top resources, and up-to-date knowledge of the ever-changing nature of SEO. A reputable SEO agency understands Google’s more than 200 website ranking factors and can help you obtain the most effective results that match your objectives and budget.</p>
 
@@ -305,17 +305,17 @@ Finally, make sure you are comfortable with the agency’s communication style. 
 
         <h2 id="the-best-books-to-learn-seo-recommended-by-pros">The Best Books To Learn SEO Recommended by Pros</h2>
 
-        <p>###### Curious?</p>
+        <h6>Curious?</h6>
 
-        <p>###### Let's talk LINKIO</p>
+        <h6>Let\'s talk LINKIO</h6>
 
-        <p>###### We love talking LINKIO. Let us know about your project and we'll send you a free proposal</p>
+        <h6>We love talking LINKIO. Let us know about your project and we\'ll send you a free proposal</h6>
 
-        <p>###### Curious?</p>
+        <h6>Curious?</h6>
 
-        <p>###### Let's talk LINKIO</p>
+        <h6>Let\'s talk LINKIO</h6>
 
-        <p>###### We love talking LINKIO. Let us know about your project and we'll send you a free proposal</p>
+        <h6>We love talking LINKIO. Let us know about your project and we\'ll send you a free proposal</h6>
       </div>
     </BlogPostTemplate>
   );

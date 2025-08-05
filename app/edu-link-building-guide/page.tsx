@@ -1,8 +1,8 @@
 import BlogPostTemplate from '@/components/BlogPostTemplate';
 
 export const metadata = {
-  title: 'Edu Link Building Guide | PostFlow',
-  description: 'Learn more about edu link building guide',
+  title: "Edu Link Building Guide | PostFlow",
+  description: "Learn more about edu link building guide",
 };
 
 export default function EduLinkBuildingGuidePage() {
@@ -50,7 +50,7 @@ export default function EduLinkBuildingGuidePage() {
 
       
       <div className="prose prose-lg max-w-none">
-        <p># .EDU Link Building with Scholarships</p>
+        <h1>.EDU Link Building with Scholarships</h1>
 
         <ul className="list-disc pl-6 space-y-2">
           <li>What is Scholarship Link Building?</li>
@@ -206,7 +206,7 @@ You can do it on social media, on your blog, and even have a chance to get some 
 
         <h2 id="tips-for-a-more-successful-scholarship-link-building-campaign">Tips for a More Successful Scholarship Link Building Campaign</h2>
 
-        <p>### Offer your scholarships to relevant schools.</p>
+        <h3>Offer your scholarships to relevant schools.</h3>
 
         <p>In order to get the most out of your links, you need to ensure relevance between what your business does and what your target school teaches. After all, it makes sense for videography students to submit their best video works to compete for a scholarship, for example.
 This influences both the application process and the impact of the link you will be getting from that resource. Relevancy matters a lot, especially in the world of search engine optimization.
@@ -347,17 +347,17 @@ As with everything, .EDU link building is only beneficial in moderation. To keep
 
         <h2 id="the-best-books-to-learn-seo-recommended-by-pros">The Best Books To Learn SEO Recommended by Pros</h2>
 
-        <p>###### Curious?</p>
+        <h6>Curious?</h6>
 
-        <p>###### Let's talk LINKIO</p>
+        <h6>Let\'s talk LINKIO</h6>
 
-        <p>###### We love talking LINKIO. Let us know about your project and we'll send you a free proposal</p>
+        <h6>We love talking LINKIO. Let us know about your project and we\'ll send you a free proposal</h6>
 
-        <p>###### Curious?</p>
+        <h6>Curious?</h6>
 
-        <p>###### Let's talk LINKIO</p>
+        <h6>Let\'s talk LINKIO</h6>
 
-        <p>###### We love talking LINKIO. Let us know about your project and we'll send you a free proposal</p>
+        <h6>We love talking LINKIO. Let us know about your project and we\'ll send you a free proposal</h6>
       </div>
     </BlogPostTemplate>
   );

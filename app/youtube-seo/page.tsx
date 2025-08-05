@@ -1,8 +1,8 @@
 import BlogPostTemplate from '@/components/BlogPostTemplate';
 
 export const metadata = {
-  title: 'Youtube Seo | PostFlow',
-  description: 'Learn more about youtube seo',
+  title: "Youtube Seo | PostFlow",
+  description: "Learn more about youtube seo",
 };
 
 export default function YoutubeSeoPage() {
@@ -38,7 +38,7 @@ export default function YoutubeSeoPage() {
 
       
       <div className="prose prose-lg max-w-none">
-        <p># YouTube SEO 101: A Quick Guide</p>
+        <h1>YouTube SEO 101: A Quick Guide</h1>
 
         <ul className="list-disc pl-6 space-y-2">
           <li>What is YouTube SEO?</li>
@@ -123,18 +123,18 @@ However, generating and choosing tags can be trickier than you think. Some tips 
 Video hashtags can optimize your SEO game and make your video more powerful in search engines. Hashtags help you garner viewers in three ways:
 • Making it more discoverable</p>
 
-        <p>#### Making it more discoverable</p>
+        <h4>Making it more discoverable</h4>
 
         <p>For example, when you put ‘YouTube marketing’ as your hashtag, viewers can find your video through the search bar.
 Competitors may also use the same hashtag as you. When their viewers click the hashtag, your content may also pop up as another resource.
 • Helping YouTube understand your video better</p>
 
-        <p>#### Helping YouTube understand your video better</p>
+        <h4>Helping YouTube understand your video better</h4>
 
         <p>Just like tags, hashtags are essential for your video performance. They help YouTube algorithms crawl, index, and understand your video content faster and better. If you optimize your hashtags, you can get a higher chance of winning higher ranks.
 • Tieing similar video content</p>
 
-        <p>#### Tieing similar video content</p>
+        <h4>Tieing similar video content</h4>
 
         <p>Hashtags can also tie similar content to your channel and automatically create a playlist. For example, you add QnAsessions as a hashtag for some of your videos with the QnA concept.
 Users can find your QnA content easier through YouTube’s search engine as similar videos will line up automatically.
@@ -299,17 +299,17 @@ Our YouTube SEO 101 can be your quick guide in optimizing your video and channel
 
         <h2 id="the-best-books-to-learn-seo-recommended-by-pros">The Best Books To Learn SEO Recommended by Pros</h2>
 
-        <p>###### Curious?</p>
+        <h6>Curious?</h6>
 
-        <p>###### Let's talk LINKIO</p>
+        <h6>Let\'s talk LINKIO</h6>
 
-        <p>###### We love talking LINKIO. Let us know about your project and we'll send you a free proposal</p>
+        <h6>We love talking LINKIO. Let us know about your project and we\'ll send you a free proposal</h6>
 
-        <p>###### Curious?</p>
+        <h6>Curious?</h6>
 
-        <p>###### Let's talk LINKIO</p>
+        <h6>Let\'s talk LINKIO</h6>
 
-        <p>###### We love talking LINKIO. Let us know about your project and we'll send you a free proposal</p>
+        <h6>We love talking LINKIO. Let us know about your project and we\'ll send you a free proposal</h6>
       </div>
     </BlogPostTemplate>
   );

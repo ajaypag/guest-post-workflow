@@ -1,8 +1,8 @@
 import BlogPostTemplate from '@/components/BlogPostTemplate';
 
 export const metadata = {
-  title: 'How To Write Listicles | PostFlow',
-  description: 'Learn more about how to write listicles',
+  title: "How To Write Listicles | PostFlow",
+  description: "Learn more about how to write listicles",
 };
 
 export default function HowToWriteListiclesPage() {
@@ -38,7 +38,7 @@ export default function HowToWriteListiclesPage() {
 
       
       <div className="prose prose-lg max-w-none">
-        <p># How To Write Winning Listicles That People Will Actually Read</p>
+        <h1>How To Write Winning Listicles That People Will Actually Read</h1>
 
         <ul className="list-disc pl-6 space-y-2">
           <li>What Are Listicles?</li>
@@ -139,7 +139,7 @@ Using what you’ve learned, we’re confident you will be able to join us in th
 
         <h2 id="faq">FAQ</h2>
 
-        <p>### What Is The Correct Way To Punctuate List Headings In A Blog Post?</p>
+        <h3>What Is The Correct Way To Punctuate List Headings In A Blog Post?</h3>
 
         <p>There are three proper ways to punctuate your list headings:
 • H2 or H3 headings – no punctuation required
@@ -218,17 +218,17 @@ Written by: Oran Yehiel, Founder at StartupGeek.com Oran Yehiel (CPA, MBA) is 
 
         <h2 id="the-best-books-to-learn-seo-recommended-by-pros">The Best Books To Learn SEO Recommended by Pros</h2>
 
-        <p>###### Curious?</p>
+        <h6>Curious?</h6>
 
-        <p>###### Let's talk LINKIO</p>
+        <h6>Let\'s talk LINKIO</h6>
 
-        <p>###### We love talking LINKIO. Let us know about your project and we'll send you a free proposal</p>
+        <h6>We love talking LINKIO. Let us know about your project and we\'ll send you a free proposal</h6>
 
-        <p>###### Curious?</p>
+        <h6>Curious?</h6>
 
-        <p>###### Let's talk LINKIO</p>
+        <h6>Let\'s talk LINKIO</h6>
 
-        <p>###### We love talking LINKIO. Let us know about your project and we'll send you a free proposal</p>
+        <h6>We love talking LINKIO. Let us know about your project and we\'ll send you a free proposal</h6>
       </div>
     </BlogPostTemplate>
   );

@@ -1,8 +1,8 @@
 import BlogPostTemplate from '@/components/BlogPostTemplate';
 
 export const metadata = {
-  title: 'Best SEO Newsletters | PostFlow',
-  description: 'Top SEO newsletters to stay ahead of the curve',
+  title: "Best SEO Newsletters | PostFlow",
+  description: "Top SEO newsletters to stay ahead of the curve",
 };
 
 export default function BestSeoNewslettersPage() {
@@ -78,7 +78,7 @@ export default function BestSeoNewslettersPage() {
 
       
       <div className="prose prose-lg max-w-none">
-        <p># Best SEO Newsletters (We Subscribed to Them All)</p>
+        <h1>Best SEO Newsletters (We Subscribed to Them All)</h1>
 
         <ul className="list-disc pl-6 space-y-2">
           <li>tldr Marketing</li>
@@ -643,17 +643,17 @@ I switch it up weekly between: a roundup of useful things I’ve found across th
 
         <h2 id="the-best-books-to-learn-seo-recommended-by-pros">The Best Books To Learn SEO Recommended by Pros</h2>
 
-        <p>###### Curious?</p>
+        <h6>Curious?</h6>
 
-        <p>###### Let's talk LINKIO</p>
+        <h6>Let\'s talk LINKIO</h6>
 
-        <p>###### We love talking LINKIO. Let us know about your project and we'll send you a free proposal</p>
+        <h6>We love talking LINKIO. Let us know about your project and we\'ll send you a free proposal</h6>
 
-        <p>###### Curious?</p>
+        <h6>Curious?</h6>
 
-        <p>###### Let's talk LINKIO</p>
+        <h6>Let\'s talk LINKIO</h6>
 
-        <p>###### We love talking LINKIO. Let us know about your project and we'll send you a free proposal</p>
+        <h6>We love talking LINKIO. Let us know about your project and we\'ll send you a free proposal</h6>
       </div>
     </BlogPostTemplate>
   );

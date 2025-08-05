@@ -1,8 +1,8 @@
 import BlogPostTemplate from '@/components/BlogPostTemplate';
 
 export const metadata = {
-  title: 'Best Rank Tracking Tools For Local Businesses What Actually Matters | PostFlow',
-  description: 'Learn more about best rank tracking tools for local businesses what actually matters',
+  title: "Best Rank Tracking Tools For Local Businesses What Actually Matters | PostFlow",
+  description: "Learn more about best rank tracking tools for local businesses what actually matters",
 };
 
 export default function BestRankTrackingToolsForLocalBusinessesWhatActuallyMattersPage() {
@@ -39,7 +39,7 @@ export default function BestRankTrackingToolsForLocalBusinessesWhatActuallyMatte
 
       
       <div className="prose prose-lg max-w-none">
-        <p># Best Rank Tracking Tools for Local Businesses: What Actually Matters?</p>
+        <h1>Best Rank Tracking Tools for Local Businesses: What Actually Matters?</h1>
 
         <ul className="list-disc pl-6 space-y-2">
           <li>Why Rank Tracking Matters (And Why You Should Care)</li>
@@ -158,17 +158,17 @@ The takeaway: find the balance that fits your business—affordable enough to ju
 
         <h2 id="the-best-books-to-learn-seo-recommended-by-pros">The Best Books To Learn SEO Recommended by Pros</h2>
 
-        <p>###### Curious?</p>
+        <h6>Curious?</h6>
 
-        <p>###### Let's talk LINKIO</p>
+        <h6>Let\'s talk LINKIO</h6>
 
-        <p>###### We love talking LINKIO. Let us know about your project and we'll send you a free proposal</p>
+        <h6>We love talking LINKIO. Let us know about your project and we\'ll send you a free proposal</h6>
 
-        <p>###### Curious?</p>
+        <h6>Curious?</h6>
 
-        <p>###### Let's talk LINKIO</p>
+        <h6>Let\'s talk LINKIO</h6>
 
-        <p>###### We love talking LINKIO. Let us know about your project and we'll send you a free proposal</p>
+        <h6>We love talking LINKIO. Let us know about your project and we\'ll send you a free proposal</h6>
       </div>
     </BlogPostTemplate>
   );

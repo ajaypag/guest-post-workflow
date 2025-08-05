@@ -1,8 +1,8 @@
 import BlogPostTemplate from '@/components/BlogPostTemplate';
 
 export const metadata = {
-  title: 'Follow-Up Email Templates | PostFlow',
-  description: 'Effective follow-up email templates for link building',
+  title: "Follow-Up Email Templates | PostFlow",
+  description: "Effective follow-up email templates for link building",
 };
 
 export default function FollowUpEmailPage() {
@@ -58,7 +58,7 @@ export default function FollowUpEmailPage() {
 
       
       <div className="prose prose-lg max-w-none">
-        <p># How to Follow up on an Email (What Gurus Forgot to Mention)</p>
+        <h1>How to Follow up on an Email (What Gurus Forgot to Mention)</h1>
 
         <ul className="list-disc pl-6 space-y-2">
           <li>1. How many follow-ups would be TOO many?</li>
@@ -719,17 +719,17 @@ If you have any questions or disagree with something you’ve just read, feel fr
 
         <h2 id="the-best-books-to-learn-seo-recommended-by-pros">The Best Books To Learn SEO Recommended by Pros</h2>
 
-        <p>###### Curious?</p>
+        <h6>Curious?</h6>
 
-        <p>###### Let's talk LINKIO</p>
+        <h6>Let\'s talk LINKIO</h6>
 
-        <p>###### We love talking LINKIO. Let us know about your project and we'll send you a free proposal</p>
+        <h6>We love talking LINKIO. Let us know about your project and we\'ll send you a free proposal</h6>
 
-        <p>###### Curious?</p>
+        <h6>Curious?</h6>
 
-        <p>###### Let's talk LINKIO</p>
+        <h6>Let\'s talk LINKIO</h6>
 
-        <p>###### We love talking LINKIO. Let us know about your project and we'll send you a free proposal</p>
+        <h6>We love talking LINKIO. Let us know about your project and we\'ll send you a free proposal</h6>
       </div>
     </BlogPostTemplate>
   );

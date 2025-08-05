@@ -1,8 +1,8 @@
 import BlogPostTemplate from '@/components/BlogPostTemplate';
 
 export const metadata = {
-  title: 'How To Choose The Best Seo Software For Your Business | PostFlow',
-  description: 'Learn more about how to choose the best seo software for your business',
+  title: "How To Choose The Best Seo Software For Your Business | PostFlow",
+  description: "Learn more about how to choose the best seo software for your business",
 };
 
 export default function HowToChooseTheBestSeoSoftwareForYourBusinessPage() {
@@ -38,7 +38,7 @@ export default function HowToChooseTheBestSeoSoftwareForYourBusinessPage() {
 
       
       <div className="prose prose-lg max-w-none">
-        <p># How to Choose the Best SEO Software for Your Business</p>
+        <h1>How to Choose the Best SEO Software for Your Business</h1>
 
         <ul className="list-disc pl-6 space-y-2">
           <li>What Is SEO Software?</li>
@@ -174,17 +174,17 @@ Generative AI platforms such as Jasper (formerly Jarvis), Copy.ai, Writesonic, a
 
         <h2 id="the-best-books-to-learn-seo-recommended-by-pros">The Best Books To Learn SEO Recommended by Pros</h2>
 
-        <p>###### Curious?</p>
+        <h6>Curious?</h6>
 
-        <p>###### Let's talk LINKIO</p>
+        <h6>Let\'s talk LINKIO</h6>
 
-        <p>###### We love talking LINKIO. Let us know about your project and we'll send you a free proposal</p>
+        <h6>We love talking LINKIO. Let us know about your project and we\'ll send you a free proposal</h6>
 
-        <p>###### Curious?</p>
+        <h6>Curious?</h6>
 
-        <p>###### Let's talk LINKIO</p>
+        <h6>Let\'s talk LINKIO</h6>
 
-        <p>###### We love talking LINKIO. Let us know about your project and we'll send you a free proposal</p>
+        <h6>We love talking LINKIO. Let us know about your project and we\'ll send you a free proposal</h6>
       </div>
     </BlogPostTemplate>
   );

@@ -1,8 +1,8 @@
 import BlogPostTemplate from '@/components/BlogPostTemplate';
 
 export const metadata = {
-  title: 'Best Directory Submission Services | PostFlow',
-  description: 'Learn more about best directory submission services',
+  title: "Best Directory Submission Services | PostFlow",
+  description: "Learn more about best directory submission services",
 };
 
 export default function BestDirectorySubmissionServicesPage() {
@@ -47,7 +47,7 @@ export default function BestDirectorySubmissionServicesPage() {
 
       
       <div className="prose prose-lg max-w-none">
-        <p># Best Directory Submission Services</p>
+        <h1>Best Directory Submission Services</h1>
 
         <ul className="list-disc pl-6 space-y-2">
           <li>What are Directories in SEO?</li>
@@ -75,7 +75,7 @@ Considering its a lot of leg work – outsourcing this task makes a lot of sense
 
         <h2 id="top-10-directory-submission-services">Top 10 Directory Submission Services</h2>
 
-        <p>## 1. Submitshop</p>
+        <h2>1. Submitshop</h2>
 
         <p>Submitshop is a Search Engine Optimization Submission, Web Promotion, Internet Marketing and Ranking Placement Company specializing in search engine submission, website optimization, internet marketing and other web promotion services so that the clients can effectively achieve their business objectives online and have a high ROI. We at Submit Shop work with each client on a one-to-one basis to evaluate needs and provide the very best service and support.</p>
 
@@ -119,7 +119,7 @@ Attuned in Business-to-Business (B2B) and Business-to-Consumers (B2C) portals, O
 
         <h2 id="all-the-directory-submissions-services-considered">All The Directory Submissions Services Considered</h2>
 
-        <p>### 11. LinkbuildingCorp</p>
+        <h3>11. LinkbuildingCorp</h3>
 
         <p>We use a customer-centric approach and our wide industry expertise, which helps our clients perform exceptionally, even for very competitive keywords. Our strong portfolio of highly satisfied clients is a testament that we drive innovation and success across multiple industry verticals. We believe that digital marketing is the most important aspect of how people conduct business online. Hence, we help your brand break through the clutter by staying ahead of the digital marketing curve and emerging trends. With smart and effective strategies, we are certainly the right platform for custom Internet Marketing Solutions.</p>
 
@@ -296,17 +296,17 @@ DevLups is a leading Indian based Web Services firm providing Professional Servi
 
         <h2 id="the-best-books-to-learn-seo-recommended-by-pros">The Best Books To Learn SEO Recommended by Pros</h2>
 
-        <p>###### Curious?</p>
+        <h6>Curious?</h6>
 
-        <p>###### Let's talk LINKIO</p>
+        <h6>Let\'s talk LINKIO</h6>
 
-        <p>###### We love talking LINKIO. Let us know about your project and we'll send you a free proposal</p>
+        <h6>We love talking LINKIO. Let us know about your project and we\'ll send you a free proposal</h6>
 
-        <p>###### Curious?</p>
+        <h6>Curious?</h6>
 
-        <p>###### Let's talk LINKIO</p>
+        <h6>Let\'s talk LINKIO</h6>
 
-        <p>###### We love talking LINKIO. Let us know about your project and we'll send you a free proposal</p>
+        <h6>We love talking LINKIO. Let us know about your project and we\'ll send you a free proposal</h6>
       </div>
     </BlogPostTemplate>
   );

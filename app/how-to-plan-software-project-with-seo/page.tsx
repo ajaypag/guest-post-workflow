@@ -1,8 +1,8 @@
 import BlogPostTemplate from '@/components/BlogPostTemplate';
 
 export const metadata = {
-  title: 'How To Plan Software Project With Seo | PostFlow',
-  description: 'Learn more about how to plan software project with seo',
+  title: "How To Plan Software Project With Seo | PostFlow",
+  description: "Learn more about how to plan software project with seo",
 };
 
 export default function HowToPlanSoftwareProjectWithSeoPage() {
@@ -41,7 +41,7 @@ export default function HowToPlanSoftwareProjectWithSeoPage() {
 
       
       <div className="prose prose-lg max-w-none">
-        <p># Planning SEO strategies for a Software Project</p>
+        <h1>Planning SEO strategies for a Software Project</h1>
 
         <ul className="list-disc pl-6 space-y-2">
           <li>Make sure your software can fit in more keywords</li>
@@ -222,17 +222,17 @@ hare only timely solutions with their audiences</p>
 
         <h2 id="the-best-books-to-learn-seo-recommended-by-pros">The Best Books To Learn SEO Recommended by Pros</h2>
 
-        <p>###### Curious?</p>
+        <h6>Curious?</h6>
 
-        <p>###### Let's talk LINKIO</p>
+        <h6>Let\'s talk LINKIO</h6>
 
-        <p>###### We love talking LINKIO. Let us know about your project and we'll send you a free proposal</p>
+        <h6>We love talking LINKIO. Let us know about your project and we\'ll send you a free proposal</h6>
 
-        <p>###### Curious?</p>
+        <h6>Curious?</h6>
 
-        <p>###### Let's talk LINKIO</p>
+        <h6>Let\'s talk LINKIO</h6>
 
-        <p>###### We love talking LINKIO. Let us know about your project and we'll send you a free proposal</p>
+        <h6>We love talking LINKIO. Let us know about your project and we\'ll send you a free proposal</h6>
       </div>
     </BlogPostTemplate>
   );

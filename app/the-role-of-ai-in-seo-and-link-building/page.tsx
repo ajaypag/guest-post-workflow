@@ -1,8 +1,8 @@
 import BlogPostTemplate from '@/components/BlogPostTemplate';
 
 export const metadata = {
-  title: 'The Role Of Ai In Seo And Link Building | PostFlow',
-  description: 'Learn more about the role of ai in seo and link building',
+  title: "The Role Of Ai In Seo And Link Building | PostFlow",
+  description: "Learn more about the role of ai in seo and link building",
 };
 
 export default function TheRoleOfAiInSeoAndLinkBuildingPage() {
@@ -40,7 +40,7 @@ export default function TheRoleOfAiInSeoAndLinkBuildingPage() {
 
       
       <div className="prose prose-lg max-w-none">
-        <p># The Role of AI in SEO and Link Building</p>
+        <h1>The Role of AI in SEO and Link Building</h1>
 
         <ul className="list-disc pl-6 space-y-2">
           <li>AI Advantages in SEO and Link Building</li>
@@ -206,17 +206,17 @@ More than that, AI systems study contenders’ backlink profiles to identify hig
 
         <h2 id="the-best-books-to-learn-seo-recommended-by-pros">The Best Books To Learn SEO Recommended by Pros</h2>
 
-        <p>###### Curious?</p>
+        <h6>Curious?</h6>
 
-        <p>###### Let's talk LINKIO</p>
+        <h6>Let\'s talk LINKIO</h6>
 
-        <p>###### We love talking LINKIO. Let us know about your project and we'll send you a free proposal</p>
+        <h6>We love talking LINKIO. Let us know about your project and we\'ll send you a free proposal</h6>
 
-        <p>###### Curious?</p>
+        <h6>Curious?</h6>
 
-        <p>###### Let's talk LINKIO</p>
+        <h6>Let\'s talk LINKIO</h6>
 
-        <p>###### We love talking LINKIO. Let us know about your project and we'll send you a free proposal</p>
+        <h6>We love talking LINKIO. Let us know about your project and we\'ll send you a free proposal</h6>
       </div>
     </BlogPostTemplate>
   );

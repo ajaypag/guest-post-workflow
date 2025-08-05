@@ -1,8 +1,8 @@
 import BlogPostTemplate from '@/components/BlogPostTemplate';
 
 export const metadata = {
-  title: 'Best Digital Marketing Tips From Experts | PostFlow',
-  description: 'Learn more about best digital marketing tips from experts',
+  title: "Best Digital Marketing Tips From Experts | PostFlow",
+  description: "Learn more about best digital marketing tips from experts",
 };
 
 export default function BestDigitalMarketingTipsFromExpertsPage() {
@@ -38,7 +38,7 @@ export default function BestDigitalMarketingTipsFromExpertsPage() {
 
       
       <div className="prose prose-lg max-w-none">
-        <p># Best Digital Marketing Tips From Experts</p>
+        <h1>Best Digital Marketing Tips From Experts</h1>
 
         <ul className="list-disc pl-6 space-y-2">
           <li>Understanding Digital Marketing</li>
@@ -202,17 +202,17 @@ Now’s the time to focus, refine your approach, and make every click count.</p>
 
         <h2 id="the-best-books-to-learn-seo-recommended-by-pros">The Best Books To Learn SEO Recommended by Pros</h2>
 
-        <p>###### Curious?</p>
+        <h6>Curious?</h6>
 
-        <p>###### Let's talk LINKIO</p>
+        <h6>Let\'s talk LINKIO</h6>
 
-        <p>###### We love talking LINKIO. Let us know about your project and we'll send you a free proposal</p>
+        <h6>We love talking LINKIO. Let us know about your project and we\'ll send you a free proposal</h6>
 
-        <p>###### Curious?</p>
+        <h6>Curious?</h6>
 
-        <p>###### Let's talk LINKIO</p>
+        <h6>Let\'s talk LINKIO</h6>
 
-        <p>###### We love talking LINKIO. Let us know about your project and we'll send you a free proposal</p>
+        <h6>We love talking LINKIO. Let us know about your project and we\'ll send you a free proposal</h6>
       </div>
     </BlogPostTemplate>
   );

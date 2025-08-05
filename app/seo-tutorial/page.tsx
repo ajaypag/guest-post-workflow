@@ -1,8 +1,8 @@
 import BlogPostTemplate from '@/components/BlogPostTemplate';
 
 export const metadata = {
-  title: 'Seo Tutorial | PostFlow',
-  description: 'Learn more about seo tutorial',
+  title: "Seo Tutorial | PostFlow",
+  description: "Learn more about seo tutorial",
 };
 
 export default function SeoTutorialPage() {
@@ -41,7 +41,7 @@ export default function SeoTutorialPage() {
 
       
       <div className="prose prose-lg max-w-none">
-        <p># Search Engine Optimization Tutorial (An Introduction to SEO)</p>
+        <h1>Search Engine Optimization Tutorial (An Introduction to SEO)</h1>
 
         <ul className="list-disc pl-6 space-y-2">
           <li>The Importance of SEO</li>
@@ -129,7 +129,7 @@ The four ways that Googlebot searches for information are:
 • Content
 Here’s a quick overview of how you can optimize each of these factors to be more easily understood by Googlebot.</p>
 
-        <p>#### Your URL: From Google Bot’s Perspective</p>
+        <h4>Your URL: From Google Bot’s Perspective</h4>
 
         <p>A URL or, Unique Resource Locator, is the method that we use to find a single specific web page.For any given URL, there can only be one web page, and this is an integral part of how the internet works.For example, if you type in https://www.linkio.com you will always land at the Linkio home page, you will never be taken to a different site or a different page unless the web page owner sets up a 301 redirect (but that’s a topic for a different time).
 In order to optimize your URLs, you must first understand the three types of URLs that are present on the internet.
@@ -156,7 +156,7 @@ Why?
 Because there are plenty of other ways to optimize for SEO besides the domain name.
 Next, let’s explore what else the Google bot is looking for as it crawls through the web.</p>
 
-        <p>#### Your Metadata: From Google Bot’s Perspective</p>
+        <h4>Your Metadata: From Google Bot’s Perspective</h4>
 
         <p>Metadata, as the name implies, is information about other information.
 For example, in the “Real World” we have social security numbers, VIN numbers, dates of birth, model numbers, and serial numbers.
@@ -181,7 +181,7 @@ For example, if you were a plumber in Newark, NJ, this is what optimized metadat
 If we go back, once again, to our library analogy, metadata is very similar to the cover of a book. In order to quickly and effectively find the information that you are looking for, the library needs to have an accurate book title (meta title), back cover (meta description), and identification number (Schema).
 You could still find any book that you were looking for with only one of these three factors, however, having all three fully optimized makes it much easier to quickly find and obtain the information that you need.</p>
 
-        <p>#### Anchor Text: From Google Bot’s Perspective</p>
+        <h4>Anchor Text: From Google Bot’s Perspective</h4>
 
         <p>Anchor text is clickable text in a hyperlink that’s on a webpage. Typically, you can recognize anchor text by the blue color and underline, although savvy web designers can customize colors to their liking.
 Linkio, is an example of anchor text.
@@ -198,7 +198,7 @@ I could write an entire guide focusing exclusively on anchor text, but for the p
 ● Natural: Natural anchors are anchors that are not related to your keyword or brand. For example, click here, this website, and our new article are all natural anchors.
 You can play around with our anchor text generator tool to come with more ideas for how to vary your anchors.</p>
 
-        <p>#### Content: From Google Bot’s Perspective</p>
+        <h4>Content: From Google Bot’s Perspective</h4>
 
         <p>Content is anything and everything that can be viewed by your audience from the web. In your run of the mill article, there can be several types of content including:
 ● Written content
@@ -301,7 +301,7 @@ Before I knew it, my WordPress backend had 90(!) plugins installed, 3 different 
 After making several changes, here are my current scores.
 While there are dozens of great resources and tactics for ramping up your site’s speed, here are a few of the simplest and easiest things I did squeeze the extra speed out of my website.</p>
 
-        <p>#### Choose the Right Web Host</p>
+        <h4>Choose the Right Web Host</h4>
 
         <p>The first and most important thing that you can do to ensure that your website loads as quickly as possible is to select the right hosting package from the best company that you can afford.
 There are four primary hosting options to choose from:
@@ -320,13 +320,13 @@ Cloud hosting, such as using providers like AWS, Digital Ocean, or RDP USA, offe
 I switched from dedicated hosting to cloud hosting in haven’t looked back. It’s pretty technical to setup though, so it’s better to go through a managed-cloud provider like Cloudways, Kinsta or ManageWP.
 The one I chose is Cloudways VULTR WordPress hosting. It’s pretty much one of the fastest options out there right now.</p>
 
-        <p>#### Minimize Image Sizes</p>
+        <h4>Minimize Image Sizes</h4>
 
         <p>Another common mistake that many newbie web owners make is that they forget to minimize the images on their website.
 Oftentimes, stock photos will download at pixel sizes of 4500 x 4500 and up. Even if you proceed to resize the images in WordPress, your website will still have to load the full image and then resize it to the appropriate length and width, slowing your website even further. Therefore, make sure to use an optimized image to speed up your WordPress site.
 I ended up using Imagify to bulk shrink my 4 gigs of media down to 400 mbs. You do notice the images get worst looking – especially since I chose the most aggressive settings, but I’d OK with it.</p>
 
-        <p>#### Enable Caching</p>
+        <h4>Enable Caching</h4>
 
         <p>One of the easiest ways to increase your website’s load time is to enable browser caching.
 Whenever someone visits your site for the first time, their browser will have to load all of the elements on your site by sending an HTTP request to the server. This takes a lot of time and can result in very slow page speeds.
@@ -337,12 +337,12 @@ But I had noticed it’s lazy loading settings are quite useful, and I preferred
 So he begrudgingly help fix the stuff WP Rocket broke and the pages are loading quite well now.
 If your website is simple, then simply install the plugin from WordPress then enable caching once it’s installed.</p>
 
-        <p>#### Audit and Enable Compression</p>
+        <h4>Audit and Enable Compression</h4>
 
         <p>When it comes to boosting your website speed, compression is the name of the game.
 Start by running a compression audit at GID Network and then enable a browser caching software such as W3 Total Cache and select “Enable Compression”. I haven’t seen compression settings in WP Rocket though.</p>
 
-        <p>#### Limit Plugins and Other Third Party Software</p>
+        <h4>Limit Plugins and Other Third Party Software</h4>
 
         <p>Although I’ve already recommended a number of great plugins that you can use to speed up your website’s response time, it’s important to note that most plugins will hinder, not help, your website’s performance.
 As such, it’s important that you minimize the number of plugins and third party software that you use.
@@ -391,7 +391,7 @@ Yes, it’s hard work. You will need to pour several hours into any article that
 But at the end of the day, you can’t game the system. All of your content should be 2,000 words or longer and cover your given topic as thoroughly as you’re able.
 Here are a few other tips to help you level up your content and improve your website’s search engine performance.</p>
 
-        <p>#### Use Clever and Benefit Driven Subheadings</p>
+        <h4>Use Clever and Benefit Driven Subheadings</h4>
 
         <p>Few people have the time or attention span to read through an entire article or mega guide these day. Just think about it…
 Have you actually read all of the content up to this point? If so, then I salute you.
@@ -400,7 +400,7 @@ This is how most content on the internet is consumed.
 In order to make your content as accessible as possible to your audience and thereby increase the dwell time on your important pages, be sure to break up your content with lots of subheadings, bullet points, and numbered lists.
 The more skimmable your content is, the better.</p>
 
-        <p>#### Embed Lots of Images and Videos</p>
+        <h4>Embed Lots of Images and Videos</h4>
 
         <p>They say that content is king, but it would be far more accurate to say that “Visual content is king”.
 In recent years, we’ve witnessed an explosive growth in video and image based content like infographics.
@@ -448,7 +448,7 @@ While it might seem boring to be in the “Play it safe” group, you can rest a
 So how do you increase your website’s popularity the right way?
 Simple… By earning highly authoritative and relevant backlinks.</p>
 
-        <p>#### Domain Authority</p>
+        <h4>Domain Authority</h4>
 
         <p>The first, and arguably most important, aspect of a backlink quality is the domain authority of the linking website.
 The best way to think this is in terms of referrals.
@@ -459,7 +459,7 @@ Earning or purchasing a backlink from a low domain authority website (anything u
 However, earning a backlink from a high quality website with a high domain authority can give you an (almost) instantaneous ranking boost and loads of SEO ‘Juice’ for years to come.
 But this is just part of the picture. After some of the more recent updates to their algorithm, Google has begun placing a higher premium on the relevance of the linking site as well.</p>
 
-        <p>#### Backlink Relevance</p>
+        <h4>Backlink Relevance</h4>
 
         <p>Google doesn’t just want to see people earning authoritative backlinks. In order to rank a site highly in the SERPs, Google also wants to see a high degree of relevance in your backlink profile.
 What does this mean?
@@ -626,17 +626,17 @@ I’ll see you at the top!</p>
 
         <h2 id="the-best-books-to-learn-seo-recommended-by-pros">The Best Books To Learn SEO Recommended by Pros</h2>
 
-        <p>###### Curious?</p>
+        <h6>Curious?</h6>
 
-        <p>###### Let's talk LINKIO</p>
+        <h6>Let\'s talk LINKIO</h6>
 
-        <p>###### We love talking LINKIO. Let us know about your project and we'll send you a free proposal</p>
+        <h6>We love talking LINKIO. Let us know about your project and we\'ll send you a free proposal</h6>
 
-        <p>###### Curious?</p>
+        <h6>Curious?</h6>
 
-        <p>###### Let's talk LINKIO</p>
+        <h6>Let\'s talk LINKIO</h6>
 
-        <p>###### We love talking LINKIO. Let us know about your project and we'll send you a free proposal</p>
+        <h6>We love talking LINKIO. Let us know about your project and we\'ll send you a free proposal</h6>
       </div>
     </BlogPostTemplate>
   );

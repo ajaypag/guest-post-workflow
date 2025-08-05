@@ -1,8 +1,8 @@
 import BlogPostTemplate from '@/components/BlogPostTemplate';
 
 export const metadata = {
-  title: 'Social Media Link Building | PostFlow',
-  description: 'Learn more about social media link building',
+  title: "Social Media Link Building | PostFlow",
+  description: "Learn more about social media link building",
 };
 
 export default function SocialMediaLinkBuildingPage() {
@@ -47,7 +47,7 @@ export default function SocialMediaLinkBuildingPage() {
 
       
       <div className="prose prose-lg max-w-none">
-        <p># How To Use Social Media Properly To Build Quality Links?</p>
+        <h1>How To Use Social Media Properly To Build Quality Links?</h1>
 
         <ul className="list-disc pl-6 space-y-2">
           <li>Why Using Social Media Is a Great Way to Build Quality Links?</li>
@@ -73,7 +73,7 @@ export default function SocialMediaLinkBuildingPage() {
           <li>In this blog, you’ll learn about the top 10 strategies for social media link building. But before that, let’s understand what link building is.</li>
         </ul>
 
-        <p># What Is Link Building?</p>
+        <h1>What Is Link Building?</h1>
 
         <p>Link building is the process by which you persuade other brands to add a link to your website or blog on their own. Every link or backlink you get from other established businesses is like an endorsement of the reliability of your website and brand.
 These links also serve as votes of credibility from other brands. Therefore, the more votes you manage to get, the better it helps you rank in Google searches and other search engines.
@@ -94,7 +94,7 @@ Social media platforms such as Pinterest, Facebook, LinkedIn, YouTube, and Twitt
 
         <h2 id="10-social-media-strategies-to-build-quality-links">10 Social Media Strategies to Build Quality Links</h2>
 
-        <p>## 1. Grow Your Brand and Build an Audience</p>
+        <h2>1. Grow Your Brand and Build an Audience</h2>
 
         <p>One of the most prevalent online activities people indulge in is social media. Globally, more than 4.26 billion people used social media in 2021, which is expected to reach around 6 billion by 2027.
 This is clear enough evidence that social media is a reliable platform for creating brand awareness and building an engaging community.
@@ -265,17 +265,17 @@ Darshan Ruparelia is a B2B SaaS marketer at SocialPilot. Darshan is a SaaS enthu
 
         <h2 id="the-best-books-to-learn-seo-recommended-by-pros">The Best Books To Learn SEO Recommended by Pros</h2>
 
-        <p>###### Curious?</p>
+        <h6>Curious?</h6>
 
-        <p>###### Let's talk LINKIO</p>
+        <h6>Let\'s talk LINKIO</h6>
 
-        <p>###### We love talking LINKIO. Let us know about your project and we'll send you a free proposal</p>
+        <h6>We love talking LINKIO. Let us know about your project and we\'ll send you a free proposal</h6>
 
-        <p>###### Curious?</p>
+        <h6>Curious?</h6>
 
-        <p>###### Let's talk LINKIO</p>
+        <h6>Let\'s talk LINKIO</h6>
 
-        <p>###### We love talking LINKIO. Let us know about your project and we'll send you a free proposal</p>
+        <h6>We love talking LINKIO. Let us know about your project and we\'ll send you a free proposal</h6>
       </div>
     </BlogPostTemplate>
   );

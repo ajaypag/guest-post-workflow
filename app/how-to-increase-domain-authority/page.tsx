@@ -1,8 +1,8 @@
 import BlogPostTemplate from '@/components/BlogPostTemplate';
 
 export const metadata = {
-  title: 'How To Increase Domain Authority | PostFlow',
-  description: 'Learn more about how to increase domain authority',
+  title: "How To Increase Domain Authority | PostFlow",
+  description: "Learn more about how to increase domain authority",
 };
 
 export default function HowToIncreaseDomainAuthorityPage() {
@@ -40,7 +40,7 @@ export default function HowToIncreaseDomainAuthorityPage() {
 
       
       <div className="prose prose-lg max-w-none">
-        <p># How to Increase Domain Authority</p>
+        <h1>How to Increase Domain Authority</h1>
 
         <ul className="list-disc pl-6 space-y-2">
           <li>What Is Domain Authority And Page Authority?</li>
@@ -275,17 +275,17 @@ Jordan Alexo is a digital marketer who’s been making money online since 2011. 
 
         <h2 id="the-best-books-to-learn-seo-recommended-by-pros">The Best Books To Learn SEO Recommended by Pros</h2>
 
-        <p>###### Curious?</p>
+        <h6>Curious?</h6>
 
-        <p>###### Let's talk LINKIO</p>
+        <h6>Let\'s talk LINKIO</h6>
 
-        <p>###### We love talking LINKIO. Let us know about your project and we'll send you a free proposal</p>
+        <h6>We love talking LINKIO. Let us know about your project and we\'ll send you a free proposal</h6>
 
-        <p>###### Curious?</p>
+        <h6>Curious?</h6>
 
-        <p>###### Let's talk LINKIO</p>
+        <h6>Let\'s talk LINKIO</h6>
 
-        <p>###### We love talking LINKIO. Let us know about your project and we'll send you a free proposal</p>
+        <h6>We love talking LINKIO. Let us know about your project and we\'ll send you a free proposal</h6>
       </div>
     </BlogPostTemplate>
   );

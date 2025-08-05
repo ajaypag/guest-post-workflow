@@ -1,7 +1,7 @@
 import BlogPostTemplate from '@/components/BlogPostTemplate';
 
 export const metadata = {
-  title: 'Google's Latest Algorithm Updates | PostFlow',
+  title: "Google's Latest Algorithm Updates | PostFlow",
   description: 'Stay updated with the latest Google algorithm changes',
 };
 
@@ -44,7 +44,7 @@ export default function GooglesLatestAlgorithmUpdatesPage() {
 
       
       <div className="prose prose-lg max-w-none">
-        <p># Understanding Google’s Latest  Algorithm Updates: What You Need to Know</p>
+        <h1>Understanding Google’s Latest  Algorithm Updates: What You Need to Know</h1>
 
         <ul className="list-disc pl-6 space-y-2">
           <li>What Are Google Search Algorithms?</li>
@@ -167,17 +167,17 @@ export default function GooglesLatestAlgorithmUpdatesPage() {
 
         <h2 id="the-best-books-to-learn-seo-recommended-by-pros">The Best Books To Learn SEO Recommended by Pros</h2>
 
-        <p>###### Curious?</p>
+        <h6>Curious?</h6>
 
-        <p>###### Let's talk LINKIO</p>
+        <h6>Let\'s talk LINKIO</h6>
 
-        <p>###### We love talking LINKIO. Let us know about your project and we'll send you a free proposal</p>
+        <h6>We love talking LINKIO. Let us know about your project and we\'ll send you a free proposal</h6>
 
-        <p>###### Curious?</p>
+        <h6>Curious?</h6>
 
-        <p>###### Let's talk LINKIO</p>
+        <h6>Let\'s talk LINKIO</h6>
 
-        <p>###### We love talking LINKIO. Let us know about your project and we'll send you a free proposal</p>
+        <h6>We love talking LINKIO. Let us know about your project and we\'ll send you a free proposal</h6>
       </div>
     </BlogPostTemplate>
   );

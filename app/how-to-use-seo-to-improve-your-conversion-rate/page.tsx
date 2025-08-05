@@ -1,8 +1,8 @@
 import BlogPostTemplate from '@/components/BlogPostTemplate';
 
 export const metadata = {
-  title: 'How To Use Seo To Improve Your Conversion Rate | PostFlow',
-  description: 'Learn more about how to use seo to improve your conversion rate',
+  title: "How To Use Seo To Improve Your Conversion Rate | PostFlow",
+  description: "Learn more about how to use seo to improve your conversion rate",
 };
 
 export default function HowToUseSeoToImproveYourConversionRatePage() {
@@ -43,7 +43,7 @@ export default function HowToUseSeoToImproveYourConversionRatePage() {
 
       
       <div className="prose prose-lg max-w-none">
-        <p># How To Use SEO To Improve Your Conversion Rate</p>
+        <h1>How To Use SEO To Improve Your Conversion Rate</h1>
 
         <ul className="list-disc pl-6 space-y-2">
           <li>Understanding The Relationship Between SEO & Conversion Rate</li>
@@ -312,17 +312,17 @@ Its advanced features and data-driven approach can optimize your conversion funn
 
         <h2 id="the-best-books-to-learn-seo-recommended-by-pros">The Best Books To Learn SEO Recommended by Pros</h2>
 
-        <p>###### Curious?</p>
+        <h6>Curious?</h6>
 
-        <p>###### Let's talk LINKIO</p>
+        <h6>Let\'s talk LINKIO</h6>
 
-        <p>###### We love talking LINKIO. Let us know about your project and we'll send you a free proposal</p>
+        <h6>We love talking LINKIO. Let us know about your project and we\'ll send you a free proposal</h6>
 
-        <p>###### Curious?</p>
+        <h6>Curious?</h6>
 
-        <p>###### Let's talk LINKIO</p>
+        <h6>Let\'s talk LINKIO</h6>
 
-        <p>###### We love talking LINKIO. Let us know about your project and we'll send you a free proposal</p>
+        <h6>We love talking LINKIO. Let us know about your project and we\'ll send you a free proposal</h6>
       </div>
     </BlogPostTemplate>
   );

@@ -1,8 +1,8 @@
 import BlogPostTemplate from '@/components/BlogPostTemplate';
 
 export const metadata = {
-  title: 'Link Building Outreach Subject Lines | PostFlow',
-  description: 'Learn more about link building outreach subject lines',
+  title: "Link Building Outreach Subject Lines | PostFlow",
+  description: "Learn more about link building outreach subject lines",
 };
 
 export default function LinkBuildingOutreachSubjectLinesPage() {
@@ -43,7 +43,7 @@ export default function LinkBuildingOutreachSubjectLinesPage() {
 
       
       <div className="prose prose-lg max-w-none">
-        <p># How to Create Link Building Outreach Subject Lines That Get Opened</p>
+        <h1>How to Create Link Building Outreach Subject Lines That Get Opened</h1>
 
         <ul className="list-disc pl-6 space-y-2">
           <li>1. Know Your Target Customer</li>
@@ -313,17 +313,17 @@ Joanne Camarce grows and strategizes B2B marketing and PR efforts. She loves sla
 
         <h2 id="the-best-books-to-learn-seo-recommended-by-pros">The Best Books To Learn SEO Recommended by Pros</h2>
 
-        <p>###### Curious?</p>
+        <h6>Curious?</h6>
 
-        <p>###### Let's talk LINKIO</p>
+        <h6>Let\'s talk LINKIO</h6>
 
-        <p>###### We love talking LINKIO. Let us know about your project and we'll send you a free proposal</p>
+        <h6>We love talking LINKIO. Let us know about your project and we\'ll send you a free proposal</h6>
 
-        <p>###### Curious?</p>
+        <h6>Curious?</h6>
 
-        <p>###### Let's talk LINKIO</p>
+        <h6>Let\'s talk LINKIO</h6>
 
-        <p>###### We love talking LINKIO. Let us know about your project and we'll send you a free proposal</p>
+        <h6>We love talking LINKIO. Let us know about your project and we\'ll send you a free proposal</h6>
       </div>
     </BlogPostTemplate>
   );

@@ -1,8 +1,8 @@
 import BlogPostTemplate from '@/components/BlogPostTemplate';
 
 export const metadata = {
-  title: 'How To Create A Content Marketing Strategy For Ecommerce | PostFlow',
-  description: 'Learn more about how to create a content marketing strategy for ecommerce',
+  title: "How To Create A Content Marketing Strategy For Ecommerce | PostFlow",
+  description: "Learn more about how to create a content marketing strategy for ecommerce",
 };
 
 export default function HowToCreateAContentMarketingStrategyForEcommercePage() {
@@ -36,7 +36,7 @@ export default function HowToCreateAContentMarketingStrategyForEcommercePage() {
 
       
       <div className="prose prose-lg max-w-none">
-        <p># How to Create a Content Marketing Strategy for eCommerce</p>
+        <h1>How to Create a Content Marketing Strategy for eCommerce</h1>
 
         <ul className="list-disc pl-6 space-y-2">
           <li>What Is a Content Marketing Strategy for eCommerce and Why is it Necessary?</li>
@@ -44,7 +44,7 @@ export default function HowToCreateAContentMarketingStrategyForEcommercePage() {
           <li>Conclusion</li>
         </ul>
 
-        <p># How to Create an eCommerce Content Marketing Strategy</p>
+        <h1>How to Create an eCommerce Content Marketing Strategy</h1>
 
         <p>Do you know that content marketing leaders experience 7.8x more site traffic than non-leaders?
 A report by Gitnux, a globally renowned market research platform for leaders, has recently revealed.
@@ -241,17 +241,17 @@ Now is the time to take action — develop your strategy, measure its impact, an
 
         <h2 id="the-best-books-to-learn-seo-recommended-by-pros">The Best Books To Learn SEO Recommended by Pros</h2>
 
-        <p>###### Curious?</p>
+        <h6>Curious?</h6>
 
-        <p>###### Let's talk LINKIO</p>
+        <h6>Let\'s talk LINKIO</h6>
 
-        <p>###### We love talking LINKIO. Let us know about your project and we'll send you a free proposal</p>
+        <h6>We love talking LINKIO. Let us know about your project and we\'ll send you a free proposal</h6>
 
-        <p>###### Curious?</p>
+        <h6>Curious?</h6>
 
-        <p>###### Let's talk LINKIO</p>
+        <h6>Let\'s talk LINKIO</h6>
 
-        <p>###### We love talking LINKIO. Let us know about your project and we'll send you a free proposal</p>
+        <h6>We love talking LINKIO. Let us know about your project and we\'ll send you a free proposal</h6>
       </div>
     </BlogPostTemplate>
   );

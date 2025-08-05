@@ -1,8 +1,8 @@
 import BlogPostTemplate from '@/components/BlogPostTemplate';
 
 export const metadata = {
-  title: 'Simple Backlink Strategies | PostFlow',
-  description: 'Learn more about simple backlink strategies',
+  title: "Simple Backlink Strategies | PostFlow",
+  description: "Learn more about simple backlink strategies",
 };
 
 export default function SimpleBacklinkStrategiesPage() {
@@ -44,7 +44,7 @@ export default function SimpleBacklinkStrategiesPage() {
 
       
       <div className="prose prose-lg max-w-none">
-        <p># Easy Backlinks: 7 Simple Ways to Get Them In 2023</p>
+        <h1>Easy Backlinks: 7 Simple Ways to Get Them In 2023</h1>
 
         <ul className="list-disc pl-6 space-y-2">
           <li>What are easy backlinks?</li>
@@ -206,17 +206,17 @@ By following these simple strategies, you can start building a sound foundation 
 
         <h2 id="the-best-books-to-learn-seo-recommended-by-pros">The Best Books To Learn SEO Recommended by Pros</h2>
 
-        <p>###### Curious?</p>
+        <h6>Curious?</h6>
 
-        <p>###### Let's talk LINKIO</p>
+        <h6>Let\'s talk LINKIO</h6>
 
-        <p>###### We love talking LINKIO. Let us know about your project and we'll send you a free proposal</p>
+        <h6>We love talking LINKIO. Let us know about your project and we\'ll send you a free proposal</h6>
 
-        <p>###### Curious?</p>
+        <h6>Curious?</h6>
 
-        <p>###### Let's talk LINKIO</p>
+        <h6>Let\'s talk LINKIO</h6>
 
-        <p>###### We love talking LINKIO. Let us know about your project and we'll send you a free proposal</p>
+        <h6>We love talking LINKIO. Let us know about your project and we\'ll send you a free proposal</h6>
       </div>
     </BlogPostTemplate>
   );

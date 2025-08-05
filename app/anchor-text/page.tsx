@@ -1,8 +1,8 @@
 import BlogPostTemplate from '@/components/BlogPostTemplate';
 
 export const metadata = {
-  title: 'Anchor Text | PostFlow',
-  description: 'Learn more about anchor text',
+  title: "Anchor Text | PostFlow",
+  description: "Learn more about anchor text",
 };
 
 export default function AnchorTextPage() {
@@ -38,7 +38,7 @@ export default function AnchorTextPage() {
 
       
       <div className="prose prose-lg max-w-none">
-        <p># Anchor Text Optimization for Link Building</p>
+        <h1>Anchor Text Optimization for Link Building</h1>
 
         <ul className="list-disc pl-6 space-y-2">
           <li>Anchor Text Categories</li>
@@ -48,13 +48,13 @@ export default function AnchorTextPage() {
           <li>Step-by-Step Implementation Plan</li>
         </ul>
 
-        <p># Safe Anchor Text Optimization for Link Building</p>
+        <h1>Safe Anchor Text Optimization for Link Building</h1>
 
         <p>This guide distills anchor text strategy into an actionable plan to improve rankings while avoiding Google penalties. You’ll learn about anchor text types, how domain and business type influence strategy, ideal anchor distributions, natural-sounding anchor examples, and a step-by-step implementation plan.</p>
 
         <h2 id="anchor-text-categories">Anchor Text Categories</h2>
 
-        <p>## Domain and Business Type Influence</p>
+        <h2>Domain and Business Type Influence</h2>
 
         <p>Your domain name and business type significantly impact what Google considers “natural” for your site:</p>
 
@@ -98,7 +98,7 @@ Anchor Best Practices:
 
         <h2 id="step-by-step-implementation-plan">Step-by-Step Implementation Plan</h2>
 
-        <p>### 1. Assess Your Current Anchor Text Profile</p>
+        <h3>1. Assess Your Current Anchor Text Profile</h3>
 
         <ul className="list-disc pl-6 space-y-2">
           <li>Audit existing backlinks using SEO tools</li>
@@ -206,17 +206,17 @@ Anchor Best Practices:
 
         <h2 id="the-best-books-to-learn-seo-recommended-by-pros">The Best Books To Learn SEO Recommended by Pros</h2>
 
-        <p>###### Curious?</p>
+        <h6>Curious?</h6>
 
-        <p>###### Let's talk LINKIO</p>
+        <h6>Let\'s talk LINKIO</h6>
 
-        <p>###### We love talking LINKIO. Let us know about your project and we'll send you a free proposal</p>
+        <h6>We love talking LINKIO. Let us know about your project and we\'ll send you a free proposal</h6>
 
-        <p>###### Curious?</p>
+        <h6>Curious?</h6>
 
-        <p>###### Let's talk LINKIO</p>
+        <h6>Let\'s talk LINKIO</h6>
 
-        <p>###### We love talking LINKIO. Let us know about your project and we'll send you a free proposal</p>
+        <h6>We love talking LINKIO. Let us know about your project and we\'ll send you a free proposal</h6>
       </div>
     </BlogPostTemplate>
   );

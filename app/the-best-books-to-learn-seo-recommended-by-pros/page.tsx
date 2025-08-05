@@ -1,8 +1,8 @@
 import BlogPostTemplate from '@/components/BlogPostTemplate';
 
 export const metadata = {
-  title: 'The Best Books To Learn Seo Recommended By Pros | PostFlow',
-  description: 'Learn more about the best books to learn seo recommended by pros',
+  title: "The Best Books To Learn Seo Recommended By Pros | PostFlow",
+  description: "Learn more about the best books to learn seo recommended by pros",
 };
 
 export default function TheBestBooksToLearnSeoRecommendedByProsPage() {
@@ -44,7 +44,7 @@ export default function TheBestBooksToLearnSeoRecommendedByProsPage() {
 
       
       <div className="prose prose-lg max-w-none">
-        <p># The Best Books To Learn SEO Recommended by Pros</p>
+        <h1>The Best Books To Learn SEO Recommended by Pros</h1>
 
         <ul className="list-disc pl-6 space-y-2">
           <li>Top Books on Search Engine Optimization</li>
@@ -77,7 +77,7 @@ export default function TheBestBooksToLearnSeoRecommendedByProsPage() {
 Author: Mark Northwell
 Number of pages: 99</p>
 
-        <p>#### What it covers</p>
+        <h4>What it covers</h4>
 
         <p>Are you a newcomer to the world of search engine optimization?
 Then this beginner’s guide to SEO is the first book to ease you into it.
@@ -85,7 +85,7 @@ The author makes it clear why everyone optimizes for search engines today, how y
 And that is not all. You’ll get more SEO fundamentals.
 99 pages divided by three hours = 33 pages per hour. What do you think? Can you manage it?</p>
 
-        <p>#### Whose recommendation is it?</p>
+        <h4>Whose recommendation is it?</h4>
 
         <p>Jerry Han, CMO at PrizeRebel:
 “I say, always start with the basics. And this SEO book can help you do that. It explains why SEO challenges you first but then lets you reap the rewards. More importantly, it teaches you the essentials to help you put your foot on the grounds of the SEO kingdom.
@@ -97,7 +97,7 @@ What I liked the best – Mark Northwell doesn’t overwhelm you with technical 
 Author: Will Coombe
 Number of pages: 247</p>
 
-        <p>#### What it covers</p>
+        <h4>What it covers</h4>
 
         <p>Imagine you’re giving someone your brand-new website and asking them to bring you the first page results on Google in just three months.
 This someone is Will Coombe, and in this book on SEO, he demonstrates how he’d do this for you.
@@ -108,7 +108,7 @@ By erecting the four pillars of SEO, of course:
 • Pillar #4. Authority
 Under his guidance, you’ll learn how to find relevant target keywords, make it easy for Google to inspect your pages, boost user engagement, increase domain authority, and more.</p>
 
-        <p>#### Whose recommendation is it?</p>
+        <h4>Whose recommendation is it?</h4>
 
         <p>Jesse Hanson, Content Manager at Online Solitaire and Word of Card Games:
 “SEO always seemed a complicated game for my understanding because I didn’t know its basic rules. Until I learned those from Will Coombe, a co-founder of the UK’s leading SEO agency, in this playbook.
@@ -120,7 +120,7 @@ The major revelation, however, was that nobody truly knows how to game Google. A
 Author: David Amerland
 Number of pages: 198</p>
 
-        <p>#### What it covers</p>
+        <h4>What it covers</h4>
 
         <p>In SEO Help, David Amerland talks about 20 SEO aspects you should know and apply in practice. For example, voice search, structured data, YouTube SEO, podcasting, hashtagging, etc.
 In one of the chapters, he particularly outlines the role of AI in SEO and the perspectives it opens in front of businesses. He establishes the connection between artificial intelligence and semantic search and names the 4Vs of big data:
@@ -130,7 +130,7 @@ In one of the chapters, he particularly outlines the role of AI in SEO and the p
 • Veracity
 Remarkably, all chapters end with action checklists.</p>
 
-        <p>#### Whose recommendation is it?</p>
+        <h4>Whose recommendation is it?</h4>
 
         <p>Jesse Galanis, Content Manager at Tech Lockdown:
 “My top pick among the best books for learning SEO is the fourth edition of SEO Help published in 2020. The first edition came out in 2010. Since then, SEO has changed a lot. That’s why the author updated this release and added tons of fresh content to it.
@@ -142,7 +142,7 @@ Interestingly, every chapter is like a standalone book describing a specific SEO
 Author: Sage Lewis
 Number of pages: 216</p>
 
-        <p>#### What it covers</p>
+        <h4>What it covers</h4>
 
         <p>So, link building is dead, right?
 So wrong.
@@ -150,7 +150,7 @@ Would you like to see that it’s actually more than alive?
 Sage Lewis proves that by examples and case studies of Walmart, Catster & Dogster, and others. Obama’s link-building strategy, for instance, fueled his victory in the elections. You can also get easy backlinks just like other companies did. See how exactly in the book.
 Besides, the author doesn’t let you forget about a social media link-building strategy you might need to develop right now to win the competition.</p>
 
-        <p>#### Whose recommendation is it?</p>
+        <h4>Whose recommendation is it?</h4>
 
         <p>Fernando Lopez, Marketing Director at Circuit:
 “It’s one of the must-read SEO books on link building and its peculiarities. It makes you rethink your approach to getting backlinks. A link builder should be a PR professional, in the first place, not a spammer. That’s the key lesson I learned from this book.”</p>
@@ -161,7 +161,7 @@ Besides, the author doesn’t let you forget about a social media link-building 
 Author: Jason McDonald
 Number of pages: 360</p>
 
-        <p>#### What it covers</p>
+        <h4>What it covers</h4>
 
         <p>SEO is power. SEO is mysterious. SEO seems impossible.
 And yet, Jason McDonald believes anyone can master this craft. How? By following these steps:
@@ -174,7 +174,7 @@ And yet, Jason McDonald believes anyone can master this craft. How? By following
 • Step 7. Practice all the time (worksheets + tools)
 To make it all possible, you might need to create a dedicated team of managers, marketers, content writers, web designers, programmers, and outreach experts for your SEO project.</p>
 
-        <p>#### Whose recommendation is it?</p>
+        <h4>Whose recommendation is it?</h4>
 
         <p>Alex Milligan, Co-founder & CMO of NuggMD:
 “Jason McDonald has become my coach in search engine optimization. His SEO workout book has taught me how to optimize effectively to get any website in an SEO-healthy shape. I like the comparison he uses in this guidebook. SEO is like physical fitness which requires discipline and smart work, not hard work.”</p>
@@ -185,14 +185,14 @@ To make it all possible, you might need to create a dedicated team of managers, 
 Author: Traian Neacsu
 Number of pages: 400</p>
 
-        <p>#### What it covers</p>
+        <h4>What it covers</h4>
 
         <p>Looking for the best books on SEO to learn how to optimize your eCommerce or dropshipping business website?
 Look no further.
 This guide is all you need to grasp how eCommerce SEO works and use this knowledge to your benefit. Whether it’s a homepage, a listing page, or a product detail page, any part of your eCommerce store will get just enough attention to make it shine in the eyes of Google and your visitors too.
 Moreover, it will also help you cope with some challenging issues like crawl traps, for example.</p>
 
-        <p>#### Whose recommendation is it?</p>
+        <h4>Whose recommendation is it?</h4>
 
         <p>Jonathan Elster, CEO at EcomHalo:
 “Running an eCommerce site requires different skill sets, and SEO is one of the most significant ones. That’s why I recommend this book to every small or midsize business owner.
@@ -204,7 +204,7 @@ Prepare for a long read, but be sure, it’s definitely worth your time. By read
 Author: Bruce Jones
 Number of pages: 316</p>
 
-        <p>#### What it covers</p>
+        <h4>What it covers</h4>
 
         <p>What is your potential customer googling right now?
 No need to keep the guessing games going any longer with this book for search engine optimization.
@@ -214,7 +214,7 @@ The author also uncovers the hidden truth behind the ways Google uses the E-A-T 
 • Authority
 • Trustworthiness</p>
 
-        <p>#### Whose recommendation is it?</p>
+        <h4>Whose recommendation is it?</h4>
 
         <p>Michael Maximoff, Co-Founder & Managing Partner of Belkins:
 “SEO is the best tool for generating quality leads. It’s an axiom – a self-evident fact that requires no proof. For those who struggle to use this instrument effectively, Learn SEO is a bottomless source of helpful instructions. With Bruce Jones’ SEO guide, you will become a wizard of both on-page and off-page search engine optimization.”</p>
@@ -225,7 +225,7 @@ The author also uncovers the hidden truth behind the ways Google uses the E-A-T 
 Author: Tim Cameron-Kitchen
 Number of pages: 296</p>
 
-        <p>#### What it covers</p>
+        <h4>What it covers</h4>
 
         <p>Show me a business leader or SEO specialist who doesn’t want to reach the top of SERPs.
 Bet, you won’t find any.
@@ -239,7 +239,7 @@ However, you not only wish to show up at the top, but you’d also want to gain 
 For that, there are some killer tactics mentioned in this book. One of them, for instance, is regular keyword rank tracking and keyword analytics. The author also emphasizes the necessity of growing your blog’s audience to maintain a competitive edge over rival businesses. You shouldn’t underrate the power of outreach either and write pitches that get noticed by influencers, journalists, or bloggers.
 Discover some other SEO strategies shared in a friendly tone by Tim Cameron-Kitchen, an SEO guru and founder of Exposure Ninja.</p>
 
-        <p>#### Whose recommendation is it?</p>
+        <h4>Whose recommendation is it?</h4>
 
         <p>Gerald Lombardo, Head of Growth at Popl:
 “How To Get To The Top of Google is a smooth read for non-techies and SEO noobs. It reads like a personal story of an expert in search engine optimization who explains its principles and terminology in a way a 5-year-old would understand.
@@ -325,17 +325,17 @@ Good luck in SEOing and see you at the top</p>
 
         <h2 id="the-best-books-to-learn-seo-recommended-by-pros">The Best Books To Learn SEO Recommended by Pros</h2>
 
-        <p>###### Curious?</p>
+        <h6>Curious?</h6>
 
-        <p>###### Let's talk LINKIO</p>
+        <h6>Let\'s talk LINKIO</h6>
 
-        <p>###### We love talking LINKIO. Let us know about your project and we'll send you a free proposal</p>
+        <h6>We love talking LINKIO. Let us know about your project and we\'ll send you a free proposal</h6>
 
-        <p>###### Curious?</p>
+        <h6>Curious?</h6>
 
-        <p>###### Let's talk LINKIO</p>
+        <h6>Let\'s talk LINKIO</h6>
 
-        <p>###### We love talking LINKIO. Let us know about your project and we'll send you a free proposal</p>
+        <h6>We love talking LINKIO. Let us know about your project and we\'ll send you a free proposal</h6>
       </div>
     </BlogPostTemplate>
   );

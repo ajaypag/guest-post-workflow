@@ -1,8 +1,8 @@
 import BlogPostTemplate from '@/components/BlogPostTemplate';
 
 export const metadata = {
-  title: 'Guide To Grow Your Blogs Audience In 2023 | PostFlow',
-  description: 'Learn more about guide to grow your blogs audience in 2023',
+  title: "Guide To Grow Your Blogs Audience In 2023 | PostFlow",
+  description: "Learn more about guide to grow your blogs audience in 2023",
 };
 
 export default function GuideToGrowYourBlogsAudienceIn2023Page() {
@@ -45,7 +45,7 @@ export default function GuideToGrowYourBlogsAudienceIn2023Page() {
 
       
       <div className="prose prose-lg max-w-none">
-        <p># The Definitive Guide To Growing Your Blog’s Audience in 2023</p>
+        <h1>The Definitive Guide To Growing Your Blog’s Audience in 2023</h1>
 
         <ul className="list-disc pl-6 space-y-2">
           <li>Strive For Better Visibility in 2023</li>
@@ -209,17 +209,17 @@ As a blogger, you should prefer quality over quantity, as the engaged audience w
 
         <h2 id="the-best-books-to-learn-seo-recommended-by-pros">The Best Books To Learn SEO Recommended by Pros</h2>
 
-        <p>###### Curious?</p>
+        <h6>Curious?</h6>
 
-        <p>###### Let's talk LINKIO</p>
+        <h6>Let\'s talk LINKIO</h6>
 
-        <p>###### We love talking LINKIO. Let us know about your project and we'll send you a free proposal</p>
+        <h6>We love talking LINKIO. Let us know about your project and we\'ll send you a free proposal</h6>
 
-        <p>###### Curious?</p>
+        <h6>Curious?</h6>
 
-        <p>###### Let's talk LINKIO</p>
+        <h6>Let\'s talk LINKIO</h6>
 
-        <p>###### We love talking LINKIO. Let us know about your project and we'll send you a free proposal</p>
+        <h6>We love talking LINKIO. Let us know about your project and we\'ll send you a free proposal</h6>
       </div>
     </BlogPostTemplate>
   );

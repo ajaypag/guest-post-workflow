@@ -1,8 +1,8 @@
 import BlogPostTemplate from '@/components/BlogPostTemplate';
 
 export const metadata = {
-  title: 'Why Every Business Needs A Website | PostFlow',
-  description: 'Learn more about why every business needs a website',
+  title: "Why Every Business Needs A Website | PostFlow",
+  description: "Learn more about why every business needs a website",
 };
 
 export default function WhyEveryBusinessNeedsAWebsitePage() {
@@ -41,7 +41,7 @@ export default function WhyEveryBusinessNeedsAWebsitePage() {
 
       
       <div className="prose prose-lg max-w-none">
-        <p># Why Every Business Needs a Website</p>
+        <h1>Why Every Business Needs a Website</h1>
 
         <ul className="list-disc pl-6 space-y-2">
           <li>Online Presence and Credibility</li>
@@ -174,17 +174,17 @@ Final Thoughts</p>
 
         <h2 id="the-best-books-to-learn-seo-recommended-by-pros">The Best Books To Learn SEO Recommended by Pros</h2>
 
-        <p>###### Curious?</p>
+        <h6>Curious?</h6>
 
-        <p>###### Let's talk LINKIO</p>
+        <h6>Let\'s talk LINKIO</h6>
 
-        <p>###### We love talking LINKIO. Let us know about your project and we'll send you a free proposal</p>
+        <h6>We love talking LINKIO. Let us know about your project and we\'ll send you a free proposal</h6>
 
-        <p>###### Curious?</p>
+        <h6>Curious?</h6>
 
-        <p>###### Let's talk LINKIO</p>
+        <h6>Let\'s talk LINKIO</h6>
 
-        <p>###### We love talking LINKIO. Let us know about your project and we'll send you a free proposal</p>
+        <h6>We love talking LINKIO. Let us know about your project and we\'ll send you a free proposal</h6>
       </div>
     </BlogPostTemplate>
   );

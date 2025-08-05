@@ -1,8 +1,8 @@
 import BlogPostTemplate from '@/components/BlogPostTemplate';
 
 export const metadata = {
-  title: 'Best Blogger Outreach Services | PostFlow',
-  description: 'Learn more about best blogger outreach services',
+  title: "Best Blogger Outreach Services | PostFlow",
+  description: "Learn more about best blogger outreach services",
 };
 
 export default function BestBloggerOutreachServicesPage() {
@@ -49,7 +49,7 @@ export default function BestBloggerOutreachServicesPage() {
 
       
       <div className="prose prose-lg max-w-none">
-        <p># Best Blogger Outreach Services</p>
+        <h1>Best Blogger Outreach Services</h1>
 
         <ul className="list-disc pl-6 space-y-2">
           <li>1. Outreach Labs</li>
@@ -75,7 +75,7 @@ export default function BestBloggerOutreachServicesPage() {
           <li>The right choice means more rankings, traffic, revenue and growth.</li>
           <li>Let me help you decide.</li>
           <li>Go through my research of 17 blog outreach agencies.</li>
-          <li>> I reviewed their response speed, process, tactics, pricing and quality.</li>
+          <li>I reviewed their response speed, process, tactics, pricing and quality.</li>
           <li>I reviewed their response speed, process, tactics, pricing and quality.</li>
           <li>Next I’ll go over key factors that’ll help you make the right blog outreach service choice.</li>
           <li>Finally, I’ll help you make a decision and give you my final verdict on who is the best.</li>
@@ -84,7 +84,7 @@ export default function BestBloggerOutreachServicesPage() {
 
         <h2 id="1-outreach-labs">1. Outreach Labs</h2>
 
-        <p>### Outreach Labs Review:</p>
+        <h3>Outreach Labs Review:</h3>
 
         <p>Outreach Labs builds relationships that earn links. By doing focused outreach to corporate blogs, industry-known blogs or personal blogs, they’ve come up with unique processes and link building strategies that consistently deliver high end links at affordable prices.
 They have a team of experienced link builders, project managers, and developers who are dedicated to providing the best possible service and experience.
@@ -112,7 +112,7 @@ Framed in another way, they do not believe links are valuable or worth building 
 
         <h2 id="2-linkbuilder-io">2. LinkBuilder.io</h2>
 
-        <p>### LinkBuilder.io Review:</p>
+        <h3>LinkBuilder.io Review:</h3>
 
         <p>LinkBuilder.io is a link building agency that focuses on high-end link building services. Their focus is on developing a custom link building strategy for each of their clients, placing a strong emphasis on competitor analysis to figure out what the right approach is for your website.</p>
 
@@ -142,7 +142,7 @@ They share case studies on their website which also showcase some examples of th
 
         <h2 id="3-page-one-power">3. Page One Power</h2>
 
-        <p>### Page One Power Review:</p>
+        <h3>Page One Power Review:</h3>
 
         <p>Page One Power is a custom link building company in Boise, Idaho. The agency specializes in manual link building services to improve search traffic and rankings. They work with mom-and-pop shops all the way up to world-class brands, securing evergreen links that drive meaningful, sustainable results.</p>
 
@@ -168,7 +168,7 @@ They share case studies on their website which also showcase some examples of th
 
         <h2 id="4-linkshero">4. Linkshero</h2>
 
-        <p>### Linkshero Review:</p>
+        <h3>Linkshero Review:</h3>
 
         <p>The amount (and quality) of backlinks pointing to your site is a top factor for your website’s success. The problem is – white hat link building is always an ungrateful and daunting process because the conversion rates are so low.
 Yes, there is A LOT of rejection.
@@ -203,7 +203,7 @@ If you work with them you also get:
 
         <h2 id="5-growthmate">5. GrowthMate</h2>
 
-        <p>### GrowthMate Review:</p>
+        <h3>GrowthMate Review:</h3>
 
         <p>GrowthMate is a relationship-based link-building agency that helps small and mid-sized businesses grow in SERP and generate more revenue. While their primary focus is on link-building for SaaS companies, they’ve also demonstrated remarkable success with service-oriented businesses.
 Based in Ukraine, their team includes experienced project managers, content writers, and outreach specialists skilled in content marketing and PR.
@@ -230,7 +230,7 @@ Their primary tactics involve ABC link exchange and top-notch quality guest post
 
         <h2 id="6-upper-ranks">6. Upper Ranks</h2>
 
-        <p>### Upper Ranks Review:</p>
+        <h3>Upper Ranks Review:</h3>
 
         <p>As a premier link building company, Upper Ranks help publicly traded companies, silicon valley startups, and even small in-house SEO teams reach ‘the upper ranks’ of the increasingly competitive digital world.
 Based out of New Jersey, The Upper Ranks aims to help businesses of all sizes gain greater search engine visibility, attract more customers, and become more profitable by utilizing their SEO services.
@@ -256,7 +256,7 @@ No matter the size of the project, you can rely on their custom link building me
 
         <h2 id="7-pitch-panda">7. Pitch Panda</h2>
 
-        <p>### Pitch Panda Review:</p>
+        <h3>Pitch Panda Review:</h3>
 
         <p>Pitch Panda is a link building service and platform hybrid that is a favorite amongst many link builders and SEO marketers. Users can do indirect swaps with high authority sites from Pitch Panda or pay Pitch Panda to handle the link building for them. This flexibility brings together many types of marketers and creates a robust network effect that produces access to lots of great opportunities.</p>
 
@@ -278,7 +278,7 @@ No matter the size of the project, you can rely on their custom link building me
 
         <h2 id="8-higher-visibility">8. Higher Visibility</h2>
 
-        <p>### Higher Visibility Review:</p>
+        <h3>Higher Visibility Review:</h3>
 
         <p>Having worked with hundreds of companies from small businesses to Fortune 1000’s, Higher Visibility understand your pain points. They also understand they aren’t the right agency for every business.
 HV want to work with businesses that want a partner, not a doer. Their goal is to understand your business & what keeps you up at night so that they can develop a customized strategy that meets your specific needs regardless of size or industry.
@@ -307,7 +307,7 @@ They also find creative ways to pitch their story ideas and will even create lin
 
         <h2 id="9-adsy">9. Adsy</h2>
 
-        <p>### Adsy Review:</p>
+        <h3>Adsy Review:</h3>
 
         <p>Adsy is a guest posting service with a wide range of filters and metrics that makes outreach easy for everyone. Now, site owners do not need to write to hundreds of blogs or sites to build links. All they need to do is register as a buyer.
 The main service Adsy provides is guest blogging. There are 20,000+ sites ready to accept guest posts with links in them. Moreover, if a user does not have a ready article, they can order content creation straight from the publisher or Adsy’s professional copywriter.
@@ -344,7 +344,7 @@ The lowest DA priority package price is $250, and the Traffic priority price is 
 
         <h2 id="11-internet-marketing-ninjas">11. Internet Marketing Ninjas</h2>
 
-        <p>### Internet Marketing Ninjas Review:</p>
+        <h3>Internet Marketing Ninjas Review:</h3>
 
         <p>For 20 years, Internet Marketing Ninjas have specialized in link building and strived to offer the most effective white-hat link building services anywhere.</p>
 
@@ -376,246 +376,246 @@ They even provided us with the login and password of a dummy account so we could
 
         <h2 id="other-blogger-outreach-agencies-we-considered">Other Blogger Outreach Agencies We Considered</h2>
 
-        <p>### 12. BibiBuzz</p>
+        <h3>12. BibiBuzz</h3>
 
-        <p>#### BibiBuzz Review:</p>
+        <h4>BibiBuzz Review:</h4>
 
         <p>BibiBuzz is run by a single SEO who is adept at helping people build a natural, diverse link profile.</p>
 
-        <p>#### BibiBuzz Response Speed:</p>
+        <h4>BibiBuzz Response Speed:</h4>
 
         <p>There is a simplistic but functional contact form you can use to reach them though, and we got a reply the following morning.</p>
 
-        <p>#### How to Order from BibiBuzz:</p>
+        <h4>How to Order from BibiBuzz:</h4>
 
         <p>The whole process is rather straightforward: you use the contact form and then discuss your details with the owner.</p>
 
-        <p>#### BibiBuzz Pricing Policy:</p>
+        <h4>BibiBuzz Pricing Policy:</h4>
 
         <p>Their prices start at $4,000 per 10 links, which isn’t too high, but not exceptionally low either. Anyhow, this price includes the content, publishing fees, etc.</p>
 
-        <p>#### BibiBuzz Link Building Tactics:</p>
+        <h4>BibiBuzz Link Building Tactics:</h4>
 
         <p>Their main way of getting links is guest posting, but while you discuss your campaign with them you can pick which strategies are to be used.
 BibiBuzz also provides you with a project tracker which lets you see exactly what they are doing and what stage they are at.</p>
 
-        <p>#### Does BibiBuzz Do Real Blogger Outreach?</p>
+        <h4>Does BibiBuzz Do Real Blogger Outreach?</h4>
 
         <p>They are very flexible with their strategies and transparent about who they reach out to.</p>
 
-        <p>#### BibiBuzz’s Own SEO:</p>
+        <h4>BibiBuzz’s Own SEO:</h4>
 
         <p>The BibiBuzz website could definitely use some improvement and the owner is very much aware of it, but they provide honest services and that’s what truly counts.</p>
 
         <h3 id="13-forward-linking">13. Forward Linking</h3>
 
-        <p>#### Forward Linking Review:</p>
+        <h4>Forward Linking Review:</h4>
 
         <p>Forward Linking provides a bespoke link building service that enables their clients to be featured on relevant & authoritative websites; leading to increased Google rankings, increased brand exposure, and increased levels of targeted organic traffic.
 As the name suggests, they are a forward-thinking agency. Google’s algorithm is always changing so they like to futureproof their links by only building links that will stand the test of time. That is why Forward Linking have strict criteria for qualifying our target sites; they only contact the best websites in your niche.
 These are links on relevant sites, trusted by Google, already ranking and receiving high levels of organic traffic.
 Their outreach service can be described as being highly personalized, relevant, transparent, and ROI focused.</p>
 
-        <p>#### How to Order from Forward Linking :</p>
+        <h4>How to Order from Forward Linking :</h4>
 
         <p>There are three basic plans at the bottom of their homepage, but you have to discuss your order with the team before you can place it. Thankfully, their contact form along with the support email is right below.</p>
 
-        <p>#### Forward Linking Link Building Tactics:</p>
+        <h4>Forward Linking Link Building Tactics:</h4>
 
         <p>“We have plenty of link building techniques at our disposal, but we generally go after resource links, guest post links, and broken links.”</p>
 
-        <p>#### Forward Linking Response Speed:</p>
+        <h4>Forward Linking Response Speed:</h4>
 
         <p>It took them a couple of hours to respond, but the managing director in touch was very clear and to-the-point about each detail about their services (more so than a lot of other vendors we spoke with).</p>
 
-        <p>#### Forward Linking Pricing Policy:</p>
+        <h4>Forward Linking Pricing Policy:</h4>
 
         <p>The per-link pricing of Forward Linking’s services is £200/link at the highest.</p>
 
-        <p>#### Does Forward Linking Do Real Blogger Outreach?</p>
+        <h4>Does Forward Linking Do Real Blogger Outreach?</h4>
 
         <p>Forward Linking is an example of providing honest services. They actually offered to reach out to our list with a 10% discount since they wouldn’t need to prospect for websites themselves.</p>
 
-        <p>#### Forward Linking ’s Own SEO:</p>
+        <h4>Forward Linking ’s Own SEO:</h4>
 
         <p>Ahrefs displays their DR as 0.5 with 0 organic traffic, so something must be preventing us from getting the real data.</p>
 
         <h3 id="14-globex-outreach">14. Globex Outreach</h3>
 
-        <p>#### Globex Outreach Review:</p>
+        <h4>Globex Outreach Review:</h4>
 
         <p>Globex was founded in 2010. Since its inception, the company has grown into one of the fastest-growing outsourced blogger outreach/content marketing agencies around the world. It is their goal to work with clients to improve link outreach and content marketing campaigns to improve their online presence and increase traffic to their sites.</p>
 
-        <p>#### Globex Outreach Response Speed:</p>
+        <h4>Globex Outreach Response Speed:</h4>
 
         <p>Globex Outreach replied to our email 3 hours after we sent it.</p>
 
-        <p>#### How To Order from Globex Outreach:</p>
+        <h4>How To Order from Globex Outreach:</h4>
 
         <p>To place your order, you will first need to pick out the websites you want your link placements on from Globex Outreach’s list (or your own one) and send them to one of the team members via email.</p>
 
-        <p>#### Does Globex Outreach Do Real Outreach?</p>
+        <h4>Does Globex Outreach Do Real Outreach?</h4>
 
         <p>Globex Outreach offers both a manual link outreach service and uses an already established directory of websites for guest posting (there are over 13,000 blogs in it).</p>
 
-        <p>#### Globex Outreach Link Building Tactics:</p>
+        <h4>Globex Outreach Link Building Tactics:</h4>
 
         <p>In the list the team sent us, each blog had at least 30 Domain Authority, 30 Page Authority, and 35 Domain Rating. The average turnaround time for Globex Outreach’s services is three to five days, depending on how quickly the bloggers reply.</p>
 
-        <p>#### Globex Outreach Pricing Policy:</p>
+        <h4>Globex Outreach Pricing Policy:</h4>
 
         <p>Depending on the website you choose to publish on, the price can fluctuate from $65 to $550 and even more.</p>
 
-        <p>#### Globex Outreach’s Own SEO:</p>
+        <h4>Globex Outreach’s Own SEO:</h4>
 
         <p>Their website’s DR is 30, with 14 monthly organic visitors.</p>
 
         <h3 id="15-outreach-buzz">15. Outreach Buzz</h3>
 
-        <p>#### Outreach Buzz Review:</p>
+        <h4>Outreach Buzz Review:</h4>
 
         <p>Outreach Buzz is a team of enthusiastic people, passionate about digital marketing, and willing to create a community where every member gets to win. They focus on finding the right solutions for any blogger outreach problem you may have. Having this in mind, they created Outreach.buzz with the purpose to help bloggers, influencers, entrepreneurs, and content promotion experts.</p>
 
-        <p>#### Outreach Buzz Response Speed:</p>
+        <h4>Outreach Buzz Response Speed:</h4>
 
         <p>Outreach Buzz answered our email within 4 hours.</p>
 
-        <p>#### How To Order from Outreach Buzz:</p>
+        <h4>How To Order from Outreach Buzz:</h4>
 
         <p>Before you can order from Outreach Buzz, you need to register an account on their website and choose from one of the packages or get in touch with the team to discuss your project in detail.</p>
 
-        <p>#### Outreach Buzz Link Building Tactics:</p>
+        <h4>Outreach Buzz Link Building Tactics:</h4>
 
         <p>Outreach Buzz uses guest posts on both already established blogging connections and websites you request them to outreach to. They also make sure each resource is relevant, gets regularly updated, and ranks in Google organically. You can also place your own requirements and be very selective about the blogs you wish to post on.</p>
 
-        <p>#### Does Outreach Buzz Do Real Outreach?</p>
+        <h4>Does Outreach Buzz Do Real Outreach?</h4>
 
         <p>At the start of your outreach campaign, the team will create a new email account that they will be using during it. You receive access to that account and can monitor exactly what they are doing, so the process is completely transparent.</p>
 
-        <p>#### Outreach Buzz Pricing Policy:</p>
+        <h4>Outreach Buzz Pricing Policy:</h4>
 
         <p>First, there is the writing fee. For 650 words you will have to pay $20 and if you want your posts to be 900+ words long, it goes up to $30. Then, there is the publication fee that changes from webmaster to webmaster (starting at $40). And finally, for 50 successful placements, Outreach Buzz charges $90.</p>
 
-        <p>#### Outreach Buzz Own SEO:</p>
+        <h4>Outreach Buzz Own SEO:</h4>
 
         <p>Their website’s DR is 30, with 101 organic traffic monthly.</p>
 
         <h3 id="16-arc-digitech">16. ARC Digitech</h3>
 
-        <p>#### ARC Digitech Review:</p>
+        <h4>ARC Digitech Review:</h4>
 
         <p>It is one of those transactions that is a win-win for both parties. Bloggers get unique and compelling content from high-authority sites featured on their blog, while the website gets a high-quality backlink. If you are concerned about your website’s search engine ranking, guest post writing is one of the services Arc Digitech offers that can help you achieve a higher position.</p>
 
-        <p>#### ARC Digitech Response Speed:</p>
+        <h4>ARC Digitech Response Speed:</h4>
 
         <p>We got a response from ARC Digitech’s support email three hours after messaging them.</p>
 
-        <p>#### How To Order from ARC Digitech:</p>
+        <h4>How To Order from ARC Digitech:</h4>
 
         <p>To  get started with your order from ARC Digitech, you have to get in touch with the team and let them know how many guest blogs you need and on which resources.</p>
 
-        <p>#### ARC Digitech Link Building Tactics:</p>
+        <h4>ARC Digitech Link Building Tactics:</h4>
 
         <p>Before adding blogs to their list, ARC Digitech vet them for quality, checking their domain authority, the number of backlinks, and the performance change in search engines upon the procurement of a link.</p>
 
-        <p>#### ARC Digitech Pricing Policy:</p>
+        <h4>ARC Digitech Pricing Policy:</h4>
 
         <p>You can get placements on smaller websites for as little as $20/link, while high-authority resources like the USA today will require $200/blog post. Places like ApNews and Yahoo will be even more expensive, needing up to $500 to post on.</p>
 
-        <p>#### ARC Digitech’s Own SEO:</p>
+        <h4>ARC Digitech’s Own SEO:</h4>
 
         <p>ARC Digitech’s Domain Rating is 9, with 12 organic traffic.</p>
 
         <h3 id="17-outreach-monks">17. Outreach Monks</h3>
 
-        <p>#### Outreach Monks Review:</p>
+        <h4>Outreach Monks Review:</h4>
 
         <p>Established in 2017, Outreach Monks is a link building agency offering strategic and sustainable solutions through manual blogger outreach. They help brands worldwide to experience increased search engine rankings and traffic.
 They act as a trusted partner for agencies, offering full transparency and accountability. A team of strategic marketing experts along with experienced native writers helps to create searchable content and links that produce results.</p>
 
-        <p>#### Outreach Monks Response Speed:</p>
+        <h4>Outreach Monks Response Speed:</h4>
 
         <p>Our reply came the next day after submitting the contact form.</p>
 
-        <p>#### How To Order from Outreach Monks:</p>
+        <h4>How To Order from Outreach Monks:</h4>
 
         <p>You will have access to a custom, easy-to-use dashboard, where you can place orders, check their status, and get white-label reports.</p>
 
-        <p>#### Outreach Monks Link Building Tactics:</p>
+        <h4>Outreach Monks Link Building Tactics:</h4>
 
         <p>Outreach Monks use two link building models. The first one is all about landing guest posts on already established blogging connections, while the second one features a purely custom outreach approach.
 They will scan your niche searching for prime link building opportunities, picking sites depending on their link histories as well as metrics including DR, TF, CF, RD, and, of course, organic traffic. Or you could just give them your own list of prospects to reach out to.</p>
 
-        <p>#### Outreach Monks Pricing Policy:</p>
+        <h4>Outreach Monks Pricing Policy:</h4>
 
         <p>The prices for link placements by Outreach Monks start at $59 for a DA 10+ placement and cap out at $419 for a DA 60+ placement.</p>
 
-        <p>#### Outreach Monks’ Own SEO:</p>
+        <h4>Outreach Monks’ Own SEO:</h4>
 
         <p>Outreach Monks’ website has 48 DR and gets 358 organic traffic monthly.</p>
 
         <h3 id="18-outreachfrog">18. OutReachFrog</h3>
 
-        <p>#### OutReachFrog Review:</p>
+        <h4>OutReachFrog Review:</h4>
 
         <p>OutReach Frog has a track record of providing websites with more SEO traffic through the use of high-quality backlinks. Their team has experience dating back to 1996.
 They secure long-lasting links on the web’s best blogs. These links provide sustainable white-hat value. Order easily online through the dashboard. After that our team works using a  manual process so you can sit back while we do all the work.</p>
 
-        <p>#### OutReachFrog Response Speed:</p>
+        <h4>OutReachFrog Response Speed:</h4>
 
         <p>We used OutReachFrog’s contact form since we couldn’t find a contact email on their site, and our reply came the next day.</p>
 
-        <p>#### How To Order from OutReachFrog:</p>
+        <h4>How To Order from OutReachFrog:</h4>
 
         <p>There are several plans you can order right from OutReachFrog’s website. Alternatively, you can get in touch with the team and discuss your project in more detail that way, or register to use OutReachFrog’s dashboard.</p>
 
-        <p>#### OutReachFrog Link Building Tactics:</p>
+        <h4>OutReachFrog Link Building Tactics:</h4>
 
         <p>OutReachFrog focus solely on manual outreach and secure backlinks by creating high-quality content and offering it to websites in your niche. They were more than happy to accept our list of prospects since it makes their job easier and they don’t have to find them themselves.</p>
 
-        <p>#### OutReachFrog Pricing Policy:</p>
+        <h4>OutReachFrog Pricing Policy:</h4>
 
         <p>OutReachFrog’s premium plan will score you 8 backlinks for $2500/monthly. That translates to about $312/link.</p>
 
-        <p>#### OutReachFrog’s Own SEO:</p>
+        <h4>OutReachFrog’s Own SEO:</h4>
 
         <p>Too many of OutReachFrog’s pages are blocked from crawling for us to get an accurate representation of their site’s SEO.</p>
 
         <h3 id="19-heroic-search">19. Heroic Search</h3>
 
-        <p>#### Heroic Search Review:</p>
+        <h4>Heroic Search Review:</h4>
 
         <p>Heroic Search link building services are centered around manual outreach, as well as relationship building. Their team frequently uses over a dozen tactics to earn links to clients in a variety of industries.
 They have relationships with editors, bloggers, journalists, and even other agencies. When these two methods are combined, they present a strong force that results in high-quality links for even the most difficult niches and assignments. Offerings include monthly link building campaigns, as well as one-off packages.</p>
 
-        <p>#### How to Order from Heroic Search:</p>
+        <h4>How to Order from Heroic Search:</h4>
 
         <p>Ordering from Heroic Search is rather simple. All you have to do is fill out an online questionnaire with a few simple questions. That includes your name, email address, which link building tactics do you agree on using, and how many links do you actually want to be built.</p>
 
-        <p>#### Heroic Search Pricing Policy:</p>
+        <h4>Heroic Search Pricing Policy:</h4>
 
         <p>Unlike a lot of other link building companies, Heroic Search doesn’t make their prices depending on metrics like Domain Authority. Instead, the prices of their services are determined by how competitive your niche is.
 They range from $300/link for low-competition niches like sports and arts to $450/link for legal, real estate, health, and other highly competitive niches.</p>
 
-        <p>#### Heroic Search Link Building Tactics:</p>
+        <h4>Heroic Search Link Building Tactics:</h4>
 
         <p>As for the tactics they use, they include guest posting, broken link building, expired domain redirects, image link building, sponsorship link building, and more.</p>
 
-        <p>#### Does Heroic Search Do Real Blogger Outreach?</p>
+        <h4>Does Heroic Search Do Real Blogger Outreach?</h4>
 
         <p>They agreed on using our own list of prospects to reach out to, but also suggested that the results might not be as good as if they filtered out their own prospects as well. So, they offered to do outreach to both our prospects and their own to get the most out of the campaign.</p>
 
-        <p>#### Heroic Search Response Speed:</p>
+        <h4>Heroic Search Response Speed:</h4>
 
         <p>It only took them about 20 minutes to reply as well, which is a sign of incredible organization.</p>
 
-        <p>#### Heroic Search’s Own SEO:</p>
+        <h4>Heroic Search’s Own SEO:</h4>
 
         <p>Their Domain Rating sits at 62 with the amount of organic traffic capping out at 62 visits monthly as well.</p>
 
         <h2 id="tips-when-hiring-a-blogger-outreach-agency">Tips When Hiring a Blogger Outreach Agency</h2>
 
-        <p>### Should you outsource blogger outreach or do it inhouse?</p>
+        <h3>Should you outsource blogger outreach or do it inhouse?</h3>
 
         <p>Even the best blogger outreach agencies need time to succeed.
 Outsourcing is not for you unless you can comfortably fund 6 months worth of activity.
@@ -629,7 +629,7 @@ They’ve got established connections with top bloggers, making securing quality
 
         <p>I place agencies into 3 buckets: scammers, bulk, and personalizers.</p>
 
-        <p>#### 1. Scammer outreach agencies</p>
+        <h4>1. Scammer outreach agencies</h4>
 
         <p>They promise blogger outreach campaigns but deliver private blog network or guest post farm links.
 Tip offs:
@@ -638,7 +638,7 @@ Tip offs:
 • having fast turn around times on each link
 These type of services no longer have a place in SEO in my opinion.</p>
 
-        <p>#### 2. Bulk outreach agencies</p>
+        <h4>2. Bulk outreach agencies</h4>
 
         <p>It’s a numbers game for bulk outreach agencies.
 Sending 1000’s of templated emails hoping for a decent response rate.
@@ -658,7 +658,7 @@ Not a fan of templates offering to pay for links.
 Most responses come from worthless blogs because quality bloggers ignore such emails.
 Ask your prospective agency about their templates to see how advanced they are (or aren’t).</p>
 
-        <p>#### 3. Personalized Outreach Agencies</p>
+        <h4>3. Personalized Outreach Agencies</h4>
 
         <p>Personalized outreach agencies claim they personalize every step of their email outreach.
 • Manually finding relevant bloggers.
@@ -674,14 +674,14 @@ Downside is pricing. You’ll pay more per link as labor costs are higher.</p>
 Google is smarter. There’s more competition.
 However, outsourcing your blogger outreach can still work depending on these factors:</p>
 
-        <p>#### 1. State of your website</p>
+        <h4>1. State of your website</h4>
 
         <p>It work best on authoritative sites that are SEO-optimized.
 The same campaign probably fails on lesser websites.
 A good outreach agency discusses those factors with you beforehand.
 Others will gloss over it, take your money and deliver links that’ll do nothing.</p>
 
-        <p>#### 2. Backlink quality</p>
+        <h4>2. Backlink quality</h4>
 
         <p>What’s better?
 • 10 links from niche relevant blogs OR 100 links from generalist blogs?
@@ -710,19 +710,19 @@ Take their monthly fee and divide it by how many links they’ll deliver.
 For example, if its $2000 a month for 10 links, then its $200 per link. $4000 for 10 links is $400.
 Here are a few insights you can gleam now:</p>
 
-        <p>#### Below $100 per link</p>
+        <h4>Below $100 per link</h4>
 
         <p>Probably means not links from genuine websites with traffic.
 I’d guess they’re creating content for $10, paying a blog partner $15 to publish and pocketing the rest.
 Meh.</p>
 
-        <p>#### $150-$250 per link</p>
+        <h4>$150-$250 per link</h4>
 
         <p>This is the realm of bulk outreach agencies.
 They’ll send hundreds of emails knowing some genuine websites will respond.
 Response rate depend on how good the value proposition is in the email template.</p>
 
-        <p>#### $300-$400 per link</p>
+        <h4>$300-$400 per link</h4>
 
         <p>Blogger outreach providers who promise real personalization come in at this price point.
 If the company is charging this amount and not personalizing, you’re better off in the $150-$250 tier.</p>
@@ -841,17 +841,17 @@ Get in Touch</p>
 
         <h2 id="the-best-books-to-learn-seo-recommended-by-pros">The Best Books To Learn SEO Recommended by Pros</h2>
 
-        <p>###### Curious?</p>
+        <h6>Curious?</h6>
 
-        <p>###### Let's talk LINKIO</p>
+        <h6>Let\'s talk LINKIO</h6>
 
-        <p>###### We love talking LINKIO. Let us know about your project and we'll send you a free proposal</p>
+        <h6>We love talking LINKIO. Let us know about your project and we\'ll send you a free proposal</h6>
 
-        <p>###### Curious?</p>
+        <h6>Curious?</h6>
 
-        <p>###### Let's talk LINKIO</p>
+        <h6>Let\'s talk LINKIO</h6>
 
-        <p>###### We love talking LINKIO. Let us know about your project and we'll send you a free proposal</p>
+        <h6>We love talking LINKIO. Let us know about your project and we\'ll send you a free proposal</h6>
       </div>
     </BlogPostTemplate>
   );

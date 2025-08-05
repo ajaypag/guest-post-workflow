@@ -1,8 +1,8 @@
 import BlogPostTemplate from '@/components/BlogPostTemplate';
 
 export const metadata = {
-  title: 'SEO Case Study | PostFlow',
-  description: 'Real-world SEO case study with actionable insights',
+  title: "SEO Case Study | PostFlow",
+  description: "Real-world SEO case study with actionable insights",
 };
 
 export default function SeoCaseStudyPage() {
@@ -45,7 +45,7 @@ export default function SeoCaseStudyPage() {
 
       
       <div className="prose prose-lg max-w-none">
-        <p># SEO Case Study (Building An Authority Site)</p>
+        <h1>SEO Case Study (Building An Authority Site)</h1>
 
         <ul className="list-disc pl-6 space-y-2">
           <li>A 2020 Update Note</li>
@@ -576,17 +576,17 @@ And if you have any questions or want to learn more about how Linkio or Outreach
 
         <h2 id="the-best-books-to-learn-seo-recommended-by-pros">The Best Books To Learn SEO Recommended by Pros</h2>
 
-        <p>###### Curious?</p>
+        <h6>Curious?</h6>
 
-        <p>###### Let's talk LINKIO</p>
+        <h6>Let\'s talk LINKIO</h6>
 
-        <p>###### We love talking LINKIO. Let us know about your project and we'll send you a free proposal</p>
+        <h6>We love talking LINKIO. Let us know about your project and we\'ll send you a free proposal</h6>
 
-        <p>###### Curious?</p>
+        <h6>Curious?</h6>
 
-        <p>###### Let's talk LINKIO</p>
+        <h6>Let\'s talk LINKIO</h6>
 
-        <p>###### We love talking LINKIO. Let us know about your project and we'll send you a free proposal</p>
+        <h6>We love talking LINKIO. Let us know about your project and we\'ll send you a free proposal</h6>
       </div>
     </BlogPostTemplate>
   );

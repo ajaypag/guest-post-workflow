@@ -1,8 +1,8 @@
 import BlogPostTemplate from '@/components/BlogPostTemplate';
 
 export const metadata = {
-  title: 'How To Create Link Bait | PostFlow',
-  description: 'Learn more about how to create link bait',
+  title: "How To Create Link Bait | PostFlow",
+  description: "Learn more about how to create link bait",
 };
 
 export default function HowToCreateLinkBaitPage() {
@@ -45,7 +45,7 @@ export default function HowToCreateLinkBaitPage() {
 
       
       <div className="prose prose-lg max-w-none">
-        <p># How to Create Link Bait (+ Linkable Asset Examples)</p>
+        <h1>How to Create Link Bait (+ Linkable Asset Examples)</h1>
 
         <ul className="list-disc pl-6 space-y-2">
           <li>Make your link bait content reasonably long-form</li>
@@ -323,17 +323,17 @@ Just find a unique angle for your post and use it as an outreach excuse.</p>
 
         <h2 id="the-best-books-to-learn-seo-recommended-by-pros">The Best Books To Learn SEO Recommended by Pros</h2>
 
-        <p>###### Curious?</p>
+        <h6>Curious?</h6>
 
-        <p>###### Let's talk LINKIO</p>
+        <h6>Let\'s talk LINKIO</h6>
 
-        <p>###### We love talking LINKIO. Let us know about your project and we'll send you a free proposal</p>
+        <h6>We love talking LINKIO. Let us know about your project and we\'ll send you a free proposal</h6>
 
-        <p>###### Curious?</p>
+        <h6>Curious?</h6>
 
-        <p>###### Let's talk LINKIO</p>
+        <h6>Let\'s talk LINKIO</h6>
 
-        <p>###### We love talking LINKIO. Let us know about your project and we'll send you a free proposal</p>
+        <h6>We love talking LINKIO. Let us know about your project and we\'ll send you a free proposal</h6>
       </div>
     </BlogPostTemplate>
   );

@@ -1,8 +1,8 @@
 import BlogPostTemplate from '@/components/BlogPostTemplate';
 
 export const metadata = {
-  title: 'Link Prospecting | PostFlow',
-  description: 'Learn more about link prospecting',
+  title: "Link Prospecting | PostFlow",
+  description: "Learn more about link prospecting",
 };
 
 export default function LinkProspectingPage() {
@@ -42,7 +42,7 @@ export default function LinkProspectingPage() {
 
       
       <div className="prose prose-lg max-w-none">
-        <p># Link Prospecting (How to Find Link Building Prospects)</p>
+        <h1>Link Prospecting (How to Find Link Building Prospects)</h1>
 
         <ul className="list-disc pl-6 space-y-2">
           <li>Bloggers who link to content on your target topic</li>
@@ -386,17 +386,17 @@ And the goal of this guide is to bring you to places with easier backlink wins.<
 
         <h2 id="the-best-books-to-learn-seo-recommended-by-pros">The Best Books To Learn SEO Recommended by Pros</h2>
 
-        <p>###### Curious?</p>
+        <h6>Curious?</h6>
 
-        <p>###### Let's talk LINKIO</p>
+        <h6>Let\'s talk LINKIO</h6>
 
-        <p>###### We love talking LINKIO. Let us know about your project and we'll send you a free proposal</p>
+        <h6>We love talking LINKIO. Let us know about your project and we\'ll send you a free proposal</h6>
 
-        <p>###### Curious?</p>
+        <h6>Curious?</h6>
 
-        <p>###### Let's talk LINKIO</p>
+        <h6>Let\'s talk LINKIO</h6>
 
-        <p>###### We love talking LINKIO. Let us know about your project and we'll send you a free proposal</p>
+        <h6>We love talking LINKIO. Let us know about your project and we\'ll send you a free proposal</h6>
       </div>
     </BlogPostTemplate>
   );
