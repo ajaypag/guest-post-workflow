@@ -18,6 +18,10 @@ export default function SEOWebinarsPage() {
         Craving some helpful, actionable SEO webinars? Then you're in the right place. Take a look at our library of recordings from myself and other SEO experts. Webinars to teach, inspire, and motivate.
       </p>
 
+      <p className="text-gray-700 mb-12">
+        Whether you're looking to understand the fundamentals of SEO, dive deep into advanced link building strategies, or learn about the latest algorithm updates, our comprehensive collection of webinars has something for everyone. These sessions are designed to provide practical, actionable insights that you can implement immediately to improve your search rankings.
+      </p>
+
       <div className="space-y-12">
         <div>
           <h2 className="text-2xl font-bold text-gray-900 mb-4">How Many Backlinks Do You Need to Rank?</h2>
