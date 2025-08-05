@@ -1,0 +1,823 @@
+'use client';
+
+import React, { useState, useEffect, useCallback } from 'react';
+import { 
+  Loader2, Globe, LinkIcon, DollarSign, ExternalLink, 
+  ChevronDown, ChevronUp, AlertCircle, CheckCircle,
+  Target, Package, Database, Activity, Users, RefreshCw,
+  Sparkles, Search, Clock, XCircle
+} from 'lucide-react';
+import { formatCurrency } from '@/lib/utils/formatting';
+
+// Permission-based configuration
+export interface TablePermissions {
+  canRebalancePools?: boolean;
+  canAssignTargetPages?: boolean;
+  canSwitchPools?: boolean;
+  canApproveReject?: boolean;
+  canGenerateWorkflows?: boolean;
+  canMarkSitesReady?: boolean;
+  canViewInternalTools?: boolean;
+  canViewPricing?: boolean;
+  canEditDomainAssignments?: boolean;
+}
+
+export interface OrderGroup {
+  id: string;
+  clientId: string;
+  client: {
+    id: string;
+    name: string;
+    website: string;
+  };
+  linkCount: number;
+  bulkAnalysisProjectId?: string;
+  targetPages?: Array<{
+    id?: string;
+    url: string;
+    pageId?: string;
+  }>;
+  anchorTexts?: string[];
+  packageType?: string;
+  packagePrice?: number;
+  groupStatus?: string;
+  siteSelections?: {
+    approved: number;
+    pending: number;
+    total: number;
+  };
+}
+
+export interface SiteSubmission {
+  id: string;
+  orderGroupId: string;
+  domainId: string;
+  domain: {
+    id: string;
+    domain: string;
+    qualificationStatus?: string;
+    notes?: string;
+  } | null;
+  domainRating?: number;
+  traffic?: number;
+  price: number;
+  status: 'pending' | 'submitted' | 'approved' | 'rejected' | 'client_approved' | 'client_rejected';
+  submissionStatus?: string;
+  clientApprovedAt?: string;
+  clientRejectedAt?: string;
+  clientReviewedAt?: string;
+  clientReviewNotes?: string;
+  specialInstructions?: string;
+  targetPageUrl?: string;
+  anchorText?: string;
+  createdAt?: string;
+  selectionPool?: 'primary' | 'alternative';
+  poolRank?: number;
+  metadata?: {
+    targetPageUrl?: string;
+    anchorText?: string;
+    specialInstructions?: string;
+    qualificationStatus?: string;
+    hasDataForSeoResults?: boolean;
+    overlapStatus?: 'direct' | 'related' | 'both' | 'none';
+    authorityDirect?: 'strong' | 'moderate' | 'weak' | 'n/a';
+    authorityRelated?: 'strong' | 'moderate' | 'weak' | 'n/a';
+    topicScope?: 'short_tail' | 'long_tail' | 'ultra_long_tail';
+    evidence?: {
+      direct_count: number;
+      direct_median_position: number | null;
+      related_count: number;
+      related_median_position: number | null;
+    };
+    [key: string]: any;
+  };
+}
+
+interface OrderSiteReviewTableProps {
+  orderId: string;
+  orderGroups: OrderGroup[];
+  siteSubmissions: Record<string, SiteSubmission[]>;
+  userType: 'internal' | 'account';
+  permissions: TablePermissions;
+  workflowStage?: string;
+  onAssignTargetPage?: (submissionId: string, targetPageUrl: string, groupId: string) => Promise<void>;
+  onSwitchPool?: (submissionId: string, groupId: string) => Promise<void>;
+  onApprove?: (submissionId: string, groupId: string) => Promise<void>;
+  onReject?: (submissionId: string, groupId: string, reason: string) => Promise<void>;
+  onRefresh?: () => Promise<void>;
+}
+
+export default function OrderSiteReviewTable({
+  orderId,
+  orderGroups,
+  siteSubmissions,
+  userType,
+  permissions,
+  workflowStage = 'site_selection_with_sites',
+  onAssignTargetPage,
+  onSwitchPool,
+  onApprove,
+  onReject,
+  onRefresh
+}: OrderSiteReviewTableProps) {
+  const [expandedGroup, setExpandedGroup] = useState<string | null>(null);
+  const [editingLineItem, setEditingLineItem] = useState<{ groupId: string; index: number } | null>(null);
+  const [assigningDomain, setAssigningDomain] = useState<string | null>(null);
+  const [actionLoading, setActionLoading] = useState<Record<string, boolean>>({});
+
+  // Column configuration based on workflow stage and permissions
+  const getColumnConfig = useCallback(() => {
+    const baseColumns = ['client', 'link_details', 'site', 'status'];
+    const columns = [...baseColumns];
+    
+    // Add tools column only for internal users
+    if (permissions.canViewInternalTools && userType === 'internal') {
+      columns.push('tools');
+    }
+    
+    // Add price column if user can view pricing
+    if (permissions.canViewPricing) {
+      const linkDetailsIndex = columns.indexOf('link_details');
+      if (linkDetailsIndex === -1) {
+        columns.splice(2, 0, 'price');
+      }
+    }
+    
+    return { columns };
+  }, [permissions, userType]);
+
+  const columnConfig = getColumnConfig();
+
+  // Column header renderer
+  const getColumnHeader = (column: string) => {
+    switch (column) {
+      case 'client': return 'Client/Target Page';
+      case 'link_details': return 'Link Details';
+      case 'site': return 'Guest Post Site';
+      case 'status': return 'Status';
+      case 'tools': return 'Internal Tools';
+      case 'price': return 'Price';
+      default: return column;
+    }
+  };
+
+  // Link Details Cell Component
+  const LinkDetailsCell = ({ targetPageUrl, anchorText, price }: { 
+    targetPageUrl?: string; 
+    anchorText?: string; 
+    price?: number; 
+  }) => (
+    <div className="space-y-1.5">
+      <div className="flex items-center gap-2 text-sm">
+        <Globe className="h-3 w-3 text-gray-400 flex-shrink-0" />
+        {targetPageUrl ? (
+          <a href={targetPageUrl} target="_blank" rel="noopener noreferrer" 
+             className="text-blue-600 hover:text-blue-800 hover:underline truncate max-w-[200px]"
+             title={targetPageUrl}>
+            {(() => {
+              try {
+                const url = new URL(targetPageUrl);
+                return url.pathname === '/' ? url.hostname : url.pathname;
+              } catch {
+                return targetPageUrl;
+              }
+            })()}
+          </a>
+        ) : (
+          <span className="text-gray-400 italic">No target page</span>
+        )}
+      </div>
+      <div className="flex items-center gap-2 text-sm">
+        <LinkIcon className="h-3 w-3 text-gray-400 flex-shrink-0" />
+        <span className="text-gray-700 truncate" title={anchorText}>
+          {anchorText || <span className="text-gray-400 italic">No anchor text</span>}
+        </span>
+      </div>
+      {permissions.canViewPricing && price !== undefined && (
+        <div className="flex items-center gap-2 text-sm">
+          <DollarSign className="h-3 w-3 text-gray-400 flex-shrink-0" />
+          <span className="font-medium text-gray-900">{formatCurrency(price)}</span>
+        </div>
+      )}
+    </div>
+  );
+
+  // Status Badge Component
+  const StatusBadge = ({ status }: { status: string }) => {
+    const getStatusStyle = (status: string) => {
+      switch (status) {
+        case 'client_approved': return 'bg-green-100 text-green-800';
+        case 'client_rejected': return 'bg-red-100 text-red-800';
+        case 'pending': return 'bg-yellow-100 text-yellow-800';
+        case 'submitted': return 'bg-blue-100 text-blue-800';
+        default: return 'bg-gray-100 text-gray-800';
+      }
+    };
+
+    const getStatusLabel = (status: string) => {
+      switch (status) {
+        case 'client_approved': return 'Approved';
+        case 'client_rejected': return 'Rejected';
+        case 'pending': return 'Pending Review';
+        case 'submitted': return 'Submitted';
+        default: return status;
+      }
+    };
+
+    return (
+      <span className={`px-2 py-1 text-xs rounded-full ${getStatusStyle(status)}`}>
+        {getStatusLabel(status)}
+      </span>
+    );
+  };
+
+  // Handle domain switching
+  const handleSwitchDomain = async (submissionId: string, groupId: string) => {
+    if (!onSwitchPool) return;
+    
+    setAssigningDomain(submissionId);
+    try {
+      await onSwitchPool(submissionId, groupId);
+    } catch (error) {
+      console.error('Error switching domain:', error);
+    } finally {
+      setAssigningDomain(null);
+    }
+  };
+
+  // Cell renderer
+  const renderTableCell = (
+    column: string,
+    data: {
+      group: OrderGroup;
+      index: number;
+      targetPageUrl?: string;
+      anchorText?: string;
+      displaySubmission?: SiteSubmission | null;
+      availableForTarget: SiteSubmission[];
+      groupId: string;
+    }
+  ) => {
+    const { group, index, targetPageUrl, anchorText, displaySubmission, availableForTarget, groupId } = data;
+
+    switch (column) {
+      case 'client':
+        return (
+          <td className="px-6 py-4 whitespace-nowrap text-sm">
+            <div className="space-y-1">
+              <div className="font-medium text-gray-900">{group.client.name}</div>
+              {targetPageUrl && (
+                <div className="text-xs text-gray-500 truncate max-w-[200px]" title={targetPageUrl}>
+                  {targetPageUrl}
+                </div>
+              )}
+            </div>
+          </td>
+        );
+
+      case 'link_details':
+        return (
+          <td className="px-6 py-4 text-sm">
+            <LinkDetailsCell 
+              targetPageUrl={targetPageUrl}
+              anchorText={anchorText}
+              price={displaySubmission?.price}
+            />
+          </td>
+        );
+
+      case 'site':
+        return (
+          <td className="px-6 py-4 text-sm">
+            {displaySubmission ? (
+              <div className="space-y-2">
+                <div className="flex items-center justify-between">
+                  <div className="flex items-center gap-2">
+                    <a href={`https://${displaySubmission.domain?.domain}`} 
+                       target="_blank" 
+                       rel="noopener noreferrer"
+                       className="text-blue-600 hover:text-blue-800 hover:underline font-medium">
+                      {displaySubmission.domain?.domain}
+                    </a>
+                    {displaySubmission.selectionPool && (
+                      <span className={`text-xs px-1.5 py-0.5 rounded ${
+                        displaySubmission.selectionPool === 'primary' 
+                          ? 'bg-green-100 text-green-700' 
+                          : 'bg-gray-100 text-gray-700'
+                      }`}>
+                        {displaySubmission.selectionPool === 'primary' ? 'Primary' : 'Alt'} #{displaySubmission.poolRank}
+                      </span>
+                    )}
+                  </div>
+                  {permissions.canSwitchPools && availableForTarget.length > 1 && (
+                    <button
+                      className="flex items-center gap-1 p-1 hover:bg-gray-100 rounded"
+                      onClick={() => setEditingLineItem(
+                        editingLineItem?.groupId === groupId && editingLineItem?.index === index 
+                          ? null 
+                          : { groupId, index }
+                      )}
+                      title={`${availableForTarget.length} available domains`}
+                    >
+                      {editingLineItem?.groupId === groupId && editingLineItem?.index === index ? (
+                        <ChevronUp className="h-4 w-4 text-gray-500" />
+                      ) : (
+                        <ChevronDown className="h-4 w-4 text-gray-500" />
+                      )}
+                      <span className="text-xs text-gray-500 font-medium">
+                        {availableForTarget.filter(s => s.selectionPool === 'alternative').length} alternatives
+                      </span>
+                    </button>
+                  )}
+                </div>
+                <div className="flex items-center gap-2 flex-wrap">
+                  {/* DR and Traffic */}
+                  <span className="text-xs text-gray-500">
+                    DR: {displaySubmission.domainRating || 'N/A'} | Traffic: {displaySubmission.traffic?.toLocaleString() || '0'}
+                  </span>
+                  {/* Qualification Status */}
+                  {displaySubmission.metadata?.qualificationStatus && (
+                    <span className={`text-xs px-2 py-0.5 rounded ${
+                      displaySubmission.metadata.qualificationStatus === 'high_quality' 
+                        ? 'bg-green-100 text-green-700' 
+                        : displaySubmission.metadata.qualificationStatus === 'good_quality'
+                        ? 'bg-blue-100 text-blue-700'
+                        : displaySubmission.metadata.qualificationStatus === 'marginal_quality'
+                        ? 'bg-yellow-100 text-yellow-700'
+                        : 'bg-gray-100 text-gray-700'
+                    }`}>
+                      {displaySubmission.metadata.qualificationStatus === 'high_quality' ? '★★★' :
+                       displaySubmission.metadata.qualificationStatus === 'good_quality' ? '★★' :
+                       displaySubmission.metadata.qualificationStatus === 'marginal_quality' ? '★' :
+                       displaySubmission.metadata.qualificationStatus}
+                    </span>
+                  )}
+                  {/* DataForSEO indicator */}
+                  {displaySubmission.metadata?.hasDataForSeoResults && (
+                    <span className="text-xs px-2 py-0.5 rounded bg-blue-100 text-blue-700 flex items-center gap-1">
+                      <Search className="w-3 h-3" />
+                      SEO
+                    </span>
+                  )}
+                  {/* Special instructions */}
+                  {displaySubmission.specialInstructions && (
+                    <span className="text-xs px-2 py-0.5 rounded bg-purple-100 text-purple-700" title={displaySubmission.specialInstructions}>
+                      Instructions
+                    </span>
+                  )}
+                </div>
+              </div>
+            ) : (
+              <span className="text-gray-400 italic">No site selected</span>
+            )}
+          </td>
+        );
+
+      case 'status':
+        return (
+          <td className="px-6 py-4 whitespace-nowrap text-sm">
+            {displaySubmission ? (
+              <StatusBadge status={displaySubmission.submissionStatus || displaySubmission.status} />
+            ) : (
+              <span className="text-gray-400 italic">-</span>
+            )}
+          </td>
+        );
+
+      case 'tools':
+        return (
+          <td className="px-6 py-4 whitespace-nowrap text-sm text-right">
+            <div className="flex items-center justify-end gap-2">
+              {group.bulkAnalysisProjectId && (
+                <a
+                  href={`/clients/${group.clientId}/bulk-analysis/projects/${group.bulkAnalysisProjectId}`}
+                  className="text-indigo-600 hover:text-indigo-800"
+                  title="View Bulk Analysis"
+                >
+                  <Database className="h-4 w-4" />
+                </a>
+              )}
+              <button
+                className="text-gray-400 hover:text-gray-600"
+                title="More options"
+              >
+                <Activity className="h-4 w-4" />
+              </button>
+            </div>
+          </td>
+        );
+
+      case 'price':
+        return (
+          <td className="px-6 py-4 whitespace-nowrap text-sm text-right">
+            <span className="font-medium text-gray-900">
+              {displaySubmission ? formatCurrency(displaySubmission.price) : '-'}
+            </span>
+          </td>
+        );
+
+      default:
+        return <td className="px-6 py-4 text-sm">-</td>;
+    }
+  };
+
+  return (
+    <div className="bg-white rounded-lg shadow-sm border border-gray-200">
+      <div className="p-6 border-b border-gray-200">
+        <div className="flex items-center justify-between">
+          <div>
+            <h2 className="text-lg font-semibold text-gray-900">Order Details</h2>
+            <p className="text-sm text-gray-500 mt-1">
+              Review and manage site selections
+            </p>
+          </div>
+          {onRefresh && (
+            <button
+              onClick={onRefresh}
+              disabled={actionLoading.refresh}
+              className="flex items-center gap-2 px-3 py-2 text-sm bg-gray-100 hover:bg-gray-200 rounded-md"
+            >
+              <RefreshCw className={`h-4 w-4 ${actionLoading.refresh ? 'animate-spin' : ''}`} />
+              Refresh
+            </button>
+          )}
+        </div>
+      </div>
+
+      <div className="overflow-x-auto">
+        <table className="min-w-full divide-y divide-gray-200">
+          <thead className="bg-gray-50">
+            <tr>
+              {columnConfig.columns.map((column) => (
+                <th
+                  key={column}
+                  className={`px-6 py-3 text-xs font-medium text-gray-500 uppercase tracking-wider ${
+                    column === 'tools' || column === 'price' ? 'text-right' : 'text-left'
+                  }`}
+                >
+                  {getColumnHeader(column)}
+                </th>
+              ))}
+            </tr>
+          </thead>
+          <tbody className="bg-white divide-y divide-gray-200">
+            {orderGroups.map((group) => {
+              const groupSubmissions = siteSubmissions[group.id] || [];
+              const isExpanded = expandedGroup === group.id;
+              
+              return (
+                <React.Fragment key={group.id}>
+                  {/* Group Header Row */}
+                  <tr className="bg-gray-50">
+                    <td colSpan={columnConfig.columns.length} className="px-6 py-3">
+                      <div className="flex items-center justify-between">
+                        <button
+                          onClick={() => setExpandedGroup(isExpanded ? null : group.id)}
+                          className="flex items-center gap-6 text-left flex-1"
+                        >
+                          <div className="flex items-center gap-3">
+                            <Package className="h-4 w-4 text-gray-400" />
+                            <div>
+                              <div className="text-sm font-semibold text-gray-900">{group.client.name}</div>
+                              <div className="text-xs text-gray-500 mt-1">
+                                {group.linkCount} link{group.linkCount > 1 ? 's' : ''} needed
+                              </div>
+                            </div>
+                          </div>
+                          {groupSubmissions.length > 0 && (
+                            <div className="flex items-center gap-3 text-xs">
+                              <span className="text-gray-500">
+                                {groupSubmissions.length} site{groupSubmissions.length !== 1 ? 's' : ''} suggested
+                              </span>
+                              {(() => {
+                                const approvedCount = groupSubmissions.filter(s => s.submissionStatus === 'client_approved').length;
+                                const pendingCount = groupSubmissions.filter(s => s.submissionStatus === 'pending').length;
+                                const rejectedCount = groupSubmissions.filter(s => s.submissionStatus === 'client_rejected').length;
+                                return (
+                                  <>
+                                    {approvedCount > 0 && (
+                                      <span className="flex items-center gap-1 text-green-600">
+                                        <CheckCircle className="h-3 w-3" />
+                                        {approvedCount} approved
+                                      </span>
+                                    )}
+                                    {pendingCount > 0 && (
+                                      <span className="flex items-center gap-1 text-yellow-600">
+                                        <Clock className="h-3 w-3" />
+                                        {pendingCount} pending
+                                      </span>
+                                    )}
+                                    {rejectedCount > 0 && (
+                                      <span className="flex items-center gap-1 text-red-600">
+                                        <XCircle className="h-3 w-3" />
+                                        {rejectedCount} rejected
+                                      </span>
+                                    )}
+                                  </>
+                                );
+                              })()}
+                            </div>
+                          )}
+                          <div className="ml-auto">
+                            {isExpanded ? (
+                              <ChevronUp className="h-5 w-5 text-gray-400" />
+                            ) : (
+                              <ChevronDown className="h-5 w-5 text-gray-400" />
+                            )}
+                          </div>
+                        </button>
+                        {group.bulkAnalysisProjectId && permissions.canViewInternalTools && (
+                          <a
+                            href={`/clients/${group.clientId}/bulk-analysis/projects/${group.bulkAnalysisProjectId}`}
+                            className="inline-flex items-center text-xs text-blue-600 hover:text-blue-800 ml-4"
+                          >
+                            <Database className="h-3 w-3 mr-1" />
+                            Bulk Analysis
+                            <ExternalLink className="h-3 w-3 ml-1" />
+                          </a>
+                        )}
+                      </div>
+                    </td>
+                  </tr>
+
+                  {/* Expanded Content */}
+                  {isExpanded && (
+                    <>
+                      {/* Render rows based on link count */}
+                      {Array.from({ length: group.linkCount }, (_, index) => {
+                        const targetPageUrl = group.targetPages?.[index]?.url;
+                        const anchorText = group.anchorTexts?.[index];
+                        
+                        // Pool-based selection logic
+                        const matchingSubmissions = groupSubmissions.filter(sub => 
+                          sub.targetPageUrl === targetPageUrl || sub.metadata?.targetPageUrl === targetPageUrl
+                        );
+                        
+                        const primarySubmissions = matchingSubmissions
+                          .filter(sub => sub.selectionPool === 'primary')
+                          .sort((a, b) => (a.poolRank || 1) - (b.poolRank || 1));
+                        
+                        const displaySubmission = primarySubmissions[index] || null;
+                        
+                        const availableForTarget = groupSubmissions.filter(sub => {
+                          const isForThisTarget = sub.targetPageUrl === targetPageUrl || 
+                                                 sub.metadata?.targetPageUrl === targetPageUrl;
+                          const isUnassigned = !sub.targetPageUrl && !sub.metadata?.targetPageUrl;
+                          const isNotRejected = sub.submissionStatus !== 'client_rejected';
+                          
+                          return (isForThisTarget || isUnassigned) && isNotRejected;
+                        });
+                        
+                        return (
+                          <React.Fragment key={`${group.id}-${index}`}>
+                            <tr className="hover:bg-gray-50">
+                              {columnConfig.columns.map((column) => 
+                                renderTableCell(column, {
+                                  group,
+                                  index,
+                                  targetPageUrl,
+                                  anchorText,
+                                  displaySubmission,
+                                  availableForTarget,
+                                  groupId: group.id
+                                })
+                              )}
+                            </tr>
+                            
+                            {/* Expandable domain comparison - Full featured version */}
+                            {editingLineItem?.groupId === group.id && 
+                             editingLineItem?.index === index && 
+                             availableForTarget.length > 1 && (
+                              <tr className="bg-white border-l-4 border-indigo-200 edit-dropdown">
+                                <td colSpan={columnConfig.columns.length} className="px-6 py-4">
+                                  <div className="bg-gray-50 rounded-lg p-4 edit-dropdown">
+                                    <div className="mb-3">
+                                      <h4 className="text-sm font-medium text-gray-900 mb-1">
+                                        Domain Comparison ({availableForTarget.length} options)
+                                      </h4>
+                                      <p className="text-xs text-gray-600">
+                                        Compare all available domains for this link placement
+                                      </p>
+                                    </div>
+                                    
+                                    <div className="overflow-hidden border border-gray-200 rounded-lg">
+                                      <table className="min-w-full divide-y divide-gray-200">
+                                        <thead className="bg-gray-100">
+                                          <tr>
+                                            <th className="px-3 py-2 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                                              Domain
+                                            </th>
+                                            <th className="px-3 py-2 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                                              Keywords
+                                            </th>
+                                            <th className="px-3 py-2 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                                              Authority
+                                            </th>
+                                            <th className="px-3 py-2 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                                              Overlap
+                                            </th>
+                                            <th className="px-3 py-2 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                                              Quality
+                                            </th>
+                                            <th className="px-3 py-2 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                                              Actions
+                                            </th>
+                                          </tr>
+                                        </thead>
+                                        <tbody className="bg-white divide-y divide-gray-200">
+                                          {availableForTarget.map((submission, subIndex) => (
+                                            <tr key={`${group.id}-${index}-sub-${subIndex}`} 
+                                                className={submission.id === displaySubmission?.id ? 'bg-green-50' : 'hover:bg-gray-50'}>
+                                              <td className="px-3 py-2 whitespace-nowrap">
+                                                <div className="flex items-center gap-2">
+                                                  {submission.id === displaySubmission?.id ? (
+                                                    <CheckCircle className="w-4 h-4 text-green-600" />
+                                                  ) : (
+                                                    <div className="w-4 h-4" />
+                                                  )}
+                                                  <div>
+                                                    <div className="text-sm font-medium">
+                                                      <a
+                                                        href={`https://${submission.domain?.domain}`}
+                                                        target="_blank"
+                                                        rel="noopener noreferrer"
+                                                        className="text-gray-900 hover:text-blue-600 hover:underline flex items-center gap-1"
+                                                        onClick={(e) => e.stopPropagation()}
+                                                        title={`Visit ${submission.domain?.domain}`}
+                                                      >
+                                                        {submission.domain?.domain}
+                                                        <ExternalLink className="w-3 h-3 text-gray-400" />
+                                                      </a>
+                                                    </div>
+                                                    {submission.id === displaySubmission?.id && (
+                                                      <span className="text-xs text-green-600 font-medium">Current selection</span>
+                                                    )}
+                                                  </div>
+                                                </div>
+                                              </td>
+                                              <td className="px-3 py-2 whitespace-nowrap">
+                                                <div className="text-xs">
+                                                  {(submission.domain as any)?.keywordCount ? (
+                                                    <span className="font-medium text-gray-900">{(submission.domain as any).keywordCount} kw</span>
+                                                  ) : submission.metadata?.evidence ? (
+                                                    <span className="font-medium text-gray-900">
+                                                      {submission.metadata.evidence.direct_count + submission.metadata.evidence.related_count} kw
+                                                    </span>
+                                                  ) : (
+                                                    <span className="text-gray-500">No data</span>
+                                                  )}
+                                                  {(submission.domain as any)?.evidence || submission.metadata?.evidence ? (
+                                                    <div className="text-xs text-gray-500 mt-0.5">
+                                                      {((submission.domain as any)?.evidence || submission.metadata?.evidence).direct_count > 0 && 
+                                                        `${((submission.domain as any)?.evidence || submission.metadata?.evidence).direct_count} direct`}
+                                                      {((submission.domain as any)?.evidence || submission.metadata?.evidence).direct_count > 0 && 
+                                                       ((submission.domain as any)?.evidence || submission.metadata?.evidence).related_count > 0 && ', '}
+                                                      {((submission.domain as any)?.evidence || submission.metadata?.evidence).related_count > 0 && 
+                                                        `${((submission.domain as any)?.evidence || submission.metadata?.evidence).related_count} related`}
+                                                    </div>
+                                                  ) : null}
+                                                </div>
+                                              </td>
+                                              <td className="px-3 py-2 whitespace-nowrap">
+                                                <div className="text-xs">
+                                                  {((submission.domain as any)?.authorityDirect || submission.metadata?.authorityDirect) && 
+                                                   ((submission.domain as any)?.authorityDirect || submission.metadata?.authorityDirect) !== 'n/a' && (
+                                                    <div className={`inline-block px-1.5 py-0.5 rounded text-xs font-medium mb-1 ${
+                                                      ((submission.domain as any)?.authorityDirect || submission.metadata?.authorityDirect) === 'strong' ? 'bg-green-100 text-green-700' :
+                                                      ((submission.domain as any)?.authorityDirect || submission.metadata?.authorityDirect) === 'moderate' ? 'bg-yellow-100 text-yellow-700' :
+                                                      'bg-red-100 text-red-700'
+                                                    }`}>
+                                                      Direct: {(submission.domain as any)?.authorityDirect || submission.metadata?.authorityDirect}
+                                                    </div>
+                                                  )}
+                                                  {((submission.domain as any)?.authorityRelated || submission.metadata?.authorityRelated) && 
+                                                   ((submission.domain as any)?.authorityRelated || submission.metadata?.authorityRelated) !== 'n/a' && (
+                                                    <div className={`inline-block px-1.5 py-0.5 rounded text-xs font-medium ${
+                                                      ((submission.domain as any)?.authorityRelated || submission.metadata?.authorityRelated) === 'strong' ? 'bg-green-100 text-green-700' :
+                                                      ((submission.domain as any)?.authorityRelated || submission.metadata?.authorityRelated) === 'moderate' ? 'bg-yellow-100 text-yellow-700' :
+                                                      'bg-red-100 text-red-700'
+                                                    }`}>
+                                                      Related: {(submission.domain as any)?.authorityRelated || submission.metadata?.authorityRelated}
+                                                    </div>
+                                                  )}
+                                                </div>
+                                              </td>
+                                              <td className="px-3 py-2 whitespace-nowrap">
+                                                {((submission.domain as any)?.overlapStatus || submission.metadata?.overlapStatus) && (
+                                                  <span className={`inline-flex items-center px-2 py-1 rounded-full text-xs font-medium ${
+                                                    ((submission.domain as any)?.overlapStatus || submission.metadata?.overlapStatus) === 'both' ? 'bg-purple-100 text-purple-700' :
+                                                    ((submission.domain as any)?.overlapStatus || submission.metadata?.overlapStatus) === 'direct' ? 'bg-green-100 text-green-700' :
+                                                    ((submission.domain as any)?.overlapStatus || submission.metadata?.overlapStatus) === 'related' ? 'bg-blue-100 text-blue-700' :
+                                                    'bg-gray-100 text-gray-600'
+                                                  }`}>
+                                                    <Target className="w-3 h-3 mr-1" />
+                                                    {((submission.domain as any)?.overlapStatus || submission.metadata?.overlapStatus) === 'both' ? 'STRONGEST' :
+                                                     ((submission.domain as any)?.overlapStatus || submission.metadata?.overlapStatus) === 'direct' ? 'VERY STRONG' :
+                                                     ((submission.domain as any)?.overlapStatus || submission.metadata?.overlapStatus) === 'related' ? 'DECENT' :
+                                                     'NO MATCH'}
+                                                  </span>
+                                                )}
+                                              </td>
+                                              <td className="px-3 py-2 whitespace-nowrap">
+                                                <div className="flex flex-col gap-1">
+                                                  {((submission.domain as any)?.qualificationStatus || submission.metadata?.qualificationStatus) && (
+                                                    <span className={`inline-flex items-center px-1.5 py-0.5 rounded text-xs font-medium ${
+                                                      ((submission.domain as any)?.qualificationStatus || submission.metadata?.qualificationStatus) === 'high_quality' ? 'bg-green-100 text-green-700' :
+                                                      ((submission.domain as any)?.qualificationStatus || submission.metadata?.qualificationStatus) === 'good_quality' ? 'bg-blue-100 text-blue-700' :
+                                                      ((submission.domain as any)?.qualificationStatus || submission.metadata?.qualificationStatus) === 'marginal_quality' ? 'bg-yellow-100 text-yellow-700' :
+                                                      'bg-gray-100 text-gray-600'
+                                                    }`}>
+                                                      {((submission.domain as any)?.qualificationStatus || submission.metadata?.qualificationStatus) === 'high_quality' ? '★★★' :
+                                                       ((submission.domain as any)?.qualificationStatus || submission.metadata?.qualificationStatus) === 'good_quality' ? '★★' :
+                                                       ((submission.domain as any)?.qualificationStatus || submission.metadata?.qualificationStatus) === 'marginal_quality' ? '★' :
+                                                       '○'}
+                                                    </span>
+                                                  )}
+                                                  {((submission.domain as any)?.hasDataForSeoResults || submission.metadata?.hasDataForSeoResults) && (
+                                                    <span className="text-xs text-indigo-600 flex items-center">
+                                                      <Database className="w-3 h-3 mr-1" />
+                                                      SEO data
+                                                    </span>
+                                                  )}
+                                                </div>
+                                              </td>
+                                              <td className="px-3 py-2 whitespace-nowrap">
+                                                <div className="flex items-center gap-1">
+                                                  {submission.id !== displaySubmission?.id && (
+                                                    <>
+                                                      {submission.selectionPool === 'primary' ? (
+                                                        <span className="text-xs text-gray-500 italic">In use</span>
+                                                      ) : (
+                                                        <>
+                                                          {permissions.canSwitchPools && (
+                                                            <button 
+                                                              className="text-xs bg-blue-100 text-blue-700 hover:bg-blue-200 px-2 py-1 rounded transition-colors"
+                                                              onClick={async (e) => {
+                                                                e.preventDefault();
+                                                                e.stopPropagation();
+                                                                await handleSwitchDomain(submission.id, group.id);
+                                                              }}
+                                                              disabled={!!assigningDomain}
+                                                            >
+                                                              {assigningDomain === submission.id ? (
+                                                                <Loader2 className="h-3 w-3 animate-spin" />
+                                                              ) : (
+                                                                'Make Primary'
+                                                              )}
+                                                            </button>
+                                                          )}
+                                                          {permissions.canEditDomainAssignments && (
+                                                            <button 
+                                                              className="text-xs bg-green-100 text-green-700 hover:bg-green-200 px-2 py-1 rounded transition-colors"
+                                                              onClick={async (e) => {
+                                                                e.preventDefault();
+                                                                e.stopPropagation();
+                                                                // TODO: Implement add as new link functionality
+                                                                console.log('Add as new link:', submission.id);
+                                                              }}
+                                                            >
+                                                              Add as New Link
+                                                            </button>
+                                                          )}
+                                                        </>
+                                                      )}
+                                                    </>
+                                                  )}
+                                                  {group.bulkAnalysisProjectId && submission.domainId && permissions.canViewInternalTools && (
+                                                    <a
+                                                      href={`/clients/${group.clientId}/bulk-analysis/projects/${group.bulkAnalysisProjectId}?guided=${submission.domainId}`}
+                                                      className="text-xs bg-indigo-100 text-indigo-700 hover:bg-indigo-200 px-2 py-1 rounded transition-colors flex items-center gap-1"
+                                                      title="View detailed bulk analysis"
+                                                      target="_blank"
+                                                      rel="noopener noreferrer"
+                                                      onClick={(e) => e.stopPropagation()}
+                                                    >
+                                                      <Database className="w-3 h-3" />
+                                                      Analysis
+                                                    </a>
+                                                  )}
+                                                </div>
+                                              </td>
+                                            </tr>
+                                          ))}
+                                        </tbody>
+                                      </table>
+                                    </div>
+                                  </div>
+                                </td>
+                              </tr>
+                            )}
+                          </React.Fragment>
+                        );
+                      })}
+                    </>
+                  )}
+                </React.Fragment>
+              );
+            })}
+          </tbody>
+        </table>
+      </div>
+    </div>
+  );
+}
