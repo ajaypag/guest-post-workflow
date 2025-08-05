@@ -70,10 +70,14 @@ export default function ExternalOrderReviewPage() {
   const handleApprove = async (submissionId: string, groupId: string) => {
     try {
       const response = await fetch(
-        `/api/orders/${orderId}/groups/${groupId}/submissions/${submissionId}/approve`,
+        `/api/orders/${orderId}/groups/${groupId}/submissions/${submissionId}/review`,
         {
           method: 'POST',
-          headers: { 'Content-Type': 'application/json' }
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ 
+            action: 'approve',
+            notes: 'Approved by client' 
+          })
         }
       );
       
@@ -89,11 +93,14 @@ export default function ExternalOrderReviewPage() {
   const handleReject = async (submissionId: string, groupId: string, reason: string) => {
     try {
       const response = await fetch(
-        `/api/orders/${orderId}/groups/${groupId}/submissions/${submissionId}/reject`,
+        `/api/orders/${orderId}/groups/${groupId}/submissions/${submissionId}/review`,
         {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({ reason })
+          body: JSON.stringify({ 
+            action: 'reject',
+            notes: reason 
+          })
         }
       );
       

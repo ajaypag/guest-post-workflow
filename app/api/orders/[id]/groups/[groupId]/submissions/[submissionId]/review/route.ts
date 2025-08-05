@@ -38,7 +38,7 @@ export async function POST(
     
     // Check permissions
     if (session.userType === 'account') {
-      if (order.accountId !== session.accountId) {
+      if (order.accountId !== session.userId) {
         return NextResponse.json({ error: 'Forbidden - Account access denied' }, { status: 403 });
       }
     }
