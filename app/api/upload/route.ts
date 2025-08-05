@@ -2,8 +2,7 @@ import { NextRequest, NextResponse } from 'next/server';
 import { writeFile, mkdir } from 'fs/promises';
 import path from 'path';
 import { existsSync } from 'fs';
-import { getServerSession } from 'next-auth';
-import { authOptions } from '@/lib/auth';
+import { AuthServiceServer } from '@/lib/auth-server';
 
 // Simple in-memory rate limiting
 const uploadAttempts = new Map<string, number[]>();
@@ -29,13 +28,13 @@ function checkRateLimit(userId: string): boolean {
 export async function POST(request: NextRequest) {
   try {
     // Check authentication
-    const session = await getServerSession(authOptions);
+    const session = await AuthServiceServer.getSession(request);
     if (!session || session.userType !== 'internal') {
       return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
     }
 
     // Check rate limit
-    if (!checkRateLimit(session.user.email)) {
+    if (!checkRateLimit(session.email)) {
       return NextResponse.json({ error: 'Too many uploads. Please wait a minute.' }, { status: 429 });
     }
 
@@ -79,8 +78,7 @@ export async function POST(request: NextRequest) {
       await mkdir(imagesDir, { recursive: true });
     }
 
-    // Ensure the target path is within public/images
-    const filename = path.basename(targetPath);
+    // Use the already validated filename
     const publicPath = path.join(imagesDir, filename);
 
     // Write the file
