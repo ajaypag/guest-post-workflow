@@ -100,8 +100,8 @@ export default function AddMeToSearchPage() {
 
       <div className="mb-8">
         <img 
-          src="https://images.surferseo.art/38ca89e1-7ea9-43ce-b6cc-1b787cefd9e4.png" 
-          alt="Google People Card example showing editable fields" 
+          src="https://images.unsplash.com/photo-1573804633927-bfcbcd909acd?w=800&q=80" 
+          alt="Google search interface showing local business results" 
           className="w-full rounded-lg shadow-sm"
         />
       </div>

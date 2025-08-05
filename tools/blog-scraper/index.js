@@ -73,17 +73,85 @@ async function scrapeBlogPost(url) {
       }
     }
     
-    // Find content
+    // Find content - extract clean text with better structure
     let content = '';
+    let cleanText = '';
     let contentElement = null;
+    
+    // Remove unwanted elements first
+    $('script, style, noscript, iframe, svg, nav, header, footer, .sidebar, .widget').remove();
+    $('.elementor-widget-sidebar, .menu, .navigation').remove();
+    
+    // Try to find main content area
     for (const selector of selectors.content) {
       const found = $(selector);
       if (found.length > 0) {
         contentElement = found.first();
-        content = contentElement.html();
         break;
       }
     }
+    
+    // If no content element found, use body
+    if (!contentElement) {
+      contentElement = $('body');
+    }
+    
+    // Extract clean structured text
+    const sections = [];
+    contentElement.find('h1, h2, h3, h4, h5, h6, p, ul, ol, blockquote').each((i, elem) => {
+      const $elem = $(elem);
+      const tagName = elem.tagName.toLowerCase();
+      const text = $elem.text().trim();
+      
+      if (!text || text.length < 2) return;
+      
+      if (tagName.startsWith('h')) {
+        const level = parseInt(tagName[1]);
+        sections.push({
+          type: 'heading',
+          level: level,
+          text: text
+        });
+      } else if (tagName === 'p') {
+        sections.push({
+          type: 'paragraph',
+          text: text
+        });
+      } else if (tagName === 'ul' || tagName === 'ol') {
+        const items = [];
+        $elem.find('li').each((j, li) => {
+          const liText = $(li).text().trim();
+          if (liText) items.push(liText);
+        });
+        if (items.length > 0) {
+          sections.push({
+            type: 'list',
+            items: items
+          });
+        }
+      } else if (tagName === 'blockquote') {
+        sections.push({
+          type: 'quote',
+          text: text
+        });
+      }
+    });
+    
+    // Convert sections to clean text
+    cleanText = sections.map(section => {
+      if (section.type === 'heading') {
+        return '\n\n' + '#'.repeat(section.level) + ' ' + section.text + '\n';
+      } else if (section.type === 'paragraph') {
+        return '\n' + section.text;
+      } else if (section.type === 'list') {
+        return '\n' + section.items.map(item => '• ' + item).join('\n');
+      } else if (section.type === 'quote') {
+        return '\n> ' + section.text;
+      }
+      return '';
+    }).join('');
+    
+    content = cleanText.trim();
     
     // Find images
     const images = [];
@@ -165,10 +233,13 @@ app.post('/api/scrape', async (req, res) => {
       const postDir = path.join(outputDir, uniqueSlug);
       await fs.ensureDir(postDir);
       
-      // Save content as markdown
+      // Save clean content as markdown (content is already clean markdown)
       const markdown = `# ${data.title}\n\n${data.content}`;
-      await fs.writeFile(path.join(postDir, 'content.html'), data.content);
       await fs.writeFile(path.join(postDir, 'content.md'), markdown);
+      
+      // Also save a clean text version
+      const cleanTextContent = data.content.replace(/#{1,6}\s/g, '').replace(/[•\-\*]/g, '').trim();
+      await fs.writeFile(path.join(postDir, 'content.txt'), cleanTextContent);
       
       // Process images - convert to absolute URLs and embed in HTML
       const processedImages = [];

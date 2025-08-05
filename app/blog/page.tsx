@@ -5,15 +5,7 @@ import { Zap, Calendar, User, ArrowRight } from 'lucide-react';
 
 export default function BlogPage() {
   const blogPosts = [
-    {
-      title: "SEO Webinars (On-Page, Off-Page and More)",
-      href: "/seo-webinars",
-      description: "Collection of SEO webinars covering advanced strategies, internal linking, and ranking techniques",
-      date: "August 25, 2022",
-      author: "Ajay Paghdal",
-      readTime: "10 min read",
-      category: "SEO Training"
-    },
+    // Featured Posts
     {
       title: "Resource Page Link Building (Search Terms and Emails)",
       href: "/resource-page-link-building-guide",
@@ -24,18 +16,178 @@ export default function BlogPage() {
       category: "Link Building"
     },
     {
+      title: "Best Guest Posting Services",
+      href: "/best-guest-posting-services",
+      description: "Top guest posting services reviewed and compared for quality backlinks",
+      date: "August 30, 2022",
+      author: "Ajay Paghdal",
+      readTime: "15 min read",
+      category: "Link Building"
+    },
+    {
+      title: "How to Sort and Filter Link Prospects",
+      href: "/how-to-sort-and-filter-link-prospects",
+      description: "Complete guide to sorting and filtering link prospects for effective outreach",
+      date: "November 15, 2022",
+      author: "Ajay Paghdal",
+      readTime: "10 min read",
+      category: "Link Building"
+    },
+    // SEO Guides
+    {
+      title: "SEO Case Study: Real Results",
+      href: "/seo-case-study",
+      description: "Real-world SEO case study with actionable insights and proven strategies",
+      date: "September 10, 2022",
+      author: "Ajay Paghdal",
+      readTime: "8 min read",
+      category: "Case Studies"
+    },
+    {
+      title: "Google's Latest Algorithm Updates",
+      href: "/googles-latest-algorithm-updates",
+      description: "Stay updated with the latest Google algorithm changes and their impact",
+      date: "August 28, 2022",
+      author: "Ajay Paghdal",
+      readTime: "7 min read",
+      category: "SEO News"
+    },
+    {
+      title: "SEO Tutorial: Complete Beginner's Guide",
+      href: "/seo-tutorial",
+      description: "Comprehensive SEO tutorial covering everything from basics to advanced strategies",
+      date: "August 2022",
+      author: "Ajay Paghdal",
+      readTime: "20 min read",
+      category: "SEO Training"
+    },
+    // Email & Outreach
+    {
+      title: "Email Outreach Templates That Convert",
+      href: "/email-outreach-templates",
+      description: "Proven email templates for successful outreach campaigns",
+      date: "August 22, 2022",
+      author: "Ajay Paghdal",
+      readTime: "8 min read",
+      category: "Outreach"
+    },
+    {
+      title: "Follow-Up Email Templates",
+      href: "/follow-up-email",
+      description: "Effective follow-up email templates for link building",
+      date: "August 24, 2022",
+      author: "Ajay Paghdal",
+      readTime: "5 min read",
+      category: "Outreach"
+    },
+    // Link Building
+    {
+      title: "Link Building Costs: Complete Guide",
+      href: "/link-building-costs",
+      description: "Comprehensive guide to link building pricing and costs",
+      date: "August 20, 2022",
+      author: "Ajay Paghdal",
+      readTime: "10 min read",
+      category: "Link Building"
+    },
+    {
+      title: "EDU Link Building Guide",
+      href: "/edu-link-building-guide",
+      description: "How to get high-quality backlinks from educational institutions",
+      date: "August 2022",
+      author: "Ajay Paghdal",
+      readTime: "12 min read",
+      category: "Link Building"
+    },
+    {
+      title: "Broken Link Building Strategy",
+      href: "/broken-link-building-guide",
+      description: "Find and fix broken links to earn quality backlinks",
+      date: "August 2022",
+      author: "Ajay Paghdal",
+      readTime: "10 min read",
+      category: "Link Building"
+    },
+    // Tools & Services
+    {
+      title: "Best SEO Newsletters to Follow",
+      href: "/best-seo-newsletters",
+      description: "Top SEO newsletters to stay ahead of the curve",
+      date: "August 26, 2022",
+      author: "Ajay Paghdal",
+      readTime: "6 min read",
+      category: "Resources"
+    },
+    {
+      title: "Best Link Building Services",
+      href: "/best-link-building-services",
+      description: "Top link building services reviewed and compared",
+      date: "August 2022",
+      author: "Ajay Paghdal",
+      readTime: "15 min read",
+      category: "Services"
+    },
+    {
+      title: "Best Email Finders for Outreach",
+      href: "/best-email-finders",
+      description: "Top email finding tools for successful outreach campaigns",
+      date: "August 2022",
+      author: "Ajay Paghdal",
+      readTime: "8 min read",
+      category: "Tools"
+    },
+    // Content Marketing
+    {
+      title: "How to Write Listicles That Rank",
+      href: "/how-to-write-listicles",
+      description: "Create compelling listicle content that ranks and converts",
+      date: "August 2022",
+      author: "Ajay Paghdal",
+      readTime: "8 min read",
+      category: "Content"
+    },
+    {
+      title: "How to Create Link Bait Content",
+      href: "/how-to-create-link-bait",
+      description: "Create content that naturally attracts backlinks",
+      date: "August 2022",
+      author: "Ajay Paghdal",
+      readTime: "10 min read",
+      category: "Content"
+    },
+    // Local SEO
+    {
       title: "Best Citation Building Services (30+ Reviewed)",
       href: "/best-citation-building-services",
-      description: "Comprehensive review of citation building services for local SEO, featuring 37 top providers",
+      description: "Comprehensive review of citation building services for local SEO",
       date: "August 25, 2022",
       author: "Ajay Paghdal", 
       readTime: "15 min read",
       category: "Local SEO"
     },
     {
-      title: "Link Disavows Good or Bad?",
+      title: "Add Me to Search: Get Found on Google",
+      href: "/add-me-to-search",
+      description: "Complete guide to getting your business listed in Google's 'near me' searches",
+      date: "August 5, 2025",
+      author: "Ajay Paghdal",
+      readTime: "10 min read",
+      category: "Local SEO"
+    },
+    // Additional Posts
+    {
+      title: "SEO Webinars Collection",
+      href: "/seo-webinars",
+      description: "Collection of SEO webinars covering advanced strategies",
+      date: "August 25, 2022",
+      author: "Ajay Paghdal",
+      readTime: "10 min read",
+      category: "SEO Training"
+    },
+    {
+      title: "Link Disavows: Good or Bad?",
       href: "/link-disavows-good-or-bad",
-      description: "Expert guide on when and how to use Google's disavow tool to clean up toxic backlinks",
+      description: "Expert guide on when and how to use Google's disavow tool",
       date: "October 28, 2022",
       author: "Ajay Paghdal",
       readTime: "8 min read", 
