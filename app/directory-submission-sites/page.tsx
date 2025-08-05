@@ -17,28 +17,7 @@ import {
   AlertCircle,
   Info
 } from 'lucide-react';
-
-// Parse CSV data
-const csvData = `Website Name,Website URL,Submit URL,DA,DR,Monthly Organic Traffic,Traffic,Automotive,Business,Careers,Dating,Dental,Design,Diet,Education,Entertainment,Faith,Family,Fashion,Finance,Fitness,Food,General,Health,Home,Insurance,Legal,Lifestyle,Marketing,Mommy Blogs,Music,News,Outdoors,Pets,Photography,Politics,Real Estate,Sales,Self Improvement,Shopping,Sports,Technology,Travel,Web Design,Wedding,Women
-zillow.com,https://www.zillow.com/,,86,91,37379650.19,Very Very High,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,x,,,,,,,,,
-realtor.com,https://www.realtor.com/,,90,90,22412827.69,Very Very High,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,x,,,,,,,,,
-trulia.com,https://www.trulia.com/,,85,87,10574583.41,Very Very High,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,x,,,,,,,,,
-mailchimp.com,https://mailchimp.com/experts/,,90,93,6319946.87,Very Very High,,,,,,,,,,,,,,,,,,,,,,x,,,,,,,,,,,,,,,,,
-drudgereport.com,http://www.drudgereport.com/,,73,77,4934795.04,Very Very High,,,,,,,,,,,,,,,,,,,,,,,,,x,,,,,,,,,,,,,,
-theknot.com,https://www.theknot.com/,,85,90,4910265.06,Very Very High,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,x,
-lonelyplanet.com,https://www.lonelyplanet.com/,,92,90,3855354.73,Very Very High,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,x,,,
-loopnet.com,https://www.loopnet.com/,,66,84,2624353.77,Very Very High,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,x,,,,,,,,,
-local.com,http://www.local.com/,,60,81,2313176.64,Very Very High,,x,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,
-healthdirect.gov.au,https://www.healthdirect.gov.au/,,64,82,2290972.28,Very Very High,,,,,,,,,,,,,,,,,x,,,,,,,,,,,,,,,,,,,,,,
-viator.com,https://www.viator.com/,,80,85,2168284.12,Very Very High,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,x,,,
-movoto.com,https://www.movoto.com/,,70,76,2102366.79,Very Very High,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,x,,,,,,,,,
-homes.com,https://www.homes.com/,,67,77,2004075.05,Very Very High,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,x,,,,,,,,,
-nolo.com,https://www.nolo.com/,,72,85,1775116.48,Very Very High,,,,,,,,,,,,,,,,,,,,x,,,,,,,,,,,,,,,,,,,
-hotpads.com,https://hotpads.com/,,71,73,1725060.52,Very Very High,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,x,,,,,,,,,
-har.com,https://www.har.com/,,65,81,1482966.4,Very Very High,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,x,,,,,,,,,
-hubspot.com,https://www.hubspot.com/agencies,https://legacydocs.hubspot.com/docs/methods/forms/submit_form,92,92,1332574.97,Very Very High,,,,,,,,,,,,,,,,,,,,,,x,,,,,,,,,,,,,,,,,
-active.com,https://www.active.com/,,77,89,1288380.87,Very Very High,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,x,,,,,
-g2.com,https://www.g2.com/categories/marketing-services,https://www.g2.com/products/submit-com/competitors/alternatives,65,88,1245526.67,Very Very High,,,,,,,,,,,,,,,,,,,,,,x,,,,,,,,,,,,,,,,,`;
+import { directoryCSVData as csvData } from '@/lib/data/directoryData';
 
 interface Directory {
   name: string;
@@ -197,7 +176,7 @@ export default function DirectorySubmissionSites() {
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
           <div className="text-center">
             <h1 className="text-4xl md:text-5xl font-bold text-gray-900 mb-4">
-              600+ Directory Sites and How To Do Directory Link Building
+              580+ Directory Sites and How To Do Directory Link Building
             </h1>
             <p className="text-xl text-gray-600 max-w-3xl mx-auto mb-6">
               The most comprehensive list of high-quality directory submission sites, 
