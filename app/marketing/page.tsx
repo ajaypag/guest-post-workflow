@@ -80,6 +80,9 @@ export default function MarketingHomepage() {
               <Link href="/guest-posting-sites" className="text-gray-600 hover:text-gray-900 text-sm font-medium">
                 Browse Sites
               </Link>
+              <Link href="/anchor-text-optimizer" className="text-gray-600 hover:text-gray-900 text-sm font-medium">
+                Free Tools
+              </Link>
               <Link href="/account/login" className="text-gray-600 hover:text-gray-900 text-sm font-medium">
                 Sign In
               </Link>
