@@ -1,6 +1,7 @@
 'use client';
 
 import { useState } from 'react';
+import Image from 'next/image';
 import BlogPostTemplate from '@/components/BlogPostTemplate';
 import { ChevronRight, Filter, Trash2, CheckCircle, XCircle, AlertCircle, Users, Globe, FileSpreadsheet, Link2 } from 'lucide-react';
 
@@ -27,9 +28,11 @@ export default function HowToSortAndFilterLinkProspectsPage() {
     >
       {/* Hero Section with Featured Image   */}
       <div className="relative rounded-2xl overflow-hidden mb-12 shadow-xl">
-        <img 
+        <Image 
           src="https://www.linkio.com/wp-content/uploads/2020/11/sorting-link-prospects-fi-1024x536.png"
           alt="Sorting Link Prospects Guide"
+          width={1024}
+          height={536}
           className="w-full h-[400px] object-cover"
         />
         <div className="absolute inset-0 bg-gradient-to-t from-black/60 via-black/20 to-transparent" />
@@ -208,9 +211,11 @@ export default function HowToSortAndFilterLinkProspectsPage() {
           </table>
         </div>
 
-        <img 
+        <Image 
           src="https://www.linkio.com/wp-content/uploads/2020/05/linked-domains.png"
           alt="Linked domains example"
+          width={1200}
+          height={600}
           className="w-full rounded-lg shadow-md mb-4"
         />
       </section>
@@ -231,9 +236,11 @@ export default function HowToSortAndFilterLinkProspectsPage() {
           </p>
         </div>
 
-        <img 
+        <Image 
           src="https://www.linkio.com/wp-content/uploads/2020/05/spoiler.png"
           alt="Filtering results"
+          width={1200}
+          height={600}
           className="w-full rounded-lg shadow-md mb-8"
         />
 
@@ -247,9 +254,11 @@ export default function HowToSortAndFilterLinkProspectsPage() {
             A German-speaking writer shouldn't suggest to their audience that they check a post in Italian. 
             Most won\'t understand the copy.
           </p>
-          <img 
+          <Image 
             src="https://www.linkio.com/wp-content/uploads/2020/05/foreign-language.png"
             alt="Foreign language example"
+            width={1200}
+            height={600}
             className="w-full rounded-lg shadow-md mb-4"
           />
           <div className="bg-blue-50 border-l-4 border-blue-400 p-4 rounded-r-lg">
@@ -287,23 +296,29 @@ export default function HowToSortAndFilterLinkProspectsPage() {
             </div>
           </div>
 
-          <img 
+          <Image 
             src="https://www.linkio.com/wp-content/uploads/2020/05/reffering-page.png"
             alt="Duplicate pages example"
+            width={1200}
+            height={600}
             className="w-full rounded-lg shadow-md"
           />
         </div>
 
         {/* More subsections with images   */}
         <div className="space-y-8">
-          <img 
+          <Image 
             src="https://www.linkio.com/wp-content/uploads/2020/05/rephrased.png"
             alt="Rephrased titles example"
+            width={1200}
+            height={600}
             className="w-full rounded-lg shadow-md"
           />
-          <img 
+          <Image 
             src="https://www.linkio.com/wp-content/uploads/2020/05/TextPre.png"
             alt="TextPre sorting example"
+            width={1200}
+            height={600}
             className="w-full rounded-lg shadow-md"
           />
         </div>

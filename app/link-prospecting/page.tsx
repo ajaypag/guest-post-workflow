@@ -79,7 +79,7 @@ What most folks do. Many people limit themselves here.
 They check link prospects for a very basic query (“keyword tools” in our case) and probably a few variations (“best keyword tools,” “free keyword tools,” “keyword tools 2020,” etc).
 While there’s nothing wrong with such a tactic, that’s what everyone does. Authors of articles ranking for those basic queries are bombarded with link requests like yours.
 You’ll have to face tougher competition.
-> What you should do. Try to diversify the way you phrase your queries. It’ll help you decrease the level of competition at this stage.
+        <blockquote className="border-l-4 border-gray-300 pl-4 italic text-gray-700 my-2">What you should do. Try to diversify the way you phrase your queries. It’ll help you decrease the level of competition at this stage.</blockquote>
 What you should do. Try to diversify the way you phrase your queries. It’ll help you decrease the level of competition at this stage.
 Learn which keywords pages ranking for your basic query also rank for. For example, Ahrefs Keywords Explorer has a standalone report for this.
 As shown above, pages ranking for “keyword tools” also rank for alternatives to Google Keyword Planner, Semrush, and other well-known tools.
@@ -101,7 +101,7 @@ No wonder.
 While common interests can attract the attention of your topic allies, similar content can’t.
 When you reach out to authors of posts on your topic, you’re trying to deal with your content competitors.
 Not all of them will be responsive, especially if you don’t give them a compelling reason to be.
-> What you should do. You should approach such link prospects delicately and only if your content permits.
+        <blockquote className="border-l-4 border-gray-300 pl-4 italic text-gray-700 my-2">What you should do. You should approach such link prospects delicately and only if your content permits.</blockquote>
 Find out what’s missing in a competing post and make sure yours can fill the gap.
 What you should do. You should approach such link prospects delicately and only if your content permits.
 Find out what’s missing in a competing post and make sure yours can fill the gap.
@@ -120,7 +120,7 @@ What kind of keyword research can go without tools and their metrics?
 The question is rhetorical 🙂
 What most folks do. Just like in the first section, people stop too early here.
 They usually don’t go any further than running a search for obvious queries like “keyword research guide,” “how to find keywords,” etc.
-> What you should do. To expand your list of link prospects, you should be more ingenious.
+        <blockquote className="border-l-4 border-gray-300 pl-4 italic text-gray-700 my-2">What you should do. To expand your list of link prospects, you should be more ingenious.</blockquote>
 Try to brainstorm ideas of how your content could be helpful in more specific terms.
 What you should do. To expand your list of link prospects, you should be more ingenious.
 Try to brainstorm ideas of how your content could be helpful in more specific terms.
@@ -146,7 +146,7 @@ For example, if someone’s case study has many backlinks, people research the s
 But do link prospects need another study that proves what they already know?
 Another common failure is when people see competitors’ backlinks from testimonials, they start offering their feedback too.
 But unless they are big names in their niche, there’s hardly anyone who’d be interested in testimonials from them.
-> What you should do. There’s no need to replicate every backlink of your competitor.
+        <blockquote className="border-l-4 border-gray-300 pl-4 italic text-gray-700 my-2">What you should do. There’s no need to replicate every backlink of your competitor.</blockquote>
 Instead, focus on backlinks strategically important for your business exposure.
 What you should do. There’s no need to replicate every backlink of your competitor.
 Instead, focus on backlinks strategically important for your business exposure.
@@ -170,7 +170,7 @@ And the list goes on.
 The truth is blogs that have “write for us” pages receive multiple pitches daily.
 Some of them have become so picky that they discard good pitches.
 Others have come up with a more creative way of selection. They welcome only writers who won’t mind paying them a “small publishing fee,” which is nonsense if your content is good.
-> What you should do. Take a look at guest blogging from a content angle – it’s not all about link building.
+        <blockquote className="border-l-4 border-gray-300 pl-4 italic text-gray-700 my-2">What you should do. Take a look at guest blogging from a content angle – it’s not all about link building.</blockquote>
 If you offer bloggers high-quality content for free, it’s in their best interest to publish it.
 What you should do. Take a look at guest blogging from a content angle – it’s not all about link building.
 If you offer bloggers high-quality content for free, it’s in their best interest to publish it.
@@ -194,7 +194,7 @@ Use a broken backlink checker to find competitors’ dead pages that still hav
 What most folks do. Dead pages exist not only on live domains. And that’s what many people overlook in broken link building.
 Over time, some companies grow into seven-figure businesses, while others go broke and shut down. Naturally, their domains with many content pages get expired. In this case, it’s a good idea to use a domain scanner and check for any existing issues.
 Bloggers don’t keep an eye on every company they’ve ever mentioned. So, live backlinks to expired domains are still on their blogs.
-> What you should do. Find expired domains related to your business using this free service.
+        <blockquote className="border-l-4 border-gray-300 pl-4 italic text-gray-700 my-2">What you should do. Find expired domains related to your business using this free service.</blockquote>
 Type in your target keyword and sort results by backlinks (BL) to check the most linked-to expired domains.
 What you should do. Find expired domains related to your business using this free service.
 Type in your target keyword and sort results by backlinks (BL) to check the most linked-to expired domains.
@@ -223,7 +223,7 @@ If you include omitted results, the number will grow to 319, but that’s still 
 Is it a dead end? No, you can filter results by different date ranges to extract more URLs, e.g. first for 2020, next for 2019, and so on.
 What most folks do. Many hunters for unlinked mentions check their company or domain names only and call it a day.
 But that way, a lot of other business mentions drop off their radars.
-> What you should do. Expand your list with more possible mentions related to your business. Here they are.
+        <blockquote className="border-l-4 border-gray-300 pl-4 italic text-gray-700 my-2">What you should do. Expand your list with more possible mentions related to your business. Here they are.</blockquote>
 What you should do. Expand your list with more possible mentions related to your business. Here they are.</p>
 
         <h3 id="branded-product-names">Branded product names</h3>
@@ -273,7 +273,7 @@ Some prospects will link to you in return. Others will at least share your write
 What most folks do. When writers need to link out somewhere, they randomly pick one of the first pages they see in Google search.
 But the thing is another backlink won’t do much good to those top-ranking pages.
 Think about it. They already have what they want and got it without your help. You won’t do them a big favor with another backlink, you see.
-> What you should do. You should help the needy rather than well-off folks.
+        <blockquote className="border-l-4 border-gray-300 pl-4 italic text-gray-700 my-2">What you should do. You should help the needy rather than well-off folks.</blockquote>
 Instead of linking out to posts that already feel good in the top 10, better target pages lagging behind. Look for them on the 2nd or 3rd pages of search results.
 What you should do. You should help the needy rather than well-off folks.
 Instead of linking out to posts that already feel good in the top 10, better target pages lagging behind. Look for them on the 2nd or 3rd pages of search results.

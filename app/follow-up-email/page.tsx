@@ -109,7 +109,7 @@ Source
 But when people keep ignoring you intentionally, which follow-up should be the last one?
 Opinion from Jeremy Knauff – CEO at Spartan Media (digital marketing agency that provides web design, social media, SEO, and PPC services).
 Connect with Jeremy on LinkedIn & Twitter.
-> As with most things in the world of SEO, the answer is this – it depends.
+        <blockquote className="border-l-4 border-gray-300 pl-4 italic text-gray-700 my-2">As with most things in the world of SEO, the answer is this – it depends.</blockquote>
 If you know the podcaster personally, you can get away with more follow-ups than you could if you were reaching out to a stranger. But in any case, you have to weigh your follow-up against the risk of alienating them. If you push too hard, you could kill any chance of ever being on the podcast, and that line is never black and white.
 You never know what someone is going through at any given point, so be mindful that their lack of response could have nothing to do with you, and may just be indicative that they’re overwhelmed at the moment.
 I’ve reached out to podcasters and got no response, and then suddenly, months, or in one case, more than a year later, they replied and brought me or a client on their show.
@@ -137,7 +137,7 @@ I wonder if people actually reply after, say, the third or fourth follow-up.
 I understand that someone might have forgotten to reply to the first email. But isn’t it naive to hope they also forgot to react to three or four follow-ups?
 Opinion from Darren Shaw – Founder of Whitespark (tools & services that help businesses with local search marketing).
 Connect with Darren on LinkedIn & Twitter.
-> I can think of some times when I’ve actually responded to something positively after the 4th follow-up. It certainly depends on the offer and who it’s coming from. If it’s some random person pitching guest posting services, I’m never going to reply. If it’s something that could benefit me or my company, then maybe I just need a few follow-ups.
+        <blockquote className="border-l-4 border-gray-300 pl-4 italic text-gray-700 my-2">I can think of some times when I’ve actually responded to something positively after the 4th follow-up. It certainly depends on the offer and who it’s coming from. If it’s some random person pitching guest posting services, I’m never going to reply. If it’s something that could benefit me or my company, then maybe I just need a few follow-ups.</blockquote>
 Sometimes, it’s just my mood at the moment. An email comes in, and I don’t have time or interest in it, so I ignore/archive. Later, the follow-up comes in, and they may have caught me when I have more time to consider it, or it might now be the time I’m interested in whatever they’re pitching, so I reply.
 In general, sending more than one follow-up may net you some additional conversions, but at what cost? You will burn some potential brand trust by annoying people, and you’re likely going to increase the number of spam reports you get.
 I can think of some times when I’ve actually responded to something positively after the 4th follow-up. It certainly depends on the offer and who it’s coming from. If it’s some random person pitching guest posting services, I’m never going to reply. If it’s something that could benefit me or my company, then maybe I just need a few follow-ups.
@@ -157,7 +157,7 @@ I wonder if recipients owe anybody a reply back.
 Source
 Opinion from Maddy Osman – Founder of The Blogsmith (SEO content writing and strategy development for B2B technology companies).
 Connect with Maddy on LinkedIn & Twitter.
-> In many situations, it’s the follow-up that gets the sale or the backlink placement. We often catch people at the wrong time or their inbox fills up and your backlink request gets lost in the chaos. It’s OK to follow up, perhaps even more than once.
+        <blockquote className="border-l-4 border-gray-300 pl-4 italic text-gray-700 my-2">In many situations, it’s the follow-up that gets the sale or the backlink placement. We often catch people at the wrong time or their inbox fills up and your backlink request gets lost in the chaos. It’s OK to follow up, perhaps even more than once.</blockquote>
 That said, there’s a line that people frequently cross when it comes to requesting backlinks specifically. Nobody owes you a response (or a placement!) and to suggest otherwise in your follow-ups is ludicrous.
 Don’t keep following up when someone tells you no or doesn’t respond after your third attempt – just move on.
 In many situations, it’s the follow-up that gets the sale or the backlink placement. We often catch people at the wrong time or their inbox fills up and your backlink request gets lost in the chaos. It’s OK to follow up, perhaps even more than once.
@@ -175,7 +175,7 @@ Feel free to follow up with an alternative idea – you don’t have anything to
 I wonder if editors don’t mind reviewing more stuff from someone they initially rejected.
 Opinion from Elisa Doucette – Founder & Managing Editor at Craft Your Content (editing, writing coaching, and content management services) and Blogger at ElisaDoucette.com.
 Connect with Elisa on LinkedIn & Twitter.
-> To be fair, the follow-up after a canned rejection is a hit-or-miss endeavor.
+        <blockquote className="border-l-4 border-gray-300 pl-4 italic text-gray-700 my-2">To be fair, the follow-up after a canned rejection is a hit-or-miss endeavor.</blockquote>
 Depends if it’s thoughtful and obviously original, or just another time-wasting template. Keep it brief, address the editor directly on a human-to-human level, and do as much of the work as possible (e.g. don’t ask “What was wrong with it?” but instead ask “Could you give me one thing to improve in this piece to make it a great fit for you?”)
 You can disagree with editors. You might even be right – shockingly, we are not always correct.
 If you think an editor is not understanding your submission, or you really want to write for the publication, you’ll be surprised to know how many people will reply back to a well-written follow-up that you’ve put time and thought into.
@@ -202,7 +202,7 @@ I wonder what if recipients have no time to consider an offer within a few days
 That’s definitely not enough for someone with a heavy workload. What would be a better way to follow up with people pressed for time?
 Opinion from Kevin Indig – Director of SEO at Shopify (top eCommerce platform) and Owner of Kevin-Indig.com (where he blogs about SEO and growth trends).
 Connect with Kevin on LinkedIn & Twitter.
-> Ask prospects, “Would it be okay to follow up in a couple of weeks instead of you having to make this decision right now?”
+        <blockquote className="border-l-4 border-gray-300 pl-4 italic text-gray-700 my-2">Ask prospects, “Would it be okay to follow up in a couple of weeks instead of you having to make this decision right now?”</blockquote>
 This way, if they come back to you and say, “Yeah, sure. Follow-up in a couple of weeks – now is just not like the right time, I don’t have the headspace for it,” they can show a bit of interest, but don’t have to make the decision right that moment.
 Ask prospects, “Would it be okay to follow up in a couple of weeks instead of you having to make this decision right now?”
 This way, if they come back to you and say, “Yeah, sure. Follow-up in a couple of weeks – now is just not like the right time, I don’t have the headspace for it,” they can show a bit of interest, but don’t have to make the decision right that moment.
@@ -219,7 +219,7 @@ Your prospects won’t drop everything to address your pitch as a priority. They
 I wonder if there are any exceptions when following up the next day could be justified.
 Opinion from Michelle Garrett – Founder of  Garrett Public Relations (writing, PR, social media, and content marketing services).
 Connect with Michelle on LinkedIn & Twitter.
-> Many journalists say they don’t mind it when you follow up on a pitch. But it’s best to wait at least a few days, maybe even a week, before following up.
+        <blockquote className="border-l-4 border-gray-300 pl-4 italic text-gray-700 my-2">Many journalists say they don’t mind it when you follow up on a pitch. But it’s best to wait at least a few days, maybe even a week, before following up.</blockquote>
 However, there are a few situations where you might need to follow up the next day. Pitching the breaking news would be one of those.
 Many journalists say they don’t mind it when you follow up on a pitch. But it’s best to wait at least a few days, maybe even a week, before following up.
 However, there are a few situations where you might need to follow up the next day. Pitching the breaking news would be one of those.
@@ -234,12 +234,12 @@ With such claims, you basically admit that your original email failed. The first
 I wonder how to avoid reminding prospects about the failure.
 Opinion from Joanna Wiebe – Founder of Copyhackers (conversion copywriting courses and resources) and Co-founder & Head of Growth at Airstory (writing software).
 Connect with Joanna on LinkedIn & Twitter.
-> If you have to follow up on an email, it’s probably because the contact ignored or deleted your first one. Which means you’d be kinda nuts to send a follow-up that’s like, “Hey, just following up on that email you ignored or deleted” – which is exactly what you’re saying when you send a “follow-up” email.
+        <blockquote className="border-l-4 border-gray-300 pl-4 italic text-gray-700 my-2">If you have to follow up on an email, it’s probably because the contact ignored or deleted your first one. Which means you’d be kinda nuts to send a follow-up that’s like, “Hey, just following up on that email you ignored or deleted” – which is exactly what you’re saying when you send a “follow-up” email.</blockquote>
 Instead, just send a brand new email, as if you’ve never reached out to them and been ignored before. Your contact doesn’t need to know you’re following up. Keep that to yourself.
 If you have to follow up on an email, it’s probably because the contact ignored or deleted your first one. Which means you’d be kinda nuts to send a follow-up that’s like, “Hey, just following up on that email you ignored or deleted” – which is exactly what you’re saying when you send a “follow-up” email.
 Instead, just send a brand new email, as if you’ve never reached out to them and been ignored before. Your contact doesn’t need to know you’re following up. Keep that to yourself.
 Would it be better to start over with all the prospects or only those who never opened the first email? If someone didn’t see the pitch, you can’t know if they’re interested or not.
-> I’d recommend changing the subject line – you can certainly reuse the pitch if they never saw it.
+        <blockquote className="border-l-4 border-gray-300 pl-4 italic text-gray-700 my-2">I’d recommend changing the subject line – you can certainly reuse the pitch if they never saw it.</blockquote>
 But why didn’t they open?
 It’s either your “from” name, your subject line, or your send time (in most cases, that’s what it comes down to).
 I’d recommend changing the subject line – you can certainly reuse the pitch if they never saw it.
@@ -261,7 +261,7 @@ My point is you can’t heavily rely on templates you found on Google. Others us
 While the thread will be new, the offer will still be the same. Should marketers retell the story once again, as recipients won’t have easy access to it anymore, or say something else that would make them more inclined to reply?
 Opinion from Brooklin Nash – Co-founder of Nash Content Consulting (B2B inbound marketing services for SaaS companies).
 Connect with Brooklin on LinkedIn & Twitter.
-> Restate more briefly, then add value in a new way.
+        <blockquote className="border-l-4 border-gray-300 pl-4 italic text-gray-700 my-2">Restate more briefly, then add value in a new way.</blockquote>
 I’d suggest trying a new thread for a few different reasons:</p>
 
         <p>It gives you room to try out different subject lines and CTAs.
@@ -294,7 +294,7 @@ I wonder how to start follow-ups in a way that would better resonate with recip
 Opinion from Kristie Holden
 SaaS Startup Marketing Consultant at KristieHolden.com.
 Connect with Kristie on LinkedIn.
-> If you’re meaning a follow-up after you’ve emailed them once but not heard a response, I’d try something like this:
+        <blockquote className="border-l-4 border-gray-300 pl-4 italic text-gray-700 my-2">If you’re meaning a follow-up after you’ve emailed them once but not heard a response, I’d try something like this:</blockquote>
 Hi [name],
 I understand you’re busy and probably get a lot of emails.
 Just looking for a quick response. Are you interested in [what’s the value you offer?]
@@ -326,7 +326,7 @@ I wonder if jokes like “were you recruited by wolves” are appropriate for b
 Source
 Opinion from Dr. Pete Meyers – Marketing Scientist at Moz (toolkit that makes SEO, link building, and content marketing easy) and Owner of DrPete.co.
 Connect with Pete on LinkedIn & Twitter.
-> While I’m generally fine with using humor and use humor often in emails and on social media (including work posts), it’s a lot different in the context of an unsolicited request from an unknown party.
+        <blockquote className="border-l-4 border-gray-300 pl-4 italic text-gray-700 my-2">While I’m generally fine with using humor and use humor often in emails and on social media (including work posts), it’s a lot different in the context of an unsolicited request from an unknown party.</blockquote>
 That naturally feels more aggressive, and the tone of the humor is often too personal.
 Coming from a stranger trying to sell you something, the wolf thing (which might be funny among friends) almost feels like negging.
 While I’m generally fine with using humor and use humor often in emails and on social media (including work posts), it’s a lot different in the context of an unsolicited request from an unknown party.
@@ -345,7 +345,7 @@ I wonder if such claims won’t make them feel uncomfortable to reply back. Psy
 Opinion from Anisa Purbasari Horton
 Freelance Writer & Editor at AnisaPurbasariHorton.com.
 Connect with Anisa on LinkedIn & Twitter.
-> In the ideal world, everyone would have time to respond to every single email, but we don’t live in that reality.
+        <blockquote className="border-l-4 border-gray-300 pl-4 italic text-gray-700 my-2">In the ideal world, everyone would have time to respond to every single email, but we don’t live in that reality.</blockquote>
 Many people see their inbox as a never-ending source of stress, and the last thing you want to do is contribute to that stress.
 Phrase your follow-up without making the other person feel obligated to respond to you. In my experience, this has worked a lot better than writing something aggressive or resorting to shame and guilt.
 In the ideal world, everyone would have time to respond to every single email, but we don’t live in that reality.
@@ -364,7 +364,7 @@ When you send someone an unsolicited pitch and then one more email to remind the
 I wonder if making apologies out of politeness isn’t odd. Don’t senders acknowledge the fact that they bother recipients that way?
 Opinion from John Doherty – Founder of Credo (platform to find the best digital marketing providers) and EditorNinja (copy editing & proofreading services).
 Connect with John on LinkedIn & Twitter.
-> It’s better to avoid those apologies because they’re simply not necessary and clue people in that you think you’re bothering them, instead of being confident in your ask.
+        <blockquote className="border-l-4 border-gray-300 pl-4 italic text-gray-700 my-2">It’s better to avoid those apologies because they’re simply not necessary and clue people in that you think you’re bothering them, instead of being confident in your ask.</blockquote>
 If you’re genuinely adding value to them, then there is no reason to apologize.
 If you think you are bothering them, then maybe you need to rethink your approach and stop bothering them.
 It’s better to avoid those apologies because they’re simply not necessary and clue people in that you think you’re bothering them, instead of being confident in your ask.
@@ -386,7 +386,7 @@ People share different kinds of stuff on social media – pics of their tattoos,
 Source
 Opinion from Carolyn Lyden – President of Search Hermit (content strategy & SEO services for BIPOC- and women-owned businesses).
 Connect with Carolyn on LinkedIn & Twitter.
-> I think there’s an element of personalization that says, “I understand who you are, and we’re on the same page about certain things,” but there’s also a fine line that feels almost like stalking.
+        <blockquote className="border-l-4 border-gray-300 pl-4 italic text-gray-700 my-2">I think there’s an element of personalization that says, “I understand who you are, and we’re on the same page about certain things,” but there’s also a fine line that feels almost like stalking.</blockquote>
 The outreach I received commented on my tattoo with no context around where the person saw a picture of it, which felt very invasive. It made me go looking through my own website, social, and mentions to see where the person saw a full picture of my arm.
 It also made me even more aware of my own privacy online and want to clamp down on it even more – if a total stranger can find pictures of and comment on my body for a sales email, then what other strangers out there know more about me than I thought and care to email me about it? It felt very unsafe and creepy.
 It also felt like a big non-sequitur to what this person’s goal was – an attempt at a weirdly intrusive “in” that had nothing to do with my business or my potential needs related to what the company did.
@@ -409,14 +409,14 @@ It simply makes no sense to send multiple reminders about your original pitch wi
 I wonder what kind of additional value people appreciate enough to reply back.
 Opinion from Sujan Patel – Managing Director at Mailshake (sales engagement & automation software to do outreach on autopilot).
 Connect with Sujan on LinkedIn & Twitter.
-> This is an area where many people get stuck. You can add value by sending a helpful article, video (doesn’t have to be from your company’s website), case study, or asking if you can help them in any way.
+        <blockquote className="border-l-4 border-gray-300 pl-4 italic text-gray-700 my-2">This is an area where many people get stuck. You can add value by sending a helpful article, video (doesn’t have to be from your company’s website), case study, or asking if you can help them in any way.</blockquote>
 Bonus if you find something they could do better and tell them how to fix it, e.g. a typo on their website.
 I always prefer to send blog posts with a reference to a specific bullet, quote, or section. It helps get their attention. You can also follow up with a compliment on one of their recent posts.
 This is an area where many people get stuck. You can add value by sending a helpful article, video (doesn’t have to be from your company’s website), case study, or asking if you can help them in any way.
 Bonus if you find something they could do better and tell them how to fix it, e.g. a typo on their website.
 I always prefer to send blog posts with a reference to a specific bullet, quote, or section. It helps get their attention. You can also follow up with a compliment on one of their recent posts.
 Good point, but doesn’t such flattery sound fake to most people? I’ve seen a lot of public criticism of it lately.
-> Vague flattery does.
+        <blockquote className="border-l-4 border-gray-300 pl-4 italic text-gray-700 my-2">Vague flattery does.</blockquote>
 It seems disingenuous but if you’re specific on what part of the article helped you do differently, then it works.
 You can be genuine at scale by referencing a specific section and a broader change that it helped you do.
 Vague flattery does.
@@ -437,7 +437,7 @@ That will be a pity, but surely not a disaster. You can always focus on values p
 When I collected replies for this post, the only value I could offer was a backlink from our blog. I didn’t have perks to extend for, say, five follow-ups.
 Opinion from Chuck Price – Founder & CEO at Measurable SEO (digital marketing company that helps businesses increase traffic, leads, and sales).
 Connect with Chuck on LinkedIn & Twitter.
-> As with so many things in SEO, “it depends.”
+        <blockquote className="border-l-4 border-gray-300 pl-4 italic text-gray-700 my-2">As with so many things in SEO, “it depends.”</blockquote>
 It’s usually not possible to “sweeten” the request on subsequent emails, so in most cases, they are really just reminders.
 Therefore, anything over one or two follow-ups is overkill. Beyond that, the diminishing returns aren’t worth the risk of being flagged as a spammer.
 As with so many things in SEO, “it depends.”
@@ -455,7 +455,7 @@ I wonder what if such comments won’t relate to the pitch directly.
 In 99% of cases, a link request will have nothing to do with someone’s latest tweets, let alone industry news. Is it OK to go off-topic? Especially since another common outreach rule is to always keep the message short and to the point.
 Opinion from Colin Campbell – Head of Community at Outreach.io (sales outreach engagement platform powered by AI-driven insights).
 Connect with Colin on LinkedIn & Twitter.
-> I think it might depend a little bit on your ACV and whether this approach is worth the time investment. But my gut would be to do what you’ve done here – build a conversation (any conversation) that interests your prospect that’s related to what they care about as a person. Even if it’s not related to their work at hand or the services/products you offer.
+        <blockquote className="border-l-4 border-gray-300 pl-4 italic text-gray-700 my-2">I think it might depend a little bit on your ACV and whether this approach is worth the time investment. But my gut would be to do what you’ve done here – build a conversation (any conversation) that interests your prospect that’s related to what they care about as a person. Even if it’s not related to their work at hand or the services/products you offer.</blockquote>
 When someone mentions my recent tweet that doesn’t directly relate to their outreach request, they still motivate me to reply. It stands out – almost nobody takes the time to do that kind of work. So, I suggest that you play with personalizing the first touch just to start any conversation then move to the relevant ask vs the other way around.
 I think it might depend a little bit on your ACV and whether this approach is worth the time investment. But my gut would be to do what you’ve done here – build a conversation (any conversation) that interests your prospect that’s related to what they care about as a person. Even if it’s not related to their work at hand or the services/products you offer.
 When someone mentions my recent tweet that doesn’t directly relate to their outreach request, they still motivate me to reply. It stands out – almost nobody takes the time to do that kind of work. So, I suggest that you play with personalizing the first touch just to start any conversation then move to the relevant ask vs the other way around.
@@ -473,7 +473,7 @@ I wonder if it doesn’t feel weird to tell someone to go check their inbox in 
 Source
 Opinion from Alexandra Tachalova – Founder of Digital Olympus (relationship-based link building agency) and Digital Marketing Consultant at AlexTachalova.com.
 Connect with Alexandra on LinkedIn & Twitter.
-> I believe it’s absolutely fine, but as always, the devil is in the detail.
+        <blockquote className="border-l-4 border-gray-300 pl-4 italic text-gray-700 my-2">I believe it’s absolutely fine, but as always, the devil is in the detail.</blockquote>
 So, the main question is how to deliver this type of follow-up so that a person wouldn’t feel disappointed or even frustrated. The key to success in public follow-ups is to show that you really care about what they do.
 The best strategy will be to leave a meaningful comment under this person’s most recent post on social media platforms. In P.S., you could say something like, “I’m still waiting for your reply. When you have a minute, could you please check your inbox?”
 And if you do it this way, I’m certain that a person wouldn’t react negatively to your public follow-up.
@@ -495,7 +495,7 @@ I wonder if such extras won’t load them up with more work.
 I mean, if they find it hard to review a single resource from the original email, what are the odds they’ll want to check out more stuff?
 Opinion from Austin Belcak – Founder of Cultivated Culture (where he teaches job seekers how to land jobs without traditional “experience” or connections).
 Connect with Austin on LinkedIn & Twitter.
-> I think it’s all about the message and the copy. If you give them a compelling reason to check out a resource through good copy and good messaging, they’ll click the link or open the attachment.
+        <blockquote className="border-l-4 border-gray-300 pl-4 italic text-gray-700 my-2">I think it’s all about the message and the copy. If you give them a compelling reason to check out a resource through good copy and good messaging, they’ll click the link or open the attachment.</blockquote>
 I definitely think that fewer attachments/links lead to more engagement though. It’s no problem to get people to check out one thing, but each additional resource takes bandwidth away and reduces the engagement in my experience.
 Anyway, I don’t think it’d hurt to send. Worst case you end up right where you were before sending it, right?
 As for me, I typically aim to try and add value to the other person upfront before making an ask for a link, so I’m probably not going to be sending them more of my stuff. Instead, I’d try to figure out what their goals are and add value to that.
@@ -515,7 +515,7 @@ I wonder if that contact will be obliged to help them somehow.
 What if that person turns out useless to them in the end? There’s no way to tell if third parties will be able to agree on something of mutual benefit. Is it necessary to negotiate possible scenarios with both parties before making such intros?
 Opinion from Ian Brodie – Writer, Advisor & Coach at IanBrodie.com (resource with client-winning tips and advanced marketing training).
 Connect with Ian on LinkedIn & Twitter.
-> You’d want to see that there would be a possibility of something positive happening between the two of them in the future. But it needn’t be an immediate opportunity.
+        <blockquote className="border-l-4 border-gray-300 pl-4 italic text-gray-700 my-2">You’d want to see that there would be a possibility of something positive happening between the two of them in the future. But it needn’t be an immediate opportunity.</blockquote>
 Online we tend to think very short term in terms of relationships – like immediate JV partners. In the real world where most business is still done, introductions are usually made between people who might potentially be interesting to each other some time in the future. Like an accountant introducing their lawyer friend to a young surveyor who might pass them business over the next 20 years once they get more senior in their firm.
 There’s been quite a lot of work in sociology on the power of heterogeneous networks and “weak ties”. In other words, having a wide and varied network is better for you than only having “like minded” contacts who are similar to you and move in similar circles. It means you get access to a much wider range of opportunities because the more diverse network interacts with different people and different situations to you – whereas people who are like you tend to see and get access to the same things as you.
 Of course, if there’s something of immediate benefit for both parties, that’s great, but there doesn’t need to be. It just has to be clear to both that there could be some significant benefit downstream.
@@ -539,7 +539,7 @@ No doubt such mentions are the whole truth and nothing but the truth. To tell yo
 Opinion from Dean Yeong
 Head of Content at Sumo (free email capture tool).
 Connect with Dean on LinkedIn & Twitter.
-> I think it’s ethical as long as we get permission from the person you want to mention beforehand.
+        <blockquote className="border-l-4 border-gray-300 pl-4 italic text-gray-700 my-2">I think it’s ethical as long as we get permission from the person you want to mention beforehand.</blockquote>
 While I can’t speak for others, I’m generally okay (even if the other person didn’t ask).
 But it’s better to get permission before name-dropping.
 I think it’s ethical as long as we get permission from the person you want to mention beforehand.
@@ -557,7 +557,7 @@ If you see some prospects repeatedly opening your email, it means something’s
 I wonder how follow-ups to “openers” should differ from follow-ups to “non-openers.”
 Opinion from Gisele Navarro – CEO at NeoMam Studios (content marketing agency that produces linkable & shareable assets).
 Connect with Gisele on LinkedIn & Twitter.
-> When it comes to recipients who are consistently opening my email, I assume they are either discussing internally or trying to figure something out so I try to insert myself into the conversation.
+        <blockquote className="border-l-4 border-gray-300 pl-4 italic text-gray-700 my-2">When it comes to recipients who are consistently opening my email, I assume they are either discussing internally or trying to figure something out so I try to insert myself into the conversation.</blockquote>
 A quick email would suffice, “I forgot to mention that I’ve got X available as well, in case you want to see it: [link to Dropbox folder].” I still send my usual follow-up to these prospects later down the line, unless they reply of course!
 I also like to try a different approach from my original email. For example, if I’m promoting the World Beer Index and my initial outreach was about the most expensive countries to drink a beer, then my follow-up will be about where to find the cheapest beer in the world.
 I like to follow up no sooner than 4-5 days, and I always send my email on a different day of the week, just to try something else.
@@ -578,7 +578,7 @@ Source
 I wonder if commenting on what someone did in their private inbox doesn’t feel invasive.
 Opinion from Mehdi Hussen – Digital Marketing Manager at SalesHandy (sales engagement platform to scale email outreach).
 Connect with Mehdi on LinkedIn & Twitter.
-> It’s all good if done with the right intention. We ain’t breaching privacy rather trying to understand the recipient’s behavior.
+        <blockquote className="border-l-4 border-gray-300 pl-4 italic text-gray-700 my-2">It’s all good if done with the right intention. We ain’t breaching privacy rather trying to understand the recipient’s behavior.</blockquote>
 This is handy when you have already built a rapport with your prospect in the initial calls or email. If there is an ongoing discussion, and there isn’t any response coming to your previous email, you can always follow up this way. It will get the recipient to take action faster.
 However, it’s not advised if the conversation is new, and the recipient doesn’t know you well.
 It’s all good if done with the right intention. We ain’t breaching privacy rather trying to understand the recipient’s behavior.
@@ -594,7 +594,7 @@ Someone carefree will probably not read too much into your statement. But tell i
 I wonder what to do if editors aren’t interested in that specific pitch at all. Following up on the same stuff over and over will get you blacklisted soon.
 Opinion from Sarah Archer – Writer & Marketing Manager at SarahAArcher.com and Head of Content Strategy at Kona (a mini culture officer in Slack).
 Connect with Sarah on LinkedIn & Twitter.
-> If an editor isn’t originally interested, consider how you can pivot the pitch. Can you offer to contribute to their site? Can you turn this into a thought leadership opportunity and offer an interview with your executive team?
+        <blockquote className="border-l-4 border-gray-300 pl-4 italic text-gray-700 my-2">If an editor isn’t originally interested, consider how you can pivot the pitch. Can you offer to contribute to their site? Can you turn this into a thought leadership opportunity and offer an interview with your executive team?</blockquote>
 Put yourself in their shoes. Determine what their content strategy is, and pitch unique concepts that make their job easier.
 Checking out their recent posts and pages that are linked from their homepage or navigation is a start. You can also input their domain into SEMrush or Ahrefs to identify their top-performing posts (either in terms of links or ranking), and reference them in your follow-up email to show that you did your homework.
 If an editor isn’t originally interested, consider how you can pivot the pitch. Can you offer to contribute to their site? Can you turn this into a thought leadership opportunity and offer an interview with your executive team?
@@ -618,7 +618,7 @@ But while your pitch is of no interest to some people now, things may change in 
 The question is, how to send the last follow-up without burning bridges?
 Opinion from Forster Perelsztejn – Marketing Manager at Rooftop (email management software to streamline internal communication, customer support, and workflows).
 Connect with Forster on LinkedIn & Twitter.
-> A lot of influencers recommend breaking up with your prospect by asking them if they want you never to contact them again. I don’t think that’s a good strategy.
+        <blockquote className="border-l-4 border-gray-300 pl-4 italic text-gray-700 my-2">A lot of influencers recommend breaking up with your prospect by asking them if they want you never to contact them again. I don’t think that’s a good strategy.</blockquote>
 If they haven’t responded yet, they’re at best neutral towards you. In that regard, asking someone who doesn’t care about you if you should stop contacting them isn’t the best approach because the fear of loss or FOMO is low.
 Instead, by asking them what could’ve changed their mind, you’re putting them in a position where they have to think about their objections. And if what you’re offering is relevant enough, you might very well at least get a response.
 A lot of influencers recommend breaking up with your prospect by asking them if they want you never to contact them again. I don’t think that’s a good strategy.
@@ -639,7 +639,7 @@ Source
 I wonder when senders face a higher risk of ending up in public with their personal details.
 Opinion from Dan Shure – Owner of Evolving SEO (SEO consulting services that help businesses with traffic, revenue growth, redesigns, site migrations, and more).
 Connect with Dan on LinkedIn & Twitter.
-> As a rule of thumb, I would never make someone’s name, company, or email public when sharing examples of outreach. The point of sharing outreach examples tends to have more to do with using them as an example of what not to do, or what to do, and does not directly have anything to do with who sent it.
+        <blockquote className="border-l-4 border-gray-300 pl-4 italic text-gray-700 my-2">As a rule of thumb, I would never make someone’s name, company, or email public when sharing examples of outreach. The point of sharing outreach examples tends to have more to do with using them as an example of what not to do, or what to do, and does not directly have anything to do with who sent it.</blockquote>
 The only time I would consider exceptions is if the example being shared doesn’t make sense unless the sender is made known. And in that case, I would make sure to think carefully about how important it is to share, or in extreme cases maybe even ask for permission.
 As a rule of thumb, I would never make someone’s name, company, or email public when sharing examples of outreach. The point of sharing outreach examples tends to have more to do with using them as an example of what not to do, or what to do, and does not directly have anything to do with who sent it.
 The only time I would consider exceptions is if the example being shared doesn’t make sense unless the sender is made known. And in that case, I would make sure to think carefully about how important it is to share, or in extreme cases maybe even ask for permission.

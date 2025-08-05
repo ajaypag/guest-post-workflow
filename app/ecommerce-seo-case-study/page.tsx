@@ -87,13 +87,13 @@ I don’t take Ahrefs referring domain counts at face value.
 • What topics should my guest blogs be about?
 You can go way deeper to get the real picture. So it’s time to fire up Linkio.
 Ahrefs said the homepages of my competitors had 302, 332 and 229 homepage referring domains. However, Linkio did it’s crawling and determined the real numbers which were 198, 281 and 187 homepage referring domains. The rest of the links are likely dead.
-> Of those numbers, 96, 192 and 99 are dofollow and indexed in Google.
+        <blockquote className="border-l-4 border-gray-300 pl-4 italic text-gray-700 my-2">Of those numbers, 96, 192 and 99 are dofollow and indexed in Google.</blockquote>
 This becomes my goal.
 Of those numbers, 96, 192 and 99 are dofollow and indexed in Google.
 This becomes my goal.
 Did you see what I just did there and why I only care about dofollow and indexed referring domains count?
 If Google didn’t care enough to put an article into it’s index, you can bet it doesn’t care about all about the links coming from that page.
-> Powering ahead, I think I can accomplish 100 dofollow and indexed referring domains to the homepage in about 3 months, which works out to 33 links per month.
+        <blockquote className="border-l-4 border-gray-300 pl-4 italic text-gray-700 my-2">Powering ahead, I think I can accomplish 100 dofollow and indexed referring domains to the homepage in about 3 months, which works out to 33 links per month.</blockquote>
 Powering ahead, I think I can accomplish 100 dofollow and indexed referring domains to the homepage in about 3 months, which works out to 33 links per month.
 Next, any real e-commerce brand needs other stuff too. Directory links, social media links, and in the case of ecommerce sites, coupon site links. Visual CPQ technology can also play a vital role in e-commerce by streamlining custom product configurations for users, which enhances both customer experience and conversion rates.
 I need to make sure I add these links too, otherwise having 100-200 links that are all dofollow on blog posts doesn’t look natural either.
@@ -115,7 +115,7 @@ And just like you shouldn’t go out there and build 100 exact match keywords, y
 I recorded a video on my process for determining backlinking topics. Check it out.
 Here’s the link for the backlink relevance checker I mention in the video.
 So I covered competitive analysis, anchor text planning and topical optimization. At the mid-month mark, I was ready to launch my link building strategy.
-> My 3 Step Link Building Strategy
+        <blockquote className="border-l-4 border-gray-300 pl-4 italic text-gray-700 my-2">My 3 Step Link Building Strategy</blockquote>
 In general, my 3 month goal is to build 100 dofollow contextual links and as many resource and niche-relevant directory links I can.
 My 3 Step Link Building Strategy
 In general, my 3 month goal is to build 100 dofollow contextual links and as many resource and niche-relevant directory links I can.</p>
@@ -147,7 +147,7 @@ That wraps up month 0. See you next month!</p>
 
         <p>So in all of month 0, I shared my plan with you.
 I hit the publish button on the website and started building links. Here are the stats after 1 month
-> That’s Ahrefs stats. Doing my own tally, I calculated building 42 new links.
+        <blockquote className="border-l-4 border-gray-300 pl-4 italic text-gray-700 my-2">That’s Ahrefs stats. Doing my own tally, I calculated building 42 new links.</blockquote>
 That’s Ahrefs stats. Doing my own tally, I calculated building 42 new links.
 • 26 Guest Posts
 • 3 Content Link Insertions
@@ -207,7 +207,7 @@ My 3 “main” high volume keywords like groomsmen gifts, best groomsmen gifts,
 Even with that said, We saw great rankings movement this month.
 Let’s start with the Ahrefs metrics growth.
 You can see Ahrefs starting to pick up more keywords as the numbers increase across the board. Here is the growth in the Average rankings chart next.
-> Compared to last month, which had an Average rank of 39, we’re seeing some great progress. This time, I’ll also provide a breakdown of the actual keywords and their rankings changes over the past 3 months.
+        <blockquote className="border-l-4 border-gray-300 pl-4 italic text-gray-700 my-2">Compared to last month, which had an Average rank of 39, we’re seeing some great progress. This time, I’ll also provide a breakdown of the actual keywords and their rankings changes over the past 3 months.</blockquote>
 Compared to last month, which had an Average rank of 39, we’re seeing some great progress. This time, I’ll also provide a breakdown of the actual keywords and their rankings changes over the past 3 months.
 Let’s be real for a second. I actually don’t have all of these products in the ecom shop. For example, I rank for groomsmen gift pocket watch. I don’t actually have any pocket watches.
 That’s what you can do too. After you set up your shop with one of ecommerce platforms or opt for a headless architecture for greater flexibility, you can start ranking pages in advance and add products after getting some success in organic search.
@@ -227,7 +227,7 @@ These values are based on 65 referring domain links that are both dofollow and i
 If you’re wondering why my keyword anchors are pretty high compared to what the ideal suggestion is, a part of it is just due to the unpredictable nature of custom outreach and not knowing what content will be accepted, but moreso, I’m OK with being a little more aggressive with keyword anchors on newer sites that don’t have many links yet.
 It’s most important to have closer to ideal percentages as the link volume starts getting higher, because that’s when it becomes a pattern to Google. In the early days, there is a lot more leeway and you can get faster rankings by being a bit more aggressive (IMO).
 Here is the growth in the Average rankings chart next.
-> Compared to last month, the average rank moved from to 32.60 to 28.42.
+        <blockquote className="border-l-4 border-gray-300 pl-4 italic text-gray-700 my-2">Compared to last month, the average rank moved from to 32.60 to 28.42.</blockquote>
 Compared to last month, the average rank moved from to 32.60 to 28.42.
 Scored our first featured snippet this month which is good news. These are all the keywords currently on page 1 of Google.
 A lot of these pages are ranking because of my listicle strategy (see month 3) so I decided to try monetizing this traffic with Etsy affiliate links. They denied my initial affiliate application due to a form error but I think they’ll approve it soon so hopefully I can get the affiliate links added this following month.
@@ -263,7 +263,7 @@ Basically just built 8 links. The campaign is pretty rinse and repeat at this po
 • I would pitch local wedding vendors content
 • That content would be about groomsmen gifts, bridal party gifts or wedding resources
 • I’d mostly build homepage links, and I’d diversity the anchor text the same way a high end brand would
-> These anchor text choices are not an accident. We’re working off competitor data to build the percentage targets, and the mostly inexperienced freelance team I have working on this project, is effortlessly making the right choices using Linkio’s anchor text suggestion module.
+        <blockquote className="border-l-4 border-gray-300 pl-4 italic text-gray-700 my-2">These anchor text choices are not an accident. We’re working off competitor data to build the percentage targets, and the mostly inexperienced freelance team I have working on this project, is effortlessly making the right choices using Linkio’s anchor text suggestion module.</blockquote>
 These anchor text choices are not an accident. We’re working off competitor data to build the percentage targets, and the mostly inexperienced freelance team I have working on this project, is effortlessly making the right choices using Linkio’s anchor text suggestion module.
 How’s this translating to money? We’ve made a few sales. I’ve added Etsy affiliate links a few days ago and maDe our first commission there yesterday. Hopefully, I can focus more on monetization soon.
 That’s about it for now – see you next month!</p>

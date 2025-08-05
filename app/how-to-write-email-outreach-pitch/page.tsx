@@ -77,7 +77,7 @@ Check out the best practices for cold email subject lines. I included those that
         <h3 id="cut-your-email-subject-line-length">Cut your email subject line length</h3>
 
         <p>Problem. Long email subject lines get truncated in inboxes, especially when people check them on smartphones. And we’re all on the go today, aren’t we?
-> Solution. Minimize your email subject length so that it could fit on the screen of any size. It’ll improve your open rates on mobile devices.
+        <blockquote className="border-l-4 border-gray-300 pl-4 italic text-gray-700 my-2">Solution. Minimize your email subject length so that it could fit on the screen of any size. It’ll improve your open rates on mobile devices.</blockquote>
 Solution. Minimize your email subject length so that it could fit on the screen of any size. It’ll improve your open rates on mobile devices.
 Being a foreword, your subject shouldn’t reveal everything you have to say. Just drop a hint of what your message is about or how it’s related to your outreach prospects.
 Note. Don’t take my words too literally. Yes, your subject line should be short, but not so short that it doesn’t convey the main idea of your email pitch.
@@ -90,7 +90,7 @@ Forcing people to make such guesses is nothing but bad manners. It can also give
 We all know the rule to use capital letters in post titles. By analogy, email subject lines are titles of our emails, but this rule doesn’t work here.
 Email subject capitalization only gives a licked-clean, promo look to a message.
 Your goal is to send a pitch reminding of a friend’s message. Do you ever capitalize words when chatting with your buddies? I don’t.
-> Solution. Use lowercase letters only in your subject lines.
+        <blockquote className="border-l-4 border-gray-300 pl-4 italic text-gray-700 my-2">Solution. Use lowercase letters only in your subject lines.</blockquote>
 Solution. Use lowercase letters only in your subject lines.
 Here’s how an all-lowercase subject stands out among newsletters in the inbox.
 Note. It’s justified to capitalize email subject words like acronyms or, say, personal names.</p>
@@ -98,7 +98,7 @@ Note. It’s justified to capitalize email subject words like acronyms or, say,
         <h3 id="make-your-email-subject-lines-sound-relevant">Make your email subject lines sound relevant</h3>
 
         <p>Problem. When people read your subject line, it should ring a bell for them. If it doesn’t, they will just scroll it by, thinking your outreach email has nothing to do with them.
-> Solution. The most opened subject lines are those that sound relevant to recipients. To achieve such an effect, use their post titles.
+        <blockquote className="border-l-4 border-gray-300 pl-4 italic text-gray-700 my-2">Solution. The most opened subject lines are those that sound relevant to recipients. To achieve such an effect, use their post titles.</blockquote>
 Solution. The most opened subject lines are those that sound relevant to recipients. To achieve such an effect, use their post titles.
 That way, you won’t need to specify which post you’re referring to in the email body. Such a subject makes it obvious and helps you reduce your email length (more on this in the next section).
 Note. Don’t copy and paste the entire post title. It’ll only make your subject longer and give it a hint of automation.
@@ -111,7 +111,7 @@ Shorten post titles to keywords only. That’d be enough to let your prospects k
         <p>Problem. To read boring emails at the end of the day or close the mailbox and go home, that is the question…
 The answer is often not in your favor, I’m afraid.
 Without engaging email subject lines, people will be reluctant to read your entire message. That’s something I can say with confidence, from personal experience.
-> Solution. Arouse your outreach prospects’ curiosity with a question about their content.
+        <blockquote className="border-l-4 border-gray-300 pl-4 italic text-gray-700 my-2">Solution. Arouse your outreach prospects’ curiosity with a question about their content.</blockquote>
 Solution. Arouse your outreach prospects’ curiosity with a question about their content.
 Logically, everyone who’s interested to write about some topic should also be interested to discuss their write-up consequently. Many recipients will be curious to check what kind of question you have.
 Note. Don’t ask your question directly in the subject line. People can say no in their minds and move on to other email pitches, leaving yours unopened.
@@ -123,7 +123,7 @@ Also, your question will make more sense in the context of your arguments rather
 Can you blame them?
 Many outreachers are focused on their own benefits only. Asking for links and shares, they aren’t ready to give anything in return.,/p>
 That’s why folks have been quite skeptical about unsolicited email pitches lately.
-> Solution. The best subject lines to get emails opened are those that accentuate the value for recipients.
+        <blockquote className="border-l-4 border-gray-300 pl-4 italic text-gray-700 my-2">Solution. The best subject lines to get emails opened are those that accentuate the value for recipients.</blockquote>
 Solution. The best subject lines to get emails opened are those that accentuate the value for recipients.
 Tell your outreach prospects that you have an idea or tip for their content.
 No one’s canceled a writer’s block after all. Many bloggers face it at one time or another but few admit though 🙂
@@ -141,7 +141,7 @@ Another way to increase email deliveribility rate and boost the email credibilit
 
         <p>Problem. When people have to deal with lots of emails, the last thing they want is empty talk.
 Talkers and other time wasters are out of favor. So are their pitches with vague subject lines.
-> Solution. To save your outreach prospects’ time, get straight to the point.
+        <blockquote className="border-l-4 border-gray-300 pl-4 italic text-gray-700 my-2">Solution. To save your outreach prospects’ time, get straight to the point.</blockquote>
 Solution. To save your outreach prospects’ time, get straight to the point.
 Especially if it can trigger some sort of emotion like wonder or excitement. To come up with such a subject, answer these two questions:
 • How is your post better than the one your prospects link to?
@@ -168,7 +168,7 @@ However, it is important to learn how to format an email pitch in a way to retai
         <p>Problem. Any outreach email enframed in a professionally designed template feels like a promo in one way or another.
 And any hint of promotion makes your pitch closer to the spam folder, no matter how beautiful that template is.
 I apologize to designers of email templates but I have to state the obvious. You don’t use a $20 template to message your friend, do you?
-> Solution. The best email design practice in blogger outreach is to avoid any visual enhancements.
+        <blockquote className="border-l-4 border-gray-300 pl-4 italic text-gray-700 my-2">Solution. The best email design practice in blogger outreach is to avoid any visual enhancements.</blockquote>
 Solution. The best email design practice in blogger outreach is to avoid any visual enhancements.
 Being plain and simple, your email will look natural. This is exactly the effect you need.
 Note. Before template designers curse me for pushing their customers away, let me stress one thing.
@@ -194,7 +194,7 @@ Don’t let this blah-blah-blah disrupt your optimal email length and show yours
         <p>Problem. Trying to sound intelligent, outreachers often cross the line.
 They use formal, complicated language that’s hard to read – long sentences, complex grammatical constructions, and fancy words that you can find mainly in classic works of literature.
 The way you talk has a direct impact on how eager your outreach prospects will be to read your email.
-> Solution. Unless you reach out to university professors, stick to an informal email tone.
+        <blockquote className="border-l-4 border-gray-300 pl-4 italic text-gray-700 my-2">Solution. Unless you reach out to university professors, stick to an informal email tone.</blockquote>
 Solution. Unless you reach out to university professors, stick to an informal email tone.
 Ideally, your language should sound as if you’re talking to a friend. The friendlier, the better.
 Here’s how to rephrase the overcomplicated message above in plain language.
@@ -212,7 +212,7 @@ Oops…
 If you don’t spell check email pitches, people will either put your IQ score in question or think you don’t respect them enough to approach with due diligence.
 Yeah, I know that in the previous section I suggested writing a message as if it’s addressed to a friend.
 While it’s no big deal to make a few typos when messaging pals, outreach emails require more attention to detail. There should be nothing that your prospects could find fault with.
-> Solution. Install a free email grammar checker like Grammarly to proofread your message before sending it. Quite handy!
+        <blockquote className="border-l-4 border-gray-300 pl-4 italic text-gray-700 my-2">Solution. Install a free email grammar checker like Grammarly to proofread your message before sending it. Quite handy!</blockquote>
 Solution. Install a free email grammar checker like Grammarly to proofread your message before sending it. Quite handy!
 Note. It’s OK to use colloquial speech (“ya” – “you,” “doin’” – “doing,” etc), even if your email spell checker highlights them as misspellings.</p>
 
@@ -229,7 +229,7 @@ Here are the main email parts you should include in your pitch.</p>
 Unfortunately, bulk email senders don’t get bulk replies.
 The worst part is that people will figure things out without even opening your email. The snippet with its first line is visible right in the inbox.
 Imagine how the lack of a personal email greeting will affect your open rates.
-> Solution. If you wonder how to address people in email pitches, the answer is obvious – by name!
+        <blockquote className="border-l-4 border-gray-300 pl-4 italic text-gray-700 my-2">Solution. If you wonder how to address people in email pitches, the answer is obvious – by name!</blockquote>
 Solution. If you wonder how to address people in email pitches, the answer is obvious – by name!
 In such a simple way, you’ll show that you actually know who you contact. It’s in our DNA to want to check out stuff addressed to us personally, at least out of curiosity.
 Note. Don’t use anything like “Dear Editor,” “Dear Sir,” “Dear Madam,” etc.
@@ -242,7 +242,7 @@ A proper email greeting is the easiest way of personalization but many outreache
 When thinking about the ways to start an email, many outreachers tell a backstory about themselves, their interests, companies, products, whatever.
 But who cares if all you want is a backlink.
 Your pitch isn’t your CV. Such a backstory will only load your email with a few extra paragraphs to read. Taking someone’s time goes against email introduction etiquette.
-> Solution. Skip the intro of yourself in your email intro. Sounds like a paradox, doesn’t it?
+        <blockquote className="border-l-4 border-gray-300 pl-4 italic text-gray-700 my-2">Solution. Skip the intro of yourself in your email intro. Sounds like a paradox, doesn’t it?</blockquote>
 Solution. Skip the intro of yourself in your email intro. Sounds like a paradox, doesn’t it?
 Instead, let your outreach prospects know you’ve read their article and explain how it’s related to you. As easy as that.
 Note. If your outreach campaign is all about your product rather than your content, sure thing you can drop a few words about it.
@@ -256,7 +256,7 @@ In simple terms, this is the reason why you contact your outreach prospects and,
 No, gaining a backlink from them isn’t the right excuse. Neither is the fact that you’ve written an article on the same topic they link to.
 That’s where many outreachers screw things up.
 Having a similar article is the most overused excuse that makes no sense at all. There are many similar articles out there, so what? Why on earth should bloggers add a link to yours?
-> Solution. Similar to products, content can have a USP too. That’s what makes it unique compared to many other articles on the same topic.
+        <blockquote className="border-l-4 border-gray-300 pl-4 italic text-gray-700 my-2">Solution. Similar to products, content can have a USP too. That’s what makes it unique compared to many other articles on the same topic.</blockquote>
 Solution. Similar to products, content can have a USP too. That’s what makes it unique compared to many other articles on the same topic.
 There are two points to accentuate in this email part:
 1) what you’ve found out as a result of your research, i.e. the USP of your article;
@@ -276,7 +276,7 @@ Outreachers can be quite impudent in email closing lines. Some of them beg for b
 Do you know how people treat pushy salesmen? The same goes for pushy outreachers.
 Unless your prospects live under a rock, they should know that Google bans sites for any link manipulations.
 Seeing a blunt backlink request in your email closing, they’ll wonder if it could get them in trouble somehow.
-> Solution. Tactfully ask people about the possibility to get your article or tool featured in their content. That’s the best way to end an email.
+        <blockquote className="border-l-4 border-gray-300 pl-4 italic text-gray-700 my-2">Solution. Tactfully ask people about the possibility to get your article or tool featured in their content. That’s the best way to end an email.</blockquote>
 Solution. Tactfully ask people about the possibility to get your article or tool featured in their content. That’s the best way to end an email.
 Avoid any backlink-related wording. Instead of “add my backlink,” use phrases like “refer to my study” or “suggest my findings to your readers.”
 Note. While impudent begging can push your outreach prospects away, veiled requests can confuse them.
@@ -302,7 +302,7 @@ Here’s how to personalize emails based on those insights.</p>
 But the thing is it’s a true art to make a comment on point.
 Saying you like their favorite movie too is not enough. Such email personalization fails most of the time.
 There are millions of other fans around the world. What’s the point of your comment? How does it set you apart from the masses?
-> Solution. Comment on your prospects’ favorites only if your words can be of any benefit to them.
+        <blockquote className="border-l-4 border-gray-300 pl-4 italic text-gray-700 my-2">Solution. Comment on your prospects’ favorites only if your words can be of any benefit to them.</blockquote>
 Solution. Comment on your prospects’ favorites only if your words can be of any benefit to them.
 You can tell them the latest news on their fav TV show or make a joke about its last episode. If you can’t think of anything like that, check Google’s News tab.
 For example, Anna seems to be a fan of Stranger Things, according to her Twitter bio.
@@ -327,7 +327,7 @@ If it turns out that you know nothing but the name of his fav team, that’ll be
 While you might be lucky to watch the same series, you can’t have bought products from all the 200 prospects on your list. And I bet you have no time to watch 200 webinars each of them recorded, right?
 Still, you can’t praise their product or speech at some event without a single proof point.
 It’s crystal clear that you’re saying good words to butter them up. But in reality, you don’t give a damn about their work. That’s not how email marketing personalization works.
-> Solution. Mention something professional only if you have at least a rough idea of how things work there. You’ll need to back up your comment with some proof to convince people you’re sincere.
+        <blockquote className="border-l-4 border-gray-300 pl-4 italic text-gray-700 my-2">Solution. Mention something professional only if you have at least a rough idea of how things work there. You’ll need to back up your comment with some proof to convince people you’re sincere.</blockquote>
 Solution. Mention something professional only if you have at least a rough idea of how things work there. You’ll need to back up your comment with some proof to convince people you’re sincere.
 Last winter, Steven announced the release of a new extension in his pinned tweet. Try to install it and play with it for a while, especially since there’s a free trial.
 In the case of a paid product, you can learn more about its use cases on the landing page.
@@ -352,7 +352,7 @@ Check out a few hacks to boost the response rates of your email pitches.</p>
         <h3 id="get-on-your-outreach-prospects-radar-ahead">Get on your outreach prospects’ radar ahead</h3>
 
         <p>Problem. Not everyone is willing to reply to strangers, let alone do them a favor. And they have every right to ignore unsolicited outreach emails, I’m afraid.
-> Solution. Get into your prospects’ lives before showing up in their inboxes.
+        <blockquote className="border-l-4 border-gray-300 pl-4 italic text-gray-700 my-2">Solution. Get into your prospects’ lives before showing up in their inboxes.</blockquote>
 Solution. Get into your prospects’ lives before showing up in their inboxes.
 Social media is a perfect place to attract attention to yourself. You can like their posts, share them with your followers, and exchange a couple of words.
 Abby thanks everyone who tweets her Google Discover study. If you do it too, she’ll be grateful and should recognize your face when your email comes.
@@ -369,7 +369,7 @@ Make sure you have the same name and avatar in your email and Twitter accounts. 
         <p>Problem. Some people call their followers to do them a favor. That’s your opportunity to build a bridge between you and them at an early stage.
 But outreachers often go over the edge here, making their little help look like a bribe.
 If you voted for some item in their survey, it doesn’t give you the full right to demand something bigger like a backlink. Come on, it took you a few seconds and one click only!
-> Solution. Do what your prospects ask, but make it sound like a “by-the-way” note rather than a favor they should return. Especially since people don’t ask for anything difficult or time-consuming, as a rule.
+        <blockquote className="border-l-4 border-gray-300 pl-4 italic text-gray-700 my-2">Solution. Do what your prospects ask, but make it sound like a “by-the-way” note rather than a favor they should return. Especially since people don’t ask for anything difficult or time-consuming, as a rule.</blockquote>
 Solution. Do what your prospects ask, but make it sound like a “by-the-way” note rather than a favor they should return. Especially since people don’t ask for anything difficult or time-consuming, as a rule.
 For example, Danielle seeks advice on marketing materials that would be worth her money.
 If you know about any, mention them in your email closing statement, since this info goes off the topic of your outreach purpose.
@@ -386,7 +386,7 @@ Alexander’s interview was published more than a year ago, so it’s kinda too 
         <p>Problem. Any issue on the page doubles the excuse for your outreach prospects to update it.
 The focus isn’t on you anymore. It’s on the need to bring their page back in order (and insert your backlink along the way).
 People mostly use this strategy to indicate the issue of broken outgoing links. Broken link building is great and all, but it’s become overused lately.
-> Solution. Check out if there are any other on-page issues. Some of them are visible to the naked eye, e.g. image issues.
+        <blockquote className="border-l-4 border-gray-300 pl-4 italic text-gray-700 my-2">Solution. Check out if there are any other on-page issues. Some of them are visible to the naked eye, e.g. image issues.</blockquote>
 Solution. Check out if there are any other on-page issues. Some of them are visible to the naked eye, e.g. image issues.
 In your outreach excuse, speculate on why that issue makes the page anything but user-friendly. Your request should make a connection to the necessity to edit that post.
 Note. You can use site audit tools to find on-page issues if you can’t notice anything with the naked eye.
@@ -398,7 +398,7 @@ But don’t be too technical. Otherwise, your message will look suspicious. Peop
 You may wonder what could be a problem here, but there’s one.
 Unfortunately, people usually don’t give a second thought to this strategy. They just link to the homepage, which is already the most linked-to page in 99% of cases.
 Such a backlink will be appreciated but not as much as backlinks to pages that have a few or no links at all.
-> Solution. Link to pages that are of higher value to your prospects’ businesses.
+        <blockquote className="border-l-4 border-gray-300 pl-4 italic text-gray-700 my-2">Solution. Link to pages that are of higher value to your prospects’ businesses.</blockquote>
 Solution. Link to pages that are of higher value to your prospects’ businesses.
 It especially makes sense when the author of your target post is a company founder or head of marketing rather than just a staff writer.
 Here are a few examples:
@@ -419,7 +419,7 @@ Set priority on stronger pages that:
 Providing two-week access to your tool for free is not enough, to say the least.
 First, people can probably get it themselves by signing up for your free trial.
 Second, your prospects may be too busy to use your tool straightaway. And the fact that you urge them on can cause the tension between you and them.
-> Solution. Share at least a few months of free access to your product.
+        <blockquote className="border-l-4 border-gray-300 pl-4 italic text-gray-700 my-2">Solution. Share at least a few months of free access to your product.</blockquote>
 Solution. Share at least a few months of free access to your product.
 That way, they’ll be able to check it out and hopefully get used to it after a while. When the time is up, some of them may ask you to extend their free accounts in exchange for more perks you’d like.
 Note. Even if your prospects decline your backlink request, don’t discontinue their free acc. Tell them they’re still welcome to use it.
@@ -432,7 +432,7 @@ For more inspiration, check out cold email case studies with great reply rates
         <p>Problem. To do the work at scale, you definitely need email marketing software and a good outreach email template. Before I share a few, let me clarify one thing.
 The problem with templates is that many people use them as is. Yeah, they add details like their names, post titles, and links, but hardly ever rephrase the default body text.
 As a result, bloggers receive almost the same templated emails and understand they’re not personal. Just look where we are now – “Delete” and “Report spam” have become the most clickable buttons in the inbox.
-> Solution. Do a bit of rephrasing of your outreach email template copy. The templates below are more for email structuring rather than word-for-word usage.
+        <blockquote className="border-l-4 border-gray-300 pl-4 italic text-gray-700 my-2">Solution. Do a bit of rephrasing of your outreach email template copy. The templates below are more for email structuring rather than word-for-word usage.</blockquote>
 Solution. Do a bit of rephrasing of your outreach email template copy. The templates below are more for email structuring rather than word-for-word usage.
 For a full list, visit our email outreach templates page.</p>
 
