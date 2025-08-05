@@ -22,21 +22,23 @@ export async function POST(
 
     // Verify order exists
     const order = await db.query.orders.findFirst({
-      where: eq(orders.id, orderId),
-      with: {
-        orderGroups: true
-      }
+      where: eq(orders.id, orderId)
     });
 
     if (!order) {
       return NextResponse.json({ error: 'Order not found' }, { status: 404 });
     }
 
+    // Get order groups separately
+    const orderGroupsList = await db.query.orderGroups.findMany({
+      where: eq(orderGroups.orderId, orderId)
+    });
+
     let migratedCount = 0;
     const errors: string[] = [];
 
     // Process each order group
-    for (const group of order.orderGroups) {
+    for (const group of orderGroupsList) {
       try {
         // Count how many times each target URL appears
         const targetUrlCounts = new Map<string, number>();
