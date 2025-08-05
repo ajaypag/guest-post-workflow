@@ -1,0 +1,397 @@
+{
+  "timestamp": "2025-08-05T18:36:15.975Z",
+  "endpointsToProtect": [
+    {
+      "path": "/api/admin/agent-diagnostics",
+      "requiresAuth": true,
+      "userType": "internal",
+      "description": "Useful monitoring and diagnostics that should be kept but protected"
+    },
+    {
+      "path": "/api/admin/agent-diagnostics/sessions/[sessionId]",
+      "requiresAuth": true,
+      "userType": "internal",
+      "description": "Useful monitoring and diagnostics that should be kept but protected"
+    },
+    {
+      "path": "/api/admin/agent-diagnostics/sessions",
+      "requiresAuth": true,
+      "userType": "internal",
+      "description": "Useful monitoring and diagnostics that should be kept but protected"
+    },
+    {
+      "path": "/api/admin/check-outline-generation-health",
+      "requiresAuth": true,
+      "userType": "internal",
+      "description": "Useful monitoring and diagnostics that should be kept but protected"
+    },
+    {
+      "path": "/api/admin/comprehensive-diagnostics",
+      "requiresAuth": true,
+      "userType": "internal",
+      "description": "Useful monitoring and diagnostics that should be kept but protected"
+    },
+    {
+      "path": "/api/admin/dataforseo-monitoring",
+      "requiresAuth": true,
+      "userType": "internal",
+      "description": "DataForSEO integration testing and debugging"
+    },
+    {
+      "path": "/api/admin/diagnose-streaming-health",
+      "requiresAuth": true,
+      "userType": "internal",
+      "description": "Debugging endpoints for issues that have been resolved"
+    },
+    {
+      "path": "/api/admin/diagnostics/client/[clientId]/target-pages",
+      "requiresAuth": true,
+      "userType": "internal",
+      "description": "Useful monitoring and diagnostics that should be kept but protected"
+    },
+    {
+      "path": "/api/admin/diagnostics/order/[orderId]",
+      "requiresAuth": true,
+      "userType": "internal",
+      "description": "Useful monitoring and diagnostics that should be kept but protected"
+    },
+    {
+      "path": "/api/admin/draft-orders-migration/status",
+      "requiresAuth": true,
+      "userType": "internal",
+      "description": "One-time database schema migrations that have already been applied"
+    },
+    {
+      "path": "/api/admin/migrations/status",
+      "requiresAuth": true,
+      "userType": "internal",
+      "description": "One-time database schema migrations that have already been applied"
+    },
+    {
+      "path": "/api/admin/normalize-urls-migration/status",
+      "requiresAuth": true,
+      "userType": "internal",
+      "description": "One-time database schema migrations that have already been applied"
+    },
+    {
+      "path": "/api/admin/order-project-diagnostics",
+      "requiresAuth": true,
+      "userType": "internal",
+      "description": "Useful monitoring and diagnostics that should be kept but protected"
+    },
+    {
+      "path": "/api/admin/order-status-diagnostics/check-groups",
+      "requiresAuth": true,
+      "userType": "internal",
+      "description": "Useful monitoring and diagnostics that should be kept but protected"
+    },
+    {
+      "path": "/api/admin/order-status-diagnostics/check-order",
+      "requiresAuth": true,
+      "userType": "internal",
+      "description": "Useful monitoring and diagnostics that should be kept but protected"
+    },
+    {
+      "path": "/api/admin/patch-health-check",
+      "requiresAuth": true,
+      "userType": "internal",
+      "description": "Useful monitoring and diagnostics that should be kept but protected"
+    },
+    {
+      "path": "/api/admin/polish-health-check",
+      "requiresAuth": true,
+      "userType": "internal",
+      "description": "Useful monitoring and diagnostics that should be kept but protected"
+    },
+    {
+      "path": "/api/admin/feature-flags",
+      "requiresAuth": true,
+      "userType": "internal",
+      "description": "Configuration management endpoints"
+    },
+    {
+      "path": "/api/admin/chatwoot-sync/accounts",
+      "requiresAuth": true,
+      "userType": "internal",
+      "description": "User and account administration"
+    },
+    {
+      "path": "/api/admin/check-account-data",
+      "requiresAuth": true,
+      "userType": "internal",
+      "description": "User and account administration"
+    },
+    {
+      "path": "/api/admin/check-invitations-table",
+      "requiresAuth": true,
+      "userType": "internal",
+      "description": "Debugging endpoints for issues that have been resolved"
+    },
+    {
+      "path": "/api/admin/check-user-type-column",
+      "requiresAuth": true,
+      "userType": "internal",
+      "description": "Debugging endpoints for issues that have been resolved"
+    },
+    {
+      "path": "/api/admin/create-system-user",
+      "requiresAuth": true,
+      "userType": "internal",
+      "description": "User and account administration"
+    },
+    {
+      "path": "/api/admin/debug-invitations",
+      "requiresAuth": true,
+      "userType": "internal",
+      "description": "Debugging endpoints for issues that have been resolved"
+    },
+    {
+      "path": "/api/admin/fix-account-data",
+      "requiresAuth": true,
+      "userType": "internal",
+      "description": "User and account administration"
+    },
+    {
+      "path": "/api/admin/fix-accounts-table",
+      "requiresAuth": true,
+      "userType": "internal",
+      "description": "One-time fixes for database schema issues"
+    },
+    {
+      "path": "/api/admin/fix-invitations-table",
+      "requiresAuth": true,
+      "userType": "internal",
+      "description": "One-time fixes for database schema issues"
+    },
+    {
+      "path": "/api/admin/invitations/[id]/resend",
+      "requiresAuth": true,
+      "userType": "internal",
+      "description": "User and account administration"
+    },
+    {
+      "path": "/api/admin/invitations/[id]/revoke",
+      "requiresAuth": true,
+      "userType": "internal",
+      "description": "User and account administration"
+    },
+    {
+      "path": "/api/admin/invitations",
+      "requiresAuth": true,
+      "userType": "internal",
+      "description": "User and account administration"
+    },
+    {
+      "path": "/api/admin/migrate-user-system",
+      "requiresAuth": true,
+      "userType": "internal",
+      "description": "One-time database schema migrations that have already been applied"
+    },
+    {
+      "path": "/api/admin/remove-duplicate-account-fields/check",
+      "requiresAuth": true,
+      "userType": "internal",
+      "description": "User and account administration"
+    },
+    {
+      "path": "/api/admin/remove-duplicate-account-fields/migrate",
+      "requiresAuth": true,
+      "userType": "internal",
+      "description": "User and account administration"
+    },
+    {
+      "path": "/api/admin/remove-duplicate-account-fields/rollback",
+      "requiresAuth": true,
+      "userType": "internal",
+      "description": "User and account administration"
+    },
+    {
+      "path": "/api/admin/test-invitation-token",
+      "requiresAuth": true,
+      "userType": "internal",
+      "description": "User and account administration"
+    },
+    {
+      "path": "/api/admin/verify-user-system-migration",
+      "requiresAuth": true,
+      "userType": "internal",
+      "description": "One-time database schema migrations that have already been applied"
+    },
+    {
+      "path": "/api/admin/comprehensive-diagnostics",
+      "requiresAuth": true,
+      "userType": "internal",
+      "description": "Useful monitoring and diagnostics that should be kept but protected"
+    }
+  ],
+  "endpointsToRemove": [
+    "/api/admin/add-client-fields-migration",
+    "/api/admin/add-dataforseo-count-column",
+    "/api/admin/add-datasource-fields",
+    "/api/admin/add-link-orchestration-columns",
+    "/api/admin/apply-bulk-url-migration",
+    "/api/admin/check-bulk-url-migration",
+    "/api/admin/check-client-type-migration",
+    "/api/admin/draft-orders-migration/migrate",
+    "/api/admin/draft-orders-migration/status",
+    "/api/admin/migrate-advertisers",
+    "/api/admin/migrate-agentic",
+    "/api/admin/migrate-agentic-versioning",
+    "/api/admin/migrate-ai-permissions",
+    "/api/admin/migrate-archive",
+    "/api/admin/migrate-article-v2",
+    "/api/admin/migrate-bulk-analysis",
+    "/api/admin/migrate-bulk-analysis-4tier",
+    "/api/admin/migrate-bulk-analysis-improvements",
+    "/api/admin/migrate-bulk-analysis-improvements-rollback",
+    "/api/admin/migrate-client-type",
+    "/api/admin/migrate-dataforseo",
+    "/api/admin/migrate-dataforseo-logs",
+    "/api/admin/migrate-description",
+    "/api/admin/migrate-email-logs",
+    "/api/admin/migrate-email-logs-direct",
+    "/api/admin/migrate-email-logs-simple",
+    "/api/admin/migrate-formatting-qa",
+    "/api/admin/migrate-formatting-qa-v2",
+    "/api/admin/migrate-keywords",
+    "/api/admin/migrate-link-orchestration",
+    "/api/admin/migrate-onboarding",
+    "/api/admin/migrate-order-groups-bulk-analysis",
+    "/api/admin/migrate-outline-background",
+    "/api/admin/migrate-outline-sessions",
+    "/api/admin/migrate-polish",
+    "/api/admin/migrate-polish-drizzle",
+    "/api/admin/migrate-semantic-audit",
+    "/api/admin/migrate-semantic-audit-v2",
+    "/api/admin/migrate-streaming-columns",
+    "/api/admin/migrate-streaming-schema",
+    "/api/admin/migrate-target-page-id",
+    "/api/admin/migrate-user-system",
+    "/api/admin/migrations/run",
+    "/api/admin/migrations/status",
+    "/api/admin/normalize-urls-migration/run",
+    "/api/admin/normalize-urls-migration/status",
+    "/api/admin/order-migration",
+    "/api/admin/order-system-migration",
+    "/api/admin/order-type-migration",
+    "/api/admin/password-reset-migration",
+    "/api/admin/payment-tables-migration",
+    "/api/admin/rollback-bulk-url-migration",
+    "/api/admin/run-airtable-migration",
+    "/api/admin/run-dataforseo-migration",
+    "/api/admin/run-migrations",
+    "/api/admin/test-email-migration",
+    "/api/admin/unified-order-migration",
+    "/api/admin/verify-order-groups-migration",
+    "/api/admin/verify-user-system-migration",
+    "/api/admin/website-type-niche-migration/check",
+    "/api/admin/website-type-niche-migration/indexes",
+    "/api/admin/website-type-niche-migration/migrate",
+    "/api/admin/website-type-niche-migration/verify",
+    "/api/admin/fix-accounts-table",
+    "/api/admin/fix-article-v2-columns",
+    "/api/admin/fix-email-logs-table",
+    "/api/admin/fix-formatting-qa-columns",
+    "/api/admin/fix-invitations-table",
+    "/api/admin/fix-link-orchestration-schema",
+    "/api/admin/fix-outline-generation-columns",
+    "/api/admin/fix-outline-sessions-schema",
+    "/api/admin/fix-polish-approach-column",
+    "/api/admin/fix-polish-database-columns",
+    "/api/admin/check-agentic-tables",
+    "/api/admin/check-archive-columns",
+    "/api/admin/check-bulk-url-migration",
+    "/api/admin/check-client-type-migration",
+    "/api/admin/check-column-sizes",
+    "/api/admin/check-description-column",
+    "/api/admin/check-email-logs-table",
+    "/api/admin/check-formatting-qa-tables",
+    "/api/admin/check-invitations-table",
+    "/api/admin/check-keywords-column",
+    "/api/admin/check-link-orchestration-schema",
+    "/api/admin/check-link-orchestration-table",
+    "/api/admin/check-order-groups-schema",
+    "/api/admin/check-polish-tables",
+    "/api/admin/check-polish-tables-direct",
+    "/api/admin/check-semantic-audit-tables",
+    "/api/admin/check-tables",
+    "/api/admin/check-user-type-column",
+    "/api/admin/debug-account-clients",
+    "/api/admin/debug-analyzed-count",
+    "/api/admin/debug-clients",
+    "/api/admin/debug-clients-api",
+    "/api/admin/debug-email-logs",
+    "/api/admin/debug-invitations",
+    "/api/admin/debug-link-orchestration-insert",
+    "/api/admin/debug-reset-token",
+    "/api/admin/diagnose-article-v2",
+    "/api/admin/diagnose-formatting-qa-enhancement",
+    "/api/admin/diagnose-o3-deep-research",
+    "/api/admin/diagnose-orders-new",
+    "/api/admin/diagnose-outline-generation",
+    "/api/admin/diagnose-outline-generation-error",
+    "/api/admin/diagnose-outline-generation-live",
+    "/api/admin/diagnose-polish-null-bytes",
+    "/api/admin/diagnose-semantic-audit-v2",
+    "/api/admin/diagnose-step-7/[id]",
+    "/api/admin/diagnose-streaming-health",
+    "/api/admin/add-dataforseo-count-column",
+    "/api/admin/check-dataforseo-status",
+    "/api/admin/dataforseo-audit/errors",
+    "/api/admin/dataforseo-audit/task/[taskId]",
+    "/api/admin/dataforseo-audit/tasks",
+    "/api/admin/dataforseo-debug",
+    "/api/admin/dataforseo-monitoring",
+    "/api/admin/dataforseo-task-details",
+    "/api/admin/migrate-dataforseo",
+    "/api/admin/migrate-dataforseo-logs",
+    "/api/admin/run-dataforseo-migration",
+    "/api/admin/analyze-o3-response",
+    "/api/admin/apply-bulk-url-migration",
+    "/api/admin/cleanup-failed-outline-sessions"
+  ],
+  "endpointsToReview": [
+    "/api/admin/chatwoot/inboxes",
+    "/api/admin/chatwoot/test-email",
+    "/api/admin/chatwoot-sync/accounts",
+    "/api/admin/chatwoot-sync/test",
+    "/api/admin/chatwoot-sync/websites",
+    "/api/admin/add-selected-target-page",
+    "/api/admin/bulk-analysis-debug",
+    "/api/admin/check-agentic-versioning",
+    "/api/admin/check-bulk-analysis-improvements",
+    "/api/admin/check-datasource-fields",
+    "/api/admin/check-order-constraints",
+    "/api/admin/check-specific-domain",
+    "/api/admin/check-streaming-status",
+    "/api/admin/check-v2-data",
+    "/api/admin/check-varchar-limits",
+    "/api/admin/create-order-groups-index",
+    "/api/admin/create-site-selections",
+    "/api/admin/enable-streaming",
+    "/api/admin/fix-order-constraints",
+    "/api/admin/fix-project-counts",
+    "/api/admin/fix-streaming-service",
+    "/api/admin/orders-diagnostic",
+    "/api/admin/orphaned-clients/assign",
+    "/api/admin/orphaned-clients/invite",
+    "/api/admin/orphaned-clients",
+    "/api/admin/orphaned-clients/share",
+    "/api/admin/patch-link-orchestration-service",
+    "/api/admin/quick-client-check",
+    "/api/admin/retry-stuck-outline-session",
+    "/api/admin/sync-drizzle-schema",
+    "/api/admin/test-db-connection",
+    "/api/admin/test-formatting-qa-insert",
+    "/api/admin/test-link-orchestration",
+    "/api/admin/test-o3-api-call",
+    "/api/admin/test-outline-generation-insert",
+    "/api/admin/test-polish-insert",
+    "/api/admin/test-polish-insert-real",
+    "/api/admin/toggle-streaming",
+    "/api/admin/verify-site-selections",
+    "/api/admin/workflow-recovery/check/[id]",
+    "/api/admin/workflow-recovery/restore/[id]",
+    "/api/admin/workflow-recovery/scan"
+  ]
+}

@@ -2,7 +2,8 @@ import { NextRequest, NextResponse } from 'next/server';
 import { db } from '@/lib/db/connection';
 import { orders, orderItems } from '@/lib/db/orderSchema';
 import { workflows } from '@/lib/db/schema';
-import { orderGroups, orderSiteSelections } from '@/lib/db/orderGroupSchema';
+import { orderGroups } from '@/lib/db/orderGroupSchema';
+import { orderSiteSubmissions } from '@/lib/db/projectOrderAssociationsSchema';
 import { bulkAnalysisDomains } from '@/lib/db/bulkAnalysisSchema';
 import { eq, and } from 'drizzle-orm';
 import { AuthServiceServer } from '@/lib/auth-server';
@@ -45,15 +46,26 @@ export async function POST(
     const groups = await db.query.orderGroups.findMany({
       where: eq(orderGroups.orderId, orderId),
       with: {
-        client: true,
-        siteSelections: {
-          where: eq(orderSiteSelections.status, 'approved'),
-          with: {
-            domain: true
-          }
-        }
+        client: true
       }
     });
+
+    // Get approved submissions for all groups
+    const approvedSubmissions = await db.query.orderSiteSubmissions.findMany({
+      where: and(
+        eq(orderSiteSubmissions.submissionStatus, 'client_approved')
+      ),
+      with: {
+        domain: true,
+        orderGroup: true
+      }
+    });
+
+    // Filter submissions to only those from this order's groups
+    const groupIds = groups.map(g => g.id);
+    const orderApprovedSubmissions = approvedSubmissions.filter(sub => 
+      groupIds.includes(sub.orderGroupId)
+    );
 
     if (!groups || groups.length === 0) {
       return NextResponse.json({ error: 'No order groups found' }, { status: 404 });
@@ -69,60 +81,60 @@ export async function POST(
 
     // Start a transaction
     await db.transaction(async (tx) => {
-      // Process each order group
-      for (const group of groups) {
-        // Skip if no approved sites
-        if (!group.siteSelections || group.siteSelections.length === 0) {
-          console.log(`Skipping group ${group.id} - no approved sites`);
+      // Process each approved submission
+      for (const submission of orderApprovedSubmissions) {
+        // Find the group this submission belongs to
+        const group = groups.find(g => g.id === submission.orderGroupId);
+        if (!group) {
+          console.log(`Skipping submission ${submission.id} - group not found`);
           continue;
         }
 
-        // Create workflows for each approved site
-        for (const selection of group.siteSelections) {
-          // For now, we'll create workflows without checking for duplicates
-          // TODO: Add workflowId to orderSiteSelections table to track this
+        // For now, we'll create workflows without checking for duplicates
+        // TODO: Add workflowId to orderSiteSubmissions table to track this
 
-          // Create workflow
-          const workflowId = uuidv4();
-          const now = new Date();
-          
-          // Get target page info
-          const targetPage = group.targetPages?.[0];
-          
-          const workflowTitle = `${group.client.name} - ${selection.domain}`;
+        // Create workflow
+        const workflowId = uuidv4();
+        const now = new Date();
+        
+        // Get target page info from submission metadata or group target pages
+        const targetPageUrl = submission.metadata?.targetPageUrl || group.targetPages?.[0]?.url;
+        const anchorText = submission.metadata?.anchorText || group.anchorTexts?.[0];
+        
+        const workflowTitle = `${group.client.name} - ${submission.domain?.domain || 'Unknown Domain'}`;
 
-          await tx.insert(workflows).values({
-            id: workflowId,
-            userId: session.userId,
-            clientId: group.clientId,
-            title: workflowTitle,
-            status: 'active',
-            content: {
-              // Store all relevant info in the content JSON
-              orderGroupId: group.id,
-              domainId: selection.domainId,
-              domain: selection.domain?.domain || '',
-              targetPageUrl: selection.targetPageUrl || targetPage?.url,
-              anchorText: selection.anchorText,
-              specialInstructions: selection.internalNotes
-            },
-            targetPages: targetPage ? [targetPage.url] : [],
-            createdAt: now,
-            updatedAt: now,
-          });
+        await tx.insert(workflows).values({
+          id: workflowId,
+          userId: session.userId,
+          clientId: group.clientId,
+          title: workflowTitle,
+          status: 'active',
+          content: {
+            // Store all relevant info in the content JSON
+            orderGroupId: group.id,
+            submissionId: submission.id,
+            domainId: submission.domainId,
+            domain: submission.domain?.domain || '',
+            targetPageUrl: targetPageUrl,
+            anchorText: anchorText,
+            specialInstructions: submission.metadata?.specialInstructions
+          },
+          targetPages: targetPageUrl ? [targetPageUrl] : [],
+          createdAt: now,
+          updatedAt: now,
+        });
 
-          // TODO: Update site selection with workflow ID once the field is added to the schema
-          // For now, the workflow is created but not linked back to the selection
+        // TODO: Update submission with workflow ID once the field is added to the schema
+        // For now, the workflow is created but not linked back to the submission
 
-          createdWorkflows.push({
-            id: workflowId,
-            title: workflowTitle,
-            domain: selection.domain?.domain || '',
-            clientId: group.clientId
-          });
+        createdWorkflows.push({
+          id: workflowId,
+          title: workflowTitle,
+          domain: submission.domain?.domain || '',
+          clientId: group.clientId
+        });
 
-          workflowsCreated++;
-        }
+        workflowsCreated++;
       }
 
       // Update order status to in_progress

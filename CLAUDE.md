@@ -153,38 +153,6 @@ npm run db:studio       # Browse database
 /admin/*               # Diagnostic tools
 ```
 
-## 🚨 Build & TypeScript Error Detection
-
-**CRITICAL**: Default 2-minute timeout is INSUFFICIENT for detecting TypeScript errors!
-
-### The Problem
-- `npm run build` completes "successfully" in ~25 seconds when it times out
-- Real TypeScript errors are NOT shown during timeout
-- This creates false confidence that build is passing
-
-### The Solution
-```bash
-# Use 10-minute timeout for accurate error detection
-timeout 600 npm run build
-
-# OR extend timeout in Bash tool calls to 600000ms (10 minutes)
-```
-
-### Rules for Build Testing
-1. **NEVER trust "compile successfully" under 1 minute** - it's likely a timeout
-2. **ALWAYS use 10-minute timeout** when checking for TypeScript errors
-3. **Let the full build complete** including static page generation
-4. **Only after full completion** can you trust there are no TypeScript errors
-
-### Example of Proper Build Check
-```typescript
-// ❌ WRONG - 2 minute timeout, false positive
-Bash({ command: "npm run build", timeout: 120000 })
-
-// ✅ CORRECT - 10 minute timeout, real results  
-Bash({ command: "npm run build", timeout: 600000 })
-```
-
 ## 🚀 Latest Features
 
 ### Order Interface Redesign (In Progress)
