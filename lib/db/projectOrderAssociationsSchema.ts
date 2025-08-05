@@ -1,4 +1,4 @@
-import { pgTable, uuid, timestamp, varchar, text, index, uniqueIndex, jsonb } from 'drizzle-orm/pg-core';
+import { pgTable, uuid, timestamp, varchar, text, index, uniqueIndex, jsonb, integer } from 'drizzle-orm/pg-core';
 import { relations } from 'drizzle-orm';
 import { orders } from './orderSchema';
 import { orderGroups } from './orderGroupSchema';
@@ -74,6 +74,13 @@ export const orderSiteSubmissions = pgTable('order_site_submissions', {
   publishedUrl: text('published_url'),
   publishedAt: timestamp('published_at'),
   
+  // NEW: Pool-based selection system
+  selectionPool: varchar('selection_pool', { length: 20 }).notNull().default('primary'),
+  // Values: 'primary', 'alternative'
+  
+  poolRank: integer('pool_rank').notNull().default(1),
+  // Rank within the pool (1 = highest priority)
+  
   // Metadata
   metadata: jsonb('metadata').$type<{
     targetPageUrl?: string;
@@ -81,19 +88,35 @@ export const orderSiteSubmissions = pgTable('order_site_submissions', {
     specialInstructions?: string;
     qualityScore?: number;
     clientPriority?: 'high' | 'medium' | 'low';
+    // Suggestion tracking
+    suggestedBy?: string;
+    suggestedAt?: string;
+    suggestedReason?: string;
+    batchId?: string;
+    // From bulk analysis
+    projectId?: string;
+    qualificationStatus?: string;
+    hasDataForSeoResults?: boolean;
+    notes?: string;
+    // Update tracking
+    lastUpdatedBy?: string;
+    lastUpdatedAt?: string;
+    // History tracking
     statusHistory?: Array<{
       status: string;
-      timestamp: Date;
+      timestamp: string;
       updatedBy: string;
       notes?: string;
     }>;
     reviewHistory?: Array<{
       action: 'approve' | 'reject';
-      timestamp: Date;
+      timestamp: string;
       reviewedBy: string;
       reviewerType: 'internal' | 'account';
       notes?: string;
     }>;
+    // Allow additional fields for flexibility
+    [key: string]: any;
   }>(),
   
   createdAt: timestamp('created_at').notNull().defaultNow(),
@@ -102,6 +125,9 @@ export const orderSiteSubmissions = pgTable('order_site_submissions', {
   orderGroupIdx: index('idx_submissions_order_group').on(table.orderGroupId),
   domainIdx: index('idx_submissions_domain').on(table.domainId),
   statusIdx: index('idx_submissions_status').on(table.submissionStatus),
+  
+  // NEW: Pool-based selection indexes
+  poolIdx: index('idx_submissions_pool').on(table.orderGroupId, table.selectionPool, table.poolRank),
 }));
 
 // Type exports

@@ -11,17 +11,23 @@ export async function POST(
   context: { params: Promise<{ id: string; groupId: string; submissionId: string }> }
 ) {
   const params = await context.params;
+  let action: string | undefined;
+  let notes: string | undefined;
+  let session: any;
+  
   try {
     // Get user session
-    const session = await AuthServiceServer.getSession();
+    session = await AuthServiceServer.getSession();
     if (!session) {
       return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
     }
     
-    const { action, notes } = await request.json();
+    const body = await request.json();
+    action = body.action;
+    notes = body.notes;
     
     // Validate action
-    if (!['approve', 'reject'].includes(action)) {
+    if (!action || !['approve', 'reject'].includes(action)) {
       return NextResponse.json({ 
         error: 'Invalid action. Must be either "approve" or "reject"' 
       }, { status: 400 });
@@ -38,7 +44,7 @@ export async function POST(
     
     // Check permissions
     if (session.userType === 'account') {
-      if (order.accountId !== session.accountId) {
+      if (order.accountId !== session.userId) {
         return NextResponse.json({ error: 'Forbidden - Account access denied' }, { status: 403 });
       }
     }
@@ -73,19 +79,27 @@ export async function POST(
     // Update submission with client review
     const newStatus = action === 'approve' ? 'client_approved' : 'client_rejected';
     
+    const updateData: any = {
+      submissionStatus: newStatus,
+      clientReviewedAt: new Date(),
+      clientReviewNotes: notes,
+    };
+    
+    // Only set clientReviewedBy for internal users (references users table)
+    if (session.userType === 'internal') {
+      updateData.clientReviewedBy = session.userId;
+    }
+    
     const [updatedSubmission] = await db.update(orderSiteSubmissions)
       .set({
-        submissionStatus: newStatus,
-        clientReviewedAt: new Date(),
-        clientReviewedBy: session.userId,
-        clientReviewNotes: notes,
+        ...updateData,
         metadata: {
-          ...submission.metadata,
+          ...(submission.metadata || {}),
           reviewHistory: [
             ...(submission.metadata?.reviewHistory || []),
             {
               action,
-              timestamp: new Date(),
+              timestamp: new Date().toISOString(),
               reviewedBy: session.userId,
               reviewerType: session.userType as 'internal' | 'account',
               notes
@@ -103,6 +117,12 @@ export async function POST(
     
   } catch (error) {
     console.error('Error reviewing submission:', error);
-    return NextResponse.json({ error: 'Internal server error' }, { status: 500 });
+    console.error('Request params:', params);
+    console.error('Request body:', { action, notes });
+    console.error('Session:', { userId: session?.userId, userType: session?.userType });
+    return NextResponse.json({ 
+      error: 'Internal server error',
+      message: error instanceof Error ? error.message : 'Unknown error'
+    }, { status: 500 });
   }
 }

@@ -1356,22 +1356,32 @@ export default function ProjectDetailPage() {
         throw new Error('No order group found for this client in the selected order');
       }
       
-      // Create site selections for the order group
-      const selections = domains.map(domain => ({
+      // Prepare domains for the new append endpoint
+      const domainsToAdd = domains.map(domain => ({
         domainId: domain.id,
-        status: 'pending', // Domains start as pending, client will need to approve
-        targetPageUrl: targetPages[0]?.url || '', // Use first target page as default
-        anchorText: '', // Client can specify this later
-        specialInstructions: ''
+        targetPageUrl: targetPages[0]?.url || null, // Optional target page
+        anchorText: null, // Can be set later
+        specialInstructions: null,
+        reason: `Added from bulk analysis project: ${project?.name}`,
+        metadata: {
+          projectId: params.projectId,
+          qualificationStatus: domain.qualificationStatus,
+          hasDataForSeoResults: domain.hasDataForSeoResults,
+          notes: domain.notes
+        }
       }));
       
-      const response = await fetch(`/api/orders/${orderId}/groups/${orderGroup.id}/site-selections`, {
+      // Use the new append endpoint
+      const response = await fetch(`/api/orders/${orderId}/groups/${orderGroup.id}/site-selections/add`, {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
         },
         credentials: 'include',
-        body: JSON.stringify({ selections })
+        body: JSON.stringify({ 
+          domains: domainsToAdd,
+          batchId: `bulk-add-${Date.now()}` // Track this batch
+        })
       });
       
       if (!response.ok) {
@@ -1379,9 +1389,19 @@ export default function ProjectDetailPage() {
         throw new Error(error.error || 'Failed to add domains to order');
       }
       
-      setMessage('✅ Domains added to order successfully!');
-      // Navigate to internal order management page
-      router.push(`/orders/${orderId}/internal`);
+      const result = await response.json();
+      
+      // Show detailed success message
+      if (result.duplicatesSkipped > 0) {
+        setMessage(`✅ Added ${result.added} new domains (${result.duplicatesSkipped} already existed). Total: ${result.stats?.total || 0} domains`);
+      } else {
+        setMessage(`✅ Successfully added ${result.added} domains to ${orderGroup.client?.name || 'order'}!`);
+      }
+      
+      // Optional: Navigate to order after a short delay to show the message
+      setTimeout(() => {
+        router.push(`/orders/${orderId}/internal`);
+      }, 2000);
       
     } catch (error: any) {
       console.error('Error adding to order:', error);
@@ -3238,9 +3258,19 @@ anotherdomain.com"
             setShowGuidedTriage(false);
             loadDomains(); // Reload to see updates
             
-            // If user came from guided link, go back to where they came from
+            // If user came from guided link, navigate properly
             if (cameFromGuidedLink) {
-              router.back();
+              // Check if we have an order context to go back to
+              if (orderContext?.order?.id) {
+                router.push(`/orders/${orderContext.order.id}/internal`);
+              } else {
+                // Fallback to going back or to the projects list
+                if (window.history.length > 1) {
+                  router.back();
+                } else {
+                  router.push(`/clients/${params.id}/bulk-analysis`);
+                }
+              }
             }
           }}
           onUpdateStatus={async (domainId: string, status: 'high_quality' | 'good_quality' | 'marginal_quality' | 'disqualified', isManual?: boolean) => {
@@ -3248,9 +3278,17 @@ anotherdomain.com"
             
             // If user came from guided link and just qualified the domain they were guided to
             if (cameFromGuidedLink && domainId === searchParams.get('guided')) {
-              // Short delay to show the update, then go back
+              // Short delay to show the update, then navigate back
               setTimeout(() => {
-                router.back();
+                if (orderContext?.order?.id) {
+                  router.push(`/orders/${orderContext.order.id}/internal`);
+                } else {
+                  if (window.history.length > 1) {
+                    router.back();
+                  } else {
+                    router.push(`/clients/${params.id}/bulk-analysis`);
+                  }
+                }
               }, 500);
             }
           }}
