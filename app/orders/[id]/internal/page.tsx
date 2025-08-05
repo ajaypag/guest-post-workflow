@@ -143,6 +143,7 @@ interface OrderDetail {
   createdAt: string;
   updatedAt: string;
   approvedAt?: string;
+  invoicedAt?: string;
   paidAt?: string;
   completedAt?: string;
   orderGroups?: OrderGroup[];
@@ -570,6 +571,75 @@ export default function InternalOrderManagementPage() {
       });
     } finally {
       setAssigningDomain(null);
+    }
+  };
+
+  const handleGenerateInvoice = async () => {
+    if (!order) return;
+    
+    setActionLoading(prev => ({ ...prev, generate_invoice: true }));
+    try {
+      const response = await fetch(`/api/orders/${orderId}/invoice`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ action: 'generate_invoice' })
+      });
+      
+      if (!response.ok) {
+        const error = await response.json();
+        throw new Error(error.error || 'Failed to generate invoice');
+      }
+      
+      const result = await response.json();
+      setMessage({
+        type: 'success',
+        text: `Invoice generated successfully for ${result.approvedSites} approved sites`
+      });
+      
+      // Reload order data
+      await loadOrder();
+    } catch (error) {
+      console.error('Error generating invoice:', error);
+      setMessage({
+        type: 'error',
+        text: error instanceof Error ? error.message : 'Failed to generate invoice'
+      });
+    } finally {
+      setActionLoading(prev => ({ ...prev, generate_invoice: false }));
+    }
+  };
+
+  const handleMarkPaid = async () => {
+    if (!order) return;
+    
+    setActionLoading(prev => ({ ...prev, mark_paid: true }));
+    try {
+      const response = await fetch(`/api/orders/${orderId}/invoice`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ action: 'mark_paid' })
+      });
+      
+      if (!response.ok) {
+        const error = await response.json();
+        throw new Error(error.error || 'Failed to mark as paid');
+      }
+      
+      setMessage({
+        type: 'success',
+        text: 'Order marked as paid successfully'
+      });
+      
+      // Reload order data
+      await loadOrder();
+    } catch (error) {
+      console.error('Error marking as paid:', error);
+      setMessage({
+        type: 'error',
+        text: error instanceof Error ? error.message : 'Failed to mark as paid'
+      });
+    } finally {
+      setActionLoading(prev => ({ ...prev, mark_paid: false }));
     }
   };
 
@@ -1283,6 +1353,48 @@ export default function InternalOrderManagementPage() {
                       </button>
                     )}
                     
+                    {/* Generate Invoice - after sites are approved */}
+                    {order.status === 'confirmed' && !order.invoicedAt && (
+                      <button
+                        onClick={handleGenerateInvoice}
+                        disabled={actionLoading.generate_invoice}
+                        className="w-full px-3 py-2 bg-orange-600 text-white text-sm rounded-md hover:bg-orange-700 disabled:opacity-50"
+                      >
+                        {actionLoading.generate_invoice ? (
+                          <span className="flex items-center justify-center gap-2">
+                            <Loader2 className="h-4 w-4 animate-spin" />
+                            Generating...
+                          </span>
+                        ) : (
+                          <span className="flex items-center justify-center gap-2">
+                            <CreditCard className="h-4 w-4" />
+                            Generate Invoice
+                          </span>
+                        )}
+                      </button>
+                    )}
+
+                    {/* Mark as Paid - after invoice generated */}
+                    {order.invoicedAt && !order.paidAt && (
+                      <button
+                        onClick={handleMarkPaid}
+                        disabled={actionLoading.mark_paid}
+                        className="w-full px-3 py-2 bg-green-600 text-white text-sm rounded-md hover:bg-green-700 disabled:opacity-50"
+                      >
+                        {actionLoading.mark_paid ? (
+                          <span className="flex items-center justify-center gap-2">
+                            <Loader2 className="h-4 w-4 animate-spin" />
+                            Processing...
+                          </span>
+                        ) : (
+                          <span className="flex items-center justify-center gap-2">
+                            <CheckCircle className="h-4 w-4" />
+                            Mark as Paid
+                          </span>
+                        )}
+                      </button>
+                    )}
+
                     {/* Workflow Generation */}
                     {order.status === 'paid' && (
                       <button
@@ -1429,6 +1541,15 @@ export default function InternalOrderManagementPage() {
                         <div>
                           <p className="text-sm font-medium text-gray-900">Confirmed</p>
                           <p className="text-sm text-gray-600">{new Date(order.approvedAt).toLocaleDateString()}</p>
+                        </div>
+                      </div>
+                    )}
+                    {order.invoicedAt && (
+                      <div className="flex items-start gap-3">
+                        <FileText className="h-4 w-4 text-orange-500 mt-0.5" />
+                        <div>
+                          <p className="text-sm font-medium text-gray-900">Invoiced</p>
+                          <p className="text-sm text-gray-600">{new Date(order.invoicedAt).toLocaleDateString()}</p>
                         </div>
                       </div>
                     )}

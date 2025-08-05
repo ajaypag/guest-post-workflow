@@ -128,33 +128,35 @@ export default function OrderProgressSteps({
   
   return (
     <div className={`relative ${className}`}>
-      <div className="flex items-center justify-between">
+      <div className="space-y-4">
         {steps.map((step, index) => {
           const Icon = step.icon;
           const isCompleted = index < currentStep;
           const isCurrent = index === currentStep;
           
           return (
-            <div key={step.id} className="flex-1 relative">
-              <div className="flex flex-col items-center">
+            <div key={step.id} className="relative">
+              <div className="flex items-start gap-3">
                 <div className={`
-                  w-10 h-10 rounded-full flex items-center justify-center transition-colors
+                  w-8 h-8 rounded-full flex items-center justify-center flex-shrink-0 transition-colors
                   ${isCompleted ? 'bg-green-500' : isCurrent ? 'bg-blue-500' : 'bg-gray-300'}
                 `}>
-                  <Icon className="w-5 h-5 text-white" />
+                  <Icon className="w-4 h-4 text-white" />
                 </div>
-                <p className={`mt-2 text-sm font-medium ${
-                  isCompleted || isCurrent ? 'text-gray-900' : 'text-gray-500'
-                }`}>
-                  {step.label}
-                </p>
-                <p className="text-xs text-gray-500 text-center mt-1 max-w-[120px]">
-                  {step.description}
-                </p>
+                <div className="flex-1">
+                  <p className={`text-sm font-medium ${
+                    isCompleted || isCurrent ? 'text-gray-900' : 'text-gray-500'
+                  }`}>
+                    {step.label}
+                  </p>
+                  <p className="text-xs text-gray-500 mt-1">
+                    {step.description}
+                  </p>
+                </div>
               </div>
               {index < steps.length - 1 && (
                 <div className={`
-                  absolute top-5 left-1/2 w-full h-0.5 transition-colors
+                  absolute left-4 top-8 w-0.5 h-8 transition-colors
                   ${isCompleted ? 'bg-green-500' : 'bg-gray-300'}
                 `} />
               )}
