@@ -27,7 +27,7 @@ export async function POST(
     notes = body.notes;
     
     // Validate action
-    if (!['approve', 'reject'].includes(action)) {
+    if (!action || !['approve', 'reject'].includes(action)) {
       return NextResponse.json({ 
         error: 'Invalid action. Must be either "approve" or "reject"' 
       }, { status: 400 });

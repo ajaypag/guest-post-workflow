@@ -153,6 +153,30 @@ npm run db:studio       # Browse database
 /admin/*               # Diagnostic tools
 ```
 
+### 🚨 Critical Build Testing Protocol
+
+**IMPORTANT**: When testing builds, TypeScript compilation errors occur 2-4 minutes into the build process, NOT at 29 seconds when Next.js says "Compiled successfully". The initial compilation is just JavaScript - TypeScript checking happens later.
+
+**Required Build Testing:**
+```bash
+# ALWAYS use extended timeout for full build validation
+npm run build  # Let it run for AT LEAST 5-10 minutes
+
+# Or use timeout command to ensure full completion
+timeout 600 npm run build  # 10 minute timeout
+```
+
+**Build Process Timeline:**
+- 0-30s: JavaScript compilation (Next.js "Compiled successfully")
+- 30s-4min: TypeScript type checking & validation
+- 4min+: Final bundling and optimization
+
+**Never declare build successful until:**
+- ✅ Full TypeScript checking completes
+- ✅ No "Build Error" messages appear
+- ✅ Process exits with code 0
+- ✅ See final "Build completed" message
+
 ## 🚀 Latest Features
 
 ### Order Interface Redesign (In Progress)
