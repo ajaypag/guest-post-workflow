@@ -5,7 +5,7 @@ import {
   Loader2, Globe, LinkIcon, DollarSign, ExternalLink, 
   ChevronDown, ChevronUp, ChevronRight, AlertCircle, CheckCircle,
   Target, Package, Database, Activity, Users, RefreshCw,
-  Sparkles, Search, Clock, XCircle
+  Sparkles, Search, Clock, XCircle, Info
 } from 'lucide-react';
 import { formatCurrency } from '@/lib/utils/formatting';
 
@@ -124,6 +124,34 @@ export default function OrderSiteReviewTable({
   const [editingLineItem, setEditingLineItem] = useState<{ groupId: string; index: number } | null>(null);
   const [assigningDomain, setAssigningDomain] = useState<string | null>(null);
   const [actionLoading, setActionLoading] = useState<Record<string, boolean>>({});
+  const [hoveredDomain, setHoveredDomain] = useState<string | null>(null);
+  const [tooltipPosition, setTooltipPosition] = useState({ x: 0, y: 0 });
+
+  // Handle click outside and escape key for dropdown
+  useEffect(() => {
+    const handleClickOutside = (event: MouseEvent) => {
+      const target = event.target as HTMLElement;
+      if (!target.closest('.edit-dropdown')) {
+        setEditingLineItem(null);
+      }
+    };
+
+    const handleEscKey = (event: KeyboardEvent) => {
+      if (event.key === 'Escape') {
+        setEditingLineItem(null);
+      }
+    };
+
+    if (editingLineItem) {
+      document.addEventListener('mousedown', handleClickOutside);
+      document.addEventListener('keydown', handleEscKey);
+      
+      return () => {
+        document.removeEventListener('mousedown', handleClickOutside);
+        document.removeEventListener('keydown', handleEscKey);
+      };
+    }
+  }, [editingLineItem]);
 
   // Column configuration based on workflow stage and permissions
   const getColumnConfig = useCallback(() => {
@@ -248,6 +276,7 @@ export default function OrderSiteReviewTable({
     );
   };
 
+
   // Handle domain switching
   const handleSwitchDomain = async (submissionId: string, groupId: string) => {
     if (!onSwitchPool) return;
@@ -333,8 +362,19 @@ export default function OrderSiteReviewTable({
                     <a href={`https://${displaySubmission.domain?.domain}`} 
                        target="_blank" 
                        rel="noopener noreferrer"
-                       className="text-blue-600 hover:text-blue-800 hover:underline font-medium">
+                       className="text-blue-600 hover:text-blue-800 hover:underline font-medium relative"
+                       onMouseEnter={(e) => {
+                         if (displaySubmission.domain?.notes || displaySubmission.metadata?.aiQualificationReasoning || displaySubmission.metadata?.topicReasoning) {
+                           const rect = e.currentTarget.getBoundingClientRect();
+                           setTooltipPosition({ x: rect.left, y: rect.bottom + 5 });
+                           setHoveredDomain(displaySubmission.id);
+                         }
+                       }}
+                       onMouseLeave={() => setHoveredDomain(null)}>
                       {displaySubmission.domain?.domain}
+                      {(displaySubmission.domain?.notes || displaySubmission.metadata?.aiQualificationReasoning || displaySubmission.metadata?.topicReasoning) && (
+                        <Info className="inline-block w-3 h-3 ml-1 text-gray-400" />
+                      )}
                     </a>
                     {displaySubmission.selectionPool && (
                       <span className={`text-xs px-1.5 py-0.5 rounded ${
@@ -1039,6 +1079,69 @@ export default function OrderSiteReviewTable({
           </tbody>
         </table>
       </div>
+      
+      {/* AI Reasoning Tooltip */}
+      {hoveredDomain && (
+        <div
+          className="fixed z-50 bg-gray-900 text-white p-3 rounded-lg shadow-lg max-w-md"
+          style={{
+            left: `${tooltipPosition.x}px`,
+            top: `${tooltipPosition.y}px`,
+            transform: 'translateX(-50%)'
+          }}
+          onMouseEnter={() => setHoveredDomain(hoveredDomain)}
+          onMouseLeave={() => setHoveredDomain(null)}
+        >
+          {(() => {
+            const submission = Object.values(siteSubmissions).flat().find(s => s.id === hoveredDomain);
+            if (!submission) return null;
+            
+            return (
+              <div className="space-y-2">
+                {submission.domain?.notes && (
+                  <div>
+                    <p className="text-xs text-gray-400 mb-1">Domain Notes:</p>
+                    <p className="text-sm">{submission.domain.notes}</p>
+                  </div>
+                )}
+                {submission.metadata?.aiQualificationReasoning && (
+                  <div>
+                    <p className="text-xs text-gray-400 mb-1">AI Analysis:</p>
+                    <p className="text-sm whitespace-pre-wrap">{submission.metadata.aiQualificationReasoning}</p>
+                  </div>
+                )}
+                {submission.metadata?.topicReasoning && (
+                  <div>
+                    <p className="text-xs text-gray-400 mb-1">Topic Analysis:</p>
+                    <p className="text-sm whitespace-pre-wrap">{submission.metadata.topicReasoning}</p>
+                  </div>
+                )}
+                {submission.metadata?.qualificationStatus && (
+                  <div>
+                    <p className="text-xs text-gray-400 mb-1">Qualification Status:</p>
+                    <p className="text-sm capitalize">{submission.metadata.qualificationStatus.replace(/_/g, ' ')}</p>
+                  </div>
+                )}
+                {submission.metadata?.evidence && (
+                  <div>
+                    <p className="text-xs text-gray-400 mb-1">Evidence:</p>
+                    <p className="text-sm">
+                      Direct: {submission.metadata.evidence.direct_count} results
+                      {submission.metadata.evidence.direct_median_position && ` (median pos: ${submission.metadata.evidence.direct_median_position})`}
+                    </p>
+                    {submission.metadata.evidence.related_count > 0 && (
+                      <p className="text-sm">
+                        Related: {submission.metadata.evidence.related_count} results
+                        {submission.metadata.evidence.related_median_position && ` (median pos: ${submission.metadata.evidence.related_median_position})`}
+                      </p>
+                    )}
+                  </div>
+                )}
+              </div>
+            );
+          })()}
+        </div>
+      )}
     </div>
   );
 }
