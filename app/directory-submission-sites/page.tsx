@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, useEffect, useMemo } from 'react';
+import { useState, useEffect, useMemo, useCallback } from 'react';
 import Link from 'next/link';
 import { 
   Search, 
@@ -15,7 +15,9 @@ import {
   Zap,
   ArrowRight,
   AlertCircle,
-  Info
+  Info,
+  ChevronLeft,
+  ChevronRight
 } from 'lucide-react';
 import { directoryCSVData as csvData } from '@/lib/data/directoryData';
 
@@ -71,6 +73,8 @@ export default function DirectorySubmissionSites() {
   const [sortBy, setSortBy] = useState<'da' | 'dr' | 'traffic'>('traffic');
   const [sortOrder, setSortOrder] = useState<'asc' | 'desc'>('desc');
   const [showFilters, setShowFilters] = useState(false);
+  const [currentPage, setCurrentPage] = useState(1);
+  const [itemsPerPage, setItemsPerPage] = useState(50);
   
   // Parse directory data
   const directories = useMemo(() => parseCSV(csvData), []);
@@ -114,6 +118,61 @@ export default function DirectorySubmissionSites() {
     
     return filtered;
   }, [directories, searchQuery, selectedCategory, minDA, minDR, sortBy, sortOrder]);
+  
+  // Calculate pagination
+  const totalPages = Math.ceil(filteredDirectories.length / itemsPerPage);
+  const startIndex = (currentPage - 1) * itemsPerPage;
+  const endIndex = startIndex + itemsPerPage;
+  const currentDirectories = filteredDirectories.slice(startIndex, endIndex);
+  
+  // Reset to page 1 when filters change
+  useEffect(() => {
+    setCurrentPage(1);
+  }, [searchQuery, selectedCategory, minDA, minDR, sortBy, sortOrder, itemsPerPage]);
+  
+  // Pagination handlers
+  const goToPage = (page: number) => {
+    if (page >= 1 && page <= totalPages) {
+      setCurrentPage(page);
+      // Scroll to top of results
+      document.getElementById('directory-results')?.scrollIntoView({ behavior: 'smooth' });
+    }
+  };
+  
+  const getPageNumbers = () => {
+    const pages = [];
+    const maxVisible = 7;
+    
+    if (totalPages <= maxVisible) {
+      for (let i = 1; i <= totalPages; i++) {
+        pages.push(i);
+      }
+    } else {
+      if (currentPage <= 3) {
+        for (let i = 1; i <= 5; i++) {
+          pages.push(i);
+        }
+        pages.push('...');
+        pages.push(totalPages);
+      } else if (currentPage >= totalPages - 2) {
+        pages.push(1);
+        pages.push('...');
+        for (let i = totalPages - 4; i <= totalPages; i++) {
+          pages.push(i);
+        }
+      } else {
+        pages.push(1);
+        pages.push('...');
+        for (let i = currentPage - 1; i <= currentPage + 1; i++) {
+          pages.push(i);
+        }
+        pages.push('...');
+        pages.push(totalPages);
+      }
+    }
+    
+    return pages;
+  };
   
   // Export to CSV
   const exportToCSV = () => {
@@ -295,10 +354,31 @@ export default function DirectorySubmissionSites() {
       {/* Results Summary */}
       <section className="bg-white">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-4">
-          <div className="flex items-center justify-between">
-            <p className="text-gray-600">
-              Showing <span className="font-semibold text-gray-900">{filteredDirectories.length}</span> of {directories.length} directories
-            </p>
+          <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4">
+            <div className="flex flex-col sm:flex-row items-start sm:items-center gap-4">
+              <p className="text-gray-600">
+                Showing <span className="font-semibold text-gray-900">
+                  {filteredDirectories.length > 0 ? startIndex + 1 : 0}-{Math.min(endIndex, filteredDirectories.length)}
+                </span> of <span className="font-semibold text-gray-900">{filteredDirectories.length}</span> directories
+                {filteredDirectories.length < directories.length && (
+                  <span className="text-sm text-gray-500"> (filtered from {directories.length} total)</span>
+                )}
+              </p>
+              <div className="flex items-center gap-2">
+                <label className="text-sm text-gray-600">Show:</label>
+                <select
+                  value={itemsPerPage}
+                  onChange={(e) => setItemsPerPage(Number(e.target.value))}
+                  className="px-3 py-1 border border-gray-300 rounded-lg text-sm focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
+                >
+                  <option value={25}>25</option>
+                  <option value={50}>50</option>
+                  <option value={100}>100</option>
+                  <option value={200}>200</option>
+                </select>
+                <span className="text-sm text-gray-600">per page</span>
+              </div>
+            </div>
             <button
               onClick={() => setSortOrder(sortOrder === 'desc' ? 'asc' : 'desc')}
               className="flex items-center gap-1 text-sm text-gray-600 hover:text-gray-900"
@@ -311,7 +391,7 @@ export default function DirectorySubmissionSites() {
       </section>
 
       {/* Directory Table */}
-      <section className="py-8">
+      <section id="directory-results" className="py-8">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
           <div className="bg-white rounded-lg shadow overflow-hidden">
             <div className="overflow-x-auto">
@@ -342,10 +422,10 @@ export default function DirectorySubmissionSites() {
                   </tr>
                 </thead>
                 <tbody className="divide-y divide-gray-200">
-                  {filteredDirectories.map((dir, index) => (
+                  {currentDirectories.map((dir, index) => (
                     <tr key={dir.url} className="hover:bg-gray-50">
                       <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
-                        {index + 1}
+                        {startIndex + index + 1}
                       </td>
                       <td className="px-6 py-4 whitespace-nowrap">
                         <div className="flex items-center gap-2">
@@ -424,96 +504,309 @@ export default function DirectorySubmissionSites() {
               </div>
             )}
           </div>
+          
+          {/* Pagination Controls */}
+          {totalPages > 1 && (
+            <div className="bg-gray-50 px-6 py-4 border-t">
+              <div className="flex items-center justify-between">
+                <button
+                  onClick={() => goToPage(currentPage - 1)}
+                  disabled={currentPage === 1}
+                  className="flex items-center gap-2 px-4 py-2 text-sm font-medium text-gray-700 bg-white rounded-lg hover:bg-gray-50 disabled:opacity-50 disabled:cursor-not-allowed border"
+                >
+                  <ChevronLeft className="w-4 h-4" />
+                  Previous
+                </button>
+                
+                <div className="flex items-center gap-1">
+                  {getPageNumbers().map((page, index) => (
+                    <button
+                      key={index}
+                      onClick={() => typeof page === 'number' && goToPage(page)}
+                      disabled={page === '...'}
+                      className={`px-3 py-2 text-sm font-medium rounded-lg ${
+                        page === currentPage
+                          ? 'bg-blue-600 text-white'
+                          : page === '...'
+                          ? 'text-gray-400 cursor-default'
+                          : 'text-gray-700 bg-white hover:bg-gray-50 border'
+                      }`}
+                    >
+                      {page}
+                    </button>
+                  ))}
+                </div>
+                
+                <button
+                  onClick={() => goToPage(currentPage + 1)}
+                  disabled={currentPage === totalPages}
+                  className="flex items-center gap-2 px-4 py-2 text-sm font-medium text-gray-700 bg-white rounded-lg hover:bg-gray-50 disabled:opacity-50 disabled:cursor-not-allowed border"
+                >
+                  Next
+                  <ChevronRight className="w-4 h-4" />
+                </button>
+              </div>
+              
+              <div className="text-center mt-3">
+                <p className="text-sm text-gray-600">
+                  Page {currentPage} of {totalPages}
+                </p>
+              </div>
+            </div>
+          )}
         </div>
       </section>
 
-      {/* Directory Link Building Guide */}
+      {/* Comprehensive Directory Link Building Guide */}
       <section className="py-16 bg-white">
         <div className="max-w-4xl mx-auto px-4 sm:px-6 lg:px-8">
           <h2 className="text-3xl font-bold text-gray-900 mb-8 text-center">
-            How to Do Directory Link Building in 2024
+            The Complete Guide to Directory Link Building in 2024
           </h2>
           
           <div className="prose prose-lg max-w-none">
-            <div className="bg-yellow-50 border border-yellow-200 rounded-lg p-6 mb-8">
+            {/* The Evolution of Directory Link Building */}
+            <div className="mb-12">
+              <h3 className="text-2xl font-semibold text-gray-900 mb-4">
+                The Evolution of Directory Link Building
+              </h3>
+              <p className="text-gray-600 mb-4">
+                In the "good 'ol days" of SEO, back when dinosaurs roamed the earth and Google didn't care about 
+                things like high-quality content, time on page, or any of those other 'pesky' metrics, directory 
+                link building was a gold mine.
+              </p>
+              <p className="text-gray-600 mb-4">
+                For about $100, you could build 20,000 directory links while sitting in your pajamas and watching 
+                Family Guy reruns. Then, when you got up the next morning... Voila! Your website was #1.
+              </p>
+              <p className="text-gray-600 mb-4">
+                Today, that same tactic will get your website sent to the naughty corner and leave it ranking 
+                worse than when you started.
+              </p>
+              <p className="text-gray-600 mb-4">
+                Because of the dramatic decrease in the efficacy of directory link building, most SEOs have written 
+                it off entirely. However, if you peel back the curtain and look behind the scenes of the top ranked 
+                sites in Google... Almost ALL of them have a metric crapton of directory links.
+              </p>
+              <p className="text-gray-600 mb-6">
+                <strong>So it's clear that directory link building as a strategy still works.</strong> But here's 
+                the thing... Even though the strategy still works, the tactics with which you execute it have 
+                changed dramatically.
+              </p>
+            </div>
+
+            {/* Important Caveat */}
+            <div className="bg-yellow-50 border border-yellow-200 rounded-lg p-6 mb-12">
               <div className="flex items-start gap-3">
                 <AlertCircle className="w-6 h-6 text-yellow-600 flex-shrink-0 mt-0.5" />
                 <div>
                   <h3 className="text-lg font-semibold text-yellow-900 mb-2">
-                    Important: Directory Links Have Changed
+                    A Quick Caveat: Directory Links Are Not a Silver Bullet
                   </h3>
-                  <p className="text-yellow-800">
-                    Directory link building isn't what it used to be. Google has significantly devalued 
-                    low-quality directory links. Focus only on high-quality, niche-relevant directories 
-                    with real traffic and editorial standards.
+                  <p className="text-yellow-800 mb-3">
+                    Directory link building works. But... This strategy alone isn't going to get your website to 
+                    the top of the SERPs overnight (or ever for that matter).
+                  </p>
+                  <ul className="space-y-2 text-yellow-800">
+                    <li>• Without high quality content, this strategy will not make a difference.</li>
+                    <li>• Without regular guest post link building, this strategy won't accomplish squat.</li>
+                    <li>• Without effective on-page SEO and a good UX, well... You might as well just put on some 
+                    tribal drums and try to boost your ranking by doing the "Search Engine Dance".</li>
+                  </ul>
+                  <p className="text-yellow-800 mt-3">
+                    Think of directory links as the foundation of your house. Essential, but not the whole structure.
                   </p>
                 </div>
               </div>
             </div>
             
-            <h3 className="text-2xl font-semibold text-gray-900 mb-4">
-              The Right Way to Build Directory Links
+            {/* 4 Ways to Find Quality Directories */}
+            <h3 className="text-2xl font-semibold text-gray-900 mb-6">
+              4 Dead Simple Ways to Find Quality Directories
             </h3>
             
-            <div className="space-y-6">
-              <div>
-                <h4 className="text-lg font-semibold text-gray-900 mb-2">
-                  1. Quality Over Quantity
+            <div className="space-y-8 mb-12">
+              <div className="bg-gray-50 rounded-lg p-6">
+                <h4 className="text-lg font-semibold text-gray-900 mb-3">
+                  1. Finding Niche Directories with Advanced Search Strings
                 </h4>
-                <p className="text-gray-600">
-                  Focus on directories with DA/DR above 40 and real organic traffic. 
-                  A single link from a high-quality, niche-relevant directory is worth more 
-                  than 100 links from low-quality directories.
+                <p className="text-gray-600 mb-4">
+                  Use Google's advanced search operators to identify niche-relevant directories:
+                </p>
+                <div className="bg-white rounded-lg p-4 font-mono text-sm space-y-2 border border-gray-200">
+                  <div>"industry" inurl:directory</div>
+                  <div>"industry" inurl:links</div>
+                  <div>"industry" intitle:directory</div>
+                  <div>intitle:industry inurl:directory</div>
+                  <div>related:industry inurl:directory</div>
+                </div>
+                <p className="text-gray-600 mt-3 text-sm">
+                  Example: "seo agency" inurl:directory
                 </p>
               </div>
               
-              <div>
-                <h4 className="text-lg font-semibold text-gray-900 mb-2">
-                  2. Niche Relevance is Key
+              <div className="bg-gray-50 rounded-lg p-6">
+                <h4 className="text-lg font-semibold text-gray-900 mb-3">
+                  2. Finding Local Directories for Brick & Mortar
                 </h4>
-                <p className="text-gray-600">
-                  Always prioritize directories in your industry. A real estate site should 
-                  focus on real estate directories, not general web directories. Use our 
-                  category filter to find directories in your niche.
+                <p className="text-gray-600 mb-4">
+                  For local businesses, use location-specific search parameters:
+                </p>
+                <div className="bg-white rounded-lg p-4 font-mono text-sm space-y-2 border border-gray-200">
+                  <div>"city" inurl:directory</div>
+                  <div>"city" inurl:businesses</div>
+                  <div>"city" intitle:directory</div>
+                  <div>"city industry" intitle:directory</div>
+                  <div>"city directory" intitle:industry</div>
+                </div>
+                <p className="text-gray-600 mt-3 text-sm">
+                  Example: "denver directory" intitle:seo
                 </p>
               </div>
               
-              <div>
+              <div className="bg-gray-50 rounded-lg p-6">
+                <h4 className="text-lg font-semibold text-gray-900 mb-3">
+                  3. Reverse Engineering Competitor Backlinks
+                </h4>
+                <p className="text-gray-600 mb-4">
+                  A much simpler way is to reverse engineer your competitors' backlinks to figure out which 
+                  directories they are using. Use tools like:
+                </p>
+                <ul className="space-y-2 text-gray-600">
+                  <li>• Linkio for detailed anchor text analysis</li>
+                  <li>• Ahrefs or Moz for comprehensive backlink profiles</li>
+                  <li>• Focus on competitors with good domain authority</li>
+                  <li>• Export and filter for directory links</li>
+                </ul>
+              </div>
+              
+              <div className="bg-gray-50 rounded-lg p-6">
+                <h4 className="text-lg font-semibold text-gray-900 mb-3">
+                  4. Finding "Mini Directories" on Niche Sites
+                </h4>
+                <p className="text-gray-600 mb-4">
+                  Search for "Best of" articles or resource pages that function as mini-directories:
+                </p>
+                <ul className="space-y-2 text-gray-600">
+                  <li>• Search: "Best [Your Industry] Companies"</li>
+                  <li>• Target pages ranking on 2nd-10th position</li>
+                  <li>• Look for outdated listings you can replace</li>
+                  <li>• Provide case studies to prove your worth</li>
+                </ul>
+              </div>
+            </div>
+            
+            {/* How to Determine Quality */}
+            <h3 className="text-2xl font-semibold text-gray-900 mb-6">
+              The No-Nonsense Way to Determine Directory Quality
+            </h3>
+            
+            <div className="space-y-6 mb-12">
+              <div className="border-l-4 border-blue-600 pl-6">
                 <h4 className="text-lg font-semibold text-gray-900 mb-2">
-                  3. Complete Profiles Matter
+                  ✅ Follow vs. Nofollow & Google Indexed
                 </h4>
                 <p className="text-gray-600">
-                  Don't just submit your URL and leave. Complete your profile with detailed 
-                  descriptions, images, and all available fields. This increases approval 
-                  rates and the value of the link.
+                  Before anything else, ask: Does the directory offer dofollow links? Is it indexed by Google? 
+                  If the answer to either is "No", move on immediately.
                 </p>
               </div>
               
-              <div>
+              <div className="border-l-4 border-blue-600 pl-6">
                 <h4 className="text-lg font-semibold text-gray-900 mb-2">
-                  4. Avoid Automation
+                  ✅ Editorial Selection Policy
                 </h4>
                 <p className="text-gray-600">
-                  Never use automated directory submission tools. Manual submission with 
-                  unique descriptions for each directory is the only safe approach in 2024.
+                  Quality directories are selective. They should have a vetting process, possibly charge a 
+                  reasonable editorial fee, or require detailed submissions. If they accept everyone, they're 
+                  not worth your time.
+                </p>
+              </div>
+              
+              <div className="border-l-4 border-blue-600 pl-6">
+                <h4 className="text-lg font-semibold text-gray-900 mb-2">
+                  ✅ Niche Relevance (Specificity)
+                </h4>
+                <p className="text-gray-600">
+                  Ensure the majority of links you build are from directories relevant to your niche. 
+                  With Google's algorithm updates, relevancy is more important than ever.
+                </p>
+              </div>
+              
+              <div className="border-l-4 border-blue-600 pl-6">
+                <h4 className="text-lg font-semibold text-gray-900 mb-2">
+                  ✅ Part of a Trusted Domain
+                </h4>
+                <p className="text-gray-600">
+                  Target directories that are part of a trusted domain (like Forbes "Best of the Web" or 
+                  business.com), not standalone directory sites.
+                </p>
+              </div>
+              
+              <div className="border-l-4 border-blue-600 pl-6">
+                <h4 className="text-lg font-semibold text-gray-900 mb-2">
+                  ✅ Useful, Unique, and Well-Organized
+                </h4>
+                <p className="text-gray-600">
+                  Test: Try to find a specific business on the directory. If it's difficult or returns 
+                  spammy results, skip it. Good directories are easy to navigate and provide value.
+                </p>
+              </div>
+              
+              <div className="border-l-4 border-blue-600 pl-6">
+                <h4 className="text-lg font-semibold text-gray-900 mb-2">
+                  ✅ Links to Reputable Sites Only
+                </h4>
+                <p className="text-gray-600">
+                  Check the other sites the directory links to. If it's full of spam or low-quality sites, 
+                  avoid it. Google looks at the neighborhood you're in.
                 </p>
               </div>
             </div>
             
-            <h3 className="text-2xl font-semibold text-gray-900 mt-12 mb-4">
-              Directory Search Operators
+            {/* Execution Best Practices */}
+            <h3 className="text-2xl font-semibold text-gray-900 mb-6">
+              How to Execute Your Directory Link Building Campaign
             </h3>
             
-            <p className="text-gray-600 mb-4">
-              Find more niche-specific directories using these Google search operators:
-            </p>
-            
-            <div className="bg-gray-50 rounded-lg p-6 font-mono text-sm space-y-2">
-              <div>intitle:"submit site" + "your niche"</div>
-              <div>intitle:"add url" + "your industry"</div>
-              <div>intitle:"add your business" + "your city"</div>
-              <div>"submit your website" + "free directory"</div>
-              <div>allintitle: "your niche" + directory</div>
+            <div className="space-y-6">
+              <div className="bg-blue-50 border border-blue-200 rounded-lg p-6">
+                <h4 className="text-lg font-semibold text-blue-900 mb-3">
+                  🎯 Goal #1: Branded or URL Anchors to Homepage
+                </h4>
+                <p className="text-blue-800">
+                  Anchor text matters. When building directory links, use ONLY:
+                </p>
+                <ul className="mt-3 space-y-2 text-blue-800">
+                  <li>• Branded anchors (e.g., "Linkio", "Linkio.com")</li>
+                  <li>• URL anchors (e.g., "www.linkio.com", "https://www.linkio.com")</li>
+                </ul>
+                <p className="text-blue-800 mt-3">
+                  If a directory doesn't allow these anchor types, skip it.
+                </p>
+              </div>
+              
+              <div className="bg-green-50 border border-green-200 rounded-lg p-6">
+                <h4 className="text-lg font-semibold text-green-900 mb-3">
+                  🎯 Keep It Niche Relevant
+                </h4>
+                <p className="text-green-800">
+                  At least 80% of your directory links should be from niche-specific directories. 
+                  General directories like Yahoo! or DMOZ are just icing on the cake. Google values 
+                  relevant directory backlinks far more than authoritative but irrelevant ones.
+                </p>
+              </div>
+              
+              <div className="bg-purple-50 border border-purple-200 rounded-lg p-6">
+                <h4 className="text-lg font-semibold text-purple-900 mb-3">
+                  🎯 Remember: It's Not a Magic Bullet
+                </h4>
+                <p className="text-purple-800">
+                  Directory link building complements your existing SEO efforts—it doesn't replace them. 
+                  Think of it as solidifying your brand and giving your website thematic relevance signals 
+                  that prepare your link profile for future keyword-anchored links.
+                </p>
+              </div>
             </div>
           </div>
         </div>
