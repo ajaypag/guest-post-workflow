@@ -58,17 +58,17 @@ const workflowSteps: WorkflowStep[] = [
   },
   {
     id: 'keyword-research',
-    name: 'Client URL & Keyword Analysis',
-    description: 'Load client target pages with AI-generated keywords and analyze topical overlap',
+    name: 'Strategic Keyword Selection',
+    description: 'Choose which client pages need links and verify keyword overlap',
     icon: <Search className="w-5 h-5" />,
-    inputs: ['Client database target pages', 'Selected URLs for linking'],
-    outputs: ['Target page selection', 'Keyword strategy', 'Topical overlap analysis'],
+    inputs: ['Your client\'s target pages', 'Their priority keywords'],
+    outputs: ['Selected pages for linking', 'Verified keyword overlap', 'Strategic angles'],
     aiAssisted: true,
     duration: '10-15 min',
     demoContent: {
-      inputExample: 'Client has 15 target pages with pre-generated keywords • Select 2-3 URLs for strategic linking',
-      outputExample: 'Selected: /project-management-software (47 keywords) • AI Overlap Score: 8.3/10 • Ahrefs export ready',
-      processDescription: 'Complex system loading client URLs from database with AI-generated keyword profiles. AI analyzes topical overlap between guest post site and your client URLs, ranking strategic fit with confidence scores.'
+      inputExample: 'Client wants to rank their /project-management-software page for "PM tools"',
+      outputExample: 'Perfect match: Guest post site ranks #5 for "PM tools" - your content will fit naturally',
+      processDescription: 'Select which of your client\'s pages need backlinks. AI analyzes if the guest post site has topical authority for those keywords. This ensures your content will feel natural and have ranking potential - not forced or off-topic.'
     }
   },
   {
@@ -103,32 +103,32 @@ const workflowSteps: WorkflowStep[] = [
   },
   {
     id: 'article-draft',
-    name: 'AI Article Generation (V2)',
-    description: 'OpenAI Agents SDK with o3-2025-04-16 creates articles section-by-section with quality control',
+    name: 'Article Writing',
+    description: 'AI writes comprehensive articles that provide genuine value to readers',
     icon: <PenTool className="w-5 h-5" />,
-    inputs: ['Research outline', 'Brand guidelines vector store', 'Writing style requirements'],
-    outputs: ['Complete article draft', 'Section-by-section generation log', 'Article completion validation'],
+    inputs: ['Research outline', 'Brand voice', 'Target audience'],
+    outputs: ['2000-3000 word article', 'Natural narrative flow', 'Strategic brand integration'],
     aiAssisted: true,
     duration: '45-60 min',
     demoContent: {
-      inputExample: 'Detailed outline + brand voice guidelines + narrative writing style requirements',
-      outputExample: '2,847-word article • 8 sections • Real-time streaming • ArticleEndCritic validates completion against outline',
-      processDescription: '3-phase OpenAI Agents conversation: Planning → Title/Intro → Section looping. Uses o3-2025-04-16 with vector store access to brand guidelines. ArticleEndCritic (o4-mini) detects completion. Supports 40+ sections with delimiter parsing and real-time streaming.'
+      inputExample: 'Research on PM tools + conversational brand voice + targeting remote team managers',
+      outputExample: '2,847-word comprehensive guide that readers actually want to share - not thin AI content',
+      processDescription: 'AI writes section by section, maintaining narrative flow and genuine helpfulness. Uses your brand guidelines to sound like you, not a robot. Strategic placement of your brand where it adds value, not forced mentions.'
     }
   },
   {
     id: 'content-audit',
-    name: 'Semantic SEO Audit',
-    description: 'AI analyzes each section for semantic SEO optimization using knowledge base',
+    name: 'Content Quality Audit',
+    description: 'Ensure your article will actually rank, not just read well',
     icon: <Eye className="w-5 h-5" />,
-    inputs: ['Complete article draft', 'Semantic SEO knowledge base', 'Brand voice requirements'],
-    outputs: ['Section-by-section analysis', 'SEO improvements', 'Optimized content'],
+    inputs: ['Article draft', 'Target keywords', 'Site requirements'],
+    outputs: ['SEO-optimized content', 'Natural keyword integration', 'Ranking improvements'],
     aiAssisted: true,
     duration: '20-30 min',
     demoContent: {
-      inputExample: '2,847-word article parsed into 8 auditable sections',
-      outputExample: 'Section 1: Strengths (3) + Weaknesses (2) + Optimized version • Citation limit: 3 total • Pattern variety tracked',
-      processDescription: 'OpenAI Agents SDK with semantic SEO vector store access. Parses article hierarchically, audits each section for SEO optimization while preserving brand voice. Limits citations to 3 maximum, tracks editing patterns to avoid repetition.'
+      inputExample: 'Article about PM tools targeting "project management software" keyword',
+      outputExample: 'Keywords naturally integrated 7 times • Related terms added • Headers optimized for featured snippets',
+      processDescription: 'AI reviews content to ensure it will rank for target keywords without keyword stuffing. Adds semantic variations and related terms Google expects to see. Maintains readability while optimizing for search - the balance that gets results.'
     }
   },
   {
@@ -148,45 +148,45 @@ const workflowSteps: WorkflowStep[] = [
   },
   {
     id: 'link-orchestration',
-    name: 'AI Link & Media Orchestration',
-    description: 'Multi-phase AI system handles internal links, client mentions, images, and outreach preparation',
+    name: 'Strategic Link Integration',
+    description: 'AI handles all linking so it feels natural, not like a link scheme',
     icon: <Send className="w-5 h-5" />,
-    inputs: ['Polished article', 'Client link strategy', 'Internal link database'],
-    outputs: ['Complete article with links', 'Image strategy', 'Outreach materials', 'Publisher URLs'],
+    inputs: ['Final article', 'Link targets', 'Publisher requirements'],
+    outputs: ['Natural link placement', 'Supporting internal links', 'Image recommendations', 'Outreach templates'],
     aiAssisted: true,
     duration: '25-35 min',
     demoContent: {
-      inputExample: 'Final article + client homepage target + internal link opportunities',
-      outputExample: '3 internal links inserted • Natural client mention + homepage link • Image strategy • Publisher pitch ready',
-      processDescription: '3-phase OpenAI Agents orchestration: Phase 1 (parallel: internal links + client mentions), Phase 2 (client link with natural conversation flow), Phase 3 (parallel: images + link requests + URL suggestions). Database session tracking with error recovery.'
+      inputExample: 'PM tools article + client homepage needs a link with "project management software" anchor',
+      outputExample: 'Homepage link placed naturally in context • 3 supporting internal links • Custom outreach email for publisher',
+      processDescription: 'AI finds natural places to mention your brand and add links without forcing them. Adds supporting internal links to boost authority. Prepares everything publishers need - you just send and follow up.'
     }
   }
 ];
 
 const bulkAnalysisSteps = [
   {
-    name: 'Competitor Domain Processing',
-    description: 'Intelligent domain normalization with order integration and Airtable sync',
+    name: 'Client Target URLs & Keywords',
+    description: 'Load your pages that need links and their target keywords',
     icon: <Building2 className="w-5 h-5" />,
-    process: 'Domain cleaning (protocols, www, trailing slashes), automatic bulk analysis creation from confirmed orders, target page keyword aggregation. Supports manual input, CSV upload, and Airtable metadata preservation.'
+    process: 'Pull in your client\'s target pages (the ones that need backlinks) and their associated keywords. This becomes the foundation for finding topically relevant guest post opportunities in our 13,000+ site database.'
   },
   {
-    name: 'DataForSEO Intelligence Pipeline',
-    description: 'Sophisticated keyword extraction with regex batching and 30-day caching',
+    name: 'Site Keyword Discovery',
+    description: 'Find what keywords each guest post site actually ranks for',
     icon: <Search className="w-5 h-5" />,
-    process: 'API: dataforseo_labs/google/ranked_keywords/live • 25 concurrent requests • Regex patterns (keyword1|keyword2) • Smart batching (1000 char limit) • Captures positions 1-100, search volumes, competition data, landing pages • PostgreSQL storage with incremental analysis'
+    process: 'DataForSEO shows us what keywords each potential guest post site ranks for. We\'re looking for sites that rank for keywords related to your client\'s niche - this means your content will naturally fit and have a better chance of ranking.'
   },
   {
-    name: 'AI Qualification Engine (O3)',
-    description: 'OpenAI O3 model analyzes topical overlap with sophisticated scoring criteria',
+    name: 'Smart Topical Analysis (O3)',
+    description: 'AI reasoning model evaluates if sites are genuinely good matches',
     icon: <Target className="w-5 h-5" />,
-    process: 'AI evaluates: Direct/Related/Both/None overlap • Authority levels (Strong 1-30, Moderate 31-60, Weak 61-100) • Topic scope (short_tail/long_tail/ultra_long_tail) • Qualification tiers: high_quality/good_quality/marginal_quality/disqualified • Evidence tracking with median positions'
+    process: 'OpenAI O3 reasoning model thinks through each match: Does this site have topical authority in your client\'s niche? Will your content feel natural here? It\'s not just matching keywords - it\'s understanding context and relevance.'
   },
   {
-    name: 'Strategic Site Matching & Scoring',
-    description: 'Multi-factor algorithm matches against 13,000+ sites with commercial viability analysis',
+    name: 'Opportunity Ranking & Selection',
+    description: 'Surface the best guest post opportunities from 13,000+ sites',
     icon: <TrendingUp className="w-5 h-5" />,
-    process: 'Database matching: DR ranges, traffic volumes, guest post costs, niche arrays • Match score 0-100 with evidence arrays • Ranking factors: Topical relevance + Domain authority + Commercial viability + Quality metrics • Auto-workflow generation for qualified opportunities'
+    process: 'Sites are scored and ranked by how well they match your client\'s needs. High-quality matches become guest post opportunities. Click to convert them into full workflows - no manual searching through thousands of sites.'
   }
 ];
 
@@ -409,28 +409,28 @@ export default function InteractiveWorkflowDemo() {
 
           {/* Example Results */}
           <div className="bg-gradient-to-br from-gray-50 to-blue-50 rounded-lg p-6">
-            <h5 className="font-semibold text-gray-900 mb-4">Real Analysis Results</h5>
+            <h5 className="font-semibold text-gray-900 mb-4">Example Client Results</h5>
             <div className="grid md:grid-cols-3 gap-4 text-center mb-4">
               <div className="bg-white rounded-lg p-4">
-                <div className="text-2xl font-bold text-blue-600 mb-1">47</div>
-                <div className="text-sm text-gray-600">Competitor domains processed</div>
+                <div className="text-2xl font-bold text-blue-600 mb-1">5</div>
+                <div className="text-sm text-gray-600">Client target pages analyzed</div>
               </div>
               <div className="bg-white rounded-lg p-4">
-                <div className="text-2xl font-bold text-green-600 mb-1">1,247</div>
-                <div className="text-sm text-gray-600">Keywords extracted via DataForSEO</div>
+                <div className="text-2xl font-bold text-green-600 mb-1">247</div>
+                <div className="text-sm text-gray-600">Relevant keywords to match</div>
               </div>
               <div className="bg-white rounded-lg p-4">
                 <div className="text-2xl font-bold text-purple-600 mb-1">89</div>
-                <div className="text-sm text-gray-600">High-quality guest post matches</div>
+                <div className="text-sm text-gray-600">Quality sites found from 13,000+</div>
               </div>
             </div>
             <div className="bg-white rounded-lg p-4 text-left">
-              <h6 className="font-medium text-gray-800 mb-2">Technical Output Sample:</h6>
-              <div className="text-xs font-mono bg-gray-50 p-3 rounded border">
-                <div className="text-green-600">• techcrunch.com: high_quality (Direct overlap + Strong authority)</div>
-                <div className="text-blue-600">• industryweek.com: good_quality (Related overlap + Moderate authority)</div>
-                <div className="text-yellow-600">• bizjournal.com: marginal_quality (Weak signals)</div>
-                <div className="text-gray-500">• Match scores: 94, 78, 45 • Evidence: [direct_count: 23, median_pos: 12]</div>
+              <h6 className="font-medium text-gray-800 mb-2">What This Means:</h6>
+              <div className="text-sm text-gray-700 space-y-1">
+                <div>✅ <strong>techcrunch.com</strong> - Perfect match: They rank for your exact keywords</div>
+                <div>✅ <strong>industryweek.com</strong> - Good fit: Strong in your broader industry</div>
+                <div>⚠️ <strong>bizjournal.com</strong> - Maybe: Some overlap but needs manual review</div>
+                <div className="text-xs text-gray-500 mt-2">No more guessing which sites will accept your content - we show you where it naturally fits</div>
               </div>
             </div>
           </div>
