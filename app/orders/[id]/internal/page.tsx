@@ -7,6 +7,7 @@ import AuthWrapper from '@/components/AuthWrapper';
 import Header from '@/components/Header';
 import OrderSiteReviewTable from '@/components/orders/OrderSiteReviewTable';
 import OrderProgressSteps, { getStateDisplay, getProgressSteps } from '@/components/orders/OrderProgressSteps';
+import AdminDomainTable from '@/components/orders/AdminDomainTable';
 import { AuthService, type AuthSession } from '@/lib/auth';
 import { formatCurrency } from '@/lib/utils/formatting';
 import { 
@@ -1594,6 +1595,12 @@ export default function InternalOrderManagementPage() {
                 workflowStage={workflowStage}
                 onAssignTargetPage={handleAssignTargetPage}
                 onSwitchPool={handleSwitchDomain}
+                onRefresh={handleRefresh}
+              />
+              
+              {/* Admin Domain Management Table */}
+              <AdminDomainTable 
+                orderId={orderId}
                 onRefresh={handleRefresh}
               />
               
