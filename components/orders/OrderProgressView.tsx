@@ -1,8 +1,9 @@
 'use client';
 
 import { useState, useEffect } from 'react';
-import { CheckCircle, Clock, Search, Users, FileText, RefreshCw, ExternalLink, Plus, Globe, LinkIcon, Eye } from 'lucide-react';
+import { RefreshCw, ExternalLink, Globe, LinkIcon, Eye, Users, FileText } from 'lucide-react';
 import { formatCurrency } from '@/lib/utils/formatting';
+import OrderProgressSteps, { getStateDisplay } from './OrderProgressSteps';
 
 interface Client {
   id: string;
@@ -39,46 +40,6 @@ interface OrderProgressViewProps {
   accountCompany: string;
 }
 
-const getStateDisplay = (status: string, state?: string) => {
-  if (status === 'draft') return { label: 'Draft', color: 'bg-gray-100 text-gray-700' };
-  if (status === 'pending_confirmation') return { label: 'Awaiting Confirmation', color: 'bg-yellow-100 text-yellow-700' };
-  if (status === 'cancelled') return { label: 'Cancelled', color: 'bg-red-100 text-red-700' };
-  if (status === 'completed') return { label: 'Completed', color: 'bg-green-100 text-green-700' };
-  
-  // For confirmed orders, show the state
-  switch (state) {
-    case 'analyzing':
-      return { label: 'Finding Sites', color: 'bg-blue-100 text-blue-700' };
-    case 'site_review':
-      return { label: 'Ready for Review', color: 'bg-purple-100 text-purple-700' };
-    case 'in_progress':
-      return { label: 'In Progress', color: 'bg-yellow-100 text-yellow-700' };
-    default:
-      return { label: 'Processing', color: 'bg-gray-100 text-gray-700' };
-  }
-};
-
-const getProgressSteps = (status: string, state?: string) => {
-  const steps = [
-    { id: 'confirmed', label: 'Order Confirmed', icon: CheckCircle, description: 'Your order has been received' },
-    { id: 'analyzing', label: 'Finding Sites', icon: Search, description: 'Our team is identifying suitable sites' },
-    { id: 'site_review', label: 'Review Sites', icon: Users, description: 'Site recommendations ready for your review' },
-    { id: 'in_progress', label: 'Creating Content', icon: FileText, description: 'Writing and placing your links' },
-    { id: 'completed', label: 'Completed', icon: CheckCircle, description: 'All links have been placed' }
-  ];
-  
-  let currentStep = 0;
-  if (status === 'confirmed' || status === 'pending_confirmation') {
-    currentStep = 1;
-    if (state === 'analyzing') currentStep = 1;
-    if (state === 'site_review') currentStep = 2;
-    if (state === 'in_progress') currentStep = 3;
-  }
-  if (status === 'completed') currentStep = 4;
-  
-  return { steps, currentStep };
-};
-
 export default function OrderProgressView({
   orderId,
   orderStatus,
@@ -92,7 +53,6 @@ export default function OrderProgressView({
   accountCompany
 }: OrderProgressViewProps) {
   const [refreshing, setRefreshing] = useState(false);
-  const { steps, currentStep } = getProgressSteps(orderStatus, orderState);
   const stateDisplay = getStateDisplay(orderStatus, orderState);
 
   const handleRefresh = async () => {
@@ -138,42 +98,7 @@ export default function OrderProgressView({
         </div>
         
         {/* Progress Steps */}
-        <div className="relative">
-          <div className="flex items-center justify-between">
-            {steps.map((step, index) => {
-              const Icon = step.icon;
-              const isCompleted = index < currentStep;
-              const isCurrent = index === currentStep;
-              
-              return (
-                <div key={step.id} className="flex-1 relative">
-                  <div className="flex flex-col items-center">
-                    <div className={`
-                      w-10 h-10 rounded-full flex items-center justify-center
-                      ${isCompleted ? 'bg-green-500' : isCurrent ? 'bg-blue-500' : 'bg-gray-300'}
-                    `}>
-                      <Icon className="w-5 h-5 text-white" />
-                    </div>
-                    <p className={`mt-2 text-sm font-medium ${
-                      isCompleted || isCurrent ? 'text-gray-900' : 'text-gray-500'
-                    }`}>
-                      {step.label}
-                    </p>
-                    <p className="text-xs text-gray-500 text-center mt-1 max-w-[120px]">
-                      {step.description}
-                    </p>
-                  </div>
-                  {index < steps.length - 1 && (
-                    <div className={`
-                      absolute top-5 left-1/2 w-full h-0.5
-                      ${isCompleted ? 'bg-green-500' : 'bg-gray-300'}
-                    `} />
-                  )}
-                </div>
-              );
-            })}
-          </div>
-        </div>
+        <OrderProgressSteps orderStatus={orderStatus} orderState={orderState} />
       </div>
 
       {/* Order Details Table */}

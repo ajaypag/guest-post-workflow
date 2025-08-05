@@ -2,7 +2,7 @@
 
 import { useState, useEffect } from 'react';
 import { useParams, useRouter } from 'next/navigation';
-import { Loader2, Clock, CheckCircle, AlertCircle, Search, Users, FileText, ArrowRight, RefreshCw, ExternalLink, BarChart3, Activity, Target } from 'lucide-react';
+import { Loader2, Clock, CheckCircle, AlertCircle, Search, Users, FileText, ArrowRight, RefreshCw, ExternalLink, BarChart3, Activity, Target, CreditCard } from 'lucide-react';
 import Link from 'next/link';
 import Header from '@/components/Header';
 
@@ -50,6 +50,7 @@ interface OrderData {
   state?: string;
   createdAt: string;
   approvedAt?: string;
+  invoicedAt?: string;
   orderGroups: OrderGroup[];
   activityTimeline?: Array<{
     id: string;
@@ -70,10 +71,16 @@ const getStateDisplay = (status: string, state?: string) => {
   switch (state) {
     case 'analyzing':
       return { label: 'Finding Sites', color: 'bg-blue-100 text-blue-700' };
+    case 'sites_ready':
+      return { label: 'Sites Ready for Review', color: 'bg-purple-100 text-purple-700' };
     case 'site_review':
       return { label: 'Ready for Review', color: 'bg-purple-100 text-purple-700' };
+    case 'client_reviewing':
+      return { label: 'Under Review', color: 'bg-purple-100 text-purple-700' };
     case 'in_progress':
       return { label: 'In Progress', color: 'bg-yellow-100 text-yellow-700' };
+    case 'content_creation':
+      return { label: 'Creating Content', color: 'bg-yellow-100 text-yellow-700' };
     default:
       return { label: 'Processing', color: 'bg-gray-100 text-gray-700' };
   }
@@ -92,8 +99,8 @@ const getProgressSteps = (status: string, state?: string) => {
   if (status === 'confirmed') {
     currentStep = 1;
     if (state === 'analyzing') currentStep = 1;
-    if (state === 'site_review') currentStep = 2;
-    if (state === 'in_progress') currentStep = 3;
+    if (state === 'sites_ready' || state === 'site_review' || state === 'client_reviewing') currentStep = 2;
+    if (state === 'in_progress' || state === 'content_creation') currentStep = 3;
   }
   if (status === 'completed') currentStep = 4;
   
@@ -216,7 +223,7 @@ export default function OrderStatusPage() {
   
   const stateDisplay = getStateDisplay(order.status, order.state);
   const { steps, currentStep } = getProgressSteps(order.status, order.state);
-  const canReviewSites = order.state === 'site_review' && 
+  const canReviewSites = (order.state === 'sites_ready' || order.state === 'site_review' || order.state === 'client_reviewing') && 
     order.orderGroups.some(g => g.submissions && g.submissions.total > 0);
   
   return (
@@ -244,6 +251,15 @@ export default function OrderStatusPage() {
                 <RefreshCw className={`w-4 h-4 mr-2 ${refreshing ? 'animate-spin' : ''}`} />
                 Refresh
               </button>
+              {order.invoicedAt && (
+                <button
+                  onClick={() => router.push(`/orders/${orderId}/invoice`)}
+                  className="inline-flex items-center px-3 py-2 bg-blue-600 text-white rounded-md hover:bg-blue-700"
+                >
+                  <CreditCard className="w-4 h-4 mr-2" />
+                  View Invoice
+                </button>
+              )}
               <span className={`px-4 py-2 rounded-full text-sm font-medium ${stateDisplay.color}`}>
                 {stateDisplay.label}
               </span>
@@ -399,7 +415,7 @@ export default function OrderStatusPage() {
                 {group.submissions && group.submissions.pending > 0 && (
                   <div className="bg-blue-50 px-4 py-2 border-t border-blue-100">
                     <Link
-                      href={`/account/orders/${orderId}/sites`}
+                      href={`/orders/${orderId}`}
                       className="text-sm text-blue-600 hover:text-blue-700 font-medium inline-flex items-center"
                     >
                       Review pending sites
@@ -512,7 +528,7 @@ export default function OrderStatusPage() {
               Our team has identified potential sites for your review. Please review and approve the sites you'd like to proceed with.
             </p>
             <Link
-              href={`/account/orders/${orderId}/sites`}
+              href={`/orders/${orderId}`}
               className="inline-flex items-center px-6 py-3 bg-blue-600 text-white rounded-lg hover:bg-blue-700 font-medium"
             >
               Review Site Recommendations

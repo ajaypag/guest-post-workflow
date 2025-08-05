@@ -63,7 +63,7 @@ export async function PATCH(
             ...(submission.metadata?.statusHistory || []),
             {
               status,
-              timestamp: new Date(),
+              timestamp: new Date().toISOString(),
               updatedBy: session.userId,
               notes
             }
