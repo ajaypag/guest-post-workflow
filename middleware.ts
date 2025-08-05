@@ -127,12 +127,18 @@ export async function middleware(request: NextRequest) {
   
   // === PROTECTED API ENDPOINTS ===
   
-  // Protect workflow and business API endpoints (require any authenticated user)
+  // Protect expensive/dangerous API endpoints (require any authenticated user)
   if (path.startsWith('/api/workflows') ||
       path.startsWith('/api/clients') ||
       path.startsWith('/api/orders') ||
       path.startsWith('/api/bulk-analysis') ||
       path.startsWith('/api/users') ||
+      path.startsWith('/api/ai/') ||           // AI endpoints - expensive OpenAI calls
+      path.startsWith('/api/email/') ||        // Email endpoints - abuse potential
+      path.startsWith('/api/test-openai') ||   // AI testing endpoint
+      path.startsWith('/api/airtable/') ||     // Airtable data access
+      path.startsWith('/api/dataforseo/') ||   // DataForSEO API calls
+      path.startsWith('/api/target-pages/') || // Keyword generation with AI
       (path.startsWith('/api/accounts') && path !== '/api/accounts/signup')) {
     
     try {

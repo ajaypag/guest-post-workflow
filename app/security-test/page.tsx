@@ -73,6 +73,20 @@ export default function SecurityTestPage() {
       ]
     },
     {
+      name: 'Expensive AI & External API Endpoints',
+      description: 'Should require authentication - high cost operations',
+      icon: AlertTriangle,
+      endpoints: [
+        { path: '/api/ai/responses/create', method: 'POST', description: 'OpenAI O3 API calls', expectedStatus: 401 },
+        { path: '/api/test-openai', method: 'GET', description: 'AI testing endpoint', expectedStatus: 401 },
+        { path: '/api/email/bulk', method: 'POST', description: 'Bulk email sending', expectedStatus: 401 },
+        { path: '/api/email/send', method: 'POST', description: 'Send email', expectedStatus: 401 },
+        { path: '/api/airtable/sync', method: 'POST', description: 'Airtable sync', expectedStatus: 401 },
+        { path: '/api/dataforseo/test', method: 'GET', description: 'DataForSEO testing', expectedStatus: 401 },
+        { path: '/api/accounts?simple=true', method: 'GET', description: 'Account data access', expectedStatus: 401 },
+      ]
+    },
+    {
       name: 'Public Endpoints',
       description: 'Should be accessible without authentication',
       icon: Unlock,
