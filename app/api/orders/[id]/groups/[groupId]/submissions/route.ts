@@ -114,8 +114,8 @@ export async function GET(
         completedAt: submission.completedAt,
         createdAt: submission.createdAt,
         // NEW: Pool information
-        selectionPool: submission.selectionPool || 'primary',
-        poolRank: submission.poolRank || 1,
+        selectionPool: submission.selectionPool,
+        poolRank: submission.poolRank,
         canReview: session.userType === 'account' && 
                    submission.submissionStatus === 'pending' &&
                    submission.submittedAt !== null,

@@ -659,6 +659,40 @@ export default function InternalOrderManagementPage() {
     }
   };
 
+  const handleRebalancePools = async () => {
+    setActionLoading(prev => ({ ...prev, rebalance_pools: true }));
+    try {
+      const response = await fetch(`/api/orders/${orderId}/rebalance-pools`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        credentials: 'include'
+      });
+
+      if (!response.ok) {
+        const error = await response.json();
+        throw new Error(error.error || 'Failed to rebalance pools');
+      }
+
+      const result = await response.json();
+      
+      setMessage({
+        type: 'success',
+        text: `Pools rebalanced successfully. ${result.migratedCount} domains updated.`
+      });
+      
+      // Reload submissions to show new pool assignments
+      await loadSiteSubmissions();
+    } catch (error) {
+      console.error('Error rebalancing pools:', error);
+      setMessage({
+        type: 'error',
+        text: error instanceof Error ? error.message : 'Failed to rebalance pools'
+      });
+    } finally {
+      setActionLoading(prev => ({ ...prev, rebalance_pools: false }));
+    }
+  };
+
   if (loading) {
     return (
       <AuthWrapper>
@@ -1311,6 +1345,27 @@ export default function InternalOrderManagementPage() {
                           </span>
                         ) : (
                           'Generate Workflows'
+                        )}
+                      </button>
+                    )}
+                    
+                    {/* Rebalance Pools */}
+                    {order.orderGroups && order.orderGroups.some(g => Object.values(siteSubmissions[g.id] || {}).length > 0) && (
+                      <button
+                        onClick={handleRebalancePools}
+                        disabled={actionLoading.rebalance_pools}
+                        className="w-full px-3 py-2 bg-indigo-600 text-white text-sm rounded-md hover:bg-indigo-700 disabled:opacity-50"
+                      >
+                        {actionLoading.rebalance_pools ? (
+                          <span className="flex items-center justify-center gap-2">
+                            <Loader2 className="h-4 w-4 animate-spin" />
+                            Rebalancing...
+                          </span>
+                        ) : (
+                          <span className="flex items-center justify-center gap-2">
+                            <RefreshCw className="h-4 w-4" />
+                            Rebalance Pools
+                          </span>
                         )}
                       </button>
                     )}

@@ -87,41 +87,90 @@ export async function POST(
     
     const existingDomainIds = new Set(existingSubmissions.map(s => s.domainId));
 
-    // Prepare new submissions (only non-duplicates)
+    // Count target page requirements from order group
+    const targetUrlCounts = new Map<string, number>();
+    if (orderGroup.targetPages && Array.isArray(orderGroup.targetPages)) {
+      (orderGroup.targetPages as any[]).forEach(page => {
+        const url = page.url;
+        if (url) {
+          targetUrlCounts.set(url, (targetUrlCounts.get(url) || 0) + 1);
+        }
+      });
+    }
+
+    // Group existing submissions by target URL to track pool assignments
+    const existingByUrl = new Map<string, number>();
+    existingSubmissions.forEach(sub => {
+      const url = sub.metadata?.targetPageUrl || 'unassigned';
+      const currentCount = existingByUrl.get(url) || 0;
+      // Only count primary pool submissions toward the requirement
+      if (sub.selectionPool === 'primary') {
+        existingByUrl.set(url, currentCount + 1);
+      }
+    });
+
+    // Prepare new submissions (only non-duplicates) with pool assignments
     const timestamp = new Date();
     const newSubmissions = domains
       .filter(d => validDomainIds.has(d.domainId) && !existingDomainIds.has(d.domainId))
-      .map(domain => ({
-        id: uuidv4(),
-        orderGroupId: groupId,
-        domainId: domain.domainId,
-        submissionStatus: 'pending', // Always start as pending for client review
-        metadata: {
-          // Target URL is optional and can be updated later
-          targetPageUrl: domain.targetPageUrl || null,
-          anchorText: domain.anchorText || null,
-          specialInstructions: domain.specialInstructions || null,
-          // Track suggestion metadata
-          suggestedBy: session.userId,
-          suggestedAt: timestamp.toISOString(),
-          suggestedReason: domain.reason || null,
-          // Support for bulk/batch tracking
-          batchId: body.batchId || null,
-          // Allow flexible metadata for future use
-          ...domain.metadata,
-          // Track status history
-          statusHistory: [{
-            status: 'pending',
-            timestamp: timestamp.toISOString(),
-            updatedBy: session.userId,
-            notes: 'Initial suggestion'
-          }]
-        },
-        submittedBy: session.userId,
-        submittedAt: timestamp,
-        createdAt: timestamp,
-        updatedAt: timestamp
-      }));
+      .map(domain => {
+        const targetUrl = domain.targetPageUrl || 'unassigned';
+        const requiredCount = targetUrlCounts.get(targetUrl) || 0;
+        const currentPrimaryCount = existingByUrl.get(targetUrl) || 0;
+        
+        // Determine pool assignment
+        const needsMorePrimary = currentPrimaryCount < requiredCount;
+        const selectionPool = needsMorePrimary ? 'primary' : 'alternative';
+        
+        // Calculate pool rank
+        let poolRank = 1;
+        if (selectionPool === 'primary') {
+          poolRank = currentPrimaryCount + 1;
+          // Update count for next iteration
+          existingByUrl.set(targetUrl, currentPrimaryCount + 1);
+        } else {
+          // For alternatives, count existing alternatives for this URL
+          const existingAlternatives = existingSubmissions.filter(s => 
+            s.metadata?.targetPageUrl === targetUrl && 
+            s.selectionPool === 'alternative'
+          ).length;
+          poolRank = existingAlternatives + 1;
+        }
+
+        return {
+          id: uuidv4(),
+          orderGroupId: groupId,
+          domainId: domain.domainId,
+          submissionStatus: 'pending', // Always start as pending for client review
+          selectionPool,
+          poolRank,
+          metadata: {
+            // Target URL is optional and can be updated later
+            targetPageUrl: domain.targetPageUrl || null,
+            anchorText: domain.anchorText || null,
+            specialInstructions: domain.specialInstructions || null,
+            // Track suggestion metadata
+            suggestedBy: session.userId,
+            suggestedAt: timestamp.toISOString(),
+            suggestedReason: domain.reason || null,
+            // Support for bulk/batch tracking
+            batchId: body.batchId || null,
+            // Allow flexible metadata for future use
+            ...domain.metadata,
+            // Track status history
+            statusHistory: [{
+              status: 'pending',
+              timestamp: timestamp.toISOString(),
+              updatedBy: session.userId,
+              notes: 'Initial suggestion'
+            }]
+          },
+          submittedBy: session.userId,
+          submittedAt: timestamp,
+          createdAt: timestamp,
+          updatedAt: timestamp
+        };
+      });
 
     if (newSubmissions.length === 0) {
       return NextResponse.json({ 
