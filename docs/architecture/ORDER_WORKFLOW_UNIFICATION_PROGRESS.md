@@ -237,3 +237,57 @@ The key insight is that most of the complex UI logic is now encapsulated within 
 - ✅ Enhanced with site submissions for confirmed orders
 
 The unification is technically complete and ready for testing and gradual rollout.
+
+## Critical Bug Fix: Data Wipe Issue (August 2025)
+
+### Problem Discovery
+After initial deployment, a critical bug was discovered where navigating to `/orders/[id]` would wipe all order data:
+1. Order created with order groups → saved to database ✓
+2. Navigate to order page → data displays briefly
+3. Component auto-saves with empty data → database wiped ✗
+
+### Root Cause Analysis
+The issue was a **race condition** in UnifiedOrderInterface:
+1. Order data and clients were loading in parallel
+2. Order processing tried to use `clients.find()` before clients were loaded
+3. This caused processing to fail silently, leaving empty `lineItems`
+4. Auto-save would trigger with this empty state
+5. Database would be updated with empty order groups
+
+### Failed Attempts
+1. **Defensive Checks** - Added multiple layers of validation but race condition persisted
+2. **Manual Save Only** - Removed auto-save but issue occurred on component mount
+3. **V2 Rewrite** - Created stripped-down version (reverted - removed too much functionality)
+
+### Successful Fix (commit b4b6157)
+Implemented proper data loading sequencing:
+
+```typescript
+// Before: Race condition
+useEffect(() => {
+  loadClients();       // Async
+  loadOrderData();     // Async - tries to use clients
+}, []);
+
+// After: Proper sequencing
+1. Load clients and order data in parallel
+2. Store order data in temporary state
+3. Process order data ONLY after clients are loaded
+4. Enable UI only after processing complete
+```
+
+Key changes:
+- Added `hasOrderDataLoaded` flag and `loadedOrderGroups` state
+- Separated data loading from data processing
+- Added new useEffect to process order groups after clients load
+- `dataInitialized` only set true after successful processing
+- All saves/UI blocked until initialization complete
+
+### Lessons Learned
+1. **Async Dependencies** - Always handle loading sequences explicitly
+2. **State Initialization** - Don't assume data is ready just because component mounted
+3. **Silent Failures** - Add logging at every critical step
+4. **Race Conditions** - Common in React when loading related data
+5. **Incremental Fixes** - Start with understanding the problem fully before rewriting
+
+The unification is now stable with the data wipe issue resolved.

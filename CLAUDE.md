@@ -13,6 +13,11 @@ Production-ready workflow system with PostgreSQL, multi-user auth, and AI agent 
 4. **Build must pass** before deployment - run `npm run build`
 
 ### Recent Changes (Keep in Mind)
+- ✅ **CRITICAL FIX**: Order Data Wipe Bug (2025-08-05)
+  - Fixed race condition in UnifiedOrderInterface causing data loss
+  - Issue: Order data loading before clients, causing empty saves
+  - Solution: Proper loading sequence with state flags
+  - Details: [docs/architecture/ORDER_WORKFLOW_UNIFICATION_PROGRESS.md](docs/architecture/ORDER_WORKFLOW_UNIFICATION_PROGRESS.md)
 - 🔄 Order Interface Redesign (2025-01-31) - IN PROGRESS
   - Three-column layout with space-efficient grouped views
   - Dual-mode: Simple (wizard) vs Detailed (power user)
