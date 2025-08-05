@@ -35,7 +35,7 @@ export async function GET(
     
     // Check permissions
     if (session.userType === 'account') {
-      if (order.accountId !== session.accountId) {
+      if (order.accountId !== session.userId) {
         return NextResponse.json({ error: 'Forbidden - Account access denied' }, { status: 403 });
       }
     }
@@ -68,7 +68,7 @@ export async function GET(
     console.log('[SUBMISSIONS API] Query conditions:', {
       orderGroupId: params.groupId,
       userType: session.userType,
-      accountId: session.accountId,
+      sessionUserId: session.userId,
       orderAccountId: order.accountId,
       status: status,
       includeCompleted: includeCompleted,
