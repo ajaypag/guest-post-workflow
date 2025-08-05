@@ -5,6 +5,7 @@ import { useParams, useRouter } from 'next/navigation';
 import Link from 'next/link';
 import AuthWrapper from '@/components/AuthWrapper';
 import Header from '@/components/Header';
+import OrderSiteReviewTable from '@/components/orders/OrderSiteReviewTable';
 import { AuthService } from '@/lib/auth';
 import { formatCurrency } from '@/lib/utils/formatting';
 import { 
@@ -637,14 +638,52 @@ export default function OrderDetailPage() {
                 </div>
               )}
               
-              {/* Order Details Table with Proper Client Grouping */}
-              <div className="bg-white rounded-lg shadow-sm border border-gray-200 overflow-hidden">
-                <div className="p-6 border-b border-gray-200">
-                  <h2 className="text-lg font-semibold text-gray-900">Order Details</h2>
-                </div>
-                
-                <div className="overflow-x-auto">
-                  <table className="min-w-full divide-y divide-gray-200">
+              {/* Use shared component for site review, regular table otherwise */}
+              {order.state === 'site_review' && order.orderGroups ? (
+                <OrderSiteReviewTable
+                  orderId={params.id as string}
+                  orderGroups={order.orderGroups}
+                  siteSubmissions={(() => {
+                    // Transform siteSubmissions to match the expected interface
+                    const transformed: Record<string, any[]> = {};
+                    Object.entries(siteSubmissions).forEach(([groupId, submissions]) => {
+                      transformed[groupId] = submissions.map(sub => ({
+                        ...sub,
+                        domain: {
+                          id: sub.domainId,
+                          domain: sub.domain,
+                          qualificationStatus: undefined,
+                          notes: undefined
+                        }
+                      }));
+                    });
+                    return transformed;
+                  })()}
+                  userType={user?.userType || 'account'}
+                  permissions={{
+                    canRebalancePools: false,
+                    canAssignTargetPages: false,
+                    canSwitchPools: false,
+                    canApproveReject: true,
+                    canGenerateWorkflows: false,
+                    canMarkSitesReady: false,
+                    canViewInternalTools: false,
+                    canViewPricing: false,
+                    canEditDomainAssignments: false
+                  }}
+                  workflowStage={order.state || 'site_review'}
+                  onRefresh={loadOrder}
+                />
+              ) : (
+                <>
+                  {/* Order Details Table with Proper Client Grouping */}
+                  <div className="bg-white rounded-lg shadow-sm border border-gray-200 overflow-hidden">
+                    <div className="p-6 border-b border-gray-200">
+                      <h2 className="text-lg font-semibold text-gray-900">Order Details</h2>
+                    </div>
+                    
+                    <div className="overflow-x-auto">
+                      <table className="min-w-full divide-y divide-gray-200">
                     <thead className="bg-gray-50">
                       <tr>
                         <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
@@ -848,6 +887,8 @@ export default function OrderDetailPage() {
                   </table>
                 </div>
               </div>
+              </>
+              )}
               
               {/* Additional Information Cards */}
               <div className="grid grid-cols-1 md:grid-cols-2 gap-6 mt-6">

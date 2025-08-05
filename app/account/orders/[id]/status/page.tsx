@@ -399,7 +399,7 @@ export default function OrderStatusPage() {
                 {group.submissions && group.submissions.pending > 0 && (
                   <div className="bg-blue-50 px-4 py-2 border-t border-blue-100">
                     <Link
-                      href={`/account/orders/${orderId}/sites`}
+                      href={`/orders/${orderId}`}
                       className="text-sm text-blue-600 hover:text-blue-700 font-medium inline-flex items-center"
                     >
                       Review pending sites
@@ -512,7 +512,7 @@ export default function OrderStatusPage() {
               Our team has identified potential sites for your review. Please review and approve the sites you'd like to proceed with.
             </p>
             <Link
-              href={`/account/orders/${orderId}/sites`}
+              href={`/orders/${orderId}`}
               className="inline-flex items-center px-6 py-3 bg-blue-600 text-white rounded-lg hover:bg-blue-700 font-medium"
             >
               Review Site Recommendations

@@ -3,7 +3,7 @@
 import React, { useState, useEffect, useCallback } from 'react';
 import { 
   Loader2, Globe, LinkIcon, DollarSign, ExternalLink, 
-  ChevronDown, ChevronUp, AlertCircle, CheckCircle,
+  ChevronDown, ChevronUp, ChevronRight, AlertCircle, CheckCircle,
   Target, Package, Database, Activity, Users, RefreshCw,
   Sparkles, Search, Clock, XCircle
 } from 'lucide-react';
@@ -127,36 +127,53 @@ export default function OrderSiteReviewTable({
 
   // Column configuration based on workflow stage and permissions
   const getColumnConfig = useCallback(() => {
-    const baseColumns = ['client', 'link_details', 'site', 'status'];
-    const columns = [...baseColumns];
-    
-    // Add tools column only for internal users
-    if (permissions.canViewInternalTools && userType === 'internal') {
-      columns.push('tools');
+    // Dynamic columns based on workflow stage
+    switch (workflowStage) {
+      case 'site_selection_with_sites':
+        return {
+          columns: ['client', 'link_details', 'site', 'status', 
+            ...(permissions.canViewInternalTools ? ['tools'] : [])]
+        };
+      case 'post_approval':
+        return {
+          columns: ['client', 'link_details', 'site', 'status',
+            ...(permissions.canViewInternalTools ? ['tools'] : [])]
+        };
+      case 'content_creation':
+        return {
+          columns: ['client', 'link_details', 'site', 'content_status', 'draft_url',
+            ...(permissions.canViewInternalTools ? ['tools'] : [])]
+        };
+      case 'completed':
+        return {
+          columns: ['client', 'link_details', 'site', 'published_url', 'completion']
+        };
+      default:
+        // Initial stage - separate columns
+        return {
+          columns: ['client', 'anchor', 
+            ...(permissions.canViewPricing ? ['price'] : []),
+            ...(permissions.canViewInternalTools ? ['tools'] : [])]
+        };
     }
-    
-    // Add price column if user can view pricing
-    if (permissions.canViewPricing) {
-      const linkDetailsIndex = columns.indexOf('link_details');
-      if (linkDetailsIndex === -1) {
-        columns.splice(2, 0, 'price');
-      }
-    }
-    
-    return { columns };
-  }, [permissions, userType]);
+  }, [permissions, userType, workflowStage]);
 
   const columnConfig = getColumnConfig();
 
   // Column header renderer
   const getColumnHeader = (column: string) => {
     switch (column) {
-      case 'client': return 'Client/Target Page';
+      case 'client': return 'Client / Target Page';
+      case 'anchor': return 'Anchor Text';
       case 'link_details': return 'Link Details';
       case 'site': return 'Guest Post Site';
-      case 'status': return 'Status';
-      case 'tools': return 'Internal Tools';
       case 'price': return 'Price';
+      case 'status': return 'Status';
+      case 'content_status': return 'Content Status';
+      case 'draft_url': return 'Draft URL';
+      case 'published_url': return 'Published URL';
+      case 'completion': return 'Completion';
+      case 'tools': return 'Internal Tools';
       default: return column;
     }
   };
@@ -255,6 +272,7 @@ export default function OrderSiteReviewTable({
       anchorText?: string;
       displaySubmission?: SiteSubmission | null;
       availableForTarget: SiteSubmission[];
+      showPoolView?: boolean;
       groupId: string;
     }
   ) => {
@@ -263,14 +281,33 @@ export default function OrderSiteReviewTable({
     switch (column) {
       case 'client':
         return (
-          <td className="px-6 py-4 whitespace-nowrap text-sm">
-            <div className="space-y-1">
-              <div className="font-medium text-gray-900">{group.client.name}</div>
-              {targetPageUrl && (
-                <div className="text-xs text-gray-500 truncate max-w-[200px]" title={targetPageUrl}>
-                  {targetPageUrl}
-                </div>
+          <td className="px-6 py-4 pl-8">
+            <div className="flex items-center gap-2">
+              {data.showPoolView && availableForTarget.length > 1 && (
+                <button
+                  className="flex items-center gap-1 p-1 hover:bg-gray-100 rounded"
+                  onClick={() => setEditingLineItem(
+                    editingLineItem?.groupId === groupId && editingLineItem?.index === index 
+                      ? null 
+                      : { groupId, index }
+                  )}
+                  title={`${availableForTarget.length} alternative domains available`}
+                >
+                  {editingLineItem?.groupId === groupId && editingLineItem?.index === index ? (
+                    <ChevronDown className="w-4 h-4 text-gray-600" />
+                  ) : (
+                    <ChevronRight className="w-4 h-4 text-gray-600" />
+                  )}
+                </button>
               )}
+              <div className="space-y-1">
+                <div className="font-medium text-gray-900">{group.client.name}</div>
+                {targetPageUrl && (
+                  <div className="text-xs text-gray-500 truncate max-w-[200px]" title={targetPageUrl}>
+                    {targetPageUrl}
+                  </div>
+                )}
+              </div>
             </div>
           </td>
         );
@@ -367,8 +404,32 @@ export default function OrderSiteReviewTable({
                   )}
                 </div>
               </div>
+            ) : permissions.canAssignTargetPages && availableForTarget.length > 0 ? (
+              <div className="flex items-center gap-2">
+                <Globe className="h-4 w-4 text-gray-400" />
+                <select
+                  className="text-sm border-gray-300 rounded-md flex-1"
+                  defaultValue=""
+                  disabled={!!assigningDomain}
+                  onChange={async (e) => {
+                    if (e.target.value && targetPageUrl && onAssignTargetPage) {
+                      // Update the selected domain's target URL
+                      await onAssignTargetPage(e.target.value, targetPageUrl, groupId);
+                    }
+                  }}
+                >
+                  <option value="">Select from pool ({availableForTarget.length} available)</option>
+                  {availableForTarget.map(sub => (
+                    <option key={sub.id} value={sub.id}>
+                      {sub.domain?.domain} 
+                      {sub.domainRating ? ` (DR: ${sub.domainRating})` : ''}
+                      {sub.metadata?.targetPageUrl && sub.metadata.targetPageUrl !== targetPageUrl ? ' - suggested for other' : ''}
+                    </option>
+                  ))}
+                </select>
+              </div>
             ) : (
-              <span className="text-gray-400 italic">No site selected</span>
+              <span className="text-gray-400 italic">No sites available</span>
             )}
           </td>
         );
@@ -411,8 +472,44 @@ export default function OrderSiteReviewTable({
         return (
           <td className="px-6 py-4 whitespace-nowrap text-sm text-right">
             <span className="font-medium text-gray-900">
-              {displaySubmission ? formatCurrency(displaySubmission.price) : '-'}
+              {index === 0 && group.packagePrice ? formatCurrency(group.packagePrice) : 
+               displaySubmission ? formatCurrency(displaySubmission.price) : '-'}
             </span>
+          </td>
+        );
+        
+      case 'anchor':
+        return (
+          <td className="px-6 py-4 text-sm text-gray-900">
+            {anchorText || '-'}
+          </td>
+        );
+        
+      case 'content_status':
+        return (
+          <td className="px-6 py-4 whitespace-nowrap text-sm">
+            <span className="text-gray-500">In Progress</span>
+          </td>
+        );
+        
+      case 'draft_url':
+        return (
+          <td className="px-6 py-4 whitespace-nowrap text-sm">
+            <span className="text-gray-400 italic">Not ready</span>
+          </td>
+        );
+        
+      case 'published_url':
+        return (
+          <td className="px-6 py-4 whitespace-nowrap text-sm">
+            <span className="text-gray-400 italic">Not published</span>
+          </td>
+        );
+        
+      case 'completion':
+        return (
+          <td className="px-6 py-4 whitespace-nowrap text-sm">
+            <CheckCircle className="h-4 w-4 text-green-500" />
           </td>
         );
 
@@ -464,6 +561,13 @@ export default function OrderSiteReviewTable({
             {orderGroups.map((group) => {
               const groupSubmissions = siteSubmissions[group.id] || [];
               const isExpanded = expandedGroup === group.id;
+              
+              // Calculate assigned vs unassigned submissions
+              const assignedSubmissions = groupSubmissions.filter(s => s.targetPageUrl || s.metadata?.targetPageUrl);
+              const unassignedSubmissions = groupSubmissions.filter(s => !s.targetPageUrl && !s.metadata?.targetPageUrl);
+              
+              // Check if we should show pool view (more suggestions than needed or has unassigned)
+              const showPoolView = groupSubmissions.length > group.linkCount || unassignedSubmissions.length > 0;
               
               return (
                 <React.Fragment key={group.id}>
@@ -579,6 +683,7 @@ export default function OrderSiteReviewTable({
                                   anchorText,
                                   displaySubmission,
                                   availableForTarget,
+                                  showPoolView,
                                   groupId: group.id
                                 })
                               )}
@@ -810,6 +915,122 @@ export default function OrderSiteReviewTable({
                           </React.Fragment>
                         );
                       })}
+                      
+                      {/* Site Pool View - Only show when we have pool paradigm */}
+                      {showPoolView && groupSubmissions.length > 0 && unassignedSubmissions.length > 0 && (
+                        <>
+                          <tr className="bg-gray-50 border-t-2 border-gray-200">
+                            <td colSpan={columnConfig.columns.length} className="px-6 py-3">
+                              <div className="flex items-center gap-2">
+                                <button
+                                  onClick={() => setExpandedGroup(isExpanded ? null : group.id)}
+                                  className="flex items-center gap-1 p-1 hover:bg-gray-100 rounded"
+                                  title={`${unassignedSubmissions.length} unassigned domains available`}
+                                >
+                                  {isExpanded ? (
+                                    <ChevronDown className="w-4 h-4 text-gray-600" />
+                                  ) : (
+                                    <ChevronUp className="w-4 h-4 text-gray-600" />
+                                  )}
+                                  <span className="text-xs text-gray-500 font-medium">
+                                    {unassignedSubmissions.length} unassigned
+                                  </span>
+                                </button>
+                                <Package className="h-4 w-4 text-gray-600" />
+                                <div>
+                                  <div className="text-sm font-medium text-gray-900">
+                                    Site Pool
+                                  </div>
+                                  <div className="text-xs text-gray-600 mt-0.5">
+                                    Additional suggestions available for selection
+                                  </div>
+                                </div>
+                              </div>
+                            </td>
+                          </tr>
+                          {isExpanded && (
+                            <tr>
+                              <td colSpan={columnConfig.columns.length} className="px-6 py-4 bg-gray-50">
+                                <div className="grid grid-cols-1 lg:grid-cols-2 gap-3">
+                                  {unassignedSubmissions.map((submission) => (
+                                    <div key={submission.id} className="bg-white p-3 rounded-lg border border-gray-200 hover:border-gray-300">
+                                      <div className="flex items-start justify-between">
+                                        <div className="flex items-start gap-3">
+                                          <Globe className="h-5 w-5 text-gray-500 mt-0.5" />
+                                          <div className="flex-1">
+                                            <div className="flex items-center gap-2 mb-1">
+                                              <div className="text-sm font-medium text-gray-900">
+                                                {submission.domain?.domain || 'Unknown'}
+                                              </div>
+                                              {group.bulkAnalysisProjectId && submission.domainId && permissions.canViewInternalTools && (
+                                                <a
+                                                  href={`/clients/${group.clientId}/bulk-analysis/projects/${group.bulkAnalysisProjectId}?guided=${submission.domainId}`}
+                                                  className="text-xs text-blue-600 hover:text-blue-800"
+                                                  target="_blank"
+                                                  rel="noopener noreferrer"
+                                                >
+                                                  <ExternalLink className="h-3 w-3" />
+                                                </a>
+                                              )}
+                                            </div>
+                                            <div className="flex items-center gap-2 text-xs text-gray-500">
+                                              <span>DR: {submission.domainRating || 'N/A'}</span>
+                                              <span>•</span>
+                                              <span>Traffic: {submission.traffic?.toLocaleString() || '0'}</span>
+                                              {submission.metadata?.hasDataForSeoResults && (
+                                                <>
+                                                  <span>•</span>
+                                                  <span className="text-blue-600">SEO Data</span>
+                                                </>
+                                              )}
+                                            </div>
+                                            {submission.metadata?.qualificationStatus && (
+                                              <div className="mt-1">
+                                                <span className={`text-xs px-2 py-0.5 rounded ${
+                                                  submission.metadata.qualificationStatus === 'high_quality' 
+                                                    ? 'bg-green-100 text-green-700' 
+                                                    : submission.metadata.qualificationStatus === 'good_quality'
+                                                    ? 'bg-blue-100 text-blue-700'
+                                                    : submission.metadata.qualificationStatus === 'marginal_quality'
+                                                    ? 'bg-yellow-100 text-yellow-700'
+                                                    : 'bg-gray-100 text-gray-700'
+                                                }`}>
+                                                  {submission.metadata.qualificationStatus === 'high_quality' ? '★★★' :
+                                                   submission.metadata.qualificationStatus === 'good_quality' ? '★★' :
+                                                   submission.metadata.qualificationStatus === 'marginal_quality' ? '★' :
+                                                   submission.metadata.qualificationStatus}
+                                                </span>
+                                              </div>
+                                            )}
+                                          </div>
+                                        </div>
+                                        {permissions.canAssignTargetPages && (
+                                          <select
+                                            className="text-xs border border-gray-300 rounded px-2 py-1"
+                                            defaultValue=""
+                                            onChange={async (e) => {
+                                              if (e.target.value && onAssignTargetPage) {
+                                                await onAssignTargetPage(submission.id, e.target.value, group.id);
+                                              }
+                                            }}
+                                          >
+                                            <option value="">Assign to...</option>
+                                            {group.targetPages?.map((page, idx) => (
+                                              <option key={idx} value={page.url}>
+                                                Target {idx + 1}: {page.url}
+                                              </option>
+                                            ))}
+                                          </select>
+                                        )}
+                                      </div>
+                                    </div>
+                                  ))}
+                                </div>
+                              </td>
+                            </tr>
+                          )}
+                        </>
+                      )}
                     </>
                   )}
                 </React.Fragment>
