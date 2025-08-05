@@ -1,7 +1,7 @@
 'use client';
 
 import React from 'react';
-import { Database, Activity, Wrench, Users, BarChart3, Settings, AlertTriangle, Bug, FileSearch, Search, Mail } from 'lucide-react';
+import { Database, Activity, Wrench, Users, BarChart3, Settings, AlertTriangle, Bug, FileSearch, Search, Mail, MessageSquare } from 'lucide-react';
 
 export default function AdminDashboard() {
   const adminTools = [
@@ -212,6 +212,14 @@ export default function AdminDashboard() {
       href: '/admin/email',
       color: 'bg-emerald-50 border-emerald-200 text-emerald-700',
       iconColor: 'text-emerald-600'
+    },
+    {
+      title: 'Chatwoot Integration',
+      description: 'Sync PostFlow contacts and orders with Chatwoot for customer support',
+      icon: MessageSquare,
+      href: '/admin/chatwoot-sync',
+      color: 'bg-blue-50 border-blue-200 text-blue-700',
+      iconColor: 'text-blue-600'
     },
     {
       title: 'User System Migration',
