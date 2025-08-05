@@ -6,6 +6,7 @@ import Link from 'next/link';
 import AuthWrapper from '@/components/AuthWrapper';
 import Header from '@/components/Header';
 import OrderSiteReviewTable from '@/components/orders/OrderSiteReviewTable';
+import OrderProgressSteps, { getStateDisplay } from '@/components/orders/OrderProgressSteps';
 import { AuthService } from '@/lib/auth';
 import { formatCurrency } from '@/lib/utils/formatting';
 import { 
@@ -99,46 +100,6 @@ interface OrderDetail {
   completedAt?: string;
   orderGroups?: OrderGroup[];
 }
-
-const getStateDisplay = (status: string, state?: string) => {
-  if (status === 'draft') return { label: 'Draft', color: 'bg-gray-100 text-gray-700' };
-  if (status === 'pending_confirmation') return { label: 'Awaiting Confirmation', color: 'bg-yellow-100 text-yellow-700' };
-  if (status === 'cancelled') return { label: 'Cancelled', color: 'bg-red-100 text-red-700' };
-  if (status === 'completed') return { label: 'Completed', color: 'bg-green-100 text-green-700' };
-  
-  // For confirmed orders, show the state
-  switch (state) {
-    case 'analyzing':
-      return { label: 'Finding Sites', color: 'bg-blue-100 text-blue-700' };
-    case 'site_review':
-      return { label: 'Ready for Review', color: 'bg-purple-100 text-purple-700' };
-    case 'in_progress':
-      return { label: 'In Progress', color: 'bg-yellow-100 text-yellow-700' };
-    default:
-      return { label: 'Processing', color: 'bg-gray-100 text-gray-700' };
-  }
-};
-
-const getProgressSteps = (status: string, state?: string) => {
-  const steps = [
-    { id: 'confirmed', label: 'Order Confirmed', icon: CheckCircle, description: 'Your order has been received' },
-    { id: 'analyzing', label: 'Finding Sites', icon: Search, description: 'Our team is identifying suitable sites' },
-    { id: 'site_review', label: 'Review Sites', icon: Users, description: 'Site recommendations ready for your review' },
-    { id: 'in_progress', label: 'Creating Content', icon: FileText, description: 'Writing and placing your links' },
-    { id: 'completed', label: 'Completed', icon: CheckCircle, description: 'All links have been placed' }
-  ];
-  
-  let currentStep = 0;
-  if (status === 'confirmed' || status === 'pending_confirmation') {
-    currentStep = 1;
-    if (state === 'analyzing') currentStep = 1;
-    if (state === 'sites_ready' || state === 'site_review' || state === 'client_reviewing') currentStep = 2;
-    if (state === 'in_progress') currentStep = 3;
-  }
-  if (status === 'completed') currentStep = 4;
-  
-  return { steps, currentStep };
-};
 
 export default function OrderDetailPage() {
   const params = useParams();
@@ -324,7 +285,6 @@ export default function OrderDetailPage() {
     );
   }
 
-  const { steps, currentStep } = getProgressSteps(order?.status || '', order?.state);
   const stateDisplay = getStateDisplay(order?.status || '', order?.state);
 
   // Group line items by client
@@ -452,42 +412,11 @@ export default function OrderDetailPage() {
             <div className="lg:col-span-1">
               <div className="bg-white rounded-lg border border-gray-200 shadow-sm p-6">
                 <h2 className="text-lg font-semibold mb-4">Order Progress</h2>
-                <div className="space-y-4">
-                  {steps.map((step, index) => {
-                    const Icon = step.icon;
-                    const isCompleted = index < currentStep;
-                    const isCurrent = index === currentStep;
-                    
-                    return (
-                      <div key={step.id} className="relative">
-                        <div className="flex items-start gap-3">
-                          <div className={`
-                            w-8 h-8 rounded-full flex items-center justify-center flex-shrink-0
-                            ${isCompleted ? 'bg-green-500' : isCurrent ? 'bg-blue-500' : 'bg-gray-300'}
-                          `}>
-                            <Icon className="w-4 h-4 text-white" />
-                          </div>
-                          <div className="flex-1">
-                            <p className={`text-sm font-medium ${
-                              isCompleted || isCurrent ? 'text-gray-900' : 'text-gray-500'
-                            }`}>
-                              {step.label}
-                            </p>
-                            <p className="text-xs text-gray-500 mt-1">
-                              {step.description}
-                            </p>
-                          </div>
-                        </div>
-                        {index < steps.length - 1 && (
-                          <div className={`
-                            absolute left-4 top-8 w-0.5 h-8
-                            ${isCompleted ? 'bg-green-500' : 'bg-gray-300'}
-                          `} />
-                        )}
-                      </div>
-                    );
-                  })}
-                </div>
+                <OrderProgressSteps 
+                  orderStatus={order?.status || ''} 
+                  orderState={order?.state} 
+                  className="mt-4"
+                />
                 
                 {/* Quick Actions based on state */}
                 <div className="mt-6 pt-6 border-t">

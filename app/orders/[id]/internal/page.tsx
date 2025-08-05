@@ -6,6 +6,7 @@ import Link from 'next/link';
 import AuthWrapper from '@/components/AuthWrapper';
 import Header from '@/components/Header';
 import OrderSiteReviewTable from '@/components/orders/OrderSiteReviewTable';
+import OrderProgressSteps, { getStateDisplay, getProgressSteps } from '@/components/orders/OrderProgressSteps';
 import { AuthService, type AuthSession } from '@/lib/auth';
 import { formatCurrency } from '@/lib/utils/formatting';
 import { 
@@ -146,56 +147,6 @@ interface OrderDetail {
   completedAt?: string;
   orderGroups?: OrderGroup[];
 }
-
-// Helper functions for state and progress
-const getStateDisplay = (status: string, state?: string) => {
-  if (status === 'draft') return { label: 'Draft', color: 'bg-gray-100 text-gray-700' };
-  if (status === 'pending_confirmation') return { label: 'Awaiting Confirmation', color: 'bg-yellow-100 text-yellow-700' };
-  if (status === 'cancelled') return { label: 'Cancelled', color: 'bg-red-100 text-red-700' };
-  if (status === 'completed') return { label: 'Completed', color: 'bg-green-100 text-green-700' };
-  
-  // For confirmed orders, show the state
-  switch (state) {
-    case 'analyzing':
-      return { label: 'Finding Sites', color: 'bg-blue-100 text-blue-700' };
-    case 'sites_ready':
-    case 'site_review':
-      return { label: 'Ready for Review', color: 'bg-purple-100 text-purple-700' };
-    case 'client_reviewing':
-      return { label: 'Client Reviewing', color: 'bg-purple-100 text-purple-700' };
-    case 'selections_confirmed':
-      return { label: 'Selections Confirmed', color: 'bg-green-100 text-green-700' };
-    case 'payment_received':
-      return { label: 'Payment Received', color: 'bg-green-100 text-green-700' };
-    case 'workflows_generated':
-    case 'in_progress':
-      return { label: 'In Progress', color: 'bg-yellow-100 text-yellow-700' };
-    default:
-      return { label: 'Processing', color: 'bg-gray-100 text-gray-700' };
-  }
-};
-
-const getProgressSteps = (status: string, state?: string) => {
-  const steps = [
-    { id: 'confirmed', label: 'Order Confirmed', icon: CheckCircle, description: 'Order has been received and confirmed' },
-    { id: 'analyzing', label: 'Finding Sites', icon: Search, description: 'Team is identifying suitable sites' },
-    { id: 'site_review', label: 'Review Sites', icon: Users, description: 'Sites ready for client review' },
-    { id: 'in_progress', label: 'Creating Content', icon: FileText, description: 'Writing and placing links' },
-    { id: 'completed', label: 'Completed', icon: CheckCircle, description: 'All links have been placed' }
-  ];
-  
-  let currentStep = 0;
-  if (status === 'confirmed' || status === 'pending_confirmation') {
-    currentStep = 1;
-    if (state === 'analyzing') currentStep = 1;
-    if (state === 'sites_ready' || state === 'site_review' || state === 'client_reviewing') currentStep = 2;
-    if (state === 'selections_confirmed' || state === 'payment_received' || state === 'workflows_generated' || state === 'in_progress') currentStep = 3;
-  }
-  if (status === 'paid') currentStep = 3;
-  if (status === 'completed') currentStep = 4;
-  
-  return { steps, currentStep };
-};
 
 export default function InternalOrderManagementPage() {
   const params = useParams();
