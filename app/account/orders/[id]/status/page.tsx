@@ -70,10 +70,16 @@ const getStateDisplay = (status: string, state?: string) => {
   switch (state) {
     case 'analyzing':
       return { label: 'Finding Sites', color: 'bg-blue-100 text-blue-700' };
+    case 'sites_ready':
+      return { label: 'Sites Ready for Review', color: 'bg-purple-100 text-purple-700' };
     case 'site_review':
       return { label: 'Ready for Review', color: 'bg-purple-100 text-purple-700' };
+    case 'client_reviewing':
+      return { label: 'Under Review', color: 'bg-purple-100 text-purple-700' };
     case 'in_progress':
       return { label: 'In Progress', color: 'bg-yellow-100 text-yellow-700' };
+    case 'content_creation':
+      return { label: 'Creating Content', color: 'bg-yellow-100 text-yellow-700' };
     default:
       return { label: 'Processing', color: 'bg-gray-100 text-gray-700' };
   }
@@ -92,8 +98,8 @@ const getProgressSteps = (status: string, state?: string) => {
   if (status === 'confirmed') {
     currentStep = 1;
     if (state === 'analyzing') currentStep = 1;
-    if (state === 'site_review') currentStep = 2;
-    if (state === 'in_progress') currentStep = 3;
+    if (state === 'sites_ready' || state === 'site_review' || state === 'client_reviewing') currentStep = 2;
+    if (state === 'in_progress' || state === 'content_creation') currentStep = 3;
   }
   if (status === 'completed') currentStep = 4;
   
@@ -216,7 +222,7 @@ export default function OrderStatusPage() {
   
   const stateDisplay = getStateDisplay(order.status, order.state);
   const { steps, currentStep } = getProgressSteps(order.status, order.state);
-  const canReviewSites = order.state === 'site_review' && 
+  const canReviewSites = (order.state === 'sites_ready' || order.state === 'site_review' || order.state === 'client_reviewing') && 
     order.orderGroups.some(g => g.submissions && g.submissions.total > 0);
   
   return (

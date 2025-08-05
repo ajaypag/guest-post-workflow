@@ -132,7 +132,7 @@ const getProgressSteps = (status: string, state?: string) => {
   if (status === 'confirmed' || status === 'pending_confirmation') {
     currentStep = 1;
     if (state === 'analyzing') currentStep = 1;
-    if (state === 'site_review') currentStep = 2;
+    if (state === 'sites_ready' || state === 'site_review' || state === 'client_reviewing') currentStep = 2;
     if (state === 'in_progress') currentStep = 3;
   }
   if (status === 'completed') currentStep = 4;
@@ -158,7 +158,7 @@ export default function OrderDetailPage() {
   }, [params.id]);
 
   useEffect(() => {
-    if (order?.state === 'site_review' && order.orderGroups) {
+    if ((order?.state === 'sites_ready' || order?.state === 'site_review' || order?.state === 'client_reviewing') && order.orderGroups) {
       loadSiteSubmissions();
     }
   }, [order?.state, order?.orderGroups]);
@@ -286,7 +286,7 @@ export default function OrderDetailPage() {
   const handleRefresh = async () => {
     setRefreshing(true);
     await loadOrder();
-    if (order?.state === 'site_review') {
+    if (order?.state === 'sites_ready' || order?.state === 'site_review' || order?.state === 'client_reviewing') {
       await loadSiteSubmissions();
     }
     setTimeout(() => setRefreshing(false), 1000);
