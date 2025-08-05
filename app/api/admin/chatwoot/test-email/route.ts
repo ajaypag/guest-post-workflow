@@ -5,7 +5,7 @@ import { ChatwootService } from '@/lib/services/chatwootService';
 export async function POST(request: Request) {
   try {
     const body = await request.json();
-    const { recipientEmail, recipientName, testMode = false } = body;
+    const { recipientEmail, recipientName, inboxId, testMode = false } = body;
 
     if (!recipientEmail) {
       return NextResponse.json({
@@ -75,8 +75,11 @@ This is a test email sent from PostFlow through Chatwoot integration.
 
 If you're receiving this, it means our email integration is working correctly!
 
+${inboxId ? `\nSent using inbox ID: ${inboxId}` : 'Sent using default inbox'}
+
 Best regards,
 PostFlow Team`,
+      inboxId, // Pass the selected inbox ID
       metadata: {
         articleTitle: 'Test Article'
       }

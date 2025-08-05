@@ -1,7 +1,7 @@
 'use client';
 
-import React, { useState } from 'react';
-import { ArrowLeft, Send, CheckCircle, XCircle, Loader2, Mail, MessageSquare, RefreshCw } from 'lucide-react';
+import React, { useState, useEffect } from 'react';
+import { ArrowLeft, Send, CheckCircle, XCircle, Loader2, Mail, MessageSquare, RefreshCw, ChevronDown } from 'lucide-react';
 import Link from 'next/link';
 
 export default function ChatwootTestPage() {
@@ -12,6 +12,30 @@ export default function ChatwootTestPage() {
   const [conversationId, setConversationId] = useState<number | null>(null);
   const [statusLoading, setStatusLoading] = useState(false);
   const [emailStatus, setEmailStatus] = useState<any>(null);
+  const [inboxes, setInboxes] = useState<any[]>([]);
+  const [selectedInboxId, setSelectedInboxId] = useState<string>('');
+  const [loadingInboxes, setLoadingInboxes] = useState(false);
+
+  // Load available inboxes when connection test succeeds
+  const loadInboxes = async () => {
+    setLoadingInboxes(true);
+    try {
+      const response = await fetch('/api/admin/chatwoot/inboxes');
+      const data = await response.json();
+      
+      if (response.ok && data.inboxes) {
+        setInboxes(data.inboxes);
+        // Set default to first inbox or env default
+        if (data.inboxes.length > 0 && !selectedInboxId) {
+          setSelectedInboxId(data.inboxes[0].id.toString());
+        }
+      }
+    } catch (error) {
+      console.error('Failed to load inboxes:', error);
+    } finally {
+      setLoadingInboxes(false);
+    }
+  };
 
   const testConnection = async () => {
     setLoading(true);
@@ -32,6 +56,11 @@ export default function ChatwootTestPage() {
         type: response.ok ? 'success' : 'error',
         data
       });
+      
+      // Load inboxes on successful connection
+      if (response.ok) {
+        await loadInboxes();
+      }
     } catch (error: any) {
       setTestResult({
         type: 'error',
@@ -59,6 +88,7 @@ export default function ChatwootTestPage() {
         body: JSON.stringify({ 
           recipientEmail,
           recipientName,
+          inboxId: selectedInboxId || undefined,
           testMode: false 
         })
       });
@@ -136,6 +166,41 @@ export default function ChatwootTestPage() {
               )}
             </button>
           </div>
+
+          {/* Inbox Selector - Show after successful connection */}
+          {inboxes.length > 0 && (
+            <div className="mb-8 p-6 bg-indigo-50 rounded-lg">
+              <h3 className="text-lg font-semibold mb-4">Select Email Inbox</h3>
+              
+              <div className="space-y-4">
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-1">
+                    Choose Inbox for Sending
+                  </label>
+                  <select
+                    value={selectedInboxId}
+                    onChange={(e) => setSelectedInboxId(e.target.value)}
+                    className="w-full px-3 py-2 border rounded-lg focus:ring-2 focus:ring-blue-500"
+                    disabled={loadingInboxes}
+                  >
+                    {inboxes.map(inbox => (
+                      <option key={inbox.id} value={inbox.id}>
+                        {inbox.name} ({inbox.channel_type})
+                        {inbox.email_address && ` - ${inbox.email_address}`}
+                      </option>
+                    ))}
+                  </select>
+                </div>
+                
+                {selectedInboxId && (
+                  <div className="text-sm text-indigo-700">
+                    <strong>Selected Inbox ID:</strong> {selectedInboxId}
+                    <p className="text-xs mt-1">This inbox will be used for sending the test email</p>
+                  </div>
+                )}
+              </div>
+            </div>
+          )}
 
           {/* Step 2: Send Test Email */}
           <div className="mb-8 p-6 bg-gray-50 rounded-lg">
@@ -360,6 +425,18 @@ export default function ChatwootTestPage() {
                     <li>Add each variable above</li>
                     <li>Click "Save" and "Redeploy"</li>
                   </ol>
+                </div>
+
+                <div className="mt-4 p-3 bg-green-100 rounded">
+                  <p className="font-semibold mb-1">✨ Multiple Inbox Support:</p>
+                  <p className="text-xs">
+                    The CHATWOOT_INBOX_ID is your default inbox. After connecting, you can select different inboxes for each email sent. This allows you to:
+                  </p>
+                  <ul className="list-disc list-inside space-y-1 text-xs mt-2">
+                    <li>Use different "from" addresses for different types of outreach</li>
+                    <li>Separate guest post emails from other communications</li>
+                    <li>Route responses to different teams based on inbox</li>
+                  </ul>
                 </div>
               </div>
             </div>

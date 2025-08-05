@@ -138,6 +138,7 @@ export class ChatwootService {
     orderType: string;
     clientName: string;
     assignedUserId?: string;
+    inboxId?: string; // Optional - uses default if not provided
     customAttributes?: Record<string, any>;
   }): Promise<ChatwootConversation> {
     try {
@@ -147,7 +148,7 @@ export class ChatwootService {
         method: 'POST',
         headers: this.getHeaders(),
         body: JSON.stringify({
-          inbox_id: this.config.inboxId,
+          inbox_id: data.inboxId || this.config.inboxId,
           contact_id: data.contactId,
           custom_attributes: {
             order_id: data.orderId,
@@ -249,6 +250,29 @@ export class ChatwootService {
       return data.payload || [];
     } catch (error) {
       console.error('Error getting Chatwoot messages:', error);
+      throw error;
+    }
+  }
+
+  /**
+   * Get all inboxes for the account
+   */
+  static async getInboxes(): Promise<any[]> {
+    try {
+      const url = `${this.config.apiUrl}/api/v1/accounts/${this.config.accountId}/inboxes`;
+      
+      const response = await fetch(url, {
+        headers: this.getHeaders()
+      });
+
+      if (!response.ok) {
+        throw new Error(`Failed to get inboxes: ${response.statusText}`);
+      }
+
+      const data = await response.json();
+      return data.payload || [];
+    } catch (error) {
+      console.error('Error getting Chatwoot inboxes:', error);
       throw error;
     }
   }

@@ -14,6 +14,7 @@ interface SendGuestPostEmailParams {
   subject: string;
   body: string;
   googleDocUrl?: string;
+  inboxId?: string; // Optional - defaults to env variable if not provided
   metadata?: {
     websiteId?: string;
     domain?: string;
@@ -66,6 +67,7 @@ export class WorkflowEmailService {
         orderId: orderId,
         orderType: 'guest_post',
         clientName: metadata?.domain || 'Guest Post',
+        inboxId: params.inboxId, // Use provided inbox or default
         customAttributes: {
           orderItemId,
           workflowId,
