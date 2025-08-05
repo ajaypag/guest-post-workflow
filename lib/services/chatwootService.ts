@@ -65,6 +65,9 @@ export class ChatwootService {
       websiteId?: string;
       accountType?: 'advertiser' | 'publisher';
       domain?: string;
+      has_paid_guest_post?: boolean;
+      guest_post_cost?: number;
+      requirement?: string;
     };
   }): Promise<ChatwootContact> {
     try {

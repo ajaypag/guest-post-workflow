@@ -281,8 +281,9 @@ export class ChatwootSyncService {
               websiteId: website.id,
               domain: website.domain,
               accountType: 'publisher',
-              hasPaidGuestPost: website.has_paid_guest_post,
-              guestPostCost: website.guest_post_cost
+              has_paid_guest_post: website.has_paid_guest_post,
+              guest_post_cost: website.guest_post_cost,
+              requirement: website.requirement
             }
           });
           stats.synced++;
