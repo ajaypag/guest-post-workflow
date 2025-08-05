@@ -209,36 +209,36 @@ export default function DirectorySubmissionSites() {
     if (!keyword) return [];
     
     const operators = [
-      { query: `intitle:"${keyword}"+"add your business" &num=100`, description: 'Find directories with "add your business" option' },
-      { query: `intitle:"${keyword}"+"add site" &num=100`, description: 'Directories accepting site submissions' },
-      { query: `intitle:"${keyword}"+"favorite links" &num=100`, description: 'Curated link directories' },
-      { query: `intitle:"${keyword}"+"listing" &num=100`, description: 'Business listing directories' },
-      { query: `intitle:"${keyword}"+"submit website" &num=100`, description: 'Website submission directories' },
-      { query: `intitle:"${keyword}"+"suggest website" &num=100`, description: 'Directories accepting suggestions' },
-      { query: `intitle:"${keyword}"+intitle:directory &num=100`, description: 'General niche directories' },
-      { query: `intitle:"${keyword}"+inurl:submit.php &num=100`, description: 'Directories with submission forms' },
-      { query: `intitle:"${keyword}"+Listings &num=100`, description: 'Listing-focused directories' },
-      { query: `intitle:"${keyword}"+"coupons for" + " * " + intitle:submit &num=100`, description: 'Coupon directories accepting submissions' },
-      { query: `intitle:"${keyword}"+"add your business" site:.edu &num=100`, description: 'Educational institution directories' },
-      { query: `intitle:"${keyword}"+"add url" &num=100`, description: 'URL submission directories' },
-      { query: `intitle:"${keyword}"+"favorite sites" &num=100`, description: 'Favorite sites directories' },
-      { query: `intitle:"${keyword}"+"recommended links" &num=100`, description: 'Recommendation directories' },
-      { query: `intitle:"${keyword}"+"submit" &num=100`, description: 'General submission directories' },
-      { query: `intitle:"${keyword}"+* directory &num=100`, description: 'All types of niche directories' },
-      { query: `intitle:"${keyword}"+inurl:".gov" "add your business" &num=100`, description: 'Government directories' },
-      { query: `intitle:"${keyword}"+directory + add/ &num=100`, description: 'Directories with add functionality' },
-      { query: `intitle:"${keyword}"+coupons + intitle:list &num=100`, description: 'Coupon listing directories' },
-      { query: `intitle:"${keyword}"+sweeps* + intitle:submit &num=100`, description: 'Sweepstakes submission directories' },
-      { query: `intitle:"${keyword}"+"add your business" site:.gov &num=100`, description: 'Government business directories' },
-      { query: `intitle:"${keyword}"+"add website" &num=100`, description: 'Website addition directories' },
-      { query: `intitle:"${keyword}"+"favorite websites" &num=100`, description: 'Favorite websites directories' },
-      { query: `intitle:"${keyword}"+"recommended sites" &num=100`, description: 'Site recommendation directories' },
-      { query: `intitle:"${keyword}"+"suggest site" &num=100`, description: 'Site suggestion directories' },
-      { query: `intitle:"${keyword}"+directory &num=100`, description: 'Simple directory search' },
-      { query: `intitle:"${keyword}"+inurl:directory &num=100`, description: 'URL-based directory search' },
-      { query: `intitle:"${keyword}"+intitle:"directory" &num=100`, description: 'Title-focused directory search' },
-      { query: `intitle:"${keyword}"+"deals for" + " * " + intitle:submit &num=100`, description: 'Deal directories accepting submissions' },
-      { query: `intitle:"${keyword}"+giveaways + intitle:submit &num=100`, description: 'Giveaway directories' }
+      { query: `intitle:"${keyword}"+"add your business"`, description: 'Find directories with "add your business" option' },
+      { query: `intitle:"${keyword}"+"add site"`, description: 'Directories accepting site submissions' },
+      { query: `intitle:"${keyword}"+"favorite links"`, description: 'Curated link directories' },
+      { query: `intitle:"${keyword}"+"listing"`, description: 'Business listing directories' },
+      { query: `intitle:"${keyword}"+"submit website"`, description: 'Website submission directories' },
+      { query: `intitle:"${keyword}"+"suggest website"`, description: 'Directories accepting suggestions' },
+      { query: `intitle:"${keyword}"+intitle:directory`, description: 'General niche directories' },
+      { query: `intitle:"${keyword}"+inurl:submit.php`, description: 'Directories with submission forms' },
+      { query: `intitle:"${keyword}"+Listings`, description: 'Listing-focused directories' },
+      { query: `intitle:"${keyword}"+"coupons for" + " * " + intitle:submit`, description: 'Coupon directories accepting submissions' },
+      { query: `intitle:"${keyword}"+"add your business" site:.edu`, description: 'Educational institution directories' },
+      { query: `intitle:"${keyword}"+"add url"`, description: 'URL submission directories' },
+      { query: `intitle:"${keyword}"+"favorite sites"`, description: 'Favorite sites directories' },
+      { query: `intitle:"${keyword}"+"recommended links"`, description: 'Recommendation directories' },
+      { query: `intitle:"${keyword}"+"submit"`, description: 'General submission directories' },
+      { query: `intitle:"${keyword}"+* directory`, description: 'All types of niche directories' },
+      { query: `intitle:"${keyword}"+inurl:".gov" "add your business"`, description: 'Government directories' },
+      { query: `intitle:"${keyword}"+directory + add/`, description: 'Directories with add functionality' },
+      { query: `intitle:"${keyword}"+coupons + intitle:list`, description: 'Coupon listing directories' },
+      { query: `intitle:"${keyword}"+sweeps* + intitle:submit`, description: 'Sweepstakes submission directories' },
+      { query: `intitle:"${keyword}"+"add your business" site:.gov`, description: 'Government business directories' },
+      { query: `intitle:"${keyword}"+"add website"`, description: 'Website addition directories' },
+      { query: `intitle:"${keyword}"+"favorite websites"`, description: 'Favorite websites directories' },
+      { query: `intitle:"${keyword}"+"recommended sites"`, description: 'Site recommendation directories' },
+      { query: `intitle:"${keyword}"+"suggest site"`, description: 'Site suggestion directories' },
+      { query: `intitle:"${keyword}"+directory`, description: 'Simple directory search' },
+      { query: `intitle:"${keyword}"+inurl:directory`, description: 'URL-based directory search' },
+      { query: `intitle:"${keyword}"+intitle:"directory"`, description: 'Title-focused directory search' },
+      { query: `intitle:"${keyword}"+"deals for" + " * " + intitle:submit`, description: 'Deal directories accepting submissions' },
+      { query: `intitle:"${keyword}"+giveaways + intitle:submit`, description: 'Giveaway directories' }
     ];
     
     return operators;
@@ -395,11 +395,11 @@ export default function DirectorySubmissionSites() {
                           <Copy className="w-4 h-4" />
                         </button>
                         <a
-                          href={`https://www.google.com/search?q=${encodeURIComponent(operator.query)}`}
+                          href={`https://www.google.com/search?q=${encodeURIComponent(operator.query)}&num=100`}
                           target="_blank"
                           rel="noopener noreferrer"
                           className="p-1.5 text-gray-600 hover:text-gray-900 hover:bg-gray-100 rounded"
-                          title="Search in Google"
+                          title="Search in Google (100 results)"
                         >
                           <ExternalLink className="w-4 h-4" />
                         </a>
@@ -410,8 +410,9 @@ export default function DirectorySubmissionSites() {
                 
                 <div className="mt-4 p-4 bg-blue-50 rounded-lg">
                   <p className="text-sm text-blue-800">
-                    <strong>Pro tip:</strong> Click the search icon to run the query in Google, or copy individual 
-                    operators to customize them further. The &num=100 parameter shows up to 100 results per search.
+                    <strong>Pro tip:</strong> Click the search icon to run the query in Google with 100 results displayed, 
+                    or copy individual operators to customize them further. You can also copy all operators at once to 
+                    use in your SEO tools or spreadsheets.
                   </p>
                 </div>
               </div>
