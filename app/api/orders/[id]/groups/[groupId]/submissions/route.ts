@@ -64,11 +64,24 @@ export async function GET(
       conditions.push(eq(orderSiteSubmissions.submissionStatus, 'pending'));
     }
     
+    // Debug logging
+    console.log('[SUBMISSIONS API] Query conditions:', {
+      orderGroupId: params.groupId,
+      userType: session.userType,
+      accountId: session.accountId,
+      orderAccountId: order.accountId,
+      status: status,
+      includeCompleted: includeCompleted,
+      conditions: conditions.length
+    });
+
     // Get submissions
     const submissions = await db.query.orderSiteSubmissions.findMany({
       where: and(...conditions),
       orderBy: (submissions, { desc }) => [desc(submissions.createdAt)]
     });
+
+    console.log('[SUBMISSIONS API] Found submissions:', submissions.length);
     
     // Get domain details for all submissions
     const domainIds = submissions.map(s => s.domainId);

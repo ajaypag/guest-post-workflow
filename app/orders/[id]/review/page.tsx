@@ -45,12 +45,16 @@ export default function ExternalOrderReviewPage() {
       // Fetch submissions for each order group
       const submissionsData: Record<string, SiteSubmission[]> = {};
       for (const group of orderData.orderGroups) {
+        console.log('[REVIEW PAGE] Fetching submissions for group:', group.id);
         const submissionsRes = await fetch(
           `/api/orders/${orderId}/groups/${group.id}/submissions`
         );
         if (submissionsRes.ok) {
           const data = await submissionsRes.json();
+          console.log('[REVIEW PAGE] Received submissions:', data.submissions?.length || 0);
           submissionsData[group.id] = data.submissions || [];
+        } else {
+          console.error('[REVIEW PAGE] Failed to fetch submissions:', submissionsRes.status, await submissionsRes.text());
         }
       }
       
