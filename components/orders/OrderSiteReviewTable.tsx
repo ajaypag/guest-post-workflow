@@ -364,7 +364,7 @@ export default function OrderSiteReviewTable({
         return (
           <td className="px-6 py-4 pl-8">
             <div className="flex items-center gap-2">
-              {data.showPoolView && availableForTarget.length > 1 && (
+              {data.showPoolView && availableForTarget.length > 0 && (
                 <button
                   className="flex items-center gap-1 p-1 hover:bg-gray-100 rounded"
                   onClick={() => setEditingLineItem(
@@ -372,7 +372,10 @@ export default function OrderSiteReviewTable({
                       ? null 
                       : { groupId, index }
                   )}
-                  title={`${availableForTarget.length} alternative domains available`}
+                  title={availableForTarget.length > 1 
+                    ? `${availableForTarget.length} alternative domains available` 
+                    : 'View domain analysis details'
+                  }
                 >
                   {editingLineItem?.groupId === groupId && editingLineItem?.index === index ? (
                     <ChevronDown className="w-4 h-4 text-gray-600" />
@@ -455,7 +458,7 @@ export default function OrderSiteReviewTable({
                       </span>
                     )}
                   </div>
-                  {permissions.canSwitchPools && availableForTarget.length > 1 && (
+                  {permissions.canSwitchPools && availableForTarget.length > 0 && (
                     <button
                       className="flex items-center gap-1 p-1 hover:bg-gray-100 rounded"
                       onClick={() => setEditingLineItem(
@@ -463,7 +466,10 @@ export default function OrderSiteReviewTable({
                           ? null 
                           : { groupId, index }
                       )}
-                      title={`${availableForTarget.length} available domains`}
+                      title={availableForTarget.length > 1 
+                        ? `${availableForTarget.length} available domains` 
+                        : 'View domain analysis details'
+                      }
                     >
                       {editingLineItem?.groupId === groupId && editingLineItem?.index === index ? (
                         <ChevronUp className="h-4 w-4 text-gray-500" />
@@ -808,7 +814,7 @@ export default function OrderSiteReviewTable({
                             {/* Expandable domain comparison - Full featured version */}
                             {editingLineItem?.groupId === group.id && 
                              editingLineItem?.index === index && 
-                             availableForTarget.length > 1 && (
+                             availableForTarget.length > 0 && (
                               <tr className="bg-white border-l-4 border-indigo-200 edit-dropdown">
                                 <td colSpan={columnConfig.columns.length} className="px-6 py-4">
                                   <div className="bg-gray-50 rounded-lg p-4 edit-dropdown">
