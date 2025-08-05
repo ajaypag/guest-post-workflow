@@ -34,7 +34,12 @@ export async function middleware(request: NextRequest) {
   // === ADMIN PROTECTION ===
   
   // Protect admin API routes (require internal users)
-  if (path.startsWith('/api/admin') || path === '/api/security-scan') {
+  if (path.startsWith('/api/admin') || 
+      path === '/api/security-scan' ||
+      path === '/api/setup-db' ||
+      path === '/api/fix-schema' ||
+      path === '/api/fix-workflows-schema' ||
+      path === '/api/database-checker') {
     try {
       // Get token from cookies or Authorization header
       let token: string | undefined;
@@ -142,6 +147,9 @@ export async function middleware(request: NextRequest) {
       path.startsWith('/api/contacts/') ||     // Contact data access
       path.startsWith('/api/keywords/') ||     // AI keyword generation
       path.startsWith('/api/domains/') ||      // Domain availability checks
+      path.startsWith('/api/websites/') ||     // Website data access
+      path.startsWith('/api/account/') ||      // Account profile operations
+      path.startsWith('/api/projects/') ||     // Project operations
       (path.startsWith('/api/accounts') && path !== '/api/accounts/signup')) {
     
     try {
