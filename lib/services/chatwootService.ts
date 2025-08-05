@@ -68,6 +68,8 @@ export class ChatwootService {
       has_paid_guest_post?: boolean;
       guest_post_cost?: number;
       requirement?: string;
+      companyName?: string;
+      totalOrders?: number;
     };
   }): Promise<ChatwootContact> {
     try {
