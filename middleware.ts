@@ -39,7 +39,12 @@ export async function middleware(request: NextRequest) {
       path === '/api/setup-db' ||
       path === '/api/fix-schema' ||
       path === '/api/fix-workflows-schema' ||
-      path === '/api/database-checker') {
+      path === '/api/database-checker' ||
+      path === '/api/test-workflow-insert' ||
+      path === '/api/check-table-structure' ||
+      path === '/api/debug-users' ||
+      path === '/api/debug' ||
+      path === '/api/migrate') {
     try {
       // Get token from cookies or Authorization header
       let token: string | undefined;
