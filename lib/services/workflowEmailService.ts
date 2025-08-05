@@ -1,5 +1,9 @@
 import { ChatwootService } from './chatwootService';
-import { pool } from '../db';
+import { db } from '@/lib/db/connection';
+import { Pool } from 'pg';
+
+// Get the underlying pool from drizzle
+const pool = (db as any).$client as Pool;
 
 interface SendGuestPostEmailParams {
   workflowId: string;
@@ -57,11 +61,12 @@ export class WorkflowEmailService {
 
       // 2. Create conversation with the contact
       console.log('Creating conversation for contact:', contact.id);
-      const conversation = await ChatwootService.createConversation({
+      const conversation = await ChatwootService.createOrderConversation({
         contactId: contact.id,
-        inboxId: process.env.CHATWOOT_INBOX_ID!,
+        orderId: orderId,
+        orderType: 'guest_post',
+        clientName: metadata?.domain || 'Guest Post',
         customAttributes: {
-          orderId,
           orderItemId,
           workflowId,
           articleTitle: metadata?.articleTitle
@@ -70,10 +75,10 @@ export class WorkflowEmailService {
 
       // 3. Send the email as a message
       console.log('Sending message in conversation:', conversation.id);
-      const message = await ChatwootService.sendMessage(conversation.id, {
+      const message = await ChatwootService.sendMessage({
+        conversationId: conversation.id,
         content: this.formatEmailContent(subject, body, googleDocUrl),
-        private: false,
-        messageType: 'outgoing'
+        private: false
       });
 
       // 4. Update order item with Chatwoot conversation ID
@@ -215,7 +220,7 @@ export class WorkflowEmailService {
 
       return {
         status: hasPublisherResponse ? 'replied' : 'sent',
-        lastActivity: new Date(conversation.last_activity_at),
+        lastActivity: new Date(), // We'll use current time as last activity
         hasPublisherResponse
       };
 
@@ -230,10 +235,10 @@ export class WorkflowEmailService {
    */
   static async sendFollowUp(conversationId: number, message: string): Promise<boolean> {
     try {
-      await ChatwootService.sendMessage(conversationId, {
+      await ChatwootService.sendMessage({
+        conversationId,
         content: message,
-        private: false,
-        messageType: 'outgoing'
+        private: false
       });
       
       return true;

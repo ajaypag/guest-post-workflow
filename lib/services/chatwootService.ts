@@ -209,6 +209,51 @@ export class ChatwootService {
   }
 
   /**
+   * Get conversation details
+   */
+  static async getConversation(conversationId: number): Promise<ChatwootConversation> {
+    try {
+      const url = `${this.config.apiUrl}/api/v1/accounts/${this.config.accountId}/conversations/${conversationId}`;
+      
+      const response = await fetch(url, {
+        headers: this.getHeaders()
+      });
+
+      if (!response.ok) {
+        throw new Error(`Failed to get conversation: ${response.statusText}`);
+      }
+
+      return await response.json();
+    } catch (error) {
+      console.error('Error getting Chatwoot conversation:', error);
+      throw error;
+    }
+  }
+
+  /**
+   * Get messages in a conversation
+   */
+  static async getMessages(conversationId: number): Promise<ChatwootMessage[]> {
+    try {
+      const url = `${this.config.apiUrl}/api/v1/accounts/${this.config.accountId}/conversations/${conversationId}/messages`;
+      
+      const response = await fetch(url, {
+        headers: this.getHeaders()
+      });
+
+      if (!response.ok) {
+        throw new Error(`Failed to get messages: ${response.statusText}`);
+      }
+
+      const data = await response.json();
+      return data.payload || [];
+    } catch (error) {
+      console.error('Error getting Chatwoot messages:', error);
+      throw error;
+    }
+  }
+
+  /**
    * Update conversation custom attributes
    */
   static async updateConversationAttributes(
