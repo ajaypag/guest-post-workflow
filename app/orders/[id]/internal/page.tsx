@@ -1706,43 +1706,47 @@ export default function InternalOrderManagementPage() {
                                                     <div className="flex items-center gap-1">
                                                       {submission.id !== finalDisplaySubmission?.id && (
                                                         <>
-                                                          <button 
-                                                            className="text-xs bg-blue-100 text-blue-700 hover:bg-blue-200 px-2 py-1 rounded transition-colors"
-                                                            onClick={async (e) => {
-                                                              e.preventDefault();
-                                                              e.stopPropagation();
-                                                              try {
-                                                                // Use the new pool-aware switch function
-                                                                await handleSwitchDomain(submission.id, groupId);
-                                                                
-                                                                // Don't close the expanded row - keep it open for user to see the change
-                                                                // setEditingLineItem(null);
-                                                              } catch (error) {
-                                                                console.error('Error switching domain:', error);
-                                                              }
-                                                            }}
-                                                            disabled={!!assigningDomain}
-                                                          >
-                                                            {assigningDomain === submission.id ? (
-                                                              <Loader2 className="h-3 w-3 animate-spin" />
-                                                            ) : submission.selectionPool === 'primary' ? (
-                                                              'Make Alternative'
-                                                            ) : (
-                                                              'Make Primary'
-                                                            )}
-                                                          </button>
-                                                          <button 
-                                                            className="text-xs bg-green-100 text-green-700 hover:bg-green-200 px-2 py-1 rounded transition-colors"
-                                                            onClick={async (e) => {
-                                                              e.preventDefault();
-                                                              e.stopPropagation();
-                                                              // Add as new link - this would need API endpoint to create new line item
-                                                              console.log('Add as new link:', submission.id);
-                                                              // TODO: Implement add as new link functionality
-                                                            }}
-                                                          >
-                                                            Add as New Link
-                                                          </button>
+                                                          {submission.selectionPool === 'primary' ? (
+                                                            <span className="text-xs text-gray-500 italic">In use</span>
+                                                          ) : (
+                                                            <>
+                                                              <button 
+                                                                className="text-xs bg-blue-100 text-blue-700 hover:bg-blue-200 px-2 py-1 rounded transition-colors"
+                                                                onClick={async (e) => {
+                                                                  e.preventDefault();
+                                                                  e.stopPropagation();
+                                                                  try {
+                                                                    // Use the new pool-aware switch function
+                                                                    await handleSwitchDomain(submission.id, groupId);
+                                                                    
+                                                                    // Don't close the expanded row - keep it open for user to see the change
+                                                                    // setEditingLineItem(null);
+                                                                  } catch (error) {
+                                                                    console.error('Error switching domain:', error);
+                                                                  }
+                                                                }}
+                                                                disabled={!!assigningDomain}
+                                                              >
+                                                                {assigningDomain === submission.id ? (
+                                                                  <Loader2 className="h-3 w-3 animate-spin" />
+                                                                ) : (
+                                                                  'Make Primary'
+                                                                )}
+                                                              </button>
+                                                              <button 
+                                                                className="text-xs bg-green-100 text-green-700 hover:bg-green-200 px-2 py-1 rounded transition-colors"
+                                                                onClick={async (e) => {
+                                                                  e.preventDefault();
+                                                                  e.stopPropagation();
+                                                                  // Add as new link - this would need API endpoint to create new line item
+                                                                  console.log('Add as new link:', submission.id);
+                                                                  // TODO: Implement add as new link functionality
+                                                                }}
+                                                              >
+                                                                Add as New Link
+                                                              </button>
+                                                            </>
+                                                          )}
                                                         </>
                                                       )}
                                                       {group.bulkAnalysisProjectId && submission.domainId && (
