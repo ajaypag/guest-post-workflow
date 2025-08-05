@@ -3,6 +3,7 @@ import { db } from '@/lib/db/connection';
 import { orders } from '@/lib/db/orderSchema';
 import { orderSiteSubmissions } from '@/lib/db/projectOrderAssociationsSchema';
 import { orderGroups } from '@/lib/db/orderGroupSchema';
+import { accounts } from '@/lib/db/accountSchema';
 import { eq, and } from 'drizzle-orm';
 import { AuthServiceServer } from '@/lib/auth-server';
 
@@ -76,11 +77,77 @@ export async function POST(
         }, { status: 400 });
       }
 
-      // Update order to payment_pending state (still confirmed status)
+      // Generate invoice number (simple format: INV-YYYYMMDD-XXXX)
+      const now = new Date();
+      const dateStr = now.toISOString().split('T')[0].replace(/-/g, '');
+      const randomStr = Math.random().toString(36).substr(2, 4).toUpperCase();
+      const invoiceNumber = `INV-${dateStr}-${randomStr}`;
+
+      // Calculate invoice details
+      const subtotal = order.subtotalRetail || 0;
+      const discountAmount = order.discountAmount || 0;
+      const clientReviewFee = order.clientReviewFee || 0;
+      const rushFee = order.rushFee || 0;
+      const total = order.totalRetail || 0;
+
+      // Get account info for billing
+      const account = await db.query.accounts.findFirst({
+        where: eq(accounts.id, order.accountId!)
+      });
+
+      // Build invoice items
+      const items = [];
+      
+      // Add main service item
+      items.push({
+        description: `Guest Post Services - ${approvedSubmissions.length} approved sites`,
+        quantity: approvedSubmissions.length,
+        unitPrice: Math.floor(subtotal / approvedSubmissions.length),
+        total: subtotal
+      });
+
+      // Add optional services
+      if (clientReviewFee > 0) {
+        items.push({
+          description: 'Client Review Service',
+          quantity: 1,
+          unitPrice: clientReviewFee,
+          total: clientReviewFee
+        });
+      }
+
+      if (rushFee > 0) {
+        items.push({
+          description: 'Rush Delivery',
+          quantity: 1,
+          unitPrice: rushFee,
+          total: rushFee
+        });
+      }
+
+      // Create invoice data
+      const invoiceData = {
+        invoiceNumber,
+        issueDate: now.toISOString().split('T')[0],
+        dueDate: new Date(now.getTime() + 30 * 24 * 60 * 60 * 1000).toISOString().split('T')[0], // 30 days from now
+        items,
+        subtotal: subtotal + clientReviewFee + rushFee,
+        discount: discountAmount,
+        total,
+        billingInfo: account ? {
+          name: account.contactName || '',
+          company: account.companyName || '',
+          email: account.email,
+          address: account.billingAddress || undefined
+        } : undefined
+      };
+
+      // Update order to payment_pending state with invoice data
       const updatedOrder = await db.update(orders)
         .set({
           state: 'payment_pending',
           invoicedAt: new Date(),
+          invoiceData,
           updatedAt: new Date()
         })
         .where(eq(orders.id, orderId))

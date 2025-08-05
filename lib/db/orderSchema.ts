@@ -1,4 +1,4 @@
-import { pgTable, uuid, varchar, text, timestamp, boolean, integer, decimal, index, unique } from 'drizzle-orm/pg-core';
+import { pgTable, uuid, varchar, text, timestamp, boolean, integer, decimal, index, unique, jsonb } from 'drizzle-orm/pg-core';
 import { relations } from 'drizzle-orm';
 import { users, clients, workflows } from './schema';
 import { bulkAnalysisDomains } from './bulkAnalysisSchema';
@@ -44,6 +44,26 @@ export const orders = pgTable('orders', {
   // Important dates
   approvedAt: timestamp('approved_at'),
   invoicedAt: timestamp('invoiced_at'),
+  invoiceData: jsonb('invoice_data').$type<{
+    invoiceNumber: string;
+    issueDate: string;
+    dueDate: string;
+    items: Array<{
+      description: string;
+      quantity: number;
+      unitPrice: number;
+      total: number;
+    }>;
+    subtotal: number;
+    discount: number;
+    total: number;
+    billingInfo?: {
+      name: string;
+      company: string;
+      email: string;
+      address?: string;
+    };
+  }>(),
   paidAt: timestamp('paid_at'),
   completedAt: timestamp('completed_at'),
   cancelledAt: timestamp('cancelled_at'),

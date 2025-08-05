@@ -2,7 +2,7 @@
 
 import { useState, useEffect } from 'react';
 import { useParams, useRouter } from 'next/navigation';
-import { Loader2, Clock, CheckCircle, AlertCircle, Search, Users, FileText, ArrowRight, RefreshCw, ExternalLink, BarChart3, Activity, Target } from 'lucide-react';
+import { Loader2, Clock, CheckCircle, AlertCircle, Search, Users, FileText, ArrowRight, RefreshCw, ExternalLink, BarChart3, Activity, Target, CreditCard } from 'lucide-react';
 import Link from 'next/link';
 import Header from '@/components/Header';
 
@@ -50,6 +50,7 @@ interface OrderData {
   state?: string;
   createdAt: string;
   approvedAt?: string;
+  invoicedAt?: string;
   orderGroups: OrderGroup[];
   activityTimeline?: Array<{
     id: string;
@@ -250,6 +251,15 @@ export default function OrderStatusPage() {
                 <RefreshCw className={`w-4 h-4 mr-2 ${refreshing ? 'animate-spin' : ''}`} />
                 Refresh
               </button>
+              {order.invoicedAt && (
+                <button
+                  onClick={() => router.push(`/orders/${orderId}/invoice`)}
+                  className="inline-flex items-center px-3 py-2 bg-blue-600 text-white rounded-md hover:bg-blue-700"
+                >
+                  <CreditCard className="w-4 h-4 mr-2" />
+                  View Invoice
+                </button>
+              )}
               <span className={`px-4 py-2 rounded-full text-sm font-medium ${stateDisplay.color}`}>
                 {stateDisplay.label}
               </span>

@@ -1374,6 +1374,19 @@ export default function InternalOrderManagementPage() {
                       </button>
                     )}
 
+                    {/* View Invoice - after invoice generated */}
+                    {order.invoicedAt && (
+                      <button
+                        onClick={() => router.push(`/orders/${orderId}/invoice`)}
+                        className="w-full px-3 py-2 bg-blue-600 text-white text-sm rounded-md hover:bg-blue-700"
+                      >
+                        <span className="flex items-center justify-center gap-2">
+                          <FileText className="h-4 w-4" />
+                          View Invoice
+                        </span>
+                      </button>
+                    )}
+                    
                     {/* Mark as Paid - after invoice generated */}
                     {order.invoicedAt && !order.paidAt && (
                       <button
