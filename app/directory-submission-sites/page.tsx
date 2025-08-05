@@ -17,7 +17,9 @@ import {
   AlertCircle,
   Info,
   ChevronLeft,
-  ChevronRight
+  ChevronRight,
+  Copy,
+  Sparkles
 } from 'lucide-react';
 import { directoryCSVData as csvData } from '@/lib/data/directoryData';
 
@@ -75,6 +77,8 @@ export default function DirectorySubmissionSites() {
   const [showFilters, setShowFilters] = useState(false);
   const [currentPage, setCurrentPage] = useState(1);
   const [itemsPerPage, setItemsPerPage] = useState(50);
+  const [keyword, setKeyword] = useState('');
+  const [showSearchOperators, setShowSearchOperators] = useState(false);
   
   // Parse directory data
   const directories = useMemo(() => parseCSV(csvData), []);
@@ -199,6 +203,58 @@ export default function DirectorySubmissionSites() {
     a.download = `directory-submission-sites-${new Date().toISOString().split('T')[0]}.csv`;
     a.click();
   };
+  
+  // Generate search operators
+  const generateSearchOperators = (keyword: string) => {
+    if (!keyword) return [];
+    
+    const operators = [
+      { query: `intitle:"${keyword}"+"add your business" &num=100`, description: 'Find directories with "add your business" option' },
+      { query: `intitle:"${keyword}"+"add site" &num=100`, description: 'Directories accepting site submissions' },
+      { query: `intitle:"${keyword}"+"favorite links" &num=100`, description: 'Curated link directories' },
+      { query: `intitle:"${keyword}"+"listing" &num=100`, description: 'Business listing directories' },
+      { query: `intitle:"${keyword}"+"submit website" &num=100`, description: 'Website submission directories' },
+      { query: `intitle:"${keyword}"+"suggest website" &num=100`, description: 'Directories accepting suggestions' },
+      { query: `intitle:"${keyword}"+intitle:directory &num=100`, description: 'General niche directories' },
+      { query: `intitle:"${keyword}"+inurl:submit.php &num=100`, description: 'Directories with submission forms' },
+      { query: `intitle:"${keyword}"+Listings &num=100`, description: 'Listing-focused directories' },
+      { query: `intitle:"${keyword}"+"coupons for" + " * " + intitle:submit &num=100`, description: 'Coupon directories accepting submissions' },
+      { query: `intitle:"${keyword}"+"add your business" site:.edu &num=100`, description: 'Educational institution directories' },
+      { query: `intitle:"${keyword}"+"add url" &num=100`, description: 'URL submission directories' },
+      { query: `intitle:"${keyword}"+"favorite sites" &num=100`, description: 'Favorite sites directories' },
+      { query: `intitle:"${keyword}"+"recommended links" &num=100`, description: 'Recommendation directories' },
+      { query: `intitle:"${keyword}"+"submit" &num=100`, description: 'General submission directories' },
+      { query: `intitle:"${keyword}"+* directory &num=100`, description: 'All types of niche directories' },
+      { query: `intitle:"${keyword}"+inurl:".gov" "add your business" &num=100`, description: 'Government directories' },
+      { query: `intitle:"${keyword}"+directory + add/ &num=100`, description: 'Directories with add functionality' },
+      { query: `intitle:"${keyword}"+coupons + intitle:list &num=100`, description: 'Coupon listing directories' },
+      { query: `intitle:"${keyword}"+sweeps* + intitle:submit &num=100`, description: 'Sweepstakes submission directories' },
+      { query: `intitle:"${keyword}"+"add your business" site:.gov &num=100`, description: 'Government business directories' },
+      { query: `intitle:"${keyword}"+"add website" &num=100`, description: 'Website addition directories' },
+      { query: `intitle:"${keyword}"+"favorite websites" &num=100`, description: 'Favorite websites directories' },
+      { query: `intitle:"${keyword}"+"recommended sites" &num=100`, description: 'Site recommendation directories' },
+      { query: `intitle:"${keyword}"+"suggest site" &num=100`, description: 'Site suggestion directories' },
+      { query: `intitle:"${keyword}"+directory &num=100`, description: 'Simple directory search' },
+      { query: `intitle:"${keyword}"+inurl:directory &num=100`, description: 'URL-based directory search' },
+      { query: `intitle:"${keyword}"+intitle:"directory" &num=100`, description: 'Title-focused directory search' },
+      { query: `intitle:"${keyword}"+"deals for" + " * " + intitle:submit &num=100`, description: 'Deal directories accepting submissions' },
+      { query: `intitle:"${keyword}"+giveaways + intitle:submit &num=100`, description: 'Giveaway directories' }
+    ];
+    
+    return operators;
+  };
+  
+  const searchOperators = useMemo(() => generateSearchOperators(keyword), [keyword]);
+  
+  // Copy to clipboard
+  const copyToClipboard = async (text: string) => {
+    try {
+      await navigator.clipboard.writeText(text);
+      // You could add a toast notification here
+    } catch (err) {
+      console.error('Failed to copy:', err);
+    }
+  };
 
   return (
     <div className="min-h-screen bg-gray-50">
@@ -258,6 +314,108 @@ export default function DirectorySubmissionSites() {
                 {showFilters ? 'Hide' : 'Show'} Filters
               </button>
             </div>
+          </div>
+        </div>
+      </section>
+
+      {/* Google Search Operators */}
+      <section className="bg-gradient-to-br from-purple-50 to-blue-50 py-12">
+        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+          <div className="text-center mb-8">
+            <h2 className="text-2xl font-bold text-gray-900 mb-2 flex items-center justify-center gap-2">
+              <Sparkles className="w-6 h-6 text-purple-600" />
+              Directory Search Operators
+            </h2>
+            <p className="text-gray-600">
+              Enter your keyword to generate 30 Google search operators for finding niche-specific directories
+            </p>
+          </div>
+          
+          <div className="max-w-2xl mx-auto">
+            <div className="bg-white rounded-lg shadow-md p-6 mb-6">
+              <label className="block text-sm font-medium text-gray-700 mb-2">
+                Your Keyword
+              </label>
+              <div className="flex gap-3">
+                <input
+                  type="text"
+                  value={keyword}
+                  onChange={(e) => setKeyword(e.target.value)}
+                  placeholder="e.g., real estate, fitness, technology"
+                  className="flex-1 px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-purple-500 focus:border-purple-500"
+                />
+                <button
+                  onClick={() => setShowSearchOperators(!showSearchOperators)}
+                  disabled={!keyword}
+                  className="px-6 py-2 bg-purple-600 text-white rounded-lg hover:bg-purple-700 disabled:bg-gray-300 disabled:cursor-not-allowed font-medium"
+                >
+                  {showSearchOperators ? 'Hide' : 'Generate'} Operators
+                </button>
+              </div>
+            </div>
+            
+            {showSearchOperators && keyword && (
+              <div className="bg-white rounded-lg shadow-md p-6">
+                <div className="flex items-center justify-between mb-4">
+                  <h3 className="font-semibold text-gray-900">
+                    30 Search Operators for "{keyword}"
+                  </h3>
+                  <button
+                    onClick={() => {
+                      const allQueries = searchOperators.map(op => op.query).join('\n');
+                      copyToClipboard(allQueries);
+                    }}
+                    className="flex items-center gap-2 px-4 py-2 text-sm bg-gray-100 text-gray-700 rounded-lg hover:bg-gray-200"
+                  >
+                    <Copy className="w-4 h-4" />
+                    Copy All
+                  </button>
+                </div>
+                
+                <div className="space-y-2 max-h-96 overflow-y-auto">
+                  {searchOperators.map((operator, index) => (
+                    <div 
+                      key={index}
+                      className="group flex items-start gap-3 p-3 rounded-lg hover:bg-gray-50 transition-colors"
+                    >
+                      <div className="flex-1">
+                        <code className="text-sm text-purple-700 break-all">
+                          {operator.query}
+                        </code>
+                        <p className="text-xs text-gray-500 mt-1">
+                          {operator.description}
+                        </p>
+                      </div>
+                      <div className="flex gap-2 opacity-0 group-hover:opacity-100 transition-opacity">
+                        <button
+                          onClick={() => copyToClipboard(operator.query)}
+                          className="p-1.5 text-gray-600 hover:text-gray-900 hover:bg-gray-100 rounded"
+                          title="Copy to clipboard"
+                        >
+                          <Copy className="w-4 h-4" />
+                        </button>
+                        <a
+                          href={`https://www.google.com/search?q=${encodeURIComponent(operator.query)}`}
+                          target="_blank"
+                          rel="noopener noreferrer"
+                          className="p-1.5 text-gray-600 hover:text-gray-900 hover:bg-gray-100 rounded"
+                          title="Search in Google"
+                        >
+                          <ExternalLink className="w-4 h-4" />
+                        </a>
+                      </div>
+                    </div>
+                  ))}
+                </div>
+                
+                <div className="mt-4 p-4 bg-blue-50 rounded-lg">
+                  <p className="text-sm text-blue-800">
+                    <strong>Pro tip:</strong> Click the search icon to run the query in Google, or copy individual 
+                    operators to customize them further. The &num=100 parameter shows up to 100 results per search.
+                  </p>
+                </div>
+              </div>
+            )}
           </div>
         </div>
       </section>
