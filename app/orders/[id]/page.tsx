@@ -197,8 +197,8 @@ export default function OrderPage() {
   // Internal action handlers
   const handleMarkSitesReady = async () => {
     try {
-      const response = await fetch(`/api/orders/${orderId}/state`, {
-        method: 'PUT',
+      const response = await fetch(`/api/orders/${orderId}/update-state`, {
+        method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         credentials: 'include',
         body: JSON.stringify({ state: 'sites_ready' })
@@ -264,6 +264,38 @@ export default function OrderPage() {
       alert('Failed to switch domain');
     }
   };
+  
+  const handleAssignTargetPage = async (submissionId: string, targetPageUrl: string, groupId: string) => {
+    try {
+      const response = await fetch(`/api/orders/${orderId}/groups/${groupId}/site-selections/${submissionId}/target-url`, {
+        method: 'PATCH',
+        headers: { 'Content-Type': 'application/json' },
+        credentials: 'include',
+        body: JSON.stringify({ 
+          targetPageUrl,
+          anchorText: null // Can be set later
+        })
+      });
+      
+      if (!response.ok) {
+        const errorData = await response.json().catch(() => ({ error: 'Unknown error' }));
+        throw new Error(errorData.error || 'Failed to update target page assignment');
+      }
+      
+      // Refresh site submissions to show the update
+      const submissionsResponse = await fetch(
+        `/api/orders/${orderId}/groups/${groupId}/site-submissions`,
+        { credentials: 'include' }
+      );
+      if (submissionsResponse.ok) {
+        const submissions = await submissionsResponse.json();
+        setSiteSubmissions(prev => ({ ...prev, [groupId]: submissions }));
+      }
+    } catch (err) {
+      console.error('Error assigning target page:', err);
+      alert('Failed to assign target page');
+    }
+  };
 
   return (
     <AuthWrapper>
@@ -283,6 +315,8 @@ export default function OrderPage() {
           onMarkSitesReady={userType === 'internal' ? handleMarkSitesReady : undefined}
           onGenerateWorkflows={userType === 'internal' ? handleGenerateWorkflows : undefined}
           onSwitchDomain={userType === 'internal' ? handleSwitchDomain : undefined}
+          onAssignTargetPage={userType === 'internal' ? handleAssignTargetPage : undefined}
+          session={session}
         />
       </div>
     </AuthWrapper>

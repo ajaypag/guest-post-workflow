@@ -168,6 +168,8 @@ interface UnifiedOrderInterfaceProps {
   onMarkSitesReady?: () => Promise<void>;
   onGenerateWorkflows?: () => Promise<void>;
   onSwitchDomain?: (submissionId: string, groupId: string) => Promise<void>;
+  onAssignTargetPage?: (submissionId: string, targetPageUrl: string, groupId: string) => Promise<void>;
+  session?: any; // For internal user assignment
 }
 
 export default function UnifiedOrderInterface({
@@ -184,10 +186,12 @@ export default function UnifiedOrderInterface({
   onModeChange,
   onMarkSitesReady,
   onGenerateWorkflows,
-  onSwitchDomain
+  onSwitchDomain,
+  onAssignTargetPage,
+  session: propSession
 }: UnifiedOrderInterfaceProps) {
   const router = useRouter();
-  const session = AuthService.getSession();
+  const session = propSession || AuthService.getSession();
   const isAccountUser = session?.userType === 'account';
   
   // Mode state
@@ -965,7 +969,9 @@ export default function UnifiedOrderInterface({
         await onSubmit(orderData);
       } else if (orderStatus === 'draft' && draftOrderId) {
         // Fallback for new draft orders without onSubmit prop
-        const response = await fetch(`/api/orders/${draftOrderId}/submit`, {
+        // Internal users use /confirm endpoint, external users use /submit
+        const endpoint = userType === 'internal' ? 'confirm' : 'submit';
+        const response = await fetch(`/api/orders/${draftOrderId}/${endpoint}`, {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
           credentials: 'include',
