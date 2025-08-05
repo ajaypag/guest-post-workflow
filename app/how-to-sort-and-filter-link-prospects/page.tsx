@@ -1,11 +1,38 @@
 'use client';
 
 import { useState } from 'react';
+import Image from 'next/image';
 import BlogPostTemplate from '@/components/BlogPostTemplate';
 import { ChevronRight, Filter, Trash2, CheckCircle, XCircle, AlertCircle, Users, Globe, FileSpreadsheet, Link2 } from 'lucide-react';
 
+// Optimized Image Component with lazy loading and performance features
+interface OptimizedImageProps {
+  src: string;
+  alt: string;
+  width: number;
+  height: number;
+  className?: string;
+  priority?: boolean;
+}
+
+const OptimizedImage = ({ src, alt, width, height, className = "", priority = false }: OptimizedImageProps) => (
+  <Image
+    src={src}
+    alt={alt}
+    width={width}
+    height={height}
+    className={`rounded-lg shadow-md ${className}`}
+    loading={priority ? "eager" : "lazy"}
+    priority={priority}
+    quality={85}
+    placeholder="blur"
+    blurDataURL="data:image/jpeg;base64,/9j/4AAQSkZJRgABAQAAAQABAAD/2wBDAAYEBQYFBAYGBQYHBwYIChAKCgkJChQODwwQFxQYGBcUFhYaHSUfGhsjHBYWICwgIyYnKSopGR8tMC0oMCUoKSj/2wBDAQcHBwoIChMKChMoGhYaKCgoKCgoKCgoKCgoKCgoKCgoKCgoKCgoKCgoKCgoKCgoKCgoKCgoKCgoKCgoKCgoKCj/wAARCAABAAEDASIAAhEBAxEB/8QAFQABAQAAAAAAAAAAAAAAAAAAAAv/xAAUEAEAAAAAAAAAAAAAAAAAAAAA/8QAFQEBAQAAAAAAAAAAAAAAAAAAAAX/xAAUEQEAAAAAAAAAAAAAAAAAAAAA/9oADAMBAAIRAxEAPwCdABmX/9k="
+  />
+);
+
 export default function HowToSortAndFilterLinkProspectsPage() {
   const [activeSection, setActiveSection] = useState('');
+  const [imagesLoaded, setImagesLoaded] = useState(0);
 
   const tableOfContents = [
     { id: "pre-stage", title: "Pre-stage of getting your spreadsheet ready", icon: FileSpreadsheet },
@@ -25,33 +52,44 @@ export default function HowToSortAndFilterLinkProspectsPage() {
       author="Ajay Paghdal"
       readTime="18 min read"
     >
-      {/* Hero Section */}
-      <div className="relative bg-gradient-to-br from-blue-50 to-indigo-100 rounded-lg p-8 mb-12 border border-blue-200">
-        <div className="flex items-center gap-3 mb-4">
-          <Filter className="w-8 h-8 text-blue-600" />
-          <span className="text-sm font-medium bg-blue-600 text-white px-3 py-1 rounded-full">
-            Link Building Strategy
-          </span>
+      {/* Hero Section with Featured Image */}
+      <div className="relative mb-12">
+        <OptimizedImage
+          src="https://www.linkio.com/wp-content/uploads/2020/11/sorting-link-prospects-fi-1024x536.png"
+          alt="How to Sort and Filter Link Prospects - Complete Guide"
+          width={1024}
+          height={536}
+          className="w-full h-[400px] object-cover"
+          priority={true}
+        />
+        <div className="absolute inset-0 bg-gradient-to-t from-black/60 via-black/20 to-transparent rounded-lg" />
+        <div className="absolute bottom-0 left-0 right-0 p-8 text-white">
+          <div className="flex items-center gap-3 mb-4">
+            <Filter className="w-8 h-8" />
+            <span className="text-sm font-medium bg-blue-600 px-3 py-1 rounded-full">
+              Link Building Strategy
+            </span>
+          </div>
+          <h1 className="text-4xl md:text-5xl font-bold mb-4">How to Sort and Filter Link Prospects</h1>
+          <p className="text-lg text-blue-100 max-w-3xl">
+            Turn your messy spreadsheet into a goldmine of opportunities. Learn the insider tactics for identifying quality link prospects and avoiding time-wasters.
+          </p>
         </div>
-        <h1 className="text-4xl font-bold mb-4 text-gray-900">How to Sort and Filter Link Prospects</h1>
-        <p className="text-lg text-gray-700 mb-6">
-          Turn your messy spreadsheet into a goldmine of opportunities. Learn the insider tactics for identifying quality link prospects and avoiding time-wasters.
-        </p>
-        
-        {/* Quick Stats */}
-        <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-          <div className="bg-white rounded-lg p-4 border border-blue-200">
-            <div className="text-2xl font-bold text-blue-600 mb-1">31%</div>
-            <div className="text-sm text-gray-600">Of prospects are actually worth pursuing</div>
-          </div>
-          <div className="bg-white rounded-lg p-4 border border-purple-200">
-            <div className="text-2xl font-bold text-purple-600 mb-1">40%</div>
-            <div className="text-sm text-gray-600">Are duplicate or reposted content</div>
-          </div>
-          <div className="bg-white rounded-lg p-4 border border-green-200">
-            <div className="text-2xl font-bold text-green-600 mb-1">5%</div>
-            <div className="text-sm text-gray-600">Of nofollow links drive real traffic</div>
-          </div>
+      </div>
+
+      {/* Quick Stats */}
+      <div className="grid grid-cols-1 md:grid-cols-3 gap-4 mb-12">
+        <div className="bg-white rounded-lg p-6 border border-blue-200 shadow-sm">
+          <div className="text-3xl font-bold text-blue-600 mb-2">31%</div>
+          <div className="text-gray-600">Of prospects are actually worth pursuing</div>
+        </div>
+        <div className="bg-white rounded-lg p-6 border border-purple-200 shadow-sm">
+          <div className="text-3xl font-bold text-purple-600 mb-2">40%</div>
+          <div className="text-gray-600">Are duplicate or reposted content</div>
+        </div>
+        <div className="bg-white rounded-lg p-6 border border-green-200 shadow-sm">
+          <div className="text-3xl font-bold text-green-600 mb-2">5%</div>
+          <div className="text-gray-600">Of nofollow links drive real traffic</div>
         </div>
       </div>
 
@@ -184,6 +222,17 @@ export default function HowToSortAndFilterLinkProspectsPage() {
           </div>
         </div>
 
+        {/* Linked Domains Example */}
+        <div className="mb-8">
+          <OptimizedImage
+            src="https://www.linkio.com/wp-content/uploads/2020/05/linked-domains.png"
+            alt="Example of linked domains spreadsheet showing essential metrics"
+            width={800}
+            height={400}
+            className="w-full max-w-4xl mx-auto"
+          />
+        </div>
+
         {/* Metrics List */}
         <div className="bg-white rounded-lg border border-gray-200 p-6 mb-8">
           <ul className="space-y-3">
@@ -272,6 +321,17 @@ export default function HowToSortAndFilterLinkProspectsPage() {
           </p>
         </div>
 
+        {/* Spoiler Result Image */}
+        <div className="mb-12">
+          <OptimizedImage
+            src="https://www.linkio.com/wp-content/uploads/2020/05/spoiler.png"
+            alt="Filtering results showing 31% success rate after removing trash prospects"
+            width={800}
+            height={400}
+            className="w-full max-w-3xl mx-auto"
+          />
+        </div>
+
         {/* 1.1 Foreign Language URLs */}
         <div className="mb-12">
           <h3 className="text-2xl font-bold mb-4 flex items-center gap-2">
@@ -294,6 +354,17 @@ export default function HowToSortAndFilterLinkProspectsPage() {
           <p className="text-gray-700 mb-6">
             To detect such cases, scroll through the sheet and double-check the titles of your referring pages.
           </p>
+
+          {/* Foreign Language Example */}
+          <div className="mb-6">
+            <OptimizedImage
+              src="https://www.linkio.com/wp-content/uploads/2020/05/foreign-language.png"
+              alt="Example of foreign language URLs to remove from link prospects"
+              width={800}
+              height={400}
+              className="w-full max-w-3xl mx-auto"
+            />
+          </div>
 
           <div className="bg-blue-50 border-l-4 border-blue-400 p-4 rounded-r-lg">
             <p className="text-sm">
@@ -368,6 +439,17 @@ export default function HowToSortAndFilterLinkProspectsPage() {
               As shown below, there were 8 tools on the list at first. Later, the author added a few more and rephrased the title a bit.
             </p>
 
+            {/* Rephrased Example */}
+            <div className="mb-6">
+              <OptimizedImage
+                src="https://www.linkio.com/wp-content/uploads/2020/05/rephrased.png"
+                alt="Example of rephrased titles showing variations of the same content"
+                width={800}
+                height={400}
+                className="w-full max-w-3xl mx-auto"
+              />
+            </div>
+
             <div className="bg-green-50 border-l-4 border-green-400 p-4 rounded-r-lg mb-6">
               <p className="text-sm">
                 <strong>Tip.</strong> When you update your content, add minor changes to the title. Leave the main keyword as is, but rephrase the surrounding text. It will help you diversify your backlink anchors in the long run.
@@ -402,6 +484,17 @@ export default function HowToSortAndFilterLinkProspectsPage() {
             <p className="text-gray-700 mb-6">
               While page titles differ, backlink anchors and surrounding text remain the same, just like the rest of the content. So, you need to sort your sheet by the text preceding the anchor (TextPre) to see more identicals.
             </p>
+
+            {/* TextPre Example */}
+            <div className="mb-6">
+              <OptimizedImage
+                src="https://www.linkio.com/wp-content/uploads/2020/05/TextPre.png"
+                alt="Example of using TextPre column to identify duplicate content"
+                width={800}
+                height={400}
+                className="w-full max-w-3xl mx-auto"
+              />
+            </div>
 
             <div className="bg-blue-50 border-l-4 border-blue-400 p-4 rounded-r-lg mb-6">
               <p className="text-sm">
@@ -478,27 +571,55 @@ export default function HowToSortAndFilterLinkProspectsPage() {
             The rule of thumb is to delete everything that doesn't look like a normal URL of a content page.
           </p>
 
-          <div className="space-y-6">
+          <div className="space-y-8">
             <div>
               <h4 className="text-lg font-semibold mb-3">1.3.1. Remove URL shorteners.</h4>
+              <OptimizedImage
+                src="https://www.linkio.com/wp-content/uploads/2020/05/shorteners.png"
+                alt="Examples of URL shorteners to remove"
+                width={600}
+                height={300}
+                className="w-full max-w-2xl mx-auto mb-4"
+              />
             </div>
 
             <div>
               <h4 className="text-lg font-semibold mb-3">1.3.2. Remove URLs with an IP instead of a domain name</h4>
-              <p className="text-gray-700">
+              <p className="text-gray-700 mb-4">
                 If you sort your sheet by the name of the referring page URL, such results will be at the top.
               </p>
+              <OptimizedImage
+                src="https://www.linkio.com/wp-content/uploads/2020/05/domain-name.png"
+                alt="Examples of URLs with IP addresses instead of domain names"
+                width={600}
+                height={300}
+                className="w-full max-w-2xl mx-auto"
+              />
             </div>
 
             <div>
               <h4 className="text-lg font-semibold mb-3">1.3.3. Remove URLs of feeds, social networks, and content curation platforms.</h4>
-              <p className="text-gray-700">
+              <p className="text-gray-700 mb-4">
                 Such URLs typically include "feed," "rss," "@", or user names.
               </p>
+              <OptimizedImage
+                src="https://www.linkio.com/wp-content/uploads/2020/05/curation-platforms.png"
+                alt="Examples of feed and social network URLs to remove"
+                width={600}
+                height={300}
+                className="w-full max-w-2xl mx-auto"
+              />
             </div>
 
             <div>
               <h4 className="text-lg font-semibold mb-3">1.3.4. Remove URLs that look like abracadabra.</h4>
+              <OptimizedImage
+                src="https://www.linkio.com/wp-content/uploads/2020/05/abracadabra.png"
+                alt="Examples of nonsensical URLs to remove"
+                width={600}
+                height={300}
+                className="w-full max-w-2xl mx-auto"
+              />
             </div>
 
             <div>
@@ -506,6 +627,13 @@ export default function HowToSortAndFilterLinkProspectsPage() {
               <p className="text-gray-700 mb-4">
                 For easier identification, check your sheet for /site/, /search/, /find/, /comment/, /tag/, signup, login and the like.
               </p>
+              <OptimizedImage
+                src="https://www.linkio.com/wp-content/uploads/2020/05/meaningful.png"
+                alt="Examples of non-meaningful content page URLs"
+                width={600}
+                height={300}
+                className="w-full max-w-2xl mx-auto mb-4"
+              />
               <p className="text-gray-700 mb-4">
                 Some referring pages can also have "domain.com" at the end of their URLs, as shown at the bottom of this screenshot.
               </p>
@@ -517,6 +645,13 @@ export default function HowToSortAndFilterLinkProspectsPage() {
               <p className="text-gray-700 mb-4">
                 Pages related to coupons and promo codes are also subject to removal. Check URLs for anything like "coupon," "promo," "deal," "discount," "voucher," etc.
               </p>
+              <OptimizedImage
+                src="https://www.linkio.com/wp-content/uploads/2020/05/coupon.png"
+                alt="Examples of coupon and promo code URLs to remove"
+                width={600}
+                height={300}
+                className="w-full max-w-2xl mx-auto mb-4"
+              />
               <p className="text-gray-700">
                 These are common examples of link trash for the SEO industry. You may find some other schemes, depending on your niche.
               </p>
@@ -524,9 +659,9 @@ export default function HowToSortAndFilterLinkProspectsPage() {
           </div>
         </div>
 
-        {/* 1.4 Forums */}
+        {/* 1.4 Forums and Communities */}
         <div className="mb-12">
-          <h3 className="text-2xl font-bold mb-4">1.4. URLs of referring pages from forums and communities.</h3>
+          <h3 className="text-2xl font-bold mb-4">1.4. URLs of referring pages from forums and communities</h3>
           
           <p className="text-gray-700 mb-4">
             To make it clear, I don't mind building links on forums, communities, and Q&A sites.
@@ -536,12 +671,20 @@ export default function HowToSortAndFilterLinkProspectsPage() {
             But since there's no need to contact anyone with a link request, you should remove such URLs from your outreach list.
           </p>
 
-          <p className="text-gray-700">
+          <p className="text-gray-700 mb-6">
             They generally contain "forum," "thread," "community," "discussion," etc.
           </p>
+
+          <OptimizedImage
+            src="https://www.linkio.com/wp-content/uploads/2020/05/forum.png"
+            alt="Examples of forum and community URLs to remove"
+            width={600}
+            height={300}
+            className="w-full max-w-2xl mx-auto"
+          />
         </div>
 
-        {/* 1.5 Non-blog pages */}
+        {/* 1.5 Non-blog Pages */}
         <div className="mb-12">
           <h3 className="text-2xl font-bold mb-4">1.5. URLs of any pages but blog posts</h3>
           
@@ -557,12 +700,28 @@ export default function HowToSortAndFilterLinkProspectsPage() {
             People prefer linking to their partners and customer testimonials from homepages.
           </p>
 
-          <p className="text-gray-700">
+          <p className="text-gray-700 mb-6">
             I hate to be the one who brings you bad news. But if you're not a well-known figure in your niche, your testimonials aren't in demand, sorry.
           </p>
+
+          <OptimizedImage
+            src="https://www.linkio.com/wp-content/uploads/2020/05/any-pages.png"
+            alt="Examples of non-blog page URLs to remove"
+            width={600}
+            height={300}
+            className="w-full max-w-2xl mx-auto mb-4"
+          />
+
+          <OptimizedImage
+            src="https://www.linkio.com/wp-content/uploads/2020/05/testimonials.png"
+            alt="Examples of testimonial page URLs"
+            width={600}
+            height={300}
+            className="w-full max-w-2xl mx-auto"
+          />
         </div>
 
-        {/* 1.6 Podcasts */}
+        {/* 1.6 Podcasts and Interviews */}
         <div className="mb-12">
           <h3 className="text-2xl font-bold mb-4">1.6. URLs of podcasts, webinars, and interviews</h3>
           
@@ -571,7 +730,11 @@ export default function HowToSortAndFilterLinkProspectsPage() {
           </p>
 
           <p className="text-gray-700 mb-4">
-            If someone recommended your competitor's article in an interview a while ago, you can't go back in time and change it. What's done is done.
+            If someone recommended your competitor's article in an interview a while ago, you can't go back in time and change it.
+          </p>
+
+          <p className="text-gray-700 mb-4">
+            What's done is done.
           </p>
 
           <p className="text-gray-700 mb-4">
@@ -582,6 +745,14 @@ export default function HowToSortAndFilterLinkProspectsPage() {
             You can identify such pages by "episode," "podcast," "webinar," "interview," or interviewee's name in URLs.
           </p>
 
+          <OptimizedImage
+            src="https://www.linkio.com/wp-content/uploads/2020/05/episode.png"
+            alt="Examples of podcast and interview URLs to remove"
+            width={600}
+            height={300}
+            className="w-full max-w-2xl mx-auto mb-4"
+          />
+
           <div className="bg-blue-50 border-l-4 border-blue-400 p-4 rounded-r-lg">
             <p className="text-sm">
               <strong>Note.</strong> You can reach out to interviewees and show your content. If they still talk about your topic, they may give you a mention in their future interviews. Or you can contact podcasters and arrange to participate in one of their upcoming episodes. But you won't be able to gain a backlink from past podcasts you have in the sheet.
@@ -590,12 +761,19 @@ export default function HowToSortAndFilterLinkProspectsPage() {
         </div>
       </section>
 
-      {/* Section 3: Pseudo Prospects */}
+      {/* Section 3: Pseudo Link Prospects */}
       <section id="pseudo-prospects" className="mb-16">
-        <h2 className="text-3xl font-bold mb-6">Which good-looking URLs are pseudo link prospects?</h2>
-        
+        <h2 className="text-3xl font-bold mb-6 flex items-center gap-3">
+          <AlertCircle className="w-8 h-8 text-orange-600" />
+          Which good-looking URLs are pseudo link prospects?
+        </h2>
+
         <p className="text-gray-700 mb-4">
-          Got done with duplicates and other meaningless pages? Take a one-minute break and welcome a new portion of trash masked behind good-looking URLs.
+          Got done with duplicates and other meaningless pages?
+        </p>
+
+        <p className="text-gray-700 mb-4">
+          Take a one-minute break and welcome a new portion of trash masked behind good-looking URLs.
         </p>
 
         <p className="text-gray-700 mb-6">
@@ -607,14 +785,14 @@ export default function HowToSortAndFilterLinkProspectsPage() {
         </p>
 
         {/* 2.1 Non-openers */}
-        <div className="mb-10">
-          <h3 className="text-xl font-semibold mb-4">2.1. Non-openers</h3>
+        <div className="mb-12">
+          <h3 className="text-2xl font-bold mb-4">2.1. Non-openers</h3>
           
           <p className="text-gray-700 mb-4">
             Check out the URLs below. In terms of structure and wording, they look pretty normal, don't they?
           </p>
 
-          <p className="text-gray-700 mb-4">
+          <p className="text-gray-700 mb-6">
             But good looks can be deceiving, especially in link prospecting. None of those URLs open for one reason or another:
           </p>
 
@@ -627,15 +805,27 @@ export default function HowToSortAndFilterLinkProspectsPage() {
             <li>the website couldn't provide a secure connection.</li>
           </ul>
 
+          <OptimizedImage
+            src="https://www.linkio.com/wp-content/uploads/2020/05/Non-openers.png"
+            alt="Examples of non-opening URLs that should be removed"
+            width={800}
+            height={400}
+            className="w-full max-w-3xl mx-auto mb-6"
+          />
+
           <p className="text-gray-700 mb-4">
-            Curious about how those pages got to your spreadsheet if they don't open? Here's how it works.
+            Curious about how those pages got to your spreadsheet if they don't open?
           </p>
 
           <p className="text-gray-700 mb-4">
-            The bot of your tool recrawls URLs once in a while to check if links are still there. Since its database contains millions of URLs, it can't recrawl every URL every day.
+            Here's how it works.
           </p>
 
-          <p className="text-gray-700 mb-6">
+          <p className="text-gray-700 mb-4">
+            The bot of your tool re-crawls URLs once in a while to check if links are still there. Since its database contains millions of URLs, it can't re-crawl every URL every day.
+          </p>
+
+          <p className="text-gray-700 mb-4">
             Due to such a delay, the bot can't learn about such issues immediately, so non-openers remain in the database for a while.
           </p>
 
@@ -646,9 +836,9 @@ export default function HowToSortAndFilterLinkProspectsPage() {
           </div>
         </div>
 
-        {/* 2.2 Third-rate content */}
-        <div className="mb-10">
-          <h3 className="text-xl font-semibold mb-4">2.2. URLs of referring pages with third-rate content</h3>
+        {/* 2.2 Third-rate Content */}
+        <div className="mb-12">
+          <h3 className="text-2xl font-bold mb-4">2.2. URLs of referring pages with third-rate content</h3>
           
           <p className="text-gray-700 mb-4">
             Let me clarify the idea of blogger outreach to loot competitors' backlinks.
@@ -671,7 +861,11 @@ export default function HowToSortAndFilterLinkProspectsPage() {
           </p>
 
           <p className="text-gray-700 mb-4">
-            Such companies hire a lot of low-paid writers who produce loads of third-rate content. Since there's an SEO rule to link out to a few websites from each post, those writers pick the first page they find in Google. Whatever.
+            Such companies hire a lot of low-paid writers who produce loads of third-rate content.
+          </p>
+
+          <p className="text-gray-700 mb-4">
+            Since there's an SEO rule to link out to a few websites from each post, those writers pick the first page they find in Google. Whatever.
           </p>
 
           <p className="text-gray-700 mb-4">
@@ -682,6 +876,14 @@ export default function HowToSortAndFilterLinkProspectsPage() {
             Content farms usually don't reveal their writers' identities and publish articles under an unidentified admin in the bio section.
           </p>
 
+          <OptimizedImage
+            src="https://www.linkio.com/wp-content/uploads/2020/05/admin-bio.png"
+            alt="Example of generic admin bio indicating content farm"
+            width={600}
+            height={300}
+            className="w-full max-w-2xl mx-auto mb-4"
+          />
+
           <div className="bg-blue-50 border-l-4 border-blue-400 p-4 rounded-r-lg">
             <p className="text-sm">
               <strong>Note.</strong> Don't make decisions based on the word count only. Some writers are skilled enough to fit their original ideas into a short piece of text. Skim through the text to figure out if the info is basic indeed and can be found in every other post in Google.
@@ -690,46 +892,82 @@ export default function HowToSortAndFilterLinkProspectsPage() {
         </div>
 
         {/* 2.3 Rewrites */}
-        <div className="mb-10">
-          <h3 className="text-xl font-semibold mb-4">2.3. URLs of referring pages with rewrites</h3>
+        <div className="mb-12">
+          <h3 className="text-2xl font-bold mb-4">2.3. URLs of referring pages with rewrites</h3>
           
           <p className="text-gray-700 mb-4">
             Analyzing link prospects, you'll notice that some articles sound familiar to you. The so-called feeling of deja vu.
           </p>
 
           <p className="text-gray-700 mb-4">
-            Such pages are close to duplicates, but they aren't. I wish they were… That way, you'd be able to identify them as quickly as you did earlier, by sorting your sheet by the text surrounding anchors.
+            Such pages are close to duplicates, but they aren't. I wish they were... That way, you'd be able to identify them as quickly as you did earlier, by sorting your sheet by the text surrounding anchors.
           </p>
 
           <p className="text-gray-700 mb-4">
-            What can disclose rewritten content is a double bio on the page. Or you can spot the same table of contents in different articles.
+            What can disclose rewritten content is a double bio on the page.
           </p>
+
+          <OptimizedImage
+            src="https://www.linkio.com/wp-content/uploads/2020/05/double-bio.png"
+            alt="Example of double bio indicating rewritten content"
+            width={600}
+            height={300}
+            className="w-full max-w-2xl mx-auto mb-4"
+          />
+
+          <p className="text-gray-700 mb-4">
+            Or you can spot the same table of contents in different articles.
+          </p>
+
+          <OptimizedImage
+            src="https://www.linkio.com/wp-content/uploads/2020/05/same-table-of-contents.png"
+            alt="Example of identical table of contents across different articles"
+            width={600}
+            height={300}
+            className="w-full max-w-2xl mx-auto mb-4"
+          />
 
           <p className="text-gray-700 mb-4">
             Check out the example below. It's not even a good-quality rewrite.
           </p>
 
-          <p className="text-gray-700">
+          <p className="text-gray-700 mb-4">
             They just used a tool that automatically replaces words from the original with synonyms. The structure of sentences remains unchanged, though.
           </p>
+
+          <OptimizedImage
+            src="https://www.linkio.com/wp-content/uploads/2020/05/re-written-content.png"
+            alt="Example of poorly rewritten content with synonym replacement"
+            width={600}
+            height={300}
+            className="w-full max-w-2xl mx-auto"
+          />
         </div>
 
-        {/* 2.4 Mumbo jumbo */}
-        <div className="mb-10">
-          <h3 className="text-xl font-semibold mb-4">2.4. URLs of referring pages with mumbo jumbo</h3>
+        {/* 2.4 Mumbo Jumbo */}
+        <div className="mb-12">
+          <h3 className="text-2xl font-bold mb-4">2.4. URLs of referring pages with mumbo jumbo</h3>
           
           <p className="text-gray-700 mb-4">
             While gaining backlinks from short articles can be debatable, you don't need them from awful copy for sure.
           </p>
 
-          <p className="text-gray-700">
+          <p className="text-gray-700 mb-6">
             I'm referring to articles with tons of grammatical errors. Commonly written by bad English speakers, they all sound like gibberish.
           </p>
+
+          <OptimizedImage
+            src="https://www.linkio.com/wp-content/uploads/2020/05/awful-copy.png"
+            alt="Example of poorly written content with grammatical errors"
+            width={600}
+            height={300}
+            className="w-full max-w-2xl mx-auto"
+          />
         </div>
 
-        {/* 2.5 Awful typography */}
-        <div className="mb-10">
-          <h3 className="text-xl font-semibold mb-4">2.5. URLs of referring pages with awful typography</h3>
+        {/* 2.5 Awful Typography */}
+        <div className="mb-12">
+          <h3 className="text-2xl font-bold mb-4">2.5. URLs of referring pages with awful typography</h3>
           
           <p className="text-gray-700 mb-4">
             Besides awful copy, you can stumble upon pages with awful typography. It devalues the content and your link prospects accordingly.
@@ -739,28 +977,59 @@ export default function HowToSortAndFilterLinkProspectsPage() {
             Now, riddle me that. How many paragraphs are there in the screenshot below? One?
           </p>
 
-          <p className="text-gray-700 mb-4">
+          <p className="text-gray-700 mb-6">
             It may blow your mind, but there are three more paragraphs under the first one. You need to strain your eyes to see them.
           </p>
+
+          <OptimizedImage
+            src="https://www.linkio.com/wp-content/uploads/2020/05/invisible-typography.png"
+            alt="Example of poor typography with invisible text"
+            width={600}
+            height={300}
+            className="w-full max-w-2xl mx-auto mb-4"
+          />
 
           <p className="text-gray-700 mb-4">
             This is the first time I've seen headings smaller than the text in paragraphs. ¯\_(ツ)_/¯
           </p>
 
+          <OptimizedImage
+            src="https://www.linkio.com/wp-content/uploads/2020/05/small-subheadings.png"
+            alt="Example of headings smaller than body text"
+            width={600}
+            height={300}
+            className="w-full max-w-2xl mx-auto mb-4"
+          />
+
           <p className="text-gray-700 mb-4">
             Another example is a weird-looking menu that takes up the entire screen space. You can call it anything but user-friendly navigation.
           </p>
 
+          <OptimizedImage
+            src="https://www.linkio.com/wp-content/uploads/2020/05/poor-navigation.png"
+            alt="Example of poor website navigation taking up entire screen"
+            width={600}
+            height={300}
+            className="w-full max-w-2xl mx-auto mb-4"
+          />
+
+          <p className="text-gray-700 mb-4">
+            What makes it all especially ridiculous is the fact that those guys provide web design and development services.
+          </p>
+
           <p className="text-gray-700">
-            What makes it all especially ridiculous is the fact that those guys provide web design and development services. How about creating a user-friendly menu for your site, huh?
+            How about creating a user-friendly menu for your site, huh?
           </p>
         </div>
       </section>
 
       {/* Section 4: Low Authority Domains */}
       <section id="low-authority" className="mb-16">
-        <h2 className="text-3xl font-bold mb-6">Should you gain backlinks from domains with low authority?</h2>
-        
+        <h2 className="text-3xl font-bold mb-6 flex items-center gap-3">
+          <Globe className="w-8 h-8 text-purple-600" />
+          Should you gain backlinks from domains with low authority?
+        </h2>
+
         <p className="text-gray-700 mb-4">
           The main stumbling point in link prospecting is whether you should deal with domains that have a low authority score.
         </p>
@@ -769,27 +1038,47 @@ export default function HowToSortAndFilterLinkProspectsPage() {
           To answer this question, let's figure out what this metric is all about.
         </p>
 
-        <p className="text-gray-700 mb-4">
+        <p className="text-gray-700 mb-6">
           Many SEO tools have it but call it in different ways: Domain Authority, Domain Rating, Trust Flow, etc. Learn how they describe their metrics.
         </p>
 
-        <div className="bg-gray-50 rounded-lg p-6 mb-6">
-          <ul className="space-y-2 text-gray-700">
-            <li><strong>Trust Flow (TF) by Majestic</strong></li>
-            <li><strong>Domain Authority (DA) by Moz</strong></li>
-            <li><strong>Domain Rating (DR) by Ahrefs</strong></li>
-          </ul>
+        <div className="grid grid-cols-1 md:grid-cols-3 gap-4 mb-8">
+          <OptimizedImage
+            src="https://www.linkio.com/wp-content/uploads/2020/05/majestic-trust-flow.png"
+            alt="Majestic Trust Flow definition"
+            width={400}
+            height={200}
+            className="w-full"
+          />
+          <OptimizedImage
+            src="https://www.linkio.com/wp-content/uploads/2020/05/moz-domain-authority.png"
+            alt="Moz Domain Authority definition"
+            width={400}
+            height={200}
+            className="w-full"
+          />
+          <OptimizedImage
+            src="https://www.linkio.com/wp-content/uploads/2020/05/ahrefs-domain-rating.png"
+            alt="Ahrefs Domain Rating definition"
+            width={400}
+            height={200}
+            className="w-full"
+          />
         </div>
 
         <p className="text-gray-700 mb-4">
           While the names of this metric differ at each company, it's based on the same thing – backlinks and nothing else.
         </p>
 
-        <p className="text-gray-700 mb-6">
-          The problem is you can't get a clear idea about the entire domain quality from one angle only. To understand its true value, you should analyze more metrics and people behind it.
+        <p className="text-gray-700 mb-4">
+          The problem is you can't get a clear idea about the entire domain quality from one angle only.
         </p>
 
-        {/* 3.1 Metrics-based approach */}
+        <p className="text-gray-700 mb-8">
+          To understand its true value, you should analyze more metrics and people behind it.
+        </p>
+
+        {/* 3.1 Metrics-based Approach */}
         <div className="mb-12">
           <h3 className="text-2xl font-bold mb-4">3.1. Metrics-based approach</h3>
           
@@ -801,87 +1090,159 @@ export default function HowToSortAndFilterLinkProspectsPage() {
             You won't have to analyze a lot of domains with a low DR one by one. Instead, add them all to your tool to get the necessary data in one go.
           </p>
 
-          <p className="text-gray-700 mb-4">
+          <p className="text-gray-700 mb-6">
             Here are the metrics that will tell you if a site is a worthy link prospect.
           </p>
 
-          <div className="space-y-8 mb-8">
-            <div>
-              <h4 className="text-lg font-semibold mb-3">Organic Traffic.</h4>
-              <p className="text-gray-700 mb-4">
-                Let me remind you of the main purpose of link building – the growth of search rankings and traffic.
-              </p>
-              <p className="text-gray-700 mb-4">
-                Backlinks serve as proof that sites are good enough to rank in the top 10, from where they'll attract more visitors.
-              </p>
-              <p className="text-gray-700 mb-4">
-                If Google ranks some sites high without tons of backlinks, that's freaking awesome! Such sites don't suck at all, as their low DR suggests.
-              </p>
-              <p className="text-gray-700 mb-4">
-                Some of them can get hundreds and even thousands of monthly visitors.
-              </p>
-              <p className="text-gray-700">
-                To compare, not all sites with a medium-to-high DR can boast of such traffic stats. Regardless of their heavy backlinks profiles, they drive only a few hundred visitors per month. That's when this metric doesn't indicate true domain quality.
+          {/* Organic Traffic */}
+          <div className="mb-8">
+            <h4 className="text-xl font-semibold mb-4">Organic Traffic</h4>
+            
+            <p className="text-gray-700 mb-4">
+              Let me remind you of the main purpose of link building – the growth of search rankings and traffic.
+            </p>
+
+            <p className="text-gray-700 mb-4">
+              Backlinks serve as proof that sites are good enough to rank in the top 10, from where they'll attract more visitors.
+            </p>
+
+            <p className="text-gray-700 mb-4">
+              If Google ranks some sites high without tons of backlinks, that's freaking awesome! Such sites don't suck at all, as their low DR suggests.
+            </p>
+
+            <p className="text-gray-700 mb-6">
+              Some of them can get hundreds and even thousands of monthly visitors.
+            </p>
+
+            <OptimizedImage
+              src="https://www.linkio.com/wp-content/uploads/2020/05/low-dr-much-traffic.png"
+              alt="Example of low DR sites with high traffic"
+              width={800}
+              height={400}
+              className="w-full max-w-3xl mx-auto mb-4"
+            />
+
+            <p className="text-gray-700 mb-4">
+              To compare, not all sites with a medium-to-high DR can boast of such traffic stats.
+            </p>
+
+            <p className="text-gray-700 mb-6">
+              Regardless of their heavy backlinks profiles, they drive only a few hundred visitors per month. That's when this metric doesn't indicate true domain quality.
+            </p>
+
+            <OptimizedImage
+              src="https://www.linkio.com/wp-content/uploads/2020/05/high-dr-less-traffic.png"
+              alt="Example of high DR sites with low traffic"
+              width={800}
+              height={400}
+              className="w-full max-w-3xl mx-auto"
+            />
+          </div>
+
+          {/* Organic Keywords */}
+          <div className="mb-8">
+            <h4 className="text-xl font-semibold mb-4">Organic Keywords</h4>
+            
+            <p className="text-gray-700 mb-4">
+              Some sites with a low DR aren't of low quality – they are just new. Their owners haven't earned many backlinks yet to increase their authority.
+            </p>
+
+            <p className="text-gray-700 mb-4">
+              Ranking in the top 10, from where most traffic comes, doesn't happen overnight either. That's why newcomers don't even get a hundred visitors per month, as a rule.
+            </p>
+
+            <p className="text-gray-700 mb-4">
+              On the other hand, some of them can rank for hundreds of keywords in the top 100. If Google approves ranking a site, it's not a piece of crap for sure.
+            </p>
+
+            <p className="text-gray-700 mb-6">
+              Besides traffic, always check how many organic keywords your link prospects with a low DR have.
+            </p>
+
+            <OptimizedImage
+              src="https://www.linkio.com/wp-content/uploads/2020/05/low-dr-many-keywords.png"
+              alt="Example of low DR sites ranking for many keywords"
+              width={800}
+              height={400}
+              className="w-full max-w-3xl mx-auto mb-4"
+            />
+
+            <p className="text-gray-700">
+              The sites above are still far from their goal, but they're already on their way. It's just a matter of time before they see a traffic boost.
+            </p>
+          </div>
+
+          {/* Linked Domains */}
+          <div className="mb-8">
+            <h4 className="text-xl font-semibold mb-4">Linked Domains</h4>
+            
+            <p className="text-gray-700 mb-4">
+              A high DR gives the impression that such a site can send you a lot of link juice. But is it always true?
+            </p>
+
+            <p className="text-gray-700 mb-4">
+              The thing is a website's link juice spreads among all the domains it links out to via dofollow links.
+            </p>
+
+            <p className="text-gray-700 mb-6">
+              The more linked domains your prospect has, the less link juice you'll receive.
+            </p>
+
+            <p className="text-gray-700 mb-4">
+              Assuming that DR stands for the entire amount of a website's link juice, here's how it works on the example of crownmediatech.com:
+            </p>
+
+            <OptimizedImage
+              src="https://www.linkio.com/wp-content/uploads/2020/05/low-dr-few-linked-domains.png"
+              alt="Example of low DR site with few linked domains"
+              width={400}
+              height={200}
+              className="w-full max-w-lg mx-auto mb-4"
+            />
+
+            <p className="text-gray-700 mb-4">
+              8 (DR) / 6 (linked domains) = 1.33
+            </p>
+
+            <div className="bg-blue-50 border-l-4 border-blue-400 p-4 rounded-r-lg mb-6">
+              <p className="text-sm">
+                <strong>Note.</strong> It's not the exact formula of Google's algorithm, but still gives a clear idea about link juice distribution.
               </p>
             </div>
 
-            <div>
-              <h4 className="text-lg font-semibold mb-3">Organic Keywords.</h4>
-              <p className="text-gray-700 mb-4">
-                Some sites with a low DR aren't of low quality – they are just new. Their owners haven't earned many backlinks yet to increase their authority.
-              </p>
-              <p className="text-gray-700 mb-4">
-                Ranking in the top 10, from where most traffic comes, doesn't happen overnight either. That's why newcomers don't even get a hundred visitors per month, as a rule.
-              </p>
-              <p className="text-gray-700 mb-4">
-                On the other hand, some of them can rank for hundreds of keywords in the top 100. If Google approves ranking a site, it's not a piece of crap for sure.
-              </p>
-              <p className="text-gray-700 mb-4">
-                Besides traffic, always check how many organic keywords your link prospects with a low DR have.
-              </p>
-              <p className="text-gray-700">
-                The sites above are still far from their goal, but they're already on their way. It's just a matter of time before they see a traffic boost.
-              </p>
-            </div>
+            <p className="text-gray-700 mb-4">
+              Now, let's compare how much link juice activerain.com with a high DR provides:
+            </p>
 
-            <div>
-              <h4 className="text-lg font-semibold mb-3">Linked Domains.</h4>
-              <p className="text-gray-700 mb-4">
-                A high DR gives the impression that such a site can send you a lot of link juice. But is it always true?
-              </p>
-              <p className="text-gray-700 mb-4">
-                The thing is a website's link juice spreads among all the domains it links out to via dofollow links. The more linked domains your prospect has, the less link juice you'll receive.
-              </p>
-              <p className="text-gray-700 mb-4">
-                Assuming that DR stands for the entire amount of a website's link juice, here's how it works on the example of crownmediatech.com:
-              </p>
-              <div className="bg-gray-100 rounded p-4 mb-4">
-                <p className="text-gray-700 font-mono">8 (DR) / 6 (linked domains) = 1.33</p>
-              </div>
-              <div className="bg-blue-50 border-l-4 border-blue-400 p-4 rounded-r-lg mb-4">
-                <p className="text-sm">
-                  <strong>Note.</strong> It's not the exact formula of Google's algorithm, but still gives a clear idea about link juice distribution.
-                </p>
-              </div>
-              <p className="text-gray-700 mb-4">
-                Now, let's compare how much link juice activerain.com with a high DR provides:
-              </p>
-              <div className="bg-gray-100 rounded p-4 mb-4">
-                <p className="text-gray-700 font-mono">81 (DR) / 330,967 (linked domains) = 0.24</p>
-              </div>
-              <p className="text-gray-700 mb-4">
-                As you can see, crownmediatech.com with DR 8 can send more link juice than activerain.com with DR 81: 1.33 vs 0.24.
-              </p>
-              <p className="text-gray-700">
-                To conclude, you don't always need to approach sites with a high DR to get a lot of link juice your way.
-              </p>
-            </div>
+            <OptimizedImage
+              src="https://www.linkio.com/wp-content/uploads/2020/05/high-dr-many-linked-domains.png"
+              alt="Example of high DR site with many linked domains"
+              width={400}
+              height={200}
+              className="w-full max-w-lg mx-auto mb-4"
+            />
+
+            <p className="text-gray-700 mb-4">
+              81 (DR) / 330,967 (linked domains) = 0.24
+            </p>
+
+            <p className="text-gray-700 mb-4">
+              As you can see, crownmediatech.com with DR 8 can send more link juice than activerain.com with DR 81:
+            </p>
+
+            <p className="text-gray-700 mb-6 font-semibold">
+              1.33 vs 0.24.
+            </p>
+
+            <p className="text-gray-700">
+              To conclude, you don't always need to approach sites with a high DR to get a lot of link juice your way.
+            </p>
           </div>
         </div>
 
-        {/* 3.2 Blogger-based approach */}
+        {/* 3.2 Bloggers-based Approach */}
         <div className="mb-12">
-          <h3 className="text-2xl font-bold mb-4">3.2. Blogger-based approach</h3>
+          <h3 className="text-2xl font-bold mb-4">3.2. Bloggers-based approach</h3>
           
           <p className="text-gray-700 mb-4">
             No doubt, metrics can give useful clues about a website's overall performance. But link prospecting isn't a math lesson to use figures only.
@@ -891,87 +1252,197 @@ export default function HowToSortAndFilterLinkProspectsPage() {
             What if your prospects fall short of all the key metrics?
           </p>
 
-          <p className="text-gray-700 mb-6">
-            Don't erase them from your spreadsheet straightaway! Learn more about people behind your target domains to understand if they can be of any value to you. You may find a few hidden gems among them.
+          <p className="text-gray-700 mb-4">
+            Don't erase them from your spreadsheet straightaway! Learn more about people behind your target domains to understand if they can be of any value to you.
           </p>
 
+          <p className="text-gray-700 mb-8">
+            You may find a few hidden gems among them.
+          </p>
+
+          {/* Prospect Examples */}
           <div className="space-y-8">
-            <div className="bg-green-50 rounded-lg p-6 border border-green-200">
-              <h4 className="text-lg font-semibold mb-3 text-green-900">Prospect.</h4>
+            {/* Sam Partland Example */}
+            <div className="bg-green-50 border-l-4 border-green-400 p-6 rounded-r-lg">
+              <h4 className="text-lg font-semibold text-green-900 mb-4">✅ Prospect</h4>
+              
               <p className="text-gray-700 mb-4">
                 Let's take sammyseo.com as an example. It looks like a no-go in terms of metrics: no traffic, 3 organic keywords, and near-zero DR.
               </p>
+
+              <OptimizedImage
+                src="https://www.linkio.com/wp-content/uploads/2020/05/sammyseo.com-stats.png"
+                alt="Sam Partland's website statistics showing low metrics"
+                width={600}
+                height={300}
+                className="w-full max-w-2xl mx-auto mb-4"
+              />
+
               <p className="text-gray-700 mb-4">
                 While this domain sucks, its owner doesn't. According to LinkedIn, Sam Partland is a director of DigiSearch and was previously the head of growth at Urban.com.au.
               </p>
+
+              <OptimizedImage
+                src="https://www.linkio.com/wp-content/uploads/2020/05/sam-partland-linkedin.png"
+                alt="Sam Partland's LinkedIn profile"
+                width={600}
+                height={300}
+                className="w-full max-w-2xl mx-auto mb-4"
+              />
+
               <p className="text-gray-700 mb-4">
                 No wonder he's not too active with his blog.
               </p>
+
               <p className="text-gray-700 mb-4">
                 With such an impressive work record, Sam is the right guy to build relationships with. The chances are he'll reward you with a backlink from a better performing domain, digisearch.com, one day.
               </p>
+
+              <OptimizedImage
+                src="https://www.linkio.com/wp-content/uploads/2020/05/digisearch.com-stats.png"
+                alt="DigiSearch website statistics showing better metrics"
+                width={600}
+                height={300}
+                className="w-full max-w-2xl mx-auto mb-4"
+              />
+
               <p className="text-gray-700 mb-4">
                 Besides LinkedIn, Twitter can also give you insights into your link prospects' background.
               </p>
+
               <p className="text-gray-700 mb-4">
                 Sam's following isn't big, but let's scroll down a bit.
               </p>
-              <p className="text-gray-700">
+
+              <p className="text-gray-700 mb-4">
                 One of his latest posts got a retweet from a niche influencer with 66.2K followers, which proves he has a knack for SEO.
               </p>
+
+              <OptimizedImage
+                src="https://www.linkio.com/wp-content/uploads/2020/05/sam-partland-twitter.png"
+                alt="Sam Partland's Twitter profile and activity"
+                width={600}
+                height={300}
+                className="w-full max-w-2xl mx-auto"
+              />
             </div>
 
-            <div className="bg-green-50 rounded-lg p-6 border border-green-200">
-              <h4 className="text-lg font-semibold mb-3 text-green-900">Prospect.</h4>
+            {/* Michelle Burson Example */}
+            <div className="bg-green-50 border-l-4 border-green-400 p-6 rounded-r-lg">
+              <h4 className="text-lg font-semibold text-green-900 mb-4">✅ Prospect</h4>
+              
               <p className="text-gray-700 mb-4">
                 Another example is marcomm.io that doesn't look promising due to its miserable metrics.
               </p>
+
+              <OptimizedImage
+                src="https://www.linkio.com/wp-content/uploads/2020/05/marcomm.io-stats.png"
+                alt="MarComm website statistics showing low metrics"
+                width={600}
+                height={300}
+                className="w-full max-w-2xl mx-auto mb-4"
+              />
+
               <p className="text-gray-700 mb-4">
                 Let's check a LinkedIn profile of its co-founder, Michelle Burson. She launched this site about a year and a half ago with her partner.
               </p>
+
+              <OptimizedImage
+                src="https://www.linkio.com/wp-content/uploads/2020/05/michelle-burson-linkedin.png"
+                alt="Michelle Burson's LinkedIn profile"
+                width={600}
+                height={300}
+                className="w-full max-w-2xl mx-auto mb-4"
+              />
+
               <p className="text-gray-700 mb-4">
                 Just like many other startups, MarComm founders probably don't have resources for heavy link building. And there's no other way to grow a DR.
               </p>
+
               <p className="text-gray-700 mb-4">
                 But while their domain is relatively new, Michelle isn't a newbie in the business. She's been a marketing manager since 2007 and eventually founded her own company. Way to go!
               </p>
+
               <p className="text-gray-700">
                 You should welcome people like her on your outreach list.
               </p>
             </div>
 
-            <div className="bg-red-50 rounded-lg p-6 border border-red-200">
-              <h4 className="text-lg font-semibold mb-3 text-red-900">No-go.</h4>
+            {/* No-go Examples */}
+            <div className="bg-red-50 border-l-4 border-red-400 p-6 rounded-r-lg">
+              <h4 className="text-lg font-semibold text-red-900 mb-4">❌ No-go</h4>
+              
               <p className="text-gray-700 mb-4">
                 Another underperforming domain that came my way is elccopywriting.com.
               </p>
+
+              <OptimizedImage
+                src="https://www.linkio.com/wp-content/uploads/2020/05/elccopywriting.com-stats.png"
+                alt="ELC Copywriting website statistics"
+                width={600}
+                height={300}
+                className="w-full max-w-2xl mx-auto mb-4"
+              />
+
               <p className="text-gray-700 mb-4">
                 The first thing that catches the eye on the homepage is its niche. Erika who owns the blog does content writing for beauty and personal care.
               </p>
+
+              <OptimizedImage
+                src="https://www.linkio.com/wp-content/uploads/2020/05/elccopywriting.com-homepage.png"
+                alt="ELC Copywriting homepage showing beauty niche focus"
+                width={600}
+                height={300}
+                className="w-full max-w-2xl mx-auto mb-4"
+              />
+
+              <p className="text-gray-700 mb-4">
+                Unless it's your target niche, making friends with her won't get you anywhere.
+              </p>
+
               <p className="text-gray-700">
-                Unless it's your target niche, making friends with her won't get you anywhere. Whether she links to you from her blog or guest posts on beauty sites, such backlinks will be irrelevant to your domain.
+                Whether she links to you from her blog or guest posts on beauty sites, such backlinks will be irrelevant to your domain.
               </p>
             </div>
 
-            <div className="bg-red-50 rounded-lg p-6 border border-red-200">
-              <h4 className="text-lg font-semibold mb-3 text-red-900">No-go.</h4>
+            <div className="bg-red-50 border-l-4 border-red-400 p-6 rounded-r-lg">
+              <h4 className="text-lg font-semibold text-red-900 mb-4">❌ No-go</h4>
+              
               <p className="text-gray-700 mb-4">
                 Renovatiocms.com doesn't look promising regarding both the key SEO metrics and visual appeal.
               </p>
+
+              <OptimizedImage
+                src="https://www.linkio.com/wp-content/uploads/2020/05/renovatiocms.com-stats.png"
+                alt="Renovatio CMS website statistics"
+                width={600}
+                height={300}
+                className="w-full max-w-2xl mx-auto mb-4"
+              />
+
               <p className="text-gray-700 mb-4">
                 The outdated design suggests this site is not new. Enter archive.org to find out how long it's been around.
               </p>
+
+              <OptimizedImage
+                src="https://www.linkio.com/wp-content/uploads/2020/05/renovatiocms.com-archive.org_.png"
+                alt="Archive.org showing Renovatio CMS history from 2010"
+                width={600}
+                height={300}
+                className="w-full max-w-2xl mx-auto mb-4"
+              />
+
               <p className="text-gray-700">
                 Well, the history dates back to 2010. If no one from their marketing department has grown its DR for 10 years, most likely no one will 🙂
               </p>
             </div>
           </div>
 
-          <p className="text-gray-700 mt-8 mb-6">
+          <p className="text-gray-700 mt-8 mb-4">
             The bottom line is, you should analyze your link prospects from different angles to make the right decision. It'll be good practice for your analytical thinking.
           </p>
 
-          <div className="bg-blue-50 border-l-4 border-blue-400 p-4 rounded-r-lg mb-6">
+          <div className="bg-blue-50 border-l-4 border-blue-400 p-4 rounded-r-lg mb-4">
             <p className="text-sm">
               <strong>Note.</strong> While sites with a low DR don't look promising, their owners usually turn out more responsive. Unlike bigwigs, they haven't become cocky yet, and building connections with new people is on their priority list.
             </p>
@@ -987,32 +1458,33 @@ export default function HowToSortAndFilterLinkProspectsPage() {
 
       {/* Section 5: Nofollow Links */}
       <section id="nofollow-links" className="mb-16">
-        <h2 className="text-3xl font-bold mb-6">Can link prospects providing nofollow backlinks be of any value?</h2>
-        
+        <h2 className="text-3xl font-bold mb-6 flex items-center gap-3">
+          <Link2 className="w-8 h-8 text-green-600" />
+          Can link prospects providing nofollow backlinks be of any value?
+        </h2>
+
         <p className="text-gray-700 mb-6">
           The value of nofollow links is a matter of dispute in SEO circles. To cut a long story short, let's consider the pros and cons of such links.
         </p>
 
         <div className="grid grid-cols-1 md:grid-cols-2 gap-6 mb-8">
-          <div className="bg-red-50 rounded-lg p-6 border border-red-200">
-            <XCircle className="w-8 h-8 text-red-600 mb-3" />
-            <h4 className="font-semibold mb-2 text-red-900">Con.</h4>
+          <div className="bg-red-50 border-l-4 border-red-400 p-6 rounded-r-lg">
+            <h4 className="text-lg font-semibold text-red-900 mb-3">❌ Con</h4>
             <p className="text-gray-700">
               They don't pass any link juice and therefore can't improve search rankings. You can build hundreds of nofollow links, but neither your domain authority nor organic traffic will grow as a result.
             </p>
           </div>
-          <div className="bg-green-50 rounded-lg p-6 border border-green-200">
-            <CheckCircle className="w-8 h-8 text-green-600 mb-3" />
-            <h4 className="font-semibold mb-2 text-green-900">Pro #1.</h4>
+
+          <div className="bg-green-50 border-l-4 border-green-400 p-6 rounded-r-lg">
+            <h4 className="text-lg font-semibold text-green-900 mb-3">✅ Pro #1</h4>
             <p className="text-gray-700">
               Technically, nofollow links don't have a direct impact on rankings. But they can still bring you visitors who, in turn, can link to you via dofollow links.
             </p>
           </div>
         </div>
 
-        <div className="bg-green-50 rounded-lg p-6 border border-green-200 mb-8">
-          <CheckCircle className="w-8 h-8 text-green-600 mb-3" />
-          <h4 className="font-semibold mb-2 text-green-900">Pro #2.</h4>
+        <div className="bg-green-50 border-l-4 border-green-400 p-6 rounded-r-lg mb-8">
+          <h4 className="text-lg font-semibold text-green-900 mb-3">✅ Pro #2</h4>
           <p className="text-gray-700 mb-4">
             Google thinks a natural backlink profile should consist of both nofollow and dofollow links.
           </p>
@@ -1022,15 +1494,18 @@ export default function HowToSortAndFilterLinkProspectsPage() {
           <p className="text-gray-700 mb-4">
             Not much chance!
           </p>
+          <p className="text-gray-700 mb-4">
+            Gaining only dofollow links will look like some sort of manipulation to Google.
+          </p>
           <p className="text-gray-700">
-            Gaining only dofollow links will look like some sort of manipulation to Google. And all the manipulations have the same ending – penalties, from a decline in rankings to the entire ban from organic search. This is not what you need, believe me.
+            And all the manipulations have the same ending – penalties, from a decline in rankings to the entire ban from organic search. This is not what you need, believe me.
           </p>
         </div>
 
-        <div className="bg-blue-50 rounded-lg p-6 border border-blue-200 mb-8">
-          <h4 className="font-semibold mb-2">Verdict.</h4>
+        <div className="bg-purple-50 border-l-4 border-purple-400 p-6 rounded-r-lg mb-8">
+          <h4 className="text-lg font-semibold text-purple-900 mb-3">⚖️ Verdict</h4>
           <p className="text-gray-700 mb-4">
-            Based on the above reasoning, you should reach out to bloggers that link out via nofollow links, but not all of them…
+            Based on the above reasoning, you should reach out to bloggers that link out via nofollow links, but not all of them...
           </p>
           <p className="text-gray-700 mb-4">
             Regardless of the pros, the con is still weighty.
@@ -1045,31 +1520,60 @@ export default function HowToSortAndFilterLinkProspectsPage() {
         </p>
 
         <p className="text-gray-700 mb-4">
-          The logic is simple here. If someone clicks to a page from Google search, they may click to your link too. If no one visits that page, getting referral traffic is out of the question.
+          The logic is simple here.
         </p>
 
         <p className="text-gray-700 mb-4">
-          Sort pages with nofollow links by traffic and remove URLs that don't have any.
+          If someone clicks to a page from Google search, they may click to your link too. If no one visits that page, getting referral traffic is out of the question.
         </p>
 
         <p className="text-gray-700 mb-6">
+          Sort pages with nofollow links by traffic and remove URLs that don't have any.
+        </p>
+
+        <OptimizedImage
+          src="https://www.linkio.com/wp-content/uploads/2020/05/nofollow-links.png"
+          alt="Examples of nofollow links in spreadsheet"
+          width={800}
+          height={400}
+          className="w-full max-w-3xl mx-auto mb-6"
+        />
+
+        <p className="text-gray-700 mb-4">
           No worries, you won't have too many link prospects of this kind. So, it won't take too long to send them outreach emails.
         </p>
 
-        <div className="bg-gray-100 rounded-lg p-6">
-          <p className="text-gray-700">
-            According to my study, no more than <strong>5% of pages with nofollow links</strong> usually have organic traffic.
-          </p>
-        </div>
+        <p className="text-gray-700 mb-6">
+          According to my study, no more than 5% of pages with nofollow links usually have organic traffic.
+        </p>
+
+        <OptimizedImage
+          src="https://www.linkio.com/wp-content/uploads/2020/05/nofollow-links-traffic-chart.png"
+          alt="Chart showing 5% of nofollow links have organic traffic"
+          width={600}
+          height={300}
+          className="w-full max-w-2xl mx-auto"
+        />
       </section>
 
       {/* Section 6: Abandoned Blogs */}
       <section id="abandoned-blogs" className="mb-16">
-        <h2 className="text-3xl font-bold mb-6">Should you deal with blogs that haven't been updated since last year or earlier?</h2>
-        
+        <h2 className="text-3xl font-bold mb-6 flex items-center gap-3">
+          <Users className="w-8 h-8 text-orange-600" />
+          Should you deal with blogs that haven't been updated since last year or earlier?
+        </h2>
+
         <p className="text-gray-700 mb-4">
           Once you clean all the trash off your sheet, you'll need to add one more column with the last blog update. It will help you identify abandoned domains and remove them.
         </p>
+
+        <OptimizedImage
+          src="https://www.linkio.com/wp-content/uploads/2020/05/last-update-column.png"
+          alt="Spreadsheet column showing last update dates"
+          width={800}
+          height={400}
+          className="w-full max-w-3xl mx-auto mb-6"
+        />
 
         <p className="text-gray-700 mb-4">
           The main contenders for removal above are blogs with no updates for a year or so.
@@ -1091,110 +1595,214 @@ export default function HowToSortAndFilterLinkProspectsPage() {
           Here are a few hacks to figure out if your target domain is still alive, and you can expect a reply.
         </p>
 
-        <div className="space-y-10">
-          {/* 5.1 Active live chat */}
-          <div>
-            <h3 className="text-xl font-semibold mb-4">5.1. Active live chat</h3>
-            <p className="text-gray-700 mb-4">
-              The last post on samadeyinka.com was published in November 2019 🙁
-            </p>
-            <p className="text-gray-700 mb-4">
-              Too early to give up on it!
-            </p>
-            <p className="text-gray-700 mb-6">
-              Look at the lower right corner of the layout. There's a live chat saying that Sam Adeyinka typically replies within a few hours. The blogger is still active regardless of such a long delay in his editorial calendar.
-            </p>
-            <div className="bg-blue-50 border-l-4 border-blue-400 p-4 rounded-r-lg">
-              <p className="text-sm">
-                <strong>Note.</strong> Pay attention to the date when the chat was last active. On peppyacademy.com, no one has used their live chat since fall, 2019. Neither have they published new content. You'll need to look for other signals of bloggers' activity, which brings us to the next hack.
-              </p>
-            </div>
-          </div>
+        {/* 5.1 Active Live Chat */}
+        <div className="mb-8">
+          <h3 className="text-xl font-semibold mb-4">5.1. Active live chat</h3>
+          
+          <p className="text-gray-700 mb-4">
+            The last post on samadeyinka.com was published in November 2019 🙁
+          </p>
 
-          {/* 5.2 Recent blog comments */}
-          <div>
-            <h3 className="text-xl font-semibold mb-4">5.2. Recent blog comments</h3>
-            <p className="text-gray-700 mb-4">
-              The next place to check is a comments section at the bottom of blog posts if it's not disabled.
-            </p>
-            <p className="text-gray-700">
-              Readers comment on makealivingwriting.com and, most importantly, Carol Tice who owns the blog responds to them.
-            </p>
-          </div>
+          <p className="text-gray-700 mb-4">
+            Too early to give up on it!
+          </p>
 
-          {/* 5.3 Post titles with current year */}
-          <div>
-            <h3 className="text-xl font-semibold mb-4">5.3. Post titles with the current year mentions</h3>
-            <p className="text-gray-700 mb-4">
-              Check the titles of the latest blog posts for the current year.
-            </p>
-            <p className="text-gray-700">
-              Although youcanmakemoneyonlinenow.com has no publication dates, they posted an article about marketing trends for 2020. Looks like they've been active this year.
+          <p className="text-gray-700 mb-6">
+            Look at the lower right corner of the layout. There's a live chat saying that Sam Adeyinka typically replies within a few hours. The blogger is still active regardless of such a long delay in his editorial calendar.
+          </p>
+
+          <OptimizedImage
+            src="https://www.linkio.com/wp-content/uploads/2020/05/samadeyinka.com-chat.png"
+            alt="Sam Adeyinka's website showing active live chat"
+            width={600}
+            height={400}
+            className="w-full max-w-2xl mx-auto mb-4"
+          />
+
+          <div className="bg-blue-50 border-l-4 border-blue-400 p-4 rounded-r-lg mb-4">
+            <p className="text-sm">
+              <strong>Note.</strong> Pay attention to the date when the chat was last active.
             </p>
           </div>
 
-          {/* 5.4 Archives in sidebar */}
-          <div>
-            <h3 className="text-xl font-semibold mb-4">5.4. Archives in the sidebar</h3>
-            <p className="text-gray-700">
-              On some blogs, layouts have a sidebar with monthly archives of content. There, you can check the last month when new articles were published.
-            </p>
-          </div>
+          <p className="text-gray-700 mb-4">
+            On peppyacademy.com, no one has used their live chat since fall, 2019. Neither have they published new content.
+          </p>
 
-          {/* 5.5 Fresh copyright date */}
-          <div>
-            <h3 className="text-xl font-semibold mb-4">5.5. Fresh copyright date</h3>
-            <p className="text-gray-700 mb-4">
-              Scroll down to the footer to see if blog owners have updated the year in a copyright notice.
-            </p>
-            <p className="text-gray-700 mb-4">
-              Is it still 2018 there? The chances of hearing back from them in 2020 are slim to none. Feel free to remove such link prospects from your sheet.
-            </p>
-            <p className="text-gray-700">
-              If they've edited the year like guys from bullsolutions.co.uk have, you can try your luck with them.
-            </p>
-          </div>
+          <OptimizedImage
+            src="https://www.linkio.com/wp-content/uploads/2020/05/peppyacademy.com-chat.png"
+            alt="Peppy Academy website showing inactive live chat"
+            width={600}
+            height={400}
+            className="w-full max-w-2xl mx-auto mb-4"
+          />
 
-          {/* 5.6 Active social media */}
-          <div>
-            <h3 className="text-xl font-semibold mb-4">5.6. Active social media profiles</h3>
-            <p className="text-gray-700 mb-4">
-              Are there no signs of life on your target domain? Head over to their social media profiles to check if things are different there.
-            </p>
-            <p className="text-gray-700 mb-4">
-              The last article on blurbpointmedia.com dates back to March 2019, but their official Twitter account is quite active.
-            </p>
-            <p className="text-gray-700 mb-4">
-              Read carefully what the tweet below says. Noticed? Now, they have a different domain blurbpoint.com, where they post more often.
-            </p>
-            <p className="text-gray-700">
-              That's what you can discover if you do a quick analysis of your link prospects.
-            </p>
-          </div>
+          <p className="text-gray-700">
+            You'll need to look for other signals of bloggers' activity, which brings us to the next hack.
+          </p>
+        </div>
 
-          {/* 5.7 Current occupation */}
-          <div>
-            <h3 className="text-xl font-semibold mb-4">5.7. Current occupation of blog owners</h3>
-            <p className="text-gray-700 mb-4">
-              When you have seemingly abandoned personal blogs on your list, look for answers on LinkedIn.
-            </p>
-            <p className="text-gray-700 mb-4">
-              A common scenario is that their owners got a full-time job and have no time for their side projects anymore.
-            </p>
-            <p className="text-gray-700">
-              Brandi M Fleeks hasn't updated bellavitacontent.com for more than a year, but she hasn't abandoned it. According to LinkedIn, she just switched to a different project a year ago. Her personal blog is still her property.
-            </p>
-          </div>
+        {/* 5.2 Recent Blog Comments */}
+        <div className="mb-8">
+          <h3 className="text-xl font-semibold mb-4">5.2. Recent blog comments</h3>
+          
+          <p className="text-gray-700 mb-4">
+            The next place to check is a comments section at the bottom of blog posts if it's not disabled.
+          </p>
+
+          <p className="text-gray-700 mb-6">
+            Readers comment on makealivingwriting.com and, most importantly, Carol Tice who owns the blog responds to them.
+          </p>
+
+          <OptimizedImage
+            src="https://www.linkio.com/wp-content/uploads/2020/05/makealivingwriting.com-comments.png"
+            alt="Make a Living Writing blog showing active comments and responses"
+            width={600}
+            height={400}
+            className="w-full max-w-2xl mx-auto"
+          />
+        </div>
+
+        {/* 5.3 Post Titles with Current Year */}
+        <div className="mb-8">
+          <h3 className="text-xl font-semibold mb-4">5.3. Post titles with the current year mentions</h3>
+          
+          <p className="text-gray-700 mb-4">
+            Check the titles of the latest blog posts for the current year.
+          </p>
+
+          <p className="text-gray-700 mb-6">
+            Although youcanmakemoneyonlinenow.com has no publication dates, they posted an article about marketing trends for 2020. Looks like they've been active this year.
+          </p>
+
+          <OptimizedImage
+            src="https://www.linkio.com/wp-content/uploads/2020/05/youcanmakemoneyonlinenow.com-publishing-dates.png"
+            alt="Website showing current year in post titles"
+            width={600}
+            height={400}
+            className="w-full max-w-2xl mx-auto"
+          />
+        </div>
+
+        {/* 5.4 Archives in Sidebar */}
+        <div className="mb-8">
+          <h3 className="text-xl font-semibold mb-4">5.4. Archives in the sidebar</h3>
+          
+          <p className="text-gray-700 mb-6">
+            On some blogs, layouts have a sidebar with monthly archives of content. There, you can check the last month when new articles were published.
+          </p>
+
+          <OptimizedImage
+            src="https://www.linkio.com/wp-content/uploads/2020/05/archives-column.png"
+            alt="Blog sidebar showing monthly archives"
+            width={400}
+            height={300}
+            className="w-full max-w-lg mx-auto"
+          />
+        </div>
+
+        {/* 5.5 Fresh Copyright Date */}
+        <div className="mb-8">
+          <h3 className="text-xl font-semibold mb-4">5.5. Fresh copyright date</h3>
+          
+          <p className="text-gray-700 mb-4">
+            Scroll down to the footer to see if blog owners have updated the year in a copyright notice.
+          </p>
+
+          <p className="text-gray-700 mb-4">
+            Is it still 2018 there? The chances of hearing back from them in 2020 are slim to none. Feel free to remove such link prospects from your sheet.
+          </p>
+
+          <p className="text-gray-700 mb-6">
+            If they've edited the year like guys from bullsolutions.co.uk have, you can try your luck with them.
+          </p>
+
+          <OptimizedImage
+            src="https://www.linkio.com/wp-content/uploads/2020/05/bullsolutions.co_.uk-copyright.png"
+            alt="Website footer showing updated copyright year"
+            width={600}
+            height={200}
+            className="w-full max-w-2xl mx-auto"
+          />
+        </div>
+
+        {/* 5.6 Active Social Media */}
+        <div className="mb-8">
+          <h3 className="text-xl font-semibold mb-4">5.6. Active social media profiles</h3>
+          
+          <p className="text-gray-700 mb-4">
+            Are there no signs of life on your target domain? Head over to their social media profiles to check if things are different there.
+          </p>
+
+          <p className="text-gray-700 mb-4">
+            The last article on blurbpointmedia.com dates back to March 2019, but their official Twitter account is quite active.
+          </p>
+
+          <p className="text-gray-700 mb-6">
+            Read carefully what the tweet below says. Noticed? Now, they have a different domain blurbpoint.com, where they post more often.
+          </p>
+
+          <OptimizedImage
+            src="https://www.linkio.com/wp-content/uploads/2020/05/blurbpointmedia.com-twitter.png"
+            alt="Twitter profile showing domain change and activity"
+            width={600}
+            height={400}
+            className="w-full max-w-2xl mx-auto mb-4"
+          />
+
+          <p className="text-gray-700">
+            That's what you can discover if you do a quick analysis of your link prospects.
+          </p>
+        </div>
+
+        {/* 5.7 Current Occupation */}
+        <div className="mb-8">
+          <h3 className="text-xl font-semibold mb-4">5.7. Current occupation of blog owners</h3>
+          
+          <p className="text-gray-700 mb-4">
+            When you have seemingly abandoned personal blogs on your list, look for answers on LinkedIn.
+          </p>
+
+          <p className="text-gray-700 mb-4">
+            A common scenario is that their owners got a full-time job and have no time for their side projects anymore.
+          </p>
+
+          <p className="text-gray-700 mb-6">
+            Brandi M Fleeks hasn't updated bellavitacontent.com for more than a year, but she hasn't abandoned it.
+          </p>
+
+          <p className="text-gray-700 mb-4">
+            According to LinkedIn, she just switched to a different project a year ago. Her personal blog is still her property.
+          </p>
+
+          <OptimizedImage
+            src="https://www.linkio.com/wp-content/uploads/2020/05/brandi-m-fleeks-linkedin.png"
+            alt="Brandi M Fleeks LinkedIn profile showing job change"
+            width={600}
+            height={400}
+            className="w-full max-w-2xl mx-auto"
+          />
         </div>
       </section>
 
       {/* Section 7: Guest Posts */}
       <section id="guest-posts" className="mb-16">
-        <h2 className="text-3xl font-bold mb-6">What should you do if your target referring page is a guest post?</h2>
-        
+        <h2 className="text-3xl font-bold mb-6 flex items-center gap-3">
+          <Users className="w-8 h-8 text-indigo-600" />
+          What should you do if your target referring page is a guest post?
+        </h2>
+
         <p className="text-gray-700 mb-4">
           The next columns to add should include your link prospect's details, particularly the name, position, company, and whether that person is an in-house employee or a guest writer.
         </p>
+
+        <OptimizedImage
+          src="https://www.linkio.com/wp-content/uploads/2020/05/guest-author-columns.png"
+          alt="Spreadsheet columns for guest author information"
+          width={800}
+          height={400}
+          className="w-full max-w-3xl mx-auto mb-6"
+        />
 
         <p className="text-gray-700 mb-4">
           You'll see that a bunch of pages on your list are guest posts.
@@ -1208,9 +1816,11 @@ export default function HowToSortAndFilterLinkProspectsPage() {
           Shall you reach out to guest contributors anyways? It all depends on your purpose.
         </p>
 
-        <div className="space-y-8">
-          <div className="bg-red-50 rounded-lg p-6 border border-red-200">
-            <h4 className="font-semibold mb-3 text-red-900">Purpose #1. Gaining a backlink to your blog post (from that specific page).</h4>
+        {/* Purpose #1 */}
+        <div className="mb-8">
+          <h3 className="text-xl font-semibold mb-4">Purpose #1. Gaining a backlink to your blog post (from that specific page).</h3>
+          
+          <div className="bg-red-50 border-l-4 border-red-400 p-6 rounded-r-lg mb-4">
             <p className="text-gray-700 mb-4">
               Most likely, it's a no. Especially if you're not ready to reward guest writers in return.
             </p>
@@ -1224,9 +1834,13 @@ export default function HowToSortAndFilterLinkProspectsPage() {
               It's all like chasing windmills – long and useless.
             </p>
           </div>
+        </div>
 
-          <div className="bg-yellow-50 rounded-lg p-6 border border-yellow-200">
-            <h4 className="font-semibold mb-3 text-yellow-900">Purpose #2. Gaining a backlink to your product (from that specific page).</h4>
+        {/* Purpose #2 */}
+        <div className="mb-8">
+          <h3 className="text-xl font-semibold mb-4">Purpose #2. Gaining a backlink to your product (from that specific page).</h3>
+          
+          <div className="bg-yellow-50 border-l-4 border-yellow-400 p-6 rounded-r-lg mb-4">
             <p className="text-gray-700 mb-4">
               If there are guest posts strategically important for your business, be ready to sweat a bit.
             </p>
@@ -1240,9 +1854,13 @@ export default function HowToSortAndFilterLinkProspectsPage() {
               No response? Then, reach out directly to blog editors or owners if editors don't reply either. Don't forget to provide free access for them.
             </p>
           </div>
+        </div>
 
-          <div className="bg-green-50 rounded-lg p-6 border border-green-200">
-            <h4 className="font-semibold mb-3 text-green-900">Purpose #3. Gaining backlinks from guest writers' upcoming posts.</h4>
+        {/* Purpose #3 */}
+        <div className="mb-8">
+          <h3 className="text-xl font-semibold mb-4">Purpose #3. Gaining backlinks from guest writers' upcoming posts.</h3>
+          
+          <div className="bg-green-50 border-l-4 border-green-400 p-6 rounded-r-lg mb-4">
             <p className="text-gray-700 mb-4">
               Face it, getting your backlinks embedded in older guest posts is almost impossible.
             </p>
@@ -1258,37 +1876,54 @@ export default function HowToSortAndFilterLinkProspectsPage() {
           </div>
         </div>
 
-        <div className="bg-blue-50 border-l-4 border-blue-400 p-4 rounded-r-lg mt-8 mb-8">
-          <p className="text-sm">
+        <div className="bg-blue-50 border-l-4 border-blue-400 p-4 rounded-r-lg mb-6">
+          <p className="text-sm mb-4">
             <strong>Note.</strong> Check LinkedIn profiles of in-house writers to make sure they still work there. In rare cases, people remain in the same company for ages.
+          </p>
+          <p className="text-sm mb-4">
+            For example, Zoe Stoller created content for Splat last year.
+          </p>
+          <p className="text-sm">
+            But things changed in September 2019. She migrated to a different company and is still there.
           </p>
         </div>
 
-        <p className="text-gray-700 mb-4">
-          For example, Zoe Stoller created content for Splat last year.
-        </p>
+        <OptimizedImage
+          src="https://www.linkio.com/wp-content/uploads/2020/05/splatworld-content.png"
+          alt="Example of content created by former employee"
+          width={600}
+          height={300}
+          className="w-full max-w-2xl mx-auto mb-4"
+        />
+
+        <OptimizedImage
+          src="https://www.linkio.com/wp-content/uploads/2020/05/zoe-stroller-linkedin.png"
+          alt="Zoe Stoller's LinkedIn showing job change"
+          width={600}
+          height={300}
+          className="w-full max-w-2xl mx-auto mb-6"
+        />
 
         <p className="text-gray-700 mb-4">
-          But things changed in September 2019. She migrated to a different company and is still there.
+          Just like guest writers, former employees can't edit their posts anymore.
         </p>
 
         <p className="text-gray-700 mb-6">
-          Just like guest writers, former employees can't edit their posts anymore. But as Zoe is a content lead at Foyr now, you have an opportunity to get a backlink from that resource.
+          But as Zoe is a content lead at Foyr now, you have an opportunity to get a backlink from that resource.
         </p>
 
-        <div className="bg-red-50 border-l-4 border-red-400 p-4 rounded-r-lg mb-6">
-          <p className="text-sm">
+        <div className="bg-red-50 border-l-4 border-red-400 p-4 rounded-r-lg">
+          <p className="text-sm mb-4">
             <strong>Exception.</strong> If you bump into guest posts by your competitor's team, feel free to remove such link prospects. They won't help you.
           </p>
+          <p className="text-sm">
+            On the other hand, you can approach owners of those domains to submit your own guest posts.
+          </p>
         </div>
-
-        <p className="text-gray-700">
-          On the other hand, you can approach owners of those domains to submit your own guest posts.
-        </p>
       </section>
 
-      {/* Final Word */}
-      <section className="bg-gradient-to-br from-blue-50 to-indigo-100 rounded-lg p-8 border border-blue-200">
+      {/* Final Word Section */}
+      <section className="bg-gradient-to-br from-blue-50 to-indigo-100 rounded-lg p-8 border border-blue-200 mb-12">
         <h2 className="text-3xl font-bold mb-4">Final Word</h2>
         <p className="text-lg mb-6 text-gray-700">
           As soon as you finish sorting out your link prospects and remove the trash, you'll come to a logical conclusion. They are not infinite, so you can't approach them carelessly and waste your opportunities.
@@ -1303,6 +1938,43 @@ export default function HowToSortAndFilterLinkProspectsPage() {
           <button className="bg-white text-blue-600 px-6 py-3 rounded-lg font-semibold hover:bg-gray-50 transition-colors border border-blue-600">
             Read Next: Outreach Templates
           </button>
+        </div>
+      </section>
+
+      {/* Related Resources */}
+      <section className="mb-12">
+        <h2 className="text-2xl font-bold mb-6">SEO and Link Building Resources</h2>
+        
+        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+          <div className="bg-white rounded-lg border border-gray-200 p-4 hover:shadow-md transition-shadow">
+            <span className="text-xs bg-blue-100 text-blue-800 px-2 py-1 rounded-full">Case Studies</span>
+            <h3 className="font-semibold mt-3 mb-2">From Zero to Breakthrough: The Marketing Tactic That Made It Happen</h3>
+          </div>
+          
+          <div className="bg-white rounded-lg border border-gray-200 p-4 hover:shadow-md transition-shadow">
+            <span className="text-xs bg-green-100 text-green-800 px-2 py-1 rounded-full">Guides</span>
+            <h3 className="font-semibold mt-3 mb-2">Best Rank Tracking Tools for Local Businesses: What Actually Matters?</h3>
+          </div>
+          
+          <div className="bg-white rounded-lg border border-gray-200 p-4 hover:shadow-md transition-shadow">
+            <span className="text-xs bg-purple-100 text-purple-800 px-2 py-1 rounded-full">Guides</span>
+            <h3 className="font-semibold mt-3 mb-2">Using SEO For Lead Generation – Everything You Need To Know</h3>
+          </div>
+          
+          <div className="bg-white rounded-lg border border-gray-200 p-4 hover:shadow-md transition-shadow">
+            <span className="text-xs bg-orange-100 text-orange-800 px-2 py-1 rounded-full">Listicles</span>
+            <h3 className="font-semibold mt-3 mb-2">The Best Books To Learn SEO Recommended by Pros</h3>
+          </div>
+          
+          <div className="bg-white rounded-lg border border-gray-200 p-4 hover:shadow-md transition-shadow">
+            <span className="text-xs bg-red-100 text-red-800 px-2 py-1 rounded-full">Case Studies</span>
+            <h3 className="font-semibold mt-3 mb-2">How to Create a Content Marketing Strategy for eCommerce</h3>
+          </div>
+          
+          <div className="bg-white rounded-lg border border-gray-200 p-4 hover:shadow-md transition-shadow">
+            <span className="text-xs bg-indigo-100 text-indigo-800 px-2 py-1 rounded-full">Guides</span>
+            <h3 className="font-semibold mt-3 mb-2">Why Every Business Needs a Website</h3>
+          </div>
         </div>
       </section>
     </BlogPostTemplate>
