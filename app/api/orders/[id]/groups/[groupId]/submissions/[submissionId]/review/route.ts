@@ -73,14 +73,22 @@ export async function POST(
     // Update submission with client review
     const newStatus = action === 'approve' ? 'client_approved' : 'client_rejected';
     
+    const updateData: any = {
+      submissionStatus: newStatus,
+      clientReviewedAt: new Date(),
+      clientReviewNotes: notes,
+    };
+    
+    // Only set clientReviewedBy for internal users (references users table)
+    if (session.userType === 'internal') {
+      updateData.clientReviewedBy = session.userId;
+    }
+    
     const [updatedSubmission] = await db.update(orderSiteSubmissions)
       .set({
-        submissionStatus: newStatus,
-        clientReviewedAt: new Date(),
-        clientReviewedBy: session.userId,
-        clientReviewNotes: notes,
+        ...updateData,
         metadata: {
-          ...submission.metadata,
+          ...(submission.metadata || {}),
           reviewHistory: [
             ...(submission.metadata?.reviewHistory || []),
             {
@@ -103,6 +111,12 @@ export async function POST(
     
   } catch (error) {
     console.error('Error reviewing submission:', error);
-    return NextResponse.json({ error: 'Internal server error' }, { status: 500 });
+    console.error('Request params:', params);
+    console.error('Request body:', { action, notes });
+    console.error('Session:', { userId: session.userId, userType: session.userType });
+    return NextResponse.json({ 
+      error: 'Internal server error',
+      message: error instanceof Error ? error.message : 'Unknown error'
+    }, { status: 500 });
   }
 }
