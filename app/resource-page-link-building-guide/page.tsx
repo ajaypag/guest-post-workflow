@@ -14,6 +14,8 @@ export default function ResourcePageLinkBuildingGuidePage() {
       publishDate="August 22, 2022"
       author="Ajay Paghdal"
       readTime="12 min read"
+      heroImage="/images/resource-page-link-building-hero.jpg"
+      heroImageAlt="Resource Page Link Building Strategy"
       relatedPosts={[
         {
           title: "SEO Webinars Collection",
@@ -79,6 +81,14 @@ export default function ResourcePageLinkBuildingGuidePage() {
       </p>
 
       <h2 id="types-of-resource-pages" className="text-2xl font-bold text-gray-900 mb-6">Types of Resource Pages</h2>
+
+      <div className="mb-8">
+        <img 
+          src="/images/types-of-resource-pages.png" 
+          alt="Three types of resource pages: Normal, Mini, and Resource Centers"
+          className="w-full rounded-lg shadow-md"
+        />
+      </div>
 
       <p className="text-gray-700 mb-6">
         Generally speaking, there are three types of resource pages. Some would argue that there are only two, and they wouldn't be wrong either. Let me explain.
@@ -147,6 +157,14 @@ export default function ResourcePageLinkBuildingGuidePage() {
 
       <h2 id="step-by-step-resource-page-link-building" className="text-2xl font-bold text-gray-900 mb-6">The Step-by-Step Resource Page Link Building</h2>
 
+      <div className="mb-8">
+        <img 
+          src="/images/resource-page-link-building-process.png" 
+          alt="Step-by-step resource page link building process infographic"
+          className="w-full rounded-lg shadow-md"
+        />
+      </div>
+
       <p className="text-gray-700 mb-6">
         Now that we've discussed what resource pages are, and what you need to get started with resource page link building, let's discuss the entire process in finer detail.
       </p>
@@ -178,6 +196,14 @@ export default function ResourcePageLinkBuildingGuidePage() {
       </p>
 
       <h3 className="text-xl font-semibold text-gray-900 mb-4">Resource Page Search Operators</h3>
+
+      <div className="mb-6">
+        <img 
+          src="/images/google-search-operators.png" 
+          alt="Google search operators for finding resource pages"
+          className="w-full rounded-lg shadow-md"
+        />
+      </div>
 
       <p className="text-gray-700 mb-6">
         Google search operators are modifiers that help you find very specific things, much more easily. I honestly don't know where we would be if those weren't a thing.
@@ -288,6 +314,14 @@ export default function ResourcePageLinkBuildingGuidePage() {
       </ul>
 
       <h3 className="text-xl font-semibold text-gray-900 mb-4">Outreach Email Templates</h3>
+
+      <div className="mb-6">
+        <img 
+          src="/images/email-outreach-templates.png" 
+          alt="Email outreach templates for resource page link building"
+          className="w-full rounded-lg shadow-md"
+        />
+      </div>
 
       <p className="text-gray-700 mb-6">
         Did you know that we have a collection of 80+ cold email outreach templates for all types of different link building strategies?
@@ -423,6 +457,14 @@ export default function ResourcePageLinkBuildingGuidePage() {
       </p>
 
       <h2 id="helpful-tools" className="text-2xl font-bold text-gray-900 mb-6">Helpful Tools</h2>
+
+      <div className="mb-6">
+        <img 
+          src="/images/link-building-tools.png" 
+          alt="Essential tools for resource page link building: Ahrefs, Hunter.io, NinjaOutreach"
+          className="w-full rounded-lg shadow-md"
+        />
+      </div>
 
       <p className="text-gray-700 mb-6">
         Besides our own tool for filtering prospects, there is quite a lot of software that can help you in your link building endeavors.
