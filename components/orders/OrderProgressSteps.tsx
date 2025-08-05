@@ -70,15 +70,17 @@ export function getProgressSteps(status: string, state?: string) {
       currentStep = 1;
     } else if (state === 'site_review' || state === 'sites_ready' || state === 'client_reviewing') {
       currentStep = 2;
-    } else if (state === 'awaiting_payment' || state === 'invoiced') {
+    } else if (state === 'payment_pending') {
       currentStep = 3;
-    } else if (state === 'paid' || state === 'workflows_generated' || state === 'in_progress') {
+    } else if (state === 'payment_received' || state === 'workflows_generated' || state === 'in_progress') {
       currentStep = 4;
     }
   } else if (status === 'paid') {
-    // Order has been paid, at least at invoicing step
-    currentStep = 3;
-    if (state === 'workflows_generated' || state === 'in_progress') {
+    // Order has been paid, move to content & submission
+    currentStep = 4;
+    if (state === 'payment_received' || state === 'workflows_generated') {
+      currentStep = 4;
+    } else if (state === 'in_progress') {
       currentStep = 4;
     }
   } else if (status === 'in_progress') {
@@ -105,10 +107,9 @@ export function getStateDisplay(status: string, state?: string) {
     case 'sites_ready':
     case 'client_reviewing':
       return { label: 'Ready for Review', color: 'bg-purple-100 text-purple-700' };
-    case 'awaiting_payment':
-    case 'invoiced':
+    case 'payment_pending':
       return { label: 'Awaiting Payment', color: 'bg-orange-100 text-orange-700' };
-    case 'paid':
+    case 'payment_received':
       return { label: 'Payment Received', color: 'bg-green-100 text-green-700' };
     case 'workflows_generated':
       return { label: 'Preparing Content', color: 'bg-indigo-100 text-indigo-700' };

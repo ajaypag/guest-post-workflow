@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from 'next/server';
 import { db } from '@/lib/db/connection';
 import { orders } from '@/lib/db/orderSchema';
 import { orderSiteSubmissions } from '@/lib/db/projectOrderAssociationsSchema';
+import { orderGroups } from '@/lib/db/orderGroupSchema';
 import { eq, and } from 'drizzle-orm';
 import { AuthServiceServer } from '@/lib/auth-server';
 
@@ -21,14 +22,7 @@ export async function POST(
 
     // Get the order
     const order = await db.query.orders.findFirst({
-      where: eq(orders.id, orderId),
-      with: {
-        orderGroups: {
-          with: {
-            submissions: true
-          }
-        }
-      }
+      where: eq(orders.id, orderId)
     });
 
     if (!order) {
@@ -47,8 +41,20 @@ export async function POST(
     }
 
     if (action === 'generate_invoice') {
+      // Get order groups and submissions separately
+      const orderGroupsList = await db.query.orderGroups.findMany({
+        where: eq(orderGroups.orderId, orderId)
+      });
+
+      const allSubmissions = [];
+      for (const group of orderGroupsList) {
+        const submissions = await db.query.orderSiteSubmissions.findMany({
+          where: eq(orderSiteSubmissions.orderGroupId, group.id)
+        });
+        allSubmissions.push(...submissions);
+      }
+
       // Check if all sites have been reviewed
-      const allSubmissions = order.orderGroups.flatMap(g => g.submissions || []);
       const pendingSubmissions = allSubmissions.filter(s => 
         s.submissionStatus === 'pending' || s.submissionStatus === 'submitted'
       );
@@ -70,10 +76,10 @@ export async function POST(
         }, { status: 400 });
       }
 
-      // Update order to invoiced state
+      // Update order to payment_pending state (still confirmed status)
       const updatedOrder = await db.update(orders)
         .set({
-          state: 'invoiced',
+          state: 'payment_pending',
           invoicedAt: new Date(),
           updatedAt: new Date()
         })
@@ -100,11 +106,11 @@ export async function POST(
         }, { status: 400 });
       }
 
-      // Update order to paid status
+      // Update order to paid status with payment_received state
       const updatedOrder = await db.update(orders)
         .set({
           status: 'paid',
-          state: 'paid',
+          state: 'payment_received',
           paidAt: new Date(),
           updatedAt: new Date()
         })
