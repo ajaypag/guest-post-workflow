@@ -105,6 +105,8 @@ interface OrderSiteReviewTableProps {
   onApprove?: (submissionId: string, groupId: string) => Promise<void>;
   onReject?: (submissionId: string, groupId: string, reason: string) => Promise<void>;
   onRefresh?: () => Promise<void>;
+  selectedSubmissions?: Set<string>;
+  onSelectionChange?: (submissionId: string, selected: boolean) => void;
 }
 
 export default function OrderSiteReviewTable({
@@ -118,7 +120,9 @@ export default function OrderSiteReviewTable({
   onSwitchPool,
   onApprove,
   onReject,
-  onRefresh
+  onRefresh,
+  selectedSubmissions,
+  onSelectionChange
 }: OrderSiteReviewTableProps) {
   const [expandedGroups, setExpandedGroups] = useState<Set<string>>(
     new Set(orderGroups.map(g => g.id))
