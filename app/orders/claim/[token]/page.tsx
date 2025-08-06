@@ -2,7 +2,6 @@
 
 import { useState, useEffect } from 'react';
 import { useParams, useRouter } from 'next/navigation';
-import OrderSiteReviewTable from '@/components/orders/OrderSiteReviewTable';
 import { formatCurrency } from '@/lib/utils/formatting';
 import { 
   Loader2, CheckCircle, AlertCircle, Package, 
@@ -188,14 +187,67 @@ export default function ClaimOrderPage() {
             <h2 className="text-lg font-medium text-gray-900">Order Details</h2>
           </div>
           
-          {/* Use the existing OrderSiteReviewTable component */}
-          {order.orderGroups && order.orderGroups.length > 0 && (
-            <OrderSiteReviewTable
-              order={order as any}
-              userType="account" // Show as external user view
-              readOnly={true} // No actions available
-            />
-          )}
+          {/* Simple order summary - don't use OrderSiteReviewTable as it needs too much data */}
+          <div className="p-6">
+            {order.orderGroups && order.orderGroups.length > 0 ? (
+              <div className="space-y-4">
+                {order.orderGroups.map((group: any) => (
+                  <div key={group.id} className="border-l-4 border-blue-500 pl-4">
+                    <div className="flex items-center justify-between mb-2">
+                      <h3 className="font-medium text-gray-900">
+                        {group.client?.name || 'Unknown Client'}
+                      </h3>
+                      <span className="text-sm text-gray-500">
+                        {group.linkCount} {group.linkCount === 1 ? 'link' : 'links'}
+                      </span>
+                    </div>
+                    {group.client?.website && (
+                      <p className="text-sm text-gray-600">
+                        Website: {group.client.website}
+                      </p>
+                    )}
+                    {group.targetPages && group.targetPages.length > 0 && (
+                      <div className="mt-2">
+                        <p className="text-xs text-gray-500 mb-1">Target Pages:</p>
+                        <ul className="text-sm text-gray-600 space-y-1">
+                          {group.targetPages.slice(0, 3).map((page: any, idx: number) => (
+                            <li key={idx} className="truncate">
+                              • {page.url || page}
+                            </li>
+                          ))}
+                          {group.targetPages.length > 3 && (
+                            <li className="text-gray-400">
+                              • {group.targetPages.length - 3} more...
+                            </li>
+                          )}
+                        </ul>
+                      </div>
+                    )}
+                  </div>
+                ))}
+                
+                <div className="pt-4 border-t border-gray-200">
+                  <div className="flex justify-between items-center">
+                    <span className="text-sm text-gray-600">
+                      Total Links: {order.orderGroups.reduce((sum: number, g: any) => sum + g.linkCount, 0)}
+                    </span>
+                    {order.includesClientReview && (
+                      <span className="text-xs px-2 py-1 bg-blue-100 text-blue-700 rounded">
+                        Includes Client Review
+                      </span>
+                    )}
+                    {order.rushDelivery && (
+                      <span className="text-xs px-2 py-1 bg-orange-100 text-orange-700 rounded">
+                        Rush Delivery
+                      </span>
+                    )}
+                  </div>
+                </div>
+              </div>
+            ) : (
+              <p className="text-gray-500">No order details available</p>
+            )}
+          </div>
         </div>
 
         {/* Claim Section */}
