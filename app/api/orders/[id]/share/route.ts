@@ -20,7 +20,11 @@ export async function POST(
     }
 
     const { id: orderId } = await params;
-    const { expiresInDays = 7 } = await request.json().catch(() => ({}));
+    const { expiresInDays = 3 } = await request.json().catch(() => ({}));
+    
+    // Security: Enforce maximum expiration of 30 days
+    const maxExpirationDays = 30;
+    const actualExpirationDays = Math.min(expiresInDays, maxExpirationDays);
 
     // Verify order exists
     const [order] = await db.select().from(orders).where(eq(orders.id, orderId));
@@ -32,7 +36,7 @@ export async function POST(
     // 32 bytes = 256 bits of entropy, URL-safe base64 encoded
     const shareToken = randomBytes(32).toString('base64url');
     const shareExpiresAt = new Date();
-    shareExpiresAt.setDate(shareExpiresAt.getDate() + expiresInDays);
+    shareExpiresAt.setDate(shareExpiresAt.getDate() + actualExpirationDays);
 
     // Update order with share token
     const [updatedOrder] = await db.update(orders)
@@ -53,7 +57,7 @@ export async function POST(
       shareUrl,
       shareToken,
       expiresAt: shareExpiresAt.toISOString(),
-      message: `Share link generated. Valid for ${expiresInDays} days.`
+      message: `Share link generated. Valid for ${actualExpirationDays} days.`
     });
 
   } catch (error: any) {

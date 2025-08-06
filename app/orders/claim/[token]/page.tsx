@@ -149,8 +149,10 @@ export default function ClaimOrderPage() {
 
   if (!order) return null;
 
-  // Check if link is expired
+  // Check if link is expired and calculate time remaining
   const isExpired = order.shareExpiresAt && new Date(order.shareExpiresAt) < new Date();
+  const timeRemaining = order.shareExpiresAt ? 
+    Math.max(0, Math.ceil((new Date(order.shareExpiresAt).getTime() - new Date().getTime()) / (1000 * 60 * 60 * 24))) : null;
   
   if (isExpired) {
     return (
@@ -181,6 +183,11 @@ export default function ClaimOrderPage() {
               <p className="text-xl font-semibold text-gray-900">
                 {formatCurrency(order.totalPrice)}
               </p>
+              {timeRemaining !== null && timeRemaining > 0 && (
+                <p className="text-xs text-orange-600 mt-1">
+                  Link expires in {timeRemaining} {timeRemaining === 1 ? 'day' : 'days'}
+                </p>
+              )}
             </div>
           </div>
         </div>
