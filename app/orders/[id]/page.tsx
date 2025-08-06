@@ -929,19 +929,70 @@ export default function OrderDetailPage() {
                 <div className="bg-white rounded-lg border border-gray-200 shadow-sm p-6">
                   <h3 className="text-lg font-semibold mb-4">Timeline</h3>
                   <div className="space-y-3">
+                    {/* Order Created */}
                     <div className="flex items-start gap-3">
                       <Clock className="h-4 w-4 text-gray-400 mt-0.5" />
                       <div>
-                        <p className="text-sm font-medium text-gray-900">Created</p>
+                        <p className="text-sm font-medium text-gray-900">Order Created</p>
                         <p className="text-sm text-gray-600">{new Date(order.createdAt).toLocaleDateString()}</p>
                       </div>
                     </div>
+                    
+                    {/* Order Confirmed */}
                     {order.approvedAt && (
                       <div className="flex items-start gap-3">
                         <CheckCircle className="h-4 w-4 text-green-500 mt-0.5" />
                         <div>
-                          <p className="text-sm font-medium text-gray-900">Confirmed</p>
+                          <p className="text-sm font-medium text-gray-900">Order Confirmed</p>
                           <p className="text-sm text-gray-600">{new Date(order.approvedAt).toLocaleDateString()}</p>
+                        </div>
+                      </div>
+                    )}
+                    
+                    {/* Sites Ready (when applicable) */}
+                    {(order.state === 'sites_ready' || order.state === 'site_review' || order.state === 'client_reviewing') && (
+                      <div className="flex items-start gap-3">
+                        <Search className="h-4 w-4 text-blue-500 mt-0.5" />
+                        <div>
+                          <p className="text-sm font-medium text-gray-900">Sites Found</p>
+                          <p className="text-sm text-gray-600">
+                            {Object.values(siteSubmissions).flat().length} sites ready for review
+                          </p>
+                        </div>
+                      </div>
+                    )}
+                    
+                    {/* Sites Approved (when applicable) */}
+                    {Object.values(siteSubmissions).flat().some(s => (s as any).status === 'client_approved') && (
+                      <div className="flex items-start gap-3">
+                        <Users className="h-4 w-4 text-purple-500 mt-0.5" />
+                        <div>
+                          <p className="text-sm font-medium text-gray-900">Sites Approved</p>
+                          <p className="text-sm text-gray-600">
+                            {Object.values(siteSubmissions).flat().filter(s => (s as any).status === 'client_approved').length} sites approved
+                          </p>
+                        </div>
+                      </div>
+                    )}
+                    
+                    {/* Invoice Generated */}
+                    {order.invoicedAt && (
+                      <div className="flex items-start gap-3">
+                        <FileText className="h-4 w-4 text-orange-500 mt-0.5" />
+                        <div>
+                          <p className="text-sm font-medium text-gray-900">Invoice Generated</p>
+                          <p className="text-sm text-gray-600">{new Date(order.invoicedAt).toLocaleDateString()}</p>
+                        </div>
+                      </div>
+                    )}
+                    
+                    {/* Payment Received */}
+                    {order.paidAt && (
+                      <div className="flex items-start gap-3">
+                        <DollarSign className="h-4 w-4 text-green-500 mt-0.5" />
+                        <div>
+                          <p className="text-sm font-medium text-gray-900">Payment Received</p>
+                          <p className="text-sm text-gray-600">{new Date(order.paidAt).toLocaleDateString()}</p>
                         </div>
                       </div>
                     )}
@@ -952,28 +1003,79 @@ export default function OrderDetailPage() {
                 <div className="bg-white rounded-lg border border-gray-200 shadow-sm p-6">
                   <div className="flex items-center gap-2 mb-4">
                     <Activity className="h-5 w-5 text-gray-600" />
-                    <h3 className="text-lg font-semibold text-gray-900">Recent Activity</h3>
+                    <h3 className="text-lg font-semibold text-gray-900">Current Status</h3>
                   </div>
                   <div className="space-y-3">
-                    {order.state === 'analyzing' && (
+                    {/* Finding Sites State */}
+                    {(order.state === 'analyzing' || order.state === 'finding_sites') && (
                       <div className="flex items-start gap-3">
                         <div className="w-2 h-2 bg-blue-500 rounded-full mt-1.5 animate-pulse" />
                         <div>
-                          <p className="text-sm font-medium text-gray-900">Analyzing sites</p>
-                          <p className="text-xs text-gray-500">Finding placement opportunities</p>
+                          <p className="text-sm font-medium text-gray-900">Finding Sites</p>
+                          <p className="text-xs text-gray-500">Our team is analyzing and curating suitable sites for your links</p>
                         </div>
                       </div>
                     )}
-                    {order.state === 'site_review' && (
+                    
+                    {/* Sites Ready for Review */}
+                    {(order.state === 'sites_ready' || order.state === 'site_review' || order.state === 'client_reviewing') && (
                       <div className="flex items-start gap-3">
                         <div className="w-2 h-2 bg-purple-500 rounded-full mt-1.5" />
                         <div>
-                          <p className="text-sm font-medium text-gray-900">Sites ready for review</p>
-                          <p className="text-xs text-gray-500">
-                            {Object.values(siteSubmissions).reduce((sum, subs) => 
-                              sum + subs.filter(s => s.status === 'pending').length, 0
-                            )} sites awaiting approval
+                          <p className="text-sm font-medium text-gray-900">
+                            {(() => {
+                              const pendingCount = Object.values(siteSubmissions).flat().filter(s => s.status === 'pending').length;
+                              const approvedCount = Object.values(siteSubmissions).flat().filter(s => (s as any).status === 'client_approved').length;
+                              
+                              if (pendingCount > 0) return 'Sites Ready for Review';
+                              if (approvedCount > 0) return 'Sites Approved';
+                              return 'Sites Available';
+                            })()}
                           </p>
+                          <p className="text-xs text-gray-500">
+                            {(() => {
+                              const pendingCount = Object.values(siteSubmissions).flat().filter(s => s.status === 'pending').length;
+                              const approvedCount = Object.values(siteSubmissions).flat().filter(s => (s as any).status === 'client_approved').length;
+                              const totalCount = Object.values(siteSubmissions).flat().length;
+                              
+                              if (pendingCount > 0) return `${pendingCount} sites awaiting your approval`;
+                              if (approvedCount > 0) return `${approvedCount} of ${totalCount} sites approved`;
+                              return `${totalCount} sites available for review`;
+                            })()}
+                          </p>
+                        </div>
+                      </div>
+                    )}
+                    
+                    {/* Payment Pending */}
+                    {order.state === 'payment_pending' && (
+                      <div className="flex items-start gap-3">
+                        <div className="w-2 h-2 bg-orange-500 rounded-full mt-1.5 animate-pulse" />
+                        <div>
+                          <p className="text-sm font-medium text-gray-900">Awaiting Payment</p>
+                          <p className="text-xs text-gray-500">Invoice ready - review and proceed with payment</p>
+                        </div>
+                      </div>
+                    )}
+                    
+                    {/* In Progress */}
+                    {(order.state === 'payment_received' || order.state === 'workflows_generated' || order.state === 'in_progress') && (
+                      <div className="flex items-start gap-3">
+                        <div className="w-2 h-2 bg-green-500 rounded-full mt-1.5 animate-pulse" />
+                        <div>
+                          <p className="text-sm font-medium text-gray-900">Content Creation Started</p>
+                          <p className="text-xs text-gray-500">Payment received - our team is creating your guest posts</p>
+                        </div>
+                      </div>
+                    )}
+                    
+                    {/* Default fallback */}
+                    {!order.state && (
+                      <div className="flex items-start gap-3">
+                        <div className="w-2 h-2 bg-gray-400 rounded-full mt-1.5" />
+                        <div>
+                          <p className="text-sm font-medium text-gray-900">Processing</p>
+                          <p className="text-xs text-gray-500">Order is being processed</p>
                         </div>
                       </div>
                     )}

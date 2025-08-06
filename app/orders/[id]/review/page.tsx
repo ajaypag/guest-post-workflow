@@ -189,8 +189,33 @@ export default function ExternalOrderReviewPage() {
     }
   };
 
-  const handleProceed = () => {
-    router.push(`/orders/${orderId}`);
+  const handleProceed = async () => {
+    // After approving sites, check if order needs invoicing or if it's ready for payment
+    if (order && approvedCount > 0) {
+      try {
+        // Trigger invoice generation for approved sites
+        const response = await fetch(`/api/orders/${orderId}/invoice`, {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ action: 'generate_invoice' })
+        });
+        
+        if (response.ok) {
+          // Invoice generated successfully, redirect to invoice page
+          router.push(`/orders/${orderId}/invoice`);
+        } else {
+          // If invoice generation fails, go to order status page
+          router.push(`/account/orders/${orderId}/status`);
+        }
+      } catch (error) {
+        console.error('Error generating invoice:', error);
+        // Fallback to order status page
+        router.push(`/account/orders/${orderId}/status`);
+      }
+    } else {
+      // No approved sites, go to order page
+      router.push(`/orders/${orderId}`);
+    }
   };
 
   if (loading) {

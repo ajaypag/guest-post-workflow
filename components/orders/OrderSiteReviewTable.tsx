@@ -405,7 +405,7 @@ export default function OrderSiteReviewTable({
         return (
           <td className="px-6 py-4 pl-8">
             <div className="flex items-center gap-2">
-              {data.showPoolView && availableForTarget.length > 0 && (
+              {displaySubmission && (
                 <button
                   className="flex items-center gap-1 p-1 hover:bg-gray-100 rounded"
                   onClick={() => setEditingLineItem(
@@ -502,7 +502,7 @@ export default function OrderSiteReviewTable({
                       </span>
                     )}
                   </div>
-                  {permissions.canSwitchPools && availableForTarget.length > 0 && (
+                  {permissions.canSwitchPools && displaySubmission && (
                     <button
                       className="flex items-center gap-1 p-1 hover:bg-gray-100 rounded"
                       onClick={() => setEditingLineItem(
@@ -943,10 +943,10 @@ export default function OrderSiteReviewTable({
                               )}
                             </tr>
                             
-                            {/* Expandable domain comparison - Full featured version */}
+                            {/* Expandable domain analysis - Shows analysis data and alternatives if available */}
                             {editingLineItem?.groupId === group.id && 
                              editingLineItem?.index === index && 
-                             availableForTarget.length > 0 && (
+                             displaySubmission && (
                               <tr className="bg-white border-l-4 border-indigo-200 edit-dropdown">
                                 <td colSpan={columnConfig.columns.length} className="px-6 py-4">
                                   <div className="bg-gray-50 rounded-lg p-4 edit-dropdown">
