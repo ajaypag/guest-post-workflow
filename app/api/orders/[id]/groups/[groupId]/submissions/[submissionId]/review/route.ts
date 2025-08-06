@@ -92,10 +92,29 @@ export async function POST(
     
     // Capture price snapshots when approving
     if (action === 'approve') {
-      // Get price from domain or use fallback pricing
-      const retailPrice = (submission as any).price || submission.domain?.price || 32900; // Default $329
+      // Calculate price based on domain rating or use existing snapshots
+      // If price snapshots already exist, use them; otherwise calculate based on DR
+      let retailPrice = submission.retailPriceSnapshot;
+      let wholesalePrice = submission.wholesalePriceSnapshot;
       const serviceFee = 7900; // $79 service fee
-      const wholesalePrice = retailPrice - serviceFee;
+      
+      if (!retailPrice) {
+        // Calculate based on domain rating if available from metadata
+        const dr = submission.metadata?.domainRating || 50; // Default DR of 50
+        
+        // Pricing tiers based on DR
+        if (dr >= 70) {
+          retailPrice = 59900; // $599
+        } else if (dr >= 50) {
+          retailPrice = 49900; // $499
+        } else if (dr >= 30) {
+          retailPrice = 39900; // $399
+        } else {
+          retailPrice = 29900; // $299
+        }
+        
+        wholesalePrice = retailPrice - serviceFee;
+      }
       
       updateData.retailPriceSnapshot = retailPrice;
       updateData.wholesalePriceSnapshot = wholesalePrice;
