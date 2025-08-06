@@ -222,7 +222,7 @@ export default function MarketingHomepage() {
             <div className="bg-blue-50 rounded-2xl p-8">
               <h3 className="text-2xl font-semibold text-blue-900 mb-6 flex items-center gap-3">
                 <Zap className="w-6 h-6" />
-                PostFlow Method
+                Linkio Method
               </h3>
               
               <div className="space-y-4">

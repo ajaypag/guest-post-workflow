@@ -3,6 +3,7 @@
 import React, { useState } from 'react';
 import { useRouter } from 'next/navigation';
 import Link from 'next/link';
+import LinkioHeader from '@/components/LinkioHeader';
 import { 
   Mail, 
   Lock, 
@@ -172,7 +173,9 @@ export default function MarketingSignupPage() {
   };
   
   return (
-    <div className="min-h-screen bg-gradient-to-br from-blue-50 to-white flex items-center justify-center px-4">
+    <div className="min-h-screen bg-gradient-to-br from-blue-50 to-white">
+      <LinkioHeader variant="default" />
+      <div className="flex items-center justify-center px-4 py-8">
       <div className="max-w-md w-full">
         {/* Header with Benefits */}
         <div className="text-center mb-8">
@@ -418,6 +421,7 @@ export default function MarketingSignupPage() {
             </Link>
           </div>
         </div>
+      </div>
       </div>
     </div>
   );

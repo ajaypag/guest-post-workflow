@@ -11,10 +11,10 @@ body {
   font-family: Arial, Helvetica, sans-serif;
 }
 
-/* Override ALL Tailwind color classes */
-* {
+/* Override ALL Tailwind color classes - REMOVED for better contrast */
+/* * {
   color: #212529 !important;
-}
+} */
 
 /* White backgrounds need dark text */
 .bg-white {
@@ -37,8 +37,14 @@ input::placeholder, textarea::placeholder {
   color: #6c757d !important;
 }
 
-/* Labels and headings */
-label, h1, h2, h3, h4, h5, h6, p, span, div {
+/* Labels and headings - More selective override */
+label {
+  color: #212529 !important;
+}
+
+/* Only override headings on light backgrounds */
+.bg-white h1, .bg-white h2, .bg-white h3, .bg-white h4, .bg-white h5, .bg-white h6,
+.bg-gray-50 h1, .bg-gray-50 h2, .bg-gray-50 h3, .bg-gray-50 h4, .bg-gray-50 h5, .bg-gray-50 h6 {
   color: #212529 !important;
 }
 
@@ -51,9 +57,10 @@ label, h1, h2, h3, h4, h5, h6, p, span, div {
   color: #495057 !important;
 }
 
-.text-sm {
+/* Remove universal text-sm override */
+/* .text-sm {
   color: #212529 !important;
-}
+} */
 
 /* Buttons */
 button {
@@ -78,6 +85,22 @@ button {
   color: #ffffff !important;
 }
 
+/* Purple and indigo backgrounds */
+.bg-purple-600, .bg-purple-700, .bg-indigo-600, .bg-indigo-700 {
+  background-color: #7c3aed !important;
+  color: #ffffff !important;
+}
+
+.bg-purple-600 *, .bg-purple-700 *, .bg-indigo-600 *, .bg-indigo-700 * {
+  color: #ffffff !important;
+}
+
+/* Improved focus states for accessibility */
+button:focus, a:focus, input:focus, textarea:focus, select:focus {
+  outline: 2px solid #3b82f6 !important;
+  outline-offset: 2px !important;
+}
+
 .text-red-600 {
   color: #dc3545 !important;
 }
@@ -92,6 +115,40 @@ button {
   color: #0c5bbd !important;
 }
 
+/* Green success colors */
+.text-green-500, .text-green-600 {
+  color: #059669 !important;
+}
+
+/* Improved gray text hierarchy */
+.text-gray-300 {
+  color: #d1d5db !important;
+}
+
+.text-gray-400 {
+  color: #9ca3af !important;
+}
+
+.text-gray-500 {
+  color: #6b7280 !important;
+}
+
+.text-gray-600 {
+  color: #4b5563 !important;
+}
+
+.text-gray-700 {
+  color: #374151 !important;
+}
+
+.text-gray-800 {
+  color: #1f2937 !important;
+}
+
+.text-gray-900 {
+  color: #111827 !important;
+}
+
 /* Links */
 a {
   color: #0d6efd !important;
@@ -99,6 +156,28 @@ a {
 
 a:hover {
   color: #0a58ca !important;
+}
+
+/* Dark background sections - proper contrast */
+.bg-gradient-to-br, .bg-gradient-to-r {
+  color: #ffffff !important;
+}
+
+.bg-gradient-to-br *, .bg-gradient-to-r * {
+  color: #ffffff !important;
+}
+
+.bg-gray-900, .bg-gray-800 {
+  color: #f3f4f6 !important;
+}
+
+.bg-gray-900 *, .bg-gray-800 * {
+  color: #f3f4f6 !important;
+}
+
+/* Ensure blue/purple gradients have white text */
+.from-blue-600, .to-purple-700, .from-blue-600.to-indigo-700 {
+  color: #ffffff !important;
 }
 
 /* Border colors */

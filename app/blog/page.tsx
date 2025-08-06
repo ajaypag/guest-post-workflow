@@ -1,5 +1,6 @@
 import Link from 'next/link';
 import Image from 'next/image';
+import LinkioHeader from '@/components/LinkioHeader';
 
 export const metadata = {
   title: 'SEO & Link Building Blog | Linkio',
@@ -155,7 +156,9 @@ const categories = ['All', 'Link Building', 'SEO', 'Email Outreach', 'Content Ma
 
 export default function BlogPage() {
   return (
-    <div className="min-h-screen bg-gray-50 py-12">
+    <div className="min-h-screen bg-gray-50">
+      <LinkioHeader variant="blog" />
+      <div className="py-12">
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
         {/* Header */}
         <div className="text-center mb-16">
@@ -310,6 +313,7 @@ export default function BlogPage() {
             </button>
           </div>
         </div>
+      </div>
       </div>
     </div>
   );
