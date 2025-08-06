@@ -9,6 +9,7 @@ import OrderSiteReviewTable from '@/components/orders/OrderSiteReviewTable';
 import OrderDetailsTable from '@/components/orders/OrderDetailsTable';
 import OrderProgressSteps, { getStateDisplay } from '@/components/orders/OrderProgressSteps';
 import TransferOrderModal from '@/components/orders/TransferOrderModal';
+import ShareOrderButton from '@/components/orders/ShareOrderButton';
 import { AuthService } from '@/lib/auth';
 import { formatCurrency } from '@/lib/utils/formatting';
 import { 
@@ -367,6 +368,10 @@ export default function OrderDetailPage() {
                 )}
                 {user?.userType === 'internal' && (
                   <>
+                    <ShareOrderButton 
+                      orderId={order.id}
+                      currentShareToken={order.shareToken}
+                    />
                     <button
                       onClick={() => setShowTransferModal(true)}
                       className="inline-flex items-center px-3 py-2 border border-gray-300 text-gray-700 rounded-md hover:bg-gray-50"
