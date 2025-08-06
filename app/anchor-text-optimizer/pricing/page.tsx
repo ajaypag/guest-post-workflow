@@ -2,6 +2,7 @@
 
 import { useState } from 'react';
 import Link from 'next/link';
+import LinkioHeader from '@/components/LinkioHeader';
 import { 
   Check, 
   ArrowRight,
@@ -131,37 +132,7 @@ export default function PricingPage() {
 
   return (
     <div className="min-h-screen bg-gray-50">
-      {/* Header */}
-      <header className="bg-white border-b">
-        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-          <div className="flex justify-between items-center h-16">
-            <div className="flex items-center space-x-3">
-              <Link href="/" className="flex items-center space-x-3">
-                <div className="w-8 h-8 bg-gradient-to-br from-blue-500 to-purple-600 rounded-lg flex items-center justify-center">
-                  <Zap className="w-5 h-5 text-white" />
-                </div>
-                <span className="text-lg font-semibold">PostFlow</span>
-              </Link>
-              <span className="text-gray-400">/</span>
-              <Link href="/anchor-text-optimizer" className="text-gray-600 hover:text-gray-900">
-                Anchor Text Optimizer
-              </Link>
-              <span className="text-gray-400">/</span>
-              <span className="text-gray-600">Pricing</span>
-            </div>
-            
-            <Link 
-              href="https://app.linkio.com/users/sign_up?_ga=2.195646757.845028537.1754360403-387936753.1754360403"
-              target="_blank"
-              rel="noopener noreferrer"
-              className="flex items-center gap-2 px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 text-sm font-medium"
-            >
-              Start Free Trial
-              <ExternalLink className="w-4 h-4" />
-            </Link>
-          </div>
-        </div>
-      </header>
+      <LinkioHeader variant="tool" toolName="Anchor Text Optimizer" />
 
       {/* Hero */}
       <section className="bg-gradient-to-br from-blue-50 to-purple-50 py-12">

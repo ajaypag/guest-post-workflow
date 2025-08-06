@@ -2,6 +2,7 @@
 
 import { useState, useEffect, useMemo, useCallback } from 'react';
 import Link from 'next/link';
+import LinkioHeader from '@/components/LinkioHeader';
 import { 
   Search, 
   Filter,
@@ -258,8 +259,10 @@ export default function DirectorySubmissionSites() {
 
   return (
     <div className="min-h-screen bg-gray-50">
-      {/* Header */}
-      <header className="bg-white border-b">
+      <LinkioHeader variant="default" />
+      
+      {/* Old header - to be removed */}
+      {/* <header className="bg-white border-b">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
           <div className="flex justify-between items-center h-16">
             <div className="flex items-center space-x-3">
@@ -284,7 +287,7 @@ export default function DirectorySubmissionSites() {
             </Link>
           </div>
         </div>
-      </header>
+      </header> */}
 
       {/* Hero */}
       <section className="bg-gradient-to-br from-blue-50 to-purple-50 py-12">
