@@ -870,7 +870,7 @@ export default function OrderSiteReviewTable({
                   {isExpanded && (
                     <>
                       {/* External review mode - show all submissions */}
-                      {userType === 'account' && workflowStage === 'site_selection_with_sites' ? (
+                      {false ? (
                         groupSubmissions.map((submission, index) => {
                           const targetPageUrl = submission.targetPageUrl || submission.metadata?.targetPageUrl;
                           const anchorText = submission.anchorText || submission.metadata?.anchorText;
