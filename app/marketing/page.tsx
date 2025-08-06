@@ -79,8 +79,8 @@ export default function MarketingHomepage() {
               </h1>
               
               <p className="text-xl text-gray-600 mb-8 leading-relaxed">
-                You pay what we pay publishers (wholesale rates) + $39 markup. That's it. 
-                No 3x markups, no hidden fees - just transparent Cost Plus pricing for premium guest posts.
+                You pay what we pay publishers + $79 for content and labor. That's it. 
+                No hidden fees, no 3x markups - just transparent Cost Plus pricing for premium guest posts.
               </p>
               
               {/* Key Benefits */}
@@ -160,8 +160,8 @@ export default function MarketingHomepage() {
               Transparent Pricing, Premium Quality
             </h2>
             <p className="text-xl text-gray-600 max-w-3xl mx-auto">
-              Like Mark Cuban's Cost Plus Drugs, you pay our actual costs + a fair markup. 
-              You get wholesale publisher rates (what we pay) + $39 for content and labor.
+              Like Mark Cuban's Cost Plus Drugs, you pay our actual costs + what we need to run the business. 
+              Publisher rates (what we pay) + $79 for premium content and expert labor.
             </p>
           </div>
 
@@ -244,7 +244,7 @@ export default function MarketingHomepage() {
                   <CheckCircle className="w-6 h-6 text-blue-600 flex-shrink-0 mt-0.5" />
                   <div>
                     <div className="font-medium text-blue-900">Cost Plus Pricing</div>
-                    <div className="text-sm text-blue-700">Publisher cost + $39 markup = total price. You see exactly what we pay.</div>
+                    <div className="text-sm text-blue-700">Publisher cost + $79 for content/labor. You see exactly what we pay.</div>
                   </div>
                 </div>
 
