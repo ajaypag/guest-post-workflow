@@ -8,13 +8,14 @@ import Header from '@/components/Header';
 import OrderSiteReviewTable from '@/components/orders/OrderSiteReviewTable';
 import OrderDetailsTable from '@/components/orders/OrderDetailsTable';
 import OrderProgressSteps, { getStateDisplay } from '@/components/orders/OrderProgressSteps';
+import TransferOrderModal from '@/components/orders/TransferOrderModal';
 import { AuthService } from '@/lib/auth';
 import { formatCurrency } from '@/lib/utils/formatting';
 import { 
   ArrowLeft, Loader2, CheckCircle, Clock, Search, Users, FileText, 
   RefreshCw, ExternalLink, Globe, LinkIcon, Eye, Edit, Package,
   Target, ChevronRight, AlertCircle, Activity, Building, User, DollarSign,
-  Download, Share2, XCircle, CreditCard, Trash2
+  Download, Share2, XCircle, CreditCard, Trash2, ArrowRightLeft
 } from 'lucide-react';
 
 // Service fee constant - $79 per link for SEO content package
@@ -123,6 +124,7 @@ export default function OrderDetailPage() {
   const [siteSubmissions, setSiteSubmissions] = useState<Record<string, SiteSubmission[]>>({});
   const [loadingSubmissions, setLoadingSubmissions] = useState(false);
   const [expandedSubmission, setExpandedSubmission] = useState<string | null>(null);
+  const [showTransferModal, setShowTransferModal] = useState(false);
 
   useEffect(() => {
     loadUser();
@@ -364,13 +366,22 @@ export default function OrderDetailPage() {
                   </Link>
                 )}
                 {user?.userType === 'internal' && (
-                  <Link
-                    href={`/orders/${order.id}/internal`}
-                    className="inline-flex items-center px-4 py-2 bg-purple-600 text-white rounded-md hover:bg-purple-700"
-                  >
-                    <Activity className="h-4 w-4 mr-2" />
-                    Manage Order
-                  </Link>
+                  <>
+                    <button
+                      onClick={() => setShowTransferModal(true)}
+                      className="inline-flex items-center px-3 py-2 border border-gray-300 text-gray-700 rounded-md hover:bg-gray-50"
+                    >
+                      <ArrowRightLeft className="h-4 w-4 mr-2" />
+                      Transfer
+                    </button>
+                    <Link
+                      href={`/orders/${order.id}/internal`}
+                      className="inline-flex items-center px-4 py-2 bg-purple-600 text-white rounded-md hover:bg-purple-700"
+                    >
+                      <Activity className="h-4 w-4 mr-2" />
+                      Manage Order
+                    </Link>
+                  </>
                 )}
                 {/* Admin delete button */}
                 {(order.status === 'draft' || (user?.userType === 'internal' && user?.role === 'admin')) && (
@@ -972,6 +983,18 @@ export default function OrderDetailPage() {
           </div>
         </div>
       </div>
+      
+      {/* Transfer Order Modal */}
+      <TransferOrderModal
+        isOpen={showTransferModal}
+        onClose={() => setShowTransferModal(false)}
+        orderId={order.id}
+        currentAccountName={order.account?.companyName || order.account?.contactName || order.account?.email}
+        onSuccess={() => {
+          setShowTransferModal(false);
+          loadOrder(); // Reload the order to show new account
+        }}
+      />
     </AuthWrapper>
   );
 }
