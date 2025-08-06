@@ -41,34 +41,75 @@ interface PricingEstimate {
   }>;
 }
 
-interface PricingEstimatorProps {
-  className?: string;
-  onEstimateChange?: (estimate: PricingEstimate | null) => void;
+export interface OrderPreferences {
+  drRange: [number, number];
+  minTraffic: number;
+  categories: string[];
+  types: string[];
+  linkCount: number;
 }
 
-export default function PricingEstimator({ className = '', onEstimateChange }: PricingEstimatorProps) {
+interface PricingEstimatorProps {
+  className?: string;
+  onEstimateChange?: (estimate: PricingEstimate | null, preferences?: OrderPreferences) => void;
+  initialPreferences?: OrderPreferences;
+}
+
+export default function PricingEstimator({ className = '', onEstimateChange, initialPreferences }: PricingEstimatorProps) {
   const [expanded, setExpanded] = useState(true);
   const [loading, setLoading] = useState(false);
   
-  // Filter states
-  const [drRange, setDrRange] = useState<[number, number]>([30, 60]);
-  const [minTraffic, setMinTraffic] = useState(0);
-  const [selectedCategories, setSelectedCategories] = useState<string[]>([]);
-  const [selectedTypes, setSelectedTypes] = useState<string[]>([]);
-  const [linkCount, setLinkCount] = useState(10);
+  // Filter states - initialize from preferences if provided
+  const [drRange, setDrRange] = useState<[number, number]>(initialPreferences?.drRange || [30, 60]);
+  const [minTraffic, setMinTraffic] = useState(initialPreferences?.minTraffic || 0);
+  const [selectedCategories, setSelectedCategories] = useState<string[]>(initialPreferences?.categories || []);
+  const [selectedTypes, setSelectedTypes] = useState<string[]>(initialPreferences?.types || []);
+  const [linkCount, setLinkCount] = useState(initialPreferences?.linkCount || 10);
   
-  // Available options (will be fetched from API)
-  const [availableCategories, setAvailableCategories] = useState<string[]>([
-    'Technology', 'Marketing', 'Business', 'Health', 
-    'Finance', 'Lifestyle', 'Education', 'Travel'
-  ]);
-  const [availableTypes, setAvailableTypes] = useState<string[]>([
-    'Blog', 'SaaS', 'News', 'E-commerce', 'Forum', 'Directory'
-  ]);
+  // Available options - fetched from database
+  const [availableCategories, setAvailableCategories] = useState<string[]>([]);
+  const [availableTypes, setAvailableTypes] = useState<string[]>([]);
+  const [availableNiches, setAvailableNiches] = useState<string[]>([]);
+  const [filterStats, setFilterStats] = useState<{
+    totalSites: number;
+    priceRange: { min: number; max: number };
+    drRange: { min: number; max: number };
+    maxTraffic: number;
+  } | null>(null);
   
   // Pricing estimate
   const [estimate, setEstimate] = useState<PricingEstimate | null>(null);
   const [error, setError] = useState<string | null>(null);
+
+  // Fetch available filter options on mount
+  useEffect(() => {
+    const fetchFilterOptions = async () => {
+      try {
+        const response = await fetch('/api/websites/filters');
+        if (response.ok) {
+          const data = await response.json();
+          setAvailableCategories(data.categories || []);
+          setAvailableTypes(data.websiteTypes || []);
+          setAvailableNiches(data.niches || []);
+          setFilterStats(data.stats || null);
+          
+          // If we have stats, set better default DR range
+          if (data.stats?.drRange) {
+            const defaultMin = Math.max(20, data.stats.drRange.min);
+            const defaultMax = Math.min(70, data.stats.drRange.max);
+            if (!initialPreferences?.drRange) {
+              setDrRange([defaultMin, defaultMax]);
+            }
+          }
+        }
+      } catch (err) {
+        console.error('Error fetching filter options:', err);
+        // Component still works with empty filters
+      }
+    };
+    
+    fetchFilterOptions();
+  }, [initialPreferences]);
 
   // Debounced API call
   const fetchEstimate = useCallback(async () => {
@@ -95,7 +136,14 @@ export default function PricingEstimator({ className = '', onEstimateChange }: P
       setEstimate(data);
       
       if (onEstimateChange) {
-        onEstimateChange(data);
+        const preferences: OrderPreferences = {
+          drRange,
+          minTraffic,
+          categories: selectedCategories,
+          types: selectedTypes,
+          linkCount
+        };
+        onEstimateChange(data, preferences);
       }
     } catch (err) {
       console.error('Error fetching estimate:', err);
@@ -103,7 +151,7 @@ export default function PricingEstimator({ className = '', onEstimateChange }: P
       setEstimate(null);
       
       if (onEstimateChange) {
-        onEstimateChange(null);
+        onEstimateChange(null, undefined);
       }
     } finally {
       setLoading(false);

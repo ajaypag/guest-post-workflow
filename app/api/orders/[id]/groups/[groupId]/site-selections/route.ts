@@ -257,22 +257,60 @@ export async function POST(
 
       // Insert new submissions
       if (body.selections && body.selections.length > 0) {
-        const newSubmissions = body.selections.map((selection: any) => ({
-          orderGroupId: groupId,
-          domainId: selection.domainId,
-          submissionStatus: selection.status === 'approved' ? 'client_approved' : 
-                           selection.status === 'rejected' ? 'client_rejected' : 'pending',
-          metadata: {
-            targetPageUrl: selection.targetPageUrl,
-            anchorText: selection.anchorText,
-            specialInstructions: selection.specialInstructions
-          },
-          clientReviewedAt: selection.status === 'approved' || selection.status === 'rejected' ? new Date() : null,
-          clientReviewNotes: selection.reviewNotes,
-          clientReviewedBy: (selection.status === 'approved' || selection.status === 'rejected') && session.userType === 'account' ? session.userId : null,
-          submittedBy: session.userType === 'internal' ? session.userId : null,
-          submittedAt: session.userType === 'internal' ? new Date() : null
-        }));
+        // Get prices for approved domains to create snapshots
+        const approvedDomainIds = body.selections
+          .filter((s: any) => s.status === 'approved')
+          .map((s: any) => s.domainId);
+        
+        // Fetch current prices from bulk analysis domains (which should have website data)
+        let domainPrices: Record<string, { wholesalePrice: number; retailPrice: number }> = {};
+        if (approvedDomainIds.length > 0) {
+          const approvedDomains = await tx.query.bulkAnalysisDomains.findMany({
+            where: inArray(bulkAnalysisDomains.id, approvedDomainIds)
+          });
+          
+          // Map domain prices (assuming they have websiteGuestPostCost from bulk analysis)
+          approvedDomains.forEach(domain => {
+            const wholesaleCents = domain.websiteGuestPostCost 
+              ? Math.round(parseFloat(domain.websiteGuestPostCost) * 100)
+              : 20000; // Default $200 if no price
+            const SERVICE_FEE_CENTS = 7900;
+            domainPrices[domain.id] = {
+              wholesalePrice: wholesaleCents,
+              retailPrice: wholesaleCents + SERVICE_FEE_CENTS
+            };
+          });
+        }
+        
+        const now = new Date();
+        const newSubmissions = body.selections.map((selection: any) => {
+          const isApproved = selection.status === 'approved';
+          const prices = isApproved ? domainPrices[selection.domainId] : null;
+          
+          return {
+            orderGroupId: groupId,
+            domainId: selection.domainId,
+            submissionStatus: isApproved ? 'client_approved' : 
+                             selection.status === 'rejected' ? 'client_rejected' : 'pending',
+            metadata: {
+              targetPageUrl: selection.targetPageUrl,
+              anchorText: selection.anchorText,
+              specialInstructions: selection.specialInstructions
+            },
+            // Price snapshot for approved items
+            ...(isApproved && prices && {
+              wholesalePriceSnapshot: prices.wholesalePrice,
+              retailPriceSnapshot: prices.retailPrice,
+              serviceFeeSnapshot: 7900,
+              priceSnapshotAt: now
+            }),
+            clientReviewedAt: selection.status === 'approved' || selection.status === 'rejected' ? now : null,
+            clientReviewNotes: selection.reviewNotes,
+            clientReviewedBy: (selection.status === 'approved' || selection.status === 'rejected') && session.userType === 'account' ? session.userId : null,
+            submittedBy: session.userType === 'internal' ? session.userId : null,
+            submittedAt: session.userType === 'internal' ? now : null
+          };
+        });
 
         await tx.insert(orderSiteSubmissions).values(newSubmissions);
       }

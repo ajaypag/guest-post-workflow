@@ -41,6 +41,33 @@ export const orders = pgTable('orders', {
   shareToken: varchar('share_token', { length: 255 }).unique(),
   shareExpiresAt: timestamp('share_expires_at'),
   
+  // Order preferences and expectations
+  estimatedBudgetMin: integer('estimated_budget_min'),
+  estimatedBudgetMax: integer('estimated_budget_max'),
+  estimatedLinksCount: integer('estimated_links_count'),
+  preferencesDrMin: integer('preferences_dr_min'),
+  preferencesDrMax: integer('preferences_dr_max'),
+  preferencesTrafficMin: integer('preferences_traffic_min'),
+  preferencesCategories: text('preferences_categories').array(),
+  preferencesTypes: text('preferences_types').array(),
+  preferencesNiches: text('preferences_niches').array(),
+  estimatorSnapshot: jsonb('estimator_snapshot').$type<{
+    sitesAvailable: number;
+    medianPrice: number;
+    averagePrice: number;
+    priceRange: { min: number; max: number };
+    examples: Array<{ domain: string; dr: number; price: number }>;
+    timestamp: string;
+  }>(),
+  estimatedPricePerLink: integer('estimated_price_per_link'),
+  actualPricePerLink: integer('actual_price_per_link'),
+  preferenceMatchScore: decimal('preference_match_score', { precision: 5, scale: 2 }),
+  
+  // Template and reordering support
+  isTemplate: boolean('is_template').default(false),
+  templateName: varchar('template_name', { length: 255 }),
+  copiedFromOrderId: uuid('copied_from_order_id'),
+  
   // Important dates
   approvedAt: timestamp('approved_at'),
   invoicedAt: timestamp('invoiced_at'),

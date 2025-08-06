@@ -74,6 +74,12 @@ export const orderSiteSubmissions = pgTable('order_site_submissions', {
   publishedUrl: text('published_url'),
   publishedAt: timestamp('published_at'),
   
+  // Price snapshot (captured at approval time)
+  wholesalePriceSnapshot: integer('wholesale_price_snapshot'),
+  retailPriceSnapshot: integer('retail_price_snapshot'),
+  serviceFeeSnapshot: integer('service_fee_snapshot').default(7900),
+  priceSnapshotAt: timestamp('price_snapshot_at'),
+  
   // NEW: Pool-based selection system
   selectionPool: varchar('selection_pool', { length: 20 }).notNull().default('primary'),
   // Values: 'primary', 'alternative'
