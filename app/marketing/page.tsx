@@ -25,6 +25,7 @@ import {
 } from 'lucide-react';
 import Link from 'next/link';
 import InteractiveWorkflowDemo from '@/components/InteractiveWorkflowDemo';
+import LinkioHeader from '@/components/LinkioHeader';
 
 interface Stats {
   totalSites: number;
@@ -57,46 +58,7 @@ export default function MarketingHomepage() {
 
   return (
     <div className="min-h-screen bg-white">
-      {/* Header */}
-      <header className="bg-white border-b border-gray-100">
-        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-          <div className="flex justify-between items-center h-16">
-            {/* Logo */}
-            <div className="flex items-center space-x-3">
-              <div className="relative">
-                <div className="w-8 h-8 bg-gradient-to-br from-blue-500 to-purple-600 rounded-lg flex items-center justify-center">
-                  <Zap className="w-5 h-5 text-white" />
-                </div>
-                <div className="absolute -top-1 -right-1 w-3 h-3 bg-emerald-400 rounded-full"></div>
-              </div>
-              <div>
-                <div className="text-lg font-semibold text-gray-900">PostFlow</div>
-                <div className="text-xs text-gray-500 -mt-1">AI-Assisted Link Building</div>
-              </div>
-            </div>
-            
-            {/* Navigation */}
-            <div className="flex items-center gap-6">
-              <Link href="/guest-posting-sites" className="text-gray-600 hover:text-gray-900 text-sm font-medium">
-                Browse Sites
-              </Link>
-              <Link href="/anchor-text-optimizer" className="text-gray-600 hover:text-gray-900 text-sm font-medium">
-                Free Tools
-              </Link>
-              <Link href="/account/login" className="text-gray-600 hover:text-gray-900 text-sm font-medium">
-                Sign In
-              </Link>
-              <Link 
-                href="/signup/marketing" 
-                className="flex items-center gap-2 px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 text-sm font-medium transition-colors"
-              >
-                Get Started
-                <ArrowRight className="w-4 h-4" />
-              </Link>
-            </div>
-          </div>
-        </div>
-      </header>
+      <LinkioHeader variant="default" />
 
       {/* Hero Section */}
       <section className="bg-gradient-to-br from-gray-50 to-blue-50 py-20">
@@ -110,13 +72,13 @@ export default function MarketingHomepage() {
               </div>
               
               <h1 className="text-5xl md:text-6xl font-bold text-gray-900 mb-6 leading-tight">
-                Strategic Link Building
+                Advanced Link Building
                 <span className="text-blue-600"> That Actually Works</span>
               </h1>
               
               <p className="text-xl text-gray-600 mb-8 leading-relaxed">
-                Expert curation meets AI efficiency. Wholesale pricing + transparent service fees. 
-                Whether you're an agency, internal SEO team, or business owner - we deliver strategic links with proven results.
+                Master link building with Linkio's advanced SEO tools, anchor text optimization, and expert insights. 
+                Trusted by SEO professionals worldwide for strategic link acquisition that drives results.
               </p>
               
               {/* Key Benefits */}
@@ -410,8 +372,8 @@ export default function MarketingHomepage() {
                   <Zap className="w-5 h-5 text-white" />
                 </div>
                 <div>
-                  <div className="text-lg font-semibold text-white">PostFlow</div>
-                  <div className="text-xs text-gray-400">AI-Assisted Link Building</div>
+                  <div className="text-lg font-semibold text-white">Linkio</div>
+                  <div className="text-xs text-gray-400">Advanced Link Building Tools</div>
                 </div>
               </div>
               <p className="text-sm text-gray-400">
@@ -455,8 +417,8 @@ export default function MarketingHomepage() {
           </div>
           
           <div className="border-t border-gray-800 mt-8 pt-8 text-center">
-            <p className="text-sm text-gray-400">
-              &copy; 2025 PostFlow. Strategic link building that scales.
+            <p className="text-sm text-gray-300">
+              &copy; 2025 Linkio. Advanced link building tools and expert insights.
             </p>
           </div>
         </div>

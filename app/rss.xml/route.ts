@@ -74,8 +74,9 @@ const blogPosts = [
   }
 ];
 
-export async function GET() {
-  const baseUrl = 'https://linkio.com';
+export async function GET(request: Request) {
+  const { protocol, host } = new URL(request.url);
+  const baseUrl = `${protocol}//${host}`;
   
   const rssItems = blogPosts.map(post => `
     <item>
@@ -100,8 +101,8 @@ export async function GET() {
     <language>en-us</language>
     <lastBuildDate>${new Date().toUTCString()}</lastBuildDate>
     <atom:link href="${baseUrl}/rss.xml" rel="self" type="application/rss+xml"/>
-    <managingEditor>noreply@linkio.com (Linkio Team)</managingEditor>
-    <webMaster>noreply@linkio.com (Linkio Team)</webMaster>
+    <managingEditor>info@linkio.com (Linkio Team)</managingEditor>
+    <webMaster>info@linkio.com (Linkio Team)</webMaster>
     <category>SEO</category>
     <category>Link Building</category>
     <category>Digital Marketing</category>

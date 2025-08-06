@@ -41,8 +41,9 @@ const appPages = [
   { path: 'contacts', priority: '0.5', changefreq: 'monthly' }
 ];
 
-export async function GET() {
-  const baseUrl = 'https://linkio.com';
+export async function GET(request: Request) {
+  const { protocol, host } = new URL(request.url);
+  const baseUrl = `${protocol}//${host}`;
   const currentDate = new Date().toISOString();
   
   // App pages XML

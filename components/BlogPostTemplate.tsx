@@ -12,6 +12,7 @@ import {
   Facebook,
   Linkedin
 } from 'lucide-react';
+import LinkioHeader from './LinkioHeader';
 
 interface BlogPostTemplateProps {
   title: string;
@@ -57,7 +58,7 @@ export default function BlogPostTemplate({
       name: 'Linkio',
       logo: {
         '@type': 'ImageObject',
-        url: 'https://linkio.com/favicon.ico'
+        url: '/favicon.ico'
       }
     },
     datePublished: new Date(publishDate).toISOString(),
@@ -89,39 +90,7 @@ export default function BlogPostTemplate({
       />
       
       <div className="min-h-screen bg-white">
-        {/* Header */}
-      <header className="bg-white border-b">
-        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-          <div className="flex justify-between items-center h-16">
-            <div className="flex items-center space-x-3">
-              <Link href="/" className="flex items-center space-x-3">
-                <div className="w-8 h-8 bg-gradient-to-br from-blue-500 to-purple-600 rounded-lg flex items-center justify-center">
-                  <Zap className="w-5 h-5 text-white" />
-                </div>
-                <span className="text-lg font-semibold">Linkio</span>
-              </Link>
-            </div>
-            
-            <div className="flex items-center gap-4">
-              <Link 
-                href="/"
-                className="flex items-center gap-2 text-gray-600 hover:text-gray-900 text-sm"
-              >
-                <ArrowLeft className="w-4 h-4" />
-                Back to Home
-              </Link>
-              <Link 
-                href="https://app.linkio.com/users/sign_up?_ga=2.195646757.845028537.1754360403-387936753.1754360403"
-                target="_blank"
-                rel="noopener noreferrer"
-                className="px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 text-sm font-medium"
-              >
-                Start Free Trial
-              </Link>
-            </div>
-          </div>
-        </div>
-      </header>
+        <LinkioHeader variant="blog" showBackButton={true} />
 
       {/* Article Header */}
       <article className="py-12">

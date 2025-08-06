@@ -1,7 +1,10 @@
 import { NextResponse } from 'next/server';
 
-export async function GET() {
-  const robotsContent = `# Linkio.com robots.txt
+export async function GET(request: Request) {
+  const { protocol, host } = new URL(request.url);
+  const baseUrl = `${protocol}//${host}`;
+  
+  const robotsContent = `# ${host} robots.txt
 
 User-agent: *
 Allow: /
@@ -44,10 +47,10 @@ Disallow: /clients/
 Disallow: /bulk-analysis/
 
 # Sitemap
-Sitemap: https://linkio.com/sitemap.xml
+Sitemap: ${baseUrl}/sitemap.xml
 
 # Host directive (optional, some crawlers use this)
-Host: https://linkio.com`;
+Host: ${baseUrl}`;
 
   return new NextResponse(robotsContent, {
     status: 200,
