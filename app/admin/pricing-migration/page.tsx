@@ -236,8 +236,10 @@ export default function PricingMigrationPage() {
 
           {/* Status Check Results */}
           {results && !migrationStatus && (
-            <div className="bg-blue-50 border border-blue-200 rounded-lg p-6">
-              <h3 className="text-lg font-semibold text-blue-900 mb-4">Current Database Status</h3>
+            <div className={`border rounded-lg p-6 ${results.migrationNeeded ? 'bg-yellow-50 border-yellow-200' : 'bg-green-50 border-green-200'}`}>
+              <h3 className={`text-lg font-semibold mb-4 ${results.migrationNeeded ? 'text-yellow-900' : 'text-green-900'}`}>
+                {results.migrationNeeded ? '⚠️ Migration Required' : '✅ Migration Complete'}
+              </h3>
               <div className="space-y-2 text-sm">
                 <div className="flex justify-between">
                   <span className="text-gray-700">Order preference columns:</span>
@@ -260,6 +262,11 @@ export default function PricingMigrationPage() {
                   <span className="font-medium text-gray-900">{results.ordersWithNewPricing || 0}</span>
                 </div>
               </div>
+              {results.migrationNeeded && (
+                <div className="mt-4 p-3 bg-yellow-100 rounded text-sm text-yellow-800">
+                  Click "Run Migration" to add the required database columns and update existing orders.
+                </div>
+              )}
             </div>
           )}
         </div>

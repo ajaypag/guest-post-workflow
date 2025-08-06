@@ -37,47 +37,70 @@ export async function GET(request: NextRequest) {
       )
     `);
 
-    // Count orders with old pricing (no estimated_price_per_link)
-    const oldPricingCount = await db.execute(sql`
-      SELECT COUNT(*) as count
-      FROM orders
-      WHERE estimated_price_per_link IS NULL
-      AND total_retail > 0
-    `);
+    // Initialize counts
+    let oldPricingCount = { rows: [{ count: 0 }] };
+    let newPricingCount = { rows: [{ count: 0 }] };
+    let ordersWithPreferences = { rows: [{ count: 0 }] };
+    let snapshotsCount = { rows: [{ count: 0 }] };
 
-    // Count orders with new pricing
-    const newPricingCount = await db.execute(sql`
-      SELECT COUNT(*) as count
-      FROM orders
-      WHERE estimated_price_per_link IS NOT NULL
-    `);
+    // Only query counts if columns exist
+    const hasPreferences = preferenceCheck.rows.length >= 4;
+    const hasSnapshots = snapshotCheck.rows.length >= 4;
 
-    // Count orders with preferences set
-    const ordersWithPreferences = await db.execute(sql`
-      SELECT COUNT(*) as count
-      FROM orders
-      WHERE preferences_dr_min IS NOT NULL
-      OR preferences_categories IS NOT NULL
-    `);
+    if (hasPreferences) {
+      try {
+        // Count orders with old pricing (no estimated_price_per_link)
+        oldPricingCount = await db.execute(sql`
+          SELECT COUNT(*) as count
+          FROM orders
+          WHERE estimated_price_per_link IS NULL
+          AND total_retail > 0
+        `);
 
-    // Count submissions with price snapshots
-    const snapshotsCount = await db.execute(sql`
-      SELECT COUNT(*) as count
-      FROM order_site_submissions
-      WHERE wholesale_price_snapshot IS NOT NULL
-    `);
+        // Count orders with new pricing
+        newPricingCount = await db.execute(sql`
+          SELECT COUNT(*) as count
+          FROM orders
+          WHERE estimated_price_per_link IS NOT NULL
+        `);
+
+        // Count orders with preferences set
+        ordersWithPreferences = await db.execute(sql`
+          SELECT COUNT(*) as count
+          FROM orders
+          WHERE preferences_dr_min IS NOT NULL
+          OR preferences_categories IS NOT NULL
+        `);
+      } catch (error) {
+        console.log('Could not query order counts:', error);
+      }
+    }
+
+    if (hasSnapshots) {
+      try {
+        // Count submissions with price snapshots
+        snapshotsCount = await db.execute(sql`
+          SELECT COUNT(*) as count
+          FROM order_site_submissions
+          WHERE wholesale_price_snapshot IS NOT NULL
+        `);
+      } catch (error) {
+        console.log('Could not query snapshot counts:', error);
+      }
+    }
 
     return NextResponse.json({
-      hasPreferenceColumns: preferenceCheck.rows.length >= 4,
-      hasSnapshotColumns: snapshotCheck.rows.length >= 4,
+      hasPreferenceColumns: hasPreferences,
+      hasSnapshotColumns: hasSnapshots,
       ordersWithOldPricing: oldPricingCount.rows[0]?.count || 0,
       ordersWithNewPricing: newPricingCount.rows[0]?.count || 0,
       ordersWithPreferences: ordersWithPreferences.rows[0]?.count || 0,
       submissionsWithSnapshots: snapshotsCount.rows[0]?.count || 0,
       columnsFound: {
-        preferences: preferenceCheck.rows.map(r => r.column_name),
-        snapshots: snapshotCheck.rows.map(r => r.column_name)
-      }
+        preferences: preferenceCheck.rows.map((r: any) => r.column_name),
+        snapshots: snapshotCheck.rows.map((r: any) => r.column_name)
+      },
+      migrationNeeded: !hasPreferences || !hasSnapshots
     });
 
   } catch (error: any) {
