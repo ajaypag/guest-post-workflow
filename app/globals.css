@@ -155,22 +155,24 @@ footer.bg-gray-900 a:hover {
   color: #ffffff;
 }
 
-.cta-gradient .cta-button-primary {
+/* Button styles for CTA sections - note these are direct classes, not nested */
+.cta-button-primary {
   background-color: #ffffff;
   color: var(--brand-primary);
 }
 
-.cta-gradient .cta-button-primary:hover {
+.cta-button-primary:hover {
   background-color: #f3f4f6;
+  color: var(--brand-primary-dark);
 }
 
-.cta-gradient .cta-button-secondary {
+.cta-button-secondary {
   border-color: #ffffff;
   color: #ffffff;
   background-color: transparent;
 }
 
-.cta-gradient .cta-button-secondary:hover {
+.cta-button-secondary:hover {
   background-color: #ffffff;
   color: var(--brand-primary);
 }
