@@ -106,8 +106,10 @@ interface OrderGroup {
     pageId?: string;
   }>;
   anchorTexts?: string[];
-  packageType?: string;
-  packagePrice?: number;
+  // New pricing model
+  totalPrice?: number;
+  estimatedPrice?: number;
+  wholesalePrice?: number;
   groupStatus?: string;
   siteSelections?: {
     approved: number;
@@ -1543,6 +1545,98 @@ export default function InternalOrderManagementPage() {
                     </div>
                   )}
                 </dl>
+              </div>
+              
+              {/* Financial Summary - Internal View */}
+              <div className="bg-white rounded-lg border border-gray-200 shadow-sm p-6 mt-6">
+                <h3 className="text-lg font-semibold text-gray-900 mb-4 flex items-center">
+                  <CreditCard className="h-5 w-5 mr-2 text-green-600" />
+                  Financial Summary
+                </h3>
+                <div className="grid grid-cols-2 gap-4">
+                  <div>
+                    <h4 className="text-sm font-medium text-gray-700 mb-3">Revenue Breakdown</h4>
+                    <dl className="space-y-2">
+                      <div className="flex justify-between text-sm">
+                        <dt className="text-gray-600">Total Revenue</dt>
+                        <dd className="font-medium text-gray-900">{formatCurrency(order.totalPrice)}</dd>
+                      </div>
+                      <div className="flex justify-between text-sm">
+                        <dt className="text-gray-600">Wholesale Costs</dt>
+                        <dd className="font-medium text-gray-900">
+                          {formatCurrency(order.totalWholesale || (order.totalPrice - 7900 * (order.orderGroups?.reduce((sum, g) => sum + g.linkCount, 0) || 0)))}
+                        </dd>
+                      </div>
+                      <div className="flex justify-between text-sm">
+                        <dt className="text-gray-600">Service Fees ({order.orderGroups?.reduce((sum, g) => sum + g.linkCount, 0) || 0} × $79)</dt>
+                        <dd className="font-medium text-gray-900">
+                          {formatCurrency(7900 * (order.orderGroups?.reduce((sum, g) => sum + g.linkCount, 0) || 0))}
+                        </dd>
+                      </div>
+                      <div className="flex justify-between text-sm pt-2 border-t">
+                        <dt className="font-medium text-gray-900">Gross Profit</dt>
+                        <dd className="font-bold text-green-600">
+                          {formatCurrency(7900 * (order.orderGroups?.reduce((sum, g) => sum + g.linkCount, 0) || 0))}
+                        </dd>
+                      </div>
+                      <div className="flex justify-between text-sm">
+                        <dt className="text-gray-600">Margin</dt>
+                        <dd className="font-medium text-gray-900">
+                          {order.totalPrice > 0 ? 
+                            `${Math.round((7900 * (order.orderGroups?.reduce((sum, g) => sum + g.linkCount, 0) || 0) / order.totalPrice) * 100)}%` : 
+                            'N/A'
+                          }
+                        </dd>
+                      </div>
+                    </dl>
+                  </div>
+                  
+                  <div>
+                    <h4 className="text-sm font-medium text-gray-700 mb-3">Per-Link Analysis</h4>
+                    <dl className="space-y-2">
+                      <div className="flex justify-between text-sm">
+                        <dt className="text-gray-600">Avg Client Price</dt>
+                        <dd className="font-medium text-gray-900">
+                          {formatCurrency(order.totalPrice / (order.orderGroups?.reduce((sum, g) => sum + g.linkCount, 0) || 1))}
+                        </dd>
+                      </div>
+                      <div className="flex justify-between text-sm">
+                        <dt className="text-gray-600">Avg Wholesale</dt>
+                        <dd className="font-medium text-gray-900">
+                          {formatCurrency((order.totalWholesale || (order.totalPrice - 7900 * (order.orderGroups?.reduce((sum, g) => sum + g.linkCount, 0) || 0))) / (order.orderGroups?.reduce((sum, g) => sum + g.linkCount, 0) || 1))}
+                        </dd>
+                      </div>
+                      <div className="flex justify-between text-sm">
+                        <dt className="text-gray-600">Service Fee</dt>
+                        <dd className="font-medium text-gray-900">{formatCurrency(7900)}</dd>
+                      </div>
+                    </dl>
+                    
+                    {order.estimatedPricePerLink && (
+                      <div className="mt-3 p-2 bg-blue-50 rounded">
+                        <div className="flex justify-between text-sm">
+                          <dt className="text-blue-900">Customer Target</dt>
+                          <dd className="font-medium text-blue-700">{formatCurrency(order.estimatedPricePerLink)}</dd>
+                        </div>
+                        <div className="text-xs text-blue-600 mt-1">
+                          {order.totalPrice / (order.orderGroups?.reduce((sum, g) => sum + g.linkCount, 0) || 1) <= order.estimatedPricePerLink ? 
+                            '✓ Within target' : 
+                            `${formatCurrency((order.totalPrice / (order.orderGroups?.reduce((sum, g) => sum + g.linkCount, 0) || 1)) - order.estimatedPricePerLink)} over target`
+                          }
+                        </div>
+                      </div>
+                    )}
+                  </div>
+                </div>
+                
+                {order.status === 'draft' && (
+                  <div className="mt-3 p-2 bg-yellow-50 border border-yellow-200 rounded">
+                    <p className="text-xs text-yellow-700">
+                      <AlertCircle className="h-3 w-3 inline mr-1" />
+                      Prices are estimates based on current market rates. Final pricing confirmed at approval.
+                    </p>
+                  </div>
+                )}
               </div>
               
               {/* Customer Preferences */}
