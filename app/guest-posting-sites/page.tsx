@@ -20,6 +20,8 @@ import {
 } from 'lucide-react';
 import Link from 'next/link';
 import LinkioHeader from '@/components/LinkioHeader';
+import MarketingCTA from '@/components/MarketingCTA';
+import MarketingFooter from '@/components/MarketingFooter';
 
 export const metadata: Metadata = {
   title: 'Guest Posting Sites List - 13,000+ Sites with Pricing | Linkio',
@@ -622,28 +624,11 @@ export default async function GuestPostingSitesPage() {
         </div>
       </section>
 
-      {/* Simple Footer */}
-      <footer className="bg-gray-900 text-gray-300 py-8">
-        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-          <div className="flex flex-col md:flex-row justify-between items-center gap-4">
-            <div className="flex items-center space-x-3">
-              <div className="relative">
-                <div className="w-8 h-8 bg-gradient-to-br from-blue-500 to-purple-600 rounded-lg flex items-center justify-center">
-                  <Zap className="w-5 h-5 text-white" />
-                </div>
-              </div>
-              <div>
-                <div className="text-sm font-semibold text-white">Linkio</div>
-                <div className="text-xs text-gray-300">Advanced Link Building Tools</div>
-              </div>
-            </div>
-            
-            <div className="text-sm text-center md:text-right">
-              <p>&copy; 2025 Linkio. All rights reserved.</p>
-            </div>
-          </div>
-        </div>
-      </footer>
+      {/* CTA Section */}
+      <MarketingCTA />
+      
+      {/* Footer */}
+      <MarketingFooter />
     </div>
   );
 }

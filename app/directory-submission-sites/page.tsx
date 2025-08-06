@@ -23,6 +23,8 @@ import {
   Sparkles
 } from 'lucide-react';
 import { directoryCSVData as csvData } from '@/lib/data/directoryData';
+import MarketingCTA from '@/components/MarketingCTA';
+import MarketingFooter from '@/components/MarketingFooter';
 
 interface Directory {
   name: string;
@@ -1004,6 +1006,15 @@ export default function DirectorySubmissionSites() {
           </div>
         </div>
       </section>
+      
+      {/* CTA Section */}
+      <MarketingCTA 
+        title="Ready to Build Quality Backlinks?"
+        description="Get started with our complete link building service. Directory submissions, guest posts, and more - all managed for you."
+      />
+      
+      {/* Footer */}
+      <MarketingFooter />
     </div>
   );
 }

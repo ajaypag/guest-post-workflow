@@ -15,6 +15,8 @@ import {
   ExternalLink
 } from 'lucide-react';
 import LinkioHeader from '@/components/LinkioHeader';
+import MarketingCTA from '@/components/MarketingCTA';
+import MarketingFooter from '@/components/MarketingFooter';
 
 interface AnchorDistribution {
   type: string;
@@ -732,6 +734,15 @@ learn more about link building"
           </div>
         </div>
       </section>
+      
+      {/* CTA Section */}
+      <MarketingCTA 
+        title="Ready to Optimize Your Anchor Text?"
+        description="Get professional link building with perfectly balanced anchor text distribution. Join agencies and SEO teams getting results."
+      />
+      
+      {/* Footer */}
+      <MarketingFooter />
     </div>
   );
 }

@@ -1,6 +1,8 @@
 import Link from 'next/link';
 import Image from 'next/image';
 import LinkioHeader from '@/components/LinkioHeader';
+import MarketingCTA from '@/components/MarketingCTA';
+import MarketingFooter from '@/components/MarketingFooter';
 
 export const metadata = {
   title: 'SEO & Link Building Blog | Linkio',
@@ -315,6 +317,15 @@ export default function BlogPage() {
         </div>
       </div>
       </div>
+      
+      {/* CTA Section */}
+      <MarketingCTA 
+        title="Ready to Master Link Building?"
+        description="Get access to our complete database of 13,000+ guest posting sites and start building quality backlinks today."
+      />
+      
+      {/* Footer */}
+      <MarketingFooter />
     </div>
   );
 }
