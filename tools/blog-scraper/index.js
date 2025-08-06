@@ -73,20 +73,27 @@ async function scrapeBlogPost(url) {
       }
     }
     
-    // Find content - extract clean text with better structure
+    // Find content - extract both HTML and clean text
     let content = '';
     let cleanText = '';
+    let htmlContent = '';
     let contentElement = null;
     
-    // Remove unwanted elements first
+    // Clone the $ to preserve original HTML
+    const $original = cheerio.load(response.data);
+    
+    // Remove unwanted elements first (for clean text extraction)
     $('script, style, noscript, iframe, svg, nav, header, footer, .sidebar, .widget').remove();
     $('.elementor-widget-sidebar, .menu, .navigation').remove();
     
     // Try to find main content area
     for (const selector of selectors.content) {
       const found = $(selector);
+      const foundOriginal = $original(selector);
       if (found.length > 0) {
         contentElement = found.first();
+        // Capture the original HTML content
+        htmlContent = foundOriginal.first().html() || '';
         break;
       }
     }
@@ -94,9 +101,10 @@ async function scrapeBlogPost(url) {
     // If no content element found, use body
     if (!contentElement) {
       contentElement = $('body');
+      htmlContent = $original('body').html() || '';
     }
     
-    // Extract clean structured text
+    // Extract clean structured text for markdown
     const sections = [];
     contentElement.find('h1, h2, h3, h4, h5, h6, p, ul, ol, blockquote').each((i, elem) => {
       const $elem = $(elem);
@@ -175,6 +183,7 @@ async function scrapeBlogPost(url) {
       url,
       title,
       content,
+      htmlContent,  // Add the raw HTML content
       images,
       scrapedAt: new Date().toISOString()
     };
@@ -285,14 +294,29 @@ app.post('/api/scrape', async (req, res) => {
       // Update the data object with processed content
       data.content = updatedContent;
       
-      // Save updated content with absolute image URLs
-      await fs.writeFile(path.join(postDir, 'content.html'), updatedContent);
-      await fs.writeFile(path.join(postDir, 'content.md'), `# ${data.title}\n\n${updatedContent}`);
+      // Save HTML content with absolute image URLs
+      // Process the HTML content to update image URLs to absolute
+      let processedHtml = data.htmlContent;
+      for (const image of processedImages) {
+        if (image.originalSrc !== image.src) {
+          // Replace relative URLs with absolute ones in HTML
+          processedHtml = processedHtml.replace(
+            new RegExp(`src=["']${image.originalSrc.replace(/[.*+?^${}()|[\]\\]/g, '\\$&')}["']`, 'g'),
+            `src="${image.src}"`
+          );
+        }
+      }
+      
+      // Save the actual HTML content
+      await fs.writeFile(path.join(postDir, 'content.html'), processedHtml);
+      // Save markdown version
+      await fs.writeFile(path.join(postDir, 'content.md'), `# ${data.title}\n\n${data.content}`);
       
       // Save metadata
       const metadata = {
         ...data,
-        content: updatedContent,
+        content: data.content,  // Clean markdown content
+        htmlContent: processedHtml,  // Full HTML content
         images: processedImages,
         outputDir: postDir,
         folderName: uniqueSlug,
