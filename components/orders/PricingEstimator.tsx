@@ -230,152 +230,193 @@ export default function PricingEstimator({ className = '', onEstimateChange, ini
     placeholder?: string;
   }) => {
     const [isOpen, setIsOpen] = useState(false);
-    const displayValue = allowCustom && customValue ? `Custom: ${customValue}` : 
+    const displayValue = allowCustom && customValue ? `${customValue}` : 
                        options.find(opt => opt.value === value)?.label || options[0]?.label;
     
     return (
-      <div className="relative">
+      <div className="relative w-full">
         <button
           onClick={() => setIsOpen(!isOpen)}
-          className="flex items-center gap-1 px-3 py-1.5 bg-white border border-gray-300 rounded-md text-sm hover:bg-gray-50 transition-colors"
+          className="w-full flex items-center justify-between px-3 py-2 bg-white border border-gray-300 rounded-md text-sm hover:border-blue-400 hover:bg-blue-50 transition-all focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
         >
-          <span className="text-gray-600">{label}:</span>
-          <span className="font-medium">{displayValue}</span>
-          <ChevronDown className="h-4 w-4 text-gray-400" />
+          <span className="font-medium text-gray-900 truncate">{displayValue}</span>
+          <ChevronDown className="h-4 w-4 text-gray-400 flex-shrink-0 ml-2" />
         </button>
         
         {isOpen && (
-          <div className="absolute top-full left-0 mt-1 bg-white border border-gray-300 rounded-md shadow-lg z-50 min-w-48">
-            {options.map(option => (
-              <button
-                key={option.value}
-                onClick={() => {
-                  onChange(option.value);
-                  if (onCustomChange) onCustomChange('');
-                  setIsOpen(false);
-                }}
-                className={`w-full text-left px-3 py-2 text-sm hover:bg-gray-50 transition-colors ${
-                  option.value === value && !customValue ? 'bg-blue-50 text-blue-700' : ''
-                }`}
-              >
-                {option.label}
-              </button>
-            ))}
-            {allowCustom && (
-              <div className="border-t border-gray-200 p-2">
-                <input
-                  type="text"
-                  placeholder={placeholder}
-                  value={customValue || ''}
-                  onChange={(e) => {
-                    if (onCustomChange) {
-                      onCustomChange(e.target.value);
-                      setIsOpen(false);
-                    }
+          <>
+            <div className="fixed inset-0 z-40" onClick={() => setIsOpen(false)} />
+            <div className="absolute top-full left-0 mt-1 w-full bg-white border border-gray-300 rounded-md shadow-xl z-50 max-h-64 overflow-y-auto">
+              {options.map(option => (
+                <button
+                  key={option.value}
+                  onClick={() => {
+                    onChange(option.value);
+                    if (onCustomChange) onCustomChange('');
+                    setIsOpen(false);
                   }}
-                  className="w-full px-2 py-1 text-sm border border-gray-300 rounded"
-                  onClick={(e) => e.stopPropagation()}
-                />
-              </div>
-            )}
-          </div>
+                  className={`w-full text-left px-3 py-2 text-sm hover:bg-blue-50 transition-colors ${
+                    option.value === value && !customValue ? 'bg-blue-50 text-blue-700 font-medium' : ''
+                  }`}
+                >
+                  {option.label}
+                </button>
+              ))}
+              {allowCustom && (
+                <div className="border-t border-gray-200 p-3">
+                  <label className="text-xs text-gray-500 mb-1 block">Custom Range</label>
+                  <input
+                    type="text"
+                    placeholder={placeholder}
+                    value={customValue || ''}
+                    onChange={(e) => {
+                      if (onCustomChange) {
+                        onCustomChange(e.target.value);
+                      }
+                    }}
+                    onKeyDown={(e) => {
+                      if (e.key === 'Enter') {
+                        setIsOpen(false);
+                      }
+                    }}
+                    className="w-full px-3 py-2 text-sm border border-gray-300 rounded focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
+                    onClick={(e) => e.stopPropagation()}
+                  />
+                </div>
+              )}
+            </div>
+          </>
         )}
       </div>
     );
   };
 
   return (
-    <div className={`bg-white border border-gray-200 rounded-lg ${className}`}>
-      <div className="p-4">
-        {/* Market Overview Stats */}
-        <div className="flex items-center gap-4 mb-3">
-          <TrendingUp className="h-5 w-5 text-blue-600" />
-          <div className="flex items-center gap-6 text-sm">
+    <div className={`bg-white border-b border-gray-200 ${className}`}>
+      <div className="px-6 py-4">
+        {/* Market Overview Header */}
+        <div className="flex items-center justify-between mb-4">
+          <div className="flex items-center gap-6">
+            <div className="flex items-center gap-3">
+              <TrendingUp className="h-6 w-6 text-blue-600" />
+              <h2 className="text-lg font-semibold text-gray-900">Market Intelligence</h2>
+            </div>
+            
             {loading ? (
-              <div className="animate-pulse text-gray-500">Loading market data...</div>
+              <div className="flex items-center gap-2 text-gray-500">
+                <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-blue-600"></div>
+                <span className="text-sm">Loading market data...</span>
+              </div>
             ) : estimate ? (
-              <>
-                <span className="font-semibold text-gray-900">
-                  📊 {estimate.count.toLocaleString()} sites
-                </span>
-                <span className="text-gray-700">
-                  {formatCurrency(estimate.clientAverage)} avg, {formatCurrency(estimate.clientMedian)} median
-                </span>
-              </>
+              <div className="flex items-center gap-6 text-sm">
+                <div className="flex items-center gap-2">
+                  <div className="w-3 h-3 bg-green-500 rounded-full"></div>
+                  <span className="font-semibold text-gray-900">
+                    {estimate.count.toLocaleString()} available sites
+                  </span>
+                </div>
+                <div className="text-gray-600">
+                  <span className="font-medium text-gray-900">{formatCurrency(estimate.clientMedian)}</span> median price
+                </div>
+                <div className="text-gray-600">
+                  <span className="font-medium text-gray-900">{formatCurrency(estimate.clientAverage)}</span> average price
+                </div>
+                <div className="text-gray-600">
+                  Range: <span className="font-medium text-gray-900">{formatCurrency(estimate.clientMin)} - {formatCurrency(estimate.clientMax)}</span>
+                </div>
+              </div>
             ) : (
-              <span className="text-gray-500">Market data will appear after filtering</span>
+              <span className="text-sm text-gray-500">Configure filters to see market availability</span>
             )}
           </div>
         </div>
 
-        {/* Filter Bar */}
-        <div className="flex flex-wrap items-center gap-3">
-          <FilterDropdown
-            label="Price"
-            value={selectedPrice}
-            options={PRICE_OPTIONS.map((opt, idx) => ({ label: opt.label, value: idx }))}
-            onChange={(val) => setSelectedPrice(val as number)}
-            allowCustom
-            customValue={customPriceMin || customPriceMax ? `${customPriceMin || '0'}-${customPriceMax || '999'}` : ''}
-            onCustomChange={(val) => {
-              const [min, max] = val.split('-').map(v => v.trim());
-              setCustomPriceMin(min);
-              setCustomPriceMax(max);
-            }}
-            placeholder="100-300"
-          />
+        {/* Enhanced Filter Controls */}
+        <div className="grid grid-cols-6 gap-4">
+          <div className="space-y-2">
+            <label className="text-xs font-medium text-gray-500 uppercase tracking-wide">Price Range</label>
+            <FilterDropdown
+              label=""
+              value={selectedPrice}
+              options={PRICE_OPTIONS.map((opt, idx) => ({ label: opt.label, value: idx }))}
+              onChange={(val) => setSelectedPrice(val as number)}
+              allowCustom
+              customValue={customPriceMin || customPriceMax ? `${customPriceMin || '0'}-${customPriceMax || '999'}` : ''}
+              onCustomChange={(val) => {
+                const [min, max] = val.split('-').map(v => v.trim());
+                setCustomPriceMin(min);
+                setCustomPriceMax(max);
+              }}
+              placeholder="100-300"
+            />
+          </div>
           
-          <FilterDropdown
-            label="DR"
-            value={selectedDR}
-            options={DR_OPTIONS.map((opt, idx) => ({ label: opt.label, value: idx }))}
-            onChange={(val) => setSelectedDR(val as number)}
-            allowCustom
-            customValue={customDRMin || customDRMax ? `${customDRMin || '20'}-${customDRMax || '80'}` : ''}
-            onCustomChange={(val) => {
-              const [min, max] = val.split('-').map(v => v.trim());
-              setCustomDRMin(min);
-              setCustomDRMax(max);
-            }}
-            placeholder="20-80"
-          />
+          <div className="space-y-2">
+            <label className="text-xs font-medium text-gray-500 uppercase tracking-wide">Domain Rating</label>
+            <FilterDropdown
+              label=""
+              value={selectedDR}
+              options={DR_OPTIONS.map((opt, idx) => ({ label: opt.label, value: idx }))}
+              onChange={(val) => setSelectedDR(val as number)}
+              allowCustom
+              customValue={customDRMin || customDRMax ? `${customDRMin || '20'}-${customDRMax || '80'}` : ''}
+              onCustomChange={(val) => {
+                const [min, max] = val.split('-').map(v => v.trim());
+                setCustomDRMin(min);
+                setCustomDRMax(max);
+              }}
+              placeholder="20-80"
+            />
+          </div>
           
-          <FilterDropdown
-            label="Traffic"
-            value={selectedTraffic}
-            options={TRAFFIC_OPTIONS.map((opt, idx) => ({ label: opt.label, value: idx }))}
-            onChange={(val) => setSelectedTraffic(val as number)}
-            allowCustom
-            customValue={customTraffic}
-            onCustomChange={setCustomTraffic}
-            placeholder="5000"
-          />
+          <div className="space-y-2">
+            <label className="text-xs font-medium text-gray-500 uppercase tracking-wide">Monthly Traffic</label>
+            <FilterDropdown
+              label=""
+              value={selectedTraffic}
+              options={TRAFFIC_OPTIONS.map((opt, idx) => ({ label: opt.label, value: idx }))}
+              onChange={(val) => setSelectedTraffic(val as number)}
+              allowCustom
+              customValue={customTraffic}
+              onCustomChange={setCustomTraffic}
+              placeholder="5000"
+            />
+          </div>
           
-          <FilterDropdown
-            label="Category"
-            value={selectedCategory}
-            options={[{ label: 'All', value: '' }, ...availableCategories.map(cat => ({ label: cat, value: cat }))].filter(opt => opt.label)}
-            onChange={(val) => setSelectedCategory(val as string)}
-          />
+          <div className="space-y-2">
+            <label className="text-xs font-medium text-gray-500 uppercase tracking-wide">Category</label>
+            <FilterDropdown
+              label=""
+              value={selectedCategory}
+              options={[{ label: 'All Categories', value: '' }, ...availableCategories.map(cat => ({ label: cat, value: cat }))].filter(opt => opt.label)}
+              onChange={(val) => setSelectedCategory(val as string)}
+            />
+          </div>
           
-          <FilterDropdown
-            label="Niche"
-            value={selectedNiche}
-            options={[{ label: 'All', value: '' }, ...availableNiches.map(niche => ({ label: niche, value: niche }))].filter(opt => opt.label)}
-            onChange={(val) => setSelectedNiche(val as string)}
-          />
+          <div className="space-y-2">
+            <label className="text-xs font-medium text-gray-500 uppercase tracking-wide">Niche</label>
+            <FilterDropdown
+              label=""
+              value={selectedNiche}
+              options={[{ label: 'All Niches', value: '' }, ...availableNiches.map(niche => ({ label: niche, value: niche }))].filter(opt => opt.label)}
+              onChange={(val) => setSelectedNiche(val as string)}
+            />
+          </div>
           
-          <FilterDropdown
-            label="Type"
-            value={selectedType}
-            options={[{ label: 'All', value: '' }, ...availableTypes.map(type => ({ label: type, value: type }))].filter(opt => opt.label)}
-            onChange={(val) => setSelectedType(val as string)}
-          />
+          <div className="space-y-2">
+            <label className="text-xs font-medium text-gray-500 uppercase tracking-wide">Website Type</label>
+            <FilterDropdown
+              label=""
+              value={selectedType}
+              options={[{ label: 'All Types', value: '' }, ...availableTypes.map(type => ({ label: type, value: type }))].filter(opt => opt.label)}
+              onChange={(val) => setSelectedType(val as string)}
+            />
+          </div>
         </div>
 
         {error && (
-          <div className="mt-3 text-sm text-red-600">
-            {error}
+          <div className="mt-4 p-3 bg-red-50 border border-red-200 rounded-md">
+            <div className="text-sm text-red-700">{error}</div>
           </div>
         )}
       </div>

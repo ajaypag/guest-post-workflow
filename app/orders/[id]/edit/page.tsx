@@ -1102,10 +1102,9 @@ export default function EditOrderPage({ params }: { params: Promise<{ id: string
         </div>
         
         {/* Pricing Estimator */}
-        <div className="px-4 pt-4 bg-gray-100">
-          <PricingEstimator 
-            className="max-w-7xl mx-auto"
-            initialPreferences={orderPreferences || undefined}
+        <PricingEstimator 
+          className=""
+          initialPreferences={orderPreferences || undefined}
             onEstimateChange={(estimate, preferences) => {
               // Store preferences for saving with the order
               if (estimate && preferences) {
@@ -1135,7 +1134,6 @@ export default function EditOrderPage({ params }: { params: Promise<{ id: string
               }
             }}
           />
-        </div>
         
         {/* Main Content Area - Three Column Layout (Desktop) / Single Column (Mobile) */}
         <div className="flex-1 flex flex-col md:flex-row gap-4 p-4 pt-0 overflow-hidden bg-gray-100" style={{height: 'calc(100vh - 64px - 80px)'}}>
