@@ -18,31 +18,74 @@ export default function OrderDetailsTable({
   userType
 }: OrderDetailsTableProps) {
   
+  // Early return if no order
+  if (!order) {
+    return (
+      <div className="bg-white rounded-lg border border-gray-200 shadow-sm p-6">
+        <p className="text-gray-500">No order data available</p>
+      </div>
+    );
+  }
+  
   // Determine which columns to show based on order state/status
   const getVisibleColumns = () => {
     const columns = ['client', 'targetPage', 'anchorText'];
     
-    // Progressive disclosure of columns based on order state
-    if (order.state === 'analyzing' || order.state === 'finding_sites') {
-      columns.push('status');
+    // Handle edge cases first
+    if (!order.state && !order.status) {
+      return columns; // Minimal display for unknown state
     }
     
+    // Map order status and state to determine what to show
+    // Status values: draft, pending_confirmation, confirmed, paid, completed, cancelled
+    // State values: configuring, analyzing, finding_sites, sites_ready, site_review, 
+    //               client_reviewing, payment_pending, payment_received, workflows_generated, in_progress
+    
+    // Early states - just show basic info
+    if (order.status === 'draft' || order.state === 'configuring') {
+      columns.push('status');
+      return columns;
+    }
+    
+    // Analysis phase - show progress
+    if (order.state === 'analyzing' || order.state === 'finding_sites' || order.status === 'pending_confirmation') {
+      columns.push('status');
+      return columns;
+    }
+    
+    // Review phase - show suggestions and pricing
     if (order.state === 'sites_ready' || order.state === 'site_review' || order.state === 'client_reviewing') {
       columns.push('suggestedSite', 'siteMetrics', 'price', 'status');
+      return columns;
     }
     
-    if (order.state === 'payment_pending' || order.state === 'payment_received' || order.state === 'workflows_generated') {
+    // Payment and post-payment phases - show approved sites
+    if (order.state === 'payment_pending' || order.state === 'payment_received' || 
+        order.state === 'workflows_generated' || order.status === 'paid') {
       columns.push('approvedSite', 'siteMetrics', 'finalPrice');
+      return columns;
     }
     
+    // Content creation phase
     if (order.state === 'in_progress') {
       columns.push('approvedSite', 'siteMetrics', 'finalPrice', 'contentStatus');
+      return columns;
     }
     
+    // Completed
     if (order.status === 'completed') {
       columns.push('approvedSite', 'siteMetrics', 'finalPrice', 'publishedUrl');
+      return columns;
     }
     
+    // Cancelled
+    if (order.status === 'cancelled') {
+      columns.push('status');
+      return columns;
+    }
+    
+    // Default fallback - show status
+    columns.push('status');
     return columns;
   };
   
@@ -52,9 +95,16 @@ export default function OrderDetailsTable({
   const getLineItems = () => {
     const items: any[] = [];
     
+    // Handle empty order groups
+    if (!orderGroups || orderGroups.length === 0) {
+      return items;
+    }
+    
     orderGroups.forEach(group => {
-      const groupSubmissions = siteSubmissions[group.id] || [];
-      const linkCount = group.linkCount || 1;
+      if (!group || !group.id) return; // Skip invalid groups
+      
+      const groupSubmissions = siteSubmissions?.[group.id] || [];
+      const linkCount = Math.max(1, group.linkCount || 1); // Ensure at least 1
       
       // Create a line item for each link in the group
       for (let i = 0; i < linkCount; i++) {
@@ -71,21 +121,32 @@ export default function OrderDetailsTable({
         items.push({
           id: `${group.id}-${i}`,
           groupId: group.id,
-          client: group.client?.name || 'Unknown Client',
-          targetPageUrl: group.targetPages?.[i]?.url || '',
-          anchorText: group.anchorTexts?.[i] || '',
+          client: group.client?.name || group.clientName || 'Unknown Client',
+          targetPageUrl: Array.isArray(group.targetPages) && group.targetPages[i] ? 
+            (group.targetPages[i].url || group.targetPages[i]) : '',
+          anchorText: Array.isArray(group.anchorTexts) ? 
+            (group.anchorTexts[i] || '') : '',
           
           // Site submission data (if available)
           submission: matchedSubmission,
-          suggestedSite: matchedSubmission?.domain,
+          // Safely handle domain as either string or object
+          suggestedSite: matchedSubmission ? 
+            (typeof matchedSubmission.domain === 'string' ? 
+              matchedSubmission.domain : 
+              matchedSubmission.domain?.domain || null) : null,
           approvedSite: (matchedSubmission?.status === 'client_approved' || matchedSubmission?.status === 'approved') 
-            ? matchedSubmission?.domain 
+            ? (typeof matchedSubmission.domain === 'string' ? 
+                matchedSubmission.domain : 
+                matchedSubmission.domain?.domain || null)
             : null,
           
-          // Pricing
-          estimatedPrice: group.estimatedPrice ? (group.estimatedPrice / linkCount) : null,
-          wholesalePrice: matchedSubmission?.wholesalePrice,
-          retailPrice: matchedSubmission?.retailPriceSnapshot || matchedSubmission?.price,
+          // Pricing - use snapshots first, then regular price, then estimate
+          estimatedPrice: group.estimatedPrice && linkCount > 0 ? 
+            Math.round(group.estimatedPrice / linkCount) : null,
+          wholesalePrice: matchedSubmission?.wholesalePriceSnapshot || 
+                         matchedSubmission?.wholesalePrice || null,
+          retailPrice: matchedSubmission?.retailPriceSnapshot || 
+                      matchedSubmission?.price || null,
           
           // Status
           submissionStatus: matchedSubmission?.status,
@@ -104,22 +165,39 @@ export default function OrderDetailsTable({
   
   const lineItems = getLineItems();
   
-  // Calculate totals
-  const totalEstimated = lineItems.reduce((sum, item) => sum + (item.estimatedPrice || 0), 0);
-  const totalFinal = lineItems.reduce((sum, item) => sum + (item.retailPrice || item.estimatedPrice || 0), 0);
+  // Calculate totals - be more careful with pricing
+  const totalEstimated = lineItems.reduce((sum, item) => {
+    return sum + (item.estimatedPrice || 0);
+  }, 0);
+  
+  const totalFinal = lineItems.reduce((sum, item) => {
+    // Use retail price if available, otherwise estimated price
+    if (item.retailPrice && item.retailPrice > 0) {
+      return sum + item.retailPrice;
+    }
+    return sum + (item.estimatedPrice || 0);
+  }, 0);
   
   return (
     <div className="bg-white rounded-lg border border-gray-200 shadow-sm overflow-hidden">
       <div className="px-6 py-4 border-b border-gray-200 bg-gray-50">
         <h3 className="text-lg font-semibold text-gray-900">Order Details</h3>
         <p className="text-sm text-gray-600 mt-1">
+          {order.status === 'draft' && 'Draft order - not yet confirmed'}
+          {order.status === 'pending_confirmation' && 'Awaiting order confirmation'}
+          {order.state === 'configuring' && 'Setting up order details'}
+          {order.state === 'analyzing' && 'Analyzing target pages and finding sites'}
+          {order.state === 'finding_sites' && 'Finding suitable guest post sites'}
           {order.state === 'sites_ready' && 'Review and approve recommended sites'}
+          {order.state === 'site_review' && 'Sites under review'}
+          {order.state === 'client_reviewing' && 'Client reviewing site suggestions'}
           {order.state === 'payment_pending' && 'Invoice generated - awaiting payment'}
           {order.state === 'payment_received' && 'Payment received - preparing content creation'}
+          {order.state === 'workflows_generated' && 'Content workflows created'}
           {order.state === 'in_progress' && 'Content creation in progress'}
           {order.status === 'completed' && 'Order completed'}
-          {!['sites_ready', 'payment_pending', 'payment_received', 'in_progress'].includes(order.state) && 
-           order.status !== 'completed' && 'Processing your order'}
+          {order.status === 'cancelled' && 'Order cancelled'}
+          {!order.state && !order.status && 'Order status unknown'}
         </p>
       </div>
       
@@ -180,16 +258,18 @@ export default function OrderDetailsTable({
             </tr>
           </thead>
           <tbody className="bg-white divide-y divide-gray-200">
-            {lineItems.map((item, index) => (
+            {lineItems.length > 0 ? lineItems.map((item, index) => (
               <tr key={item.id} className="hover:bg-gray-50">
                 {/* Client & Target Page */}
                 {visibleColumns.includes('client') && (
                   <td className="px-6 py-4">
                     <div>
                       <div className="text-sm font-medium text-gray-900">{item.client}</div>
-                      <div className="text-sm text-gray-500 mt-1">
-                        {item.targetPageUrl || 'No target page selected'}
-                      </div>
+                      {item.targetPageUrl && (
+                        <div className="text-sm text-gray-500 mt-1">
+                          {item.targetPageUrl}
+                        </div>
+                      )}
                     </div>
                   </td>
                 )}
@@ -252,7 +332,7 @@ export default function OrderDetailsTable({
                     {(item.domainRating || item.traffic) ? (
                       <div className="text-xs text-gray-600 space-y-1">
                         {item.domainRating && <div>DR: {item.domainRating}</div>}
-                        {item.traffic && <div>Traffic: {item.traffic.toLocaleString()}</div>}
+                        {item.traffic && <div>Traffic: {typeof item.traffic === 'number' ? item.traffic.toLocaleString() : item.traffic}</div>}
                       </div>
                     ) : (
                       <span className="text-sm text-gray-400">-</span>
@@ -311,10 +391,23 @@ export default function OrderDetailsTable({
                         <Clock className="h-3 w-3 mr-1" />
                         Pending Review
                       </span>
-                    ) : order.state === 'finding_sites' ? (
+                    ) : order.state === 'analyzing' ? (
+                      <span className="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-blue-100 text-blue-800">
+                        <Clock className="h-3 w-3 mr-1 animate-spin" />
+                        Analyzing
+                      </span>
+                    ) : order.state === 'finding_sites' && !item.submission ? (
                       <span className="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-blue-100 text-blue-800">
                         <Clock className="h-3 w-3 mr-1 animate-spin" />
                         Finding Sites
+                      </span>
+                    ) : order.status === 'draft' ? (
+                      <span className="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-gray-100 text-gray-600">
+                        Draft
+                      </span>
+                    ) : order.status === 'cancelled' ? (
+                      <span className="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-gray-100 text-gray-600">
+                        Cancelled
                       </span>
                     ) : (
                       <span className="text-sm text-gray-400">-</span>
@@ -362,22 +455,33 @@ export default function OrderDetailsTable({
                   </td>
                 )}
               </tr>
-            ))}
+            )) : (
+              <tr>
+                <td colSpan={visibleColumns.length} className="px-6 py-8 text-center text-gray-500">
+                  {order.status === 'draft' ? 'No items added to this draft order yet' :
+                   order.state === 'configuring' ? 'Order is being configured...' :
+                   order.state === 'analyzing' ? 'Analyzing requirements...' :
+                   order.state === 'finding_sites' ? 'Finding suitable sites...' :
+                   'No line items available'}
+                </td>
+              </tr>
+            )}
           </tbody>
           <tfoot className="bg-gray-50">
             <tr>
               <td 
-                colSpan={visibleColumns.length - 1} 
+                colSpan={Math.max(1, visibleColumns.length - 1)} 
                 className="px-6 py-4 text-right text-sm font-medium text-gray-900"
               >
                 Total Investment
               </td>
               <td className="px-6 py-4 text-right">
                 <div className="text-sm font-bold text-gray-900">
-                  {order.state === 'payment_received' || order.state === 'payment_pending' || 
-                   order.state === 'workflows_generated' || order.state === 'in_progress' || 
-                   order.status === 'completed' ? (
-                    formatCurrency((order as any).invoiceData?.total || (order as any).totalRetail || totalFinal)
+                  {(order.state === 'payment_received' || order.state === 'payment_pending' || 
+                    order.state === 'workflows_generated' || order.state === 'in_progress' || 
+                    order.status === 'completed' || order.status === 'paid') && 
+                   (order.invoiceData?.total || order.totalRetail) ? (
+                    formatCurrency(order.invoiceData?.total || order.totalRetail || totalFinal)
                   ) : totalFinal > 0 ? (
                     <>
                       {formatCurrency(totalFinal)}
