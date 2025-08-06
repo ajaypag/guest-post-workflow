@@ -23,7 +23,9 @@ export const metadata = {
   },
 };
 
+// Complete list of all 51 blog posts
 const blogPosts = [
+  // Featured and main posts
   {
     title: 'Resource Page Link Building Guide',
     href: '/resource-page-link-building-guide',
@@ -151,6 +153,287 @@ const blogPosts = [
     category: 'Email Outreach',
     readTime: '8 min read',
     date: 'January 2024'
+  },
+  // Additional 35 blog posts
+  {
+    title: 'Manual vs Automated Link Building',
+    href: '/manual-vs-automated-link-building',
+    excerpt: 'Comparing manual and automated link building approaches for maximum ROI.',
+    category: 'Link Building',
+    readTime: '10 min read',
+    date: 'January 2024'
+  },
+  {
+    title: 'Guest Post Pitching Templates',
+    href: '/guest-post-pitching-templates',
+    excerpt: 'Proven email templates for successful guest post outreach campaigns.',
+    category: 'Email Outreach',
+    readTime: '8 min read',
+    date: 'January 2024'
+  },
+  {
+    title: 'Link Building ROI Calculator',
+    href: '/link-building-roi-calculator',
+    excerpt: 'Calculate the true ROI of your link building campaigns.',
+    category: 'Resources',
+    readTime: '5 min read',
+    date: 'January 2024'
+  },
+  {
+    title: 'White Hat Link Building Strategies',
+    href: '/white-hat-link-building-strategies',
+    excerpt: 'Ethical link building techniques that drive long-term results.',
+    category: 'Link Building',
+    readTime: '15 min read',
+    date: 'January 2024'
+  },
+  {
+    title: 'Link Building for E-commerce Sites',
+    href: '/link-building-for-ecommerce',
+    excerpt: 'Specialized link building strategies for online stores.',
+    category: 'E-commerce',
+    readTime: '12 min read',
+    date: 'January 2024'
+  },
+  {
+    title: 'HARO Link Building Guide',
+    href: '/haro-link-building-guide',
+    excerpt: 'How to use Help a Reporter Out for high-quality backlinks.',
+    category: 'Link Building',
+    readTime: '10 min read',
+    date: 'January 2024'
+  },
+  {
+    title: 'Link Building Mistakes to Avoid',
+    href: '/link-building-mistakes',
+    excerpt: 'Common link building errors that can hurt your SEO.',
+    category: 'Link Building',
+    readTime: '8 min read',
+    date: 'January 2024'
+  },
+  {
+    title: 'Local Link Building Strategies',
+    href: '/local-link-building-strategies',
+    excerpt: 'Build local authority with community-focused link building.',
+    category: 'Local SEO',
+    readTime: '10 min read',
+    date: 'January 2024'
+  },
+  {
+    title: 'Link Building for SaaS Companies',
+    href: '/link-building-for-saas',
+    excerpt: 'Tailored link building strategies for software companies.',
+    category: 'SaaS',
+    readTime: '12 min read',
+    date: 'January 2024'
+  },
+  {
+    title: 'Content Marketing for Link Building',
+    href: '/content-marketing-link-building',
+    excerpt: 'Creating content that naturally attracts backlinks.',
+    category: 'Content Marketing',
+    readTime: '15 min read',
+    date: 'January 2024'
+  },
+  {
+    title: 'Link Building Outreach Automation',
+    href: '/link-building-outreach-automation',
+    excerpt: 'Tools and techniques to scale your outreach efforts.',
+    category: 'Email Outreach',
+    readTime: '10 min read',
+    date: 'January 2024'
+  },
+  {
+    title: 'Competitor Link Analysis Guide',
+    href: '/competitor-link-analysis',
+    excerpt: 'Find and replicate your competitors\' best backlinks.',
+    category: 'SEO',
+    readTime: '12 min read',
+    date: 'January 2024'
+  },
+  {
+    title: 'Link Building for Startups',
+    href: '/link-building-for-startups',
+    excerpt: 'Budget-friendly link building for new businesses.',
+    category: 'Link Building',
+    readTime: '10 min read',
+    date: 'January 2024'
+  },
+  {
+    title: 'Podcast Guest Outreach for Links',
+    href: '/podcast-guest-outreach',
+    excerpt: 'Get backlinks through podcast appearances.',
+    category: 'Link Building',
+    readTime: '8 min read',
+    date: 'January 2024'
+  },
+  {
+    title: 'Link Building with Infographics',
+    href: '/link-building-infographics',
+    excerpt: 'Create shareable infographics that earn natural links.',
+    category: 'Content Marketing',
+    readTime: '10 min read',
+    date: 'January 2024'
+  },
+  {
+    title: 'Digital PR for Link Building',
+    href: '/digital-pr-link-building',
+    excerpt: 'Using PR strategies to earn high-authority backlinks.',
+    category: 'Link Building',
+    readTime: '15 min read',
+    date: 'January 2024'
+  },
+  {
+    title: 'Link Building for Affiliate Sites',
+    href: '/link-building-affiliate-sites',
+    excerpt: 'Safe link building strategies for affiliate marketers.',
+    category: 'Affiliate',
+    readTime: '12 min read',
+    date: 'January 2024'
+  },
+  {
+    title: 'Link Velocity and SEO Impact',
+    href: '/link-velocity-seo',
+    excerpt: 'Understanding natural link growth patterns.',
+    category: 'SEO',
+    readTime: '8 min read',
+    date: 'January 2024'
+  },
+  {
+    title: 'Niche Edit Link Building',
+    href: '/niche-edit-link-building',
+    excerpt: 'Getting links added to existing content.',
+    category: 'Link Building',
+    readTime: '10 min read',
+    date: 'January 2024'
+  },
+  {
+    title: 'Link Building for B2B Companies',
+    href: '/link-building-b2b',
+    excerpt: 'Enterprise link building strategies that work.',
+    category: 'B2B',
+    readTime: '12 min read',
+    date: 'January 2024'
+  },
+  {
+    title: 'Link Building Tools Comparison',
+    href: '/link-building-tools-comparison',
+    excerpt: 'Compare the best link building and outreach tools.',
+    category: 'SEO Tools',
+    readTime: '20 min read',
+    date: 'January 2024'
+  },
+  {
+    title: 'Link Building Case Studies',
+    href: '/link-building-case-studies',
+    excerpt: 'Real examples of successful link building campaigns.',
+    category: 'Case Studies',
+    readTime: '15 min read',
+    date: 'January 2024'
+  },
+  {
+    title: 'Link Building for News Sites',
+    href: '/link-building-news-sites',
+    excerpt: 'Building authority for news and media websites.',
+    category: 'Link Building',
+    readTime: '10 min read',
+    date: 'January 2024'
+  },
+  {
+    title: 'Skyscraper Technique Guide',
+    href: '/skyscraper-technique-guide',
+    excerpt: 'Brian Dean\'s famous link building method explained.',
+    category: 'Link Building',
+    readTime: '12 min read',
+    date: 'January 2024'
+  },
+  {
+    title: 'Link Building for Healthcare Sites',
+    href: '/link-building-healthcare',
+    excerpt: 'YMYL link building strategies for medical websites.',
+    category: 'Healthcare',
+    readTime: '15 min read',
+    date: 'January 2024'
+  },
+  {
+    title: 'Link Building Metrics That Matter',
+    href: '/link-building-metrics',
+    excerpt: 'Key metrics to track link building success.',
+    category: 'SEO',
+    readTime: '10 min read',
+    date: 'January 2024'
+  },
+  {
+    title: 'International Link Building',
+    href: '/international-link-building',
+    excerpt: 'Building links for multi-language websites.',
+    category: 'International SEO',
+    readTime: '12 min read',
+    date: 'January 2024'
+  },
+  {
+    title: 'Link Building for Real Estate',
+    href: '/link-building-real-estate',
+    excerpt: 'Local link building for real estate websites.',
+    category: 'Real Estate',
+    readTime: '10 min read',
+    date: 'January 2024'
+  },
+  {
+    title: 'Link Reclamation Guide',
+    href: '/link-reclamation-guide',
+    excerpt: 'Find and fix lost backlinks to your site.',
+    category: 'Link Building',
+    readTime: '8 min read',
+    date: 'January 2024'
+  },
+  {
+    title: 'Link Building for Lawyers',
+    href: '/link-building-lawyers',
+    excerpt: 'Ethical link building for law firm websites.',
+    category: 'Legal',
+    readTime: '12 min read',
+    date: 'January 2024'
+  },
+  {
+    title: 'Reverse Engineering Competitors\' Links',
+    href: '/reverse-engineering-competitor-links',
+    excerpt: 'Advanced techniques to uncover link opportunities.',
+    category: 'SEO',
+    readTime: '15 min read',
+    date: 'January 2024'
+  },
+  {
+    title: 'Link Building for Travel Sites',
+    href: '/link-building-travel',
+    excerpt: 'Tourism and travel industry link building.',
+    category: 'Travel',
+    readTime: '10 min read',
+    date: 'January 2024'
+  },
+  {
+    title: 'Link Building Reporting Templates',
+    href: '/link-building-reporting',
+    excerpt: 'Professional templates for client reporting.',
+    category: 'Resources',
+    readTime: '8 min read',
+    date: 'January 2024'
+  },
+  {
+    title: 'Link Building for Education Sites',
+    href: '/link-building-education',
+    excerpt: 'Building authority for educational websites.',
+    category: 'Education',
+    readTime: '12 min read',
+    date: 'January 2024'
+  },
+  {
+    title: 'Link Building Trends 2024',
+    href: '/link-building-trends-2024',
+    excerpt: 'The future of link building and emerging strategies.',
+    category: 'Link Building',
+    readTime: '10 min read',
+    date: 'January 2024'
   }
 ];
 
@@ -213,7 +496,7 @@ export default function BlogPage() {
           </div>
         </div>
 
-        {/* Blog Posts Grid */}
+        {/* Blog Posts Grid - Show all posts */}
         <div className="grid gap-8 md:grid-cols-2 lg:grid-cols-3 mb-16">
           {blogPosts.map((post, index) => (
             <article key={post.href} className="bg-white rounded-xl shadow-sm hover:shadow-md transition-shadow overflow-hidden">
@@ -252,56 +535,11 @@ export default function BlogPage() {
           ))}
         </div>
 
-        {/* All Posts Section */}
-        <div className="bg-white rounded-xl shadow-sm p-8">
-          <h2 className="text-2xl font-bold text-gray-900 mb-6">All Blog Posts</h2>
-          <div className="space-y-6">
-            {[
-              { title: 'Resource Page Link Building Guide', href: '/resource-page-link-building-guide', category: 'Link Building' },
-              { title: 'Anchor Text Optimization Guide', href: '/anchor-text', category: 'Link Building' },
-              { title: 'SEO Tutorial: Complete Beginner Guide', href: '/seo-tutorial', category: 'SEO' },
-              { title: 'Broken Link Building Guide', href: '/broken-link-building-guide', category: 'Link Building' },
-              { title: 'How to Get High Authority Backlinks', href: '/how-to-get-high-authority-backlinks', category: 'Link Building' },
-              { title: 'Best Email Finders (Free & Paid)', href: '/best-email-finders', category: 'Email Outreach' },
-              { title: 'How to Find Email Addresses (2K+ Free Credits)', href: '/how-to-find-email-addresses', category: 'Email Outreach' },
-              { title: 'Ecommerce SEO Case Study: Zero to Page 1', href: '/ecommerce-seo-case-study', category: 'Case Studies' },
-              { title: '.EDU Link Building with Scholarships', href: '/edu-link-building-guide', category: 'Link Building' },
-              { title: 'Best SEO Books Recommended by Pros', href: '/best-seo-books-recommended-by-pros', category: 'Resources' },
-              { title: 'Link Building Costs: Complete Pricing Guide', href: '/link-building-costs', category: 'Link Building' },
-              { title: 'How to Write Listicles That Get Links', href: '/how-to-write-listicles', category: 'Content Marketing' },
-              { title: 'Best Content SEO Tools for 2024', href: '/best-content-seo-tools', category: 'SEO Tools' },
-              { title: 'Simple Backlink Strategies for Beginners', href: '/easy-backlinks-simple-strategies', category: 'Link Building' },
-              { title: 'Best Rank Tracking Tools for Local Businesses', href: '/best-rank-tracking-tools-local-businesses', category: 'Local SEO' },
-              { title: 'Follow-Up Email Guide for Link Building', href: '/follow-up-email', category: 'Email Outreach' },
-            ].map((post, index) => (
-              <div key={post.href} className="flex items-center justify-between py-4 border-b border-gray-100 last:border-b-0">
-                <div className="flex-1">
-                  <Link href={post.href} className="text-lg font-medium text-gray-900 hover:text-blue-600 transition-colors">
-                    {post.title}
-                  </Link>
-                  <div className="flex items-center mt-1">
-                    <span className="inline-block px-2 py-1 bg-gray-100 text-gray-600 text-xs rounded">
-                      {post.category}
-                    </span>
-                  </div>
-                </div>
-                <Link 
-                  href={post.href}
-                  className="ml-4 text-blue-600 hover:text-blue-800 flex items-center"
-                >
-                  <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5l7 7-7 7" />
-                  </svg>
-                </Link>
-              </div>
-            ))}
-          </div>
-        </div>
 
         {/* Newsletter Signup */}
         <div className="bg-gray-900 rounded-2xl p-8 text-white text-center mt-16">
-          <h2 className="text-2xl font-bold mb-4">Stay Updated with SEO Insights</h2>
-          <p className="text-gray-300 mb-6 max-w-2xl mx-auto">
+          <h2 className="text-2xl font-bold mb-4" style={{ color: '#ffffff' }}>Stay Updated with SEO Insights</h2>
+          <p className="mb-6 max-w-2xl mx-auto" style={{ color: '#d1d5db' }}>
             Get the latest SEO strategies, link building tips, and case studies delivered to your inbox.
           </p>
           <div className="flex max-w-md mx-auto">
@@ -310,7 +548,7 @@ export default function BlogPage() {
               placeholder="Enter your email"
               className="flex-1 px-4 py-3 rounded-l-lg text-gray-900"
             />
-            <button className="px-6 py-3 bg-blue-600 hover:bg-blue-700 rounded-r-lg font-semibold transition-colors">
+            <button className="px-6 py-3 bg-blue-600 hover:bg-blue-700 rounded-r-lg font-semibold transition-colors" style={{ color: '#ffffff' }}>
               Subscribe
             </button>
           </div>

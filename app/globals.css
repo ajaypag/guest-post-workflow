@@ -179,16 +179,21 @@ a:hover {
   color: #f3f4f6 !important;
 }
 
-/* Footer specific text colors */
-.bg-gray-900 h4, .bg-gray-900 .text-white {
+/* Footer and dark background text colors - more specific */
+.bg-gray-900 h2, .bg-gray-900 h3, .bg-gray-900 h4, .bg-gray-900 .text-white {
   color: #ffffff !important;
 }
 
-.bg-gray-900 .text-gray-300, .bg-gray-900 p, .bg-gray-900 li {
+/* Only apply to elements without inline styles */
+.bg-gray-900 p:not([style]), .bg-gray-900 li:not([style]) {
   color: #d1d5db !important;
 }
 
-.bg-gray-900 a.text-gray-300:hover {
+.bg-gray-900 .text-gray-300:not([style]) {
+  color: #d1d5db !important;
+}
+
+.bg-gray-900 a:hover {
   color: #ffffff !important;
 }
 
