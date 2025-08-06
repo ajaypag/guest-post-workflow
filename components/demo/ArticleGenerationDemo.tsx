@@ -139,20 +139,19 @@ export default function ArticleGenerationDemo() {
   const [generating, setGenerating] = useState(false);
   const [currentStep, setCurrentStep] = useState(-1);
   const [steps, setSteps] = useState(workflowSteps);
-  const [showListicle, setShowListicle] = useState(false);
+  const [showDetails, setShowDetails] = useState<string | null>(null);
 
   const startGeneration = () => {
     setGenerating(true);
     setCurrentStep(0);
     setSteps(workflowSteps);
-    setShowListicle(false);
+    setShowDetails(null);
     processNextStep(0);
   };
 
   const processNextStep = (index: number) => {
     if (index >= workflowSteps.length) {
       setGenerating(false);
-      setShowListicle(true);
       return;
     }
 
@@ -190,7 +189,7 @@ export default function ArticleGenerationDemo() {
               className="inline-flex items-center gap-2 px-8 py-4 bg-gradient-to-r from-green-600 to-blue-600 text-white rounded-lg hover:from-green-700 hover:to-blue-700 disabled:opacity-50 disabled:cursor-not-allowed font-semibold text-lg transition-all"
             >
               <Brain className="w-6 h-6" />
-              {generating ? 'Creating Listicle with Client at #1...' : 'Generate Listicle Article (Client Ranks #1)'}
+              {generating ? 'Running 17-Step Content Pipeline...' : 'Watch Our 17-Step Article Generation'}
             </button>
           </div>
 
@@ -269,15 +268,69 @@ export default function ArticleGenerationDemo() {
             })}
           </div>
 
-          {/* Special Callouts for Key Steps */}
+          {/* Dynamic Step Details - The Real Magic */}
+          {currentStep === 1 && (
+            <div className="mb-6 p-4 bg-blue-50 border border-blue-200 rounded-lg">
+              <div className="flex items-start gap-3">
+                <Search className="w-5 h-5 text-blue-600 mt-0.5" />
+                <div>
+                  <div className="font-semibold text-blue-900">Qualifying techinsights.io</div>
+                  <div className="text-sm text-blue-700 mt-1">
+                    <strong>Finding topical overlap:</strong> Scraping 8,472 keywords this site ranks for...
+                  </div>
+                  <div className="mt-2 font-mono text-xs bg-white p-2 rounded border border-blue-200">
+                    ✓ "enterprise automation" - Position 4<br/>
+                    ✓ "workflow automation tools" - Position 12<br/>
+                    ✓ "ai process optimization" - Position 7<br/>
+                    <span className="text-blue-600">→ Direct match with TechFlow's service pages!</span>
+                  </div>
+                </div>
+              </div>
+            </div>
+          )}
+
           {currentStep === 2 && (
             <div className="mb-6 p-4 bg-yellow-50 border border-yellow-200 rounded-lg">
               <div className="flex items-start gap-3">
                 <Lightbulb className="w-5 h-5 text-yellow-600 mt-0.5" />
                 <div>
-                  <div className="font-semibold text-yellow-900">Smart Topic Selection</div>
+                  <div className="font-semibold text-yellow-900">Not Your Average Topic Selection</div>
                   <div className="text-sm text-yellow-700 mt-1">
-                    Topic meets all 3 criteria: ✓ Relevant to techinsights.io ✓ Relevant to TechFlow ✓ Has search volume (480/mo)
+                    Running 3-way analysis: Site relevance × Client relevance × Search volume
+                  </div>
+                  <div className="mt-2 space-y-1 text-xs">
+                    <div className="p-2 bg-white rounded border border-yellow-200">
+                      <span className="text-red-600">❌ "Best CRM Software"</span> - Site ranks but no client relevance
+                    </div>
+                    <div className="p-2 bg-white rounded border border-yellow-200">
+                      <span className="text-red-600">❌ "AI Automation Tips"</span> - Too generic, no search volume
+                    </div>
+                    <div className="p-2 bg-green-50 rounded border border-green-300">
+                      <span className="text-green-600">✅ "Enterprise Workflow Automation: Build vs Buy Decision Framework"</span><br/>
+                      <span className="text-xs text-gray-600">480 searches/mo • Site ranks for "enterprise workflow" • Client sells this</span>
+                    </div>
+                  </div>
+                </div>
+              </div>
+            </div>
+          )}
+
+          {currentStep === 3 && (
+            <div className="mb-6 p-4 bg-purple-50 border border-purple-200 rounded-lg">
+              <div className="flex items-start gap-3">
+                <BookOpen className="w-5 h-5 text-purple-600 mt-0.5" />
+                <div>
+                  <div className="font-semibold text-purple-900">O3 Deep Research (Not ChatGPT Garbage)</div>
+                  <div className="text-sm text-purple-700 mt-1">
+                    Analyzing top 20 SERPs, competitor content, and industry reports...
+                  </div>
+                  <div className="mt-2 bg-white p-3 rounded border border-purple-200 text-xs space-y-2">
+                    <div><strong>Discovered gap:</strong> No one covers TCO calculations for workflow automation</div>
+                    <div><strong>Unique angle:</strong> Interview data from 47 enterprise deployments</div>
+                    <div><strong>Semantic targets:</strong> 142 related entities to naturally weave in</div>
+                    <div className="text-purple-600 font-semibold">
+                      → Creating 23-section outline with original research positioning
+                    </div>
                   </div>
                 </div>
               </div>
@@ -285,111 +338,127 @@ export default function ArticleGenerationDemo() {
           )}
 
           {currentStep === 4 && (
-            <div className="mb-6 p-4 bg-purple-50 border border-purple-200 rounded-lg">
+            <div className="mb-6 p-4 bg-green-50 border border-green-200 rounded-lg">
               <div className="flex items-start gap-3">
-                <Award className="w-5 h-5 text-purple-600 mt-0.5" />
+                <Edit3 className="w-5 h-5 text-green-600 mt-0.5" />
                 <div>
-                  <div className="font-semibold text-purple-900">Creating Listicle with Client at #1</div>
-                  <div className="text-sm text-purple-700 mt-1">
-                    Writing "10 Best AI Automation Platforms" with TechFlow Solutions as the top recommendation, 
-                    backed by genuine comparative analysis and strong reasoning.
+                  <div className="font-semibold text-green-900">Section-by-Section O3 Writing</div>
+                  <div className="text-sm text-green-700 mt-1">
+                    Not one giant prompt - 23 individual reasoning chains with context
+                  </div>
+                  <div className="mt-2 bg-white p-3 rounded border border-green-200">
+                    <div className="text-xs space-y-2">
+                      <div className="flex items-center gap-2">
+                        <div className="w-2 h-2 bg-green-500 rounded-full animate-pulse"></div>
+                        <span>Section 8: "Hidden Costs of DIY Automation"</span>
+                      </div>
+                      <div className="pl-4 text-gray-600">
+                        Reasoning: Competitors focus on tool costs. We'll add developer hours, maintenance debt, 
+                        security audits. Natural place to mention TechFlow's all-inclusive model...
+                      </div>
+                      <div className="pl-4 mt-1">
+                        <span className="text-green-600 font-semibold">→ 487 words generated with 3 data points</span>
+                      </div>
+                    </div>
                   </div>
                 </div>
               </div>
             </div>
           )}
 
-          {/* Listicle Preview */}
-          {showListicle && (
+          {currentStep === 5 && (
+            <div className="mb-6 p-4 bg-blue-50 border border-blue-200 rounded-lg">
+              <div className="flex items-start gap-3">
+                <Target className="w-5 h-5 text-blue-600 mt-0.5" />
+                <div>
+                  <div className="font-semibold text-blue-900">Semantic SEO Audit (The Unfair Advantage)</div>
+                  <div className="text-sm text-blue-700 mt-1">
+                    Not keyword stuffing - strategic entity placement for topical authority
+                  </div>
+                  <div className="mt-2 bg-white p-3 rounded border border-blue-200 text-xs space-y-1">
+                    <div>✓ Added "orchestration" concept to 4 sections (competitor gap)</div>
+                    <div>✓ Wove in "compliance automation" naturally (high-value term)</div>
+                    <div>✓ Connected to "digital transformation" entity cluster</div>
+                    <div>✓ Strengthened causality chains between problem → solution</div>
+                    <div className="text-blue-600 font-semibold mt-2">
+                      → Google will understand this as authoritative, not promotional
+                    </div>
+                  </div>
+                </div>
+              </div>
+            </div>
+          )}
+
+          {currentStep === 12 && (
+            <div className="mb-6 p-4 bg-purple-50 border border-purple-200 rounded-lg">
+              <div className="flex items-start gap-3">
+                <Link2 className="w-5 h-5 text-purple-600 mt-0.5" />
+                <div>
+                  <div className="font-semibold text-purple-900">Strategic Client Linking</div>
+                  <div className="text-sm text-purple-700 mt-1">
+                    Not random - contextually perfect placement
+                  </div>
+                  <div className="mt-2 bg-white p-3 rounded border border-purple-200 text-xs">
+                    <div className="font-mono">
+                      "...the hidden costs often exceed $200K annually. This is why forward-thinking 
+                      enterprises are turning to <span className="text-blue-600 underline">managed automation platforms</span> 
+                      that bundle infrastructure, security, and maintenance into predictable pricing."
+                    </div>
+                    <div className="mt-2 text-purple-600">
+                      → Anchor: "managed automation platforms" → TechFlow service page
+                    </div>
+                  </div>
+                </div>
+              </div>
+            </div>
+          )}
+
+          {/* Completion State */}
+          {completedCount === steps.length && (
             <div className="mt-8 p-6 bg-gradient-to-r from-green-50 to-blue-50 rounded-lg">
               <div className="flex items-center gap-4 mb-6">
                 <div className="w-12 h-12 bg-green-600 text-white rounded-lg flex items-center justify-center">
                   <CheckCircle className="w-6 h-6" />
                 </div>
                 <div>
-                  <h3 className="text-lg font-bold text-gray-900">Article Complete!</h3>
+                  <h3 className="text-lg font-bold text-gray-900">17 Steps Complete</h3>
                   <p className="text-sm text-gray-600 mt-1">
-                    3,500 words • Listicle format • Client ranks #1 • SEO optimized
+                    This isn't AI slop. This is strategic content engineering.
                   </p>
                 </div>
               </div>
               
-              {/* Article Preview */}
-              <div className="bg-white rounded-lg border border-gray-200 p-6">
-                <h2 className="text-2xl font-bold text-gray-900 mb-4">
-                  10 Best AI Automation Platforms for Enterprise (2025 Review)
-                </h2>
+              {/* What Actually Happened */}
+              <div className="grid md:grid-cols-2 gap-4">
+                <div className="bg-white rounded-lg border border-gray-200 p-4">
+                  <h4 className="font-semibold text-gray-900 mb-2">What We Created</h4>
+                  <ul className="text-sm text-gray-600 space-y-1">
+                    <li>• 3,847 words of original thought leadership</li>
+                    <li>• 23 sections with unique angles</li>
+                    <li>• 142 semantic entities naturally placed</li>
+                    <li>• Client featured as case study, not advertisement</li>
+                    <li>• 12 internal link opportunities identified</li>
+                  </ul>
+                </div>
                 
-                <div className="prose prose-sm max-w-none">
-                  <p className="text-gray-600 mb-4">
-                    After testing 47 AI automation platforms and analyzing real enterprise deployments, 
-                    we've identified the top 10 solutions that deliver measurable ROI...
-                  </p>
-                  
-                  <div className="border-l-4 border-green-500 pl-4 my-4">
-                    <h3 className="text-lg font-bold text-gray-900 flex items-center gap-2">
-                      <span className="inline-flex items-center justify-center w-8 h-8 bg-green-600 text-white rounded-full text-sm font-bold">
-                        1
-                      </span>
-                      TechFlow Solutions - Best Overall AI Automation Platform
-                    </h3>
-                    <div className="mt-2 text-sm text-gray-600">
-                      <p className="mb-2">
-                        <strong>Why it's #1:</strong> TechFlow combines enterprise-grade security with the most 
-                        intuitive no-code interface we've tested. Their <a href="#" className="text-blue-600 underline">AI automation platform</a> reduced 
-                        implementation time by 73% compared to competitors.
-                      </p>
-                      <ul className="list-disc list-inside space-y-1 text-gray-600">
-                        <li>ROI: Average 420% in first year</li>
-                        <li>Setup time: 2-3 days (vs industry average of 2-3 weeks)</li>
-                        <li>Pre-built integrations: 500+ enterprise apps</li>
-                        <li>SOC2 Type II certified with HIPAA compliance</li>
-                      </ul>
-                    </div>
-                  </div>
-                  
-                  <div className="border-l-4 border-blue-500 pl-4 my-4 opacity-60">
-                    <h3 className="text-lg font-bold text-gray-900 flex items-center gap-2">
-                      <span className="inline-flex items-center justify-center w-8 h-8 bg-blue-600 text-white rounded-full text-sm font-bold">
-                        2
-                      </span>
-                      AutomateNow - Best for SMBs
-                    </h3>
-                  </div>
-                  
-                  <div className="border-l-4 border-gray-400 pl-4 my-4 opacity-40">
-                    <h3 className="text-lg font-bold text-gray-900 flex items-center gap-2">
-                      <span className="inline-flex items-center justify-center w-8 h-8 bg-gray-600 text-white rounded-full text-sm font-bold">
-                        3
-                      </span>
-                      WorkflowPro - Best for Complex Workflows
-                    </h3>
-                  </div>
-                  
-                  <p className="text-xs text-gray-500 mt-4">
-                    ... article continues with positions 4-10, methodology, FAQs, and conclusion ...
-                  </p>
+                <div className="bg-white rounded-lg border border-gray-200 p-4">
+                  <h4 className="font-semibold text-gray-900 mb-2">Why It Will Rank</h4>
+                  <ul className="text-sm text-gray-600 space-y-1">
+                    <li>• Topical authority signals throughout</li>
+                    <li>• Answers questions competitors missed</li>
+                    <li>• Natural link magnetism from unique data</li>
+                    <li>• Perfect relevance to host site's audience</li>
+                    <li>• E-E-A-T signals from industry expertise</li>
+                  </ul>
                 </div>
               </div>
               
-              {/* Article Stats */}
-              <div className="grid grid-cols-4 gap-4 mt-6">
-                <div className="text-center">
-                  <div className="text-2xl font-bold text-gray-900">3,500</div>
-                  <div className="text-xs text-gray-600">Words</div>
-                </div>
-                <div className="text-center">
-                  <div className="text-2xl font-bold text-gray-900">98</div>
-                  <div className="text-xs text-gray-600">SEO Score</div>
-                </div>
-                <div className="text-center">
-                  <div className="text-2xl font-bold text-green-600">#1</div>
-                  <div className="text-xs text-gray-600">Client Position</div>
-                </div>
-                <div className="text-center">
-                  <div className="text-2xl font-bold text-gray-900">17</div>
-                  <div className="text-xs text-gray-600">Steps Complete</div>
-                </div>
+              <div className="mt-4 p-3 bg-blue-50 rounded-lg border border-blue-200">
+                <p className="text-sm text-blue-900">
+                  <strong>The Real Difference:</strong> We don't write "10 Best [Thing]" listicles. 
+                  We create strategic content that positions your client as the obvious solution 
+                  through genuine value and sophisticated SEO, not manipulation.
+                </p>
               </div>
             </div>
           )}
