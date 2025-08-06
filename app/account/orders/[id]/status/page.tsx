@@ -5,6 +5,7 @@ import { useParams, useRouter } from 'next/navigation';
 import { Loader2, Clock, CheckCircle, AlertCircle, Search, Users, FileText, ArrowRight, RefreshCw, ExternalLink, BarChart3, Activity, Target, CreditCard } from 'lucide-react';
 import Link from 'next/link';
 import Header from '@/components/Header';
+import { formatCurrency } from '@/lib/utils/formatting';
 
 interface BulkAnalysisProject {
   id: string;
@@ -46,12 +47,21 @@ interface OrderData {
   id: string;
   accountId: string;
   totalPrice: number;
+  totalWholesale?: number;
   status: string;
   state?: string;
   createdAt: string;
   approvedAt?: string;
   invoicedAt?: string;
   orderGroups: OrderGroup[];
+  // Customer preferences
+  estimatedLinksCount?: number;
+  preferencesDrMin?: number;
+  preferencesDrMax?: number;
+  preferencesTrafficMin?: number;
+  preferencesCategories?: string[];
+  preferencesNiches?: string[];
+  estimatedPricePerLink?: number;
   activityTimeline?: Array<{
     id: string;
     type: string;
@@ -231,9 +241,10 @@ export default function OrderStatusPage() {
       <Header />
       <div className="min-h-screen bg-gray-50">
       <div className="max-w-6xl mx-auto px-4 py-8">
-        {/* Header */}
-        <div className="bg-white rounded-lg shadow-sm border border-gray-200 p-6 mb-6">
-          <div className="flex items-center justify-between mb-6">
+        {/* Order Summary with Pricing */}
+        <div className="bg-gradient-to-r from-blue-50 to-indigo-50 rounded-lg shadow-sm border border-blue-200 p-6 mb-6">
+          <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
+            {/* Order Info */}
             <div>
               <h1 className="text-2xl font-bold text-gray-900">
                 Order #{order.id.slice(0, 8)}
@@ -241,7 +252,105 @@ export default function OrderStatusPage() {
               <p className="text-gray-600 mt-1">
                 Created {new Date(order.createdAt).toLocaleDateString()}
               </p>
+              <div className="mt-3">
+                <span className={`inline-flex px-3 py-1 rounded-full text-sm font-medium ${stateDisplay.color}`}>
+                  {stateDisplay.label}
+                </span>
+              </div>
             </div>
+            
+            {/* Investment Summary */}
+            <div className="text-center">
+              <p className="text-sm text-gray-600 mb-1">Total Investment</p>
+              <p className="text-3xl font-bold text-gray-900">{formatCurrency(order.totalPrice)}</p>
+              <p className="text-xs text-gray-500 mt-1">
+                {order.orderGroups.reduce((sum, g) => sum + g.linkCount, 0)} total links
+              </p>
+            </div>
+            
+            {/* Price Breakdown */}
+            <div className="text-right">
+              <p className="text-sm text-gray-600 mb-2">Investment Breakdown</p>
+              <div className="space-y-1 text-sm">
+                <div className="flex justify-between">
+                  <span className="text-gray-500">Site Costs:</span>
+                  <span className="font-medium">{formatCurrency(order.totalWholesale || (order.totalPrice - 7900 * order.orderGroups.reduce((sum, g) => sum + g.linkCount, 0)))}</span>
+                </div>
+                <div className="flex justify-between">
+                  <span className="text-gray-500">SEO Services:</span>
+                  <span className="font-medium">{formatCurrency(7900 * order.orderGroups.reduce((sum, g) => sum + g.linkCount, 0))}</span>
+                </div>
+                <div className="flex justify-between pt-1 border-t">
+                  <span className="font-medium">Total:</span>
+                  <span className="font-bold text-blue-600">{formatCurrency(order.totalPrice)}</span>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+        
+        {/* Customer Preferences */}
+        {(order.estimatedPricePerLink || order.preferencesDrMin || order.preferencesTrafficMin) && (
+          <div className="bg-white rounded-lg shadow-sm border border-gray-200 p-6 mb-6">
+            <h2 className="text-lg font-semibold text-gray-900 mb-4 flex items-center">
+              <Target className="w-5 h-5 mr-2 text-blue-600" />
+              Your Order Preferences
+            </h2>
+            <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+              {order.estimatedPricePerLink && (
+                <div className="bg-gray-50 p-4 rounded-lg">
+                  <p className="text-sm text-gray-600 mb-1">Target Price per Link</p>
+                  <p className="text-xl font-bold text-gray-900">{formatCurrency(order.estimatedPricePerLink)}</p>
+                </div>
+              )}
+              {(order.preferencesDrMin || order.preferencesDrMax) && (
+                <div className="bg-gray-50 p-4 rounded-lg">
+                  <p className="text-sm text-gray-600 mb-1">Domain Rating Range</p>
+                  <p className="text-xl font-bold text-gray-900">
+                    DR {order.preferencesDrMin || 0} - {order.preferencesDrMax || 100}
+                  </p>
+                </div>
+              )}
+              {order.preferencesTrafficMin && (
+                <div className="bg-gray-50 p-4 rounded-lg">
+                  <p className="text-sm text-gray-600 mb-1">Minimum Traffic</p>
+                  <p className="text-xl font-bold text-gray-900">
+                    {order.preferencesTrafficMin.toLocaleString()}+
+                  </p>
+                </div>
+              )}
+            </div>
+            {((order.preferencesCategories && order.preferencesCategories.length > 0) || 
+              (order.preferencesNiches && order.preferencesNiches.length > 0)) && (
+              <div className="mt-4 pt-4 border-t">
+                {order.preferencesCategories && order.preferencesCategories.length > 0 && (
+                  <div className="mb-2">
+                    <span className="text-sm text-gray-600 mr-2">Categories:</span>
+                    {order.preferencesCategories.map((cat, idx) => (
+                      <span key={idx} className="inline-block px-2 py-1 bg-blue-100 text-blue-700 text-xs rounded mr-1">
+                        {cat}
+                      </span>
+                    ))}
+                  </div>
+                )}
+                {order.preferencesNiches && order.preferencesNiches.length > 0 && (
+                  <div>
+                    <span className="text-sm text-gray-600 mr-2">Niches:</span>
+                    {order.preferencesNiches.map((niche, idx) => (
+                      <span key={idx} className="inline-block px-2 py-1 bg-green-100 text-green-700 text-xs rounded mr-1">
+                        {niche}
+                      </span>
+                    ))}
+                  </div>
+                )}
+              </div>
+            )}
+          </div>
+        )}
+        
+        {/* Header Actions */}
+        <div className="bg-white rounded-lg shadow-sm border border-gray-200 p-6 mb-6">
+          <div className="flex items-center justify-between">
             <div className="flex items-center gap-3">
               <button
                 onClick={handleRefresh}
