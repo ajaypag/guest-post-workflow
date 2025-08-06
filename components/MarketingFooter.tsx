@@ -88,7 +88,7 @@ export default function MarketingFooter() {
               </li>
               <li>
                 <Link 
-                  href="/login" 
+                  href="/signup" 
                   className="text-gray-400 hover:text-white transition-colors"
                 >
                   Get Started
@@ -114,7 +114,7 @@ export default function MarketingFooter() {
               Ready to try strategic link building?
             </p>
             <Link
-              href="/signup/marketing"
+              href="/signup"
               className="inline-flex items-center gap-2 px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 text-sm transition-colors"
             >
               Start Today
