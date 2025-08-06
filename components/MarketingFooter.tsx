@@ -67,21 +67,6 @@ export default function MarketingFooter() {
                   SEO Blog & Guides
                 </Link>
               </li>
-              <li>
-                <a 
-                  href="https://www.outreachlabs.com/link-building-service/" 
-                  target="_blank" 
-                  rel="noopener noreferrer" 
-                  className="text-gray-400 hover:text-white transition-colors"
-                >
-                  Case Studies
-                </a>
-              </li>
-              <li>
-                <span className="text-gray-500">
-                  Bulk Discounts Available
-                </span>
-              </li>
             </ul>
           </div>
 
@@ -92,12 +77,14 @@ export default function MarketingFooter() {
             </h4>
             <ul className="space-y-2 text-sm">
               <li>
-                <Link 
-                  href="/account/login" 
+                <a 
+                  href="https://postflow.outreachlabs.net/login" 
+                  target="_blank"
+                  rel="noopener noreferrer"
                   className="text-gray-400 hover:text-white transition-colors"
                 >
                   Sign In
-                </Link>
+                </a>
               </li>
               <li>
                 <Link 

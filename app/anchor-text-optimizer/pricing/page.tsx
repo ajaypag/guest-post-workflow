@@ -132,7 +132,7 @@ export default function PricingPage() {
 
   return (
     <div className="min-h-screen bg-gray-50">
-      <LinkioHeader variant="tool" toolName="Anchor Text Optimizer" />
+      <LinkioHeader variant="default" />
 
       {/* Hero */}
       <section className="bg-gradient-to-br from-blue-50 to-purple-50 py-12">

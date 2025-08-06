@@ -147,11 +147,6 @@ export default function MarketingHomepage() {
                 </div>
               </div>
 
-              <div className="mt-6 pt-6 border-t border-gray-100">
-                <p className="text-sm text-gray-600 text-center">
-                  <strong>Wholesale pricing available</strong> for agencies & bulk orders
-                </p>
-              </div>
             </div>
           </div>
         </div>

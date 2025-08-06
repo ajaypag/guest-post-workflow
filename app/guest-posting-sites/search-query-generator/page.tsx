@@ -16,6 +16,8 @@ import {
   X
 } from 'lucide-react';
 import Link from 'next/link';
+import LinkioHeader from '@/components/LinkioHeader';
+import MarketingFooter from '@/components/MarketingFooter';
 
 // Popular guest post search operators organized by type
 const SEARCH_OPERATORS = {
