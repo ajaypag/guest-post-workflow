@@ -11,8 +11,10 @@ Allow: /
 Allow: /blog
 Allow: /anchor-text-optimizer  
 Allow: /guest-posting-sites
-Allow: /websites
-Allow: /contacts
+
+# Disallow internal pages
+Disallow: /websites
+Disallow: /contacts
 
 # Disallow private areas
 Disallow: /admin/
@@ -35,8 +37,8 @@ Allow: /
 Allow: /blog
 Allow: /anchor-text-optimizer
 Allow: /guest-posting-sites
-Allow: /websites
-Allow: /contacts
+Disallow: /websites
+Disallow: /contacts
 Disallow: /admin/
 Disallow: /api/
 Disallow: /account/

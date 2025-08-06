@@ -1,8 +1,8 @@
 import { NextResponse } from 'next/server';
 
 // All blog posts
+// Only include blog posts that actually exist
 const blogPosts = [
-  'resource-page-link-building-guide',
   'anchor-text',
   'seo-tutorial', 
   'broken-link-building-guide',
@@ -17,18 +17,7 @@ const blogPosts = [
   'best-content-seo-tools',
   'easy-backlinks-simple-strategies',
   'best-rank-tracking-tools-local-businesses',
-  'follow-up-email',
-  'best-citation-building-services',
-  'best-guest-posting-services',
-  'best-seo-newsletters',
-  'directory-submission-sites',
-  'googles-latest-algorithm-updates',
-  'guest-posting-sites',
-  'how-to-sort-and-filter-link-prospects',
-  'link-disavows-good-or-bad',
-  'seo-case-study',
-  'seo-proposal',
-  'seo-webinars'
+  'directory-submission-sites'
 ];
 
 // Main app pages that should be indexed
@@ -37,8 +26,9 @@ const appPages = [
   { path: 'blog', priority: '0.9', changefreq: 'daily' },
   { path: 'anchor-text-optimizer', priority: '0.8', changefreq: 'weekly' },
   { path: 'guest-posting-sites', priority: '0.7', changefreq: 'weekly' },
-  { path: 'websites', priority: '0.6', changefreq: 'weekly' },
-  { path: 'contacts', priority: '0.5', changefreq: 'monthly' }
+  { path: 'guest-posting-sites/search-query-generator', priority: '0.6', changefreq: 'weekly' },
+  { path: 'signup', priority: '0.5', changefreq: 'monthly' },
+  { path: 'login', priority: '0.4', changefreq: 'monthly' }
 ];
 
 export async function GET(request: Request) {
