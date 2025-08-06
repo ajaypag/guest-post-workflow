@@ -13,9 +13,12 @@ export async function GET(request: NextRequest) {
     // Parse filters
     const drMin = parseInt(searchParams.get('drMin') || '1');
     const drMax = parseInt(searchParams.get('drMax') || '100');
-    const minTraffic = parseInt(searchParams.get('minTraffic') || '0');
+    const minTraffic = parseInt(searchParams.get('minTraffic') || '100');
+    const priceMin = parseInt(searchParams.get('priceMin') || '0'); // In cents
+    const priceMax = parseInt(searchParams.get('priceMax') || '999999'); // In cents
     const categories = searchParams.get('categories')?.split(',').filter(Boolean) || [];
     const types = searchParams.get('types')?.split(',').filter(Boolean) || [];
+    const niches = searchParams.get('niches')?.split(',').filter(Boolean) || [];
     const linkCount = parseInt(searchParams.get('linkCount') || '1');
 
     // Build where conditions
@@ -30,6 +33,14 @@ export async function GET(request: NextRequest) {
     // Add traffic filter
     if (minTraffic > 0) {
       conditions.push(gte(websites.totalTraffic, minTraffic));
+    }
+
+    // Add price range filter (guestPostCost is in dollars, convert to cents for comparison)
+    if (priceMin > 0) {
+      conditions.push(gte(sql`(${websites.guestPostCost}::decimal * 100 + ${SERVICE_FEE_CENTS})`, priceMin));
+    }
+    if (priceMax < 999999) {
+      conditions.push(lte(sql`(${websites.guestPostCost}::decimal * 100 + ${SERVICE_FEE_CENTS})`, priceMax));
     }
 
     // Add category filter if specified
@@ -49,6 +60,14 @@ export async function GET(request: NextRequest) {
       conditions.push(sql`(${sql.join(typeConditions, sql` OR `)})`);
     }
 
+    // Add niche filter if specified
+    if (niches.length > 0) {
+      const nicheConditions = niches.map(niche => 
+        sql`${websites.niche} && ARRAY[${niche}]::text[]`
+      );
+      conditions.push(sql`(${sql.join(nicheConditions, sql` OR `)})`);
+    }
+
     // Fetch matching websites
     const results = await db
       .select({
@@ -57,7 +76,8 @@ export async function GET(request: NextRequest) {
         totalTraffic: websites.totalTraffic,
         guestPostCost: websites.guestPostCost,
         categories: websites.categories,
-        websiteType: websites.websiteType
+        websiteType: websites.websiteType,
+        niche: websites.niche
       })
       .from(websites)
       .where(and(...conditions))
