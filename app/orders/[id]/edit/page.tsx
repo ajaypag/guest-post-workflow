@@ -1462,7 +1462,7 @@ export default function EditOrderPage({ params }: { params: Promise<{ id: string
                         <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Brand</th>
                         <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Target Page</th>
                         <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Anchor Text</th>
-                        <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Cost Breakdown</th>
+                        <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Investment Details</th>
                         <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Price</th>
                         <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider"></th>
                       </tr>
@@ -1501,7 +1501,10 @@ export default function EditOrderPage({ params }: { params: Promise<{ id: string
                                 ${(item.price / 100).toFixed(0)}
                               </div>
                               <div className="text-xs text-gray-500">
-                                ${((item.wholesalePrice || (item.price - SERVICE_FEE_CENTS)) / 100).toFixed(0)} + $79 fee
+                                ${((item.wholesalePrice || (item.price - SERVICE_FEE_CENTS)) / 100).toFixed(0)} site + $79 SEO content package
+                              </div>
+                              <div className="text-xs text-gray-400 mt-1">
+                                2000-word article, semantic SEO, images, internal links
                               </div>
                             </div>
                           </td>
@@ -1679,9 +1682,9 @@ export default function EditOrderPage({ params }: { params: Promise<{ id: string
               {/* Right Side - Total and Continue */}
               <div className="flex items-center space-x-4 md:space-x-6 w-full md:w-auto">
                 <div className="text-right">
-                  <p className="text-sm text-gray-500">Estimated Order Total</p>
+                  <p className="text-sm text-gray-500">Total Investment</p>
                   <p className="text-2xl font-bold text-gray-900">{formatCurrency(total)}</p>
-                  <p className="text-xs text-gray-400">Final pricing after site approval</p>
+                  <p className="text-xs text-gray-400">Site costs + strategic SEO content creation</p>
                 </div>
                 
                 <div className="flex items-center gap-3">

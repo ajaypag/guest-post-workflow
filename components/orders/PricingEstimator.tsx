@@ -384,13 +384,13 @@ export default function PricingEstimator({ className = '', onEstimateChange, ini
                   </span>
                 </div>
                 <div className="text-gray-600">
-                  <span className="font-medium text-gray-900">{formatCurrency(estimate.wholesaleMedian)}</span> median wholesale
+                  <span className="font-medium text-gray-900">{formatCurrency(estimate.wholesaleMedian)}</span> median site cost
                 </div>
                 <div className="text-gray-600">
-                  <span className="font-medium text-gray-900">{formatCurrency(estimate.wholesaleAverage)}</span> average wholesale
+                  <span className="font-medium text-gray-900">{formatCurrency(estimate.wholesaleAverage)}</span> average site cost
                 </div>
                 <div className="text-gray-600">
-                  Wholesale range: <span className="font-medium text-gray-900">{formatCurrency(estimate.wholesaleMin)} - {formatCurrency(estimate.wholesaleMax)}</span>
+                  Site cost range: <span className="font-medium text-gray-900">{formatCurrency(estimate.wholesaleMin)} - {formatCurrency(estimate.wholesaleMax)}</span>
                 </div>
               </div>
             ) : (
