@@ -788,7 +788,15 @@ export default function OrderDetailPage() {
                               )}
                               <td className="px-6 py-4 text-right text-sm font-medium text-gray-900">
                                 {/* Only show price on the first item in the group */}
-                                {index === 0 ? formatCurrency(totalPrice) : ''}
+                                {index === 0 ? (
+                                  totalPrice > 0 ? formatCurrency(totalPrice) : (
+                                    order.status === 'draft' || order.status === 'pending_confirmation' ? (
+                                      <span className="text-gray-500 italic">Pending estimate</span>
+                                    ) : (
+                                      <span className="text-gray-500">-</span>
+                                    )
+                                  )
+                                ) : ''}
                               </td>
                             </tr>
                           ))}
@@ -866,7 +874,14 @@ export default function OrderDetailPage() {
                           )}
                         </td>
                         <td className="px-6 py-4 text-right text-sm font-bold text-gray-900">
-                          {formatCurrency(order.totalPrice)}
+                          {order.totalPrice > 0 ? (
+                            formatCurrency(order.totalPrice)
+                          ) : (
+                            <span className="text-gray-500 italic">
+                              {order.status === 'draft' || order.status === 'pending_confirmation' ? 
+                                'Pending estimate' : 'To be determined'}
+                            </span>
+                          )}
                         </td>
                       </tr>
                       {user?.userType !== 'internal' && (
