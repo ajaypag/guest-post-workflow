@@ -90,6 +90,19 @@ export async function POST(
       updateData.clientReviewedBy = session.userId;
     }
     
+    // Capture price snapshots when approving
+    if (action === 'approve') {
+      // Get price from domain or use fallback pricing
+      const retailPrice = (submission as any).price || submission.domain?.price || 32900; // Default $329
+      const serviceFee = 7900; // $79 service fee
+      const wholesalePrice = retailPrice - serviceFee;
+      
+      updateData.retailPriceSnapshot = retailPrice;
+      updateData.wholesalePriceSnapshot = wholesalePrice;
+      updateData.serviceFeeSnapshot = serviceFee;
+      updateData.priceSnapshotAt = new Date();
+    }
+    
     const [updatedSubmission] = await db.update(orderSiteSubmissions)
       .set({
         ...updateData,

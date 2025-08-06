@@ -1006,6 +1006,17 @@ export default function OrderDetailPage() {
                     <h3 className="text-lg font-semibold text-gray-900">Current Status</h3>
                   </div>
                   <div className="space-y-3">
+                    {/* Awaiting Confirmation State */}
+                    {(order.status === 'pending_confirmation' || order.status === 'draft') && (
+                      <div className="flex items-start gap-3">
+                        <div className="w-2 h-2 bg-yellow-500 rounded-full mt-1.5 animate-pulse" />
+                        <div>
+                          <p className="text-sm font-medium text-gray-900">Awaiting Confirmation</p>
+                          <p className="text-xs text-gray-500">Order submitted and waiting for internal review and approval</p>
+                        </div>
+                      </div>
+                    )}
+                    
                     {/* Finding Sites State */}
                     {(order.state === 'analyzing' || order.state === 'finding_sites') && (
                       <div className="flex items-start gap-3">

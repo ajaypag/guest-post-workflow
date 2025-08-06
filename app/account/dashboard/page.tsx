@@ -409,7 +409,7 @@ function AccountDashboardContent({ user }: AccountDashboardProps) {
                       Status
                     </th>
                     <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                      Domains
+                      Links/Status
                     </th>
                     <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
                       Progress
@@ -450,7 +450,16 @@ function AccountDashboardContent({ user }: AccountDashboardProps) {
                           })()}
                         </td>
                         <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-600">
-                          {order.itemCount || 0} domains
+                          {(() => {
+                            const stateDisplay = getStateDisplay(order.status, (order as any).state);
+                            if (order.status === 'pending_confirmation' || order.status === 'draft') {
+                              return <span className="text-gray-500 italic">Pending setup</span>;
+                            }
+                            if (order.itemCount > 0) {
+                              return `${order.itemCount} link${order.itemCount > 1 ? 's' : ''}`;
+                            }
+                            return <span className="text-gray-500 italic">Configuring</span>;
+                          })()}
                         </td>
                         <td className="px-6 py-4 whitespace-nowrap">
                           <div className="flex items-center">
