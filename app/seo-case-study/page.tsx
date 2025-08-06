@@ -5,7 +5,7 @@ export const metadata = {
   description: '16-month SEO case study showing how we built an authority site from scratch. See month-by-month progress, strategies, and results.',
 };
 
-export default function SeoCase StudyPage() {
+export default function SeoCaseStudyPage() {
   return (
     <BlogPostTemplate
       title="SEO Case Study (Building An Authority Site)"
