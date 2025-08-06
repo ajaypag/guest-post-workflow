@@ -852,7 +852,7 @@ export default function OrderDetailPage() {
                                     <div className="flex items-start gap-3">
                                       <Globe className="h-5 w-5 text-purple-600 mt-0.5" />
                                       <div className="flex-1">
-                                        <div className="text-sm font-medium text-gray-900">{submission.domain}</div>
+                                        <div className="text-sm font-medium text-gray-900">{typeof submission.domain === 'string' ? submission.domain : (submission.domain as any)?.domain || 'Unknown'}</div>
                                         <div className="flex items-center gap-4 mt-1 text-xs text-gray-600">
                                           {submission.domainRating && (
                                             <span>DR: {submission.domainRating}</span>
