@@ -8,6 +8,7 @@ import Header from '@/components/Header';
 import OrderSiteReviewTable from '@/components/orders/OrderSiteReviewTable';
 import OrderProgressSteps, { getStateDisplay, getProgressSteps } from '@/components/orders/OrderProgressSteps';
 import AdminDomainTable from '@/components/orders/AdminDomainTable';
+import ChangeBulkAnalysisProject from '@/components/orders/ChangeBulkAnalysisProject';
 import { AuthService, type AuthSession } from '@/lib/auth';
 import { formatCurrency } from '@/lib/utils/formatting';
 import { 
@@ -1374,22 +1375,38 @@ export default function InternalOrderManagementPage() {
                     )}
                     
                     {/* Bulk Analysis Links - Available during analysis and review phases */}
-                    {(order.state === 'analyzing' || order.state === 'finding_sites' || order.state === 'sites_ready' || order.state === 'site_review' || order.state === 'client_reviewing') && order.orderGroups?.some(g => g.bulkAnalysisProjectId) && (
+                    {(order.state === 'analyzing' || order.state === 'finding_sites' || order.state === 'sites_ready' || order.state === 'site_review' || order.state === 'client_reviewing') && order.orderGroups && (
                       <div className="space-y-2">
                         <div className="text-xs text-gray-600 mb-1">
                           {(order.state === 'sites_ready' || order.state === 'site_review' || order.state === 'client_reviewing') ? 
-                            'Make changes based on client feedback:' : 
+                            'Bulk Analysis Projects:' : 
                             'Find and analyze sites:'
                           }
                         </div>
-                        {order.orderGroups.filter(g => g.bulkAnalysisProjectId).map(group => (
-                          <Link
-                            key={group.id}
-                            href={`/clients/${group.clientId}/bulk-analysis/projects/${group.bulkAnalysisProjectId}`}
-                            className="block w-full px-3 py-2 bg-blue-600 text-white text-sm rounded-md hover:bg-blue-700 text-center"
-                          >
-                            Analyze {group.client.name}
-                          </Link>
+                        {order.orderGroups.map(group => (
+                          <div key={group.id} className="space-y-1">
+                            <div className="flex items-center justify-between">
+                              <span className="text-xs font-medium text-gray-700">
+                                {group.client.name}
+                              </span>
+                              <ChangeBulkAnalysisProject
+                                orderGroupId={group.id}
+                                orderId={order.id}
+                                clientId={group.clientId}
+                                clientName={group.client.name}
+                                currentProjectId={group.bulkAnalysisProjectId}
+                                onProjectChanged={() => loadOrder()}
+                              />
+                            </div>
+                            {group.bulkAnalysisProjectId && (
+                              <Link
+                                href={`/clients/${group.clientId}/bulk-analysis/projects/${group.bulkAnalysisProjectId}`}
+                                className="block w-full px-3 py-2 bg-blue-600 text-white text-sm rounded-md hover:bg-blue-700 text-center"
+                              >
+                                Analyze {group.client.name}
+                              </Link>
+                            )}
+                          </div>
                         ))}
                       </div>
                     )}
