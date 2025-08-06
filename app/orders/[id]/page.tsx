@@ -16,6 +16,9 @@ import {
   Download, Share2, XCircle, CreditCard, Trash2
 } from 'lucide-react';
 
+// Service fee constant - $79 per link for SEO content package
+const SERVICE_FEE_CENTS = 7900;
+
 interface LineItem {
   id: string;
   clientId: string;
@@ -24,7 +27,8 @@ interface LineItem {
   targetPageUrl?: string;
   anchorText?: string;
   price: number;
-  selectedPackage?: string;
+  wholesalePrice?: number;
+  isEstimate?: boolean;
   guestPostSite?: string;
   draftUrl?: string;
   publishedUrl?: string;
@@ -48,8 +52,13 @@ interface OrderGroup {
     pageId?: string;
   }>;
   anchorTexts?: string[];
+  // Legacy package pricing (deprecated)
   packageType?: string;
   packagePrice?: number;
+  // New cost-plus pricing model
+  totalPrice?: number;
+  estimatedPrice?: number;
+  wholesalePrice?: number;
 }
 
 interface SiteSubmission {
@@ -160,8 +169,9 @@ export default function OrderDetailPage() {
               targetPageUrl: group.targetPages?.[i]?.url || '',
               targetPageId: group.targetPages?.[i]?.pageId,
               anchorText: group.anchorTexts?.[i] || '',
-              price: group.packagePrice || 0,
-              selectedPackage: group.packageType || 'better',
+              price: group.totalPrice || group.estimatedPrice || 0,
+              wholesalePrice: group.wholesalePrice || (group.totalPrice ? group.totalPrice - SERVICE_FEE_CENTS * group.linkCount : 0),
+              isEstimate: data.status === 'draft' || data.status === 'pending_confirmation',
               guestPostSite: '',
               draftUrl: '',
               publishedUrl: '',
@@ -834,13 +844,23 @@ export default function OrderDetailPage() {
                     </tbody>
                     <tfoot className="bg-gray-50">
                       <tr>
-                        <td colSpan={getColumnCount() - 1} className="px-6 py-4 text-right text-sm font-medium text-gray-900">
-                          Total
+                        <td colSpan={getColumnCount() - 1} className="px-6 py-4 text-right">
+                          <div className="text-sm font-medium text-gray-900">Total Investment</div>
+                          {(order.status === 'draft' || order.status === 'pending_confirmation') && (
+                            <div className="text-xs text-gray-500 mt-1">Estimate based on current market prices</div>
+                          )}
                         </td>
                         <td className="px-6 py-4 text-right text-sm font-bold text-gray-900">
                           {formatCurrency(order.totalPrice)}
                         </td>
                       </tr>
+                      {user?.userType !== 'internal' && (
+                        <tr>
+                          <td colSpan={getColumnCount()} className="px-6 py-3 text-center text-xs text-gray-500 bg-gray-100">
+                            Site costs + strategic SEO content creation
+                          </td>
+                        </tr>
+                      )}
                     </tfoot>
                   </table>
                 </div>
@@ -976,22 +996,26 @@ export default function OrderDetailPage() {
                         <h4 className="text-sm font-medium text-gray-700 mb-3">Profit Analysis</h4>
                         <dl className="space-y-2">
                           <div className="flex justify-between text-sm">
-                            <dt className="text-gray-600">Wholesale Cost</dt>
+                            <dt className="text-gray-600">Site Wholesale Cost</dt>
                             <dd className="font-medium">{formatCurrency(order.totalWholesale || 0)}</dd>
                           </div>
                           <div className="flex justify-between text-sm">
-                            <dt className="text-gray-600">Revenue</dt>
+                            <dt className="text-gray-600">SEO Content Package ({lineItems.length} × {formatCurrency(SERVICE_FEE_CENTS)})</dt>
+                            <dd className="font-medium">{formatCurrency(SERVICE_FEE_CENTS * lineItems.length)}</dd>
+                          </div>
+                          <div className="flex justify-between text-sm">
+                            <dt className="text-gray-600">Total Revenue</dt>
                             <dd className="font-medium">{formatCurrency(order.totalPrice)}</dd>
                           </div>
                           <div className="flex justify-between text-sm pt-2 border-t">
                             <dt className="font-medium">Gross Profit</dt>
-                            <dd className="font-bold text-green-600">{formatCurrency(order.profitMargin || (order.totalPrice - (order.totalWholesale || 0)))}</dd>
+                            <dd className="font-bold text-green-600">{formatCurrency(SERVICE_FEE_CENTS * lineItems.length)}</dd>
                           </div>
                           <div className="flex justify-between text-sm">
                             <dt className="text-gray-600">Margin</dt>
                             <dd className="font-medium">
-                              {order.totalWholesale ? 
-                                `${Math.round(((order.totalPrice - order.totalWholesale) / order.totalPrice) * 100)}%` : 
+                              {order.totalPrice > 0 ? 
+                                `${Math.round((SERVICE_FEE_CENTS * lineItems.length / order.totalPrice) * 100)}%` : 
                                 'N/A'
                               }
                             </dd>
