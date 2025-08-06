@@ -148,6 +148,17 @@ interface OrderDetail {
   paidAt?: string;
   completedAt?: string;
   orderGroups?: OrderGroup[];
+  // Preferences from external user
+  estimatedLinksCount?: number;
+  preferencesDrMin?: number;
+  preferencesDrMax?: number;
+  preferencesTrafficMin?: number;
+  preferencesCategories?: string[];
+  preferencesTypes?: string[];
+  preferencesNiches?: string[];
+  estimatedPricePerLink?: number;
+  estimatedBudgetMin?: number;
+  estimatedBudgetMax?: number;
 }
 
 export default function InternalOrderManagementPage() {
@@ -1533,6 +1544,90 @@ export default function InternalOrderManagementPage() {
                   )}
                 </dl>
               </div>
+              
+              {/* Customer Preferences */}
+              {(order.preferencesDrMin || order.preferencesTrafficMin || order.estimatedPricePerLink) && (
+                <div className="bg-white rounded-lg border border-gray-200 shadow-sm p-6 mt-6">
+                  <h3 className="text-lg font-semibold text-gray-900 mb-4 flex items-center">
+                    <Target className="h-5 w-5 mr-2 text-blue-600" />
+                    Customer Preferences
+                  </h3>
+                  <dl className="space-y-3">
+                    {/* Target Budget */}
+                    {order.estimatedPricePerLink && (
+                      <div className="bg-blue-50 p-3 rounded-md">
+                        <dt className="text-sm font-medium text-blue-900">Target Price per Link</dt>
+                        <dd className="text-lg font-bold text-blue-700">{formatCurrency(order.estimatedPricePerLink)}</dd>
+                        <dd className="text-xs text-blue-600 mt-1">
+                          Wholesale: ~{formatCurrency((order.estimatedPricePerLink || 0) - 7900)}
+                        </dd>
+                      </div>
+                    )}
+                    
+                    {/* Total Order Target */}
+                    {order.estimatedLinksCount && order.estimatedPricePerLink && (
+                      <div>
+                        <dt className="text-sm text-gray-500">Target Order Size</dt>
+                        <dd className="text-sm font-medium text-gray-900">
+                          {order.estimatedLinksCount} links × {formatCurrency(order.estimatedPricePerLink)} = {formatCurrency((order.estimatedLinksCount || 0) * (order.estimatedPricePerLink || 0))}
+                        </dd>
+                      </div>
+                    )}
+                    
+                    {/* DR Range */}
+                    {(order.preferencesDrMin || order.preferencesDrMax) && (
+                      <div>
+                        <dt className="text-sm text-gray-500">Domain Rating</dt>
+                        <dd className="text-sm font-medium text-gray-900">
+                          DR {order.preferencesDrMin || 0} - {order.preferencesDrMax || 100}
+                        </dd>
+                      </div>
+                    )}
+                    
+                    {/* Traffic */}
+                    {order.preferencesTrafficMin && (
+                      <div>
+                        <dt className="text-sm text-gray-500">Minimum Traffic</dt>
+                        <dd className="text-sm font-medium text-gray-900">
+                          {order.preferencesTrafficMin.toLocaleString()}+ monthly visitors
+                        </dd>
+                      </div>
+                    )}
+                    
+                    {/* Categories */}
+                    {order.preferencesCategories && order.preferencesCategories.length > 0 && (
+                      <div>
+                        <dt className="text-sm text-gray-500">Categories</dt>
+                        <dd className="text-sm text-gray-900">
+                          <div className="flex flex-wrap gap-1 mt-1">
+                            {order.preferencesCategories.map((cat, idx) => (
+                              <span key={idx} className="px-2 py-1 bg-gray-100 text-gray-700 text-xs rounded">
+                                {cat}
+                              </span>
+                            ))}
+                          </div>
+                        </dd>
+                      </div>
+                    )}
+                    
+                    {/* Niches */}
+                    {order.preferencesNiches && order.preferencesNiches.length > 0 && (
+                      <div>
+                        <dt className="text-sm text-gray-500">Niches</dt>
+                        <dd className="text-sm text-gray-900">
+                          <div className="flex flex-wrap gap-1 mt-1">
+                            {order.preferencesNiches.map((niche, idx) => (
+                              <span key={idx} className="px-2 py-1 bg-gray-100 text-gray-700 text-xs rounded">
+                                {niche}
+                              </span>
+                            ))}
+                          </div>
+                        </dd>
+                      </div>
+                    )}
+                  </dl>
+                </div>
+              )}
             </div>
 
             {/* Middle/Right Columns - Order Details Table */}
