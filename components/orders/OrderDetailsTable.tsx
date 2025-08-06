@@ -92,9 +92,9 @@ export default function OrderDetailsTable({
           contentStatus: matchedSubmission?.contentStatus,
           publishedUrl: matchedSubmission?.publishedUrl,
           
-          // Metrics
-          domainRating: matchedSubmission?.domainRating,
-          traffic: matchedSubmission?.traffic
+          // Metrics - check metadata first, then submission fields
+          domainRating: matchedSubmission?.metadata?.domainRating || matchedSubmission?.domainRating,
+          traffic: matchedSubmission?.metadata?.traffic || matchedSubmission?.traffic
         });
       }
     });

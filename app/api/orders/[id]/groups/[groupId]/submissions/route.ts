@@ -154,8 +154,8 @@ export async function GET(
           hasDataForSeoResults: domain.hasDataForSeoResults,
           dataForSeoResultsCount: domain.dataForSeoResultsCount
         } : null,
-        domainRating: websiteData?.domainRating || undefined,
-        traffic: websiteData?.totalTraffic || undefined,
+        domainRating: submission.metadata?.domainRating || websiteData?.domainRating || undefined,
+        traffic: submission.metadata?.traffic || websiteData?.totalTraffic || undefined,
         status: submission.submissionStatus,
         price: price,
         wholesalePrice: wholesalePrice,
