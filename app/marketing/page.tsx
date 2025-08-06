@@ -160,7 +160,7 @@ export default function MarketingHomepage() {
               Transparent Pricing, Premium Quality
             </h2>
             <p className="text-xl text-gray-600 max-w-3xl mx-auto">
-              Like Mark Cuban's Cost Plus Drugs, you pay our actual costs + what we need to run the business. 
+              You pay our actual costs + what we need to run the business. 
               Publisher rates (what we pay) + $79 for premium content and expert labor.
             </p>
           </div>
