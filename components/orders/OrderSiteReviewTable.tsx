@@ -61,6 +61,8 @@ export interface SiteSubmission {
   domainRating?: number;
   traffic?: number;
   price: number;
+  wholesalePrice?: number;
+  serviceFee?: number;
   status: 'pending' | 'submitted' | 'approved' | 'rejected' | 'client_approved' | 'client_rejected';
   submissionStatus?: string;
   clientApprovedAt?: string;
@@ -243,11 +245,21 @@ export default function OrderSiteReviewTable({
     }
   };
 
-  // Link Details Cell Component
-  const LinkDetailsCell = ({ targetPageUrl, anchorText, price }: { 
+  // Enhanced Link Details Cell Component with better pricing
+  const LinkDetailsCell = ({ 
+    targetPageUrl, 
+    anchorText, 
+    price, 
+    wholesalePrice,
+    isEstimate,
+    showDetailedPricing 
+  }: { 
     targetPageUrl?: string; 
     anchorText?: string; 
-    price?: number; 
+    price?: number;
+    wholesalePrice?: number;
+    isEstimate?: boolean;
+    showDetailedPricing?: boolean;
   }) => (
     <div className="space-y-1.5">
       <div className="flex items-center gap-2 text-sm">
@@ -276,9 +288,27 @@ export default function OrderSiteReviewTable({
         </span>
       </div>
       {permissions.canViewPricing && price !== undefined && (
-        <div className="flex items-center gap-2 text-sm">
-          <DollarSign className="h-3 w-3 text-gray-400 flex-shrink-0" />
-          <span className="font-medium text-gray-900">{formatCurrency(price)}</span>
+        <div className="space-y-0.5">
+          <div className="flex items-center gap-2 text-sm">
+            <DollarSign className="h-3 w-3 text-gray-400 flex-shrink-0" />
+            <span className="font-medium text-gray-900">
+              {formatCurrency(price)}
+              {isEstimate && (
+                <span className="text-xs text-gray-500 ml-1" title="Estimated price - final price confirmed at approval">
+                  (est)
+                </span>
+              )}
+            </span>
+          </div>
+          {showDetailedPricing && wholesalePrice !== undefined && (
+            <div className="flex items-center gap-2 text-xs text-gray-500 ml-5">
+              <span title="Wholesale site cost">Site: {formatCurrency(wholesalePrice)}</span>
+              <span>•</span>
+              <span title="Your profit margin" className="text-green-600 font-medium">
+                Margin: {formatCurrency((price || 0) - wholesalePrice)}
+              </span>
+            </div>
+          )}
         </div>
       )}
     </div>
@@ -417,6 +447,9 @@ export default function OrderSiteReviewTable({
               targetPageUrl={targetPageUrl}
               anchorText={anchorText}
               price={displaySubmission?.price}
+              wholesalePrice={displaySubmission?.wholesalePrice}
+              isEstimate={!displaySubmission?.price || displaySubmission?.status === 'pending'}
+              showDetailedPricing={userType === 'internal'}
             />
           </td>
         );
@@ -490,10 +523,32 @@ export default function OrderSiteReviewTable({
                   )}
                 </div>
                 <div className="flex items-center gap-2 flex-wrap">
-                  {/* DR and Traffic - TODO: Fetch from websites table */}
-                  <span className="text-xs text-gray-500">
-                    DR: N/A | Traffic: N/A
-                  </span>
+                  {/* Domain metrics and pricing */}
+                  <div className="flex items-center gap-3 text-xs">
+                    {displaySubmission.domainRating && (
+                      <span className="text-gray-600">
+                        <span className="text-gray-400">DR:</span> <span className="font-medium">{displaySubmission.domainRating}</span>
+                      </span>
+                    )}
+                    {displaySubmission.traffic && (
+                      <span className="text-gray-600">
+                        <span className="text-gray-400">Traffic:</span> <span className="font-medium">{displaySubmission.traffic.toLocaleString()}</span>
+                      </span>
+                    )}
+                    {permissions.canViewPricing && displaySubmission.price && (
+                      <span className="text-gray-600">
+                        <span className="text-gray-400">Price:</span> 
+                        <span className="font-medium text-gray-900 ml-1">
+                          {formatCurrency(displaySubmission.price)}
+                          {userType === 'internal' && displaySubmission.wholesalePrice && (
+                            <span className="text-green-600 text-xs ml-1">
+                              (+{formatCurrency(displaySubmission.price - displaySubmission.wholesalePrice)})
+                            </span>
+                          )}
+                        </span>
+                      </span>
+                    )}
+                  </div>
                   {/* Qualification Status */}
                   {displaySubmission.metadata?.qualificationStatus && (
                     <span className={`text-xs px-2 py-0.5 rounded ${
@@ -603,6 +658,40 @@ export default function OrderSiteReviewTable({
         return (
           <td className="px-6 py-4 text-sm text-gray-900">
             {anchorText || '-'}
+          </td>
+        );
+      
+      case 'price':
+        const sitePrice = displaySubmission?.price || 0;
+        const siteWholesale = displaySubmission?.wholesalePrice || 0;
+        const isEstimatePrice = !displaySubmission?.price || displaySubmission?.status === 'pending';
+        
+        return (
+          <td className="px-6 py-4 text-sm">
+            {permissions.canViewPricing ? (
+              <div className="space-y-1">
+                <div className="flex items-center gap-1">
+                  <span className="font-medium text-gray-900">
+                    {formatCurrency(sitePrice)}
+                  </span>
+                  {isEstimatePrice && (
+                    <span className="text-xs text-gray-500" title="Estimated price">(est)</span>
+                  )}
+                </div>
+                {userType === 'internal' && siteWholesale > 0 && (
+                  <div className="text-xs space-y-0.5">
+                    <div className="text-gray-500">
+                      Site: {formatCurrency(siteWholesale)}
+                    </div>
+                    <div className="text-green-600 font-medium">
+                      +{formatCurrency(sitePrice - siteWholesale)}
+                    </div>
+                  </div>
+                )}
+              </div>
+            ) : (
+              <span className="text-gray-400">-</span>
+            )}
           </td>
         );
         
