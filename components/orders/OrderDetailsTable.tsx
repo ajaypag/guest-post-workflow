@@ -106,11 +106,23 @@ export default function OrderDetailsTable({
       const groupSubmissions = siteSubmissions?.[group.id] || [];
       const linkCount = Math.max(1, group.linkCount || 1); // Ensure at least 1
       
+      // Group target pages to track how many links point to each URL
+      const targetPageCounts: Record<string, number> = {};
+      const targetPageIndices: Record<string, number> = {};
+      
       // Create a line item for each link in the group
       for (let i = 0; i < linkCount; i++) {
         // Get the target page URL for this specific link
         const targetPageUrl = Array.isArray(group.targetPages) && group.targetPages[i] ? 
           (typeof group.targetPages[i] === 'string' ? group.targetPages[i] : group.targetPages[i].url) : '';
+        
+        // Track how many times we've seen this target URL (for multiple links to same target)
+        if (!targetPageCounts[targetPageUrl]) {
+          targetPageCounts[targetPageUrl] = 0;
+          targetPageIndices[targetPageUrl] = 0;
+        }
+        const targetPageIndex = targetPageIndices[targetPageUrl];
+        targetPageIndices[targetPageUrl]++;
         
         // Find submissions that are specifically assigned to THIS target URL
         // This is critical - submissions are assigned to specific target pages, not just any slot
@@ -119,20 +131,24 @@ export default function OrderDetailsTable({
           return submissionTargetUrl === targetPageUrl;
         });
         
-        // From the matching submissions, prioritize by status and pool
+        // Sort submissions by pool and rank to handle multiple primaries
+        const primarySubmissions = matchingSubmissions
+          .filter(sub => sub.selectionPool === 'primary')
+          .sort((a, b) => (a.poolRank || 1) - (b.poolRank || 1));
+        
+        const approvedSubmissions = matchingSubmissions
+          .filter(sub => sub.status === 'client_approved' || sub.status === 'approved')
+          .sort((a, b) => (a.poolRank || 1) - (b.poolRank || 1));
+        
+        // For multiple links to same target, use index to get different primary submissions
+        // This is the KEY: primarySubmissions[targetPageIndex] gets the Nth primary for the Nth link
         let matchedSubmission = 
-          // First try to find an approved submission for this target URL
-          matchingSubmissions.find(s => 
-            s.status === 'client_approved' || s.status === 'approved'
-          ) ||
-          // Then try pending submissions for this target URL
-          matchingSubmissions.find(s => 
-            s.status === 'pending'
-          ) ||
-          // Then check primary pool submissions
-          matchingSubmissions.find(s => 
-            s.selectionPool === 'primary'
-          ) ||
+          // First try approved submissions (using index for multiple)
+          (approvedSubmissions[targetPageIndex] || approvedSubmissions[0]) ||
+          // Then try primary pool submissions (using index for multiple)
+          primarySubmissions[targetPageIndex] ||
+          // Then any pending submission
+          matchingSubmissions.find(s => s.status === 'pending') ||
           // Finally any matching submission
           matchingSubmissions[0] || null;
         
