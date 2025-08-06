@@ -14,11 +14,13 @@ interface ChangeBulkAnalysisProjectProps {
 
 interface BulkAnalysisProject {
   id: string;
-  projectName: string;
+  name?: string;
+  projectName?: string; // Legacy field
   status: string;
   createdAt: string;
   targetPageCount?: number;
   domainCount?: number;
+  description?: string;
 }
 
 export default function ChangeBulkAnalysisProject({
@@ -48,7 +50,7 @@ export default function ChangeBulkAnalysisProject({
       setError('');
       
       // Fetch all bulk analysis projects for this client
-      const response = await fetch(`/api/clients/${clientId}/bulk-analysis/projects`, {
+      const response = await fetch(`/api/bulk-analysis/projects?clientId=${clientId}`, {
         credentials: 'include'
       });
       
@@ -172,7 +174,7 @@ export default function ChangeBulkAnalysisProject({
                   <option value="">No project linked</option>
                   {projects.map(project => (
                     <option key={project.id} value={project.id}>
-                      {project.projectName || 'Untitled Project'}
+                      {project.name || project.projectName || 'Untitled Project'}
                       {project.id === currentProjectId && ' (current)'}
                       {project.domainCount ? ` - ${project.domainCount} domains` : ''}
                     </option>
