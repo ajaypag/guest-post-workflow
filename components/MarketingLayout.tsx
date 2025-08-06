@@ -1,3 +1,5 @@
+'use client';
+
 import LinkioHeader from './LinkioHeader';
 
 interface MarketingLayoutProps {
