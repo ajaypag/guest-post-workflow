@@ -14,6 +14,7 @@ export const websites = pgTable('websites', {
   totalTraffic: integer('total_traffic'),
   guestPostCost: decimal('guest_post_cost', { precision: 10, scale: 2 }),
   categories: text('categories').array(),
+  niche: text('niche').array(), // PostgreSQL array of niches
   type: text('type').array(),
   status: varchar('status', { length: 50 }).default('Unknown'),
   hasGuestPost: boolean('has_guest_post').default(false),

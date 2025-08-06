@@ -1,0 +1,402 @@
+import express from 'express';
+import axios from 'axios';
+import * as cheerio from 'cheerio';
+import fs from 'fs-extra';
+import path from 'path';
+import { fileURLToPath } from 'url';
+import { parseStringPromise } from 'xml2js';
+
+const __filename = fileURLToPath(import.meta.url);
+const __dirname = path.dirname(__filename);
+
+const app = express();
+const PORT = 3001;
+
+app.use(express.json());
+app.use(express.static('public'));
+
+// Fetch and parse sitemap
+async function fetchSitemap(url) {
+  try {
+    const response = await axios.get(url);
+    const result = await parseStringPromise(response.data);
+    
+    const urls = [];
+    if (result.urlset && result.urlset.url) {
+      result.urlset.url.forEach(item => {
+        urls.push({
+          loc: item.loc[0],
+          lastmod: item.lastmod ? item.lastmod[0] : null
+        });
+      });
+    }
+    
+    return urls;
+  } catch (error) {
+    console.error('Error fetching sitemap:', error);
+    throw error;
+  }
+}
+
+// Scrape blog post content
+async function scrapeBlogPost(url) {
+  try {
+    const response = await axios.get(url);
+    const $ = cheerio.load(response.data);
+    
+    // Try multiple selectors for different blog structures
+    const selectors = {
+      title: [
+        'h1',
+        '.entry-title',
+        '.post-title',
+        'article h1',
+        '[class*="title"] h1'
+      ],
+      content: [
+        '.entry-content',
+        '.post-content',
+        'article .content',
+        '[class*="content"]',
+        'main article'
+      ],
+      images: 'img'
+    };
+    
+    // Find title
+    let title = '';
+    for (const selector of selectors.title) {
+      const found = $(selector).first().text().trim();
+      if (found) {
+        title = found;
+        break;
+      }
+    }
+    
+    // Find content - extract both HTML and clean text
+    let content = '';
+    let cleanText = '';
+    let htmlContent = '';
+    let contentElement = null;
+    
+    // Clone the $ to preserve original HTML
+    const $original = cheerio.load(response.data);
+    
+    // Remove unwanted elements first (for clean text extraction)
+    $('script, style, noscript, iframe, svg, nav, header, footer, .sidebar, .widget').remove();
+    $('.elementor-widget-sidebar, .menu, .navigation').remove();
+    
+    // Try to find main content area
+    for (const selector of selectors.content) {
+      const found = $(selector);
+      const foundOriginal = $original(selector);
+      if (found.length > 0) {
+        contentElement = found.first();
+        // Capture the original HTML content
+        htmlContent = foundOriginal.first().html() || '';
+        break;
+      }
+    }
+    
+    // If no content element found, use body
+    if (!contentElement) {
+      contentElement = $('body');
+      htmlContent = $original('body').html() || '';
+    }
+    
+    // Extract clean structured text for markdown
+    const sections = [];
+    contentElement.find('h1, h2, h3, h4, h5, h6, p, ul, ol, blockquote').each((i, elem) => {
+      const $elem = $(elem);
+      const tagName = elem.tagName.toLowerCase();
+      const text = $elem.text().trim();
+      
+      if (!text || text.length < 2) return;
+      
+      if (tagName.startsWith('h')) {
+        const level = parseInt(tagName[1]);
+        sections.push({
+          type: 'heading',
+          level: level,
+          text: text
+        });
+      } else if (tagName === 'p') {
+        sections.push({
+          type: 'paragraph',
+          text: text
+        });
+      } else if (tagName === 'ul' || tagName === 'ol') {
+        const items = [];
+        $elem.find('li').each((j, li) => {
+          const liText = $(li).text().trim();
+          if (liText) items.push(liText);
+        });
+        if (items.length > 0) {
+          sections.push({
+            type: 'list',
+            items: items
+          });
+        }
+      } else if (tagName === 'blockquote') {
+        sections.push({
+          type: 'quote',
+          text: text
+        });
+      }
+    });
+    
+    // Convert sections to clean text
+    cleanText = sections.map(section => {
+      if (section.type === 'heading') {
+        return '\n\n' + '#'.repeat(section.level) + ' ' + section.text + '\n';
+      } else if (section.type === 'paragraph') {
+        return '\n' + section.text;
+      } else if (section.type === 'list') {
+        return '\n' + section.items.map(item => '• ' + item).join('\n');
+      } else if (section.type === 'quote') {
+        return '\n> ' + section.text;
+      }
+      return '';
+    }).join('');
+    
+    content = cleanText.trim();
+    
+    // Find images
+    const images = [];
+    if (contentElement) {
+      contentElement.find('img').each((i, elem) => {
+        const src = $(elem).attr('src');
+        const alt = $(elem).attr('alt') || '';
+        if (src) {
+          images.push({ src, alt });
+        }
+      });
+    }
+    
+    // Also check for featured image
+    const featuredImage = $('meta[property="og:image"]').attr('content');
+    if (featuredImage && !images.some(img => img.src === featuredImage)) {
+      images.unshift({ src: featuredImage, alt: 'Featured Image' });
+    }
+    
+    return {
+      url,
+      title,
+      content,
+      htmlContent,  // Add the raw HTML content
+      images,
+      scrapedAt: new Date().toISOString()
+    };
+  } catch (error) {
+    console.error(`Error scraping ${url}:`, error.message);
+    throw error;
+  }
+}
+
+// No longer needed - we embed original URLs instead of downloading
+
+// API Routes
+app.get('/api/sitemap', async (req, res) => {
+  const { url } = req.query;
+  
+  if (!url) {
+    return res.status(400).json({ error: 'Sitemap URL is required' });
+  }
+  
+  try {
+    const urls = await fetchSitemap(url);
+    res.json({ urls });
+  } catch (error) {
+    res.status(500).json({ error: error.message });
+  }
+});
+
+app.post('/api/scrape', async (req, res) => {
+  const { urls } = req.body;
+  
+  if (!urls || !Array.isArray(urls)) {
+    return res.status(400).json({ error: 'URLs array is required' });
+  }
+  
+  const results = [];
+  const timestamp = new Date().toISOString().replace(/[:.]/g, '-').split('T')[0];
+  const outputDir = path.join(__dirname, 'output', `batch-${timestamp}-${Date.now()}`);
+  
+  // Create master index
+  const masterIndex = {
+    batchId: `batch-${timestamp}-${Date.now()}`,
+    scrapedAt: new Date().toISOString(),
+    totalUrls: urls.length,
+    posts: []
+  };
+  
+  for (let i = 0; i < urls.length; i++) {
+    const url = urls[i];
+    try {
+      console.log(`Scraping ${i + 1}/${urls.length}: ${url}`);
+      const data = await scrapeBlogPost(url);
+      
+      // Create unique folder name with index to avoid conflicts
+      const baseSlug = url.split('/').filter(Boolean).pop() || 'post';
+      const uniqueSlug = `${String(i + 1).padStart(3, '0')}-${baseSlug}`;
+      const postDir = path.join(outputDir, uniqueSlug);
+      await fs.ensureDir(postDir);
+      
+      // Save clean content as markdown (content is already clean markdown)
+      const markdown = `# ${data.title}\n\n${data.content}`;
+      await fs.writeFile(path.join(postDir, 'content.md'), markdown);
+      
+      // Also save a clean text version
+      const cleanTextContent = data.content.replace(/#{1,6}\s/g, '').replace(/[•\-\*]/g, '').trim();
+      await fs.writeFile(path.join(postDir, 'content.txt'), cleanTextContent);
+      
+      // Process images - convert to absolute URLs and embed in HTML
+      const processedImages = [];
+      let updatedContent = data.content;
+      
+      for (let i = 0; i < data.images.length; i++) {
+        const image = data.images[i];
+        try {
+          // Convert relative URLs to absolute
+          const fullImageUrl = new URL(image.src, url).href;
+          
+          // Update the HTML content to use absolute URLs
+          if (image.src.startsWith('http')) {
+            // Already absolute, no change needed
+            processedImages.push({
+              ...image,
+              src: image.src,
+              originalSrc: image.src
+            });
+          } else {
+            // Convert relative to absolute and update HTML
+            updatedContent = updatedContent.replace(
+              new RegExp(`src=["']${image.src.replace(/[.*+?^${}()|[\]\\]/g, '\\$&')}["']`, 'g'),
+              `src="${fullImageUrl}"`
+            );
+            
+            processedImages.push({
+              ...image,
+              src: fullImageUrl,
+              originalSrc: image.src
+            });
+          }
+        } catch (err) {
+          console.error(`Failed to process image: ${image.src}`, err);
+          processedImages.push({
+            ...image,
+            src: image.src,
+            originalSrc: image.src
+          });
+        }
+      }
+      
+      // Update the data object with processed content
+      data.content = updatedContent;
+      
+      // Save HTML content with absolute image URLs
+      // Process the HTML content to update image URLs to absolute
+      let processedHtml = data.htmlContent;
+      for (const image of processedImages) {
+        if (image.originalSrc !== image.src) {
+          // Replace relative URLs with absolute ones in HTML
+          processedHtml = processedHtml.replace(
+            new RegExp(`src=["']${image.originalSrc.replace(/[.*+?^${}()|[\]\\]/g, '\\$&')}["']`, 'g'),
+            `src="${image.src}"`
+          );
+        }
+      }
+      
+      // Save the actual HTML content
+      await fs.writeFile(path.join(postDir, 'content.html'), processedHtml);
+      // Save markdown version
+      await fs.writeFile(path.join(postDir, 'content.md'), `# ${data.title}\n\n${data.content}`);
+      
+      // Save metadata
+      const metadata = {
+        ...data,
+        content: data.content,  // Clean markdown content
+        htmlContent: processedHtml,  // Full HTML content
+        images: processedImages,
+        outputDir: postDir,
+        folderName: uniqueSlug,
+        index: i + 1
+      };
+      await fs.writeJSON(path.join(postDir, 'metadata.json'), metadata, { spaces: 2 });
+      
+      // Add to master index
+      masterIndex.posts.push({
+        index: i + 1,
+        folderName: uniqueSlug,
+        url: url,
+        title: data.title,
+        imagesCount: processedImages.length,
+        status: 'success'
+      });
+      
+      results.push({
+        url,
+        status: 'success',
+        title: data.title,
+        imagesCount: processedImages.length,
+        folderName: uniqueSlug
+      });
+      
+    } catch (error) {
+      // Add failed post to master index
+      masterIndex.posts.push({
+        index: i + 1,
+        folderName: null,
+        url: url,
+        title: null,
+        imagesCount: 0,
+        status: 'error',
+        error: error.message
+      });
+      
+      results.push({
+        url,
+        status: 'error',
+        error: error.message
+      });
+    }
+  }
+  
+  // Save master index
+  await fs.writeJSON(path.join(outputDir, 'batch-index.json'), masterIndex, { spaces: 2 });
+  
+  // Create CSV for easy viewing
+  const csvRows = [
+    'Index,Folder,Title,URL,Images,Status,Error'
+  ];
+  
+  masterIndex.posts.forEach(post => {
+    const csvRow = [
+      post.index,
+      post.folderName || '',
+      `"${(post.title || '').replace(/"/g, '""')}"`,
+      post.url,
+      post.imagesCount,
+      post.status,
+      `"${(post.error || '').replace(/"/g, '""')}"`
+    ].join(',');
+    csvRows.push(csvRow);
+  });
+  
+  await fs.writeFile(path.join(outputDir, 'batch-summary.csv'), csvRows.join('\n'));
+  
+  res.json({ 
+    results, 
+    outputDir,
+    batchId: masterIndex.batchId,
+    summary: {
+      total: masterIndex.totalUrls,
+      successful: masterIndex.posts.filter(p => p.status === 'success').length,
+      failed: masterIndex.posts.filter(p => p.status === 'error').length
+    }
+  });
+});
+
+app.listen(PORT, () => {
+  console.log(`Blog scraper running at http://localhost:${PORT}`);
+});

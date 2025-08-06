@@ -1,0 +1,252 @@
+# Resource Page Link Building
+
+# Resource Page Link Building
+
+
+# Resource Page Link Building
+
+• What is Resource Page Link Building?
+• Types of Resource Pages
+• How Does It Work?
+• Having Resource-Worthy Content
+• The Step-by-Step Resource Page Link Building
+• Tips for a More Successful Campaign
+• Pros & Cons of Resource Page Link Building
+• Things to Avoid while Building Resource Page Links
+• Helpful Tools
+• Conclusion
+Resource page link building is one of the most popular link building strategies out there. It is also one of the easiest link building strategies to carry out. It doesn’t involve any tricks and for some prospects, you won’t even need to perform outreach, since they have a page submission form built right into their website.
+This article is all about resource page link building, its ins, and outs, some useful tips, and even a step-by-step guide for running a resource page link building campaign of your own.
+But before we can really dig into it, we need to answer a simple question.
+
+## What is Resource Page Link Building?
+
+Resource page link building is the process of acquiring backlinks by submitting your content to resource pages. What really sets this link building method apart from other ones is the fact that you don’t need to do any kind of negotiation with the resource page owners, since the whole point of a resource page is to link to other niche-related sites with useful information.
+It’s easy compared to other link building methods, and the links you get will be from authoritative, high-quality websites (if you filter your prospects well, of course).
+Not only is it awesome for your SEO, but also useful for people who are just looking for credible information on a certain topic. It’s a win-win situation for all parties involved: you get a strong link, the resource page owner receives a helpful addition to their site, and a portion of their visitors pretty much become yours.
+With that said, we should take a look at the types of resource pages.
+
+## Types of Resource Pages
+
+Generally speaking, there are three types of resource pages. Some would argue that there are only two, and they wouldn’t be wrong either. Let me explain.
+“Normal” resource pages are websites that collect and link to external pages on niche-specific topics. Some resource pages focus only on one niche, while others cover a much wider array of topics.
+musicoutfitters.com is a good example of a “traditional resource page.
+“Mini” resource pages can be blog posts or other pages that don’t necessarily qualify as a full-on resource page and have a smaller external resource section instead.
+For example, this blog post by TroyPoint about The 25 Best Free Online Movie Streaming Sites in October 2020 qualifies perfectly as a mini resource page.
+And while this type of resource pages has a “mini” in its name, you should never underestimate the value of a link from one, especially if it’s on a larger blog or news portal.
+And finally, we have resource centers. That name isn’t mentioned very often, and those sites are few and far between. These are just resource pages that list other resource pages.
+
+## How Does It Work?
+
+There are two ways of submitting your site to a resource page. I already mentioned that some resource pages will have a built-in form that you can use to submit your site quickly and painlessly.
+But a lot of resource pages won’t have that form. What do you do in that case? You guessed it, with outreach. You should check your prospects’ sites for their preferred method of communication, but most of the time it will be a separate email address dedicated to submissions.
+Sometimes, though, a prospect will list their social media profile or even phone number as a contact point for submissions. In those cases, you should reach them through there. Don’t just go for the generic info @ domain.com pretty much every site has in its footer as there is a good chance your message will just get lost
+
+## Having Resource-Worthy Content
+
+There is one thing you need to have on your site in order to succeed with any link building campaign, not just resource pages. Even if you’re not currently focusing on building links, you absolutely need to have it and keep making it.
+Can you guess what I’m talking about?
+Of course, it’s none other than good, link-worthy content. Remember: the point of a resource page is to gather up valuable pages in one spot so that whoever is doing research on that topic can find it all in a single place. Sure, resource page link building is generally easier than other strategies, but in order for your site to get accepted, it needs to provide value to the resource page.
+It also has to be relevant. After all, would it make sense for a page with the best home recipes to link to a page about web development? It’s best to filter out your prospects, depending on the type of content you produce, but you can also do it vice versa, and make custom content specifically for your list of prospects.
+
+## The Step-by-Step Resource Page Link Building
+
+Now that we’ve discussed what resource pages are, and what you need to get started with resource page link building, let’s discuss the entire process in finer detail.
+If you’re familiar with other types of link building, you already know what the first step is going to be.
+That’s right, building up your prospects list.
+
+### Find Resource Page Link Building Opportunities
+
+As I mentioned above, your link prospects should be relevant to your niche. But how do you actually look for them? Do you just type “ your niche resource pages” into Google and hope for the best?
+Well, that’s one way of doing it. The results are probably not going to be particularly satisfying, though.
+You will have much more luck using Google’s search operators, which I will list in the next section.
+But finding websites is just half of the job. You also need to find your prospects’ emails. If there’s one in the site’s footer, consider yourself lucky. If there are none, you will actually have to go through their pages looking for it, or use an email scraping tool like Hunter.io to do it for you.
+The latter option is much faster, especially if your prospect list consists of dozens or even hundreds of addresses. Want to know how to do link prospecting to face less competition on your way? We’ve got a guide dedicated to just that.
+
+### Resource Page Search Operators
+
+Google search operators are modifiers that help you find very specific things, much more easily. I honestly don’t know where we would be if those weren’t a thing.
+Probably on the second page of Google.
+All jokes aside, even though search operators can be confusing at first (especially considering just how many variations of them exist), they make our lives a whole lot easier.
+Just paste them into your search bar and watch them do their magic helping you find very specific things that would take hours upon hours to find manually.
+I have cherry-picked the most relevant search operators for finding resource page link building prospects. Here they are:
+> “Keyword”+”related urls”+&num=100“Keyword”+”resource pages”+&num=100“Keyword”+ “helpful links”+&num=100“Keyword”+ “useful links”+&num=100“Keyword”+ useful resources+&num=100“Keyword”+favorite links+&num=100“Keyword”+favorite sites+&num=100“Keyword”+intitle:resources+&num=100“Keyword”+inurl:links+&num=100“Keyword”+inurl:links site:.edu+&num=100“Keyword”+inurl:links site:.gov+&num=100“Keyword”+inurl:resources+&num=100“Keyword”+”other links”+&num=100“Keyword”+inurl:links inurl:lib*+&num=100“Keyword”+inurl:links library site:.edu+&num=100“Keyword”+inurl:links library site:.org+&num=100“Keyword”+inurl:links site:.org+&num=100“Keyword”+inurl:resources inurl:lib*+&num=100“Keyword”+inurl:resources site:.edu+&num=100“Keyword”+inurl:resources site:.gov+&num=100“Keyword”+inurl:resources site:.org+&num=100“Keyword”+links+&num=100“Keyword”+related sites+&num=100“Keyword”+related urls+&num=100“Keyword”+resources+&num=100“Keyword”+intitle:\”list * * sites\”+&num=100“Keyword”+list * sites+&num=100“Keyword”+intitle:\”recommended links\”+&num=100“Keyword”+intitle:\”recommended sites\”+&num=100“”Keyword resources”++&num=100“Keyword”+intitle:top+&num=100“Keyword”+intitle:\”useful links\”+&num=100
+“Keyword”+”related urls”+&num=100“Keyword”+”resource pages”+&num=100“Keyword”+ “helpful links”+&num=100“Keyword”+ “useful links”+&num=100“Keyword”+ useful resources+&num=100“Keyword”+favorite links+&num=100“Keyword”+favorite sites+&num=100“Keyword”+intitle:resources+&num=100“Keyword”+inurl:links+&num=100“Keyword”+inurl:links site:.edu+&num=100“Keyword”+inurl:links site:.gov+&num=100“Keyword”+inurl:resources+&num=100“Keyword”+”other links”+&num=100“Keyword”+inurl:links inurl:lib*+&num=100“Keyword”+inurl:links library site:.edu+&num=100“Keyword”+inurl:links library site:.org+&num=100“Keyword”+inurl:links site:.org+&num=100“Keyword”+inurl:resources inurl:lib*+&num=100“Keyword”+inurl:resources site:.edu+&num=100“Keyword”+inurl:resources site:.gov+&num=100“Keyword”+inurl:resources site:.org+&num=100“Keyword”+links+&num=100“Keyword”+related sites+&num=100“Keyword”+related urls+&num=100“Keyword”+resources+&num=100“Keyword”+intitle:\”list * * sites\”+&num=100“Keyword”+list * sites+&num=100“Keyword”+intitle:\”recommended links\”+&num=100“Keyword”+intitle:\”recommended sites\”+&num=100“”Keyword resources”++&num=100“Keyword”+intitle:top+&num=100“Keyword”+intitle:\”useful links\”+&num=100
+
+### Filter Your Prospects for Quality
+
+The most convenient way of keeping track of your prospects is with a spreadsheet. That way, you can have the website name in one column, right next to their email address.
+When you’re done filling up your prospect list, it’s time to double-check them all for quality. Of course, you can skip this step entirely, but you really shouldn’t. Low-quality links from poor websites can actually harm your SEO instead of improving it, so you need to make sure your prospects’ sites don’t fall into the scammy/shady category.
+We actually have a link prospect filtering tool of our own that you can use to speed things up, and an article about the major controversies surrounding sorting out prospects. You can import your prospect list into it and use a variety of filtering options to remove all irrelevant URLs.
+Mostly, you need to be looking out for the frequency at which your prospects’ sites get updated (and whether they are still being updated at all). You also need to make sure the resource page you’re looking at actually links to external sites.
+Some resources will only refer to internal pages, so the probability of getting them to link to you is somewhere around zero percent.
+You also need to make sure your prospects link to topically-relevant pages because if it’s just a mixed bag of random links, chances are it is not a very good website to build links on.
+Finally, there are the SEO metrics. How many visitors do your prospects get each month? What is their domain rating? How long have they been on the web? All these things and more you can check with SEO tools, which I am going to cover in more detail further on.
+
+### Craft Your Email Pitch
+
+After you’ve filtered out your prospects, you should prepare your outreach email pitch. Of course, the best approach is to write a custom email for each prospect, but if you’ve got hundreds of emails to send out, that’s simply not realistic.
+Generally, email templates are great to use as long as you customize them well and give a bit of a personal touch to each one you send. Just make sure you don’t copy-paste and send everyone the same thing.
+The general rules of writing a good resource page outreach email are:
+• Be polite! It should go without saying, but the simple lack of a “please” and “thank you” can make you look… a bit rude.
+• Be brief and to the point. The less of your prospects’ time you waste – the better.
+• Be clear as to who you are, and why you think your site would make a good addition to their resource page.
+• Make sure to include the exact URL you want the link to point to! This way, you will be making the life of the person responsible for accepting submission just that extra little bit easier.
+
+### Outreach Email Templates
+
+Did you know that we have a collection of 80+ cold email outreach templates for all types of different link building strategies?
+Here are the ones suitable for resource page link building. Feel free to grab and use them, but make sure you change them up enough so that your prospects can’t even tell it was a template in the first place!
+Template 1
+> Hello {{prospect.first_name}},I came across your resource page {{resource page link}} while gathering some information on {{topic}}.Great list, I had no idea about some of the resources before I found them on your site.If you’re interested, I have an article of my own on {{topic}} that I think would make a great addition to your page. Here it is: {{Your post’s URL}}.I think your readers would enjoy it because {{elaborate why}} and it would fit right in.Thank you for your time,{{inbox.name}}
+Hello {{prospect.first_name}},
+I came across your resource page {{resource page link}} while gathering some information on {{topic}}.
+Great list, I had no idea about some of the resources before I found them on your site.
+If you’re interested, I have an article of my own on {{topic}} that I think would make a great addition to your page. Here it is: {{Your post’s URL}}.
+I think your readers would enjoy it because {{elaborate why}} and it would fit right in.
+Thank you for your time,
+{{inbox.name}}
+Template 2
+> Hello {{prospect.first_name}},My name is {{inbox.name}}, and I just found your resource page for {{audience}}.{{resource page link}}I’m from {{your company’s name}} and we {{tell them about what you do and what you can offer}}.{{Your post’s URL}}It might make a good addition to your resource page and provide good value for your visitors.Let me know if I can do anything else for you.Thank you,{{inbox.name}}
+Hello {{prospect.first_name}},
+My name is {{inbox.name}}, and I just found your resource page for {{audience}}.
+{{resource page link}}
+I’m from {{your company’s name}} and we {{tell them about what you do and what you can offer}}.
+{{Your post’s URL}}
+It might make a good addition to your resource page and provide good value for your visitors.
+Let me know if I can do anything else for you.
+Thank you,
+{{inbox.name}}
+Template 3
+> Hey, {{prospect.first_name}}!I was digging around for information on {{topic}} today and came across your resource page: {{link to resource page}}What an awesome list of resources! I didn’t even know about some of them.If you’re interested, I actually just wrote a guide on {{topic}}: {{your URL}}It might make a great addition to your page.Either way, keep up the great work! Thanks for your time.Cheers,{{inbox.signature}}
+Hey, {{prospect.first_name}}!
+I was digging around for information on {{topic}} today and came across your resource page: {{link to resource page}}
+What an awesome list of resources! I didn’t even know about some of them.
+If you’re interested, I actually just wrote a guide on {{topic}}: {{your URL}}
+It might make a great addition to your page.
+Either way, keep up the great work! Thanks for your time.
+Cheers,
+{{inbox.signature}}
+Template 4
+> Hi {{prospect.first_name}},I’m getting in touch today to introduce you to {{resource}}, which I think could be of real value to your readers.{{Summary of what the resource is}}You can view the {{Resource}} yourself at: {{Link}}I noticed that you link out to a number of other really great resources on {{URL of page that links out}}, and thought that this could be great to sit alongside these.I thought that this might be of real interest and useful to your readers because:{{Reason 1}}{{Reason 2}}{{Reason 3}}If you need any more information from me, please just let me know. You know where I am.{{Email Signature}}
+Hi {{prospect.first_name}},
+I’m getting in touch today to introduce you to {{resource}}, which I think could be of real value to your readers.
+{{Summary of what the resource is}}
+You can view the {{Resource}} yourself at: {{Link}}
+I noticed that you link out to a number of other really great resources on {{URL of page that links out}}, and thought that this could be great to sit alongside these.
+I thought that this might be of real interest and useful to your readers because:
+{{Reason 1}}{{Reason 2}}{{Reason 3}}
+If you need any more information from me, please just let me know. You know where I am.
+{{Email Signature}}
+
+### Send out Your Emails
+
+At this point, the only thing left is to send out your pitches and wait for your responses. As long as you have quality content that fits the theme of any given resource page, the conversion rate should be pretty high.
+If you don’t have the time to do outreach by yourself, there are reputable agencies that can help. Read about pricing, offerings and reviews here at our blogger outreach services page.
+
+## Tips for a More Successful Campaign
+
+The conversion rate for this link building strategy should be pretty high by default since resource pages are literally made for you to submit your site to. Still, there are a few things that you can do to achieve even better results, faster.
+Make sure you’re reaching out to the person actually responsible for receiving submissions.
+I’ve talked about avoiding the generic info@domain.com commonly found in the site’s footer, and it’s true that sometimes you can ask for the right person to contact, but in reality, it will be much quicker if the first person you reached was the right one.
+If your prospect has information about their preferred contact method, use it.
+Don’t be afraid to reach out to sites that are not necessarily centered around collecting resources. Blogs with external resource sections are also a great source of powerful links.
+Make sure you filter out low-quality resources to avoid links that can actually harm your SEO.
+Run a backlink check of your prospect’s site and take note of any broken links they might have. Before submitting your own one, point those out to the owner. This will help instantly boost your relationship with the prospect, show your genuine interest, and provide even more value to your prospect.
+
+## Pros & Cons of Resource Page Link Building
+
+Resource page link building is on the easier and more effective side of link building strategies, but, of course, it has its own disadvantages.
+
+### Pros:
+
+• High conversion rate, prospects are literally asking for you to submit your site.
+• Sometimes outreach isn’t even necessary, thanks to built-in submission forms.
+• High-quality backlinks from authoritative resources with strong backlink profiles.
+• You can acquire a number of links with a single, good piece of content.
+
+### Cons:
+
+• There aren’t that many resource pages around.
+• If you don’t filter out low-quality resources, you run the risk of actually harming your SEO, and not boosting it.
+• Some of the links can have the “NoFollow” attribute.
+• Resource page link building can really boost your SEO, but you shouldn’t pick it as your primary link building method, and use it in combination with other ones.
+
+## Things to Avoid while Building Resource Page Links
+
+I’ve put a pretty big accent on the filtering step of the whole resource page link building process. But how do you actually determine if a prospect is not worth your time and effort?
+Look at the sites they are linking out to. If it’s just a bunch of random links to sites that have seemingly no connection, that’s a tell-tale sign of a link scheme. Make sure your prospects actually collect niche-related resources, and yours fits in organically.
+Remember: a real resource page will never ask you to pay money in order to submit your site. This falls into the “purchased” links category, and those are punishable by Google.
+
+## Helpful Tools
+
+Besides our own tool for filtering prospects, there is quite a lot of software that can help you in your link building endeavors.
+Ahrefs is one of the best all-in-one SEO solutions for checking your prospects’ backlink profiles along with important SEO metrics.
+I mentioned it before, but Hunter.io is awesome for finding anyone’s email address. Just paste in your prospect’s domain name, and it will do its magic to find all addresses, related to it.
+NinjaOutreach has an awesome tool for automating your outreach campaign, organizing it, tracking each conversation, and even sending automatic follow-ups. Using good old Gmail can be a mess, and emails often get buried underneath hundreds of other messages.
+
+## Conclusion
+
+Resource page link building is relatively easy to perform, has a high conversion rate, and only requires a solid piece of niche-related content from you.
+For many SEOs, it has become the go-to link building strategy. Make sure you filter out your prospect list well, and you will see success with it as well!
+But you have to remember that a healthy backlink profile consists of lots of different link types, and you should use this tactic in combination with other ones.
+
+## SEO and Link Building Resources
+
+• Case Studies
+
+## From Zero to Breakthrough: The Marketing Tactic That Made It Happen
+
+• Case Studies
+
+## How Startups Are Winning with Real Tactics That Actually Convert
+
+• Case Studies
+
+## How to Track Multiple Vehicles With Vehicle Tracking Software?
+
+• Case Studies
+
+## How to Create a Content Marketing Strategy for eCommerce
+
+• Case Studies
+
+## How to Choose the Best SEO Software for Your Business
+
+• Guides
+
+## Best Rank Tracking Tools for Local Businesses: What Actually Matters?
+
+• Case Studies
+
+## Best Digital Marketing Tips From Experts
+
+• Guides
+
+## Why Every Business Needs a Website
+
+• Guides
+
+## Using SEO For Lead Generation – Everything You Need To Know
+
+• Listicles
+
+## The Best Books To Learn SEO Recommended by Pros
+
+
+###### Curious?
+
+
+###### Let's talk LINKIO
+
+
+###### We love talking LINKIO. Let us know about your project and we'll send you a free proposal
+
+
+###### Curious?
+
+
+###### Let's talk LINKIO
+
+
+###### We love talking LINKIO. Let us know about your project and we'll send you a free proposal

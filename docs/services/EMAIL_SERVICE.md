@@ -188,23 +188,19 @@ EMAIL_FROM_NAME=PostFlow                    # Optional: From name
 EMAIL_REPLY_TO=support@postflow.outreachlabs.net  # Optional: Reply-to address
 ```
 
-### Current Setup (Temporary)
-- **From Address**: `onboarding@resend.dev` (Resend test domain)
-- **Status**: Working for development and testing
-- **Limitation**: Resend branding in emails
-- **Test Restriction**: Can only send to `ajay@linkio.com` until domain is verified
+### Current Setup (Production)
+- **From Address**: `noreply@postflow.outreachlabs.net` (verified domain)
+- **Reply To**: `info@linkio.com`
+- **Status**: ✅ Production ready with custom domain
+- **Limitation**: None - full email functionality available
 
-### Testing Workaround
-Until domain is verified, use one of these approaches:
-1. **Test with your email**: Use `ajay@linkio.com` as the recipient
-2. **Verify a domain**: Add your domain at resend.com/domains
-3. **Use different API key**: Create a new Resend account with a verified domain
-
-### Domain Verification TODO
-1. **Verify Domain**: Add `postflow.outreachlabs.net` in Resend dashboard
-2. **Remove Override**: Delete lines 29-31 in `lib/services/emailService.ts`
-3. **Update Config**: Set environment variables for custom domain
-4. **Test**: Verify emails send from custom domain
+### Environment Variables (Optional Override)
+Set these to customize email addresses:
+```env
+EMAIL_FROM=noreply@postflow.outreachlabs.net  # Default from address
+EMAIL_FROM_NAME=PostFlow                      # From name
+EMAIL_REPLY_TO=info@linkio.com               # Reply-to address
+```
 
 ## Database Schema
 

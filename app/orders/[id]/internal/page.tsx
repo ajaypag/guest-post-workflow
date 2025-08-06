@@ -1,16 +1,19 @@
 'use client';
 
-import { useState, useEffect } from 'react';
+import React, { useState, useEffect } from 'react';
 import { useParams, useRouter } from 'next/navigation';
 import Link from 'next/link';
 import AuthWrapper from '@/components/AuthWrapper';
 import Header from '@/components/Header';
+import OrderSiteReviewTable from '@/components/orders/OrderSiteReviewTable';
+import OrderProgressSteps, { getStateDisplay, getProgressSteps } from '@/components/orders/OrderProgressSteps';
+import AdminDomainTable from '@/components/orders/AdminDomainTable';
 import { AuthService, type AuthSession } from '@/lib/auth';
 import { formatCurrency } from '@/lib/utils/formatting';
 import { 
   ArrowLeft, Loader2, CheckCircle, Clock, Users, FileText, 
   RefreshCw, ExternalLink, Globe, LinkIcon, Eye, Package,
-  Target, ChevronRight, AlertCircle, Activity, Building, User, DollarSign,
+  Target, ChevronRight, ChevronUp, ChevronDown, AlertCircle, Activity, Building, User, DollarSign,
   Download, Share2, XCircle, CreditCard, Trash2, Zap, PlayCircle,
   ClipboardCheck, Send, Database, Search, Plus, Edit, KeyRound, Sparkles
 } from 'lucide-react';
@@ -47,10 +50,43 @@ interface SiteSubmission {
   specialInstructions?: string;
   targetPageUrl?: string;
   anchorText?: string;
+  createdAt?: string;
+  selectionPool?: 'primary' | 'alternative';
+  poolRank?: number;
   metadata?: {
     targetPageUrl?: string;
     anchorText?: string;
     specialInstructions?: string;
+    suggestedBy?: string;
+    suggestedAt?: string;
+    suggestedReason?: string;
+    batchId?: string;
+    projectId?: string;
+    qualificationStatus?: string;
+    hasDataForSeoResults?: boolean;
+    notes?: string;
+    lastUpdatedBy?: string;
+    lastUpdatedAt?: string;
+    // AI Qualification fields
+    overlapStatus?: 'direct' | 'related' | 'both' | 'none';
+    authorityDirect?: 'strong' | 'moderate' | 'weak' | 'n/a';
+    authorityRelated?: 'strong' | 'moderate' | 'weak' | 'n/a';
+    topicScope?: 'short_tail' | 'long_tail' | 'ultra_long_tail';
+    topicReasoning?: string;
+    aiQualificationReasoning?: string;
+    evidence?: {
+      direct_count: number;
+      direct_median_position: number | null;
+      related_count: number;
+      related_median_position: number | null;
+    };
+    statusHistory?: Array<{
+      status: string;
+      timestamp: string;
+      updatedBy: string;
+      notes?: string;
+    }>;
+    [key: string]: any;
   };
 }
 
@@ -108,60 +144,11 @@ interface OrderDetail {
   createdAt: string;
   updatedAt: string;
   approvedAt?: string;
+  invoicedAt?: string;
   paidAt?: string;
   completedAt?: string;
   orderGroups?: OrderGroup[];
 }
-
-// Helper functions for state and progress
-const getStateDisplay = (status: string, state?: string) => {
-  if (status === 'draft') return { label: 'Draft', color: 'bg-gray-100 text-gray-700' };
-  if (status === 'pending_confirmation') return { label: 'Awaiting Confirmation', color: 'bg-yellow-100 text-yellow-700' };
-  if (status === 'cancelled') return { label: 'Cancelled', color: 'bg-red-100 text-red-700' };
-  if (status === 'completed') return { label: 'Completed', color: 'bg-green-100 text-green-700' };
-  
-  // For confirmed orders, show the state
-  switch (state) {
-    case 'analyzing':
-      return { label: 'Finding Sites', color: 'bg-blue-100 text-blue-700' };
-    case 'sites_ready':
-    case 'site_review':
-      return { label: 'Ready for Review', color: 'bg-purple-100 text-purple-700' };
-    case 'client_reviewing':
-      return { label: 'Client Reviewing', color: 'bg-purple-100 text-purple-700' };
-    case 'selections_confirmed':
-      return { label: 'Selections Confirmed', color: 'bg-green-100 text-green-700' };
-    case 'payment_received':
-      return { label: 'Payment Received', color: 'bg-green-100 text-green-700' };
-    case 'workflows_generated':
-    case 'in_progress':
-      return { label: 'In Progress', color: 'bg-yellow-100 text-yellow-700' };
-    default:
-      return { label: 'Processing', color: 'bg-gray-100 text-gray-700' };
-  }
-};
-
-const getProgressSteps = (status: string, state?: string) => {
-  const steps = [
-    { id: 'confirmed', label: 'Order Confirmed', icon: CheckCircle, description: 'Order has been received and confirmed' },
-    { id: 'analyzing', label: 'Finding Sites', icon: Search, description: 'Team is identifying suitable sites' },
-    { id: 'site_review', label: 'Review Sites', icon: Users, description: 'Sites ready for client review' },
-    { id: 'in_progress', label: 'Creating Content', icon: FileText, description: 'Writing and placing links' },
-    { id: 'completed', label: 'Completed', icon: CheckCircle, description: 'All links have been placed' }
-  ];
-  
-  let currentStep = 0;
-  if (status === 'confirmed' || status === 'pending_confirmation') {
-    currentStep = 1;
-    if (state === 'analyzing') currentStep = 1;
-    if (state === 'sites_ready' || state === 'site_review' || state === 'client_reviewing') currentStep = 2;
-    if (state === 'selections_confirmed' || state === 'payment_received' || state === 'workflows_generated' || state === 'in_progress') currentStep = 3;
-  }
-  if (status === 'paid') currentStep = 3;
-  if (status === 'completed') currentStep = 4;
-  
-  return { steps, currentStep };
-};
 
 export default function InternalOrderManagementPage() {
   const params = useParams();
@@ -182,6 +169,42 @@ export default function InternalOrderManagementPage() {
   const [selectedPages, setSelectedPages] = useState<Set<string>>(new Set());
   const [generatingKeywords, setGeneratingKeywords] = useState(false);
   const [currentProcessingPage, setCurrentProcessingPage] = useState<string | null>(null);
+  const [editingLineItem, setEditingLineItem] = useState<{ groupId: string; index: number } | null>(null);
+  const [assigningDomain, setAssigningDomain] = useState<string | null>(null);
+
+  // Auto-dismiss success messages after 5 seconds
+  useEffect(() => {
+    if (message?.type === 'success') {
+      const timer = setTimeout(() => {
+        setMessage(null);
+      }, 5000);
+      return () => clearTimeout(timer);
+    }
+  }, [message]);
+
+  // Handle closing edit dropdown on click outside or ESC
+  useEffect(() => {
+    const handleClickOutside = (e: MouseEvent) => {
+      if (editingLineItem && !(e.target as HTMLElement).closest('.edit-dropdown')) {
+        setEditingLineItem(null);
+      }
+    };
+    
+    const handleEscape = (e: KeyboardEvent) => {
+      if (e.key === 'Escape' && editingLineItem) {
+        setEditingLineItem(null);
+      }
+    };
+    
+    if (editingLineItem) {
+      document.addEventListener('mousedown', handleClickOutside);
+      document.addEventListener('keydown', handleEscape);
+      return () => {
+        document.removeEventListener('mousedown', handleClickOutside);
+        document.removeEventListener('keydown', handleEscape);
+      };
+    }
+  }, [editingLineItem]);
 
   useEffect(() => {
     const checkAuth = async () => {
@@ -466,53 +489,197 @@ export default function InternalOrderManagementPage() {
     }
   };
 
-  const handleAssignTargetPage = async (submissionId: string, targetPageUrl: string, groupId: string) => {
+  const handleSwitchDomain = async (submissionId: string, groupId: string) => {
     try {
-      // Get current submissions
-      const currentSubmissions = siteSubmissions[groupId] || [];
+      setAssigningDomain(submissionId);
       
-      // Update the specific submission with the new target page
-      const updatedSubmissions = currentSubmissions.map(sub => 
-        sub.id === submissionId 
-          ? { ...sub, targetPageUrl }
-          : sub
-      );
-      
-      // Prepare the update payload
-      const selections = updatedSubmissions.map(sub => ({
-        domainId: sub.domainId,
-        status: sub.status === 'client_approved' ? 'approved' : 
-                sub.status === 'client_rejected' ? 'rejected' : 'pending',
-        targetPageUrl: sub.targetPageUrl || '',
-        anchorText: sub.anchorText || '',
-        specialInstructions: sub.specialInstructions || '',
-        reviewNotes: sub.clientReviewNotes || ''
-      }));
-      
-      // Send update to API
-      const response = await fetch(`/api/orders/${orderId}/groups/${groupId}/site-selections`, {
+      const response = await fetch(`/api/orders/${orderId}/groups/${groupId}/site-selections/${submissionId}/switch`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ selections })
+        credentials: 'include'
       });
       
       if (!response.ok) {
-        throw new Error('Failed to update target page assignment');
+        const errorData = await response.json().catch(() => ({ error: 'Unknown error' }));
+        throw new Error(errorData.error || 'Failed to switch domain');
       }
       
-      // Reload submissions
+      const result = await response.json();
+      
+      // Reload submissions to show the update
       await loadSiteSubmissions();
       setMessage({
         type: 'success',
-        text: 'Domain assigned to target page successfully'
+        text: result.message || 'Domain switched successfully'
       });
       
-    } catch (error) {
-      console.error('Error assigning target page:', error);
+    } catch (error: any) {
+      console.error('Error switching domain:', error);
       setMessage({
         type: 'error',
-        text: 'Failed to assign target page'
+        text: error.message || 'Failed to switch domain'
       });
+    } finally {
+      setAssigningDomain(null);
+    }
+  };
+
+  const handleAssignTargetPage = async (submissionId: string, targetPageUrl: string, groupId: string) => {
+    try {
+      setAssigningDomain(submissionId);
+      
+      // Create an AbortController for timeout
+      const controller = new AbortController();
+      const timeoutId = setTimeout(() => controller.abort(), 15000); // 15 second timeout
+      
+      // Use the new target URL update endpoint
+      const response = await fetch(`/api/orders/${orderId}/groups/${groupId}/site-selections/${submissionId}/target-url`, {
+        method: 'PATCH',
+        headers: { 'Content-Type': 'application/json' },
+        credentials: 'include',
+        signal: controller.signal,
+        body: JSON.stringify({ 
+          targetPageUrl,
+          anchorText: null // Can be set later
+        })
+      }).finally(() => clearTimeout(timeoutId));
+      
+      if (!response.ok) {
+        const errorData = await response.json().catch(() => ({ error: 'Unknown error' }));
+        throw new Error(errorData.error || 'Failed to update target page assignment');
+      }
+      
+      // Reload submissions to show the update
+      await loadSiteSubmissions();
+      setMessage({
+        type: 'success',
+        text: targetPageUrl ? 'Domain assigned to target page successfully' : 'Domain unassigned successfully'
+      });
+      
+    } catch (error: any) {
+      console.error('Error assigning target page:', error);
+      
+      let errorMessage = 'Failed to assign target page';
+      if (error.name === 'AbortError') {
+        errorMessage = 'Request timed out. Please try again.';
+      } else if (error instanceof Error) {
+        errorMessage = error.message;
+      }
+      
+      setMessage({
+        type: 'error',
+        text: `Error: ${errorMessage}`
+      });
+    } finally {
+      setAssigningDomain(null);
+    }
+  };
+
+  const handleGenerateInvoice = async () => {
+    if (!order) return;
+    
+    setActionLoading(prev => ({ ...prev, generate_invoice: true }));
+    try {
+      const response = await fetch(`/api/orders/${orderId}/invoice`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ action: 'generate_invoice' })
+      });
+      
+      if (!response.ok) {
+        const error = await response.json();
+        throw new Error(error.error || 'Failed to generate invoice');
+      }
+      
+      const result = await response.json();
+      setMessage({
+        type: 'success',
+        text: `Invoice generated successfully for ${result.approvedSites} approved sites`
+      });
+      
+      // Reload order data
+      await loadOrder();
+    } catch (error) {
+      console.error('Error generating invoice:', error);
+      setMessage({
+        type: 'error',
+        text: error instanceof Error ? error.message : 'Failed to generate invoice'
+      });
+    } finally {
+      setActionLoading(prev => ({ ...prev, generate_invoice: false }));
+    }
+  };
+
+  const handleRegenerateInvoice = async () => {
+    if (!order) return;
+    
+    if (!confirm('Are you sure you want to regenerate the invoice? This will overwrite the existing invoice.')) {
+      return;
+    }
+    
+    setActionLoading(prev => ({ ...prev, regenerate_invoice: true }));
+    try {
+      const response = await fetch(`/api/orders/${orderId}/invoice`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ action: 'regenerate_invoice' })
+      });
+      
+      if (!response.ok) {
+        const error = await response.json();
+        throw new Error(error.error || 'Failed to regenerate invoice');
+      }
+      
+      const result = await response.json();
+      setMessage({
+        type: 'success',
+        text: `Invoice regenerated successfully for ${result.approvedSites} approved sites`
+      });
+      
+      // Reload order data
+      await loadOrder();
+    } catch (error) {
+      console.error('Error regenerating invoice:', error);
+      setMessage({
+        type: 'error',
+        text: error instanceof Error ? error.message : 'Failed to regenerate invoice'
+      });
+    } finally {
+      setActionLoading(prev => ({ ...prev, regenerate_invoice: false }));
+    }
+  };
+
+  const handleMarkPaid = async () => {
+    if (!order) return;
+    
+    setActionLoading(prev => ({ ...prev, mark_paid: true }));
+    try {
+      const response = await fetch(`/api/orders/${orderId}/invoice`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ action: 'mark_paid' })
+      });
+      
+      if (!response.ok) {
+        const error = await response.json();
+        throw new Error(error.error || 'Failed to mark as paid');
+      }
+      
+      setMessage({
+        type: 'success',
+        text: 'Order marked as paid successfully'
+      });
+      
+      // Reload order data
+      await loadOrder();
+    } catch (error) {
+      console.error('Error marking as paid:', error);
+      setMessage({
+        type: 'error',
+        text: error instanceof Error ? error.message : 'Failed to mark as paid'
+      });
+    } finally {
+      setActionLoading(prev => ({ ...prev, mark_paid: false }));
     }
   };
 
@@ -554,11 +721,45 @@ export default function InternalOrderManagementPage() {
     }
   };
 
+  const handleRebalancePools = async () => {
+    setActionLoading(prev => ({ ...prev, rebalance_pools: true }));
+    try {
+      const response = await fetch(`/api/orders/${orderId}/rebalance-pools`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        credentials: 'include'
+      });
+
+      if (!response.ok) {
+        const error = await response.json();
+        throw new Error(error.error || 'Failed to rebalance pools');
+      }
+
+      const result = await response.json();
+      
+      setMessage({
+        type: 'success',
+        text: `Pools rebalanced successfully. ${result.migratedCount} domains updated.`
+      });
+      
+      // Reload submissions to show new pool assignments
+      await loadSiteSubmissions();
+    } catch (error) {
+      console.error('Error rebalancing pools:', error);
+      setMessage({
+        type: 'error',
+        text: error instanceof Error ? error.message : 'Failed to rebalance pools'
+      });
+    } finally {
+      setActionLoading(prev => ({ ...prev, rebalance_pools: false }));
+    }
+  };
+
   if (loading) {
     return (
       <AuthWrapper>
         <Header />
-        <div className="container mx-auto px-4 py-8">
+        <div className="px-4 sm:px-6 lg:px-8 py-8">
           <div className="flex items-center justify-center h-64">
             <Loader2 className="h-8 w-8 animate-spin text-gray-400" />
           </div>
@@ -571,7 +772,7 @@ export default function InternalOrderManagementPage() {
     return (
       <AuthWrapper>
         <Header />
-        <div className="container mx-auto px-4 py-8">
+        <div className="px-4 sm:px-6 lg:px-8 py-8">
           <div className="text-center">
             <p className="text-gray-500">{error || 'Order not found'}</p>
             <Link href="/orders" className="mt-4 text-blue-600 hover:underline">
@@ -599,23 +800,362 @@ export default function InternalOrderManagementPage() {
   const { steps, currentStep } = getProgressSteps(order?.status || '', order?.state);
   const stateDisplay = getStateDisplay(order?.status || '', order?.state);
 
-  // Calculate dynamic column count for progressive disclosure
+  // Progressive column system based on workflow stage
+  const getWorkflowStage = () => {
+    if (!order) return 'initial';
+    if (order.status === 'completed') return 'completed';
+    if (order.state === 'in_progress') return 'content_creation';
+    
+    // Check if we have any site submissions - if so, we're past initial selection
+    const totalSubmissions = Object.values(siteSubmissions).flat().length;
+    
+    if (totalSubmissions > 0) {
+      // If we have sites, determine if we're in selection or post-approval phase
+      const approvedSubmissions = Object.values(siteSubmissions).flat().filter(s => s.submissionStatus === 'client_approved').length;
+      
+      // If more than half are approved, we're in post-approval consolidation phase
+      if (approvedSubmissions / totalSubmissions > 0.5) {
+        return 'post_approval';
+      }
+      
+      // Otherwise, we're still in site selection but with consolidated view
+      return 'site_selection_with_sites';
+    }
+    
+    // No sites yet - show traditional separate columns
+    return 'initial';
+  };
+
+  const workflowStage = getWorkflowStage();
+
+  const getColumnConfig = () => {
+    switch (workflowStage) {
+      case 'site_selection_with_sites':
+        return {
+          showSeparateDetails: false,
+          showGuestPostSite: true,
+          showDraftUrl: false,
+          showPublishedUrl: false,
+          showStatus: true,
+          columns: ['client', 'link_details', 'site', 'status']
+        };
+      case 'post_approval':
+        return {
+          showSeparateDetails: false,
+          showGuestPostSite: true,
+          showDraftUrl: false,
+          showPublishedUrl: false,
+          showStatus: true,
+          columns: ['client', 'link_details', 'site', 'status']
+        };
+      case 'content_creation':
+        return {
+          showSeparateDetails: false,
+          showGuestPostSite: true,
+          showDraftUrl: true,
+          showPublishedUrl: false,
+          showStatus: true,
+          columns: ['client', 'link_details', 'site', 'content_status', 'draft_url']
+        };
+      case 'completed':
+        return {
+          showSeparateDetails: false,
+          showGuestPostSite: true,
+          showDraftUrl: false,
+          showPublishedUrl: true,
+          showStatus: false,
+          columns: ['client', 'link_details', 'site', 'published_url', 'completion']
+        };
+      default:
+        return {
+          showSeparateDetails: true,
+          showGuestPostSite: false,
+          showDraftUrl: false,
+          showPublishedUrl: false,
+          showStatus: false,
+          columns: ['client', 'anchor', 'price', 'tools']
+        };
+    }
+  };
+
+  const columnConfig = getColumnConfig();
+
   const getColumnCount = () => {
-    if (!order) return 4;
-    let count = 3; // Base columns: Client/Target, Anchor, Price
-    if (Object.keys(siteSubmissions).length > 0 || order.state === 'sites_ready' || order.state === 'site_review' || order.state === 'client_reviewing' || order.state === 'in_progress' || order.status === 'completed') count++;
-    if (order.state === 'in_progress' || order.status === 'completed') count++;
-    if (order.status === 'completed') count++;
-    if (order.status === 'confirmed' && order.state === 'analyzing') count++;
-    if (session?.userType === 'internal') count++; // Add internal actions column
-    return count;
+    return columnConfig.columns.length;
+  };
+
+  // Consolidated Link Details Component
+  const LinkDetailsCell = ({ targetPageUrl, anchorText, price }: { 
+    targetPageUrl?: string; 
+    anchorText?: string; 
+    price?: number; 
+  }) => (
+    <div className="space-y-1.5">
+      <div className="flex items-center gap-2 text-sm">
+        <Globe className="h-3 w-3 text-gray-400 flex-shrink-0" />
+        <span className="text-gray-900 font-medium truncate max-w-[200px]" title={targetPageUrl}>
+          {targetPageUrl ? (() => {
+            try {
+              return new URL(targetPageUrl).pathname;
+            } catch {
+              return targetPageUrl.length > 30 ? targetPageUrl.substring(0, 30) + '...' : targetPageUrl;
+            }
+          })() : 'No target page'}
+        </span>
+      </div>
+      <div className="flex items-center gap-2 text-sm">
+        <LinkIcon className="h-3 w-3 text-gray-400 flex-shrink-0" />
+        <span className="text-gray-700 truncate max-w-[200px]" title={anchorText}>
+          "{anchorText || 'No anchor text'}"
+        </span>
+      </div>
+      <div className="flex items-center gap-2 text-sm">
+        <DollarSign className="h-3 w-3 text-gray-400 flex-shrink-0" />
+        <span className="text-gray-900 font-medium">
+          {price ? formatCurrency(price) : 'Price TBD'}
+        </span>
+      </div>
+    </div>
+  );
+
+  // Dynamic cell renderer
+  const renderTableCell = (
+    column: string, 
+    data: {
+      group: any;
+      index: number;
+      targetPageUrl?: string;
+      anchorText?: string;
+      displaySubmission?: any;
+      availableForTarget: any[];
+      showPoolView: boolean;
+      groupId: string;
+    }
+  ) => {
+    const { group, index, targetPageUrl, anchorText, displaySubmission, availableForTarget, showPoolView, groupId } = data;
+    
+    switch (column) {
+      case 'client':
+        return (
+          <td className="px-6 py-4 pl-8">
+            <div className="flex items-center gap-2">
+              {showPoolView && availableForTarget.length > 1 && (
+                <button
+                  className="flex items-center gap-1 p-1 hover:bg-gray-100 rounded"
+                  onClick={() => setEditingLineItem(editingLineItem?.groupId === groupId && editingLineItem?.index === index ? null : { groupId, index })}
+                  title={`${availableForTarget.length} alternative domains available`}
+                >
+                  {editingLineItem?.groupId === groupId && editingLineItem?.index === index ? (
+                    <ChevronDown className="w-4 h-4 text-gray-600" />
+                  ) : (
+                    <ChevronRight className="w-4 h-4 text-gray-600" />
+                  )}
+                  <span className="text-xs text-gray-500 font-medium">
+                    {availableForTarget.length} alternatives
+                  </span>
+                </button>
+              )}
+              <div className="text-sm">
+                <div className="text-gray-900">Link {index + 1}</div>
+                <div className="text-gray-500 text-xs mt-0.5">
+                  {targetPageUrl ? (
+                    <span className="truncate max-w-[200px] block" title={targetPageUrl}>
+                      {(() => {
+                        try {
+                          const url = new URL(targetPageUrl);
+                          return url.pathname === '/' ? url.hostname : url.pathname;
+                        } catch {
+                          return targetPageUrl.length > 40 ? targetPageUrl.substring(0, 40) + '...' : targetPageUrl;
+                        }
+                      })()}
+                    </span>
+                  ) : 'No target page selected'}
+                </div>
+              </div>
+            </div>
+          </td>
+        );
+        
+      case 'anchor':
+        return (
+          <td className="px-6 py-4 text-sm text-gray-900">
+            {anchorText || '-'}
+          </td>
+        );
+        
+      case 'link_details':
+        return (
+          <td className="px-6 py-4">
+            <LinkDetailsCell 
+              targetPageUrl={targetPageUrl} 
+              anchorText={anchorText}
+              price={displaySubmission?.price || (index === 0 ? group.packagePrice : undefined)} 
+            />
+          </td>
+        );
+        
+      case 'site':
+        return columnConfig.showGuestPostSite ? (
+          <td className="px-6 py-4">
+            {displaySubmission ? (
+              <div className="flex items-center gap-2">
+                <Globe className="h-4 w-4 text-blue-600" />
+                <div className="flex-1">
+                  <div className="flex items-center gap-2">
+                    <div className="text-sm font-medium text-gray-900">
+                      {displaySubmission.domain?.domain || 'Unknown'}
+                    </div>
+                    {group.bulkAnalysisProjectId && displaySubmission.domainId && (
+                      <a
+                        href={`/clients/${group.clientId}/bulk-analysis/projects/${group.bulkAnalysisProjectId}?guided=${displaySubmission.domainId}`}
+                        className="inline-flex items-center px-1.5 py-0.5 text-xs bg-indigo-100 text-indigo-700 hover:bg-indigo-200 rounded transition-colors"
+                        title="View detailed domain analysis"
+                        onClick={(e) => e.stopPropagation()}
+                      >
+                        <ExternalLink className="w-3 h-3 mr-0.5" />
+                        Analysis
+                      </a>
+                    )}
+                  </div>
+                  <div className="flex items-center gap-2 mt-1">
+                    <span className={`text-xs ${
+                      displaySubmission.submissionStatus === 'client_approved' ? 'text-green-600' :
+                      displaySubmission.submissionStatus === 'client_rejected' ? 'text-red-600' :
+                      'text-yellow-600'
+                    }`}>
+                      {displaySubmission.submissionStatus === 'client_approved' ? '✓ Approved' :
+                       displaySubmission.submissionStatus === 'client_rejected' ? '✗ Rejected' :
+                       '⏳ Pending'}
+                    </span>
+                    {displaySubmission.domainRating && (
+                      <span className="text-xs text-gray-500">DR: {displaySubmission.domainRating}</span>
+                    )}
+                    {displaySubmission.traffic && (
+                      <span className="text-xs text-gray-500">Traffic: {displaySubmission.traffic.toLocaleString()}</span>
+                    )}
+                    {displaySubmission.metadata?.hasDataForSeoResults && (
+                      <span className="text-xs text-indigo-600" title="Has keyword ranking data">
+                        <Search className="inline h-3 w-3" />
+                      </span>
+                    )}
+                    {displaySubmission.metadata?.qualificationStatus && (
+                      <span className={`text-xs ${
+                        displaySubmission.metadata.qualificationStatus === 'high_quality' ? 'text-green-600' :
+                        displaySubmission.metadata.qualificationStatus === 'good_quality' ? 'text-blue-600' :
+                        displaySubmission.metadata.qualificationStatus === 'marginal_quality' ? 'text-yellow-600' :
+                        'text-gray-600'
+                      }`}>
+                        {displaySubmission.metadata.qualificationStatus === 'high_quality' ? '★★★' :
+                         displaySubmission.metadata.qualificationStatus === 'good_quality' ? '★★' :
+                         displaySubmission.metadata.qualificationStatus === 'marginal_quality' ? '★' :
+                         '○'}
+                      </span>
+                    )}
+                    {displaySubmission.metadata?.overlapStatus && (
+                      <span 
+                        className={`inline-flex items-center px-1.5 py-0.5 text-xs rounded-full cursor-help ${
+                          displaySubmission.metadata.overlapStatus === 'direct' ? 'bg-green-100 text-green-700' :
+                          displaySubmission.metadata.overlapStatus === 'related' ? 'bg-blue-100 text-blue-700' :
+                          displaySubmission.metadata.overlapStatus === 'both' ? 'bg-purple-100 text-purple-700' :
+                          'bg-gray-100 text-gray-600'
+                        }`}
+                        title={`AI Analysis: ${
+                          displaySubmission.metadata.overlapStatus === 'both' ? 'STRONGEST: Perfect match - site ranks for both core and related keywords' :
+                          displaySubmission.metadata.overlapStatus === 'direct' ? 'VERY STRONG: Direct keyword match - site ranks for your core keywords' :
+                          displaySubmission.metadata.overlapStatus === 'related' ? 'DECENT: Related topic match - site ranks for related keywords' :
+                          'No keyword overlap detected'
+                        }${displaySubmission.metadata.topicScope ? ` | Content strategy: ${displaySubmission.metadata.topicScope.replace('_', ' ')}` : ''}`}
+                      >
+                        <Sparkles className="w-3 h-3 mr-0.5" />
+                        AI
+                      </span>
+                    )}
+                  </div>
+                </div>
+              </div>
+            ) : availableForTarget.length > 0 ? (
+              <div className="flex items-center gap-2">
+                {assigningDomain && (
+                  <Loader2 className="h-4 w-4 animate-spin text-gray-500" />
+                )}
+                <select
+                  className="text-sm border-gray-300 rounded-md flex-1"
+                  defaultValue=""
+                  disabled={!!assigningDomain}
+                  onChange={async (e) => {
+                    if (e.target.value && targetPageUrl) {
+                      // Update the selected domain's target URL
+                      await handleAssignTargetPage(e.target.value, targetPageUrl, groupId);
+                    }
+                  }}
+                >
+                  <option value="">Select from pool ({availableForTarget.length} available)</option>
+                  {availableForTarget.map(sub => (
+                    <option key={sub.id} value={sub.id}>
+                      {sub.domain?.domain} 
+                      {sub.domainRating ? ` (DR: ${sub.domainRating})` : ''}
+                      {sub.metadata?.targetPageUrl && sub.metadata.targetPageUrl !== targetPageUrl ? ' - suggested for other' : ''}
+                    </option>
+                  ))}
+                </select>
+              </div>
+            ) : (
+              <span className="text-sm text-gray-400">No sites available</span>
+            )}
+          </td>
+        ) : null;
+        
+      case 'price':
+        return (
+          <td className="px-6 py-4 text-right text-sm text-gray-900">
+            {index === 0 ? formatCurrency(group.packagePrice || 0) : ''}
+          </td>
+        );
+        
+      case 'status':
+        return (
+          <td className="px-6 py-4">
+            <div className="text-sm">
+              {displaySubmission ? (
+                <span className={`inline-flex items-center px-2 py-1 rounded-full text-xs font-medium ${
+                  displaySubmission.submissionStatus === 'client_approved' ? 'bg-green-100 text-green-800' :
+                  displaySubmission.submissionStatus === 'client_rejected' ? 'bg-red-100 text-red-800' :
+                  displaySubmission.submissionStatus === 'pending' ? 'bg-yellow-100 text-yellow-800' :
+                  'bg-gray-100 text-gray-800'
+                }`}>
+                  {displaySubmission.submissionStatus === 'client_approved' ? 'Approved' :
+                   displaySubmission.submissionStatus === 'client_rejected' ? 'Rejected' :
+                   displaySubmission.submissionStatus === 'pending' ? 'Pending Review' :
+                   displaySubmission.submissionStatus}
+                </span>
+              ) : (
+                <span className="text-gray-500">Awaiting site selection</span>
+              )}
+            </div>
+          </td>
+        );
+        
+      case 'tools':
+        return (
+          <td className="px-6 py-4">
+            <div className="flex items-center gap-2">
+              {/* Tools for individual line items - currently empty but ready for future tools */}
+              {/* Bulk Analysis is handled at group level to avoid redundancy */}
+              <span className="text-xs text-gray-400">-</span>
+            </div>
+          </td>
+        );
+        
+      default:
+        return <td className="px-6 py-4 text-sm text-gray-500">-</td>;
+    }
   };
 
   return (
     <AuthWrapper>
       <Header />
-      <div className="container mx-auto px-4 py-8">
-        <div className="max-w-7xl mx-auto">
+      <div className="min-h-screen bg-gray-50">
+        <div className="px-4 sm:px-6 lg:px-8 py-8">
           {/* Header */}
           <div className="mb-6">
             <div className="flex items-center justify-between">
@@ -853,6 +1393,84 @@ export default function InternalOrderManagementPage() {
                       </button>
                     )}
                     
+                    {/* Generate Invoice - after sites are approved */}
+                    {order.status === 'confirmed' && !order.invoicedAt && (
+                      <button
+                        onClick={handleGenerateInvoice}
+                        disabled={actionLoading.generate_invoice}
+                        className="w-full px-3 py-2 bg-orange-600 text-white text-sm rounded-md hover:bg-orange-700 disabled:opacity-50"
+                      >
+                        {actionLoading.generate_invoice ? (
+                          <span className="flex items-center justify-center gap-2">
+                            <Loader2 className="h-4 w-4 animate-spin" />
+                            Generating...
+                          </span>
+                        ) : (
+                          <span className="flex items-center justify-center gap-2">
+                            <CreditCard className="h-4 w-4" />
+                            Generate Invoice
+                          </span>
+                        )}
+                      </button>
+                    )}
+
+                    {/* View Invoice - after invoice generated */}
+                    {order.invoicedAt && (
+                      <>
+                        <button
+                          onClick={() => router.push(`/orders/${orderId}/invoice`)}
+                          className="w-full px-3 py-2 bg-blue-600 text-white text-sm rounded-md hover:bg-blue-700"
+                        >
+                          <span className="flex items-center justify-center gap-2">
+                            <FileText className="h-4 w-4" />
+                            View Invoice
+                          </span>
+                        </button>
+                        
+                        {/* Regenerate Invoice - for corrections */}
+                        {!order.paidAt && (
+                          <button
+                            onClick={handleRegenerateInvoice}
+                            disabled={actionLoading.regenerate_invoice}
+                            className="w-full px-3 py-2 bg-amber-600 text-white text-sm rounded-md hover:bg-amber-700 disabled:opacity-50"
+                          >
+                            {actionLoading.regenerate_invoice ? (
+                              <span className="flex items-center justify-center gap-2">
+                                <Loader2 className="h-4 w-4 animate-spin" />
+                                Regenerating...
+                              </span>
+                            ) : (
+                              <span className="flex items-center justify-center gap-2">
+                                <RefreshCw className="h-4 w-4" />
+                                Regenerate Invoice
+                              </span>
+                            )}
+                          </button>
+                        )}
+                      </>
+                    )}
+                    
+                    {/* Mark as Paid - after invoice generated */}
+                    {order.invoicedAt && !order.paidAt && (
+                      <button
+                        onClick={handleMarkPaid}
+                        disabled={actionLoading.mark_paid}
+                        className="w-full px-3 py-2 bg-green-600 text-white text-sm rounded-md hover:bg-green-700 disabled:opacity-50"
+                      >
+                        {actionLoading.mark_paid ? (
+                          <span className="flex items-center justify-center gap-2">
+                            <Loader2 className="h-4 w-4 animate-spin" />
+                            Processing...
+                          </span>
+                        ) : (
+                          <span className="flex items-center justify-center gap-2">
+                            <CheckCircle className="h-4 w-4" />
+                            Mark as Paid
+                          </span>
+                        )}
+                      </button>
+                    )}
+
                     {/* Workflow Generation */}
                     {order.status === 'paid' && (
                       <button
@@ -867,6 +1485,27 @@ export default function InternalOrderManagementPage() {
                           </span>
                         ) : (
                           'Generate Workflows'
+                        )}
+                      </button>
+                    )}
+                    
+                    {/* Rebalance Pools */}
+                    {order.orderGroups && order.orderGroups.some(g => Object.values(siteSubmissions[g.id] || {}).length > 0) && (
+                      <button
+                        onClick={handleRebalancePools}
+                        disabled={actionLoading.rebalance_pools}
+                        className="w-full px-3 py-2 bg-indigo-600 text-white text-sm rounded-md hover:bg-indigo-700 disabled:opacity-50"
+                      >
+                        {actionLoading.rebalance_pools ? (
+                          <span className="flex items-center justify-center gap-2">
+                            <Loader2 className="h-4 w-4 animate-spin" />
+                            Rebalancing...
+                          </span>
+                        ) : (
+                          <span className="flex items-center justify-center gap-2">
+                            <RefreshCw className="h-4 w-4" />
+                            Rebalance Pools
+                          </span>
                         )}
                       </button>
                     )}
@@ -937,305 +1576,36 @@ export default function InternalOrderManagementPage() {
               )}
               
               {/* Order Details Table with Proper Client Grouping */}
-              <div className="bg-white rounded-lg shadow-sm border border-gray-200 overflow-hidden">
-                <div className="p-6 border-b border-gray-200">
-                  <h2 className="text-lg font-semibold text-gray-900">Order Details</h2>
-                </div>
-                
-                <div className="overflow-x-auto">
-                  <table className="min-w-full divide-y divide-gray-200">
-                    <thead className="bg-gray-50">
-                      <tr>
-                        <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                          Client / Target Page
-                        </th>
-                        <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                          Anchor Text
-                        </th>
-                        {/* Progressive disclosure - only show additional columns when relevant */}
-                        {(Object.keys(siteSubmissions).length > 0 || order.state === 'sites_ready' || order.state === 'site_review' || order.state === 'client_reviewing' || order.state === 'in_progress' || order.status === 'completed') && (
-                          <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                            Guest Post Site
-                          </th>
-                        )}
-                        {(order.state === 'in_progress' || order.status === 'completed') && (
-                          <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                            Draft URL
-                          </th>
-                        )}
-                        {order.status === 'completed' && (
-                          <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                            Published URL
-                          </th>
-                        )}
-                        <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                          Internal Tools
-                        </th>
-                        <th className="px-6 py-3 text-right text-xs font-medium text-gray-500 uppercase tracking-wider">
-                          Price
-                        </th>
-                      </tr>
-                    </thead>
-                    <tbody className="bg-white divide-y divide-gray-200">
-                      {/* Group line items by client */}
-                      {order.orderGroups && order.orderGroups.map(group => {
-                        const groupId = group.id;
-                        const isExpanded = expandedGroup === groupId;
-                        
-                        return (
-                        <>
-                          {/* Client group header row */}
-                          <tr key={`${groupId}-header`} className="bg-gray-50">
-                            <td colSpan={getColumnCount()} className="px-6 py-3">
-                              <div className="flex items-center justify-between">
-                                <div>
-                                  <div className="text-sm font-semibold text-gray-900">{group.client.name}</div>
-                                  <div className="text-xs text-gray-500 mt-1">{group.linkCount} link{group.linkCount > 1 ? 's' : ''}</div>
-                                </div>
-                                {group.bulkAnalysisProjectId && (
-                                  <Link
-                                    href={`/clients/${group.clientId}/bulk-analysis/projects/${group.bulkAnalysisProjectId}`}
-                                    className="inline-flex items-center text-xs text-blue-600 hover:text-blue-800"
-                                  >
-                                    <Database className="h-3 w-3 mr-1" />
-                                    Bulk Analysis
-                                    <ExternalLink className="h-3 w-3 ml-1" />
-                                  </Link>
-                                )}
-                              </div>
-                            </td>
-                          </tr>
-                          {/* Line items for this client */}
-                          {[...Array(group.linkCount)].map((_, index) => {
-                            const targetPageUrl = group.targetPages?.[index]?.url;
-                            // Find site submission for this target page
-                            const siteSuggestion = siteSubmissions[groupId]?.find(sub => 
-                              sub.targetPageUrl === targetPageUrl
-                            );
-                            
-                            return (
-                              <tr key={`${groupId}-${index}`} className="hover:bg-gray-50">
-                                <td className="px-6 py-4 pl-12">
-                                  <div className="text-sm text-gray-600">
-                                    {targetPageUrl || 'No target page selected'}
-                                  </div>
-                                </td>
-                                <td className="px-6 py-4 text-sm text-gray-900">
-                                  {group.anchorTexts?.[index] || '-'}
-                                </td>
-                                {(Object.keys(siteSubmissions).length > 0 || order.state === 'sites_ready' || order.state === 'site_review' || order.state === 'client_reviewing' || order.state === 'in_progress' || order.status === 'completed') && (
-                                  <td className="px-6 py-4">
-                                    {siteSuggestion ? (
-                                      <div className="flex items-center gap-2">
-                                        <Globe className="h-4 w-4 text-blue-600" />
-                                        <div>
-                                          <div className="text-sm font-medium text-gray-900">{siteSuggestion.domain?.domain || 'Unknown'}</div>
-                                          <div className="text-xs text-gray-500">
-                                            {siteSuggestion.submissionStatus === 'client_approved' ? (
-                                              <span className="text-green-600">Approved</span>
-                                            ) : siteSuggestion.submissionStatus === 'client_rejected' ? (
-                                              <span className="text-red-600">Rejected</span>
-                                            ) : (
-                                              <span className="text-yellow-600">Suggested</span>
-                                            )}
-                                          </div>
-                                        </div>
-                                      </div>
-                                    ) : (
-                                      <span className="text-sm text-gray-400">No site suggested</span>
-                                    )}
-                                  </td>
-                                )}
-                                {(order.state === 'in_progress' || order.status === 'completed') && (
-                                  <td className="px-6 py-4">
-                                    <span className="text-sm text-gray-400">-</span>
-                                  </td>
-                                )}
-                                {order.status === 'completed' && (
-                                  <td className="px-6 py-4">
-                                    <span className="text-sm text-gray-400">-</span>
-                                  </td>
-                                )}
-                                <td className="px-6 py-4">
-                                  {index === 0 && group.bulkAnalysisProjectId && (
-                                    <Link
-                                      href={`/clients/${group.clientId}/bulk-analysis/projects/${group.bulkAnalysisProjectId}`}
-                                      className="inline-flex items-center text-sm text-blue-600 hover:text-blue-800"
-                                    >
-                                      <Search className="h-3 w-3 mr-1" />
-                                      Analyze
-                                    </Link>
-                                  )}
-                                </td>
-                                <td className="px-6 py-4 text-right text-sm font-medium text-gray-900">
-                                  {/* Only show price on the first item in the group */}
-                                  {index === 0 ? formatCurrency(group.packagePrice || 0) : ''}
-                                </td>
-                              </tr>
-                            );
-                          })}
-                          
-                          {/* Orphaned domains (no target URL) for this client */}
-                          {siteSubmissions[groupId] && (() => {
-                            const orphanedDomains = siteSubmissions[groupId].filter(sub => 
-                              !sub.targetPageUrl || sub.targetPageUrl === ''
-                            );
-                            return orphanedDomains.length > 0 ? (
-                              <>
-                                <tr className="bg-yellow-50">
-                                  <td colSpan={getColumnCount()} className="px-6 py-3">
-                                    <div className="flex items-center justify-between">
-                                      <div className="flex items-center gap-2">
-                                        <AlertCircle className="h-4 w-4 text-yellow-600" />
-                                        <div>
-                                          <div className="text-sm font-medium text-yellow-900">Unassigned Domains</div>
-                                          <div className="text-xs text-yellow-700 mt-1">
-                                            {orphanedDomains.length} domain{orphanedDomains.length > 1 ? 's' : ''} need to be paired with target pages
-                                          </div>
-                                        </div>
-                                      </div>
-                                    </div>
-                                  </td>
-                                </tr>
-                                {orphanedDomains.map((submission) => (
-                                  <tr key={submission.id} className="bg-yellow-50 hover:bg-yellow-100">
-                                    <td className="px-6 py-4 pl-12">
-                                      <div className="flex items-start gap-3">
-                                        <Globe className="h-5 w-5 text-yellow-600 mt-0.5" />
-                                        <div className="flex-1">
-                                          <div className="text-sm font-medium text-gray-900">{submission.domain?.domain || 'Unknown'}</div>
-                                          <div className="flex items-center gap-4 mt-1 text-xs text-gray-600">
-                                            {submission.domainRating && (
-                                              <span>DR: {submission.domainRating}</span>
-                                            )}
-                                            {submission.traffic && (
-                                              <span>Traffic: {submission.traffic.toLocaleString()}</span>
-                                            )}
-                                          </div>
-                                        </div>
-                                      </div>
-                                    </td>
-                                    <td className="px-6 py-4">
-                                      <select 
-                                        className="text-sm border-gray-300 rounded-md"
-                                        defaultValue=""
-                                        onChange={async (e) => {
-                                          if (e.target.value) {
-                                            await handleAssignTargetPage(submission.id, e.target.value, groupId);
-                                          }
-                                        }}
-                                      >
-                                        <option value="">Select target page...</option>
-                                        {group.targetPages?.map((page, idx) => (
-                                          <option key={idx} value={page.url}>
-                                            {page.url}
-                                          </option>
-                                        ))}
-                                      </select>
-                                    </td>
-                                    {(Object.keys(siteSubmissions).length > 0 || order.state === 'sites_ready' || order.state === 'site_review' || order.state === 'client_reviewing' || order.state === 'in_progress' || order.status === 'completed') && (
-                                      <td colSpan={getColumnCount() - 3} className="px-6 py-4">
-                                        <span className="text-xs text-yellow-600">Needs target page assignment</span>
-                                      </td>
-                                    )}
-                                    <td className="px-6 py-4 text-right">
-                                      <span className="text-sm font-medium text-gray-900">
-                                        {formatCurrency(submission.price)}
-                                      </span>
-                                    </td>
-                                  </tr>
-                                ))}
-                              </>
-                            ) : null;
-                          })()}
-                          
-                          {/* Site submissions for this client when in site_review state */}
-                          {(order.state === 'sites_ready' || order.state === 'site_review' || order.state === 'client_reviewing') && siteSubmissions[groupId] && siteSubmissions[groupId].length > 0 && (
-                            <>
-                              <tr className="bg-purple-50">
-                                <td colSpan={getColumnCount()} className="px-6 py-3">
-                                  <div className="flex items-center justify-between">
-                                    <div>
-                                      <div className="text-sm font-medium text-purple-900">Site Submissions</div>
-                                      <div className="text-xs text-purple-700 mt-1">
-                                        {siteSubmissions[groupId].length} sites submitted for review
-                                      </div>
-                                    </div>
-                                    <button
-                                      onClick={() => setExpandedGroup(isExpanded ? null : groupId)}
-                                      className="text-sm text-purple-600 hover:text-purple-800"
-                                    >
-                                      {isExpanded ? 'Hide' : 'Show'} Details
-                                    </button>
-                                  </div>
-                                </td>
-                              </tr>
-                              {isExpanded && siteSubmissions[groupId].map((submission) => (
-                                <tr key={submission.id} className="bg-purple-50 hover:bg-purple-100">
-                                  <td className="px-6 py-4 pl-12">
-                                    <div className="flex items-start gap-3">
-                                      <Globe className="h-5 w-5 text-purple-600 mt-0.5" />
-                                      <div className="flex-1">
-                                        <div className="text-sm font-medium text-gray-900">{submission.domain?.domain || 'Unknown'}</div>
-                                        <div className="flex items-center gap-4 mt-1 text-xs text-gray-600">
-                                          {submission.domainRating && (
-                                            <span>DR: {submission.domainRating}</span>
-                                          )}
-                                          {submission.traffic && (
-                                            <span>Traffic: {submission.traffic.toLocaleString()}</span>
-                                          )}
-                                          <span className="font-medium">{formatCurrency(submission.price)}</span>
-                                        </div>
-                                      </div>
-                                    </div>
-                                  </td>
-                                  <td colSpan={getColumnCount() - 2} className="px-6 py-4">
-                                    <div className="flex items-center gap-2">
-                                      <span className={`px-2 py-1 rounded text-xs font-medium ${
-                                        submission.status === 'approved' ? 'bg-green-100 text-green-800' :
-                                        submission.status === 'rejected' ? 'bg-red-100 text-red-800' :
-                                        'bg-yellow-100 text-yellow-800'
-                                      }`}>
-                                        {submission.status === 'approved' ? 'Client Approved' :
-                                         submission.status === 'rejected' ? 'Client Rejected' :
-                                         'Pending Review'}
-                                      </span>
-                                      {submission.clientReviewNotes && (
-                                        <span className="text-xs text-gray-600 italic">
-                                          "{submission.clientReviewNotes}"
-                                        </span>
-                                      )}
-                                    </div>
-                                  </td>
-                                  <td className="px-6 py-4 text-right">
-                                    <span className="text-sm font-medium text-gray-900">
-                                      {formatCurrency(submission.price)}
-                                    </span>
-                                  </td>
-                                </tr>
-                              ))}
-                            </>
-                          )}
-                        </>
-                        );
-                      })}
-                    </tbody>
-                    <tfoot className="bg-gray-50">
-                      <tr>
-                        <td colSpan={getColumnCount() - 1} className="px-6 py-4 text-right text-sm font-medium text-gray-900">
-                          Total
-                        </td>
-                        <td className="px-6 py-4 text-right text-sm font-bold text-gray-900">
-                          {formatCurrency(order.totalPrice)}
-                        </td>
-                      </tr>
-                    </tfoot>
-                  </table>
-                </div>
-              </div>
+              <OrderSiteReviewTable
+                orderId={orderId}
+                orderGroups={order.orderGroups || []}
+                siteSubmissions={siteSubmissions}
+                userType="internal"
+                permissions={{
+                  canRebalancePools: true,
+                  canAssignTargetPages: true,
+                  canSwitchPools: true,
+                  canApproveReject: true,
+                  canGenerateWorkflows: true,
+                  canMarkSitesReady: true,
+                  canViewInternalTools: true,
+                  canViewPricing: true,
+                  canEditDomainAssignments: true
+                }}
+                workflowStage={workflowStage}
+                onAssignTargetPage={handleAssignTargetPage}
+                onSwitchPool={handleSwitchDomain}
+                onRefresh={handleRefresh}
+              />
+              
+              {/* Admin Domain Management Table */}
+              <AdminDomainTable 
+                orderId={orderId}
+                onRefresh={handleRefresh}
+              />
               
               {/* Additional Information Cards */}
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-6 mt-6">
+              <div className="grid grid-cols-1 lg:grid-cols-2 gap-6 mt-6">
                 {/* Timeline */}
                 <div className="bg-white rounded-lg border border-gray-200 shadow-sm p-6">
                   <h3 className="text-lg font-semibold mb-4">Timeline</h3>
@@ -1253,6 +1623,15 @@ export default function InternalOrderManagementPage() {
                         <div>
                           <p className="text-sm font-medium text-gray-900">Confirmed</p>
                           <p className="text-sm text-gray-600">{new Date(order.approvedAt).toLocaleDateString()}</p>
+                        </div>
+                      </div>
+                    )}
+                    {order.invoicedAt && (
+                      <div className="flex items-start gap-3">
+                        <FileText className="h-4 w-4 text-orange-500 mt-0.5" />
+                        <div>
+                          <p className="text-sm font-medium text-gray-900">Invoiced</p>
+                          <p className="text-sm text-gray-600">{new Date(order.invoicedAt).toLocaleDateString()}</p>
                         </div>
                       </div>
                     )}
@@ -1334,7 +1713,7 @@ export default function InternalOrderManagementPage() {
                     <DollarSign className="h-5 w-5 mr-2 text-gray-400" />
                     Pricing Analysis
                   </h3>
-                  <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                  <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
                     <div>
                       <h4 className="text-sm font-medium text-gray-700 mb-3">Customer Pricing</h4>
                       <dl className="space-y-2">

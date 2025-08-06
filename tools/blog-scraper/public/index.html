@@ -1,0 +1,387 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Linkio Blog Scraper</title>
+  <style>
+    * {
+      box-sizing: border-box;
+      margin: 0;
+      padding: 0;
+    }
+    
+    body {
+      font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+      background: #f5f5f5;
+      padding: 20px;
+    }
+    
+    .container {
+      max-width: 1200px;
+      margin: 0 auto;
+      background: white;
+      border-radius: 8px;
+      box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+      padding: 30px;
+    }
+    
+    h1 {
+      color: #333;
+      margin-bottom: 30px;
+    }
+    
+    .input-group {
+      margin-bottom: 20px;
+    }
+    
+    label {
+      display: block;
+      margin-bottom: 5px;
+      font-weight: 500;
+      color: #555;
+    }
+    
+    input[type="text"] {
+      width: 100%;
+      padding: 10px;
+      border: 1px solid #ddd;
+      border-radius: 4px;
+      font-size: 16px;
+    }
+    
+    button {
+      background: #007bff;
+      color: white;
+      border: none;
+      padding: 10px 20px;
+      border-radius: 4px;
+      font-size: 16px;
+      cursor: pointer;
+      margin-right: 10px;
+    }
+    
+    button:hover {
+      background: #0056b3;
+    }
+    
+    button:disabled {
+      background: #ccc;
+      cursor: not-allowed;
+    }
+    
+    .urls-list {
+      margin: 20px 0;
+      border: 1px solid #ddd;
+      border-radius: 4px;
+      max-height: 400px;
+      overflow-y: auto;
+    }
+    
+    .url-item {
+      padding: 10px 15px;
+      border-bottom: 1px solid #eee;
+      display: flex;
+      align-items: center;
+      gap: 10px;
+    }
+    
+    .url-item:last-child {
+      border-bottom: none;
+    }
+    
+    .url-item:hover {
+      background: #f8f9fa;
+    }
+    
+    .url-item input[type="checkbox"] {
+      width: 18px;
+      height: 18px;
+      cursor: pointer;
+    }
+    
+    .url-item label {
+      margin: 0;
+      font-weight: normal;
+      cursor: pointer;
+      flex: 1;
+    }
+    
+    .status {
+      margin-top: 20px;
+      padding: 15px;
+      border-radius: 4px;
+      display: none;
+    }
+    
+    .status.info {
+      background: #d1ecf1;
+      color: #0c5460;
+      border: 1px solid #bee5eb;
+    }
+    
+    .status.success {
+      background: #d4edda;
+      color: #155724;
+      border: 1px solid #c3e6cb;
+    }
+    
+    .status.error {
+      background: #f8d7da;
+      color: #721c24;
+      border: 1px solid #f5c6cb;
+    }
+    
+    .progress {
+      margin-top: 20px;
+      display: none;
+    }
+    
+    .progress-bar {
+      width: 100%;
+      height: 20px;
+      background: #e9ecef;
+      border-radius: 4px;
+      overflow: hidden;
+    }
+    
+    .progress-fill {
+      height: 100%;
+      background: #007bff;
+      transition: width 0.3s ease;
+    }
+    
+    .results {
+      margin-top: 20px;
+    }
+    
+    .result-item {
+      padding: 10px;
+      margin-bottom: 10px;
+      border-radius: 4px;
+    }
+    
+    .result-item.success {
+      background: #d4edda;
+      color: #155724;
+    }
+    
+    .result-item.error {
+      background: #f8d7da;
+      color: #721c24;
+    }
+    
+    .controls {
+      margin: 20px 0;
+    }
+    
+    .select-all {
+      margin-right: 20px;
+    }
+  </style>
+</head>
+<body>
+  <div class="container">
+    <h1>Linkio Blog Scraper</h1>
+    
+    <div class="input-group">
+      <label for="sitemap-url">Sitemap URL:</label>
+      <input 
+        type="text" 
+        id="sitemap-url" 
+        placeholder="https://www.linkio.com/sitemap.xml"
+        value="https://www.linkio.com/sitemap.xml"
+      >
+    </div>
+    
+    <button id="fetch-sitemap">Fetch Sitemap</button>
+    
+    <div class="controls" style="display: none;">
+      <label class="select-all">
+        <input type="checkbox" id="select-all"> Select All
+      </label>
+      <button id="scrape-selected">Scrape Selected Posts</button>
+    </div>
+    
+    <div class="urls-list" id="urls-list" style="display: none;"></div>
+    
+    <div class="status" id="status"></div>
+    
+    <div class="progress" id="progress">
+      <div class="progress-bar">
+        <div class="progress-fill" id="progress-fill"></div>
+      </div>
+      <p id="progress-text"></p>
+    </div>
+    
+    <div class="results" id="results"></div>
+  </div>
+  
+  <script>
+    const sitemapInput = document.getElementById('sitemap-url');
+    const fetchButton = document.getElementById('fetch-sitemap');
+    const urlsList = document.getElementById('urls-list');
+    const statusDiv = document.getElementById('status');
+    const scrapeButton = document.getElementById('scrape-selected');
+    const selectAllCheckbox = document.getElementById('select-all');
+    const controlsDiv = document.querySelector('.controls');
+    const progressDiv = document.getElementById('progress');
+    const progressFill = document.getElementById('progress-fill');
+    const progressText = document.getElementById('progress-text');
+    const resultsDiv = document.getElementById('results');
+    
+    let allUrls = [];
+    
+    function showStatus(message, type = 'info') {
+      statusDiv.textContent = message;
+      statusDiv.className = `status ${type}`;
+      statusDiv.style.display = 'block';
+    }
+    
+    function hideStatus() {
+      statusDiv.style.display = 'none';
+    }
+    
+    fetchButton.addEventListener('click', async () => {
+      const sitemapUrl = sitemapInput.value.trim();
+      
+      if (!sitemapUrl) {
+        showStatus('Please enter a sitemap URL', 'error');
+        return;
+      }
+      
+      fetchButton.disabled = true;
+      showStatus('Fetching sitemap...');
+      
+      try {
+        const response = await fetch(`/api/sitemap?url=${encodeURIComponent(sitemapUrl)}`);
+        const data = await response.json();
+        
+        if (!response.ok) {
+          throw new Error(data.error || 'Failed to fetch sitemap');
+        }
+        
+        allUrls = data.urls;
+        displayUrls(allUrls);
+        showStatus(`Found ${allUrls.length} URLs`, 'success');
+        
+      } catch (error) {
+        showStatus(`Error: ${error.message}`, 'error');
+      } finally {
+        fetchButton.disabled = false;
+      }
+    });
+    
+    function displayUrls(urls) {
+      urlsList.innerHTML = '';
+      urlsList.style.display = 'block';
+      controlsDiv.style.display = 'block';
+      
+      // Filter blog posts (exclude non-blog pages)
+      const blogUrls = urls.filter(url => {
+        const loc = url.loc.toLowerCase();
+        return loc.includes('/blog/') || 
+               loc.includes('/post/') || 
+               loc.includes('/article/') ||
+               (loc.includes('linkio.com/') && 
+                !loc.endsWith('linkio.com/') && 
+                !loc.includes('/tag/') && 
+                !loc.includes('/category/') &&
+                !loc.includes('/page/') &&
+                !loc.includes('.xml'));
+      });
+      
+      blogUrls.forEach((url, index) => {
+        const div = document.createElement('div');
+        div.className = 'url-item';
+        
+        const checkbox = document.createElement('input');
+        checkbox.type = 'checkbox';
+        checkbox.id = `url-${index}`;
+        checkbox.value = url.loc;
+        
+        const label = document.createElement('label');
+        label.htmlFor = `url-${index}`;
+        label.textContent = url.loc;
+        
+        div.appendChild(checkbox);
+        div.appendChild(label);
+        
+        urlsList.appendChild(div);
+      });
+    }
+    
+    selectAllCheckbox.addEventListener('change', (e) => {
+      const checkboxes = urlsList.querySelectorAll('input[type="checkbox"]');
+      checkboxes.forEach(cb => cb.checked = e.target.checked);
+    });
+    
+    scrapeButton.addEventListener('click', async () => {
+      const checkboxes = urlsList.querySelectorAll('input[type="checkbox"]:checked');
+      const selectedUrls = Array.from(checkboxes).map(cb => cb.value);
+      
+      if (selectedUrls.length === 0) {
+        showStatus('Please select at least one URL to scrape', 'error');
+        return;
+      }
+      
+      scrapeButton.disabled = true;
+      progressDiv.style.display = 'block';
+      resultsDiv.innerHTML = '';
+      hideStatus();
+      
+      try {
+        progressText.textContent = `Scraping ${selectedUrls.length} posts...`;
+        progressFill.style.width = '10%';
+        
+        const response = await fetch('/api/scrape', {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json'
+          },
+          body: JSON.stringify({ urls: selectedUrls })
+        });
+        
+        const data = await response.json();
+        
+        if (!response.ok) {
+          throw new Error(data.error || 'Failed to scrape posts');
+        }
+        
+        progressFill.style.width = '100%';
+        progressText.textContent = 'Scraping complete!';
+        
+        // Display results
+        displayResults(data.results);
+        
+        if (data.outputDir) {
+          showStatus(`Scraping complete! Files saved to: ${data.outputDir}`, 'success');
+        }
+        
+      } catch (error) {
+        showStatus(`Error: ${error.message}`, 'error');
+      } finally {
+        scrapeButton.disabled = false;
+        setTimeout(() => {
+          progressDiv.style.display = 'none';
+        }, 2000);
+      }
+    });
+    
+    function displayResults(results) {
+      results.forEach(result => {
+        const div = document.createElement('div');
+        div.className = `result-item ${result.status}`;
+        
+        if (result.status === 'success') {
+          div.textContent = `✓ ${result.title || result.url} - ${result.imagesCount} images`;
+        } else {
+          div.textContent = `✗ ${result.url} - ${result.error}`;
+        }
+        
+        resultsDiv.appendChild(div);
+      });
+    }
+  </script>
+</body>
+</html>

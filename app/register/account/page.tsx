@@ -216,7 +216,7 @@ function AccountRegistrationContent() {
       <div className="max-w-md w-full">
         <div className="text-center mb-8">
           <h1 className="text-3xl font-bold text-gray-900">Create Your Account</h1>
-          <p className="mt-2 text-gray-600">Complete your registration to access PostFlow</p>
+          <p className="mt-2 text-gray-600">Complete your registration to access Linkio</p>
         </div>
 
         <div className="bg-white rounded-lg shadow-md p-8">

@@ -74,13 +74,20 @@ export async function POST(request: NextRequest) {
 
 export async function GET(request: NextRequest) {
   try {
-    // Check if this is a simple request (no auth required for new order system)
+    // SECURITY: All account access requires authentication
+    const session = await AuthServiceServer.getSession(request);
+    
+    if (!session || session.userType !== 'internal') {
+      return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
+    }
+
+    // Parse query parameters after authentication
     const { searchParams } = new URL(request.url);
     const simple = searchParams.get('simple') === 'true';
     const ids = searchParams.get('ids');
     
     if (simple) {
-      // Simple mode for new order system - return accounts
+      // Simple mode for new order system - return accounts (AUTHENTICATED)
       const accountsList = await db.select({
         id: accounts.id,
         email: accounts.email,
@@ -94,7 +101,7 @@ export async function GET(request: NextRequest) {
       return NextResponse.json(accountsList);
     }
     
-    // Support filtering by IDs
+    // Support filtering by IDs (AUTHENTICATED)
     if (ids) {
       const { inArray } = await import('drizzle-orm');
       const idArray = ids.split(',');
@@ -102,13 +109,6 @@ export async function GET(request: NextRequest) {
         where: inArray(accounts.id, idArray),
       });
       return NextResponse.json({ accounts: accountsList });
-    }
-    
-    // Original implementation for legacy system
-    const session = await AuthServiceServer.getSession(request);
-    
-    if (!session || session.userType !== 'internal') {
-      return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
     }
 
     // Fetch all accounts with their primary client data

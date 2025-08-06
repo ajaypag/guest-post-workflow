@@ -35,7 +35,7 @@ export async function GET(
     
     // Check permissions
     if (session.userType === 'account') {
-      if (order.accountId !== session.accountId) {
+      if (order.accountId !== session.userId) {
         return NextResponse.json({ error: 'Forbidden - Account access denied' }, { status: 403 });
       }
     }
@@ -64,11 +64,24 @@ export async function GET(
       conditions.push(eq(orderSiteSubmissions.submissionStatus, 'pending'));
     }
     
+    // Debug logging
+    console.log('[SUBMISSIONS API] Query conditions:', {
+      orderGroupId: params.groupId,
+      userType: session.userType,
+      sessionUserId: session.userId,
+      orderAccountId: order.accountId,
+      status: status,
+      includeCompleted: includeCompleted,
+      conditions: conditions.length
+    });
+
     // Get submissions
     const submissions = await db.query.orderSiteSubmissions.findMany({
       where: and(...conditions),
       orderBy: (submissions, { desc }) => [desc(submissions.createdAt)]
     });
+
+    console.log('[SUBMISSIONS API] Found submissions:', submissions.length);
     
     // Get domain details for all submissions
     const domainIds = submissions.map(s => s.domainId);
@@ -91,8 +104,20 @@ export async function GET(
           id: domain.id,
           domain: domain.domain,
           qualificationStatus: domain.qualificationStatus,
-          notes: domain.notes
+          notes: domain.notes,
+          // Include bulk analysis data for mini-table
+          overlapStatus: domain.overlapStatus,
+          authorityDirect: domain.authorityDirect,
+          authorityRelated: domain.authorityRelated,
+          topicScope: domain.topicScope,
+          topicReasoning: domain.topicReasoning,
+          aiQualificationReasoning: domain.aiQualificationReasoning,
+          evidence: domain.evidence,
+          keywordCount: domain.keywordCount,
+          hasDataForSeoResults: domain.hasDataForSeoResults,
+          dataForSeoResultsCount: domain.dataForSeoResultsCount
         } : null,
+        // Note: domainRating and traffic would need to be fetched from websites table if needed
         status: submission.submissionStatus,
         targetPageUrl: submission.metadata?.targetPageUrl,
         anchorText: submission.metadata?.anchorText,
@@ -102,6 +127,9 @@ export async function GET(
         submittedAt: submission.submittedAt,
         completedAt: submission.completedAt,
         createdAt: submission.createdAt,
+        // NEW: Pool information
+        selectionPool: submission.selectionPool,
+        poolRank: submission.poolRank,
         canReview: session.userType === 'account' && 
                    submission.submissionStatus === 'pending' &&
                    submission.submittedAt !== null,

@@ -1,130 +1,11 @@
 'use client';
 
 import React from 'react';
-import { Database, Activity, Wrench, Users, BarChart3, Settings, AlertTriangle, Bug, FileSearch, Search, Mail } from 'lucide-react';
+import { Database, Activity, Wrench, Users, BarChart3, Settings, AlertTriangle, Bug, FileSearch, Search, Mail, MessageSquare } from 'lucide-react';
 
 export default function AdminDashboard() {
   const adminTools = [
-    {
-      title: 'Database Migrations',
-      description: 'Run and manage all database migrations from one place',
-      icon: Database,
-      href: '/admin/migrations',
-      color: 'bg-emerald-50 border-emerald-200 text-emerald-700',
-      iconColor: 'text-emerald-600'
-    },
-    {
-      title: 'Airtable Sync',
-      description: 'Sync websites from Airtable to local database',
-      icon: Database,
-      href: '/admin/airtable-sync',
-      color: 'bg-indigo-50 border-indigo-200 text-indigo-700',
-      iconColor: 'text-indigo-600'
-    },
-    {
-      title: 'Database Migration',
-      description: 'Manage database tables and migrations for agentic features',
-      icon: Database,
-      href: '/admin/database-migration',
-      color: 'bg-blue-50 border-blue-200 text-blue-700',
-      iconColor: 'text-blue-600'
-    },
-    {
-      title: 'Bulk URL Migration',
-      description: 'Manage orphan URL support for bulk URL management feature',
-      icon: Database,
-      href: '/admin/bulk-url-migration',
-      color: 'bg-indigo-50 border-indigo-200 text-indigo-700',
-      iconColor: 'text-indigo-600'
-    },
-    {
-      title: 'Unified Order Migration',
-      description: 'Migrate to multi-client order system (advertisers → accounts, order_groups)',
-      icon: Database,
-      href: '/admin/unified-order-migration',
-      color: 'bg-rose-50 border-rose-200 text-rose-700',
-      iconColor: 'text-rose-600'
-    },
-    {
-      title: 'Order System Migration',
-      description: 'Create order_groups, order_site_selections tables for order-centric architecture',
-      icon: Database,
-      href: '/admin/order-system-migration',
-      color: 'bg-purple-50 border-purple-200 text-purple-700',
-      iconColor: 'text-purple-600'
-    },
-    {
-      title: 'DataForSEO Migration',
-      description: 'Manage database migration for DataForSEO integration and keyword analysis',
-      icon: Search,
-      href: '/admin/dataforseo-migration',
-      color: 'bg-blue-50 border-blue-200 text-blue-700',
-      iconColor: 'text-blue-600'
-    },
-    {
-      title: 'DataForSEO Cache Migrations',
-      description: 'Run migrations for smart caching system (fixes cache not working)',
-      icon: Database,
-      href: '/admin/dataforseo-migrations',
-      color: 'bg-cyan-50 border-cyan-200 text-cyan-700',
-      iconColor: 'text-cyan-600'
-    },
-    {
-      title: 'DataForSEO Count Migration',
-      description: 'Add results count column for immediate display in bulk analysis table',
-      icon: Database,
-      href: '/admin/dataforseo-count-migration',
-      color: 'bg-purple-50 border-purple-200 text-purple-700',
-      iconColor: 'text-purple-600'
-    },
-    {
-      title: 'Client Type Migration',
-      description: 'Add prospect vs client type system for bulk analysis dashboard',
-      icon: Database,
-      href: '/admin/client-type-migration',
-      color: 'bg-emerald-50 border-emerald-200 text-emerald-700',
-      iconColor: 'text-emerald-600'
-    },
-    {
-      title: 'Airtable Migration',
-      description: 'Add Airtable metadata columns to bulk_analysis_domains for domain import integration',
-      icon: Database,
-      href: '/admin/airtable-migration',
-      color: 'bg-orange-50 border-orange-200 text-orange-700',
-      iconColor: 'text-orange-600'
-    },
-    {
-      title: 'Add Selected Target Page',
-      description: 'Add selected_target_page_id column to bulk_analysis_domains table',
-      icon: Database,
-      href: '/admin/add-selected-target-page',
-      color: 'bg-violet-50 border-violet-200 text-violet-700',
-      iconColor: 'text-violet-600'
-    },
-    {
-      title: 'Normalized URL Migration',
-      description: 'Add normalized URLs to target pages for better duplicate detection',
-      icon: Database,
-      href: '/admin/normalize-urls-migration',
-      color: 'bg-teal-50 border-teal-200 text-teal-700',
-      iconColor: 'text-teal-600'
-    },
-    {
-      title: 'Draft Orders Migration',
-      description: 'Fix draft orders created by account users to use system user',
-      icon: Database,
-      href: '/admin/draft-orders-migration',
-      color: 'bg-amber-50 border-amber-200 text-amber-700',
-      iconColor: 'text-amber-600'
-    },
-    {
-      title: 'Orders/New Diagnostic',
-      description: 'Diagnose infinite loop issues on the orders/new page',
-      icon: Bug,
-      href: '/admin/orders-new-diagnostic',
-      color: 'bg-red-50 border-red-200 text-red-700',
-      iconColor: 'text-red-600'
-    },
+    // Active Monitoring & Diagnostics
     {
       title: 'Diagnostics',
       description: 'Run comprehensive system diagnostics and health checks',
@@ -142,36 +23,12 @@ export default function AdminDashboard() {
       iconColor: 'text-yellow-600'
     },
     {
-      title: 'Column Size Checker',
-      description: 'Check VARCHAR column sizes for potential data truncation',
-      icon: Database,
-      href: '/admin/column-check',
-      color: 'bg-purple-50 border-purple-200 text-purple-700',
-      iconColor: 'text-purple-600'
-    },
-    {
-      title: 'Fix Formatting QA',
-      description: 'Diagnose and fix formatting QA column size issues',
-      icon: Wrench,
-      href: '/admin/fix-formatting-qa',
-      color: 'bg-orange-50 border-orange-200 text-orange-700',
-      iconColor: 'text-orange-600'
-    },
-    {
       title: 'Outline Generation Health',
       description: 'Check AI outline generation system health and status',
       icon: Activity,
       href: '/admin/outline-generation-health',
       color: 'bg-purple-50 border-purple-200 text-purple-700',
       iconColor: 'text-purple-600'
-    },
-    {
-      title: 'Fix Outline Generation',
-      description: 'Diagnose and fix outline generation issues',
-      icon: Wrench,
-      href: '/admin/fix-outline-generation',
-      color: 'bg-pink-50 border-pink-200 text-pink-700',
-      iconColor: 'text-pink-600'
     },
     {
       title: 'Outline Generation Diagnostics',
@@ -198,6 +55,42 @@ export default function AdminDashboard() {
       iconColor: 'text-cyan-600'
     },
     {
+      title: 'Polish Health Check',
+      description: 'Monitor content polishing service health and performance',
+      icon: Activity,
+      href: '/admin/polish-health',
+      color: 'bg-indigo-50 border-indigo-200 text-indigo-700',
+      iconColor: 'text-indigo-600'
+    },
+    {
+      title: 'Link Orchestration Diagnostics',
+      description: 'Monitor and debug link orchestration service',
+      icon: Activity,
+      href: '/admin/link-orchestration-diagnostics',
+      color: 'bg-violet-50 border-violet-200 text-violet-700',
+      iconColor: 'text-violet-600'
+    },
+    
+    // Order Management Diagnostics
+    {
+      title: 'Order Flow Diagnostics',
+      description: 'Debug order creation and flow issues',
+      icon: Bug,
+      href: '/admin/order-flow-diagnostics',
+      color: 'bg-orange-50 border-orange-200 text-orange-700',
+      iconColor: 'text-orange-600'
+    },
+    {
+      title: 'Order Status Diagnostics',
+      description: 'Check order status and group integrity',
+      icon: Activity,
+      href: '/admin/order-status-diagnostics',
+      color: 'bg-lime-50 border-lime-200 text-lime-700',
+      iconColor: 'text-lime-600'
+    },
+    
+    // User & Account Management
+    {
       title: 'User Management',
       description: 'Manage users, permissions, and send invitations',
       icon: Users,
@@ -206,20 +99,12 @@ export default function AdminDashboard() {
       iconColor: 'text-indigo-600'
     },
     {
-      title: 'Email Management',
-      description: 'Monitor email communications, view logs, and send test emails',
+      title: 'Account Invitations',
+      description: 'Manage account invitations and access',
       icon: Mail,
-      href: '/admin/email',
-      color: 'bg-emerald-50 border-emerald-200 text-emerald-700',
-      iconColor: 'text-emerald-600'
-    },
-    {
-      title: 'User System Migration',
-      description: 'Migrate user system to support invite-only registration and multiple user types',
-      icon: Users,
-      href: '/admin/user-system-migration',
-      color: 'bg-pink-50 border-pink-200 text-pink-700',
-      iconColor: 'text-pink-600'
+      href: '/admin/account-invitations',
+      color: 'bg-blue-50 border-blue-200 text-blue-700',
+      iconColor: 'text-blue-600'
     },
     {
       title: 'Debug Invitations',
@@ -230,6 +115,58 @@ export default function AdminDashboard() {
       iconColor: 'text-purple-600'
     },
     {
+      title: 'Debug Account Clients',
+      description: 'Debug account and client relationships',
+      icon: Bug,
+      href: '/admin/debug-account-clients',
+      color: 'bg-rose-50 border-rose-200 text-rose-700',
+      iconColor: 'text-rose-600'
+    },
+    {
+      title: 'Create System User',
+      description: 'Create internal system users for automation',
+      icon: Users,
+      href: '/admin/create-system-user',
+      color: 'bg-teal-50 border-teal-200 text-teal-700',
+      iconColor: 'text-teal-600'
+    },
+    
+    // External Integrations
+    {
+      title: 'Airtable Sync',
+      description: 'Sync websites from Airtable to local database',
+      icon: Database,
+      href: '/admin/airtable-sync',
+      color: 'bg-indigo-50 border-indigo-200 text-indigo-700',
+      iconColor: 'text-indigo-600'
+    },
+    {
+      title: 'Chatwoot Integration',
+      description: 'Sync Linkio contacts and orders with Chatwoot for customer support',
+      icon: MessageSquare,
+      href: '/admin/chatwoot-sync',
+      color: 'bg-blue-50 border-blue-200 text-blue-700',
+      iconColor: 'text-blue-600'
+    },
+    {
+      title: 'Chatwoot Email Test',
+      description: 'Test Chatwoot email sending and status tracking functionality',
+      icon: Mail,
+      href: '/admin/chatwoot-test',
+      color: 'bg-purple-50 border-purple-200 text-purple-700',
+      iconColor: 'text-purple-600'
+    },
+    
+    // Email & Analytics
+    {
+      title: 'Email Management',
+      description: 'Monitor email communications, view logs, and send test emails',
+      icon: Mail,
+      href: '/admin/email',
+      color: 'bg-emerald-50 border-emerald-200 text-emerald-700',
+      iconColor: 'text-emerald-600'
+    },
+    {
       title: 'Analytics',
       description: 'View system usage and performance analytics',
       icon: BarChart3,
@@ -237,14 +174,8 @@ export default function AdminDashboard() {
       color: 'bg-teal-50 border-teal-200 text-teal-700',
       iconColor: 'text-teal-600'
     },
-    {
-      title: 'o3 Response Analyzer',
-      description: 'Analyze o3-deep-research responses to fix parsing issues',
-      icon: FileSearch,
-      href: '/admin/o3-response-analyzer',
-      color: 'bg-purple-50 border-purple-200 text-purple-700',
-      iconColor: 'text-purple-600'
-    },
+    
+    // DataForSEO Monitoring
     {
       title: 'DataForSEO Monitoring',
       description: 'Monitor API calls, analyze keyword filtering patterns, and debug issues',
@@ -260,54 +191,6 @@ export default function AdminDashboard() {
       href: '/admin/dataforseo-audit',
       color: 'bg-amber-50 border-amber-200 text-amber-700',
       iconColor: 'text-amber-600'
-    },
-    {
-      title: 'Bulk Analysis Debug',
-      description: 'Debug manual keywords domain persistence issues',
-      icon: Bug,
-      href: '/api/admin/bulk-analysis-debug?clientId=test',
-      color: 'bg-red-50 border-red-200 text-red-700',
-      iconColor: 'text-red-600'
-    },
-    {
-      title: 'Bulk Analysis Test',
-      description: 'Test manual keywords domain creation fix',
-      icon: Activity,
-      href: '/admin/bulk-analysis-test',
-      color: 'bg-green-50 border-green-200 text-green-700',
-      iconColor: 'text-green-600'
-    },
-    {
-      title: 'Debug Analyzed Count',
-      description: 'Debug why analyzed metric shows 0 for projects',
-      icon: Bug,
-      href: '/api/admin/debug-analyzed-count',
-      color: 'bg-yellow-50 border-yellow-200 text-yellow-700',
-      iconColor: 'text-yellow-600'
-    },
-    {
-      title: 'Check Account Data',
-      description: 'Check integrity of account users and their linked clients',
-      icon: AlertTriangle,
-      href: '/api/admin/check-account-data',
-      color: 'bg-red-50 border-red-200 text-red-700',
-      iconColor: 'text-red-600'
-    },
-    {
-      title: 'Fix Account Data',
-      description: 'Create missing account records and link to clients',
-      icon: Wrench,
-      href: '/api/admin/fix-account-data',
-      color: 'bg-green-50 border-green-200 text-green-700',
-      iconColor: 'text-green-600'
-    },
-    {
-      title: 'Debug Clients API',
-      description: 'Debug why clients/projects are not showing for internal users',
-      icon: Bug,
-      href: '/api/admin/debug-clients-api',
-      color: 'bg-purple-50 border-purple-200 text-purple-700',
-      iconColor: 'text-purple-600'
     }
   ];
 
@@ -324,10 +207,10 @@ export default function AdminDashboard() {
             <div className="flex items-start space-x-3">
               <AlertTriangle className="w-5 h-5 text-yellow-600 mt-0.5" />
               <div>
-                <h3 className="text-sm font-semibold text-yellow-800">Admin Tools Overview</h3>
+                <h3 className="text-sm font-semibold text-yellow-800">Admin Tools</h3>
                 <p className="text-sm text-yellow-700 mt-1">
-                  These tools are designed for database management and system diagnostics. 
-                  All agentic features require proper database tables to function correctly.
+                  These tools are for system monitoring, diagnostics, and management. 
+                  Access is restricted to internal users only.
                 </p>
               </div>
             </div>
@@ -351,22 +234,29 @@ export default function AdminDashboard() {
 
           <div className="mt-8 pt-6 border-t border-gray-200">
             <div className="bg-gray-50 rounded-lg p-4">
-              <h3 className="font-semibold text-gray-900 mb-2">Quick Reference</h3>
+              <h3 className="font-semibold text-gray-900 mb-2">Tool Categories</h3>
               <div className="grid grid-cols-1 md:grid-cols-2 gap-4 text-sm text-gray-600">
                 <div>
-                  <strong>Database Migration:</strong> Check/Create/Remove tables for agentic features
+                  <strong>Monitoring & Diagnostics:</strong> System health and performance monitoring
                 </div>
                 <div>
-                  <strong>Diagnostics:</strong> Comprehensive system health analysis
+                  <strong>User Management:</strong> User accounts, permissions, and invitations
                 </div>
                 <div>
-                  <strong>Column Check:</strong> Verify VARCHAR column sizes across all tables
+                  <strong>External Integrations:</strong> Airtable, Chatwoot, and email services
                 </div>
                 <div>
-                  <strong>Fix Formatting QA:</strong> Resolve specific formatting QA issues
+                  <strong>Analytics & Audit:</strong> Usage tracking and API monitoring
                 </div>
               </div>
             </div>
+          </div>
+
+          <div className="mt-4 p-4 bg-blue-50 border border-blue-200 rounded-lg">
+            <p className="text-sm text-blue-800">
+              <strong>Note:</strong> All admin endpoints require authentication. 
+              If you encounter any 404 errors, those tools have been deprecated and removed for security.
+            </p>
           </div>
         </div>
       </div>

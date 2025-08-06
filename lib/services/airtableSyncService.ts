@@ -108,11 +108,11 @@ export class AirtableSyncService {
       const websiteResult = await client.query(`
         INSERT INTO websites (
           airtable_id, domain, domain_rating, total_traffic,
-          guest_post_cost, categories, type, status,
+          guest_post_cost, categories, type, website_type, niche, status,
           has_guest_post, has_link_insert, published_opportunities,
           overall_quality, airtable_created_at, airtable_updated_at,
           last_synced_at
-        ) VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, NOW(), NOW(), NOW())
+        ) VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13, $14, NOW(), NOW(), NOW())
         ON CONFLICT (airtable_id) DO UPDATE SET
           domain = EXCLUDED.domain,
           domain_rating = EXCLUDED.domain_rating,
@@ -120,6 +120,8 @@ export class AirtableSyncService {
           guest_post_cost = EXCLUDED.guest_post_cost,
           categories = EXCLUDED.categories,
           type = EXCLUDED.type,
+          website_type = EXCLUDED.website_type,
+          niche = EXCLUDED.niche,
           status = EXCLUDED.status,
           has_guest_post = EXCLUDED.has_guest_post,
           has_link_insert = EXCLUDED.has_link_insert,
@@ -136,6 +138,8 @@ export class AirtableSyncService {
         website.guestPostCost,
         website.categories,
         website.type,
+        website.websiteType,
+        website.niche,
         website.status,
         website.hasGuestPost,
         website.hasLinkInsert,
@@ -264,6 +268,37 @@ export class AirtableSyncService {
     if (filters.categories && filters.categories.length > 0) {
       conditions.push(`w.categories && $${paramIndex++}`);
       params.push(filters.categories);
+    }
+    
+    if (filters.websiteTypes && filters.websiteTypes.length > 0) {
+      conditions.push(`w.website_type && $${paramIndex++}`);
+      params.push(filters.websiteTypes);
+    }
+    
+    if (filters.niches && filters.niches.length > 0) {
+      conditions.push(`w.niche && $${paramIndex++}`);
+      params.push(filters.niches);
+    }
+    
+    // Airtable metadata filters
+    if (filters.airtableUpdatedAfter) {
+      conditions.push(`w.airtable_updated_at >= $${paramIndex++}`);
+      params.push(filters.airtableUpdatedAfter);
+    }
+    
+    if (filters.airtableUpdatedBefore) {
+      conditions.push(`w.airtable_updated_at <= $${paramIndex++}`);
+      params.push(filters.airtableUpdatedBefore);
+    }
+    
+    if (filters.lastSyncedAfter) {
+      conditions.push(`w.last_synced_at >= $${paramIndex++}`);
+      params.push(filters.lastSyncedAfter);
+    }
+    
+    if (filters.lastSyncedBefore) {
+      conditions.push(`w.last_synced_at <= $${paramIndex++}`);
+      params.push(filters.lastSyncedBefore);
     }
     
     // Handle qualification filters

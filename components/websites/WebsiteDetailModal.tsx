@@ -43,6 +43,8 @@ interface Website {
   guestPostCost: number | null;
   categories: string[];
   type: string[];
+  websiteType: string[]; // SaaS, Blog, News, eCommerce, etc.
+  niche: string[]; // Multiple niches
   status: string;
   hasGuestPost: boolean;
   hasLinkInsert: boolean;
@@ -51,6 +53,8 @@ interface Website {
   lastSyncedAt: string;
   createdAt: string;
   updatedAt: string;
+  airtableCreatedAt?: string;
+  airtableUpdatedAt?: string;
   // Additional fields from Airtable
   domainAuthority?: number | null;
   spamScore?: number | null;
@@ -332,6 +336,9 @@ export default function WebsiteDetailModal({
                   {/* Timestamps */}
                   <div className="text-sm text-gray-500 space-y-1">
                     <div>Last synced: {format(new Date(website.lastSyncedAt), 'PPp')}</div>
+                    {website.airtableUpdatedAt && (
+                      <div>Airtable updated: {format(new Date(website.airtableUpdatedAt), 'PPp')}</div>
+                    )}
                     <div>Added to database: {format(new Date(website.createdAt), 'PP')}</div>
                   </div>
                 </div>

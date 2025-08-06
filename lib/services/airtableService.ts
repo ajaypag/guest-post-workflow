@@ -115,6 +115,7 @@ export class AirtableService {
         'Guest Post Cost V2',
         'Category',
         'Type',
+        'Niche', // Explicitly request Niche field
         'Status',
         'Guest Post Access?',
         'Link Insert Access?',
@@ -253,20 +254,6 @@ export class AirtableService {
   private static processWebsiteRecord(record: AirtableWebsite): ProcessedWebsite {
     const fields = record.fields;
     
-    // Debug: Check the structure of fields
-    console.log('🔍 Processing record:', {
-      recordId: record.id,
-      fieldsType: typeof fields,
-      isArray: Array.isArray(fields),
-      fieldsKeys: fields && typeof fields === 'object' && !Array.isArray(fields) ? Object.keys(fields).slice(0, 5) : 'Not an object',
-      sampleFieldValue: fields?.Website,
-      postFlowFields: {
-        emails: fields['PostFlow Contact Emails'],
-        prices: fields['PostFlow Guest Post Prices'],
-        requirements: fields['PostFlow Blogger Requirements'],
-        statuses: fields['PostFlow Contact Status']
-      }
-    });
     
     // Extract domain from URL
     let domain = fields.Website || '';
@@ -287,7 +274,9 @@ export class AirtableService {
       totalTraffic: fields['Total Traffic'] || null,
       guestPostCost: fields['Guest Post Cost V2'] || null,
       categories: fields.Category || [],
-      type: fields.Type || [],
+      type: fields.Type || [], // Keep existing for backward compatibility
+      websiteType: fields.Type || [], // Map Type field to websiteType (SaaS, Blog, News, eCommerce, etc.)
+      niche: this.parseArrayField(fields.Niche), // Parse comma-separated string or array
       contacts, // Now populated from PostFlow lookup fields
       publishedOpportunities: fields['Count of Published Opportunities'] || 0,
       status: fields.Status || 'Unknown',
@@ -295,6 +284,25 @@ export class AirtableService {
       hasLinkInsert: fields['Link Insert Access?'] === 'Yes',
       overallQuality: fields['Overall Website Quality']
     };
+  }
+
+  /**
+   * Parse a field that might be a comma-separated string or an array
+   */
+  private static parseArrayField(field: any): string[] {
+    if (!field) return [];
+    
+    // If it's already an array, return it
+    if (Array.isArray(field)) {
+      return field;
+    }
+    
+    // If it's a string, split by comma and trim
+    if (typeof field === 'string') {
+      return field.split(',').map(item => item.trim()).filter(item => item.length > 0);
+    }
+    
+    return [];
   }
 
   /**

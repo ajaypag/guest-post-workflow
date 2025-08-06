@@ -1,0 +1,208 @@
+# SEO Webinars (On-Page, Off-Page and More)
+
+# SEO Webinars (On-Page, Off-Page and More)
+
+
+# SEO Webinars (On-Page, Off-Page and More)
+
+• How Many Backlinks Do You Need to Rank?
+• Building Peak Performance Website
+• How to use InRank to unlock internal link potential in your site
+• 11 SEO Mistakes You’re Making Right Now
+• Why SEO Consultants Get Fired and Who They Get Replaced With
+• SEO Tutorial for Beginners
+• What Google Values in a Website
+• Introduction to Off Page SEO and Link Building
+• How to Make SEO Proposals that Convert
+• How Google Understands Your Content
+• Onsite Optimization Intro – Page Factors to Consider
+• Backlinking Strategy – A Complete Guide
+• Best Practices for Anchor Text Optimization
+• How To Build Quality Backlinks with Blogger Outreach
+• Website Speed Perception: Users vs Search Engines
+• Introduction to Schema Markup for SEO
+• Anchor Text SEO Guide
+Craving some helpful, actionable SEO webinars? Then you’re in the right place. Take a look at our library of recordings from myself and other SEO experts. Webinars to teach, inspire, and motivate. Sound like something you might like? Then kickback and let the learning begin.
+To make a choice easier for you, the article lists both pros and cons of each tool.
+
+## How Many Backlinks Do You Need to Rank?
+
+Presented by Ajay Paghdal, CEO at Linkio.
+Learn an advanced way to calculate how many links you need to build based on the competitive level of your keyword.
+Here’s what you’ll learn:
+– A rundown of some current estimation methodologies– What makes them good and faulty– A fresh way to measure how many links you need– A mix of tools to help speed up and automate the estimation process
+
+## Building Peak Performance Website
+
+Presented by Clwyd Probert, CEO at Whitehat SEO Ltd.
+This is for those starting a business and looking to choose a content management platform for their next website build. Hear directly from HubSpot Go-to-Market Lead (Web & CMS Hub) Luke Summerfield on why he thinks you need to include the HubSpot CMS in your list and what are the best practices for building a website in 2021.
+Here’s what you’ll learn:
+• What are the problems with current CMS platforms
+• What are the problems with the current website development project methods
+• Why is the HubSpot CMS a good fit for both SMS and Enterprise website builds
+• What is the best way to run a website project build
+
+## How to use InRank to unlock internal link potential in your site
+
+Presented by Jenny Halasz, Ambassador at OnCrawl.
+When you’re feeling like you’ve done everything you can do to optimize a site, it’s time to look at InRank. InRank is the proprietary technology and rating system used by OnCrawl to determine internal PageRank.
+Here’s what you’ll learn:
+In recent core updates, Jenny Halasz found that tweaking a page’s Inrank had a significant impact on how it performed post-update.
+You don’t want to miss this deep dive into Internal linking, where Jenny shows you how you can unlock additional potential from your website and really move the needle on those stubborn queries.
+– Evaluate your website’s internal value– Components of Internal “Link Power”*– Importance of segmentation– Examples of actionnable InkRank use– How to use internal linking for optimizing your site?
+Want to be added to this list? Click here to bring up our submission form. We will be in touch shortly with feedback.
+
+### How To Rank at the Top of Google without Backlinks
+
+By Ajay Paghdal of Founder at Linkio. Recorded in 2020.
+You’ll learn that it’s not all about backlinks or content. Engagement is a secret weapon for getting skyhigh rankings – and getting it is easier than you think.
+Key takeaways:
+– How I ranked #1 for “top seo agency” without link building– What tactic I used to create engagement– How to automate the entire process– Nuances to make sure you get good results
+About the Presenter
+Ajay has been in the SEO game since 2012, launching and selling a link building agency named OutreachMama and now working on a link building SaaS.
+View Webinar
+
+## 11 SEO Mistakes You’re Making Right Now
+
+By Viola Eva of Head of SEO at White Light. Recorded in 2018.
+From keyword research, to link building, to content – Viola covers some critical mistakes that, when done right, can move the needle substantially for your business.
+View Webinar
+
+## Why SEO Consultants Get Fired and Who They Get Replaced With
+
+By Ajay Paghdal of Head of SEO at Linkio. Recorded in 2019.
+Host Ajay Paghdal welcomes Douglas Karr, CEO of DK New Media. Listen as they discuss why SEO consultants don’t last and who they get replaced with.
+View Webinar
+
+## SEO Tutorial for Beginners
+
+By Ajay Paghdal of Founder at Linkio. Recorded in 2019.
+This 2018 SEO training introduces basic concepts like onsite optimization, backlinks, and anchor text and explains the various intersections between them
+View Webinar
+
+## What Google Values in a Website
+
+By Ajay Paghdal of Founder at Linkio. Recorded in 2019.
+This video focuses on understanding Google and covers the following topics: Google’s goal for search results; How to get your content recognized by Google; How Google collects data to determine if your content is relevant; Google’s algorithm for determining the best search results; The role of keywords and anchor text in Google searches; and finally, what Google would consider a “red flag”.
+View Webinar
+
+## Introduction to Off Page SEO and Link Building
+
+By Ajay Paghdal of Founder at Linkio. Recorded in 2019.
+This video focuses on building your popularity off of your website. Part of Google’s ranking process includes not only optimizing your web site but having off-site content that points back to your site and is consistent with what you’re showing on your site. This part focuses on building popularity of your website across the web through the use of backlinks from high quality and relevant web sites.
+View Webinar
+
+## How to Make SEO Proposals that Convert
+
+By Ajay Paghdal of Founder at Linkio. Recorded in 2019.
+Learn how to craft an SEO proposal that is simple, easy to understand and converts. Follow this fast step-by-step process and see your deal flow increase.
+View Webinar
+
+## How Google Understands Your Content
+
+By Ajay Paghdal of Founder at Linkio. Recorded in 2019.
+This video focuses on how Google understands your outputs, defining four key components: URL, metadata, anchor text and content. It further identifies all of the terms you need to know within these four modules components and provides tips on how to best optimize your SEO strategy accordingly.
+View Webinar
+
+## Onsite Optimization Intro – Page Factors to Consider
+
+By Ajay Paghdal of Founder at Linkio. Recorded in 2019.
+This video focuses on the different SEO factors to consider when you are creating content. Now that we understand that the right combination of URL, metadata, anchor text and content is important, we discuss how to implement these components into your content creation strategy. Topics covered in this part include: The importance of variety and uniqueness in your content, creating an effective keywords list and categories of keywords, how to incorporate anchor text correctly, and what things to avoid in your content.
+View Webinar
+
+## Backlinking Strategy – A Complete Guide
+
+By Ajay Paghdal of Founder at Linkio. Recorded in 2019.
+Every online marketer worth their salt knows what a backlink is. It’s an incredibly simple concept. You, as a website owner, convince another website owner to include a link on their website that points back to your website. Like I said, simple right? Well… Yes and no. While backlinks in and of themselves are simple, understanding how to build backlinks the right way is not. With the constant updates to Google’s algorithm and best practices, the very same tactics that once landed you on the first page for your target keyword can now result in massive search engine penalties. All in all… building backlinks can quickly become a minefield of mistakes and mishaps for the uninformed SEO.
+View Webinar
+
+## Best Practices for Anchor Text Optimization
+
+By Ajay Paghdal of Founder at Linkio. Recorded in 2019.
+Learn all about anchor text. How to optimize for it and the best practices. What in the World is Anchor Text, and Why Does it Matter? How the Penguin Update Changed the Game What Types of Anchor Text Are There Your Guide to Anchor Text Best Practices How to Apply This Knowledge
+View Webinar
+
+## How To Build Quality Backlinks with Blogger Outreach
+
+By Ajay Paghdal of Founder at Linkio. Recorded in 2019.
+OutreachMama presents the advanced guide to running blogger outreach link building campaigns to work. Watch this webinar to learn how to get onto page 1 of Google.
+View Webinar
+
+## Website Speed Perception: Users vs Search Engines
+
+By Matthew Edgarof Founder at Matthew Edgar. Recorded in 2019.
+How the concept of speed differs between SEOs and website visitors
+View Webinar
+
+## Introduction to Schema Markup for SEO
+
+By Ajay Paghdal of Founder at Linkio. Recorded in 2019.
+This video focuses on Schema Markup and how it pertains to SEO. Schema markup is a type of metadata that is added to the backend of your website and can help Google identify and organize what is presented on your site. Specifically, this part addresses types of schema markup, the different categories that are in Google’s database, and how you can implement relevant markup to optimize your search result listings.
+View Webinar
+
+## Anchor Text SEO Guide
+
+By Matt Diggity of Founder at Authority Builders. Recorded in 2020.
+In this webinar, Matt breaks down a repeatable process for selecting the optimal anchor text when link building in SEO. He also covers 11 anchor text selection techniques that will help your backlinks become more effective while helping you avoid over-optimization penalties.
+View Webinar
+If you decide to record your own webinar after watching, check out the best webinar software that will help you.
+
+## SEO and Link Building Resources
+
+• Case Studies
+
+## From Zero to Breakthrough: The Marketing Tactic That Made It Happen
+
+• Case Studies
+
+## How Startups Are Winning with Real Tactics That Actually Convert
+
+• Case Studies
+
+## How to Track Multiple Vehicles With Vehicle Tracking Software?
+
+• Case Studies
+
+## How to Create a Content Marketing Strategy for eCommerce
+
+• Case Studies
+
+## How to Choose the Best SEO Software for Your Business
+
+• Guides
+
+## Best Rank Tracking Tools for Local Businesses: What Actually Matters?
+
+• Case Studies
+
+## Best Digital Marketing Tips From Experts
+
+• Guides
+
+## Why Every Business Needs a Website
+
+• Guides
+
+## Using SEO For Lead Generation – Everything You Need To Know
+
+• Listicles
+
+## The Best Books To Learn SEO Recommended by Pros
+
+
+###### Curious?
+
+
+###### Let's talk LINKIO
+
+
+###### We love talking LINKIO. Let us know about your project and we'll send you a free proposal
+
+
+###### Curious?
+
+
+###### Let's talk LINKIO
+
+
+###### We love talking LINKIO. Let us know about your project and we'll send you a free proposal
