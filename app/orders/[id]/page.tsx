@@ -197,7 +197,7 @@ export default function OrderDetailPage() {
       
       for (const group of order.orderGroups) {
         try {
-          const response = await fetch(`/api/orders/${order.id}/groups/${group.id}/submissions`);
+          const response = await fetch(`/api/orders/${order.id}/groups/${group.id}/submissions?includeCompleted=true`);
           if (response.ok) {
             const data = await response.json();
             submissionsByGroup[group.id] = data.submissions || [];
@@ -258,7 +258,7 @@ export default function OrderDetailPage() {
   const handleRefresh = async () => {
     setRefreshing(true);
     await loadOrder();
-    if (order?.state === 'sites_ready' || order?.state === 'site_review' || order?.state === 'client_reviewing') {
+    if (order?.state === 'sites_ready' || order?.state === 'site_review' || order?.state === 'client_reviewing' || order?.state === 'payment_pending' || order?.state === 'payment_received' || order?.state === 'workflows_generated' || order?.state === 'in_progress') {
       await loadSiteSubmissions();
     }
     setTimeout(() => setRefreshing(false), 1000);
