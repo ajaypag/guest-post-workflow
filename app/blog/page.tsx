@@ -537,18 +537,18 @@ export default function BlogPage() {
 
 
         {/* Newsletter Signup */}
-        <div className="bg-gray-900 rounded-2xl p-8 text-white text-center mt-16">
-          <h2 className="text-2xl font-bold mb-4" style={{ color: '#ffffff' }}>Stay Updated with SEO Insights</h2>
-          <p className="mb-6 max-w-2xl mx-auto" style={{ color: '#d1d5db' }}>
+        <div className="bg-gray-900 rounded-2xl p-8 text-white text-center mt-16 newsletter-dark">
+          <h2 className="text-2xl font-bold mb-4 text-white">Stay Updated with SEO Insights</h2>
+          <p className="mb-6 max-w-2xl mx-auto text-gray-300">
             Get the latest SEO strategies, link building tips, and case studies delivered to your inbox.
           </p>
           <div className="flex max-w-md mx-auto">
             <input 
               type="email" 
               placeholder="Enter your email"
-              className="flex-1 px-4 py-3 rounded-l-lg text-gray-900"
+              className="flex-1 px-4 py-3 rounded-l-lg text-gray-900 bg-white"
             />
-            <button className="px-6 py-3 bg-blue-600 hover:bg-blue-700 rounded-r-lg font-semibold transition-colors" style={{ color: '#ffffff' }}>
+            <button className="px-6 py-3 bg-blue-600 hover:bg-blue-700 rounded-r-lg font-semibold transition-colors text-white">
               Subscribe
             </button>
           </div>

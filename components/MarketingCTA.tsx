@@ -33,51 +33,26 @@ export default function MarketingCTA({
   variant = 'default'
 }: MarketingCTAProps) {
   return (
-    <section className={`${variant === 'compact' ? 'py-12' : 'py-20'} bg-gradient-to-br from-blue-600 to-purple-700 text-white`}>
+    <section className={`${variant === 'compact' ? 'py-12' : 'py-20'} bg-gradient-to-br from-blue-600 to-purple-700 text-white cta-gradient`}>
       <div className="max-w-4xl mx-auto px-4 sm:px-6 lg:px-8 text-center">
-        <h2 className={`${variant === 'compact' ? 'text-3xl' : 'text-4xl'} font-bold mb-6`}>
+        <h2 className={`${variant === 'compact' ? 'text-3xl' : 'text-4xl'} font-bold mb-6 text-white`}>
           {title}
         </h2>
-        <p className={`${variant === 'compact' ? 'text-lg' : 'text-xl'} opacity-90 mb-8`}>
+        <p className={`${variant === 'compact' ? 'text-lg' : 'text-xl'} mb-8 text-blue-100`}>
           {description}
         </p>
         
         <div className="flex flex-col sm:flex-row gap-4 justify-center">
           <Link
             href={primaryButtonHref}
-            className="inline-flex items-center justify-center gap-2 px-8 py-4 bg-white text-blue-600 font-semibold rounded-lg hover:bg-gray-100 transition-colors text-lg"
-            style={{ 
-              backgroundColor: '#ffffff', 
-              color: '#2563eb' 
-            }}
-            onMouseEnter={(e) => {
-              e.currentTarget.style.backgroundColor = '#f3f4f6';
-              e.currentTarget.style.color = '#1d4ed8';
-            }}
-            onMouseLeave={(e) => {
-              e.currentTarget.style.backgroundColor = '#ffffff';
-              e.currentTarget.style.color = '#2563eb';
-            }}
+            className="cta-button-primary inline-flex items-center justify-center gap-2 px-8 py-4 font-semibold rounded-lg transition-colors text-lg"
           >
             {primaryButtonText}
             <ArrowRight className="w-5 h-5" />
           </Link>
           <Link
             href={secondaryButtonHref}
-            className="inline-flex items-center justify-center gap-2 px-8 py-4 border-2 border-white text-white font-semibold rounded-lg hover:bg-white hover:text-blue-600 transition-colors text-lg"
-            style={{ 
-              borderColor: '#ffffff',
-              color: '#ffffff',
-              backgroundColor: 'transparent'
-            }}
-            onMouseEnter={(e) => {
-              e.currentTarget.style.backgroundColor = '#ffffff';
-              e.currentTarget.style.color = '#2563eb';
-            }}
-            onMouseLeave={(e) => {
-              e.currentTarget.style.backgroundColor = 'transparent';
-              e.currentTarget.style.color = '#ffffff';
-            }}
+            className="cta-button-secondary inline-flex items-center justify-center gap-2 px-8 py-4 border-2 font-semibold rounded-lg transition-colors text-lg"
           >
             {secondaryButtonText}
           </Link>

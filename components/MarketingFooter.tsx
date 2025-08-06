@@ -24,32 +24,29 @@ export default function MarketingFooter() {
                 <Zap className="w-5 h-5 text-white" />
               </div>
               <div>
-                <div className="text-lg font-semibold" style={{ color: '#ffffff' }}>
+                <div className="text-lg font-semibold text-white">
                   Linkio
                 </div>
-                <div className="text-xs" style={{ color: '#d1d5db' }}>
+                <div className="text-xs text-gray-400">
                   Advanced Link Building Tools
                 </div>
               </div>
             </div>
-            <p className="text-sm" style={{ color: '#d1d5db' }}>
+            <p className="text-sm text-gray-400">
               Strategic link building for SEO professionals and business owners. Expert curation meets AI efficiency.
             </p>
           </div>
 
           {/* Services */}
           <div>
-            <h4 className="font-semibold mb-4" style={{ color: '#ffffff' }}>
+            <h4 className="font-semibold mb-4 text-white">
               Services
             </h4>
             <ul className="space-y-2 text-sm">
               <li>
                 <Link 
                   href="/guest-posting-sites" 
-                  className="hover:text-white transition-colors"
-                  style={{ color: '#d1d5db' }}
-                  onMouseEnter={(e) => e.currentTarget.style.color = '#ffffff'}
-                  onMouseLeave={(e) => e.currentTarget.style.color = '#d1d5db'}
+                  className="text-gray-400 hover:text-white transition-colors"
                 >
                   Guest Posting Sites
                 </Link>
@@ -57,10 +54,7 @@ export default function MarketingFooter() {
               <li>
                 <Link 
                   href="/anchor-text-optimizer" 
-                  className="hover:text-white transition-colors"
-                  style={{ color: '#d1d5db' }}
-                  onMouseEnter={(e) => e.currentTarget.style.color = '#ffffff'}
-                  onMouseLeave={(e) => e.currentTarget.style.color = '#d1d5db'}
+                  className="text-gray-400 hover:text-white transition-colors"
                 >
                   Anchor Text Optimizer
                 </Link>
@@ -68,10 +62,7 @@ export default function MarketingFooter() {
               <li>
                 <Link 
                   href="/blog" 
-                  className="hover:text-white transition-colors"
-                  style={{ color: '#d1d5db' }}
-                  onMouseEnter={(e) => e.currentTarget.style.color = '#ffffff'}
-                  onMouseLeave={(e) => e.currentTarget.style.color = '#d1d5db'}
+                  className="text-gray-400 hover:text-white transition-colors"
                 >
                   SEO Blog & Guides
                 </Link>
@@ -81,16 +72,13 @@ export default function MarketingFooter() {
                   href="https://www.outreachlabs.com/link-building-service/" 
                   target="_blank" 
                   rel="noopener noreferrer" 
-                  className="hover:text-white transition-colors"
-                  style={{ color: '#d1d5db' }}
-                  onMouseEnter={(e) => e.currentTarget.style.color = '#ffffff'}
-                  onMouseLeave={(e) => e.currentTarget.style.color = '#d1d5db'}
+                  className="text-gray-400 hover:text-white transition-colors"
                 >
                   Case Studies
                 </a>
               </li>
               <li>
-                <span style={{ color: '#9ca3af' }}>
+                <span className="text-gray-500">
                   Bulk Discounts Available
                 </span>
               </li>
@@ -99,17 +87,14 @@ export default function MarketingFooter() {
 
           {/* Company */}
           <div>
-            <h4 className="font-semibold mb-4" style={{ color: '#ffffff' }}>
+            <h4 className="font-semibold mb-4 text-white">
               Company
             </h4>
             <ul className="space-y-2 text-sm">
               <li>
                 <Link 
                   href="/account/login" 
-                  className="hover:text-white transition-colors"
-                  style={{ color: '#d1d5db' }}
-                  onMouseEnter={(e) => e.currentTarget.style.color = '#ffffff'}
-                  onMouseLeave={(e) => e.currentTarget.style.color = '#d1d5db'}
+                  className="text-gray-400 hover:text-white transition-colors"
                 >
                   Sign In
                 </Link>
@@ -117,10 +102,7 @@ export default function MarketingFooter() {
               <li>
                 <Link 
                   href="/signup/marketing" 
-                  className="hover:text-white transition-colors"
-                  style={{ color: '#d1d5db' }}
-                  onMouseEnter={(e) => e.currentTarget.style.color = '#ffffff'}
-                  onMouseLeave={(e) => e.currentTarget.style.color = '#d1d5db'}
+                  className="text-gray-400 hover:text-white transition-colors"
                 >
                   Get Started
                 </Link>
@@ -128,10 +110,7 @@ export default function MarketingFooter() {
               <li>
                 <Link 
                   href="/directory-submission-sites" 
-                  className="hover:text-white transition-colors"
-                  style={{ color: '#d1d5db' }}
-                  onMouseEnter={(e) => e.currentTarget.style.color = '#ffffff'}
-                  onMouseLeave={(e) => e.currentTarget.style.color = '#d1d5db'}
+                  className="text-gray-400 hover:text-white transition-colors"
                 >
                   Directory Sites
                 </Link>
@@ -141,21 +120,15 @@ export default function MarketingFooter() {
 
           {/* Get Started */}
           <div>
-            <h4 className="font-semibold mb-4" style={{ color: '#ffffff' }}>
+            <h4 className="font-semibold mb-4 text-white">
               Get Started
             </h4>
-            <p className="text-sm mb-4" style={{ color: '#d1d5db' }}>
+            <p className="text-sm mb-4 text-gray-400">
               Ready to try strategic link building?
             </p>
             <Link
               href="/signup/marketing"
               className="inline-flex items-center gap-2 px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 text-sm transition-colors"
-              style={{ 
-                backgroundColor: '#2563eb',
-                color: '#ffffff'
-              }}
-              onMouseEnter={(e) => e.currentTarget.style.backgroundColor = '#1d4ed8'}
-              onMouseLeave={(e) => e.currentTarget.style.backgroundColor = '#2563eb'}
             >
               Start Today
               <ArrowRight className="w-4 h-4" />
@@ -164,7 +137,7 @@ export default function MarketingFooter() {
         </div>
         
         <div className="border-t border-gray-800 mt-8 pt-8 text-center">
-          <p className="text-sm" style={{ color: '#d1d5db' }}>
+          <p className="text-sm text-gray-400">
             &copy; 2025 Linkio. Advanced link building tools and expert insights.
           </p>
         </div>

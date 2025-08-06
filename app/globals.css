@@ -1,270 +1,247 @@
 @import "tailwindcss";
 
+/* ============================================
+   CSS VARIABLES FOR CONSISTENT THEMING
+   ============================================ */
 :root {
-  --background: #f8f9fa;
-  --foreground: #212529;
+  /* Brand Colors */
+  --brand-primary: #2563eb;
+  --brand-primary-dark: #1d4ed8;
+  --brand-secondary: #7c3aed;
+  
+  /* Text Colors */
+  --text-primary: #111827;
+  --text-secondary: #6b7280;
+  --text-tertiary: #9ca3af;
+  --text-on-dark: #f3f4f6;
+  --text-on-dark-secondary: #d1d5db;
+  
+  /* Background Colors */
+  --bg-primary: #ffffff;
+  --bg-secondary: #f8f9fa;
+  --bg-dark: #111827;
+  --bg-dark-card: #1f2937;
+  
+  /* Semantic Colors */
+  --color-success: #059669;
+  --color-error: #dc2626;
+  --color-warning: #f59e0b;
+  --color-info: #3b82f6;
 }
 
+/* ============================================
+   MINIMAL RESET - Let Tailwind do its job
+   ============================================ */
 body {
-  background: #f8f9fa !important;
-  color: #212529 !important;
-  font-family: Arial, Helvetica, sans-serif;
+  font-family: system-ui, -apple-system, 'Segoe UI', Roboto, Arial, sans-serif;
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
 }
 
-/* Override ALL Tailwind color classes - REMOVED for better contrast */
-/* * {
-  color: #212529 !important;
-} */
-
-/* White and light backgrounds need dark text */
-.bg-white, .bg-gray-50, .bg-blue-50 {
-  color: #212529 !important;
+/* Ensure full height layouts work properly */
+html, body {
+  height: 100%;
 }
 
-.bg-white *, .bg-gray-50 *, .bg-blue-50 * {
-  color: #212529 !important;
+/* ============================================
+   FORM ELEMENTS - Consistent styling
+   ============================================ */
+input:not([type="checkbox"]):not([type="radio"]),
+textarea,
+select {
+  /* Let Tailwind handle most styling, just ensure readability */
+  color: var(--text-primary);
+  background-color: var(--bg-primary);
 }
 
-/* Light gradients need dark text */
-.bg-gradient-to-br.from-gray-50, .bg-gradient-to-br.from-blue-50,
-.bg-gradient-to-br.to-white, .bg-gradient-to-br.from-blue-50.to-white {
-  color: #212529 !important;
+input::placeholder,
+textarea::placeholder {
+  color: var(--text-tertiary);
+  opacity: 1; /* Firefox fix */
 }
 
-.bg-gradient-to-br.from-gray-50 *, .bg-gradient-to-br.from-blue-50 *,
-.bg-gradient-to-br.to-white *, .bg-gradient-to-br.from-blue-50.to-white * {
-  color: #212529 !important;
+/* Better focus states for accessibility */
+:focus-visible {
+  outline: 2px solid var(--brand-primary);
+  outline-offset: 2px;
 }
 
-/* Form elements */
-input, textarea, select {
-  color: #000000 !important;
-  background-color: #ffffff !important;
-  border: 1px solid #dee2e6 !important;
+/* ============================================
+   TYPOGRAPHY UTILITIES
+   These are opt-in classes, not global overrides
+   ============================================ */
+
+/* For sections that need consistent text colors */
+.text-theme-primary {
+  color: var(--text-primary);
 }
 
-input::placeholder, textarea::placeholder {
-  color: #6c757d !important;
+.text-theme-secondary {
+  color: var(--text-secondary);
 }
 
-/* Labels and headings - More selective override */
-label {
-  color: #212529 !important;
+.text-theme-on-dark {
+  color: var(--text-on-dark);
 }
 
-/* Only override headings on light backgrounds */
-.bg-white h1, .bg-white h2, .bg-white h3, .bg-white h4, .bg-white h5, .bg-white h6,
-.bg-gray-50 h1, .bg-gray-50 h2, .bg-gray-50 h3, .bg-gray-50 h4, .bg-gray-50 h5, .bg-gray-50 h6 {
-  color: #212529 !important;
+.text-theme-on-dark-secondary {
+  color: var(--text-on-dark-secondary);
 }
 
-/* Specific text color overrides */
-.text-white {
-  color: #ffffff !important;
+/* ============================================
+   PROSE CONTENT - Blog posts and articles
+   ============================================ */
+.prose {
+  color: var(--text-primary);
 }
 
-.text-gray-600, .text-gray-500, .text-gray-400 {
-  color: #495057 !important;
+.prose a {
+  color: var(--brand-primary);
+  text-decoration: underline;
 }
 
-/* Remove universal text-sm override */
-/* .text-sm {
-  color: #212529 !important;
-} */
-
-/* Buttons */
-button {
-  color: inherit !important;
+.prose a:hover {
+  color: var(--brand-primary-dark);
 }
 
-.bg-blue-600 {
-  background-color: #0d6efd !important;
-  color: #ffffff !important;
+/* Dark background prose adjustments */
+.bg-gray-900 .prose,
+.bg-gray-800 .prose {
+  color: var(--text-on-dark);
 }
 
-.bg-blue-600 * {
-  color: #ffffff !important;
+/* ============================================
+   COMPONENT-SPECIFIC FIXES
+   Only target specific problem areas
+   ============================================ */
+
+/* Newsletter sections on dark backgrounds */
+.newsletter-dark {
+  color: var(--text-on-dark);
 }
 
-.bg-green-600 {
-  background-color: #198754 !important;
-  color: #ffffff !important;
+.newsletter-dark h2,
+.newsletter-dark h3 {
+  color: #ffffff;
 }
 
-.bg-green-600 * {
-  color: #ffffff !important;
+.newsletter-dark p {
+  color: var(--text-on-dark-secondary);
 }
 
-/* Purple and indigo backgrounds */
-.bg-purple-600, .bg-purple-700, .bg-indigo-600, .bg-indigo-700 {
-  background-color: #7c3aed !important;
-  color: #ffffff !important;
+/* Footer specific - using attribute selector for precision */
+footer.bg-gray-900 {
+  color: var(--text-on-dark-secondary);
 }
 
-.bg-purple-600 *, .bg-purple-700 *, .bg-indigo-600 *, .bg-indigo-700 * {
-  color: #ffffff !important;
+footer.bg-gray-900 h1,
+footer.bg-gray-900 h2,
+footer.bg-gray-900 h3,
+footer.bg-gray-900 h4 {
+  color: #ffffff;
 }
 
-/* Improved focus states for accessibility */
-button:focus, a:focus, input:focus, textarea:focus, select:focus {
-  outline: 2px solid #3b82f6 !important;
-  outline-offset: 2px !important;
+footer.bg-gray-900 a {
+  color: var(--text-on-dark-secondary);
+  text-decoration: none;
 }
 
-.text-red-600 {
-  color: #dc3545 !important;
+footer.bg-gray-900 a:hover {
+  color: #ffffff;
 }
 
-/* Blue info boxes - light blue needs dark text */
-.bg-blue-50 {
-  background-color: #e7f1ff !important;
-  color: #0c5bbd !important;
+/* CTA gradient sections */
+.cta-gradient {
+  color: #ffffff;
 }
 
-.bg-blue-50 * {
-  color: #0c5bbd !important;
+.cta-gradient .cta-button-primary {
+  background-color: #ffffff;
+  color: var(--brand-primary);
 }
 
-/* Override for specific blue-50 elements that should be dark */
-.bg-blue-50 h1, .bg-blue-50 h2, .bg-blue-50 h3, .bg-blue-50 h4, .bg-blue-50 h5, .bg-blue-50 h6,
-.bg-blue-50 p, .bg-blue-50 span, .bg-blue-50 div {
-  color: #0c5bbd !important;
+.cta-gradient .cta-button-primary:hover {
+  background-color: #f3f4f6;
 }
 
-/* Green success colors */
-.text-green-500, .text-green-600 {
-  color: #059669 !important;
+.cta-gradient .cta-button-secondary {
+  border-color: #ffffff;
+  color: #ffffff;
+  background-color: transparent;
 }
 
-/* Improved gray text hierarchy */
-.text-gray-300 {
-  color: #d1d5db !important;
+.cta-gradient .cta-button-secondary:hover {
+  background-color: #ffffff;
+  color: var(--brand-primary);
 }
 
-.text-gray-400 {
-  color: #9ca3af !important;
-}
+/* ============================================
+   UTILITY CLASSES
+   ============================================ */
 
-.text-gray-500 {
-  color: #6b7280 !important;
-}
-
-.text-gray-600 {
-  color: #4b5563 !important;
-}
-
-.text-gray-700 {
-  color: #374151 !important;
-}
-
-.text-gray-800 {
-  color: #1f2937 !important;
-}
-
-.text-gray-900 {
-  color: #111827 !important;
-}
-
-/* Links */
-a {
-  color: #0d6efd !important;
-}
-
-a:hover {
-  color: #0a58ca !important;
-}
-
-/* Dark background sections - proper contrast - SPECIFIC ONLY */
-.bg-gray-900, .bg-gray-800 {
-  color: #f3f4f6 !important;
-}
-
-/* Footer and dark background text colors - more specific */
-.bg-gray-900 h2, .bg-gray-900 h3, .bg-gray-900 h4, .bg-gray-900 .text-white {
-  color: #ffffff !important;
-}
-
-/* Only apply to elements without inline styles */
-.bg-gray-900 p:not([style]), .bg-gray-900 li:not([style]) {
-  color: #d1d5db !important;
-}
-
-.bg-gray-900 .text-gray-300:not([style]) {
-  color: #d1d5db !important;
-}
-
-.bg-gray-900 a:hover {
-  color: #ffffff !important;
-}
-
-/* ONLY specific dark gradients get white text */
-.bg-gradient-to-br.from-blue-600.to-purple-700,
-.bg-gradient-to-r.from-blue-600.to-indigo-700 {
-  color: #ffffff !important;
-}
-
-.bg-gradient-to-br.from-blue-600.to-purple-700 *,
-.bg-gradient-to-r.from-blue-600.to-indigo-700 * {
-  color: #ffffff !important;
-}
-
-/* CTA Section button fixes */
-.bg-gradient-to-br.from-blue-600.to-purple-700 .bg-white {
-  background-color: #ffffff !important;
-  color: #2563eb !important;
-}
-
-.bg-gradient-to-br.from-blue-600.to-purple-700 .bg-white:hover {
-  background-color: #f3f4f6 !important;
-  color: #1d4ed8 !important;
-}
-
-.bg-gradient-to-br.from-blue-600.to-purple-700 .border-white {
-  border-color: #ffffff !important;
-  color: #ffffff !important;
-  background-color: transparent !important;
-}
-
-.bg-gradient-to-br.from-blue-600.to-purple-700 .border-white:hover {
-  background-color: #ffffff !important;
-  color: #2563eb !important;
-}
-
-/* Border colors */
-.border, .border-b {
-  border-color: #dee2e6 !important;
-}
-
-.border-gray-300 {
-  border-color: #dee2e6 !important;
-}
-
-/* Shadow for better definition */
-.shadow, .shadow-sm {
-  box-shadow: 0 1px 2px rgba(0,0,0,0.05) !important;
-}
-
-/* Progress bar */
-.bg-gray-200 {
-  background-color: #e9ecef !important;
-}
-
-/* Rounded corners */
-.rounded-md {
-  border-radius: 0.375rem !important;
-}
-
-.rounded-lg {
-  border-radius: 0.5rem !important;
-}
-
-/* Hide scrollbar for Chrome, Safari and Opera */
+/* Hide scrollbar utilities */
 .scrollbar-hide::-webkit-scrollbar {
   display: none;
 }
 
-/* Hide scrollbar for IE, Edge and Firefox */
 .scrollbar-hide {
-  -ms-overflow-style: none;  /* IE and Edge */
-  scrollbar-width: none;  /* Firefox */
+  -ms-overflow-style: none;
+  scrollbar-width: none;
+}
+
+/* Gradient text effect */
+.gradient-text {
+  background: linear-gradient(to right, var(--brand-primary), var(--brand-secondary));
+  -webkit-background-clip: text;
+  -webkit-text-fill-color: transparent;
+  background-clip: text;
+}
+
+/* ============================================
+   RESPONSIVE UTILITIES
+   ============================================ */
+@media (prefers-reduced-motion: reduce) {
+  *,
+  *::before,
+  *::after {
+    animation-duration: 0.01ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.01ms !important;
+  }
+}
+
+/* ============================================
+   PRINT STYLES
+   ============================================ */
+@media print {
+  /* Hide navigation and CTAs when printing */
+  header, footer, .cta-section, .newsletter-section {
+    display: none;
+  }
+  
+  /* Ensure text is black for printing */
+  body {
+    color: #000000;
+    background: #ffffff;
+  }
+  
+  /* Show link URLs in print */
+  a[href^="http"]:after {
+    content: " (" attr(href) ")";
+  }
+}
+
+/* ============================================
+   DARK MODE PREPARATION
+   Ready for future implementation
+   ============================================ */
+@media (prefers-color-scheme: dark) {
+  /* Dark mode variables ready to be activated
+  :root {
+    --text-primary: #f3f4f6;
+    --text-secondary: #d1d5db;
+    --bg-primary: #111827;
+    --bg-secondary: #1f2937;
+  }
+  */
 }
