@@ -74,13 +74,13 @@ export default function MarketingHomepage() {
               </div>
               
               <h1 className="text-5xl md:text-6xl font-bold text-gray-900 mb-6 leading-tight">
-                Advanced Link Building
-                <span className="text-blue-600"> That Actually Works</span>
+                Fair-Priced Guest Posting
+                <span className="text-blue-600"> With Zero Shortcuts</span>
               </h1>
               
               <p className="text-xl text-gray-600 mb-8 leading-relaxed">
-                Master link building with Linkio's advanced SEO tools, anchor text optimization, and expert insights. 
-                Trusted by SEO professionals worldwide for strategic link acquisition that drives results.
+                The world's first Cost Plus guest posting service. $40 content + $39 labor = $79 total. 
+                Top-tier content, topic selection, and topical overlap - all enabled by smart AI engineering.
               </p>
               
               {/* Key Benefits */}
@@ -102,10 +102,10 @@ export default function MarketingHomepage() {
               {/* CTAs */}
               <div className="flex flex-col sm:flex-row gap-4">
                 <Link
-                  href="/login"
+                  href="/signup"
                   className="inline-flex items-center justify-center gap-2 px-8 py-4 bg-blue-600 text-white font-semibold rounded-lg hover:bg-blue-700 transition-colors text-lg"
                 >
-                  Start Your Campaign
+                  Get Started - $79
                   <ArrowRight className="w-5 h-5" />
                 </Link>
                 <Link
@@ -133,7 +133,7 @@ export default function MarketingHomepage() {
                 </div>
                 <div className="text-center">
                   <div className="text-3xl font-bold text-green-600 mb-1">$79</div>
-                  <div className="text-sm text-gray-600">Flat Service Fee</div>
+                  <div className="text-sm text-gray-600">Cost Plus Pricing</div>
                 </div>
                 <div className="text-center">
                   <div className="text-3xl font-bold text-purple-600 mb-1">
@@ -157,10 +157,11 @@ export default function MarketingHomepage() {
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
           <div className="text-center mb-16">
             <h2 className="text-4xl font-bold text-gray-900 mb-4">
-              Why SEO Professionals Choose Us
+              Transparent Pricing, Premium Quality
             </h2>
             <p className="text-xl text-gray-600 max-w-3xl mx-auto">
-              Whether you're an agency, internal team, or business owner - we deliver strategic link building based on data, not guesswork.
+              Like Mark Cuban's Cost Plus Drugs, we show you exactly what you're paying for. 
+              No hidden markups, no shortcuts - just fair pricing for top-tier guest posting.
             </p>
           </div>
 
@@ -198,8 +199,8 @@ export default function MarketingHomepage() {
                     <span className="text-gray-600 text-sm font-bold">−</span>
                   </div>
                   <div>
-                    <div className="font-medium text-gray-900">Unclear Pricing</div>
-                    <div className="text-sm text-gray-600">Hidden fees and variable markups</div>
+                    <div className="font-medium text-gray-900">Hidden Markups</div>
+                    <div className="text-sm text-gray-600">Unclear pricing with variable fees</div>
                   </div>
                 </div>
 
@@ -242,8 +243,8 @@ export default function MarketingHomepage() {
                 <div className="flex items-start gap-3">
                   <CheckCircle className="w-6 h-6 text-blue-600 flex-shrink-0 mt-0.5" />
                   <div>
-                    <div className="font-medium text-blue-900">Wholesale Pricing</div>
-                    <div className="text-sm text-blue-700">Transparent costs perfect for agencies and internal teams</div>
+                    <div className="font-medium text-blue-900">Cost Plus Pricing</div>
+                    <div className="text-sm text-blue-700">$40 content + $39 labor = $79 total. No hidden fees.</div>
                   </div>
                 </div>
 
