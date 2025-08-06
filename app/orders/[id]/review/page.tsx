@@ -2,7 +2,8 @@
 
 import { useState, useEffect } from 'react';
 import { useParams, useRouter } from 'next/navigation';
-import { Loader2, CheckCircle, XCircle, AlertCircle, ArrowRight, DollarSign } from 'lucide-react';
+import Link from 'next/link';
+import { Loader2, CheckCircle, XCircle, AlertCircle, ArrowRight, ArrowLeft, DollarSign } from 'lucide-react';
 import Header from '@/components/Header';
 import OrderSiteReviewTable from '@/components/orders/OrderSiteReviewTable';
 import type { OrderGroup, SiteSubmission } from '@/components/orders/OrderSiteReviewTable';
@@ -259,6 +260,15 @@ export default function ExternalOrderReviewPage() {
         <div className="max-w-7xl mx-auto px-4 py-8">
           {/* Header */}
           <div className="bg-white rounded-lg shadow-sm border border-gray-200 p-6 mb-6">
+            <div className="flex items-center gap-4 mb-4">
+              <Link
+                href={`/orders/${orderId}`}
+                className="inline-flex items-center text-gray-600 hover:text-gray-900 transition-colors"
+              >
+                <ArrowLeft className="h-4 w-4 mr-2" />
+                Back to Order
+              </Link>
+            </div>
             <div className="flex items-center justify-between mb-4">
               <div>
                 <h1 className="text-2xl font-bold text-gray-900">
