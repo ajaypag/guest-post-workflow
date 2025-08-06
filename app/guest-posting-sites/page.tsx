@@ -633,13 +633,13 @@ export default async function GuestPostingSitesPage() {
                 </div>
               </div>
               <div>
-                <div className="text-sm font-semibold text-white">PostFlow</div>
-                <div className="text-xs text-gray-400">Transparent Link Building</div>
+                <div className="text-sm font-semibold text-white">Linkio</div>
+                <div className="text-xs text-gray-300">Advanced Link Building Tools</div>
               </div>
             </div>
             
             <div className="text-sm text-center md:text-right">
-              <p>&copy; 2025 PostFlow. All rights reserved.</p>
+              <p>&copy; 2025 Linkio. All rights reserved.</p>
             </div>
           </div>
         </div>

@@ -169,11 +169,12 @@ export default function BlogPage() {
         </div>
 
         {/* Categories Filter */}
-        <div className="flex flex-wrap justify-center gap-4 mb-12">
+        <div className="flex flex-wrap justify-center gap-4 mb-12" role="group" aria-label="Filter blog posts by category">
           {categories.map((category) => (
             <button
               key={category}
               className="px-4 py-2 rounded-full border border-gray-300 text-gray-700 hover:bg-blue-50 hover:border-blue-300 hover:text-blue-700 transition-colors"
+              aria-label={`Filter by ${category} category`}
             >
               {category}
             </button>

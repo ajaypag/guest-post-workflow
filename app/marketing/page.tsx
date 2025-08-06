@@ -373,10 +373,10 @@ export default function MarketingHomepage() {
                 </div>
                 <div>
                   <div className="text-lg font-semibold text-white">Linkio</div>
-                  <div className="text-xs text-gray-400">Advanced Link Building Tools</div>
+                  <div className="text-xs text-gray-300">Advanced Link Building Tools</div>
                 </div>
               </div>
-              <p className="text-sm text-gray-400">
+              <p className="text-sm text-gray-300">
                 Strategic link building for SEO professionals and business owners. Expert curation meets AI efficiency.
               </p>
             </div>
@@ -385,9 +385,9 @@ export default function MarketingHomepage() {
             <div>
               <h4 className="font-semibold text-white mb-4">Services</h4>
               <ul className="space-y-2 text-sm">
-                <li><Link href="/guest-posting-sites" className="hover:text-white">Guest Posting Sites</Link></li>
-                <li><a href="https://www.outreachlabs.com/link-building-service/" target="_blank" rel="noopener noreferrer" className="hover:text-white">Case Studies</a></li>
-                <li><span className="text-gray-500">Bulk Discounts Available</span></li>
+                <li><Link href="/guest-posting-sites" className="text-gray-300 hover:text-white">Guest Posting Sites</Link></li>
+                <li><a href="https://www.outreachlabs.com/link-building-service/" target="_blank" rel="noopener noreferrer" className="text-gray-300 hover:text-white">Case Studies</a></li>
+                <li><span className="text-gray-400">Bulk Discounts Available</span></li>
               </ul>
             </div>
 
@@ -395,15 +395,15 @@ export default function MarketingHomepage() {
             <div>
               <h4 className="font-semibold text-white mb-4">Company</h4>
               <ul className="space-y-2 text-sm">
-                <li><Link href="/account/login" className="hover:text-white">Sign In</Link></li>
-                <li><Link href="/signup/marketing" className="hover:text-white">Get Started</Link></li>
+                <li><Link href="/account/login" className="text-gray-300 hover:text-white">Sign In</Link></li>
+                <li><Link href="/signup/marketing" className="text-gray-300 hover:text-white">Get Started</Link></li>
               </ul>
             </div>
 
             {/* Contact */}
             <div>
               <h4 className="font-semibold text-white mb-4">Get Started</h4>
-              <p className="text-sm text-gray-400 mb-4">
+              <p className="text-sm text-gray-300 mb-4">
                 Ready to try strategic link building?
               </p>
               <Link

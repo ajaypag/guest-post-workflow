@@ -313,67 +313,78 @@ export default function AnchorTextOptimizer() {
               {/* Input Fields */}
               <div className="grid md:grid-cols-2 gap-6">
                 <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-2">
+                  <label htmlFor="target-keyword" className="block text-sm font-medium text-gray-700 mb-2">
                     Target Keyword
                   </label>
                   <input
+                    id="target-keyword"
                     type="text"
                     value={targetKeyword}
                     onChange={(e) => setTargetKeyword(e.target.value)}
                     placeholder="e.g., project management software"
                     className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
+                    aria-required="true"
                   />
                 </div>
                 
                 <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-2">
+                  <label htmlFor="brand-name" className="block text-sm font-medium text-gray-700 mb-2">
                     Brand Name
                   </label>
                   <input
+                    id="brand-name"
                     type="text"
                     value={brandName}
                     onChange={(e) => setBrandName(e.target.value)}
-                    placeholder="e.g., PostFlow"
+                    placeholder="e.g., Linkio"
                     className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
+                    aria-required="true"
                   />
                 </div>
               </div>
               
               <div>
-                <label className="block text-sm font-medium text-gray-700 mb-2">
+                <label htmlFor="website-url" className="block text-sm font-medium text-gray-700 mb-2">
                   Website URL (optional)
                 </label>
                 <input
-                  type="text"
+                  id="website-url"
+                  type="url"
                   value={websiteUrl}
                   onChange={(e) => setWebsiteUrl(e.target.value)}
-                  placeholder="e.g., https://postflow.com"
+                  placeholder="e.g., https://linkio.com"
                   className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
                 />
               </div>
               
               <div>
-                <label className="block text-sm font-medium text-gray-700 mb-2">
+                <label htmlFor="current-anchors" className="block text-sm font-medium text-gray-700 mb-2">
                   Current Anchor Texts (one per line)
                 </label>
                 <textarea
+                  id="current-anchors"
                   value={currentAnchors}
                   onChange={(e) => setCurrentAnchors(e.target.value)}
-                  placeholder="PostFlow
-project management software
+                  placeholder="Linkio
+link building software
 click here
-best PM tools
-postflow.com
-learn more about project management"
+best SEO tools
+linkio.com
+learn more about link building"
                   rows={8}
                   className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
+                  aria-describedby="anchor-help"
                 />
+                <p id="anchor-help" className="text-sm text-gray-500 mt-1">
+                  Enter each anchor text on a separate line. Include your current backlink anchor texts for analysis.
+                </p>
               </div>
               
               <button
                 onClick={analyzeAnchors}
                 disabled={!targetKeyword || !brandName || analyzing}
                 className="w-full flex items-center justify-center gap-2 px-6 py-3 bg-blue-600 text-white rounded-lg hover:bg-blue-700 disabled:bg-gray-300 font-medium transition-colors"
+                aria-describedby={!targetKeyword || !brandName ? "analyze-requirements" : undefined}
               >
                 {analyzing ? (
                   <>
@@ -387,6 +398,12 @@ learn more about project management"
                   </>
                 )}
               </button>
+              
+              {(!targetKeyword || !brandName) && (
+                <p id="analyze-requirements" className="text-sm text-gray-500 text-center mt-2">
+                  Target keyword and brand name are required to analyze anchor text distribution.
+                </p>
+              )}
             </div>
             
             {/* Results */}
