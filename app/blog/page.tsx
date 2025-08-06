@@ -44,6 +44,15 @@ export default function BlogPage() {
       category: "Case Studies"
     },
     {
+      title: "How to Make an SEO Proposal (+ Templates)",
+      href: "/seo-proposal",
+      description: "Learn how to create winning SEO proposals that convert prospects into clients. Includes step-by-step guide, templates, and proven strategies.",
+      date: "November 15, 2020",
+      author: "Ajay Paghdal",
+      readTime: "18 min read",
+      category: "SEO Training"
+    },
+    {
       title: "Google's Latest Algorithm Updates",
       href: "/googles-latest-algorithm-updates",
       description: "Stay updated with the latest Google algorithm changes and their impact",
