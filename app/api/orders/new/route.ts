@@ -41,8 +41,8 @@ export async function POST(request: NextRequest) {
         // NOTE: Account creation should be done through proper account onboarding flow
         // For now, we'll require selecting an existing account
         throw new Error('Account creation not supported in order flow. Please create account first.');
-      } else if (account?.id) {
-        // Use existing account if provided
+      } else {
+        // Use existing account
         accountId = account.id;
         
         // Verify account exists in accounts table (not users table)
@@ -51,9 +51,6 @@ export async function POST(request: NextRequest) {
         if (!existingAccount) {
           throw new Error('Selected account not found');
         }
-      } else {
-        // No account provided - this is allowed for internal users creating orphaned orders
-        accountId = null;
       }
 
       // Calculate total links and pricing
@@ -79,26 +76,23 @@ export async function POST(request: NextRequest) {
       // Create the main order
       const orderId = uuidv4();
       
-      // Get account details if accountId exists
-      let accountDetails = null;
-      if (accountId) {
-        const { accounts } = await import('@/lib/db/accountSchema');
-        const [accountRecord] = await tx.select().from(accounts).where(eq(accounts.id, accountId));
-        
-        if (!accountRecord) {
-          throw new Error('Account not found');
-        }
-        
-        accountDetails = {
-          email: accountRecord.email,
-          name: accountRecord.contactName || account?.name,
-          company: accountRecord.companyName || account?.company || ''
-        };
+      // Get account details from the accounts table
+      const { accounts } = await import('@/lib/db/accountSchema');
+      const [accountRecord] = await tx.select().from(accounts).where(eq(accounts.id, accountId));
+      
+      if (!accountRecord) {
+        throw new Error('Account not found');
       }
+      
+      const accountDetails = {
+        email: accountRecord.email,
+        name: accountRecord.contactName || account.name,
+        company: accountRecord.companyName || account.company || ''
+      };
       
       const [newOrder] = await tx.insert(orders).values({
         id: orderId,
-        accountId: accountId, // Can be null for orphaned orders
+        accountId: accountId, // Now properly using accounts table
         status: 'draft',
         state: 'configuring',
         subtotalRetail: basePrice,

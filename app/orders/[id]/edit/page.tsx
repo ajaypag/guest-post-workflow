@@ -509,20 +509,18 @@ export default function EditOrderPage({ params }: { params: Promise<{ id: string
           accountCompany: selectedAccountCompany || '',
         };
       } else if (session.userType === 'internal') {
-        // Internal users - account is optional for draft orders
-        if (selectedAccountId) {
-          // Use selected account
-          accountInfo = {
-            accountId: selectedAccountId,
-            accountEmail: selectedAccountEmail,
-            accountName: selectedAccountName,
-            accountCompany: selectedAccountCompany || '',
-          };
-        } else {
-          // No account selected - save as orphaned order
-          // This allows internal users to create orders for clients who haven't signed up yet
-          accountInfo = null;
+        // Internal users - must select an account
+        if (!selectedAccountId || !selectedAccountEmail || !selectedAccountName) {
+          // Don't save if account info is missing
+          setSaveStatus('idle');
+          return;
         }
+        accountInfo = {
+          accountId: selectedAccountId,
+          accountEmail: selectedAccountEmail,
+          accountName: selectedAccountName,
+          accountCompany: selectedAccountCompany || '',
+        };
       } else {
         setSaveStatus('error');
         return;
@@ -1010,10 +1008,7 @@ export default function EditOrderPage({ params }: { params: Promise<{ id: string
           <div className="bg-white border-b border-gray-200 px-6 py-4">
             <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
               <div>
-                <label className="block text-sm font-medium text-gray-700 mb-1">
-                  Select Account
-                  <span className="text-xs text-gray-500 ml-2">(Optional - can be assigned later)</span>
-                </label>
+                <label className="block text-sm font-medium text-gray-700 mb-1">Select Account *</label>
                 <select
                   value={selectedAccountId || ''}
                   onChange={(e) => {
@@ -1028,8 +1023,9 @@ export default function EditOrderPage({ params }: { params: Promise<{ id: string
                     }
                   }}
                   className="w-full px-3 py-2 border border-gray-300 rounded-md focus:ring-blue-500 focus:border-blue-500"
+                  required
                 >
-                  <option value="">No account (will assign later)</option>
+                  <option value="">Choose an account...</option>
                   {accountsList.map(account => (
                     <option key={account.id} value={account.id}>
                       {account.companyName || account.contactName} ({account.email})
