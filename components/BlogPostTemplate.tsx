@@ -13,6 +13,8 @@ import {
   Linkedin
 } from 'lucide-react';
 import LinkioHeader from './LinkioHeader';
+import MarketingCTA from './MarketingCTA';
+import MarketingFooter from './MarketingFooter';
 
 interface BlogPostTemplateProps {
   title: string;
@@ -200,43 +202,17 @@ export default function BlogPostTemplate({
       )}
 
       {/* CTA Section */}
-      <section className="py-16 bg-gradient-to-br from-blue-600 to-purple-700 text-white">
-        <div className="max-w-4xl mx-auto px-4 sm:px-6 lg:px-8 text-center">
-          <h2 className="text-3xl font-bold mb-4">
-            Ready to Supercharge Your Link Building?
-          </h2>
-          <p className="text-xl opacity-90 mb-8">
-            Join thousands of SEO professionals using Linkio to build better backlinks
-          </p>
-          
-          <div className="flex flex-col sm:flex-row gap-4 justify-center">
-            <Link 
-              href="https://app.linkio.com/users/sign_up?_ga=2.195646757.845028537.1754360403-387936753.1754360403"
-              target="_blank"
-              rel="noopener noreferrer"
-              className="inline-flex items-center gap-2 px-8 py-4 bg-white text-blue-600 rounded-lg hover:bg-gray-100 font-semibold"
-            >
-              Start Free Trial
-              <ArrowRight className="w-5 h-5" />
-            </Link>
-            <Link 
-              href="/anchor-text-optimizer"
-              className="inline-flex items-center gap-2 px-8 py-4 border-2 border-white text-white rounded-lg hover:bg-white hover:text-blue-600 font-semibold transition-colors"
-            >
-              Try Our Free Tools
-            </Link>
-          </div>
-        </div>
-      </section>
+      <MarketingCTA 
+        title="Ready to Supercharge Your Link Building?"
+        description="Join thousands of SEO professionals using Linkio to build better backlinks"
+        primaryButtonText="Start Free Trial"
+        primaryButtonHref="https://app.linkio.com/users/sign_up?_ga=2.195646757.845028537.1754360403-387936753.1754360403"
+        secondaryButtonText="Try Our Free Tools"
+        secondaryButtonHref="/anchor-text-optimizer"
+      />
 
       {/* Footer */}
-      <footer className="bg-gray-900 text-gray-300 py-8">
-        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 text-center">
-          <p className="text-sm">
-            &copy; 2025 Linkio. Advanced link building tools and expert insights.
-          </p>
-        </div>
-      </footer>
+      <MarketingFooter />
       </div>
     </>
   );
