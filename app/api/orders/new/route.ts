@@ -35,12 +35,46 @@ export async function POST(request: NextRequest) {
     // Start a transaction
     return await db.transaction(async (tx) => {
       let accountId: string;
+      let accountRecord: any;
 
       // Handle account creation or selection
       if (isNewAccount) {
         // NOTE: Account creation should be done through proper account onboarding flow
         // For now, we'll require selecting an existing account
         throw new Error('Account creation not supported in order flow. Please create account first.');
+      } else if (!account || !account.id) {
+        // No account selected - create a provisional account
+        const { accounts } = await import('@/lib/db/accountSchema');
+        const { v4: uuidv4 } = await import('uuid');
+        const bcrypt = await import('bcryptjs');
+        
+        const timestamp = Date.now();
+        const provisionalId = uuidv4();
+        
+        // Create provisional account with minimal info
+        [accountRecord] = await tx.insert(accounts).values({
+          id: provisionalId,
+          email: `provisional-${timestamp}@pending.local`,
+          password: await bcrypt.hash(`PROVISIONAL_${timestamp}`, 10),
+          status: 'provisional',
+          contactName: account?.name || 'Pending Setup',
+          companyName: account?.company || 'TBD',
+          role: 'viewer',
+          emailVerified: false,
+          internalNotes: JSON.stringify({
+            createdBy: session.userId,
+            createdByEmail: session.email,
+            createdAt: new Date().toISOString(),
+            provisionalNotes: internalNotes || 'Created during order flow',
+            originalEmail: account?.email || null,
+            claimable: true
+          }),
+          createdAt: new Date(),
+          updatedAt: new Date()
+        }).returning();
+        
+        accountId = provisionalId;
+        console.log('Created provisional account:', provisionalId);
       } else {
         // Use existing account
         accountId = account.id;
@@ -51,6 +85,7 @@ export async function POST(request: NextRequest) {
         if (!existingAccount) {
           throw new Error('Selected account not found');
         }
+        accountRecord = existingAccount;
       }
 
       // Calculate total links and pricing
@@ -76,18 +111,21 @@ export async function POST(request: NextRequest) {
       // Create the main order
       const orderId = uuidv4();
       
-      // Get account details from the accounts table
-      const { accounts } = await import('@/lib/db/accountSchema');
-      const [accountRecord] = await tx.select().from(accounts).where(eq(accounts.id, accountId));
-      
+      // Get account details - we already have accountRecord from above
       if (!accountRecord) {
-        throw new Error('Account not found');
+        // Fetch it if we don't have it yet (shouldn't happen with new logic)
+        const { accounts } = await import('@/lib/db/accountSchema');
+        [accountRecord] = await tx.select().from(accounts).where(eq(accounts.id, accountId));
+        
+        if (!accountRecord) {
+          throw new Error('Account not found');
+        }
       }
       
       const accountDetails = {
         email: accountRecord.email,
-        name: accountRecord.contactName || account.name,
-        company: accountRecord.companyName || account.company || ''
+        name: accountRecord.contactName || account?.name || 'Pending Setup',
+        company: accountRecord.companyName || account?.company || ''
       };
       
       const [newOrder] = await tx.insert(orders).values({

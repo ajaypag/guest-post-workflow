@@ -509,18 +509,25 @@ export default function EditOrderPage({ params }: { params: Promise<{ id: string
           accountCompany: selectedAccountCompany || '',
         };
       } else if (session.userType === 'internal') {
-        // Internal users - must select an account
-        if (!selectedAccountId || !selectedAccountEmail || !selectedAccountName) {
-          // Don't save if account info is missing
-          setSaveStatus('idle');
-          return;
+        // Internal users - can use existing account or leave empty (will create provisional)
+        if (selectedAccountId) {
+          // Using an existing account
+          accountInfo = {
+            accountId: selectedAccountId,
+            accountEmail: selectedAccountEmail,
+            accountName: selectedAccountName,
+            accountCompany: selectedAccountCompany || '',
+          };
+        } else {
+          // No account selected - will create provisional account
+          // Pass null accountId to signal provisional account creation
+          accountInfo = {
+            accountId: null,
+            accountEmail: '',
+            accountName: 'Pending Setup',
+            accountCompany: selectedAccountCompany || 'TBD',
+          };
         }
-        accountInfo = {
-          accountId: selectedAccountId,
-          accountEmail: selectedAccountEmail,
-          accountName: selectedAccountName,
-          accountCompany: selectedAccountCompany || '',
-        };
       } else {
         setSaveStatus('error');
         return;
@@ -1008,30 +1015,55 @@ export default function EditOrderPage({ params }: { params: Promise<{ id: string
           <div className="bg-white border-b border-gray-200 px-6 py-4">
             <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
               <div>
-                <label className="block text-sm font-medium text-gray-700 mb-1">Select Account *</label>
+                <label className="block text-sm font-medium text-gray-700 mb-1">
+                  Select Account 
+                  <span className="text-gray-500 font-normal ml-1">(Optional)</span>
+                </label>
                 <select
                   value={selectedAccountId || ''}
                   onChange={(e) => {
                     const accountId = e.target.value;
-                    setSelectedAccountId(accountId);
+                    setSelectedAccountId(accountId || null);
                     // Find selected account and populate fields
-                    const account = accountsList.find(a => a.id === accountId);
-                    if (account) {
-                      setSelectedAccountEmail(account.email);
-                      setSelectedAccountName(account.contactName);
-                      setSelectedAccountCompany(account.companyName || '');
+                    if (accountId) {
+                      const account = accountsList.find(a => a.id === accountId);
+                      if (account) {
+                        setSelectedAccountEmail(account.email);
+                        setSelectedAccountName(account.contactName);
+                        setSelectedAccountCompany(account.companyName || '');
+                      }
+                    } else {
+                      // Clear fields when no account selected
+                      setSelectedAccountEmail('');
+                      setSelectedAccountName('');
+                      setSelectedAccountCompany('');
                     }
                   }}
                   className="w-full px-3 py-2 border border-gray-300 rounded-md focus:ring-blue-500 focus:border-blue-500"
-                  required
                 >
-                  <option value="">Choose an account...</option>
-                  {accountsList.map(account => (
-                    <option key={account.id} value={account.id}>
-                      {account.companyName || account.contactName} ({account.email})
-                    </option>
-                  ))}
+                  <option value="">No account - Create provisional</option>
+                  <optgroup label="Active Accounts">
+                    {accountsList.filter(a => a.status === 'active').map(account => (
+                      <option key={account.id} value={account.id}>
+                        {account.companyName || account.contactName} ({account.email})
+                      </option>
+                    ))}
+                  </optgroup>
+                  {accountsList.filter(a => a.status === 'provisional').length > 0 && (
+                    <optgroup label="Provisional Accounts">
+                      {accountsList.filter(a => a.status === 'provisional').map(account => (
+                        <option key={account.id} value={account.id}>
+                          {account.companyName || account.contactName} (Provisional)
+                        </option>
+                      ))}
+                    </optgroup>
+                  )}
                 </select>
+                {!selectedAccountId && (
+                  <p className="text-xs text-amber-600 mt-1">
+                    ⚠️ A provisional account will be created that can be claimed later
+                  </p>
+                )}
               </div>
               {selectedAccountId && (
                 <>
