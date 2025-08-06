@@ -5,15 +5,28 @@ import { useRouter } from 'next/navigation';
 import { sessionStorage } from '@/lib/userStorage';
 import { type AuthSession } from '@/lib/auth';
 import { useState, useEffect } from 'react';
-import { User, LogOut, Users, Building2, Zap, Search, BarChart2, Globe, Mail, ShoppingCart, Package, Database } from 'lucide-react';
+import { User, LogOut, Users, Building2, Zap, Search, BarChart2, Globe, Mail, ShoppingCart, Package, Database, ChevronDown, Settings } from 'lucide-react';
 
 export default function Header() {
   const router = useRouter();
   const [session, setSession] = useState<AuthSession | null>(null);
+  const [adminDropdownOpen, setAdminDropdownOpen] = useState(false);
 
   useEffect(() => {
     setSession(sessionStorage.getSession());
   }, []);
+
+  // Close dropdown when clicking outside
+  useEffect(() => {
+    const handleClickOutside = () => {
+      setAdminDropdownOpen(false);
+    };
+
+    if (adminDropdownOpen) {
+      document.addEventListener('click', handleClickOutside);
+      return () => document.removeEventListener('click', handleClickOutside);
+    }
+  }, [adminDropdownOpen]);
 
   const handleLogout = () => {
     sessionStorage.clearSession();
@@ -99,59 +112,71 @@ export default function Header() {
                   <ShoppingCart className="w-4 h-4 mr-1.5" />
                   Orders
                 </Link>
-                <Link
-                  href="/websites"
-                  className="text-gray-600 hover:text-gray-900 hover:bg-gray-50 px-3 py-2 rounded-lg text-sm font-medium transition-colors flex items-center"
-                >
-                  <Globe className="w-4 h-4 mr-1.5" />
-                  Websites
-                </Link>
-                <Link
-                  href="/contacts"
-                  className="text-gray-600 hover:text-gray-900 hover:bg-gray-50 px-3 py-2 rounded-lg text-sm font-medium transition-colors flex items-center"
-                >
-                  <Mail className="w-4 h-4 mr-1.5" />
-                  Contacts
-                </Link>
-                <Link
-                  href="/accounts"
-                  className="text-gray-600 hover:text-gray-900 hover:bg-gray-50 px-3 py-2 rounded-lg text-sm font-medium transition-colors flex items-center"
-                >
-                  <Users className="w-4 h-4 mr-1.5" />
-                  Accounts
-                </Link>
-                {session.role === 'admin' && (
-                  <>
-                    <Link
-                      href="/admin/users"
-                      className="text-gray-600 hover:text-gray-900 hover:bg-gray-50 px-3 py-2 rounded-lg text-sm font-medium transition-colors flex items-center"
-                    >
-                      <Users className="w-4 h-4 mr-1.5" />
-                      Users
-                    </Link>
-                    <Link
-                      href="/admin/account-invitations"
-                      className="text-gray-600 hover:text-gray-900 hover:bg-gray-50 px-3 py-2 rounded-lg text-sm font-medium transition-colors flex items-center"
-                    >
-                      <Mail className="w-4 h-4 mr-1.5" />
-                      Invitations
-                    </Link>
-                    <Link
-                      href="/admin/migrate-onboarding"
-                      className="text-gray-600 hover:text-gray-900 hover:bg-gray-50 px-3 py-2 rounded-lg text-sm font-medium transition-colors flex items-center"
-                    >
-                      <Database className="w-4 h-4 mr-1.5" />
-                      Migrate Onboarding
-                    </Link>
-                    <Link
-                      href="/admin/fix-invitations-table"
-                      className="text-gray-600 hover:text-gray-900 hover:bg-gray-50 px-3 py-2 rounded-lg text-sm font-medium transition-colors flex items-center"
-                    >
-                      <Database className="w-4 h-4 mr-1.5" />
-                      Fix Invitations Table
-                    </Link>
-                  </>
-                )}
+                
+                {/* Admin Dropdown */}
+                <div className="relative">
+                  <button
+                    onClick={(e) => {
+                      e.stopPropagation();
+                      setAdminDropdownOpen(!adminDropdownOpen);
+                    }}
+                    className="text-gray-600 hover:text-gray-900 hover:bg-gray-50 px-3 py-2 rounded-lg text-sm font-medium transition-colors flex items-center"
+                  >
+                    <Settings className="w-4 h-4 mr-1.5" />
+                    Admin
+                    <ChevronDown className={`w-4 h-4 ml-1 transition-transform ${adminDropdownOpen ? 'rotate-180' : ''}`} />
+                  </button>
+                  
+                  {adminDropdownOpen && (
+                    <div className="absolute right-0 mt-2 w-48 bg-white rounded-lg shadow-lg border border-gray-100 py-1 z-50">
+                      <Link
+                        href="/websites"
+                        className="block px-4 py-2 text-sm text-gray-700 hover:bg-gray-50 flex items-center"
+                        onClick={() => setAdminDropdownOpen(false)}
+                      >
+                        <Globe className="w-4 h-4 mr-2" />
+                        Websites
+                      </Link>
+                      <Link
+                        href="/contacts"
+                        className="block px-4 py-2 text-sm text-gray-700 hover:bg-gray-50 flex items-center"
+                        onClick={() => setAdminDropdownOpen(false)}
+                      >
+                        <Mail className="w-4 h-4 mr-2" />
+                        Contacts
+                      </Link>
+                      <Link
+                        href="/accounts"
+                        className="block px-4 py-2 text-sm text-gray-700 hover:bg-gray-50 flex items-center"
+                        onClick={() => setAdminDropdownOpen(false)}
+                      >
+                        <Users className="w-4 h-4 mr-2" />
+                        Accounts
+                      </Link>
+                      {session.role === 'admin' && (
+                        <>
+                          <div className="border-t border-gray-100 my-1"></div>
+                          <Link
+                            href="/admin/users"
+                            className="block px-4 py-2 text-sm text-gray-700 hover:bg-gray-50 flex items-center"
+                            onClick={() => setAdminDropdownOpen(false)}
+                          >
+                            <Users className="w-4 h-4 mr-2" />
+                            Users
+                          </Link>
+                          <Link
+                            href="/admin/account-invitations"
+                            className="block px-4 py-2 text-sm text-gray-700 hover:bg-gray-50 flex items-center"
+                            onClick={() => setAdminDropdownOpen(false)}
+                          >
+                            <Mail className="w-4 h-4 mr-2" />
+                            Invitations
+                          </Link>
+                        </>
+                      )}
+                    </div>
+                  )}
+                </div>
               </>
             )}
           </nav>

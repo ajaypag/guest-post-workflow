@@ -37,12 +37,16 @@ interface Website {
   guestPostCost: number | null;
   categories: string[];
   type: string[];
+  websiteType: string[]; // SaaS, Blog, News, eCommerce, etc.
+  niche: string[]; // Multiple niches
   status: string;
   hasGuestPost: boolean;
   hasLinkInsert: boolean;
   publishedOpportunities: number;
   overallQuality: string | null;
   lastSyncedAt: string;
+  airtableCreatedAt?: string;
+  airtableUpdatedAt?: string;
   contacts: Array<{
     id: string;
     email: string;
@@ -69,11 +73,18 @@ interface Filters {
   minCost?: number;
   maxCost?: number;
   categories: string[];
+  websiteTypes: string[]; // SaaS, Blog, News, eCommerce, etc.
+  niches: string[]; // Multiple niches
   hasGuestPost?: boolean;
   hasLinkInsert?: boolean;
   status?: string;
   qualificationStatus?: 'all' | 'qualified' | 'unqualified';
   clientId?: string;
+  // Airtable metadata filters
+  airtableUpdatedAfter?: string;
+  airtableUpdatedBefore?: string;
+  lastSyncedAfter?: string;
+  lastSyncedBefore?: string;
 }
 
 function WebsitesPageContent() {
@@ -90,10 +101,14 @@ function WebsitesPageContent() {
   const [filters, setFilters] = useState<Filters>({
     search: '',
     categories: [],
+    websiteTypes: [],
+    niches: [],
     qualificationStatus: 'all'
   });
   const [clients, setClients] = useState<Array<{ id: string; name: string }>>([]);
   const [categories, setCategories] = useState<string[]>([]);
+  const [websiteTypes, setWebsiteTypes] = useState<string[]>([]);
+  const [niches, setNiches] = useState<string[]>([]);
   const [selectedWebsiteId, setSelectedWebsiteId] = useState<string | null>(null);
   const [selectedWebsiteDomain, setSelectedWebsiteDomain] = useState<string>('');
   const [showDetailModal, setShowDetailModal] = useState(false);
@@ -116,9 +131,15 @@ function WebsitesPageContent() {
             minCost: filters.minCost,
             maxCost: filters.maxCost,
             categories: filters.categories,
+            websiteTypes: filters.websiteTypes,
+            niches: filters.niches,
             hasGuestPost: filters.hasGuestPost,
             hasLinkInsert: filters.hasLinkInsert,
-            status: filters.status
+            status: filters.status,
+            airtableUpdatedAfter: filters.airtableUpdatedAfter,
+            airtableUpdatedBefore: filters.airtableUpdatedBefore,
+            lastSyncedAfter: filters.lastSyncedAfter,
+            lastSyncedBefore: filters.lastSyncedBefore
           },
           limit: 50,
           offset: page * 50,
@@ -183,10 +204,18 @@ function WebsitesPageContent() {
       });
       const data = await response.json();
       const allCategories = new Set<string>();
+      const allWebsiteTypes = new Set<string>();
+      const allNiches = new Set<string>();
+      
       data.websites?.forEach((w: Website) => {
         w.categories?.forEach(cat => allCategories.add(cat));
+        w.websiteType?.forEach(type => allWebsiteTypes.add(type));
+        w.niche?.forEach(niche => allNiches.add(niche));
       });
+      
       setCategories(Array.from(allCategories).sort());
+      setWebsiteTypes(Array.from(allWebsiteTypes).sort());
+      setNiches(Array.from(allNiches).sort());
     } catch (error) {
       console.error('Failed to load categories:', error);
       // Fallback to static list
@@ -519,6 +548,74 @@ function WebsitesPageContent() {
             </div>
           )}
 
+          {/* Airtable Metadata Filters */}
+          {showFilters && (
+            <div className="mt-4">
+              <label className="block text-sm font-medium text-gray-700 mb-2">
+                Airtable Metadata Filters
+              </label>
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                {/* Airtable Updated Date Range */}
+                <div>
+                  <label className="block text-sm font-medium text-gray-600 mb-1">
+                    Airtable Updated Date
+                  </label>
+                  <div className="flex gap-2">
+                    <input
+                      type="date"
+                      placeholder="From"
+                      className="w-1/2 px-3 py-1.5 border rounded text-sm"
+                      value={filters.airtableUpdatedAfter || ''}
+                      onChange={(e) => setFilters(prev => ({ 
+                        ...prev, 
+                        airtableUpdatedAfter: e.target.value || undefined 
+                      }))}
+                    />
+                    <input
+                      type="date"
+                      placeholder="To"
+                      className="w-1/2 px-3 py-1.5 border rounded text-sm"
+                      value={filters.airtableUpdatedBefore || ''}
+                      onChange={(e) => setFilters(prev => ({ 
+                        ...prev, 
+                        airtableUpdatedBefore: e.target.value || undefined 
+                      }))}
+                    />
+                  </div>
+                </div>
+
+                {/* Last Synced Date Range */}
+                <div>
+                  <label className="block text-sm font-medium text-gray-600 mb-1">
+                    Last Synced Date
+                  </label>
+                  <div className="flex gap-2">
+                    <input
+                      type="date"
+                      placeholder="From"
+                      className="w-1/2 px-3 py-1.5 border rounded text-sm"
+                      value={filters.lastSyncedAfter || ''}
+                      onChange={(e) => setFilters(prev => ({ 
+                        ...prev, 
+                        lastSyncedAfter: e.target.value || undefined 
+                      }))}
+                    />
+                    <input
+                      type="date"
+                      placeholder="To"
+                      className="w-1/2 px-3 py-1.5 border rounded text-sm"
+                      value={filters.lastSyncedBefore || ''}
+                      onChange={(e) => setFilters(prev => ({ 
+                        ...prev, 
+                        lastSyncedBefore: e.target.value || undefined 
+                      }))}
+                    />
+                  </div>
+                </div>
+              </div>
+            </div>
+          )}
+
           {/* Categories */}
           {showFilters && categories.length > 0 && (
             <div className="mt-4">
@@ -553,12 +650,82 @@ function WebsitesPageContent() {
             </div>
           )}
 
+          {/* Website Types */}
+          {showFilters && websiteTypes.length > 0 && (
+            <div className="mt-4">
+              <label className="block text-sm font-medium text-gray-700 mb-2">
+                Website Types
+              </label>
+              <div className="grid grid-cols-2 md:grid-cols-4 lg:grid-cols-6 gap-2">
+                {websiteTypes.map(type => (
+                  <label key={type} className="flex items-center gap-1.5">
+                    <input
+                      type="checkbox"
+                      checked={filters.websiteTypes.includes(type)}
+                      onChange={(e) => {
+                        if (e.target.checked) {
+                          setFilters(prev => ({ 
+                            ...prev, 
+                            websiteTypes: [...prev.websiteTypes, type] 
+                          }));
+                        } else {
+                          setFilters(prev => ({ 
+                            ...prev, 
+                            websiteTypes: prev.websiteTypes.filter(t => t !== type) 
+                          }));
+                        }
+                      }}
+                      className="w-4 h-4 text-purple-600 rounded border-gray-300 focus:ring-purple-500"
+                    />
+                    <span className="text-sm">{type}</span>
+                  </label>
+                ))}
+              </div>
+            </div>
+          )}
+
+          {/* Niches */}
+          {showFilters && niches.length > 0 && (
+            <div className="mt-4">
+              <label className="block text-sm font-medium text-gray-700 mb-2">
+                Niches
+              </label>
+              <div className="grid grid-cols-2 md:grid-cols-4 lg:grid-cols-6 gap-2">
+                {niches.map(niche => (
+                  <label key={niche} className="flex items-center gap-1.5">
+                    <input
+                      type="checkbox"
+                      checked={filters.niches.includes(niche)}
+                      onChange={(e) => {
+                        if (e.target.checked) {
+                          setFilters(prev => ({ 
+                            ...prev, 
+                            niches: [...prev.niches, niche] 
+                          }));
+                        } else {
+                          setFilters(prev => ({ 
+                            ...prev, 
+                            niches: prev.niches.filter(n => n !== niche) 
+                          }));
+                        }
+                      }}
+                      className="w-4 h-4 text-orange-600 rounded border-gray-300 focus:ring-orange-500"
+                    />
+                    <span className="text-sm">{niche}</span>
+                  </label>
+                ))}
+              </div>
+            </div>
+          )}
+
           {showFilters && (
             <div className="mt-4 flex justify-between">
               <button
                 onClick={() => setFilters({ 
                   search: filters.search, 
                   categories: [],
+                  websiteTypes: [],
+                  niches: [],
                   qualificationStatus: 'all' 
                 })}
                 className="text-sm text-gray-600 hover:text-gray-800"
@@ -609,6 +776,12 @@ function WebsitesPageContent() {
                   </th>
                   <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase">
                     Access
+                  </th>
+                  <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase">
+                    Website Type
+                  </th>
+                  <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase">
+                    Niche
                   </th>
                   <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase">
                     Contacts
@@ -700,6 +873,32 @@ function WebsitesPageContent() {
                             <Link2 className="w-3 h-3" />
                             LI
                           </span>
+                        )}
+                      </div>
+                    </td>
+                    <td className="px-4 py-3">
+                      <div className="flex flex-wrap gap-1">
+                        {website.websiteType && website.websiteType.length > 0 ? (
+                          website.websiteType.map((type, index) => (
+                            <span key={index} className="inline-flex items-center text-xs px-2 py-1 bg-purple-100 text-purple-700 rounded">
+                              {type}
+                            </span>
+                          ))
+                        ) : (
+                          <span className="text-gray-400 text-sm">-</span>
+                        )}
+                      </div>
+                    </td>
+                    <td className="px-4 py-3">
+                      <div className="flex flex-wrap gap-1">
+                        {website.niche && website.niche.length > 0 ? (
+                          website.niche.map((niche, index) => (
+                            <span key={index} className="inline-flex items-center text-xs px-2 py-1 bg-orange-100 text-orange-700 rounded">
+                              {niche}
+                            </span>
+                          ))
+                        ) : (
+                          <span className="text-gray-400 text-sm">-</span>
                         )}
                       </div>
                     </td>

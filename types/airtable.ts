@@ -18,7 +18,8 @@ export interface AirtableWebsite extends AirtableRecord {
     'Total Traffic': number;
     'Guest Post Cost V2': number;
     Category: string[];
-    Type: string[];
+    Type: string[]; // SaaS, Blog, News, eCommerce, etc.
+    Niche: string[]; // Multiple niches
     'Guest Post Contact': string[];
     'Count of Published Opportunities': number;
     Status: string;
@@ -65,6 +66,8 @@ export interface ProcessedWebsite {
   guestPostCost: number | null;
   categories: string[];
   type: string[];
+  websiteType: string[]; // SaaS, Blog, News, eCommerce, etc.
+  niche: string[]; // Multiple niches
   contacts: ProcessedContact[];
   publishedOpportunities: number;
   status: string;
@@ -85,6 +88,13 @@ export interface WebsiteFilters {
   hasGuestPost?: boolean;
   hasLinkInsert?: boolean;
   categories?: string[];
+  websiteTypes?: string[]; // SaaS, Blog, News, eCommerce, etc.
+  niches?: string[]; // Multiple niches
   searchTerm?: string;
   forceAllRecords?: boolean; // Skip view filtering for full sync
+  // Airtable metadata filters
+  airtableUpdatedAfter?: string; // ISO date string
+  airtableUpdatedBefore?: string; // ISO date string
+  lastSyncedAfter?: string; // ISO date string
+  lastSyncedBefore?: string; // ISO date string
 }
