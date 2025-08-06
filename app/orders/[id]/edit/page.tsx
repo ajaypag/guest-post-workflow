@@ -110,7 +110,13 @@ export default function EditOrderPage({ params }: { params: Promise<{ id: string
   
   // Pricing state - flat service fee model
   const [estimatedPricePerLink, setEstimatedPricePerLink] = useState(27900); // Default $279
+  const [estimatedWholesalePerLink, setEstimatedWholesalePerLink] = useState(20000); // Default $200, updated by pricing estimator
   const [orderPreferences, setOrderPreferences] = useState<any>(null);
+  
+  // Get current wholesale estimate for new line items
+  const getCurrentWholesaleEstimate = () => {
+    return estimatedWholesalePerLink; // Use pricing estimator data
+  };
   
   // Draft order state
   const [draftOrderId, setDraftOrderId] = useState<string | null>(null);
@@ -212,8 +218,8 @@ export default function EditOrderPage({ params }: { params: Promise<{ id: string
             targetPageId: page.id,
             targetPageUrl: page.url,
             anchorText: generateAnchorText(requestingItem.clientName),
-            wholesalePrice: 20000, // Default $200 wholesale
-            price: 20000 + SERVICE_FEE_CENTS // $200 + $79 = $279
+            wholesalePrice: getCurrentWholesaleEstimate(), // Dynamic wholesale from pricing estimator
+            price: getCurrentWholesaleEstimate() + SERVICE_FEE_CENTS
           }));
           
           setLineItems(prev => [...prev, ...newItems]);
@@ -333,8 +339,8 @@ export default function EditOrderPage({ params }: { params: Promise<{ id: string
                   targetPageId: targetPage.pageId || targetPage.id,
                   targetPageUrl: targetPage.url,
                   anchorText: group.anchorTexts?.[index] || '',
-                  wholesalePrice: 20000, // Default $200 wholesale
-                  price: 20000 + SERVICE_FEE_CENTS
+                  wholesalePrice: getCurrentWholesaleEstimate(), // Dynamic wholesale from pricing estimator
+                  price: getCurrentWholesaleEstimate() + SERVICE_FEE_CENTS
                 });
               });
             } else {
@@ -347,8 +353,8 @@ export default function EditOrderPage({ params }: { params: Promise<{ id: string
                   targetPageId: undefined,
                   targetPageUrl: undefined,
                   anchorText: undefined,
-                  wholesalePrice: 20000, // Default $200 wholesale
-                  price: 20000 + SERVICE_FEE_CENTS
+                  wholesalePrice: getCurrentWholesaleEstimate(), // Dynamic wholesale from pricing estimator
+                  price: getCurrentWholesaleEstimate() + SERVICE_FEE_CENTS
                 });
               }
             }
@@ -652,8 +658,8 @@ export default function EditOrderPage({ params }: { params: Promise<{ id: string
             targetPageId: undefined,
             targetPageUrl: undefined,
             anchorText: undefined,
-            wholesalePrice: 20000, // Default $200 wholesale
-            price: 20000 + SERVICE_FEE_CENTS,
+            wholesalePrice: getCurrentWholesaleEstimate(), // Dynamic wholesale from pricing estimator
+            price: getCurrentWholesaleEstimate() + SERVICE_FEE_CENTS,
           }]);
         }
       } else {
@@ -700,8 +706,8 @@ export default function EditOrderPage({ params }: { params: Promise<{ id: string
             targetPageId: undefined,
             targetPageUrl: undefined,
             anchorText: undefined,
-            wholesalePrice: 20000, // Default $200 wholesale
-            price: 20000 + SERVICE_FEE_CENTS,
+            wholesalePrice: getCurrentWholesaleEstimate(), // Dynamic wholesale from pricing estimator
+            price: getCurrentWholesaleEstimate() + SERVICE_FEE_CENTS,
           });
         }
         return [...nonClientItems, ...existingItems, ...newItems];
@@ -751,8 +757,8 @@ export default function EditOrderPage({ params }: { params: Promise<{ id: string
           targetPageId: target.id,
           targetPageUrl: target.url,
           anchorText: generateAnchorText(target.clientName),
-          wholesalePrice: 20000, // Default $200 wholesale
-          price: 20000 + SERVICE_FEE_CENTS
+          wholesalePrice: getCurrentWholesaleEstimate(), // Dynamic wholesale from pricing estimator
+          price: getCurrentWholesaleEstimate() + SERVICE_FEE_CENTS
         };
         return [...prev, newItem];
       }
@@ -1108,8 +1114,10 @@ export default function EditOrderPage({ params }: { params: Promise<{ id: string
             onEstimateChange={(estimate, preferences) => {
               // Store preferences for saving with the order
               if (estimate && preferences) {
-                // Update the estimated price per link
+                // Update the estimated price per link (wholesale + service fee)
                 setEstimatedPricePerLink(estimate.clientMedian);
+                // Update wholesale estimate for new line items
+                setEstimatedWholesalePerLink(estimate.wholesaleMedian);
                 setOrderPreferences(preferences);
                 
                 // Save to local state for persistence
@@ -1119,12 +1127,14 @@ export default function EditOrderPage({ params }: { params: Promise<{ id: string
                   timestamp: new Date().toISOString()
                 }));
                 
-                // Update line items with new estimated price if they don't have a specific price
+                // Update line items that are still using default pricing (not custom prices)
                 setLineItems(prev => prev.map(item => {
-                  if (!item.wholesalePrice) {
+                  // Only update items that have the old default wholesale price or no specific price
+                  const isDefaultPricing = !item.wholesalePrice || item.wholesalePrice === 20000 || item.price === (item.wholesalePrice + SERVICE_FEE_CENTS);
+                  if (isDefaultPricing) {
                     return {
                       ...item,
-                      wholesalePrice: estimate.clientMedian - SERVICE_FEE_CENTS,
+                      wholesalePrice: estimate.wholesaleMedian,
                       price: estimate.clientMedian
                     };
                   }
@@ -1452,7 +1462,7 @@ export default function EditOrderPage({ params }: { params: Promise<{ id: string
                         <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Brand</th>
                         <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Target Page</th>
                         <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Anchor Text</th>
-                        <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Package</th>
+                        <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Cost Breakdown</th>
                         <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Price</th>
                         <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider"></th>
                       </tr>
@@ -1669,8 +1679,9 @@ export default function EditOrderPage({ params }: { params: Promise<{ id: string
               {/* Right Side - Total and Continue */}
               <div className="flex items-center space-x-4 md:space-x-6 w-full md:w-auto">
                 <div className="text-right">
-                  <p className="text-sm text-gray-500">Order Total</p>
-                  <p className="text-2xl font-bold text-gray-900">${total}</p>
+                  <p className="text-sm text-gray-500">Estimated Order Total</p>
+                  <p className="text-2xl font-bold text-gray-900">{formatCurrency(total)}</p>
+                  <p className="text-xs text-gray-400">Final pricing after site approval</p>
                 </div>
                 
                 <div className="flex items-center gap-3">
@@ -1744,8 +1755,8 @@ export default function EditOrderPage({ params }: { params: Promise<{ id: string
                     </div>
                     <div className="pt-3 border-t border-gray-200">
                       <div className="flex justify-between text-lg font-semibold">
-                        <span>Total Price:</span>
-                        <span>${total}</span>
+                        <span>Estimated Total:</span>
+                        <span>{formatCurrency(total)}</span>
                       </div>
                     </div>
                   </div>
