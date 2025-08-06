@@ -207,7 +207,7 @@ export default function PricingEstimator({ className = '', onEstimateChange, ini
     } finally {
       setLoading(false);
     }
-  }, [getCurrentFilters, onEstimateChange]);
+  }, [getCurrentFilters]); // Removed onEstimateChange to prevent infinite loop
 
   // Fetch estimate on filter changes (debounced)
   useEffect(() => {
