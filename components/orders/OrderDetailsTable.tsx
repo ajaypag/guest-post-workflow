@@ -171,11 +171,22 @@ export default function OrderDetailsTable({
   }, 0);
   
   const totalFinal = lineItems.reduce((sum, item) => {
-    // Use retail price if available, otherwise estimated price
-    if (item.retailPrice && item.retailPrice > 0) {
-      return sum + item.retailPrice;
+    // Only count approved items for final total
+    if (item.submissionStatus === 'client_approved' || item.submissionStatus === 'approved') {
+      // Use retail price snapshot if available
+      if (item.retailPrice && item.retailPrice > 0) {
+        return sum + item.retailPrice;
+      }
     }
-    return sum + (item.estimatedPrice || 0);
+    // For non-approved items in review phase, still show estimated
+    if (!item.submissionStatus || item.submissionStatus === 'pending') {
+      if (item.retailPrice && item.retailPrice > 0) {
+        return sum + item.retailPrice;
+      }
+      return sum + (item.estimatedPrice || 0);
+    }
+    // Don't count rejected items
+    return sum;
   }, 0);
   
   return (
@@ -477,16 +488,15 @@ export default function OrderDetailsTable({
               </td>
               <td className="px-6 py-4 text-right">
                 <div className="text-sm font-bold text-gray-900">
-                  {(order.state === 'payment_received' || order.state === 'payment_pending' || 
-                    order.state === 'workflows_generated' || order.state === 'in_progress' || 
-                    order.status === 'completed' || order.status === 'paid') && 
-                   (order.invoiceData?.total || order.totalRetail) ? (
-                    formatCurrency(order.invoiceData?.total || order.totalRetail || totalFinal)
-                  ) : totalFinal > 0 ? (
+                  {/* Always use calculated total from line items if we have approved items with prices */}
+                  {totalFinal > 0 ? (
                     <>
                       {formatCurrency(totalFinal)}
-                      {totalEstimated > 0 && totalEstimated !== totalFinal && (
-                        <div className="text-xs text-gray-500">Est: {formatCurrency(totalEstimated)}</div>
+                      {/* Show invoice total if different (for debugging/transparency) */}
+                      {(order.invoiceData?.total && order.invoiceData.total !== totalFinal) && (
+                        <div className="text-xs text-gray-500">
+                          Invoice: {formatCurrency(order.invoiceData.total)}
+                        </div>
                       )}
                     </>
                   ) : totalEstimated > 0 ? (
