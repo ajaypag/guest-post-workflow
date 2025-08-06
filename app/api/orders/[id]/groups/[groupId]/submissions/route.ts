@@ -4,6 +4,7 @@ import { orderSiteSubmissions } from '@/lib/db/projectOrderAssociationsSchema';
 import { orderGroups } from '@/lib/db/orderGroupSchema';
 import { orders } from '@/lib/db/orderSchema';
 import { bulkAnalysisDomains } from '@/lib/db/bulkAnalysisSchema';
+import { websites } from '@/lib/db/websiteSchema';
 import { eq, and, inArray } from 'drizzle-orm';
 import { AuthServiceServer } from '@/lib/auth-server';
 
@@ -94,9 +95,45 @@ export async function GET(
     // Create domain lookup map
     const domainMap = new Map(domains.map(d => [d.id, d]));
     
+    // Get website pricing data for domains without price snapshots
+    const domainNames = domains.map(d => d.domain);
+    const websitePrices = domainNames.length > 0
+      ? await db.query.websites.findMany({
+          where: inArray(websites.domain, domainNames),
+          columns: {
+            domain: true,
+            guestPostCost: true,
+            domainRating: true,
+            totalTraffic: true
+          }
+        })
+      : [];
+    
+    // Create website price lookup map
+    const websiteMap = new Map(websitePrices.map(w => [w.domain, w]));
+    
     // Transform submissions with domain data
     const enrichedSubmissions = submissions.map(submission => {
       const domain = domainMap.get(submission.domainId);
+      const websiteData = domain ? websiteMap.get(domain.domain) : null;
+      
+      // Calculate price - use snapshot if available, otherwise from website data
+      let price = 0;
+      let wholesalePrice = 0;
+      const serviceFee = submission.serviceFeeSnapshot || 7900;
+      
+      if (submission.retailPriceSnapshot) {
+        price = submission.retailPriceSnapshot;
+        wholesalePrice = submission.wholesalePriceSnapshot || (price - serviceFee);
+      } else if (submission.wholesalePriceSnapshot) {
+        wholesalePrice = submission.wholesalePriceSnapshot;
+        price = wholesalePrice + serviceFee;
+      } else if (websiteData?.guestPostCost) {
+        // Convert from decimal dollars to cents
+        wholesalePrice = Math.round(parseFloat(websiteData.guestPostCost.toString()) * 100);
+        price = wholesalePrice + serviceFee;
+      }
+      
       return {
         id: submission.id,
         domainId: submission.domainId,
@@ -117,8 +154,12 @@ export async function GET(
           hasDataForSeoResults: domain.hasDataForSeoResults,
           dataForSeoResultsCount: domain.dataForSeoResultsCount
         } : null,
-        // Note: domainRating and traffic would need to be fetched from websites table if needed
+        domainRating: submission.metadata?.domainRating || websiteData?.domainRating || undefined,
+        traffic: submission.metadata?.traffic || websiteData?.totalTraffic || undefined,
         status: submission.submissionStatus,
+        price: price,
+        wholesalePrice: wholesalePrice,
+        serviceFee: serviceFee,
         targetPageUrl: submission.metadata?.targetPageUrl,
         anchorText: submission.metadata?.anchorText,
         specialInstructions: submission.metadata?.specialInstructions,

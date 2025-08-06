@@ -16,6 +16,8 @@ export const websites = pgTable('websites', {
   categories: text('categories').array(),
   niche: text('niche').array(), // PostgreSQL array of niches
   type: text('type').array(),
+  websiteType: text('website_type').array(), // New: SaaS, Blog, News, eCommerce, etc
+  niche: text('niche').array(), // New: Multiple niches per website
   status: varchar('status', { length: 50 }).default('Unknown'),
   hasGuestPost: boolean('has_guest_post').default(false),
   hasLinkInsert: boolean('has_link_insert').default(false),

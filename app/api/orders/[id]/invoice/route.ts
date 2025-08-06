@@ -94,36 +94,47 @@ export async function POST(
       const randomStr = Math.random().toString(36).substr(2, 4).toUpperCase();
       const invoiceNumber = `INV-${dateStr}-${randomStr}`;
 
-      // Calculate invoice details
-      const subtotal = order.subtotalRetail || 0;
-      const discountAmount = order.discountAmount || 0;
-      const clientReviewFee = order.clientReviewFee || 0;
-      const rushFee = order.rushFee || 0;
-      const total = order.totalRetail || 0;
-
+      // Calculate invoice details from price snapshots
+      let sitesSubtotal = 0;
+      let serviceFeeTotal = 0;
+      let wholesaleTotal = 0;
+      
       // Get account info for billing
       const account = await db.query.accounts.findFirst({
         where: eq(accounts.id, order.accountId!)
       });
 
-      // Build invoice items - list each site individually
+      // Build invoice items - list each site individually with actual pricing
       const items = [];
       
-      // Add each approved site as a line item
-      const pricePerSite = Math.floor(subtotal / approvedSubmissions.length);
+      // Add each approved site as a line item using price snapshots
       for (const submission of approvedSubmissions) {
         // Get domain info
         const domain = await db.query.bulkAnalysisDomains.findFirst({
           where: eq(bulkAnalysisDomains.id, submission.domainId)
         });
         
+        // Use price snapshot if available, fallback to default pricing
+        const retailPrice = submission.retailPriceSnapshot || 27900; // Default $279
+        const wholesalePrice = submission.wholesalePriceSnapshot || (retailPrice - 7900);
+        const serviceFee = submission.serviceFeeSnapshot || 7900; // $79 service fee
+        
+        sitesSubtotal += retailPrice;
+        wholesaleTotal += wholesalePrice;
+        serviceFeeTotal += serviceFee;
+        
         items.push({
           description: `Guest Post - ${domain?.domain || 'Site'}`,
           quantity: 1,
-          unitPrice: pricePerSite,
-          total: pricePerSite
+          unitPrice: retailPrice,
+          total: retailPrice
         });
       }
+      
+      // Get optional services from order
+      const clientReviewFee = order.clientReviewFee || 0;
+      const rushFee = order.rushFee || 0;
+      const discountAmount = order.discountAmount || 0;
 
       // Add optional services
       if (clientReviewFee > 0) {
@@ -144,15 +155,19 @@ export async function POST(
         });
       }
 
+      // Calculate final totals
+      const invoiceSubtotal = sitesSubtotal + clientReviewFee + rushFee;
+      const finalTotal = invoiceSubtotal - discountAmount;
+
       // Create invoice data
       const invoiceData = {
         invoiceNumber,
         issueDate: now.toISOString().split('T')[0],
         dueDate: new Date(now.getTime() + 2 * 24 * 60 * 60 * 1000).toISOString().split('T')[0], // 2 days from now
         items,
-        subtotal: subtotal + clientReviewFee + rushFee,
+        subtotal: invoiceSubtotal,
         discount: discountAmount,
-        total,
+        total: finalTotal,
         billingInfo: account ? {
           name: account.contactName || '',
           company: account.companyName || '',
@@ -161,9 +176,16 @@ export async function POST(
         } : undefined
       };
 
-      // Update order to payment_pending state with invoice data
+      // Update order with correct pricing and invoice data
       const updatedOrder = await db.update(orders)
         .set({
+          // Update pricing to reflect actual costs
+          subtotalRetail: sitesSubtotal,
+          totalRetail: finalTotal,
+          totalWholesale: wholesaleTotal,
+          profitMargin: serviceFeeTotal,
+          discountAmount: discountAmount,
+          // State and invoice tracking  
           state: 'payment_pending',
           invoicedAt: new Date(),
           invoiceData,

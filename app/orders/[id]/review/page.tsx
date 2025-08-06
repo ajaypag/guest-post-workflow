@@ -2,10 +2,12 @@
 
 import { useState, useEffect } from 'react';
 import { useParams, useRouter } from 'next/navigation';
-import { Loader2, CheckCircle, XCircle, AlertCircle, ArrowRight } from 'lucide-react';
+import Link from 'next/link';
+import { Loader2, CheckCircle, XCircle, AlertCircle, ArrowRight, ArrowLeft, DollarSign } from 'lucide-react';
 import Header from '@/components/Header';
 import OrderSiteReviewTable from '@/components/orders/OrderSiteReviewTable';
 import type { OrderGroup, SiteSubmission } from '@/components/orders/OrderSiteReviewTable';
+import { formatCurrency } from '@/lib/utils/formatting';
 
 interface OrderData {
   id: string;
@@ -188,8 +190,33 @@ export default function ExternalOrderReviewPage() {
     }
   };
 
-  const handleProceed = () => {
-    router.push(`/orders/${orderId}`);
+  const handleProceed = async () => {
+    // After approving sites, check if order needs invoicing or if it's ready for payment
+    if (order && approvedCount > 0) {
+      try {
+        // Trigger invoice generation for approved sites
+        const response = await fetch(`/api/orders/${orderId}/invoice`, {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ action: 'generate_invoice' })
+        });
+        
+        if (response.ok) {
+          // Invoice generated successfully, redirect to invoice page
+          router.push(`/orders/${orderId}/invoice`);
+        } else {
+          // If invoice generation fails, go to order status page
+          router.push(`/account/orders/${orderId}/status`);
+        }
+      } catch (error) {
+        console.error('Error generating invoice:', error);
+        // Fallback to order status page
+        router.push(`/account/orders/${orderId}/status`);
+      }
+    } else {
+      // No approved sites, go to order page
+      router.push(`/orders/${orderId}`);
+    }
   };
 
   if (loading) {
@@ -233,6 +260,15 @@ export default function ExternalOrderReviewPage() {
         <div className="max-w-7xl mx-auto px-4 py-8">
           {/* Header */}
           <div className="bg-white rounded-lg shadow-sm border border-gray-200 p-6 mb-6">
+            <div className="flex items-center gap-4 mb-4">
+              <Link
+                href={`/orders/${orderId}`}
+                className="inline-flex items-center text-gray-600 hover:text-gray-900 transition-colors"
+              >
+                <ArrowLeft className="h-4 w-4 mr-2" />
+                Back to Order
+              </Link>
+            </div>
             <div className="flex items-center justify-between mb-4">
               <div>
                 <h1 className="text-2xl font-bold text-gray-900">
@@ -336,6 +372,68 @@ export default function ExternalOrderReviewPage() {
               setSelectedSubmissions(newSelected);
             }}
           />
+
+          {/* Pricing Summary for Approved Sites */}
+          {approvedCount > 0 && (
+            <div className="mt-6 bg-white rounded-lg shadow-sm border border-gray-200 p-6">
+              <div className="flex items-center justify-between mb-4">
+                <div className="flex items-center gap-2">
+                  <DollarSign className="w-5 h-5 text-gray-500" />
+                  <h3 className="text-lg font-semibold text-gray-900">Order Summary</h3>
+                </div>
+              </div>
+              
+              <div className="space-y-3">
+                {Object.entries(siteSubmissions).map(([groupId, submissions]) => {
+                  const approvedSubmissions = submissions.filter(s => s.status === 'client_approved');
+                  if (approvedSubmissions.length === 0) return null;
+                  
+                  const group = order?.orderGroups.find(g => g.id === groupId);
+                  const groupTotal = approvedSubmissions.reduce((sum, sub) => sum + (sub.price || 0), 0);
+                  
+                  return (
+                    <div key={groupId} className="flex justify-between py-2 border-b border-gray-100 last:border-b-0">
+                      <div>
+                        <span className="font-medium text-gray-900">{group?.client.name || 'Unknown Client'}</span>
+                        <span className="text-sm text-gray-500 ml-2">
+                          ({approvedSubmissions.length} site{approvedSubmissions.length > 1 ? 's' : ''})
+                        </span>
+                      </div>
+                      <span className="font-medium text-gray-900">
+                        {groupTotal > 0 ? formatCurrency(groupTotal) : (
+                          <span className="text-gray-500 italic text-sm">Pricing pending</span>
+                        )}
+                      </span>
+                    </div>
+                  );
+                })}
+                
+                {/* Total */}
+                <div className="pt-3 border-t border-gray-200">
+                  <div className="flex justify-between items-center">
+                    <span className="text-lg font-semibold text-gray-900">Total Investment</span>
+                    <span className="text-lg font-bold text-gray-900">
+                      {(() => {
+                        const totalPrice = Object.values(siteSubmissions)
+                          .flat()
+                          .filter(s => s.status === 'client_approved')
+                          .reduce((sum, sub) => sum + (sub.price || 0), 0);
+                        
+                        return totalPrice > 0 ? formatCurrency(totalPrice) : (
+                          <span className="text-gray-500 italic text-base font-normal">
+                            Final pricing will be confirmed
+                          </span>
+                        );
+                      })()}
+                    </span>
+                  </div>
+                  <p className="text-xs text-gray-500 mt-1 text-right">
+                    Final pricing confirmed at approval
+                  </p>
+                </div>
+              </div>
+            </div>
+          )}
 
           {/* Proceed Button */}
           {pendingCount === 0 && approvedCount > 0 && (

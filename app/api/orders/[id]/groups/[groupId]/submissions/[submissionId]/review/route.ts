@@ -90,11 +90,71 @@ export async function POST(
       updateData.clientReviewedBy = session.userId;
     }
     
+    // Capture price snapshots when approving
+    if (action === 'approve') {
+      // Get website data to get actual domain rating and pricing
+      const { websites } = await import('@/lib/db/websiteSchema');
+      const websiteData = submission.domain?.domain ? 
+        await db.query.websites.findFirst({
+          where: eq(websites.domain, submission.domain.domain)
+        }) : null;
+      
+      // Calculate price based on domain rating or use existing snapshots
+      // If price snapshots already exist, use them; otherwise calculate based on DR
+      let retailPrice = submission.retailPriceSnapshot;
+      let wholesalePrice = submission.wholesalePriceSnapshot;
+      const serviceFee = 7900; // $79 service fee
+      
+      if (!retailPrice) {
+        // Use website's guest post cost if available, otherwise calculate based on DR
+        if (websiteData?.guestPostCost) {
+          // Convert from decimal dollars to cents
+          wholesalePrice = Math.round(parseFloat(websiteData.guestPostCost.toString()) * 100);
+          retailPrice = wholesalePrice + serviceFee;
+        } else {
+          // Calculate based on domain rating if available
+          const dr = websiteData?.domainRating || submission.metadata?.domainRating || 50;
+          
+          // Pricing tiers based on DR
+          if (dr >= 70) {
+            retailPrice = 59900; // $599
+          } else if (dr >= 50) {
+            retailPrice = 49900; // $499
+          } else if (dr >= 30) {
+            retailPrice = 39900; // $399
+          } else {
+            retailPrice = 29900; // $299
+          }
+          
+          wholesalePrice = retailPrice - serviceFee;
+        }
+      }
+      
+      updateData.retailPriceSnapshot = retailPrice;
+      updateData.wholesalePriceSnapshot = wholesalePrice;
+      updateData.serviceFeeSnapshot = serviceFee;
+      updateData.priceSnapshotAt = new Date();
+    }
+    
+    // If approving, get website data for metadata enrichment
+    let websiteData = null;
+    if (action === 'approve' && submission.domain?.domain) {
+      const { websites } = await import('@/lib/db/websiteSchema');
+      websiteData = await db.query.websites.findFirst({
+        where: eq(websites.domain, submission.domain.domain)
+      });
+    }
+    
     const [updatedSubmission] = await db.update(orderSiteSubmissions)
       .set({
         ...updateData,
         metadata: {
           ...(submission.metadata || {}),
+          // Store domain rating and traffic when approving
+          ...(action === 'approve' && websiteData ? {
+            domainRating: websiteData.domainRating || submission.metadata?.domainRating,
+            traffic: websiteData.totalTraffic || submission.metadata?.traffic
+          } : {}),
           reviewHistory: [
             ...(submission.metadata?.reviewHistory || []),
             {

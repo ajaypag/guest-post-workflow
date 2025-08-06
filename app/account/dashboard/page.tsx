@@ -4,8 +4,8 @@ import React, { useState, useEffect } from 'react';
 import { useRouter } from 'next/navigation';
 import AccountAuthWrapper from '@/components/AccountAuthWrapper';
 import Header from '@/components/Header';
-import OnboardingChecklist from '@/components/OnboardingChecklist';
 import { formatCurrency } from '@/lib/utils/formatting';
+import { getStateDisplay } from '@/components/orders/OrderProgressSteps';
 import {
   Package,
   FileText,
@@ -75,11 +75,6 @@ function AccountDashboardContent({ user }: AccountDashboardProps) {
     totalSpent: 0,
     totalBrands: 0,
   });
-  const [onboardingData, setOnboardingData] = useState({
-    completed: false,
-    steps: {},
-    showChecklist: true
-  });
 
   useEffect(() => {
     if (user) {
@@ -128,19 +123,6 @@ function AccountDashboardContent({ user }: AccountDashboardProps) {
         }));
       }
       
-      // Load onboarding status
-      const onboardingResponse = await fetch('/api/accounts/onboarding', {
-        credentials: 'include',
-      });
-      
-      if (onboardingResponse.ok) {
-        const onboarding = await onboardingResponse.json();
-        setOnboardingData({
-          completed: onboarding.onboardingCompleted || false,
-          steps: onboarding.onboardingSteps || {},
-          showChecklist: !onboarding.onboardingCompleted
-        });
-      }
       
     } catch (error) {
       console.error('Error loading dashboard data:', error);
@@ -222,21 +204,6 @@ function AccountDashboardContent({ user }: AccountDashboardProps) {
             </button>
           </div>
 
-          {/* Onboarding Checklist for new users */}
-          {onboardingData.showChecklist && !onboardingData.completed && (
-            <div className="mb-8">
-              <OnboardingChecklist
-                accountId={user?.id || ''}
-                onboardingSteps={onboardingData.steps}
-                onClose={() => setOnboardingData(prev => ({ ...prev, showChecklist: false }))}
-                onComplete={() => {
-                  setOnboardingData(prev => ({ ...prev, completed: true, showChecklist: false }));
-                  // Optionally reload dashboard data
-                  loadDashboardData();
-                }}
-              />
-            </div>
-          )}
 
           {/* Stats Grid */}
           <div className="grid grid-cols-2 md:grid-cols-5 gap-4 mb-8">
@@ -442,7 +409,7 @@ function AccountDashboardContent({ user }: AccountDashboardProps) {
                       Status
                     </th>
                     <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                      Domains
+                      Links/Status
                     </th>
                     <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
                       Progress
@@ -472,13 +439,27 @@ function AccountDashboardContent({ user }: AccountDashboardProps) {
                           {new Date(order.createdAt).toLocaleDateString()}
                         </td>
                         <td className="px-6 py-4 whitespace-nowrap">
-                          <span className={`inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium ${getStatusColor(order.status)}`}>
-                            {getStatusIcon(order.status)}
-                            <span className="ml-1 capitalize">{order.status.replace('_', ' ')}</span>
-                          </span>
+                          {(() => {
+                            const stateDisplay = getStateDisplay(order.status, (order as any).state);
+                            return (
+                              <span className={`inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium ${stateDisplay.color}`}>
+                                {getStatusIcon(order.status)}
+                                <span className="ml-1">{stateDisplay.label}</span>
+                              </span>
+                            );
+                          })()}
                         </td>
                         <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-600">
-                          {order.itemCount || 0} domains
+                          {(() => {
+                            const stateDisplay = getStateDisplay(order.status, (order as any).state);
+                            if (order.status === 'pending_confirmation' || order.status === 'draft') {
+                              return <span className="text-gray-500 italic">Pending setup</span>;
+                            }
+                            if (order.itemCount > 0) {
+                              return `${order.itemCount} link${order.itemCount > 1 ? 's' : ''}`;
+                            }
+                            return <span className="text-gray-500 italic">Configuring</span>;
+                          })()}
                         </td>
                         <td className="px-6 py-4 whitespace-nowrap">
                           <div className="flex items-center">
@@ -499,10 +480,10 @@ function AccountDashboardContent({ user }: AccountDashboardProps) {
                         <td className="px-6 py-4 whitespace-nowrap text-sm">
                           <div className="flex items-center gap-3">
                             <button
-                              onClick={() => router.push(`/orders/${order.id}/detail`)}
+                              onClick={() => router.push(`/orders/${order.id}`)}
                               className="text-blue-600 hover:text-blue-800"
                             >
-                              View Details
+                              View Order
                             </button>
                             {order.status === 'draft' && (
                               <button

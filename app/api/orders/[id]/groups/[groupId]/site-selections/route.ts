@@ -5,6 +5,7 @@ import { orderGroups } from '@/lib/db/orderGroupSchema';
 import { bulkAnalysisProjects, bulkAnalysisDomains } from '@/lib/db/bulkAnalysisSchema';
 import { orderSiteSelections } from '@/lib/db/schema';
 import { projectOrderAssociations, orderSiteSubmissions } from '@/lib/db/projectOrderAssociationsSchema';
+import { websites } from '@/lib/db/websiteSchema';
 import { eq, and, inArray, sql } from 'drizzle-orm';
 import { AuthServiceServer } from '@/lib/auth-server';
 
@@ -257,22 +258,69 @@ export async function POST(
 
       // Insert new submissions
       if (body.selections && body.selections.length > 0) {
-        const newSubmissions = body.selections.map((selection: any) => ({
-          orderGroupId: groupId,
-          domainId: selection.domainId,
-          submissionStatus: selection.status === 'approved' ? 'client_approved' : 
-                           selection.status === 'rejected' ? 'client_rejected' : 'pending',
-          metadata: {
-            targetPageUrl: selection.targetPageUrl,
-            anchorText: selection.anchorText,
-            specialInstructions: selection.specialInstructions
-          },
-          clientReviewedAt: selection.status === 'approved' || selection.status === 'rejected' ? new Date() : null,
-          clientReviewNotes: selection.reviewNotes,
-          clientReviewedBy: (selection.status === 'approved' || selection.status === 'rejected') && session.userType === 'account' ? session.userId : null,
-          submittedBy: session.userType === 'internal' ? session.userId : null,
-          submittedAt: session.userType === 'internal' ? new Date() : null
-        }));
+        // Get prices for approved domains to create snapshots
+        const approvedDomainIds = body.selections
+          .filter((s: any) => s.status === 'approved')
+          .map((s: any) => s.domainId);
+        
+        // Fetch current prices from bulk analysis domains and websites
+        let domainPrices: Record<string, { wholesalePrice: number; retailPrice: number }> = {};
+        if (approvedDomainIds.length > 0) {
+          // Get domains with their associated website data
+          const approvedDomainsWithPrices = await tx.execute(sql`
+            SELECT 
+              bad.id,
+              bad.domain,
+              w.guest_post_cost,
+              w.domain_rating,
+              w.total_traffic
+            FROM bulk_analysis_domains bad
+            LEFT JOIN websites w ON LOWER(bad.domain) = LOWER(w.domain)
+            WHERE bad.id = ANY(${approvedDomainIds})
+          `);
+          
+          // Map domain prices from website data
+          const SERVICE_FEE_CENTS = 7900;
+          approvedDomainsWithPrices.rows.forEach((row: any) => {
+            const wholesaleCents = row.guest_post_cost 
+              ? Math.round(parseFloat(row.guest_post_cost) * 100)
+              : 20000; // Default $200 if no price
+            domainPrices[row.id] = {
+              wholesalePrice: wholesaleCents,
+              retailPrice: wholesaleCents + SERVICE_FEE_CENTS
+            };
+          });
+        }
+        
+        const now = new Date();
+        const newSubmissions = body.selections.map((selection: any) => {
+          const isApproved = selection.status === 'approved';
+          const prices = isApproved ? domainPrices[selection.domainId] : null;
+          
+          return {
+            orderGroupId: groupId,
+            domainId: selection.domainId,
+            submissionStatus: isApproved ? 'client_approved' : 
+                             selection.status === 'rejected' ? 'client_rejected' : 'pending',
+            metadata: {
+              targetPageUrl: selection.targetPageUrl,
+              anchorText: selection.anchorText,
+              specialInstructions: selection.specialInstructions
+            },
+            // Price snapshot for approved items
+            ...(isApproved && prices && {
+              wholesalePriceSnapshot: prices.wholesalePrice,
+              retailPriceSnapshot: prices.retailPrice,
+              serviceFeeSnapshot: 7900,
+              priceSnapshotAt: now
+            }),
+            clientReviewedAt: selection.status === 'approved' || selection.status === 'rejected' ? now : null,
+            clientReviewNotes: selection.reviewNotes,
+            clientReviewedBy: (selection.status === 'approved' || selection.status === 'rejected') && session.userType === 'account' ? session.userId : null,
+            submittedBy: session.userType === 'internal' ? session.userId : null,
+            submittedAt: session.userType === 'internal' ? now : null
+          };
+        });
 
         await tx.insert(orderSiteSubmissions).values(newSubmissions);
       }

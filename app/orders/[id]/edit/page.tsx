@@ -10,6 +10,7 @@ import { formatCurrency } from '@/lib/utils/formatting';
 import CreateClientModal from '@/components/ui/CreateClientModal';
 import CreateTargetPageModal from '@/components/ui/CreateTargetPageModal';
 import OrderProgressView from '@/components/orders/OrderProgressView';
+import PricingEstimator from '@/components/orders/PricingEstimator';
 import { 
   Building, Package, Plus, X, ChevronDown, ChevronUp, ChevronRight,
   Search, Target, Link as LinkIcon, Type, CheckCircle,
@@ -17,7 +18,8 @@ import {
   ArrowLeft, Loader2
 } from 'lucide-react';
 
-type PackageType = 'good' | 'better' | 'best';
+// Service fee constant - $79 per link
+const SERVICE_FEE_CENTS = 7900;
 
 // Debounce utility
 function debounce<T extends (...args: any[]) => any>(
@@ -38,8 +40,8 @@ interface OrderLineItem {
   targetPageId?: string;
   targetPageUrl?: string;
   anchorText?: string;
-  price: number;
-  selectedPackage: PackageType;
+  price: number; // Total price (wholesale + service fee)
+  wholesalePrice?: number; // Wholesale cost from database
 }
 
 interface ClientWithSelection {
@@ -106,12 +108,14 @@ export default function EditOrderPage({ params }: { params: Promise<{ id: string
   const [subtotal, setSubtotal] = useState(0);
   const [total, setTotal] = useState(0);
   
-  // Pricing state
-  const [selectedPackage, setSelectedPackage] = useState<PackageType>('better');
-  const packagePricing = {
-    good: { price: 230, name: 'Good Guest Posts', description: 'DR 20-34' },
-    better: { price: 279, name: 'Better Guest Posts', description: 'DR 35-49' },
-    best: { price: 349, name: 'Best Guest Posts', description: 'DR 50-80' }
+  // Pricing state - flat service fee model
+  const [estimatedPricePerLink, setEstimatedPricePerLink] = useState(27900); // Default $279
+  const [estimatedWholesalePerLink, setEstimatedWholesalePerLink] = useState(20000); // Default $200, updated by pricing estimator
+  const [orderPreferences, setOrderPreferences] = useState<any>(null);
+  
+  // Get current wholesale estimate for new line items
+  const getCurrentWholesaleEstimate = () => {
+    return estimatedWholesalePerLink; // Use pricing estimator data
   };
   
   // Draft order state
@@ -214,8 +218,8 @@ export default function EditOrderPage({ params }: { params: Promise<{ id: string
             targetPageId: page.id,
             targetPageUrl: page.url,
             anchorText: generateAnchorText(requestingItem.clientName),
-            price: packagePricing[selectedPackage].price || 100,
-            selectedPackage: selectedPackage
+            wholesalePrice: getCurrentWholesaleEstimate(), // Dynamic wholesale from pricing estimator
+            price: getCurrentWholesaleEstimate() + SERVICE_FEE_CENTS
           }));
           
           setLineItems(prev => [...prev, ...newItems]);
@@ -290,6 +294,23 @@ export default function EditOrderPage({ params }: { params: Promise<{ id: string
         setOrderStatus(order.status || 'draft');
         setOrderState(order.state || 'configuring');
         
+        // Load preferences from database
+        if (order.preferencesDrMin && order.preferencesDrMax) {
+          const loadedPreferences = {
+            drRange: [order.preferencesDrMin, order.preferencesDrMax] as [number, number],
+            minTraffic: order.preferencesTrafficMin || 0,
+            categories: order.preferencesCategories || [],
+            types: order.preferencesTypes || [],
+            linkCount: order.estimatedLinksCount || 10
+          };
+          setOrderPreferences(loadedPreferences);
+          
+          // Also set estimated price if available
+          if (order.estimatedPricePerLink) {
+            setEstimatedPricePerLink(order.estimatedPricePerLink);
+          }
+        }
+        
         // Determine if this is a new order (just created from /orders/new)
         const isNew = order.status === 'draft' && 
                      (!order.orderGroups || order.orderGroups.length === 0) &&
@@ -318,8 +339,8 @@ export default function EditOrderPage({ params }: { params: Promise<{ id: string
                   targetPageId: targetPage.pageId || targetPage.id,
                   targetPageUrl: targetPage.url,
                   anchorText: group.anchorTexts?.[index] || '',
-                  price: packagePricing[selectedPackage].price,
-                  selectedPackage: selectedPackage
+                  wholesalePrice: getCurrentWholesaleEstimate(), // Dynamic wholesale from pricing estimator
+                  price: getCurrentWholesaleEstimate() + SERVICE_FEE_CENTS
                 });
               });
             } else {
@@ -332,8 +353,8 @@ export default function EditOrderPage({ params }: { params: Promise<{ id: string
                   targetPageId: undefined,
                   targetPageUrl: undefined,
                   anchorText: undefined,
-                  price: packagePricing[selectedPackage].price,
-                  selectedPackage: selectedPackage
+                  wholesalePrice: getCurrentWholesaleEstimate(), // Dynamic wholesale from pricing estimator
+                  price: getCurrentWholesaleEstimate() + SERVICE_FEE_CENTS
                 });
               }
             }
@@ -364,7 +385,7 @@ export default function EditOrderPage({ params }: { params: Promise<{ id: string
     } finally {
       setLoadingDraft(false);
     }
-  }, [session, router, selectedPackage, packagePricing]);
+  }, [session, router, estimatedPricePerLink]);
 
   useEffect(() => {
     // Only load data once when session is available
@@ -519,8 +540,22 @@ export default function EditOrderPage({ params }: { params: Promise<{ id: string
         // Pricing - use correct field names expected by API
         subtotal: subtotal,
         totalPrice: total,
-        totalWholesale: Math.round(total * 0.6), // Estimate wholesale cost
-        profitMargin: Math.round(total * 0.4),
+        // Calculate actual wholesale and profit based on line items
+        totalWholesale: lineItems.reduce((sum, item) => 
+          sum + (item.wholesalePrice || (item.price - SERVICE_FEE_CENTS)), 0
+        ),
+        profitMargin: lineItems.length * SERVICE_FEE_CENTS, // Profit = number of links × $79 service fee
+        
+        // Preferences from pricing estimator
+        ...(orderPreferences && {
+          estimatedLinksCount: orderPreferences.linkCount,
+          preferencesDrMin: orderPreferences.drRange[0],
+          preferencesDrMax: orderPreferences.drRange[1],
+          preferencesTrafficMin: orderPreferences.minTraffic,
+          preferencesCategories: orderPreferences.categories,
+          preferencesTypes: orderPreferences.types,
+          estimatedPricePerLink: estimatedPricePerLink,
+        }),
         
         // Groups for the new order structure - API expects 'orderGroups'
         orderGroups: Array.from(selectedClients.entries())
@@ -547,8 +582,8 @@ export default function EditOrderPage({ params }: { params: Promise<{ id: string
               linkCount: data.linkCount,
               targetPages: targetPages,
               anchorTexts: anchorTexts,
-              packageType: clientItems[0]?.selectedPackage || 'better',
-              packagePrice: packagePricing[clientItems[0]?.selectedPackage || 'better'].price,
+              estimatedPrice: clientItems[0]?.price || estimatedPricePerLink,
+              wholesalePrice: clientItems[0]?.wholesalePrice || (estimatedPricePerLink - SERVICE_FEE_CENTS),
             };
           })
       };
@@ -585,7 +620,7 @@ export default function EditOrderPage({ params }: { params: Promise<{ id: string
       setSaveStatus('error');
       setTimeout(() => setSaveStatus('idle'), 2000);
     }
-  }, [session, draftOrderId, lineItems, selectedClients, clients, subtotal, total, packagePricing, 
+  }, [session, draftOrderId, lineItems, selectedClients, clients, subtotal, total, estimatedPricePerLink,
       selectedAccountId, selectedAccountEmail, selectedAccountName, selectedAccountCompany]);
   
   // Use ref to avoid recreating debounced function
@@ -623,8 +658,8 @@ export default function EditOrderPage({ params }: { params: Promise<{ id: string
             targetPageId: undefined,
             targetPageUrl: undefined,
             anchorText: undefined,
-            price: packagePricing[selectedPackage].price || 100,
-            selectedPackage: selectedPackage,
+            wholesalePrice: getCurrentWholesaleEstimate(), // Dynamic wholesale from pricing estimator
+            price: getCurrentWholesaleEstimate() + SERVICE_FEE_CENTS,
           }]);
         }
       } else {
@@ -671,8 +706,8 @@ export default function EditOrderPage({ params }: { params: Promise<{ id: string
             targetPageId: undefined,
             targetPageUrl: undefined,
             anchorText: undefined,
-            price: packagePricing[selectedPackage].price || 100,
-            selectedPackage: selectedPackage,
+            wholesalePrice: getCurrentWholesaleEstimate(), // Dynamic wholesale from pricing estimator
+            price: getCurrentWholesaleEstimate() + SERVICE_FEE_CENTS,
           });
         }
         return [...nonClientItems, ...existingItems, ...newItems];
@@ -722,8 +757,8 @@ export default function EditOrderPage({ params }: { params: Promise<{ id: string
           targetPageId: target.id,
           targetPageUrl: target.url,
           anchorText: generateAnchorText(target.clientName),
-          price: packagePricing[selectedPackage].price || 100,
-          selectedPackage: selectedPackage
+          wholesalePrice: getCurrentWholesaleEstimate(), // Dynamic wholesale from pricing estimator
+          price: getCurrentWholesaleEstimate() + SERVICE_FEE_CENTS
         };
         return [...prev, newItem];
       }
@@ -1072,8 +1107,46 @@ export default function EditOrderPage({ params }: { params: Promise<{ id: string
           </div>
         </div>
         
+        {/* Pricing Estimator */}
+        <PricingEstimator 
+          className=""
+          initialPreferences={orderPreferences || undefined}
+            onEstimateChange={(estimate, preferences) => {
+              // Store preferences for saving with the order
+              if (estimate && preferences) {
+                // Update the estimated price per link (wholesale + service fee)
+                setEstimatedPricePerLink(estimate.clientMedian);
+                // Update wholesale estimate for new line items
+                setEstimatedWholesalePerLink(estimate.wholesaleMedian);
+                setOrderPreferences(preferences);
+                
+                // Save to local state for persistence
+                sessionStorage.setItem('orderPreferences', JSON.stringify({
+                  estimate,
+                  preferences,
+                  timestamp: new Date().toISOString()
+                }));
+                
+                // Update line items that are still using default pricing (not custom prices)
+                setLineItems(prev => prev.map(item => {
+                  // Only update items that have the old default wholesale price or no specific price
+                  const isDefaultPricing = !item.wholesalePrice || item.wholesalePrice === 20000 || item.price === (item.wholesalePrice + SERVICE_FEE_CENTS);
+                  if (isDefaultPricing) {
+                    return {
+                      ...item,
+                      wholesalePrice: estimate.wholesaleMedian,
+                      price: estimate.clientMedian
+                    };
+                  }
+                  return item;
+                }));
+                
+              }
+            }}
+          />
+        
         {/* Main Content Area - Three Column Layout (Desktop) / Single Column (Mobile) */}
-        <div className="flex-1 flex flex-col md:flex-row gap-4 p-4 overflow-hidden bg-gray-100" style={{height: 'calc(100vh - 64px - 80px)'}}>
+        <div className="flex-1 flex flex-col md:flex-row gap-4 p-4 pt-0 overflow-hidden bg-gray-100" style={{height: 'calc(100vh - 64px - 80px)'}}>
           {error && (
             <div className="absolute top-4 left-1/2 transform -translate-x-1/2 z-50 bg-red-50 border border-red-200 rounded-lg p-4 flex items-start shadow-lg">
               <AlertCircle className="h-5 w-5 text-red-600 mt-0.5 mr-3" />
@@ -1389,7 +1462,7 @@ export default function EditOrderPage({ params }: { params: Promise<{ id: string
                         <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Brand</th>
                         <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Target Page</th>
                         <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Anchor Text</th>
-                        <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Package</th>
+                        <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Investment Details</th>
                         <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Price</th>
                         <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider"></th>
                       </tr>
@@ -1423,21 +1496,17 @@ export default function EditOrderPage({ params }: { params: Promise<{ id: string
                             />
                           </td>
                           <td className="px-4 py-3">
-                            <select
-                              value={item.selectedPackage || 'better'}
-                              onChange={(e) => {
-                                const pkg = e.target.value as keyof typeof packagePricing;
-                                updateLineItem(item.id, { 
-                                  price: packagePricing[pkg].price || item.price,
-                                  selectedPackage: pkg 
-                                });
-                              }}
-                              className="w-full px-2 py-1 text-sm border border-gray-200 rounded focus:outline-none focus:ring-1 focus:ring-blue-500"
-                            >
-                              <option value="good">Good (DR 20-34)</option>
-                              <option value="better">Better (DR 35-49)</option>
-                              <option value="best">Best (DR 50-80)</option>
-                            </select>
+                            <div className="text-sm">
+                              <div className="font-medium text-gray-900">
+                                ${(item.price / 100).toFixed(0)}
+                              </div>
+                              <div className="text-xs text-gray-500">
+                                ${((item.wholesalePrice || (item.price - SERVICE_FEE_CENTS)) / 100).toFixed(0)} site + $79 SEO content package
+                              </div>
+                              <div className="text-xs text-gray-400 mt-1">
+                                2000-word article, semantic SEO, images, internal links
+                              </div>
+                            </div>
                           </td>
                           <td className="px-4 py-3">
                             <p className="text-sm font-medium text-gray-900">${item.price}</p>
@@ -1494,7 +1563,7 @@ export default function EditOrderPage({ params }: { params: Promise<{ id: string
                             )}
                           </div>
                           <span className="text-sm font-medium text-gray-900">
-                            ${items.reduce((sum, item) => sum + (packagePricing[item.selectedPackage as keyof typeof packagePricing]?.price || 0), 0)}
+                            ${items.reduce((sum, item) => sum + (item.price || 0), 0) / 100}
                           </span>
                         </button>
                         
@@ -1534,26 +1603,17 @@ export default function EditOrderPage({ params }: { params: Promise<{ id: string
                                       />
                                     </td>
                                     <td className="px-4 py-3">
-                                      <select
-                                        value={item.selectedPackage}
-                                        onChange={(e) => {
-                                          const newPackage = e.target.value as PackageType;
-                                          updateLineItem(item.id, { 
-                                            selectedPackage: newPackage,
-                                            price: packagePricing[newPackage].price
-                                          });
-                                        }}
-                                        className="px-3 py-1.5 border border-gray-300 rounded text-sm"
-                                      >
-                                        {Object.entries(packagePricing).map(([key, pkg]) => (
-                                          <option key={key} value={key}>
-                                            {pkg.name} {pkg.price > 0 && `($${pkg.price})`}
-                                          </option>
-                                        ))}
-                                      </select>
+                                      <div className="text-sm">
+                                        <div className="font-medium text-gray-900">
+                                          ${(item.price / 100).toFixed(0)}
+                                        </div>
+                                        <div className="text-xs text-gray-500">
+                                          ${((item.wholesalePrice || (item.price - SERVICE_FEE_CENTS)) / 100).toFixed(0)} + $79
+                                        </div>
+                                      </div>
                                     </td>
                                     <td className="px-4 py-3 text-sm font-medium text-gray-900">
-                                      ${packagePricing[item.selectedPackage as keyof typeof packagePricing]?.price || 0}
+                                      ${(item.price / 100).toFixed(0)}
                                     </td>
                                     <td className="px-4 py-3">
                                       <button
@@ -1586,31 +1646,11 @@ export default function EditOrderPage({ params }: { params: Promise<{ id: string
               {/* Left Side - Order Summary Stats and Package Selection */}
               <div className="flex flex-col md:flex-row items-center gap-4 md:space-x-6 w-full md:w-auto">
                 <div className="hidden md:flex items-center space-x-4">
-                  <span className="text-sm font-medium text-gray-700">Default Package:</span>
-                  <div className="flex items-center space-x-2 bg-gray-50 p-1 rounded-lg">
-                    {Object.entries(packagePricing).filter(([key]) => key !== 'custom').map(([key, pkg]) => (
-                      <button
-                        key={key}
-                        onClick={() => {
-                          setSelectedPackage(key as typeof selectedPackage);
-                          // Update all line item prices if not custom
-                          if (key !== 'custom') {
-                            setLineItems(prev => prev.map(item => ({
-                              ...item,
-                              price: pkg.price
-                            })));
-                          }
-                        }}
-                        className={`px-3 py-1.5 rounded text-sm font-medium transition-all ${
-                          selectedPackage === key 
-                            ? 'bg-blue-600 text-white shadow-sm' 
-                            : 'text-gray-600 hover:text-gray-900 hover:bg-gray-100'
-                        }`}
-                        title={`${pkg.name} - ${pkg.description}`}
-                      >
-                        {pkg.name} (${pkg.price})
-                      </button>
-                    ))}
+                  <span className="text-sm font-medium text-gray-700">Pricing:</span>
+                  <div className="flex items-center space-x-2 bg-green-50 px-3 py-1.5 rounded-lg">
+                    <span className="text-sm text-green-800">
+                      Wholesale + $79 Service Fee
+                    </span>
                   </div>
                 </div>
                 
@@ -1642,8 +1682,9 @@ export default function EditOrderPage({ params }: { params: Promise<{ id: string
               {/* Right Side - Total and Continue */}
               <div className="flex items-center space-x-4 md:space-x-6 w-full md:w-auto">
                 <div className="text-right">
-                  <p className="text-sm text-gray-500">Order Total</p>
-                  <p className="text-2xl font-bold text-gray-900">${total}</p>
+                  <p className="text-sm text-gray-500">Total Investment</p>
+                  <p className="text-2xl font-bold text-gray-900">{formatCurrency(total)}</p>
+                  <p className="text-xs text-gray-400">Site costs + strategic SEO content creation</p>
                 </div>
                 
                 <div className="flex items-center gap-3">
@@ -1717,8 +1758,8 @@ export default function EditOrderPage({ params }: { params: Promise<{ id: string
                     </div>
                     <div className="pt-3 border-t border-gray-200">
                       <div className="flex justify-between text-lg font-semibold">
-                        <span>Total Price:</span>
-                        <span>${total}</span>
+                        <span>Estimated Total:</span>
+                        <span>{formatCurrency(total)}</span>
                       </div>
                     </div>
                   </div>
