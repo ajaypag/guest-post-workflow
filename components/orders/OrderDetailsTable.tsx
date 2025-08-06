@@ -108,22 +108,39 @@ export default function OrderDetailsTable({
       
       // Create a line item for each link in the group
       for (let i = 0; i < linkCount; i++) {
-        // Try to find a matching submission for this line item
-        // Prioritize approved submissions, then pending, then any
-        let matchedSubmission = groupSubmissions.find(s => 
-          (s.status === 'client_approved' || s.status === 'approved') && 
-          (!s.metadata?.lineItemIndex || s.metadata?.lineItemIndex === i)
-        ) || groupSubmissions.find(s => 
-          s.status === 'pending' && 
-          (!s.metadata?.lineItemIndex || s.metadata?.lineItemIndex === i)
-        ) || groupSubmissions[i];
+        // Get the target page URL for this specific link
+        const targetPageUrl = Array.isArray(group.targetPages) && group.targetPages[i] ? 
+          (typeof group.targetPages[i] === 'string' ? group.targetPages[i] : group.targetPages[i].url) : '';
+        
+        // Find submissions that are specifically assigned to THIS target URL
+        // This is critical - submissions are assigned to specific target pages, not just any slot
+        const matchingSubmissions = groupSubmissions.filter(sub => {
+          const submissionTargetUrl = sub.targetPageUrl || sub.metadata?.targetPageUrl;
+          return submissionTargetUrl === targetPageUrl;
+        });
+        
+        // From the matching submissions, prioritize by status and pool
+        let matchedSubmission = 
+          // First try to find an approved submission for this target URL
+          matchingSubmissions.find(s => 
+            s.status === 'client_approved' || s.status === 'approved'
+          ) ||
+          // Then try pending submissions for this target URL
+          matchingSubmissions.find(s => 
+            s.status === 'pending'
+          ) ||
+          // Then check primary pool submissions
+          matchingSubmissions.find(s => 
+            s.selectionPool === 'primary'
+          ) ||
+          // Finally any matching submission
+          matchingSubmissions[0] || null;
         
         items.push({
           id: `${group.id}-${i}`,
           groupId: group.id,
           client: group.client?.name || group.clientName || 'Unknown Client',
-          targetPageUrl: Array.isArray(group.targetPages) && group.targetPages[i] ? 
-            (group.targetPages[i].url || group.targetPages[i]) : '',
+          targetPageUrl: targetPageUrl,
           anchorText: Array.isArray(group.anchorTexts) ? 
             (group.anchorTexts[i] || '') : '',
           
