@@ -58,7 +58,7 @@ export async function GET(
         allProjects.unshift({
           ...primaryProject,
           associationType: 'primary',
-          associationId: null,
+          associationId: '', // Empty string instead of null for TypeScript
           isPrimary: true
         });
       }
