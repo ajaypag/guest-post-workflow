@@ -72,22 +72,6 @@ export default function AdminDashboard() {
     },
     
     // Order Management Diagnostics
-    {
-      title: 'Order Flow Diagnostics',
-      description: 'Debug order creation and flow issues',
-      icon: Bug,
-      href: '/admin/order-flow-diagnostics',
-      color: 'bg-orange-50 border-orange-200 text-orange-700',
-      iconColor: 'text-orange-600'
-    },
-    {
-      title: 'Order Status Diagnostics',
-      description: 'Check order status and group integrity',
-      icon: Activity,
-      href: '/admin/order-status-diagnostics',
-      color: 'bg-lime-50 border-lime-200 text-lime-700',
-      iconColor: 'text-lime-600'
-    },
     
     // User & Account Management
     {
@@ -105,22 +89,6 @@ export default function AdminDashboard() {
       href: '/admin/account-invitations',
       color: 'bg-blue-50 border-blue-200 text-blue-700',
       iconColor: 'text-blue-600'
-    },
-    {
-      title: 'Debug Invitations',
-      description: 'View all invitations in database for debugging',
-      icon: Search,
-      href: '/admin/debug-invitations',
-      color: 'bg-purple-50 border-purple-200 text-purple-700',
-      iconColor: 'text-purple-600'
-    },
-    {
-      title: 'Debug Account Clients',
-      description: 'Debug account and client relationships',
-      icon: Bug,
-      href: '/admin/debug-account-clients',
-      color: 'bg-rose-50 border-rose-200 text-rose-700',
-      iconColor: 'text-rose-600'
     },
     {
       title: 'Create System User',
@@ -175,23 +143,6 @@ export default function AdminDashboard() {
       iconColor: 'text-teal-600'
     },
     
-    // DataForSEO Monitoring
-    {
-      title: 'DataForSEO Monitoring',
-      description: 'Monitor API calls, analyze keyword filtering patterns, and debug issues',
-      icon: Search,
-      href: '/admin/dataforseo-monitoring',
-      color: 'bg-orange-50 border-orange-200 text-orange-700',
-      iconColor: 'text-orange-600'
-    },
-    {
-      title: 'DataForSEO Audit',
-      description: 'Audit API task IDs, view errors, track costs and success rates',
-      icon: FileSearch,
-      href: '/admin/dataforseo-audit',
-      color: 'bg-amber-50 border-amber-200 text-amber-700',
-      iconColor: 'text-amber-600'
-    }
   ];
 
   return (
