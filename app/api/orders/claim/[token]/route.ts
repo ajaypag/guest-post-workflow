@@ -4,6 +4,7 @@ import { orders } from '@/lib/db/orderSchema';
 import { orderGroups } from '@/lib/db/orderGroupSchema';
 import { clients } from '@/lib/db/schema';
 import { eq } from 'drizzle-orm';
+import { claimViewRateLimiter, getClientIp } from '@/lib/utils/rateLimiter';
 
 // GET - Get order details by share token (no auth required)
 export async function GET(
@@ -12,6 +13,21 @@ export async function GET(
 ) {
   try {
     const { token } = await params;
+    
+    // Rate limiting by IP to prevent abuse
+    const clientIp = getClientIp(request);
+    const rateLimitResult = claimViewRateLimiter.check(`view:${clientIp}`);
+    
+    if (!rateLimitResult.allowed) {
+      return NextResponse.json({ 
+        error: `Too many requests. Please try again in ${rateLimitResult.retryAfter} seconds.` 
+      }, { 
+        status: 429,
+        headers: {
+          'Retry-After': String(rateLimitResult.retryAfter || 300)
+        }
+      });
+    }
 
     // Find order by share token
     const order = await db.query.orders.findFirst({

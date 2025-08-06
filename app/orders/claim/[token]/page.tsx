@@ -13,6 +13,8 @@ interface OrderData {
   status: string;
   state?: string;
   totalPrice: number;
+  includesClientReview?: boolean;
+  rushDelivery?: boolean;
   account?: {
     companyName?: string;
     contactName?: string;
@@ -107,8 +109,12 @@ export default function ClaimOrderPage() {
       
       const result = await response.json();
       
-      // Success! Redirect to login with success message
-      router.push(`/login?claimed=true&email=${encodeURIComponent(email)}`);
+      // Success! Redirect to login with success message and verification notice
+      if (result.requiresEmailVerification) {
+        router.push(`/account/login?claimed=true&email=${encodeURIComponent(email)}&verify=true`);
+      } else {
+        router.push(`/account/login?claimed=true&email=${encodeURIComponent(email)}`);
+      }
       
     } catch (error: any) {
       console.error('Error claiming order:', error);

@@ -2,9 +2,13 @@ import { NextRequest, NextResponse } from 'next/server';
 import { db } from '@/lib/db/connection';
 import { orders } from '@/lib/db/orderSchema';
 import { accounts } from '@/lib/db/accountSchema';
+import { orderStatusHistory } from '@/lib/db/orderSchema';
 import { eq } from 'drizzle-orm';
 import { v4 as uuidv4 } from 'uuid';
 import bcrypt from 'bcryptjs';
+import { claimSignupRateLimiter, getClientIp } from '@/lib/utils/rateLimiter';
+import { randomBytes } from 'crypto';
+import { EmailService } from '@/lib/services/emailService';
 
 // POST - Create account and claim order
 export async function POST(
@@ -13,6 +17,22 @@ export async function POST(
 ) {
   try {
     const { token } = await params;
+    
+    // Rate limiting by IP
+    const clientIp = getClientIp(request);
+    const rateLimitResult = claimSignupRateLimiter.check(`signup:${clientIp}`);
+    
+    if (!rateLimitResult.allowed) {
+      return NextResponse.json({ 
+        error: `Too many signup attempts. Please try again in ${rateLimitResult.retryAfter} seconds.` 
+      }, { 
+        status: 429,
+        headers: {
+          'Retry-After': String(rateLimitResult.retryAfter || 900)
+        }
+      });
+    }
+    
     const { email, password, contactName, companyName, phone } = await request.json();
 
     // Validate required fields
@@ -22,10 +42,25 @@ export async function POST(
       }, { status: 400 });
     }
 
-    // Validate password length
+    // Validate password strength
     if (password.length < 8) {
       return NextResponse.json({ 
         error: 'Password must be at least 8 characters' 
+      }, { status: 400 });
+    }
+    
+    // Check password complexity (at least one number and one letter)
+    if (!/(?=.*[a-zA-Z])(?=.*[0-9])/.test(password)) {
+      return NextResponse.json({ 
+        error: 'Password must contain at least one letter and one number' 
+      }, { status: 400 });
+    }
+    
+    // Validate email format
+    const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+    if (!emailRegex.test(email)) {
+      return NextResponse.json({ 
+        error: 'Invalid email format' 
       }, { status: 400 });
     }
 
@@ -52,6 +87,7 @@ export async function POST(
       // Create new account
       const accountId = uuidv4();
       const hashedPassword = await bcrypt.hash(password, 10);
+      const verificationToken = randomBytes(32).toString('base64url');
       
       const [newAccount] = await tx.insert(accounts).values({
         id: accountId,
@@ -61,8 +97,9 @@ export async function POST(
         companyName,
         phone: phone || null,
         role: 'viewer', // Default role for claimed accounts
-        status: 'active',
-        emailVerified: true, // Mark as verified since they're using a valid link
+        status: 'pending', // Account pending until email verified
+        emailVerified: false, // Require email verification for security
+        emailVerificationToken: verificationToken,
         onboardingCompleted: true, // Skip onboarding for claimed accounts
         createdAt: new Date(),
         updatedAt: new Date()
@@ -80,9 +117,48 @@ export async function POST(
         .where(eq(orders.id, order.id))
         .returning();
 
+      // Add audit log entry for order claim
+      await tx.insert(orderStatusHistory).values({
+        id: uuidv4(),
+        orderId: order.id,
+        oldStatus: order.status,
+        newStatus: order.status, // Status doesn't change, but we log the claim event
+        changedBy: accountId, // New account claiming the order
+        changedAt: new Date(),
+        notes: `Order claimed by ${contactName} (${email}) from company ${companyName}. IP: ${clientIp}. Share token revoked.`
+      });
+
+      // Send verification email (after transaction completes)
+      try {
+        const baseUrl = process.env.NEXTAUTH_URL || request.headers.get('origin') || 'http://localhost:3000';
+        const verificationUrl = `${baseUrl}/account/verify-email?token=${verificationToken}`;
+        
+        await EmailService.send('account_welcome', {
+          to: email,
+          subject: 'Verify your email to access your order',
+          html: `
+            <div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto;">
+              <h2 style="color: #2563eb;">Welcome to PostFlow!</h2>
+              <p>Hi ${contactName},</p>
+              <p>Your account has been created and your order has been claimed successfully. To access your order dashboard and track progress, please verify your email address.</p>
+              <div style="text-align: center; margin: 30px 0;">
+                <a href="${verificationUrl}" style="background-color: #2563eb; color: white; padding: 12px 24px; text-decoration: none; border-radius: 6px; font-weight: 500;">Verify Email Address</a>
+              </div>
+              <p style="color: #6b7280; font-size: 14px;">If the button doesn't work, copy and paste this link into your browser:</p>
+              <p style="color: #6b7280; font-size: 14px; word-break: break-all;">${verificationUrl}</p>
+              <p style="color: #6b7280; font-size: 14px;">This verification link will expire in 24 hours.</p>
+            </div>
+          `
+        });
+      } catch (emailError) {
+        console.error('Failed to send verification email:', emailError);
+        // Don't fail the request if email fails, but log it
+      }
+
       return NextResponse.json({
         success: true,
-        message: 'Account created and order claimed successfully',
+        message: 'Account created and order claimed successfully. Please check your email to verify your account before accessing your order.',
+        requiresEmailVerification: true,
         account: {
           id: newAccount.id,
           email: newAccount.email,

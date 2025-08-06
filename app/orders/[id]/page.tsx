@@ -105,6 +105,8 @@ interface OrderDetail {
   rushFee?: number;
   internalNotes?: string;
   accountNotes?: string;
+  shareToken?: string;
+  shareExpiresAt?: string;
   createdAt: string;
   updatedAt: string;
   approvedAt?: string;

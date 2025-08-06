@@ -3,7 +3,7 @@ import { db } from '@/lib/db/connection';
 import { orders } from '@/lib/db/orderSchema';
 import { eq } from 'drizzle-orm';
 import { AuthServiceServer } from '@/lib/auth-server';
-import { v4 as uuidv4 } from 'uuid';
+import { randomBytes } from 'crypto';
 
 // POST - Generate or regenerate share link
 export async function POST(
@@ -28,8 +28,9 @@ export async function POST(
       return NextResponse.json({ error: 'Order not found' }, { status: 404 });
     }
 
-    // Generate unique share token
-    const shareToken = uuidv4();
+    // Generate cryptographically secure share token
+    // 32 bytes = 256 bits of entropy, URL-safe base64 encoded
+    const shareToken = randomBytes(32).toString('base64url');
     const shareExpiresAt = new Date();
     shareExpiresAt.setDate(shareExpiresAt.getDate() + expiresInDays);
 

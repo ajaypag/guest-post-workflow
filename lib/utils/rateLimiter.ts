@@ -54,6 +54,8 @@ class RateLimiter {
 // Create rate limiters for different endpoints
 export const authRateLimiter = new RateLimiter(5, 15 * 60 * 1000); // 5 attempts per 15 minutes
 export const passwordResetRateLimiter = new RateLimiter(3, 60 * 60 * 1000); // 3 attempts per hour
+export const claimSignupRateLimiter = new RateLimiter(3, 15 * 60 * 1000); // 3 signup attempts per 15 minutes per IP
+export const claimViewRateLimiter = new RateLimiter(10, 5 * 60 * 1000); // 10 views per 5 minutes per IP
 
 // Helper function to get client IP
 export function getClientIp(request: Request): string {
