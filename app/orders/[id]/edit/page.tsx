@@ -1132,7 +1132,6 @@ export default function EditOrderPage({ params }: { params: Promise<{ id: string
                   return item;
                 }));
                 
-                console.log('Pricing preferences updated:', preferences);
               }
             }}
           />

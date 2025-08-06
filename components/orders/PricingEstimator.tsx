@@ -156,7 +156,7 @@ export default function PricingEstimator({ className = '', onEstimateChange, ini
     } finally {
       setLoading(false);
     }
-  }, [drRange, minTraffic, selectedCategories, selectedTypes, linkCount, onEstimateChange]);
+  }, [drRange, minTraffic, selectedCategories, selectedTypes, linkCount]); // eslint-disable-line react-hooks/exhaustive-deps
 
   // Fetch estimate on filter changes (debounced)
   useEffect(() => {
