@@ -10,6 +10,7 @@ import { formatCurrency } from '@/lib/utils/formatting';
 import CreateClientModal from '@/components/ui/CreateClientModal';
 import CreateTargetPageModal from '@/components/ui/CreateTargetPageModal';
 import OrderProgressView from '@/components/orders/OrderProgressView';
+import PricingEstimator from '@/components/orders/PricingEstimator';
 import { 
   Building, Package, Plus, X, ChevronDown, ChevronUp, ChevronRight,
   Search, Target, Link as LinkIcon, Type, CheckCircle,
@@ -1072,8 +1073,19 @@ export default function EditOrderPage({ params }: { params: Promise<{ id: string
           </div>
         </div>
         
+        {/* Pricing Estimator */}
+        <div className="px-4 pt-4 bg-gray-100">
+          <PricingEstimator 
+            className="max-w-7xl mx-auto"
+            onEstimateChange={(estimate) => {
+              // Could use this to update the UI or show suggestions
+              console.log('Pricing estimate updated:', estimate);
+            }}
+          />
+        </div>
+        
         {/* Main Content Area - Three Column Layout (Desktop) / Single Column (Mobile) */}
-        <div className="flex-1 flex flex-col md:flex-row gap-4 p-4 overflow-hidden bg-gray-100" style={{height: 'calc(100vh - 64px - 80px)'}}>
+        <div className="flex-1 flex flex-col md:flex-row gap-4 p-4 pt-0 overflow-hidden bg-gray-100" style={{height: 'calc(100vh - 64px - 80px)'}}>
           {error && (
             <div className="absolute top-4 left-1/2 transform -translate-x-1/2 z-50 bg-red-50 border border-red-200 rounded-lg p-4 flex items-start shadow-lg">
               <AlertCircle className="h-5 w-5 text-red-600 mt-0.5 mr-3" />

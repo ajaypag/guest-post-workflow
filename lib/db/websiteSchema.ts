@@ -15,6 +15,8 @@ export const websites = pgTable('websites', {
   guestPostCost: decimal('guest_post_cost', { precision: 10, scale: 2 }),
   categories: text('categories').array(),
   type: text('type').array(),
+  websiteType: text('website_type').array(), // New: SaaS, Blog, News, eCommerce, etc
+  niche: text('niche').array(), // New: Multiple niches per website
   status: varchar('status', { length: 50 }).default('Unknown'),
   hasGuestPost: boolean('has_guest_post').default(false),
   hasLinkInsert: boolean('has_link_insert').default(false),
