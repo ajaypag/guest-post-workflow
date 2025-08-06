@@ -27,7 +27,7 @@ export default function MarketingCTA({
   title = "Ready for Strategic Link Building?",
   description = "Join dozens of agencies, SEO teams, and business owners getting quality links at wholesale pricing.",
   primaryButtonText = "Start Your Campaign",
-  primaryButtonHref = "/signup/marketing",
+  primaryButtonHref = "/login",
   secondaryButtonText = "Browse Our Database",
   secondaryButtonHref = "/guest-posting-sites",
   variant = 'default'

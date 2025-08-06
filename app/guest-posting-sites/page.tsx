@@ -318,7 +318,7 @@ export default async function GuestPostingSitesPage() {
                     </td>
                     <td className="px-4 py-3 text-right">
                       <Link
-                        href="/signup/marketing"
+                        href="/login"
                         className="text-sm px-3 py-1 bg-blue-600 text-white rounded hover:bg-blue-700 inline-block"
                       >
                         Get Started
@@ -336,7 +336,7 @@ export default async function GuestPostingSitesPage() {
                   Showing 1 to {websites.length} of {totalCount.toLocaleString()} websites
                 </p>
                 <Link
-                  href="/signup/marketing"
+                  href="/login"
                   className="text-sm text-blue-600 hover:text-blue-700 font-medium"
                 >
                   Create account to browse all sites →
@@ -608,7 +608,7 @@ export default async function GuestPostingSitesPage() {
           
           <div className="flex flex-col sm:flex-row gap-4 justify-center">
             <Link
-              href="/signup/marketing"
+              href="/login"
               className="inline-flex items-center justify-center gap-2 px-8 py-4 bg-blue-600 text-white font-semibold rounded-lg hover:bg-blue-700 transition-colors text-lg"
             >
               Start Your First Campaign

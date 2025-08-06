@@ -213,7 +213,7 @@ export default function SearchQueryGeneratorPage() {
                 Sign In
               </Link>
               <Link 
-                href="/signup/marketing" 
+                href="/login" 
                 className="flex items-center gap-2 px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 text-sm font-medium transition-colors"
               >
                 Get Started
@@ -462,7 +462,7 @@ export default function SearchQueryGeneratorPage() {
               Ready to automate your guest posting outreach?
             </p>
             <Link
-              href="/signup/marketing"
+              href="/login"
               className="inline-flex items-center gap-2 px-6 py-3 bg-blue-600 text-white font-medium rounded-lg hover:bg-blue-700 transition-colors"
             >
               Start with Linkio

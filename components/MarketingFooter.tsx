@@ -101,7 +101,7 @@ export default function MarketingFooter() {
               </li>
               <li>
                 <Link 
-                  href="/signup/marketing" 
+                  href="/login" 
                   className="text-gray-400 hover:text-white transition-colors"
                 >
                   Get Started

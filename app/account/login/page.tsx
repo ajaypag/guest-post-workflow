@@ -1,197 +1,194 @@
 'use client';
 
-import React, { useState, Suspense } from 'react';
+import { useState, useEffect } from 'react';
 import { useRouter, useSearchParams } from 'next/navigation';
-import Link from 'next/link';
-import { 
-  Mail, 
-  Lock, 
-  Loader2, 
-  AlertCircle,
-  Building,
-  ArrowRight
-} from 'lucide-react';
+import { AuthService } from '@/lib/auth';
+import { Sparkles, Users, BarChart3, Mail } from 'lucide-react';
+import LinkioHeader from '@/components/LinkioHeader';
+import MarketingFooter from '@/components/MarketingFooter';
+import { Suspense } from 'react';
 
 function AccountLoginForm() {
   const router = useRouter();
   const searchParams = useSearchParams();
-  const [loading, setLoading] = useState(false);
-  const [error, setError] = useState('');
-  const [successMessage, setSuccessMessage] = useState('');
-  
-  // Get redirect URL from query params
-  const redirectTo = searchParams.get('redirect') || '/account/dashboard';
-  const registered = searchParams.get('registered') === 'true';
-  
   const [formData, setFormData] = useState({
     email: '',
     password: ''
   });
-  
+  const [error, setError] = useState('');
+  const [loading, setLoading] = useState(false);
+
+  // Get redirect URL from query params
+  const redirectTo = searchParams.get('redirect') || '/account/dashboard';
+  const registered = searchParams.get('registered') === 'true';
+
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     setError('');
-    
-    if (!formData.email || !formData.password) {
-      setError('Please fill in all fields');
-      return;
-    }
-    
     setLoading(true);
-    
+
     try {
-      const response = await fetch('/api/auth/account/login', {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-        },
-        body: JSON.stringify(formData),
-      });
+      console.log('🔐 Attempting login for:', formData.email);
       
-      const data = await response.json();
+      // Login logic only - no registration
+      const user = await AuthService.login(formData.email, formData.password);
+      console.log('🔐 Login response:', user ? 'User received' : 'No user');
       
-      if (response.ok) {
-        // Token is now stored in HTTP-only cookie by the server
-        // No need to store in localStorage (XSS vulnerability)
-        
-        // Redirect to intended page or dashboard
-        router.push(redirectTo);
-      } else {
-        setError(data.error || 'Invalid email or password');
+      if (!user) {
+        throw new Error('Invalid email or password');
       }
-    } catch (err) {
-      console.error('Login error:', err);
-      setError('Failed to login. Please try again.');
+      
+      // Check if cookie was set
+      console.log('🔐 Document cookies after login:', document.cookie);
+      
+      router.push(redirectTo);
+    } catch (error: any) {
+      console.error('🔐 Login error:', error);
+      setError(error.message);
     } finally {
       setLoading(false);
     }
   };
-  
+
   return (
-    <div className="min-h-screen bg-gradient-to-br from-blue-50 to-white flex items-center justify-center px-4">
-      <div className="max-w-md w-full">
-        {/* Logo/Header */}
-        <div className="text-center mb-8">
-          <div className="inline-flex items-center justify-center w-16 h-16 bg-blue-600 rounded-full mb-4">
-            <Building className="h-8 w-8 text-white" />
+    <div className="min-h-screen bg-gradient-to-br from-blue-50 to-purple-50">
+      <LinkioHeader variant="default" />
+      <div className="flex items-center justify-center py-12 px-4">
+        <div className="max-w-md w-full space-y-8">
+        <div className="text-center">
+          <div className="mx-auto w-20 h-20 bg-gradient-to-br from-blue-600 to-purple-600 rounded-2xl flex items-center justify-center mb-4 shadow-lg">
+            <Sparkles className="w-10 h-10 text-white" />
           </div>
-          <h1 className="text-2xl font-bold text-gray-900">Account Login</h1>
-          <p className="text-gray-600 mt-2">Access your order dashboard</p>
+          <h2 className="text-3xl font-bold text-gray-900">
+            Linkio
+          </h2>
+          <p className="mt-3 text-lg text-gray-600">
+            Guest Post Workflow Management Platform
+          </p>
+          <p className="mt-4 text-sm text-gray-500 max-w-sm mx-auto">
+            Streamline your content outreach with automated workflows, AI-powered article generation, and comprehensive analytics
+          </p>
+        </div>
+
+        {/* Feature highlights */}
+        <div className="grid grid-cols-3 gap-4 text-center">
+          <div className="space-y-2">
+            <div className="mx-auto w-12 h-12 bg-blue-100 rounded-xl flex items-center justify-center">
+              <Users className="w-6 h-6 text-blue-600" />
+            </div>
+            <p className="text-xs text-gray-600">Multi-user Collaboration</p>
+          </div>
+          <div className="space-y-2">
+            <div className="mx-auto w-12 h-12 bg-purple-100 rounded-xl flex items-center justify-center">
+              <Mail className="w-6 h-6 text-purple-600" />
+            </div>
+            <p className="text-xs text-gray-600">Automated Outreach</p>
+          </div>
+          <div className="space-y-2">
+            <div className="mx-auto w-12 h-12 bg-green-100 rounded-xl flex items-center justify-center">
+              <BarChart3 className="w-6 h-6 text-green-600" />
+            </div>
+            <p className="text-xs text-gray-600">Performance Analytics</p>
+          </div>
         </div>
         
-        {/* Login Form */}
-        <div className="bg-white rounded-lg shadow-xl p-8">
-          <form onSubmit={handleSubmit} className="space-y-6">
-            {registered && !error && !loading && (
-              <div className="flex items-center gap-2 text-green-600 bg-green-50 p-3 rounded-lg text-sm">
-                <AlertCircle className="h-4 w-4 flex-shrink-0" />
-                Account created successfully! Please sign in.
-              </div>
-            )}
+        <div className="bg-white shadow-xl rounded-2xl p-8">
+          {registered && (
+            <div className="bg-green-50 border border-green-200 text-green-700 px-4 py-3 rounded-lg text-sm mb-4">
+              Registration successful! Please sign in with your new account.
+            </div>
+          )}
+          
+          <form className="space-y-6" onSubmit={handleSubmit}>
             {error && (
-              <div className="flex items-center gap-2 text-red-600 bg-red-50 p-3 rounded-lg text-sm">
-                <AlertCircle className="h-4 w-4 flex-shrink-0" />
+              <div className="bg-red-50 border border-red-200 text-red-700 px-4 py-3 rounded-lg text-sm">
                 {error}
               </div>
             )}
             
-            <div>
-              <label className="block text-sm font-medium text-gray-700 mb-2">
-                Email Address
-              </label>
-              <div className="relative">
-                <Mail className="absolute left-3 top-3 h-5 w-5 text-gray-400" />
+            <div className="space-y-4">
+              <div>
+                <label htmlFor="email" className="block text-sm font-medium text-gray-700">
+                  Email address
+                </label>
                 <input
+                  id="email"
+                  name="email"
                   type="email"
+                  required
+                  className="mt-1 appearance-none rounded-lg relative block w-full px-4 py-3 border border-gray-300 placeholder-gray-400 text-gray-900 focus:outline-none focus:ring-2 focus:ring-purple-500 focus:border-transparent transition-all"
+                  placeholder="you@company.com"
                   value={formData.email}
                   onChange={(e) => setFormData({ ...formData, email: e.target.value })}
-                  className="w-full pl-10 pr-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
-                  placeholder="you@company.com"
-                  autoComplete="email"
-                  autoFocus
                 />
               </div>
-            </div>
-            
-            <div>
-              <label className="block text-sm font-medium text-gray-700 mb-2">
-                Password
-              </label>
-              <div className="relative">
-                <Lock className="absolute left-3 top-3 h-5 w-5 text-gray-400" />
+              
+              <div>
+                <label htmlFor="password" className="block text-sm font-medium text-gray-700">
+                  Password
+                </label>
                 <input
+                  id="password"
+                  name="password"
                   type="password"
+                  required
+                  className="mt-1 appearance-none rounded-lg relative block w-full px-4 py-3 border border-gray-300 placeholder-gray-400 text-gray-900 focus:outline-none focus:ring-2 focus:ring-purple-500 focus:border-transparent transition-all"
+                  placeholder="Enter your password"
                   value={formData.password}
                   onChange={(e) => setFormData({ ...formData, password: e.target.value })}
-                  className="w-full pl-10 pr-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
-                  placeholder="Enter your password"
-                  autoComplete="current-password"
                 />
               </div>
             </div>
-            
+
             <div className="flex items-center justify-between">
-              <Link 
-                href="/account/forgot-password" 
-                className="text-sm text-blue-600 hover:text-blue-700"
+              <div></div>
+              <a
+                href="/account/forgot-password"
+                className="text-sm text-purple-600 hover:text-purple-500 transition-colors"
               >
                 Forgot password?
-              </Link>
+              </a>
             </div>
-            
-            <button
-              type="submit"
-              disabled={loading}
-              className="w-full py-3 px-4 bg-blue-600 text-white rounded-lg hover:bg-blue-700 font-medium disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center gap-2"
-            >
-              {loading ? (
-                <>
-                  <Loader2 className="h-5 w-5 animate-spin" />
-                  Signing in...
-                </>
-              ) : (
-                <>
-                  Sign In
-                  <ArrowRight className="h-5 w-5" />
-                </>
-              )}
-            </button>
-          </form>
-          
-          <div className="mt-6 text-center">
-            <p className="text-sm text-gray-600">
-              Don't have an account?{' '}
-              <Link 
-                href="/signup" 
-                className="text-blue-600 hover:text-blue-700 font-medium"
+
+            <div>
+              <button
+                type="submit"
+                disabled={loading}
+                className="group relative w-full flex justify-center py-3 px-4 border border-transparent text-sm font-medium rounded-lg text-white bg-gradient-to-r from-blue-600 to-purple-600 hover:from-blue-700 hover:to-purple-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-purple-500 disabled:opacity-50 transition-all duration-200 shadow-lg hover:shadow-xl"
               >
-                Sign up
-              </Link>
-            </p>
-          </div>
+                {loading ? 'Signing in...' : 'Sign in'}
+              </button>
+            </div>
+
+            <div className="text-center">
+              <p className="text-sm text-gray-600">
+                Don't have an account?{' '}
+                <a 
+                  href="/signup" 
+                  className="text-purple-600 hover:text-purple-700 font-medium transition-colors"
+                >
+                  Sign up
+                </a>
+              </p>
+            </div>
+          </form>
         </div>
-        
-        {/* Footer */}
-        <div className="mt-8 text-center">
-          <Link 
-            href="/" 
-            className="text-sm text-gray-600 hover:text-gray-700"
-          >
-            ← Back to home
-          </Link>
+
+        <div className="text-center">
+          <p className="text-xs text-gray-400">
+            © 2025 Linkio. All rights reserved.
+          </p>
+        </div>
         </div>
       </div>
+      <MarketingFooter />
     </div>
   );
 }
 
 export default function AccountLoginPage() {
   return (
-    <Suspense fallback={
-      <div className="min-h-screen bg-gradient-to-br from-blue-50 to-white flex items-center justify-center">
-        <Loader2 className="h-8 w-8 animate-spin text-blue-600" />
-      </div>
-    }>
+    <Suspense fallback={<div>Loading...</div>}>
       <AccountLoginForm />
     </Suspense>
   );

@@ -102,7 +102,7 @@ export default function MarketingHomepage() {
               {/* CTAs */}
               <div className="flex flex-col sm:flex-row gap-4">
                 <Link
-                  href="/signup/marketing"
+                  href="/login"
                   className="inline-flex items-center justify-center gap-2 px-8 py-4 bg-blue-600 text-white font-semibold rounded-lg hover:bg-blue-700 transition-colors text-lg"
                 >
                   Start Your Campaign

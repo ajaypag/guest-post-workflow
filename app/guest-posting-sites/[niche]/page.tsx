@@ -415,7 +415,7 @@ export default async function NichePage({ params }: { params: Promise<{ niche: s
                   </td>
                   <td className="px-4 py-3 text-right">
                     <Link
-                      href="/signup/marketing"
+                      href="/login"
                       className="text-sm px-3 py-1 bg-blue-600 text-white rounded hover:bg-blue-700 inline-block"
                     >
                       Get Started
@@ -441,7 +441,7 @@ export default async function NichePage({ params }: { params: Promise<{ niche: s
                   Showing {websiteResults.length} of {totalCount} {nicheName} websites
                 </p>
                 <Link
-                  href="/signup/marketing"
+                  href="/login"
                   className="text-sm text-blue-600 hover:text-blue-700 font-medium"
                 >
                   Create account to browse all →
@@ -595,7 +595,7 @@ export default async function NichePage({ params }: { params: Promise<{ niche: s
                 {/* CTA */}
                 <div className="mt-8">
                   <Link
-                    href="/signup/marketing"
+                    href="/login"
                     className="inline-flex items-center gap-2 px-6 py-3 bg-blue-600 text-white rounded-lg hover:bg-blue-700 font-medium transition-colors"
                   >
                     Start Building {nicheName} Links
