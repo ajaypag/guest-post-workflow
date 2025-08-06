@@ -5,6 +5,7 @@ import { useRouter } from 'next/navigation';
 import AccountAuthWrapper from '@/components/AccountAuthWrapper';
 import Header from '@/components/Header';
 import { formatCurrency } from '@/lib/utils/formatting';
+import { getStateDisplay } from '@/components/orders/OrderProgressSteps';
 import {
   Package,
   FileText,
@@ -438,10 +439,15 @@ function AccountDashboardContent({ user }: AccountDashboardProps) {
                           {new Date(order.createdAt).toLocaleDateString()}
                         </td>
                         <td className="px-6 py-4 whitespace-nowrap">
-                          <span className={`inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium ${getStatusColor(order.status)}`}>
-                            {getStatusIcon(order.status)}
-                            <span className="ml-1 capitalize">{order.status.replace('_', ' ')}</span>
-                          </span>
+                          {(() => {
+                            const stateDisplay = getStateDisplay(order.status, (order as any).state);
+                            return (
+                              <span className={`inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium ${stateDisplay.color}`}>
+                                {getStatusIcon(order.status)}
+                                <span className="ml-1">{stateDisplay.label}</span>
+                              </span>
+                            );
+                          })()}
                         </td>
                         <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-600">
                           {order.itemCount || 0} domains

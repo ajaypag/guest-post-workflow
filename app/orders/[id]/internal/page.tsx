@@ -1373,9 +1373,15 @@ export default function InternalOrderManagementPage() {
                       </>
                     )}
                     
-                    {/* Bulk Analysis Links */}
-                    {(order.state === 'analyzing' || order.state === 'finding_sites') && order.orderGroups?.some(g => g.bulkAnalysisProjectId) && (
+                    {/* Bulk Analysis Links - Available during analysis and review phases */}
+                    {(order.state === 'analyzing' || order.state === 'finding_sites' || order.state === 'sites_ready' || order.state === 'site_review' || order.state === 'client_reviewing') && order.orderGroups?.some(g => g.bulkAnalysisProjectId) && (
                       <div className="space-y-2">
+                        <div className="text-xs text-gray-600 mb-1">
+                          {(order.state === 'sites_ready' || order.state === 'site_review' || order.state === 'client_reviewing') ? 
+                            'Make changes based on client feedback:' : 
+                            'Find and analyze sites:'
+                          }
+                        </div>
                         {order.orderGroups.filter(g => g.bulkAnalysisProjectId).map(group => (
                           <Link
                             key={group.id}

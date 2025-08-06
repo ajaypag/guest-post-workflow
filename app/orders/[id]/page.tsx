@@ -429,22 +429,22 @@ export default function OrderDetailPage() {
                   className="mt-4"
                 />
                 
-                {/* Quick Actions based on state */}
-                <div className="mt-6 pt-6 border-t">
-                  <h3 className="text-sm font-medium text-gray-900 mb-3">Quick Actions</h3>
-                  <div className="space-y-2">
-                    {order.state === 'analyzing' && order.orderGroups?.some(g => g.bulkAnalysisProjectId) && (
-                      <div className="space-y-2">
-                        {order.orderGroups.filter(g => g.bulkAnalysisProjectId).map(group => (
-                          <Link
-                            key={group.id}
-                            href={`/clients/${group.clientId}/bulk-analysis/projects/${group.bulkAnalysisProjectId}`}
-                            className="block w-full px-3 py-2 bg-blue-600 text-white text-sm rounded-md hover:bg-blue-700 text-center"
-                          >
-                            Analyze {group.client.name}
-                          </Link>
-                        ))}
-                        {user?.userType === 'internal' && (
+                {/* Quick Actions based on state - Internal users only */}
+                {user?.userType === 'internal' && (
+                  <div className="mt-6 pt-6 border-t">
+                    <h3 className="text-sm font-medium text-gray-900 mb-3">Quick Actions</h3>
+                    <div className="space-y-2">
+                      {order.state === 'analyzing' && order.orderGroups?.some(g => g.bulkAnalysisProjectId) && (
+                        <div className="space-y-2">
+                          {order.orderGroups.filter(g => g.bulkAnalysisProjectId).map(group => (
+                            <Link
+                              key={group.id}
+                              href={`/clients/${group.clientId}/bulk-analysis/projects/${group.bulkAnalysisProjectId}`}
+                              className="block w-full px-3 py-2 bg-blue-600 text-white text-sm rounded-md hover:bg-blue-700 text-center"
+                            >
+                              Analyze {group.client.name}
+                            </Link>
+                          ))}
                           <button
                             onClick={async () => {
                               if (confirm('Mark sites as ready for client review? This will notify the client that sites are available.')) {
@@ -475,88 +475,113 @@ export default function OrderDetailPage() {
                           >
                             Mark Sites Ready for Review
                           </button>
-                        )}
-                      </div>
-                    )}
-                    {(order.state === 'site_review' || order.state === 'client_reviewing') && (
-                      <div className="space-y-2">
-                        <Link
-                          href={`/orders/${order.id}/review`}
-                          className="block w-full px-4 py-3 bg-purple-600 text-white text-sm rounded-md hover:bg-purple-700 text-center font-medium"
-                        >
-                          <Users className="w-4 h-4 mx-auto mb-1" />
-                          Review & Approve Sites
-                          {Object.values(siteSubmissions).flat().filter(s => s.status === 'pending').length > 0 && (
-                            <div className="text-xs text-purple-200 mt-1">
-                              {Object.values(siteSubmissions).flat().filter(s => s.status === 'pending').length} sites pending
-                            </div>
-                          )}
-                        </Link>
-                      </div>
-                    )}
-                    {order.status === 'completed' && lineItems.some(item => item.workflowId) && (
-                      <div className="space-y-2">
-                        <p className="text-xs text-gray-500 mb-1">View Articles:</p>
-                        {lineItems.filter(item => item.workflowId).map((item, idx) => (
+                        </div>
+                      )}
+                      {(order.state === 'site_review' || order.state === 'client_reviewing') && (
+                        <div className="space-y-2">
                           <Link
-                            key={idx}
-                            href={`/workflows/${item.workflowId}`}
-                            className="block w-full px-3 py-2 bg-green-600 text-white text-sm rounded-md hover:bg-green-700 text-center truncate"
+                            href={`/orders/${order.id}/review`}
+                            className="block w-full px-4 py-3 bg-purple-600 text-white text-sm rounded-md hover:bg-purple-700 text-center font-medium"
                           >
-                            {item.clientName} - {item.targetPageUrl || 'Article'}
+                            <Users className="w-4 h-4 mx-auto mb-1" />
+                            Review & Approve Sites
+                            {Object.values(siteSubmissions).flat().filter(s => s.status === 'pending').length > 0 && (
+                              <div className="text-xs text-purple-200 mt-1">
+                                {Object.values(siteSubmissions).flat().filter(s => s.status === 'pending').length} sites pending
+                              </div>
+                            )}
                           </Link>
-                        ))}
-                      </div>
-                    )}
-                    
-                    {/* Invoice Link */}
-                    {order.invoicedAt && (
-                      <div className="space-y-2">
-                        <Link
-                          href={`/orders/${order.id}/invoice`}
-                          className="block w-full px-4 py-3 bg-green-600 text-white text-sm rounded-md hover:bg-green-700 text-center font-medium"
-                        >
-                          <FileText className="w-4 h-4 mx-auto mb-1" />
-                          View Invoice
-                          <div className="text-xs text-green-200 mt-1">
-                            {formatCurrency(order.totalPrice)}
-                          </div>
-                        </Link>
-                      </div>
-                    )}
+                        </div>
+                      )}
+                      {order.status === 'completed' && lineItems.some(item => item.workflowId) && (
+                        <div className="space-y-2">
+                          <p className="text-xs text-gray-500 mb-1">View Articles:</p>
+                          {lineItems.filter(item => item.workflowId).map((item, idx) => (
+                            <Link
+                              key={idx}
+                              href={`/workflows/${item.workflowId}`}
+                              className="block w-full px-3 py-2 bg-green-600 text-white text-sm rounded-md hover:bg-green-700 text-center truncate"
+                            >
+                              {item.clientName} - {item.targetPageUrl || 'Article'}
+                            </Link>
+                          ))}
+                        </div>
+                      )}
+                      
+                      {/* Invoice Link */}
+                      {order.invoicedAt && (
+                        <div className="space-y-2">
+                          <Link
+                            href={`/orders/${order.id}/invoice`}
+                            className="block w-full px-4 py-3 bg-green-600 text-white text-sm rounded-md hover:bg-green-700 text-center font-medium"
+                          >
+                            <FileText className="w-4 h-4 mx-auto mb-1" />
+                            View Invoice
+                            <div className="text-xs text-green-200 mt-1">
+                              {formatCurrency(order.totalPrice)}
+                            </div>
+                          </Link>
+                        </div>
+                      )}
 
-                    {/* Confirm Order Link - Internal Users Only */}
-                    {order.status === 'pending_confirmation' && user?.userType === 'internal' && (
-                      <div className="space-y-2">
-                        <Link
-                          href={`/orders/${order.id}/confirm`}
-                          className="block w-full px-4 py-3 bg-orange-600 text-white text-sm rounded-md hover:bg-orange-700 text-center font-medium"
-                        >
-                          <CheckCircle className="w-4 h-4 mx-auto mb-1" />
-                          Confirm Order
-                          <div className="text-xs text-orange-200 mt-1">
-                            Ready for confirmation
+                      {/* Confirm Order Link - Internal Users Only */}
+                      {order.status === 'pending_confirmation' && user?.userType === 'internal' && (
+                        <div className="space-y-2">
+                          <Link
+                            href={`/orders/${order.id}/confirm`}
+                            className="block w-full px-4 py-3 bg-orange-600 text-white text-sm rounded-md hover:bg-orange-700 text-center font-medium"
+                          >
+                            <CheckCircle className="w-4 h-4 mx-auto mb-1" />
+                            Confirm Order
+                            <div className="text-xs text-orange-200 mt-1">
+                              Ready for confirmation
+                            </div>
+                          </Link>
+                        </div>
+                      )}
+                      
+                      {/* Status Message for External Users */}
+                      {order.status === 'pending_confirmation' && user?.userType !== 'internal' && (
+                        <div className="bg-blue-50 border border-blue-200 rounded-lg p-4">
+                          <div className="flex items-start gap-3">
+                            <Clock className="w-5 h-5 text-blue-600 mt-0.5" />
+                            <div>
+                              <p className="text-sm font-medium text-blue-900">Order Submitted Successfully</p>
+                              <p className="text-xs text-blue-700 mt-1">
+                                Your order is awaiting confirmation from our team. We'll begin processing shortly.
+                              </p>
+                            </div>
                           </div>
-                        </Link>
-                      </div>
-                    )}
-                    
-                    {/* Status Message for External Users */}
-                    {order.status === 'pending_confirmation' && user?.userType !== 'internal' && (
-                      <div className="bg-blue-50 border border-blue-200 rounded-lg p-4">
+                        </div>
+                      )}
+                    </div>
+                  </div>
+                )}
+                
+                {/* Status Message for External Users when sites are ready */}
+                {user?.userType !== 'internal' && (order.state === 'sites_ready' || order.state === 'site_review' || order.state === 'client_reviewing') && (
+                  <div className="mt-6 pt-6 border-t">
+                    <div className="bg-purple-50 border border-purple-200 rounded-lg p-4">
+                      <div className="flex items-start justify-between gap-3">
                         <div className="flex items-start gap-3">
-                          <Clock className="w-5 h-5 text-blue-600 mt-0.5" />
+                          <Users className="w-5 h-5 text-purple-600 mt-0.5" />
                           <div>
-                            <p className="text-sm font-medium text-blue-900">Order Submitted Successfully</p>
-                            <p className="text-xs text-blue-700 mt-1">
-                              Your order is awaiting confirmation from our team. We'll begin processing shortly.
+                            <p className="text-sm font-medium text-purple-900">Sites Ready for Review</p>
+                            <p className="text-xs text-purple-700 mt-1">
+                              Your recommended sites are ready for review and approval.
                             </p>
                           </div>
                         </div>
+                        <Link
+                          href={`/orders/${order.id}/review`}
+                          className="px-3 py-2 bg-purple-600 text-white text-xs rounded-md hover:bg-purple-700 whitespace-nowrap"
+                        >
+                          Review Sites
+                        </Link>
                       </div>
-                    )}
+                    </div>
                   </div>
-                </div>
+                )}
               </div>
               
               {/* Account Information */}
