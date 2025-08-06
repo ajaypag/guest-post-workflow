@@ -525,8 +525,8 @@ export default function OrderDetailPage() {
                       </div>
                     )}
 
-                    {/* Confirm Order Link */}
-                    {order.status === 'pending_confirmation' && (
+                    {/* Confirm Order Link - Internal Users Only */}
+                    {order.status === 'pending_confirmation' && user?.userType === 'internal' && (
                       <div className="space-y-2">
                         <Link
                           href={`/orders/${order.id}/confirm`}
@@ -538,6 +538,21 @@ export default function OrderDetailPage() {
                             Ready for confirmation
                           </div>
                         </Link>
+                      </div>
+                    )}
+                    
+                    {/* Status Message for External Users */}
+                    {order.status === 'pending_confirmation' && user?.userType !== 'internal' && (
+                      <div className="bg-blue-50 border border-blue-200 rounded-lg p-4">
+                        <div className="flex items-start gap-3">
+                          <Clock className="w-5 h-5 text-blue-600 mt-0.5" />
+                          <div>
+                            <p className="text-sm font-medium text-blue-900">Order Submitted Successfully</p>
+                            <p className="text-xs text-blue-700 mt-1">
+                              Your order is awaiting confirmation from our team. We'll begin processing shortly.
+                            </p>
+                          </div>
+                        </div>
                       </div>
                     )}
                   </div>
