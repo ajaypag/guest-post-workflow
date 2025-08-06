@@ -129,7 +129,7 @@ export default function OrderDetailPage() {
   }, [params.id]);
 
   useEffect(() => {
-    if ((order?.state === 'sites_ready' || order?.state === 'site_review' || order?.state === 'client_reviewing') && order.orderGroups) {
+    if ((order?.state === 'sites_ready' || order?.state === 'site_review' || order?.state === 'client_reviewing' || order?.state === 'payment_pending' || order?.state === 'payment_received' || order?.state === 'workflows_generated' || order?.state === 'in_progress') && order.orderGroups) {
       loadSiteSubmissions();
     }
   }, [order?.state, order?.orderGroups]);
@@ -826,18 +826,27 @@ export default function OrderDetailPage() {
                             </tr>
                           ))}
                           
-                          {/* Site submissions for this client when in site_review state */}
-                          {order.state === 'site_review' && groupId && siteSubmissions[groupId] && expandedSubmission === groupId && (
+                          {/* Site submissions for this client when in site_review state OR after payment */}
+                          {(order.state === 'site_review' || order.state === 'payment_pending' || order.state === 'payment_received' || order.state === 'workflows_generated' || order.state === 'in_progress') && groupId && siteSubmissions[groupId] && (order.state === 'site_review' ? expandedSubmission === groupId : true) && (
                             <>
                               <tr className="bg-purple-50">
                                 <td colSpan={getColumnCount()} className="px-6 py-3">
-                                  <div className="text-sm font-medium text-purple-900">Site Recommendations</div>
+                                  <div className="text-sm font-medium text-purple-900">
+                                    {order.state === 'site_review' ? 'Site Recommendations' : 'Approved Sites'}
+                                  </div>
                                   <div className="text-xs text-purple-700 mt-1">
-                                    {siteSubmissions[groupId].filter(s => s.status === 'pending').length} sites pending review
+                                    {order.state === 'site_review' 
+                                      ? `${siteSubmissions[groupId].filter(s => s.status === 'pending').length} sites pending review`
+                                      : `${siteSubmissions[groupId].filter(s => (s as any).status === 'client_approved' || s.status === 'approved').length} approved sites`
+                                    }
                                   </div>
                                 </td>
                               </tr>
-                              {siteSubmissions[groupId].filter(s => s.status === 'pending').map((submission) => (
+                              {siteSubmissions[groupId].filter(s => 
+                                order.state === 'site_review' 
+                                  ? s.status === 'pending' 
+                                  : ((s as any).status === 'client_approved' || s.status === 'approved')
+                              ).map((submission) => (
                                 <tr key={submission.id} className="bg-purple-50 hover:bg-purple-100">
                                   <td className="px-6 py-4 pl-12">
                                     <div className="flex items-start gap-3">
@@ -851,7 +860,7 @@ export default function OrderDetailPage() {
                                           {submission.traffic && (
                                             <span>Traffic: {submission.traffic.toLocaleString()}</span>
                                           )}
-                                          <span className="font-medium">{formatCurrency(submission.price)}</span>
+                                          <span className="font-medium">{formatCurrency((submission as any).retailPriceSnapshot || submission.price || 0)}</span>
                                         </div>
                                       </div>
                                     </div>
@@ -867,20 +876,27 @@ export default function OrderDetailPage() {
                                     )}
                                   </td>
                                   <td className="px-6 py-4 text-right">
-                                    <div className="flex items-center justify-end gap-2">
-                                      <button
-                                        onClick={() => handleRejectSubmission(groupId, submission.id)}
-                                        className="px-3 py-1 text-sm text-red-700 bg-red-100 rounded-md hover:bg-red-200"
-                                      >
-                                        <XCircle className="h-4 w-4" />
-                                      </button>
-                                      <button
-                                        onClick={() => handleApproveSubmission(groupId, submission.id)}
-                                        className="px-3 py-1 text-sm text-green-700 bg-green-100 rounded-md hover:bg-green-200"
-                                      >
-                                        <CheckCircle className="h-4 w-4" />
-                                      </button>
-                                    </div>
+                                    {order.state === 'site_review' ? (
+                                      <div className="flex items-center justify-end gap-2">
+                                        <button
+                                          onClick={() => handleRejectSubmission(groupId, submission.id)}
+                                          className="px-3 py-1 text-sm text-red-700 bg-red-100 rounded-md hover:bg-red-200"
+                                        >
+                                          <XCircle className="h-4 w-4" />
+                                        </button>
+                                        <button
+                                          onClick={() => handleApproveSubmission(groupId, submission.id)}
+                                          className="px-3 py-1 text-sm text-green-700 bg-green-100 rounded-md hover:bg-green-200"
+                                        >
+                                          <CheckCircle className="h-4 w-4" />
+                                        </button>
+                                      </div>
+                                    ) : (
+                                      <span className="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-green-100 text-green-800">
+                                        <CheckCircle className="h-3 w-3 mr-1" />
+                                        Approved
+                                      </span>
+                                    )}
                                   </td>
                                 </tr>
                               ))}
@@ -899,14 +915,27 @@ export default function OrderDetailPage() {
                           )}
                         </td>
                         <td className="px-6 py-4 text-right text-sm font-bold text-gray-900">
-                          {order.totalPrice > 0 ? (
-                            formatCurrency(order.totalPrice)
-                          ) : (
-                            <span className="text-gray-500 italic">
-                              {order.status === 'draft' || order.status === 'pending_confirmation' ? 
-                                'Pending estimate' : 'To be determined'}
-                            </span>
-                          )}
+                          {(() => {
+                            // Use invoice total if available (after payment)
+                            if ((order as any).invoiceData?.total) {
+                              return formatCurrency((order as any).invoiceData.total);
+                            }
+                            // Use totalRetail if available
+                            if ((order as any).totalRetail > 0) {
+                              return formatCurrency((order as any).totalRetail);
+                            }
+                            // Use totalPrice if available
+                            if (order.totalPrice > 0) {
+                              return formatCurrency(order.totalPrice);
+                            }
+                            // Show appropriate message based on status
+                            return (
+                              <span className="text-gray-500 italic">
+                                {order.status === 'draft' || order.status === 'pending_confirmation' ? 
+                                  'Pending estimate' : 'To be determined'}
+                              </span>
+                            );
+                          })()}
                         </td>
                       </tr>
                       {user?.userType !== 'internal' && (
