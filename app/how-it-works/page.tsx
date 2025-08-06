@@ -26,7 +26,7 @@ import AIAnalysisDemo from '@/components/demo/AIAnalysisDemo';
 import SiteReviewDemo from '@/components/demo/SiteReviewDemo';
 import ArticleGenerationDemo from '@/components/demo/ArticleGenerationDemo';
 
-// Progress indicator for the workflow
+// Progress indicator for the workflow - Desktop only
 const WorkflowProgress = ({ currentPhase }: { currentPhase: number }) => {
   const phases = [
     { id: 1, name: 'Client Setup', icon: Users },
@@ -38,7 +38,7 @@ const WorkflowProgress = ({ currentPhase }: { currentPhase: number }) => {
   ];
 
   return (
-    <div className="fixed top-20 left-0 right-0 bg-white/95 backdrop-blur-sm border-b border-gray-200 z-40">
+    <div className="hidden lg:block fixed top-20 left-0 right-0 bg-white/95 backdrop-blur-sm border-b border-gray-200 z-40">
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-3">
         <div className="flex items-center justify-between">
           {phases.map((phase, index) => (
@@ -50,11 +50,11 @@ const WorkflowProgress = ({ currentPhase }: { currentPhase: number }) => {
                 `}>
                   <phase.icon className="w-5 h-5" />
                 </div>
-                <span className="ml-2 text-sm font-medium hidden md:inline">{phase.name}</span>
+                <span className="ml-2 text-sm font-medium">{phase.name}</span>
               </div>
               {index < phases.length - 1 && (
                 <div className={`
-                  mx-2 md:mx-4 h-0.5 w-8 md:w-16 transition-all
+                  mx-4 h-0.5 w-16 transition-all
                   ${currentPhase > phase.id ? 'bg-blue-600' : 'bg-gray-300'}
                 `} />
               )}
@@ -87,6 +87,18 @@ const PerspectiveSwitch = ({ perspective }: { perspective: 'agency' | 'internal'
   );
 };
 
+// Mobile scroll progress bar
+const MobileProgressBar = ({ progress }: { progress: number }) => {
+  return (
+    <div className="lg:hidden fixed top-16 left-0 right-0 h-1 bg-gray-200 z-50">
+      <div 
+        className="h-full bg-gradient-to-r from-blue-600 to-purple-600 transition-all duration-200"
+        style={{ width: `${progress * 100}%` }}
+      />
+    </div>
+  );
+};
+
 export default function HowItWorksPage() {
   const [currentPhase, setCurrentPhase] = useState(1);
   const [scrollProgress, setScrollProgress] = useState(0);
@@ -111,6 +123,7 @@ export default function HowItWorksPage() {
     <div className="min-h-screen bg-white">
       <LinkioHeader variant="default" />
       <WorkflowProgress currentPhase={currentPhase} />
+      <MobileProgressBar progress={scrollProgress} />
       
       {/* Hero Section */}
       <section className="pt-32 pb-20 bg-gradient-to-br from-blue-50 via-white to-purple-50">
