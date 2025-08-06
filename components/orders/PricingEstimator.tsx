@@ -1,6 +1,6 @@
 'use client';
 
-import React, { useState, useEffect, useCallback } from 'react';
+import React, { useState, useEffect, useCallback, useRef } from 'react';
 import { TrendingUp, ChevronDown } from 'lucide-react';
 import { formatCurrency } from '@/lib/utils/formatting';
 
@@ -218,7 +218,7 @@ export default function PricingEstimator({ className = '', onEstimateChange, ini
     return () => clearTimeout(timer);
   }, [fetchEstimate]);
 
-  // Dropdown component for filters
+  // Dropdown component with proper UX
   const FilterDropdown = ({ label, value, options, onChange, allowCustom = false, customValue, onCustomChange, placeholder }: {
     label: string;
     value: string | number;
@@ -230,62 +230,130 @@ export default function PricingEstimator({ className = '', onEstimateChange, ini
     placeholder?: string;
   }) => {
     const [isOpen, setIsOpen] = useState(false);
+    const [dropdownDirection, setDropdownDirection] = useState<'down' | 'up'>('down');
+    const dropdownRef = useRef<HTMLDivElement>(null);
+    const buttonRef = useRef<HTMLButtonElement>(null);
+    
     const displayValue = allowCustom && customValue ? `${customValue}` : 
                        options.find(opt => opt.value === value)?.label || options[0]?.label;
+
+    // Close dropdown when clicking outside
+    useEffect(() => {
+      const handleClickOutside = (event: MouseEvent) => {
+        if (dropdownRef.current && !dropdownRef.current.contains(event.target as Node) &&
+            buttonRef.current && !buttonRef.current.contains(event.target as Node)) {
+          setIsOpen(false);
+        }
+      };
+
+      if (isOpen) {
+        document.addEventListener('mousedown', handleClickOutside);
+        return () => document.removeEventListener('mousedown', handleClickOutside);
+      }
+    }, [isOpen]);
+
+    // Auto-positioning to prevent overflow
+    const handleToggle = () => {
+      if (!isOpen && buttonRef.current) {
+        const rect = buttonRef.current.getBoundingClientRect();
+        const spaceBelow = window.innerHeight - rect.bottom;
+        const spaceAbove = rect.top;
+        const dropdownHeight = Math.min(256, options.length * 40 + (allowCustom ? 60 : 0)); // Estimate dropdown height
+        
+        if (spaceBelow < dropdownHeight && spaceAbove > dropdownHeight) {
+          setDropdownDirection('up');
+        } else {
+          setDropdownDirection('down');
+        }
+      }
+      setIsOpen(!isOpen);
+    };
+
+    // Close on escape key
+    useEffect(() => {
+      const handleEscape = (e: KeyboardEvent) => {
+        if (e.key === 'Escape') {
+          setIsOpen(false);
+        }
+      };
+
+      if (isOpen) {
+        document.addEventListener('keydown', handleEscape);
+        return () => document.removeEventListener('keydown', handleEscape);
+      }
+    }, [isOpen]);
     
     return (
       <div className="relative w-full">
         <button
-          onClick={() => setIsOpen(!isOpen)}
+          ref={buttonRef}
+          onClick={handleToggle}
           className="w-full flex items-center justify-between px-3 py-2 bg-white border border-gray-300 rounded-md text-sm hover:border-blue-400 hover:bg-blue-50 transition-all focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
+          aria-haspopup="listbox"
+          aria-expanded={isOpen}
         >
           <span className="font-medium text-gray-900 truncate">{displayValue}</span>
-          <ChevronDown className="h-4 w-4 text-gray-400 flex-shrink-0 ml-2" />
+          <ChevronDown className={`h-4 w-4 text-gray-400 flex-shrink-0 ml-2 transition-transform ${isOpen ? 'rotate-180' : ''}`} />
         </button>
         
         {isOpen && (
-          <>
-            <div className="fixed inset-0 z-40" onClick={() => setIsOpen(false)} />
-            <div className="absolute top-full left-0 mt-1 w-full bg-white border border-gray-300 rounded-md shadow-xl z-50 max-h-64 overflow-y-auto">
-              {options.map(option => (
-                <button
-                  key={option.value}
-                  onClick={() => {
-                    onChange(option.value);
-                    if (onCustomChange) onCustomChange('');
-                    setIsOpen(false);
-                  }}
-                  className={`w-full text-left px-3 py-2 text-sm hover:bg-blue-50 transition-colors ${
-                    option.value === value && !customValue ? 'bg-blue-50 text-blue-700 font-medium' : ''
-                  }`}
-                >
-                  {option.label}
-                </button>
-              ))}
-              {allowCustom && (
-                <div className="border-t border-gray-200 p-3">
-                  <label className="text-xs text-gray-500 mb-1 block">Custom Range</label>
-                  <input
-                    type="text"
-                    placeholder={placeholder}
-                    value={customValue || ''}
-                    onChange={(e) => {
-                      if (onCustomChange) {
-                        onCustomChange(e.target.value);
-                      }
+          <div 
+            ref={dropdownRef}
+            className={`absolute ${dropdownDirection === 'up' ? 'bottom-full mb-1' : 'top-full mt-1'} left-0 w-full bg-white border border-gray-300 rounded-md shadow-xl z-50 max-h-64 overflow-hidden`}
+            role="listbox"
+          >
+            <div className="max-h-60 overflow-y-auto" style={{
+              scrollbarWidth: 'thin',
+              scrollbarColor: '#d1d5db #f3f4f6'
+            }}>
+              {options.length === 0 ? (
+                <div className="px-3 py-2 text-sm text-gray-500 italic">No options available</div>
+              ) : (
+                options.map(option => (
+                  <button
+                    key={option.value}
+                    onClick={() => {
+                      onChange(option.value);
+                      if (onCustomChange) onCustomChange('');
+                      setIsOpen(false);
                     }}
-                    onKeyDown={(e) => {
-                      if (e.key === 'Enter') {
-                        setIsOpen(false);
-                      }
-                    }}
-                    className="w-full px-3 py-2 text-sm border border-gray-300 rounded focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
-                    onClick={(e) => e.stopPropagation()}
-                  />
-                </div>
+                    className={`w-full text-left px-3 py-2 text-sm hover:bg-blue-50 transition-colors focus:outline-none focus:bg-blue-50 ${
+                      option.value === value && !customValue ? 'bg-blue-50 text-blue-700 font-medium' : 'text-gray-900'
+                    }`}
+                    role="option"
+                    aria-selected={option.value === value && !customValue}
+                  >
+                    {option.label}
+                  </button>
+                ))
               )}
             </div>
-          </>
+            
+            {allowCustom && (
+              <div className="border-t border-gray-200 p-3 bg-gray-50">
+                <label className="text-xs font-medium text-gray-500 mb-1 block uppercase tracking-wide">Custom Range</label>
+                <input
+                  type="text"
+                  placeholder={placeholder}
+                  value={customValue || ''}
+                  onChange={(e) => {
+                    if (onCustomChange) {
+                      onCustomChange(e.target.value);
+                    }
+                  }}
+                  onKeyDown={(e) => {
+                    if (e.key === 'Enter') {
+                      setIsOpen(false);
+                    }
+                    e.stopPropagation();
+                  }}
+                  className="w-full px-3 py-2 text-sm border border-gray-300 rounded focus:ring-2 focus:ring-blue-500 focus:border-blue-500 bg-white"
+                  onClick={(e) => e.stopPropagation()}
+                  autoFocus={false}
+                />
+              </div>
+            )}
+          </div>
         )}
       </div>
     );
