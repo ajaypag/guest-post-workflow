@@ -142,7 +142,7 @@ export default function AdminDashboard() {
     },
     {
       title: 'Chatwoot Integration',
-      description: 'Sync PostFlow contacts and orders with Chatwoot for customer support',
+      description: 'Sync Linkio contacts and orders with Chatwoot for customer support',
       icon: MessageSquare,
       href: '/admin/chatwoot-sync',
       color: 'bg-blue-50 border-blue-200 text-blue-700',

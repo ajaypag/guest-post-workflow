@@ -2,7 +2,7 @@ import BlogPostTemplate from '@/components/BlogPostTemplate';
 import Image from 'next/image';
 
 export const metadata = {
-  title: 'Best Books to Learn SEO: Recommended by Professionals 2024 | PostFlow',
+  title: 'Best Books to Learn SEO: Recommended by Professionals 2024 | Linkio',
   description: 'Discover the top SEO books recommended by industry professionals. From beginner guides to advanced strategies, find the perfect books to master SEO.',
 };
 

@@ -1,7 +1,7 @@
 import BlogPostTemplate from '@/components/BlogPostTemplate';
 
 export const metadata = {
-  title: 'Add Me to Search: How to Create Your Google People Card | PostFlow',
+  title: 'Add Me to Search: How to Create Your Google People Card | Linkio',
   description: 'Learn how to create and optimize your Google People Card using the "Add Me to Search" feature. Complete guide with step-by-step instructions for better online visibility.',
 };
 

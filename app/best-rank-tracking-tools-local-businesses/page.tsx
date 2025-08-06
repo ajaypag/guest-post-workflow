@@ -2,7 +2,7 @@ import BlogPostTemplate from '@/components/BlogPostTemplate';
 import Image from 'next/image';
 
 export const metadata = {
-  title: 'Best Rank Tracking Tools for Local Businesses: What Actually Matters | PostFlow',
+  title: 'Best Rank Tracking Tools for Local Businesses: What Actually Matters | Linkio',
   description: 'Discover the best rank tracking tools for local SEO. Compare features, pricing, and accuracy of top local rank tracking solutions for 2024.',
 };
 

@@ -2,7 +2,7 @@ import BlogPostTemplate from '@/components/BlogPostTemplate';
 import Image from 'next/image';
 
 export const metadata = {
-  title: 'How to Follow up on an Email (What Gurus Forgot to Mention) | PostFlow',
+  title: 'How to Follow up on an Email (What Gurus Forgot to Mention) | Linkio',
   description: 'The complete guide to email follow-ups that actually work. Learn the truth about follow-up frequency, timing, and what recipients really think.',
 };
 

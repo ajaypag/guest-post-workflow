@@ -200,7 +200,7 @@ export default function SearchQueryGeneratorPage() {
                 <div className="absolute -top-1 -right-1 w-3 h-3 bg-emerald-400 rounded-full"></div>
               </div>
               <div>
-                <div className="text-lg font-semibold text-gray-900">PostFlow</div>
+                <div className="text-lg font-semibold text-gray-900">Linkio</div>
                 <div className="text-xs text-gray-500 -mt-1">Guest Post Query Generator</div>
               </div>
             </Link>
@@ -465,7 +465,7 @@ export default function SearchQueryGeneratorPage() {
               href="/signup/marketing"
               className="inline-flex items-center gap-2 px-6 py-3 bg-blue-600 text-white font-medium rounded-lg hover:bg-blue-700 transition-colors"
             >
-              Start with PostFlow
+              Start with Linkio
               <ArrowRight className="w-4 h-4" />
             </Link>
           </div>

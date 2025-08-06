@@ -2,7 +2,7 @@ import BlogPostTemplate from '@/components/BlogPostTemplate';
 import Image from 'next/image';
 
 export const metadata = {
-  title: 'Best Guest Posting Services (50 Agencies Reviewed) | PostFlow',
+  title: 'Best Guest Posting Services (50 Agencies Reviewed) | Linkio',
   description: 'Comprehensive review of the top 50 guest posting services and agencies. Compare pricing, tactics, response times, and quality to find the best fit.',
 };
 

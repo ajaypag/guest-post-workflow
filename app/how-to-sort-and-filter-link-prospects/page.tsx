@@ -1,7 +1,7 @@
 import BlogPostTemplate from '@/components/BlogPostTemplate';
 
 export const metadata = {
-  title: 'How to Sort and Filter Link Prospects | PostFlow',
+  title: 'How to Sort and Filter Link Prospects | Linkio',
   description: 'Complete guide on sorting and filtering link prospects. Learn to identify quality links, remove duplicates, and build an effective outreach list.',
 };
 

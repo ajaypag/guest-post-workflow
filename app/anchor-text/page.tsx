@@ -2,7 +2,7 @@ import BlogPostTemplate from '@/components/BlogPostTemplate';
 import Image from 'next/image';
 
 export const metadata = {
-  title: 'Anchor Text Optimization for Link Building: Complete Guide 2024 | PostFlow',
+  title: 'Anchor Text Optimization for Link Building: Complete Guide 2024 | Linkio',
   description: 'Master safe anchor text optimization for link building. Learn anchor text types, optimal ratios, natural-sounding phrases, and step-by-step implementation strategies.',
 };
 

@@ -1,7 +1,7 @@
 import BlogPostTemplate from '@/components/BlogPostTemplate';
 
 export const metadata = {
-  title: 'Broken Link Building Guide: Complete Strategy & Templates | PostFlow',
+  title: 'Broken Link Building Guide: Complete Strategy & Templates | Linkio',
   description: 'Master broken link building with our comprehensive guide. Learn how to find broken links, create replacement content, and use proven outreach templates for high-quality backlinks.',
 };
 

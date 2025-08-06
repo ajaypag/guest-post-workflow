@@ -2,7 +2,7 @@ import BlogPostTemplate from '@/components/BlogPostTemplate';
 import Image from 'next/image';
 
 export const metadata = {
-  title: 'Best Email Finders 2024: Free & Paid Tools Compared | PostFlow',
+  title: 'Best Email Finders 2024: Free & Paid Tools Compared | Linkio',
   description: 'Comprehensive comparison of 28+ email finder tools. Compare features, pricing, accuracy, and user reviews of Hunter, RocketReach, Apollo, and more.',
 };
 

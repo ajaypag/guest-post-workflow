@@ -1,7 +1,7 @@
 import BlogPostTemplate from '@/components/BlogPostTemplate';
 
 export const metadata = {
-  title: 'Ecommerce SEO Case Study: From Zero to Page 1 in 7 Months | PostFlow',
+  title: 'Ecommerce SEO Case Study: From Zero to Page 1 in 7 Months | Linkio',
   description: 'Follow our month-by-month ecommerce SEO case study as we built 128 backlinks and achieved page 1 rankings for competitive keywords in the groomsmen gifts niche.',
 };
 

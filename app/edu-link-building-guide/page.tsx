@@ -2,7 +2,7 @@ import BlogPostTemplate from '@/components/BlogPostTemplate';
 import Image from 'next/image';
 
 export const metadata = {
-  title: '.EDU Link Building with Scholarships: Complete Guide 2024 | PostFlow',
+  title: '.EDU Link Building with Scholarships: Complete Guide 2024 | Linkio',
   description: 'Master .EDU link building through scholarships. Learn proven strategies, cost analysis, step-by-step process, and tips for successful educational backlink campaigns.',
 };
 

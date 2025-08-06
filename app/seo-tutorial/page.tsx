@@ -2,7 +2,7 @@ import BlogPostTemplate from '@/components/BlogPostTemplate';
 import Image from 'next/image';
 
 export const metadata = {
-  title: 'Search Engine Optimization Tutorial: Complete SEO Guide 2024 | PostFlow',
+  title: 'Search Engine Optimization Tutorial: Complete SEO Guide 2024 | Linkio',
   description: 'Master SEO from scratch with this comprehensive tutorial. Learn on-page optimization, off-page SEO, Google RankBrain, schema markup, and proven ranking strategies.',
 };
 

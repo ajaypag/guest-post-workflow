@@ -2,7 +2,7 @@ import BlogPostTemplate from '@/components/BlogPostTemplate';
 import Image from 'next/image';
 
 export const metadata = {
-  title: 'Best Content SEO Tools: On-Page and Off-Page Optimization 2024 | PostFlow',
+  title: 'Best Content SEO Tools: On-Page and Off-Page Optimization 2024 | Linkio',
   description: 'Discover the best content SEO tools for on-page and off-page optimization. From content creation to link building, find the perfect tools for your SEO strategy.',
 };
 

@@ -2,7 +2,7 @@ import BlogPostTemplate from '@/components/BlogPostTemplate';
 import Image from 'next/image';
 
 export const metadata = {
-  title: 'Link Building Costs: Complete Pricing Guide 2024 | PostFlow',
+  title: 'Link Building Costs: Complete Pricing Guide 2024 | Linkio',
   description: 'Comprehensive guide to link building costs and pricing. Learn what factors determine prices, in-house vs agency costs, and how to budget for quality backlinks.',
 };
 

@@ -1,7 +1,7 @@
 import BlogPostTemplate from '@/components/BlogPostTemplate';
 
 export const metadata = {
-  title: 'Link Disavows Good or Bad? Complete Guide | PostFlow',
+  title: 'Link Disavows Good or Bad? Complete Guide | Linkio',
   description: 'Learn whether link disavows are good or bad for your SEO. Discover what types of links to disavow, best practices, and insights from 120 disavow files.',
 };
 

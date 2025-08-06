@@ -81,7 +81,7 @@ export default function ChatwootSyncPage() {
           </div>
           
           <p className="text-gray-600">
-            Sync PostFlow data with your Chatwoot instance
+            Sync Linkio data with your Chatwoot instance
           </p>
         </div>
 
@@ -134,7 +134,7 @@ export default function ChatwootSyncPage() {
             </div>
             
             <p className="text-gray-600 text-sm mb-4">
-              Import all PostFlow accounts as Chatwoot contacts. This will create contacts for all advertisers.
+              Import all Linkio accounts as Chatwoot contacts. This will create contacts for all advertisers.
             </p>
             
             <button

@@ -1,7 +1,7 @@
 import BlogPostTemplate from '@/components/BlogPostTemplate';
 
 export const metadata = {
-  title: 'SEO Case Study: Building An Authority Site | PostFlow',
+  title: 'SEO Case Study: Building An Authority Site | Linkio',
   description: '16-month SEO case study showing how we built an authority site from scratch. See month-by-month progress, strategies, and results.',
 };
 

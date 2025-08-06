@@ -272,7 +272,7 @@ export default function DirectorySubmissionSites() {
                 <div className="w-8 h-8 bg-gradient-to-br from-blue-500 to-purple-600 rounded-lg flex items-center justify-center">
                   <Zap className="w-5 h-5 text-white" />
                 </div>
-                <span className="text-lg font-semibold">PostFlow</span>
+                <span className="text-lg font-semibold">Linkio</span>
               </Link>
               <span className="text-gray-400">/</span>
               <span className="text-gray-600">Directory Submission Sites</span>

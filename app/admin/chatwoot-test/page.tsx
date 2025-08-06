@@ -420,7 +420,7 @@ export default function ChatwootTestPage() {
                 <div className="mt-4 p-3 bg-blue-100 rounded">
                   <p className="font-semibold mb-1">⚡ How to update in Coolify:</p>
                   <ol className="list-decimal list-inside space-y-1 text-xs">
-                    <li>Go to your PostFlow application in Coolify</li>
+                    <li>Go to your Linkio application in Coolify</li>
                     <li>Click on "Environment Variables" tab</li>
                     <li>Add each variable above</li>
                     <li>Click "Save" and "Redeploy"</li>

@@ -2,7 +2,7 @@ import BlogPostTemplate from '@/components/BlogPostTemplate';
 import Image from 'next/image';
 
 export const metadata = {
-  title: 'How to Make An SEO Proposal (+ Templates) | PostFlow',
+  title: 'How to Make An SEO Proposal (+ Templates) | Linkio',
   description: 'Learn how to create winning SEO proposals that convert prospects into clients. Includes step-by-step guide, templates, and proven strategies.',
 };
 

@@ -2,7 +2,7 @@ import BlogPostTemplate from '@/components/BlogPostTemplate';
 import Image from 'next/image';
 
 export const metadata = {
-  title: 'Easy Backlinks: 7 Simple Ways to Get Them in 2024 | PostFlow',
+  title: 'Easy Backlinks: 7 Simple Ways to Get Them in 2024 | Linkio',
   description: 'Discover 7 proven strategies to get easy backlinks that boost your SEO. From HARO to broken link building, learn simple tactics that actually work.',
 };
 

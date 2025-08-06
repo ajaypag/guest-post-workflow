@@ -4,6 +4,8 @@ import { useState, useEffect } from 'react';
 import { useRouter } from 'next/navigation';
 import { AuthService } from '@/lib/auth';
 import { Sparkles, Users, BarChart3, Mail } from 'lucide-react';
+import LinkioHeader from '@/components/LinkioHeader';
+import MarketingFooter from '@/components/MarketingFooter';
 
 export default function LoginPage() {
   const router = useRouter();
@@ -43,14 +45,16 @@ export default function LoginPage() {
   };
 
   return (
-    <div className="min-h-screen flex items-center justify-center bg-gradient-to-br from-blue-50 to-purple-50">
-      <div className="max-w-md w-full space-y-8">
+    <div className="min-h-screen bg-gradient-to-br from-blue-50 to-purple-50">
+      <LinkioHeader variant="default" />
+      <div className="flex items-center justify-center py-12 px-4">
+        <div className="max-w-md w-full space-y-8">
         <div className="text-center">
           <div className="mx-auto w-20 h-20 bg-gradient-to-br from-blue-600 to-purple-600 rounded-2xl flex items-center justify-center mb-4 shadow-lg">
             <Sparkles className="w-10 h-10 text-white" />
           </div>
           <h2 className="text-3xl font-bold text-gray-900">
-            PostFlow
+            Linkio
           </h2>
           <p className="mt-3 text-lg text-gray-600">
             Guest Post Workflow Management Platform
@@ -160,10 +164,12 @@ export default function LoginPage() {
 
         <div className="text-center">
           <p className="text-xs text-gray-400">
-            © 2025 PostFlow by OutreachLabs. All rights reserved.
+            © 2025 Linkio. All rights reserved.
           </p>
         </div>
+        </div>
       </div>
+      <MarketingFooter />
     </div>
   );
 }

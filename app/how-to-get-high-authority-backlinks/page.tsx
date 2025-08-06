@@ -1,7 +1,7 @@
 import BlogPostTemplate from '@/components/BlogPostTemplate';
 
 export const metadata = {
-  title: 'How to Get Backlinks From High Authority Sites: Step-by-Step Guide | PostFlow',
+  title: 'How to Get Backlinks From High Authority Sites: Step-by-Step Guide | Linkio',
   description: 'Learn proven strategies to get high-quality backlinks from authoritative websites. Includes guest posting, HARO, resource pages, and practical outreach templates.',
 };
 

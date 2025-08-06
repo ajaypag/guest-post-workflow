@@ -2,7 +2,7 @@ import BlogPostTemplate from '@/components/BlogPostTemplate';
 import Image from 'next/image';
 
 export const metadata = {
-  title: 'Best SEO Newsletters (We Subscribed to Them All) | PostFlow',  
+  title: 'Best SEO Newsletters (We Subscribed to Them All) | Linkio',  
   description: 'Discover the top 45+ SEO newsletters we personally tested. Stay updated with the latest SEO news, tips, and strategies from industry experts.',
 };
 

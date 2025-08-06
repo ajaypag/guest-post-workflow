@@ -155,26 +155,27 @@ footer.bg-gray-900 a:hover {
   color: #ffffff;
 }
 
-/* Button styles for CTA sections - note these are direct classes, not nested */
+/* Button styles for CTA sections - with proper specificity */
 .cta-button-primary {
-  background-color: #ffffff;
-  color: var(--brand-primary);
+  background-color: #ffffff !important;
+  color: var(--brand-primary) !important;
 }
 
 .cta-button-primary:hover {
-  background-color: #f3f4f6;
-  color: var(--brand-primary-dark);
+  background-color: #f3f4f6 !important;
+  color: var(--brand-primary-dark) !important;
 }
 
 .cta-button-secondary {
-  border-color: #ffffff;
-  color: #ffffff;
-  background-color: transparent;
+  border: 2px solid #ffffff !important;
+  color: #ffffff !important;
+  background-color: transparent !important;
 }
 
 .cta-button-secondary:hover {
-  background-color: #ffffff;
-  color: var(--brand-primary);
+  background-color: #ffffff !important;
+  color: var(--brand-primary) !important;
+  border-color: #ffffff !important;
 }
 
 /* ============================================

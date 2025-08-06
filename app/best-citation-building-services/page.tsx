@@ -1,7 +1,7 @@
 import BlogPostTemplate from '@/components/BlogPostTemplate';
 
 export const metadata = {
-  title: 'Best Citation Building Services (30+ Reviewed) | PostFlow',
+  title: 'Best Citation Building Services (30+ Reviewed) | Linkio',
   description: 'Comprehensive review of the top 30+ citation building services to help improve your local SEO. Compare features, pricing, and find the right service for your business.',
 };
 

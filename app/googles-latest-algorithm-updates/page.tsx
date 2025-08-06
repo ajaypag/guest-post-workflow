@@ -2,7 +2,7 @@ import BlogPostTemplate from '@/components/BlogPostTemplate';
 import Image from 'next/image';
 
 export const metadata = {
-  title: 'Understanding Google\'s Latest Algorithm Updates | PostFlow',
+  title: 'Understanding Google\'s Latest Algorithm Updates | Linkio',
   description: 'Stay updated on Google\'s latest algorithm changes including BERT, Core Updates, and Mobile-first Indexing. Learn how to maintain SEO visibility.',
 };
 

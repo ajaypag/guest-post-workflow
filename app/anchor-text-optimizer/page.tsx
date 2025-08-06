@@ -729,7 +729,7 @@ learn more about link building"
               href="/"
               className="inline-flex items-center gap-2 px-8 py-4 border-2 border-white text-white rounded-lg hover:bg-white hover:text-blue-600 font-semibold transition-colors"
             >
-              Learn About PostFlow
+              Learn About Linkio
             </Link>
           </div>
         </div>

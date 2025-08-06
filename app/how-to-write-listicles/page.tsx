@@ -2,7 +2,7 @@ import BlogPostTemplate from '@/components/BlogPostTemplate';
 import Image from 'next/image';
 
 export const metadata = {
-  title: 'How To Write Winning Listicles That People Will Actually Read | PostFlow',
+  title: 'How To Write Winning Listicles That People Will Actually Read | Linkio',
   description: 'Learn how to write engaging listicles that rank well and keep readers engaged. Complete guide with examples, formats, and proven strategies for 2024.',
 };
 

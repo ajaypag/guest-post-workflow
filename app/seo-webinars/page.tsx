@@ -1,7 +1,7 @@
 import BlogPostTemplate from '@/components/BlogPostTemplate';
 
 export const metadata = {
-  title: 'SEO Webinars (On-Page, Off-Page and More) | PostFlow',
+  title: 'SEO Webinars (On-Page, Off-Page and More) | Linkio',
   description: 'Watch our collection of SEO webinars covering on-page optimization, off-page SEO, link building, and more. Learn from industry experts.',
 };
 

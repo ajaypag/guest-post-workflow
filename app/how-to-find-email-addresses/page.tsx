@@ -1,7 +1,7 @@
 import BlogPostTemplate from '@/components/BlogPostTemplate';
 
 export const metadata = {
-  title: 'How to Find Email Addresses: Complete Guide with 2K+ Free Credits | PostFlow',
+  title: 'How to Find Email Addresses: Complete Guide with 2K+ Free Credits | Linkio',
   description: 'Learn how to find email addresses using 30+ free tools and manual techniques. Get 2,288 free credits and discover proven methods for finding business and personal emails.',
 };
 
