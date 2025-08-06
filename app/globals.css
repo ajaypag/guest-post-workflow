@@ -16,13 +16,23 @@ body {
   color: #212529 !important;
 } */
 
-/* White backgrounds need dark text */
-.bg-white {
-  background-color: #ffffff !important;
+/* White and light backgrounds need dark text */
+.bg-white, .bg-gray-50, .bg-blue-50 {
   color: #212529 !important;
 }
 
-.bg-white * {
+.bg-white *, .bg-gray-50 *, .bg-blue-50 * {
+  color: #212529 !important;
+}
+
+/* Light gradients need dark text */
+.bg-gradient-to-br.from-gray-50, .bg-gradient-to-br.from-blue-50,
+.bg-gradient-to-br.to-white, .bg-gradient-to-br.from-blue-50.to-white {
+  color: #212529 !important;
+}
+
+.bg-gradient-to-br.from-gray-50 *, .bg-gradient-to-br.from-blue-50 *,
+.bg-gradient-to-br.to-white *, .bg-gradient-to-br.from-blue-50.to-white * {
   color: #212529 !important;
 }
 
@@ -105,13 +115,19 @@ button:focus, a:focus, input:focus, textarea:focus, select:focus {
   color: #dc3545 !important;
 }
 
-/* Blue info boxes */
+/* Blue info boxes - light blue needs dark text */
 .bg-blue-50 {
   background-color: #e7f1ff !important;
   color: #0c5bbd !important;
 }
 
 .bg-blue-50 * {
+  color: #0c5bbd !important;
+}
+
+/* Override for specific blue-50 elements that should be dark */
+.bg-blue-50 h1, .bg-blue-50 h2, .bg-blue-50 h3, .bg-blue-50 h4, .bg-blue-50 h5, .bg-blue-50 h6,
+.bg-blue-50 p, .bg-blue-50 span, .bg-blue-50 div {
   color: #0c5bbd !important;
 }
 
@@ -158,15 +174,7 @@ a:hover {
   color: #0a58ca !important;
 }
 
-/* Dark background sections - proper contrast */
-.bg-gradient-to-br, .bg-gradient-to-r {
-  color: #ffffff !important;
-}
-
-.bg-gradient-to-br *, .bg-gradient-to-r * {
-  color: #ffffff !important;
-}
-
+/* Dark background sections - proper contrast - SPECIFIC ONLY */
 .bg-gray-900, .bg-gray-800 {
   color: #f3f4f6 !important;
 }
@@ -175,8 +183,14 @@ a:hover {
   color: #f3f4f6 !important;
 }
 
-/* Ensure blue/purple gradients have white text */
-.from-blue-600, .to-purple-700, .from-blue-600.to-indigo-700 {
+/* ONLY specific dark gradients get white text */
+.bg-gradient-to-br.from-blue-600.to-purple-700,
+.bg-gradient-to-r.from-blue-600.to-indigo-700 {
+  color: #ffffff !important;
+}
+
+.bg-gradient-to-br.from-blue-600.to-purple-700 *,
+.bg-gradient-to-r.from-blue-600.to-indigo-700 * {
   color: #ffffff !important;
 }
 
