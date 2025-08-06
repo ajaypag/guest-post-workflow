@@ -92,7 +92,7 @@ export default function BlogPostTemplate({
       />
       
       <div className="min-h-screen bg-white">
-        <LinkioHeader variant="blog" showBackButton={true} />
+        <LinkioHeader variant="default" />
 
       {/* Article Header */}
       <article className="py-12">
