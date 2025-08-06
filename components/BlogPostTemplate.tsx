@@ -42,9 +42,54 @@ export default function BlogPostTemplate({
 }: BlogPostTemplateProps) {
   const shareUrl = typeof window !== 'undefined' ? window.location.href : '';
   
+  // Generate JSON-LD structured data for SEO
+  const structuredData = {
+    '@context': 'https://schema.org',
+    '@type': 'BlogPosting',
+    headline: title,
+    description: metaDescription,
+    author: {
+      '@type': 'Person',
+      name: author
+    },
+    publisher: {
+      '@type': 'Organization',
+      name: 'Linkio',
+      logo: {
+        '@type': 'ImageObject',
+        url: 'https://linkio.com/favicon.ico'
+      }
+    },
+    datePublished: new Date(publishDate).toISOString(),
+    dateModified: new Date(publishDate).toISOString(),
+    mainEntityOfPage: {
+      '@type': 'WebPage',
+      '@id': shareUrl
+    },
+    ...(heroImage && {
+      image: {
+        '@type': 'ImageObject',
+        url: heroImage,
+        caption: heroImageAlt || title
+      }
+    }),
+    articleSection: 'SEO & Link Building',
+    keywords: ['SEO', 'Link Building', 'Digital Marketing', 'Backlinks'],
+    inLanguage: 'en-US'
+  };
+  
   return (
-    <div className="min-h-screen bg-white">
-      {/* Header */}
+    <>
+      {/* JSON-LD Structured Data */}
+      <script
+        type="application/ld+json"
+        dangerouslySetInnerHTML={{
+          __html: JSON.stringify(structuredData)
+        }}
+      />
+      
+      <div className="min-h-screen bg-white">
+        {/* Header */}
       <header className="bg-white border-b">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
           <div className="flex justify-between items-center h-16">
@@ -53,7 +98,7 @@ export default function BlogPostTemplate({
                 <div className="w-8 h-8 bg-gradient-to-br from-blue-500 to-purple-600 rounded-lg flex items-center justify-center">
                   <Zap className="w-5 h-5 text-white" />
                 </div>
-                <span className="text-lg font-semibold">PostFlow</span>
+                <span className="text-lg font-semibold">Linkio</span>
               </Link>
             </div>
             
@@ -219,10 +264,11 @@ export default function BlogPostTemplate({
       <footer className="bg-gray-900 text-gray-300 py-8">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 text-center">
           <p className="text-sm">
-            &copy; 2025 PostFlow. Strategic link building that scales.
+            &copy; 2025 Linkio. Advanced link building tools and expert insights.
           </p>
         </div>
       </footer>
-    </div>
+      </div>
+    </>
   );
 }

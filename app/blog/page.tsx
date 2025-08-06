@@ -2,8 +2,22 @@ import Link from 'next/link';
 import Image from 'next/image';
 
 export const metadata = {
-  title: 'SEO & Link Building Blog | PostFlow',
-  description: 'Comprehensive guides and tutorials on SEO, link building, email outreach, and digital marketing strategies. Learn from industry experts and improve your rankings.',
+  title: 'SEO & Link Building Blog | Linkio',
+  description: 'Expert guides on advanced SEO strategies, link building techniques, and digital marketing. Learn from industry professionals and master modern SEO.',
+  openGraph: {
+    title: 'SEO & Link Building Blog | Linkio',
+    description: 'Expert guides on advanced SEO strategies, link building techniques, and digital marketing. Learn from industry professionals and master modern SEO.',
+    type: 'website',
+    url: 'https://linkio.com/blog',
+  },
+  twitter: {
+    card: 'summary_large_image',
+    title: 'SEO & Link Building Blog | Linkio',
+    description: 'Expert guides on advanced SEO strategies, link building techniques, and digital marketing. Learn from industry professionals and master modern SEO.',
+  },
+  alternates: {
+    canonical: 'https://linkio.com/blog',
+  },
 };
 
 const blogPosts = [
