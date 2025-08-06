@@ -5,6 +5,7 @@ import { orderGroups } from '@/lib/db/orderGroupSchema';
 import { bulkAnalysisProjects, bulkAnalysisDomains } from '@/lib/db/bulkAnalysisSchema';
 import { orderSiteSelections } from '@/lib/db/schema';
 import { projectOrderAssociations, orderSiteSubmissions } from '@/lib/db/projectOrderAssociationsSchema';
+import { websites } from '@/lib/db/websiteSchema';
 import { eq, and, inArray, sql } from 'drizzle-orm';
 import { AuthServiceServer } from '@/lib/auth-server';
 
@@ -262,20 +263,29 @@ export async function POST(
           .filter((s: any) => s.status === 'approved')
           .map((s: any) => s.domainId);
         
-        // Fetch current prices from bulk analysis domains (which should have website data)
+        // Fetch current prices from bulk analysis domains and websites
         let domainPrices: Record<string, { wholesalePrice: number; retailPrice: number }> = {};
         if (approvedDomainIds.length > 0) {
-          const approvedDomains = await tx.query.bulkAnalysisDomains.findMany({
-            where: inArray(bulkAnalysisDomains.id, approvedDomainIds)
-          });
+          // Get domains with their associated website data
+          const approvedDomainsWithPrices = await tx.execute(sql`
+            SELECT 
+              bad.id,
+              bad.domain,
+              w.guest_post_cost,
+              w.domain_rating,
+              w.total_traffic
+            FROM bulk_analysis_domains bad
+            LEFT JOIN websites w ON LOWER(bad.domain) = LOWER(w.domain)
+            WHERE bad.id = ANY(${approvedDomainIds})
+          `);
           
-          // Map domain prices (assuming they have websiteGuestPostCost from bulk analysis)
-          approvedDomains.forEach(domain => {
-            const wholesaleCents = domain.websiteGuestPostCost 
-              ? Math.round(parseFloat(domain.websiteGuestPostCost) * 100)
+          // Map domain prices from website data
+          const SERVICE_FEE_CENTS = 7900;
+          approvedDomainsWithPrices.rows.forEach((row: any) => {
+            const wholesaleCents = row.guest_post_cost 
+              ? Math.round(parseFloat(row.guest_post_cost) * 100)
               : 20000; // Default $200 if no price
-            const SERVICE_FEE_CENTS = 7900;
-            domainPrices[domain.id] = {
+            domainPrices[row.id] = {
               wholesalePrice: wholesaleCents,
               retailPrice: wholesaleCents + SERVICE_FEE_CENTS
             };
