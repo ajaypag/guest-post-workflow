@@ -1374,7 +1374,7 @@ export default function InternalOrderManagementPage() {
                     )}
                     
                     {/* Bulk Analysis Links */}
-                    {order.state === 'analyzing' && order.orderGroups?.some(g => g.bulkAnalysisProjectId) && (
+                    {(order.state === 'analyzing' || order.state === 'finding_sites') && order.orderGroups?.some(g => g.bulkAnalysisProjectId) && (
                       <div className="space-y-2">
                         {order.orderGroups.filter(g => g.bulkAnalysisProjectId).map(group => (
                           <Link
@@ -1389,7 +1389,7 @@ export default function InternalOrderManagementPage() {
                     )}
                     
                     {/* Site Readiness */}
-                    {order.state === 'analyzing' && (
+                    {(order.state === 'analyzing' || order.state === 'finding_sites') && (
                       <button
                         onClick={handleMarkSitesReady}
                         disabled={actionLoading.sites_ready}
@@ -1843,7 +1843,7 @@ export default function InternalOrderManagementPage() {
                     <h3 className="text-lg font-semibold text-gray-900">Internal Activity</h3>
                   </div>
                   <div className="space-y-3">
-                    {order.state === 'analyzing' && (
+                    {(order.state === 'analyzing' || order.state === 'finding_sites') && (
                       <div className="flex items-start gap-3">
                         <div className="w-2 h-2 bg-blue-500 rounded-full mt-1.5 animate-pulse" />
                         <div>
