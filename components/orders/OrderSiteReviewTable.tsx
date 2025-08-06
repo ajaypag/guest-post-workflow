@@ -287,20 +287,24 @@ export default function OrderSiteReviewTable({
           {anchorText || <span className="text-gray-400 italic">No anchor text</span>}
         </span>
       </div>
-      {permissions.canViewPricing && price !== undefined && (
+      {permissions.canViewPricing && (
         <div className="space-y-0.5">
           <div className="flex items-center gap-2 text-sm">
             <DollarSign className="h-3 w-3 text-gray-400 flex-shrink-0" />
-            <span className="font-medium text-gray-900">
-              {formatCurrency(price)}
-              {isEstimate && (
-                <span className="text-xs text-gray-500 ml-1" title="Estimated price - final price confirmed at approval">
-                  (est)
-                </span>
-              )}
-            </span>
+            {price && price > 0 ? (
+              <span className="font-medium text-gray-900">
+                {formatCurrency(price)}
+                {isEstimate && (
+                  <span className="text-xs text-gray-500 ml-1" title="Estimated price - final price confirmed at approval">
+                    (est)
+                  </span>
+                )}
+              </span>
+            ) : (
+              <span className="text-gray-500 italic text-xs">Pricing pending</span>
+            )}
           </div>
-          {showDetailedPricing && wholesalePrice !== undefined && (
+          {showDetailedPricing && price && price > 0 && wholesalePrice !== undefined && (
             <div className="flex items-center gap-2 text-xs text-gray-500 ml-5">
               <span title="Wholesale site cost">Site: {formatCurrency(wholesalePrice)}</span>
               <span>•</span>
@@ -644,16 +648,6 @@ export default function OrderSiteReviewTable({
           </td>
         );
 
-      case 'price':
-        return (
-          <td className="px-6 py-4 whitespace-nowrap text-sm text-right">
-            <span className="font-medium text-gray-900">
-              {index === 0 && group.packagePrice ? formatCurrency(group.packagePrice) : 
-               displaySubmission ? formatCurrency(displaySubmission.price) : '-'}
-            </span>
-          </td>
-        );
-        
       case 'anchor':
         return (
           <td className="px-6 py-4 text-sm text-gray-900">
@@ -669,26 +663,36 @@ export default function OrderSiteReviewTable({
         return (
           <td className="px-6 py-4 text-sm">
             {permissions.canViewPricing ? (
-              <div className="space-y-1">
-                <div className="flex items-center gap-1">
-                  <span className="font-medium text-gray-900">
-                    {formatCurrency(sitePrice)}
-                  </span>
-                  {isEstimatePrice && (
-                    <span className="text-xs text-gray-500" title="Estimated price">(est)</span>
+              displaySubmission ? (
+                <div className="space-y-1">
+                  <div className="flex items-center gap-1">
+                    {sitePrice > 0 ? (
+                      <>
+                        <span className="font-medium text-gray-900">
+                          {formatCurrency(sitePrice)}
+                        </span>
+                        {isEstimatePrice && (
+                          <span className="text-xs text-gray-500" title="Estimated price - final price confirmed at approval">(est)</span>
+                        )}
+                      </>
+                    ) : (
+                      <span className="text-gray-500 italic text-xs">Pricing pending</span>
+                    )}
+                  </div>
+                  {userType === 'internal' && siteWholesale > 0 && (
+                    <div className="text-xs space-y-0.5">
+                      <div className="text-gray-500">
+                        Site: {formatCurrency(siteWholesale)}
+                      </div>
+                      <div className="text-green-600 font-medium">
+                        +{formatCurrency(sitePrice - siteWholesale)}
+                      </div>
+                    </div>
                   )}
                 </div>
-                {userType === 'internal' && siteWholesale > 0 && (
-                  <div className="text-xs space-y-0.5">
-                    <div className="text-gray-500">
-                      Site: {formatCurrency(siteWholesale)}
-                    </div>
-                    <div className="text-green-600 font-medium">
-                      +{formatCurrency(sitePrice - siteWholesale)}
-                    </div>
-                  </div>
-                )}
-              </div>
+              ) : (
+                <span className="text-gray-400 italic text-xs">No site assigned</span>
+              )
             ) : (
               <span className="text-gray-400">-</span>
             )}
