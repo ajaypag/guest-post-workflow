@@ -26,6 +26,8 @@ import {
 import Link from 'next/link';
 import InteractiveWorkflowDemo from '@/components/InteractiveWorkflowDemo';
 import LinkioHeader from '@/components/LinkioHeader';
+import MarketingCTA from '@/components/MarketingCTA';
+import MarketingFooter from '@/components/MarketingFooter';
 
 interface Stats {
   totalSites: number;
@@ -334,95 +336,10 @@ export default function MarketingHomepage() {
       </section>
 
       {/* Final CTA */}
-      <section className="py-20 bg-gradient-to-br from-blue-600 to-purple-700 text-white">
-        <div className="max-w-4xl mx-auto px-4 sm:px-6 lg:px-8 text-center">
-          <h2 className="text-4xl font-bold mb-6">
-            Ready for Strategic Link Building?
-          </h2>
-          <p className="text-xl opacity-90 mb-8">
-            Join dozens of agencies, SEO teams, and business owners getting quality links at wholesale pricing.
-          </p>
-          
-          <div className="flex flex-col sm:flex-row gap-4 justify-center">
-            <Link
-              href="/signup/marketing"
-              className="inline-flex items-center justify-center gap-2 px-8 py-4 bg-white text-blue-600 font-semibold rounded-lg hover:bg-gray-100 transition-colors text-lg"
-            >
-              Start Your Campaign
-              <ArrowRight className="w-5 h-5" />
-            </Link>
-            <Link
-              href="/guest-posting-sites"
-              className="inline-flex items-center justify-center gap-2 px-8 py-4 border-2 border-white text-white font-semibold rounded-lg hover:bg-white hover:text-blue-600 transition-colors text-lg"
-            >
-              Browse Our Database
-            </Link>
-          </div>
-        </div>
-      </section>
+      <MarketingCTA />
 
       {/* Footer */}
-      <footer className="bg-gray-900 text-gray-300 py-12">
-        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-          <div className="grid md:grid-cols-4 gap-8">
-            {/* Brand */}
-            <div>
-              <div className="flex items-center space-x-3 mb-4">
-                <div className="w-8 h-8 bg-gradient-to-br from-blue-500 to-purple-600 rounded-lg flex items-center justify-center">
-                  <Zap className="w-5 h-5 text-white" />
-                </div>
-                <div>
-                  <div className="text-lg font-semibold text-white">Linkio</div>
-                  <div className="text-xs text-gray-300">Advanced Link Building Tools</div>
-                </div>
-              </div>
-              <p className="text-sm text-gray-300">
-                Strategic link building for SEO professionals and business owners. Expert curation meets AI efficiency.
-              </p>
-            </div>
-
-            {/* Services */}
-            <div>
-              <h4 className="font-semibold text-white mb-4">Services</h4>
-              <ul className="space-y-2 text-sm">
-                <li><Link href="/guest-posting-sites" className="text-gray-300 hover:text-white">Guest Posting Sites</Link></li>
-                <li><a href="https://www.outreachlabs.com/link-building-service/" target="_blank" rel="noopener noreferrer" className="text-gray-300 hover:text-white">Case Studies</a></li>
-                <li><span className="text-gray-400">Bulk Discounts Available</span></li>
-              </ul>
-            </div>
-
-            {/* Company */}
-            <div>
-              <h4 className="font-semibold text-white mb-4">Company</h4>
-              <ul className="space-y-2 text-sm">
-                <li><Link href="/account/login" className="text-gray-300 hover:text-white">Sign In</Link></li>
-                <li><Link href="/signup/marketing" className="text-gray-300 hover:text-white">Get Started</Link></li>
-              </ul>
-            </div>
-
-            {/* Contact */}
-            <div>
-              <h4 className="font-semibold text-white mb-4">Get Started</h4>
-              <p className="text-sm text-gray-300 mb-4">
-                Ready to try strategic link building?
-              </p>
-              <Link
-                href="/signup/marketing"
-                className="inline-flex items-center gap-2 px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 text-sm transition-colors"
-              >
-                Start Today
-                <ArrowRight className="w-4 h-4" />
-              </Link>
-            </div>
-          </div>
-          
-          <div className="border-t border-gray-800 mt-8 pt-8 text-center">
-            <p className="text-sm text-gray-300">
-              &copy; 2025 Linkio. Advanced link building tools and expert insights.
-            </p>
-          </div>
-        </div>
-      </footer>
+      <MarketingFooter />
     </div>
   );
 }

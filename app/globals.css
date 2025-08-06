@@ -179,8 +179,17 @@ a:hover {
   color: #f3f4f6 !important;
 }
 
-.bg-gray-900 *, .bg-gray-800 * {
-  color: #f3f4f6 !important;
+/* Footer specific text colors */
+.bg-gray-900 h4, .bg-gray-900 .text-white {
+  color: #ffffff !important;
+}
+
+.bg-gray-900 .text-gray-300, .bg-gray-900 p, .bg-gray-900 li {
+  color: #d1d5db !important;
+}
+
+.bg-gray-900 a.text-gray-300:hover {
+  color: #ffffff !important;
 }
 
 /* ONLY specific dark gradients get white text */
@@ -192,6 +201,28 @@ a:hover {
 .bg-gradient-to-br.from-blue-600.to-purple-700 *,
 .bg-gradient-to-r.from-blue-600.to-indigo-700 * {
   color: #ffffff !important;
+}
+
+/* CTA Section button fixes */
+.bg-gradient-to-br.from-blue-600.to-purple-700 .bg-white {
+  background-color: #ffffff !important;
+  color: #2563eb !important;
+}
+
+.bg-gradient-to-br.from-blue-600.to-purple-700 .bg-white:hover {
+  background-color: #f3f4f6 !important;
+  color: #1d4ed8 !important;
+}
+
+.bg-gradient-to-br.from-blue-600.to-purple-700 .border-white {
+  border-color: #ffffff !important;
+  color: #ffffff !important;
+  background-color: transparent !important;
+}
+
+.bg-gradient-to-br.from-blue-600.to-purple-700 .border-white:hover {
+  background-color: #ffffff !important;
+  color: #2563eb !important;
 }
 
 /* Border colors */
