@@ -25,6 +25,15 @@ interface MigrationPlan {
 export default function LineItemsMigrationPage() {
   const router = useRouter();
   const [loading, setLoading] = useState(false);
+  const [orderId, setOrderId] = useState('');
+  const [migrationPlan, setMigrationPlan] = useState<MigrationPlan | null>(null);
+  const [migrationResult, setMigrationResult] = useState<any>(null);
+  const [error, setError] = useState<string | null>(null);
+  const [recentOrders, setRecentOrders] = useState<any[]>([]);
+
+  useEffect(() => {
+    loadRecentOrders();
+  }, []);
 
   // Check feature flag
   if (!isLineItemsMigrationUIEnabled()) {
@@ -56,15 +65,6 @@ export default function LineItemsMigrationPage() {
       </AuthWrapper>
     );
   }
-  const [orderId, setOrderId] = useState('');
-  const [migrationPlan, setMigrationPlan] = useState<MigrationPlan | null>(null);
-  const [migrationResult, setMigrationResult] = useState<any>(null);
-  const [error, setError] = useState<string | null>(null);
-  const [recentOrders, setRecentOrders] = useState<any[]>([]);
-
-  useEffect(() => {
-    loadRecentOrders();
-  }, []);
 
   const loadRecentOrders = async () => {
     try {
