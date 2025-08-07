@@ -165,8 +165,8 @@ export default function B2BServicesLinkBuildingPage() {
             </h1>
             
             <p className="text-xl text-gray-600 mb-8 max-w-4xl mx-auto leading-relaxed">
-              Your competitors fight for "link building services" while you dominate "white-label link building," 
-              "B2B link building," "enterprise link building," and 47 other modifier combinations. 
+              Your competitors fight for generic service terms while you dominate every modifier variation: 
+              "enterprise," "white-label," "B2B," "startup," "HIPAA-compliant," and 45+ other combinations. 
               Full market coverage through strategic niche positioning.
             </p>
 
@@ -232,15 +232,15 @@ export default function B2BServicesLinkBuildingPage() {
               <ul className="space-y-3 text-red-700">
                 <li className="flex items-start gap-2">
                   <div className="w-2 h-2 bg-red-500 rounded-full mt-2 flex-shrink-0"></div>
-                  <span>"Link building services" - 10,000+ competitors</span>
+                  <span>"Marketing services" - 10,000+ competitors</span>
                 </li>
                 <li className="flex items-start gap-2">
                   <div className="w-2 h-2 bg-red-500 rounded-full mt-2 flex-shrink-0"></div>
-                  <span>$50+ CPCs for basic service keywords</span>
+                  <span>"Software development" - $50+ CPCs</span>
                 </li>
                 <li className="flex items-start gap-2">
                   <div className="w-2 h-2 bg-red-500 rounded-full mt-2 flex-shrink-0"></div>
-                  <span>Years to rank for head terms</span>
+                  <span>"Consulting services" - Years to rank</span>
                 </li>
               </ul>
             </div>
@@ -253,15 +253,15 @@ export default function B2BServicesLinkBuildingPage() {
               <ul className="space-y-3 text-yellow-700">
                 <li className="flex items-start gap-2">
                   <div className="w-2 h-2 bg-yellow-500 rounded-full mt-2 flex-shrink-0"></div>
-                  <span>"White-label link building agencies"</span>
+                  <span>"White-label marketing agencies"</span>
                 </li>
                 <li className="flex items-start gap-2">
                   <div className="w-2 h-2 bg-yellow-500 rounded-full mt-2 flex-shrink-0"></div>
-                  <span>"Enterprise software development firms"</span>
+                  <span>"Enterprise software development"</span>
                 </li>
                 <li className="flex items-start gap-2">
                   <div className="w-2 h-2 bg-yellow-500 rounded-full mt-2 flex-shrink-0"></div>
-                  <span>"HIPAA-compliant dev shops"</span>
+                  <span>"HIPAA-compliant IT services"</span>
                 </li>
               </ul>
             </div>
@@ -485,7 +485,9 @@ export default function B2BServicesLinkBuildingPage() {
                         <div>
                           <div className="font-semibold text-gray-900 mb-2">B2B Buyer Query to ChatGPT:</div>
                           <div className="text-gray-700 italic">
-                            "I need a white-label link building agency that can handle enterprise clients"
+                            {selectedService === 'linkbuilding' && '"I need a white-label link building agency that can handle enterprise clients"'}
+                            {selectedService === 'development' && '"I need an enterprise software development firm with fintech experience"'}
+                            {selectedService === 'consulting' && '"I need a digital transformation consultant for supply chain optimization"'}
                           </div>
                         </div>
                       </div>
@@ -504,19 +506,19 @@ export default function B2BServicesLinkBuildingPage() {
                         <ul className="space-y-2 text-sm text-green-700">
                           <li className="flex items-center gap-2">
                             <CheckCircle className="w-4 h-4 text-green-600" />
-                            <span>"white-label link building" - #1</span>
+                            <span>"white-label [your service]" - #1</span>
                           </li>
                           <li className="flex items-center gap-2">
                             <CheckCircle className="w-4 h-4 text-green-600" />
-                            <span>"B2B link building services" - #1</span>
+                            <span>"B2B [your service]" - #1</span>
                           </li>
                           <li className="flex items-center gap-2">
                             <CheckCircle className="w-4 h-4 text-green-600" />
-                            <span>"local SEO link building" - #1</span>
+                            <span>"enterprise [your service]" - #1</span>
                           </li>
                           <li className="flex items-center gap-2">
                             <CheckCircle className="w-4 h-4 text-green-600" />
-                            <span>"SaaS link building agency" - Featured</span>
+                            <span>"[industry] [your service]" - Featured</span>
                           </li>
                         </ul>
                       </div>
@@ -574,10 +576,10 @@ export default function B2BServicesLinkBuildingPage() {
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
           <div className="text-center mb-16">
             <h2 className="text-4xl font-bold text-gray-900 mb-6">
-              Real Results: OutreachLabs Case Study
+              Real Results: How This Strategy Works
             </h2>
             <p className="text-xl text-gray-600 max-w-3xl mx-auto">
-              How we used this exact strategy to dominate link building service variations
+              Case study: How a B2B service provider dominated their category with modifier coverage
             </p>
           </div>
 
@@ -592,7 +594,7 @@ export default function B2BServicesLinkBuildingPage() {
                     </div>
                     <div>
                       <div className="font-medium text-gray-900">Identified Publication Strengths</div>
-                      <div className="text-sm text-gray-600">Found sites strong in white-label, B2B, local SEO niches</div>
+                      <div className="text-sm text-gray-600">Found sites strong in specific industry and service niches</div>
                     </div>
                   </li>
                   <li className="flex items-start gap-3">
@@ -736,7 +738,7 @@ export default function B2BServicesLinkBuildingPage() {
                   </div>
                   <div>
                     <div className="font-medium">One Impossible Target</div>
-                    <div className="text-sm text-indigo-200">"Link building services" - 10K+ competitors</div>
+                    <div className="text-sm text-indigo-200">Generic service term - 10K+ competitors</div>
                   </div>
                 </div>
                 <div className="flex items-center gap-4">
