@@ -504,6 +504,7 @@ export default function InternalOrderManagementPage() {
   };
 
   const handleEditSubmission = async (submissionId: string, groupId: string, updates: any) => {
+    console.log('handleEditSubmission called:', { submissionId, groupId, updates });
     try {
       const response = await fetch(`/api/orders/${orderId}/groups/${groupId}/submissions/${submissionId}/edit`, {
         method: 'PATCH',
