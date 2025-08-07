@@ -34,7 +34,7 @@ export default function IndustriesPage() {
       description: 'Geo-targeted authority building through local and industry publications',
       features: ['Local Publication Network', 'Geographic Authority Mapping', 'Community-Based Citations'],
       href: '/local-business-link-building',
-      available: false
+      available: true
     },
     {
       id: 'ecommerce',
