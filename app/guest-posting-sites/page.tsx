@@ -120,6 +120,7 @@ function getTrafficDisplay(traffic: number | null) {
 
 export default async function GuestPostingSitesPage() {
   const { websites, totalCount, niches } = await getWebsites();
+  const stats = await getMarketingStats();
 
   return (
     <div className="min-h-screen bg-gray-50">
@@ -612,7 +613,7 @@ export default async function GuestPostingSitesPage() {
           {/* Trust Indicators */}
           <div className="grid grid-cols-3 gap-8 mb-10 max-w-2xl mx-auto">
             <div className="text-center">
-              <div className="text-3xl font-bold text-gray-900 mb-1">13,000+</div>
+              <div className="text-3xl font-bold text-gray-900 mb-1">{formatSiteCount(stats.totalSites)}+</div>
               <div className="text-sm text-gray-500">Verified Sites</div>
             </div>
             <div className="text-center">
