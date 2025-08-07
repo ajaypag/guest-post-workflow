@@ -27,16 +27,9 @@ export default function DatabaseMigrationPage() {
     {
       id: 'create_line_items_tables',
       name: 'Create Line Items Tables',
-      description: 'Creates order_line_items, line_item_changes, and line_item_templates tables for the new line items system',
+      description: 'Creates order_line_items, line_item_changes, line_item_templates, and order_benchmarks tables for the new line items system',
       dangerous: false,
       endpoint: '/api/admin/database-migrations/create-line-items-tables'
-    },
-    {
-      id: 'create_benchmark_table',
-      name: 'Create Order Benchmarks Table',
-      description: 'Creates order_benchmarks table for tracking pricing history and selections',
-      dangerous: false,
-      endpoint: '/api/admin/database-migrations/create-benchmark-table'
     },
     {
       id: 'add_inclusion_status_columns',
