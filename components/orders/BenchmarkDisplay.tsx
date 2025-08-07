@@ -272,8 +272,12 @@ export default function BenchmarkDisplay({
             <div className="text-sm text-gray-600">Total Links</div>
           </div>
           <div>
-            <div className="text-2xl font-bold">{benchmark.benchmarkData.totalClients}</div>
-            <div className="text-sm text-gray-600">Clients</div>
+            <div className="text-2xl font-bold">
+              {benchmark.benchmarkData.originalConstraints?.estimatedPricePerLink ? 
+                formatCurrency(benchmark.benchmarkData.originalConstraints.estimatedPricePerLink) : 
+                'TBD'}
+            </div>
+            <div className="text-sm text-gray-600">Target Price/Link</div>
           </div>
           <div>
             <div className="text-2xl font-bold">{benchmark.benchmarkData.totalTargetPages}</div>
@@ -299,18 +303,16 @@ export default function BenchmarkDisplay({
           </h4>
           
           <div className="grid grid-cols-1 md:grid-cols-2 gap-4 text-sm">
-            {/* Budget Comparison */}
-            {benchmark.benchmarkData.originalConstraints.budgetRange.length > 0 && (
+            {/* Price Comparison */}
+            {benchmark.benchmarkData.originalConstraints.estimatedPricePerLink && (
               <div className="flex justify-between">
-                <span className="text-gray-600">Budget:</span>
+                <span className="text-gray-600">Target Price per Link:</span>
                 <div className="text-right">
                   <div className="text-gray-500">
-                    Requested: {benchmark.benchmarkData.originalConstraints.budgetRange.length === 2 
-                      ? `${formatCurrency(benchmark.benchmarkData.originalConstraints.budgetRange[0])} - ${formatCurrency(benchmark.benchmarkData.originalConstraints.budgetRange[1])}`
-                      : formatCurrency(benchmark.benchmarkData.originalConstraints.budgetRange[0])}
+                    Requested: {formatCurrency(benchmark.benchmarkData.originalConstraints.estimatedPricePerLink)}
                   </div>
                   <div className="font-medium">
-                    Current: {formatCurrency(benchmark.benchmarkData.orderTotal)}
+                    Current Total: {formatCurrency(benchmark.benchmarkData.orderTotal)}
                   </div>
                 </div>
               </div>
@@ -319,13 +321,13 @@ export default function BenchmarkDisplay({
             {/* Links Comparison */}
             {benchmark.benchmarkData.originalConstraints.estimatedLinks && (
               <div className="flex justify-between">
-                <span className="text-gray-600">Links:</span>
+                <span className="text-gray-600">Number of Links:</span>
                 <div className="text-right">
                   <div className="text-gray-500">
-                    Requested: {benchmark.benchmarkData.originalConstraints.estimatedLinks}
+                    Requested: {benchmark.benchmarkData.originalConstraints.estimatedLinks} × {benchmark.benchmarkData.originalConstraints.estimatedPricePerLink ? formatCurrency(benchmark.benchmarkData.originalConstraints.estimatedPricePerLink) : 'TBD'}
                   </div>
                   <div className="font-medium">
-                    Current: {benchmark.benchmarkData.totalRequestedLinks}
+                    Current: {benchmark.benchmarkData.totalRequestedLinks} links
                   </div>
                 </div>
               </div>
