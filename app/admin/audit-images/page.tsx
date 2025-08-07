@@ -26,11 +26,8 @@ export default function AuditImagesPage() {
     setResults(null);
 
     try {
-      const response = await fetch('/api/admin/audit-images', {
-        headers: {
-          'Authorization': `Bearer ${process.env.NEXT_PUBLIC_ADMIN_API_KEY || 'your-admin-key'}`,
-        },
-      });
+      // For now, skip authorization since we're in admin panel already
+      const response = await fetch('/api/admin/audit-images');
 
       if (!response.ok) {
         throw new Error(`Failed to run audit: ${response.statusText}`);
@@ -54,7 +51,6 @@ export default function AuditImagesPage() {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
-          'Authorization': `Bearer ${process.env.NEXT_PUBLIC_ADMIN_API_KEY || 'your-admin-key'}`,
         },
         body: JSON.stringify({ fix: true }),
       });

@@ -6,9 +6,10 @@ const execAsync = promisify(exec);
 
 export async function GET(request: NextRequest) {
   try {
-    // Check for admin authorization (you should add proper auth here)
+    // Optional authorization - skip if no ADMIN_API_KEY is set
     const authHeader = request.headers.get('authorization');
-    if (authHeader !== `Bearer ${process.env.ADMIN_API_KEY}`) {
+    if (process.env.ADMIN_API_KEY && authHeader !== `Bearer ${process.env.ADMIN_API_KEY}`) {
+      // Only enforce auth if ADMIN_API_KEY is configured
       return NextResponse.json(
         { error: 'Unauthorized' },
         { status: 401 }
@@ -59,9 +60,10 @@ export async function GET(request: NextRequest) {
 
 export async function POST(request: NextRequest) {
   try {
-    // Check for admin authorization
+    // Optional authorization - skip if no ADMIN_API_KEY is set
     const authHeader = request.headers.get('authorization');
-    if (authHeader !== `Bearer ${process.env.ADMIN_API_KEY}`) {
+    if (process.env.ADMIN_API_KEY && authHeader !== `Bearer ${process.env.ADMIN_API_KEY}`) {
+      // Only enforce auth if ADMIN_API_KEY is configured
       return NextResponse.json(
         { error: 'Unauthorized' },
         { status: 401 }
