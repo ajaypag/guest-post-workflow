@@ -509,12 +509,12 @@ export default function SaaSLinkBuildingPage() {
               <div className="w-12 h-12 bg-purple-600 rounded-lg flex items-center justify-center mb-4">
                 <Users className="w-6 h-6 text-white" />
               </div>
-              <h3 className="text-xl font-semibold text-gray-900 mb-3">Marketing Agencies</h3>
+              <h3 className="text-xl font-semibold text-gray-900 mb-3">B2B Services</h3>
               <p className="text-gray-600 mb-4">
-                White-label solutions for agencies managing multiple client campaigns with sophisticated reporting.
+                Strategic modifier coverage for complete market domination across service variations.
               </p>
-              <Link href="/agency-link-building" className="text-blue-600 font-medium hover:text-blue-700">
-                Coming Soon →
+              <Link href="/b2b-services-link-building" className="text-blue-600 font-medium hover:text-blue-700">
+                Learn More →
               </Link>
             </div>
 
@@ -527,7 +527,7 @@ export default function SaaSLinkBuildingPage() {
                 Geo-targeted authority building across local publications and industry-specific trade publications.
               </p>
               <Link href="/local-business-link-building" className="text-green-600 font-medium hover:text-green-700">
-                Coming Soon →
+                Learn More →
               </Link>
             </div>
 
@@ -540,7 +540,7 @@ export default function SaaSLinkBuildingPage() {
                 Product category domination through strategic placement across lifestyle and industry publications.
               </p>
               <Link href="/ecommerce-link-building" className="text-orange-600 font-medium hover:text-orange-700">
-                Coming Soon →
+                Learn More →
               </Link>
             </div>
           </div>
