@@ -2,9 +2,11 @@ import { NextRequest, NextResponse } from 'next/server';
 import { db } from '@/lib/db/connection';
 import { orderSiteSubmissions } from '@/lib/db/projectOrderAssociationsSchema';
 import { orderGroups } from '@/lib/db/orderGroupSchema';
+import { orderLineItems } from '@/lib/db/orderLineItemSchema';
 import { orders } from '@/lib/db/orderSchema';
 import { eq, and } from 'drizzle-orm';
 import { AuthServiceServer } from '@/lib/auth-server';
+import { isLineItemsSystemEnabled } from '@/lib/config/featureFlags';
 
 export async function POST(
   request: NextRequest,
