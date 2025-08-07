@@ -103,7 +103,7 @@ interface OrderSiteReviewTableProps {
   permissions: TablePermissions;
   workflowStage?: string;
   onAssignTargetPage?: (submissionId: string, targetPageUrl: string, groupId: string) => Promise<void>;
-  onSwitchPool?: (submissionId: string, groupId: string) => Promise<void>;
+  onSwitchPool?: (submissionId: string, groupId: string, targetPrimaryId?: string) => Promise<void>;
   onApprove?: (submissionId: string, groupId: string) => Promise<void>;
   onReject?: (submissionId: string, groupId: string, reason: string) => Promise<void>;
   onRefresh?: () => Promise<void>;
@@ -349,12 +349,12 @@ export default function OrderSiteReviewTable({
 
 
   // Handle domain switching
-  const handleSwitchDomain = async (submissionId: string, groupId: string) => {
+  const handleSwitchDomain = async (submissionId: string, groupId: string, targetPrimaryId?: string) => {
     if (!onSwitchPool) return;
     
     setAssigningDomain(submissionId);
     try {
-      await onSwitchPool(submissionId, groupId);
+      await onSwitchPool(submissionId, groupId, targetPrimaryId);
     } catch (error) {
       console.error('Error switching domain:', error);
     } finally {
@@ -1120,7 +1120,8 @@ export default function OrderSiteReviewTable({
                                                               onClick={async (e) => {
                                                                 e.preventDefault();
                                                                 e.stopPropagation();
-                                                                await handleSwitchDomain(submission.id, group.id);
+                                                                // Pass the current displayed primary to be replaced
+                                                                await handleSwitchDomain(submission.id, group.id, displaySubmission?.id);
                                                               }}
                                                               disabled={!!assigningDomain}
                                                             >

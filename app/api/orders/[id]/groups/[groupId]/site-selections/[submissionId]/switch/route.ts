@@ -14,6 +14,10 @@ export async function POST(
 ) {
   try {
     const { submissionId, groupId } = await params;
+    
+    // Get optional target primary ID from request body
+    const body = await request.json().catch(() => ({}));
+    const { targetPrimaryId } = body;
 
     // Authenticate user
     const session = await AuthServiceServer.getSession(request);
@@ -110,18 +114,35 @@ export async function POST(
       } 
       // 3. If alternative, try to switch with a primary
       else {
-        // Find a primary to swap with (prefer lowest rank for consistency)
-        const primaryToSwap = await tx.query.orderSiteSubmissions.findFirst({
-          where: and(
-            eq(orderSiteSubmissions.orderGroupId, groupId),
-            sql`metadata->>'targetPageUrl' = ${targetUrl}`,
-            eq(orderSiteSubmissions.selectionPool, 'primary')
-          ),
-          orderBy: [orderSiteSubmissions.poolRank]
-        });
+        let primaryToSwap;
+        
+        // If a specific target primary was provided, use that
+        if (targetPrimaryId) {
+          primaryToSwap = await tx.query.orderSiteSubmissions.findFirst({
+            where: and(
+              eq(orderSiteSubmissions.id, targetPrimaryId),
+              eq(orderSiteSubmissions.orderGroupId, groupId),
+              eq(orderSiteSubmissions.selectionPool, 'primary')
+            )
+          });
+          
+          if (!primaryToSwap) {
+            throw new Error('Target primary domain not found or is not a primary');
+          }
+        } else {
+          // Fallback to finding the lowest ranked primary (original behavior)
+          primaryToSwap = await tx.query.orderSiteSubmissions.findFirst({
+            where: and(
+              eq(orderSiteSubmissions.orderGroupId, groupId),
+              sql`metadata->>'targetPageUrl' = ${targetUrl}`,
+              eq(orderSiteSubmissions.selectionPool, 'primary')
+            ),
+            orderBy: [orderSiteSubmissions.poolRank]
+          });
 
-        if (!primaryToSwap) {
-          throw new Error('No primary domain available to swap');
+          if (!primaryToSwap) {
+            throw new Error('No primary domain available to swap');
+          }
         }
 
         // Swap their pools and ranks

@@ -115,16 +115,15 @@ export default function ExternalOrderReviewPage() {
     }
   };
 
-  const handleSwitchPool = async (submissionId: string, groupId: string) => {
+  const handleSwitchPool = async (submissionId: string, groupId: string, targetPrimaryId?: string) => {
     try {
+      // Use the correct switch endpoint that supports targetPrimaryId
       const response = await fetch(
-        `/api/orders/${orderId}/groups/${groupId}/site-selections`,
+        `/api/orders/${orderId}/groups/${groupId}/site-selections/${submissionId}/switch`,
         {
-          method: 'PUT',
+          method: 'POST',
           headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({
-            selections: [{ submissionId, action: 'switch_pool' }]
-          })
+          body: JSON.stringify({ targetPrimaryId })
         }
       );
       

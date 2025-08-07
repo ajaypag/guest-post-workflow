@@ -503,14 +503,15 @@ export default function InternalOrderManagementPage() {
     }
   };
 
-  const handleSwitchDomain = async (submissionId: string, groupId: string) => {
+  const handleSwitchDomain = async (submissionId: string, groupId: string, targetPrimaryId?: string) => {
     try {
       setAssigningDomain(submissionId);
       
       const response = await fetch(`/api/orders/${orderId}/groups/${groupId}/site-selections/${submissionId}/switch`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        credentials: 'include'
+        credentials: 'include',
+        body: JSON.stringify({ targetPrimaryId })
       });
       
       if (!response.ok) {
