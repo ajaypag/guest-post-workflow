@@ -36,53 +36,74 @@ export async function createOrderBenchmark(
       }
     });
 
-    // Build benchmark data
+    // Build benchmark data - capturing the original request at confirmation time
     const clientGroups = await Promise.all(groups.map(async (group) => {
-      // Get all submissions for this group
+      // For initial benchmark at confirmation, we capture the requested structure
+      // not the selected submissions (which don't exist yet)
+      
+      // Check if we have any submissions yet
       const submissions = await tx.query.orderSiteSubmissions.findMany({
         where: and(
           eq(orderSiteSubmissions.orderGroupId, group.id),
-          // Only include "included" submissions in benchmark
           eq(orderSiteSubmissions.inclusionStatus, 'included')
         )
       });
 
-      // Group submissions by target page
-      const targetPageMap = new Map<string, any[]>();
-      
-      submissions.forEach(sub => {
-        const url = sub.metadata?.targetPageUrl || 'unassigned';
-        if (!targetPageMap.has(url)) {
-          targetPageMap.set(url, []);
-        }
-        targetPageMap.get(url)!.push({
-          domainId: sub.domainId,
-          domain: sub.metadata?.domain || '',
-          wholesalePrice: sub.wholesalePriceSnapshot || 0,
-          retailPrice: sub.retailPriceSnapshot || 0,
-          anchorText: sub.metadata?.anchorText,
-          specialInstructions: sub.metadata?.specialInstructions,
-          metrics: {
-            dr: sub.metadata?.dr,
-            traffic: sub.metadata?.traffic,
-            qualityScore: sub.metadata?.qualityScore,
+      // If we have included submissions, use them
+      if (submissions.length > 0) {
+        // Group submissions by target page
+        const targetPageMap = new Map<string, any[]>();
+        
+        submissions.forEach(sub => {
+          const url = sub.metadata?.targetPageUrl || 'unassigned';
+          if (!targetPageMap.has(url)) {
+            targetPageMap.set(url, []);
           }
+          targetPageMap.get(url)!.push({
+            domainId: sub.domainId,
+            domain: sub.metadata?.domain || '',
+            wholesalePrice: sub.wholesalePriceSnapshot || 0,
+            retailPrice: sub.retailPriceSnapshot || 0,
+            anchorText: sub.metadata?.anchorText,
+            specialInstructions: sub.metadata?.specialInstructions,
+            metrics: {
+              dr: sub.metadata?.dr,
+              traffic: sub.metadata?.traffic,
+              qualityScore: sub.metadata?.qualityScore,
+            }
+          });
         });
-      });
 
-      const targetPages = Array.from(targetPageMap.entries()).map(([url, domains]) => ({
-        url,
-        pageId: group.targetPages?.find((tp: any) => tp.url === url)?.pageId,
-        requestedLinks: domains.length,
-        requestedDomains: domains,
-      }));
+        const targetPages = Array.from(targetPageMap.entries()).map(([url, domains]) => ({
+          url,
+          pageId: group.targetPages?.find((tp: any) => tp.url === url)?.pageId,
+          requestedLinks: domains.length,
+          requestedDomains: domains,
+        }));
 
-      return {
-        clientId: group.clientId,
-        clientName: group.client?.name || '',
-        linkCount: submissions.length, // Actual included links
-        targetPages,
-      };
+        return {
+          clientId: group.clientId,
+          clientName: group.client?.name || '',
+          linkCount: submissions.length,
+          targetPages,
+        };
+      } else {
+        // No submissions yet - capture the original request structure
+        const targetPages = (group.targetPages as any[] || []).map((tp: any) => ({
+          url: tp.url || '',
+          pageId: tp.pageId,
+          requestedLinks: Math.ceil((group.linkCount || 0) / (group.targetPages?.length || 1)),
+          requestedDomains: [] // No domains selected yet
+        }));
+
+        return {
+          clientId: group.clientId,
+          clientName: group.client?.name || '',
+          linkCount: group.linkCount || 0, // Original requested link count
+          targetPages,
+          originalRequest: true // Flag to indicate this is the initial request
+        };
+      }
     }));
 
     // Calculate totals

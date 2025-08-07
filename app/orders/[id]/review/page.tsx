@@ -289,10 +289,10 @@ export default function ExternalOrderReviewPage() {
   };
 
   const handleProceed = async () => {
-    // After approving sites, check if order needs invoicing or if it's ready for payment
-    if (order && approvedCount > 0) {
+    // After selecting sites (included status), check if order needs invoicing
+    if (order && includedCount > 0) {
       try {
-        // Trigger invoice generation for approved sites
+        // Trigger invoice generation for included sites
         const response = await fetch(`/api/orders/${orderId}/invoice`, {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
@@ -342,14 +342,23 @@ export default function ExternalOrderReviewPage() {
     );
   }
 
-  // Calculate statistics
-  const totalSubmissions = Object.values(siteSubmissions).flat().length;
-  const pendingCount = Object.values(siteSubmissions).flat()
-    .filter(s => s.status === 'pending').length;
-  const approvedCount = Object.values(siteSubmissions).flat()
-    .filter(s => s.status === 'client_approved').length;
-  const rejectedCount = Object.values(siteSubmissions).flat()
-    .filter(s => s.status === 'client_rejected').length;
+  // Calculate statistics (supporting both old and new systems)
+  const allSubmissions = Object.values(siteSubmissions).flat();
+  const totalSubmissions = allSubmissions.length;
+  
+  // Count based on inclusion status (new system) or approval status (old system)
+  const includedCount = allSubmissions
+    .filter(s => s.inclusionStatus === 'included' || s.status === 'client_approved').length;
+  const excludedCount = allSubmissions
+    .filter(s => s.inclusionStatus === 'excluded' || s.status === 'client_rejected').length;
+  const savedForLaterCount = allSubmissions
+    .filter(s => s.inclusionStatus === 'saved_for_later').length;
+  const pendingCount = allSubmissions
+    .filter(s => !s.inclusionStatus && s.status === 'pending').length;
+    
+  // For backward compatibility
+  const approvedCount = includedCount;
+  const rejectedCount = excludedCount;
 
   return (
     <>
@@ -503,8 +512,8 @@ export default function ExternalOrderReviewPage() {
             </div>
           )}
 
-          {/* Pricing Summary for Approved Sites */}
-          {approvedCount > 0 && (
+          {/* Pricing Summary for Selected Sites */}
+          {includedCount > 0 && (
             <div className="mt-6 bg-white rounded-lg shadow-sm border border-gray-200 p-6">
               <div className="flex items-center justify-between mb-4">
                 <div className="flex items-center gap-2">
@@ -515,18 +524,20 @@ export default function ExternalOrderReviewPage() {
               
               <div className="space-y-3">
                 {Object.entries(siteSubmissions).map(([groupId, submissions]) => {
-                  const approvedSubmissions = submissions.filter(s => s.status === 'client_approved');
-                  if (approvedSubmissions.length === 0) return null;
+                  const includedSubmissions = submissions.filter(s => 
+                    s.inclusionStatus === 'included' || s.status === 'client_approved'
+                  );
+                  if (includedSubmissions.length === 0) return null;
                   
                   const group = order?.orderGroups.find(g => g.id === groupId);
-                  const groupTotal = approvedSubmissions.reduce((sum, sub) => sum + (sub.price || 0), 0);
+                  const groupTotal = includedSubmissions.reduce((sum, sub) => sum + (sub.price || 0), 0);
                   
                   return (
                     <div key={groupId} className="flex justify-between py-2 border-b border-gray-100 last:border-b-0">
                       <div>
                         <span className="font-medium text-gray-900">{group?.client.name || 'Unknown Client'}</span>
                         <span className="text-sm text-gray-500 ml-2">
-                          ({approvedSubmissions.length} site{approvedSubmissions.length > 1 ? 's' : ''})
+                          ({includedSubmissions.length} site{includedSubmissions.length > 1 ? 's' : ''})
                         </span>
                       </div>
                       <span className="font-medium text-gray-900">
@@ -546,7 +557,7 @@ export default function ExternalOrderReviewPage() {
                       {(() => {
                         const totalPrice = Object.values(siteSubmissions)
                           .flat()
-                          .filter(s => s.status === 'client_approved')
+                          .filter(s => s.inclusionStatus === 'included' || s.status === 'client_approved')
                           .reduce((sum, sub) => sum + (sub.price || 0), 0);
                         
                         return totalPrice > 0 ? formatCurrency(totalPrice) : (
@@ -565,16 +576,21 @@ export default function ExternalOrderReviewPage() {
             </div>
           )}
 
-          {/* Proceed Button */}
-          {pendingCount === 0 && approvedCount > 0 && (
+          {/* Proceed Button - Show when sites have been selected */}
+          {includedCount > 0 && (
             <div className="mt-6 text-center">
               <button
                 onClick={handleProceed}
                 className="inline-flex items-center px-6 py-3 bg-blue-600 text-white rounded-lg hover:bg-blue-700 font-medium"
               >
-                Proceed to Next Step
+                Generate Invoice ({includedCount} sites)
                 <ArrowRight className="w-5 h-5 ml-2" />
               </button>
+              {pendingCount > 0 && (
+                <p className="text-sm text-gray-600 mt-2">
+                  {pendingCount} sites still pending review
+                </p>
+              )}
             </div>
           )}
         </div>

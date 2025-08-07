@@ -27,6 +27,7 @@ interface BenchmarkData {
         specialInstructions?: string;
       }>;
     }>;
+    originalRequest?: boolean; // Flag to indicate this is the initial request
   }>;
   totalRequestedLinks: number;
   totalClients: number;
@@ -158,9 +159,16 @@ export default function BenchmarkDisplay({
           <div className="flex items-center gap-3">
             <BarChart3 className="h-5 w-5 text-blue-600" />
             <h3 className="text-lg font-semibold">
-              {userType === 'account' ? 'Your Order Wishlist' : 'Order Benchmark'}
+              {userType === 'account' ? 'Your Order Wishlist' : 
+               benchmark.benchmarkData.clientGroups.some(g => g.originalRequest) ? 
+               'Client\'s Original Request' : 'Order Benchmark'}
             </h3>
             <span className="text-sm text-gray-500">v{benchmark.version}</span>
+            {benchmark.benchmarkData.clientGroups.some(g => g.originalRequest) && (
+              <span className="px-2 py-1 text-xs bg-blue-100 text-blue-700 rounded">
+                Initial Request
+              </span>
+            )}
             {benchmark.captureReason === 'client_modified' && (
               <span className="px-2 py-1 text-xs bg-purple-100 text-purple-700 rounded">
                 Client Modified
@@ -347,6 +355,16 @@ export default function BenchmarkDisplay({
                 
                 {expandedClients.has(group.clientId) && (
                   <div className="p-3">
+                    {group.originalRequest && (
+                      <div className="bg-blue-50 border border-blue-200 rounded p-2 mb-3">
+                        <div className="text-sm text-blue-700">
+                          <strong>Client requested:</strong> {group.linkCount} links across {group.targetPages.length} target pages
+                        </div>
+                        <div className="text-xs text-blue-600 mt-1">
+                          No sites selected yet - awaiting internal team selection
+                        </div>
+                      </div>
+                    )}
                     {group.targetPages.map(page => {
                       const pageComparison = clientComparison?.targetPageAnalysis.find(
                         tpa => tpa.url === page.url
