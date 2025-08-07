@@ -14,7 +14,7 @@ export default function BestEmailFindersPage() {
       publishDate="March 15, 2024"
       author="Ajay Paghdal"
       readTime="45 min read"
-      heroImage="https://www.linkio.com/wp-content/uploads/2024/03/best-email-finders-featured.png"
+      heroImage=""
       heroImageAlt="Best Email Finder Tools Comparison Guide"
       relatedPosts={[
         {
@@ -123,14 +123,14 @@ export default function BestEmailFindersPage() {
           </div>
         </div>
 
-        <Image 
-          src="https://www.linkio.com/wp-content/uploads/2024/03/hunter-email-finder-interface.png" 
+        {/* <Image 
+          src="" // Commented out: src="https://www.linkio.com/wp-content/uploads/2024/03/hunter-email-finder-interface.png" 
           alt="Hunter email finder interface and features"
           width={800}
           height={400}
           className="w-full rounded-lg shadow-md mb-8"
           loading="lazy"
-        />
+        /> */}
 
         <h2 id="rocketreach" className="text-2xl font-bold text-gray-900 mb-6">2. RocketReach</h2>
 
@@ -256,14 +256,14 @@ export default function BestEmailFindersPage() {
           </div>
         </div>
 
-        <Image 
-          src="https://www.linkio.com/wp-content/uploads/2024/03/email-finder-tools-comparison.png" 
+        {/* <Image 
+          src="" // Commented out: src="https://www.linkio.com/wp-content/uploads/2024/03/email-finder-tools-comparison.png" 
           alt="Email finder tools feature comparison chart"
           width={800}
           height={500}
           className="w-full rounded-lg shadow-md mb-8"
           loading="lazy"
-        />
+        /> */}
 
         <h2 id="snovio" className="text-2xl font-bold text-gray-900 mb-6">4. Snov.io</h2>
 
@@ -482,14 +482,14 @@ export default function BestEmailFindersPage() {
           </div>
         </div>
 
-        <Image 
-          src="https://www.linkio.com/wp-content/uploads/2024/03/email-finder-pricing-comparison.png" 
+        {/* <Image 
+          src="" // Commented out: src="https://www.linkio.com/wp-content/uploads/2024/03/email-finder-pricing-comparison.png" 
           alt="Email finder tools pricing comparison table"
           width={800}
           height={600}
           className="w-full rounded-lg shadow-md mb-8"
           loading="lazy"
-        />
+        /> */}
 
         <h2 id="apollo" className="text-2xl font-bold text-gray-900 mb-6">7. Apollo</h2>
 
@@ -688,14 +688,14 @@ export default function BestEmailFindersPage() {
           </table>
         </div>
 
-        <Image 
-          src="https://www.linkio.com/wp-content/uploads/2024/03/best-email-finder-features.png" 
+        {/* <Image 
+          src="" // Commented out: src="https://www.linkio.com/wp-content/uploads/2024/03/best-email-finder-features.png" 
           alt="Email finder tools feature comparison"
           width={800}
           height={500}
           className="w-full rounded-lg shadow-md mb-8"
           loading="lazy"
-        />
+        /> */}
 
         <h2 className="text-2xl font-bold text-gray-900 mb-6">Other Notable Email Finders</h2>
 

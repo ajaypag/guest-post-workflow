@@ -14,7 +14,7 @@ export default function HowToWriteListiclesPage() {
       publishDate="March 5, 2024"
       author="Ajay Paghdal"
       readTime="12 min read"
-      heroImage="https://www.linkio.com/wp-content/uploads/2024/03/how-to-write-listicles-featured.png"
+      heroImage=""
       heroImageAlt="How To Write Winning Listicles"
       relatedPosts={[
         {
@@ -154,14 +154,14 @@ export default function HowToWriteListiclesPage() {
           </div>
         </div>
 
-        <Image 
-          src="https://www.linkio.com/wp-content/uploads/2024/03/listicle-examples-comparison.png" 
+        {/* <Image 
+          src="" // Commented out: src="https://www.linkio.com/wp-content/uploads/2024/03/listicle-examples-comparison.png" 
           alt="Good vs Bad Listicle Examples Comparison"
           width={800}
           height={500}
           className="w-full rounded-lg shadow-md mb-8"
           loading="lazy"
-        />
+        /> */}
 
         <h2 className="text-2xl font-bold text-gray-900 mb-6">How Should You Plan And Write A Listicle?</h2>
 
@@ -643,14 +643,14 @@ export default function HowToWriteListiclesPage() {
           </div>
         </div>
 
-        <Image 
-          src="https://www.linkio.com/wp-content/uploads/2024/03/listicle-writing-process.png" 
+        {/* <Image 
+          src="" // Commented out: src="https://www.linkio.com/wp-content/uploads/2024/03/listicle-writing-process.png" 
           alt="Step-by-step listicle writing process"
           width={800}
           height={600}
           className="w-full rounded-lg shadow-md mb-8"
           loading="lazy"
-        />
+        /> */}
 
         <h2 className="text-2xl font-bold text-gray-900 mb-6">Are You Ready To Plan And Write Your Winning Listicle?</h2>
 

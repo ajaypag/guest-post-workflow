@@ -77,6 +77,22 @@ export default function MarketingFooter() {
             </h4>
             <ul className="space-y-2 text-sm">
               <li>
+                <Link 
+                  href="/how-it-works" 
+                  className="text-gray-400 hover:text-white transition-colors"
+                >
+                  How It Works
+                </Link>
+              </li>
+              <li>
+                <Link 
+                  href="/contact" 
+                  className="text-gray-400 hover:text-white transition-colors"
+                >
+                  Contact Us
+                </Link>
+              </li>
+              <li>
                 <a 
                   href="https://postflow.outreachlabs.net/login" 
                   target="_blank"
@@ -92,14 +108,6 @@ export default function MarketingFooter() {
                   className="text-gray-400 hover:text-white transition-colors"
                 >
                   Get Started
-                </Link>
-              </li>
-              <li>
-                <Link 
-                  href="/directory-submission-sites" 
-                  className="text-gray-400 hover:text-white transition-colors"
-                >
-                  Directory Sites
                 </Link>
               </li>
             </ul>
@@ -123,10 +131,32 @@ export default function MarketingFooter() {
           </div>
         </div>
         
-        <div className="border-t border-gray-800 mt-8 pt-8 text-center">
-          <p className="text-sm text-gray-400">
-            &copy; 2025 Linkio. Advanced link building tools and expert insights.
-          </p>
+        <div className="border-t border-gray-800 mt-8 pt-8">
+          <div className="flex flex-col md:flex-row justify-between items-center gap-4">
+            <p className="text-sm text-gray-400">
+              &copy; 2025 Linkio, Inc. All rights reserved.
+            </p>
+            <div className="flex items-center gap-6 text-sm">
+              <Link 
+                href="/terms" 
+                className="text-gray-400 hover:text-white transition-colors"
+              >
+                Terms of Service
+              </Link>
+              <Link 
+                href="/privacy" 
+                className="text-gray-400 hover:text-white transition-colors"
+              >
+                Privacy Policy
+              </Link>
+              <Link 
+                href="/cookies" 
+                className="text-gray-400 hover:text-white transition-colors"
+              >
+                Cookie Policy
+              </Link>
+            </div>
+          </div>
         </div>
       </div>
     </footer>

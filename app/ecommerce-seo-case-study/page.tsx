@@ -13,7 +13,7 @@ export default function EcommerceSEOCaseStudyPage() {
       publishDate="August 2020"
       author="Ajay Paghdal"
       readTime="15 min read"
-      heroImage="https://www.linkio.com/wp-content/uploads/2020/08/ecommerce-seo-case-study.jpg"
+      heroImage=""
       heroImageAlt="Ecommerce SEO Case Study Growth Chart"
       relatedPosts={[
         {

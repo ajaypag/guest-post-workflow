@@ -45,9 +45,9 @@ export default function LoginPage() {
   };
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-blue-50 to-purple-50">
+    <div className="min-h-screen bg-gradient-to-br from-blue-50 to-purple-50 flex flex-col">
       <LinkioHeader variant="default" />
-      <div className="flex items-center justify-center py-12 px-4">
+      <div className="flex-grow flex items-center justify-center py-12 px-4">
         <div className="max-w-md w-full space-y-8">
         <div className="text-center">
           <div className="mx-auto w-20 h-20 bg-gradient-to-br from-blue-600 to-purple-600 rounded-2xl flex items-center justify-center mb-4 shadow-lg">

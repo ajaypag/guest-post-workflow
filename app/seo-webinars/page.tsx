@@ -13,7 +13,7 @@ export default function SeoWebinarsPage() {
       publishDate="December 15, 2020"
       author="Ajay Paghdal"
       readTime="20 min read"
-      heroImage="https://www.linkio.com/wp-content/uploads/2020/12/seo-webinars-featured-image-1024x536.png"
+      heroImage=""
       heroImageAlt="SEO Webinars Collection"
       relatedPosts={[
         {
@@ -61,11 +61,11 @@ export default function SeoWebinarsPage() {
           </a>
         </h2>
 
-        <img 
-          src="https://www.linkio.com/wp-content/uploads/2020/12/maxresdefault-39.jpg" 
+        {/* <img 
+          src="" // Commented out: src="https://www.linkio.com/wp-content/uploads/2020/12/maxresdefault-39.jpg" 
           alt="How Many Backlinks Do You Need to Rank webinar thumbnail"
           className="w-full rounded-lg shadow-md mb-6"
-        />
+        /> */}
 
         <p className="text-gray-700 mb-4">
           Presented by Ajay Paghdal, CEO at <a href="https://www.linkio.com/" target="_blank" rel="nofollow noopener" className="text-blue-600 hover:underline">Linkio</a>.
@@ -89,11 +89,11 @@ export default function SeoWebinarsPage() {
           </a>
         </h2>
 
-        <img 
-          src="https://www.linkio.com/wp-content/uploads/2020/12/maxresdefault-40.jpg" 
+        {/* <img 
+          src="" // Commented out: src="https://www.linkio.com/wp-content/uploads/2020/12/maxresdefault-40.jpg" 
           alt="Building Peak Performance Website webinar thumbnail"
           className="w-full rounded-lg shadow-md mb-6"
-        />
+        /> */}
 
         <p className="text-gray-700 mb-4">
           Presented by Clwyd Probert, CEO at <a href="https://www.whitehat-seo.co.uk/" target="_blank" rel="nofollow noopener" className="text-blue-600 hover:underline">Whitehat SEO Ltd</a>.
@@ -119,11 +119,11 @@ export default function SeoWebinarsPage() {
           </a>
         </h2>
 
-        <img 
-          src="https://www.linkio.com/wp-content/uploads/2020/12/maxresdefault-41.jpg" 
+        {/* <img 
+          src="" // Commented out: src="https://www.linkio.com/wp-content/uploads/2020/12/maxresdefault-41.jpg" 
           alt="InRank Internal Link Potential webinar thumbnail"
           className="w-full rounded-lg shadow-md mb-6"
-        />
+        /> */}
 
         <p className="text-gray-700 mb-4">
           Presented by Jenny Halasz, Ambassador at <a href="https://www.oncrawl.com/" target="_blank" rel="nofollow noopener" className="text-blue-600 hover:underline">OnCrawl</a>.
@@ -161,11 +161,11 @@ export default function SeoWebinarsPage() {
 
         <h3 className="text-xl font-bold text-gray-900 mb-4">How To Rank at the Top of Google without Backlinks</h3>
 
-        <img 
-          src="https://www.linkio.com/wp-content/uploads/2020/12/maxresdefault-34.jpg" 
+        {/* <img 
+          src="" // Commented out: src="https://www.linkio.com/wp-content/uploads/2020/12/maxresdefault-34.jpg" 
           alt="Rank Without Backlinks webinar thumbnail"
           className="w-full rounded-lg shadow-md mb-6"
-        />
+        /> */}
 
         <p className="text-gray-700 mb-4">
           By Ajay Paghdal of Founder at <a href="https://www.linkio.com/" target="_blank" rel="nofollow noopener" className="text-blue-600 hover:underline">Linkio</a>. Recorded in 2020.
@@ -196,11 +196,11 @@ export default function SeoWebinarsPage() {
 
         <h2 id="seo-mistakes" className="text-2xl font-bold text-gray-900 mb-4">11 SEO Mistakes You're Making Right Now</h2>
 
-        <img 
-          src="https://www.linkio.com/wp-content/uploads/2020/12/maxresdefault-35.jpg" 
+        {/* <img 
+          src="" // Commented out: src="https://www.linkio.com/wp-content/uploads/2020/12/maxresdefault-35.jpg" 
           alt="11 SEO Mistakes webinar thumbnail"
           className="w-full rounded-lg shadow-md mb-6"
-        />
+        /> */}
 
         <p className="text-gray-700 mb-4">
           By Viola Eva of Head of SEO at White Light. Recorded in 2018.
@@ -218,11 +218,11 @@ export default function SeoWebinarsPage() {
 
         <h2 id="seo-consultants" className="text-2xl font-bold text-gray-900 mb-4">Why SEO Consultants Get Fired and Who They Get Replaced With</h2>
 
-        <img 
-          src="https://www.linkio.com/wp-content/uploads/2020/12/maxresdefault-36.jpg" 
+        {/* <img 
+          src="" // Commented out: src="https://www.linkio.com/wp-content/uploads/2020/12/maxresdefault-36.jpg" 
           alt="Why SEO Consultants Get Fired webinar thumbnail"
           className="w-full rounded-lg shadow-md mb-6"
-        />
+        /> */}
 
         <p className="text-gray-700 mb-4">
           By Ajay Paghdal of Head of SEO at Linkio. Recorded in 2019.
@@ -240,11 +240,11 @@ export default function SeoWebinarsPage() {
 
         <h2 id="beginners" className="text-2xl font-bold text-gray-900 mb-4">SEO Tutorial for Beginners</h2>
 
-        <img 
-          src="https://www.linkio.com/wp-content/uploads/2020/12/maxresdefault-42.jpg" 
+        {/* <img 
+          src="" // Commented out: src="https://www.linkio.com/wp-content/uploads/2020/12/maxresdefault-42.jpg" 
           alt="SEO Tutorial for Beginners webinar thumbnail"
           className="w-full rounded-lg shadow-md mb-6"
-        />
+        /> */}
 
         <p className="text-gray-700 mb-4">
           By Ajay Paghdal of Founder at Linkio. Recorded in 2019.
@@ -422,11 +422,11 @@ export default function SeoWebinarsPage() {
 
         <h2 id="anchor-guide" className="text-2xl font-bold text-gray-900 mb-4">Anchor Text SEO Guide</h2>
 
-        <img 
-          src="https://www.linkio.com/wp-content/uploads/2020/12/maxresdefault-38.jpg" 
+        {/* <img 
+          src="" // Commented out: src="https://www.linkio.com/wp-content/uploads/2020/12/maxresdefault-38.jpg" 
           alt="Anchor Text SEO Guide webinar thumbnail"
           className="w-full rounded-lg shadow-md mb-6"
-        />
+        /> */}
 
         <p className="text-gray-700 mb-4">
           By Matt Diggity of Founder at Authority Builders. Recorded in 2020.

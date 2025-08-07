@@ -14,7 +14,7 @@ export default function GoogleAlgorithmUpdatesPage() {
       publishDate="March 22, 2023"
       author="Ajay Paghdal"
       readTime="8 min read"
-      heroImage="https://www.linkio.com/wp-content/uploads/2023/03/google-algorithm-updates-featured-image.png"
+      heroImage=""
       heroImageAlt="Understanding Google's Latest Algorithm Updates"
       relatedPosts={[
         {

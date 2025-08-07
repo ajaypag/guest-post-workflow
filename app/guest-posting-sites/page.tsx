@@ -2,6 +2,7 @@ import { Metadata } from 'next';
 import { db } from '@/lib/db/connection';
 import { websites } from '@/lib/db/websiteSchema';
 import { sql } from 'drizzle-orm';
+import { getMarketingStats, formatSiteCount } from '@/lib/marketing-stats';
 import { 
   Globe, 
   TrendingUp, 
@@ -22,11 +23,17 @@ import Link from 'next/link';
 import LinkioHeader from '@/components/LinkioHeader';
 import MarketingCTA from '@/components/MarketingCTA';
 import MarketingFooter from '@/components/MarketingFooter';
+import NichesDirectory from '@/components/NichesDirectory';
 
-export const metadata: Metadata = {
-  title: 'Guest Posting Sites List - 13,000+ Sites with Pricing | Linkio',
-  description: 'Browse 13,000+ guest posting sites with transparent pricing. See wholesale costs + $79 service fee. Filter by category, DR, traffic, and more.',
-};
+export async function generateMetadata(): Promise<Metadata> {
+  const stats = await getMarketingStats();
+  const siteCount = formatSiteCount(stats.totalSites);
+  
+  return {
+    title: `Guest Posting Sites List - ${siteCount}+ Sites with Pricing | Linkio`,
+    description: `Browse ${siteCount}+ guest posting sites with transparent pricing. See wholesale costs + $79 service fee. Filter by category, DR, traffic, and more.`,
+  };
+}
 
 async function getWebsites() {
   try {
@@ -52,20 +59,26 @@ async function getWebsites() {
       .select({ count: sql<number>`count(*)` })
       .from(websites);
 
-    // Get niches with at least 10 websites (minimum threshold for page creation)
+    // Get ALL niches with at least 10 websites (for full directory)
+    // Use same counting method as individual niche pages for consistency
     const nichesResult = await db.execute(sql`
+      WITH niche_counts AS (
+        SELECT 
+          UNNEST(niche) as niche_name
+        FROM websites
+        WHERE niche IS NOT NULL AND array_length(niche, 1) > 0
+      )
       SELECT 
-        UNNEST(niche) as niche_name,
-        COUNT(*) as website_count
-      FROM websites
-      WHERE niche IS NOT NULL AND array_length(niche, 1) > 0
+        niche_name,
+        COUNT(DISTINCT websites.id) as website_count
+      FROM niche_counts nc
+      JOIN websites ON nc.niche_name = ANY(websites.niche)
       GROUP BY niche_name
-      HAVING COUNT(*) >= 10
+      HAVING COUNT(DISTINCT websites.id) >= 10
       ORDER BY website_count DESC
-      LIMIT 20
     `);
     
-    const topNiches = nichesResult.rows.map((row: any) => ({
+    const allNiches = nichesResult.rows.map((row: any) => ({
       name: row.niche_name,
       count: parseInt(row.website_count)
     }));
@@ -83,13 +96,15 @@ async function getWebsites() {
         hasGuestPost: site.hasGuestPost,
       })),
       totalCount: countResult[0]?.count || 0,
-      niches: topNiches,
+      niches: allNiches,
     };
   } catch (error) {
     console.warn('Could not fetch websites data, database not available during build:', error);
+    // Use same fallback as marketing stats for consistency
+    const fallbackStats = await getMarketingStats();
     return {
       websites: [],
-      totalCount: 13000, // Fallback number for build time
+      totalCount: fallbackStats.totalSites,
       niches: [],
     };
   }
@@ -112,6 +127,7 @@ function getTrafficDisplay(traffic: number | null) {
 
 export default async function GuestPostingSitesPage() {
   const { websites, totalCount, niches } = await getWebsites();
+  const stats = await getMarketingStats();
 
   return (
     <div className="min-h-screen bg-gray-50">
@@ -183,41 +199,13 @@ export default async function GuestPostingSitesPage() {
         </div>
       </section>
 
-      {/* Niches Section - Primary Hub */}
+      {/* Niches Section - Primary Hub with Search and Expandable Directory */}
       <section id="niches" className="py-16 bg-gray-50">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-          <div className="text-center mb-12">
-            <h2 className="text-3xl font-bold text-gray-900 mb-3">
-              Browse by Niche
-            </h2>
-            <p className="text-lg text-gray-600">
-              Find highly-specific guest posting opportunities in your exact niche
-            </p>
-          </div>
-
-          {/* Niche Grid */}
-          <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-6 mb-12">
-            {niches.map(niche => (
-              <Link
-                key={niche.name}
-                href={`/guest-posting-sites/${niche.name.toLowerCase().replace(/[&\s]+/g, '-').replace(/[^a-z0-9-]/g, '').replace(/-+/g, '-').replace(/^-|-$/g, '')}-blogs`}
-                className="group block p-6 bg-white border border-gray-200 rounded-xl hover:border-blue-300 hover:shadow-md transition-all"
-              >
-                <div className="text-center">
-                  <div className="text-3xl font-bold text-gray-900 mb-1">{niche.count}</div>
-                  <div className="font-medium text-gray-900 group-hover:text-blue-600 transition-colors">
-                    {niche.name}
-                  </div>
-                  <div className="text-sm text-gray-500 mt-1">
-                    Guest posting sites
-                  </div>
-                </div>
-              </Link>
-            ))}
-          </div>
+          <NichesDirectory allNiches={niches} />
 
           {/* Additional Tools */}
-          <div className="bg-white rounded-xl border p-8 text-center">
+          <div className="bg-white rounded-xl border p-8 text-center mt-12">
             <h3 className="text-xl font-semibold text-gray-900 mb-3">Need to Find More Sites?</h3>
             <p className="text-gray-600 mb-6">
               Use our search query generator to discover guest posting opportunities beyond our database
@@ -253,7 +241,17 @@ export default async function GuestPostingSitesPage() {
                 Just pay wholesale site cost + our flat service fee.
               </p>
             </div>
-            <table className="w-full">
+            
+            {/* Mobile scroll hint */}
+            <div className="md:hidden px-4 py-2 bg-yellow-50 border-b border-yellow-100">
+              <p className="text-xs text-gray-700 text-center font-medium">
+                👉 Swipe left to see pricing & more →
+              </p>
+            </div>
+            
+            {/* Scrollable wrapper for table */}
+            <div className="overflow-x-auto">
+              <table className="w-full min-w-[900px]">
               <thead className="bg-gray-50 border-b">
                 <tr>
                   <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase">Domain</th>
@@ -318,7 +316,7 @@ export default async function GuestPostingSitesPage() {
                     </td>
                     <td className="px-4 py-3 text-right">
                       <Link
-                        href="/login"
+                        href="/signup"
                         className="text-sm px-3 py-1 bg-blue-600 text-white rounded hover:bg-blue-700 inline-block"
                       >
                         Get Started
@@ -328,6 +326,7 @@ export default async function GuestPostingSitesPage() {
                 ))}
               </tbody>
             </table>
+            </div> {/* End scrollable wrapper */}
             
             {/* Table Footer */}
             <div className="px-4 py-3 border-t bg-gray-50">
@@ -336,7 +335,7 @@ export default async function GuestPostingSitesPage() {
                   Showing 1 to {websites.length} of {totalCount.toLocaleString()} websites
                 </p>
                 <Link
-                  href="/login"
+                  href="/signup"
                   className="text-sm text-blue-600 hover:text-blue-700 font-medium"
                 >
                   Create account to browse all sites →
@@ -593,7 +592,7 @@ export default async function GuestPostingSitesPage() {
           {/* Trust Indicators */}
           <div className="grid grid-cols-3 gap-8 mb-10 max-w-2xl mx-auto">
             <div className="text-center">
-              <div className="text-3xl font-bold text-gray-900 mb-1">13,000+</div>
+              <div className="text-3xl font-bold text-gray-900 mb-1">{formatSiteCount(stats.totalSites)}+</div>
               <div className="text-sm text-gray-500">Verified Sites</div>
             </div>
             <div className="text-center">
@@ -608,7 +607,7 @@ export default async function GuestPostingSitesPage() {
           
           <div className="flex flex-col sm:flex-row gap-4 justify-center">
             <Link
-              href="/login"
+              href="/signup"
               className="inline-flex items-center justify-center gap-2 px-8 py-4 bg-blue-600 text-white font-semibold rounded-lg hover:bg-blue-700 transition-colors text-lg"
             >
               Start Your First Campaign

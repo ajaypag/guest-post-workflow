@@ -14,7 +14,7 @@ export default function FollowUpEmailPage() {
       publishDate="May 20, 2021"
       author="Ajay Paghdal"
       readTime="30 min read"
-      heroImage="https://www.linkio.com/wp-content/uploads/2021/05/follow-up-email-guide-featured-image.png"
+      heroImage=""
       heroImageAlt="How to Follow up on an Email"
       relatedPosts={[
         {

@@ -13,7 +13,7 @@ export default function BrokenLinkBuildingGuidePage() {
       publishDate="February 20, 2024"
       author="Ajay Paghdal"
       readTime="15 min read"
-      heroImage="https://www.linkio.com/wp-content/uploads/2024/02/broken-link-building-guide.jpg"
+      heroImage=""
       heroImageAlt="Broken Link Building Guide"
       relatedPosts={[
         {

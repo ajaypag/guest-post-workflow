@@ -270,7 +270,7 @@ export default function BlogPage() {
       {/* CTA Section */}
       <MarketingCTA 
         title="Ready to Master Link Building?"
-        description="Get access to our complete database of 13,000+ guest posting sites and start building quality backlinks today."
+        description="Get access to our complete database of guest posting sites and start building quality backlinks today."
       />
       
       {/* Footer */}

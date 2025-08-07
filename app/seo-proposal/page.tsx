@@ -14,7 +14,7 @@ export default function SeoProposalPage() {
       publishDate="November 15, 2020"
       author="Ajay Paghdal"
       readTime="18 min read"
-      heroImage="https://www.linkio.com/wp-content/uploads/2020/11/seo-proposals-featured-image-1024x537.png"
+      heroImage=""
       heroImageAlt="How to Make An SEO Proposal"
       relatedPosts={[
         {

@@ -14,7 +14,7 @@ export default function EasyBacklinksPage() {
       publishDate="January 15, 2024"
       author="Ajay Paghdal"
       readTime="11 min read"
-      heroImage="https://www.linkio.com/wp-content/uploads/2024/01/easy-backlinks-featured-image.png"
+      heroImage=""
       heroImageAlt="Easy Backlinks: 7 Simple Ways to Get Them"
       relatedPosts={[
         {
@@ -79,14 +79,14 @@ export default function EasyBacklinksPage() {
           </p>
         </div>
 
-        <Image 
-          src="https://www.linkio.com/wp-content/uploads/2024/01/easy-vs-difficult-backlinks.png" 
+        {/* <Image 
+          src="" // Commented out: src="https://www.linkio.com/wp-content/uploads/2024/01/easy-vs-difficult-backlinks.png" 
           alt="Easy vs Difficult Backlinks Comparison"
           width={800}
           height={400}
           className="w-full rounded-lg shadow-md mb-8"
           loading="lazy"
-        />
+        /> */}
 
         <h2 className="text-2xl font-bold text-gray-900 mb-6">Why is it Important to Get Backlinks?</h2>
 
@@ -402,14 +402,14 @@ export default function EasyBacklinksPage() {
               </div>
             </div>
 
-            <Image 
-              src="https://www.linkio.com/wp-content/uploads/2024/01/infographic-example.png" 
+            {/* <Image 
+              src="" // Commented out: src="https://www.linkio.com/wp-content/uploads/2024/01/infographic-example.png" 
               alt="Example of Link-Worthy Infographic"
               width={800}
               height={600}
               className="w-full rounded-lg shadow-md mb-6"
               loading="lazy"
-            />
+            /> */}
 
             <div className="bg-blue-50 rounded-lg p-4">
               <h5 className="font-bold text-gray-900 mb-2">Tools for Creating Infographics:</h5>

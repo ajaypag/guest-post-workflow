@@ -14,7 +14,7 @@ export default function BestSeoBooksByProsPage() {
       publishDate="May 12, 2024"
       author="Ajay Paghdal"
       readTime="12 min read"
-      heroImage="https://www.linkio.com/wp-content/uploads/2024/05/best-seo-books-featured.png"
+      heroImage=""
       heroImageAlt="Best SEO Books Recommended by Professionals"
       relatedPosts={[
         {
@@ -162,14 +162,14 @@ export default function BestSeoBooksByProsPage() {
           </div>
         </div>
 
-        <Image 
-          src="https://www.linkio.com/wp-content/uploads/2024/05/seo-books-collection.png" 
+        {/* <Image 
+          src="" // Commented out: src="https://www.linkio.com/wp-content/uploads/2024/05/seo-books-collection.png" 
           alt="Collection of top SEO books recommended by professionals"
           width={800}
           height={500}
           className="w-full rounded-lg shadow-md mb-8"
           loading="lazy"
-        />
+        /> */}
 
         <h2 className="text-2xl font-bold text-gray-900 mb-6">Advanced Strategy and Technical SEO</h2>
 
@@ -413,14 +413,14 @@ export default function BestSeoBooksByProsPage() {
           </div>
         </div>
 
-        <Image 
-          src="https://www.linkio.com/wp-content/uploads/2024/05/seo-learning-progression.png" 
+        {/* <Image 
+          src="" // Commented out: src="https://www.linkio.com/wp-content/uploads/2024/05/seo-learning-progression.png" 
           alt="SEO learning progression from beginner to expert"
           width={800}
           height={400}
           className="w-full rounded-lg shadow-md mb-8"
           loading="lazy"
-        />
+        /> */}
 
         <h2 className="text-2xl font-bold text-gray-900 mb-6">Reading Recommendations by Experience Level</h2>
 

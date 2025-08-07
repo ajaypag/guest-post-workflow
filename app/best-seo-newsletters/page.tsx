@@ -14,7 +14,7 @@ export default function BestSeoNewslettersPage() {
       publishDate="September 15, 2023"
       author="Ajay Paghdal"
       readTime="22 min read"
-      heroImage="https://www.linkio.com/wp-content/uploads/2023/09/best-seo-newsletters-featured-image.png"
+      heroImage=""
       heroImageAlt="Best SEO Newsletters"
       relatedPosts={[
         {

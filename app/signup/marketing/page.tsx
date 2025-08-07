@@ -189,7 +189,7 @@ export default function MarketingSignupPage() {
           <div className="mt-6 space-y-2">
             <div className="flex items-center gap-2 text-sm text-gray-700">
               <CheckCircle className="w-4 h-4 text-green-500 flex-shrink-0" />
-              <span>Access 13,000+ verified guest posting sites</span>
+              <span>Access our verified guest posting database</span>
             </div>
             <div className="flex items-center gap-2 text-sm text-gray-700">
               <CheckCircle className="w-4 h-4 text-green-500 flex-shrink-0" />

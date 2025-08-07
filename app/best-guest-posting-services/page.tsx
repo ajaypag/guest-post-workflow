@@ -14,7 +14,7 @@ export default function BestGuestPostingServicesPage() {
       publishDate="January 8, 2024"
       author="Ajay Paghdal"
       readTime="25 min read"
-      heroImage="https://www.linkio.com/wp-content/uploads/2024/01/best-guest-posting-services-featured-image.png"
+      heroImage=""
       heroImageAlt="Best Guest Posting Services"
       relatedPosts={[
         {
