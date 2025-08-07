@@ -194,6 +194,50 @@ export default function OrderDetailPage() {
     }
   };
   
+  const handleEditSubmission = async (submissionId: string, groupId: string, updates: any) => {
+    try {
+      const response = await fetch(`/api/orders/${params.id}/groups/${groupId}/submissions/${submissionId}/edit`, {
+        method: 'PATCH',
+        headers: { 'Content-Type': 'application/json' },
+        credentials: 'include',
+        body: JSON.stringify(updates)
+      });
+      
+      if (!response.ok) {
+        const errorData = await response.json().catch(() => ({ error: 'Unknown error' }));
+        throw new Error(errorData.error || 'Failed to edit submission');
+      }
+      
+      await loadSiteSubmissions();
+      alert('Submission updated successfully');
+      
+    } catch (error: any) {
+      console.error('Error editing submission:', error);
+      alert(error.message || 'Failed to edit submission');
+    }
+  };
+
+  const handleRemoveSubmission = async (submissionId: string, groupId: string) => {
+    try {
+      const response = await fetch(`/api/orders/${params.id}/groups/${groupId}/submissions/${submissionId}/edit`, {
+        method: 'DELETE',
+        credentials: 'include'
+      });
+      
+      if (!response.ok) {
+        const errorData = await response.json().catch(() => ({ error: 'Unknown error' }));
+        throw new Error(errorData.error || 'Failed to remove submission');
+      }
+      
+      await loadSiteSubmissions();
+      alert('Submission removed successfully');
+      
+    } catch (error: any) {
+      console.error('Error removing submission:', error);
+      alert(error.message || 'Failed to remove submission');
+    }
+  };
+
   const loadSiteSubmissions = async () => {
     if (!order?.orderGroups) return;
     
@@ -696,9 +740,11 @@ export default function OrderDetailPage() {
                     canMarkSitesReady: false,
                     canViewInternalTools: false,
                     canViewPricing: false,
-                    canEditDomainAssignments: false
+                    canEditDomainAssignments: true  // Allow editing for all users (API will check ownership)
                   }}
                   workflowStage={order.state || 'site_review'}
+                  onEditSubmission={handleEditSubmission}
+                  onRemoveSubmission={handleRemoveSubmission}
                   onRefresh={loadOrder}
                 />
               ) : (
