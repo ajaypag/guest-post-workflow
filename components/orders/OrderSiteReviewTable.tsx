@@ -789,7 +789,9 @@ export default function OrderSiteReviewTable({
           </thead>
           <tbody className="bg-white divide-y divide-gray-200">
             {orderGroups.map((group) => {
-              const groupSubmissions = siteSubmissions[group.id] || [];
+              const allGroupSubmissions = siteSubmissions[group.id] || [];
+              // Filter out removed submissions
+              const groupSubmissions = allGroupSubmissions.filter(s => s.submissionStatus !== 'removed');
               const isExpanded = expandedGroups.has(group.id);
               
               // Calculate assigned vs unassigned submissions
