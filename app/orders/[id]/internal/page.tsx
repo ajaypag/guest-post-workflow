@@ -503,6 +503,68 @@ export default function InternalOrderManagementPage() {
     }
   };
 
+  const handleEditSubmission = async (submissionId: string, groupId: string, updates: any) => {
+    try {
+      const response = await fetch(`/api/orders/${orderId}/groups/${groupId}/submissions/${submissionId}/edit`, {
+        method: 'PATCH',
+        headers: { 'Content-Type': 'application/json' },
+        credentials: 'include',
+        body: JSON.stringify(updates)
+      });
+      
+      if (!response.ok) {
+        const errorData = await response.json().catch(() => ({ error: 'Unknown error' }));
+        throw new Error(errorData.error || 'Failed to edit submission');
+      }
+      
+      const result = await response.json();
+      
+      // Reload submissions to show the update
+      await loadSiteSubmissions();
+      setMessage({
+        type: 'success',
+        text: result.message || 'Submission updated successfully'
+      });
+      
+    } catch (error: any) {
+      console.error('Error editing submission:', error);
+      setMessage({
+        type: 'error',
+        text: error.message || 'Failed to edit submission'
+      });
+    }
+  };
+  
+  const handleRemoveSubmission = async (submissionId: string, groupId: string) => {
+    try {
+      const response = await fetch(`/api/orders/${orderId}/groups/${groupId}/submissions/${submissionId}/edit`, {
+        method: 'DELETE',
+        credentials: 'include'
+      });
+      
+      if (!response.ok) {
+        const errorData = await response.json().catch(() => ({ error: 'Unknown error' }));
+        throw new Error(errorData.error || 'Failed to remove submission');
+      }
+      
+      const result = await response.json();
+      
+      // Reload submissions to show the update
+      await loadSiteSubmissions();
+      setMessage({
+        type: 'success',
+        text: result.message || 'Submission removed successfully'
+      });
+      
+    } catch (error: any) {
+      console.error('Error removing submission:', error);
+      setMessage({
+        type: 'error',
+        text: error.message || 'Failed to remove submission'
+      });
+    }
+  };
+
   const handleSwitchDomain = async (submissionId: string, groupId: string, targetPrimaryId?: string) => {
     try {
       setAssigningDomain(submissionId);
@@ -1808,6 +1870,8 @@ export default function InternalOrderManagementPage() {
                 workflowStage={workflowStage}
                 onAssignTargetPage={handleAssignTargetPage}
                 onSwitchPool={handleSwitchDomain}
+                onEditSubmission={handleEditSubmission}
+                onRemoveSubmission={handleRemoveSubmission}
                 onRefresh={handleRefresh}
               />
               

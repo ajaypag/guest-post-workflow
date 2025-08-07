@@ -115,6 +115,27 @@ export default function ExternalOrderReviewPage() {
     }
   };
 
+  const handleEditSubmission = async (submissionId: string, groupId: string, updates: any) => {
+    try {
+      const response = await fetch(`/api/orders/${orderId}/groups/${groupId}/submissions/${submissionId}/edit`, {
+        method: 'PATCH',
+        headers: { 'Content-Type': 'application/json' },
+        credentials: 'include',
+        body: JSON.stringify(updates)
+      });
+      
+      if (!response.ok) {
+        const errorData = await response.json().catch(() => ({ error: 'Unknown error' }));
+        throw new Error(errorData.error || 'Failed to edit submission');
+      }
+      
+      await fetchOrder();
+    } catch (error: any) {
+      console.error('Error editing submission:', error);
+      alert(error.message || 'Failed to edit submission');
+    }
+  };
+
   const handleSwitchPool = async (submissionId: string, groupId: string, targetPrimaryId?: string) => {
     try {
       // Use the correct switch endpoint that supports targetPrimaryId
@@ -357,6 +378,7 @@ export default function ExternalOrderReviewPage() {
             workflowStage="site_selection_with_sites"
             onApprove={handleApprove}
             onReject={handleReject}
+            onEditSubmission={handleEditSubmission}
             onSwitchPool={handleSwitchPool}
             onAssignTargetPage={handleAssignTargetPage}
             onRefresh={fetchOrder}
