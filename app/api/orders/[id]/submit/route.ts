@@ -72,20 +72,8 @@ export async function POST(
           if (systemUser) {
             capturedByUserId = systemUser.id;
           } else {
-            // Find ANY user as fallback (there must be at least one user in the system)
-            const anyUser = await tx.query.users.findFirst({
-              orderBy: (users, { asc }) => [asc(users.createdAt)]
-            });
-            
-            if (anyUser) {
-              capturedByUserId = anyUser.id;
-              console.warn('Using fallback user for benchmark creation:', anyUser.email);
-            } else {
-              // This should never happen in a properly set up system
-              console.error('CRITICAL: No users exist in the system. Cannot create benchmark.');
-              // Don't fail the order submission, just skip benchmark
-              throw new Error('No users available for benchmark creation');
-            }
+            // If no admin exists, skip benchmark creation for now
+            throw new Error('No system user available for benchmark creation');
           }
         }
         
