@@ -14,7 +14,7 @@ export default function SeoTutorialPage() {
       publishDate="January 10, 2020"
       author="Ajay Paghdal"
       readTime="25 min read"
-      heroImage="https://www.linkio.com/wp-content/uploads/2020/01/seo-tutorial-guide-featured.png"
+      heroImage=""
       heroImageAlt="Complete SEO Tutorial and Guide"
       relatedPosts={[
         {
@@ -86,14 +86,14 @@ export default function SeoTutorialPage() {
           </p>
         </div>
 
-        <Image 
-          src="https://www.linkio.com/wp-content/uploads/2020/01/what-is-seo-definition.png" 
+        {/* <Image 
+          src="" // Commented out: src="https://www.linkio.com/wp-content/uploads/2020/01/what-is-seo-definition.png" 
           alt="What is SEO definition and explanation"
           width={800}
           height={400}
           className="w-full rounded-lg shadow-md mb-8"
           loading="lazy"
-        />
+        /> */}
 
         <h2 className="text-2xl font-bold text-gray-900 mb-6">The Importance of SEO</h2>
 
@@ -170,14 +170,14 @@ export default function SeoTutorialPage() {
           </div>
         </div>
 
-        <Image 
-          src="https://www.linkio.com/wp-content/uploads/2020/01/what-google-wants-quality-content.png" 
+        {/* <Image 
+          src="" // Commented out: src="https://www.linkio.com/wp-content/uploads/2020/01/what-google-wants-quality-content.png" 
           alt="What Google wants in high-quality content"
           width={800}
           height={500}
           className="w-full rounded-lg shadow-md mb-8"
           loading="lazy"
-        />
+        /> */}
 
         <h2 className="text-2xl font-bold text-gray-900 mb-6">How Google Finds the Most Valuable Content</h2>
 
@@ -341,14 +341,14 @@ export default function SeoTutorialPage() {
           </div>
         </div>
 
-        <Image 
-          src="https://www.linkio.com/wp-content/uploads/2020/01/anchor-text-types-examples.png" 
+        {/* <Image 
+          src="" // Commented out: src="https://www.linkio.com/wp-content/uploads/2020/01/anchor-text-types-examples.png" 
           alt="Different types of anchor text examples"
           width={800}
           height={400}
           className="w-full rounded-lg shadow-md mb-8"
           loading="lazy"
-        />
+        /> */}
 
         <h4 className="text-lg font-bold text-gray-900 mb-4">Content: From Google Bot's Perspective</h4>
 
@@ -442,14 +442,14 @@ export default function SeoTutorialPage() {
           </div>
         </div>
 
-        <Image 
-          src="https://www.linkio.com/wp-content/uploads/2020/01/google-user-metrics-signals.png" 
+        {/* <Image 
+          src="" // Commented out: src="https://www.linkio.com/wp-content/uploads/2020/01/google-user-metrics-signals.png" 
           alt="Google user metrics and engagement signals"
           width={800}
           height={500}
           className="w-full rounded-lg shadow-md mb-8"
           loading="lazy"
-        />
+        /> */}
 
         <h2 className="text-2xl font-bold text-gray-900 mb-6">Differentiating White Hat and Black Hat Tactics</h2>
 
@@ -613,14 +613,14 @@ export default function SeoTutorialPage() {
           </div>
         </div>
 
-        <Image 
-          src="https://www.linkio.com/wp-content/uploads/2020/01/website-speed-optimization-tips.png" 
+        {/* <Image 
+          src="" // Commented out: src="https://www.linkio.com/wp-content/uploads/2020/01/website-speed-optimization-tips.png" 
           alt="Website speed optimization techniques and tools"
           width={800}
           height={500}
           className="w-full rounded-lg shadow-md mb-8"
           loading="lazy"
-        />
+        /> */}
 
         <h3 className="text-xl font-bold text-gray-900 mb-6">Website Design</h3>
 
@@ -792,14 +792,14 @@ export default function SeoTutorialPage() {
           </p>
         </div>
 
-        <Image 
-          src="https://www.linkio.com/wp-content/uploads/2020/01/rankbrain-user-signals.png" 
+        {/* <Image 
+          src="" // Commented out: src="https://www.linkio.com/wp-content/uploads/2020/01/rankbrain-user-signals.png" 
           alt="RankBrain user signals and engagement metrics"
           width={800}
           height={500}
           className="w-full rounded-lg shadow-md mb-8"
           loading="lazy"
-        />
+        /> */}
 
         <h2 className="text-2xl font-bold text-gray-900 mb-6">How to do Off-Page SEO</h2>
 
@@ -890,14 +890,14 @@ export default function SeoTutorialPage() {
           </div>
         </div>
 
-        <Image 
-          src="https://www.linkio.com/wp-content/uploads/2020/01/backlink-quality-factors.png" 
+        {/* <Image 
+          src="" // Commented out: src="https://www.linkio.com/wp-content/uploads/2020/01/backlink-quality-factors.png" 
           alt="Backlink quality factors: authority and relevance"
           width={800}
           height={400}
           className="w-full rounded-lg shadow-md mb-8"
           loading="lazy"
-        />
+        /> */}
 
         <h2 className="text-2xl font-bold text-gray-900 mb-6">Schema Helps Google Understand Your Site</h2>
 
@@ -994,14 +994,14 @@ export default function SeoTutorialPage() {
           </p>
         </div>
 
-        <Image 
-          src="https://www.linkio.com/wp-content/uploads/2020/01/schema-markup-examples.png" 
+        {/* <Image 
+          src="" // Commented out: src="https://www.linkio.com/wp-content/uploads/2020/01/schema-markup-examples.png" 
           alt="Schema markup examples and implementation"
           width={800}
           height={500}
           className="w-full rounded-lg shadow-md mb-8"
           loading="lazy"
-        />
+        /> */}
 
         <h2 className="text-2xl font-bold text-gray-900 mb-6">SEO Quick Tips</h2>
 

@@ -156,13 +156,13 @@ export default function BlogPostTemplate({
           {heroImage && (
             <div className="mb-12">
               <div className="relative aspect-[16/9] rounded-lg overflow-hidden">
-                <Image
+                {/* <Image
                   src={heroImage}
                   alt={heroImageAlt || title}
                   fill
                   className="object-cover"
                   priority
-                />
+                /> */}
               </div>
             </div>
           )}

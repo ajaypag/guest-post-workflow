@@ -54,7 +54,19 @@ const SKIP_PATTERNS = [
   /github\.com.*\.(?:png|jpg|jpeg|gif|svg)/,  // GitHub avatars/images
 ];
 
+// Known broken domains/patterns to always flag
+const KNOWN_BROKEN_PATTERNS = [
+  /linkio\.com\/wp-content/,  // Old WordPress uploads that no longer exist
+  /your-domain\.com/,          // Placeholder domains
+  /example\.com/,              // Example domains
+];
+
 async function checkImageExists(url: string): Promise<boolean> {
+  // Check if it matches known broken patterns first
+  if (KNOWN_BROKEN_PATTERNS.some(pattern => pattern.test(url))) {
+    return false; // Known broken, don't even bother checking
+  }
+
   try {
     // Local file check
     if (url.startsWith('/')) {

@@ -13,7 +13,7 @@ export default function BestCitationBuildingServicesPage() {
       publishDate="August 15, 2022"
       author="Ajay Paghdal"
       readTime="12 min read"
-      heroImage="https://www.linkio.com/wp-content/uploads/2022/08/citation-building-services-1024x536.jpg"
+      heroImage=""
       heroImageAlt="Best Citation Building Services"
       relatedPosts={[
         {
@@ -68,7 +68,7 @@ export default function BestCitationBuildingServicesPage() {
         <div className="space-y-8 mb-12">
           <div className="border-l-4 border-blue-500 pl-6">
             <div className="flex items-center mb-4">
-              <img src="https://www.linkio.com/wp-content/uploads/2020/04/lcm_1586210597.png" alt="Submitshop logo" className="w-24 h-auto mr-4" />
+              {/* <img src="" // Commented out: src="https://www.linkio.com/wp-content/uploads/2020/04/lcm_1586210597.png" alt="Submitshop logo" className="w-24 h-auto mr-4" /> */}
               <h3 className="text-xl font-bold text-gray-900">1. Submitshop</h3>
             </div>
             <p className="text-gray-700">
@@ -78,7 +78,7 @@ export default function BestCitationBuildingServicesPage() {
 
           <div className="border-l-4 border-blue-500 pl-6">
             <div className="flex items-center mb-4">
-              <img src="https://www.linkio.com/wp-content/uploads/2020/04/lcm_1586210007.png" alt="SEOlutions logo" className="w-24 h-auto mr-4" />
+              {/* <img src="" // Commented out: src="https://www.linkio.com/wp-content/uploads/2020/04/lcm_1586210007.png" alt="SEOlutions logo" className="w-24 h-auto mr-4" /> */}
               <h3 className="text-xl font-bold text-gray-900">2. SEOlutions</h3>
             </div>
             <p className="text-gray-700">
@@ -88,7 +88,7 @@ export default function BestCitationBuildingServicesPage() {
 
           <div className="border-l-4 border-blue-500 pl-6">
             <div className="flex items-center mb-4">
-              <img src="https://www.linkio.com/wp-content/uploads/2020/04/lcm_1586212195.png" alt="Local Citation logo" className="w-24 h-auto mr-4" />
+              {/* <img src="" // Commented out: src="https://www.linkio.com/wp-content/uploads/2020/04/lcm_1586212195.png" alt="Local Citation logo" className="w-24 h-auto mr-4" /> */}
               <h3 className="text-xl font-bold text-gray-900">3. Local Citation</h3>
             </div>
             <p className="text-gray-700">
@@ -98,7 +98,7 @@ export default function BestCitationBuildingServicesPage() {
 
           <div className="border-l-4 border-blue-500 pl-6">
             <div className="flex items-center mb-4">
-              <img src="https://www.linkio.com/wp-content/uploads/2020/04/lcm_1586300137.png" alt="MarketersCenter logo" className="w-24 h-auto mr-4" />
+              {/* <img src="" // Commented out: src="https://www.linkio.com/wp-content/uploads/2020/04/lcm_1586300137.png" alt="MarketersCenter logo" className="w-24 h-auto mr-4" /> */}
               <h3 className="text-xl font-bold text-gray-900">4. MarketersCenter</h3>
             </div>
             <p className="text-gray-700">
@@ -108,7 +108,7 @@ export default function BestCitationBuildingServicesPage() {
 
           <div className="border-l-4 border-blue-500 pl-6">
             <div className="flex items-center mb-4">
-              <img src="https://www.linkio.com/wp-content/uploads/2020/04/lcm_1586211015.webp" alt="Greenix Marketing logo" className="w-24 h-auto mr-4" />
+              {/* <img src="" // Commented out: src="https://www.linkio.com/wp-content/uploads/2020/04/lcm_1586211015.webp" alt="Greenix Marketing logo" className="w-24 h-auto mr-4" /> */}
               <h3 className="text-xl font-bold text-gray-900">5. Greenix Marketing</h3>
             </div>
             <p className="text-gray-700">
@@ -118,7 +118,7 @@ export default function BestCitationBuildingServicesPage() {
 
           <div className="border-l-4 border-blue-500 pl-6">
             <div className="flex items-center mb-4">
-              <img src="https://www.linkio.com/wp-content/uploads/2020/04/citation_submission1586299221.png" alt="Triple Option Web Solutions logo" className="w-24 h-auto mr-4" />
+              {/* <img src="" // Commented out: src="https://www.linkio.com/wp-content/uploads/2020/04/citation_submission1586299221.png" alt="Triple Option Web Solutions logo" className="w-24 h-auto mr-4" /> */}
               <h3 className="text-xl font-bold text-gray-900">6. Triple Option Web Solutions</h3>
             </div>
             <p className="text-gray-700">
@@ -128,7 +128,7 @@ export default function BestCitationBuildingServicesPage() {
 
           <div className="border-l-4 border-blue-500 pl-6">
             <div className="flex items-center mb-4">
-              <img src="https://www.linkio.com/wp-content/uploads/2020/04/lcm_1586302893.png" alt="Citation Building Service logo" className="w-24 h-auto mr-4" />
+              {/* <img src="" // Commented out: src="https://www.linkio.com/wp-content/uploads/2020/04/lcm_1586302893.png" alt="Citation Building Service logo" className="w-24 h-auto mr-4" /> */}
               <h3 className="text-xl font-bold text-gray-900">7. Citation Building Service</h3>
             </div>
             <p className="text-gray-700">
@@ -138,7 +138,7 @@ export default function BestCitationBuildingServicesPage() {
 
           <div className="border-l-4 border-blue-500 pl-6">
             <div className="flex items-center mb-4">
-              <img src="https://www.linkio.com/wp-content/uploads/2020/04/rsseo1586737647.png" alt="Tistasoft logo" className="w-24 h-auto mr-4" />
+              {/* <img src="" // Commented out: src="https://www.linkio.com/wp-content/uploads/2020/04/rsseo1586737647.png" alt="Tistasoft logo" className="w-24 h-auto mr-4" /> */}
               <h3 className="text-xl font-bold text-gray-900">8. Tistasoft</h3>
             </div>
             <p className="text-gray-700">
@@ -148,7 +148,7 @@ export default function BestCitationBuildingServicesPage() {
 
           <div className="border-l-4 border-blue-500 pl-6">
             <div className="flex items-center mb-4">
-              <img src="https://www.linkio.com/wp-content/uploads/2020/04/lcm_1586203123.svg" alt="RS Seo Solution logo" className="w-24 h-auto mr-4" />
+              {/* <img src="" // Commented out: src="https://www.linkio.com/wp-content/uploads/2020/04/lcm_1586203123.svg" alt="RS Seo Solution logo" className="w-24 h-auto mr-4" /> */}
               <h3 className="text-xl font-bold text-gray-900">9. RS Seo Solution</h3>
             </div>
             <p className="text-gray-700">
@@ -158,7 +158,7 @@ export default function BestCitationBuildingServicesPage() {
 
           <div className="border-l-4 border-blue-500 pl-6">
             <div className="flex items-center mb-4">
-              <img src="https://www.linkio.com/wp-content/uploads/2020/04/lcm_1586201781.jpg" alt="Bright Local logo" className="w-24 h-auto mr-4" />
+              {/* <img src="" // Commented out: src="https://www.linkio.com/wp-content/uploads/2020/04/lcm_1586201781.jpg" alt="Bright Local logo" className="w-24 h-auto mr-4" /> */}
               <h3 className="text-xl font-bold text-gray-900">10. Bright Local</h3>
             </div>
             <p className="text-gray-700">
@@ -175,27 +175,27 @@ export default function BestCitationBuildingServicesPage() {
 
         <div className="grid grid-cols-2 md:grid-cols-3 gap-6 mb-8">
           <div className="flex items-center">
-            <img src="https://www.linkio.com/wp-content/uploads/2020/04/lcm_1586202261.png" alt="Service logo" className="w-16 h-auto mr-2" />
+            {/* <img src="" // Commented out: src="https://www.linkio.com/wp-content/uploads/2020/04/lcm_1586202261.png" alt="Service logo" className="w-16 h-auto mr-2" /> */}
             <span className="text-sm">Citation Vault</span>
           </div>
           <div className="flex items-center">
-            <img src="https://www.linkio.com/wp-content/uploads/2020/04/lcm_1586202780.png" alt="Service logo" className="w-16 h-auto mr-2" />
+            {/* <img src="" // Commented out: src="https://www.linkio.com/wp-content/uploads/2020/04/lcm_1586202780.png" alt="Service logo" className="w-16 h-auto mr-2" /> */}
             <span className="text-sm">Local SEO Guide</span>
           </div>
           <div className="flex items-center">
-            <img src="https://www.linkio.com/wp-content/uploads/2020/04/lcm_1586203933.png" alt="Service logo" className="w-16 h-auto mr-2" />
+            {/* <img src="" // Commented out: src="https://www.linkio.com/wp-content/uploads/2020/04/lcm_1586203933.png" alt="Service logo" className="w-16 h-auto mr-2" /> */}
             <span className="text-sm">Whitespark</span>
           </div>
           <div className="flex items-center">
-            <img src="https://www.linkio.com/wp-content/uploads/2020/04/lcm_1586204341.png" alt="Service logo" className="w-16 h-auto mr-2" />
+            {/* <img src="" // Commented out: src="https://www.linkio.com/wp-content/uploads/2020/04/lcm_1586204341.png" alt="Service logo" className="w-16 h-auto mr-2" /> */}
             <span className="text-sm">Yext</span>
           </div>
           <div className="flex items-center">
-            <img src="https://www.linkio.com/wp-content/uploads/2020/04/lcm_1586205371.png" alt="Service logo" className="w-16 h-auto mr-2" />
+            {/* <img src="" // Commented out: src="https://www.linkio.com/wp-content/uploads/2020/04/lcm_1586205371.png" alt="Service logo" className="w-16 h-auto mr-2" /> */}
             <span className="text-sm">Moz Local</span>
           </div>
           <div className="flex items-center">
-            <img src="https://www.linkio.com/wp-content/uploads/2020/04/lcm_1586206343.png" alt="Service logo" className="w-16 h-auto mr-2" />
+            {/* <img src="" // Commented out: src="https://www.linkio.com/wp-content/uploads/2020/04/lcm_1586206343.png" alt="Service logo" className="w-16 h-auto mr-2" /> */}
             <span className="text-sm">Synup</span>
           </div>
         </div>
