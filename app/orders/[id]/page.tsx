@@ -368,6 +368,7 @@ export default function OrderDetailPage() {
                     Edit Order
                   </Link>
                 )}
+                {/* Debug: User type: {user?.userType} */}
                 {user?.userType === 'internal' && (
                   <>
                     <ShareOrderButton 
