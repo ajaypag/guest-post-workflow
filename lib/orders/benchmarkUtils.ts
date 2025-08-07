@@ -3,6 +3,7 @@ import { orderBenchmarks, benchmarkComparisons } from '@/lib/db/orderBenchmarkSc
 import { orderGroups } from '@/lib/db/orderGroupSchema';
 import { orderSiteSubmissions } from '@/lib/db/projectOrderAssociationsSchema';
 import { orders } from '@/lib/db/orderSchema';
+import { users } from '@/lib/db/schema';
 import { eq, and } from 'drizzle-orm';
 
 /**
@@ -13,7 +14,20 @@ export async function createOrderBenchmark(
   userId: string,
   reason: 'order_confirmed' | 'order_submitted' | 'manual_update' | 'client_revision' = 'order_confirmed'
 ) {
+  // Validate inputs
+  if (!orderId || !userId) {
+    throw new Error('Order ID and User ID are required for benchmark creation');
+  }
   return await db.transaction(async (tx) => {
+    // Validate user exists before attempting to create benchmark
+    const user = await tx.query.users.findFirst({
+      where: eq(users.id, userId)
+    });
+    
+    if (!user) {
+      throw new Error(`User ${userId} does not exist in users table`);
+    }
+    
     // Mark any existing benchmarks as not latest
     await tx.update(orderBenchmarks)
       .set({ isLatest: false })
@@ -106,9 +120,9 @@ export async function createOrderBenchmark(
       }
     }));
 
-    // Calculate totals
-    const totalRequestedLinks = clientGroups.reduce((sum, g) => sum + g.linkCount, 0);
-    const totalTargetPages = clientGroups.reduce((sum, g) => sum + g.targetPages.length, 0);
+    // Calculate totals with safety checks
+    const totalRequestedLinks = clientGroups.reduce((sum, g) => sum + (g.linkCount || 0), 0);
+    const totalTargetPages = clientGroups.reduce((sum, g) => sum + (g.targetPages?.length || 0), 0);
     
     // Calculate unique domains
     const uniqueDomains = new Set<string>();
