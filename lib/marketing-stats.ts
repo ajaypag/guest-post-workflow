@@ -28,7 +28,7 @@ export async function getMarketingStats(): Promise<MarketingStats> {
 
     return {
       totalSites: totalSites[0]?.count || 13000,
-      totalNiches: nicheCount.rows[0]?.count || 100
+      totalNiches: (nicheCount.rows[0] as any)?.count || 100
     };
   } catch (error) {
     console.warn('Could not fetch marketing stats:', error);
