@@ -43,6 +43,14 @@ interface BenchmarkData {
     niches?: string[];
     estimatedPricing?: any;
     estimatedPricePerLink?: number;
+    estimatorSnapshot?: {
+      sitesAvailable: number;
+      medianPrice: number;
+      averagePrice: number;
+      priceRange: { min: number; max: number };
+      examples: Array<{ domain: string; dr: number; price: number }>;
+      timestamp: string;
+    };
   };
 }
 
@@ -355,18 +363,48 @@ export default function BenchmarkDisplay({
               </div>
             )}
             
-            {/* Price Per Link */}
-            {benchmark.benchmarkData.originalConstraints.estimatedPricePerLink && (
+            {/* Sites Available */}
+            {benchmark.benchmarkData.originalConstraints.estimatorSnapshot?.sitesAvailable && (
               <div className="flex justify-between">
-                <span className="text-gray-600">Price per Link:</span>
+                <span className="text-gray-600">Sites Available:</span>
                 <div className="text-right">
                   <div className="text-gray-500">
-                    Estimated: {formatCurrency(benchmark.benchmarkData.originalConstraints.estimatedPricePerLink)}
+                    When Ordered: {benchmark.benchmarkData.originalConstraints.estimatorSnapshot.sitesAvailable.toLocaleString()}
+                  </div>
+                  <div className="font-medium text-gray-400 italic">
+                    Current market varies
+                  </div>
+                </div>
+              </div>
+            )}
+            
+            {/* Median Site Cost */}
+            {benchmark.benchmarkData.originalConstraints.estimatorSnapshot?.medianPrice && (
+              <div className="flex justify-between">
+                <span className="text-gray-600">Median Site Cost:</span>
+                <div className="text-right">
+                  <div className="text-gray-500">
+                    Expected: {formatCurrency(benchmark.benchmarkData.originalConstraints.estimatorSnapshot.medianPrice)}
                   </div>
                   <div className="font-medium">
                     Current Avg: {benchmark.benchmarkData.totalRequestedLinks > 0 
                       ? formatCurrency(benchmark.benchmarkData.orderTotal / benchmark.benchmarkData.totalRequestedLinks)
                       : 'N/A'}
+                  </div>
+                </div>
+              </div>
+            )}
+            
+            {/* Price Range */}
+            {benchmark.benchmarkData.originalConstraints.estimatorSnapshot?.priceRange && (
+              <div className="flex justify-between">
+                <span className="text-gray-600">Expected Price Range:</span>
+                <div className="text-right">
+                  <div className="text-gray-500">
+                    Market Range: {formatCurrency(benchmark.benchmarkData.originalConstraints.estimatorSnapshot.priceRange.min)} - {formatCurrency(benchmark.benchmarkData.originalConstraints.estimatorSnapshot.priceRange.max)}
+                  </div>
+                  <div className="font-medium text-gray-400 italic">
+                    Actual selection pending
                   </div>
                 </div>
               </div>

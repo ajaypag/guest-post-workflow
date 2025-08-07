@@ -16,7 +16,7 @@ import {
   Building, Package, Plus, X, ChevronDown, ChevronUp, ChevronRight,
   Search, Target, Link as LinkIcon, Type, CheckCircle,
   AlertCircle, Copy, Trash2, User, Globe, ExternalLink,
-  ArrowLeft, Loader2
+  ArrowLeft, Loader2, Clock, Users, CreditCard
 } from 'lucide-react';
 
 // Service fee constant - $79 per link
@@ -584,6 +584,9 @@ export default function EditOrderPage({ params }: { params: Promise<{ id: string
           preferencesCategories: orderPreferences.categories,
           preferencesTypes: orderPreferences.types,
           estimatedPricePerLink: estimatedPricePerLink,
+          estimatedBudgetMin: orderPreferences.estimatedBudgetMin,
+          estimatedBudgetMax: orderPreferences.estimatedBudgetMax,
+          estimatorSnapshot: orderPreferences.estimatorSnapshot,
         }),
         
         // Groups for the new order structure - API expects 'orderGroups'
@@ -1218,12 +1221,35 @@ export default function EditOrderPage({ params }: { params: Promise<{ id: string
                 setEstimatedPricePerLink(estimate.clientMedian);
                 // Update wholesale estimate for new line items
                 setEstimatedWholesalePerLink(estimate.wholesaleMedian);
-                setOrderPreferences(preferences);
+                
+                // Calculate budget range based on total links and price range
+                const totalLinks = lineItems.length || preferences.linkCount || 1;
+                const budgetMin = totalLinks * estimate.clientMin;
+                const budgetMax = totalLinks * estimate.clientMax;
+                
+                // Create estimator snapshot of what user saw
+                const estimatorSnapshot = {
+                  sitesAvailable: estimate.count,
+                  medianPrice: estimate.wholesaleMedian,
+                  averagePrice: estimate.wholesaleAverage,
+                  priceRange: { min: estimate.wholesaleMin, max: estimate.wholesaleMax },
+                  examples: estimate.examples || [],
+                  timestamp: new Date().toISOString()
+                };
+                
+                const enhancedPreferences = {
+                  ...preferences,
+                  estimatedBudgetMin: budgetMin,
+                  estimatedBudgetMax: budgetMax,
+                  estimatorSnapshot: estimatorSnapshot
+                };
+                
+                setOrderPreferences(enhancedPreferences);
                 
                 // Save to local state for persistence
                 sessionStorage.setItem('orderPreferences', JSON.stringify({
                   estimate,
-                  preferences,
+                  preferences: enhancedPreferences,
                   timestamp: new Date().toISOString()
                 }));
                 
@@ -1904,23 +1930,60 @@ export default function EditOrderPage({ params }: { params: Promise<{ id: string
                 {/* What Happens Next */}
                 <div className="bg-blue-50 rounded-lg p-4 mb-6">
                   <h3 className="font-semibold text-blue-900 mb-2">What Happens Next?</h3>
-                  <ul className="text-sm text-blue-800 space-y-1">
-                    {isNewOrder ? (
-                      <>
-                        <li>• Your order will be created as a draft</li>
-                        <li>• You can review and submit when ready</li>
-                        <li>• Our team will begin site selection after submission</li>
-                        <li>• You'll receive email updates on progress</li>
-                      </>
-                    ) : (
-                      <>
-                        <li>• Your order changes will be saved</li>
-                        <li>• {orderStatus === 'draft' ? 'You can submit the order when ready' : 'Our team will be notified of the updates'}</li>
-                        <li>• You can continue to make changes as needed</li>
-                        <li>• Track your order progress from the order details page</li>
-                      </>
-                    )}
-                  </ul>
+                  <div className="space-y-3">
+                    <h4 className="font-medium text-gray-900 text-sm">What happens next:</h4>
+                    <div className="space-y-2 text-sm text-gray-700">
+                      {isNewOrder ? (
+                        <>
+                          <div className="flex items-start gap-3">
+                            <CheckCircle className="h-4 w-4 text-green-500 mt-0.5" />
+                            <div>
+                              <div className="font-medium">Your order will be confirmed</div>
+                              <div className="text-xs text-gray-500">Order details locked and sent to our team</div>
+                            </div>
+                          </div>
+                          <div className="flex items-start gap-3">
+                            <Clock className="h-4 w-4 text-blue-500 mt-0.5" />
+                            <div>
+                              <div className="font-medium">We'll find perfect sites (24-48 hours)</div>
+                              <div className="text-xs text-gray-500">Our team analyzes your requirements and identifies high-quality sites</div>
+                            </div>
+                          </div>
+                          <div className="flex items-start gap-3">
+                            <Users className="h-4 w-4 text-purple-500 mt-0.5" />
+                            <div>
+                              <div className="font-medium">Review & approve recommended sites</div>
+                              <div className="text-xs text-gray-500">You'll receive an email when sites are ready for your review</div>
+                            </div>
+                          </div>
+                          <div className="flex items-start gap-3">
+                            <CreditCard className="h-4 w-4 text-orange-500 mt-0.5" />
+                            <div>
+                              <div className="font-medium">Pay invoice to start content creation</div>
+                              <div className="text-xs text-gray-500">Final pricing based on approved sites</div>
+                            </div>
+                          </div>
+                        </>
+                      ) : (
+                        <>
+                          <div className="flex items-start gap-3">
+                            <CheckCircle className="h-4 w-4 text-green-500 mt-0.5" />
+                            <div>
+                              <div className="font-medium">Your order changes will be saved</div>
+                              <div className="text-xs text-gray-500">Updates will be applied to your existing order</div>
+                            </div>
+                          </div>
+                          <div className="flex items-start gap-3">
+                            <AlertCircle className="h-4 w-4 text-blue-500 mt-0.5" />
+                            <div>
+                              <div className="font-medium">{orderStatus === 'draft' ? 'You can submit the order when ready' : 'Our team will be notified of the updates'}</div>
+                              <div className="text-xs text-gray-500">Track your order progress from the order details page</div>
+                            </div>
+                          </div>
+                        </>
+                      )}
+                    </div>
+                  </div>
                 </div>
                 
                 {/* Actions */}

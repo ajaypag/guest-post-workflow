@@ -24,6 +24,77 @@ import {
 // Service fee constant - $79 per link for SEO content package
 const SERVICE_FEE_CENTS = 7900;
 
+// User-friendly status messaging
+const getStatusMessage = (status: string, state?: string) => {
+  if (status === 'confirmed') {
+    if (state === 'analyzing' || state === 'finding_sites') {
+      return {
+        title: "🔍 Finding Perfect Sites for You",
+        description: "Our team is analyzing your requirements to identify high-quality sites that match your criteria.",
+        timeline: "Typically takes 24-48 hours",
+        nextStep: "You'll receive an email when sites are ready for review",
+        userAction: "none",
+        actionText: "No action needed - we're working on it!"
+      };
+    } else if (state === 'sites_ready' || state === 'site_review' || state === 'client_reviewing') {
+      return {
+        title: "📋 Sites Ready for Your Review",
+        description: "We've found sites that match your criteria. Review and approve the ones you'd like to use.",
+        timeline: "Please review within 5 business days",
+        nextStep: "Approve sites to receive your final invoice",
+        userAction: "required",
+        actionText: "Your review is needed"
+      };
+    } else if (state === 'payment_pending') {
+      return {
+        title: "💳 Invoice Ready for Payment",
+        description: "Your sites have been approved and your invoice is ready. Pay to start content creation.",
+        timeline: "Content creation begins after payment",
+        nextStep: "Our team will create and publish your content",
+        userAction: "required",
+        actionText: "Payment required"
+      };
+    }
+  } else if (status === 'paid' || status === 'in_progress') {
+    return {
+      title: "✍️ Creating Your Content",
+      description: "Payment received! Our team is now creating high-quality guest posts and getting them published.",
+      timeline: "Content creation and publishing takes 2-4 weeks",
+      nextStep: "You'll receive links as they are published",
+      userAction: "none",
+      actionText: "Content creation in progress"
+    };
+  } else if (status === 'completed') {
+    return {
+      title: "🎉 Order Complete!",
+      description: "All your guest posts have been successfully created and published.",
+      timeline: "Complete",
+      nextStep: "Review your published links below",
+      userAction: "none",
+      actionText: "All done!"
+    };
+  } else if (status === 'draft') {
+    return {
+      title: "📝 Draft Order",
+      description: "Your order is still being configured and hasn't been submitted yet.",
+      timeline: "No timeline - still in draft",
+      nextStep: "Complete your order configuration and submit",
+      userAction: "required",
+      actionText: "Finish configuring your order"
+    };
+  }
+  
+  // Fallback
+  return {
+    title: `Order ${status}`,
+    description: "Order is being processed",
+    timeline: "Timeline varies by status",
+    nextStep: "Check back later for updates",
+    userAction: "none",
+    actionText: "Processing"
+  };
+};
+
 interface LineItem {
   id: string;
   orderId: string;
@@ -642,13 +713,13 @@ export default function OrderDetailPage() {
                         <div className="space-y-2">
                           <p className="text-xs text-gray-500 mb-1">View Articles:</p>
                           {lineItems.filter(item => item.workflowId).map((item, idx) => (
-                            <Link
+                            <div
                               key={idx}
-                              href={`/workflows/${item.workflowId}`}
-                              className="block w-full px-3 py-2 bg-green-600 text-white text-sm rounded-md hover:bg-green-700 text-center truncate"
+                              className="block w-full px-3 py-2 bg-green-100 text-green-800 text-sm rounded-md text-center truncate border border-green-200"
                             >
-                              {item.clientName} - {item.targetPageUrl || 'Article'}
-                            </Link>
+                              <div className="font-medium">{item.clientName} - {item.targetPageUrl || 'Article'}</div>
+                              <div className="text-xs text-green-600 mt-1">Article Completed</div>
+                            </div>
                           ))}
                         </div>
                       )}

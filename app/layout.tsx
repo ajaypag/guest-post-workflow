@@ -2,6 +2,7 @@ import '../polyfills/randomUUID';   // load UUID polyfill before anything else
 import type { Metadata } from "next";
 import "./globals.css";
 import DebugLoader from "@/components/DebugLoader";
+import { NotificationProvider } from "@/lib/contexts/NotificationContext";
 
 export const metadata: Metadata = {
   metadataBase: new URL('https://linkio.com'),
@@ -67,8 +68,10 @@ export default function RootLayout({
   return (
     <html lang="en">
       <body className="min-h-screen bg-gray-50">
-        {children}
-        <DebugLoader />
+        <NotificationProvider>
+          {children}
+          <DebugLoader />
+        </NotificationProvider>
       </body>
     </html>
   );
