@@ -33,6 +33,17 @@ interface BenchmarkData {
   totalClients: number;
   totalTargetPages: number;
   totalUniqueDomains: number;
+  originalConstraints?: {
+    budgetRange: number[];
+    drRange: number[];
+    minTraffic?: number;
+    estimatedLinks?: number;
+    categories?: string[];
+    types?: string[];
+    niches?: string[];
+    estimatedPricing?: any;
+    estimatedPricePerLink?: number;
+  };
 }
 
 interface ComparisonData {
@@ -270,6 +281,113 @@ export default function BenchmarkDisplay({
           Captured on {new Date(benchmark.capturedAt).toLocaleDateString()} - {benchmark.captureReason.replace(/_/g, ' ')}
         </div>
       </div>
+
+      {/* Original Constraints vs Current Selection */}
+      {benchmark.benchmarkData.originalConstraints && (
+        <div className="bg-white border rounded-lg p-4">
+          <h4 className="font-semibold mb-3 flex items-center gap-2">
+            <Target className="h-4 w-4" />
+            Original Request vs Current Selection
+          </h4>
+          
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-4 text-sm">
+            {/* Budget Comparison */}
+            {benchmark.benchmarkData.originalConstraints.budgetRange.length > 0 && (
+              <div className="flex justify-between">
+                <span className="text-gray-600">Budget:</span>
+                <div className="text-right">
+                  <div className="text-gray-500">
+                    Requested: {benchmark.benchmarkData.originalConstraints.budgetRange.length === 2 
+                      ? `${formatCurrency(benchmark.benchmarkData.originalConstraints.budgetRange[0])} - ${formatCurrency(benchmark.benchmarkData.originalConstraints.budgetRange[1])}`
+                      : formatCurrency(benchmark.benchmarkData.originalConstraints.budgetRange[0])}
+                  </div>
+                  <div className="font-medium">
+                    Current: {formatCurrency(benchmark.benchmarkData.orderTotal)}
+                  </div>
+                </div>
+              </div>
+            )}
+            
+            {/* Links Comparison */}
+            {benchmark.benchmarkData.originalConstraints.estimatedLinks && (
+              <div className="flex justify-between">
+                <span className="text-gray-600">Links:</span>
+                <div className="text-right">
+                  <div className="text-gray-500">
+                    Requested: {benchmark.benchmarkData.originalConstraints.estimatedLinks}
+                  </div>
+                  <div className="font-medium">
+                    Current: {benchmark.benchmarkData.totalRequestedLinks}
+                  </div>
+                </div>
+              </div>
+            )}
+            
+            {/* DR Range */}
+            {benchmark.benchmarkData.originalConstraints.drRange.length > 0 && (
+              <div className="flex justify-between">
+                <span className="text-gray-600">Domain Rating:</span>
+                <div className="text-right">
+                  <div className="text-gray-500">
+                    Requested: {benchmark.benchmarkData.originalConstraints.drRange.length === 2
+                      ? `${benchmark.benchmarkData.originalConstraints.drRange[0]} - ${benchmark.benchmarkData.originalConstraints.drRange[1]}`
+                      : `${benchmark.benchmarkData.originalConstraints.drRange[0]}+`}
+                  </div>
+                  <div className="font-medium text-gray-400 italic">
+                    Selection pending
+                  </div>
+                </div>
+              </div>
+            )}
+            
+            {/* Traffic */}
+            {benchmark.benchmarkData.originalConstraints.minTraffic && (
+              <div className="flex justify-between">
+                <span className="text-gray-600">Min Traffic:</span>
+                <div className="text-right">
+                  <div className="text-gray-500">
+                    Requested: {benchmark.benchmarkData.originalConstraints.minTraffic.toLocaleString()}+
+                  </div>
+                  <div className="font-medium text-gray-400 italic">
+                    Selection pending
+                  </div>
+                </div>
+              </div>
+            )}
+            
+            {/* Price Per Link */}
+            {benchmark.benchmarkData.originalConstraints.estimatedPricePerLink && (
+              <div className="flex justify-between">
+                <span className="text-gray-600">Price per Link:</span>
+                <div className="text-right">
+                  <div className="text-gray-500">
+                    Estimated: {formatCurrency(benchmark.benchmarkData.originalConstraints.estimatedPricePerLink)}
+                  </div>
+                  <div className="font-medium">
+                    Current Avg: {benchmark.benchmarkData.totalRequestedLinks > 0 
+                      ? formatCurrency(benchmark.benchmarkData.orderTotal / benchmark.benchmarkData.totalRequestedLinks)
+                      : 'N/A'}
+                  </div>
+                </div>
+              </div>
+            )}
+            
+            {/* Categories */}
+            {benchmark.benchmarkData.originalConstraints.categories && benchmark.benchmarkData.originalConstraints.categories.length > 0 && (
+              <div className="md:col-span-2">
+                <div className="flex justify-between items-start">
+                  <span className="text-gray-600">Categories:</span>
+                  <div className="text-right max-w-xs">
+                    <div className="text-gray-500 text-xs">
+                      {benchmark.benchmarkData.originalConstraints.categories.join(', ')}
+                    </div>
+                  </div>
+                </div>
+              </div>
+            )}
+          </div>
+        </div>
+      )}
 
       {/* Comparison Section */}
       {comparison && (

@@ -128,6 +128,19 @@ export async function createOrderBenchmark(
       totalClients: groups.length,
       totalTargetPages,
       totalUniqueDomains: uniqueDomains.size,
+      
+      // Original constraints from order creation
+      originalConstraints: {
+        budgetRange: [order.estimatedBudgetMin, order.estimatedBudgetMax].filter(x => x != null),
+        drRange: [order.preferencesDrMin, order.preferencesDrMax].filter(x => x != null),
+        minTraffic: order.preferencesTrafficMin,
+        estimatedLinks: order.estimatedLinksCount,
+        categories: order.preferencesCategories || [],
+        types: order.preferencesTypes || [],
+        niches: order.preferencesNiches || [],
+        estimatedPricing: order.estimatorSnapshot,
+        estimatedPricePerLink: order.estimatedPricePerLink
+      }
     };
 
     // Get the current version number
