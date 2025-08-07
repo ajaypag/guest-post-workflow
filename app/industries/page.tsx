@@ -17,14 +17,14 @@ export default function IndustriesPage() {
       available: true
     },
     {
-      id: 'agency',
-      name: 'Marketing Agencies',
+      id: 'b2b-services',
+      name: 'B2B Services',
       icon: Users,
       color: 'purple',
-      description: 'White-label link building solutions with sophisticated client reporting',
-      features: ['White-Label Dashboard', 'Multi-Client Management', 'Agency-Specific Workflows'],
-      href: '/agency-link-building',
-      available: false
+      description: 'Strategic modifier coverage for complete market domination',
+      features: ['Modifier Strategy', '50-100 Term Coverage', 'AI Citation Engineering'],
+      href: '/b2b-services-link-building',
+      available: true
     },
     {
       id: 'local',
