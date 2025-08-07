@@ -253,7 +253,17 @@ export default async function GuestPostingSitesPage() {
                 Just pay wholesale site cost + our flat service fee.
               </p>
             </div>
-            <table className="w-full">
+            
+            {/* Mobile scroll hint */}
+            <div className="md:hidden px-4 py-2 bg-yellow-50 border-b border-yellow-100">
+              <p className="text-xs text-gray-700 text-center font-medium">
+                👉 Swipe left to see pricing & more →
+              </p>
+            </div>
+            
+            {/* Scrollable wrapper for table */}
+            <div className="overflow-x-auto">
+              <table className="w-full min-w-[900px]">
               <thead className="bg-gray-50 border-b">
                 <tr>
                   <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase">Domain</th>
@@ -328,6 +338,7 @@ export default async function GuestPostingSitesPage() {
                 ))}
               </tbody>
             </table>
+            </div> {/* End scrollable wrapper */}
             
             {/* Table Footer */}
             <div className="px-4 py-3 border-t bg-gray-50">
