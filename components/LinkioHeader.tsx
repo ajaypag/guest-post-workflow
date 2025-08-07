@@ -129,19 +129,27 @@ export default function LinkioHeader({
             )}
           </div>
 
-          {/* Mobile menu button - only show for default variant with multiple items */}
+          {/* Mobile section for default variant */}
           {variant === 'default' && (
-            <button
-              onClick={toggleMobileMenu}
-              className="md:hidden p-2 rounded-lg text-gray-600 hover:text-gray-900 hover:bg-gray-100 transition-colors"
-              aria-label="Toggle navigation menu"
-            >
-              {isMobileMenuOpen ? (
-                <X className="w-6 h-6" />
-              ) : (
-                <Menu className="w-6 h-6" />
-              )}
-            </button>
+            <div className="md:hidden flex items-center gap-3">
+              <Link 
+                href="/signup"
+                className="px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 text-sm font-medium transition-colors"
+              >
+                Get Started
+              </Link>
+              <button
+                onClick={toggleMobileMenu}
+                className="p-2 rounded-lg text-gray-600 hover:text-gray-900 hover:bg-gray-100 transition-colors"
+                aria-label="Toggle navigation menu"
+              >
+                {isMobileMenuOpen ? (
+                  <X className="w-6 h-6" />
+                ) : (
+                  <Menu className="w-6 h-6" />
+                )}
+              </button>
+            </div>
           )}
 
           {/* Mobile CTA for blog/tool variants */}
@@ -187,7 +195,7 @@ export default function LinkioHeader({
               </Link>
             ))}
             
-            <div className="pt-4 border-t border-gray-100 space-y-3">
+            <div className="pt-4 border-t border-gray-100">
               <Link
                 href="https://postflow.outreachlabs.net/login"
                 target="_blank"
@@ -196,14 +204,6 @@ export default function LinkioHeader({
                 className="block text-gray-600 hover:text-gray-900 py-2 transition-colors"
               >
                 Sign In
-              </Link>
-              <Link
-                href="/signup"
-                onClick={closeMobileMenu}
-                className="flex items-center justify-center gap-2 w-full px-4 py-3 bg-blue-600 text-white rounded-lg hover:bg-blue-700 font-medium transition-colors"
-              >
-                Get Started
-                <ArrowRight className="w-4 h-4" />
               </Link>
             </div>
           </div>
