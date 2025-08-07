@@ -789,7 +789,9 @@ export default function OrderSiteReviewTable({
           </thead>
           <tbody className="bg-white divide-y divide-gray-200">
             {orderGroups.map((group) => {
-              const groupSubmissions = siteSubmissions[group.id] || [];
+              const allSubmissions = siteSubmissions[group.id] || [];
+              // Filter out any legacy soft-deleted submissions (from before we switched to hard delete)
+              const groupSubmissions = allSubmissions.filter(s => s.submissionStatus !== 'removed');
               const isExpanded = expandedGroups.has(group.id);
               
               // Calculate assigned vs unassigned submissions

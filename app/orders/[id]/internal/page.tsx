@@ -272,12 +272,16 @@ export default function InternalOrderManagementPage() {
     if (!order?.orderGroups) return;
     
     setLoadingSubmissions(true);
+    // Clear existing submissions to force re-render
+    setSiteSubmissions({});
+    
     try {
       const submissionsByGroup: Record<string, SiteSubmission[]> = {};
       
       for (const group of order.orderGroups) {
         try {
-          const response = await fetch(`/api/orders/${order.id}/groups/${group.id}/submissions`);
+          // Add cache-busting query param to force fresh data
+          const response = await fetch(`/api/orders/${order.id}/groups/${group.id}/submissions?t=${Date.now()}`);
           if (response.ok) {
             const data = await response.json();
             submissionsByGroup[group.id] = data.submissions || [];
@@ -549,7 +553,22 @@ export default function InternalOrderManagementPage() {
       
       const result = await response.json();
       
-      // Reload submissions to show the update
+      // Trigger automatic rebalance after deletion
+      try {
+        const rebalanceResponse = await fetch(`/api/orders/${orderId}/rebalance-pools`, {
+          method: 'POST',
+          credentials: 'include'
+        });
+        
+        if (!rebalanceResponse.ok) {
+          console.warn('Failed to rebalance pools after deletion');
+        }
+      } catch (rebalanceError) {
+        console.warn('Error rebalancing pools:', rebalanceError);
+      }
+      
+      // Reload everything to show the updated state
+      await loadOrder();
       await loadSiteSubmissions();
       setMessage({
         type: 'success',
