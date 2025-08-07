@@ -789,9 +789,7 @@ export default function OrderSiteReviewTable({
           </thead>
           <tbody className="bg-white divide-y divide-gray-200">
             {orderGroups.map((group) => {
-              const allGroupSubmissions = siteSubmissions[group.id] || [];
-              // Filter out removed submissions
-              const groupSubmissions = allGroupSubmissions.filter(s => s.submissionStatus !== 'removed');
+              const groupSubmissions = siteSubmissions[group.id] || [];
               const isExpanded = expandedGroups.has(group.id);
               
               // Calculate assigned vs unassigned submissions
@@ -1136,7 +1134,6 @@ export default function OrderSiteReviewTable({
                                                           onClick={(e) => {
                                                             e.preventDefault();
                                                             e.stopPropagation();
-                                                            console.log('Edit button clicked for:', submission.id);
                                                             setEditingSubmission({
                                                               id: submission.id,
                                                               groupId: group.id,

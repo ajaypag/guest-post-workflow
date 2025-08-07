@@ -201,10 +201,6 @@ export async function DELETE(
       return NextResponse.json({ error: 'Only internal users can remove submissions' }, { status: 403 });
     }
 
-    // Get confirmation flag from query params
-    const { searchParams } = new URL(request.url);
-    const hardDelete = searchParams.get('hard') === 'true';
-
     const result = await db.transaction(async (tx) => {
       // Verify submission exists
       const submission = await tx.query.orderSiteSubmissions.findFirst({
@@ -218,41 +214,16 @@ export async function DELETE(
         throw new Error('Submission not found');
       }
 
-      if (hardDelete) {
-        // Actually delete the record (use with caution)
-        await tx.delete(orderSiteSubmissions)
-          .where(eq(orderSiteSubmissions.id, submissionId));
-        
-        return { action: 'deleted' };
-      } else {
-        // Soft delete - mark as removed
-        const [updatedSubmission] = await tx
-          .update(orderSiteSubmissions)
-          .set({
-            submissionStatus: 'removed',
-            metadata: {
-              ...submission.metadata,
-              removedAt: new Date().toISOString(),
-              removedBy: session.userId,
-              previousStatus: submission.submissionStatus
-            },
-            updatedAt: new Date()
-          })
-          .where(eq(orderSiteSubmissions.id, submissionId))
-          .returning();
-        
-        return { 
-          action: 'removed',
-          submission: updatedSubmission 
-        };
-      }
+      // Just hard delete for internal users - no soft delete
+      await tx.delete(orderSiteSubmissions)
+        .where(eq(orderSiteSubmissions.id, submissionId));
+      
+      return { action: 'deleted' };
     });
 
     return NextResponse.json({
       success: true,
-      message: result.action === 'deleted' 
-        ? 'Submission permanently deleted' 
-        : 'Submission removed (can be restored)',
+      message: 'Submission deleted successfully',
       ...result
     });
 
