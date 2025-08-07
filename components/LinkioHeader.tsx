@@ -83,6 +83,12 @@ export default function LinkioHeader({
             {variant === 'default' && (
               <>
                 <Link 
+                  href="/how-it-works" 
+                  className="text-gray-600 hover:text-gray-900 text-sm font-medium"
+                >
+                  How It Works
+                </Link>
+                <Link 
                   href="/guest-posting-sites" 
                   className="text-gray-600 hover:text-gray-900 text-sm font-medium"
                 >
