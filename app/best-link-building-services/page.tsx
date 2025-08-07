@@ -1469,10 +1469,539 @@ export default function BestLinkBuildingServicesPage() {
             </div>
           </div>
 
+          {/* 26. Digital Lead */}
+          <div className="mb-12 bg-gray-50 rounded-lg p-6">
+            <div className="flex items-center gap-3 mb-4">
+              <div className="w-10 h-10 bg-gray-600 rounded-full flex items-center justify-center text-white font-bold">26</div>
+              <h3 className="text-2xl font-bold text-gray-900">Digital Lead</h3>
+            </div>
+
+            <div className="space-y-4">
+              <p className="text-gray-700">
+                Our M.O. is simple: Pair custom content, with a diverse profile of niche specific link opportunities, for top rankings in search engines.
+                Our results speak for themselves:
+                Prosperous clients with endless first page search results
+                Experts at organically grown white hat link building
+                quality content connecting companies to consumers
+                The strength of our system stems from an authentically earned network. Thousands of like minded site masters who understand that a robust backlink profile is the key to unlocking lasting success online.
+              </p>
+            </div>
+          </div>
+
+          {/* 27. Desire Marketing */}
+          <div className="mb-12 bg-gray-50 rounded-lg p-6">
+            <div className="flex items-center gap-3 mb-4">
+              <div className="w-10 h-10 bg-gray-600 rounded-full flex items-center justify-center text-white font-bold">27</div>
+              <h3 className="text-2xl font-bold text-gray-900">Desire Marketing</h3>
+            </div>
+
+            <div className="space-y-4">
+              <div>
+                <h4 className="font-semibold text-gray-900 mb-2">Desire Marketing Review:</h4>
+                <p className="text-gray-700 mb-2">
+                  Desire Marketing is an affordable link building company that offers customized and targeted services.
+                </p>
+                <p className="text-gray-700 mb-2">
+                  With over 5 years of experience, they've created a large catalog of 9K blogs in almost every niche to gain links from. Whenever their clients need links from blogs that aren't in their database, they do outreach based on those requirements.
+                </p>
+                <p className="text-gray-700">
+                  Their primary goal is to develop a brand-specific strategy to build contextually relevant links for each website. Such links send signals of authority to Google, Bing, and other search engines to rank them higher.
+                </p>
+              </div>
+
+              <div>
+                <h4 className="font-semibold text-gray-900 mb-2">Desire Marketing Link Building Tactics:</h4>
+                <p className="text-gray-700 mb-2">
+                  Desire Marketing specialists use three ways to build links – guest posting, blogger outreach, and niche edits.
+                </p>
+                <p className="text-gray-700 mb-2">
+                  To do guest posting, they interact with influential bloggers and contribute high-quality content with clients' links to their blogs. Or they can order blog owners to write an article themselves. That way, the link will appear on behalf of the site admin rather than a guest writer.
+                </p>
+                <p className="text-gray-700">
+                  The tactic of niche edits is less time-consuming, as there's no need to write an entire article for the sake of a single backlink. Instead, outreach specialists ask bloggers to insert their client's link into an already published post.
+                </p>
+              </div>
+
+              <div>
+                <h4 className="font-semibold text-gray-900 mb-2">How to Order from Desire Marketing:</h4>
+                <p className="text-gray-700">
+                  To order Desire Marketing services, you can contact their team by email (support@desire.marketing) or mobile / WhatsApp.
+                </p>
+              </div>
+
+              <div>
+                <h4 className="font-semibold text-gray-900 mb-2">Desire Marketing Pricing Policy:</h4>
+                <p className="text-gray-700 mb-2">
+                  Desire Marketing doesn't have a one-for-all price. Since every case is unique, they customize their pricing packages to the budget and individual needs of each client. They do an SEO audit of their client's website and provide a detailed estimate of how many links they'll need and how much that will cost.
+                </p>
+                <p className="text-gray-700">
+                  Note that if you are an agency, they'll also let you resell links to your clients.
+                </p>
+              </div>
+
+              <div>
+                <h4 className="font-semibold text-gray-900 mb-2">Desire Marketing Response Speed:</h4>
+                <p className="text-gray-700">
+                  We reached out to their team on Friday morning and received a reply on the same day in a few hours.
+                </p>
+              </div>
+
+              <div>
+                <h4 className="font-semibold text-gray-900 mb-2">Does Desire Marketing Do Real Blogger Outreach?</h4>
+                <p className="text-gray-700">
+                  Yes, their team members don't use any black-hat tactics like automated link building. They reach out to each blogger individually by email to get them to insert their clients' links manually.
+                </p>
+              </div>
+
+              <div>
+                <h4 className="font-semibold text-gray-900 mb-2">Desire Marketing Own SEO:</h4>
+                <p className="text-gray-700">
+                  According to Ahrefs estimates, the domain rating (DR) of Desire Marketing is 52 at the moment.
+                </p>
+              </div>
+            </div>
+          </div>
+
+          {/* 28. Digital Current */}
+          <div className="mb-12 bg-gray-50 rounded-lg p-6">
+            <div className="flex items-center gap-3 mb-4">
+              <div className="w-10 h-10 bg-gray-600 rounded-full flex items-center justify-center text-white font-bold">28</div>
+              <h3 className="text-2xl font-bold text-gray-900">Digital Current</h3>
+            </div>
+
+            <div className="space-y-4">
+              <div>
+                <h4 className="font-semibold text-gray-900 mb-2">Digital Current Review:</h4>
+                <p className="text-gray-700 mb-2">
+                  Digital Current is a leader in building domain authority, with the war stories to prove it.
+                </p>
+                <p className="text-gray-700 mb-2">
+                  They've been doing this for a while now (and boy do they have some stories from those early years!). But what does this mean for you? You'll get top-tier strategies focused on collaboration and quality that increase rankings over the long term. You'll benefit from Digital Current's industry expertise in verticals like finance, health, technology, education, retail, e-commerce, professional services, hospitality, SaaS, and more. And, they're completely transparent, keeping you up-to-date on your progress, every step of the way.
+                </p>
+                <p className="text-gray-700">
+                  What do you get when you build links with Digital Current?
+                  Domain authority strategy development, backlink auditing & monitoring, link acquisition & outreach, preemptive removal, cleanup & disavow, content distribution & promotion, penalty removal, and agency white-labeling services.
+                </p>
+              </div>
+
+              <div>
+                <h4 className="font-semibold text-gray-900 mb-2">Digital Current Link Building Tactics:</h4>
+                <p className="text-gray-700">
+                  Digital Current don't just find any old site to provide a link. Through tactics like content marketing, influencer engagement, publisher outreach, link-earning scholarship programs, graphic creation and promotion, real guest posting, and more, they identify ways to support your overall content and SEO strategies. This leads to a larger audience of engaged prospects.
+                </p>
+              </div>
+
+              <div>
+                <h4 className="font-semibold text-gray-900 mb-2">How to Order from Digital Current:</h4>
+                <p className="text-gray-700">
+                  Before ordering, you will have to discuss your plans and budget during a consultation, as the team treats each project uniquely.
+                </p>
+              </div>
+
+              <div>
+                <h4 className="font-semibold text-gray-900 mb-2">Digital Current Pricing Policy:</h4>
+                <p className="text-gray-700">
+                  The price of Digital Current's services depends on your website and budget, and while some projects only require a thousand dollars monthly to maximize ROI, others need tens of thousands to do it right.
+                </p>
+              </div>
+
+              <div>
+                <h4 className="font-semibold text-gray-900 mb-2">Digital Current Response Speed:</h4>
+                <p className="text-gray-700">
+                  We messaged Digital Current's email twice and got no reply, unfortunately.
+                </p>
+              </div>
+
+              <div>
+                <h4 className="font-semibold text-gray-900 mb-2">Digital Current's Own SEO:</h4>
+                <p className="text-gray-700">
+                  Digital Current's website is fairly well-optimized, with 59 DR and 1,800 organic monthly visitors.
+                </p>
+              </div>
+            </div>
+          </div>
+
+          {/* 29. Higher Visibility */}
+          <div className="mb-12 bg-gray-50 rounded-lg p-6">
+            <div className="flex items-center gap-3 mb-4">
+              <div className="w-10 h-10 bg-gray-600 rounded-full flex items-center justify-center text-white font-bold">29</div>
+              <h3 className="text-2xl font-bold text-gray-900">Higher Visibility</h3>
+            </div>
+
+            <div className="space-y-4">
+              <div>
+                <h4 className="font-semibold text-gray-900 mb-2">Higher Visibility Review:</h4>
+                <p className="text-gray-700 mb-2">
+                  Having worked with hundreds of companies from small businesses to Fortune 1000's, Higher Visibility understand your pain points. They also understand they aren't the right agency for every business.
+                </p>
+                <p className="text-gray-700 mb-2">
+                  HV want to work with businesses that want a partner, not a doer. Their goal is to understand your business & what keeps you up at night so that they can develop a customized strategy that meets your specific needs regardless of size or industry.
+                </p>
+                <p className="text-gray-700">
+                  Higher Visibility were recently named SEO Agency of the Year by Search Engine Land and are consistently recognized as a leader in their industry by multiple 3rd party review sites. They are also very proud to be included for their expertise in numerous publications including Search Engine Journal, Inc, Forbes, The Huffington Post, along with many others.
+                </p>
+              </div>
+
+              <div>
+                <h4 className="font-semibold text-gray-900 mb-2">Higher Visibility Link Building Tactics:</h4>
+                <p className="text-gray-700">
+                  Higher Visibility contact relevant and authoritative websites across the Internet to get their clients listed on resource lists, blog posts, news articles, and requesting websites to fix their broken links.
+                  They also find creative ways to pitch their story ideas and will even create linkable assets like infographics or content pieces to provide valuable resources for websites to link to.
+                </p>
+              </div>
+
+              <div>
+                <h4 className="font-semibold text-gray-900 mb-2">Higher Visibility Pricing Policy:</h4>
+                <p className="text-gray-700">
+                  A link building campaign by Higher Visibility can fluctuate in price from several hundred dollars per month to several thousand.
+                </p>
+              </div>
+
+              <div>
+                <h4 className="font-semibold text-gray-900 mb-2">How to Order from Higher Visibility:</h4>
+                <p className="text-gray-700">
+                  There are no pre-made plans to buy from the get-go and to place your order you would first have to go through a consultation, which you can book via the contact form.
+                </p>
+              </div>
+
+              <div>
+                <h4 className="font-semibold text-gray-900 mb-2">Higher Visibility Response Speed:</h4>
+                <p className="text-gray-700">
+                  Higher Visibility were pretty swift to reply to our email within an hour but didn't reveal any finer details such as price and custom outreach options before setting up a consultation call.
+                </p>
+              </div>
+
+              <div>
+                <h4 className="font-semibold text-gray-900 mb-2">Higher Visibility's Own SEO:</h4>
+                <p className="text-gray-700">
+                  A lot of Higher Visibility's pages are disallowed from crawling, but their DR is still displayed as a solid 74 with 2,900 monthly organic visitors.
+                </p>
+              </div>
+            </div>
+          </div>
+
+          {/* 30. The Hoth */}
+          <div className="mb-12 bg-gray-50 rounded-lg p-6">
+            <div className="flex items-center gap-3 mb-4">
+              <div className="w-10 h-10 bg-gray-600 rounded-full flex items-center justify-center text-white font-bold">30</div>
+              <h3 className="text-2xl font-bold text-gray-900">The Hoth</h3>
+            </div>
+
+            <div className="space-y-4">
+              <div>
+                <h4 className="font-semibold text-gray-900 mb-2">The Hoth Review:</h4>
+                <p className="text-gray-700 mb-2">
+                  The HOTH is an acronym for Hittem Over The Head, in other words, to bludgeon with awesomeness. It can be used as a noun (as in their product, or their brand) or as a verb (i.e. To HOTH someone, to HOTH something).
+                </p>
+                <p className="text-gray-700 mb-2">
+                  When the HOTH was started in 2010, the industry was plagued by sketchy service providers with poor support. The HOTH was to change all that. They became the best SEO company so you would have an amazing experience.
+                </p>
+                <p className="text-gray-700">
+                  The HOTH put their names and faces on it, made support a priority, and gave out guarantees, developing an entire suite of products to fit your needs. They made a streamlined production system that allows the team to deliver their custom projects and campaigns with agility, speed, and scale. All in a nicely wrapped interface that produces results for you, day in, and day out.
+                </p>
+              </div>
+
+              <div>
+                <h4 className="font-semibold text-gray-900 mb-2">How to Order from The Hoth:</h4>
+                <p className="text-gray-700">
+                  You can schedule a free consultation and discuss your order with one of their account managers through an interactive calendar.
+                </p>
+              </div>
+
+              <div>
+                <h4 className="font-semibold text-gray-900 mb-2">The Hoth Link Building Tactics:</h4>
+                <p className="text-gray-700">
+                  The team employs lots of different strategies depending on the type of service you've selected.
+                </p>
+              </div>
+
+              <div>
+                <h4 className="font-semibold text-gray-900 mb-2">The Hoth Pricing Policy:</h4>
+                <p className="text-gray-700 mb-2">
+                  The HOTH offers a variety of services from generating leads to improving your site's SEO and, of course, link building.
+                </p>
+                <p className="text-gray-700 mb-2">
+                  As for link building services, there is quite a selection as well: HOTH GuestPost, HOTH GuestPost PRO, HOTH Foundations, HOTH Blitz, and HOTH Boost. Let's look at them one by one.
+                </p>
+                <p className="text-gray-700 mb-2">
+                  The HOTH GuestPost package has a name that speaks for itself. It is your standard guest posting offer with pricings depending on the DA of the site linking to you, starting at $100/link from a DA 10+ resource up to $500/link for a 50+ DA site.
+                </p>
+                <p className="text-gray-700 mb-2">
+                  The difference between the regular and the PRO version of the HOTH GuestPost lies in how the prospects are chosen. In the PRO package, instead of looking at a site's DA, the team looks at how much monthly organic traffic a resource is getting.
+                  A link from a site with a thousand organic visitors will cost you $200, and if you'd like to go for bigger resources with up to 25,000 organic traffic the price will go up to $500. Sure, this service is a little bit more expensive, but organic traffic is also a more accurate representation of a site's well-being than its Domain Authority.
+                </p>
+                <p className="text-gray-700 mb-2">
+                  Next up is the HOTH Foundations. To sum up how it works: firstly, the team sets up mini-authority properties on blogging platforms, where contextual links back to your site are placed in original, semantically relevant content. Of course, you have complete control over your anchor text.
+                  The prices for this package range anywhere from $60 to $500 depending on the number of URLs, blogs, and whether you're looking for regular or premium content.
+                </p>
+                <p className="text-gray-700 mb-2">
+                  You will find the HOTH Blitz offer interesting if you're looking to quickly boost your secondary resource. The team has a lot of connections with websites from practically every niche out there. And this offer secures permanent backlinks in the homepage sidebars of those sites.
+                  You can get 5 such links for as little as $250, 10 for $450, and 20 for $875.
+                </p>
+                <p className="text-gray-700">
+                  Last but not least is the HOTH Boost. This offer gets you in-content links on high-DA resources to, once again, boost your secondary properties, social media posts, videos, etc.
+                  It is also the cheapest, with two pricing choices: $49 and $149 for 50 and 250 posts respectively.
+                  The HOTH offers a pretty impressive range of services which you will surely find helpful.
+                </p>
+              </div>
+
+              <div>
+                <h4 className="font-semibold text-gray-900 mb-2">The Hoth Response Speed:</h4>
+                <p className="text-gray-700">
+                  The initial response to our email directed us to their 27-page price list, which, while being very clear and informative can feel a little intimidating at first and it would be nice if someone explained how all those work in person.
+                  They did offer to schedule a free consultation with one of their managers though, so they are redeemed. That reply came in the following morning by the way, which is not bad at all.
+                </p>
+              </div>
+
+              <div>
+                <h4 className="font-semibold text-gray-900 mb-2">Does The Hoth Do Real Blogger Outreach?</h4>
+                <p className="text-gray-700">
+                  The HOTH has an already impressive database of publishers who accept guest posts, but their number grows daily and they are open for custom outreach, so there's zero doubt about the validity of their services.
+                </p>
+              </div>
+
+              <div>
+                <h4 className="font-semibold text-gray-900 mb-2">The Hoth's Own SEO:</h4>
+                <p className="text-gray-700">
+                  The HOTH website is huge with a DR of 72 and 86,400 monthly organic visitors, and they are very professional about how they approach every single task thrown at them.
+                </p>
+              </div>
+            </div>
+          </div>
+
+          {/* 31. Lead to Conversion */}
+          <div className="mb-12 bg-gray-50 rounded-lg p-6">
+            <div className="flex items-center gap-3 mb-4">
+              <div className="w-10 h-10 bg-gray-600 rounded-full flex items-center justify-center text-white font-bold">31</div>
+              <h3 className="text-2xl font-bold text-gray-900">Lead to Conversion</h3>
+            </div>
+
+            <div className="space-y-4">
+              <p className="text-gray-700 mb-2">
+                At Lead to Conversion, our sole purpose is to help emerging businesses achieve the highest possible level of success through responsive web design and effective online marketing.
+              </p>
+              <p className="text-gray-700 mb-2">
+                Our team delivers results-oriented services along with the industry's latest best practices, producing tangible growth and ROI for your business — all at affordable prices. With Lead to Conversion, you'll always stay ahead of the curve and in front of the pack.
+              </p>
+              <p className="text-gray-700 mb-2">
+                We take pride in providing our customers with the highest level of personalized attention, care and commitment, with superior results and tailor-made plans designed exclusively for you and your emerging business.
+              </p>
+              <p className="text-gray-700">
+                Whether you're looking to improve your rankings in the search engines or need a web site that responds to mobile devices and converts visitors … whether you're launching a new small business or looking to grow and overcome the competition, Lead to Conversion is your source for innovative online marketing solutions.
+              </p>
+            </div>
+          </div>
+
+          {/* 32. SEO Power Solutions */}
+          <div className="mb-12 bg-gray-50 rounded-lg p-6">
+            <div className="flex items-center gap-3 mb-4">
+              <div className="w-10 h-10 bg-gray-600 rounded-full flex items-center justify-center text-white font-bold">32</div>
+              <h3 className="text-2xl font-bold text-gray-900">SEO Power Solutions</h3>
+            </div>
+
+            <div className="space-y-4">
+              <div>
+                <h4 className="font-semibold text-gray-900 mb-2">SEO Power Solutions Review:</h4>
+                <p className="text-gray-700">
+                  SEO Power Solutions specialize in planning and executing the most effective off-page link building plans which can boost the keywords ranking on various search engines. The genuine white-hat SEO guidelines are followed to the core, and the best suited back-linking plan is picked up by the team. This involves many diverse skills and profound knowledge of web and SEO- the factors that contribute to making their professionals special.
+                  Affordability is another important factor for SEO Power Solutions, and yet the quality of service is never compromised. Get in touch and their excellent team is ready to discuss your link building demands and other SEO services!!
+                </p>
+              </div>
+
+              <div>
+                <h4 className="font-semibold text-gray-900 mb-2">How to Order from SEO Power Solutions:</h4>
+                <p className="text-gray-700">
+                  You can get a quote by submitting a form or contact the team via email, phone, or skype.
+                </p>
+              </div>
+
+              <div>
+                <h4 className="font-semibold text-gray-900 mb-2">SEO Power Solutions Pricing Policy:</h4>
+                <p className="text-gray-700">
+                  The owner didn't give us any specific numbers (they wanted to discuss our order in more detail) and their website lacks any information regarding their prices as each campaign is unique and its cost is calculated depending on your industry and the metrics of your target websites.
+                </p>
+              </div>
+
+              <div>
+                <h4 className="font-semibold text-gray-900 mb-2">SEO Power Solutions Link Building Tactics:</h4>
+                <p className="text-gray-700">
+                  Guest posting and directory submissions.
+                </p>
+              </div>
+
+              <div>
+                <h4 className="font-semibold text-gray-900 mb-2">Does SEO Power Solutions Do Real Blogger Outreach?</h4>
+                <p className="text-gray-700">
+                  SEO Power Solutions run backlink audits of your competition and reach out to websites linking to them in addition to guest posting on resources within their database.
+                </p>
+              </div>
+
+              <div>
+                <h4 className="font-semibold text-gray-900 mb-2">SEO Power Solutions Response Speed:</h4>
+                <p className="text-gray-700">
+                  Our reply came the next day but it lacked answers to all of our questions, so we had to ask again.
+                </p>
+              </div>
+
+              <div>
+                <h4 className="font-semibold text-gray-900 mb-2">SEO Power Solutions SEO Metrics:</h4>
+                <p className="text-gray-700">
+                  Their website can't be crawled at all so no data on their metrics here.
+                </p>
+              </div>
+            </div>
+          </div>
+
+          {/* 33. Stuart C McHenry */}
+          <div className="mb-12 bg-gray-50 rounded-lg p-6">
+            <div className="flex items-center gap-3 mb-4">
+              <div className="w-10 h-10 bg-gray-600 rounded-full flex items-center justify-center text-white font-bold">33</div>
+              <h3 className="text-2xl font-bold text-gray-900">Stuart C McHenry</h3>
+            </div>
+
+            <div className="space-y-4">
+              <div>
+                <h4 className="font-semibold text-gray-900 mb-2">Stuart C McHenry Review:</h4>
+                <p className="text-gray-700 mb-2">
+                  It used to be that search engines would reward content with top rankings so long as they had links to support them. In the past few years, search engines have changed their algorithms.
+                </p>
+                <p className="text-gray-700 mb-2">
+                  Links must be relevant to your content, or your page might lose its ranking. Even worse, your website could get penalized in the search engines.
+                </p>
+                <p className="text-gray-700 mb-2">
+                  Stuart doesn't use any unproven tactics or jump on the current bandwagon of link building strategies. Those shortcuts never last long and will only ruin your ROI.
+                </p>
+                <p className="text-gray-700">
+                  "My outreach and link building process will provide quality links that will maintain rankings for years to come.", as stated by Stuart himself.
+                </p>
+              </div>
+
+              <div>
+                <h4 className="font-semibold text-gray-900 mb-2">Stuart C McHenry Link Building Tactics:</h4>
+                <p className="text-gray-700">
+                  The majority of the backlinks they build for their clients are done via guest posting, unlinked mentions, interviews, and content-driven tactics. These are the type of links you will be proud to show off.
+                </p>
+              </div>
+
+              <div>
+                <h4 className="font-semibold text-gray-900 mb-2">How to Order from Stuart C McHenry:</h4>
+                <p className="text-gray-700">
+                  To place an order you will have to discuss it with the owner through their email you can find, intuitively, on the Contact page.
+                </p>
+              </div>
+
+              <div>
+                <h4 className="font-semibold text-gray-900 mb-2">Stuart C McHenry Pricing Policy:</h4>
+                <p className="text-gray-700">
+                  The average price is $300/link, but it can fluctuate depending on your niche. More competitive niches cost more to build links in.
+                </p>
+              </div>
+
+              <div>
+                <h4 className="font-semibold text-gray-900 mb-2">Does Stuart C McHenry Do Real Blogger Outreach?</h4>
+                <p className="text-gray-700">
+                  Stuart agreed to reach out to 500 of our prospects, but for a different price. They charged us an hourly fee of $150.
+                </p>
+              </div>
+
+              <div>
+                <h4 className="font-semibold text-gray-900 mb-2">Stuart C McHenry Response Speed:</h4>
+                <p className="text-gray-700">
+                  Stuart works alone, so their response rate might not be as swift as other vendors, but we got our reply the next day.
+                </p>
+              </div>
+
+              <div>
+                <h4 className="font-semibold text-gray-900 mb-2">Stuart C McHenry's Own SEO:</h4>
+                <p className="text-gray-700">
+                  Their website's DR is 40 with only 52 organic visitors per month.
+                </p>
+              </div>
+            </div>
+          </div>
+
+          {/* 34. Internet Marketing Ninjas */}
+          <div className="mb-12 bg-gray-50 rounded-lg p-6">
+            <div className="flex items-center gap-3 mb-4">
+              <div className="w-10 h-10 bg-gray-600 rounded-full flex items-center justify-center text-white font-bold">34</div>
+              <h3 className="text-2xl font-bold text-gray-900">Internet Marketing Ninjas</h3>
+            </div>
+
+            <div className="space-y-4">
+              <div>
+                <h4 className="font-semibold text-gray-900 mb-2">Internet Marketing Ninjas Review:</h4>
+                <p className="text-gray-700">
+                  For 20 years, Internet Marketing Ninjas have specialized in link building and strived to offer the most effective white-hat link building services anywhere.
+                </p>
+              </div>
+
+              <div>
+                <h4 className="font-semibold text-gray-900 mb-2">Internet Marketing Ninjas Link Building Tactics:</h4>
+                <p className="text-gray-700">
+                  The method they use for content marketing and link building first involves creating trusted content as well as brand assets (infographics, polls, quizzes, videos, calculators, etc.).
+                  Once they create awesome trusted content and brand assets for your site, they market this content, and in turn, you earn real citations (links), which increase your site's trustworthiness in the eyes of Google.
+                </p>
+              </div>
+
+              <div>
+                <h4 className="font-semibold text-gray-900 mb-2">Internet Marketing Ninjas Pricing Policy:</h4>
+                <p className="text-gray-700">
+                  The prices for their services start at $7,500/monthly and include consulting, and the content itself along with its marketing. That will get you 10 links.
+                </p>
+              </div>
+
+              <div>
+                <h4 className="font-semibold text-gray-900 mb-2">How to Order from Internet Marketing Ninjas:</h4>
+                <p className="text-gray-700">
+                  To place an order you have to go through submitting a contact form and discussing what exactly you are looking for with their VP of sales, but once that is done you get access to an extremely in-depth dashboard which you can use to track your project.
+                  They even provided us with the login and password of a dummy account so we could see that dashboard for ourselves without ordering.
+                </p>
+              </div>
+
+              <div>
+                <h4 className="font-semibold text-gray-900 mb-2">Internet Marketing Ninjas Response Speed:</h4>
+                <p className="text-gray-700">
+                  The reply to our initial email came in as little as 10 minutes.
+                </p>
+              </div>
+
+              <div>
+                <h4 className="font-semibold text-gray-900 mb-2">Does Internet Marketing Ninjas Do Real Blogger Outreach?</h4>
+                <p className="text-gray-700">
+                  They are one of the very few vendors who actually refused to do outreach to our prospect list because they "have their unique process and are unable to process someone else's link building plan".
+                </p>
+              </div>
+
+              <div>
+                <h4 className="font-semibold text-gray-900 mb-2">Internet Marketing Ninjas's Own SEO:</h4>
+                <p className="text-gray-700">
+                  But they clearly know what they are doing with a high Domain Rating of 78 and with 26,600 unique organic visits to boot.
+                </p>
+              </div>
+            </div>
+          </div>
+
+          {/* 35. Digital Media Group */}
+          <div className="mb-12 bg-gray-50 rounded-lg p-6">
+            <div className="flex items-center gap-3 mb-4">
+              <div className="w-10 h-10 bg-gray-600 rounded-full flex items-center justify-center text-white font-bold">35</div>
+              <h3 className="text-2xl font-bold text-gray-900">Digital Media Group</h3>
+            </div>
+
+            <div className="space-y-4">
+              <p className="text-gray-700 mb-2">
+                Our approach is different for every industry and company. With us, you will be earning links rather than paying for them. Whether you are just starting out or running an established ecommerce hosting business, we will help you achieve your goals. We understand what types of content will earn links that are profitable to your website. We follow the best link acquisition tactics that comply with industry guidelines when securing links to our clients' sites. At Digital Media Group we deliver top tier links that are relevant to your content and target audience.
+              </p>
+              <p className="text-gray-700">
+                Online marketing is vital for business survival. With our offices in Salt Lake City, Utah and Yerevan Armenia, we work with small businesses and entrepreneurs worldwide to help them build their brand. Our team of international link builders is here to serve you. Establishing our new office in Yerevan, Armenia gives us the opportunity to provide services to Russian-speaking clients in many countries.
+              </p>
+            </div>
+          </div>
+
           {/* Progress note */}
           <div className="bg-blue-50 border border-blue-200 rounded-lg p-6 text-center">
             <p className="text-gray-700 text-lg">
-              Agencies 1-25 complete. Next: Agencies 26-50+ and conclusion coming next...
+              Agencies 1-35 complete. Final agencies 36-50+ and conclusion coming next...
             </p>
           </div>
 
