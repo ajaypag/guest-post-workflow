@@ -214,16 +214,11 @@ export async function DELETE(
         throw new Error('Submission not found');
       }
 
-      console.log(`[DELETE] Deleting submission ${submissionId} from group ${groupId}`);
-      
       // Just hard delete for internal users - no soft delete
-      const deleteResult = await tx.delete(orderSiteSubmissions)
-        .where(eq(orderSiteSubmissions.id, submissionId))
-        .returning();
+      await tx.delete(orderSiteSubmissions)
+        .where(eq(orderSiteSubmissions.id, submissionId));
       
-      console.log(`[DELETE] Delete result:`, deleteResult.length > 0 ? 'SUCCESS' : 'FAILED - No rows deleted');
-      
-      return { action: 'deleted', deletedCount: deleteResult.length };
+      return { action: 'deleted' };
     });
 
     return NextResponse.json({
