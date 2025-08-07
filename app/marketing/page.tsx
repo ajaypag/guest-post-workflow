@@ -69,7 +69,7 @@ export default function MarketingHomepage() {
           <div className="grid lg:grid-cols-2 gap-12 items-center">
             {/* Left: Main Message */}
             <div>
-              <div className="inline-flex items-center gap-2 px-3 py-1 bg-purple-100 text-purple-800 rounded-full text-sm font-medium mb-6">
+              <div className="inline-flex items-center gap-2 px-3 py-1 bg-blue-100 text-blue-800 rounded-full text-sm font-medium mb-6">
                 <Brain className="w-4 h-4" />
                 Built for the AI Citation Era
               </div>
@@ -104,7 +104,7 @@ export default function MarketingHomepage() {
               <div className="flex flex-col sm:flex-row gap-4">
                 <Link
                   href="/signup"
-                  className="inline-flex items-center justify-center gap-2 px-8 py-4 bg-purple-600 text-white font-semibold rounded-lg hover:bg-purple-700 transition-colors text-lg"
+                  className="inline-flex items-center justify-center gap-2 px-8 py-4 bg-gradient-to-r from-blue-600 to-purple-600 text-white font-semibold rounded-lg hover:from-blue-700 hover:to-purple-700 transition-colors text-lg"
                 >
                   Dominate AI Citations
                   <ArrowRight className="w-5 h-5" />
@@ -127,13 +127,13 @@ export default function MarketingHomepage() {
               
               <div className="grid grid-cols-2 gap-6">
                 <div className="text-center">
-                  <div className="text-3xl font-bold text-purple-600 mb-1">
+                  <div className="text-3xl font-bold text-blue-600 mb-1">
                     {stats.totalSites.toLocaleString()}+
                   </div>
                   <div className="text-sm text-gray-600">Authority Sites</div>
                 </div>
                 <div className="text-center">
-                  <div className="text-3xl font-bold text-blue-600 mb-1">O3</div>
+                  <div className="text-3xl font-bold text-purple-600 mb-1">O3</div>
                   <div className="text-sm text-gray-600">Research Model</div>
                 </div>
                 <div className="text-center">
@@ -194,12 +194,12 @@ export default function MarketingHomepage() {
             </div>
 
             <div className="space-y-6">
-              <div className="bg-purple-50 rounded-xl p-6 border border-purple-200">
-                <h3 className="font-semibold text-purple-900 mb-3 flex items-center gap-2">
-                  <Brain className="w-5 h-5 text-purple-600" />
+              <div className="bg-blue-50 rounded-xl p-6 border border-blue-200">
+                <h3 className="font-semibold text-blue-900 mb-3 flex items-center gap-2">
+                  <Brain className="w-5 h-5 text-blue-600" />
                   The Citation Economy
                 </h3>
-                <ul className="space-y-2 text-purple-700">
+                <ul className="space-y-2 text-blue-700">
                   <li>• Brand mentions in AI responses drive awareness</li>
                   <li>• Citations establish industry authority</li>
                   <li>• Topical relevance beats traffic metrics</li>
@@ -287,42 +287,42 @@ export default function MarketingHomepage() {
             </div>
 
             {/* Our Approach */}
-            <div className="bg-purple-50 rounded-2xl p-8">
-              <h3 className="text-2xl font-semibold text-purple-900 mb-6 flex items-center gap-3">
+            <div className="bg-blue-50 rounded-2xl p-8">
+              <h3 className="text-2xl font-semibold text-blue-900 mb-6 flex items-center gap-3">
                 <Brain className="w-6 h-6" />
                 AI Citation Engineering
               </h3>
               
               <div className="space-y-4">
                 <div className="flex items-start gap-3">
-                  <CheckCircle className="w-6 h-6 text-purple-600 flex-shrink-0 mt-0.5" />
+                  <CheckCircle className="w-6 h-6 text-blue-600 flex-shrink-0 mt-0.5" />
                   <div>
-                    <div className="font-medium text-purple-900">Topical Authority Mapping</div>
-                    <div className="text-sm text-purple-700">AI identifies sites with proven expertise overlap in your industry</div>
+                    <div className="font-medium text-blue-900">Topical Authority Mapping</div>
+                    <div className="text-sm text-blue-700">AI identifies sites with proven expertise overlap in your industry</div>
                   </div>
                 </div>
                 
                 <div className="flex items-start gap-3">
-                  <CheckCircle className="w-6 h-6 text-purple-600 flex-shrink-0 mt-0.5" />
+                  <CheckCircle className="w-6 h-6 text-blue-600 flex-shrink-0 mt-0.5" />
                   <div>
-                    <div className="font-medium text-purple-900">LLM Citation Optimization</div>
-                    <div className="text-sm text-purple-700">Content designed to be referenced by AI systems, not just ranked</div>
+                    <div className="font-medium text-blue-900">LLM Citation Optimization</div>
+                    <div className="text-sm text-blue-700">Content designed to be referenced by AI systems, not just ranked</div>
                   </div>
                 </div>
                 
                 <div className="flex items-start gap-3">
-                  <CheckCircle className="w-6 h-6 text-purple-600 flex-shrink-0 mt-0.5" />
+                  <CheckCircle className="w-6 h-6 text-blue-600 flex-shrink-0 mt-0.5" />
                   <div>
-                    <div className="font-medium text-purple-900">O3-Powered Research</div>
-                    <div className="text-sm text-purple-700">Deep reasoning creates citation-worthy content depth and expertise</div>
+                    <div className="font-medium text-blue-900">O3-Powered Research</div>
+                    <div className="text-sm text-blue-700">Deep reasoning creates citation-worthy content depth and expertise</div>
                   </div>
                 </div>
 
                 <div className="flex items-start gap-3">
-                  <CheckCircle className="w-6 h-6 text-purple-600 flex-shrink-0 mt-0.5" />
+                  <CheckCircle className="w-6 h-6 text-blue-600 flex-shrink-0 mt-0.5" />
                   <div>
-                    <div className="font-medium text-purple-900">Zero-Click Revenue</div>
-                    <div className="text-sm text-purple-700">Brand mentions and citations drive awareness when traffic can't</div>
+                    <div className="font-medium text-blue-900">Zero-Click Revenue</div>
+                    <div className="text-sm text-blue-700">Brand mentions and citations drive awareness when traffic can't</div>
                   </div>
                 </div>
               </div>
@@ -340,7 +340,7 @@ export default function MarketingHomepage() {
           
           <div className="bg-white rounded-2xl p-8 shadow-lg border mb-8">
             <div className="mb-6">
-              <div className="inline-flex items-center gap-2 px-3 py-1 bg-purple-100 text-purple-800 rounded-full text-sm font-medium mb-4">
+              <div className="inline-flex items-center gap-2 px-3 py-1 bg-blue-100 text-blue-800 rounded-full text-sm font-medium mb-4">
                 <Brain className="w-4 h-4" />
                 AI Citation Success
               </div>
@@ -353,7 +353,7 @@ export default function MarketingHomepage() {
             
             <div className="grid md:grid-cols-3 gap-6 text-center">
               <div>
-                <div className="text-2xl font-bold text-purple-600">Cited</div>
+                <div className="text-2xl font-bold text-blue-600">Cited</div>
                 <div className="text-sm text-gray-600">In AI overviews</div>
               </div>
               <div>
@@ -361,7 +361,7 @@ export default function MarketingHomepage() {
                 <div className="text-sm text-gray-600">Topical match</div>
               </div>
               <div>
-                <div className="text-2xl font-bold text-blue-600">Zero</div>
+                <div className="text-2xl font-bold text-purple-600">Zero</div>
                 <div className="text-sm text-gray-600">Click dependence</div>
               </div>
             </div>
@@ -399,7 +399,7 @@ export default function MarketingHomepage() {
 
           <div className="grid lg:grid-cols-3 gap-8">
             <div className="bg-gray-800 rounded-xl p-8 border border-gray-700">
-              <div className="w-12 h-12 bg-purple-600 rounded-lg flex items-center justify-center mb-6">
+              <div className="w-12 h-12 bg-blue-600 rounded-lg flex items-center justify-center mb-6">
                 <Brain className="w-6 h-6 text-white" />
               </div>
               <h3 className="text-xl font-semibold mb-4">O3 Deep Research</h3>
@@ -415,7 +415,7 @@ export default function MarketingHomepage() {
             </div>
 
             <div className="bg-gray-800 rounded-xl p-8 border border-gray-700">
-              <div className="w-12 h-12 bg-blue-600 rounded-lg flex items-center justify-center mb-6">
+              <div className="w-12 h-12 bg-purple-600 rounded-lg flex items-center justify-center mb-6">
                 <Target className="w-6 h-6 text-white" />
               </div>
               <h3 className="text-xl font-semibold mb-4">Topical Authority Analysis</h3>
