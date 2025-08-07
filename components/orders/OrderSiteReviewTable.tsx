@@ -1127,7 +1127,55 @@ export default function OrderSiteReviewTable({
                                                   {submission.id !== displaySubmission?.id && (
                                                     <>
                                                       {submission.selectionPool === 'primary' ? (
-                                                        <span className="text-xs text-gray-500 italic">In use</span>
+                                                        <>
+                                                          <span className="text-xs text-gray-500 italic">In use</span>
+                                                          {/* Edit button for primary pool */}
+                                                          {permissions.canEditDomainAssignments && onEditSubmission && (
+                                                            <button
+                                                              className="text-xs bg-gray-100 text-gray-700 hover:bg-gray-200 p-1 rounded transition-colors"
+                                                              onClick={(e) => {
+                                                                e.preventDefault();
+                                                                e.stopPropagation();
+                                                                setEditingSubmission({
+                                                                  id: submission.id,
+                                                                  groupId: group.id,
+                                                                  targetPageUrl: submission.metadata?.targetPageUrl,
+                                                                  anchorText: submission.metadata?.anchorText,
+                                                                  specialInstructions: submission.metadata?.specialInstructions
+                                                                });
+                                                              }}
+                                                              title="Edit submission details"
+                                                            >
+                                                              <Edit2 className="h-3 w-3" />
+                                                            </button>
+                                                          )}
+                                                          {/* Remove button for primary pool - internal users only */}
+                                                          {userType === 'internal' && onRemoveSubmission && (
+                                                            <button
+                                                              className="text-xs bg-red-100 text-red-700 hover:bg-red-200 p-1 rounded transition-colors"
+                                                              onClick={async (e) => {
+                                                                e.preventDefault();
+                                                                e.stopPropagation();
+                                                                if (confirm('Remove this site from the order?')) {
+                                                                  setRemovingSubmission(submission.id);
+                                                                  try {
+                                                                    await onRemoveSubmission(submission.id, group.id);
+                                                                  } finally {
+                                                                    setRemovingSubmission(null);
+                                                                  }
+                                                                }
+                                                              }}
+                                                              title="Remove from order"
+                                                              disabled={removingSubmission === submission.id}
+                                                            >
+                                                              {removingSubmission === submission.id ? (
+                                                                <Loader2 className="h-3 w-3 animate-spin" />
+                                                              ) : (
+                                                                <Trash2 className="h-3 w-3" />
+                                                              )}
+                                                            </button>
+                                                          )}
+                                                        </>
                                                       ) : (
                                                         <>
                                                           {permissions.canSwitchPools && (
