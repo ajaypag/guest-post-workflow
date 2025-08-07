@@ -27,6 +27,7 @@ export async function POST() {
           captured_at TIMESTAMP NOT NULL DEFAULT NOW(),
           captured_by UUID NOT NULL REFERENCES users(id),
           capture_reason VARCHAR(50) NOT NULL,
+          benchmark_type VARCHAR(50) NOT NULL,
           benchmark_data JSONB NOT NULL,
           notes TEXT,
           created_at TIMESTAMP NOT NULL DEFAULT NOW(),
@@ -184,6 +185,42 @@ export async function POST() {
         ADD COLUMN updated_at TIMESTAMP NOT NULL DEFAULT NOW()
       `);
       columnsAdded.push('updated_at');
+    }
+    
+    // Add benchmark_type if missing
+    if (!existingColumns.includes('benchmark_type')) {
+      // Check if there are existing records
+      const countResult = await db.execute(sql`
+        SELECT COUNT(*) as count FROM order_benchmarks
+      `);
+      const recordCount = parseInt(countResult.rows[0].count as string);
+      
+      if (recordCount === 0) {
+        await db.execute(sql`
+          ALTER TABLE order_benchmarks 
+          ADD COLUMN benchmark_type VARCHAR(50) NOT NULL
+        `);
+      } else {
+        // Add as nullable first
+        await db.execute(sql`
+          ALTER TABLE order_benchmarks 
+          ADD COLUMN benchmark_type VARCHAR(50)
+        `);
+        
+        // Set default value for existing records
+        await db.execute(sql`
+          UPDATE order_benchmarks 
+          SET benchmark_type = 'initial'
+          WHERE benchmark_type IS NULL
+        `);
+        
+        // Make it NOT NULL
+        await db.execute(sql`
+          ALTER TABLE order_benchmarks 
+          ALTER COLUMN benchmark_type SET NOT NULL
+        `);
+      }
+      columnsAdded.push('benchmark_type');
     }
     
     // Create indexes if they don't exist

@@ -24,6 +24,8 @@ export const orderBenchmarks = pgTable('order_benchmarks', {
   capturedBy: uuid('captured_by').notNull().references(() => users.id),
   captureReason: varchar('capture_reason', { length: 50 }).notNull(),
   // Reasons: 'order_confirmed', 'manual_update', 'client_revision'
+  benchmarkType: varchar('benchmark_type', { length: 50 }).notNull(),
+  // Types: 'initial', 'revision', 'comparison'
   
   // The benchmark data - complete snapshot of what was requested
   benchmarkData: jsonb('benchmark_data').notNull().$type<{

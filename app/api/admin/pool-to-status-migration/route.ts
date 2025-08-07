@@ -172,6 +172,7 @@ export async function POST(request: NextRequest) {
                 isLatest: true,
                 capturedBy: session.userId,
                 captureReason: 'migration_retroactive',
+                benchmarkType: 'initial',
                 benchmarkData,
                 notes: 'Retroactively created during pool-to-status migration',
               });

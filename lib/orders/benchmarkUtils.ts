@@ -158,6 +158,7 @@ export async function createOrderBenchmark(
       isLatest: true,
       capturedBy: userId,
       captureReason: reason,
+      benchmarkType: 'initial', // Always 'initial' for now
       benchmarkData,
       notes: reason === 'order_confirmed' || reason === 'order_submitted' 
         ? 'Initial benchmark created at order confirmation'

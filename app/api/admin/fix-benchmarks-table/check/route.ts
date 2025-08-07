@@ -23,6 +23,7 @@ export async function GET() {
       'captured_at',
       'captured_by',
       'capture_reason',
+      'benchmark_type',
       'benchmark_data',
       'notes',
       'created_at',
