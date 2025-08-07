@@ -553,21 +553,7 @@ export default function InternalOrderManagementPage() {
       
       const result = await response.json();
       
-      // Trigger automatic rebalance after deletion
-      try {
-        const rebalanceResponse = await fetch(`/api/orders/${orderId}/rebalance-pools`, {
-          method: 'POST',
-          credentials: 'include'
-        });
-        
-        if (!rebalanceResponse.ok) {
-          console.warn('Failed to rebalance pools after deletion');
-        }
-      } catch (rebalanceError) {
-        console.warn('Error rebalancing pools:', rebalanceError);
-      }
-      
-      // Reload everything to show the updated state
+      // Just reload to show the updated state - no automatic rebalance
       await loadOrder();
       await loadSiteSubmissions();
       setMessage({
