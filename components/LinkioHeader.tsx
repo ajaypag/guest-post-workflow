@@ -118,7 +118,7 @@ export default function LinkioHeader({
                   onMouseLeave={() => setIsIndustriesOpen(false)}
                 >
                   <button
-                    className="flex items-center gap-1 text-gray-600 hover:text-gray-900 text-sm font-medium transition-colors"
+                    className="flex items-center gap-1 text-gray-600 hover:text-gray-900 text-sm font-medium transition-colors py-2"
                   >
                     Industries
                     <ChevronDown className={`w-3 h-3 transition-transform ${isIndustriesOpen ? 'rotate-180' : ''}`} />
@@ -126,21 +126,23 @@ export default function LinkioHeader({
                   
                   {isIndustriesOpen && (
                     <div
-                      className="absolute top-full left-0 mt-1 w-64 bg-white rounded-lg shadow-lg border border-gray-100 py-2 z-50"
+                      className="absolute top-full left-0 -mt-1 pt-1 w-64 z-50"
                     >
-                      {industriesItems.map((item) => (
-                        <Link
-                          key={item.href}
-                          href={item.href}
-                          className="block px-4 py-2 hover:bg-gray-50 transition-colors"
-                          onClick={() => setIsIndustriesOpen(false)}
-                        >
-                          <div className="font-medium text-gray-900 text-sm">{item.label}</div>
-                          {item.description && (
-                            <div className="text-xs text-gray-500 mt-0.5">{item.description}</div>
-                          )}
-                        </Link>
-                      ))}
+                      <div className="bg-white rounded-lg shadow-lg border border-gray-100 py-2">
+                        {industriesItems.map((item) => (
+                          <Link
+                            key={item.href}
+                            href={item.href}
+                            className="block px-4 py-2 hover:bg-gray-50 transition-colors"
+                            onClick={() => setIsIndustriesOpen(false)}
+                          >
+                            <div className="font-medium text-gray-900 text-sm">{item.label}</div>
+                            {item.description && (
+                              <div className="text-xs text-gray-500 mt-0.5">{item.description}</div>
+                            )}
+                          </Link>
+                        ))}
+                      </div>
                     </div>
                   )}
                 </div>
