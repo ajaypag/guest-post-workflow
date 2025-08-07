@@ -216,8 +216,8 @@ export default function OrderDetailPage() {
     if ((order?.state === 'sites_ready' || order?.state === 'site_review' || order?.state === 'client_reviewing' || order?.state === 'payment_pending' || order?.state === 'payment_received' || order?.state === 'workflows_generated' || order?.state === 'in_progress') && order.orderGroups) {
       loadSiteSubmissions();
     }
-    // Load benchmark for confirmed orders
-    if (order?.status === 'confirmed' || order?.status === 'paid' || order?.status === 'in_progress' || order?.status === 'completed') {
+    // Load benchmark for orders that have been submitted (includes pending_confirmation)
+    if (order?.status === 'pending_confirmation' || order?.status === 'confirmed' || order?.status === 'paid' || order?.status === 'in_progress' || order?.status === 'completed') {
       loadBenchmarkData();
     }
   }, [order?.state, order?.orderGroups, order?.status]);
@@ -632,6 +632,17 @@ export default function OrderDetailPage() {
               </div>
             </div>
           </div>
+
+          {/* Benchmark Display - Show original request */}
+          {benchmarkData && (
+            <div className="mb-6">
+              <BenchmarkDisplay 
+                benchmark={benchmarkData}
+                orderId={order.id}
+                userType={user?.userType || 'internal'}
+              />
+            </div>
+          )}
 
           {/* Three Column Layout */}
           <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">

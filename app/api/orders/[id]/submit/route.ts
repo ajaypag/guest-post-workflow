@@ -3,6 +3,7 @@ import { db } from '@/lib/db/connection';
 import { orders } from '@/lib/db/orderSchema';
 import { eq, and } from 'drizzle-orm';
 import { AuthServiceServer } from '@/lib/auth-server';
+import { createOrderBenchmark } from '@/lib/orders/benchmarkUtils';
 
 export async function POST(
   request: NextRequest,
@@ -49,12 +50,24 @@ export async function POST(
         .where(eq(orders.id, orderId))
         .returning();
         
+      // Create benchmark snapshot of the submitted order
+      // This captures what the client originally requested
+      let benchmark;
+      try {
+        benchmark = await createOrderBenchmark(orderId, session.userId, 'order_submitted');
+        console.log(`✅ Created benchmark for submitted order ${orderId}`);
+      } catch (benchmarkError) {
+        console.error('Failed to create benchmark on submission:', benchmarkError);
+        // Don't fail the submission if benchmark creation fails
+      }
+        
       // TODO: Send notification to internal team about new order submission
       // This could trigger an email or internal notification
       
       return NextResponse.json({
         success: true,
         order: updatedOrder,
+        benchmark: benchmark,
         message: 'Order submitted successfully. Our team will review and begin processing shortly.'
       });
     });
