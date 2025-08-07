@@ -23,6 +23,7 @@ import Link from 'next/link';
 import LinkioHeader from '@/components/LinkioHeader';
 import MarketingCTA from '@/components/MarketingCTA';
 import MarketingFooter from '@/components/MarketingFooter';
+import NichesDirectory from '@/components/NichesDirectory';
 
 export async function generateMetadata(): Promise<Metadata> {
   const stats = await getMarketingStats();
@@ -58,7 +59,7 @@ async function getWebsites() {
       .select({ count: sql<number>`count(*)` })
       .from(websites);
 
-    // Get niches with at least 10 websites (minimum threshold for page creation)
+    // Get ALL niches with at least 10 websites (for full directory)
     // Use same counting method as individual niche pages for consistency
     const nichesResult = await db.execute(sql`
       WITH niche_counts AS (
@@ -75,10 +76,9 @@ async function getWebsites() {
       GROUP BY niche_name
       HAVING COUNT(DISTINCT websites.id) >= 10
       ORDER BY website_count DESC
-      LIMIT 20
     `);
     
-    const topNiches = nichesResult.rows.map((row: any) => ({
+    const allNiches = nichesResult.rows.map((row: any) => ({
       name: row.niche_name,
       count: parseInt(row.website_count)
     }));
@@ -96,7 +96,7 @@ async function getWebsites() {
         hasGuestPost: site.hasGuestPost,
       })),
       totalCount: countResult[0]?.count || 0,
-      niches: topNiches,
+      niches: allNiches,
     };
   } catch (error) {
     console.warn('Could not fetch websites data, database not available during build:', error);
@@ -199,41 +199,13 @@ export default async function GuestPostingSitesPage() {
         </div>
       </section>
 
-      {/* Niches Section - Primary Hub */}
+      {/* Niches Section - Primary Hub with Search and Expandable Directory */}
       <section id="niches" className="py-16 bg-gray-50">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-          <div className="text-center mb-12">
-            <h2 className="text-3xl font-bold text-gray-900 mb-3">
-              Browse by Niche
-            </h2>
-            <p className="text-lg text-gray-600">
-              Find highly-specific guest posting opportunities in your exact niche
-            </p>
-          </div>
-
-          {/* Niche Grid */}
-          <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-6 mb-12">
-            {niches.map(niche => (
-              <Link
-                key={niche.name}
-                href={`/guest-posting-sites/${niche.name.toLowerCase().replace(/[&\s]+/g, '-').replace(/[^a-z0-9-]/g, '').replace(/-+/g, '-').replace(/^-|-$/g, '')}-blogs`}
-                className="group block p-6 bg-white border border-gray-200 rounded-xl hover:border-blue-300 hover:shadow-md transition-all"
-              >
-                <div className="text-center">
-                  <div className="text-3xl font-bold text-gray-900 mb-1">{niche.count}</div>
-                  <div className="font-medium text-gray-900 group-hover:text-blue-600 transition-colors">
-                    {niche.name}
-                  </div>
-                  <div className="text-sm text-gray-500 mt-1">
-                    Guest posting sites
-                  </div>
-                </div>
-              </Link>
-            ))}
-          </div>
+          <NichesDirectory allNiches={niches} />
 
           {/* Additional Tools */}
-          <div className="bg-white rounded-xl border p-8 text-center">
+          <div className="bg-white rounded-xl border p-8 text-center mt-12">
             <h3 className="text-xl font-semibold text-gray-900 mb-3">Need to Find More Sites?</h3>
             <p className="text-gray-600 mb-6">
               Use our search query generator to discover guest posting opportunities beyond our database
