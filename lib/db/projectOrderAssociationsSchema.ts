@@ -80,12 +80,24 @@ export const orderSiteSubmissions = pgTable('order_site_submissions', {
   serviceFeeSnapshot: integer('service_fee_snapshot').default(7900),
   priceSnapshotAt: timestamp('price_snapshot_at'),
   
-  // NEW: Pool-based selection system
+  // NEW: Pool-based selection system (DEPRECATED - keeping for migration)
   selectionPool: varchar('selection_pool', { length: 20 }).notNull().default('primary'),
   // Values: 'primary', 'alternative'
   
   poolRank: integer('pool_rank').notNull().default(1),
   // Rank within the pool (1 = highest priority)
+  
+  // NEW: Status-based selection system (replacing pools)
+  inclusionStatus: varchar('inclusion_status', { length: 20 }),
+  // Values: 'included', 'excluded', 'saved_for_later'
+  
+  inclusionOrder: integer('inclusion_order'),
+  // Display order for included items (manually controlled)
+  
+  exclusionReason: text('exclusion_reason'),
+  // Why the domain was excluded from the order
+  
+  benchmarkId: uuid('benchmark_id'),
   
   // Metadata
   metadata: jsonb('metadata').$type<{

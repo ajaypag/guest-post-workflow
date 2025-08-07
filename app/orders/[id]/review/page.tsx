@@ -3,11 +3,13 @@
 import { useState, useEffect } from 'react';
 import { useParams, useRouter } from 'next/navigation';
 import Link from 'next/link';
-import { Loader2, CheckCircle, XCircle, AlertCircle, ArrowRight, ArrowLeft, DollarSign } from 'lucide-react';
+import { Loader2, CheckCircle, XCircle, AlertCircle, ArrowRight, ArrowLeft, DollarSign, Bell } from 'lucide-react';
 import Header from '@/components/Header';
-import OrderSiteReviewTable from '@/components/orders/OrderSiteReviewTable';
-import type { OrderGroup, SiteSubmission } from '@/components/orders/OrderSiteReviewTable';
+import OrderSiteReviewTableV2 from '@/components/orders/OrderSiteReviewTableV2';
+import type { OrderGroup, SiteSubmission, LineItem } from '@/components/orders/OrderSiteReviewTableV2';
+import BenchmarkDisplay from '@/components/orders/BenchmarkDisplay';
 import { formatCurrency } from '@/lib/utils/formatting';
+import { isLineItemsSystemEnabled } from '@/lib/config/featureFlags';
 
 interface OrderData {
   id: string;
@@ -18,6 +20,7 @@ interface OrderData {
   createdAt: string;
   approvedAt?: string;
   orderGroups: OrderGroup[];
+  lineItems?: any[];
 }
 
 export default function ExternalOrderReviewPage() {
@@ -30,6 +33,8 @@ export default function ExternalOrderReviewPage() {
   const [siteSubmissions, setSiteSubmissions] = useState<Record<string, SiteSubmission[]>>({});
   const [selectedSubmissions, setSelectedSubmissions] = useState<Set<string>>(new Set());
   const [actionLoading, setActionLoading] = useState(false);
+  const [lineItems, setLineItems] = useState<LineItem[]>([]);
+  const [benchmarkData, setBenchmarkData] = useState<any>(null);
 
   useEffect(() => {
     fetchOrder();
@@ -44,6 +49,24 @@ export default function ExternalOrderReviewPage() {
       if (!response.ok) throw new Error('Failed to fetch order');
       const orderData = await response.json();
       
+      // Load line items if system is enabled
+      if (isLineItemsSystemEnabled() && orderData.lineItems) {
+        const items: LineItem[] = orderData.lineItems.map((item: any) => ({
+          id: item.id,
+          orderId: item.orderId,
+          clientId: item.clientId,
+          targetPageUrl: item.targetPageUrl,
+          targetPageId: item.targetPageId,
+          anchorText: item.anchorText,
+          status: item.status,
+          assignedDomainId: item.assignedDomainId,
+          assignedDomain: item.assignedDomain,
+          estimatedPrice: item.estimatedPrice,
+          metadata: item.metadata
+        }));
+        setLineItems(items);
+      }
+      
       // Fetch submissions for each order group
       const submissionsData: Record<string, SiteSubmission[]> = {};
       for (const group of orderData.orderGroups) {
@@ -57,6 +80,19 @@ export default function ExternalOrderReviewPage() {
           submissionsData[group.id] = data.submissions || [];
         } else {
           console.error('[REVIEW PAGE] Failed to fetch submissions:', submissionsRes.status, await submissionsRes.text());
+        }
+      }
+      
+      // Fetch benchmark data if order is confirmed
+      if (orderData.status === 'confirmed' || orderData.status === 'paid') {
+        try {
+          const benchmarkRes = await fetch(`/api/orders/${orderId}/benchmark`);
+          if (benchmarkRes.ok) {
+            const benchData = await benchmarkRes.json();
+            setBenchmarkData(benchData);
+          }
+        } catch (error) {
+          console.error('Failed to load benchmark:', error);
         }
       }
       
@@ -78,7 +114,8 @@ export default function ExternalOrderReviewPage() {
           headers: { 'Content-Type': 'application/json' },
           body: JSON.stringify({ 
             action: 'approve',
-            notes: 'Approved by client' 
+            notes: 'Approved by client',
+            approvedBy: 'account_user' // Track who approved
           })
         }
       );
@@ -101,7 +138,8 @@ export default function ExternalOrderReviewPage() {
           headers: { 'Content-Type': 'application/json' },
           body: JSON.stringify({ 
             action: 'reject',
-            notes: reason 
+            notes: reason,
+            rejectedBy: 'account_user' // Track who rejected
           })
         }
       );
@@ -136,23 +174,63 @@ export default function ExternalOrderReviewPage() {
     }
   };
 
-  const handleSwitchPool = async (submissionId: string, groupId: string, targetPrimaryId?: string) => {
+  const handleChangeInclusionStatus = async (submissionId: string, groupId: string, status: 'included' | 'excluded' | 'saved_for_later', reason?: string) => {
     try {
-      // Use the correct switch endpoint that supports targetPrimaryId
       const response = await fetch(
-        `/api/orders/${orderId}/groups/${groupId}/site-selections/${submissionId}/switch`,
+        `/api/orders/${orderId}/groups/${groupId}/submissions/${submissionId}/inclusion`,
         {
-          method: 'POST',
+          method: 'PATCH',
           headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({ targetPrimaryId })
+          body: JSON.stringify({ 
+            inclusionStatus: status,
+            exclusionReason: reason 
+          })
         }
       );
       
-      if (!response.ok) throw new Error('Failed to switch pool');
+      if (!response.ok) throw new Error('Failed to update status');
       
       await fetchOrder();
     } catch (error) {
-      console.error('Error switching pool:', error);
+      console.error('Error updating status:', error);
+    }
+  };
+
+  const handleAssignToLineItem = async (submissionId: string, lineItemId: string) => {
+    try {
+      // Find the submission to get domain ID
+      let domainId: string | null = null;
+      for (const [groupId, submissions] of Object.entries(siteSubmissions)) {
+        const submission = submissions.find(s => s.id === submissionId);
+        if (submission) {
+          domainId = submission.domainId;
+          break;
+        }
+      }
+
+      if (!domainId) {
+        throw new Error('Submission not found');
+      }
+
+      const response = await fetch(
+        `/api/orders/${orderId}/line-items/${lineItemId}/assign-domain`,
+        {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ submissionId, domainId })
+        }
+      );
+
+      if (!response.ok) {
+        const error = await response.json();
+        throw new Error(error.error || 'Failed to assign domain to line item');
+      }
+
+      // Refresh data
+      await fetchOrder();
+    } catch (error) {
+      console.error('Error assigning to line item:', error);
+      alert(error instanceof Error ? error.message : 'Failed to assign domain to line item');
     }
   };
 
@@ -304,6 +382,21 @@ export default function ExternalOrderReviewPage() {
               </div>
             </div>
 
+            {/* Notification if recently marked ready */}
+            {order.state === 'sites_ready' && (
+              <div className="bg-blue-50 border border-blue-200 rounded-lg p-3 mb-4 flex items-center gap-3">
+                <Bell className="h-5 w-5 text-blue-600" />
+                <div className="flex-1">
+                  <p className="text-sm font-medium text-blue-900">
+                    Sites are ready for your review!
+                  </p>
+                  <p className="text-xs text-blue-700 mt-0.5">
+                    Our team has carefully selected sites based on your requirements. Please review and approve the ones you'd like to proceed with.
+                  </p>
+                </div>
+              </div>
+            )}
+
             {/* Progress Stats */}
             <div className="grid grid-cols-4 gap-4 mt-6">
               <div className="text-center">
@@ -359,28 +452,30 @@ export default function ExternalOrderReviewPage() {
           )}
 
           {/* Site Review Table */}
-          <OrderSiteReviewTable
+          <OrderSiteReviewTableV2
             orderId={orderId}
             orderGroups={order.orderGroups}
+            lineItems={lineItems}
             siteSubmissions={siteSubmissions}
             userType="account"
             permissions={{
               canApproveReject: true,
               canViewPricing: true,
               canViewInternalTools: false,
-              canSwitchPools: true,
-              canAssignTargetPages: true,
-              canRebalancePools: true,
+              canChangeStatus: true,  // External users CAN organize sites (included/excluded/saved)
+              canAssignTargetPages: true,  // External users CAN assign/change target pages
               canGenerateWorkflows: false,
               canMarkSitesReady: false,
-              canEditDomainAssignments: true
+              canEditDomainAssignments: true,  // External users CAN edit all domain details
+              canSetExclusionReason: false  // Only this is restricted - internal notes
             }}
             workflowStage="site_selection_with_sites"
             onApprove={handleApprove}
             onReject={handleReject}
             onEditSubmission={handleEditSubmission}
-            onSwitchPool={handleSwitchPool}
+            onChangeInclusionStatus={handleChangeInclusionStatus}
             onAssignTargetPage={handleAssignTargetPage}
+            onAssignToLineItem={handleAssignToLineItem}
             onRefresh={fetchOrder}
             selectedSubmissions={selectedSubmissions}
             onSelectionChange={(submissionId, selected) => {
@@ -392,7 +487,21 @@ export default function ExternalOrderReviewPage() {
               }
               setSelectedSubmissions(newSelected);
             }}
+            useLineItems={isLineItemsSystemEnabled()}
+            useStatusSystem={true}  // External users CAN use status system for organization
+            benchmarkData={benchmarkData}
           />
+
+          {/* Benchmark Display */}
+          {benchmarkData && (
+            <div className="mt-6">
+              <BenchmarkDisplay 
+                benchmarkData={benchmarkData}
+                orderId={orderId}
+                showHistory={false}
+              />
+            </div>
+          )}
 
           {/* Pricing Summary for Approved Sites */}
           {approvedCount > 0 && (

@@ -3,9 +3,11 @@ import { AuthServiceServer } from '@/lib/auth-server';
 import { db } from '@/lib/db/connection';
 import { orders, orderItems } from '@/lib/db/orderSchema';
 import { orderGroups, orderSiteSelections } from '@/lib/db/orderGroupSchema';
+import { orderLineItems } from '@/lib/db/orderLineItemSchema';
 import { clients, users } from '@/lib/db/schema';
-import { eq, inArray } from 'drizzle-orm';
+import { eq, inArray, desc } from 'drizzle-orm';
 import { orderSiteSubmissions, projectOrderAssociations } from '@/lib/db/projectOrderAssociationsSchema';
+import { isLineItemsSystemEnabled } from '@/lib/config/featureFlags';
 
 export async function GET(
   request: NextRequest,
@@ -76,10 +78,46 @@ export async function GET(
       })
     );
     
+    // Load line items if the system is enabled
+    let lineItems: any[] = [];
+    if (isLineItemsSystemEnabled()) {
+      try {
+        lineItems = await db.query.orderLineItems.findMany({
+          where: eq(orderLineItems.orderId, id),
+          with: {
+            client: {
+              columns: {
+                id: true,
+                name: true,
+                website: true
+              }
+            },
+            targetPage: true,
+            assignedDomain: true,
+            addedByUser: {
+              columns: {
+                id: true,
+                email: true,
+                name: true
+              }
+            }
+          },
+          orderBy: [
+            orderLineItems.displayOrder,
+            orderLineItems.addedAt
+          ]
+        });
+      } catch (error) {
+        console.error('Error loading line items:', error);
+        // Continue without line items if there's an error
+      }
+    }
+    
     // Transform the data
     const orderWithGroups = {
       ...order,
-      orderGroups: groupsWithSelections
+      orderGroups: groupsWithSelections,
+      lineItems: lineItems
     };
 
     // Check permissions
@@ -246,10 +284,45 @@ export async function PUT(
       })
     );
     
+    // Load line items if the system is enabled (for PUT response)
+    let lineItems: any[] = [];
+    if (isLineItemsSystemEnabled()) {
+      try {
+        lineItems = await db.query.orderLineItems.findMany({
+          where: eq(orderLineItems.orderId, id),
+          with: {
+            client: {
+              columns: {
+                id: true,
+                name: true,
+                website: true
+              }
+            },
+            targetPage: true,
+            assignedDomain: true,
+            addedByUser: {
+              columns: {
+                id: true,
+                email: true,
+                name: true
+              }
+            }
+          },
+          orderBy: [
+            orderLineItems.displayOrder,
+            orderLineItems.addedAt
+          ]
+        });
+      } catch (error) {
+        console.error('Error loading line items (PUT):', error);
+      }
+    }
+    
     // Transform the data
     const orderWithGroups = {
       ...updatedOrder,
-      orderGroups: groupsWithSelections
+      orderGroups: groupsWithSelections,
+      lineItems: lineItems
     };
 
     return NextResponse.json(orderWithGroups);

@@ -5,13 +5,15 @@ import { useParams, useRouter } from 'next/navigation';
 import Link from 'next/link';
 import AuthWrapper from '@/components/AuthWrapper';
 import Header from '@/components/Header';
-import OrderSiteReviewTable from '@/components/orders/OrderSiteReviewTable';
+import OrderSiteReviewTableV2 from '@/components/orders/OrderSiteReviewTableV2';
+import BenchmarkDisplay from '@/components/orders/BenchmarkDisplay';
 import OrderDetailsTable from '@/components/orders/OrderDetailsTable';
 import OrderProgressSteps, { getStateDisplay } from '@/components/orders/OrderProgressSteps';
 import TransferOrderModal from '@/components/orders/TransferOrderModal';
 import ShareOrderButton from '@/components/orders/ShareOrderButton';
 import { AuthService } from '@/lib/auth';
 import { formatCurrency } from '@/lib/utils/formatting';
+import { isLineItemsSystemEnabled } from '@/lib/config/featureFlags';
 import { 
   ArrowLeft, Loader2, CheckCircle, Clock, Search, Users, FileText, 
   RefreshCw, ExternalLink, Globe, LinkIcon, Eye, Edit, Package,
@@ -128,6 +130,9 @@ export default function OrderDetailPage() {
   const [loadingSubmissions, setLoadingSubmissions] = useState(false);
   const [expandedSubmission, setExpandedSubmission] = useState<string | null>(null);
   const [showTransferModal, setShowTransferModal] = useState(false);
+  const [benchmarkData, setBenchmarkData] = useState<any>(null);
+  const [comparisonData, setComparisonData] = useState<any>(null);
+  const [showBenchmarkHistory, setShowBenchmarkHistory] = useState(false);
 
   useEffect(() => {
     loadUser();
@@ -138,7 +143,11 @@ export default function OrderDetailPage() {
     if ((order?.state === 'sites_ready' || order?.state === 'site_review' || order?.state === 'client_reviewing' || order?.state === 'payment_pending' || order?.state === 'payment_received' || order?.state === 'workflows_generated' || order?.state === 'in_progress') && order.orderGroups) {
       loadSiteSubmissions();
     }
-  }, [order?.state, order?.orderGroups]);
+    // Load benchmark for confirmed orders
+    if (order?.status === 'confirmed' || order?.status === 'paid' || order?.status === 'in_progress' || order?.status === 'completed') {
+      loadBenchmarkData();
+    }
+  }, [order?.state, order?.orderGroups, order?.status]);
 
   const loadUser = async () => {
     const currentUser = await AuthService.getCurrentUser();
@@ -162,8 +171,32 @@ export default function OrderDetailPage() {
       const data = await response.json();
       setOrder(data);
       
-      // Transform orderGroups into lineItems for the table
-      if (data.orderGroups && data.orderGroups.length > 0) {
+      // Load line items from the line items system if available
+      if (isLineItemsSystemEnabled() && data.lineItems && data.lineItems.length > 0) {
+        console.log('[LOAD_ORDER] Loading from line items system');
+        
+        const items: LineItem[] = data.lineItems.map((dbItem: any) => ({
+          id: dbItem.id, // Use actual database ID
+          clientId: dbItem.clientId,
+          clientName: dbItem.client?.name || 'Unknown Client',
+          targetPageId: dbItem.targetPageId,
+          targetPageUrl: dbItem.targetPageUrl,
+          anchorText: dbItem.anchorText,
+          price: dbItem.approvedPrice || dbItem.estimatedPrice || 0,
+          wholesalePrice: dbItem.metadata?.wholesalePrice || (dbItem.estimatedPrice - SERVICE_FEE_CENTS),
+          isEstimate: data.status === 'draft' || data.status === 'pending_confirmation',
+          guestPostSite: dbItem.assignedDomain || '',
+          draftUrl: '',
+          publishedUrl: dbItem.publishedUrl || '',
+          bulkAnalysisId: dbItem.metadata?.bulkAnalysisId,
+          workflowId: dbItem.metadata?.workflowId
+        }));
+        
+        setLineItems(items);
+      }
+      // Fallback to transform orderGroups into lineItems for the table (legacy system)
+      else if (data.orderGroups && data.orderGroups.length > 0) {
+        console.log('[LOAD_ORDER] Loading from orderGroups system (fallback)');
         const items: LineItem[] = [];
         data.orderGroups.forEach((group: OrderGroup) => {
           // Create a line item for each link in the group
@@ -305,11 +338,56 @@ export default function OrderDetailPage() {
     }
   };
 
+  const loadBenchmarkData = async () => {
+    try {
+      const response = await fetch(`/api/orders/${params.id}/benchmark?comparison=true`);
+      if (response.ok) {
+        const data = await response.json();
+        setBenchmarkData(data.benchmark);
+        setComparisonData(data.comparison);
+      }
+    } catch (error) {
+      console.error('Failed to load benchmark data:', error);
+    }
+  };
+
+  const handleEditBenchmark = async (updatedBenchmarkData: any) => {
+    try {
+      const response = await fetch(`/api/orders/${params.id}/benchmark`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ 
+          action: 'create', 
+          reason: 'client_modified',
+          benchmarkData: updatedBenchmarkData 
+        })
+      });
+      
+      if (response.ok) {
+        const data = await response.json();
+        setBenchmarkData(data.benchmark);
+        await loadBenchmarkData(); // Reload to get comparison
+        alert('Your wishlist has been updated successfully');
+      }
+    } catch (error) {
+      console.error('Failed to update benchmark:', error);
+      alert('Failed to update wishlist');
+    }
+  };
+
+  const handleViewBenchmarkHistory = () => {
+    setShowBenchmarkHistory(true);
+    // TODO: Implement history modal/sidebar
+  };
+
   const handleRefresh = async () => {
     setRefreshing(true);
     await loadOrder();
     if (order?.state === 'sites_ready' || order?.state === 'site_review' || order?.state === 'client_reviewing' || order?.state === 'payment_pending' || order?.state === 'payment_received' || order?.state === 'workflows_generated' || order?.state === 'in_progress') {
       await loadSiteSubmissions();
+    }
+    if (order?.status === 'confirmed' || order?.status === 'paid' || order?.status === 'in_progress' || order?.status === 'completed') {
+      await loadBenchmarkData();
     }
     setTimeout(() => setRefreshing(false), 1000);
   };
@@ -711,9 +789,10 @@ export default function OrderDetailPage() {
               
               {/* Use shared component for site review, regular table otherwise */}
               {order.state === 'site_review' && order.orderGroups ? (
-                <OrderSiteReviewTable
+                <OrderSiteReviewTableV2
                   orderId={params.id as string}
                   orderGroups={order.orderGroups}
+                  lineItems={lineItems}
                   siteSubmissions={(() => {
                     // Transform siteSubmissions to match the expected interface
                     const transformed: Record<string, any[]> = {};
@@ -732,20 +811,21 @@ export default function OrderDetailPage() {
                   })()}
                   userType={user?.userType || 'account'}
                   permissions={{
-                    canRebalancePools: false,
-                    canAssignTargetPages: false,
-                    canSwitchPools: false,
+                    canChangeStatus: true,  // External users CAN organize sites
+                    canAssignTargetPages: true,  // External users CAN modify target pages
                     canApproveReject: true,
                     canGenerateWorkflows: false,
                     canMarkSitesReady: false,
                     canViewInternalTools: false,
-                    canViewPricing: false,
-                    canEditDomainAssignments: true  // Allow editing for all users (API will check ownership)
+                    canViewPricing: true,
+                    canEditDomainAssignments: true  // External users CAN edit domain details
                   }}
                   workflowStage={order.state || 'site_review'}
                   onEditSubmission={handleEditSubmission}
                   onRemoveSubmission={handleRemoveSubmission}
                   onRefresh={loadOrder}
+                  useLineItems={isLineItemsSystemEnabled()}
+                  useStatusSystem={true}  // External users CAN use status system
                 />
               ) : (
                 <>

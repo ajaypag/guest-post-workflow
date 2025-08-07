@@ -25,6 +25,8 @@ export async function POST(
     const body = await request.json();
     action = body.action;
     notes = body.notes;
+    const approvedBy = body.approvedBy;
+    const rejectedBy = body.rejectedBy;
     
     // Validate action
     if (!action || !['approve', 'reject'].includes(action)) {
@@ -85,10 +87,30 @@ export async function POST(
       clientReviewNotes: notes,
     };
     
-    // Only set clientReviewedBy for internal users (references users table)
+    // Track who performed the action
     if (session.userType === 'internal') {
       updateData.clientReviewedBy = session.userId;
     }
+    
+    // Store metadata about who approved/rejected
+    updateData.metadata = {
+      ...(submission.metadata || {}),
+      reviewHistory: [
+        ...(submission.metadata?.reviewHistory || []),
+        {
+          action: action,
+          performedBy: session.userType === 'internal' ? session.userId : session.email,
+          performedByType: session.userType,
+          performedAt: new Date().toISOString(),
+          notes: notes,
+          sessionInfo: {
+            userId: session.userId,
+            email: session.email,
+            userType: session.userType
+          }
+        }
+      ]
+    };
     
     // Capture price snapshots when approving
     if (action === 'approve') {
@@ -169,6 +191,25 @@ export async function POST(
       })
       .where(eq(orderSiteSubmissions.id, params.submissionId))
       .returning();
+    
+    // If using line items system and approving, update the associated line item
+    if (isLineItemsSystemEnabled() && action === 'approve' && submission.metadata?.assignedToLineItemId) {
+      await db.update(orderLineItems)
+        .set({
+          status: 'approved',
+          approvedPrice: updatedSubmission[0].retailPriceSnapshot,
+          wholesalePrice: updatedSubmission[0].wholesalePriceSnapshot,
+          metadata: {
+            ...(await db.query.orderLineItems.findFirst({
+              where: eq(orderLineItems.id, submission.metadata.assignedToLineItemId)
+            }))?.metadata,
+            approvedAt: new Date().toISOString(),
+            approvedBy: session.email
+          },
+          updatedAt: new Date()
+        })
+        .where(eq(orderLineItems.id, submission.metadata.assignedToLineItemId));
+    }
     
     return NextResponse.json({ 
       message: `Submission ${action}d successfully`,

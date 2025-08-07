@@ -1,12 +1,13 @@
 'use client';
 
-import { useState, useEffect, useCallback, useRef } from 'react';
+import { useState, useEffect, useCallback } from 'react';
 import { useRouter } from 'next/navigation';
 import Link from 'next/link';
 import AuthWrapper from '@/components/AuthWrapper';
 import Header from '@/components/Header';
 import { AuthService } from '@/lib/auth';
 import { formatCurrency } from '@/lib/utils/formatting';
+import { isLineItemsSystemEnabled } from '@/lib/config/featureFlags';
 import CreateClientModal from '@/components/ui/CreateClientModal';
 import CreateTargetPageModal from '@/components/ui/CreateTargetPageModal';
 import OrderProgressView from '@/components/orders/OrderProgressView';
@@ -20,18 +21,6 @@ import {
 
 // Service fee constant - $79 per link
 const SERVICE_FEE_CENTS = 7900;
-
-// Debounce utility
-function debounce<T extends (...args: any[]) => any>(
-  func: T,
-  wait: number
-): (...args: Parameters<T>) => void {
-  let timeout: NodeJS.Timeout;
-  return (...args: Parameters<T>) => {
-    clearTimeout(timeout);
-    timeout = setTimeout(() => func(...args), wait);
-  };
-}
 
 interface OrderLineItem {
   id: string;
@@ -317,8 +306,48 @@ export default function EditOrderPage({ params }: { params: Promise<{ id: string
                      new Date(order.createdAt).getTime() > Date.now() - 60000; // Created within last minute
         setIsNewOrder(isNew);
         
-        // Load order groups into line items
-        if (order.orderGroups && order.orderGroups.length > 0) {
+        // Load line items from the line items system if available
+        if (isLineItemsSystemEnabled() && order.lineItems && order.lineItems.length > 0) {
+          console.log('[LOAD_ORDER] Loading from line items system');
+          
+          const newLineItems: OrderLineItem[] = [];
+          const newSelectedClients = new Map<string, { selected: boolean; linkCount: number }>();
+          
+          // Track clients and their line item counts
+          const clientCounts = new Map<string, number>();
+          
+          order.lineItems.forEach((dbItem: any) => {
+            // Create UI line item from database line item
+            newLineItems.push({
+              id: dbItem.id, // Use actual database ID
+              clientId: dbItem.clientId,
+              clientName: dbItem.client?.name || 'Unknown Client',
+              targetPageId: dbItem.targetPageId,
+              targetPageUrl: dbItem.targetPageUrl,
+              anchorText: dbItem.anchorText,
+              wholesalePrice: dbItem.metadata?.wholesalePrice || (dbItem.estimatedPrice - SERVICE_FEE_CENTS),
+              price: dbItem.approvedPrice || dbItem.estimatedPrice || (getCurrentWholesaleEstimate() + SERVICE_FEE_CENTS)
+            });
+            
+            // Count line items per client
+            const count = clientCounts.get(dbItem.clientId) || 0;
+            clientCounts.set(dbItem.clientId, count + 1);
+          });
+          
+          // Set selected clients based on line items
+          clientCounts.forEach((count, clientId) => {
+            newSelectedClients.set(clientId, { 
+              selected: true, 
+              linkCount: count 
+            });
+          });
+          
+          setLineItems(newLineItems);
+          setSelectedClients(newSelectedClients);
+        }
+        // Fallback to loading from order groups (legacy system)
+        else if (order.orderGroups && order.orderGroups.length > 0) {
+          console.log('[LOAD_ORDER] Loading from orderGroups system (fallback)');
           const newLineItems: OrderLineItem[] = [];
           const newSelectedClients = new Map<string, { selected: boolean; linkCount: number }>();
           
@@ -591,22 +620,112 @@ export default function EditOrderPage({ params }: { params: Promise<{ id: string
       console.log('[AUTO_SAVE] Order data being sent:', orderData);
       
       if (draftOrderId) {
-        // Update existing order
-        const response = await fetch(`/api/orders/${draftOrderId}`, {
-          method: 'PUT',
-          headers: { 'Content-Type': 'application/json' },
-          credentials: 'include',
-          body: JSON.stringify(orderData)
-        });
-        
-        if (response.ok) {
-          console.log('[AUTO_SAVE] Successfully saved order');
-          setSaveStatus('saved');
-          setLastSaved(new Date());
+        // Check if line items system is enabled
+        if (isLineItemsSystemEnabled() && lineItems.length > 0) {
+          console.log('[AUTO_SAVE] Using line items system');
+          
+          // Update order with basic info first
+          const orderUpdateResponse = await fetch(`/api/orders/${draftOrderId}`, {
+            method: 'PUT',
+            headers: { 'Content-Type': 'application/json' },
+            credentials: 'include',
+            body: JSON.stringify({
+              ...accountInfo,
+              subtotal: subtotal,
+              totalPrice: total,
+              totalWholesale: lineItems.reduce((sum, item) => 
+                sum + (item.wholesalePrice || (item.price - SERVICE_FEE_CENTS)), 0
+              ),
+              profitMargin: lineItems.length * SERVICE_FEE_CENTS,
+              // Don't send orderGroups for line items system
+              orderGroups: []
+            })
+          });
+          
+          if (orderUpdateResponse.ok) {
+            // Now save line items via the line items API
+            const lineItemsData = lineItems.map(item => ({
+              clientId: item.clientId,
+              targetPageId: item.targetPageId,
+              targetPageUrl: item.targetPageUrl,
+              anchorText: item.anchorText,
+              estimatedPrice: item.price,
+              metadata: {
+                wholesalePrice: item.wholesalePrice || (item.price - SERVICE_FEE_CENTS),
+                serviceFee: SERVICE_FEE_CENTS,
+                clientName: item.clientName
+              }
+            }));
+            
+            // First get existing line items to clear them
+            const existingItemsResponse = await fetch(`/api/orders/${draftOrderId}/line-items`, {
+              credentials: 'include'
+            });
+            
+            let existingItems = [];
+            if (existingItemsResponse.ok) {
+              const existingData = await existingItemsResponse.json();
+              existingItems = existingData.lineItems || [];
+            }
+            
+            // Clear existing line items if any exist
+            if (existingItems.length > 0) {
+              const existingItemIds = existingItems.map(item => item.id);
+              await fetch(`/api/orders/${draftOrderId}/line-items`, {
+                method: 'DELETE',
+                headers: { 'Content-Type': 'application/json' },
+                credentials: 'include',
+                body: JSON.stringify({
+                  itemIds: existingItemIds,
+                  reason: 'Clearing items before draft save'
+                })
+              });
+            }
+            
+            // Now create new line items
+            const lineItemsResponse = await fetch(`/api/orders/${draftOrderId}/line-items`, {
+              method: 'POST',
+              headers: { 'Content-Type': 'application/json' },
+              credentials: 'include',
+              body: JSON.stringify({
+                items: lineItemsData,
+                reason: 'Order draft saved from edit page'
+              })
+            });
+            
+            if (lineItemsResponse.ok) {
+              console.log('[AUTO_SAVE] Successfully saved order and line items');
+              setSaveStatus('saved');
+              setLastSaved(new Date());
+            } else {
+              const errorData = await lineItemsResponse.json();
+              console.error('[AUTO_SAVE] Failed to save line items:', errorData);
+              setSaveStatus('error');
+            }
+          } else {
+            const errorData = await orderUpdateResponse.json();
+            console.error('[AUTO_SAVE] Failed to update order:', errorData);
+            setSaveStatus('error');
+          }
         } else {
-          const errorData = await response.json();
-          console.error('[AUTO_SAVE] Failed to save order:', errorData);
-          setSaveStatus('error');
+          // Fallback to old orderGroups system
+          console.log('[AUTO_SAVE] Using orderGroups system (fallback)');
+          const response = await fetch(`/api/orders/${draftOrderId}`, {
+            method: 'PUT',
+            headers: { 'Content-Type': 'application/json' },
+            credentials: 'include',
+            body: JSON.stringify(orderData)
+          });
+          
+          if (response.ok) {
+            console.log('[AUTO_SAVE] Successfully saved order');
+            setSaveStatus('saved');
+            setLastSaved(new Date());
+          } else {
+            const errorData = await response.json();
+            console.error('[AUTO_SAVE] Failed to save order:', errorData);
+            setSaveStatus('error');
+          }
         }
       }
       // Note: Removed auto-creation of new drafts
@@ -623,23 +742,7 @@ export default function EditOrderPage({ params }: { params: Promise<{ id: string
   }, [session, draftOrderId, lineItems, selectedClients, clients, subtotal, total, estimatedPricePerLink,
       selectedAccountId, selectedAccountEmail, selectedAccountName, selectedAccountCompany]);
   
-  // Use ref to avoid recreating debounced function
-  const saveOrderDraftRef = useRef(saveOrderDraft);
-  saveOrderDraftRef.current = saveOrderDraft;
-  
-  // Debounced auto-save - stable reference
-  const debouncedSave = useCallback(
-    debounce(() => saveOrderDraftRef.current(), 2000),
-    [] // No dependencies, stable function
-  );
-  
-  // Trigger auto-save when order changes
-  useEffect(() => {
-    if (lineItems.length > 0) {
-      console.log('[AUTO_SAVE] Triggering auto-save due to changes');
-      debouncedSave();
-    }
-  }, [lineItems, selectedClients, debouncedSave]); // Trigger on any line items or client selection changes
+  // Auto-save removed - manual save only
   
   // Draft loading is handled by loadDrafts() in the main useEffect above
 
@@ -913,10 +1016,7 @@ export default function EditOrderPage({ params }: { params: Promise<{ id: string
       }
     }
     
-    // Save draft before showing confirmation
-    await saveOrderDraft();
-    
-    // Show confirmation modal
+    // Show confirmation modal (no auto-save - user must confirm to save)
     setShowConfirmModal(true);
   };
   
