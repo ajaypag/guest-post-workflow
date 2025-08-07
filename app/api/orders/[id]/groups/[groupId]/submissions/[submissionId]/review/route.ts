@@ -196,21 +196,26 @@ export async function POST(
     
     // If using line items system and approving, update the associated line item
     if (isLineItemsSystemEnabled() && action === 'approve' && submission.metadata?.assignedToLineItemId) {
-      await db.update(orderLineItems)
-        .set({
-          status: 'approved',
-          approvedPrice: updatedSubmission[0].retailPriceSnapshot,
-          wholesalePrice: updatedSubmission[0].wholesalePriceSnapshot,
-          metadata: {
-            ...(await db.query.orderLineItems.findFirst({
-              where: eq(orderLineItems.id, submission.metadata.assignedToLineItemId)
-            }))?.metadata,
-            approvedAt: new Date().toISOString(),
-            approvedBy: session.email
-          },
-          updatedAt: new Date()
-        })
-        .where(eq(orderLineItems.id, submission.metadata.assignedToLineItemId));
+      const lineItem = await db.query.orderLineItems.findFirst({
+        where: eq(orderLineItems.id, submission.metadata.assignedToLineItemId)
+      });
+      
+      if (lineItem) {
+        await db.update(orderLineItems)
+          .set({
+            status: 'approved',
+            approvedPrice: updatedSubmission.retailPriceSnapshot,
+            wholesalePrice: updatedSubmission.wholesalePriceSnapshot,
+            metadata: {
+              ...(lineItem.metadata as any || {}),
+              approvedAt: new Date().toISOString(),
+              approvedBy: session.email
+            },
+            modifiedAt: new Date(),
+            modifiedBy: session.userId
+          })
+          .where(eq(orderLineItems.id, submission.metadata.assignedToLineItemId));
+      }
     }
     
     return NextResponse.json({ 

@@ -288,16 +288,25 @@ export async function POST(
 
       // If using line items, update their status to invoiced
       if (useLineItems) {
-        await db.update(orderLineItems)
-          .set({
-            status: 'invoiced',
-            metadata: {
-              invoicedAt: new Date().toISOString(),
-              invoiceNumber
-            },
-            updatedAt: new Date()
-          })
-          .where(eq(orderLineItems.orderId, orderId));
+        // Get existing line items to preserve metadata
+        const existingLineItems = await db.query.orderLineItems.findMany({
+          where: eq(orderLineItems.orderId, orderId)
+        });
+        
+        // Update each line item with merged metadata
+        for (const item of existingLineItems) {
+          await db.update(orderLineItems)
+            .set({
+              status: 'invoiced',
+              metadata: {
+                ...(item.metadata as any || {}),
+                invoicedAt: new Date().toISOString(),
+                invoiceNumber
+              },
+              modifiedAt: new Date()
+            })
+            .where(eq(orderLineItems.id, item.id));
+        }
       }
       
       return NextResponse.json({
@@ -306,7 +315,7 @@ export async function POST(
         message: isRegenerate ? 'Invoice regenerated successfully' : 'Invoice generated successfully',
         invoiceMethod: useLineItems ? 'line_items' : 'submissions',
         itemCount: approvedItems.length,
-        approvedSites: approvedSubmissions.length
+        approvedSites: approvedItems.length
       });
 
     } else if (action === 'mark_paid') {

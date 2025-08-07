@@ -63,16 +63,12 @@ export async function POST(
       stateChangeMetadata.notificationMessage = 'Sites are ready for your review';
     }
 
-    // Update the order state with metadata
+    // Update the order state
     await db
       .update(orders)
       .set({
         state,
-        updatedAt: new Date(),
-        metadata: {
-          ...(existingOrder.metadata || {}),
-          lastStateChange: stateChangeMetadata
-        }
+        updatedAt: new Date()
       })
       .where(eq(orders.id, id));
 

@@ -496,9 +496,9 @@ export default function ExternalOrderReviewPage() {
           {benchmarkData && (
             <div className="mt-6">
               <BenchmarkDisplay 
-                benchmarkData={benchmarkData}
+                benchmark={benchmarkData}
                 orderId={orderId}
-                showHistory={false}
+                userType="account"
               />
             </div>
           )}

@@ -26,11 +26,13 @@ const SERVICE_FEE_CENTS = 7900;
 
 interface LineItem {
   id: string;
+  orderId: string;
   clientId: string;
   clientName: string;
   targetPageId?: string;
   targetPageUrl?: string;
   anchorText?: string;
+  status: string;
   price: number;
   wholesalePrice?: number;
   isEstimate?: boolean;
@@ -203,11 +205,13 @@ export default function OrderDetailPage() {
           for (let i = 0; i < group.linkCount; i++) {
             items.push({
               id: `${group.id}-${i}`,
+              orderId: params.id as string,
               clientId: group.clientId,
               clientName: group.client?.name || 'Unknown Client',
               targetPageUrl: group.targetPages?.[i]?.url || '',
               targetPageId: group.targetPages?.[i]?.pageId,
               anchorText: group.anchorTexts?.[i] || '',
+              status: 'draft',
               price: group.totalPrice || group.estimatedPrice || 0,
               wholesalePrice: group.wholesalePrice || (group.totalPrice ? group.totalPrice - SERVICE_FEE_CENTS * group.linkCount : 0),
               isEstimate: data.status === 'draft' || data.status === 'pending_confirmation',

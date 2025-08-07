@@ -670,7 +670,7 @@ export default function EditOrderPage({ params }: { params: Promise<{ id: string
             
             // Clear existing line items if any exist
             if (existingItems.length > 0) {
-              const existingItemIds = existingItems.map(item => item.id);
+              const existingItemIds = existingItems.map((item: any) => item.id);
               await fetch(`/api/orders/${draftOrderId}/line-items`, {
                 method: 'DELETE',
                 headers: { 'Content-Type': 'application/json' },

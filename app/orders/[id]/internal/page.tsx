@@ -2104,7 +2104,7 @@ export default function InternalOrderManagementPage() {
                   onRemoveSubmission={handleRemoveSubmission}
                   onRefresh={handleRefresh}
                   onAssignToLineItem={handleAssignToLineItem}
-                  lineItems={lineItems}
+                  lineItems={order.lineItems || []}
                   useStatusSystem={true}
                   useLineItems={isLineItemsSystemEnabled()}
                   benchmarkData={benchmarkData}

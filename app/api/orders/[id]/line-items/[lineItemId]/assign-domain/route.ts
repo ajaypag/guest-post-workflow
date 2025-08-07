@@ -63,7 +63,10 @@ export async function POST(
         targetPageUrl: submission?.metadata?.targetPageUrl || lineItem.targetPageUrl,
         anchorText: submission?.metadata?.anchorText || lineItem.anchorText,
         status: 'assigned',
-        updatedAt: new Date()
+        assignedAt: new Date(),
+        assignedBy: session.userId,
+        modifiedAt: new Date(),
+        modifiedBy: session.userId
       })
       .where(eq(orderLineItems.id, params.lineItemId));
 
@@ -128,7 +131,8 @@ export async function DELETE(
         assignedDomainId: null,
         assignedDomain: null,
         status: 'pending',
-        updatedAt: new Date()
+        modifiedAt: new Date(),
+        modifiedBy: session.userId
       })
       .where(eq(orderLineItems.id, params.lineItemId));
 
