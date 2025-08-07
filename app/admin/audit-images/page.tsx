@@ -81,7 +81,7 @@ export default function AuditImagesPage() {
       <div className="max-w-6xl mx-auto px-4">
         <div className="bg-white rounded-lg shadow-lg p-8">
           <div className="flex items-center gap-3 mb-6">
-            <Image className="w-8 h-8 text-blue-600" />
+            <Image className="w-8 h-8 text-blue-600" aria-hidden="true" />
             <h1 className="text-3xl font-bold text-gray-900">Marketing Images Audit</h1>
           </div>
 
