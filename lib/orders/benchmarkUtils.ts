@@ -11,7 +11,7 @@ import { eq, and } from 'drizzle-orm';
 export async function createOrderBenchmark(
   orderId: string,
   userId: string,
-  reason: 'order_confirmed' | 'manual_update' | 'client_revision' = 'order_confirmed'
+  reason: 'order_confirmed' | 'order_submitted' | 'manual_update' | 'client_revision' = 'order_confirmed'
 ) {
   return await db.transaction(async (tx) => {
     // Mark any existing benchmarks as not latest
@@ -159,7 +159,7 @@ export async function createOrderBenchmark(
       capturedBy: userId,
       captureReason: reason,
       benchmarkData,
-      notes: reason === 'order_confirmed' 
+      notes: reason === 'order_confirmed' || reason === 'order_submitted' 
         ? 'Initial benchmark created at order confirmation'
         : undefined,
     }).returning();
