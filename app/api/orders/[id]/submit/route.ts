@@ -1,7 +1,8 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { db } from '@/lib/db/connection';
 import { orders } from '@/lib/db/orderSchema';
-import { eq, and } from 'drizzle-orm';
+import { users } from '@/lib/db/schema';
+import { eq, and, or } from 'drizzle-orm';
 import { AuthServiceServer } from '@/lib/auth-server';
 import { createOrderBenchmark } from '@/lib/orders/benchmarkUtils';
 
@@ -54,7 +55,29 @@ export async function POST(
       // This captures what the client originally requested
       let benchmark;
       try {
-        benchmark = await createOrderBenchmark(orderId, session.userId, 'order_submitted');
+        // For external users, we need to use a valid user ID from the users table
+        // We'll use the system user or the first admin user
+        let capturedByUserId = session.userId;
+        
+        if (session.userType === 'account') {
+          // Find a system user or admin to attribute this to
+          const systemUser = await tx.query.users.findFirst({
+            where: (users, { or, eq }) => or(
+              eq(users.email, 'system@localhost'),
+              eq(users.role, 'admin')
+            ),
+            orderBy: (users, { asc }) => [asc(users.createdAt)]
+          });
+          
+          if (systemUser) {
+            capturedByUserId = systemUser.id;
+          } else {
+            // If no admin exists, skip benchmark creation for now
+            throw new Error('No system user available for benchmark creation');
+          }
+        }
+        
+        benchmark = await createOrderBenchmark(orderId, capturedByUserId, 'order_submitted');
         console.log(`✅ Created benchmark for submitted order ${orderId}`);
       } catch (benchmarkError) {
         console.error('Failed to create benchmark on submission:', benchmarkError);
