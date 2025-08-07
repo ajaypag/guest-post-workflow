@@ -44,7 +44,7 @@ export default function IndustriesPage() {
       description: 'Product category domination through lifestyle and industry publications',
       features: ['Product Category Authority', 'Lifestyle Publication Placement', 'Seasonal Campaign Strategy'],
       href: '/ecommerce-link-building',
-      available: false
+      available: true
     },
     {
       id: 'consulting',
