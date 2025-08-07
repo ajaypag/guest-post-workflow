@@ -28,7 +28,9 @@ export async function POST() {
           captured_by UUID NOT NULL REFERENCES users(id),
           capture_reason VARCHAR(50) NOT NULL,
           benchmark_data JSONB NOT NULL,
-          notes TEXT
+          notes TEXT,
+          created_at TIMESTAMP NOT NULL DEFAULT NOW(),
+          updated_at TIMESTAMP NOT NULL DEFAULT NOW()
         )
       `);
       
@@ -164,6 +166,24 @@ export async function POST() {
         ADD COLUMN is_latest BOOLEAN NOT NULL DEFAULT true
       `);
       columnsAdded.push('is_latest');
+    }
+    
+    // Add created_at if missing
+    if (!existingColumns.includes('created_at')) {
+      await db.execute(sql`
+        ALTER TABLE order_benchmarks 
+        ADD COLUMN created_at TIMESTAMP NOT NULL DEFAULT NOW()
+      `);
+      columnsAdded.push('created_at');
+    }
+    
+    // Add updated_at if missing
+    if (!existingColumns.includes('updated_at')) {
+      await db.execute(sql`
+        ALTER TABLE order_benchmarks 
+        ADD COLUMN updated_at TIMESTAMP NOT NULL DEFAULT NOW()
+      `);
+      columnsAdded.push('updated_at');
     }
     
     // Create indexes if they don't exist

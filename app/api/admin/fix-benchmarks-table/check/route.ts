@@ -24,7 +24,9 @@ export async function GET() {
       'captured_by',
       'capture_reason',
       'benchmark_data',
-      'notes'
+      'notes',
+      'created_at',
+      'updated_at'
     ];
     
     // Find missing columns
