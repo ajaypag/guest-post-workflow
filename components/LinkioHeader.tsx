@@ -27,11 +27,10 @@ export default function LinkioHeader({
     setIsIndustriesOpen(false);
   };
 
-  // Navigation items for default variant
+  // Navigation items for default variant (Industries moved to separate dropdown)
   const navItems = [
     { href: '/how-it-works', label: 'How It Works' },
     { href: '/guest-posting-sites', label: 'Browse Sites' },
-    { href: '/blog', label: 'Blog' },
   ];
 
   // Industries dropdown items
@@ -112,31 +111,21 @@ export default function LinkioHeader({
             {/* Default variant - full nav */}
             {variant === 'default' && (
               <>
-                {navItems.map((item) => (
-                  <Link 
-                    key={item.href}
-                    href={item.href}
-                    className="text-gray-600 hover:text-gray-900 text-sm font-medium transition-colors"
-                  >
-                    {item.label}
-                  </Link>
-                ))}
-                
-                {/* Industries Dropdown */}
-                <div className="relative">
+                {/* Industries Dropdown - First for prominence */}
+                <div 
+                  className="relative"
+                  onMouseEnter={() => setIsIndustriesOpen(true)}
+                  onMouseLeave={() => setIsIndustriesOpen(false)}
+                >
                   <button
-                    onMouseEnter={() => setIsIndustriesOpen(true)}
-                    onMouseLeave={() => setIsIndustriesOpen(false)}
                     className="flex items-center gap-1 text-gray-600 hover:text-gray-900 text-sm font-medium transition-colors"
                   >
                     Industries
-                    <ChevronDown className="w-3 h-3" />
+                    <ChevronDown className={`w-3 h-3 transition-transform ${isIndustriesOpen ? 'rotate-180' : ''}`} />
                   </button>
                   
                   {isIndustriesOpen && (
                     <div
-                      onMouseEnter={() => setIsIndustriesOpen(true)}
-                      onMouseLeave={() => setIsIndustriesOpen(false)}
                       className="absolute top-full left-0 mt-1 w-64 bg-white rounded-lg shadow-lg border border-gray-100 py-2 z-50"
                     >
                       {industriesItems.map((item) => (
@@ -144,6 +133,7 @@ export default function LinkioHeader({
                           key={item.href}
                           href={item.href}
                           className="block px-4 py-2 hover:bg-gray-50 transition-colors"
+                          onClick={() => setIsIndustriesOpen(false)}
                         >
                           <div className="font-medium text-gray-900 text-sm">{item.label}</div>
                           {item.description && (
@@ -154,6 +144,23 @@ export default function LinkioHeader({
                     </div>
                   )}
                 </div>
+                
+                {navItems.map((item) => (
+                  <Link 
+                    key={item.href}
+                    href={item.href}
+                    className="text-gray-600 hover:text-gray-900 text-sm font-medium transition-colors"
+                  >
+                    {item.label}
+                  </Link>
+                ))}
+                
+                <Link 
+                  href="/blog"
+                  className="text-gray-600 hover:text-gray-900 text-sm font-medium transition-colors"
+                >
+                  Blog
+                </Link>
                 
                 <Link 
                   href="https://postflow.outreachlabs.net/login"
@@ -229,18 +236,7 @@ export default function LinkioHeader({
       {variant === 'default' && isMobileMenuOpen && (
         <div className="md:hidden absolute top-full left-0 right-0 bg-white border-b border-gray-100 shadow-lg z-50">
           <div className="px-4 py-6 space-y-4">
-            {navItems.map((item) => (
-              <Link
-                key={item.href}
-                href={item.href}
-                onClick={closeMobileMenu}
-                className="block text-gray-900 hover:text-blue-600 font-medium py-2 transition-colors"
-              >
-                {item.label}
-              </Link>
-            ))}
-            
-            {/* Industries Section for Mobile */}
+            {/* Industries Section for Mobile - First */}
             <div>
               <button
                 onClick={() => setIsIndustriesOpen(!isIndustriesOpen)}
@@ -265,6 +261,25 @@ export default function LinkioHeader({
                 </div>
               )}
             </div>
+            
+            {navItems.map((item) => (
+              <Link
+                key={item.href}
+                href={item.href}
+                onClick={closeMobileMenu}
+                className="block text-gray-900 hover:text-blue-600 font-medium py-2 transition-colors"
+              >
+                {item.label}
+              </Link>
+            ))}
+            
+            <Link
+              href="/blog"
+              onClick={closeMobileMenu}
+              className="block text-gray-900 hover:text-blue-600 font-medium py-2 transition-colors"
+            >
+              Blog
+            </Link>
             
             <div className="pt-4 border-t border-gray-100">
               <Link
