@@ -1,7 +1,7 @@
 'use client';
 
 import { useEffect, useState } from 'react';
-import { useRouter } from 'next/navigation';
+import { useRouter, usePathname } from 'next/navigation';
 import { AuthService, type AuthSession } from '@/lib/auth';
 
 interface AuthWrapperProps {
@@ -11,6 +11,7 @@ interface AuthWrapperProps {
 
 export default function AuthWrapper({ children, requireAdmin = false }: AuthWrapperProps) {
   const router = useRouter();
+  const pathname = usePathname();
   const [session, setSession] = useState<AuthSession | null>(null);
   const [loading, setLoading] = useState(true);
 
@@ -19,7 +20,9 @@ export default function AuthWrapper({ children, requireAdmin = false }: AuthWrap
       const currentSession = AuthService.getSession();
       
       if (!currentSession) {
-        router.push('/login');
+        // Preserve the current path as redirect parameter
+        const redirectUrl = `/login?redirect=${encodeURIComponent(pathname)}`;
+        router.push(redirectUrl);
         return;
       }
       
@@ -33,7 +36,7 @@ export default function AuthWrapper({ children, requireAdmin = false }: AuthWrap
     };
 
     checkAuth();
-  }, [router, requireAdmin]);
+  }, [router, requireAdmin, pathname]);
 
   if (loading) {
     return (
