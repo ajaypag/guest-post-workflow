@@ -59,14 +59,21 @@ async function getWebsites() {
       .from(websites);
 
     // Get niches with at least 10 websites (minimum threshold for page creation)
+    // Use same counting method as individual niche pages for consistency
     const nichesResult = await db.execute(sql`
+      WITH niche_counts AS (
+        SELECT 
+          UNNEST(niche) as niche_name
+        FROM websites
+        WHERE niche IS NOT NULL AND array_length(niche, 1) > 0
+      )
       SELECT 
-        UNNEST(niche) as niche_name,
-        COUNT(*) as website_count
-      FROM websites
-      WHERE niche IS NOT NULL AND array_length(niche, 1) > 0
+        niche_name,
+        COUNT(DISTINCT websites.id) as website_count
+      FROM niche_counts nc
+      JOIN websites ON nc.niche_name = ANY(websites.niche)
       GROUP BY niche_name
-      HAVING COUNT(*) >= 10
+      HAVING COUNT(DISTINCT websites.id) >= 10
       ORDER BY website_count DESC
       LIMIT 20
     `);

@@ -126,29 +126,38 @@ async function getRelatedNiches(nicheName: string, currentSlug: string) {
     const categories = Array.from(categoriesSet);
     if (categories.length === 0) return [];
     
-    // Get all websites that share these categories
-    const relatedWebsites = await db.execute(sql`
-      SELECT UNNEST(niche) as niche_name
-      FROM websites
-      WHERE categories && ARRAY[${sql.raw(categories.map(c => `'${c}'`).join(','))}]::text[]
-        AND niche IS NOT NULL
-        AND array_length(niche, 1) > 0
-        AND NOT (${nicheName} = ANY(niche))
+    // Get related niches with accurate counts (count distinct websites, not occurrences)
+    const relatedNichesQuery = await db.execute(sql`
+      WITH related_niches AS (
+        SELECT UNNEST(niche) as niche_name
+        FROM websites
+        WHERE categories && ARRAY[${sql.raw(categories.map(c => `'${c}'`).join(','))}]::text[]
+          AND niche IS NOT NULL
+          AND array_length(niche, 1) > 0
+          AND NOT (${nicheName} = ANY(niche))
+      )
+      SELECT 
+        niche_name,
+        COUNT(DISTINCT websites.id) as website_count
+      FROM related_niches rn
+      JOIN websites ON rn.niche_name = ANY(websites.niche)
+      WHERE rn.niche_name != ${nicheName}
+      GROUP BY niche_name
+      HAVING COUNT(DISTINCT websites.id) >= 5
+      ORDER BY website_count DESC
+      LIMIT 12
     `);
     
-    // Count occurrences of each niche
+    // Convert query results to the expected format
     const nicheCount = new Map<string, number>();
-    relatedWebsites.rows.forEach((row: any) => {
+    relatedNichesQuery.rows.forEach((row: any) => {
       if (row.niche_name && row.niche_name !== nicheName) {
-        nicheCount.set(row.niche_name.trim(), (nicheCount.get(row.niche_name.trim()) || 0) + 1);
+        nicheCount.set(row.niche_name.trim(), parseInt(row.website_count));
       }
     });
     
-    // Convert to array and sort by count
+    // Convert to array (already filtered and sorted in SQL query)
     return Array.from(nicheCount.entries())
-      .filter(([_, count]) => count >= 5)
-      .sort((a, b) => b[1] - a[1])
-      .slice(0, 12)
       .map(([name, count]) => ({
         name,
         count,
