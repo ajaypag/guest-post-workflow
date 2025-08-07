@@ -97,8 +97,6 @@ export const orderSiteSubmissions = pgTable('order_site_submissions', {
   exclusionReason: text('exclusion_reason'),
   // Why the domain was excluded from the order
   
-  benchmarkId: uuid('benchmark_id'),
-  
   // Metadata
   metadata: jsonb('metadata').$type<{
     targetPageUrl?: string;
