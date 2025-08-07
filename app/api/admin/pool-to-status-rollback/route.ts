@@ -48,7 +48,6 @@ export async function POST(request: NextRequest) {
               inclusionStatus: null,
               inclusionOrder: null,
               exclusionReason: null,
-              benchmarkId: null,
               updatedAt: new Date(),
             })
             .where(eq(orderSiteSubmissions.id, submission.id));
