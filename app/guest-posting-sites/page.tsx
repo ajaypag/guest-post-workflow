@@ -2,6 +2,7 @@ import { Metadata } from 'next';
 import { db } from '@/lib/db/connection';
 import { websites } from '@/lib/db/websiteSchema';
 import { sql } from 'drizzle-orm';
+import { getMarketingStats, formatSiteCount } from '@/lib/marketing-stats';
 import { 
   Globe, 
   TrendingUp, 
@@ -23,10 +24,15 @@ import LinkioHeader from '@/components/LinkioHeader';
 import MarketingCTA from '@/components/MarketingCTA';
 import MarketingFooter from '@/components/MarketingFooter';
 
-export const metadata: Metadata = {
-  title: 'Guest Posting Sites List - 13,000+ Sites with Pricing | Linkio',
-  description: 'Browse 13,000+ guest posting sites with transparent pricing. See wholesale costs + $79 service fee. Filter by category, DR, traffic, and more.',
-};
+export async function generateMetadata(): Promise<Metadata> {
+  const stats = await getMarketingStats();
+  const siteCount = formatSiteCount(stats.totalSites);
+  
+  return {
+    title: `Guest Posting Sites List - ${siteCount}+ Sites with Pricing | Linkio`,
+    description: `Browse ${siteCount}+ guest posting sites with transparent pricing. See wholesale costs + $79 service fee. Filter by category, DR, traffic, and more.`,
+  };
+}
 
 async function getWebsites() {
   try {
@@ -87,9 +93,11 @@ async function getWebsites() {
     };
   } catch (error) {
     console.warn('Could not fetch websites data, database not available during build:', error);
+    // Use same fallback as marketing stats for consistency
+    const fallbackStats = await getMarketingStats();
     return {
       websites: [],
-      totalCount: 13000, // Fallback number for build time
+      totalCount: fallbackStats.totalSites,
       niches: [],
     };
   }
