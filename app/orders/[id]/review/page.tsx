@@ -406,25 +406,30 @@ export default function ExternalOrderReviewPage() {
               </div>
             )}
 
-            {/* Progress Stats */}
-            <div className="grid grid-cols-4 gap-4 mt-6">
+            {/* Benchmark Display - Show Original Request vs Current Selection */}
+            {benchmarkData && (
+              <div className="mt-6">
+                <BenchmarkDisplay 
+                  benchmark={benchmarkData}
+                  orderId={orderId}
+                  userType="account"
+                />
+              </div>
+            )}
+
+            {/* Progress Stats - Simple included/excluded counts */}
+            <div className="grid grid-cols-3 gap-4 mt-6">
               <div className="text-center">
-                <p className="text-2xl font-semibold text-gray-900">{pendingCount}</p>
-                <p className="text-xs text-gray-500">Pending Review</p>
+                <p className="text-2xl font-semibold text-green-600">{includedCount}</p>
+                <p className="text-xs text-gray-500">Included</p>
               </div>
               <div className="text-center">
-                <p className="text-2xl font-semibold text-green-600">{approvedCount}</p>
-                <p className="text-xs text-gray-500">Approved</p>
+                <p className="text-2xl font-semibold text-amber-600">{savedForLaterCount}</p>
+                <p className="text-xs text-gray-500">Saved for Later</p>
               </div>
               <div className="text-center">
-                <p className="text-2xl font-semibold text-red-600">{rejectedCount}</p>
-                <p className="text-xs text-gray-500">Rejected</p>
-              </div>
-              <div className="text-center">
-                <p className="text-2xl font-semibold text-blue-600">
-                  {Math.round((approvedCount / totalSubmissions) * 100) || 0}%
-                </p>
-                <p className="text-xs text-gray-500">Completion</p>
+                <p className="text-2xl font-semibold text-gray-400">{excludedCount}</p>
+                <p className="text-xs text-gray-500">Excluded</p>
               </div>
             </div>
           </div>
@@ -500,17 +505,6 @@ export default function ExternalOrderReviewPage() {
             useStatusSystem={true}  // External users CAN use status system for organization
             benchmarkData={benchmarkData}
           />
-
-          {/* Benchmark Display */}
-          {benchmarkData && (
-            <div className="mt-6">
-              <BenchmarkDisplay 
-                benchmark={benchmarkData}
-                orderId={orderId}
-                userType="account"
-              />
-            </div>
-          )}
 
           {/* Pricing Summary for Selected Sites */}
           {includedCount > 0 && (
