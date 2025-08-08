@@ -20,15 +20,19 @@ export default function AuthWrapper({ children, requireAdmin = false }: AuthWrap
       const currentSession = AuthService.getSession();
       
       if (!currentSession) {
-        // Preserve the current path as redirect parameter
-        console.log('🔐 AuthWrapper redirect - Original pathname:', pathname);
+        // Get the full current path from window.location if available
+        const fullPath = typeof window !== 'undefined' ? window.location.pathname : pathname;
+        
+        console.log('🔐 AuthWrapper redirect - usePathname():', pathname);
+        console.log('🔐 AuthWrapper redirect - window.location.pathname:', typeof window !== 'undefined' ? window.location.pathname : 'N/A');
+        console.log('🔐 AuthWrapper redirect - Using fullPath:', fullPath);
         
         // Store in sessionStorage as backup and use URL parameter
         if (typeof window !== 'undefined') {
-          sessionStorage.setItem('auth_redirect', pathname);
+          sessionStorage.setItem('auth_redirect', fullPath);
         }
         
-        const encodedPath = encodeURIComponent(pathname);
+        const encodedPath = encodeURIComponent(fullPath);
         console.log('🔐 AuthWrapper redirect - Encoded pathname:', encodedPath);
         const redirectUrl = `/login?redirect=${encodedPath}`;
         console.log('🔐 AuthWrapper redirect - Full redirect URL:', redirectUrl);
