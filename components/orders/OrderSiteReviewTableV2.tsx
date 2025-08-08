@@ -539,6 +539,8 @@ export default function OrderSiteReviewTableV2({
                         />
                       </th>
                       <th className="pb-2">Domain</th>
+                      <th className="pb-2">DR</th>
+                      <th className="pb-2">Traffic</th>
                       <th className="pb-2">Status</th>
                       {useLineItems && <th className="pb-2">Line Item</th>}
                       <th className="pb-2">Target Page</th>
@@ -598,6 +600,14 @@ export default function OrderSiteReviewTableV2({
                                   </span>
                                 )}
                               </div>
+                            </td>
+                            <td className="py-3 text-center">
+                              {submission.metadata?.dr || '-'}
+                            </td>
+                            <td className="py-3 text-center">
+                              {submission.metadata?.traffic ? 
+                                submission.metadata.traffic.toLocaleString() :
+                                '-'}
                             </td>
                           <td className="py-3">
                             {permissions.canChangeStatus ? (

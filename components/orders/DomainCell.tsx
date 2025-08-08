@@ -83,7 +83,9 @@ export default function DomainCell({ domain, domainId }: DomainCellProps) {
   const overlapBadge = getOverlapBadge(domain.overlapStatus);
   const authorityBadge = getAuthorityBadge(domain.authorityDirect, domain.authorityRelated);
   const topicScopeBadge = getTopicScopeBadge(domain.topicScope);
-  const isQualified = domain.qualificationStatus === 'qualified';
+  const isQualified = domain.qualificationStatus === 'high_quality' || 
+                      domain.qualificationStatus === 'good_quality' || 
+                      domain.qualificationStatus === 'marginal_quality';
 
   return (
     <div className="space-y-2">

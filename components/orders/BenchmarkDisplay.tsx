@@ -347,22 +347,22 @@ export default function BenchmarkDisplay({
                         Requested: {formatCurrency(benchmark.benchmarkData.originalConstraints.estimatedPricePerLink)}
                       </div>
                       <div className="font-medium">
-                        Current Total: {formatCurrency(benchmark.benchmarkData.orderTotal)}
+                        Current Total: {formatCurrency(comparison?.comparisonData?.actualRevenue || 0)}
                       </div>
                     </div>
                   </div>
                 )}
                 
                 {/* Links Comparison */}
-                {benchmark.benchmarkData.originalConstraints.estimatedLinks && (
+                {benchmark.benchmarkData.totalRequestedLinks && (
                   <div className="flex justify-between">
                     <span className="text-gray-600">Number of Links:</span>
                     <div className="text-right">
                       <div className="text-gray-500">
-                        Requested: {benchmark.benchmarkData.originalConstraints.estimatedLinks} × {benchmark.benchmarkData.originalConstraints.estimatedPricePerLink ? formatCurrency(benchmark.benchmarkData.originalConstraints.estimatedPricePerLink) : 'TBD'}
+                        Requested: {benchmark.benchmarkData.totalRequestedLinks} × {benchmark.benchmarkData.originalConstraints?.estimatedPricePerLink ? formatCurrency(benchmark.benchmarkData.originalConstraints.estimatedPricePerLink) : 'TBD'}
                       </div>
                       <div className="font-medium">
-                        Current: {benchmark.benchmarkData.totalRequestedLinks} links
+                        Current: {comparison?.comparisonData?.deliveredLinks || 0} links
                       </div>
                     </div>
                   </div>
@@ -379,9 +379,7 @@ export default function BenchmarkDisplay({
                           : `${benchmark.benchmarkData.originalConstraints.drRange[0]}+`}
                       </div>
                       <div className="font-medium">
-                        {comparison?.comparisonData?.currentDrRange?.length > 0 
-                          ? `${comparison.comparisonData.currentDrRange[0]} - ${comparison.comparisonData.currentDrRange[1]}`
-                          : <span className="text-gray-400 italic">Selection pending</span>}
+                        <span className="text-gray-400 italic">Selection pending</span>
                       </div>
                     </div>
                   </div>
@@ -396,9 +394,7 @@ export default function BenchmarkDisplay({
                         Requested: {benchmark.benchmarkData.originalConstraints.minTraffic.toLocaleString()}+
                       </div>
                       <div className="font-medium">
-                        {comparison?.comparisonData?.currentTrafficRange?.length > 0 
-                          ? `${comparison.comparisonData.currentTrafficRange[0].toLocaleString()} - ${comparison.comparisonData.currentTrafficRange[1].toLocaleString()}`
-                          : <span className="text-gray-400 italic">Selection pending</span>}
+                        <span className="text-gray-400 italic">Selection pending</span>
                       </div>
                     </div>
                   </div>

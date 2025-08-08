@@ -1219,7 +1219,12 @@ export default function EditOrderPage({ params }: { params: Promise<{ id: string
                 setEstimatedWholesalePerLink(estimate.wholesaleMedian);
                 
                 // Calculate budget range based on total links and price range
-                const totalLinks = lineItems.length || preferences.linkCount || 1;
+                // Prioritize client link counts over line items (line items might be placeholders)
+                const clientLinksTotal = Array.from(selectedClients.values()).reduce((sum, client) => 
+                  sum + (client.selected ? client.linkCount : 0), 0);
+                const totalLinks = clientLinksTotal > 0 ? clientLinksTotal : 
+                                  (lineItems.length > 0 ? lineItems.length : 
+                                  preferences.linkCount || 1);
                 const budgetMin = totalLinks * estimate.clientMin;
                 const budgetMax = totalLinks * estimate.clientMax;
                 
@@ -1235,6 +1240,7 @@ export default function EditOrderPage({ params }: { params: Promise<{ id: string
                 
                 const enhancedPreferences = {
                   ...preferences,
+                  linkCount: totalLinks, // Make sure linkCount is included!
                   estimatedBudgetMin: budgetMin,
                   estimatedBudgetMax: budgetMax,
                   estimatorSnapshot: estimatorSnapshot
