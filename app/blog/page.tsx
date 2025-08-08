@@ -27,6 +27,14 @@ export const metadata = {
 // TODO: Create pages for the other blog posts that are currently 404
 const blogPosts = [
   {
+    title: 'Best Blogger Outreach Services (17+ Agencies Reviewed)',
+    href: '/best-blogger-outreach-services',
+    excerpt: 'Comprehensive review of 17+ blogger outreach agencies including response speeds, pricing, tactics, and quality assessments to help you choose the right service.',
+    category: 'Link Building',
+    readTime: '30 min read',
+    date: 'January 2024'
+  },
+  {
     title: 'Best Guest Posting Services (50 Agencies Reviewed)',
     href: '/best-guest-posting-services',
     excerpt: 'We messaged each provider individually to bring you comprehensive insights on pricing, strategies, response times, and real guest posting capabilities.',
