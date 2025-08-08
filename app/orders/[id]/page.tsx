@@ -873,11 +873,14 @@ export default function OrderDetailPage() {
                 </div>
               )}
               
-              {/* Use shared component for site review, regular table otherwise */}
-              {order.state === 'site_review' && order.orderGroups ? (
+              {/* Use shared component for site review and other states with site data */}
+              {(order.state === 'sites_ready' || order.state === 'site_review' || order.state === 'client_reviewing' || 
+                order.state === 'payment_pending' || order.state === 'payment_received' || 
+                order.state === 'workflows_generated' || order.state === 'in_progress' || 
+                order.status === 'completed') && (order.orderGroups || lineItems.length > 0) ? (
                 <OrderSiteReviewTableV2
                   orderId={params.id as string}
-                  orderGroups={order.orderGroups}
+                  orderGroups={order.orderGroups || []}
                   lineItems={lineItems}
                   siteSubmissions={(() => {
                     // Transform siteSubmissions to match the expected interface
