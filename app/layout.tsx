@@ -2,6 +2,8 @@ import '../polyfills/randomUUID';   // load UUID polyfill before anything else
 import type { Metadata } from "next";
 import "./globals.css";
 import { NotificationProvider } from "@/lib/contexts/NotificationContext";
+import { WebVitals } from "@/components/WebVitals";
+import { StructuredData, organizationSchema, websiteSchema } from "@/components/StructuredData";
 
 export const metadata: Metadata = {
   metadataBase: new URL('https://linkio.com'),
@@ -54,7 +56,7 @@ export const metadata: Metadata = {
     },
   },
   verification: {
-    google: "google-site-verification-code-here", // Add actual verification code
+    google: process.env.NEXT_PUBLIC_GOOGLE_SITE_VERIFICATION || "google-site-verification-code-here",
   },
   category: "technology",
 };
@@ -66,7 +68,12 @@ export default function RootLayout({
 }>) {
   return (
     <html lang="en">
+      <head>
+        <StructuredData data={organizationSchema} />
+        <StructuredData data={websiteSchema} />
+      </head>
       <body className="min-h-screen bg-gray-50">
+        <WebVitals />
         <NotificationProvider>
           {children}
         </NotificationProvider>
