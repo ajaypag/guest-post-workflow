@@ -20,34 +20,21 @@ export default function AuthWrapper({ children, requireAdmin = false }: AuthWrap
       const currentSession = AuthService.getSession();
       
       if (!currentSession) {
-        // Delay slightly to ensure the URL is fully loaded
-        setTimeout(() => {
-          // Get the full current path from window.location if available
-          const fullPath = typeof window !== 'undefined' ? window.location.pathname : pathname;
-          
-          console.log('🔐 AuthWrapper redirect - usePathname():', pathname);
-          console.log('🔐 AuthWrapper redirect - window.location.pathname:', typeof window !== 'undefined' ? window.location.pathname : 'N/A');
-          console.log('🔐 AuthWrapper redirect - window.location.href:', typeof window !== 'undefined' ? window.location.href : 'N/A');
-          console.log('🔐 AuthWrapper redirect - Using fullPath:', fullPath);
-          
-          // Let's also try getting it from the browser's current URL
-          const currentUrl = typeof window !== 'undefined' ? new URL(window.location.href).pathname : pathname;
-          console.log('🔐 AuthWrapper redirect - URL object pathname:', currentUrl);
-          
-          const finalPath = currentUrl !== '/orders' ? currentUrl : fullPath;
-          console.log('🔐 AuthWrapper redirect - Final path to use:', finalPath);
-          
-          // Store in sessionStorage as backup and use URL parameter
-          if (typeof window !== 'undefined') {
-            sessionStorage.setItem('auth_redirect', finalPath);
-          }
-          
-          const encodedPath = encodeURIComponent(finalPath);
-          console.log('🔐 AuthWrapper redirect - Encoded pathname:', encodedPath);
-          const redirectUrl = `/login?redirect=${encodedPath}`;
-          console.log('🔐 AuthWrapper redirect - Full redirect URL:', redirectUrl);
-          router.push(redirectUrl);
-        }, 100); // Small delay to let URL resolve
+        // Use usePathname() since it has the correct full path!
+        console.log('🔐 AuthWrapper redirect - usePathname():', pathname);
+        console.log('🔐 AuthWrapper redirect - window.location.pathname:', typeof window !== 'undefined' ? window.location.pathname : 'N/A');
+        console.log('🔐 AuthWrapper redirect - Using pathname from usePathname() (correct!)');
+        
+        // Store in sessionStorage as backup and use URL parameter
+        if (typeof window !== 'undefined') {
+          sessionStorage.setItem('auth_redirect', pathname);
+        }
+        
+        const encodedPath = encodeURIComponent(pathname);
+        console.log('🔐 AuthWrapper redirect - Encoded pathname:', encodedPath);
+        const redirectUrl = `/login?redirect=${encodedPath}`;
+        console.log('🔐 AuthWrapper redirect - Full redirect URL:', redirectUrl);
+        router.push(redirectUrl);
         return;
       }
       
