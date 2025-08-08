@@ -70,6 +70,7 @@ export default function RootLayout({
         <NotificationProvider>
           {children}
         </NotificationProvider>
+        {children}
       </body>
     </html>
   );

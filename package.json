@@ -13,7 +13,11 @@
     "db:push": "drizzle-kit push",
     "db:migrate-apply": "tsx scripts/migrate.ts",
     "db:debug": "tsx scripts/debug-and-migrate.ts",
-    "test:keywords": "tsx scripts/test-keyword-generation.ts"
+    "test:keywords": "tsx scripts/test-keyword-generation.ts",
+    "audit:images": "tsx scripts/audit-broken-images.ts",
+    "audit:images:fix": "tsx scripts/audit-broken-images.ts --fix",
+    "validate:images": "tsx scripts/validate-all-images.ts",
+    "images:disable": "tsx scripts/comment-out-all-images.ts"
   },
   "dependencies": {
     "@hookform/resolvers": "^5.1.1",

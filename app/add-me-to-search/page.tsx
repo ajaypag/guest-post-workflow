@@ -13,7 +13,7 @@ export default function AddMeToSearchPage() {
       publishDate="September 22, 2022"
       author="Ajay Paghdal"
       readTime="15 min read"
-      heroImage="https://www.linkio.com/wp-content/uploads/2022/09/add-me-to-search-1024x536.jpg"
+      heroImage=""
       heroImageAlt="Add Me to Search Google People Card Guide"
       relatedPosts={[
         {
@@ -99,11 +99,11 @@ export default function AddMeToSearchPage() {
       </div>
 
       <div className="mb-8">
-        <img 
+        {/* <img 
           src="https://images.unsplash.com/photo-1573804633927-bfcbcd909acd?w=800&q=80" 
           alt="Google search interface showing local business results" 
           className="w-full rounded-lg shadow-sm"
-        />
+        /> */}
       </div>
 
       <p className="text-gray-700 mb-6">
@@ -111,11 +111,11 @@ export default function AddMeToSearchPage() {
       </p>
 
       <div className="mb-8">
-        <img 
-          src="https://images.surferseo.art/d515d816-edd8-4ce9-a0e6-a55c2e5bfec7.png" 
+        {/* <img 
+          src="" // Commented out: src="https://images.surferseo.art/d515d816-edd8-4ce9-a0e6-a55c2e5bfec7.png" 
           alt="Claiming a knowledge panel in Google search" 
           className="w-full rounded-lg shadow-sm"
-        />
+        /> */}
       </div>
 
       <p className="text-gray-700 mb-6">
@@ -156,11 +156,11 @@ export default function AddMeToSearchPage() {
       </p>
 
       <div className="mb-8">
-        <img 
-          src="https://images.surferseo.art/12503bf3-5a1e-4930-b057-3c3f24f30656.png" 
+        {/* <img 
+          src="" // Commented out: src="https://images.surferseo.art/12503bf3-5a1e-4930-b057-3c3f24f30656.png" 
           alt="Aleyda Solis Google People Card example" 
           className="w-full rounded-lg shadow-sm"
-        />
+        /> */}
       </div>
 
       <p className="text-gray-700 mb-6">

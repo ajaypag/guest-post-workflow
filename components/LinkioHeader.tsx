@@ -1,5 +1,8 @@
+'use client';
+
+import { useState } from 'react';
 import Link from 'next/link';
-import { ArrowRight, Zap, ArrowLeft } from 'lucide-react';
+import { ArrowRight, Zap, ArrowLeft, Menu, X, ChevronDown } from 'lucide-react';
 
 interface LinkioHeaderProps {
   variant?: 'default' | 'blog' | 'tool';
@@ -12,37 +15,63 @@ export default function LinkioHeader({
   toolName, 
   showBackButton = false 
 }: LinkioHeaderProps) {
+  const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
+  const [isIndustriesOpen, setIsIndustriesOpen] = useState(false);
+
+  const toggleMobileMenu = () => {
+    setIsMobileMenuOpen(!isMobileMenuOpen);
+  };
+
+  const closeMobileMenu = () => {
+    setIsMobileMenuOpen(false);
+    setIsIndustriesOpen(false);
+  };
+
+  // Navigation items for default variant (Industries moved to separate dropdown)
+  const navItems = [
+    { href: '/how-it-works', label: 'How It Works' },
+    { href: '/guest-posting-sites', label: 'Browse Sites' },
+  ];
+
+  // Industries dropdown items
+  const industriesItems = [
+    { href: '/industries', label: 'All Industries', description: 'Overview of industry strategies' },
+    { href: '/saas-link-building', label: 'SaaS & Software', description: 'AI citation engineering' },
+    { href: '/b2b-services-link-building', label: 'B2B Services', description: 'Modifier coverage strategy' },
+    { href: '/local-business-link-building', label: 'Local Businesses', description: 'Geographic authority' },
+    { href: '/ecommerce-link-building', label: 'E-commerce', description: 'Editorial placement strategy' },
+  ];
   return (
-    <header className="bg-white border-b border-gray-100">
+    <header className="bg-white border-b border-gray-100 relative">
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
         <div className="flex justify-between items-center h-16">
           {/* Logo Section */}
           <div className="flex items-center space-x-3">
-            <Link href="/" className="flex items-center space-x-3">
+            <Link href="/" className="flex items-center space-x-3" onClick={closeMobileMenu}>
               <div className="w-8 h-8 bg-gradient-to-br from-blue-500 to-purple-600 rounded-lg flex items-center justify-center">
                 <Zap className="w-5 h-5 text-white" />
               </div>
               <span className="text-lg font-semibold text-gray-900">Linkio</span>
             </Link>
             
-            {/* Tool breadcrumb */}
+            {/* Tool breadcrumb - hidden on very small screens */}
             {variant === 'tool' && toolName && (
-              <>
+              <div className="hidden sm:flex items-center space-x-2">
                 <span className="text-gray-400">/</span>
-                <span className="text-gray-600">{toolName}</span>
-              </>
+                <span className="text-gray-600 text-sm">{toolName}</span>
+              </div>
             )}
           </div>
           
-          {/* Navigation Section */}
-          <div className="flex items-center gap-4">
+          {/* Desktop Navigation */}
+          <div className="hidden md:flex items-center gap-4">
             {/* Blog variant - minimal nav */}
             {variant === 'blog' && (
               <>
                 {showBackButton && (
                   <Link 
                     href="/"
-                    className="flex items-center gap-2 text-gray-600 hover:text-gray-900 text-sm"
+                    className="flex items-center gap-2 text-gray-600 hover:text-gray-900 text-sm transition-colors"
                   >
                     <ArrowLeft className="w-4 h-4" />
                     Back to Home
@@ -52,7 +81,7 @@ export default function LinkioHeader({
                   href="https://app.linkio.com/users/sign_up"
                   target="_blank"
                   rel="noopener noreferrer"
-                  className="px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 text-sm font-medium"
+                  className="px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 text-sm font-medium transition-colors"
                 >
                   Start Free Trial
                 </Link>
@@ -64,7 +93,7 @@ export default function LinkioHeader({
               <>
                 <Link 
                   href="/blog"
-                  className="text-gray-600 hover:text-gray-900 text-sm font-medium"
+                  className="text-gray-600 hover:text-gray-900 text-sm font-medium transition-colors"
                 >
                   Blog
                 </Link>
@@ -72,7 +101,7 @@ export default function LinkioHeader({
                   href="https://app.linkio.com/users/sign_up"
                   target="_blank"
                   rel="noopener noreferrer"
-                  className="flex items-center gap-2 px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 text-sm font-medium"
+                  className="flex items-center gap-2 px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 text-sm font-medium transition-colors"
                 >
                   Get Started Free
                 </Link>
@@ -82,23 +111,64 @@ export default function LinkioHeader({
             {/* Default variant - full nav */}
             {variant === 'default' && (
               <>
-                <Link 
-                  href="/guest-posting-sites" 
-                  className="text-gray-600 hover:text-gray-900 text-sm font-medium"
+                {/* Industries Dropdown - First for prominence */}
+                <div 
+                  className="relative"
+                  onMouseEnter={() => setIsIndustriesOpen(true)}
+                  onMouseLeave={() => setIsIndustriesOpen(false)}
                 >
-                  Browse Sites
-                </Link>
+                  <button
+                    className="flex items-center gap-1 text-gray-600 hover:text-gray-900 text-sm font-medium transition-colors py-2"
+                  >
+                    Industries
+                    <ChevronDown className={`w-3 h-3 transition-transform ${isIndustriesOpen ? 'rotate-180' : ''}`} />
+                  </button>
+                  
+                  {isIndustriesOpen && (
+                    <div
+                      className="absolute top-full left-0 -mt-1 pt-1 w-64 z-50"
+                    >
+                      <div className="bg-white rounded-lg shadow-lg border border-gray-100 py-2">
+                        {industriesItems.map((item) => (
+                          <Link
+                            key={item.href}
+                            href={item.href}
+                            className="block px-4 py-2 hover:bg-gray-50 transition-colors"
+                            onClick={() => setIsIndustriesOpen(false)}
+                          >
+                            <div className="font-medium text-gray-900 text-sm">{item.label}</div>
+                            {item.description && (
+                              <div className="text-xs text-gray-500 mt-0.5">{item.description}</div>
+                            )}
+                          </Link>
+                        ))}
+                      </div>
+                    </div>
+                  )}
+                </div>
+                
+                {navItems.map((item) => (
+                  <Link 
+                    key={item.href}
+                    href={item.href}
+                    className="text-gray-600 hover:text-gray-900 text-sm font-medium transition-colors"
+                  >
+                    {item.label}
+                  </Link>
+                ))}
+                
                 <Link 
-                  href="/blog" 
-                  className="text-gray-600 hover:text-gray-900 text-sm font-medium"
+                  href="/blog"
+                  className="text-gray-600 hover:text-gray-900 text-sm font-medium transition-colors"
                 >
                   Blog
                 </Link>
+                
                 <Link 
                   href="https://postflow.outreachlabs.net/login"
                   target="_blank"
                   rel="noopener noreferrer" 
-                  className="text-gray-600 hover:text-gray-900 text-sm font-medium"
+                  className="text-gray-600 hover:text-gray-900 text-sm font-medium transition-colors"
                 >
                   Sign In
                 </Link>
@@ -112,8 +182,129 @@ export default function LinkioHeader({
               </>
             )}
           </div>
+
+          {/* Mobile section for default variant */}
+          {variant === 'default' && (
+            <div className="md:hidden flex items-center gap-3">
+              <Link 
+                href="/signup"
+                className="px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 text-sm font-medium transition-colors"
+              >
+                Get Started
+              </Link>
+              <button
+                onClick={toggleMobileMenu}
+                className="p-2 rounded-lg text-gray-600 hover:text-gray-900 hover:bg-gray-100 transition-colors"
+                aria-label="Toggle navigation menu"
+              >
+                {isMobileMenuOpen ? (
+                  <X className="w-6 h-6" />
+                ) : (
+                  <Menu className="w-6 h-6" />
+                )}
+              </button>
+            </div>
+          )}
+
+          {/* Mobile CTA for blog/tool variants */}
+          {variant !== 'default' && (
+            <div className="md:hidden">
+              {variant === 'blog' && (
+                <Link 
+                  href="https://app.linkio.com/users/sign_up"
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className="px-3 py-2 bg-blue-600 text-white rounded-lg text-sm font-medium"
+                >
+                  Start Trial
+                </Link>
+              )}
+              {variant === 'tool' && (
+                <Link 
+                  href="https://app.linkio.com/users/sign_up"
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className="px-3 py-2 bg-blue-600 text-white rounded-lg text-sm font-medium"
+                >
+                  Get Started
+                </Link>
+              )}
+            </div>
+          )}
         </div>
       </div>
+
+      {/* Mobile Navigation Menu */}
+      {variant === 'default' && isMobileMenuOpen && (
+        <div className="md:hidden absolute top-full left-0 right-0 bg-white border-b border-gray-100 shadow-lg z-50">
+          <div className="px-4 py-6 space-y-4">
+            {/* Industries Section for Mobile - First */}
+            <div>
+              <button
+                onClick={() => setIsIndustriesOpen(!isIndustriesOpen)}
+                className="flex items-center justify-between w-full text-gray-900 hover:text-blue-600 font-medium py-2 transition-colors"
+              >
+                Industries
+                <ChevronDown className={`w-4 h-4 transition-transform ${isIndustriesOpen ? 'rotate-180' : ''}`} />
+              </button>
+              
+              {isIndustriesOpen && (
+                <div className="ml-4 mt-2 space-y-2">
+                  {industriesItems.map((item) => (
+                    <Link
+                      key={item.href}
+                      href={item.href}
+                      onClick={closeMobileMenu}
+                      className="block text-gray-600 hover:text-blue-600 py-1 text-sm transition-colors"
+                    >
+                      {item.label}
+                    </Link>
+                  ))}
+                </div>
+              )}
+            </div>
+            
+            {navItems.map((item) => (
+              <Link
+                key={item.href}
+                href={item.href}
+                onClick={closeMobileMenu}
+                className="block text-gray-900 hover:text-blue-600 font-medium py-2 transition-colors"
+              >
+                {item.label}
+              </Link>
+            ))}
+            
+            <Link
+              href="/blog"
+              onClick={closeMobileMenu}
+              className="block text-gray-900 hover:text-blue-600 font-medium py-2 transition-colors"
+            >
+              Blog
+            </Link>
+            
+            <div className="pt-4 border-t border-gray-100">
+              <Link
+                href="https://postflow.outreachlabs.net/login"
+                target="_blank"
+                rel="noopener noreferrer"
+                onClick={closeMobileMenu}
+                className="block text-gray-600 hover:text-gray-900 py-2 transition-colors"
+              >
+                Sign In
+              </Link>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Mobile menu backdrop */}
+      {isMobileMenuOpen && (
+        <div 
+          className="md:hidden fixed inset-0 bg-black bg-opacity-25 z-40"
+          onClick={closeMobileMenu}
+        />
+      )}
     </header>
   );
 }

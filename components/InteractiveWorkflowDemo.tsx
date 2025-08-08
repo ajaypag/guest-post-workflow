@@ -168,7 +168,7 @@ const bulkAnalysisSteps = [
     name: 'Client Target URLs & Keywords',
     description: 'Load your pages that need links and their target keywords',
     icon: <Building2 className="w-5 h-5" />,
-    process: 'Pull in your client\'s target pages (the ones that need backlinks) and their associated keywords. This becomes the foundation for finding topically relevant guest post opportunities in our 13,000+ site database.'
+    process: 'Pull in your client\'s target pages (the ones that need backlinks) and their associated keywords. This becomes the foundation for finding topically relevant guest post opportunities in our extensive site database.'
   },
   {
     name: 'Site Keyword Discovery',
@@ -184,7 +184,7 @@ const bulkAnalysisSteps = [
   },
   {
     name: 'Opportunity Ranking & Selection',
-    description: 'Surface the best guest post opportunities from 13,000+ sites',
+    description: 'Surface the best guest post opportunities from our extensive database',
     icon: <TrendingUp className="w-5 h-5" />,
     process: 'Sites are scored and ranked by how well they match your client\'s needs. High-quality matches become guest post opportunities. Click to convert them into full workflows - no manual searching through thousands of sites.'
   }
@@ -421,7 +421,7 @@ export default function InteractiveWorkflowDemo() {
               </div>
               <div className="bg-white rounded-lg p-4">
                 <div className="text-2xl font-bold text-purple-600 mb-1">89</div>
-                <div className="text-sm text-gray-600">Quality sites found from 13,000+</div>
+                <div className="text-sm text-gray-600">Quality sites found from database</div>
               </div>
             </div>
             <div className="bg-white rounded-lg p-4 text-left">

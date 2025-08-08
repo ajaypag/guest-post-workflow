@@ -21,7 +21,8 @@ import {
   Star,
   BarChart3,
   Brain,
-  Eye
+  Eye,
+  AlertCircle
 } from 'lucide-react';
 import Link from 'next/link';
 import InteractiveWorkflowDemo from '@/components/InteractiveWorkflowDemo';
@@ -70,32 +71,32 @@ export default function MarketingHomepage() {
             <div>
               <div className="inline-flex items-center gap-2 px-3 py-1 bg-blue-100 text-blue-800 rounded-full text-sm font-medium mb-6">
                 <Brain className="w-4 h-4" />
-                AI-Assisted, Human-Curated
+                Built for the AI Citation Era
               </div>
               
               <h1 className="text-5xl md:text-6xl font-bold text-gray-900 mb-6 leading-tight">
-                Fair-Priced Guest Posting
-                <span className="text-blue-600"> With Zero Shortcuts</span>
+                Thrive in the
+                <span className="text-purple-600"> Zero-Click World</span>
               </h1>
               
               <p className="text-xl text-gray-600 mb-8 leading-relaxed">
-                You pay what we pay publishers + $79 for content and labor. That's it. 
-                No hidden fees, no 3x markups - just transparent Cost Plus pricing for premium guest posts.
+                Organic traffic is down. But your sales don't have to be. We place your content 
+                where AI systems actually look for authoritative sources—transforming declining clicks into valuable citations.
               </p>
               
               {/* Key Benefits */}
               <div className="space-y-4 mb-8">
                 <div className="flex items-center gap-3">
                   <CheckCircle className="w-5 h-5 text-green-600 flex-shrink-0" />
-                  <span className="text-gray-700">Strategic topic overlap analysis for maximum relevance</span>
+                  <span className="text-gray-700">Topical authority mapping - content placed where LLMs search for expertise</span>
                 </div>
                 <div className="flex items-center gap-3">
                   <CheckCircle className="w-5 h-5 text-green-600 flex-shrink-0" />
-                  <span className="text-gray-700">White-label ready process for agencies & teams</span>
+                  <span className="text-gray-700">O3-powered research creates citation-worthy content depth</span>
                 </div>
                 <div className="flex items-center gap-3">
                   <CheckCircle className="w-5 h-5 text-green-600 flex-shrink-0" />
-                  <span className="text-gray-700">Complete service: research, writing, outreach & placement</span>
+                  <span className="text-gray-700">Strategic brand positioning across your industry's AI-referenced sites</span>
                 </div>
               </div>
 
@@ -103,9 +104,9 @@ export default function MarketingHomepage() {
               <div className="flex flex-col sm:flex-row gap-4">
                 <Link
                   href="/signup"
-                  className="inline-flex items-center justify-center gap-2 px-8 py-4 bg-blue-600 text-white font-semibold rounded-lg hover:bg-blue-700 transition-colors text-lg"
+                  className="inline-flex items-center justify-center gap-2 px-8 py-4 bg-gradient-to-r from-blue-600 to-purple-600 text-white font-semibold rounded-lg hover:from-blue-700 hover:to-purple-700 transition-colors text-lg"
                 >
-                  Get Started - $79
+                  Dominate AI Citations
                   <ArrowRight className="w-5 h-5" />
                 </Link>
                 <Link
@@ -113,7 +114,7 @@ export default function MarketingHomepage() {
                   className="inline-flex items-center justify-center gap-2 px-8 py-4 border-2 border-gray-300 text-gray-700 font-semibold rounded-lg hover:bg-gray-50 transition-colors text-lg"
                 >
                   <Eye className="w-5 h-5" />
-                  Browse {stats.totalSites.toLocaleString()} Sites
+                  See {stats.totalSites.toLocaleString()} Authority Sites
                 </Link>
               </div>
             </div>
@@ -121,7 +122,7 @@ export default function MarketingHomepage() {
             {/* Right: Stats Card */}
             <div className="bg-white rounded-2xl p-8 shadow-lg border">
               <h3 className="text-xl font-semibold text-gray-900 mb-6 text-center">
-                Real Numbers, Real Results
+                AI Citation Infrastructure
               </h3>
               
               <div className="grid grid-cols-2 gap-6">
@@ -129,24 +130,93 @@ export default function MarketingHomepage() {
                   <div className="text-3xl font-bold text-blue-600 mb-1">
                     {stats.totalSites.toLocaleString()}+
                   </div>
-                  <div className="text-sm text-gray-600">Verified Sites</div>
+                  <div className="text-sm text-gray-600">Authority Sites</div>
                 </div>
                 <div className="text-center">
-                  <div className="text-3xl font-bold text-green-600 mb-1">$79</div>
-                  <div className="text-sm text-gray-600">Cost Plus Pricing</div>
+                  <div className="text-3xl font-bold text-purple-600 mb-1">O3</div>
+                  <div className="text-sm text-gray-600">Research Model</div>
                 </div>
                 <div className="text-center">
-                  <div className="text-3xl font-bold text-purple-600 mb-1">
+                  <div className="text-3xl font-bold text-green-600 mb-1">
                     {stats.totalNiches}+
                   </div>
-                  <div className="text-sm text-gray-600">Active Niches</div>
+                  <div className="text-sm text-gray-600">Topical Clusters</div>
                 </div>
                 <div className="text-center">
-                  <div className="text-3xl font-bold text-orange-600 mb-1">Dozens</div>
-                  <div className="text-sm text-gray-600">Happy Clients</div>
+                  <div className="text-3xl font-bold text-orange-600 mb-1">Zero</div>
+                  <div className="text-sm text-gray-600">Click Dependence</div>
                 </div>
               </div>
 
+            </div>
+          </div>
+        </div>
+      </section>
+
+      {/* The Zero-Click Problem */}
+      <section className="py-20 bg-red-50 border-y border-red-100">
+        <div className="max-w-6xl mx-auto px-4 sm:px-6 lg:px-8">
+          <div className="text-center mb-16">
+            <h2 className="text-4xl font-bold text-gray-900 mb-6">
+              The SEO Apocalypse is Here
+            </h2>
+            <p className="text-xl text-gray-600 max-w-4xl mx-auto">
+              AI overviews, ChatGPT searches, and zero-click results are killing organic traffic. 
+              But smart companies are adapting by optimizing for citations instead of clicks.
+            </p>
+          </div>
+
+          <div className="grid lg:grid-cols-2 gap-12 items-center">
+            <div className="space-y-6">
+              <div className="bg-white rounded-xl p-6 border border-red-200">
+                <h3 className="font-semibold text-red-900 mb-3 flex items-center gap-2">
+                  <TrendingUp className="w-5 h-5 text-red-600" />
+                  The Death Spiral
+                </h3>
+                <ul className="space-y-2 text-gray-700">
+                  <li>• Google traffic down 25-40% year over year</li>
+                  <li>• AI overviews capture clicks before your site loads</li>
+                  <li>• ChatGPT users never visit your website</li>
+                  <li>• Zero-click searches now exceed click-through results</li>
+                </ul>
+              </div>
+              
+              <div className="bg-white rounded-xl p-6 border border-red-200">
+                <h3 className="font-semibold text-red-900 mb-3 flex items-center gap-2">
+                  <AlertCircle className="w-5 h-5 text-red-600" />
+                  Traditional SEO's Fatal Flaw
+                </h3>
+                <p className="text-gray-700">
+                  Still optimizing for 2019? Rankings and traffic don't matter if AI systems 
+                  never cite your content as an authoritative source.
+                </p>
+              </div>
+            </div>
+
+            <div className="space-y-6">
+              <div className="bg-blue-50 rounded-xl p-6 border border-blue-200">
+                <h3 className="font-semibold text-blue-900 mb-3 flex items-center gap-2">
+                  <Brain className="w-5 h-5 text-blue-600" />
+                  The Citation Economy
+                </h3>
+                <ul className="space-y-2 text-blue-700">
+                  <li>• Brand mentions in AI responses drive awareness</li>
+                  <li>• Citations establish industry authority</li>
+                  <li>• Topical relevance beats traffic metrics</li>
+                  <li>• Strategic placement creates lasting competitive advantage</li>
+                </ul>
+              </div>
+              
+              <div className="bg-purple-50 rounded-xl p-6 border border-purple-200">
+                <h3 className="font-semibold text-purple-900 mb-3 flex items-center gap-2">
+                  <Target className="w-5 h-5 text-purple-600" />
+                  Our Solution
+                </h3>
+                <p className="text-purple-700">
+                  We place your content on sites with proven topical authority in your industry. 
+                  When AI systems need expert sources, they find you.
+                </p>
+              </div>
             </div>
           </div>
         </div>
@@ -157,11 +227,11 @@ export default function MarketingHomepage() {
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
           <div className="text-center mb-16">
             <h2 className="text-4xl font-bold text-gray-900 mb-4">
-              Transparent Pricing, Premium Quality
+              LLM Citation Engineering vs Traditional Guest Posting
             </h2>
             <p className="text-xl text-gray-600 max-w-3xl mx-auto">
-              You pay our actual costs + what we need to run the business. 
-              Publisher rates (what we pay) + $79 for premium content and expert labor.
+              While others chase vanity metrics, we optimize for what actually moves the needle in 2025: 
+              strategic placement where AI systems discover and cite authoritative sources.
             </p>
           </div>
 
@@ -170,7 +240,7 @@ export default function MarketingHomepage() {
             <div className="bg-gray-50 rounded-2xl p-8">
               <h3 className="text-2xl font-semibold text-gray-900 mb-6 flex items-center gap-3">
                 <Building2 className="w-6 h-6" />
-                Traditional Approach
+                Traditional Guest Posting
               </h3>
               
               <div className="space-y-4">
@@ -179,8 +249,8 @@ export default function MarketingHomepage() {
                     <span className="text-gray-600 text-sm font-bold">−</span>
                   </div>
                   <div>
-                    <div className="font-medium text-gray-900">DR-Focused Selection</div>
-                    <div className="text-sm text-gray-600">High authority numbers without topic relevance</div>
+                    <div className="font-medium text-gray-900">Vanity Metrics Focus</div>
+                    <div className="text-sm text-gray-600">Chase high DR without topical relevance analysis</div>
                   </div>
                 </div>
                 
@@ -189,8 +259,8 @@ export default function MarketingHomepage() {
                     <span className="text-gray-600 text-sm font-bold">−</span>
                   </div>
                   <div>
-                    <div className="font-medium text-gray-900">Generic Content</div>
-                    <div className="text-sm text-gray-600">Template-based articles with forced placement</div>
+                    <div className="font-medium text-gray-900">Traffic-Dependent ROI</div>
+                    <div className="text-sm text-gray-600">Success tied to declining organic click-through rates</div>
                   </div>
                 </div>
                 
@@ -219,40 +289,40 @@ export default function MarketingHomepage() {
             {/* Our Approach */}
             <div className="bg-blue-50 rounded-2xl p-8">
               <h3 className="text-2xl font-semibold text-blue-900 mb-6 flex items-center gap-3">
-                <Zap className="w-6 h-6" />
-                Linkio Method
+                <Brain className="w-6 h-6" />
+                AI Citation Engineering
               </h3>
               
               <div className="space-y-4">
                 <div className="flex items-start gap-3">
                   <CheckCircle className="w-6 h-6 text-blue-600 flex-shrink-0 mt-0.5" />
                   <div>
-                    <div className="font-medium text-blue-900">Strategic Topic Mapping</div>
-                    <div className="text-sm text-blue-700">AI analyzes host site's authority clusters for natural content fit</div>
+                    <div className="font-medium text-blue-900">Topical Authority Mapping</div>
+                    <div className="text-sm text-blue-700">AI identifies sites with proven expertise overlap in your industry</div>
                   </div>
                 </div>
                 
                 <div className="flex items-start gap-3">
                   <CheckCircle className="w-6 h-6 text-blue-600 flex-shrink-0 mt-0.5" />
                   <div>
-                    <div className="font-medium text-blue-900">Research-Driven Content</div>
-                    <div className="text-sm text-blue-700">2000-3000 word articles with genuine value and strategic placement</div>
+                    <div className="font-medium text-blue-900">LLM Citation Optimization</div>
+                    <div className="text-sm text-blue-700">Content designed to be referenced by AI systems, not just ranked</div>
                   </div>
                 </div>
                 
                 <div className="flex items-start gap-3">
                   <CheckCircle className="w-6 h-6 text-blue-600 flex-shrink-0 mt-0.5" />
                   <div>
-                    <div className="font-medium text-blue-900">Cost Plus Pricing</div>
-                    <div className="text-sm text-blue-700">Publisher cost + $79 for content/labor. You see exactly what we pay.</div>
+                    <div className="font-medium text-blue-900">O3-Powered Research</div>
+                    <div className="text-sm text-blue-700">Deep reasoning creates citation-worthy content depth and expertise</div>
                   </div>
                 </div>
 
                 <div className="flex items-start gap-3">
                   <CheckCircle className="w-6 h-6 text-blue-600 flex-shrink-0 mt-0.5" />
                   <div>
-                    <div className="font-medium text-blue-900">Scalable Process</div>
-                    <div className="text-sm text-blue-700">AI efficiency + human expertise scales with your needs</div>
+                    <div className="font-medium text-blue-900">Zero-Click Revenue</div>
+                    <div className="text-sm text-blue-700">Brand mentions and citations drive awareness when traffic can't</div>
                   </div>
                 </div>
               </div>
@@ -265,41 +335,41 @@ export default function MarketingHomepage() {
       <section className="py-20 bg-gray-50">
         <div className="max-w-4xl mx-auto px-4 sm:px-6 lg:px-8 text-center">
           <h2 className="text-4xl font-bold text-gray-900 mb-6">
-            Real Results, Not Vanity Metrics
+            While Others Chase Traffic, We Build Citations
           </h2>
           
           <div className="bg-white rounded-2xl p-8 shadow-lg border mb-8">
             <div className="mb-6">
               <div className="inline-flex items-center gap-2 px-3 py-1 bg-blue-100 text-blue-800 rounded-full text-sm font-medium mb-4">
-                <BarChart3 className="w-4 h-4" />
-                Recent Win
+                <Brain className="w-4 h-4" />
+                AI Citation Success
               </div>
             </div>
             
             <blockquote className="text-lg text-gray-700 italic mb-6">
-              "DR 71. 500 Traffic. Declining Graph. Most SEOs: 'Skip it - dead site.' 
-              I strategically bought a guest post anyway. Published yesterday, already sitting on Page 1."
+              "DR 71, declining traffic. Most agencies said 'skip it.' We saw something better: 
+              proven topical authority in our client's industry. Now they get cited in AI overviews while competitors chase vanity metrics."
             </blockquote>
             
             <div className="grid md:grid-cols-3 gap-6 text-center">
               <div>
-                <div className="text-2xl font-bold text-blue-600">Page 1</div>
-                <div className="text-sm text-gray-600">Ranking in 24hrs</div>
+                <div className="text-2xl font-bold text-blue-600">Cited</div>
+                <div className="text-sm text-gray-600">In AI overviews</div>
               </div>
               <div>
-                <div className="text-2xl font-bold text-green-600">1K</div>
-                <div className="text-sm text-gray-600">Monthly searches</div>
+                <div className="text-2xl font-bold text-green-600">Authority</div>
+                <div className="text-sm text-gray-600">Topical match</div>
               </div>
               <div>
-                <div className="text-2xl font-bold text-purple-600">Topic</div>
-                <div className="text-sm text-gray-600">Authority match</div>
+                <div className="text-2xl font-bold text-purple-600">Zero</div>
+                <div className="text-sm text-gray-600">Click dependence</div>
               </div>
             </div>
           </div>
           
           <p className="text-gray-600 mb-6">
-            <strong>The secret?</strong> We mapped the site's existing topical authority to our target keyword. 
-            Traffic charts only tell half the story. Topic overlap tells the rest.
+            <strong>The difference?</strong> While others focus on DR and traffic, we analyze topical authority overlap. 
+            When AI systems need expert sources, they find our strategically placed content.
           </p>
           
           <Link
@@ -314,12 +384,83 @@ export default function MarketingHomepage() {
         </div>
       </section>
 
+      {/* Technology Behind the Process */}
+      <section className="py-20 bg-gray-900 text-white">
+        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+          <div className="text-center mb-16">
+            <h2 className="text-4xl font-bold mb-6">
+              Beyond Human Capacity: AI-Powered Authority Mapping
+            </h2>
+            <p className="text-xl text-gray-300 max-w-4xl mx-auto">
+              While agencies manually chase domain ratings, we've built the first AI system that analyzes 
+              topical authority at scale. Every placement is strategically engineered for maximum citation potential.
+            </p>
+          </div>
+
+          <div className="grid lg:grid-cols-3 gap-8">
+            <div className="bg-gray-800 rounded-xl p-8 border border-gray-700">
+              <div className="w-12 h-12 bg-blue-600 rounded-lg flex items-center justify-center mb-6">
+                <Brain className="w-6 h-6 text-white" />
+              </div>
+              <h3 className="text-xl font-semibold mb-4">O3 Deep Research</h3>
+              <p className="text-gray-300 mb-4">
+                OpenAI's most advanced reasoning model creates citation-worthy content depth. 
+                10-15 minutes of deep analysis per article.
+              </p>
+              <ul className="text-sm text-gray-400 space-y-1">
+                <li>• Comprehensive source analysis</li>
+                <li>• Multi-angle topic exploration</li>
+                <li>• Expert-level content depth</li>
+              </ul>
+            </div>
+
+            <div className="bg-gray-800 rounded-xl p-8 border border-gray-700">
+              <div className="w-12 h-12 bg-purple-600 rounded-lg flex items-center justify-center mb-6">
+                <Target className="w-6 h-6 text-white" />
+              </div>
+              <h3 className="text-xl font-semibold mb-4">Topical Authority Analysis</h3>
+              <p className="text-gray-300 mb-4">
+                AI maps proven expertise overlap between your industry and potential host sites. 
+                DataForSEO + custom algorithms.
+              </p>
+              <ul className="text-sm text-gray-400 space-y-1">
+                <li>• Keyword ranking verification</li>
+                <li>• Authority cluster identification</li>
+                <li>• Strategic topic overlap scoring</li>
+              </ul>
+            </div>
+
+            <div className="bg-gray-800 rounded-xl p-8 border border-gray-700">
+              <div className="w-12 h-12 bg-green-600 rounded-lg flex items-center justify-center mb-6">
+                <BarChart3 className="w-6 h-6 text-white" />
+              </div>
+              <h3 className="text-xl font-semibold mb-4">Citation Optimization</h3>
+              <p className="text-gray-300 mb-4">
+                Section-by-section semantic SEO audit optimizes content for AI system discovery and reference.
+              </p>
+              <ul className="text-sm text-gray-400 space-y-1">
+                <li>• LLM-friendly content structure</li>
+                <li>• Narrative quality control</li>
+                <li>• Citation-worthy expertise signals</li>
+              </ul>
+            </div>
+          </div>
+
+          <div className="mt-16 text-center">
+            <div className="inline-flex items-center gap-2 px-6 py-3 bg-gradient-to-r from-purple-600 to-blue-600 rounded-lg">
+              <Brain className="w-5 h-5" />
+              <span className="font-semibold">First AI System Built for LLM Citation Era</span>
+            </div>
+          </div>
+        </div>
+      </section>
+
       {/* Interactive Workflow Demo */}
       <section className="py-20 bg-white">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
           <div className="text-center mb-12">
             <h2 className="text-4xl font-bold text-gray-900 mb-4">
-              See Our Actual Process In Action
+              See the Technology in Action
             </h2>
             <p className="text-xl text-gray-600 max-w-3xl mx-auto">
               This isn't marketing fluff - click through our actual production system. 
@@ -332,7 +473,14 @@ export default function MarketingHomepage() {
       </section>
 
       {/* Final CTA */}
-      <MarketingCTA />
+      <MarketingCTA 
+        title="Ready to Dominate AI Citations?"
+        description="While your competitors chase declining traffic, position your brand where AI systems discover authoritative sources."
+        primaryButtonText="Start Citation Engineering"
+        primaryButtonHref="/signup"
+        secondaryButtonText="Explore Authority Database"
+        secondaryButtonHref="/guest-posting-sites"
+      />
 
       {/* Footer */}
       <MarketingFooter />

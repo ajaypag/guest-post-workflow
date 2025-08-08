@@ -13,7 +13,7 @@ export default function SeoCaseStudyPage() {
       publishDate="September 1, 2017"
       author="Ajay Paghdal"
       readTime="25 min read"
-      heroImage="https://www.linkio.com/wp-content/uploads/2017/09/seo-case-study-featured-image.jpg"
+      heroImage=""
       heroImageAlt="SEO Case Study Building Authority Site"
       relatedPosts={[
         {
@@ -65,11 +65,11 @@ export default function SeoCaseStudyPage() {
           </ul>
         </div>
 
-        <img 
-          src="https://www.linkio.com/wp-content/uploads/2017/09/linkio-backlink-profile-month-1.png" 
+        {/* <img 
+          src="" // Commented out: src="https://www.linkio.com/wp-content/uploads/2017/09/linkio-backlink-profile-month-1.png" 
           alt="Linkio backlink profile at launch - zero backlinks"
           className="w-full rounded-lg shadow-md mb-8"
-        />
+        /> */}
 
         <h2 className="text-2xl font-bold text-gray-900 mb-6">Month 1: In The Beginning...</h2>
         
@@ -102,11 +102,11 @@ export default function SeoCaseStudyPage() {
 
         <h2 className="text-2xl font-bold text-gray-900 mb-6">Month 2: The Plot Thickens...</h2>
 
-        <img 
-          src="https://www.linkio.com/wp-content/uploads/2017/10/linkio-month-2-traffic.png" 
+        {/* <img 
+          src="" // Commented out: src="https://www.linkio.com/wp-content/uploads/2017/10/linkio-month-2-traffic.png" 
           alt="Month 2 traffic growth"
           className="w-full rounded-lg shadow-md mb-6"
-        />
+        /> */}
         
         <p className="text-gray-700 mb-6">
           Month 2 was when we started seeing our first real traction. We continued our aggressive link building campaign and published our second piece of epic content.
@@ -127,11 +127,11 @@ export default function SeoCaseStudyPage() {
           This was the hardest month psychologically. We were putting in massive effort but seeing minimal returns. Classic SEO growing pains.
         </p>
 
-        <img 
-          src="https://www.linkio.com/wp-content/uploads/2017/11/linkio-month-3-rankings.png" 
+        {/* <img 
+          src="" // Commented out: src="https://www.linkio.com/wp-content/uploads/2017/11/linkio-month-3-rankings.png" 
           alt="Month 3 keyword rankings"
           className="w-full rounded-lg shadow-md mb-6"
-        />
+        /> */}
 
         <h2 className="text-2xl font-bold text-gray-900 mb-6">Month 4: New Name, Same Game</h2>
         
@@ -154,11 +154,11 @@ export default function SeoCaseStudyPage() {
 
         <h2 className="text-2xl font-bold text-gray-900 mb-6">Months 7-10: Slow Gains</h2>
 
-        <img 
-          src="https://www.linkio.com/wp-content/uploads/2018/03/linkio-month-7-10-growth.png" 
+        {/* <img 
+          src="" // Commented out: src="https://www.linkio.com/wp-content/uploads/2018/03/linkio-month-7-10-growth.png" 
           alt="Months 7-10 traffic growth chart"
           className="w-full rounded-lg shadow-md mb-6"
-        />
+        /> */}
         
         <p className="text-gray-700 mb-6">
           Finally! The compound effect of our link building started showing results. Traffic began climbing steadily.
@@ -189,11 +189,11 @@ export default function SeoCaseStudyPage() {
 
         <h2 className="text-2xl font-bold text-gray-900 mb-6">Month 12: Big Gains Finally</h2>
 
-        <img 
-          src="https://www.linkio.com/wp-content/uploads/2018/08/linkio-month-12-breakthrough.png" 
+        {/* <img 
+          src="" // Commented out: src="https://www.linkio.com/wp-content/uploads/2018/08/linkio-month-12-breakthrough.png" 
           alt="Month 12 traffic breakthrough"
           className="w-full rounded-lg shadow-md mb-6"
-        />
+        /> */}
         
         <p className="text-gray-700 mb-6">
           This was our breakthrough month. All the work we'd put in over the previous 11 months finally paid off with massive traffic gains.
@@ -217,11 +217,11 @@ export default function SeoCaseStudyPage() {
 
         <h2 className="text-2xl font-bold text-gray-900 mb-6">Months 15-16: More Page 1 Rankings</h2>
 
-        <img 
-          src="https://www.linkio.com/wp-content/uploads/2018/12/linkio-final-results.png" 
+        {/* <img 
+          src="" // Commented out: src="https://www.linkio.com/wp-content/uploads/2018/12/linkio-final-results.png" 
           alt="Final results after 16 months"
           className="w-full rounded-lg shadow-md mb-8"
-        />
+        /> */}
 
         <div className="bg-gradient-to-r from-green-500 to-blue-500 text-white rounded-lg p-8 mb-8">
           <h2 className="text-2xl font-bold mb-4">Final Results After 16 Months</h2>

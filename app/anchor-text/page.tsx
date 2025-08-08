@@ -14,7 +14,7 @@ export default function AnchorTextOptimizationPage() {
       publishDate="March 22, 2023"
       author="Ajay Paghdal"
       readTime="12 min read"
-      heroImage="https://www.linkio.com/wp-content/uploads/2023/03/anchor-text-guide-featured.png"
+      heroImage=""
       heroImageAlt="Anchor Text Optimization for Link Building Guide"
       relatedPosts={[
         {
@@ -91,14 +91,14 @@ export default function AnchorTextOptimizationPage() {
           </div>
         </div>
 
-        <Image 
-          src="https://www.linkio.com/wp-content/uploads/2023/03/anchor-text-types-breakdown.png" 
+        {/* <Image 
+          src="" // Commented out: src="https://www.linkio.com/wp-content/uploads/2023/03/anchor-text-types-breakdown.png" 
           alt="Anchor text types and risk levels breakdown"
           width={800}
           height={500}
           className="w-full rounded-lg shadow-md mb-8"
           loading="lazy"
-        />
+        /> */}
 
         <h2 className="text-2xl font-bold text-gray-900 mb-6">Domain and Business Type Influence</h2>
 
@@ -175,14 +175,14 @@ export default function AnchorTextOptimizationPage() {
           </div>
         </div>
 
-        <Image 
-          src="https://www.linkio.com/wp-content/uploads/2023/03/domain-type-anchor-strategies.png" 
+        {/* <Image 
+          src="" // Commented out: src="https://www.linkio.com/wp-content/uploads/2023/03/domain-type-anchor-strategies.png" 
           alt="Domain-based anchor text strategies comparison"
           width={800}
           height={400}
           className="w-full rounded-lg shadow-md mb-8"
           loading="lazy"
-        />
+        /> */}
 
         <h2 className="text-2xl font-bold text-gray-900 mb-6">Optimal Anchor Text Ratios by Page Type</h2>
 
@@ -308,14 +308,14 @@ export default function AnchorTextOptimizationPage() {
           </div>
         </div>
 
-        <Image 
-          src="https://www.linkio.com/wp-content/uploads/2023/03/natural-anchor-text-examples.png" 
+        {/* <Image 
+          src="" // Commented out: src="https://www.linkio.com/wp-content/uploads/2023/03/natural-anchor-text-examples.png" 
           alt="Natural vs artificial anchor text examples"
           width={800}
           height={500}
           className="w-full rounded-lg shadow-md mb-8"
           loading="lazy"
-        />
+        /> */}
 
         <h2 className="text-2xl font-bold text-gray-900 mb-6">Step-by-Step Implementation Plan</h2>
 
@@ -376,14 +376,14 @@ export default function AnchorTextOptimizationPage() {
           </div>
         </div>
 
-        <Image 
-          src="https://www.linkio.com/wp-content/uploads/2023/03/anchor-text-implementation-timeline.png" 
+        {/* <Image 
+          src="" // Commented out: src="https://www.linkio.com/wp-content/uploads/2023/03/anchor-text-implementation-timeline.png" 
           alt="Step-by-step anchor text implementation timeline"
           width={800}
           height={600}
           className="w-full rounded-lg shadow-md mb-8"
           loading="lazy"
-        />
+        /> */}
 
         <h2 className="text-2xl font-bold text-gray-900 mb-6">Anchor Text Cycling Strategy</h2>
 

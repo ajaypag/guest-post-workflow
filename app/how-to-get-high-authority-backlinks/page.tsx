@@ -13,7 +13,7 @@ export default function HighAuthorityBacklinksPage() {
       publishDate="January 15, 2024"
       author="Jordan Alexo"
       readTime="12 min read"
-      heroImage="https://www.linkio.com/wp-content/uploads/2024/01/high-authority-backlinks-guide.jpg"
+      heroImage=""
       heroImageAlt="High Authority Backlinks Guide"
       relatedPosts={[
         {

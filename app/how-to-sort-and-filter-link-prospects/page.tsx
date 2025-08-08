@@ -13,7 +13,7 @@ export default function SortFilterLinkProspectsPage() {
       publishDate="March 15, 2021"
       author="Ajay Paghdal"
       readTime="20 min read"
-      heroImage="https://www.linkio.com/wp-content/uploads/2021/03/sorting-link-prospects-fi-1024x536.png"
+      heroImage=""
       heroImageAlt="How to Sort and Filter Link Prospects"
       relatedPosts={[
         {
@@ -83,11 +83,11 @@ export default function SortFilterLinkProspectsPage() {
           </div>
         </div>
 
-        <img 
-          src="https://www.linkio.com/wp-content/uploads/2021/03/linked-domains.png" 
+        {/* <img 
+          src="" // Commented out: src="https://www.linkio.com/wp-content/uploads/2021/03/linked-domains.png" 
           alt="Linked domains analysis"
           className="w-full rounded-lg shadow-md mb-8"
-        />
+        /> */}
 
         <h2 id="referring-pages" className="text-2xl font-bold text-gray-900 mb-6">What kind of referring pages should you get rid of?</h2>
         
@@ -107,11 +107,11 @@ export default function SortFilterLinkProspectsPage() {
           A German-speaking writer shouldn't suggest to the German-speaking audience that they check a post in Italian. That's why you don't need to contact authors of foreign-language posts with a link request.
         </p>
 
-        <img 
-          src="https://www.linkio.com/wp-content/uploads/2021/03/spoiler.png" 
+        {/* <img 
+          src="" // Commented out: src="https://www.linkio.com/wp-content/uploads/2021/03/spoiler.png" 
           alt="Language filtering example"
           className="w-full rounded-lg shadow-md mb-8"
-        />
+        /> */}
 
         <h3 className="text-xl font-bold text-gray-900 mb-4">2. URLs of duplicate referring pages</h3>
         
@@ -156,11 +156,11 @@ export default function SortFilterLinkProspectsPage() {
           <li>Non-meaningful content pages (/site/, /search/, /comment/, etc.)</li>
         </ul>
 
-        <img 
-          src="https://www.linkio.com/wp-content/uploads/2021/03/trash-urls.png" 
+        {/* <img 
+          src="" // Commented out: src="https://www.linkio.com/wp-content/uploads/2021/03/trash-urls.png" 
           alt="Examples of trash URLs to remove"
           className="w-full rounded-lg shadow-md mb-8"
-        />
+        /> */}
 
         <h2 id="pseudo-prospects" className="text-2xl font-bold text-gray-900 mb-6">Which good-looking URLs are pseudo link prospects?</h2>
         
@@ -229,11 +229,11 @@ export default function SortFilterLinkProspectsPage() {
           </div>
         </div>
 
-        <img 
-          src="https://www.linkio.com/wp-content/uploads/2021/03/link-juice-calculation.png" 
+        {/* <img 
+          src="" // Commented out: src="https://www.linkio.com/wp-content/uploads/2021/03/link-juice-calculation.png" 
           alt="Link juice calculation example"
           className="w-full rounded-lg shadow-md mb-8"
-        />
+        /> */}
 
         <h3 className="text-xl font-bold text-gray-900 mb-4">Bloggers-based approach</h3>
         

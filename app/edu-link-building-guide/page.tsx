@@ -14,7 +14,7 @@ export default function EduLinkBuildingGuidePage() {
       publishDate="November 15, 2020"
       author="Ajay Paghdal"
       readTime="18 min read"
-      heroImage="https://www.linkio.com/wp-content/uploads/2020/11/edu-link-building-feaured-image.jpeg"
+      heroImage=""
       heroImageAlt=".EDU Link Building with Scholarships Guide"
       relatedPosts={[
         {
@@ -61,14 +61,14 @@ export default function EduLinkBuildingGuidePage() {
           And it's healthy for your site's SEO! A lot of search engine optimization agencies proudly advertise their .EDU link building services as if it was a be-all-end-all tactic that will blast your website to the top of Google's search results within days.
         </p>
 
-        <Image 
-          src="https://www.linkio.com/wp-content/uploads/2020/10/1.png" 
+        {/* <Image 
+          src="" // Commented out: src="https://www.linkio.com/wp-content/uploads/2020/10/1.png" 
           alt="Scholarship link building process overview"
           width={800}
           height={400}
           className="w-full rounded-lg shadow-md mb-8"
           loading="lazy"
-        />
+        /> */}
 
         <h2 className="text-2xl font-bold text-gray-900 mb-6">Does Scholarship Link Building Still Work?</h2>
 
@@ -117,14 +117,14 @@ export default function EduLinkBuildingGuidePage() {
           </div>
         </div>
 
-        <Image 
-          src="https://www.linkio.com/wp-content/uploads/2020/10/2.png" 
+        {/* <Image 
+          src="" // Commented out: src="https://www.linkio.com/wp-content/uploads/2020/10/2.png" 
           alt="Scholarship link building pros and cons analysis"
           width={800}
           height={500}
           className="w-full rounded-lg shadow-md mb-8"
           loading="lazy"
-        />
+        /> */}
 
         <h2 className="text-2xl font-bold text-gray-900 mb-6">How Much Does a Campaign Cost? Not so Obvious Fees</h2>
 
@@ -195,14 +195,14 @@ export default function EduLinkBuildingGuidePage() {
           </ul>
         </div>
 
-        <Image 
-          src="https://www.linkio.com/wp-content/uploads/2020/10/3.png" 
+        {/* <Image 
+          src="" // Commented out: src="https://www.linkio.com/wp-content/uploads/2020/10/3.png" 
           alt="Educational link authority and value analysis"
           width={800}
           height={400}
           className="w-full rounded-lg shadow-md mb-8"
           loading="lazy"
-        />
+        /> */}
 
         <h2 className="text-2xl font-bold text-gray-900 mb-6">Scholarship Links and Domain Authority (and Other Third-party Metrics)</h2>
 
@@ -260,14 +260,14 @@ export default function EduLinkBuildingGuidePage() {
           </p>
         </div>
 
-        <Image 
-          src="https://www.linkio.com/wp-content/uploads/2020/10/4.png" 
+        {/* <Image 
+          src="" // Commented out: src="https://www.linkio.com/wp-content/uploads/2020/10/4.png" 
           alt="College scholarship link building targeting strategy"
           width={800}
           height={500}
           className="w-full rounded-lg shadow-md mb-8"
           loading="lazy"
-        />
+        /> */}
 
         <h2 className="text-2xl font-bold text-gray-900 mb-6">The Step-by-step Process of Scholarship Link Building</h2>
 
@@ -341,14 +341,14 @@ export default function EduLinkBuildingGuidePage() {
           </div>
         </div>
 
-        <Image 
-          src="https://www.linkio.com/wp-content/uploads/2020/10/5.png" 
+        {/* <Image 
+          src="" // Commented out: src="https://www.linkio.com/wp-content/uploads/2020/10/5.png" 
           alt="Step-by-step scholarship link building process"
           width={800}
           height={600}
           className="w-full rounded-lg shadow-md mb-8"
           loading="lazy"
-        />
+        /> */}
 
         <h2 className="text-2xl font-bold text-gray-900 mb-6">Tips for a More Successful Scholarship Link Building Campaign</h2>
 
@@ -438,14 +438,14 @@ export default function EduLinkBuildingGuidePage() {
           </div>
         </div>
 
-        <Image 
-          src="https://www.linkio.com/wp-content/uploads/2024/12/unnamed.jpg" 
+        {/* <Image 
+          src="" // Commented out: src="https://www.linkio.com/wp-content/uploads/2024/12/unnamed.jpg" 
           alt="Scholarship link building best practices and mistakes to avoid"
           width={800}
           height={400}
           className="w-full rounded-lg shadow-md mb-8"
           loading="lazy"
-        />
+        /> */}
 
         <h2 className="text-2xl font-bold text-gray-900 mb-6">Some Original Scholarship Ideas</h2>
 

@@ -1,20 +1,24 @@
 'use client';
 
-import { useState, useEffect } from 'react';
-import { useRouter } from 'next/navigation';
+import { useState, useEffect, Suspense } from 'react';
+import { useRouter, useSearchParams } from 'next/navigation';
 import { AuthService } from '@/lib/auth';
 import { Sparkles, Users, BarChart3, Mail } from 'lucide-react';
 import LinkioHeader from '@/components/LinkioHeader';
 import MarketingFooter from '@/components/MarketingFooter';
 
-export default function LoginPage() {
+function LoginForm() {
   const router = useRouter();
+  const searchParams = useSearchParams();
   const [formData, setFormData] = useState({
     email: '',
     password: ''
   });
   const [error, setError] = useState('');
   const [loading, setLoading] = useState(false);
+  
+  // Get redirect URL from query params, default to homepage
+  const redirectTo = searchParams.get('redirect') || '/';
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -22,22 +26,15 @@ export default function LoginPage() {
     setLoading(true);
 
     try {
-      console.log('🔐 Attempting login for:', formData.email);
-      
       // Login logic only - no registration
       const user = await AuthService.login(formData.email, formData.password);
-      console.log('🔐 Login response:', user ? 'User received' : 'No user');
       
       if (!user) {
         throw new Error('Invalid email or password');
       }
       
-      // Check if cookie was set
-      console.log('🔐 Document cookies after login:', document.cookie);
-      
-      router.push('/');
+      router.push(redirectTo);
     } catch (error: any) {
-      console.error('🔐 Login error:', error);
       setError(error.message);
     } finally {
       setLoading(false);
@@ -45,9 +42,9 @@ export default function LoginPage() {
   };
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-blue-50 to-purple-50">
+    <div className="min-h-screen bg-gradient-to-br from-blue-50 to-purple-50 flex flex-col">
       <LinkioHeader variant="default" />
-      <div className="flex items-center justify-center py-12 px-4">
+      <div className="flex-grow flex items-center justify-center py-12 px-4">
         <div className="max-w-md w-full space-y-8">
         <div className="text-center">
           <div className="mx-auto w-20 h-20 bg-gradient-to-br from-blue-600 to-purple-600 rounded-2xl flex items-center justify-center mb-4 shadow-lg">
@@ -171,5 +168,13 @@ export default function LoginPage() {
       </div>
       <MarketingFooter />
     </div>
+  );
+}
+
+export default function LoginPage() {
+  return (
+    <Suspense fallback={<div>Loading...</div>}>
+      <LoginForm />
+    </Suspense>
   );
 }

@@ -13,7 +13,7 @@ export default function LinkDisavowsPage() {
       publishDate="December 10, 2022"
       author="Ajay Paghdal"
       readTime="10 min read"
-      heroImage="https://www.linkio.com/wp-content/uploads/2022/10/Link-Disavows-Good-or-Bad.png"
+      heroImage=""
       heroImageAlt="Link Disavows Good or Bad"
       relatedPosts={[
         {

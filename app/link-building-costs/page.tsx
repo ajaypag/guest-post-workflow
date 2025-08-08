@@ -14,7 +14,7 @@ export default function LinkBuildingCostsPage() {
       publishDate="March 15, 2023"
       author="Ajay Paghdal"
       readTime="12 min read"
-      heroImage="https://www.linkio.com/wp-content/uploads/2023/03/link-building-costs-featured-image.png"
+      heroImage=""
       heroImageAlt="Link Building Costs Complete Pricing Guide"
       relatedPosts={[
         {
@@ -90,14 +90,14 @@ export default function LinkBuildingCostsPage() {
           Keep in mind that these prices reflect "good" links and buying practices that aren't related to toxic backlinks. This means that buying cheap backlinks is not a viable strategy. These types of links won't grant you higher visibility. They also won't improve your authority by way of sheer quality.
         </p>
 
-        <Image 
-          src="https://www.linkio.com/wp-content/uploads/2023/03/link-building-price-ranges.png" 
+        {/* <Image 
+          src="" // Commented out: src="https://www.linkio.com/wp-content/uploads/2023/03/link-building-price-ranges.png" 
           alt="Link building price ranges by quality"
           width={800}
           height={400}
           className="w-full rounded-lg shadow-md mb-8"
           loading="lazy"
-        />
+        /> */}
 
         <h2 className="text-2xl font-bold text-gray-900 mb-6">What Are Good Links?</h2>
 
@@ -220,14 +220,14 @@ export default function LinkBuildingCostsPage() {
           </div>
         </div>
 
-        <Image 
-          src="https://www.linkio.com/wp-content/uploads/2023/03/domain-rating-pricing.png" 
+        {/* <Image 
+          src="" // Commented out: src="https://www.linkio.com/wp-content/uploads/2023/03/domain-rating-pricing.png" 
           alt="Domain Rating vs Link Pricing"
           width={800}
           height={400}
           className="w-full rounded-lg shadow-md mb-8"
           loading="lazy"
-        />
+        /> */}
 
         <h2 className="text-2xl font-bold text-gray-900 mb-6">How DR and DA Impacts Cost</h2>
 
@@ -391,14 +391,14 @@ export default function LinkBuildingCostsPage() {
           </ul>
         </div>
 
-        <Image 
-          src="https://www.linkio.com/wp-content/uploads/2023/03/inhouse-vs-agency-comparison.png" 
+        {/* <Image 
+          src="" // Commented out: src="https://www.linkio.com/wp-content/uploads/2023/03/inhouse-vs-agency-comparison.png" 
           alt="In-house vs Agency Link Building Costs"
           width={800}
           height={400}
           className="w-full rounded-lg shadow-md mb-8"
           loading="lazy"
-        />
+        /> */}
 
         <h2 className="text-2xl font-bold text-gray-900 mb-6">How Many Backlinks Do You Need?</h2>
 

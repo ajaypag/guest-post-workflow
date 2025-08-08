@@ -14,7 +14,7 @@ export default function BestContentSeoToolsPage() {
       publishDate="February 10, 2024"
       author="Ajay Paghdal"
       readTime="10 min read"
-      heroImage="https://www.linkio.com/wp-content/uploads/2024/02/best-content-seo-tools-featured.png"
+      heroImage=""
       heroImageAlt="Best Content SEO Tools for 2024"
       relatedPosts={[
         {
@@ -91,14 +91,14 @@ export default function BestContentSeoToolsPage() {
           Both of these techniques are important for the success of an SEO campaign.
         </p>
 
-        <Image 
-          src="https://www.linkio.com/wp-content/uploads/2024/02/onpage-vs-offpage-seo.png" 
+        {/* <Image 
+          src="" // Commented out: src="https://www.linkio.com/wp-content/uploads/2024/02/onpage-vs-offpage-seo.png" 
           alt="On-Page vs Off-Page SEO Comparison"
           width={800}
           height={400}
           className="w-full rounded-lg shadow-md mb-8"
           loading="lazy"
-        />
+        /> */}
 
         <h2 className="text-2xl font-bold text-gray-900 mb-6">Best On-Page and Off-Page SEO Tools</h2>
 
@@ -443,14 +443,14 @@ export default function BestContentSeoToolsPage() {
           </div>
         </div>
 
-        <Image 
-          src="https://www.linkio.com/wp-content/uploads/2024/02/seo-tools-comparison.png" 
+        {/* <Image 
+          src="" // Commented out: src="https://www.linkio.com/wp-content/uploads/2024/02/seo-tools-comparison.png" 
           alt="SEO Tools Feature Comparison"
           width={800}
           height={500}
           className="w-full rounded-lg shadow-md mb-8"
           loading="lazy"
-        />
+        /> */}
 
         <h2 className="text-2xl font-bold text-gray-900 mb-6">Complete SEO Checklist</h2>
 

@@ -13,7 +13,7 @@ export default function HowToFindEmailAddressesPage() {
       publishDate="March 10, 2024"
       author="Ajay Paghdal"
       readTime="20 min read"
-      heroImage="https://www.linkio.com/wp-content/uploads/2024/03/how-to-find-email-addresses.jpg"
+      heroImage=""
       heroImageAlt="How to Find Email Addresses Guide"
       relatedPosts={[
         {

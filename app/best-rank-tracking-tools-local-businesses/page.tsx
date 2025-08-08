@@ -14,7 +14,7 @@ export default function BestRankTrackingToolsLocalPage() {
       publishDate="April 8, 2024"
       author="Ajay Paghdal"
       readTime="6 min read"
-      heroImage="https://www.linkio.com/wp-content/uploads/2024/04/best-rank-tracking-tools-local-businesses-featured.png"
+      heroImage=""
       heroImageAlt="Best Rank Tracking Tools for Local Businesses"
       relatedPosts={[
         {
@@ -67,14 +67,14 @@ export default function BestRankTrackingToolsLocalPage() {
           </div>
         </div>
 
-        <Image 
-          src="https://www.linkio.com/wp-content/uploads/2024/04/local-search-statistics.png" 
+        {/* <Image 
+          src="" // Commented out: src="https://www.linkio.com/wp-content/uploads/2024/04/local-search-statistics.png" 
           alt="Local search statistics and trends"
           width={800}
           height={400}
           className="w-full rounded-lg shadow-md mb-8"
           loading="lazy"
-        />
+        /> */}
 
         <h2 className="text-2xl font-bold text-gray-900 mb-6">What Actually Matters When Choosing a Rank Tracking Tool</h2>
 
@@ -275,14 +275,14 @@ export default function BestRankTrackingToolsLocalPage() {
           </div>
         </div>
 
-        <Image 
-          src="https://www.linkio.com/wp-content/uploads/2024/04/rank-tracking-tools-comparison.png" 
+        {/* <Image 
+          src="" // Commented out: src="https://www.linkio.com/wp-content/uploads/2024/04/rank-tracking-tools-comparison.png" 
           alt="Local rank tracking tools feature comparison"
           width={800}
           height={500}
           className="w-full rounded-lg shadow-md mb-8"
           loading="lazy"
-        />
+        /> */}
 
         <h2 className="text-2xl font-bold text-gray-900 mb-6">Under-the-Radar Gems (Affordable and Surprisingly Good)</h2>
 
