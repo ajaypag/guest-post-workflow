@@ -1,6 +1,43 @@
 import { NextResponse } from 'next/server';
+import { db } from '@/lib/db/connection';
+import { sql } from 'drizzle-orm';
 
-// Static pages for now - can be enhanced with database queries later
+// Function to get dynamic niche pages from database
+async function getDynamicNichePages() {
+  try {
+    // Get niches with at least 10 websites (same logic as generateStaticParams)
+    const websitesResult = await db.execute(sql`
+      SELECT 
+        UNNEST(niche) as niche_name,
+        COUNT(*) as website_count
+      FROM websites
+      WHERE niche IS NOT NULL 
+        AND array_length(niche, 1) > 0
+      GROUP BY niche_name
+      HAVING COUNT(*) >= 10
+    `);
+    
+    return websitesResult.rows.map((row: any) => {
+      const nicheSlug = row.niche_name
+        .toLowerCase()
+        .replace(/[&\s]+/g, '-')
+        .replace(/[^a-z0-9-]/g, '')
+        .replace(/-+/g, '-')
+        .replace(/^-|-$/g, '') + '-blogs';
+      
+      return {
+        path: `guest-posting-sites/${nicheSlug}`,
+        priority: 0.8,
+        changefreq: 'weekly'
+      };
+    });
+  } catch (error) {
+    console.warn('Could not fetch niche pages for sitemap:', error);
+    return [];
+  }
+}
+
+// Static pages
 const pages = [
   // Core pages
   { path: '', priority: 1.0, changefreq: 'weekly' },
@@ -51,16 +88,22 @@ export async function GET(request: Request) {
   const baseUrl = `${protocol}//${host}`;
   const currentDate = new Date().toISOString();
   
-  // TODO: Add database queries here to fetch dynamic content
+  // Fetch dynamic niche pages from database
+  const dynamicNichePages = await getDynamicNichePages();
+  
+  // Combine static and dynamic pages
+  const allPages = [...pages, ...dynamicNichePages];
+  
+  // TODO: Add other dynamic content like blog posts when available
   // const blogPosts = await db.query('SELECT slug FROM posts WHERE published = true');
-  // const dynamicPages = blogPosts.map(post => ({ 
+  // const blogPages = blogPosts.map(post => ({ 
   //   path: `blog/${post.slug}`, 
   //   priority: 0.7, 
   //   changefreq: 'weekly' 
   // }));
-  // const allPages = [...pages, ...dynamicPages];
+  // allPages.push(...blogPages);
   
-  const urlEntries = pages.map(page => {
+  const urlEntries = allPages.map(page => {
     const loc = page.path ? `${baseUrl}/${page.path}` : baseUrl;
     return `  <url>
     <loc>${loc}</loc>
