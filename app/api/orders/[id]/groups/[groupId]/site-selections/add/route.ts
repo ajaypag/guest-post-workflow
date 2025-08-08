@@ -128,7 +128,7 @@ export async function POST(
     const domainNames = bulkDomains.map(d => d.domain.toLowerCase());
     const websiteData = domainNames.length > 0
       ? await db.query.websites.findMany({
-          where: sql`LOWER(${websites.domain}) = ANY(${domainNames})`
+          where: sql`LOWER(${websites.domain}) = ANY(ARRAY[${sql.join(domainNames.map(d => sql`${d}`), sql`,`)}])`
         })
       : [];
     

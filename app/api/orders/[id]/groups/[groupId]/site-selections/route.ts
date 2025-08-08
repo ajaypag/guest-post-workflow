@@ -82,7 +82,7 @@ export async function GET(
     const domainNames = analyzedDomainsList.map(d => d.domain.toLowerCase());
     const websiteData = domainNames.length > 0 
       ? await db.query.websites.findMany({
-          where: sql`LOWER(${websites.domain}) = ANY(${domainNames})`
+          where: sql`LOWER(${websites.domain}) = ANY(ARRAY[${sql.join(domainNames.map(d => sql`${d}`), sql`,`)}])`
         })
       : [];
     
@@ -142,7 +142,7 @@ export async function GET(
     const submissionDomainNames = domainsWithSubmissions.map(d => d.domain.toLowerCase());
     const submissionWebsiteData = submissionDomainNames.length > 0
       ? await db.query.websites.findMany({
-          where: sql`LOWER(${websites.domain}) = ANY(${submissionDomainNames})`
+          where: sql`LOWER(${websites.domain}) = ANY(ARRAY[${sql.join(submissionDomainNames.map(d => sql`${d}`), sql`,`)}])`
         })
       : [];
     
