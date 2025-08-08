@@ -110,8 +110,8 @@ export default function LocalBusinessLinkBuildingPage() {
             
             <p className="text-xl text-gray-600 mb-8 max-w-4xl mx-auto leading-relaxed">
               Google Ads are oversaturated. Map packs show 3 businesses out of 20+. 
-              Smart local businesses are building authority on national sites with location-specific expertise—becoming 
-              the cited source when people ask AI for recommendations.
+              Smart local businesses skip the obvious directories and build authority through unexpected publications—becoming 
+              the cited source when people ask AI for local recommendations.
             </p>
 
             <div className="flex flex-col sm:flex-row gap-4 justify-center">
@@ -159,7 +159,7 @@ export default function LocalBusinessLinkBuildingPage() {
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
           <div className="text-center mb-16">
             <h2 className="text-4xl font-bold text-gray-900 mb-6">
-              The Local Marketing Death Spiral
+              Why Traditional Local Marketing Fails
             </h2>
             <p className="text-xl text-gray-600 max-w-3xl mx-auto">
               Traditional local marketing is broken. Ads are expensive, maps are crowded, 
@@ -172,7 +172,7 @@ export default function LocalBusinessLinkBuildingPage() {
               <div className="w-12 h-12 bg-red-600 rounded-lg flex items-center justify-center mb-6">
                 <DollarSign className="w-6 h-6 text-white" />
               </div>
-              <h3 className="text-xl font-semibold text-red-900 mb-4">Google Ads Nightmare</h3>
+              <h3 className="text-xl font-semibold text-red-900 mb-4">Google Ads Are Too Expensive</h3>
               <ul className="space-y-3 text-red-700">
                 <li className="flex items-start gap-2">
                   <div className="w-2 h-2 bg-red-500 rounded-full mt-2 flex-shrink-0"></div>
@@ -677,7 +677,7 @@ export default function LocalBusinessLinkBuildingPage() {
 
       {/* Final CTA */}
       <MarketingCTA 
-        title="Ready to Escape the Local Marketing Death Spiral?"
+        title="Ready to Build Real Local Authority?"
         description="Build permanent authority on national sites while competitors fight over expensive ads and crowded map packs."
         primaryButtonText="Start Building Authority"
         primaryButtonHref="/signup"

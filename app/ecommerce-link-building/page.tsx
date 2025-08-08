@@ -113,7 +113,7 @@ export default function EcommerceLinkBuildingPage() {
             <p className="text-xl text-gray-600 mb-8 max-w-4xl mx-auto leading-relaxed">
               Google Shopping is a wasteland of dropshippers and knockoffs. Amazon owns product search. 
               But when people want gift ideas, product comparisons, or category recommendations, 
-              they turn to AI—and AI turns to authoritative publications. We get you there.
+              they turn to AI—and AI naturally cites the publications we place you in. Smart placements, organic citations.
             </p>
 
             <div className="flex flex-col sm:flex-row gap-4 justify-center">

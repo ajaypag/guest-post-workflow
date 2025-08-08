@@ -165,9 +165,9 @@ export default function B2BServicesLinkBuildingPage() {
             </h1>
             
             <p className="text-xl text-gray-600 mb-8 max-w-4xl mx-auto leading-relaxed">
-              Your competitors fight for generic service terms while you dominate every modifier variation: 
-              "enterprise," "white-label," "B2B," "startup," "HIPAA-compliant," and 45+ other combinations. 
-              Full market coverage through strategic niche positioning.
+              Your competitors fight for generic service terms while you own every modifier variation: 
+              "enterprise," "white-label," "B2B," "startup," "HIPAA-compliant," and dozens more. 
+              Strategic placements that naturally get cited when AI systems need specific B2B recommendations.
             </p>
 
             <div className="flex flex-col sm:flex-row gap-4 justify-center">
@@ -175,7 +175,7 @@ export default function B2BServicesLinkBuildingPage() {
                 href="/signup"
                 className="inline-flex items-center justify-center gap-2 px-8 py-4 bg-gradient-to-r from-indigo-600 to-blue-600 text-white font-semibold rounded-lg hover:from-indigo-700 hover:to-blue-700 transition-colors text-lg"
               >
-                Dominate Your Service Category
+                Build B2B Authority
                 <ArrowRight className="w-5 h-5" />
               </Link>
               <a
@@ -191,8 +191,8 @@ export default function B2BServicesLinkBuildingPage() {
           {/* Success Stats */}
           <div className="grid md:grid-cols-4 gap-6 bg-white rounded-2xl p-8 shadow-lg">
             <div className="text-center">
-              <div className="text-3xl font-bold text-indigo-600 mb-2">50-100</div>
-              <div className="text-sm text-gray-600">Modifier Combinations</div>
+              <div className="text-3xl font-bold text-indigo-600 mb-2">Real</div>
+              <div className="text-sm text-gray-600">Topical Authority</div>
             </div>
             <div className="text-center">
               <div className="text-3xl font-bold text-blue-600 mb-2">73%</div>
@@ -228,7 +228,7 @@ export default function B2BServicesLinkBuildingPage() {
               <div className="w-12 h-12 bg-red-600 rounded-lg flex items-center justify-center mb-6">
                 <TrendingUp className="w-6 h-6 text-white" />
               </div>
-              <h3 className="text-xl font-semibold text-red-900 mb-4">Generic Term Bloodbath</h3>
+              <h3 className="text-xl font-semibold text-red-900 mb-4">Generic Terms Don't Work</h3>
               <ul className="space-y-3 text-red-700">
                 <li className="flex items-start gap-2">
                   <div className="w-2 h-2 bg-red-500 rounded-full mt-2 flex-shrink-0"></div>
@@ -579,7 +579,7 @@ export default function B2BServicesLinkBuildingPage() {
               Real Results: How This Strategy Works
             </h2>
             <p className="text-xl text-gray-600 max-w-3xl mx-auto">
-              Case study: How a B2B service provider dominated their category with modifier coverage
+              Case study: How a B2B service provider owned their category with modifier coverage
             </p>
           </div>
 
@@ -801,7 +801,7 @@ export default function B2BServicesLinkBuildingPage() {
       {/* Final CTA */}
       <MarketingCTA 
         title="Ready to Own Every Service Variation?"
-        description="Stop competing for impossible keywords. Dominate 50-100 modifier combinations and become the inevitable choice."
+        description="Stop competing for impossible keywords. Own the modifiers that actually convert and become the natural choice."
         primaryButtonText="Start Modifier Domination"
         primaryButtonHref="/signup"
         secondaryButtonText="See Our Results"
