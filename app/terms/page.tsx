@@ -1,5 +1,15 @@
 import LinkioHeader from '@/components/LinkioHeader';
 import MarketingFooter from '@/components/MarketingFooter';
+import { Metadata } from 'next';
+
+export const metadata: Metadata = {
+  title: 'Terms of Service | Linkio Link Building Platform',
+  description: 'Terms of service for Linkio\'s AI-powered link building platform. Review our service terms, user agreements, and platform policies.',
+  robots: {
+    index: true,
+    follow: false, // Legal pages typically nofollow
+  },
+};
 
 export default function TermsPage() {
   return (
