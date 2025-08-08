@@ -10,7 +10,6 @@ import BenchmarkDisplay from '@/components/orders/BenchmarkDisplay';
 import OrderProgressSteps, { getStateDisplay, getProgressSteps } from '@/components/orders/OrderProgressSteps';
 import LineItemsTable from '@/components/orders/LineItemsTable';
 import { isLineItemsSystemEnabled, enableLineItemsForOrder } from '@/lib/config/featureFlags';
-import AdminDomainTable from '@/components/orders/AdminDomainTable';
 import ChangeBulkAnalysisProject from '@/components/orders/ChangeBulkAnalysisProject';
 import { AuthService, type AuthSession } from '@/lib/auth';
 import { formatCurrency } from '@/lib/utils/formatting';
@@ -2110,12 +2109,6 @@ export default function InternalOrderManagementPage() {
                   benchmarkData={benchmarkData}
                 />
               )}
-              
-              {/* Admin Domain Management Table */}
-              <AdminDomainTable 
-                orderId={orderId}
-                onRefresh={handleRefresh}
-              />
               
               {/* Additional Information Cards */}
               <div className="grid grid-cols-1 lg:grid-cols-2 gap-6 mt-6">
