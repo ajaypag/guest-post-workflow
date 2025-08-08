@@ -98,7 +98,9 @@ export default function ExternalOrderReviewPage() {
           const benchmarkRes = await fetch(`/api/orders/${orderId}/benchmark`);
           if (benchmarkRes.ok) {
             const benchData = await benchmarkRes.json();
-            setBenchmarkData(benchData);
+            // The API returns { benchmark: ..., hasBenchmark: true }
+            // We need to pass just the benchmark object to the component
+            setBenchmarkData(benchData.benchmark || benchData);
           }
         } catch (error) {
           console.error('Failed to load benchmark:', error);

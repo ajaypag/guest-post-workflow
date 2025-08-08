@@ -181,11 +181,11 @@ export default function BenchmarkDisplay({
             <BarChart3 className="h-5 w-5 text-blue-600" />
             <h3 className="text-lg font-semibold">
               {userType === 'account' ? 'Your Order Wishlist' : 
-               benchmark.benchmarkData.clientGroups.some(g => g.originalRequest) ? 
+               benchmark.benchmarkData?.clientGroups?.some(g => g.originalRequest) ? 
                'Client\'s Original Request' : 'Order Benchmark'}
             </h3>
             <span className="text-sm text-gray-500">v{benchmark.version}</span>
-            {benchmark.benchmarkData.clientGroups.some(g => g.originalRequest) && (
+            {benchmark.benchmarkData?.clientGroups?.some(g => g.originalRequest) && (
               <span className="px-2 py-1 text-xs bg-blue-100 text-blue-700 rounded">
                 Initial Request
               </span>
@@ -270,23 +270,23 @@ export default function BenchmarkDisplay({
         {/* Summary Stats */}
         <div className="grid grid-cols-4 gap-4">
           <div>
-            <div className="text-2xl font-bold">{benchmark.benchmarkData.totalRequestedLinks}</div>
+            <div className="text-2xl font-bold">{benchmark.benchmarkData?.totalRequestedLinks || 0}</div>
             <div className="text-sm text-gray-600">Total Links</div>
           </div>
           <div>
             <div className="text-2xl font-bold">
-              {benchmark.benchmarkData.originalConstraints?.estimatedPricePerLink ? 
+              {benchmark.benchmarkData?.originalConstraints?.estimatedPricePerLink ? 
                 formatCurrency(benchmark.benchmarkData.originalConstraints.estimatedPricePerLink) : 
                 'TBD'}
             </div>
             <div className="text-sm text-gray-600">Target Price/Link</div>
           </div>
           <div>
-            <div className="text-2xl font-bold">{benchmark.benchmarkData.totalTargetPages}</div>
+            <div className="text-2xl font-bold">{benchmark.benchmarkData?.totalTargetPages || 0}</div>
             <div className="text-sm text-gray-600">Target Pages</div>
           </div>
           <div>
-            <div className="text-2xl font-bold">{formatCurrency(benchmark.benchmarkData.orderTotal)}</div>
+            <div className="text-2xl font-bold">{formatCurrency(benchmark.benchmarkData?.orderTotal || 0)}</div>
             <div className="text-sm text-gray-600">Total Value</div>
           </div>
         </div>
@@ -313,7 +313,7 @@ export default function BenchmarkDisplay({
       </div>
 
       {/* Original Constraints vs Current Selection */}
-      {benchmark.benchmarkData.originalConstraints && (
+      {benchmark.benchmarkData?.originalConstraints && (
         <div className="bg-white border rounded-lg">
           <button
             onClick={() => setShowComparison(!showComparison)}
@@ -522,13 +522,13 @@ export default function BenchmarkDisplay({
             <Package className="h-4 w-4" />
             <h4 className="font-semibold">Benchmark Details</h4>
             <span className="text-xs text-gray-500">
-              ({benchmark.benchmarkData.clientGroups.length} client{benchmark.benchmarkData.clientGroups.length !== 1 ? 's' : ''})
+              ({benchmark.benchmarkData?.clientGroups?.length || 0} client{benchmark.benchmarkData?.clientGroups?.length !== 1 ? 's' : ''})
             </span>
           </div>
           <ChevronDown className={`h-4 w-4 transition-transform ${showBenchmarkDetails ? 'rotate-180' : ''}`} />
         </button>
         
-        {showBenchmarkDetails && (
+        {showBenchmarkDetails && benchmark.benchmarkData?.clientGroups && (
           <div className="px-4 pb-4 border-t mt-1">
             {benchmark.benchmarkData.clientGroups.map(group => {
               const clientComparison = comparison?.comparisonData.clientAnalysis.find(
