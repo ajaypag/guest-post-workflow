@@ -478,12 +478,12 @@ export default function BenchmarkDisplay({
           <div className="mb-4">
             <div className="flex justify-between text-sm mb-1">
               <span>{comparison.comparisonData.deliveredLinks} of {comparison.comparisonData.requestedLinks} delivered</span>
-              <span>{comparison.comparisonData.completionPercentage}%</span>
+              <span>{Math.min(100, comparison.comparisonData.completionPercentage)}%</span>
             </div>
             <div className="w-full bg-gray-200 rounded-full h-2">
               <div 
                 className="bg-green-600 h-2 rounded-full"
-                style={{ width: `${comparison.comparisonData.completionPercentage}%` }}
+                style={{ width: `${Math.min(100, comparison.comparisonData.completionPercentage)}%` }}
               />
             </div>
           </div>

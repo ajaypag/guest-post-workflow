@@ -67,20 +67,29 @@ export default function ExternalOrderReviewPage() {
         setLineItems(items);
       }
       
-      // Fetch submissions for each order group
+      // Fetch submissions for each order group (if using orderGroups mode)
       const submissionsData: Record<string, SiteSubmission[]> = {};
-      for (const group of orderData.orderGroups) {
-        console.log('[REVIEW PAGE] Fetching submissions for group:', group.id);
-        const submissionsRes = await fetch(
-          `/api/orders/${orderId}/groups/${group.id}/submissions?includeCompleted=true`
-        );
-        if (submissionsRes.ok) {
-          const data = await submissionsRes.json();
-          console.log('[REVIEW PAGE] Received submissions:', data.submissions?.length || 0);
-          submissionsData[group.id] = data.submissions || [];
-        } else {
-          console.error('[REVIEW PAGE] Failed to fetch submissions:', submissionsRes.status, await submissionsRes.text());
+      
+      // Check if this order uses line items instead of order groups
+      const isUsingLineItems = orderData.lineItems && orderData.lineItems.length > 0 && 
+                               (!orderData.orderGroups || orderData.orderGroups.length === 0);
+      
+      if (!isUsingLineItems && orderData.orderGroups && orderData.orderGroups.length > 0) {
+        for (const group of orderData.orderGroups) {
+          console.log('[REVIEW PAGE] Fetching submissions for group:', group.id);
+          const submissionsRes = await fetch(
+            `/api/orders/${orderId}/groups/${group.id}/submissions?includeCompleted=true`
+          );
+          if (submissionsRes.ok) {
+            const data = await submissionsRes.json();
+            console.log('[REVIEW PAGE] Received submissions:', data.submissions?.length || 0);
+            submissionsData[group.id] = data.submissions || [];
+          } else {
+            console.error('[REVIEW PAGE] Failed to fetch submissions:', submissionsRes.status, await submissionsRes.text());
+          }
         }
+      } else if (isUsingLineItems) {
+        console.log('[REVIEW PAGE] Order uses line items, skipping group submissions fetch');
       }
       
       // Fetch benchmark data if order is confirmed
@@ -96,7 +105,11 @@ export default function ExternalOrderReviewPage() {
         }
       }
       
-      setOrder(orderData);
+      // Ensure orderGroups is at least an empty array to prevent crashes
+      setOrder({
+        ...orderData,
+        orderGroups: orderData.orderGroups || []
+      });
       setSiteSubmissions(submissionsData);
     } catch (error) {
       console.error('Error fetching order:', error);
