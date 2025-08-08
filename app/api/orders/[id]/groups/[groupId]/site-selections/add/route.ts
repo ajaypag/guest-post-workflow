@@ -4,7 +4,8 @@ import { orders } from '@/lib/db/orderSchema';
 import { orderGroups } from '@/lib/db/orderGroupSchema';
 import { bulkAnalysisDomains } from '@/lib/db/bulkAnalysisSchema';
 import { orderSiteSubmissions, projectOrderAssociations } from '@/lib/db/projectOrderAssociationsSchema';
-import { eq, and, inArray } from 'drizzle-orm';
+import { websites } from '@/lib/db/websiteSchema';
+import { eq, and, inArray, sql } from 'drizzle-orm';
 import { AuthServiceServer } from '@/lib/auth-server';
 import { v4 as uuidv4 } from 'uuid';
 
@@ -109,11 +110,39 @@ export async function POST(
       }
     });
 
+    // Get bulk analysis domains with their actual domain names
+    const domainIdsToAdd = domains
+      .filter(d => validDomainIds.has(d.domainId) && !existingDomainIds.has(d.domainId))
+      .map(d => d.domainId);
+    
+    const bulkDomains = domainIdsToAdd.length > 0 
+      ? await db.query.bulkAnalysisDomains.findMany({
+          where: inArray(bulkAnalysisDomains.id, domainIdsToAdd)
+        })
+      : [];
+    
+    // Create a map for easy lookup
+    const bulkDomainMap = new Map(bulkDomains.map(d => [d.id, d]));
+    
+    // Fetch website data for all domains being added
+    const domainNames = bulkDomains.map(d => d.domain.toLowerCase());
+    const websiteData = domainNames.length > 0
+      ? await db.query.websites.findMany({
+          where: sql`LOWER(${websites.domain}) = ANY(${domainNames})`
+        })
+      : [];
+    
+    // Create a map for website data lookup
+    const websiteMap = new Map(websiteData.map(w => [w.domain.toLowerCase(), w]));
+
     // Prepare new submissions (only non-duplicates) with pool assignments
     const timestamp = new Date();
     const newSubmissions = domains
       .filter(d => validDomainIds.has(d.domainId) && !existingDomainIds.has(d.domainId))
       .map(domain => {
+        // Get the bulk domain and website data
+        const bulkDomain = bulkDomainMap.get(domain.domainId);
+        const website = bulkDomain ? websiteMap.get(bulkDomain.domain.toLowerCase()) : null;
         const targetUrl = domain.targetPageUrl || 'unassigned';
         const requiredCount = targetUrlCounts.get(targetUrl) || 0;
         const currentPrimaryCount = existingByUrl.get(targetUrl) || 0;
@@ -137,6 +166,12 @@ export async function POST(
           poolRank = existingAlternatives + 1;
         }
 
+        // Calculate prices if we have website data
+        const guestPostCost = website?.guestPostCost ? parseFloat(website.guestPostCost) : 0;
+        const wholesalePrice = guestPostCost ? Math.round(guestPostCost * 100) : 0; // Convert to cents
+        const serviceFee = 7900; // $79 service fee in cents
+        const retailPrice = wholesalePrice + serviceFee;
+        
         return {
           id: uuidv4(),
           orderGroupId: groupId,
@@ -144,11 +179,23 @@ export async function POST(
           submissionStatus: 'pending', // Always start as pending for client review
           selectionPool,
           poolRank,
+          // Add price snapshots if we have the data
+          ...(wholesalePrice > 0 && {
+            wholesalePriceSnapshot: wholesalePrice,
+            retailPriceSnapshot: retailPrice,
+            serviceFeeSnapshot: serviceFee,
+            priceSnapshotAt: timestamp
+          }),
           metadata: {
             // Target URL is optional and can be updated later
             targetPageUrl: domain.targetPageUrl || null,
             anchorText: domain.anchorText || null,
             specialInstructions: domain.specialInstructions || null,
+            // Include website metrics from websites table
+            domain: bulkDomain?.domain || null,
+            dr: website?.domainRating || null,
+            traffic: website?.totalTraffic || null,
+            guestPostCost: website?.guestPostCost ? parseFloat(website.guestPostCost) : null,
             // Track suggestion metadata
             suggestedBy: session.userId,
             suggestedAt: timestamp.toISOString(),
