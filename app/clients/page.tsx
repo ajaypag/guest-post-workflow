@@ -7,7 +7,7 @@ import AuthWrapper from '@/components/AuthWrapper';
 import Header from '@/components/Header';
 import { clientStorage, sessionStorage } from '@/lib/userStorage';
 import { Client } from '@/types/user';
-import { Building2, Plus, Users, Globe, CheckCircle, XCircle, Clock, Edit, Archive, ArchiveRestore, X, BarChart2, ArrowLeft } from 'lucide-react';
+import { Building2, Plus, Users, Globe, CheckCircle, XCircle, Clock, Edit, Archive, ArchiveRestore, X, BarChart2, AlertCircle, ArrowLeft } from 'lucide-react';
 
 function ClientsPageContent() {
   const router = useRouter();
@@ -204,6 +204,15 @@ function ClientsPageContent() {
                   />
                   <span className="ml-2 text-sm text-gray-600">Show Archived</span>
                 </label>
+                {userType === 'internal' && (
+                  <Link
+                    href="/admin/orphaned-clients"
+                    className="inline-flex items-center px-4 py-2 bg-orange-600 text-white text-sm font-medium rounded-md hover:bg-orange-700"
+                  >
+                    <AlertCircle className="w-4 h-4 mr-2" />
+                    Orphaned Clients
+                  </Link>
+                )}
                 <Link
                   href="/clients/new"
                   className="inline-flex items-center px-4 py-2 bg-blue-600 text-white text-sm font-medium rounded-md hover:bg-blue-700"
