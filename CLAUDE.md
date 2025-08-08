@@ -18,7 +18,7 @@ Production-ready workflow system with PostgreSQL, multi-user auth, and AI agent 
   - Dual-mode: Simple (wizard) vs Detailed (power user)
   - Placeholder system for connected flow
   - Package-based pricing tiers
-  - See: `/orders/new` and [docs/architecture/ORDER_INTERFACE_REDESIGN.md](docs/architecture/ORDER_INTERFACE_REDESIGN.md)
+  - See: `/orders/new` and [docs/06-planning/order-interface-redesign.md](docs/06-planning/order-interface-redesign.md)
 - ✅ V2 Article Generation with ArticleEndCritic (2025-01-19)
 - ✅ Agent retry pattern for text response fix
 - ✅ Dynamic outline-based completion detection
@@ -30,7 +30,7 @@ Production-ready workflow system with PostgreSQL, multi-user auth, and AI agent 
 - 🏗️ Advertiser/Publisher architecture redesign (2025-01-30)
   - Created separate tables for advertisers/publishers
   - Orders currently use users.id (migration needed)
-  - See: docs/architecture/USER_TYPES.md
+  - See: docs/02-architecture/authentication.md
 - ✅ Account Authentication System (2025-01-30)
   - Full login/logout with HTTP-only cookies
   - Password reset via email
@@ -47,15 +47,15 @@ Production-ready workflow system with PostgreSQL, multi-user auth, and AI agent 
 
 | What You Need | Where to Find It |
 |--------------|------------------|
-| **Local Setup** | [docs/setup/LOCAL_DEV.md](docs/setup/LOCAL_DEV.md) |
-| **Deploy to Coolify** | [docs/setup/COOLIFY_DEPLOY.md](docs/setup/COOLIFY_DEPLOY.md) |
-| **Database Schema** | [docs/architecture/DATABASE.md](docs/architecture/DATABASE.md) |
-| **Build AI Agents** | [docs/agents/BUILDING_BLOCKS.md](docs/agents/BUILDING_BLOCKS.md) |
-| **Auto-Save Fix** | [docs/agents/AUTO_SAVE_PATTERN.md](docs/agents/AUTO_SAVE_PATTERN.md) |
-| **Email System** | [docs/services/EMAIL_SERVICE.md](docs/services/EMAIL_SERVICE.md) |
-| **Debug Issues** | [docs/admin/DIAGNOSTICS.md](docs/admin/DIAGNOSTICS.md) |
-| **Order System Implementation** | [docs/architecture/ORDER_SYSTEM_IMPLEMENTATION.md](docs/architecture/ORDER_SYSTEM_IMPLEMENTATION.md) |
-| **Tech Debt & Shortcuts** | [docs/architecture/TECH_DEBT_AND_SHORTCUTS.md](docs/architecture/TECH_DEBT_AND_SHORTCUTS.md) |
+| **Local Setup** | [docs/01-getting-started/local-development.md](docs/01-getting-started/local-development.md) |
+| **Deploy to Coolify** | [docs/01-getting-started/deployment.md](docs/01-getting-started/deployment.md) |
+| **Database Schema** | [docs/02-architecture/database-schema.md](docs/02-architecture/database-schema.md) |
+| **Build AI Agents** | [docs/03-development/building-ai-agents.md](docs/03-development/building-ai-agents.md) |
+| **Auto-Save Fix** | [docs/03-development/auto-save-pattern.md](docs/03-development/auto-save-pattern.md) |
+| **Email System** | [docs/04-operations/email-service.md](docs/04-operations/email-service.md) |
+| **Debug Issues** | [docs/04-operations/diagnostics.md](docs/04-operations/diagnostics.md) |
+| **Order System Implementation** | [docs/02-architecture/order-system.md](docs/02-architecture/order-system.md) |
+| **Tech Debt & Shortcuts** | [docs/02-architecture/technical-debt.md](docs/02-architecture/technical-debt.md) |
 | **All Documentation** | [docs/DEVELOPER_GUIDE.md](docs/DEVELOPER_GUIDE.md) |
 
 ### Production Config
@@ -110,7 +110,7 @@ onChange(newData);  // setState is async, auto-save reads old state
 // ✅ CORRECT - Immediate data
 onChange(newData);  // triggerAutoSave gets data directly
 ```
-[Full guide: docs/agents/AUTO_SAVE_PATTERN.md](docs/agents/AUTO_SAVE_PATTERN.md)
+[Full guide: docs/03-development/auto-save-pattern.md](docs/03-development/auto-save-pattern.md)
 
 ## 🤖 AI Agent Development
 
@@ -119,14 +119,14 @@ New LLM orchestration approach - agent drives conversation naturally:
 - Single agent, empty instructions
 - Database-driven prompts
 - ArticleEndCritic for completion
-- [Full guide: docs/agents/V2_PATTERN.md](docs/agents/V2_PATTERN.md)
+- [Full guide: docs/03-development/ai-v2-pattern.md](docs/03-development/ai-v2-pattern.md)
 
 ### Agent Text Retry Fix
 ```typescript
 // Agents output text instead of tools? Apply this:
 import { assistantSentPlainText, SEMANTIC_AUDIT_RETRY_NUDGE } from '@/lib/utils/agentUtils';
 ```
-[Implementation: docs/agents/RETRY_PATTERN.md](docs/agents/RETRY_PATTERN.md)
+[Implementation: docs/03-development/retry-pattern.md](docs/03-development/retry-pattern.md)
 
 ## 🔍 Debugging Protocol
 
@@ -137,7 +137,7 @@ import { assistantSentPlainText, SEMANTIC_AUDIT_RETRY_NUDGE } from '@/lib/utils/
 3. **Test exact insert**: `/admin/test-database-inserts`
 4. **Verify tables**: `/admin/database-migration`
 
-[Full protocol: docs/admin/DIAGNOSTICS.md](docs/admin/DIAGNOSTICS.md)
+[Full protocol: docs/04-operations/diagnostics.md](docs/04-operations/diagnostics.md)
 
 ## 📋 Common Tasks
 
@@ -161,7 +161,7 @@ npm run db:studio       # Browse database
 - Placeholder system for connected flow between columns
 - Package-based pricing (Bronze/Silver/Gold/Custom)
 - **Status**: Initial implementation complete, further refinement needed
-- See: `/orders/new` and [docs/architecture/ORDER_INTERFACE_REDESIGN.md](docs/architecture/ORDER_INTERFACE_REDESIGN.md)
+- See: `/orders/new` and [docs/06-planning/order-interface-redesign.md](docs/06-planning/order-interface-redesign.md)
 
 ### V2 Article Generation (Production Ready)
 - True LLM orchestration without complex tools
@@ -178,8 +178,8 @@ npm run db:studio       # Browse database
 ## 🔒 Security & Authentication
 
 **When implementing auth/permissions for shared interfaces**:
-1. Check [CLIENT_SECURITY_IMPLEMENTATION.md](docs/architecture/CLIENT_SECURITY_IMPLEMENTATION.md)
-2. Follow the pattern from [ORDER_SYSTEM_IMPLEMENTATION.md](docs/architecture/ORDER_SYSTEM_IMPLEMENTATION.md)
+1. Check [CLIENT_SECURITY_IMPLEMENTATION.md](docs/02-architecture/security.md)
+2. Follow the pattern from [ORDER_SYSTEM_IMPLEMENTATION.md](docs/02-architecture/order-system.md)
 3. Key pattern:
 ```typescript
 if (session.userType === 'internal') {
@@ -193,10 +193,10 @@ if (session.userType === 'internal') {
 
 For detailed guides on all topics:
 - **[Developer Guide](docs/DEVELOPER_GUIDE.md)** - Complete documentation index
-- **[Building Agents](docs/agents/)** - Agent patterns and examples
-- **[Database Rules](docs/db/)** - Schema patterns and pitfalls
-- **[Architecture](docs/architecture/)** - System design and patterns
-- **[Security](docs/architecture/CLIENT_SECURITY_IMPLEMENTATION.md)** - Auth patterns for shared interfaces
+- **[Building Agents](docs/03-development/)** - Agent patterns and examples
+- **[Database Rules](docs/03-development/)** - Schema patterns and pitfalls
+- **[Architecture](docs/02-architecture/)** - System design and patterns
+- **[Security](docs/02-architecture/security.md)** - Auth patterns for shared interfaces
 
 ---
 
