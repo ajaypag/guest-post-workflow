@@ -7,9 +7,10 @@ import { AuthService, type AuthSession } from '@/lib/auth';
 interface AuthWrapperProps {
   children: React.ReactNode;
   requireAdmin?: boolean;
+  debugId?: string; // Add optional debug ID to identify which component is calling
 }
 
-export default function AuthWrapper({ children, requireAdmin = false }: AuthWrapperProps) {
+export default function AuthWrapper({ children, requireAdmin = false, debugId }: AuthWrapperProps) {
   const router = useRouter();
   const pathname = usePathname();
   const [session, setSession] = useState<AuthSession | null>(null);
@@ -21,9 +22,9 @@ export default function AuthWrapper({ children, requireAdmin = false }: AuthWrap
       
       if (!currentSession) {
         // Use usePathname() since it has the correct full path!
-        console.log('🔐 AuthWrapper redirect - usePathname():', pathname);
-        console.log('🔐 AuthWrapper redirect - window.location.pathname:', typeof window !== 'undefined' ? window.location.pathname : 'N/A');
-        console.log('🔐 AuthWrapper redirect - window.location.href:', typeof window !== 'undefined' ? window.location.href : 'N/A');
+        console.log(`🔐 AuthWrapper redirect [${debugId || 'unknown'}] - usePathname():`, pathname);
+        console.log(`🔐 AuthWrapper redirect [${debugId || 'unknown'}] - window.location.pathname:`, typeof window !== 'undefined' ? window.location.pathname : 'N/A');
+        console.log(`🔐 AuthWrapper redirect [${debugId || 'unknown'}] - window.location.href:`, typeof window !== 'undefined' ? window.location.href : 'N/A');
         
         // Check if pathname looks incomplete - if so, try to get full path
         let finalPath = pathname;
@@ -31,10 +32,10 @@ export default function AuthWrapper({ children, requireAdmin = false }: AuthWrap
           // Extract the full path from the browser URL
           const url = new URL(window.location.href);
           finalPath = url.pathname;
-          console.log('🔐 AuthWrapper - Detected incomplete pathname, using href path:', finalPath);
+          console.log(`🔐 AuthWrapper [${debugId || 'unknown'}] - Detected incomplete pathname, using href path:`, finalPath);
         }
         
-        console.log('🔐 AuthWrapper redirect - Final path to use:', finalPath);
+        console.log(`🔐 AuthWrapper redirect [${debugId || 'unknown'}] - Final path to use:`, finalPath);
         
         // Store in sessionStorage as backup and use URL parameter
         if (typeof window !== 'undefined') {
@@ -42,9 +43,9 @@ export default function AuthWrapper({ children, requireAdmin = false }: AuthWrap
         }
         
         const encodedPath = encodeURIComponent(finalPath);
-        console.log('🔐 AuthWrapper redirect - Encoded pathname:', encodedPath);
+        console.log(`🔐 AuthWrapper redirect [${debugId || 'unknown'}] - Encoded pathname:`, encodedPath);
         const redirectUrl = `/login?redirect=${encodedPath}`;
-        console.log('🔐 AuthWrapper redirect - Full redirect URL:', redirectUrl);
+        console.log(`🔐 AuthWrapper redirect [${debugId || 'unknown'}] - Full redirect URL:`, redirectUrl);
         router.push(redirectUrl);
         return;
       }
