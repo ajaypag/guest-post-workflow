@@ -30,7 +30,11 @@ export default function AuthWrapper({ children, requireAdmin = false, debugId }:
         // Check if a redirect is already stored (another component already initiated redirect)
         const existingRedirect = typeof window !== 'undefined' ? sessionStorage.getItem('auth_redirect') : null;
         if (existingRedirect && existingRedirect.length > pathname.length) {
-          console.log(`🔐 AuthWrapper [${debugId || 'unknown'}] - Better redirect already exists (${existingRedirect}), skipping`);
+          console.log(`🔐 AuthWrapper [${debugId || 'unknown'}] - Better redirect already exists (${existingRedirect}), using it`);
+          // Still redirect to login, but use the existing better redirect path
+          const encodedPath = encodeURIComponent(existingRedirect);
+          const redirectUrl = `/login?redirect=${encodedPath}`;
+          router.push(redirectUrl);
           return;
         }
         
