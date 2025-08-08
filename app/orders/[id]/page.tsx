@@ -883,17 +883,17 @@ export default function OrderDetailPage() {
                   orderGroups={order.orderGroups || []}
                   lineItems={lineItems}
                   siteSubmissions={(() => {
-                    // Transform siteSubmissions to match the expected interface
+                    // Transform siteSubmissions to match OrderSiteReviewTableV2's expected interface
                     const transformed: Record<string, any[]> = {};
                     Object.entries(siteSubmissions).forEach(([groupId, submissions]) => {
                       transformed[groupId] = submissions.map(sub => ({
                         ...sub,
-                        domain: {
+                        // Transform domain from string to expected object structure
+                        domain: typeof sub.domain === 'string' ? {
                           id: sub.domainId,
-                          domain: sub.domain,
-                          qualificationStatus: undefined,
-                          notes: undefined
-                        }
+                          domain: sub.domain
+                          // Leave other properties undefined to avoid the React error
+                        } : sub.domain  // If already an object, keep it
                       }));
                     });
                     return transformed;
