@@ -755,7 +755,7 @@ export default function OrderDetailPage() {
                       {order.status === 'pending_confirmation' && user?.userType === 'internal' && (
                         <div className="space-y-2">
                           <Link
-                            href={`/orders/${order.id}/confirm`}
+                            href={`/orders/${order.id}/internal`}
                             className="block w-full px-4 py-3 bg-orange-600 text-white text-sm rounded-md hover:bg-orange-700 text-center font-medium"
                           >
                             <CheckCircle className="w-4 h-4 mx-auto mb-1" />

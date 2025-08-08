@@ -357,7 +357,7 @@ export function OrdersTableMultiClient({
                       <div className="flex items-center justify-end gap-2">
                         {isInternal && order.status === 'pending_confirmation' && (
                           <Link
-                            href={`/orders/${order.id}/confirm`}
+                            href={`/orders/${order.id}/internal`}
                             className="inline-flex items-center px-3 py-1.5 bg-green-600 text-white text-sm rounded-md hover:bg-green-700"
                           >
                             <CheckCircle className="h-4 w-4 mr-1" />
