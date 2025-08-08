@@ -4,6 +4,7 @@ import { useState, useEffect } from 'react';
 import { useParams, useRouter } from 'next/navigation';
 import Link from 'next/link';
 import { Loader2, CheckCircle, XCircle, AlertCircle, ArrowRight, ArrowLeft, DollarSign, Bell } from 'lucide-react';
+import AuthWrapper from '@/components/AuthWrapper';
 import Header from '@/components/Header';
 import OrderSiteReviewTableV2 from '@/components/orders/OrderSiteReviewTableV2';
 import type { OrderGroup, SiteSubmission, LineItem } from '@/components/orders/OrderSiteReviewTableV2';
@@ -334,18 +335,18 @@ export default function ExternalOrderReviewPage() {
 
   if (loading) {
     return (
-      <>
+      <AuthWrapper>
         <Header />
         <div className="min-h-screen bg-gray-50 flex items-center justify-center">
           <Loader2 className="w-8 h-8 animate-spin text-gray-500" />
         </div>
-      </>
+      </AuthWrapper>
     );
   }
 
   if (!order) {
     return (
-      <>
+      <AuthWrapper>
         <Header />
         <div className="min-h-screen bg-gray-50 flex items-center justify-center">
           <div className="text-center">
@@ -353,7 +354,7 @@ export default function ExternalOrderReviewPage() {
             <p className="text-gray-600">Order not found</p>
           </div>
         </div>
-      </>
+      </AuthWrapper>
     );
   }
 
@@ -376,7 +377,7 @@ export default function ExternalOrderReviewPage() {
   const rejectedCount = excludedCount;
 
   return (
-    <>
+    <AuthWrapper>
       <Header />
       <div className="min-h-screen bg-gray-50">
         <div className="max-w-7xl mx-auto px-4 py-8">
@@ -604,6 +605,6 @@ export default function ExternalOrderReviewPage() {
           )}
         </div>
       </div>
-    </>
+    </AuthWrapper>
   );
 }
