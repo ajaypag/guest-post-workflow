@@ -3,7 +3,7 @@ import { orderBenchmarks, benchmarkComparisons } from '@/lib/db/orderBenchmarkSc
 import { orderGroups } from '@/lib/db/orderGroupSchema';
 import { orderSiteSubmissions } from '@/lib/db/projectOrderAssociationsSchema';
 import { orders } from '@/lib/db/orderSchema';
-import { eq, and } from 'drizzle-orm';
+import { eq, and, or } from 'drizzle-orm';
 
 /**
  * Create a benchmark snapshot when an order is confirmed
@@ -199,9 +199,12 @@ export async function compareToBenchmark(orderId: string, userId?: string) {
       where: eq(orderSiteSubmissions.orderGroupId, group.id)
     });
 
-    // Count by status
+    // Count by status - include 'pending' (selected sites awaiting client review) and 'included' as delivered for internal tracking
     const delivered = submissions.filter(s => 
-      s.submissionStatus === 'completed' || s.submissionStatus === 'client_approved'
+      s.submissionStatus === 'completed' || 
+      s.submissionStatus === 'client_approved' ||
+      s.submissionStatus === 'pending' ||  // Sites selected but awaiting client review
+      s.inclusionStatus === 'included'     // Sites marked as included in the selection
     ).length;
     
     const inProgress = submissions.filter(s => 
@@ -222,7 +225,10 @@ export async function compareToBenchmark(orderId: string, userId?: string) {
       );
 
       const deliveredForPage = currentSubmissions.filter(s => 
-        s.submissionStatus === 'completed' || s.submissionStatus === 'client_approved'
+        s.submissionStatus === 'completed' || 
+        s.submissionStatus === 'client_approved' ||
+        s.submissionStatus === 'pending' ||  // Sites selected but awaiting client review
+        s.inclusionStatus === 'included'     // Sites marked as included in the selection
       ).length;
 
       // Find substitutions, missing, extras
@@ -290,7 +296,26 @@ export async function compareToBenchmark(orderId: string, userId?: string) {
 
   // Financial comparison
   const expectedRevenue = benchmark.benchmarkData.orderTotal;
-  const actualRevenue = 0; // TODO: Calculate from actual delivered submissions
+  
+  // Calculate actual revenue from all included/selected sites across all groups
+  let actualRevenue = 0;
+  for (const group of groups) {
+    const submissions = await db.query.orderSiteSubmissions.findMany({
+      where: and(
+        eq(orderSiteSubmissions.orderGroupId, group.id),
+        or(
+          eq(orderSiteSubmissions.submissionStatus, 'completed'),
+          eq(orderSiteSubmissions.submissionStatus, 'client_approved'),
+          eq(orderSiteSubmissions.submissionStatus, 'pending'),
+          eq(orderSiteSubmissions.inclusionStatus, 'included')
+        )
+      )
+    });
+    
+    actualRevenue += submissions.reduce((sum, sub) => {
+      return sum + (sub.retailPriceSnapshot || 0);
+    }, 0);
+  }
   
   // Identify issues
   const issues: any[] = [];
