@@ -1,5 +1,15 @@
 import LinkioHeader from '@/components/LinkioHeader';
 import MarketingFooter from '@/components/MarketingFooter';
+import { Metadata } from 'next';
+
+export const metadata: Metadata = {
+  title: 'Cookie Policy | Linkio Website Cookies & Tracking',
+  description: 'Learn about Linkio\'s use of cookies and tracking technologies. Understand how we use cookies to improve your browsing experience.',
+  robots: {
+    index: true,
+    follow: false,
+  },
+};
 
 export default function CookiesPage() {
   return (
