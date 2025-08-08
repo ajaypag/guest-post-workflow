@@ -297,8 +297,11 @@ export async function compareToBenchmark(orderId: string, userId?: string) {
   // Financial comparison
   const expectedRevenue = benchmark.benchmarkData.orderTotal;
   
-  // Calculate actual revenue from all included/selected sites across all groups
+  // Calculate actual revenue and metrics from all included/selected sites across all groups
   let actualRevenue = 0;
+  let drValues: number[] = [];
+  let trafficValues: number[] = [];
+  
   for (const group of groups) {
     const submissions = await db.query.orderSiteSubmissions.findMany({
       where: and(
@@ -313,9 +316,20 @@ export async function compareToBenchmark(orderId: string, userId?: string) {
     });
     
     actualRevenue += submissions.reduce((sum, sub) => {
+      // Also collect DR and traffic values
+      if (sub.metadata?.dr) drValues.push(sub.metadata.dr);
+      if (sub.metadata?.traffic) trafficValues.push(sub.metadata.traffic);
       return sum + (sub.retailPriceSnapshot || 0);
     }, 0);
   }
+  
+  // Calculate DR and traffic ranges
+  const drRange = drValues.length > 0 
+    ? [Math.min(...drValues), Math.max(...drValues)]
+    : [];
+  const trafficRange = trafficValues.length > 0
+    ? [Math.min(...trafficValues), Math.max(...trafficValues)]
+    : [];
   
   // Identify issues
   const issues: any[] = [];

@@ -378,8 +378,10 @@ export default function BenchmarkDisplay({
                           ? `${benchmark.benchmarkData.originalConstraints.drRange[0]} - ${benchmark.benchmarkData.originalConstraints.drRange[1]}`
                           : `${benchmark.benchmarkData.originalConstraints.drRange[0]}+`}
                       </div>
-                      <div className="font-medium text-gray-400 italic">
-                        Selection pending
+                      <div className="font-medium">
+                        {comparison?.comparisonData?.currentDrRange?.length > 0 
+                          ? `${comparison.comparisonData.currentDrRange[0]} - ${comparison.comparisonData.currentDrRange[1]}`
+                          : <span className="text-gray-400 italic">Selection pending</span>}
                       </div>
                     </div>
                   </div>
@@ -393,8 +395,10 @@ export default function BenchmarkDisplay({
                       <div className="text-gray-500">
                         Requested: {benchmark.benchmarkData.originalConstraints.minTraffic.toLocaleString()}+
                       </div>
-                      <div className="font-medium text-gray-400 italic">
-                        Selection pending
+                      <div className="font-medium">
+                        {comparison?.comparisonData?.currentTrafficRange?.length > 0 
+                          ? `${comparison.comparisonData.currentTrafficRange[0].toLocaleString()} - ${comparison.comparisonData.currentTrafficRange[1].toLocaleString()}`
+                          : <span className="text-gray-400 italic">Selection pending</span>}
                       </div>
                     </div>
                   </div>
