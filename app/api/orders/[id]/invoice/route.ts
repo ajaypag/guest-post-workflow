@@ -3,10 +3,12 @@ import { db } from '@/lib/db/connection';
 import { orders } from '@/lib/db/orderSchema';
 import { orderSiteSubmissions } from '@/lib/db/projectOrderAssociationsSchema';
 import { orderGroups } from '@/lib/db/orderGroupSchema';
+import { orderLineItems } from '@/lib/db/orderLineItemSchema';
 import { accounts } from '@/lib/db/accountSchema';
 import { bulkAnalysisDomains } from '@/lib/db/bulkAnalysisSchema';
 import { eq, and } from 'drizzle-orm';
 import { AuthServiceServer } from '@/lib/auth-server';
+import { isLineItemsSystemEnabled } from '@/lib/config/featureFlags';
 
 export async function POST(
   request: NextRequest,
@@ -53,39 +55,103 @@ export async function POST(
         }, { status: 400 });
       }
       
-      // Get order groups and submissions separately
-      const orderGroupsList = await db.query.orderGroups.findMany({
-        where: eq(orderGroups.orderId, orderId)
-      });
-
-      const allSubmissions = [];
-      for (const group of orderGroupsList) {
-        const submissions = await db.query.orderSiteSubmissions.findMany({
-          where: eq(orderSiteSubmissions.orderGroupId, group.id)
-        });
-        allSubmissions.push(...submissions);
-      }
-
-      // Check if all sites have been reviewed
-      const pendingSubmissions = allSubmissions.filter(s => 
-        s.submissionStatus === 'pending' || s.submissionStatus === 'submitted'
-      );
+      // Check if using line items system
+      let useLineItems = false;
+      let lineItemsList: any[] = [];
       
-      if (pendingSubmissions.length > 0) {
-        return NextResponse.json({ 
-          error: 'Cannot generate invoice - site review not complete',
-          pendingCount: pendingSubmissions.length 
-        }, { status: 400 });
+      if (isLineItemsSystemEnabled()) {
+        // Try to get line items first
+        lineItemsList = await db.query.orderLineItems.findMany({
+          where: eq(orderLineItems.orderId, orderId),
+          with: {
+            client: true
+          }
+        });
+        
+        useLineItems = lineItemsList.length > 0;
       }
+      
+      // Variables for invoice generation
+      let approvedItems: any[] = [];
+      let pendingCount = 0;
+      
+      if (useLineItems) {
+        // Use line items system
+        console.log('[INVOICE] Using line items system for invoice generation');
+        
+        // Check for unassigned line items
+        const unassignedItems = lineItemsList.filter(item => !item.assignedDomainId);
+        if (unassignedItems.length > 0) {
+          return NextResponse.json({ 
+            error: 'Cannot generate invoice - some line items have no assigned domains',
+            unassignedCount: unassignedItems.length 
+          }, { status: 400 });
+        }
+        
+        // Check for pending line items
+        const pendingItems = lineItemsList.filter(item => 
+          item.status === 'pending' || item.status === 'draft'
+        );
+        pendingCount = pendingItems.length;
+        
+        if (pendingCount > 0) {
+          return NextResponse.json({ 
+            error: 'Cannot generate invoice - line items review not complete',
+            pendingCount 
+          }, { status: 400 });
+        }
+        
+        // Get approved/assigned line items
+        approvedItems = lineItemsList.filter(item => 
+          item.status === 'approved' || item.status === 'assigned' || item.status === 'confirmed'
+        );
+        
+        if (approvedItems.length === 0) {
+          return NextResponse.json({ 
+            error: 'Cannot generate invoice - no approved line items' 
+          }, { status: 400 });
+        }
+      } else {
+        // Fallback to old system
+        console.log('[INVOICE] Using orderSiteSubmissions system for invoice generation');
+        
+        const orderGroupsList = await db.query.orderGroups.findMany({
+          where: eq(orderGroups.orderId, orderId)
+        });
 
-      const approvedSubmissions = allSubmissions.filter(s => 
-        s.submissionStatus === 'client_approved'
-      );
+        const allSubmissions = [];
+        for (const group of orderGroupsList) {
+          const submissions = await db.query.orderSiteSubmissions.findMany({
+            where: eq(orderSiteSubmissions.orderGroupId, group.id)
+          });
+          allSubmissions.push(...submissions);
+        }
 
-      if (approvedSubmissions.length === 0) {
-        return NextResponse.json({ 
-          error: 'Cannot generate invoice - no approved sites' 
-        }, { status: 400 });
+        // Check if all sites have been reviewed
+        // Sites with inclusionStatus set have been reviewed (included/excluded/saved_for_later)
+        const pendingSubmissions = allSubmissions.filter(s => 
+          !s.inclusionStatus && (s.submissionStatus === 'pending' || s.submissionStatus === 'submitted')
+        );
+        pendingCount = pendingSubmissions.length;
+        
+        if (pendingCount > 0) {
+          return NextResponse.json({ 
+            error: 'Cannot generate invoice - site review not complete',
+            pendingCount 
+          }, { status: 400 });
+        }
+
+        // Check for approved items using both old and new status systems
+        approvedItems = allSubmissions.filter(s => 
+          s.submissionStatus === 'client_approved' || 
+          s.inclusionStatus === 'included'
+        );
+
+        if (approvedItems.length === 0) {
+          return NextResponse.json({ 
+            error: 'Cannot generate invoice - no approved sites' 
+          }, { status: 400 });
+        }
       }
 
       // Generate invoice number (simple format: INV-YYYYMMDD-XXXX)
@@ -107,28 +173,57 @@ export async function POST(
       // Build invoice items - list each site individually with actual pricing
       const items = [];
       
-      // Add each approved site as a line item using price snapshots
-      for (const submission of approvedSubmissions) {
-        // Get domain info
-        const domain = await db.query.bulkAnalysisDomains.findFirst({
-          where: eq(bulkAnalysisDomains.id, submission.domainId)
-        });
-        
-        // Use price snapshot if available, fallback to default pricing
-        const retailPrice = submission.retailPriceSnapshot || 27900; // Default $279
-        const wholesalePrice = submission.wholesalePriceSnapshot || (retailPrice - 7900);
-        const serviceFee = submission.serviceFeeSnapshot || 7900; // $79 service fee
-        
-        sitesSubtotal += retailPrice;
-        wholesaleTotal += wholesalePrice;
-        serviceFeeTotal += serviceFee;
-        
-        items.push({
-          description: `Guest Post - ${domain?.domain || 'Site'}`,
-          quantity: 1,
-          unitPrice: retailPrice,
-          total: retailPrice
-        });
+      if (useLineItems) {
+        // Generate invoice from line items
+        for (const lineItem of approvedItems) {
+          // Use approved price if set, otherwise estimated price
+          const retailPrice = lineItem.approvedPrice || lineItem.estimatedPrice || 27900;
+          const wholesalePrice = lineItem.wholesalePrice || (retailPrice - 7900);
+          const serviceFee = 7900; // $79 service fee
+          
+          sitesSubtotal += retailPrice;
+          wholesaleTotal += wholesalePrice;
+          serviceFeeTotal += serviceFee;
+          
+          // Build description from line item data
+          const clientName = lineItem.client?.name || 'Client';
+          const domain = lineItem.assignedDomain || 'Pending Assignment';
+          const targetPage = lineItem.targetPageUrl ? 
+            ` for ${new URL(lineItem.targetPageUrl).pathname}` : '';
+          
+          items.push({
+            description: `Guest Post - ${domain}${targetPage} (${clientName})`,
+            quantity: 1,
+            unitPrice: retailPrice,
+            total: retailPrice,
+            // Store line item ID for tracking
+            lineItemId: lineItem.id
+          });
+        }
+      } else {
+        // Fallback to old system
+        for (const submission of approvedItems) {
+          // Get domain info
+          const domain = await db.query.bulkAnalysisDomains.findFirst({
+            where: eq(bulkAnalysisDomains.id, submission.domainId)
+          });
+          
+          // Use price snapshot if available, fallback to default pricing
+          const retailPrice = submission.retailPriceSnapshot || 27900;
+          const wholesalePrice = submission.wholesalePriceSnapshot || (retailPrice - 7900);
+          const serviceFee = submission.serviceFeeSnapshot || 7900;
+          
+          sitesSubtotal += retailPrice;
+          wholesaleTotal += wholesalePrice;
+          serviceFeeTotal += serviceFee;
+          
+          items.push({
+            description: `Guest Post - ${domain?.domain || 'Site'}`,
+            quantity: 1,
+            unitPrice: retailPrice,
+            total: retailPrice
+          });
+        }
       }
       
       // Get optional services from order
@@ -194,11 +289,36 @@ export async function POST(
         .where(eq(orders.id, orderId))
         .returning();
 
+      // If using line items, update their status to invoiced
+      if (useLineItems) {
+        // Get existing line items to preserve metadata
+        const existingLineItems = await db.query.orderLineItems.findMany({
+          where: eq(orderLineItems.orderId, orderId)
+        });
+        
+        // Update each line item with merged metadata
+        for (const item of existingLineItems) {
+          await db.update(orderLineItems)
+            .set({
+              status: 'invoiced',
+              metadata: {
+                ...(item.metadata as any || {}),
+                invoicedAt: new Date().toISOString(),
+                invoiceNumber
+              },
+              modifiedAt: new Date()
+            })
+            .where(eq(orderLineItems.id, item.id));
+        }
+      }
+      
       return NextResponse.json({
         success: true,
         order: updatedOrder[0],
         message: isRegenerate ? 'Invoice regenerated successfully' : 'Invoice generated successfully',
-        approvedSites: approvedSubmissions.length
+        invoiceMethod: useLineItems ? 'line_items' : 'submissions',
+        itemCount: approvedItems.length,
+        approvedSites: approvedItems.length
       });
 
     } else if (action === 'mark_paid') {

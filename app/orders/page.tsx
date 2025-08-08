@@ -6,6 +6,7 @@ import { OrdersTableMultiClient } from '@/components/OrdersTableMultiClient';
 import AuthWrapper from '@/components/AuthWrapper';
 import Header from '@/components/Header';
 import { AuthService } from '@/lib/auth';
+import { useNotifications } from '@/lib/contexts/NotificationContext';
 import Link from 'next/link';
 
 interface Account {
@@ -58,6 +59,7 @@ function OrdersPageContent() {
   const [statusFilter, setStatusFilter] = useState('all');
   const [dateRange, setDateRange] = useState('all');
   const [userType, setUserType] = useState<string>('');
+  const { refreshNotifications } = useNotifications();
 
   const statusOptions = [
     { value: 'all', label: 'All Statuses' },
@@ -108,6 +110,8 @@ function OrdersPageContent() {
       console.error('Error fetching orders:', error);
     } finally {
       setLoading(false);
+      // Refresh notifications when orders are fetched
+      refreshNotifications();
     }
   };
 

@@ -3,11 +3,13 @@
 import { useState, useEffect } from 'react';
 import { useParams, useRouter } from 'next/navigation';
 import Link from 'next/link';
-import { Loader2, CheckCircle, XCircle, AlertCircle, ArrowRight, ArrowLeft, DollarSign } from 'lucide-react';
+import { Loader2, CheckCircle, XCircle, AlertCircle, ArrowRight, ArrowLeft, DollarSign, Bell } from 'lucide-react';
 import Header from '@/components/Header';
-import OrderSiteReviewTable from '@/components/orders/OrderSiteReviewTable';
-import type { OrderGroup, SiteSubmission } from '@/components/orders/OrderSiteReviewTable';
+import OrderSiteReviewTableV2 from '@/components/orders/OrderSiteReviewTableV2';
+import type { OrderGroup, SiteSubmission, LineItem } from '@/components/orders/OrderSiteReviewTableV2';
+import BenchmarkDisplay from '@/components/orders/BenchmarkDisplay';
 import { formatCurrency } from '@/lib/utils/formatting';
+import { isLineItemsSystemEnabled } from '@/lib/config/featureFlags';
 
 interface OrderData {
   id: string;
@@ -18,6 +20,7 @@ interface OrderData {
   createdAt: string;
   approvedAt?: string;
   orderGroups: OrderGroup[];
+  lineItems?: any[];
 }
 
 export default function ExternalOrderReviewPage() {
@@ -30,6 +33,8 @@ export default function ExternalOrderReviewPage() {
   const [siteSubmissions, setSiteSubmissions] = useState<Record<string, SiteSubmission[]>>({});
   const [selectedSubmissions, setSelectedSubmissions] = useState<Set<string>>(new Set());
   const [actionLoading, setActionLoading] = useState(false);
+  const [lineItems, setLineItems] = useState<LineItem[]>([]);
+  const [benchmarkData, setBenchmarkData] = useState<any>(null);
 
   useEffect(() => {
     fetchOrder();
@@ -44,23 +49,69 @@ export default function ExternalOrderReviewPage() {
       if (!response.ok) throw new Error('Failed to fetch order');
       const orderData = await response.json();
       
-      // Fetch submissions for each order group
+      // Load line items if system is enabled
+      if (isLineItemsSystemEnabled() && orderData.lineItems) {
+        const items: LineItem[] = orderData.lineItems.map((item: any) => ({
+          id: item.id,
+          orderId: item.orderId,
+          clientId: item.clientId,
+          targetPageUrl: item.targetPageUrl,
+          targetPageId: item.targetPageId,
+          anchorText: item.anchorText,
+          status: item.status,
+          assignedDomainId: item.assignedDomainId,
+          assignedDomain: item.assignedDomain,
+          estimatedPrice: item.estimatedPrice,
+          metadata: item.metadata
+        }));
+        setLineItems(items);
+      }
+      
+      // Fetch submissions for each order group (if using orderGroups mode)
       const submissionsData: Record<string, SiteSubmission[]> = {};
-      for (const group of orderData.orderGroups) {
-        console.log('[REVIEW PAGE] Fetching submissions for group:', group.id);
-        const submissionsRes = await fetch(
-          `/api/orders/${orderId}/groups/${group.id}/submissions?includeCompleted=true`
-        );
-        if (submissionsRes.ok) {
-          const data = await submissionsRes.json();
-          console.log('[REVIEW PAGE] Received submissions:', data.submissions?.length || 0);
-          submissionsData[group.id] = data.submissions || [];
-        } else {
-          console.error('[REVIEW PAGE] Failed to fetch submissions:', submissionsRes.status, await submissionsRes.text());
+      
+      // Check if this order uses line items instead of order groups
+      const isUsingLineItems = orderData.lineItems && orderData.lineItems.length > 0 && 
+                               (!orderData.orderGroups || orderData.orderGroups.length === 0);
+      
+      if (!isUsingLineItems && orderData.orderGroups && orderData.orderGroups.length > 0) {
+        for (const group of orderData.orderGroups) {
+          console.log('[REVIEW PAGE] Fetching submissions for group:', group.id);
+          const submissionsRes = await fetch(
+            `/api/orders/${orderId}/groups/${group.id}/submissions?includeCompleted=true`
+          );
+          if (submissionsRes.ok) {
+            const data = await submissionsRes.json();
+            console.log('[REVIEW PAGE] Received submissions:', data.submissions?.length || 0);
+            submissionsData[group.id] = data.submissions || [];
+          } else {
+            console.error('[REVIEW PAGE] Failed to fetch submissions:', submissionsRes.status, await submissionsRes.text());
+          }
+        }
+      } else if (isUsingLineItems) {
+        console.log('[REVIEW PAGE] Order uses line items, skipping group submissions fetch');
+      }
+      
+      // Fetch benchmark data if order is confirmed
+      if (orderData.status === 'confirmed' || orderData.status === 'paid') {
+        try {
+          const benchmarkRes = await fetch(`/api/orders/${orderId}/benchmark`);
+          if (benchmarkRes.ok) {
+            const benchData = await benchmarkRes.json();
+            // The API returns { benchmark: ..., hasBenchmark: true }
+            // We need to pass just the benchmark object to the component
+            setBenchmarkData(benchData.benchmark || benchData);
+          }
+        } catch (error) {
+          console.error('Failed to load benchmark:', error);
         }
       }
       
-      setOrder(orderData);
+      // Ensure orderGroups is at least an empty array to prevent crashes
+      setOrder({
+        ...orderData,
+        orderGroups: orderData.orderGroups || []
+      });
       setSiteSubmissions(submissionsData);
     } catch (error) {
       console.error('Error fetching order:', error);
@@ -78,7 +129,8 @@ export default function ExternalOrderReviewPage() {
           headers: { 'Content-Type': 'application/json' },
           body: JSON.stringify({ 
             action: 'approve',
-            notes: 'Approved by client' 
+            notes: 'Approved by client',
+            approvedBy: 'account_user' // Track who approved
           })
         }
       );
@@ -101,7 +153,8 @@ export default function ExternalOrderReviewPage() {
           headers: { 'Content-Type': 'application/json' },
           body: JSON.stringify({ 
             action: 'reject',
-            notes: reason 
+            notes: reason,
+            rejectedBy: 'account_user' // Track who rejected
           })
         }
       );
@@ -115,24 +168,84 @@ export default function ExternalOrderReviewPage() {
     }
   };
 
-  const handleSwitchPool = async (submissionId: string, groupId: string) => {
+  const handleEditSubmission = async (submissionId: string, groupId: string, updates: any) => {
+    try {
+      const response = await fetch(`/api/orders/${orderId}/groups/${groupId}/submissions/${submissionId}/edit`, {
+        method: 'PATCH',
+        headers: { 'Content-Type': 'application/json' },
+        credentials: 'include',
+        body: JSON.stringify(updates)
+      });
+      
+      if (!response.ok) {
+        const errorData = await response.json().catch(() => ({ error: 'Unknown error' }));
+        throw new Error(errorData.error || 'Failed to edit submission');
+      }
+      
+      await fetchOrder();
+    } catch (error: any) {
+      console.error('Error editing submission:', error);
+      alert(error.message || 'Failed to edit submission');
+    }
+  };
+
+  const handleChangeInclusionStatus = async (submissionId: string, groupId: string, status: 'included' | 'excluded' | 'saved_for_later', reason?: string) => {
     try {
       const response = await fetch(
-        `/api/orders/${orderId}/groups/${groupId}/site-selections`,
+        `/api/orders/${orderId}/groups/${groupId}/submissions/${submissionId}/inclusion`,
         {
-          method: 'PUT',
+          method: 'PATCH',
           headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({
-            selections: [{ submissionId, action: 'switch_pool' }]
+          body: JSON.stringify({ 
+            inclusionStatus: status,
+            exclusionReason: reason 
           })
         }
       );
       
-      if (!response.ok) throw new Error('Failed to switch pool');
+      if (!response.ok) throw new Error('Failed to update status');
       
       await fetchOrder();
     } catch (error) {
-      console.error('Error switching pool:', error);
+      console.error('Error updating status:', error);
+    }
+  };
+
+  const handleAssignToLineItem = async (submissionId: string, lineItemId: string) => {
+    try {
+      // Find the submission to get domain ID
+      let domainId: string | null = null;
+      for (const [groupId, submissions] of Object.entries(siteSubmissions)) {
+        const submission = submissions.find(s => s.id === submissionId);
+        if (submission) {
+          domainId = submission.domainId;
+          break;
+        }
+      }
+
+      if (!domainId) {
+        throw new Error('Submission not found');
+      }
+
+      const response = await fetch(
+        `/api/orders/${orderId}/line-items/${lineItemId}/assign-domain`,
+        {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ submissionId, domainId })
+        }
+      );
+
+      if (!response.ok) {
+        const error = await response.json();
+        throw new Error(error.error || 'Failed to assign domain to line item');
+      }
+
+      // Refresh data
+      await fetchOrder();
+    } catch (error) {
+      console.error('Error assigning to line item:', error);
+      alert(error instanceof Error ? error.message : 'Failed to assign domain to line item');
     }
   };
 
@@ -191,10 +304,10 @@ export default function ExternalOrderReviewPage() {
   };
 
   const handleProceed = async () => {
-    // After approving sites, check if order needs invoicing or if it's ready for payment
-    if (order && approvedCount > 0) {
+    // After selecting sites (included status), check if order needs invoicing
+    if (order && includedCount > 0) {
       try {
-        // Trigger invoice generation for approved sites
+        // Trigger invoice generation for included sites
         const response = await fetch(`/api/orders/${orderId}/invoice`, {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
@@ -244,14 +357,23 @@ export default function ExternalOrderReviewPage() {
     );
   }
 
-  // Calculate statistics
-  const totalSubmissions = Object.values(siteSubmissions).flat().length;
-  const pendingCount = Object.values(siteSubmissions).flat()
-    .filter(s => s.status === 'pending').length;
-  const approvedCount = Object.values(siteSubmissions).flat()
-    .filter(s => s.status === 'client_approved').length;
-  const rejectedCount = Object.values(siteSubmissions).flat()
-    .filter(s => s.status === 'client_rejected').length;
+  // Calculate statistics (supporting both old and new systems)
+  const allSubmissions = Object.values(siteSubmissions).flat();
+  const totalSubmissions = allSubmissions.length;
+  
+  // Count based on inclusion status (new system) or approval status (old system)
+  const includedCount = allSubmissions
+    .filter(s => s.inclusionStatus === 'included' || s.status === 'client_approved').length;
+  const excludedCount = allSubmissions
+    .filter(s => s.inclusionStatus === 'excluded' || s.status === 'client_rejected').length;
+  const savedForLaterCount = allSubmissions
+    .filter(s => s.inclusionStatus === 'saved_for_later').length;
+  const pendingCount = allSubmissions
+    .filter(s => !s.inclusionStatus && s.status === 'pending').length;
+    
+  // For backward compatibility
+  const approvedCount = includedCount;
+  const rejectedCount = excludedCount;
 
   return (
     <>
@@ -284,25 +406,45 @@ export default function ExternalOrderReviewPage() {
               </div>
             </div>
 
-            {/* Progress Stats */}
-            <div className="grid grid-cols-4 gap-4 mt-6">
+            {/* Notification if recently marked ready */}
+            {order.state === 'sites_ready' && (
+              <div className="bg-blue-50 border border-blue-200 rounded-lg p-3 mb-4 flex items-center gap-3">
+                <Bell className="h-5 w-5 text-blue-600" />
+                <div className="flex-1">
+                  <p className="text-sm font-medium text-blue-900">
+                    Sites are ready for your review!
+                  </p>
+                  <p className="text-xs text-blue-700 mt-0.5">
+                    Our team has carefully selected sites based on your requirements. Please review and approve the ones you'd like to proceed with.
+                  </p>
+                </div>
+              </div>
+            )}
+
+            {/* Benchmark Display - Show Original Request vs Current Selection */}
+            {benchmarkData && (
+              <div className="mt-6">
+                <BenchmarkDisplay 
+                  benchmark={benchmarkData}
+                  orderId={orderId}
+                  userType="account"
+                />
+              </div>
+            )}
+
+            {/* Progress Stats - Simple included/excluded counts */}
+            <div className="grid grid-cols-3 gap-4 mt-6">
               <div className="text-center">
-                <p className="text-2xl font-semibold text-gray-900">{pendingCount}</p>
-                <p className="text-xs text-gray-500">Pending Review</p>
+                <p className="text-2xl font-semibold text-green-600">{includedCount}</p>
+                <p className="text-xs text-gray-500">Included</p>
               </div>
               <div className="text-center">
-                <p className="text-2xl font-semibold text-green-600">{approvedCount}</p>
-                <p className="text-xs text-gray-500">Approved</p>
+                <p className="text-2xl font-semibold text-amber-600">{savedForLaterCount}</p>
+                <p className="text-xs text-gray-500">Saved for Later</p>
               </div>
               <div className="text-center">
-                <p className="text-2xl font-semibold text-red-600">{rejectedCount}</p>
-                <p className="text-xs text-gray-500">Rejected</p>
-              </div>
-              <div className="text-center">
-                <p className="text-2xl font-semibold text-blue-600">
-                  {Math.round((approvedCount / totalSubmissions) * 100) || 0}%
-                </p>
-                <p className="text-xs text-gray-500">Completion</p>
+                <p className="text-2xl font-semibold text-gray-400">{excludedCount}</p>
+                <p className="text-xs text-gray-500">Excluded</p>
               </div>
             </div>
           </div>
@@ -339,27 +481,30 @@ export default function ExternalOrderReviewPage() {
           )}
 
           {/* Site Review Table */}
-          <OrderSiteReviewTable
+          <OrderSiteReviewTableV2
             orderId={orderId}
             orderGroups={order.orderGroups}
+            lineItems={lineItems}
             siteSubmissions={siteSubmissions}
             userType="account"
             permissions={{
               canApproveReject: true,
               canViewPricing: true,
               canViewInternalTools: false,
-              canSwitchPools: true,
-              canAssignTargetPages: true,
-              canRebalancePools: true,
+              canChangeStatus: true,  // External users CAN organize sites (included/excluded/saved)
+              canAssignTargetPages: true,  // External users CAN assign/change target pages
               canGenerateWorkflows: false,
               canMarkSitesReady: false,
-              canEditDomainAssignments: true
+              canEditDomainAssignments: true,  // External users CAN edit all domain details
+              canSetExclusionReason: false  // Only this is restricted - internal notes
             }}
             workflowStage="site_selection_with_sites"
             onApprove={handleApprove}
             onReject={handleReject}
-            onSwitchPool={handleSwitchPool}
+            onEditSubmission={handleEditSubmission}
+            onChangeInclusionStatus={handleChangeInclusionStatus}
             onAssignTargetPage={handleAssignTargetPage}
+            onAssignToLineItem={handleAssignToLineItem}
             onRefresh={fetchOrder}
             selectedSubmissions={selectedSubmissions}
             onSelectionChange={(submissionId, selected) => {
@@ -371,10 +516,13 @@ export default function ExternalOrderReviewPage() {
               }
               setSelectedSubmissions(newSelected);
             }}
+            useLineItems={isLineItemsSystemEnabled()}
+            useStatusSystem={true}  // External users CAN use status system for organization
+            benchmarkData={benchmarkData}
           />
 
-          {/* Pricing Summary for Approved Sites */}
-          {approvedCount > 0 && (
+          {/* Pricing Summary for Selected Sites */}
+          {includedCount > 0 && (
             <div className="mt-6 bg-white rounded-lg shadow-sm border border-gray-200 p-6">
               <div className="flex items-center justify-between mb-4">
                 <div className="flex items-center gap-2">
@@ -385,18 +533,20 @@ export default function ExternalOrderReviewPage() {
               
               <div className="space-y-3">
                 {Object.entries(siteSubmissions).map(([groupId, submissions]) => {
-                  const approvedSubmissions = submissions.filter(s => s.status === 'client_approved');
-                  if (approvedSubmissions.length === 0) return null;
+                  const includedSubmissions = submissions.filter(s => 
+                    s.inclusionStatus === 'included' || s.status === 'client_approved'
+                  );
+                  if (includedSubmissions.length === 0) return null;
                   
                   const group = order?.orderGroups.find(g => g.id === groupId);
-                  const groupTotal = approvedSubmissions.reduce((sum, sub) => sum + (sub.price || 0), 0);
+                  const groupTotal = includedSubmissions.reduce((sum, sub) => sum + (sub.price || 0), 0);
                   
                   return (
                     <div key={groupId} className="flex justify-between py-2 border-b border-gray-100 last:border-b-0">
                       <div>
                         <span className="font-medium text-gray-900">{group?.client.name || 'Unknown Client'}</span>
                         <span className="text-sm text-gray-500 ml-2">
-                          ({approvedSubmissions.length} site{approvedSubmissions.length > 1 ? 's' : ''})
+                          ({includedSubmissions.length} site{includedSubmissions.length > 1 ? 's' : ''})
                         </span>
                       </div>
                       <span className="font-medium text-gray-900">
@@ -416,7 +566,7 @@ export default function ExternalOrderReviewPage() {
                       {(() => {
                         const totalPrice = Object.values(siteSubmissions)
                           .flat()
-                          .filter(s => s.status === 'client_approved')
+                          .filter(s => s.inclusionStatus === 'included' || s.status === 'client_approved')
                           .reduce((sum, sub) => sum + (sub.price || 0), 0);
                         
                         return totalPrice > 0 ? formatCurrency(totalPrice) : (
@@ -435,16 +585,21 @@ export default function ExternalOrderReviewPage() {
             </div>
           )}
 
-          {/* Proceed Button */}
-          {pendingCount === 0 && approvedCount > 0 && (
+          {/* Proceed Button - Show when sites have been selected */}
+          {includedCount > 0 && (
             <div className="mt-6 text-center">
               <button
                 onClick={handleProceed}
                 className="inline-flex items-center px-6 py-3 bg-blue-600 text-white rounded-lg hover:bg-blue-700 font-medium"
               >
-                Proceed to Next Step
+                Generate Invoice ({includedCount} sites)
                 <ArrowRight className="w-5 h-5 ml-2" />
               </button>
+              {pendingCount > 0 && (
+                <p className="text-sm text-gray-600 mt-2">
+                  {pendingCount} sites still pending review
+                </p>
+              )}
             </div>
           )}
         </div>

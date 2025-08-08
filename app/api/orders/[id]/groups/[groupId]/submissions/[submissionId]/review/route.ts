@@ -2,9 +2,11 @@ import { NextRequest, NextResponse } from 'next/server';
 import { db } from '@/lib/db/connection';
 import { orderSiteSubmissions } from '@/lib/db/projectOrderAssociationsSchema';
 import { orderGroups } from '@/lib/db/orderGroupSchema';
+import { orderLineItems } from '@/lib/db/orderLineItemSchema';
 import { orders } from '@/lib/db/orderSchema';
 import { eq, and } from 'drizzle-orm';
 import { AuthServiceServer } from '@/lib/auth-server';
+import { isLineItemsSystemEnabled } from '@/lib/config/featureFlags';
 
 export async function POST(
   request: NextRequest,
@@ -25,6 +27,8 @@ export async function POST(
     const body = await request.json();
     action = body.action;
     notes = body.notes;
+    const approvedBy = body.approvedBy;
+    const rejectedBy = body.rejectedBy;
     
     // Validate action
     if (!action || !['approve', 'reject'].includes(action)) {
@@ -85,10 +89,30 @@ export async function POST(
       clientReviewNotes: notes,
     };
     
-    // Only set clientReviewedBy for internal users (references users table)
+    // Track who performed the action
     if (session.userType === 'internal') {
       updateData.clientReviewedBy = session.userId;
     }
+    
+    // Store metadata about who approved/rejected
+    updateData.metadata = {
+      ...(submission.metadata || {}),
+      reviewHistory: [
+        ...(submission.metadata?.reviewHistory || []),
+        {
+          action: action,
+          performedBy: session.userType === 'internal' ? session.userId : session.email,
+          performedByType: session.userType,
+          performedAt: new Date().toISOString(),
+          notes: notes,
+          sessionInfo: {
+            userId: session.userId,
+            email: session.email,
+            userType: session.userType
+          }
+        }
+      ]
+    };
     
     // Capture price snapshots when approving
     if (action === 'approve') {
@@ -169,6 +193,30 @@ export async function POST(
       })
       .where(eq(orderSiteSubmissions.id, params.submissionId))
       .returning();
+    
+    // If using line items system and approving, update the associated line item
+    if (isLineItemsSystemEnabled() && action === 'approve' && submission.metadata?.assignedToLineItemId) {
+      const lineItem = await db.query.orderLineItems.findFirst({
+        where: eq(orderLineItems.id, submission.metadata.assignedToLineItemId)
+      });
+      
+      if (lineItem) {
+        await db.update(orderLineItems)
+          .set({
+            status: 'approved',
+            approvedPrice: updatedSubmission.retailPriceSnapshot,
+            wholesalePrice: updatedSubmission.wholesalePriceSnapshot,
+            metadata: {
+              ...(lineItem.metadata as any || {}),
+              approvedAt: new Date().toISOString(),
+              approvedBy: session.email
+            },
+            modifiedAt: new Date(),
+            modifiedBy: session.userId
+          })
+          .where(eq(orderLineItems.id, submission.metadata.assignedToLineItemId));
+      }
+    }
     
     return NextResponse.json({ 
       message: `Submission ${action}d successfully`,

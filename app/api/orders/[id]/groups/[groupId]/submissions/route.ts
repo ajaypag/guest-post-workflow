@@ -168,9 +168,14 @@ export async function GET(
         submittedAt: submission.submittedAt,
         completedAt: submission.completedAt,
         createdAt: submission.createdAt,
-        // NEW: Pool information
+        // Pool information (deprecated)
         selectionPool: submission.selectionPool,
         poolRank: submission.poolRank,
+        // NEW: Status-based system
+        inclusionStatus: submission.inclusionStatus || 
+          (submission.selectionPool === 'primary' ? 'included' : 'saved_for_later'),
+        inclusionOrder: submission.inclusionOrder || submission.poolRank,
+        exclusionReason: submission.exclusionReason,
         canReview: session.userType === 'account' && 
                    submission.submissionStatus === 'pending' &&
                    submission.submittedAt !== null,
