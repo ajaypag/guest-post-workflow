@@ -21,6 +21,19 @@ export default function AuthWrapper({ children, requireAdmin = false, debugId }:
       const currentSession = AuthService.getSession();
       
       if (!currentSession) {
+        // Check if we're already redirecting to login to prevent overwrites
+        if (typeof window !== 'undefined' && window.location.pathname === '/login') {
+          console.log(`🔐 AuthWrapper [${debugId || 'unknown'}] - Already redirecting to login, skipping`);
+          return;
+        }
+        
+        // Check if a redirect is already stored (another component already initiated redirect)
+        const existingRedirect = typeof window !== 'undefined' ? sessionStorage.getItem('auth_redirect') : null;
+        if (existingRedirect && existingRedirect.length > pathname.length) {
+          console.log(`🔐 AuthWrapper [${debugId || 'unknown'}] - Better redirect already exists (${existingRedirect}), skipping`);
+          return;
+        }
+        
         // Use usePathname() since it has the correct full path!
         console.log(`🔐 AuthWrapper redirect [${debugId || 'unknown'}] - usePathname():`, pathname);
         console.log(`🔐 AuthWrapper redirect [${debugId || 'unknown'}] - window.location.pathname:`, typeof window !== 'undefined' ? window.location.pathname : 'N/A');
