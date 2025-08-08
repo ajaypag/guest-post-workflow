@@ -17,20 +17,20 @@ export const fetchWebsiteContentTool = tool({
     url: z.string().url().describe('The website URL to fetch and analyze'),
     analysis_focus: z.enum(['full', 'metadata', 'content', 'technical']).describe('Focus area for content analysis'),
     findings: z.object({
-      title_tag: z.string().optional(),
-      meta_description: z.string().optional(), 
-      h1_tags: z.array(z.string()).optional(),
-      h2_tags: z.array(z.string()).optional(),
-      word_count: z.number().optional(),
-      images_total: z.number().optional(),
-      images_with_alt: z.number().optional(),
-      internal_links: z.number().optional(),
-      external_links: z.number().optional(),
-      has_ssl: z.boolean().optional(),
-      has_robots_txt: z.boolean().optional(),
-      has_sitemap: z.boolean().optional(),
-      load_time: z.number().optional(),
-      mobile_friendly: z.boolean().optional()
+      title_tag: z.string().nullable(),
+      meta_description: z.string().nullable(), 
+      h1_tags: z.array(z.string()).nullable(),
+      h2_tags: z.array(z.string()).nullable(),
+      word_count: z.number().nullable(),
+      images_total: z.number().nullable(),
+      images_with_alt: z.number().nullable(),
+      internal_links: z.number().nullable(),
+      external_links: z.number().nullable(),
+      has_ssl: z.boolean().nullable(),
+      has_robots_txt: z.boolean().nullable(),
+      has_sitemap: z.boolean().nullable(),
+      load_time: z.number().nullable(),
+      mobile_friendly: z.boolean().nullable()
     }).describe('Findings from website content analysis'),
     issues_found: z.array(z.string()).describe('List of SEO issues discovered'),
     opportunities: z.array(z.string()).describe('SEO optimization opportunities identified')
@@ -75,13 +75,13 @@ export const analyzePageSpeedTool = tool({
     url: z.string().url().describe('The website URL to analyze for speed'),
     device_type: z.enum(['desktop', 'mobile', 'both']).describe('Device type for speed testing'),
     metrics: z.object({
-      desktop_score: z.number().min(0).max(100).optional(),
-      mobile_score: z.number().min(0).max(100).optional(),
-      lcp: z.number().optional().describe('Largest Contentful Paint in seconds'),
-      fid: z.number().optional().describe('First Input Delay in milliseconds'),
-      cls: z.number().optional().describe('Cumulative Layout Shift score'),
-      ttfb: z.number().optional().describe('Time to First Byte in milliseconds'),
-      fcp: z.number().optional().describe('First Contentful Paint in seconds')
+      desktop_score: z.number().min(0).max(100).nullable(),
+      mobile_score: z.number().min(0).max(100).nullable(),
+      lcp: z.number().nullable().describe('Largest Contentful Paint in seconds'),
+      fid: z.number().nullable().describe('First Input Delay in milliseconds'),
+      cls: z.number().nullable().describe('Cumulative Layout Shift score'),
+      ttfb: z.number().nullable().describe('Time to First Byte in milliseconds'),
+      fcp: z.number().nullable().describe('First Contentful Paint in seconds')
     }).describe('Page speed metrics and Core Web Vitals'),
     performance_issues: z.array(z.string()).describe('Performance issues identified'),
     optimization_recommendations: z.array(z.object({
@@ -131,8 +131,8 @@ export const analyzeBacklinkProfileTool = tool({
       domain_authority: z.number().min(0).max(100),
       page_authority: z.number().min(0).max(100),
       spam_score: z.number().min(0).max(100),
-      trust_flow: z.number().min(0).max(100).optional(),
-      citation_flow: z.number().min(0).max(100).optional()
+      trust_flow: z.number().min(0).max(100).nullable(),
+      citation_flow: z.number().min(0).max(100).nullable()
     }).describe('Backlink profile metrics'),
     top_anchor_texts: z.array(z.string()).describe('Most common anchor texts'),
     top_referring_domains: z.array(z.string()).describe('Highest authority referring domains'),
@@ -307,7 +307,7 @@ export const generateSEOReportTool = tool({
       offpage_seo: z.number().min(0).max(100),
       content_quality: z.number().min(0).max(100),
       mobile_optimization: z.number().min(0).max(100),
-      local_seo: z.number().min(0).max(100).optional(),
+      local_seo: z.number().min(0).max(100).nullable(),
       page_speed: z.number().min(0).max(100)
     }).describe('Scores by SEO category'),
     critical_issues: z.array(z.object({
