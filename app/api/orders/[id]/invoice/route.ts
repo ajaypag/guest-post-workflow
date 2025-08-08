@@ -128,8 +128,9 @@ export async function POST(
         }
 
         // Check if all sites have been reviewed
+        // Sites with inclusionStatus set have been reviewed (included/excluded/saved_for_later)
         const pendingSubmissions = allSubmissions.filter(s => 
-          s.submissionStatus === 'pending' || s.submissionStatus === 'submitted'
+          !s.inclusionStatus && (s.submissionStatus === 'pending' || s.submissionStatus === 'submitted')
         );
         pendingCount = pendingSubmissions.length;
         
@@ -140,8 +141,10 @@ export async function POST(
           }, { status: 400 });
         }
 
+        // Check for approved items using both old and new status systems
         approvedItems = allSubmissions.filter(s => 
-          s.submissionStatus === 'client_approved'
+          s.submissionStatus === 'client_approved' || 
+          s.inclusionStatus === 'included'
         );
 
         if (approvedItems.length === 0) {
