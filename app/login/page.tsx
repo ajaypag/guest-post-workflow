@@ -17,14 +17,8 @@ function LoginForm() {
   const [error, setError] = useState('');
   const [loading, setLoading] = useState(false);
   
-  // Get redirect URL from query params or sessionStorage, default to homepage
-  const urlRedirect = searchParams.get('redirect');
-  const sessionRedirect = typeof window !== 'undefined' ? sessionStorage.getItem('auth_redirect') : null;
-  const redirectTo = urlRedirect || sessionRedirect || '/';
-  
-  console.log('🔐 Login page - URL redirect:', urlRedirect);
-  console.log('🔐 Login page - Session redirect:', sessionRedirect);
-  console.log('🔐 Login page - Final redirect:', redirectTo);
+  // Get redirect URL from query params, default to homepage
+  const redirectTo = searchParams.get('redirect') || '/';
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -32,27 +26,15 @@ function LoginForm() {
     setLoading(true);
 
     try {
-      console.log('🔐 Attempting login for:', formData.email);
-      
       // Login logic only - no registration
       const user = await AuthService.login(formData.email, formData.password);
-      console.log('🔐 Login response:', user ? 'User received' : 'No user');
       
       if (!user) {
         throw new Error('Invalid email or password');
       }
       
-      // Check if cookie was set
-      console.log('🔐 Document cookies after login:', document.cookie);
-      
-      // Clear the redirect from sessionStorage
-      if (typeof window !== 'undefined') {
-        sessionStorage.removeItem('auth_redirect');
-      }
-      
       router.push(redirectTo);
     } catch (error: any) {
-      console.error('🔐 Login error:', error);
       setError(error.message);
     } finally {
       setLoading(false);

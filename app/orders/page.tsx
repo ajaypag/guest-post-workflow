@@ -325,7 +325,7 @@ function OrdersPageContent() {
 
 export default function OrdersPage() {
   return (
-    <AuthWrapper debugId="orders-list">
+    <AuthWrapper>
       <Header />
       <OrdersPageContent />
     </AuthWrapper>

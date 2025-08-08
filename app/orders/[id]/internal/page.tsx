@@ -770,7 +770,7 @@ export default function InternalOrderManagementPage() {
 
   if (loading) {
     return (
-      <AuthWrapper debugId="internal-loading">
+      <AuthWrapper>
         <Header />
         <div className="px-4 sm:px-6 lg:px-8 py-8">
           <div className="flex items-center justify-center h-64">
@@ -783,7 +783,7 @@ export default function InternalOrderManagementPage() {
 
   if (error || !order) {
     return (
-      <AuthWrapper debugId="internal-error">
+      <AuthWrapper>
         <Header />
         <div className="px-4 sm:px-6 lg:px-8 py-8">
           <div className="text-center">
@@ -1165,7 +1165,7 @@ export default function InternalOrderManagementPage() {
   };
 
   return (
-    <AuthWrapper debugId="internal-main">
+    <AuthWrapper>
       <Header />
       <div className="min-h-screen bg-gray-50">
         <div className="px-4 sm:px-6 lg:px-8 py-8">
