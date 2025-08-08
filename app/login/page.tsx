@@ -17,8 +17,14 @@ function LoginForm() {
   const [error, setError] = useState('');
   const [loading, setLoading] = useState(false);
   
-  // Get redirect URL from query params, default to homepage
-  const redirectTo = searchParams.get('redirect') || '/';
+  // Get redirect URL from query params or sessionStorage, default to homepage
+  const urlRedirect = searchParams.get('redirect');
+  const sessionRedirect = typeof window !== 'undefined' ? sessionStorage.getItem('auth_redirect') : null;
+  const redirectTo = urlRedirect || sessionRedirect || '/';
+  
+  console.log('🔐 Login page - URL redirect:', urlRedirect);
+  console.log('🔐 Login page - Session redirect:', sessionRedirect);
+  console.log('🔐 Login page - Final redirect:', redirectTo);
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -38,6 +44,11 @@ function LoginForm() {
       
       // Check if cookie was set
       console.log('🔐 Document cookies after login:', document.cookie);
+      
+      // Clear the redirect from sessionStorage
+      if (typeof window !== 'undefined') {
+        sessionStorage.removeItem('auth_redirect');
+      }
       
       router.push(redirectTo);
     } catch (error: any) {
