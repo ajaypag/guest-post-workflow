@@ -307,22 +307,6 @@ export default function ExternalOrderReviewPage() {
     // After selecting sites (included status), check if order needs invoicing
     if (order && includedCount > 0) {
       try {
-        setActionLoading(true);
-        
-        // First, update order status to indicate client has approved sites
-        const statusResponse = await fetch(`/api/orders/${orderId}`, {
-          method: 'PUT',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({ 
-            status: 'client_approved',
-            state: 'awaiting_invoice' 
-          })
-        });
-        
-        if (!statusResponse.ok) {
-          console.error('Failed to update order status');
-        }
-        
         // Trigger invoice generation for included sites
         const response = await fetch(`/api/orders/${orderId}/invoice`, {
           method: 'POST',
@@ -334,27 +318,13 @@ export default function ExternalOrderReviewPage() {
           // Invoice generated successfully, redirect to invoice page
           router.push(`/orders/${orderId}/invoice`);
         } else {
-          // If invoice generation fails, get error details
-          const errorData = await response.json();
-          console.error('Invoice generation failed:', errorData);
-          
-          // Show error message to user
-          if (errorData.pendingCount) {
-            alert(`Cannot generate invoice yet. ${errorData.pendingCount} sites are still pending review.`);
-          } else if (errorData.unassignedCount) {
-            alert(`Cannot generate invoice yet. ${errorData.unassignedCount} line items have no assigned domains.`);
-          } else {
-            alert(errorData.error || 'Failed to generate invoice. Please contact support.');
-          }
-          
-          // Stay on the current page so user can see what needs to be fixed
-          // Don't redirect to legacy status page
+          // If invoice generation fails, go to order status page
+          router.push(`/account/orders/${orderId}/status`);
         }
       } catch (error) {
         console.error('Error generating invoice:', error);
-        alert('An error occurred while generating the invoice. Please try again.');
-      } finally {
-        setActionLoading(false);
+        // Fallback to order status page
+        router.push(`/account/orders/${orderId}/status`);
       }
     } else {
       // No approved sites, go to order page
@@ -620,20 +590,10 @@ export default function ExternalOrderReviewPage() {
             <div className="mt-6 text-center">
               <button
                 onClick={handleProceed}
-                disabled={actionLoading}
-                className="inline-flex items-center px-6 py-3 bg-blue-600 text-white rounded-lg hover:bg-blue-700 font-medium disabled:opacity-50 disabled:cursor-not-allowed"
+                className="inline-flex items-center px-6 py-3 bg-blue-600 text-white rounded-lg hover:bg-blue-700 font-medium"
               >
-                {actionLoading ? (
-                  <>
-                    <Loader2 className="w-5 h-5 mr-2 animate-spin" />
-                    Generating Invoice...
-                  </>
-                ) : (
-                  <>
-                    Generate Invoice ({includedCount} sites)
-                    <ArrowRight className="w-5 h-5 ml-2" />
-                  </>
-                )}
+                Generate Invoice ({includedCount} sites)
+                <ArrowRight className="w-5 h-5 ml-2" />
               </button>
               {pendingCount > 0 && (
                 <p className="text-sm text-gray-600 mt-2">
