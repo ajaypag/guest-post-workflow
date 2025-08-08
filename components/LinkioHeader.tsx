@@ -2,7 +2,7 @@
 
 import { useState } from 'react';
 import Link from 'next/link';
-import { ArrowRight, Zap, ArrowLeft, Menu, X } from 'lucide-react';
+import { ArrowRight, Zap, ArrowLeft, Menu, X, ChevronDown } from 'lucide-react';
 
 interface LinkioHeaderProps {
   variant?: 'default' | 'blog' | 'tool';
@@ -16,6 +16,7 @@ export default function LinkioHeader({
   showBackButton = false 
 }: LinkioHeaderProps) {
   const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
+  const [isIndustriesOpen, setIsIndustriesOpen] = useState(false);
 
   const toggleMobileMenu = () => {
     setIsMobileMenuOpen(!isMobileMenuOpen);
@@ -23,13 +24,22 @@ export default function LinkioHeader({
 
   const closeMobileMenu = () => {
     setIsMobileMenuOpen(false);
+    setIsIndustriesOpen(false);
   };
 
-  // Navigation items for default variant
+  // Navigation items for default variant (Industries moved to separate dropdown)
   const navItems = [
     { href: '/how-it-works', label: 'How It Works' },
     { href: '/guest-posting-sites', label: 'Browse Sites' },
-    { href: '/blog', label: 'Blog' },
+  ];
+
+  // Industries dropdown items
+  const industriesItems = [
+    { href: '/industries', label: 'All Industries', description: 'Overview of industry strategies' },
+    { href: '/saas-link-building', label: 'SaaS & Software', description: 'AI citation engineering' },
+    { href: '/b2b-services-link-building', label: 'B2B Services', description: 'Modifier coverage strategy' },
+    { href: '/local-business-link-building', label: 'Local Businesses', description: 'Geographic authority' },
+    { href: '/ecommerce-link-building', label: 'E-commerce', description: 'Editorial placement strategy' },
   ];
   return (
     <header className="bg-white border-b border-gray-100 relative">
@@ -101,6 +111,42 @@ export default function LinkioHeader({
             {/* Default variant - full nav */}
             {variant === 'default' && (
               <>
+                {/* Industries Dropdown - First for prominence */}
+                <div 
+                  className="relative"
+                  onMouseEnter={() => setIsIndustriesOpen(true)}
+                  onMouseLeave={() => setIsIndustriesOpen(false)}
+                >
+                  <button
+                    className="flex items-center gap-1 text-gray-600 hover:text-gray-900 text-sm font-medium transition-colors py-2"
+                  >
+                    Industries
+                    <ChevronDown className={`w-3 h-3 transition-transform ${isIndustriesOpen ? 'rotate-180' : ''}`} />
+                  </button>
+                  
+                  {isIndustriesOpen && (
+                    <div
+                      className="absolute top-full left-0 -mt-1 pt-1 w-64 z-50"
+                    >
+                      <div className="bg-white rounded-lg shadow-lg border border-gray-100 py-2">
+                        {industriesItems.map((item) => (
+                          <Link
+                            key={item.href}
+                            href={item.href}
+                            className="block px-4 py-2 hover:bg-gray-50 transition-colors"
+                            onClick={() => setIsIndustriesOpen(false)}
+                          >
+                            <div className="font-medium text-gray-900 text-sm">{item.label}</div>
+                            {item.description && (
+                              <div className="text-xs text-gray-500 mt-0.5">{item.description}</div>
+                            )}
+                          </Link>
+                        ))}
+                      </div>
+                    </div>
+                  )}
+                </div>
+                
                 {navItems.map((item) => (
                   <Link 
                     key={item.href}
@@ -110,6 +156,14 @@ export default function LinkioHeader({
                     {item.label}
                   </Link>
                 ))}
+                
+                <Link 
+                  href="/blog"
+                  className="text-gray-600 hover:text-gray-900 text-sm font-medium transition-colors"
+                >
+                  Blog
+                </Link>
+                
                 <Link 
                   href="https://postflow.outreachlabs.net/login"
                   target="_blank"
@@ -184,6 +238,32 @@ export default function LinkioHeader({
       {variant === 'default' && isMobileMenuOpen && (
         <div className="md:hidden absolute top-full left-0 right-0 bg-white border-b border-gray-100 shadow-lg z-50">
           <div className="px-4 py-6 space-y-4">
+            {/* Industries Section for Mobile - First */}
+            <div>
+              <button
+                onClick={() => setIsIndustriesOpen(!isIndustriesOpen)}
+                className="flex items-center justify-between w-full text-gray-900 hover:text-blue-600 font-medium py-2 transition-colors"
+              >
+                Industries
+                <ChevronDown className={`w-4 h-4 transition-transform ${isIndustriesOpen ? 'rotate-180' : ''}`} />
+              </button>
+              
+              {isIndustriesOpen && (
+                <div className="ml-4 mt-2 space-y-2">
+                  {industriesItems.map((item) => (
+                    <Link
+                      key={item.href}
+                      href={item.href}
+                      onClick={closeMobileMenu}
+                      className="block text-gray-600 hover:text-blue-600 py-1 text-sm transition-colors"
+                    >
+                      {item.label}
+                    </Link>
+                  ))}
+                </div>
+              )}
+            </div>
+            
             {navItems.map((item) => (
               <Link
                 key={item.href}
@@ -194,6 +274,14 @@ export default function LinkioHeader({
                 {item.label}
               </Link>
             ))}
+            
+            <Link
+              href="/blog"
+              onClick={closeMobileMenu}
+              className="block text-gray-900 hover:text-blue-600 font-medium py-2 transition-colors"
+            >
+              Blog
+            </Link>
             
             <div className="pt-4 border-t border-gray-100">
               <Link
