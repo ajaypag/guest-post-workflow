@@ -23,14 +23,25 @@ export default function AuthWrapper({ children, requireAdmin = false }: AuthWrap
         // Use usePathname() since it has the correct full path!
         console.log('🔐 AuthWrapper redirect - usePathname():', pathname);
         console.log('🔐 AuthWrapper redirect - window.location.pathname:', typeof window !== 'undefined' ? window.location.pathname : 'N/A');
-        console.log('🔐 AuthWrapper redirect - Using pathname from usePathname() (correct!)');
+        console.log('🔐 AuthWrapper redirect - window.location.href:', typeof window !== 'undefined' ? window.location.href : 'N/A');
+        
+        // Check if pathname looks incomplete - if so, try to get full path
+        let finalPath = pathname;
+        if (typeof window !== 'undefined' && pathname === '/orders' && window.location.href.includes('/orders/')) {
+          // Extract the full path from the browser URL
+          const url = new URL(window.location.href);
+          finalPath = url.pathname;
+          console.log('🔐 AuthWrapper - Detected incomplete pathname, using href path:', finalPath);
+        }
+        
+        console.log('🔐 AuthWrapper redirect - Final path to use:', finalPath);
         
         // Store in sessionStorage as backup and use URL parameter
         if (typeof window !== 'undefined') {
-          sessionStorage.setItem('auth_redirect', pathname);
+          sessionStorage.setItem('auth_redirect', finalPath);
         }
         
-        const encodedPath = encodeURIComponent(pathname);
+        const encodedPath = encodeURIComponent(finalPath);
         console.log('🔐 AuthWrapper redirect - Encoded pathname:', encodedPath);
         const redirectUrl = `/login?redirect=${encodedPath}`;
         console.log('🔐 AuthWrapper redirect - Full redirect URL:', redirectUrl);
