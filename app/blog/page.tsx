@@ -27,6 +27,14 @@ export const metadata = {
 // TODO: Create pages for the other blog posts that are currently 404
 const blogPosts = [
   {
+    title: 'Best Link Building Services (50+ Agencies Reviewed)',
+    href: '/best-link-building-services',
+    excerpt: 'We contacted and reviewed every single vendor to bring you comprehensive insights on pricing, tactics, and real blogger outreach capabilities.',
+    category: 'Link Building',
+    readTime: '45 min read',
+    date: 'January 2024'
+  },
+  {
     title: 'Anchor Text Optimization for Link Building',
     href: '/anchor-text',
     excerpt: 'Master safe anchor text strategies with optimal ratios and natural-sounding phrases.',
