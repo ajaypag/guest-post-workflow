@@ -3,6 +3,18 @@ import { ArrowRight, Users, Globe, BarChart3, Zap, Building2, ShoppingCart } fro
 import LinkioHeader from '@/components/LinkioHeader';
 import MarketingCTA from '@/components/MarketingCTA';
 import MarketingFooter from '@/components/MarketingFooter';
+import { Metadata } from 'next';
+
+export const metadata: Metadata = {
+  title: 'Industry-Specific Link Building Services | SaaS, Ecommerce, B2B',
+  description: 'Specialized link building for SaaS, ecommerce, B2B services, and local businesses. AI-powered citation strategies tailored to your industry with proven results.',
+  keywords: ['industry link building', 'SaaS link building', 'ecommerce SEO', 'B2B link building', 'industry-specific SEO'],
+  openGraph: {
+    title: 'Industry-Specific Link Building Services | Linkio',
+    description: 'Specialized link building for SaaS, ecommerce, B2B services, and local businesses. AI-powered citation strategies tailored to your industry.',
+    type: 'website',
+  },
+};
 
 export default function IndustriesPage() {
   const industries = [

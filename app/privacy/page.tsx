@@ -1,5 +1,15 @@
 import LinkioHeader from '@/components/LinkioHeader';
 import MarketingFooter from '@/components/MarketingFooter';
+import { Metadata } from 'next';
+
+export const metadata: Metadata = {
+  title: 'Privacy Policy | Linkio Data Protection & Privacy',
+  description: 'Linkio\'s privacy policy explaining how we collect, use, and protect your personal data. Learn about our commitment to data security and user privacy.',
+  robots: {
+    index: true,
+    follow: false, // Legal pages typically nofollow
+  },
+};
 
 export default function PrivacyPage() {
   return (

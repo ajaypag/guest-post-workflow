@@ -598,6 +598,42 @@ export const v2AgentSessionsRelations = relations(v2AgentSessions, ({ one }) => 
 export type V2AgentSession = typeof v2AgentSessions.$inferSelect;
 export type NewV2AgentSession = typeof v2AgentSessions.$inferInsert;
 
+// SEO Audit Sessions for comprehensive website SEO analysis
+export const seoAuditSessions = pgTable('seo_audit_sessions', {
+  id: uuid('id').primaryKey(),
+  workflowId: uuid('workflow_id').notNull(),
+  version: integer('version').notNull(),
+  stepId: varchar('step_id', { length: 50 }).notNull(),
+  status: varchar('status', { length: 50 }).notNull(), // initializing | auditing | analyzing | reporting | completed | failed
+  websiteUrl: text('website_url').notNull(),
+  overallScore: integer('overall_score'), // 0-100 SEO score
+  technicalScore: integer('technical_score'), // 0-100 technical SEO score
+  onpageScore: integer('onpage_score'), // 0-100 on-page SEO score
+  offpageScore: integer('offpage_score'), // 0-100 off-page SEO score
+  contentScore: integer('content_score'), // 0-100 content quality score
+  mobileScore: integer('mobile_score'), // 0-100 mobile optimization score
+  auditReport: text('audit_report'), // TEXT for comprehensive audit report
+  criticalIssues: jsonb('critical_issues'), // Array of critical issues found
+  quickWins: jsonb('quick_wins'), // Array of quick win recommendations
+  actionPlan: jsonb('action_plan'), // Prioritized action plan
+  sessionMetadata: jsonb('session_metadata'),
+  errorMessage: text('error_message'), // TEXT for error messages
+  startedAt: timestamp('started_at').notNull(),
+  completedAt: timestamp('completed_at'),
+  createdAt: timestamp('created_at').notNull(),
+  updatedAt: timestamp('updated_at').notNull(),
+});
+
+export const seoAuditSessionsRelations = relations(seoAuditSessions, ({ one }) => ({
+  workflow: one(workflows, {
+    fields: [seoAuditSessions.workflowId],
+    references: [workflows.id],
+  }),
+}));
+
+export type SEOAuditSession = typeof seoAuditSessions.$inferSelect;
+export type NewSEOAuditSession = typeof seoAuditSessions.$inferInsert;
+
 // Link Orchestration Sessions
 export const linkOrchestrationSessions = pgTable('link_orchestration_sessions', {
   id: uuid('id').primaryKey(),
