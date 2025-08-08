@@ -1,7 +1,6 @@
 import '../polyfills/randomUUID';   // load UUID polyfill before anything else
 import type { Metadata } from "next";
 import "./globals.css";
-import DebugLoader from "@/components/DebugLoader";
 import { NotificationProvider } from "@/lib/contexts/NotificationContext";
 
 export const metadata: Metadata = {
@@ -70,7 +69,6 @@ export default function RootLayout({
       <body className="min-h-screen bg-gray-50">
         <NotificationProvider>
           {children}
-          <DebugLoader />
         </NotificationProvider>
       </body>
     </html>
