@@ -68,8 +68,6 @@ interface TargetPageWithMetadata {
   keywords?: string; // Comma-separated from database
   keywordArray?: string[]; // Parsed for display
   description?: string;
-  dr: number; // TODO: Get from actual SEO data
-  traffic: number; // TODO: Get from actual SEO data
   clientId: string;
   clientName: string;
   usageCount: number;
@@ -487,8 +485,6 @@ export default function EditOrderPage({ params }: { params: Promise<{ id: string
               keywords: page.keywords,
               keywordArray,
               description: page.description,
-              dr: 70, // TODO: Get real metrics from SEO tools
-              traffic: 10000, // TODO: Get real metrics from SEO tools
               clientId,
               clientName: client.name,
               usageCount,
@@ -500,8 +496,8 @@ export default function EditOrderPage({ params }: { params: Promise<{ id: string
       }
     });
     
-    // Sort by domain rating (descending) only - don't re-sort by usage to prevent jumping
-    targets.sort((a, b) => b.dr - a.dr);
+    // Sort by usage count (descending) only - don't re-sort by DR since we don't have that data for client pages
+    targets.sort((a, b) => b.usageCount - a.usageCount);
     
     setAvailableTargets(targets);
   }, [selectedClients, clients, lineItems]);

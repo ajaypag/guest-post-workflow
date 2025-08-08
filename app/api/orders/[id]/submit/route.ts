@@ -63,7 +63,7 @@ export async function POST(
           // Find a system user or admin to attribute this to
           const systemUser = await tx.query.users.findFirst({
             where: (users, { or, eq }) => or(
-              eq(users.email, 'system@localhost'),
+              eq(users.email, 'system@internal.postflow'),
               eq(users.role, 'admin')
             ),
             orderBy: (users, { asc }) => [asc(users.createdAt)]
