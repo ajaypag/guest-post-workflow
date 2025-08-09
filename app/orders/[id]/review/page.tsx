@@ -308,6 +308,8 @@ export default function ExternalOrderReviewPage() {
     // After selecting sites (included status), check if order needs invoicing
     if (order && includedCount > 0) {
       try {
+        console.log(`[INVOICE] Generating invoice for order ${orderId} with ${includedCount} included sites`);
+        
         // Trigger invoice generation for included sites
         const response = await fetch(`/api/orders/${orderId}/invoice`, {
           method: 'POST',
@@ -316,16 +318,27 @@ export default function ExternalOrderReviewPage() {
         });
         
         if (response.ok) {
+          const result = await response.json();
+          console.log('[INVOICE] Generated successfully:', result);
           // Invoice generated successfully, redirect to invoice page
           router.push(`/orders/${orderId}/invoice`);
         } else {
-          // If invoice generation fails, go to order status page
-          router.push(`/account/orders/${orderId}/status`);
+          // Log the error details for debugging
+          const errorData = await response.json().catch(() => ({ error: 'Unknown error' }));
+          console.error('[INVOICE] Failed to generate invoice:', {
+            status: response.status,
+            statusText: response.statusText,
+            error: errorData
+          });
+          
+          // Show error message to user
+          alert(`Failed to generate invoice: ${errorData.error || 'Unknown error'}. Please try again or contact support.`);
+          
+          // Don't redirect automatically - let user decide next step
         }
       } catch (error) {
-        console.error('Error generating invoice:', error);
-        // Fallback to order status page
-        router.push(`/account/orders/${orderId}/status`);
+        console.error('[INVOICE] Error generating invoice:', error);
+        alert('Failed to generate invoice due to network error. Please try again.');
       }
     } else {
       // No approved sites, go to order page

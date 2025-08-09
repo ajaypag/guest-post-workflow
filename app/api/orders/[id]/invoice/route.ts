@@ -45,11 +45,15 @@ export async function POST(
     }
 
     if (action === 'generate_invoice' || action === 'regenerate_invoice') {
+      console.log(`[INVOICE API] Starting invoice generation for order ${orderId}`);
+      console.log(`[INVOICE API] Order state: ${order.state}, Account: ${order.accountId}`);
+      
       // Check if regenerating
       const isRegenerate = action === 'regenerate_invoice';
       
       // If regenerating, check if invoice exists
       if (isRegenerate && !order.invoicedAt) {
+        console.log('[INVOICE API] Regenerate requested but no invoice exists');
         return NextResponse.json({ 
           error: 'Cannot regenerate - no invoice exists yet' 
         }, { status: 400 });
