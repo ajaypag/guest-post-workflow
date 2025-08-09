@@ -3,7 +3,7 @@
 import { useState, useEffect } from 'react';
 import { useParams, useRouter } from 'next/navigation';
 import OrderPaymentPage from '@/components/orders/OrderPaymentPage';
-import { AuthService } from '@/lib/auth';
+// Removed AuthService - external users don't need it for payment
 import { Loader2 } from 'lucide-react';
 
 export default function PaymentPage() {
@@ -16,26 +16,48 @@ export default function PaymentPage() {
   useEffect(() => {
     const loadOrder = async () => {
       try {
-        const session = await AuthService.getSession();
-        if (!session) {
-          router.push('/login');
-          return;
-        }
-
+        // No authentication check needed here - the API will handle auth
+        // External users access this via invoice page after authentication
         const response = await fetch(`/api/orders/${params.id}`, {
-          credentials: 'include'
+          credentials: 'include'  // Include cookies for account auth
         });
 
         if (!response.ok) {
+          console.error('[PAYMENT PAGE] Failed to fetch order:', {
+            status: response.status,
+            statusText: response.statusText,
+            orderId: params.id
+          });
+          
           if (response.status === 404) {
-            router.push('/orders');
+            setError('Order not found');
             return;
           }
-          throw new Error('Failed to load order');
+          
+          if (response.status === 401) {
+            setError('Authentication required. Please log in to continue.');
+            return;
+          }
+          
+          if (response.status === 403) {
+            setError('You do not have permission to view this order.');
+            return;
+          }
+          
+          throw new Error(`Failed to load order: ${response.statusText}`);
         }
 
         const data = await response.json();
-        setOrder(data.order);
+        console.log('[PAYMENT PAGE] Order data received:', data);
+        
+        // Check if we actually got order data
+        if (!data || !data.id) {
+          console.error('[PAYMENT PAGE] Invalid order data structure:', data);
+          setError('Failed to load order data. Please try again.');
+          return;
+        }
+        
+        setOrder(data); // API returns order directly, not wrapped in { order: ... }
       } catch (err) {
         console.error('Error loading order:', err);
         setError(err instanceof Error ? err.message : 'Failed to load order');
