@@ -25,6 +25,13 @@ export default function DatabaseMigrationPage() {
 
   const migrations = [
     {
+      id: 'add_duplicate_tracking_columns',
+      name: 'Add Duplicate Tracking Columns',
+      description: 'Adds columns for tracking duplicate domain resolutions in bulk_analysis_domains (duplicate_of, duplicate_resolution, etc.)',
+      dangerous: false,
+      endpoint: '/api/admin/database-migrations/add-duplicate-tracking-columns'
+    },
+    {
       id: 'create_line_items_tables',
       name: 'Create Line Items Tables',
       description: 'Creates order_line_items, line_item_changes, line_item_templates, and order_benchmarks tables for the new line items system',
