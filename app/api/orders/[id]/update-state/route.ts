@@ -26,7 +26,6 @@ export async function POST(
     const validStates = [
       'analyzing',
       'sites_ready',
-      'site_review',
       'client_reviewing',
       'selections_confirmed',
       'payment_received',

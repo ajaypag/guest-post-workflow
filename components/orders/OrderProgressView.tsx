@@ -249,7 +249,7 @@ export default function OrderProgressView({
         <div className="bg-white rounded-lg shadow-sm border border-gray-200 p-6">
           <h3 className="text-lg font-semibold text-gray-900 mb-4">Quick Actions</h3>
           <div className="space-y-3">
-            {orderState === 'site_review' && (
+            {orderState === 'sites_ready' && (
               <button className="w-full px-4 py-2 bg-blue-600 text-white rounded-md hover:bg-blue-700 flex items-center justify-center">
                 <Users className="h-4 w-4 mr-2" />
                 Review Recommended Sites

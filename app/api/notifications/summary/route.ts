@@ -83,14 +83,14 @@ function getOrderNeedsAction(order: any, isInternal: boolean): boolean {
   if (isInternal) {
     // Internal user action items
     if (order.status === 'pending_confirmation') return true;
-    if (order.status === 'confirmed' && order.state === 'site_review') return true;
+    if (order.status === 'confirmed' && order.state === 'sites_ready') return true;
     return false;
   } else {
     // External user action items
     if (order.status === 'draft') return true;
     if (order.status === 'confirmed' && (
       order.state === 'sites_ready' || 
-      order.state === 'site_review' || 
+      order.
       order.state === 'client_reviewing'
     )) return true;
     if (order.status === 'confirmed' && order.state === 'payment_pending') return true;
@@ -101,13 +101,13 @@ function getOrderNeedsAction(order: any, isInternal: boolean): boolean {
 function getActionMessage(order: any, isInternal: boolean): string {
   if (isInternal) {
     if (order.status === 'pending_confirmation') return 'Needs confirmation';
-    if (order.status === 'confirmed' && order.state === 'site_review') return 'Ready to send to client';
+    if (order.status === 'confirmed' && order.state === 'sites_ready') return 'Ready to send to client';
     return 'Needs attention';
   } else {
     if (order.status === 'draft') return 'Finish setup';
     if (order.status === 'confirmed' && (
       order.state === 'sites_ready' || 
-      order.state === 'site_review' || 
+      order.
       order.state === 'client_reviewing'
     )) return 'Review sites';
     if (order.status === 'confirmed' && order.state === 'payment_pending') return 'Payment due';

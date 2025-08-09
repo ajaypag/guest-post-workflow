@@ -46,23 +46,23 @@ const orderStates: StateConfig[] = [
   },
   {
     status: 'confirmed',
-    state: 'analyzing / finding_sites',
+    state: 'analyzing',
     internalView: '"Finding Sites" status with bulk analysis project links',
     externalView: '"Analysis in Progress" with 24-48hr timeline',
     internalActions: ['Mark Sites Ready', 'View Analysis Projects', 'Add Notes'],
     externalActions: ['View Status', 'Refresh Page'],
     riskLevel: 'medium',
-    technicalNotes: 'CURRENT: analyzing (set by API) | LEGACY: finding_sites (never set, only checked)'
+    technicalNotes: undefined
   },
   {
     status: 'confirmed',
-    state: 'sites_ready / site_review',
+    state: 'sites_ready',
     internalView: 'Site submission table with review controls',
     externalView: '"Sites Ready for Review" with site counts',
     internalActions: ['Approve/Reject Sites', 'Edit Submissions', 'Generate Invoice', 'Add Comments'],
     externalActions: ['Review Sites', 'Approve Sites', 'Reject Sites', 'Request Changes'],
     riskLevel: 'medium',
-    technicalNotes: 'CURRENT: sites_ready (main flow) | LEGACY: site_review (old table button)'
+    technicalNotes: undefined
   },
   {
     status: 'confirmed',
@@ -139,10 +139,10 @@ const technicalDebt = [
   },
   {
     issue: 'Duplicate States',
-    description: 'analyzing (CURRENT) vs finding_sites (LEGACY - never set). sites_ready (CURRENT) vs site_review (LEGACY)',
+    description: 'Legacy duplicate states have been removed',
     impact: 'medium',
     files: ['orderSchema.ts', 'API routes', 'order pages'],
-    details: 'finding_sites is checked but never set anywhere. site_review is only set from old table buttons.'
+    details: undefined
   },
   {
     issue: 'Status/State Overlap',
@@ -465,7 +465,7 @@ export default function OrderFlowMatrixPage() {
                   <div className="flex items-center gap-3 flex-wrap">
                     <span className="px-3 py-1 bg-white rounded-full text-sm">analyzing</span>
                     <span className="text-blue-600">→</span>
-                    <span className="px-3 py-1 bg-white rounded-full text-sm">site_review</span>
+                    <span className="px-3 py-1 bg-white rounded-full text-sm">sites_ready</span>
                     <span className="text-blue-600">→</span>
                     <span className="px-3 py-1 bg-white rounded-full text-sm">client_reviewing</span>
                     <span className="text-blue-600">→</span>
@@ -541,7 +541,7 @@ export default function OrderFlowMatrixPage() {
                   <div>
                     <h3 className="font-medium text-gray-900 mb-2">Short-term Cleanup</h3>
                     <ul className="text-sm text-gray-600 space-y-1">
-                      <li>✓ Consolidate duplicate states (analyzing = finding_sites)</li>
+                      <li>✓ Consolidate duplicate states (completed)</li>
                       <li>✓ Add status/state validation in API endpoints</li>
                       <li>✓ Create migration status tracking dashboard</li>
                       <li>✓ Document valid status/state combinations</li>
@@ -564,8 +564,9 @@ export default function OrderFlowMatrixPage() {
 {`enum OrderStatus {
   DRAFT = 'draft',
   AWAITING_CONFIRMATION = 'awaiting_confirmation',
-  FINDING_SITES = 'finding_sites',
-  SITE_REVIEW = 'site_review',
+  ANALYZING = 'analyzing',
+  SITES_READY = 'sites_ready',
+  CLIENT_REVIEWING = 'client_reviewing',
   AWAITING_PAYMENT = 'awaiting_payment',
   CREATING_CONTENT = 'creating_content',
   COMPLETED = 'completed',

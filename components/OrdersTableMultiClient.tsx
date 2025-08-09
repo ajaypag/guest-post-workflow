@@ -114,10 +114,10 @@ export function OrdersTableMultiClient({
       if (order.status === 'pending_confirmation') {
         return { text: 'Needs Confirmation', color: 'text-red-600', priority: 'high' };
       }
-      if (order.status === 'confirmed' && (order.state === 'analyzing' || order.state === 'finding_sites')) {
+      if (order.status === 'confirmed' && (order.state === 'analyzing')) {
         return { text: 'Processing', color: 'text-blue-600', priority: 'medium' };
       }
-      if (order.status === 'confirmed' && order.state === 'site_review') {
+      if (order.status === 'confirmed' && order.state === 'sites_ready') {
         return { text: 'Ready to Send', color: 'text-yellow-600', priority: 'medium' };
       }
     }
@@ -126,13 +126,13 @@ export function OrdersTableMultiClient({
       if (order.status === 'draft') {
         return { text: 'Finish Setup', color: 'text-red-600', priority: 'high' };
       }
-      if (order.status === 'confirmed' && (order.state === 'sites_ready' || order.state === 'site_review' || order.state === 'client_reviewing')) {
+      if (order.status === 'confirmed' && (order.state === 'sites_ready' || order.state === 'client_reviewing')) {
         return { text: 'Review Sites', color: 'text-red-600', priority: 'high' };
       }
       if (order.status === 'confirmed' && order.state === 'payment_pending') {
         return { text: 'Payment Due', color: 'text-red-600', priority: 'high' };
       }
-      if (order.status === 'confirmed' && (order.state === 'analyzing' || order.state === 'finding_sites')) {
+      if (order.status === 'confirmed' && (order.state === 'analyzing')) {
         return { text: 'In Progress', color: 'text-blue-600', priority: 'low' };
       }
     }
@@ -373,7 +373,7 @@ export function OrdersTableMultiClient({
                                     method: 'POST',
                                     headers: { 'Content-Type': 'application/json' },
                                     body: JSON.stringify({ 
-                                      state: 'site_review',
+                                      state: 'sites_ready',
                                       notes: 'Sites ready for client review'
                                     })
                                   });

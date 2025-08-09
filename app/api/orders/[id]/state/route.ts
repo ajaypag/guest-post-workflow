@@ -29,7 +29,7 @@ export async function POST(
       'configuring',
       'awaiting_review',
       'analyzing',
-      'site_review',
+      'sites_ready',
       'reviewing',
       'payment_pending',
       'in_progress',
@@ -53,8 +53,8 @@ export async function POST(
     
     // Validate state transitions
     const stateTransitions: Record<string, string[]> = {
-      'analyzing': ['site_review', 'reviewing'],
-      'site_review': ['reviewing', 'payment_pending'],
+      'analyzing': ['sites_ready', 'reviewing'],
+      'sites_ready': ['reviewing', 'payment_pending'],
       'reviewing': ['payment_pending', 'in_progress'],
       'payment_pending': ['in_progress'],
       'in_progress': ['completed']

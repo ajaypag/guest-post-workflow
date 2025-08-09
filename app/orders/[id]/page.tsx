@@ -27,7 +27,7 @@ const SERVICE_FEE_CENTS = 7900;
 // User-friendly status messaging
 const getStatusMessage = (status: string, state?: string) => {
   if (status === 'confirmed') {
-    if (state === 'analyzing' || state === 'finding_sites') {
+    if (state === 'analyzing') {
       return {
         title: "🔍 Finding Perfect Sites for You",
         description: "Our team is analyzing your requirements to identify high-quality sites that match your criteria.",
@@ -36,7 +36,7 @@ const getStatusMessage = (status: string, state?: string) => {
         userAction: "none",
         actionText: "No action needed - we're working on it!"
       };
-    } else if (state === 'sites_ready' || state === 'site_review' || state === 'client_reviewing') {
+    } else if (state === 'sites_ready' || state === 'client_reviewing') {
       return {
         title: "📋 Sites Ready for Your Review",
         description: "We've found sites that match your criteria. Review and approve the ones you'd like to use.",
@@ -213,7 +213,7 @@ export default function OrderDetailPage() {
   }, [params.id]);
 
   useEffect(() => {
-    if ((order?.state === 'sites_ready' || order?.state === 'site_review' || order?.state === 'client_reviewing' || order?.state === 'payment_pending' || order?.state === 'payment_received' || order?.state === 'workflows_generated' || order?.state === 'in_progress') && order.orderGroups) {
+    if ((order?.state === 'sites_ready' || order?.order?.state === 'client_reviewing' || order?.state === 'payment_pending' || order?.state === 'payment_received' || order?.state === 'workflows_generated' || order?.state === 'in_progress') && order.orderGroups) {
       loadSiteSubmissions();
     }
     // Load benchmark for orders that have been submitted (includes pending_confirmation)
@@ -458,7 +458,7 @@ export default function OrderDetailPage() {
   const handleRefresh = async () => {
     setRefreshing(true);
     await loadOrder();
-    if (order?.state === 'sites_ready' || order?.state === 'site_review' || order?.state === 'client_reviewing' || order?.state === 'payment_pending' || order?.state === 'payment_received' || order?.state === 'workflows_generated' || order?.state === 'in_progress') {
+    if (order?.state === 'sites_ready' || order?.order?.state === 'client_reviewing' || order?.state === 'payment_pending' || order?.state === 'payment_received' || order?.state === 'workflows_generated' || order?.state === 'in_progress') {
       await loadSiteSubmissions();
     }
     if (order?.status === 'confirmed' || order?.status === 'paid' || order?.status === 'in_progress' || order?.status === 'completed') {
@@ -518,7 +518,7 @@ export default function OrderDetailPage() {
   // Calculate dynamic column count for progressive disclosure
   const getColumnCount = () => {
     let count = 3; // Base columns: Client/Target, Anchor, Price
-    if (order.state === 'site_review' || order.state === 'in_progress' || order.status === 'completed') count++;
+    if (order.order.state === 'in_progress' || order.status === 'completed') count++;
     if (order.state === 'in_progress' || order.status === 'completed') count++;
     if (order.status === 'completed') count++;
     if (order.status === 'confirmed' && order.state === 'analyzing') count++;
@@ -680,7 +680,7 @@ export default function OrderDetailPage() {
                                     method: 'POST',
                                     headers: { 'Content-Type': 'application/json' },
                                     body: JSON.stringify({ 
-                                      state: 'site_review',
+                                      state: 'sites_ready',
                                       notes: 'Sites ready for client review'
                                     })
                                   });
@@ -704,7 +704,7 @@ export default function OrderDetailPage() {
                           </button>
                         </div>
                       )}
-                      {(order.state === 'site_review' || order.state === 'client_reviewing') && (
+                      {(order.order.state === 'client_reviewing') && (
                         <div className="space-y-2">
                           <Link
                             href={`/orders/${order.id}/review`}
@@ -786,7 +786,7 @@ export default function OrderDetailPage() {
                 )}
                 
                 {/* Status Message for External Users when sites are ready */}
-                {user?.userType !== 'internal' && (order.state === 'sites_ready' || order.state === 'site_review' || order.state === 'client_reviewing') && (
+                {user?.userType !== 'internal' && (order.state === 'sites_ready' || order.state === 'client_reviewing') && (
                   <div className="mt-6 pt-6 border-t">
                     <div className="bg-purple-50 border border-purple-200 rounded-lg p-4">
                       <div className="flex items-start justify-between gap-3">
@@ -836,7 +836,7 @@ export default function OrderDetailPage() {
             {/* Middle/Right Columns - Order Details Table */}
             <div className="lg:col-span-2">
               {/* Site Review Summary Card */}
-              {order.state === 'site_review' && Object.keys(siteSubmissions).length > 0 && (
+              {order.state === 'sites_ready' && Object.keys(siteSubmissions).length > 0 && (
                 <div className="bg-purple-50 border border-purple-200 rounded-lg p-6 mb-6">
                   <div className="flex items-start justify-between">
                     <div>
@@ -874,7 +874,7 @@ export default function OrderDetailPage() {
               )}
               
               {/* Use shared component for site review and other states with site data */}
-              {(order.state === 'sites_ready' || order.state === 'site_review' || order.state === 'client_reviewing' || 
+              {(order.state === 'sites_ready' || order.state === 'client_reviewing' || 
                 order.state === 'payment_pending' || order.state === 'payment_received' || 
                 order.state === 'workflows_generated' || order.state === 'in_progress' || 
                 order.status === 'completed') && (order.orderGroups || lineItems.length > 0) ? (
@@ -909,7 +909,7 @@ export default function OrderDetailPage() {
                     canViewPricing: true,
                     canEditDomainAssignments: true  // External users CAN edit domain details
                   }}
-                  workflowStage={order.state || 'site_review'}
+                  workflowStage={order.state || 'sites_ready'}
                   onEditSubmission={handleEditSubmission}
                   onRemoveSubmission={handleRemoveSubmission}
                   onRefresh={loadOrder}
@@ -957,7 +957,7 @@ export default function OrderDetailPage() {
                     )}
                     
                     {/* Sites Ready (when applicable) */}
-                    {(order.state === 'sites_ready' || order.state === 'site_review' || order.state === 'client_reviewing') && (
+                    {(order.state === 'sites_ready' || order.state === 'client_reviewing') && (
                       <div className="flex items-start gap-3">
                         <Search className="h-4 w-4 text-blue-500 mt-0.5" />
                         <div>
@@ -1025,7 +1025,7 @@ export default function OrderDetailPage() {
                     )}
                     
                     {/* Finding Sites State */}
-                    {(order.state === 'analyzing' || order.state === 'finding_sites') && (
+                    {order.state === 'analyzing' && (
                       <div className="flex items-start gap-3">
                         <div className="w-2 h-2 bg-blue-500 rounded-full mt-1.5 animate-pulse" />
                         <div>
@@ -1036,7 +1036,7 @@ export default function OrderDetailPage() {
                     )}
                     
                     {/* Sites Ready for Review */}
-                    {(order.state === 'sites_ready' || order.state === 'site_review' || order.state === 'client_reviewing') && (
+                    {(order.state === 'sites_ready' || order.state === 'client_reviewing') && (
                       <div className="flex items-start gap-3">
                         <div className="w-2 h-2 bg-purple-500 rounded-full mt-1.5" />
                         <div>
