@@ -23,6 +23,7 @@ import { BulkAnalysisDomain } from '@/types/bulk-analysis';
 import { ProcessedWebsite } from '@/types/airtable';
 import OrderSelectionModal from '@/components/orders/OrderSelectionModal';
 import DuplicateResolutionModal from '@/components/ui/DuplicateResolutionModal';
+import { OrderBadgeDisplay } from '@/components/bulk-analysis/OrderBadgeDisplay';
 import { 
   ArrowLeft, 
   Target, 
@@ -194,6 +195,10 @@ export default function ProjectDetailPage() {
     isLoading: !!(orderId && orderGroupId),
     error: null 
   });
+
+  // State for all associated orders
+  const [associatedOrders, setAssociatedOrders] = useState<any[]>([]);
+  const [loadingAssociatedOrders, setLoadingAssociatedOrders] = useState(false);
   
   // Calculate sorted and filtered domains
   const sortedFilteredDomains = useMemo(() => {
@@ -388,12 +393,32 @@ export default function ProjectDetailPage() {
     }
   };
 
+  const loadAssociatedOrders = async () => {
+    if (!params.projectId) return;
+    
+    try {
+      setLoadingAssociatedOrders(true);
+      const response = await fetch(`/api/projects/${params.projectId}/associated-orders`);
+      if (response.ok) {
+        const data = await response.json();
+        setAssociatedOrders(data.orders || []);
+      }
+    } catch (error) {
+      console.error('Error loading associated orders:', error);
+    } finally {
+      setLoadingAssociatedOrders(false);
+    }
+  };
+
   const loadProject = async () => {
     try {
       const response = await fetch(`/api/clients/${params.id}/projects/${params.projectId}`);
       if (response.ok) {
         const data = await response.json();
         setProject(data.project);
+        
+        // Load associated orders for this project
+        loadAssociatedOrders();
         
         // Load default target pages if project was created from an order
         try {
@@ -1827,6 +1852,29 @@ export default function ProjectDetailPage() {
                   <ArrowRight className="w-4 h-4 ml-1" />
                 </Link>
               </div>
+            </div>
+          )}
+
+          {/* Associated Orders Display */}
+          {associatedOrders.length > 0 && (
+            <div className="mb-6">
+              <div className="flex items-center justify-between mb-3">
+                <h3 className="text-lg font-semibold text-gray-900">
+                  Orders Using This Project ({associatedOrders.length})
+                </h3>
+                {loadingAssociatedOrders && (
+                  <Loader2 className="w-4 h-4 animate-spin text-gray-500" />
+                )}
+              </div>
+              <OrderBadgeDisplay 
+                orders={associatedOrders}
+                currentOrderId={orderId || undefined}
+                onOrderClick={(order) => {
+                  // Navigate to the bulk analysis page with this order context
+                  router.push(`/clients/${params.id}/bulk-analysis/projects/${params.projectId}?orderId=${order.orderId}&orderGroupId=${order.orderGroupId}`);
+                }}
+                compact={associatedOrders.length > 3}
+              />
             </div>
           )}
           
