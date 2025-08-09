@@ -1538,12 +1538,17 @@ export default function ProjectDetailPage() {
         const skippedCount = resolutions.filter(r => r.resolution === 'skip').length;
         const updatedCount = resolutions.filter(r => r.resolution === 'update_original').length;
         
-        let message = '✅ Duplicate resolution complete: ';
+        // Build detailed message
         const messages = [];
-        if (keepBothCount > 0) messages.push(`${keepBothCount} kept in both`);
-        if (movedCount > 0) messages.push(`${movedCount} moved`);
-        if (skippedCount > 0) messages.push(`${skippedCount} skipped`);
-        if (updatedCount > 0) messages.push(`${updatedCount} updated`);
+        if (keepBothCount > 0) messages.push(`${keepBothCount} added to this project (kept in both)`);
+        if (movedCount > 0) messages.push(`${movedCount} moved to this project`);
+        if (skippedCount > 0) messages.push(`${skippedCount} skipped (kept in original project only)`);
+        if (updatedCount > 0) messages.push(`${updatedCount} updated in original project`);
+        
+        const totalAdded = keepBothCount + movedCount;
+        let message = totalAdded > 0 
+          ? `✅ Added ${totalAdded} domain${totalAdded !== 1 ? 's' : ''} to project. `
+          : '✅ Duplicate resolution complete. ';
         
         setMessage(message + messages.join(', '));
         

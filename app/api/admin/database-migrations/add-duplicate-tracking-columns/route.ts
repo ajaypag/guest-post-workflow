@@ -21,6 +21,22 @@ export async function POST(request: NextRequest) {
 
     console.log('Starting duplicate tracking columns migration...');
 
+    // Step 0: Drop the existing unique constraint that prevents duplicates across projects
+    // First, find the constraint name
+    const constraintResult = await db.execute(sql`
+      SELECT conname 
+      FROM pg_constraint 
+      WHERE conrelid = 'bulk_analysis_domains'::regclass 
+      AND contype = 'u'
+      AND NOT conname LIKE '%pkey%'
+    `);
+    
+    if (constraintResult.rows.length > 0) {
+      const constraintName = (constraintResult.rows[0] as any).conname;
+      console.log(`Dropping existing constraint: ${constraintName}`);
+      await db.execute(sql`ALTER TABLE bulk_analysis_domains DROP CONSTRAINT ${sql.raw(constraintName)}`);
+    }
+
     // Step 1: Add columns for duplicate tracking and resolution history
     await db.execute(sql`
       ALTER TABLE bulk_analysis_domains 
@@ -67,6 +83,14 @@ export async function POST(request: NextRequest) {
     `);
 
     console.log('Added column comments');
+
+    // Step 4: Create new unique constraint that allows same domain in different projects
+    await db.execute(sql`
+      CREATE UNIQUE INDEX IF NOT EXISTS uk_bulk_analysis_domains_client_domain_project 
+      ON bulk_analysis_domains(client_id, domain, project_id)
+    `);
+    
+    console.log('Added new unique constraint allowing duplicates across projects');
 
     // Verify columns were added
     const result = await db.execute(sql`

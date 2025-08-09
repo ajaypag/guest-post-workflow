@@ -462,15 +462,15 @@ export class BulkAnalysisService {
                 updatedAt: now,
               };
               
-              const [insertedDup] = await db
+              // Insert the domain - now it should work with the new constraint
+              const insertedDup = await db
                 .insert(bulkAnalysisDomains)
                 .values(duplicateDomain)
-                .onConflictDoNothing() // Temporarily handle constraint
                 .returning();
               
-              if (insertedDup) {
+              if (insertedDup.length > 0) {
                 results.push({
-                  ...insertedDup,
+                  ...insertedDup[0],
                   targetPages: pages,
                   keywords: Array.from(allKeywords),
                 });
