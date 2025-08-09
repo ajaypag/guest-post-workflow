@@ -52,7 +52,7 @@ const orderStates: StateConfig[] = [
     internalActions: ['Mark Sites Ready', 'View Analysis Projects', 'Add Notes'],
     externalActions: ['View Status', 'Refresh Page'],
     riskLevel: 'medium',
-    technicalNotes: 'Duplicate states: analyzing = finding_sites (technical debt)'
+    technicalNotes: 'CURRENT: analyzing (set by API) | LEGACY: finding_sites (never set, only checked)'
   },
   {
     status: 'confirmed',
@@ -62,7 +62,7 @@ const orderStates: StateConfig[] = [
     internalActions: ['Approve/Reject Sites', 'Edit Submissions', 'Generate Invoice', 'Add Comments'],
     externalActions: ['Review Sites', 'Approve Sites', 'Reject Sites', 'Request Changes'],
     riskLevel: 'medium',
-    technicalNotes: 'Duplicate states: sites_ready = site_review (technical debt)'
+    technicalNotes: 'CURRENT: sites_ready (main flow) | LEGACY: site_review (old table button)'
   },
   {
     status: 'confirmed',
@@ -139,9 +139,10 @@ const technicalDebt = [
   },
   {
     issue: 'Duplicate States',
-    description: 'Multiple state values mean the same thing (analyzing = finding_sites)',
+    description: 'analyzing (CURRENT) vs finding_sites (LEGACY - never set). sites_ready (CURRENT) vs site_review (LEGACY)',
     impact: 'medium',
-    files: ['orderSchema.ts']
+    files: ['orderSchema.ts', 'API routes', 'order pages'],
+    details: 'finding_sites is checked but never set anywhere. site_review is only set from old table buttons.'
   },
   {
     issue: 'Status/State Overlap',
@@ -495,9 +496,12 @@ export default function OrderFlowMatrixPage() {
                   {technicalDebt.map((debt, idx) => (
                     <div key={idx} className="border-l-4 border-red-400 pl-4 py-2">
                       <div className="flex items-start justify-between">
-                        <div>
+                        <div className="flex-1">
                           <h3 className="font-medium text-gray-900">{debt.issue}</h3>
                           <p className="text-sm text-gray-600 mt-1">{debt.description}</p>
+                          {debt.details && (
+                            <p className="text-xs text-gray-500 mt-1 italic">{debt.details}</p>
+                          )}
                           <div className="flex items-center gap-3 mt-2">
                             <span className={`text-xs px-2 py-1 rounded ${getImpactColor(debt.impact)}`}>
                               {debt.impact} impact
