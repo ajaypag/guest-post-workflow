@@ -1621,13 +1621,19 @@ export default function InternalOrderManagementPage() {
                     {order.estimatedPricePerLink && (
                       <div className="mt-3 p-2 bg-blue-50 rounded">
                         <div className="flex justify-between text-sm">
-                          <dt className="text-blue-900">Customer Target</dt>
+                          <dt className="text-blue-900">Target per Link</dt>
                           <dd className="font-medium text-blue-700">{formatCurrency(order.estimatedPricePerLink)}</dd>
+                        </div>
+                        <div className="flex justify-between text-sm mt-1">
+                          <dt className="text-blue-900">Current avg per Link</dt>
+                          <dd className="font-medium text-blue-700">
+                            {formatCurrency(order.totalPrice / (order.orderGroups?.reduce((sum, g) => sum + g.linkCount, 0) || 1))}
+                          </dd>
                         </div>
                         <div className="text-xs text-blue-600 mt-1">
                           {order.totalPrice / (order.orderGroups?.reduce((sum, g) => sum + g.linkCount, 0) || 1) <= order.estimatedPricePerLink ? 
                             '✓ Within target' : 
-                            `${formatCurrency((order.totalPrice / (order.orderGroups?.reduce((sum, g) => sum + g.linkCount, 0) || 1)) - order.estimatedPricePerLink)} over target`
+                            `${formatCurrency((order.totalPrice / (order.orderGroups?.reduce((sum, g) => sum + g.linkCount, 0) || 1)) - order.estimatedPricePerLink)} over target per link`
                           }
                         </div>
                       </div>

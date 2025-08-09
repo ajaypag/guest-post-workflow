@@ -130,10 +130,19 @@ export default function OrderDetailPage() {
   }, [params.id]);
 
   useEffect(() => {
-    if ((order?.state === 'sites_ready' || order?.state === 'site_review' || order?.state === 'client_reviewing' || order?.state === 'payment_pending' || order?.state === 'payment_received' || order?.state === 'workflows_generated' || order?.state === 'in_progress') && order.orderGroups) {
+    // Internal users can see metrics during planning phase
+    // External users only see metrics after sites are ready for review
+    const shouldLoadSubmissions = user?.userType === 'internal' 
+      ? order?.orderGroups // Load if order groups exist for internal users
+      : ((order?.state === 'sites_ready' || order?.state === 'site_review' || 
+          order?.state === 'client_reviewing' || order?.state === 'payment_pending' || 
+          order?.state === 'payment_received' || order?.state === 'workflows_generated' || 
+          order?.state === 'in_progress') && order.orderGroups);
+    
+    if (shouldLoadSubmissions) {
       loadSiteSubmissions();
     }
-  }, [order?.state, order?.orderGroups]);
+  }, [order?.state, order?.orderGroups, user?.userType]);
 
   const loadUser = async () => {
     const currentUser = await AuthService.getCurrentUser();

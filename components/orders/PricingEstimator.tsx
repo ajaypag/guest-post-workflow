@@ -107,6 +107,45 @@ export default function PricingEstimator({ className = '', onEstimateChange, ini
   // Pricing estimate
   const [estimate, setEstimate] = useState<PricingEstimate | null>(null);
   const [error, setError] = useState<string | null>(null);
+  const [hasLoadedInitial, setHasLoadedInitial] = useState(false);
+
+  // Load initial preferences if provided
+  useEffect(() => {
+    if (initialPreferences && !hasLoadedInitial) {
+      // Set DR range
+      if (initialPreferences.drRange) {
+        const [drMin, drMax] = initialPreferences.drRange;
+        // Find matching DR option or use custom
+        const drOption = DR_OPTIONS.findIndex(opt => opt.value === drMin);
+        if (drOption >= 0) {
+          setSelectedDR(drOption);
+        } else {
+          setCustomDRMin(drMin.toString());
+          setCustomDRMax(drMax.toString());
+        }
+      }
+      
+      // Set traffic minimum
+      if (initialPreferences.minTraffic !== undefined) {
+        const trafficOption = TRAFFIC_OPTIONS.findIndex(opt => opt.value === initialPreferences.minTraffic);
+        if (trafficOption >= 0) {
+          setSelectedTraffic(trafficOption);
+        } else {
+          setCustomTraffic(initialPreferences.minTraffic.toString());
+        }
+      }
+      
+      // Set categories and types
+      if (initialPreferences.categories && initialPreferences.categories.length > 0) {
+        setSelectedCategory(initialPreferences.categories[0]);
+      }
+      if (initialPreferences.types && initialPreferences.types.length > 0) {
+        setSelectedType(initialPreferences.types[0]);
+      }
+      
+      setHasLoadedInitial(true);
+    }
+  }, [initialPreferences, hasLoadedInitial]);
 
   // Fetch available filter options on mount
   useEffect(() => {

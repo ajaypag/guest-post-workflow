@@ -294,10 +294,12 @@ export default function EditOrderPage({ params }: { params: Promise<{ id: string
         setOrderStatus(order.status || 'draft');
         setOrderState(order.state || 'configuring');
         
-        // Load preferences from database
-        if (order.preferencesDrMin && order.preferencesDrMax) {
+        // Load preferences from database - load if ANY preference exists
+        if (order.preferencesDrMin !== undefined || order.preferencesDrMax !== undefined || 
+            order.preferencesTrafficMin !== undefined || order.preferencesCategories || 
+            order.preferencesTypes) {
           const loadedPreferences = {
-            drRange: [order.preferencesDrMin, order.preferencesDrMax] as [number, number],
+            drRange: [order.preferencesDrMin || 0, order.preferencesDrMax || 100] as [number, number],
             minTraffic: order.preferencesTrafficMin || 0,
             categories: order.preferencesCategories || [],
             types: order.preferencesTypes || [],
