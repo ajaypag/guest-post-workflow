@@ -26,7 +26,6 @@ export async function POST(
     const validStates = [
       'analyzing',
       'sites_ready',
-      'site_review',
       'client_reviewing',
       'selections_confirmed',
       'payment_received',
@@ -49,12 +48,26 @@ export async function POST(
       return NextResponse.json({ error: 'Order not found' }, { status: 404 });
     }
 
+    // Track state changes for notification purposes
+    const stateChangeMetadata: any = {
+      previousState: existingOrder.state,
+      newState: state,
+      changedBy: session.userId,
+      changedAt: new Date().toISOString()
+    };
+
+    // If marking sites ready, add notification flag
+    if (state === 'sites_ready') {
+      stateChangeMetadata.notifyAccount = true;
+      stateChangeMetadata.notificationMessage = 'Sites are ready for your review';
+    }
+
     // Update the order state
     await db
       .update(orders)
       .set({
         state,
-        updatedAt: new Date(),
+        updatedAt: new Date()
       })
       .where(eq(orders.id, id));
 
@@ -65,6 +78,18 @@ export async function POST(
         account: true
       },
     });
+
+    // Send notification email if sites are ready
+    if (state === 'sites_ready' && updatedOrder?.account?.email) {
+      try {
+        // Send email notification (using existing email service)
+        console.log(`[STATE_UPDATE] Would send notification email to ${updatedOrder.account.email} for order ${id}`);
+        // TODO: Implement actual email sending when email service is configured
+      } catch (error) {
+        console.error('Failed to send notification email:', error);
+        // Don't fail the request if email fails
+      }
+    }
 
     return NextResponse.json(updatedOrder);
   } catch (error) {

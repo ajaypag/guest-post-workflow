@@ -4,6 +4,8 @@ import * as schema from './schema';
 import * as orderGroupSchema from './orderGroupSchema';
 import * as paymentSchema from './paymentSchema';
 import * as projectOrderAssociationsSchema from './projectOrderAssociationsSchema';
+import * as orderBenchmarkSchema from './orderBenchmarkSchema';
+import * as orderLineItemSchema from './orderLineItemSchema';
 
 // Database configuration
 const connectionString = process.env.DATABASE_URL || 
@@ -21,6 +23,8 @@ const allSchemas = {
   ...orderGroupSchema,
   ...paymentSchema,
   ...projectOrderAssociationsSchema,
+  ...orderBenchmarkSchema,
+  ...orderLineItemSchema,
 };
 
 // Create Drizzle instance

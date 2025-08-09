@@ -5,9 +5,12 @@ import { useParams, useRouter } from 'next/navigation';
 import Link from 'next/link';
 import AuthWrapper from '@/components/AuthWrapper';
 import Header from '@/components/Header';
-import OrderSiteReviewTable from '@/components/orders/OrderSiteReviewTable';
+import OrderSiteReviewTableV2 from '@/components/orders/OrderSiteReviewTableV2';
+import BenchmarkDisplay from '@/components/orders/BenchmarkDisplay';
 import OrderProgressSteps, { getStateDisplay, getProgressSteps } from '@/components/orders/OrderProgressSteps';
-import AdminDomainTable from '@/components/orders/AdminDomainTable';
+import LineItemsTable from '@/components/orders/LineItemsTable';
+import { isLineItemsSystemEnabled, enableLineItemsForOrder } from '@/lib/config/featureFlags';
+import ChangeBulkAnalysisProject from '@/components/orders/ChangeBulkAnalysisProject';
 import { AuthService, type AuthSession } from '@/lib/auth';
 import { formatCurrency } from '@/lib/utils/formatting';
 import { 
@@ -51,6 +54,11 @@ interface SiteSubmission {
   targetPageUrl?: string;
   anchorText?: string;
   createdAt?: string;
+  // Status-based fields
+  inclusionStatus?: 'included' | 'excluded' | 'saved_for_later';
+  inclusionOrder?: number;
+  exclusionReason?: string;
+  // Deprecated pool fields
   selectionPool?: 'primary' | 'alternative';
   poolRank?: number;
   metadata?: {
@@ -150,6 +158,7 @@ interface OrderDetail {
   paidAt?: string;
   completedAt?: string;
   orderGroups?: OrderGroup[];
+  lineItems?: any[]; // Line items for new system
   // Preferences from external user
   estimatedLinksCount?: number;
   preferencesDrMin?: number;
@@ -162,6 +171,41 @@ interface OrderDetail {
   estimatedBudgetMin?: number;
   estimatedBudgetMax?: number;
 }
+
+// Helper functions for dual-mode support (orderGroups vs lineItems)
+const getTotalLinkCount = (order: OrderDetail): number => {
+  if (order.lineItems && order.lineItems.length > 0) {
+    // Count line items
+    return order.lineItems.length;
+  }
+  // Fallback to orderGroups
+  return order.orderGroups?.reduce((sum, g) => sum + g.linkCount, 0) || 0;
+};
+
+const getTotalServiceFees = (order: OrderDetail): number => {
+  const linkCount = getTotalLinkCount(order);
+  return 7900 * linkCount; // $79 per link
+};
+
+const getWholesaleTotal = (order: OrderDetail): number => {
+  if (order.lineItems && order.lineItems.length > 0) {
+    // Calculate from line items
+    return order.lineItems.reduce((sum, item) => sum + (item.wholesalePrice || 0), 0);
+  }
+  // Fallback to order total calculation
+  return order.totalWholesale || (order.totalPrice - getTotalServiceFees(order));
+};
+
+const getAveragePricePerLink = (order: OrderDetail): number => {
+  const linkCount = getTotalLinkCount(order);
+  return linkCount > 0 ? order.totalPrice / linkCount : 0;
+};
+
+const getAverageWholesalePerLink = (order: OrderDetail): number => {
+  const linkCount = getTotalLinkCount(order);
+  const wholesale = getWholesaleTotal(order);
+  return linkCount > 0 ? wholesale / linkCount : 0;
+};
 
 export default function InternalOrderManagementPage() {
   const params = useParams();
@@ -184,6 +228,9 @@ export default function InternalOrderManagementPage() {
   const [currentProcessingPage, setCurrentProcessingPage] = useState<string | null>(null);
   const [editingLineItem, setEditingLineItem] = useState<{ groupId: string; index: number } | null>(null);
   const [assigningDomain, setAssigningDomain] = useState<string | null>(null);
+  const [benchmarkData, setBenchmarkData] = useState<any>(null);
+  const [comparisonData, setComparisonData] = useState<any>(null);
+  const [useLineItemsView, setUseLineItemsView] = useState(false);
 
   // Auto-dismiss success messages after 5 seconds
   useEffect(() => {
@@ -243,6 +290,10 @@ export default function InternalOrderManagementPage() {
     if (order?.status === 'pending_confirmation') {
       checkTargetPageStatuses();
     }
+    // Load benchmark data for confirmed orders
+    if (order?.status === 'confirmed') {
+      loadBenchmarkData();
+    }
   }, [order?.state, order?.orderGroups, order?.status]);
 
   const loadOrder = async () => {
@@ -259,6 +310,12 @@ export default function InternalOrderManagementPage() {
       // Don't load site submissions here - they'll be loaded separately
       
       setOrder(data);
+      
+      // Check if this order should use line items view
+      if (isLineItemsSystemEnabled() && enableLineItemsForOrder(orderId)) {
+        setUseLineItemsView(true);
+      }
+      
     } catch (err) {
       console.error('Error loading order:', err);
       setError('Failed to load order details');
@@ -270,13 +327,22 @@ export default function InternalOrderManagementPage() {
   const loadSiteSubmissions = async () => {
     if (!order?.orderGroups) return;
     
+    // Skip site submissions loading for line items mode
+    if (useLineItemsView || (order.lineItems && order.lineItems.length > 0 && (!order.orderGroups || order.orderGroups.length === 0))) {
+      return;
+    }
+    
     setLoadingSubmissions(true);
+    // Clear existing submissions to force re-render
+    setSiteSubmissions({});
+    
     try {
       const submissionsByGroup: Record<string, SiteSubmission[]> = {};
       
       for (const group of order.orderGroups) {
         try {
-          const response = await fetch(`/api/orders/${order.id}/groups/${group.id}/submissions`);
+          // Add cache-busting query param to force fresh data
+          const response = await fetch(`/api/orders/${order.id}/groups/${group.id}/submissions?t=${Date.now()}`);
           if (response.ok) {
             const data = await response.json();
             submissionsByGroup[group.id] = data.submissions || [];
@@ -296,6 +362,11 @@ export default function InternalOrderManagementPage() {
 
   const checkTargetPageStatuses = async () => {
     if (!order?.orderGroups) return;
+    
+    // Skip target page checking for line items mode
+    if (useLineItemsView || (order.lineItems && order.lineItems.length > 0 && (!order.orderGroups || order.orderGroups.length === 0))) {
+      return;
+    }
     
     const statuses: TargetPageStatus[] = [];
     
@@ -330,10 +401,74 @@ export default function InternalOrderManagementPage() {
     setSelectedPages(new Set(pagesNeedingKeywords));
   };
 
+  const loadBenchmarkData = async () => {
+    try {
+      const response = await fetch(`/api/orders/${orderId}/benchmark?comparison=true`);
+      if (response.ok) {
+        const data = await response.json();
+        setBenchmarkData(data.benchmark);
+        setComparisonData(data.comparison);
+      }
+    } catch (error) {
+      console.error('Failed to load benchmark data:', error);
+    }
+  };
+
+  const handleCreateBenchmark = async () => {
+    try {
+      const response = await fetch(`/api/orders/${orderId}/benchmark`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ action: 'create', reason: 'manual_update' })
+      });
+      
+      if (response.ok) {
+        const data = await response.json();
+        setBenchmarkData(data.benchmark);
+        await loadBenchmarkData(); // Reload to get comparison
+        setMessage({
+          type: 'success',
+          text: 'Benchmark created successfully'
+        });
+      }
+    } catch (error) {
+      console.error('Failed to create benchmark:', error);
+      setMessage({
+        type: 'error',
+        text: 'Failed to create benchmark'
+      });
+    }
+  };
+
+  const handleUpdateComparison = async () => {
+    try {
+      const response = await fetch(`/api/orders/${orderId}/benchmark`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ action: 'compare' })
+      });
+      
+      if (response.ok) {
+        const data = await response.json();
+        setComparisonData(data.comparison);
+        setMessage({
+          type: 'success',
+          text: 'Comparison updated successfully'
+        });
+      }
+    } catch (error) {
+      console.error('Failed to update comparison:', error);
+      setMessage({
+        type: 'error',
+        text: 'Failed to update comparison'
+      });
+    }
+  };
+
   const handleRefresh = async () => {
     setRefreshing(true);
     await loadOrder();
-    if (order?.state === 'sites_ready' || order?.state === 'site_review' || order?.state === 'client_reviewing') {
+    if (order?.state === 'sites_ready' || order?.state === 'client_reviewing') {
       await loadSiteSubmissions();
     }
     if (order?.status === 'pending_confirmation') {
@@ -502,14 +637,124 @@ export default function InternalOrderManagementPage() {
     }
   };
 
-  const handleSwitchDomain = async (submissionId: string, groupId: string) => {
+  const handleEditSubmission = async (submissionId: string, groupId: string, updates: any) => {
+    try {
+      const response = await fetch(`/api/orders/${orderId}/groups/${groupId}/submissions/${submissionId}/edit`, {
+        method: 'PATCH',
+        headers: { 'Content-Type': 'application/json' },
+        credentials: 'include',
+        body: JSON.stringify(updates)
+      });
+      
+      if (!response.ok) {
+        const errorData = await response.json().catch(() => ({ error: 'Unknown error' }));
+        throw new Error(errorData.error || 'Failed to edit submission');
+      }
+      
+      const result = await response.json();
+      
+      // Reload submissions to show the update
+      await loadSiteSubmissions();
+      setMessage({
+        type: 'success',
+        text: result.message || 'Submission updated successfully'
+      });
+      
+    } catch (error: any) {
+      console.error('Error editing submission:', error);
+      setMessage({
+        type: 'error',
+        text: error.message || 'Failed to edit submission'
+      });
+    }
+  };
+  
+  const handleRemoveSubmission = async (submissionId: string, groupId: string) => {
+    try {
+      const response = await fetch(`/api/orders/${orderId}/groups/${groupId}/submissions/${submissionId}/edit`, {
+        method: 'DELETE',
+        credentials: 'include'
+      });
+      
+      if (!response.ok) {
+        const errorData = await response.json().catch(() => ({ error: 'Unknown error' }));
+        throw new Error(errorData.error || 'Failed to remove submission');
+      }
+      
+      const result = await response.json();
+      
+      // Just reload to show the updated state - no automatic rebalance
+      await loadOrder();
+      await loadSiteSubmissions();
+      setMessage({
+        type: 'success',
+        text: result.message || 'Submission removed successfully'
+      });
+      
+    } catch (error: any) {
+      console.error('Error removing submission:', error);
+      setMessage({
+        type: 'error',
+        text: error.message || 'Failed to remove submission'
+      });
+    }
+  };
+
+  const handleAssignToLineItem = async (submissionId: string, lineItemId: string) => {
+    try {
+      // Find the submission to get domain ID
+      let domainId: string | null = null;
+      for (const [groupId, submissions] of Object.entries(siteSubmissions)) {
+        const submission = submissions.find(s => s.id === submissionId);
+        if (submission) {
+          domainId = submission.domainId;
+          break;
+        }
+      }
+
+      if (!domainId) {
+        throw new Error('Submission not found');
+      }
+
+      const response = await fetch(
+        `/api/orders/${orderId}/line-items/${lineItemId}/assign-domain`,
+        {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ submissionId, domainId })
+        }
+      );
+
+      if (!response.ok) {
+        const error = await response.json();
+        throw new Error(error.error || 'Failed to assign domain to line item');
+      }
+
+      // Refresh both submissions and line items
+      await loadSiteSubmissions();
+      await loadOrder();
+      setMessage({
+        type: 'success',
+        text: 'Domain successfully assigned to line item'
+      });
+    } catch (error) {
+      console.error('Error assigning to line item:', error);
+      setMessage({
+        type: 'error',
+        text: error instanceof Error ? error.message : 'Failed to assign domain to line item'
+      });
+    }
+  };
+
+  const handleSwitchDomain = async (submissionId: string, groupId: string, targetPrimaryId?: string) => {
     try {
       setAssigningDomain(submissionId);
       
       const response = await fetch(`/api/orders/${orderId}/groups/${groupId}/site-selections/${submissionId}/switch`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        credentials: 'include'
+        credentials: 'include',
+        body: JSON.stringify({ targetPrimaryId })
       });
       
       if (!response.ok) {
@@ -734,37 +979,38 @@ export default function InternalOrderManagementPage() {
     }
   };
 
-  const handleRebalancePools = async () => {
-    setActionLoading(prev => ({ ...prev, rebalance_pools: true }));
+  // DEPRECATED: Rebalance pools removed in favor of status-based system
+  // const handleRebalancePools = async () => { ... };
+
+  const handleChangeInclusionStatus = async (submissionId: string, groupId: string, status: 'included' | 'excluded' | 'saved_for_later', reason?: string) => {
     try {
-      const response = await fetch(`/api/orders/${orderId}/rebalance-pools`, {
-        method: 'POST',
+      const response = await fetch(`/api/orders/${orderId}/groups/${groupId}/submissions/${submissionId}/inclusion`, {
+        method: 'PATCH',
         headers: { 'Content-Type': 'application/json' },
-        credentials: 'include'
+        credentials: 'include',
+        body: JSON.stringify({ 
+          inclusionStatus: status,
+          exclusionReason: reason 
+        })
       });
 
       if (!response.ok) {
         const error = await response.json();
-        throw new Error(error.error || 'Failed to rebalance pools');
+        throw new Error(error.error || 'Failed to update status');
       }
 
-      const result = await response.json();
-      
       setMessage({
         type: 'success',
-        text: `Pools rebalanced successfully. ${result.migratedCount} domains updated.`
+        text: `Domain status updated to ${status.replace(/_/g, ' ')}`
       });
       
-      // Reload submissions to show new pool assignments
       await loadSiteSubmissions();
     } catch (error) {
-      console.error('Error rebalancing pools:', error);
+      console.error('Error updating status:', error);
       setMessage({
         type: 'error',
-        text: error instanceof Error ? error.message : 'Failed to rebalance pools'
+        text: error instanceof Error ? error.message : 'Failed to update status'
       });
-    } finally {
-      setActionLoading(prev => ({ ...prev, rebalance_pools: false }));
     }
   };
 
@@ -1373,29 +1619,45 @@ export default function InternalOrderManagementPage() {
                       </>
                     )}
                     
-                    {/* Bulk Analysis Links - Available during analysis and review phases */}
-                    {(order.state === 'analyzing' || order.state === 'finding_sites' || order.state === 'sites_ready' || order.state === 'site_review' || order.state === 'client_reviewing') && order.orderGroups?.some(g => g.bulkAnalysisProjectId) && (
+                    {/* Bulk Analysis Links - Available during analysis and review phases (orderGroups mode only) */}
+                    {!useLineItemsView && (order.state === 'analyzing' || order.state === 'sites_ready' || order.state === 'client_reviewing') && order.orderGroups && (
                       <div className="space-y-2">
                         <div className="text-xs text-gray-600 mb-1">
-                          {(order.state === 'sites_ready' || order.state === 'site_review' || order.state === 'client_reviewing') ? 
-                            'Make changes based on client feedback:' : 
+                          {(order.state === 'sites_ready' || order.state === 'client_reviewing') ? 
+                            'Bulk Analysis Projects:' : 
                             'Find and analyze sites:'
                           }
                         </div>
-                        {order.orderGroups.filter(g => g.bulkAnalysisProjectId).map(group => (
-                          <Link
-                            key={group.id}
-                            href={`/clients/${group.clientId}/bulk-analysis/projects/${group.bulkAnalysisProjectId}`}
-                            className="block w-full px-3 py-2 bg-blue-600 text-white text-sm rounded-md hover:bg-blue-700 text-center"
-                          >
-                            Analyze {group.client.name}
-                          </Link>
+                        {order.orderGroups.map(group => (
+                          <div key={group.id} className="space-y-1">
+                            <div className="flex items-center justify-between">
+                              <span className="text-xs font-medium text-gray-700">
+                                {group.client.name}
+                              </span>
+                              <ChangeBulkAnalysisProject
+                                orderGroupId={group.id}
+                                orderId={order.id}
+                                clientId={group.clientId}
+                                clientName={group.client.name}
+                                currentProjectId={group.bulkAnalysisProjectId}
+                                onProjectChanged={() => loadOrder()}
+                              />
+                            </div>
+                            {group.bulkAnalysisProjectId && (
+                              <Link
+                                href={`/clients/${group.clientId}/bulk-analysis/projects/${group.bulkAnalysisProjectId}`}
+                                className="block w-full px-3 py-2 bg-blue-600 text-white text-sm rounded-md hover:bg-blue-700 text-center"
+                              >
+                                Analyze {group.client.name}
+                              </Link>
+                            )}
+                          </div>
                         ))}
                       </div>
                     )}
                     
                     {/* Site Readiness */}
-                    {(order.state === 'analyzing' || order.state === 'finding_sites') && (
+                    {(order.state === 'analyzing') && (
                       <button
                         onClick={handleMarkSitesReady}
                         disabled={actionLoading.sites_ready}
@@ -1508,26 +1770,7 @@ export default function InternalOrderManagementPage() {
                       </button>
                     )}
                     
-                    {/* Rebalance Pools */}
-                    {order.orderGroups && order.orderGroups.some(g => Object.values(siteSubmissions[g.id] || {}).length > 0) && (
-                      <button
-                        onClick={handleRebalancePools}
-                        disabled={actionLoading.rebalance_pools}
-                        className="w-full px-3 py-2 bg-indigo-600 text-white text-sm rounded-md hover:bg-indigo-700 disabled:opacity-50"
-                      >
-                        {actionLoading.rebalance_pools ? (
-                          <span className="flex items-center justify-center gap-2">
-                            <Loader2 className="h-4 w-4 animate-spin" />
-                            Rebalancing...
-                          </span>
-                        ) : (
-                          <span className="flex items-center justify-center gap-2">
-                            <RefreshCw className="h-4 w-4" />
-                            Rebalance Pools
-                          </span>
-                        )}
-                      </button>
-                    )}
+                    {/* Pool rebalancing removed - using status-based system now */}
                   </div>
                 </div>
               </div>
@@ -1570,26 +1813,26 @@ export default function InternalOrderManagementPage() {
                       <div className="flex justify-between text-sm">
                         <dt className="text-gray-600">Wholesale Costs</dt>
                         <dd className="font-medium text-gray-900">
-                          {formatCurrency(order.totalWholesale || (order.totalPrice - 7900 * (order.orderGroups?.reduce((sum, g) => sum + g.linkCount, 0) || 0)))}
+                          {formatCurrency(getWholesaleTotal(order))}
                         </dd>
                       </div>
                       <div className="flex justify-between text-sm">
-                        <dt className="text-gray-600">Service Fees ({order.orderGroups?.reduce((sum, g) => sum + g.linkCount, 0) || 0} × $79)</dt>
+                        <dt className="text-gray-600">Service Fees ({getTotalLinkCount(order)} × $79)</dt>
                         <dd className="font-medium text-gray-900">
-                          {formatCurrency(7900 * (order.orderGroups?.reduce((sum, g) => sum + g.linkCount, 0) || 0))}
+                          {formatCurrency(getTotalServiceFees(order))}
                         </dd>
                       </div>
                       <div className="flex justify-between text-sm pt-2 border-t">
                         <dt className="font-medium text-gray-900">Gross Profit</dt>
                         <dd className="font-bold text-green-600">
-                          {formatCurrency(7900 * (order.orderGroups?.reduce((sum, g) => sum + g.linkCount, 0) || 0))}
+                          {formatCurrency(getTotalServiceFees(order))}
                         </dd>
                       </div>
                       <div className="flex justify-between text-sm">
                         <dt className="text-gray-600">Margin</dt>
                         <dd className="font-medium text-gray-900">
                           {order.totalPrice > 0 ? 
-                            `${Math.round((7900 * (order.orderGroups?.reduce((sum, g) => sum + g.linkCount, 0) || 0) / order.totalPrice) * 100)}%` : 
+                            `${Math.round((getTotalServiceFees(order) / order.totalPrice) * 100)}%` : 
                             'N/A'
                           }
                         </dd>
@@ -1603,13 +1846,13 @@ export default function InternalOrderManagementPage() {
                       <div className="flex justify-between text-sm">
                         <dt className="text-gray-600">Avg Client Price</dt>
                         <dd className="font-medium text-gray-900">
-                          {formatCurrency(order.totalPrice / (order.orderGroups?.reduce((sum, g) => sum + g.linkCount, 0) || 1))}
+                          {formatCurrency(getAveragePricePerLink(order))}
                         </dd>
                       </div>
                       <div className="flex justify-between text-sm">
                         <dt className="text-gray-600">Avg Wholesale</dt>
                         <dd className="font-medium text-gray-900">
-                          {formatCurrency((order.totalWholesale || (order.totalPrice - 7900 * (order.orderGroups?.reduce((sum, g) => sum + g.linkCount, 0) || 0))) / (order.orderGroups?.reduce((sum, g) => sum + g.linkCount, 0) || 1))}
+                          {formatCurrency(getAverageWholesalePerLink(order))}
                         </dd>
                       </div>
                       <div className="flex justify-between text-sm">
@@ -1631,9 +1874,9 @@ export default function InternalOrderManagementPage() {
                           </dd>
                         </div>
                         <div className="text-xs text-blue-600 mt-1">
-                          {order.totalPrice / (order.orderGroups?.reduce((sum, g) => sum + g.linkCount, 0) || 1) <= order.estimatedPricePerLink ? 
+                          {getAveragePricePerLink(order) <= order.estimatedPricePerLink ? 
                             '✓ Within target' : 
-                            `${formatCurrency((order.totalPrice / (order.orderGroups?.reduce((sum, g) => sum + g.linkCount, 0) || 1)) - order.estimatedPricePerLink)} over target per link`
+                            `${formatCurrency(getAveragePricePerLink(order) - order.estimatedPricePerLink)} over target`
                           }
                         </div>
                       </div>
@@ -1739,7 +1982,7 @@ export default function InternalOrderManagementPage() {
             {/* Middle/Right Columns - Order Details Table */}
             <div className="lg:col-span-2">
               {/* Site Review Summary Card */}
-              {(order.state === 'sites_ready' || order.state === 'site_review' || order.state === 'client_reviewing') && Object.keys(siteSubmissions).length > 0 && (
+              {(order.state === 'sites_ready' || order.state === 'client_reviewing') && Object.keys(siteSubmissions).length > 0 && (
                 <div className="bg-purple-50 border border-purple-200 rounded-lg p-6 mb-6">
                   <div className="flex items-start justify-between">
                     <div>
@@ -1776,34 +2019,102 @@ export default function InternalOrderManagementPage() {
                 </div>
               )}
               
-              {/* Order Details Table with Proper Client Grouping */}
-              <OrderSiteReviewTable
-                orderId={orderId}
-                orderGroups={order.orderGroups || []}
-                siteSubmissions={siteSubmissions}
-                userType="internal"
-                permissions={{
-                  canRebalancePools: true,
-                  canAssignTargetPages: true,
-                  canSwitchPools: true,
-                  canApproveReject: true,
-                  canGenerateWorkflows: true,
-                  canMarkSitesReady: true,
-                  canViewInternalTools: true,
-                  canViewPricing: true,
-                  canEditDomainAssignments: true
-                }}
-                workflowStage={workflowStage}
-                onAssignTargetPage={handleAssignTargetPage}
-                onSwitchPool={handleSwitchDomain}
-                onRefresh={handleRefresh}
-              />
-              
-              {/* Admin Domain Management Table */}
-              <AdminDomainTable 
-                orderId={orderId}
-                onRefresh={handleRefresh}
-              />
+              {/* Benchmark Display - Shows order wishlist vs actual delivery */}
+              {order.status === 'confirmed' && (
+                <BenchmarkDisplay
+                  orderId={orderId}
+                  benchmark={benchmarkData}
+                  comparison={comparisonData}
+                  showDetails={true}
+                  canCreateComparison={true}
+                  onCreateComparison={benchmarkData ? handleUpdateComparison : handleCreateBenchmark}
+                  onRefresh={loadBenchmarkData}
+                  userType="internal"
+                />
+              )}
+
+              {/* View Toggle */}
+              {isLineItemsSystemEnabled() && (
+                <div className="mb-4 bg-white rounded-lg border border-gray-200 p-4">
+                  <div className="flex items-center justify-between">
+                    <div className="flex items-center gap-3">
+                      <h3 className="font-medium text-gray-900">Order Management View</h3>
+                      <span className="text-sm text-gray-500">
+                        {useLineItemsView ? 'Line Items (Beta)' : 'Traditional Groups'}
+                      </span>
+                    </div>
+                    <div className="flex items-center gap-2">
+                      <button
+                        onClick={() => setUseLineItemsView(false)}
+                        className={`px-3 py-1 text-sm rounded-md transition-colors ${
+                          !useLineItemsView 
+                            ? 'bg-blue-100 text-blue-900 border border-blue-200' 
+                            : 'bg-gray-100 text-gray-600 hover:bg-gray-200'
+                        }`}
+                      >
+                        Groups View
+                      </button>
+                      <button
+                        onClick={() => setUseLineItemsView(true)}
+                        className={`px-3 py-1 text-sm rounded-md transition-colors ${
+                          useLineItemsView 
+                            ? 'bg-blue-100 text-blue-900 border border-blue-200' 
+                            : 'bg-gray-100 text-gray-600 hover:bg-gray-200'
+                        }`}
+                      >
+                        Line Items
+                      </button>
+                    </div>
+                  </div>
+                </div>
+              )}
+
+              {/* Order Details Table - Conditional Rendering */}
+              {useLineItemsView && isLineItemsSystemEnabled() ? (
+                <LineItemsTable
+                  orderId={orderId}
+                  lineItems={order.lineItems || []}
+                  userType="internal"
+                  canEdit={true}
+                  canAddItems={true}
+                  canDeleteItems={true}
+                  canAssignDomains={true}
+                  canApproveItems={true}
+                  onRefresh={() => {
+                    // Refresh handler for line items
+                    loadOrder();
+                  }}
+                />
+              ) : (
+                <OrderSiteReviewTableV2
+                  orderId={orderId}
+                  orderGroups={order.orderGroups || []}
+                  siteSubmissions={siteSubmissions}
+                  userType="internal"
+                  permissions={{
+                    canChangeStatus: true,
+                    canAssignTargetPages: true,
+                    canApproveReject: true,
+                    canGenerateWorkflows: true,
+                    canMarkSitesReady: true,
+                    canViewInternalTools: true,
+                    canViewPricing: true,
+                    canEditDomainAssignments: true,
+                    canSetExclusionReason: true
+                  }}
+                  workflowStage={workflowStage}
+                  onAssignTargetPage={handleAssignTargetPage}
+                  onChangeInclusionStatus={handleChangeInclusionStatus}
+                  onEditSubmission={handleEditSubmission}
+                  onRemoveSubmission={handleRemoveSubmission}
+                  onRefresh={handleRefresh}
+                  onAssignToLineItem={handleAssignToLineItem}
+                  lineItems={order.lineItems || []}
+                  useStatusSystem={true}
+                  useLineItems={isLineItemsSystemEnabled()}
+                  benchmarkData={benchmarkData}
+                />
+              )}
               
               {/* Additional Information Cards */}
               <div className="grid grid-cols-1 lg:grid-cols-2 gap-6 mt-6">
@@ -1855,7 +2166,7 @@ export default function InternalOrderManagementPage() {
                     <h3 className="text-lg font-semibold text-gray-900">Internal Activity</h3>
                   </div>
                   <div className="space-y-3">
-                    {(order.state === 'analyzing' || order.state === 'finding_sites') && (
+                    {(order.state === 'analyzing') && (
                       <div className="flex items-start gap-3">
                         <div className="w-2 h-2 bg-blue-500 rounded-full mt-1.5 animate-pulse" />
                         <div>
@@ -1864,7 +2175,7 @@ export default function InternalOrderManagementPage() {
                         </div>
                       </div>
                     )}
-                    {(order.state === 'sites_ready' || order.state === 'site_review') && (
+                    {(order.state === 'sites_ready') && (
                       <div className="flex items-start gap-3">
                         <div className="w-2 h-2 bg-purple-500 rounded-full mt-1.5" />
                         <div>

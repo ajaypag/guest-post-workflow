@@ -89,11 +89,17 @@ export async function POST(
             const submission = urlSubmissions[i];
             const isWithinRequiredCount = i < requiredCount;
             
+            // Reset status to pending for primary pool (unless client already approved)
+            const newStatus = submission.submissionStatus === 'client_approved' 
+              ? 'client_approved' 
+              : (isWithinRequiredCount ? 'pending' : submission.submissionStatus || 'pending');
+            
             await db
               .update(orderSiteSubmissions)
               .set({
                 selectionPool: isWithinRequiredCount ? 'primary' : 'alternative',
                 poolRank: isWithinRequiredCount ? i + 1 : i - requiredCount + 1,
+                submissionStatus: newStatus,
                 updatedAt: new Date()
               })
               .where(eq(orderSiteSubmissions.id, submission.id));

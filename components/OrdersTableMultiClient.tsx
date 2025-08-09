@@ -108,6 +108,46 @@ export function OrdersTableMultiClient({
     return statusLabels[status] || status;
   };
 
+  const getActionStatus = (order: Order, isInternal: boolean) => {
+    // For internal users
+    if (isInternal) {
+      if (order.status === 'pending_confirmation') {
+        return { text: 'Needs Confirmation', color: 'text-red-600', priority: 'high' };
+      }
+      if (order.status === 'confirmed' && (order.state === 'analyzing')) {
+        return { text: 'Processing', color: 'text-blue-600', priority: 'medium' };
+      }
+      if (order.status === 'confirmed' && order.state === 'sites_ready') {
+        return { text: 'Ready to Send', color: 'text-yellow-600', priority: 'medium' };
+      }
+    }
+    // For external users  
+    else {
+      if (order.status === 'draft') {
+        return { text: 'Finish Setup', color: 'text-red-600', priority: 'high' };
+      }
+      if (order.status === 'confirmed' && (order.state === 'sites_ready' || order.state === 'client_reviewing')) {
+        return { text: 'Review Sites', color: 'text-red-600', priority: 'high' };
+      }
+      if (order.status === 'confirmed' && order.state === 'payment_pending') {
+        return { text: 'Payment Due', color: 'text-red-600', priority: 'high' };
+      }
+      if (order.status === 'confirmed' && (order.state === 'analyzing')) {
+        return { text: 'In Progress', color: 'text-blue-600', priority: 'low' };
+      }
+    }
+    
+    // Default cases
+    if (order.status === 'paid' || order.status === 'in_progress') {
+      return { text: 'In Progress', color: 'text-blue-600', priority: 'low' };
+    }
+    if (order.status === 'completed') {
+      return { text: 'Complete', color: 'text-green-600', priority: 'low' };
+    }
+    
+    return { text: 'No Action', color: 'text-gray-500', priority: 'low' };
+  };
+
   const toggleOrderExpanded = (orderId: string) => {
     const newExpanded = new Set(expandedOrders);
     if (newExpanded.has(orderId)) {
@@ -184,6 +224,9 @@ export function OrdersTableMultiClient({
               </th>
               <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
                 Status
+              </th>
+              <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                Action Status
               </th>
               <th className="px-6 py-3 text-right text-xs font-medium text-gray-500 uppercase tracking-wider">
                 Value
@@ -273,6 +316,25 @@ export function OrdersTableMultiClient({
                       </div>
                     </td>
 
+                    <td className="px-6 py-4 whitespace-nowrap">
+                      {(() => {
+                        const actionStatus = getActionStatus(order, isInternal);
+                        return (
+                          <div className="flex items-center gap-2">
+                            {actionStatus.priority === 'high' && (
+                              <div className="w-2 h-2 bg-red-500 rounded-full animate-pulse" />
+                            )}
+                            {actionStatus.priority === 'medium' && (
+                              <div className="w-2 h-2 bg-yellow-500 rounded-full" />
+                            )}
+                            <span className={`text-sm font-medium ${actionStatus.color}`}>
+                              {actionStatus.text}
+                            </span>
+                          </div>
+                        );
+                      })()}
+                    </td>
+
                     <td className="px-6 py-4 whitespace-nowrap text-right">
                       <div className="font-medium">{formatCurrency(order.totalRetail)}</div>
                       {order.discountAmount > 0 && (
@@ -295,7 +357,7 @@ export function OrdersTableMultiClient({
                       <div className="flex items-center justify-end gap-2">
                         {isInternal && order.status === 'pending_confirmation' && (
                           <Link
-                            href={`/orders/${order.id}/confirm`}
+                            href={`/orders/${order.id}/internal`}
                             className="inline-flex items-center px-3 py-1.5 bg-green-600 text-white text-sm rounded-md hover:bg-green-700"
                           >
                             <CheckCircle className="h-4 w-4 mr-1" />
@@ -311,7 +373,7 @@ export function OrdersTableMultiClient({
                                     method: 'POST',
                                     headers: { 'Content-Type': 'application/json' },
                                     body: JSON.stringify({ 
-                                      state: 'site_review',
+                                      state: 'sites_ready',
                                       notes: 'Sites ready for client review'
                                     })
                                   });
@@ -333,6 +395,18 @@ export function OrdersTableMultiClient({
                             <Users className="h-4 w-4 mr-1" />
                             Sites Ready
                           </button>
+                        )}
+                        {/* Payment button for orders pending payment */}
+                        {order.state === 'payment_pending' && !order.paidAt && (
+                          <a
+                            href={`/orders/${order.id}/payment`}
+                            className="inline-flex items-center px-3 py-1.5 bg-orange-600 text-white text-sm rounded-md hover:bg-orange-700"
+                          >
+                            <svg className="h-4 w-4 mr-1" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M3 10h18M7 15h1m4 0h1m-7 4h12a3 3 0 003-3V8a3 3 0 00-3-3H6a3 3 0 00-3 3v8a3 3 0 003 3z" />
+                            </svg>
+                            Pay ${((order.totalRetail || 0) / 100).toFixed(0)}
+                          </a>
                         )}
                         {isInternal && order.shareToken && (
                           <button
@@ -406,7 +480,7 @@ export function OrdersTableMultiClient({
                   {/* Expanded client groups */}
                   {isExpanded && hasGroups && (
                     <tr>
-                      <td colSpan={7} className="px-0 py-0">
+                      <td colSpan={8} className="px-0 py-0">
                         <div className="bg-gray-50 border-t border-gray-200">
                           <table className="min-w-full">
                             <tbody className="divide-y divide-gray-200">

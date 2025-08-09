@@ -6,6 +6,7 @@ import { sessionStorage } from '@/lib/userStorage';
 import { type AuthSession } from '@/lib/auth';
 import { useState, useEffect } from 'react';
 import { User, LogOut, Users, Building2, Zap, Search, BarChart2, Globe, Mail, ShoppingCart, Package, Database, ChevronDown, Settings } from 'lucide-react';
+import NotificationBell from '@/components/ui/NotificationBell';
 
 export default function Header() {
   const router = useRouter();
@@ -183,6 +184,9 @@ export default function Header() {
 
           {/* User Menu */}
           <div className="flex items-center space-x-3">
+            {/* Notification Bell */}
+            <NotificationBell />
+            
             <div className="flex items-center space-x-3 px-3 py-2 bg-gray-50 rounded-lg">
               <div className="w-7 h-7 bg-gradient-to-br from-blue-500 to-purple-600 rounded-full flex items-center justify-center">
                 <User className="w-4 h-4 text-white" />

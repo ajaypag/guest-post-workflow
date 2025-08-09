@@ -22,6 +22,7 @@ import { BulkAnalysisProject } from '@/types/bulk-analysis-projects';
 import { BulkAnalysisDomain } from '@/types/bulk-analysis';
 import { ProcessedWebsite } from '@/types/airtable';
 import OrderSelectionModal from '@/components/orders/OrderSelectionModal';
+import DuplicateResolutionModal from '@/components/ui/DuplicateResolutionModal';
 import { 
   ArrowLeft, 
   Target, 
@@ -146,6 +147,11 @@ export default function ProjectDetailPage() {
   
   // Bulk workflow creation state
   const [bulkWorkflowCreating, setBulkWorkflowCreating] = useState(false);
+  
+  // Duplicate resolution state
+  const [showDuplicateModal, setShowDuplicateModal] = useState(false);
+  const [duplicatesToResolve, setDuplicatesToResolve] = useState<any[]>([]);
+  const [pendingDomainSubmission, setPendingDomainSubmission] = useState<any>(null);
   const [bulkWorkflowProgress, setBulkWorkflowProgress] = useState({ current: 0, total: 0 });
   
   // Bulk status update state
@@ -652,7 +658,7 @@ export default function ProjectDetailPage() {
       setMessage('');
       try {
         // Extract domains and metadata from selected websites
-        const domainList = selectedDatabaseWebsites.map(w => w.domain);
+        let domainList = selectedDatabaseWebsites.map(w => w.domain);
         const metadata: Record<string, any> = {};
         
         selectedDatabaseWebsites.forEach(website => {
@@ -668,7 +674,55 @@ export default function ProjectDetailPage() {
           };
         });
         
-        // Create domains with metadata
+        // First check for duplicates
+        const checkResponse = await fetch(`/api/clients/${params.id}/bulk-analysis/check-duplicates`, {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            domains: domainList,
+            projectId: params.projectId
+          })
+        });
+
+        if (checkResponse.ok) {
+          const checkData = await checkResponse.json();
+          
+          // Filter out domains already in current project
+          let domainsToAdd = domainList;
+          if (checkData.alreadyInProject && checkData.alreadyInProject.length > 0) {
+            console.log(`Skipping ${checkData.alreadyInProject.length} domains already in project:`, checkData.alreadyInProject);
+            domainsToAdd = domainList.filter(d => !checkData.alreadyInProject.includes(d));
+            
+            if (domainsToAdd.length === 0) {
+              setMessage(`⚠️ All selected domains are already in this project`);
+              setLoading(false);
+              return;
+            }
+          }
+          
+          if (checkData.duplicates && checkData.duplicates.length > 0) {
+            // Store submission data for after resolution (only domains not already in project)
+            setPendingDomainSubmission({
+              domains: domainsToAdd,
+              targetPageIds: keywordInputMode === 'target-pages' ? selectedTargetPages : [],
+              manualKeywords: keywordInputMode === 'manual' ? manualKeywords : undefined,
+              projectId: params.projectId,
+              airtableMetadata: metadata,
+              isDatabase: true
+            });
+            
+            // Show duplicate resolution modal
+            setDuplicatesToResolve(checkData.duplicates);
+            setShowDuplicateModal(true);
+            setLoading(false);
+            return;
+          }
+          
+          // Update domainList to only include domains not already in project
+          domainList = domainsToAdd;
+        }
+
+        // No duplicates, proceed with normal creation
         const response = await fetch(`/api/clients/${params.id}/bulk-analysis`, {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
@@ -714,24 +768,60 @@ export default function ProjectDetailPage() {
 
       try {
         // Parse domains
-        const domainList = domainText
+        let domainList = domainText
           .split('\n')
           .map(d => d.trim())
           .filter(Boolean);
 
-        // Check for existing domains
-        const checkResponse = await fetch(`/api/clients/${params.id}/bulk-analysis/check`, {
+        // Check for duplicates in other projects
+        const checkResponse = await fetch(`/api/clients/${params.id}/bulk-analysis/check-duplicates`, {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({ domains: domainList })
+          body: JSON.stringify({
+            domains: domainList,
+            projectId: params.projectId
+          })
         });
 
         if (checkResponse.ok) {
           const checkData = await checkResponse.json();
-          setExistingDomains(checkData.existing || []);
+          
+          // Filter out domains already in current project
+          let domainsToAdd = domainList;
+          if (checkData.alreadyInProject && checkData.alreadyInProject.length > 0) {
+            console.log(`Skipping ${checkData.alreadyInProject.length} domains already in project:`, checkData.alreadyInProject);
+            domainsToAdd = domainList.filter(d => !checkData.alreadyInProject.includes(d));
+            
+            if (domainsToAdd.length === 0) {
+              setMessage(`⚠️ All entered domains are already in this project`);
+              setLoading(false);
+              return;
+            }
+          }
+          
+          if (checkData.duplicates && checkData.duplicates.length > 0) {
+            // Store submission data for after resolution (only domains not already in project)
+            setPendingDomainSubmission({
+              domains: domainsToAdd,
+              targetPageIds: keywordInputMode === 'target-pages' ? selectedTargetPages : [],
+              manualKeywords: keywordInputMode === 'manual' ? manualKeywords : undefined,
+              projectId: params.projectId,
+              airtableMetadata: undefined,
+              isDatabase: false
+            });
+            
+            // Show duplicate resolution modal
+            setDuplicatesToResolve(checkData.duplicates);
+            setShowDuplicateModal(true);
+            setLoading(false);
+            return;
+          }
+          
+          // Update domainList to only include domains not already in project
+          domainList = domainsToAdd;
         }
 
-        // Create or update domains
+        // No duplicates, proceed with normal creation
         const response = await fetch(`/api/clients/${params.id}/bulk-analysis`, {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
@@ -1446,6 +1536,70 @@ export default function ProjectDetailPage() {
     }
   };
   
+  const handleDuplicateResolution = async (resolutions: any[]) => {
+    if (!pendingDomainSubmission) return;
+    
+    try {
+      setLoading(true);
+      setMessage('Processing duplicate resolutions...');
+      
+      // Submit with duplicate resolutions
+      const response = await fetch(`/api/clients/${params.id}/bulk-analysis/resolve-duplicates`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          ...pendingDomainSubmission,
+          resolutions
+        })
+      });
+      
+      if (response.ok) {
+        const data = await response.json();
+        await loadDomains();
+        
+        // Clear UI state based on submission type
+        if (pendingDomainSubmission.isDatabase) {
+          setSelectedDatabaseWebsites([]);
+        } else {
+          setDomainText('');
+        }
+        
+        // Count actions taken
+        const keepBothCount = resolutions.filter(r => r.resolution === 'keep_both').length;
+        const movedCount = resolutions.filter(r => r.resolution === 'move_to_new').length;
+        const skippedCount = resolutions.filter(r => r.resolution === 'skip').length;
+        const updatedCount = resolutions.filter(r => r.resolution === 'update_original').length;
+        
+        // Build detailed message
+        const messages = [];
+        if (keepBothCount > 0) messages.push(`${keepBothCount} added to this project (kept in both)`);
+        if (movedCount > 0) messages.push(`${movedCount} moved to this project`);
+        if (skippedCount > 0) messages.push(`${skippedCount} skipped (kept in original project only)`);
+        if (updatedCount > 0) messages.push(`${updatedCount} updated in original project`);
+        
+        const totalAdded = keepBothCount + movedCount;
+        let message = totalAdded > 0 
+          ? `✅ Added ${totalAdded} domain${totalAdded !== 1 ? 's' : ''} to project. `
+          : '✅ Duplicate resolution complete. ';
+        
+        setMessage(message + messages.join(', '));
+        
+        // Clear duplicate resolution state
+        setShowDuplicateModal(false);
+        setDuplicatesToResolve([]);
+        setPendingDomainSubmission(null);
+      } else {
+        const error = await response.json();
+        throw new Error(error.error || 'Failed to resolve duplicates');
+      }
+    } catch (error) {
+      console.error('Error resolving duplicates:', error);
+      setMessage('❌ Error resolving duplicates');
+    } finally {
+      setLoading(false);
+    }
+  };
+
   const handleBulkDelete = async () => {
     const domainIds = Array.from(selectedDomains);
     const domainCount = domainIds.length;
@@ -3310,6 +3464,20 @@ anotherdomain.com"
           onConfirm={handleMoveToProject}
         />
       )}
+
+      {/* Duplicate Resolution Modal */}
+      <DuplicateResolutionModal
+        isOpen={showDuplicateModal}
+        onClose={() => {
+          setShowDuplicateModal(false);
+          setDuplicatesToResolve([]);
+          setPendingDomainSubmission(null);
+        }}
+        duplicates={duplicatesToResolve}
+        targetProjectName={project?.name || 'this project'}
+        onResolve={handleDuplicateResolution}
+        loading={loading}
+      />
       
       {/* Order Selection Modal */}
       <OrderSelectionModal

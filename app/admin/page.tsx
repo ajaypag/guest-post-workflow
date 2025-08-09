@@ -1,7 +1,7 @@
 'use client';
 
 import React from 'react';
-import { Database, Activity, Wrench, Users, BarChart3, Settings, AlertTriangle, Bug, FileSearch, Search, Mail, MessageSquare } from 'lucide-react';
+import { Database, Activity, Wrench, Users, BarChart3, Settings, AlertTriangle, Bug, FileSearch, Search, Mail, MessageSquare, GitBranch } from 'lucide-react';
 
 export default function AdminDashboard() {
   const adminTools = [
@@ -72,6 +72,14 @@ export default function AdminDashboard() {
     },
     
     // Order Management Diagnostics
+    {
+      title: 'Order Flow Matrix',
+      description: 'View complete order status/stage permissions and visibility matrix',
+      icon: GitBranch,
+      href: '/admin/order-flow-matrix',
+      color: 'bg-orange-50 border-orange-200 text-orange-700',
+      iconColor: 'text-orange-600'
+    },
     
     // User & Account Management
     {

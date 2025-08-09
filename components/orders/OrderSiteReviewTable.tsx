@@ -5,7 +5,7 @@ import {
   Loader2, Globe, LinkIcon, DollarSign, ExternalLink, 
   ChevronDown, ChevronUp, ChevronRight, AlertCircle, CheckCircle,
   Target, Package, Database, Activity, Users, RefreshCw,
-  Sparkles, Search, Clock, XCircle, Info
+  Sparkles, Search, Clock, XCircle, Info, Edit2, Trash2, MoreVertical
 } from 'lucide-react';
 import { formatCurrency } from '@/lib/utils/formatting';
 
@@ -103,9 +103,11 @@ interface OrderSiteReviewTableProps {
   permissions: TablePermissions;
   workflowStage?: string;
   onAssignTargetPage?: (submissionId: string, targetPageUrl: string, groupId: string) => Promise<void>;
-  onSwitchPool?: (submissionId: string, groupId: string) => Promise<void>;
+  onSwitchPool?: (submissionId: string, groupId: string, targetPrimaryId?: string) => Promise<void>;
   onApprove?: (submissionId: string, groupId: string) => Promise<void>;
   onReject?: (submissionId: string, groupId: string, reason: string) => Promise<void>;
+  onEditSubmission?: (submissionId: string, groupId: string, updates: any) => Promise<void>;
+  onRemoveSubmission?: (submissionId: string, groupId: string) => Promise<void>;
   onRefresh?: () => Promise<void>;
   selectedSubmissions?: Set<string>;
   onSelectionChange?: (submissionId: string, selected: boolean) => void;
@@ -122,6 +124,8 @@ export default function OrderSiteReviewTable({
   onSwitchPool,
   onApprove,
   onReject,
+  onEditSubmission,
+  onRemoveSubmission,
   onRefresh,
   selectedSubmissions,
   onSelectionChange
@@ -134,6 +138,18 @@ export default function OrderSiteReviewTable({
   const [actionLoading, setActionLoading] = useState<Record<string, boolean>>({});
   const [hoveredDomain, setHoveredDomain] = useState<string | null>(null);
   const [tooltipPosition, setTooltipPosition] = useState({ x: 0, y: 0 });
+  const [editingSubmission, setEditingSubmission] = useState<{
+    id: string;
+    groupId: string;
+    targetPageUrl?: string;
+    anchorText?: string;
+    specialInstructions?: string;
+    priceOverride?: number;
+    internalNotes?: string;
+  } | null>(null);
+  const [removingSubmission, setRemovingSubmission] = useState<string | null>(null);
+  const [savingEdit, setSavingEdit] = useState(false);
+  const [editError, setEditError] = useState<string | null>(null);
 
   // Handle click outside and escape key for dropdown
   useEffect(() => {
@@ -349,12 +365,12 @@ export default function OrderSiteReviewTable({
 
 
   // Handle domain switching
-  const handleSwitchDomain = async (submissionId: string, groupId: string) => {
+  const handleSwitchDomain = async (submissionId: string, groupId: string, targetPrimaryId?: string) => {
     if (!onSwitchPool) return;
     
     setAssigningDomain(submissionId);
     try {
-      await onSwitchPool(submissionId, groupId);
+      await onSwitchPool(submissionId, groupId, targetPrimaryId);
     } catch (error) {
       console.error('Error switching domain:', error);
     } finally {
@@ -773,7 +789,9 @@ export default function OrderSiteReviewTable({
           </thead>
           <tbody className="bg-white divide-y divide-gray-200">
             {orderGroups.map((group) => {
-              const groupSubmissions = siteSubmissions[group.id] || [];
+              const allSubmissions = siteSubmissions[group.id] || [];
+              // Filter out any legacy soft-deleted submissions (from before we switched to hard delete)
+              const groupSubmissions = allSubmissions.filter(s => s.submissionStatus !== 'removed');
               const isExpanded = expandedGroups.has(group.id);
               
               // Calculate assigned vs unassigned submissions
@@ -1108,10 +1126,108 @@ export default function OrderSiteReviewTable({
                                               </td>
                                               <td className="px-3 py-2 whitespace-nowrap">
                                                 <div className="flex items-center gap-1">
-                                                  {submission.id !== displaySubmission?.id && (
+                                                  {submission.id === displaySubmission?.id ? (
+                                                    <>
+                                                      <span className="text-xs text-green-600 font-medium">Active</span>
+                                                      {/* Edit button for active/current submission */}
+                                                      {permissions.canEditDomainAssignments && onEditSubmission && (
+                                                        <button
+                                                          className="text-xs bg-gray-100 text-gray-700 hover:bg-gray-200 p-1 rounded transition-colors"
+                                                          onClick={(e) => {
+                                                            e.preventDefault();
+                                                            e.stopPropagation();
+                                                            setEditingSubmission({
+                                                              id: submission.id,
+                                                              groupId: group.id,
+                                                              targetPageUrl: submission.metadata?.targetPageUrl,
+                                                              anchorText: submission.metadata?.anchorText,
+                                                              specialInstructions: submission.metadata?.specialInstructions
+                                                            });
+                                                          }}
+                                                          title="Edit submission details"
+                                                        >
+                                                          <Edit2 className="h-3 w-3" />
+                                                        </button>
+                                                      )}
+                                                      {/* Remove button for active submission - internal users only */}
+                                                      {userType === 'internal' && onRemoveSubmission && (
+                                                        <button
+                                                          className="text-xs bg-red-100 text-red-700 hover:bg-red-200 p-1 rounded transition-colors"
+                                                          onClick={async (e) => {
+                                                            e.preventDefault();
+                                                            e.stopPropagation();
+                                                            if (confirm('Remove this site from the order?')) {
+                                                              setRemovingSubmission(submission.id);
+                                                              try {
+                                                                await onRemoveSubmission(submission.id, group.id);
+                                                              } finally {
+                                                                setRemovingSubmission(null);
+                                                              }
+                                                            }
+                                                          }}
+                                                          title="Remove from order"
+                                                          disabled={removingSubmission === submission.id}
+                                                        >
+                                                          {removingSubmission === submission.id ? (
+                                                            <Loader2 className="h-3 w-3 animate-spin" />
+                                                          ) : (
+                                                            <Trash2 className="h-3 w-3" />
+                                                          )}
+                                                        </button>
+                                                      )}
+                                                    </>
+                                                  ) : (
                                                     <>
                                                       {submission.selectionPool === 'primary' ? (
-                                                        <span className="text-xs text-gray-500 italic">In use</span>
+                                                        <>
+                                                          <span className="text-xs text-gray-500 italic">In use</span>
+                                                          {/* Edit button for primary pool */}
+                                                          {permissions.canEditDomainAssignments && onEditSubmission && (
+                                                            <button
+                                                              className="text-xs bg-gray-100 text-gray-700 hover:bg-gray-200 p-1 rounded transition-colors"
+                                                              onClick={(e) => {
+                                                                e.preventDefault();
+                                                                e.stopPropagation();
+                                                                setEditingSubmission({
+                                                                  id: submission.id,
+                                                                  groupId: group.id,
+                                                                  targetPageUrl: submission.metadata?.targetPageUrl,
+                                                                  anchorText: submission.metadata?.anchorText,
+                                                                  specialInstructions: submission.metadata?.specialInstructions
+                                                                });
+                                                              }}
+                                                              title="Edit submission details"
+                                                            >
+                                                              <Edit2 className="h-3 w-3" />
+                                                            </button>
+                                                          )}
+                                                          {/* Remove button for primary pool - internal users only */}
+                                                          {userType === 'internal' && onRemoveSubmission && (
+                                                            <button
+                                                              className="text-xs bg-red-100 text-red-700 hover:bg-red-200 p-1 rounded transition-colors"
+                                                              onClick={async (e) => {
+                                                                e.preventDefault();
+                                                                e.stopPropagation();
+                                                                if (confirm('Remove this site from the order?')) {
+                                                                  setRemovingSubmission(submission.id);
+                                                                  try {
+                                                                    await onRemoveSubmission(submission.id, group.id);
+                                                                  } finally {
+                                                                    setRemovingSubmission(null);
+                                                                  }
+                                                                }
+                                                              }}
+                                                              title="Remove from order"
+                                                              disabled={removingSubmission === submission.id}
+                                                            >
+                                                              {removingSubmission === submission.id ? (
+                                                                <Loader2 className="h-3 w-3 animate-spin" />
+                                                              ) : (
+                                                                <Trash2 className="h-3 w-3" />
+                                                              )}
+                                                            </button>
+                                                          )}
+                                                        </>
                                                       ) : (
                                                         <>
                                                           {permissions.canSwitchPools && (
@@ -1120,7 +1236,8 @@ export default function OrderSiteReviewTable({
                                                               onClick={async (e) => {
                                                                 e.preventDefault();
                                                                 e.stopPropagation();
-                                                                await handleSwitchDomain(submission.id, group.id);
+                                                                // Pass the current displayed primary to be replaced
+                                                                await handleSwitchDomain(submission.id, group.id, displaySubmission?.id);
                                                               }}
                                                               disabled={!!assigningDomain}
                                                             >
@@ -1132,17 +1249,65 @@ export default function OrderSiteReviewTable({
                                                             </button>
                                                           )}
                                                           {permissions.canEditDomainAssignments && (
-                                                            <button 
-                                                              className="text-xs bg-green-100 text-green-700 hover:bg-green-200 px-2 py-1 rounded transition-colors"
-                                                              onClick={async (e) => {
-                                                                e.preventDefault();
-                                                                e.stopPropagation();
-                                                                // TODO: Implement add as new link functionality
-                                                                console.log('Add as new link:', submission.id);
-                                                              }}
-                                                            >
-                                                              Add as New Link
-                                                            </button>
+                                                            <>
+                                                              <button 
+                                                                className="text-xs bg-green-100 text-green-700 hover:bg-green-200 px-2 py-1 rounded transition-colors"
+                                                                onClick={async (e) => {
+                                                                  e.preventDefault();
+                                                                  e.stopPropagation();
+                                                                  // TODO: Implement add as new link functionality
+                                                                  console.log('Add as new link:', submission.id);
+                                                                }}
+                                                              >
+                                                                Add as New Link
+                                                              </button>
+                                                              {/* Edit button */}
+                                                              {onEditSubmission && (
+                                                                <button
+                                                                  className="text-xs bg-gray-100 text-gray-700 hover:bg-gray-200 p-1 rounded transition-colors"
+                                                                  onClick={(e) => {
+                                                                    e.preventDefault();
+                                                                    e.stopPropagation();
+                                                                    setEditingSubmission({
+                                                                      id: submission.id,
+                                                                      groupId: group.id,
+                                                                      targetPageUrl: submission.metadata?.targetPageUrl,
+                                                                      anchorText: submission.metadata?.anchorText,
+                                                                      specialInstructions: submission.metadata?.specialInstructions
+                                                                    });
+                                                                  }}
+                                                                  title="Edit submission details"
+                                                                >
+                                                                  <Edit2 className="h-3 w-3" />
+                                                                </button>
+                                                              )}
+                                                              {/* Remove button */}
+                                                              {onRemoveSubmission && (
+                                                                <button
+                                                                  className="text-xs bg-red-100 text-red-700 hover:bg-red-200 p-1 rounded transition-colors"
+                                                                  onClick={async (e) => {
+                                                                    e.preventDefault();
+                                                                    e.stopPropagation();
+                                                                    if (confirm('Remove this site from the order?')) {
+                                                                      setRemovingSubmission(submission.id);
+                                                                      try {
+                                                                        await onRemoveSubmission(submission.id, group.id);
+                                                                      } finally {
+                                                                        setRemovingSubmission(null);
+                                                                      }
+                                                                    }
+                                                                  }}
+                                                                  title="Remove from order"
+                                                                  disabled={removingSubmission === submission.id}
+                                                                >
+                                                                  {removingSubmission === submission.id ? (
+                                                                    <Loader2 className="h-3 w-3 animate-spin" />
+                                                                  ) : (
+                                                                    <Trash2 className="h-3 w-3" />
+                                                                  )}
+                                                                </button>
+                                                              )}
+                                                            </>
                                                           )}
                                                         </>
                                                       )}
@@ -1370,6 +1535,131 @@ export default function OrderSiteReviewTable({
               </div>
             );
           })()}
+        </div>
+      )}
+
+      {/* Edit Submission Modal */}
+      {editingSubmission && onEditSubmission && (
+        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
+          <div className="bg-white rounded-lg p-6 max-w-md w-full">
+            <h3 className="text-lg font-semibold mb-4">Edit Submission Details</h3>
+            
+            {/* Error message */}
+            {editError && (
+              <div className="mb-4 p-3 bg-red-50 border border-red-200 rounded-md">
+                <p className="text-sm text-red-600">{editError}</p>
+              </div>
+            )}
+            
+            <div className="space-y-4">
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-1">
+                  Target Page URL
+                </label>
+                <input
+                  type="text"
+                  className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-blue-500 focus:border-blue-500"
+                  value={editingSubmission.targetPageUrl || ''}
+                  onChange={(e) => setEditingSubmission({
+                    ...editingSubmission,
+                    targetPageUrl: e.target.value
+                  })}
+                  placeholder="Enter target page URL"
+                />
+              </div>
+
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-1">
+                  Anchor Text
+                </label>
+                <input
+                  type="text"
+                  className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-blue-500 focus:border-blue-500"
+                  value={editingSubmission.anchorText || ''}
+                  onChange={(e) => setEditingSubmission({
+                    ...editingSubmission,
+                    anchorText: e.target.value
+                  })}
+                  placeholder="Enter anchor text"
+                />
+              </div>
+
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-1">
+                  Special Instructions
+                </label>
+                <textarea
+                  className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-blue-500 focus:border-blue-500"
+                  rows={3}
+                  value={editingSubmission.specialInstructions || ''}
+                  onChange={(e) => setEditingSubmission({
+                    ...editingSubmission,
+                    specialInstructions: e.target.value
+                  })}
+                  placeholder="Enter any special instructions"
+                />
+              </div>
+            </div>
+
+            <div className="flex justify-end gap-3 mt-6">
+              <button
+                onClick={() => {
+                  setEditingSubmission(null);
+                  setEditError(null);
+                }}
+                className="px-4 py-2 text-gray-700 bg-gray-100 hover:bg-gray-200 rounded-md transition-colors"
+                disabled={savingEdit}
+              >
+                Cancel
+              </button>
+              <button
+                onClick={async () => {
+                  // Validation
+                  if (!editingSubmission.targetPageUrl?.trim()) {
+                    setEditError('Target page URL is required');
+                    return;
+                  }
+                  if (!editingSubmission.anchorText?.trim()) {
+                    setEditError('Anchor text is required');
+                    return;
+                  }
+                  
+                  setEditError(null);
+                  setSavingEdit(true);
+                  
+                  try {
+                    await onEditSubmission(
+                      editingSubmission.id,
+                      editingSubmission.groupId,
+                      {
+                        targetPageUrl: editingSubmission.targetPageUrl.trim(),
+                        anchorText: editingSubmission.anchorText.trim(),
+                        specialInstructions: editingSubmission.specialInstructions?.trim()
+                      }
+                    );
+                    setEditingSubmission(null);
+                    setEditError(null);
+                  } catch (error: any) {
+                    console.error('Error saving changes:', error);
+                    setEditError(error.message || 'Failed to save changes');
+                  } finally {
+                    setSavingEdit(false);
+                  }
+                }}
+                className="px-4 py-2 bg-blue-600 text-white hover:bg-blue-700 rounded-md transition-colors disabled:opacity-50 disabled:cursor-not-allowed flex items-center gap-2"
+                disabled={savingEdit}
+              >
+                {savingEdit ? (
+                  <>
+                    <Loader2 className="h-4 w-4 animate-spin" />
+                    Saving...
+                  </>
+                ) : (
+                  'Save Changes'
+                )}
+              </button>
+            </div>
+          </div>
         </div>
       )}
     </div>

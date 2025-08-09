@@ -3,9 +3,15 @@ import { OrderService } from '@/lib/services/orderService';
 import { AuthServiceServer } from '@/lib/auth-server';
 import { db } from '@/lib/db/connection';
 import { orders, orderItems } from '@/lib/db/orderSchema';
+import { orderLineItems, lineItemChanges } from '@/lib/db/orderLineItemSchema';
 import { bulkAnalysisDomains } from '@/lib/db/bulkAnalysisSchema';
 import { eq, inArray } from 'drizzle-orm';
 import { v4 as uuidv4 } from 'uuid';
+import { shouldUseLineItemsForNewOrders } from '@/lib/config/featureFlags';
+import { PricingService } from '@/lib/services/pricingService';
+
+// Service fee per link (in cents)
+const SERVICE_FEE_CENTS = 7900; // $79.00
 
 export async function GET(request: NextRequest) {
   try {
@@ -185,12 +191,24 @@ export async function POST(request: NextRequest) {
     let subtotalRetail = 0;
     let subtotalWholesale = 0;
 
-    // Calculate base prices
+    // Calculate base prices using actual website data
     for (const domain of selectedDomains) {
-      // For now, use a default DR of 50 since bulk analysis domains don't have DR
-      const dr = 50;
-      const retailPrice = dr >= 70 ? 59900 : dr >= 50 ? 49900 : dr >= 30 ? 39900 : 29900;
-      const wholesalePrice = Math.floor(retailPrice * 0.6);
+      // Get actual pricing from website table
+      const priceInfo = await PricingService.getDomainPrice(domain.domain);
+      
+      let wholesalePrice = 0;
+      let retailPrice = 0;
+      
+      if (priceInfo.found && priceInfo.wholesalePrice > 0) {
+        // Use actual website data
+        wholesalePrice = Math.floor(priceInfo.wholesalePrice * 100); // Convert to cents
+        retailPrice = wholesalePrice + SERVICE_FEE_CENTS; // Add $79 service fee
+      } else {
+        // Fallback for domains not in website table (keep existing logic temporarily)
+        const dr = 50;
+        retailPrice = dr >= 70 ? 59900 : dr >= 50 ? 49900 : dr >= 30 ? 39900 : 29900;
+        wholesalePrice = Math.floor(retailPrice * 0.6);
+      }
       
       subtotalRetail += retailPrice;
       subtotalWholesale += wholesalePrice;
@@ -241,8 +259,69 @@ export async function POST(request: NextRequest) {
       updatedAt: now,
     });
 
-    // Create order items
-    for (const domain of selectedDomains) {
+    // Check if we should use line items instead of orderItems
+    if (shouldUseLineItemsForNewOrders()) {
+      // Create line items (new system)
+      let displayOrder = 0;
+      const batchId = uuidv4();
+      
+      for (const domain of selectedDomains) {
+        // Get actual pricing from website table
+        const priceInfo = await PricingService.getDomainPrice(domain.domain);
+        
+        let wholesalePrice = 0;
+        let retailPrice = 0;
+        
+        if (priceInfo.found && priceInfo.wholesalePrice > 0) {
+          // Use actual website data
+          wholesalePrice = Math.floor(priceInfo.wholesalePrice * 100); // Convert to cents
+          retailPrice = wholesalePrice + SERVICE_FEE_CENTS; // Add $79 service fee
+        } else {
+          // Fallback for domains not in website table
+          const dr = 50;
+          retailPrice = dr >= 70 ? 59900 : dr >= 50 ? 49900 : dr >= 30 ? 39900 : 29900;
+          wholesalePrice = Math.floor(retailPrice * 0.6);
+        }
+        
+        const targetPageId = domainTargetPageMap.get(domain.id) || null;
+        const lineItemId = uuidv4();
+        
+        // Create line item
+        const lineItemData = {
+          orderId,
+          clientId,
+          addedBy: session.userId,
+          status: 'draft' as const,
+          estimatedPrice: retailPrice,
+          displayOrder: displayOrder,
+          ...(targetPageId ? { targetPageId } : {}),
+          ...(domain.id ? { assignedDomainId: domain.id } : {}),
+          ...(domain.domain ? { assignedDomain: domain.domain } : {})
+        };
+        
+        await db.insert(orderLineItems).values(lineItemData);
+        displayOrder++;
+
+        // Create change log entry
+        await db.insert(lineItemChanges).values({
+          lineItemId,
+          orderId,
+          changeType: 'created',
+          newValue: {
+            domain: domain.domain,
+            estimatedPrice: retailPrice,
+            source: 'order_creation'
+          },
+          changedBy: session.userId,
+          changeReason: 'Line item created during order creation',
+          batchId
+        });
+      }
+      
+      // Skip orderItems creation - we're using line items instead
+    } else {
+      // Create order items (legacy system)
+      for (const domain of selectedDomains) {
       // For now, use a default DR of 50 since bulk analysis domains don't have DR
       const dr = 50;
       const retailPrice = dr >= 70 ? 59900 : dr >= 50 ? 49900 : dr >= 30 ? 39900 : 29900;
@@ -251,21 +330,22 @@ export async function POST(request: NextRequest) {
       // Get the target page ID for this domain
       const targetPageId = domainTargetPageMap.get(domain.id) || null;
 
-      await db.insert(orderItems).values({
-        id: uuidv4(),
-        orderId,
-        domainId: domain.id,
-        targetPageId, // Include target page mapping
-        domain: domain.domain,
-        domainRating: dr,
-        traffic: null,
-        retailPrice,
-        wholesalePrice,
-        status: 'pending',
-        createdAt: now,
-        updatedAt: now,
-      });
-    }
+        await db.insert(orderItems).values({
+          id: uuidv4(),
+          orderId,
+          domainId: domain.id,
+          targetPageId, // Include target page mapping
+          domain: domain.domain,
+          domainRating: dr,
+          traffic: null,
+          retailPrice,
+          wholesalePrice,
+          status: 'pending',
+          createdAt: now,
+          updatedAt: now,
+        });
+      }
+    } // End of else block for legacy orderItems
 
     // Fetch the created order with items
     const createdOrder = await db.query.orders.findFirst({

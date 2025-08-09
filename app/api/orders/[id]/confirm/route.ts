@@ -10,6 +10,7 @@ import { AuthServiceServer } from '@/lib/auth-server';
 import { generateKeywords, formatKeywordsForStorage } from '@/lib/services/keywordGenerationService';
 import { generateDescription } from '@/lib/services/descriptionGenerationService';
 import { ClientService } from '@/lib/db/clientService';
+import { createOrderBenchmark } from '@/lib/orders/benchmarkUtils';
 
 export async function POST(
   request: NextRequest,
@@ -202,13 +203,24 @@ export async function POST(
         })
         .where(eq(orders.id, orderId))
         .returning();
+      
+      // Create benchmark snapshot of the confirmed order
+      let benchmark;
+      try {
+        benchmark = await createOrderBenchmark(orderId, session.userId, 'order_confirmed');
+        console.log(`✅ Created benchmark for order ${orderId}`);
+      } catch (benchmarkError) {
+        console.error('Failed to create benchmark:', benchmarkError);
+        // Don't fail the confirmation if benchmark creation fails
+      }
         
       return NextResponse.json({
         success: true,
         order: updatedOrder,
         projectsCreated: createdProjects.length,
         projects: createdProjects,
-        projectTargetPages // Include this for frontend to use when creating domains
+        projectTargetPages, // Include this for frontend to use when creating domains
+        benchmarkCreated: !!benchmark
       });
     });
     

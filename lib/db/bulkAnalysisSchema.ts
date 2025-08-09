@@ -71,6 +71,13 @@ export const bulkAnalysisDomains = pgTable('bulk_analysis_domains', {
   // Project support - required going forward
   projectId: uuid('project_id').references(() => bulkAnalysisProjects.id, { onDelete: 'cascade' }),
   projectAddedAt: timestamp('project_added_at'),
+  // Duplicate tracking fields
+  duplicateOf: uuid('duplicate_of'),
+  duplicateResolution: varchar('duplicate_resolution', { length: 50 }),
+  duplicateResolvedBy: uuid('duplicate_resolved_by').references(() => users.id),
+  duplicateResolvedAt: timestamp('duplicate_resolved_at'),
+  originalProjectId: uuid('original_project_id').references(() => bulkAnalysisProjects.id),
+  resolutionMetadata: jsonb('resolution_metadata'),
   createdAt: timestamp('created_at').notNull(),
   updatedAt: timestamp('updated_at').notNull(),
 }, (table) => {

@@ -5,28 +5,105 @@ import { useParams, useRouter } from 'next/navigation';
 import Link from 'next/link';
 import AuthWrapper from '@/components/AuthWrapper';
 import Header from '@/components/Header';
-import OrderSiteReviewTable from '@/components/orders/OrderSiteReviewTable';
+import OrderSiteReviewTableV2 from '@/components/orders/OrderSiteReviewTableV2';
+import BenchmarkDisplay from '@/components/orders/BenchmarkDisplay';
 import OrderDetailsTable from '@/components/orders/OrderDetailsTable';
 import OrderProgressSteps, { getStateDisplay } from '@/components/orders/OrderProgressSteps';
+import TransferOrderModal from '@/components/orders/TransferOrderModal';
+import ShareOrderButton from '@/components/orders/ShareOrderButton';
 import { AuthService } from '@/lib/auth';
 import { formatCurrency } from '@/lib/utils/formatting';
+import { isLineItemsSystemEnabled } from '@/lib/config/featureFlags';
 import { 
   ArrowLeft, Loader2, CheckCircle, Clock, Search, Users, FileText, 
   RefreshCw, ExternalLink, Globe, LinkIcon, Eye, Edit, Package,
   Target, ChevronRight, AlertCircle, Activity, Building, User, DollarSign,
-  Download, Share2, XCircle, CreditCard, Trash2
+  Download, Share2, XCircle, CreditCard, Trash2, ArrowRightLeft
 } from 'lucide-react';
 
 // Service fee constant - $79 per link for SEO content package
 const SERVICE_FEE_CENTS = 7900;
 
+// User-friendly status messaging
+const getStatusMessage = (status: string, state?: string) => {
+  if (status === 'confirmed') {
+    if (state === 'analyzing') {
+      return {
+        title: "🔍 Finding Perfect Sites for You",
+        description: "Our team is analyzing your requirements to identify high-quality sites that match your criteria.",
+        timeline: "Typically takes 24-48 hours",
+        nextStep: "You'll receive an email when sites are ready for review",
+        userAction: "none",
+        actionText: "No action needed - we're working on it!"
+      };
+    } else if (state === 'sites_ready' || state === 'client_reviewing') {
+      return {
+        title: "📋 Sites Ready for Your Review",
+        description: "We've found sites that match your criteria. Review and approve the ones you'd like to use.",
+        timeline: "Please review within 5 business days",
+        nextStep: "Approve sites to receive your final invoice",
+        userAction: "required",
+        actionText: "Your review is needed"
+      };
+    } else if (state === 'payment_pending') {
+      return {
+        title: "💳 Invoice Ready for Payment",
+        description: "Your sites have been approved and your invoice is ready. Pay to start content creation.",
+        timeline: "Content creation begins after payment",
+        nextStep: "Our team will create and publish your content",
+        userAction: "required",
+        actionText: "Payment required"
+      };
+    }
+  } else if (status === 'paid' || status === 'in_progress') {
+    return {
+      title: "✍️ Creating Your Content",
+      description: "Payment received! Our team is now creating high-quality guest posts and getting them published.",
+      timeline: "Content creation and publishing takes 2-4 weeks",
+      nextStep: "You'll receive links as they are published",
+      userAction: "none",
+      actionText: "Content creation in progress"
+    };
+  } else if (status === 'completed') {
+    return {
+      title: "🎉 Order Complete!",
+      description: "All your guest posts have been successfully created and published.",
+      timeline: "Complete",
+      nextStep: "Review your published links below",
+      userAction: "none",
+      actionText: "All done!"
+    };
+  } else if (status === 'draft') {
+    return {
+      title: "📝 Draft Order",
+      description: "Your order is still being configured and hasn't been submitted yet.",
+      timeline: "No timeline - still in draft",
+      nextStep: "Complete your order configuration and submit",
+      userAction: "required",
+      actionText: "Finish configuring your order"
+    };
+  }
+  
+  // Fallback
+  return {
+    title: `Order ${status}`,
+    description: "Order is being processed",
+    timeline: "Timeline varies by status",
+    nextStep: "Check back later for updates",
+    userAction: "none",
+    actionText: "Processing"
+  };
+};
+
 interface LineItem {
   id: string;
+  orderId: string;
   clientId: string;
   clientName: string;
   targetPageId?: string;
   targetPageUrl?: string;
   anchorText?: string;
+  status: string;
   price: number;
   wholesalePrice?: number;
   isEstimate?: boolean;
@@ -103,6 +180,8 @@ interface OrderDetail {
   rushFee?: number;
   internalNotes?: string;
   accountNotes?: string;
+  shareToken?: string;
+  shareExpiresAt?: string;
   createdAt: string;
   updatedAt: string;
   approvedAt?: string;
@@ -123,6 +202,10 @@ export default function OrderDetailPage() {
   const [siteSubmissions, setSiteSubmissions] = useState<Record<string, SiteSubmission[]>>({});
   const [loadingSubmissions, setLoadingSubmissions] = useState(false);
   const [expandedSubmission, setExpandedSubmission] = useState<string | null>(null);
+  const [showTransferModal, setShowTransferModal] = useState(false);
+  const [benchmarkData, setBenchmarkData] = useState<any>(null);
+  const [comparisonData, setComparisonData] = useState<any>(null);
+  const [showBenchmarkHistory, setShowBenchmarkHistory] = useState(false);
 
   useEffect(() => {
     loadUser();
@@ -142,7 +225,12 @@ export default function OrderDetailPage() {
     if (shouldLoadSubmissions) {
       loadSiteSubmissions();
     }
-  }, [order?.state, order?.orderGroups, user?.userType]);
+    
+    // Load benchmark for orders that have been submitted (includes pending_confirmation)
+    if (order?.status === 'pending_confirmation' || order?.status === 'confirmed' || order?.status === 'paid' || order?.status === 'in_progress' || order?.status === 'completed') {
+      loadBenchmarkData();
+    }
+  }, [order?.state, order?.orderGroups, order?.status, user?.userType]);
 
   const loadUser = async () => {
     const currentUser = await AuthService.getCurrentUser();
@@ -166,19 +254,45 @@ export default function OrderDetailPage() {
       const data = await response.json();
       setOrder(data);
       
-      // Transform orderGroups into lineItems for the table
-      if (data.orderGroups && data.orderGroups.length > 0) {
+      // Load line items from the line items system if available
+      if (isLineItemsSystemEnabled() && data.lineItems && data.lineItems.length > 0) {
+        console.log('[LOAD_ORDER] Loading from line items system');
+        
+        const items: LineItem[] = data.lineItems.map((dbItem: any) => ({
+          id: dbItem.id, // Use actual database ID
+          clientId: dbItem.clientId,
+          clientName: dbItem.client?.name || 'Unknown Client',
+          targetPageId: dbItem.targetPageId,
+          targetPageUrl: dbItem.targetPageUrl,
+          anchorText: dbItem.anchorText,
+          price: dbItem.approvedPrice || dbItem.estimatedPrice || 0,
+          wholesalePrice: dbItem.metadata?.wholesalePrice || (dbItem.estimatedPrice - SERVICE_FEE_CENTS),
+          isEstimate: data.status === 'draft' || data.status === 'pending_confirmation',
+          guestPostSite: dbItem.assignedDomain || '',
+          draftUrl: '',
+          publishedUrl: dbItem.publishedUrl || '',
+          bulkAnalysisId: dbItem.metadata?.bulkAnalysisId,
+          workflowId: dbItem.metadata?.workflowId
+        }));
+        
+        setLineItems(items);
+      }
+      // Fallback to transform orderGroups into lineItems for the table (legacy system)
+      else if (data.orderGroups && data.orderGroups.length > 0) {
+        console.log('[LOAD_ORDER] Loading from orderGroups system (fallback)');
         const items: LineItem[] = [];
         data.orderGroups.forEach((group: OrderGroup) => {
           // Create a line item for each link in the group
           for (let i = 0; i < group.linkCount; i++) {
             items.push({
               id: `${group.id}-${i}`,
+              orderId: params.id as string,
               clientId: group.clientId,
               clientName: group.client?.name || 'Unknown Client',
               targetPageUrl: group.targetPages?.[i]?.url || '',
               targetPageId: group.targetPages?.[i]?.pageId,
               anchorText: group.anchorTexts?.[i] || '',
+              status: 'draft',
               price: group.totalPrice || group.estimatedPrice || 0,
               wholesalePrice: group.wholesalePrice || (group.totalPrice ? group.totalPrice - SERVICE_FEE_CENTS * group.linkCount : 0),
               isEstimate: data.status === 'draft' || data.status === 'pending_confirmation',
@@ -198,6 +312,50 @@ export default function OrderDetailPage() {
     }
   };
   
+  const handleEditSubmission = async (submissionId: string, groupId: string, updates: any) => {
+    try {
+      const response = await fetch(`/api/orders/${params.id}/groups/${groupId}/submissions/${submissionId}/edit`, {
+        method: 'PATCH',
+        headers: { 'Content-Type': 'application/json' },
+        credentials: 'include',
+        body: JSON.stringify(updates)
+      });
+      
+      if (!response.ok) {
+        const errorData = await response.json().catch(() => ({ error: 'Unknown error' }));
+        throw new Error(errorData.error || 'Failed to edit submission');
+      }
+      
+      await loadSiteSubmissions();
+      alert('Submission updated successfully');
+      
+    } catch (error: any) {
+      console.error('Error editing submission:', error);
+      alert(error.message || 'Failed to edit submission');
+    }
+  };
+
+  const handleRemoveSubmission = async (submissionId: string, groupId: string) => {
+    try {
+      const response = await fetch(`/api/orders/${params.id}/groups/${groupId}/submissions/${submissionId}/edit`, {
+        method: 'DELETE',
+        credentials: 'include'
+      });
+      
+      if (!response.ok) {
+        const errorData = await response.json().catch(() => ({ error: 'Unknown error' }));
+        throw new Error(errorData.error || 'Failed to remove submission');
+      }
+      
+      await loadSiteSubmissions();
+      alert('Submission removed successfully');
+      
+    } catch (error: any) {
+      console.error('Error removing submission:', error);
+      alert(error.message || 'Failed to remove submission');
+    }
+  };
+
   const loadSiteSubmissions = async () => {
     if (!order?.orderGroups) return;
     
@@ -265,11 +423,56 @@ export default function OrderDetailPage() {
     }
   };
 
+  const loadBenchmarkData = async () => {
+    try {
+      const response = await fetch(`/api/orders/${params.id}/benchmark?comparison=true`);
+      if (response.ok) {
+        const data = await response.json();
+        setBenchmarkData(data.benchmark);
+        setComparisonData(data.comparison);
+      }
+    } catch (error) {
+      console.error('Failed to load benchmark data:', error);
+    }
+  };
+
+  const handleEditBenchmark = async (updatedBenchmarkData: any) => {
+    try {
+      const response = await fetch(`/api/orders/${params.id}/benchmark`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ 
+          action: 'create', 
+          reason: 'client_modified',
+          benchmarkData: updatedBenchmarkData 
+        })
+      });
+      
+      if (response.ok) {
+        const data = await response.json();
+        setBenchmarkData(data.benchmark);
+        await loadBenchmarkData(); // Reload to get comparison
+        alert('Your wishlist has been updated successfully');
+      }
+    } catch (error) {
+      console.error('Failed to update benchmark:', error);
+      alert('Failed to update wishlist');
+    }
+  };
+
+  const handleViewBenchmarkHistory = () => {
+    setShowBenchmarkHistory(true);
+    // TODO: Implement history modal/sidebar
+  };
+
   const handleRefresh = async () => {
     setRefreshing(true);
     await loadOrder();
-    if (order?.state === 'sites_ready' || order?.state === 'site_review' || order?.state === 'client_reviewing' || order?.state === 'payment_pending' || order?.state === 'payment_received' || order?.state === 'workflows_generated' || order?.state === 'in_progress') {
+    if (order?.state === 'sites_ready' || order?.state === 'client_reviewing' || order?.state === 'payment_pending' || order?.state === 'payment_received' || order?.state === 'workflows_generated' || order?.state === 'in_progress') {
       await loadSiteSubmissions();
+    }
+    if (order?.status === 'confirmed' || order?.status === 'paid' || order?.status === 'in_progress' || order?.status === 'completed') {
+      await loadBenchmarkData();
     }
     setTimeout(() => setRefreshing(false), 1000);
   };
@@ -325,7 +528,7 @@ export default function OrderDetailPage() {
   // Calculate dynamic column count for progressive disclosure
   const getColumnCount = () => {
     let count = 3; // Base columns: Client/Target, Anchor, Price
-    if (order.state === 'site_review' || order.state === 'in_progress' || order.status === 'completed') count++;
+    if (order.state === 'in_progress' || order.status === 'completed') count++;
     if (order.state === 'in_progress' || order.status === 'completed') count++;
     if (order.status === 'completed') count++;
     if (order.status === 'confirmed' && order.state === 'analyzing') count++;
@@ -373,13 +576,26 @@ export default function OrderDetailPage() {
                   </Link>
                 )}
                 {user?.userType === 'internal' && (
-                  <Link
-                    href={`/orders/${order.id}/internal`}
-                    className="inline-flex items-center px-4 py-2 bg-purple-600 text-white rounded-md hover:bg-purple-700"
-                  >
-                    <Activity className="h-4 w-4 mr-2" />
-                    Manage Order
-                  </Link>
+                  <>
+                    <ShareOrderButton 
+                      orderId={order.id}
+                      currentShareToken={order.shareToken}
+                    />
+                    <button
+                      onClick={() => setShowTransferModal(true)}
+                      className="inline-flex items-center px-3 py-2 border border-gray-300 text-gray-700 rounded-md hover:bg-gray-50"
+                    >
+                      <ArrowRightLeft className="h-4 w-4 mr-2" />
+                      Transfer
+                    </button>
+                    <Link
+                      href={`/orders/${order.id}/internal`}
+                      className="inline-flex items-center px-4 py-2 bg-purple-600 text-white rounded-md hover:bg-purple-700"
+                    >
+                      <Activity className="h-4 w-4 mr-2" />
+                      Manage Order
+                    </Link>
+                  </>
                 )}
                 {/* Admin delete button */}
                 {(order.status === 'draft' || (user?.userType === 'internal' && user?.role === 'admin')) && (
@@ -427,6 +643,17 @@ export default function OrderDetailPage() {
             </div>
           </div>
 
+          {/* Benchmark Display - Show original request */}
+          {benchmarkData && (
+            <div className="mb-6">
+              <BenchmarkDisplay 
+                benchmark={benchmarkData}
+                orderId={order.id}
+                userType={user?.userType || 'internal'}
+              />
+            </div>
+          )}
+
           {/* Three Column Layout */}
           <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
             {/* Left Column - Progress Steps */}
@@ -463,7 +690,7 @@ export default function OrderDetailPage() {
                                     method: 'POST',
                                     headers: { 'Content-Type': 'application/json' },
                                     body: JSON.stringify({ 
-                                      state: 'site_review',
+                                      state: 'sites_ready',
                                       notes: 'Sites ready for client review'
                                     })
                                   });
@@ -487,7 +714,7 @@ export default function OrderDetailPage() {
                           </button>
                         </div>
                       )}
-                      {(order.state === 'site_review' || order.state === 'client_reviewing') && (
+                      {(order.state === 'client_reviewing') && (
                         <div className="space-y-2">
                           <Link
                             href={`/orders/${order.id}/review`}
@@ -507,13 +734,13 @@ export default function OrderDetailPage() {
                         <div className="space-y-2">
                           <p className="text-xs text-gray-500 mb-1">View Articles:</p>
                           {lineItems.filter(item => item.workflowId).map((item, idx) => (
-                            <Link
+                            <div
                               key={idx}
-                              href={`/workflows/${item.workflowId}`}
-                              className="block w-full px-3 py-2 bg-green-600 text-white text-sm rounded-md hover:bg-green-700 text-center truncate"
+                              className="block w-full px-3 py-2 bg-green-100 text-green-800 text-sm rounded-md text-center truncate border border-green-200"
                             >
-                              {item.clientName} - {item.targetPageUrl || 'Article'}
-                            </Link>
+                              <div className="font-medium">{item.clientName} - {item.targetPageUrl || 'Article'}</div>
+                              <div className="text-xs text-green-600 mt-1">Article Completed</div>
+                            </div>
                           ))}
                         </div>
                       )}
@@ -538,7 +765,7 @@ export default function OrderDetailPage() {
                       {order.status === 'pending_confirmation' && user?.userType === 'internal' && (
                         <div className="space-y-2">
                           <Link
-                            href={`/orders/${order.id}/confirm`}
+                            href={`/orders/${order.id}/internal`}
                             className="block w-full px-4 py-3 bg-orange-600 text-white text-sm rounded-md hover:bg-orange-700 text-center font-medium"
                           >
                             <CheckCircle className="w-4 h-4 mx-auto mb-1" />
@@ -569,7 +796,7 @@ export default function OrderDetailPage() {
                 )}
                 
                 {/* Status Message for External Users when sites are ready */}
-                {user?.userType !== 'internal' && (order.state === 'sites_ready' || order.state === 'site_review' || order.state === 'client_reviewing') && (
+                {user?.userType !== 'internal' && (order.state === 'sites_ready' || order.state === 'client_reviewing') && (
                   <div className="mt-6 pt-6 border-t">
                     <div className="bg-purple-50 border border-purple-200 rounded-lg p-4">
                       <div className="flex items-start justify-between gap-3">
@@ -619,7 +846,7 @@ export default function OrderDetailPage() {
             {/* Middle/Right Columns - Order Details Table */}
             <div className="lg:col-span-2">
               {/* Site Review Summary Card */}
-              {order.state === 'site_review' && Object.keys(siteSubmissions).length > 0 && (
+              {order.state === 'sites_ready' && Object.keys(siteSubmissions).length > 0 && (
                 <div className="bg-purple-50 border border-purple-200 rounded-lg p-6 mb-6">
                   <div className="flex items-start justify-between">
                     <div>
@@ -656,41 +883,48 @@ export default function OrderDetailPage() {
                 </div>
               )}
               
-              {/* Use shared component for site review, regular table otherwise */}
-              {order.state === 'site_review' && order.orderGroups ? (
-                <OrderSiteReviewTable
+              {/* Use shared component for site review and other states with site data */}
+              {(order.state === 'sites_ready' || order.state === 'client_reviewing' || 
+                order.state === 'payment_pending' || order.state === 'payment_received' || 
+                order.state === 'workflows_generated' || order.state === 'in_progress' || 
+                order.status === 'completed') && (order.orderGroups || lineItems.length > 0) ? (
+                <OrderSiteReviewTableV2
                   orderId={params.id as string}
-                  orderGroups={order.orderGroups}
+                  orderGroups={order.orderGroups || []}
+                  lineItems={lineItems}
                   siteSubmissions={(() => {
-                    // Transform siteSubmissions to match the expected interface
+                    // Transform siteSubmissions to match OrderSiteReviewTableV2's expected interface
                     const transformed: Record<string, any[]> = {};
                     Object.entries(siteSubmissions).forEach(([groupId, submissions]) => {
                       transformed[groupId] = submissions.map(sub => ({
                         ...sub,
-                        domain: {
+                        // Transform domain from string to expected object structure
+                        domain: typeof sub.domain === 'string' ? {
                           id: sub.domainId,
-                          domain: sub.domain,
-                          qualificationStatus: undefined,
-                          notes: undefined
-                        }
+                          domain: sub.domain
+                          // Leave other properties undefined to avoid the React error
+                        } : sub.domain  // If already an object, keep it
                       }));
                     });
                     return transformed;
                   })()}
                   userType={user?.userType || 'account'}
                   permissions={{
-                    canRebalancePools: false,
-                    canAssignTargetPages: false,
-                    canSwitchPools: false,
+                    canChangeStatus: true,  // External users CAN organize sites
+                    canAssignTargetPages: true,  // External users CAN modify target pages
                     canApproveReject: true,
                     canGenerateWorkflows: false,
                     canMarkSitesReady: false,
                     canViewInternalTools: false,
-                    canViewPricing: false,
-                    canEditDomainAssignments: false
+                    canViewPricing: true,
+                    canEditDomainAssignments: true  // External users CAN edit domain details
                   }}
-                  workflowStage={order.state || 'site_review'}
+                  workflowStage={order.state || 'sites_ready'}
+                  onEditSubmission={handleEditSubmission}
+                  onRemoveSubmission={handleRemoveSubmission}
                   onRefresh={loadOrder}
+                  useLineItems={isLineItemsSystemEnabled()}
+                  useStatusSystem={true}  // External users CAN use status system
                 />
               ) : (
                 <>
@@ -733,7 +967,7 @@ export default function OrderDetailPage() {
                     )}
                     
                     {/* Sites Ready (when applicable) */}
-                    {(order.state === 'sites_ready' || order.state === 'site_review' || order.state === 'client_reviewing') && (
+                    {(order.state === 'sites_ready' || order.state === 'client_reviewing') && (
                       <div className="flex items-start gap-3">
                         <Search className="h-4 w-4 text-blue-500 mt-0.5" />
                         <div>
@@ -801,7 +1035,7 @@ export default function OrderDetailPage() {
                     )}
                     
                     {/* Finding Sites State */}
-                    {(order.state === 'analyzing' || order.state === 'finding_sites') && (
+                    {order.state === 'analyzing' && (
                       <div className="flex items-start gap-3">
                         <div className="w-2 h-2 bg-blue-500 rounded-full mt-1.5 animate-pulse" />
                         <div>
@@ -812,7 +1046,7 @@ export default function OrderDetailPage() {
                     )}
                     
                     {/* Sites Ready for Review */}
-                    {(order.state === 'sites_ready' || order.state === 'site_review' || order.state === 'client_reviewing') && (
+                    {(order.state === 'sites_ready' || order.state === 'client_reviewing') && (
                       <div className="flex items-start gap-3">
                         <div className="w-2 h-2 bg-purple-500 rounded-full mt-1.5" />
                         <div>
@@ -843,12 +1077,25 @@ export default function OrderDetailPage() {
                     
                     {/* Payment Pending */}
                     {order.state === 'payment_pending' && (
-                      <div className="flex items-start gap-3">
-                        <div className="w-2 h-2 bg-orange-500 rounded-full mt-1.5 animate-pulse" />
-                        <div>
-                          <p className="text-sm font-medium text-gray-900">Awaiting Payment</p>
-                          <p className="text-xs text-gray-500">Invoice ready - review and proceed with payment</p>
+                      <div className="space-y-3">
+                        <div className="flex items-start gap-3">
+                          <div className="w-2 h-2 bg-orange-500 rounded-full mt-1.5 animate-pulse" />
+                          <div>
+                            <p className="text-sm font-medium text-gray-900">Awaiting Payment</p>
+                            <p className="text-xs text-gray-500">Invoice ready - review and proceed with payment</p>
+                          </div>
                         </div>
+                        {!order.paidAt && (
+                          <a
+                            href={`/orders/${order.id}/payment`}
+                            className="inline-flex items-center gap-2 bg-orange-600 text-white px-4 py-2 rounded-lg hover:bg-orange-700 transition-colors text-sm font-medium"
+                          >
+                            <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M3 10h18M7 15h1m4 0h1m-7 4h12a3 3 0 003-3V8a3 3 0 00-3-3H6a3 3 0 00-3 3v8a3 3 0 003 3z" />
+                            </svg>
+                            Pay Invoice ${((order.totalPrice || 0) / 100).toFixed(2)}
+                          </a>
+                        )}
                       </div>
                     )}
                     
@@ -981,6 +1228,18 @@ export default function OrderDetailPage() {
           </div>
         </div>
       </div>
+      
+      {/* Transfer Order Modal */}
+      <TransferOrderModal
+        isOpen={showTransferModal}
+        onClose={() => setShowTransferModal(false)}
+        orderId={order.id}
+        currentAccountName={order.account?.companyName || order.account?.contactName || order.account?.email}
+        onSuccess={() => {
+          setShowTransferModal(false);
+          loadOrder(); // Reload the order to show new account
+        }}
+      />
     </AuthWrapper>
   );
 }

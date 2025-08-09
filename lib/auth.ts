@@ -149,7 +149,11 @@ export class AuthService {
       if (!response.ok) return null;
       
       const { user } = await response.json();
-      return user;
+      // Ensure userType is set for internal users
+      return {
+        ...user,
+        userType: 'internal'
+      };
     } catch (error) {
       console.error('Error getting current user:', error);
       return null;

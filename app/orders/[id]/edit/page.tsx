@@ -1,12 +1,13 @@
 'use client';
 
-import { useState, useEffect, useCallback, useRef } from 'react';
+import { useState, useEffect, useCallback } from 'react';
 import { useRouter } from 'next/navigation';
 import Link from 'next/link';
 import AuthWrapper from '@/components/AuthWrapper';
 import Header from '@/components/Header';
 import { AuthService } from '@/lib/auth';
 import { formatCurrency } from '@/lib/utils/formatting';
+import { isLineItemsSystemEnabled } from '@/lib/config/featureFlags';
 import CreateClientModal from '@/components/ui/CreateClientModal';
 import CreateTargetPageModal from '@/components/ui/CreateTargetPageModal';
 import OrderProgressView from '@/components/orders/OrderProgressView';
@@ -15,23 +16,11 @@ import {
   Building, Package, Plus, X, ChevronDown, ChevronUp, ChevronRight,
   Search, Target, Link as LinkIcon, Type, CheckCircle,
   AlertCircle, Copy, Trash2, User, Globe, ExternalLink,
-  ArrowLeft, Loader2
+  ArrowLeft, Loader2, Clock, Users, CreditCard
 } from 'lucide-react';
 
 // Service fee constant - $79 per link
 const SERVICE_FEE_CENTS = 7900;
-
-// Debounce utility
-function debounce<T extends (...args: any[]) => any>(
-  func: T,
-  wait: number
-): (...args: Parameters<T>) => void {
-  let timeout: NodeJS.Timeout;
-  return (...args: Parameters<T>) => {
-    clearTimeout(timeout);
-    timeout = setTimeout(() => func(...args), wait);
-  };
-}
 
 interface OrderLineItem {
   id: string;
@@ -79,8 +68,6 @@ interface TargetPageWithMetadata {
   keywords?: string; // Comma-separated from database
   keywordArray?: string[]; // Parsed for display
   description?: string;
-  dr: number; // TODO: Get from actual SEO data
-  traffic: number; // TODO: Get from actual SEO data
   clientId: string;
   clientName: string;
   usageCount: number;
@@ -319,8 +306,48 @@ export default function EditOrderPage({ params }: { params: Promise<{ id: string
                      new Date(order.createdAt).getTime() > Date.now() - 60000; // Created within last minute
         setIsNewOrder(isNew);
         
-        // Load order groups into line items
-        if (order.orderGroups && order.orderGroups.length > 0) {
+        // Load line items from the line items system if available
+        if (isLineItemsSystemEnabled() && order.lineItems && order.lineItems.length > 0) {
+          console.log('[LOAD_ORDER] Loading from line items system');
+          
+          const newLineItems: OrderLineItem[] = [];
+          const newSelectedClients = new Map<string, { selected: boolean; linkCount: number }>();
+          
+          // Track clients and their line item counts
+          const clientCounts = new Map<string, number>();
+          
+          order.lineItems.forEach((dbItem: any) => {
+            // Create UI line item from database line item
+            newLineItems.push({
+              id: dbItem.id, // Use actual database ID
+              clientId: dbItem.clientId,
+              clientName: dbItem.client?.name || 'Unknown Client',
+              targetPageId: dbItem.targetPageId,
+              targetPageUrl: dbItem.targetPageUrl,
+              anchorText: dbItem.anchorText,
+              wholesalePrice: dbItem.metadata?.wholesalePrice || (dbItem.estimatedPrice - SERVICE_FEE_CENTS),
+              price: dbItem.approvedPrice || dbItem.estimatedPrice || (getCurrentWholesaleEstimate() + SERVICE_FEE_CENTS)
+            });
+            
+            // Count line items per client
+            const count = clientCounts.get(dbItem.clientId) || 0;
+            clientCounts.set(dbItem.clientId, count + 1);
+          });
+          
+          // Set selected clients based on line items
+          clientCounts.forEach((count, clientId) => {
+            newSelectedClients.set(clientId, { 
+              selected: true, 
+              linkCount: count 
+            });
+          });
+          
+          setLineItems(newLineItems);
+          setSelectedClients(newSelectedClients);
+        }
+        // Fallback to loading from order groups (legacy system)
+        else if (order.orderGroups && order.orderGroups.length > 0) {
+          console.log('[LOAD_ORDER] Loading from orderGroups system (fallback)');
           const newLineItems: OrderLineItem[] = [];
           const newSelectedClients = new Map<string, { selected: boolean; linkCount: number }>();
           
@@ -460,8 +487,6 @@ export default function EditOrderPage({ params }: { params: Promise<{ id: string
               keywords: page.keywords,
               keywordArray,
               description: page.description,
-              dr: 70, // TODO: Get real metrics from SEO tools
-              traffic: 10000, // TODO: Get real metrics from SEO tools
               clientId,
               clientName: client.name,
               usageCount,
@@ -473,8 +498,8 @@ export default function EditOrderPage({ params }: { params: Promise<{ id: string
       }
     });
     
-    // Sort by domain rating (descending) only - don't re-sort by usage to prevent jumping
-    targets.sort((a, b) => b.dr - a.dr);
+    // Sort by usage count (descending) only - don't re-sort by DR since we don't have that data for client pages
+    targets.sort((a, b) => b.usageCount - a.usageCount);
     
     setAvailableTargets(targets);
   }, [selectedClients, clients, lineItems]);
@@ -557,6 +582,9 @@ export default function EditOrderPage({ params }: { params: Promise<{ id: string
           preferencesCategories: orderPreferences.categories,
           preferencesTypes: orderPreferences.types,
           estimatedPricePerLink: estimatedPricePerLink,
+          estimatedBudgetMin: orderPreferences.estimatedBudgetMin,
+          estimatedBudgetMax: orderPreferences.estimatedBudgetMax,
+          estimatorSnapshot: orderPreferences.estimatorSnapshot,
         }),
         
         // Groups for the new order structure - API expects 'orderGroups'
@@ -593,22 +621,112 @@ export default function EditOrderPage({ params }: { params: Promise<{ id: string
       console.log('[AUTO_SAVE] Order data being sent:', orderData);
       
       if (draftOrderId) {
-        // Update existing order
-        const response = await fetch(`/api/orders/${draftOrderId}`, {
-          method: 'PUT',
-          headers: { 'Content-Type': 'application/json' },
-          credentials: 'include',
-          body: JSON.stringify(orderData)
-        });
-        
-        if (response.ok) {
-          console.log('[AUTO_SAVE] Successfully saved order');
-          setSaveStatus('saved');
-          setLastSaved(new Date());
+        // Check if line items system is enabled
+        if (isLineItemsSystemEnabled() && lineItems.length > 0) {
+          console.log('[AUTO_SAVE] Using line items system');
+          
+          // Update order with basic info first
+          const orderUpdateResponse = await fetch(`/api/orders/${draftOrderId}`, {
+            method: 'PUT',
+            headers: { 'Content-Type': 'application/json' },
+            credentials: 'include',
+            body: JSON.stringify({
+              ...accountInfo,
+              subtotal: subtotal,
+              totalPrice: total,
+              totalWholesale: lineItems.reduce((sum, item) => 
+                sum + (item.wholesalePrice || (item.price - SERVICE_FEE_CENTS)), 0
+              ),
+              profitMargin: lineItems.length * SERVICE_FEE_CENTS,
+              // Don't send orderGroups for line items system
+              orderGroups: []
+            })
+          });
+          
+          if (orderUpdateResponse.ok) {
+            // Now save line items via the line items API
+            const lineItemsData = lineItems.map(item => ({
+              clientId: item.clientId,
+              targetPageId: item.targetPageId,
+              targetPageUrl: item.targetPageUrl,
+              anchorText: item.anchorText,
+              estimatedPrice: item.price,
+              metadata: {
+                wholesalePrice: item.wholesalePrice || (item.price - SERVICE_FEE_CENTS),
+                serviceFee: SERVICE_FEE_CENTS,
+                clientName: item.clientName
+              }
+            }));
+            
+            // First get existing line items to clear them
+            const existingItemsResponse = await fetch(`/api/orders/${draftOrderId}/line-items`, {
+              credentials: 'include'
+            });
+            
+            let existingItems = [];
+            if (existingItemsResponse.ok) {
+              const existingData = await existingItemsResponse.json();
+              existingItems = existingData.lineItems || [];
+            }
+            
+            // Clear existing line items if any exist
+            if (existingItems.length > 0) {
+              const existingItemIds = existingItems.map((item: any) => item.id);
+              await fetch(`/api/orders/${draftOrderId}/line-items`, {
+                method: 'DELETE',
+                headers: { 'Content-Type': 'application/json' },
+                credentials: 'include',
+                body: JSON.stringify({
+                  itemIds: existingItemIds,
+                  reason: 'Clearing items before draft save'
+                })
+              });
+            }
+            
+            // Now create new line items
+            const lineItemsResponse = await fetch(`/api/orders/${draftOrderId}/line-items`, {
+              method: 'POST',
+              headers: { 'Content-Type': 'application/json' },
+              credentials: 'include',
+              body: JSON.stringify({
+                items: lineItemsData,
+                reason: 'Order draft saved from edit page'
+              })
+            });
+            
+            if (lineItemsResponse.ok) {
+              console.log('[AUTO_SAVE] Successfully saved order and line items');
+              setSaveStatus('saved');
+              setLastSaved(new Date());
+            } else {
+              const errorData = await lineItemsResponse.json();
+              console.error('[AUTO_SAVE] Failed to save line items:', errorData);
+              setSaveStatus('error');
+            }
+          } else {
+            const errorData = await orderUpdateResponse.json();
+            console.error('[AUTO_SAVE] Failed to update order:', errorData);
+            setSaveStatus('error');
+          }
         } else {
-          const errorData = await response.json();
-          console.error('[AUTO_SAVE] Failed to save order:', errorData);
-          setSaveStatus('error');
+          // Fallback to old orderGroups system
+          console.log('[AUTO_SAVE] Using orderGroups system (fallback)');
+          const response = await fetch(`/api/orders/${draftOrderId}`, {
+            method: 'PUT',
+            headers: { 'Content-Type': 'application/json' },
+            credentials: 'include',
+            body: JSON.stringify(orderData)
+          });
+          
+          if (response.ok) {
+            console.log('[AUTO_SAVE] Successfully saved order');
+            setSaveStatus('saved');
+            setLastSaved(new Date());
+          } else {
+            const errorData = await response.json();
+            console.error('[AUTO_SAVE] Failed to save order:', errorData);
+            setSaveStatus('error');
+          }
         }
       }
       // Note: Removed auto-creation of new drafts
@@ -625,23 +743,7 @@ export default function EditOrderPage({ params }: { params: Promise<{ id: string
   }, [session, draftOrderId, lineItems, selectedClients, clients, subtotal, total, estimatedPricePerLink,
       selectedAccountId, selectedAccountEmail, selectedAccountName, selectedAccountCompany]);
   
-  // Use ref to avoid recreating debounced function
-  const saveOrderDraftRef = useRef(saveOrderDraft);
-  saveOrderDraftRef.current = saveOrderDraft;
-  
-  // Debounced auto-save - stable reference
-  const debouncedSave = useCallback(
-    debounce(() => saveOrderDraftRef.current(), 2000),
-    [] // No dependencies, stable function
-  );
-  
-  // Trigger auto-save when order changes
-  useEffect(() => {
-    if (lineItems.length > 0) {
-      console.log('[AUTO_SAVE] Triggering auto-save due to changes');
-      debouncedSave();
-    }
-  }, [lineItems, selectedClients, debouncedSave]); // Trigger on any line items or client selection changes
+  // Auto-save removed - manual save only
   
   // Draft loading is handled by loadDrafts() in the main useEffect above
 
@@ -915,10 +1017,7 @@ export default function EditOrderPage({ params }: { params: Promise<{ id: string
       }
     }
     
-    // Save draft before showing confirmation
-    await saveOrderDraft();
-    
-    // Show confirmation modal
+    // Show confirmation modal (no auto-save - user must confirm to save)
     setShowConfirmModal(true);
   };
   
@@ -1120,12 +1219,41 @@ export default function EditOrderPage({ params }: { params: Promise<{ id: string
                 setEstimatedPricePerLink(estimate.clientMedian);
                 // Update wholesale estimate for new line items
                 setEstimatedWholesalePerLink(estimate.wholesaleMedian);
-                setOrderPreferences(preferences);
+                
+                // Calculate budget range based on total links and price range
+                // Prioritize client link counts over line items (line items might be placeholders)
+                const clientLinksTotal = Array.from(selectedClients.values()).reduce((sum, client) => 
+                  sum + (client.selected ? client.linkCount : 0), 0);
+                const totalLinks = clientLinksTotal > 0 ? clientLinksTotal : 
+                                  (lineItems.length > 0 ? lineItems.length : 
+                                  preferences.linkCount || 1);
+                const budgetMin = totalLinks * estimate.clientMin;
+                const budgetMax = totalLinks * estimate.clientMax;
+                
+                // Create estimator snapshot of what user saw
+                const estimatorSnapshot = {
+                  sitesAvailable: estimate.count,
+                  medianPrice: estimate.wholesaleMedian,
+                  averagePrice: estimate.wholesaleAverage,
+                  priceRange: { min: estimate.wholesaleMin, max: estimate.wholesaleMax },
+                  examples: estimate.examples || [],
+                  timestamp: new Date().toISOString()
+                };
+                
+                const enhancedPreferences = {
+                  ...preferences,
+                  linkCount: totalLinks, // Make sure linkCount is included!
+                  estimatedBudgetMin: budgetMin,
+                  estimatedBudgetMax: budgetMax,
+                  estimatorSnapshot: estimatorSnapshot
+                };
+                
+                setOrderPreferences(enhancedPreferences);
                 
                 // Save to local state for persistence
                 sessionStorage.setItem('orderPreferences', JSON.stringify({
                   estimate,
-                  preferences,
+                  preferences: enhancedPreferences,
                   timestamp: new Date().toISOString()
                 }));
                 
@@ -1806,23 +1934,60 @@ export default function EditOrderPage({ params }: { params: Promise<{ id: string
                 {/* What Happens Next */}
                 <div className="bg-blue-50 rounded-lg p-4 mb-6">
                   <h3 className="font-semibold text-blue-900 mb-2">What Happens Next?</h3>
-                  <ul className="text-sm text-blue-800 space-y-1">
-                    {isNewOrder ? (
-                      <>
-                        <li>• Your order will be created as a draft</li>
-                        <li>• You can review and submit when ready</li>
-                        <li>• Our team will begin site selection after submission</li>
-                        <li>• You'll receive email updates on progress</li>
-                      </>
-                    ) : (
-                      <>
-                        <li>• Your order changes will be saved</li>
-                        <li>• {orderStatus === 'draft' ? 'You can submit the order when ready' : 'Our team will be notified of the updates'}</li>
-                        <li>• You can continue to make changes as needed</li>
-                        <li>• Track your order progress from the order details page</li>
-                      </>
-                    )}
-                  </ul>
+                  <div className="space-y-3">
+                    <h4 className="font-medium text-gray-900 text-sm">What happens next:</h4>
+                    <div className="space-y-2 text-sm text-gray-700">
+                      {isNewOrder ? (
+                        <>
+                          <div className="flex items-start gap-3">
+                            <CheckCircle className="h-4 w-4 text-green-500 mt-0.5" />
+                            <div>
+                              <div className="font-medium">Your order will be confirmed</div>
+                              <div className="text-xs text-gray-500">Order details locked and sent to our team</div>
+                            </div>
+                          </div>
+                          <div className="flex items-start gap-3">
+                            <Clock className="h-4 w-4 text-blue-500 mt-0.5" />
+                            <div>
+                              <div className="font-medium">We'll find perfect sites (24-48 hours)</div>
+                              <div className="text-xs text-gray-500">Our team analyzes your requirements and identifies high-quality sites</div>
+                            </div>
+                          </div>
+                          <div className="flex items-start gap-3">
+                            <Users className="h-4 w-4 text-purple-500 mt-0.5" />
+                            <div>
+                              <div className="font-medium">Review & approve recommended sites</div>
+                              <div className="text-xs text-gray-500">You'll receive an email when sites are ready for your review</div>
+                            </div>
+                          </div>
+                          <div className="flex items-start gap-3">
+                            <CreditCard className="h-4 w-4 text-orange-500 mt-0.5" />
+                            <div>
+                              <div className="font-medium">Pay invoice to start content creation</div>
+                              <div className="text-xs text-gray-500">Final pricing based on approved sites</div>
+                            </div>
+                          </div>
+                        </>
+                      ) : (
+                        <>
+                          <div className="flex items-start gap-3">
+                            <CheckCircle className="h-4 w-4 text-green-500 mt-0.5" />
+                            <div>
+                              <div className="font-medium">Your order changes will be saved</div>
+                              <div className="text-xs text-gray-500">Updates will be applied to your existing order</div>
+                            </div>
+                          </div>
+                          <div className="flex items-start gap-3">
+                            <AlertCircle className="h-4 w-4 text-blue-500 mt-0.5" />
+                            <div>
+                              <div className="font-medium">{orderStatus === 'draft' ? 'You can submit the order when ready' : 'Our team will be notified of the updates'}</div>
+                              <div className="text-xs text-gray-500">Track your order progress from the order details page</div>
+                            </div>
+                          </div>
+                        </>
+                      )}
+                    </div>
+                  </div>
                 </div>
                 
                 {/* Actions */}

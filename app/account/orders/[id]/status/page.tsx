@@ -83,8 +83,6 @@ const getStateDisplay = (status: string, state?: string) => {
       return { label: 'Finding Sites', color: 'bg-blue-100 text-blue-700' };
     case 'sites_ready':
       return { label: 'Sites Ready for Review', color: 'bg-purple-100 text-purple-700' };
-    case 'site_review':
-      return { label: 'Ready for Review', color: 'bg-purple-100 text-purple-700' };
     case 'client_reviewing':
       return { label: 'Under Review', color: 'bg-purple-100 text-purple-700' };
     case 'in_progress':
@@ -100,7 +98,7 @@ const getProgressSteps = (status: string, state?: string) => {
   const steps = [
     { id: 'confirmed', label: 'Order Confirmed', icon: CheckCircle, description: 'Your order has been received' },
     { id: 'analyzing', label: 'Finding Sites', icon: Search, description: 'Our team is identifying suitable sites' },
-    { id: 'site_review', label: 'Review Sites', icon: Users, description: 'Site recommendations ready for your review' },
+    { id: 'sites_ready', label: 'Review Sites', icon: Users, description: 'Site recommendations ready for your review' },
     { id: 'in_progress', label: 'Creating Content', icon: FileText, description: 'Writing and placing your links' },
     { id: 'completed', label: 'Completed', icon: CheckCircle, description: 'All links have been placed' }
   ];
@@ -109,7 +107,7 @@ const getProgressSteps = (status: string, state?: string) => {
   if (status === 'confirmed') {
     currentStep = 1;
     if (state === 'analyzing') currentStep = 1;
-    if (state === 'sites_ready' || state === 'site_review' || state === 'client_reviewing') currentStep = 2;
+    if (state === 'sites_ready' || state === 'client_reviewing') currentStep = 2;
     if (state === 'in_progress' || state === 'content_creation') currentStep = 3;
   }
   if (status === 'completed') currentStep = 4;
@@ -233,7 +231,7 @@ export default function OrderStatusPage() {
   
   const stateDisplay = getStateDisplay(order.status, order.state);
   const { steps, currentStep } = getProgressSteps(order.status, order.state);
-  const canReviewSites = (order.state === 'sites_ready' || order.state === 'site_review' || order.state === 'client_reviewing') && 
+  const canReviewSites = (order.state === 'sites_ready' || order.state === 'client_reviewing') && 
     order.orderGroups.some(g => g.submissions && g.submissions.total > 0);
   
   return (
@@ -593,7 +591,7 @@ export default function OrderStatusPage() {
             )}
             
             {/* Sites Ready */}
-            {order.state === 'site_review' && order.orderGroups.some(g => g.submissions && g.submissions.total > 0) && (
+            {order.state === 'sites_ready' && order.orderGroups.some(g => g.submissions && g.submissions.total > 0) && (
               <div className="flex gap-3">
                 <div className="flex-shrink-0">
                   <div className="w-8 h-8 bg-purple-100 rounded-full flex items-center justify-center">

@@ -19,13 +19,18 @@ export async function middleware(request: NextRequest) {
     return NextResponse.next();
   }
   
-  // 2. Webhook endpoints (have their own auth)
+  // 2. Public claim endpoints for share links
+  if (path.startsWith('/api/orders/claim/')) {
+    return NextResponse.next();
+  }
+  
+  // 3. Webhook endpoints (have their own auth)
   if (path.startsWith('/api/airtable/webhook') ||
       path.startsWith('/api/webhooks/')) {
     return NextResponse.next();
   }
   
-  // 3. Health check endpoints
+  // 4. Health check endpoints
   if (path === '/api/health' || 
       path === '/api/ping') {
     return NextResponse.next();

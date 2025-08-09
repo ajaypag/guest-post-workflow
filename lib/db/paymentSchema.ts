@@ -1,4 +1,4 @@
-import { pgTable, uuid, varchar, integer, timestamp, boolean, jsonb, pgEnum } from 'drizzle-orm/pg-core';
+import { pgTable, uuid, varchar, integer, timestamp, boolean, jsonb, pgEnum, text, index, unique } from 'drizzle-orm/pg-core';
 import { orders } from './orderSchema';
 import { accounts, users } from './schema';
 
@@ -90,8 +90,129 @@ export const invoices = pgTable('invoices', {
   updatedAt: timestamp('updated_at').defaultNow().notNull(),
 });
 
+// Stripe Payment Intents table
+export const stripePaymentIntents = pgTable('stripe_payment_intents', {
+  id: uuid('id').defaultRandom().primaryKey(),
+  orderId: uuid('order_id').notNull().references(() => orders.id, { onDelete: 'cascade' }),
+  paymentId: uuid('payment_id').references(() => payments.id),
+  
+  // Stripe identifiers
+  stripePaymentIntentId: varchar('stripe_payment_intent_id', { length: 255 }).notNull().unique(),
+  stripeCustomerId: varchar('stripe_customer_id', { length: 255 }),
+  
+  // Payment details
+  amount: integer('amount').notNull(), // Amount in cents
+  currency: varchar('currency', { length: 3 }).notNull().default('USD'),
+  status: varchar('status', { length: 50 }).notNull(), // Stripe PI status: requires_payment_method, requires_confirmation, requires_action, processing, requires_capture, canceled, succeeded
+  
+  // Client secret for frontend integration
+  clientSecret: text('client_secret').notNull(),
+  
+  // Metadata
+  metadata: jsonb('metadata'), // Store order ID and other context
+  
+  // Idempotency and retry handling
+  idempotencyKey: varchar('idempotency_key', { length: 255 }).unique(),
+  
+  // Processing details
+  paymentMethodId: varchar('payment_method_id', { length: 255 }),
+  setupFutureUsage: varchar('setup_future_usage', { length: 50 }), // on_session, off_session
+  confirmationMethod: varchar('confirmation_method', { length: 50 }).default('automatic'), // automatic, manual
+  
+  // Captured amounts for partial captures
+  amountCapturable: integer('amount_capturable'),
+  amountCaptured: integer('amount_captured').default(0),
+  amountReceived: integer('amount_received').default(0),
+  
+  // Processing timestamps
+  createdAt: timestamp('created_at').defaultNow().notNull(),
+  updatedAt: timestamp('updated_at').defaultNow().notNull(),
+  confirmedAt: timestamp('confirmed_at'),
+  succeededAt: timestamp('succeeded_at'),
+  canceledAt: timestamp('canceled_at'),
+  
+  // Last known Stripe webhook event
+  lastWebhookEventId: varchar('last_webhook_event_id', { length: 255 }),
+  
+  // Error tracking
+  lastError: jsonb('last_error'), // Store Stripe error details
+  failureCode: varchar('failure_code', { length: 100 }),
+  failureMessage: text('failure_message'),
+}, (table) => ({
+  orderIdIdx: index('idx_stripe_payment_intents_order_id').on(table.orderId),
+  stripeIdIdx: index('idx_stripe_payment_intents_stripe_id').on(table.stripePaymentIntentId),
+  statusIdx: index('idx_stripe_payment_intents_status').on(table.status),
+  customerIdx: index('idx_stripe_payment_intents_customer').on(table.stripeCustomerId),
+}));
+
+// Stripe Customers table for storing customer data
+export const stripeCustomers = pgTable('stripe_customers', {
+  id: uuid('id').defaultRandom().primaryKey(),
+  accountId: uuid('account_id').notNull().references(() => accounts.id),
+  
+  // Stripe customer data
+  stripeCustomerId: varchar('stripe_customer_id', { length: 255 }).notNull().unique(),
+  email: varchar('email', { length: 255 }).notNull(),
+  name: varchar('name', { length: 255 }),
+  
+  // Billing information
+  billingAddress: jsonb('billing_address'),
+  
+  // Metadata
+  metadata: jsonb('metadata'),
+  
+  // Timestamps
+  createdAt: timestamp('created_at').defaultNow().notNull(),
+  updatedAt: timestamp('updated_at').defaultNow().notNull(),
+}, (table) => ({
+  accountIdx: index('idx_stripe_customers_account').on(table.accountId),
+  stripeIdIdx: index('idx_stripe_customers_stripe_id').on(table.stripeCustomerId),
+  emailIdx: index('idx_stripe_customers_email').on(table.email),
+}));
+
+// Stripe Webhooks table for tracking processed webhooks and preventing duplicates
+export const stripeWebhooks = pgTable('stripe_webhooks', {
+  id: uuid('id').defaultRandom().primaryKey(),
+  
+  // Webhook data
+  stripeEventId: varchar('stripe_event_id', { length: 255 }).notNull().unique(),
+  eventType: varchar('event_type', { length: 100 }).notNull(),
+  
+  // Processing status
+  status: varchar('status', { length: 50 }).notNull().default('pending'), // pending, processed, failed, skipped
+  
+  // Related entities
+  paymentIntentId: uuid('payment_intent_id').references(() => stripePaymentIntents.id),
+  orderId: uuid('order_id').references(() => orders.id),
+  
+  // Event data
+  eventData: jsonb('event_data').notNull(), // Full Stripe event object
+  
+  // Processing details
+  processedAt: timestamp('processed_at'),
+  errorMessage: text('error_message'),
+  retryCount: integer('retry_count').default(0),
+  
+  // Timestamps
+  createdAt: timestamp('created_at').defaultNow().notNull(),
+  updatedAt: timestamp('updated_at').defaultNow().notNull(),
+}, (table) => ({
+  eventIdIdx: index('idx_stripe_webhooks_event_id').on(table.stripeEventId),
+  typeIdx: index('idx_stripe_webhooks_type').on(table.eventType),
+  statusIdx: index('idx_stripe_webhooks_status').on(table.status),
+  orderIdx: index('idx_stripe_webhooks_order').on(table.orderId),
+  createdIdx: index('idx_stripe_webhooks_created').on(table.createdAt),
+}));
+
+
 // Type exports
 export type Payment = typeof payments.$inferSelect;
 export type NewPayment = typeof payments.$inferInsert;
 export type Invoice = typeof invoices.$inferSelect;
 export type NewInvoice = typeof invoices.$inferInsert;
+export type StripePaymentIntent = typeof stripePaymentIntents.$inferSelect;
+export type NewStripePaymentIntent = typeof stripePaymentIntents.$inferInsert;
+export type StripeCustomer = typeof stripeCustomers.$inferSelect;
+export type NewStripeCustomer = typeof stripeCustomers.$inferInsert;
+export type StripeWebhook = typeof stripeWebhooks.$inferSelect;
+export type NewStripeWebhook = typeof stripeWebhooks.$inferInsert;

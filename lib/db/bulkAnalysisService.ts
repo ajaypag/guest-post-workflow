@@ -1,8 +1,18 @@
 import { db } from './connection';
 import { targetPages, TargetPage } from './schema';
-import { bulkAnalysisDomains, BulkAnalysisDomain } from './bulkAnalysisSchema';
+import { bulkAnalysisDomains, BulkAnalysisDomain, bulkAnalysisProjects } from './bulkAnalysisSchema';
 import { eq, and, inArray, sql, ne, desc, asc, or, like } from 'drizzle-orm';
 import { v4 as uuidv4 } from 'uuid';
+
+export type DuplicateResolution = 'keep_both' | 'move_to_new' | 'skip' | 'update_original';
+
+export interface DuplicateResolutionChoice {
+  domain: string;
+  existingDomainId: string;
+  existingProjectId: string;
+  existingProjectName: string;
+  resolution: DuplicateResolution;
+}
 
 export interface BulkAnalysisInput {
   clientId: string;
@@ -12,6 +22,7 @@ export interface BulkAnalysisInput {
   manualKeywords?: string;
   projectId: string;
   airtableMetadata?: Record<string, any>; // Map of domain -> metadata
+  duplicateResolutions?: DuplicateResolutionChoice[]; // How to handle duplicates
 }
 
 export interface BulkAnalysisResult extends BulkAnalysisDomain {
@@ -90,11 +101,11 @@ export class BulkAnalysisService {
   }
 
   /**
-   * Create or update bulk analysis domains
+   * Create or update bulk analysis domains with duplicate resolution
    */
   static async createOrUpdateDomains(input: BulkAnalysisInput): Promise<BulkAnalysisResult[]> {
     try {
-      const { clientId, domains, targetPageIds, userId, manualKeywords, projectId, airtableMetadata } = input;
+      const { clientId, domains, targetPageIds, userId, manualKeywords, projectId, airtableMetadata, duplicateResolutions } = input;
       
       // Clean domains
       const cleanedDomains = domains.map(d => this.cleanDomain(d)).filter(Boolean);
@@ -178,7 +189,7 @@ export class BulkAnalysisService {
         .returning();
 
       // Attach keywords for response
-      const results: BulkAnalysisResult[] = insertedDomains.map(domain => ({
+      const results: BulkAnalysisResult[] = insertedDomains.map((domain: BulkAnalysisDomain) => ({
         ...domain,
         targetPages: pages,
         keywords: Array.from(allKeywords),
@@ -349,6 +360,286 @@ export class BulkAnalysisService {
       return existing;
     } catch (error) {
       console.error('Error checking existing domains:', error);
+      throw error;
+    }
+  }
+
+  /**
+   * Resolve duplicate domains based on user choices
+   */
+  static async resolveDuplicatesAndCreate(input: BulkAnalysisInput & {
+    resolutions: DuplicateResolutionChoice[]
+  }): Promise<BulkAnalysisResult[]> {
+    try {
+      const { clientId, domains, targetPageIds, userId, manualKeywords, projectId, resolutions } = input;
+      
+      const results: BulkAnalysisResult[] = [];
+      const resolutionMap = new Map(resolutions.map(r => [r.domain, r]));
+      
+      // Get keywords for new entries
+      let allKeywords = new Set<string>();
+      let pages: TargetPage[] = [];
+      
+      if (manualKeywords) {
+        const keywords = manualKeywords.split(',').map(k => k.trim()).filter(Boolean);
+        keywords.forEach(k => allKeywords.add(k));
+      } else if (targetPageIds && targetPageIds.length > 0) {
+        pages = await db
+          .select()
+          .from(targetPages)
+          .where(
+            and(
+              eq(targetPages.clientId, clientId),
+              inArray(targetPages.id, targetPageIds)
+            )
+          );
+        pages.forEach(page => {
+          if (page.keywords) {
+            const keywords = page.keywords.split(',').map(k => k.trim());
+            keywords.forEach(k => allKeywords.add(k));
+          }
+        });
+      }
+      
+      const keywordCount = allKeywords.size;
+      const now = new Date();
+      
+      // Process each domain based on its resolution
+      for (const domain of domains) {
+        const cleanDomain = this.cleanDomain(domain);
+        const resolution = resolutionMap.get(cleanDomain);
+        
+        if (!resolution) {
+          // No duplicate, create new entry
+          const newDomain = {
+            id: uuidv4(),
+            clientId,
+            domain: cleanDomain,
+            qualificationStatus: 'pending' as const,
+            targetPageIds,
+            keywordCount,
+            projectId,
+            projectAddedAt: now,
+            createdAt: now,
+            updatedAt: now,
+          };
+          
+          const inserted = await db
+            .insert(bulkAnalysisDomains)
+            .values(newDomain)
+            .returning();
+          
+          if (inserted.length === 0) continue;
+          
+          results.push({
+            ...inserted[0],
+            targetPages: pages,
+            keywords: Array.from(allKeywords),
+          });
+        } else {
+          // Handle based on resolution type
+          switch (resolution.resolution) {
+            case 'keep_both':
+              // Create new entry alongside existing one
+              const duplicateDomain = {
+                id: uuidv4(),
+                clientId,
+                domain: cleanDomain,
+                qualificationStatus: 'pending' as const,
+                targetPageIds,
+                keywordCount,
+                projectId,
+                projectAddedAt: now,
+                duplicateOf: resolution.existingDomainId,
+                duplicateResolution: 'keep_both' as const,
+                duplicateResolvedBy: userId,
+                duplicateResolvedAt: now,
+                resolutionMetadata: {
+                  originalProject: resolution.existingProjectName,
+                  originalProjectId: resolution.existingProjectId,
+                },
+                createdAt: now,
+                updatedAt: now,
+              };
+              
+              // Insert the domain - now it should work with the new constraint
+              const insertedDup = await db
+                .insert(bulkAnalysisDomains)
+                .values(duplicateDomain)
+                .returning();
+              
+              if (insertedDup.length > 0) {
+                results.push({
+                  ...insertedDup[0],
+                  targetPages: pages,
+                  keywords: Array.from(allKeywords),
+                });
+              }
+              break;
+              
+            case 'move_to_new':
+              // Update existing entry to new project
+              const [moved] = await db
+                .update(bulkAnalysisDomains)
+                .set({
+                  projectId,
+                  targetPageIds,
+                  keywordCount,
+                  originalProjectId: resolution.existingProjectId,
+                  duplicateResolution: 'move_to_new' as const,
+                  duplicateResolvedBy: userId,
+                  duplicateResolvedAt: now,
+                  resolutionMetadata: {
+                    originalProject: resolution.existingProjectName,
+                    movedFrom: resolution.existingProjectId,
+                  },
+                  updatedAt: now,
+                })
+                .where(eq(bulkAnalysisDomains.id, resolution.existingDomainId))
+                .returning();
+              
+              if (moved) {
+                results.push({
+                  ...moved,
+                  targetPages: pages,
+                  keywords: Array.from(allKeywords),
+                });
+              }
+              break;
+              
+            case 'update_original':
+              // Update existing entry with new data but keep in original project
+              const [updated] = await db
+                .update(bulkAnalysisDomains)
+                .set({
+                  targetPageIds,
+                  keywordCount,
+                  duplicateResolution: 'update_original' as const,
+                  duplicateResolvedBy: userId,
+                  duplicateResolvedAt: now,
+                  resolutionMetadata: {
+                    updatedWith: {
+                      targetPageIds,
+                      keywordCount,
+                      projectId,
+                    },
+                  },
+                  updatedAt: now,
+                })
+                .where(eq(bulkAnalysisDomains.id, resolution.existingDomainId))
+                .returning();
+              
+              if (updated) {
+                results.push({
+                  ...updated,
+                  targetPages: pages,
+                  keywords: Array.from(allKeywords),
+                });
+              }
+              break;
+              
+            case 'skip':
+              // Record that we skipped this domain
+              await db
+                .update(bulkAnalysisDomains)
+                .set({
+                  duplicateResolution: 'skip' as const,
+                  duplicateResolvedBy: userId,
+                  duplicateResolvedAt: now,
+                  resolutionMetadata: {
+                    skippedForProject: projectId,
+                  },
+                  updatedAt: now,
+                })
+                .where(eq(bulkAnalysisDomains.id, resolution.existingDomainId));
+              // Don't add to results since we're skipping
+              break;
+          }
+        }
+      }
+      
+      return results;
+    } catch (error) {
+      console.error('Error resolving duplicates:', error);
+      throw error;
+    }
+  }
+
+  /**
+   * Check for duplicate domains with detailed project info
+   */
+  static async checkDuplicatesWithDetails(
+    clientId: string,
+    domains: string[],
+    currentProjectId: string
+  ): Promise<{
+    duplicates: Array<{
+      domain: string;
+      existingDomainId: string;
+      existingProjectId: string;
+      existingProjectName: string;
+      qualificationStatus: string;
+      hasWorkflow: boolean;
+      checkedAt?: Date;
+      checkedBy?: string;
+      isInCurrentProject?: boolean;
+    }>;
+    newDomains: string[];
+    alreadyInProject: string[];
+  }> {
+    try {
+      const cleanedDomains = domains.map(d => this.cleanDomain(d));
+      
+      // Get ALL existing domains (including current project)
+      const allExisting = await db
+        .select({
+          id: bulkAnalysisDomains.id,
+          domain: bulkAnalysisDomains.domain,
+          projectId: bulkAnalysisDomains.projectId,
+          projectName: bulkAnalysisProjects.name,
+          qualificationStatus: bulkAnalysisDomains.qualificationStatus,
+          hasWorkflow: bulkAnalysisDomains.hasWorkflow,
+          checkedAt: bulkAnalysisDomains.checkedAt,
+          checkedBy: bulkAnalysisDomains.checkedBy,
+        })
+        .from(bulkAnalysisDomains)
+        .leftJoin(bulkAnalysisProjects, eq(bulkAnalysisDomains.projectId, bulkAnalysisProjects.id))
+        .where(
+          and(
+            eq(bulkAnalysisDomains.clientId, clientId),
+            inArray(bulkAnalysisDomains.domain, cleanedDomains)
+          )
+        );
+      
+      // Separate domains in current project vs other projects
+      const inCurrentProject = allExisting.filter(e => e.projectId === currentProjectId);
+      const inOtherProjects = allExisting.filter(e => e.projectId !== currentProjectId);
+
+      // Only report duplicates from OTHER projects (not current)
+      const duplicates = inOtherProjects.map(e => ({
+        domain: e.domain,
+        existingDomainId: e.id,
+        existingProjectId: e.projectId || '',
+        existingProjectName: e.projectName || 'No Project',
+        qualificationStatus: e.qualificationStatus,
+        hasWorkflow: e.hasWorkflow || false,
+        checkedAt: e.checkedAt || undefined,
+        checkedBy: e.checkedBy || undefined,
+      }));
+
+      // Domains already in the current project (skip these silently)
+      const alreadyInProject = inCurrentProject.map(e => e.domain);
+      
+      const existingDomainNames = new Set(allExisting.map(e => e.domain));
+      const newDomains = cleanedDomains.filter(d => !existingDomainNames.has(d));
+
+      return { 
+        duplicates, 
+        newDomains,
+        alreadyInProject,
+      };
+    } catch (error) {
+      console.error('Error checking duplicates with details:', error);
       throw error;
     }
   }

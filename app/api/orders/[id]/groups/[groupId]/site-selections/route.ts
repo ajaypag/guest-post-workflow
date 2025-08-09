@@ -78,28 +78,44 @@ export async function GET(
       });
     }
 
-    // Transform bulk analysis domains to the expected format
-    const transformedDomains = analyzedDomainsList.map(domain => ({
-      id: domain.id,
-      domain: domain.domain,
-      dr: 70, // TODO: Get from DataForSEO or other metrics
-      traffic: 10000, // TODO: Get from DataForSEO or other metrics
-      niche: domain.client?.niche || 'General',
-      status: domain.qualificationStatus === 'high_quality' ? 'high_quality' : 
-              domain.qualificationStatus === 'good_quality' ? 'good' :
-              domain.qualificationStatus === 'marginal_quality' ? 'marginal' : 'disqualified',
-      price: 100, // TODO: Calculate based on metrics
-      projectId: domain.projectId,
-      notes: domain.notes
-    }));
+    // Get website data for the analyzed domains to enrich with real metrics
+    const domainNames = analyzedDomainsList.map(d => d.domain.toLowerCase());
+    const websiteData = domainNames.length > 0 
+      ? await db.query.websites.findMany({
+          where: sql`LOWER(${websites.domain}) = ANY(ARRAY[${sql.join(domainNames.map(d => sql`${d}`), sql`,`)}])`
+        })
+      : [];
+    
+    // Create a map for easy lookup
+    const websiteMap = new Map(websiteData.map(w => [w.domain.toLowerCase(), w]));
+    
+    // Transform bulk analysis domains to the expected format with real data
+    const transformedDomains = analyzedDomainsList.map(domain => {
+      const website = websiteMap.get(domain.domain.toLowerCase());
+      const guestPostCost = website?.guestPostCost ? parseFloat(website.guestPostCost) : null;
+      
+      return {
+        id: domain.id,
+        domain: domain.domain,
+        dr: website?.domainRating || null,
+        traffic: website?.totalTraffic || null,
+        niche: domain.client?.niche || 'General',
+        status: domain.qualificationStatus === 'high_quality' ? 'high_quality' : 
+                domain.qualificationStatus === 'good_quality' ? 'good' :
+                domain.qualificationStatus === 'marginal_quality' ? 'marginal' : 'disqualified',
+        price: guestPostCost,
+        projectId: domain.projectId,
+        notes: domain.notes
+      };
+    });
 
     // Get suggested sites based on client requirements
     const suggestedSites = transformedDomains.filter(domain => {
       // Apply client requirements as filters
       const reqs = orderGroup.requirementOverrides || {};
       
-      if (reqs.minDR && domain.dr < reqs.minDR) return false;
-      if (reqs.minTraffic && domain.traffic < reqs.minTraffic) return false;
+      if (reqs.minDR && domain.dr !== null && domain.dr < reqs.minDR) return false;
+      if (reqs.minTraffic && domain.traffic !== null && domain.traffic < reqs.minTraffic) return false;
       if (reqs.niches && reqs.niches.length > 0 && !reqs.niches.includes(domain.niche)) return false;
       
       // Only suggest high quality and good sites
@@ -122,32 +138,48 @@ export async function GET(
     // Create a map for easy lookup
     const domainMap = new Map(domainsWithSubmissions.map(d => [d.id, d]));
 
+    // Get website data for submission domains as well
+    const submissionDomainNames = domainsWithSubmissions.map(d => d.domain.toLowerCase());
+    const submissionWebsiteData = submissionDomainNames.length > 0
+      ? await db.query.websites.findMany({
+          where: sql`LOWER(${websites.domain}) = ANY(ARRAY[${sql.join(submissionDomainNames.map(d => sql`${d}`), sql`,`)}])`
+        })
+      : [];
+    
+    // Create a map for submission website data
+    const submissionWebsiteMap = new Map(submissionWebsiteData.map(w => [w.domain.toLowerCase(), w]));
+    
     // Transform submissions to expected format
     const transformedSelections = currentSubmissions.map(submission => {
       const domain = domainMap.get(submission.domainId);
+      if (!domain) return null;
+      
+      const website = submissionWebsiteMap.get(domain.domain.toLowerCase());
+      const guestPostCost = website?.guestPostCost ? parseFloat(website.guestPostCost) : null;
+      
       return {
         id: submission.id,
         domainId: submission.domainId,
-        domain: domain ? {
+        domain: {
           id: domain.id,
           domain: domain.domain,
-          dr: 70, // TODO: Get from DataForSEO or other metrics
-          traffic: 10000, // TODO: Get from DataForSEO or other metrics
+          dr: website?.domainRating || null,
+          traffic: website?.totalTraffic || null,
           niche: 'General',
           status: domain.qualificationStatus === 'high_quality' ? 'high_quality' : 
                   domain.qualificationStatus === 'good_quality' ? 'good' :
                   domain.qualificationStatus === 'marginal_quality' ? 'marginal' : 'disqualified',
-          price: 100,
+          price: guestPostCost,
           projectId: domain.projectId,
           notes: domain.notes
-        } : null,
+        },
         targetPageUrl: submission.metadata?.targetPageUrl,
         anchorText: submission.metadata?.anchorText,
         submissionStatus: submission.submissionStatus,
         clientReviewedAt: submission.clientReviewedAt,
         clientReviewNotes: submission.clientReviewNotes
       };
-    }).filter(s => s.domain !== null);
+    }).filter(s => s !== null);
 
     return NextResponse.json({
       suggested: suggestedSites,
