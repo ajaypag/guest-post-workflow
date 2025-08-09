@@ -32,8 +32,21 @@ export async function POST(
 
     const { userType, userId, accountId } = session;
 
-    // Parse request body
-    const body = await request.json();
+    // Parse request body - handle empty body gracefully
+    let body = {};
+    const contentType = request.headers.get('content-type');
+    if (contentType?.includes('application/json')) {
+      const text = await request.text();
+      if (text) {
+        try {
+          body = JSON.parse(text);
+        } catch (e) {
+          console.error('[PAYMENT INTENT] Failed to parse JSON body:', e);
+          body = {}; // Use empty object if parsing fails
+        }
+      }
+    }
+    
     const validatedData = createPaymentIntentSchema.parse(body);
 
     // For account users, verify they own this order

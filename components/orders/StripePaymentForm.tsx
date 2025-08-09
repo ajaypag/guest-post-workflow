@@ -291,6 +291,7 @@ export default function StripePaymentForm(props: StripePaymentFormProps) {
         headers: {
           'Content-Type': 'application/json',
         },
+        body: JSON.stringify({}), // Send empty JSON body as API expects JSON
         credentials: 'include', // Include cookies for authentication
       });
 

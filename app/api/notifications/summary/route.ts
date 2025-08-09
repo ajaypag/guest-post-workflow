@@ -80,6 +80,9 @@ export async function GET(request: NextRequest) {
 }
 
 function getOrderNeedsAction(order: any, isInternal: boolean): boolean {
+  // Add defensive check for order existence
+  if (!order || !order.status) return false;
+  
   if (isInternal) {
     // Internal user action items
     if (order.status === 'pending_confirmation') return true;
@@ -88,9 +91,8 @@ function getOrderNeedsAction(order: any, isInternal: boolean): boolean {
   } else {
     // External user action items
     if (order.status === 'draft') return true;
-    if (order.status === 'confirmed' && (
+    if (order.status === 'confirmed' && order.state && (
       order.state === 'sites_ready' || 
-      order.
       order.state === 'client_reviewing'
     )) return true;
     if (order.status === 'confirmed' && order.state === 'payment_pending') return true;
@@ -99,15 +101,17 @@ function getOrderNeedsAction(order: any, isInternal: boolean): boolean {
 }
 
 function getActionMessage(order: any, isInternal: boolean): string {
+  // Add defensive check for order existence
+  if (!order || !order.status) return 'Needs attention';
+  
   if (isInternal) {
     if (order.status === 'pending_confirmation') return 'Needs confirmation';
     if (order.status === 'confirmed' && order.state === 'sites_ready') return 'Ready to send to client';
     return 'Needs attention';
   } else {
     if (order.status === 'draft') return 'Finish setup';
-    if (order.status === 'confirmed' && (
+    if (order.status === 'confirmed' && order.state && (
       order.state === 'sites_ready' || 
-      order.
       order.state === 'client_reviewing'
     )) return 'Review sites';
     if (order.status === 'confirmed' && order.state === 'payment_pending') return 'Payment due';
