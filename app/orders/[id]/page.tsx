@@ -1067,12 +1067,25 @@ export default function OrderDetailPage() {
                     
                     {/* Payment Pending */}
                     {order.state === 'payment_pending' && (
-                      <div className="flex items-start gap-3">
-                        <div className="w-2 h-2 bg-orange-500 rounded-full mt-1.5 animate-pulse" />
-                        <div>
-                          <p className="text-sm font-medium text-gray-900">Awaiting Payment</p>
-                          <p className="text-xs text-gray-500">Invoice ready - review and proceed with payment</p>
+                      <div className="space-y-3">
+                        <div className="flex items-start gap-3">
+                          <div className="w-2 h-2 bg-orange-500 rounded-full mt-1.5 animate-pulse" />
+                          <div>
+                            <p className="text-sm font-medium text-gray-900">Awaiting Payment</p>
+                            <p className="text-xs text-gray-500">Invoice ready - review and proceed with payment</p>
+                          </div>
                         </div>
+                        {!order.paidAt && (
+                          <a
+                            href={`/orders/${order.id}/payment`}
+                            className="inline-flex items-center gap-2 bg-orange-600 text-white px-4 py-2 rounded-lg hover:bg-orange-700 transition-colors text-sm font-medium"
+                          >
+                            <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M3 10h18M7 15h1m4 0h1m-7 4h12a3 3 0 003-3V8a3 3 0 00-3-3H6a3 3 0 00-3 3v8a3 3 0 003 3z" />
+                            </svg>
+                            Pay Invoice ${((order.totalPrice || 0) / 100).toFixed(2)}
+                          </a>
+                        )}
                       </div>
                     )}
                     

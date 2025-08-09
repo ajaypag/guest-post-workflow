@@ -128,12 +128,12 @@ export async function POST(
       });
     }
 
-    // Use the total retail amount from the order
+    // Use the order's total retail amount for payment
     const amount = order.totalRetail;
-
-    if (amount <= 0) {
+    
+    if (!amount || amount <= 0) {
       return NextResponse.json(
-        { error: 'Order amount must be greater than 0' },
+        { error: 'Order has no valid amount to collect payment for' },
         { status: 400 }
       );
     }

@@ -2,8 +2,9 @@ import { NextRequest, NextResponse } from 'next/server';
 import { headers } from 'next/headers';
 import { StripeService } from '@/lib/services/stripeService';
 import { db } from '@/lib/db/connection';
-import { stripeWebhooks } from '@/lib/db/paymentSchema';
+import { stripeWebhooks, stripePaymentIntents } from '@/lib/db/paymentSchema';
 import { orders } from '@/lib/db/orderSchema';
+import { accounts } from '@/lib/db/accountSchema';
 import { eq } from 'drizzle-orm';
 import Stripe from 'stripe';
 import { EmailService } from '@/lib/services/emailService';
@@ -146,22 +147,63 @@ export async function POST(request: NextRequest) {
     } catch (error) {
       console.error(`Error processing webhook event ${event.id}:`, error);
 
+      // Get current retry count
+      const currentWebhook = await db
+        .select()
+        .from(stripeWebhooks)
+        .where(eq(stripeWebhooks.id, webhookRecord.id))
+        .limit(1);
+
+      const retryCount = (currentWebhook[0]?.retryCount || 0) + 1;
+      const maxRetries = 5;
+
       // Update webhook record with error
       await db
         .update(stripeWebhooks)
         .set({
-          status: 'failed',
+          status: retryCount >= maxRetries ? 'failed_permanent' : 'failed',
           errorMessage: error instanceof Error ? error.message : 'Unknown error',
-          retryCount: 1,
+          retryCount: retryCount,
           updatedAt: new Date(),
         })
         .where(eq(stripeWebhooks.id, webhookRecord.id));
 
-      // Return 500 to trigger Stripe retry
-      return NextResponse.json(
-        { error: 'Webhook processing failed' },
-        { status: 500 }
-      );
+      // Return 500 to trigger Stripe retry only if we haven't exceeded max retries
+      if (retryCount < maxRetries) {
+        console.log(`Webhook will be retried (attempt ${retryCount}/${maxRetries}) in ${Math.pow(2, retryCount)} minutes`);
+        return NextResponse.json(
+          { error: 'Webhook processing failed, will retry' },
+          { status: 500 }
+        );
+      } else {
+        console.error(`Webhook permanently failed after ${maxRetries} attempts`);
+        
+        // Send alert to admin about permanent failure
+        try {
+          await EmailService.send('notification', {
+            to: 'admin@postflow.outreachlabs.net',
+            subject: `🚨 Webhook Permanently Failed - ${event.type}`,
+            text: `Webhook event ${event.id} of type ${event.type} has permanently failed after ${maxRetries} attempts.\n\nError: ${error instanceof Error ? error.message : 'Unknown error'}\n\nPlease investigate and manually reconcile if needed.`,
+            html: `
+              <div style="font-family: Arial, sans-serif; color: #333;">
+                <h2 style="color: #d32f2f;">🚨 Webhook Permanently Failed</h2>
+                <p><strong>Event ID:</strong> ${event.id}</p>
+                <p><strong>Event Type:</strong> ${event.type}</p>
+                <p><strong>Attempts:</strong> ${maxRetries}</p>
+                <p><strong>Error:</strong> ${error instanceof Error ? error.message : 'Unknown error'}</p>
+                <p><strong>Action Required:</strong> Manual investigation and reconciliation may be needed.</p>
+              </div>
+            `,
+          });
+        } catch (emailError) {
+          console.error('Failed to send webhook failure alert:', emailError);
+        }
+
+        return NextResponse.json(
+          { error: 'Webhook processing permanently failed' },
+          { status: 200 } // Return 200 to stop Stripe retries
+        );
+      }
     }
 
     return NextResponse.json({ received: true });
@@ -236,6 +278,9 @@ async function handlePaymentIntentSucceeded(event: Stripe.Event, webhookRecordId
 
   // Update webhook record with related entities
   await updateWebhookRelations(webhookRecordId, paymentIntent.id);
+
+  // Send success email notification
+  await sendPaymentSuccessNotification(paymentIntent);
 }
 
 async function handlePaymentIntentFailed(event: Stripe.Event, webhookRecordId: string): Promise<void> {
@@ -318,23 +363,81 @@ async function handlePaymentMethodAttached(event: Stripe.Event, webhookRecordId:
 }
 
 async function updateWebhookRelations(webhookRecordId: string, stripePaymentIntentId: string): Promise<void> {
-  // Find our payment intent record to get the order ID
-  const paymentIntentData = await StripeService.getPaymentIntentByOrder(''); // We need a different approach
+  // Query our stripe_payment_intents table directly
+  const result = await db
+    .select()
+    .from(stripePaymentIntents)
+    .where(eq(stripePaymentIntents.stripePaymentIntentId, stripePaymentIntentId))
+    .limit(1);
 
-  // Alternative: Query our stripe_payment_intents table directly
-  const result = await db.query.stripePaymentIntents?.findFirst({
-    where: (table: any, { eq }: any) => eq(table.stripePaymentIntentId, stripePaymentIntentId),
-  });
-
-  if (result) {
+  if (result.length > 0) {
+    const paymentIntent = result[0];
     await db
       .update(stripeWebhooks)
       .set({
-        paymentIntentId: result.id,
-        orderId: result.orderId,
+        paymentIntentId: paymentIntent.id,
+        orderId: paymentIntent.orderId,
         updatedAt: new Date(),
       })
       .where(eq(stripeWebhooks.id, webhookRecordId));
+  }
+}
+
+/**
+ * Send payment success notification email
+ */
+async function sendPaymentSuccessNotification(paymentIntent: Stripe.PaymentIntent): Promise<void> {
+  try {
+    const orderId = paymentIntent.metadata?.orderId;
+    if (!orderId) {
+      console.error('No order ID found in payment intent metadata');
+      return;
+    }
+
+    // Get order and account details
+    const orderResult = await db
+      .select()
+      .from(orders)
+      .where(eq(orders.id, orderId))
+      .limit(1);
+    
+    if (orderResult.length === 0) {
+      console.error(`Order ${orderId} not found for success notification`);
+      return;
+    }
+
+    const order = orderResult[0];
+    
+    // Get account email
+    if (order.accountId) {
+      const accountResult = await db
+        .select()
+        .from(accounts)
+        .where(eq(accounts.id, order.accountId))
+        .limit(1);
+      
+      if (accountResult.length > 0) {
+        const accountEmail = accountResult[0].email;
+        
+        try {
+          console.log(`Sending payment success notification to ${accountEmail}`);
+          
+          await EmailService.sendPaymentSuccessEmail({
+            to: accountEmail,
+            orderId: orderId,
+            amount: paymentIntent.amount,
+            paymentIntentId: paymentIntent.id,
+            orderViewUrl: `${process.env.NEXTAUTH_URL || 'https://postflow.outreachlabs.net'}/orders/${orderId}`
+          });
+          
+          console.log(`Payment success email sent to ${accountEmail}`);
+        } catch (emailError) {
+          console.error('Failed to send payment success notification email:', emailError);
+        }
+      }
+    }
+  } catch (error) {
+    console.error('Error sending payment success notification:', error);
   }
 }
 
@@ -349,13 +452,14 @@ async function handlePaymentFailure(paymentIntent: Stripe.PaymentIntent): Promis
       return;
     }
 
-    // Update order state to payment_failed if it was pending
-    const order = await db.query.orders?.findFirst({
-      where: (table: any, { eq }: any) => eq(table.id, orderId),
-      with: {
-        account: true,
-      }
-    });
+    // Get order with account details
+    const orderResult = await db
+      .select()
+      .from(orders)
+      .where(eq(orders.id, orderId))
+      .limit(1);
+    
+    const order = orderResult.length > 0 ? orderResult[0] : null;
 
     if (order && order.state === 'payment_pending') {
       await db
@@ -369,14 +473,37 @@ async function handlePaymentFailure(paymentIntent: Stripe.PaymentIntent): Promis
       console.log(`Order ${orderId} marked as payment_failed`);
     }
 
+    // Get account details for email notification
+    let accountEmail: string | null = null;
+    if (order?.accountId) {
+      const accountResult = await db
+        .select()
+        .from(accounts)
+        .where(eq(accounts.id, order.accountId))
+        .limit(1);
+      
+      if (accountResult.length > 0) {
+        accountEmail = accountResult[0].email;
+      }
+    }
+
     // Send failure notification email
-    if (order?.account) {
+    if (accountEmail) {
       const errorMessage = paymentIntent.last_payment_error?.message || 'Payment failed';
       const errorCode = paymentIntent.last_payment_error?.code || 'unknown_error';
 
       try {
-        // TODO: Implement proper email notification
-        console.log(`Payment failed notification needed for ${order.account.email}`);
+        console.log(`Sending payment failed notification to ${accountEmail}`);
+        
+        // Send customer notification
+        await EmailService.sendPaymentFailedEmail({
+          to: accountEmail,
+          orderId: orderId,
+          errorMessage: errorMessage,
+          retryUrl: `${process.env.NEXTAUTH_URL || 'https://postflow.outreachlabs.net'}/orders/${orderId}/payment`
+        });
+
+        // Also notify internal team
         /*await EmailService.send({
           to: order.account.email,
           subject: `Payment Failed - Order #${orderId.substring(0, 8)}`,
@@ -428,34 +555,52 @@ async function handlePaymentActionRequired(paymentIntent: Stripe.PaymentIntent):
       return;
     }
 
-    // Get order details
-    const order = await db.query.orders?.findFirst({
-      where: (table: any, { eq }: any) => eq(table.id, orderId),
-      with: {
-        account: true,
-      }
-    });
+    // Get order and account details
+    const orderResult = await db
+      .select()
+      .from(orders)
+      .where(eq(orders.id, orderId))
+      .limit(1);
+    
+    if (orderResult.length === 0) {
+      console.error(`Order ${orderId} not found`);
+      return;
+    }
 
-    if (order?.account) {
-      try {
-        // TODO: Implement proper email notification
-        console.log(`Payment failed notification needed for ${order.account.email}`);
-        /*await EmailService.send({
-          to: order.account.email,
-          subject: `Payment Action Required - Order #${orderId.substring(0, 8)}`,
-          text: `Your payment for Order #${orderId.substring(0, 8)} requires additional verification. Please complete the payment process.`,
-          html: `
-            <div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto;">
-              <h2>Payment Action Required</h2>
-              <p>Your payment for Order #${orderId.substring(0, 8)} requires additional verification (such as 3D Secure).</p>
-              <p>Please return to your order page and complete the payment process.</p>
-              <p>This is a security measure to protect your payment.</p>
-              <p>Best regards,<br>The PostFlow Team</p>
-            </div>
-          `,
-        });*/
-      } catch (emailError) {
-        console.error('Failed to send payment action required notification email:', emailError);
+    const order = orderResult[0];
+    
+    // Get account email
+    if (order.accountId) {
+      const accountResult = await db
+        .select()
+        .from(accounts)
+        .where(eq(accounts.id, order.accountId))
+        .limit(1);
+      
+      if (accountResult.length > 0) {
+        const accountEmail = accountResult[0].email;
+        
+        try {
+          console.log(`Sending payment action required notification to ${accountEmail}`);
+          
+          // Send action required notification
+          await EmailService.send('notification', {
+            to: accountEmail,
+            subject: `Payment Action Required - Order #${orderId.substring(0, 8)}`,
+            text: `Your payment for Order #${orderId.substring(0, 8)} requires additional verification. Please complete the payment process.`,
+            html: `
+              <div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto;">
+                <h2>Payment Action Required</h2>
+                <p>Your payment for Order #${orderId.substring(0, 8)} requires additional verification (such as 3D Secure).</p>
+                <p>Please return to your order page and complete the payment process.</p>
+                <p>This is a security measure to protect your payment.</p>
+                <p>Best regards,<br>The PostFlow Team</p>
+              </div>
+            `,
+          });
+        } catch (emailError) {
+          console.error('Failed to send payment action required notification email:', emailError);
+        }
       }
     }
   } catch (error) {

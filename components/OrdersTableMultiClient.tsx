@@ -396,6 +396,18 @@ export function OrdersTableMultiClient({
                             Sites Ready
                           </button>
                         )}
+                        {/* Payment button for orders pending payment */}
+                        {order.state === 'payment_pending' && !order.paidAt && (
+                          <a
+                            href={`/orders/${order.id}/payment`}
+                            className="inline-flex items-center px-3 py-1.5 bg-orange-600 text-white text-sm rounded-md hover:bg-orange-700"
+                          >
+                            <svg className="h-4 w-4 mr-1" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M3 10h18M7 15h1m4 0h1m-7 4h12a3 3 0 003-3V8a3 3 0 00-3-3H6a3 3 0 00-3 3v8a3 3 0 003 3z" />
+                            </svg>
+                            Pay ${((order.totalRetail || 0) / 100).toFixed(0)}
+                          </a>
+                        )}
                         {isInternal && order.shareToken && (
                           <button
                             onClick={() => copyShareLink(order.shareToken!)}

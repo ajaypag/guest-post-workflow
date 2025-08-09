@@ -42,6 +42,11 @@ function PaymentForm({
   const elements = useElements();
   const [processing, setProcessing] = useState(false);
   const [errorMessage, setErrorMessage] = useState<string>('');
+  const [retryAttempts, setRetryAttempts] = useState(0);
+  const [canRetry, setCanRetry] = useState(false);
+  const [networkError, setNetworkError] = useState(false);
+
+  const MAX_RETRY_ATTEMPTS = 3;
 
   const handleSubmit = async (event: React.FormEvent) => {
     event.preventDefault();
@@ -69,6 +74,8 @@ function PaymentForm({
         
         // Handle specific Stripe error types
         let userFriendlyMessage = 'Payment failed';
+        let isRetryable = false;
+        
         switch (error.code) {
           case 'card_declined':
             userFriendlyMessage = 'Your card was declined. Please try a different payment method or contact your bank.';
@@ -77,20 +84,33 @@ function PaymentForm({
             userFriendlyMessage = 'Insufficient funds. Please check your account balance or use a different payment method.';
             break;
           case 'incorrect_cvc':
-            userFriendlyMessage = 'The security code is incorrect. Please check your card details.';
+            userFriendlyMessage = 'The security code is incorrect. Please check your card details and try again.';
+            isRetryable = true;
             break;
           case 'expired_card':
             userFriendlyMessage = 'Your card has expired. Please use a different payment method.';
             break;
           case 'processing_error':
             userFriendlyMessage = 'We encountered a processing error. Please try again in a few moments.';
+            isRetryable = true;
             break;
           case 'authentication_required':
             userFriendlyMessage = 'Additional authentication is required. Please complete the verification process.';
             break;
+          case 'api_connection_error':
+          case 'api_error':
+          case 'rate_limit_error':
+            userFriendlyMessage = 'Connection error. Please check your internet connection and try again.';
+            isRetryable = true;
+            setNetworkError(true);
+            break;
           default:
             userFriendlyMessage = error.message || 'Payment failed. Please try again or contact support.';
+            isRetryable = error.code !== 'card_declined' && error.code !== 'insufficient_funds';
         }
+        
+        // Enable retry button for retryable errors and if we haven't exceeded max attempts
+        setCanRetry(isRetryable && retryAttempts < MAX_RETRY_ATTEMPTS);
         
         setErrorMessage(userFriendlyMessage);
         onError?.(userFriendlyMessage);
@@ -125,13 +145,41 @@ function PaymentForm({
       }
     } catch (err) {
       console.error('Payment error:', err);
-      const errorMsg = err instanceof Error ? err.message : 'An unexpected error occurred';
-      setErrorMessage(errorMsg);
-      onError?.(errorMsg);
+      
+      // Handle network errors
+      const isNetworkError = err instanceof TypeError && err.message.includes('fetch') ||
+                            err instanceof Error && (
+                              err.message.includes('Network') ||
+                              err.message.includes('connection') ||
+                              err.message.includes('timeout')
+                            );
+      
+      if (isNetworkError) {
+        setNetworkError(true);
+        setCanRetry(retryAttempts < MAX_RETRY_ATTEMPTS);
+        setErrorMessage('Network connection error. Please check your internet connection and try again.');
+        onError?.('Network connection error. Please try again.');
+      } else {
+        const errorMsg = err instanceof Error ? err.message : 'An unexpected error occurred';
+        setErrorMessage(errorMsg);
+        onError?.(errorMsg);
+      }
     } finally {
       setProcessing(false);
       onProcessing?.(false);
     }
+  };
+
+  const handleRetry = () => {
+    setRetryAttempts(prev => prev + 1);
+    setErrorMessage('');
+    setNetworkError(false);
+    setCanRetry(false);
+    
+    // Retry with a short delay
+    setTimeout(() => {
+      handleSubmit({ preventDefault: () => {} } as React.FormEvent);
+    }, 1000);
   };
 
   return (
@@ -157,7 +205,31 @@ function PaymentForm({
 
       {errorMessage && (
         <div className="p-4 bg-red-50 border border-red-200 rounded-lg">
-          <p className="text-red-600 text-sm">{errorMessage}</p>
+          <div className="flex items-start justify-between">
+            <div className="flex-1">
+              <p className="text-red-600 text-sm">{errorMessage}</p>
+              {networkError && (
+                <p className="text-red-500 text-xs mt-2">
+                  Network issue detected. Please check your connection.
+                </p>
+              )}
+              {retryAttempts > 0 && (
+                <p className="text-gray-600 text-xs mt-1">
+                  Retry attempt {retryAttempts} of {MAX_RETRY_ATTEMPTS}
+                </p>
+              )}
+            </div>
+            {canRetry && (
+              <button
+                type="button"
+                onClick={handleRetry}
+                disabled={processing}
+                className="ml-4 px-3 py-1 text-xs font-medium text-red-700 bg-red-100 border border-red-300 rounded hover:bg-red-200 disabled:opacity-50 disabled:cursor-not-allowed"
+              >
+                Try Again
+              </button>
+            )}
+          </div>
         </div>
       )}
 
