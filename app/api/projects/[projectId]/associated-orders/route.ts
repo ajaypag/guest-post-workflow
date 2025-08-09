@@ -26,11 +26,11 @@ export async function GET(
         orderGroupId: projectOrderAssociations.orderGroupId,
         associationType: projectOrderAssociations.associationType,
         createdAt: projectOrderAssociations.createdAt,
-        orderName: orders.name,
+        orderType: orders.orderType,
         orderState: orders.state,
         orderStatus: orders.status,
-        orderTotalPrice: orders.totalPrice,
-        orderGroupName: orderGroups.name,
+        orderTotalRetail: orders.totalRetail,
+        orderCreatedAt: orders.createdAt,
         orderGroupLinkCount: orderGroups.linkCount,
         clientId: orderGroups.clientId
       })
@@ -39,16 +39,18 @@ export async function GET(
       .leftJoin(orderGroups, eq(projectOrderAssociations.orderGroupId, orderGroups.id))
       .where(eq(projectOrderAssociations.projectId, params.projectId));
     
-    // Format the response
+    // Format the response with generated names based on order ID and date
     const formattedOrders = associations.map(assoc => ({
       orderId: assoc.orderId,
-      orderName: assoc.orderName || 'Unknown Order',
+      // Generate a name from order ID and date
+      orderName: `Order #${assoc.orderId.substring(0, 8)}`,
       orderGroupId: assoc.orderGroupId,
-      orderGroupName: assoc.orderGroupName || 'Unknown Group',
-      createdAt: assoc.createdAt,
+      // Generate group name from group ID and link count
+      orderGroupName: `Group ${assoc.orderGroupId.substring(0, 4)} (${assoc.orderGroupLinkCount || 0} links)`,
+      createdAt: assoc.createdAt || assoc.orderCreatedAt,
       state: assoc.orderState,
       status: assoc.orderStatus,
-      totalPrice: assoc.orderTotalPrice,
+      totalPrice: assoc.orderTotalRetail,
       linkCount: assoc.orderGroupLinkCount,
       associationType: assoc.associationType,
       clientId: assoc.clientId
