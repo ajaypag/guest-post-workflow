@@ -687,10 +687,23 @@ export default function ProjectDetailPage() {
         if (checkResponse.ok) {
           const checkData = await checkResponse.json();
           
+          // Filter out domains already in current project
+          let domainsToAdd = domainList;
+          if (checkData.alreadyInProject && checkData.alreadyInProject.length > 0) {
+            console.log(`Skipping ${checkData.alreadyInProject.length} domains already in project:`, checkData.alreadyInProject);
+            domainsToAdd = domainList.filter(d => !checkData.alreadyInProject.includes(d));
+            
+            if (domainsToAdd.length === 0) {
+              setMessage(`⚠️ All selected domains are already in this project`);
+              setLoading(false);
+              return;
+            }
+          }
+          
           if (checkData.duplicates && checkData.duplicates.length > 0) {
-            // Store submission data for after resolution
+            // Store submission data for after resolution (only domains not already in project)
             setPendingDomainSubmission({
-              domains: domainList,
+              domains: domainsToAdd,
               targetPageIds: keywordInputMode === 'target-pages' ? selectedTargetPages : [],
               manualKeywords: keywordInputMode === 'manual' ? manualKeywords : undefined,
               projectId: params.projectId,
@@ -704,6 +717,9 @@ export default function ProjectDetailPage() {
             setLoading(false);
             return;
           }
+          
+          // Update domainList to only include domains not already in project
+          domainList = domainsToAdd;
         }
 
         // No duplicates, proceed with normal creation
@@ -770,10 +786,23 @@ export default function ProjectDetailPage() {
         if (checkResponse.ok) {
           const checkData = await checkResponse.json();
           
+          // Filter out domains already in current project
+          let domainsToAdd = domainList;
+          if (checkData.alreadyInProject && checkData.alreadyInProject.length > 0) {
+            console.log(`Skipping ${checkData.alreadyInProject.length} domains already in project:`, checkData.alreadyInProject);
+            domainsToAdd = domainList.filter(d => !checkData.alreadyInProject.includes(d));
+            
+            if (domainsToAdd.length === 0) {
+              setMessage(`⚠️ All entered domains are already in this project`);
+              setLoading(false);
+              return;
+            }
+          }
+          
           if (checkData.duplicates && checkData.duplicates.length > 0) {
-            // Store submission data for after resolution
+            // Store submission data for after resolution (only domains not already in project)
             setPendingDomainSubmission({
-              domains: domainList,
+              domains: domainsToAdd,
               targetPageIds: keywordInputMode === 'target-pages' ? selectedTargetPages : [],
               manualKeywords: keywordInputMode === 'manual' ? manualKeywords : undefined,
               projectId: params.projectId,
@@ -787,6 +816,9 @@ export default function ProjectDetailPage() {
             setLoading(false);
             return;
           }
+          
+          // Update domainList to only include domains not already in project
+          domainList = domainsToAdd;
         }
 
         // No duplicates, proceed with normal creation

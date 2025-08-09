@@ -582,14 +582,16 @@ export class BulkAnalysisService {
       hasWorkflow: boolean;
       checkedAt?: Date;
       checkedBy?: string;
+      isInCurrentProject?: boolean;
     }>;
     newDomains: string[];
+    alreadyInProject: string[];
   }> {
     try {
       const cleanedDomains = domains.map(d => this.cleanDomain(d));
       
-      // Get existing domains with project info
-      const existing = await db
+      // Get ALL existing domains (including current project)
+      const allExisting = await db
         .select({
           id: bulkAnalysisDomains.id,
           domain: bulkAnalysisDomains.domain,
@@ -605,12 +607,16 @@ export class BulkAnalysisService {
         .where(
           and(
             eq(bulkAnalysisDomains.clientId, clientId),
-            inArray(bulkAnalysisDomains.domain, cleanedDomains),
-            ne(bulkAnalysisDomains.projectId, currentProjectId) // Exclude current project
+            inArray(bulkAnalysisDomains.domain, cleanedDomains)
           )
         );
+      
+      // Separate domains in current project vs other projects
+      const inCurrentProject = allExisting.filter(e => e.projectId === currentProjectId);
+      const inOtherProjects = allExisting.filter(e => e.projectId !== currentProjectId);
 
-      const duplicates = existing.map(e => ({
+      // Only report duplicates from OTHER projects (not current)
+      const duplicates = inOtherProjects.map(e => ({
         domain: e.domain,
         existingDomainId: e.id,
         existingProjectId: e.projectId || '',
@@ -621,10 +627,17 @@ export class BulkAnalysisService {
         checkedBy: e.checkedBy || undefined,
       }));
 
-      const existingDomainNames = new Set(existing.map(e => e.domain));
+      // Domains already in the current project (skip these silently)
+      const alreadyInProject = inCurrentProject.map(e => e.domain);
+      
+      const existingDomainNames = new Set(allExisting.map(e => e.domain));
       const newDomains = cleanedDomains.filter(d => !existingDomainNames.has(d));
 
-      return { duplicates, newDomains };
+      return { 
+        duplicates, 
+        newDomains,
+        alreadyInProject,
+      };
     } catch (error) {
       console.error('Error checking duplicates with details:', error);
       throw error;
