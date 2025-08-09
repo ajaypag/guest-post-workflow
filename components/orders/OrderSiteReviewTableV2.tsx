@@ -602,11 +602,13 @@ export default function OrderSiteReviewTableV2({
                               </div>
                             </td>
                             <td className="py-3 text-center">
-                              {submission.metadata?.dr || '-'}
+                              {submission.domainRating || '-'}
                             </td>
                             <td className="py-3 text-center">
-                              {submission.metadata?.traffic ? 
-                                submission.metadata.traffic.toLocaleString() :
+                              {submission.traffic ? 
+                                (typeof submission.traffic === 'number' ? 
+                                  submission.traffic.toLocaleString() : 
+                                  submission.traffic) :
                                 '-'}
                             </td>
                           <td className="py-3">
