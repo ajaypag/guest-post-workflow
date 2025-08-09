@@ -362,6 +362,9 @@ export async function compareToBenchmark(orderId: string, userId?: string) {
     revenueDifference: actualRevenue - expectedRevenue,
     clientAnalysis,
     issues,
+    // Add the calculated DR and traffic ranges
+    drRange,
+    trafficRange,
   };
 
   // Save comparison

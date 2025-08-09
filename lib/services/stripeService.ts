@@ -11,11 +11,21 @@ import { eq, and } from 'drizzle-orm';
 import { v4 as uuidv4 } from 'uuid';
 
 
-// Initialize Stripe with the secret key
-const stripe = new Stripe(process.env.STRIPE_SECRET_KEY!, {
-  apiVersion: '2025-07-30.basil', // Latest stable API version
-  typescript: true,
-});
+// Initialize Stripe with the secret key (lazy initialization to avoid build errors)
+let stripe: Stripe | null = null;
+
+const getStripeClient = (): Stripe => {
+  if (!stripe) {
+    if (!process.env.STRIPE_SECRET_KEY) {
+      throw new Error('STRIPE_SECRET_KEY is not configured');
+    }
+    stripe = new Stripe(process.env.STRIPE_SECRET_KEY, {
+      apiVersion: '2025-07-30.basil', // Latest stable API version
+      typescript: true,
+    });
+  }
+  return stripe;
+};
 
 interface CreatePaymentIntentOptions {
   orderId: string;
@@ -59,7 +69,7 @@ export class StripeService {
       
       // Retrieve the customer from Stripe to ensure it still exists
       try {
-        const stripeCustomer = await stripe.customers.retrieve(dbCustomer.stripeCustomerId) as Stripe.Customer;
+        const stripeCustomer = await getStripeClient().customers.retrieve(dbCustomer.stripeCustomerId) as Stripe.Customer;
         
         if (stripeCustomer.deleted) {
           // Customer was deleted in Stripe, create a new one
@@ -74,7 +84,7 @@ export class StripeService {
     }
 
     // Create new customer in Stripe
-    const stripeCustomer = await stripe.customers.create({
+    const stripeCustomer = await getStripeClient().customers.create({
       email,
       name,
       address: billingAddress,
@@ -171,12 +181,12 @@ export class StripeService {
 
     if (existingPaymentIntent.length > 0) {
       const dbPaymentIntent = existingPaymentIntent[0];
-      const paymentIntent = await stripe.paymentIntents.retrieve(dbPaymentIntent.stripePaymentIntentId);
+      const paymentIntent = await getStripeClient().paymentIntents.retrieve(dbPaymentIntent.stripePaymentIntentId);
       return { paymentIntent, dbPaymentIntent };
     }
 
     // Create payment intent in Stripe
-    const paymentIntent = await stripe.paymentIntents.create({
+    const paymentIntent = await getStripeClient().paymentIntents.create({
       amount,
       currency: currency.toLowerCase(),
       customer: stripeCustomer.id,
@@ -316,7 +326,7 @@ export class StripeService {
    * Cancel a payment intent
    */
   static async cancelPaymentIntent(stripePaymentIntentId: string): Promise<Stripe.PaymentIntent> {
-    const paymentIntent = await stripe.paymentIntents.cancel(stripePaymentIntentId);
+    const paymentIntent = await getStripeClient().paymentIntents.cancel(stripePaymentIntentId);
     
     // Update in database
     await db
@@ -349,7 +359,7 @@ export class StripeService {
     }
 
     const pi = dbPaymentIntent[0];
-    const paymentIntent = await stripe.paymentIntents.retrieve(pi.stripePaymentIntentId);
+    const paymentIntent = await getStripeClient().paymentIntents.retrieve(pi.stripePaymentIntentId);
 
     return { paymentIntent, dbPaymentIntent: pi };
   }
@@ -362,7 +372,7 @@ export class StripeService {
     signature: string,
     webhookSecret: string
   ): Stripe.Event {
-    return stripe.webhooks.constructEvent(payload, signature, webhookSecret);
+    return getStripeClient().webhooks.constructEvent(payload, signature, webhookSecret);
   }
 
   /**

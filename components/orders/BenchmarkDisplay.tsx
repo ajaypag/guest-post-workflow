@@ -61,6 +61,8 @@ interface ComparisonData {
   expectedRevenue: number;
   actualRevenue: number;
   revenueDifference: number;
+  drRange?: number[];
+  trafficRange?: number[];
   clientAnalysis: Array<{
     clientId: string;
     clientName: string;
@@ -379,7 +381,13 @@ export default function BenchmarkDisplay({
                           : `${benchmark.benchmarkData.originalConstraints.drRange[0]}+`}
                       </div>
                       <div className="font-medium">
-                        <span className="text-gray-400 italic">Selection pending</span>
+                        {comparison?.comparisonData?.drRange && comparison.comparisonData.drRange.length > 0 ? (
+                          comparison.comparisonData.drRange.length === 2 ?
+                            `${comparison.comparisonData.drRange[0]} - ${comparison.comparisonData.drRange[1]}` :
+                            `${comparison.comparisonData.drRange[0]}+`
+                        ) : (
+                          <span className="text-gray-400 italic">Selection pending</span>
+                        )}
                       </div>
                     </div>
                   </div>
@@ -394,7 +402,13 @@ export default function BenchmarkDisplay({
                         Requested: {benchmark.benchmarkData.originalConstraints.minTraffic.toLocaleString()}+
                       </div>
                       <div className="font-medium">
-                        <span className="text-gray-400 italic">Selection pending</span>
+                        {comparison?.comparisonData?.trafficRange && comparison.comparisonData.trafficRange.length > 0 ? (
+                          comparison.comparisonData.trafficRange.length === 2 ?
+                            `${comparison.comparisonData.trafficRange[0].toLocaleString()} - ${comparison.comparisonData.trafficRange[1].toLocaleString()}` :
+                            `${comparison.comparisonData.trafficRange[0].toLocaleString()}+`
+                        ) : (
+                          <span className="text-gray-400 italic">Selection pending</span>
+                        )}
                       </div>
                     </div>
                   </div>
