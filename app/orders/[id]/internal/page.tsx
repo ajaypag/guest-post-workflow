@@ -468,7 +468,7 @@ export default function InternalOrderManagementPage() {
   const handleRefresh = async () => {
     setRefreshing(true);
     await loadOrder();
-    if (order?.state === 'sites_ready' || order?.order?.state === 'client_reviewing') {
+    if (order?.state === 'sites_ready' || order?.state === 'client_reviewing') {
       await loadSiteSubmissions();
     }
     if (order?.status === 'pending_confirmation') {

@@ -213,7 +213,7 @@ export default function OrderDetailPage() {
   }, [params.id]);
 
   useEffect(() => {
-    if ((order?.state === 'sites_ready' || order?.order?.state === 'client_reviewing' || order?.state === 'payment_pending' || order?.state === 'payment_received' || order?.state === 'workflows_generated' || order?.state === 'in_progress') && order.orderGroups) {
+    if ((order?.state === 'sites_ready' || order?.state === 'client_reviewing' || order?.state === 'payment_pending' || order?.state === 'payment_received' || order?.state === 'workflows_generated' || order?.state === 'in_progress') && order.orderGroups) {
       loadSiteSubmissions();
     }
     // Load benchmark for orders that have been submitted (includes pending_confirmation)
@@ -458,7 +458,7 @@ export default function OrderDetailPage() {
   const handleRefresh = async () => {
     setRefreshing(true);
     await loadOrder();
-    if (order?.state === 'sites_ready' || order?.order?.state === 'client_reviewing' || order?.state === 'payment_pending' || order?.state === 'payment_received' || order?.state === 'workflows_generated' || order?.state === 'in_progress') {
+    if (order?.state === 'sites_ready' || order?.state === 'client_reviewing' || order?.state === 'payment_pending' || order?.state === 'payment_received' || order?.state === 'workflows_generated' || order?.state === 'in_progress') {
       await loadSiteSubmissions();
     }
     if (order?.status === 'confirmed' || order?.status === 'paid' || order?.status === 'in_progress' || order?.status === 'completed') {
@@ -518,7 +518,7 @@ export default function OrderDetailPage() {
   // Calculate dynamic column count for progressive disclosure
   const getColumnCount = () => {
     let count = 3; // Base columns: Client/Target, Anchor, Price
-    if (order.order.state === 'in_progress' || order.status === 'completed') count++;
+    if (order.state === 'in_progress' || order.status === 'completed') count++;
     if (order.state === 'in_progress' || order.status === 'completed') count++;
     if (order.status === 'completed') count++;
     if (order.status === 'confirmed' && order.state === 'analyzing') count++;
@@ -704,7 +704,7 @@ export default function OrderDetailPage() {
                           </button>
                         </div>
                       )}
-                      {(order.order.state === 'client_reviewing') && (
+                      {(order.state === 'client_reviewing') && (
                         <div className="space-y-2">
                           <Link
                             href={`/orders/${order.id}/review`}
