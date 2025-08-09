@@ -88,8 +88,15 @@ export default function FixDuplicateDomainsPage() {
     checkStatus();
   }, []);
 
+  // Check if all required things exist and no unwanted things exist
+  const hasUnwantedConstraints = constraints.some(c => !c.shouldExist);
+  const missingRequiredConstraints = !constraints.some(c => c.shouldExist && c.name === 'uk_bulk_analysis_domains_client_domain_project');
+  const allColumnsExist = statusChecks.filter(c => c.name.includes('column:')).every(c => c.status === 'exists');
+  
   const allChecksPass = statusChecks.length > 0 && 
-    statusChecks.every(check => check.status === 'exists');
+    allColumnsExist &&
+    !hasUnwantedConstraints && 
+    !missingRequiredConstraints;
 
   return (
     <AuthWrapper>
