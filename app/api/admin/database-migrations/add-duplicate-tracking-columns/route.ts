@@ -22,19 +22,35 @@ export async function POST(request: NextRequest) {
     console.log('Starting duplicate tracking columns migration...');
 
     // Step 0: Drop the existing unique constraint that prevents duplicates across projects
-    // First, find the constraint name
-    const constraintResult = await db.execute(sql`
-      SELECT conname 
-      FROM pg_constraint 
-      WHERE conrelid = 'bulk_analysis_domains'::regclass 
-      AND contype = 'u'
-      AND NOT conname LIKE '%pkey%'
-    `);
+    // Drop the specific constraint we know exists
+    try {
+      await db.execute(sql`
+        ALTER TABLE bulk_analysis_domains 
+        DROP CONSTRAINT IF EXISTS idx_bulk_analysis_domains_client_domain
+      `);
+      console.log('Dropped idx_bulk_analysis_domains_client_domain constraint');
+    } catch (error) {
+      console.log('Constraint idx_bulk_analysis_domains_client_domain not found or already dropped');
+    }
     
-    if (constraintResult.rows.length > 0) {
-      const constraintName = (constraintResult.rows[0] as any).conname;
-      console.log(`Dropping existing constraint: ${constraintName}`);
-      await db.execute(sql`ALTER TABLE bulk_analysis_domains DROP CONSTRAINT ${sql.raw(constraintName)}`);
+    // Also try to drop any other unique constraints on (client_id, domain)
+    try {
+      const constraintResult = await db.execute(sql`
+        SELECT conname 
+        FROM pg_constraint 
+        WHERE conrelid = 'bulk_analysis_domains'::regclass 
+        AND contype = 'u'
+        AND NOT conname LIKE '%pkey%'
+        AND NOT conname LIKE '%project%'
+      `);
+      
+      for (const row of constraintResult.rows) {
+        const constraintName = (row as any).conname;
+        console.log(`Dropping additional constraint: ${constraintName}`);
+        await db.execute(sql`ALTER TABLE bulk_analysis_domains DROP CONSTRAINT IF EXISTS ${sql.raw(constraintName)}`);
+      }
+    } catch (error) {
+      console.log('No additional constraints to drop');
     }
 
     // Step 1: Add columns for duplicate tracking and resolution history
@@ -102,11 +118,32 @@ export async function POST(request: NextRequest) {
 
     const addedColumns = result.rows.map((row: any) => row.column_name);
 
+    // Verify the old constraint is gone
+    const oldConstraintCheck = await db.execute(sql`
+      SELECT COUNT(*) as count 
+      FROM pg_constraint 
+      WHERE conname = 'idx_bulk_analysis_domains_client_domain'
+    `);
+    
+    const oldConstraintExists = (oldConstraintCheck.rows[0] as any).count > 0;
+
+    // Verify the new constraint exists
+    const newConstraintCheck = await db.execute(sql`
+      SELECT COUNT(*) as count 
+      FROM pg_indexes 
+      WHERE indexname = 'uk_bulk_analysis_domains_client_domain_project'
+    `);
+    
+    const newConstraintExists = (newConstraintCheck.rows[0] as any).count > 0;
+
     return NextResponse.json({ 
       success: true,
       message: 'Duplicate tracking columns migration completed successfully',
       addedColumns,
-      columnCount: addedColumns.length
+      columnCount: addedColumns.length,
+      oldConstraintRemoved: !oldConstraintExists,
+      newConstraintAdded: newConstraintExists,
+      warnings: oldConstraintExists ? ['Old constraint still exists - may need manual removal'] : []
     });
 
   } catch (error: any) {
