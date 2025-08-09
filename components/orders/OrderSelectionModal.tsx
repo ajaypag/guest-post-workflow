@@ -1,7 +1,7 @@
 'use client';
 
 import React, { useState, useEffect } from 'react';
-import { X, Plus, FileText, Loader2 } from 'lucide-react';
+import { X, Plus, FileText, Loader2, ShoppingBag, Calendar, Hash, Package } from 'lucide-react';
 
 interface Account {
   id: string;
@@ -126,6 +126,19 @@ export default function OrderSelectionModal({
     });
   };
 
+  const getOrderAge = (dateString: string) => {
+    const now = new Date();
+    const created = new Date(dateString);
+    const diffInMs = now.getTime() - created.getTime();
+    const diffInDays = Math.floor(diffInMs / (1000 * 60 * 60 * 24));
+    
+    if (diffInDays === 0) return 'Today';
+    if (diffInDays === 1) return '1 day old';
+    if (diffInDays < 7) return `${diffInDays} days old`;
+    if (diffInDays < 30) return `${Math.floor(diffInDays / 7)} weeks old`;
+    return `${Math.floor(diffInDays / 30)} months old`;
+  };
+
   if (!isOpen) return null;
 
   return (
@@ -159,43 +172,70 @@ export default function OrderSelectionModal({
                       This project is associated with the following orders:
                     </p>
                     <div className="space-y-2">
-                      {associatedOrders.map((order) => (
-                        <label
-                          key={order.id}
-                          className={`flex items-start p-4 border-2 rounded-lg cursor-pointer transition-colors hover:bg-gray-50 ${
-                            selectedOption === 'existing' && selectedOrderId === order.id
-                              ? 'border-blue-500 bg-blue-50'
-                              : 'border-gray-200'
-                          }`}
-                        >
-                          <input
-                            type="radio"
-                            name="orderOption"
-                            value={order.id}
-                            checked={selectedOption === 'existing' && selectedOrderId === order.id}
-                            onChange={() => {
-                              setSelectedOption('existing');
-                              setSelectedOrderId(order.id);
-                            }}
-                            className="mt-1 text-blue-600 focus:ring-blue-500"
-                          />
-                          <div className="ml-3 flex-1">
-                            <div className="flex items-center gap-2">
-                              <FileText className="h-4 w-4 text-blue-600" />
-                              <span className="font-medium text-gray-900">
-                                {order.account?.contactName || order.account?.companyName || order.account?.email || 'Unknown'}
-                              </span>
-                              <span className="text-xs bg-blue-100 text-blue-700 px-2 py-0.5 rounded">
-                                Associated Order
-                              </span>
+                      {associatedOrders.map((order, index) => {
+                        // Assign unique colors to orders
+                        const colors = [
+                          { bg: 'bg-blue-50', border: 'border-blue-500', icon: 'text-blue-600', badge: 'bg-blue-100 text-blue-700' },
+                          { bg: 'bg-green-50', border: 'border-green-500', icon: 'text-green-600', badge: 'bg-green-100 text-green-700' },
+                          { bg: 'bg-purple-50', border: 'border-purple-500', icon: 'text-purple-600', badge: 'bg-purple-100 text-purple-700' },
+                        ][index % 3];
+                        
+                        return (
+                          <label
+                            key={order.id}
+                            className={`flex items-start p-4 border-2 rounded-lg cursor-pointer transition-colors hover:shadow-md ${
+                              selectedOption === 'existing' && selectedOrderId === order.id
+                                ? `${colors.border} ${colors.bg}`
+                                : 'border-gray-200 hover:bg-gray-50'
+                            }`}
+                          >
+                            <input
+                              type="radio"
+                              name="orderOption"
+                              value={order.id}
+                              checked={selectedOption === 'existing' && selectedOrderId === order.id}
+                              onChange={() => {
+                                setSelectedOption('existing');
+                                setSelectedOrderId(order.id);
+                              }}
+                              className="mt-1 text-blue-600 focus:ring-blue-500"
+                            />
+                            <div className="ml-3 flex-1">
+                              <div className="flex items-center gap-2 mb-2">
+                                <ShoppingBag className={`h-4 w-4 ${colors.icon}`} />
+                                <span className="font-semibold text-gray-900">
+                                  Order #{order.id.substring(0, 8)}
+                                </span>
+                                <span className={`text-xs px-2 py-0.5 rounded ${colors.badge}`}>
+                                  Associated #{index + 1}
+                                </span>
+                              </div>
+                              <div className="grid grid-cols-2 gap-2 text-sm text-gray-600">
+                                <div className="flex items-center gap-1">
+                                  <Package className="h-3 w-3" />
+                                  <span>{order.itemCount || 0} domains</span>
+                                </div>
+                                <div className="flex items-center gap-1">
+                                  <Hash className="h-3 w-3" />
+                                  <span>{formatCurrency(order.totalRetail)}</span>
+                                </div>
+                                <div className="flex items-center gap-1">
+                                  <Calendar className="h-3 w-3" />
+                                  <span className="text-xs">{formatDate(order.createdAt)}</span>
+                                </div>
+                                <div className="text-xs">
+                                  Status: <span className="capitalize font-medium">{order.status || 'draft'}</span>
+                                </div>
+                              </div>
+                              {order.account && (
+                                <div className="mt-2 pt-2 border-t border-gray-200 text-xs text-gray-500">
+                                  Account: {order.account.contactName || order.account.companyName || order.account.email}
+                                </div>
+                              )}
                             </div>
-                            <div className="text-sm text-gray-600 mt-1">
-                              <p>{order.itemCount || 0} domains • {formatCurrency(order.totalRetail)}</p>
-                              <p className="text-xs">Status: <span className="capitalize">{order.status || 'draft'}</span></p>
-                            </div>
-                          </div>
-                        </label>
-                      ))}
+                          </label>
+                        );
+                      })}
                     </div>
                   </div>
 
@@ -244,40 +284,70 @@ export default function OrderSelectionModal({
                   </div>
 
                   <div className="space-y-2 max-h-64 overflow-y-auto">
-                    {draftOrders.map((order) => (
-                      <label
-                        key={order.id}
-                        className={`flex items-start p-4 border-2 rounded-lg cursor-pointer transition-colors hover:bg-gray-50 ${
-                          selectedOption === 'existing' && selectedOrderId === order.id
-                            ? 'border-blue-500 bg-blue-50'
-                            : 'border-gray-200'
-                        }`}
-                      >
-                        <input
-                          type="radio"
-                          name="orderOption"
-                          value={order.id}
-                          checked={selectedOption === 'existing' && selectedOrderId === order.id}
-                          onChange={() => {
-                            setSelectedOption('existing');
-                            setSelectedOrderId(order.id);
-                          }}
-                          className="mt-1 text-blue-600 focus:ring-blue-500"
-                        />
-                        <div className="ml-3 flex-1">
-                          <div className="flex items-center gap-2">
-                            <FileText className="h-4 w-4 text-gray-600" />
-                            <span className="font-medium text-gray-900">
-                              {order.account?.contactName || order.account?.companyName || order.account?.email || 'Unknown'}
-                            </span>
+                    {draftOrders.map((order, index) => {
+                      // Assign unique colors to draft orders
+                      const colors = [
+                        { bg: 'bg-amber-50', border: 'border-amber-500', icon: 'text-amber-600', badge: 'bg-amber-100 text-amber-700' },
+                        { bg: 'bg-pink-50', border: 'border-pink-500', icon: 'text-pink-600', badge: 'bg-pink-100 text-pink-700' },
+                        { bg: 'bg-indigo-50', border: 'border-indigo-500', icon: 'text-indigo-600', badge: 'bg-indigo-100 text-indigo-700' },
+                      ][index % 3];
+                      
+                      return (
+                        <label
+                          key={order.id}
+                          className={`flex items-start p-4 border-2 rounded-lg cursor-pointer transition-colors hover:shadow-md ${
+                            selectedOption === 'existing' && selectedOrderId === order.id
+                              ? `${colors.border} ${colors.bg}`
+                              : 'border-gray-200 hover:bg-gray-50'
+                          }`}
+                        >
+                          <input
+                            type="radio"
+                            name="orderOption"
+                            value={order.id}
+                            checked={selectedOption === 'existing' && selectedOrderId === order.id}
+                            onChange={() => {
+                              setSelectedOption('existing');
+                              setSelectedOrderId(order.id);
+                            }}
+                            className="mt-1 text-blue-600 focus:ring-blue-500"
+                          />
+                          <div className="ml-3 flex-1">
+                            <div className="flex items-center gap-2 mb-2">
+                              <FileText className={`h-4 w-4 ${colors.icon}`} />
+                              <span className="font-semibold text-gray-900">
+                                Draft Order #{order.id.substring(0, 8)}
+                              </span>
+                              <span className={`text-xs px-2 py-0.5 rounded ${colors.badge}`}>
+                                Draft #{index + 1}
+                              </span>
+                            </div>
+                            <div className="grid grid-cols-2 gap-2 text-sm text-gray-600">
+                              <div className="flex items-center gap-1">
+                                <Package className="h-3 w-3" />
+                                <span>{order.itemCount || 0} domains</span>
+                              </div>
+                              <div className="flex items-center gap-1">
+                                <Hash className="h-3 w-3" />
+                                <span>{formatCurrency(order.totalRetail)}</span>
+                              </div>
+                              <div className="flex items-center gap-1">
+                                <Calendar className="h-3 w-3" />
+                                <span className="text-xs">{formatDate(order.createdAt)}</span>
+                              </div>
+                              <div className="text-xs">
+                                Age: <span className="font-medium">{getOrderAge(order.createdAt)}</span>
+                              </div>
+                            </div>
+                            {order.account && (
+                              <div className="mt-2 pt-2 border-t border-gray-200 text-xs text-gray-500">
+                                Account: {order.account.contactName || order.account.companyName || order.account.email}
+                              </div>
+                            )}
                           </div>
-                          <div className="text-sm text-gray-600 mt-1">
-                            <p>{order.itemCount} domains • {formatCurrency(order.totalRetail)}</p>
-                            <p className="text-xs">Created {formatDate(order.createdAt)}</p>
-                          </div>
-                        </div>
-                      </label>
-                    ))}
+                        </label>
+                      );
+                    })}
                   </div>
                 </>
               )}
