@@ -658,7 +658,7 @@ export default function ProjectDetailPage() {
       setMessage('');
       try {
         // Extract domains and metadata from selected websites
-        const domainList = selectedDatabaseWebsites.map(w => w.domain);
+        let domainList = selectedDatabaseWebsites.map(w => w.domain);
         const metadata: Record<string, any> = {};
         
         selectedDatabaseWebsites.forEach(website => {
@@ -768,7 +768,7 @@ export default function ProjectDetailPage() {
 
       try {
         // Parse domains
-        const domainList = domainText
+        let domainList = domainText
           .split('\n')
           .map(d => d.trim())
           .filter(Boolean);
