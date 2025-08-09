@@ -375,7 +375,9 @@ async function handlePaymentFailure(paymentIntent: Stripe.PaymentIntent): Promis
       const errorCode = paymentIntent.last_payment_error?.code || 'unknown_error';
 
       try {
-        await emailService.send({
+        // TODO: Implement proper email notification
+        console.log(`Payment failed notification needed for ${order.account.email}`);
+        /*await EmailService.send({
           to: order.account.email,
           subject: `Payment Failed - Order #${orderId.substring(0, 8)}`,
           text: `Your payment for Order #${orderId.substring(0, 8)} has failed. Please try again or contact support.\n\nError: ${errorMessage}`,
@@ -388,10 +390,10 @@ async function handlePaymentFailure(paymentIntent: Stripe.PaymentIntent): Promis
               <p>Best regards,<br>The PostFlow Team</p>
             </div>
           `,
-        });
+        });*/
 
         // Also notify internal team
-        await emailService.send({
+        /*await EmailService.send({
           to: 'admin@postflow.outreachlabs.net',
           subject: `Payment Failed - Order ${orderId.substring(0, 8)}`,
           text: `Payment failed for Order ${orderId}. Error: ${errorCode} - ${errorMessage}`,
@@ -405,7 +407,7 @@ async function handlePaymentFailure(paymentIntent: Stripe.PaymentIntent): Promis
               <p><strong>Payment Intent:</strong> ${paymentIntent.id}</p>
             </div>
           `,
-        });
+        });*/
       } catch (emailError) {
         console.error('Failed to send payment failure notification email:', emailError);
       }
@@ -436,7 +438,9 @@ async function handlePaymentActionRequired(paymentIntent: Stripe.PaymentIntent):
 
     if (order?.account) {
       try {
-        await emailService.send({
+        // TODO: Implement proper email notification
+        console.log(`Payment failed notification needed for ${order.account.email}`);
+        /*await EmailService.send({
           to: order.account.email,
           subject: `Payment Action Required - Order #${orderId.substring(0, 8)}`,
           text: `Your payment for Order #${orderId.substring(0, 8)} requires additional verification. Please complete the payment process.`,
@@ -449,7 +453,7 @@ async function handlePaymentActionRequired(paymentIntent: Stripe.PaymentIntent):
               <p>Best regards,<br>The PostFlow Team</p>
             </div>
           `,
-        });
+        });*/
       } catch (emailError) {
         console.error('Failed to send payment action required notification email:', emailError);
       }

@@ -149,8 +149,8 @@ export async function POST(
       setupFutureUsage: validatedData.setupFutureUsage,
       metadata: {
         orderType: order.orderType,
-        orderState: order.state,
-        companyName: account.companyName || account.name,
+        orderState: order.state || 'unknown',
+        companyName: account.companyName || account.contactName || 'Unknown',
       },
     });
 

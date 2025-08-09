@@ -15,6 +15,7 @@ export async function GET() {
       publishableKeyAccessible: !!publishableKey,
       secretKeyAccessible: !!secretKey,
       webhookSecretAccessible: !!webhookSecret,
+      sdkInitialized: false as boolean,
     };
 
     // Test Stripe SDK initialization

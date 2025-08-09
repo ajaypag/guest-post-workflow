@@ -1,7 +1,7 @@
 'use client';
 
 import React from 'react';
-import { CheckCircleIcon, XMarkIcon } from '@heroicons/react/24/outline';
+import { CheckCircle, X } from 'lucide-react';
 
 interface PaymentSuccessModalProps {
   isOpen: boolean;
@@ -37,14 +37,14 @@ export default function PaymentSuccessModal({
           onClick={onClose}
           className="absolute top-4 right-4 text-gray-400 hover:text-gray-600 transition-colors"
         >
-          <XMarkIcon className="h-6 w-6" />
+          <X className="h-6 w-6" />
         </button>
 
         {/* Success content */}
         <div className="text-center">
           {/* Success icon */}
           <div className="mx-auto flex items-center justify-center h-16 w-16 rounded-full bg-green-100 mb-4">
-            <CheckCircleIcon className="h-10 w-10 text-green-600" />
+            <CheckCircle className="h-10 w-10 text-green-600" />
           </div>
 
           {/* Title */}

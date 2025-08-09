@@ -140,7 +140,7 @@ export default function OrderPaymentPage({ order, className }: OrderPaymentPageP
               
               <div className="flex justify-between">
                 <span className="text-gray-600">Status:</span>
-                <span className="capitalize font-medium text-blue-600">{order.state.replace('_', ' ')}</span>
+                <span className="capitalize font-medium text-blue-600">{order.state?.replace('_', ' ') || 'Unknown'}</span>
               </div>
               
               {order.estimatedLinksCount && (
@@ -167,17 +167,17 @@ export default function OrderPaymentPage({ order, className }: OrderPaymentPageP
                   </div>
                 )}
                 
-                {order.rushDelivery && order.rushFee > 0 && (
+                {order.rushDelivery && order.rushFee && order.rushFee > 0 && (
                   <div className="flex justify-between">
                     <span className="text-gray-600">Rush Delivery:</span>
-                    <span>${(order.rushFee / 100).toFixed(2)}</span>
+                    <span>${((order.rushFee || 0) / 100).toFixed(2)}</span>
                   </div>
                 )}
                 
-                {order.includesClientReview && order.clientReviewFee > 0 && (
+                {order.includesClientReview && order.clientReviewFee && order.clientReviewFee > 0 && (
                   <div className="flex justify-between">
                     <span className="text-gray-600">Client Review:</span>
-                    <span>${(order.clientReviewFee / 100).toFixed(2)}</span>
+                    <span>${((order.clientReviewFee || 0) / 100).toFixed(2)}</span>
                   </div>
                 )}
                 

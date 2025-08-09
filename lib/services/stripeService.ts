@@ -13,7 +13,7 @@ import { v4 as uuidv4 } from 'uuid';
 
 // Initialize Stripe with the secret key
 const stripe = new Stripe(process.env.STRIPE_SECRET_KEY!, {
-  apiVersion: '2023-10-16', // Use a stable API version
+  apiVersion: '2025-07-30.basil', // Latest stable API version
   typescript: true,
 });
 
@@ -156,7 +156,7 @@ export class StripeService {
     const { stripeCustomer } = await this.createOrRetrieveCustomer({
       accountId,
       email: accountData.email,
-      name: accountData.companyName || accountData.name,
+      name: accountData.companyName || accountData.contactName,
     });
 
     // Generate idempotency key if not provided
@@ -217,8 +217,8 @@ export class StripeService {
         confirmationMethod: paymentIntent.confirmation_method as string,
         setupFutureUsage: paymentIntent.setup_future_usage as string,
         amountCapturable: paymentIntent.amount_capturable,
-        amountCaptured: paymentIntent.amount_captured || 0,
-        amountReceived: paymentIntent.amount_received || 0,
+        amountCaptured: 0, // Will be updated via webhook when payment is captured
+        amountReceived: 0, // Will be updated via webhook when payment is received
         createdAt: new Date(),
         updatedAt: new Date(),
       })
@@ -256,8 +256,8 @@ export class StripeService {
         status: paymentIntent.status,
         paymentMethodId: paymentIntent.payment_method as string,
         amountCapturable: paymentIntent.amount_capturable,
-        amountCaptured: paymentIntent.amount_captured || 0,
-        amountReceived: paymentIntent.amount_received || 0,
+        amountCaptured: 0, // Will be updated when payment is captured
+        amountReceived: 0, // Will be updated when payment is received
         lastWebhookEventId: eventId,
         lastError: paymentIntent.last_payment_error ? JSON.stringify(paymentIntent.last_payment_error) : null,
         failureCode: paymentIntent.last_payment_error?.code || null,
