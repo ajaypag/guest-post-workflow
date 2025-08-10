@@ -13,6 +13,18 @@ import { EmailService } from '@/lib/services/emailService';
 const WEBHOOK_MAX_SIZE = 1024 * 1024; // 1MB max payload size
 const rateLimitMap = new Map<string, { count: number; resetTime: number }>();
 
+// Clean up old rate limit entries every hour to prevent memory leak
+if (typeof global !== 'undefined' && !(global as any).rateLimitCleanupInterval) {
+  (global as any).rateLimitCleanupInterval = setInterval(() => {
+    const now = Date.now();
+    for (const [key, value] of rateLimitMap.entries()) {
+      if (value.resetTime < now) {
+        rateLimitMap.delete(key);
+      }
+    }
+  }, 60 * 60 * 1000); // Run every hour
+}
+
 function checkRateLimit(ip: string): boolean {
   const now = Date.now();
   const windowMs = 60 * 1000; // 1 minute window
@@ -508,8 +520,9 @@ async function handlePaymentFailure(paymentIntent: Stripe.PaymentIntent): Promis
         // Keeping commented to avoid duplicate emails
 
         // Notify internal team about payment failure
+        const adminEmail = process.env.ADMIN_NOTIFICATION_EMAIL || 'admin@postflow.outreachlabs.net';
         await EmailService.send({
-          to: 'admin@postflow.outreachlabs.net',
+          to: adminEmail,
           subject: `Payment Failed - Order ${orderId.substring(0, 8)}`,
           text: `Payment failed for Order ${orderId}. Error: ${errorCode} - ${errorMessage}`,
           html: `
