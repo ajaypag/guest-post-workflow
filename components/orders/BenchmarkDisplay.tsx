@@ -349,7 +349,11 @@ export default function BenchmarkDisplay({
                         Requested: {formatCurrency(benchmark.benchmarkData.originalConstraints.estimatedPricePerLink)}
                       </div>
                       <div className="font-medium">
-                        Current Total: {formatCurrency(comparison?.comparisonData?.actualRevenue || 0)}
+                        Current Avg per Link: {
+                          comparison?.comparisonData?.deliveredLinks && comparison.comparisonData.deliveredLinks > 0
+                            ? formatCurrency((comparison.comparisonData.actualRevenue || 0) / comparison.comparisonData.deliveredLinks)
+                            : 'No sites selected'
+                        }
                       </div>
                     </div>
                   </div>
@@ -438,9 +442,11 @@ export default function BenchmarkDisplay({
                         Expected: {formatCurrency(benchmark.benchmarkData.originalConstraints.estimatorSnapshot.medianPrice)}
                       </div>
                       <div className="font-medium">
-                        Current Avg: {benchmark.benchmarkData.totalRequestedLinks > 0 
-                          ? formatCurrency(benchmark.benchmarkData.orderTotal / benchmark.benchmarkData.totalRequestedLinks)
-                          : 'N/A'}
+                        Current Avg: {
+                          comparison?.comparisonData?.deliveredLinks && comparison.comparisonData.deliveredLinks > 0
+                            ? formatCurrency((comparison.comparisonData.actualRevenue || 0) / comparison.comparisonData.deliveredLinks)
+                            : 'No sites selected'
+                        }
                       </div>
                     </div>
                   </div>
