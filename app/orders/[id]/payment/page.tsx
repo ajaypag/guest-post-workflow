@@ -48,7 +48,15 @@ export default function PaymentPage() {
         }
 
         const data = await response.json();
-        console.log('[PAYMENT PAGE] Order data received:', data);
+        console.log('[PAYMENT PAGE] Order data received:', {
+          id: data.id,
+          state: data.state,
+          totalRetail: data.totalRetail,
+          subtotalRetail: data.subtotalRetail,
+          discountAmount: data.discountAmount,
+          invoiceData: data.invoiceData ? 'present' : 'missing',
+          invoicedAt: data.invoicedAt
+        });
         
         // Check if we actually got order data
         if (!data || !data.id) {
@@ -117,6 +125,30 @@ export default function PaymentPage() {
     );
   }
 
+  // Check if invoice has been generated
+  if (!order.invoiceData || !order.totalRetail) {
+    return (
+      <div className="container mx-auto px-4 py-8">
+        <div className="max-w-2xl mx-auto">
+          <div className="bg-yellow-50 border border-yellow-200 rounded-lg p-6">
+            <h2 className="text-lg font-semibold text-yellow-800 mb-2">
+              Invoice Not Generated
+            </h2>
+            <p className="text-yellow-700">
+              An invoice needs to be generated before payment can be processed.
+            </p>
+            <a
+              href={`/orders/${order.id}`}
+              className="inline-block mt-4 bg-yellow-600 text-white px-4 py-2 rounded-lg hover:bg-yellow-700 transition-colors"
+            >
+              Return to Order
+            </a>
+          </div>
+        </div>
+      </div>
+    );
+  }
+
   // Check if order is in a payable state
   const payableStates = ['payment_pending', 'reviewing', 'sites_ready'];
   if (!payableStates.includes(order.state) && !order.paidAt) {
@@ -142,13 +174,15 @@ export default function PaymentPage() {
     );
   }
 
-  // Convert order to match OrderPaymentPage expectations
+  // Order already has the correct fields after invoice generation
+  // No need to map - just ensure defaults for optional fields
   const orderForPayment = {
     ...order,
-    totalRetail: order.totalPrice, // Map totalPrice to totalRetail for compatibility
+    // These fields should already exist from invoice generation:
+    // totalRetail, subtotalRetail, discountAmount, discountPercent
+    // Just ensure optional fields have defaults
     rushFee: order.rushFee || 0,
     clientReviewFee: order.clientReviewFee || 0,
-    subtotalRetail: order.subtotal || order.totalPrice,
     estimatedLinksCount: order.estimatedLinksCount || 0,
     account: order.account || {},
     paidAt: order.paidAt || null
