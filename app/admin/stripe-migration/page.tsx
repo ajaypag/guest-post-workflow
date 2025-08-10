@@ -16,22 +16,16 @@ export default function StripeMigrationPage() {
   const router = useRouter();
   const [checks, setChecks] = useState<MigrationCheck[]>([
     {
-      name: 'stripe_payment_intents',
-      description: 'Core table for tracking Stripe Payment Intents',
+      name: 'refunds_table',
+      description: 'Refunds tracking table and order refund columns',
       status: 'pending',
       icon: <CreditCard className="h-5 w-5" />
     },
     {
-      name: 'stripe_customers', 
-      description: 'Stripe customer records linked to accounts',
+      name: 'payment_intent_column', 
+      description: 'stripe_payment_intent_id column in payments table',
       status: 'pending',
       icon: <Shield className="h-5 w-5" />
-    },
-    {
-      name: 'stripe_webhooks',
-      description: 'Webhook event processing and deduplication',
-      status: 'pending',
-      icon: <Webhook className="h-5 w-5" />
     }
   ]);
   const [isChecking, setIsChecking] = useState(false);
@@ -108,14 +102,14 @@ export default function StripeMigrationPage() {
           <div className="flex items-center gap-3 mb-6">
             <Database className="h-8 w-8 text-blue-600" />
             <div>
-              <h1 className="text-2xl font-bold text-gray-900">Stripe Database Migration</h1>
-              <p className="text-gray-600">Manage database tables required for Stripe payment integration</p>
+              <h1 className="text-2xl font-bold text-gray-900">Stripe Refunds Migration</h1>
+              <p className="text-gray-600">Apply database migrations for Stripe refunds and payment intent tracking</p>
             </div>
           </div>
 
           {/* Migration Status */}
           <div className="mb-8">
-            <h2 className="text-lg font-semibold mb-4">Required Tables Status</h2>
+            <h2 className="text-lg font-semibold mb-4">Migration Status</h2>
             <div className="space-y-3">
               {checks.map((check) => (
                 <div key={check.name} className="border rounded-lg p-4">
@@ -263,43 +257,50 @@ export default function StripeMigrationPage() {
                   View Migration SQL
                 </summary>
                 <pre className="mt-3 p-4 bg-gray-50 rounded-lg text-xs overflow-x-auto">
-{`-- Stripe Payment Integration Tables
-
-CREATE TABLE IF NOT EXISTS "stripe_payment_intents" (
-  "id" uuid PRIMARY KEY DEFAULT gen_random_uuid(),
-  "order_id" uuid NOT NULL REFERENCES "orders"("id") ON DELETE CASCADE,
-  "payment_id" uuid REFERENCES "payments"("id"),
-  "stripe_payment_intent_id" varchar(255) NOT NULL UNIQUE,
-  "stripe_customer_id" varchar(255),
-  "amount" integer NOT NULL,
-  "currency" varchar(3) NOT NULL DEFAULT 'USD',
-  "status" varchar(50) NOT NULL,
-  "client_secret" text NOT NULL,
-  "metadata" jsonb,
-  "idempotency_key" varchar(255) UNIQUE,
-  "created_at" timestamp DEFAULT now() NOT NULL,
-  "updated_at" timestamp DEFAULT now() NOT NULL
+{`-- Migration 0030: Add Refunds Table
+CREATE TABLE IF NOT EXISTS refunds (
+  id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+  payment_id UUID NOT NULL REFERENCES payments(id),
+  order_id UUID NOT NULL REFERENCES orders(id),
+  
+  stripe_refund_id VARCHAR(255) NOT NULL,
+  amount INTEGER NOT NULL,
+  currency VARCHAR(3) NOT NULL DEFAULT 'USD',
+  status VARCHAR(50) NOT NULL,
+  
+  reason VARCHAR(50),
+  notes TEXT,
+  failure_reason VARCHAR(500),
+  
+  initiated_by UUID NOT NULL REFERENCES users(id),
+  metadata JSONB,
+  
+  processed_at TIMESTAMP,
+  canceled_at TIMESTAMP,
+  created_at TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
+  updated_at TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP
 );
 
-CREATE TABLE IF NOT EXISTS "stripe_customers" (
-  "id" uuid PRIMARY KEY DEFAULT gen_random_uuid(),
-  "account_id" uuid NOT NULL REFERENCES "accounts"("id"),
-  "stripe_customer_id" varchar(255) NOT NULL UNIQUE,
-  "email" varchar(255) NOT NULL,
-  "name" varchar(255),
-  "created_at" timestamp DEFAULT now() NOT NULL,
-  "updated_at" timestamp DEFAULT now() NOT NULL
-);
+-- Add indexes
+CREATE UNIQUE INDEX IF NOT EXISTS idx_refunds_stripe_id ON refunds(stripe_refund_id);
+CREATE INDEX IF NOT EXISTS idx_refunds_payment ON refunds(payment_id);
+CREATE INDEX IF NOT EXISTS idx_refunds_order ON refunds(order_id);
+CREATE INDEX IF NOT EXISTS idx_refunds_status ON refunds(status);
 
-CREATE TABLE IF NOT EXISTS "stripe_webhooks" (
-  "id" uuid PRIMARY KEY DEFAULT gen_random_uuid(),
-  "stripe_event_id" varchar(255) NOT NULL UNIQUE,
-  "event_type" varchar(100) NOT NULL,
-  "status" varchar(50) NOT NULL DEFAULT 'pending',
-  "event_data" jsonb NOT NULL,
-  "processed_at" timestamp,
-  "created_at" timestamp DEFAULT now() NOT NULL
-);`}
+-- Add refund columns to orders table
+ALTER TABLE orders
+ADD COLUMN IF NOT EXISTS refunded_at TIMESTAMP,
+ADD COLUMN IF NOT EXISTS partial_refund_amount INTEGER;
+
+-- Migration 0031: Add Stripe Payment Intent Column
+ALTER TABLE payments 
+ADD COLUMN IF NOT EXISTS stripe_payment_intent_id VARCHAR(255);
+
+-- Add indexes for better query performance
+CREATE INDEX IF NOT EXISTS idx_payments_stripe_intent ON payments(stripe_payment_intent_id);
+CREATE INDEX IF NOT EXISTS idx_payments_order ON payments(order_id);
+CREATE INDEX IF NOT EXISTS idx_payments_account ON payments(account_id);
+CREATE INDEX IF NOT EXISTS idx_payments_status ON payments(status);`}
                 </pre>
               </details>
             </div>

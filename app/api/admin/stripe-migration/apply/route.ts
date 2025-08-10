@@ -14,144 +14,93 @@ export async function POST(request: NextRequest) {
       return NextResponse.json({ error: 'Only internal users can apply migrations' }, { status: 403 });
     }
 
-    console.log('Starting Stripe migration...');
+    console.log('Starting Stripe refunds migration...');
     
     // Apply migration in a transaction
     const result = await db.transaction(async (tx) => {
-      const created = {
-        tables: [] as string[],
-        indexes: [] as string[],
+      const applied = {
+        migrations: [] as string[],
         errors: [] as string[]
       };
 
-      // Create stripe_payment_intents table
+      // Migration 0030: Create refunds table
       try {
         await tx.execute(sql`
-          CREATE TABLE IF NOT EXISTS "stripe_payment_intents" (
-            "id" uuid PRIMARY KEY DEFAULT gen_random_uuid(),
-            "order_id" uuid NOT NULL REFERENCES "orders"("id") ON DELETE CASCADE,
-            "payment_id" uuid REFERENCES "payments"("id"),
-            "stripe_payment_intent_id" varchar(255) NOT NULL UNIQUE,
-            "stripe_customer_id" varchar(255),
-            "amount" integer NOT NULL,
-            "currency" varchar(3) NOT NULL DEFAULT 'USD',
-            "status" varchar(50) NOT NULL,
-            "client_secret" text NOT NULL,
-            "metadata" jsonb,
-            "idempotency_key" varchar(255) UNIQUE,
-            "payment_method_id" varchar(255),
-            "setup_future_usage" varchar(50),
-            "confirmation_method" varchar(50) DEFAULT 'automatic',
-            "amount_capturable" integer,
-            "amount_captured" integer DEFAULT 0,
-            "amount_received" integer DEFAULT 0,
-            "created_at" timestamp DEFAULT now() NOT NULL,
-            "updated_at" timestamp DEFAULT now() NOT NULL,
-            "confirmed_at" timestamp,
-            "succeeded_at" timestamp,
-            "canceled_at" timestamp,
-            "last_webhook_event_id" varchar(255),
-            "last_error" jsonb,
-            "failure_code" varchar(100),
-            "failure_message" text
+          CREATE TABLE IF NOT EXISTS refunds (
+            id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+            payment_id UUID NOT NULL REFERENCES payments(id),
+            order_id UUID NOT NULL REFERENCES orders(id),
+            
+            -- Refund details
+            stripe_refund_id VARCHAR(255) NOT NULL,
+            amount INTEGER NOT NULL, -- Amount in cents
+            currency VARCHAR(3) NOT NULL DEFAULT 'USD',
+            status VARCHAR(50) NOT NULL, -- pending, succeeded, failed, canceled
+            
+            -- Reason and notes
+            reason VARCHAR(50), -- duplicate, fraudulent, requested_by_customer, other
+            notes TEXT,
+            failure_reason VARCHAR(500),
+            
+            -- Tracking
+            initiated_by UUID NOT NULL REFERENCES users(id),
+            metadata JSONB,
+            
+            -- Timestamps
+            processed_at TIMESTAMP,
+            canceled_at TIMESTAMP,
+            created_at TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
+            updated_at TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP
           )
         `);
-        created.tables.push('stripe_payment_intents');
+        
+        // Add indexes for refunds table
+        await tx.execute(sql`CREATE UNIQUE INDEX IF NOT EXISTS idx_refunds_stripe_id ON refunds(stripe_refund_id)`);
+        await tx.execute(sql`CREATE INDEX IF NOT EXISTS idx_refunds_payment ON refunds(payment_id)`);
+        await tx.execute(sql`CREATE INDEX IF NOT EXISTS idx_refunds_order ON refunds(order_id)`);
+        await tx.execute(sql`CREATE INDEX IF NOT EXISTS idx_refunds_status ON refunds(status)`);
+        
+        // Add refund columns to orders table
+        await tx.execute(sql`ALTER TABLE orders ADD COLUMN IF NOT EXISTS refunded_at TIMESTAMP`);
+        await tx.execute(sql`ALTER TABLE orders ADD COLUMN IF NOT EXISTS partial_refund_amount INTEGER`);
+        
+        applied.migrations.push('0030_add_refunds_table');
       } catch (error: any) {
         if (!error.message?.includes('already exists')) {
-          created.errors.push(`stripe_payment_intents: ${error.message}`);
+          applied.errors.push(`0030_add_refunds_table: ${error.message}`);
         }
       }
 
-      // Create stripe_customers table
+      // Migration 0031: Add stripe_payment_intent_id to payments table
       try {
-        await tx.execute(sql`
-          CREATE TABLE IF NOT EXISTS "stripe_customers" (
-            "id" uuid PRIMARY KEY DEFAULT gen_random_uuid(),
-            "account_id" uuid NOT NULL REFERENCES "accounts"("id"),
-            "stripe_customer_id" varchar(255) NOT NULL UNIQUE,
-            "email" varchar(255) NOT NULL,
-            "name" varchar(255),
-            "billing_address" jsonb,
-            "metadata" jsonb,
-            "created_at" timestamp DEFAULT now() NOT NULL,
-            "updated_at" timestamp DEFAULT now() NOT NULL
-          )
-        `);
-        created.tables.push('stripe_customers');
+        await tx.execute(sql`ALTER TABLE payments ADD COLUMN IF NOT EXISTS stripe_payment_intent_id VARCHAR(255)`);
+        
+        // Add indexes for better query performance
+        await tx.execute(sql`CREATE INDEX IF NOT EXISTS idx_payments_stripe_intent ON payments(stripe_payment_intent_id)`);
+        await tx.execute(sql`CREATE INDEX IF NOT EXISTS idx_payments_order ON payments(order_id)`);
+        await tx.execute(sql`CREATE INDEX IF NOT EXISTS idx_payments_account ON payments(account_id)`);
+        await tx.execute(sql`CREATE INDEX IF NOT EXISTS idx_payments_status ON payments(status)`);
+        
+        applied.migrations.push('0031_add_stripe_payment_intent_to_payments');
       } catch (error: any) {
         if (!error.message?.includes('already exists')) {
-          created.errors.push(`stripe_customers: ${error.message}`);
+          applied.errors.push(`0031_add_stripe_payment_intent_to_payments: ${error.message}`);
         }
       }
 
-      // Create stripe_webhooks table
-      try {
-        await tx.execute(sql`
-          CREATE TABLE IF NOT EXISTS "stripe_webhooks" (
-            "id" uuid PRIMARY KEY DEFAULT gen_random_uuid(),
-            "stripe_event_id" varchar(255) NOT NULL UNIQUE,
-            "event_type" varchar(100) NOT NULL,
-            "status" varchar(50) NOT NULL DEFAULT 'pending',
-            "payment_intent_id" uuid REFERENCES "stripe_payment_intents"("id"),
-            "order_id" uuid REFERENCES "orders"("id"),
-            "event_data" jsonb NOT NULL,
-            "processed_at" timestamp,
-            "error_message" text,
-            "retry_count" integer DEFAULT 0,
-            "created_at" timestamp DEFAULT now() NOT NULL,
-            "updated_at" timestamp DEFAULT now() NOT NULL
-          )
-        `);
-        created.tables.push('stripe_webhooks');
-      } catch (error: any) {
-        if (!error.message?.includes('already exists')) {
-          created.errors.push(`stripe_webhooks: ${error.message}`);
-        }
-      }
-
-      // Create indexes for performance
-      const indexes = [
-        { name: 'idx_stripe_payment_intents_order_id', sql: 'CREATE INDEX IF NOT EXISTS "idx_stripe_payment_intents_order_id" ON "stripe_payment_intents"("order_id")' },
-        { name: 'idx_stripe_payment_intents_stripe_id', sql: 'CREATE INDEX IF NOT EXISTS "idx_stripe_payment_intents_stripe_id" ON "stripe_payment_intents"("stripe_payment_intent_id")' },
-        { name: 'idx_stripe_payment_intents_status', sql: 'CREATE INDEX IF NOT EXISTS "idx_stripe_payment_intents_status" ON "stripe_payment_intents"("status")' },
-        { name: 'idx_stripe_payment_intents_customer', sql: 'CREATE INDEX IF NOT EXISTS "idx_stripe_payment_intents_customer" ON "stripe_payment_intents"("stripe_customer_id")' },
-        { name: 'idx_stripe_customers_account', sql: 'CREATE INDEX IF NOT EXISTS "idx_stripe_customers_account" ON "stripe_customers"("account_id")' },
-        { name: 'idx_stripe_customers_stripe_id', sql: 'CREATE INDEX IF NOT EXISTS "idx_stripe_customers_stripe_id" ON "stripe_customers"("stripe_customer_id")' },
-        { name: 'idx_stripe_customers_email', sql: 'CREATE INDEX IF NOT EXISTS "idx_stripe_customers_email" ON "stripe_customers"("email")' },
-        { name: 'idx_stripe_webhooks_event_id', sql: 'CREATE INDEX IF NOT EXISTS "idx_stripe_webhooks_event_id" ON "stripe_webhooks"("stripe_event_id")' },
-        { name: 'idx_stripe_webhooks_type', sql: 'CREATE INDEX IF NOT EXISTS "idx_stripe_webhooks_type" ON "stripe_webhooks"("event_type")' },
-        { name: 'idx_stripe_webhooks_status', sql: 'CREATE INDEX IF NOT EXISTS "idx_stripe_webhooks_status" ON "stripe_webhooks"("status")' },
-        { name: 'idx_stripe_webhooks_order', sql: 'CREATE INDEX IF NOT EXISTS "idx_stripe_webhooks_order" ON "stripe_webhooks"("order_id")' },
-        { name: 'idx_stripe_webhooks_created', sql: 'CREATE INDEX IF NOT EXISTS "idx_stripe_webhooks_created" ON "stripe_webhooks"("created_at")' }
-      ];
-
-      for (const index of indexes) {
-        try {
-          await tx.execute(sql.raw(index.sql));
-          created.indexes.push(index.name);
-        } catch (error: any) {
-          if (!error.message?.includes('already exists')) {
-            created.errors.push(`${index.name}: ${error.message}`);
-          }
-        }
-      }
-
-      return created;
+      return applied;
     });
 
-    console.log('Stripe migration completed:', result);
+    console.log('Stripe refunds migration completed:', result);
 
     return NextResponse.json({
       success: true,
-      message: 'Stripe migration applied successfully',
+      message: 'Stripe refunds migration applied successfully',
       details: {
-        tablesCreated: result.tables.length,
-        indexesCreated: result.indexes.length,
+        migrationsApplied: result.migrations.length,
         errors: result.errors.length
       },
-      created: result.tables,
-      indexes: result.indexes,
+      migrations: result.migrations,
       errors: result.errors.length > 0 ? result.errors : undefined
     });
 
