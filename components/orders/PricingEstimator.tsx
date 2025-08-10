@@ -401,47 +401,81 @@ export default function PricingEstimator({ className = '', onEstimateChange, ini
   return (
     <div className={`bg-white border-b border-gray-200 ${className}`}>
       <div className="px-6 py-4">
-        {/* Market Overview Header */}
+        {/* Pricing Preferences Header with Clear Explanation */}
         <div className="flex items-center justify-between mb-4">
           <div className="flex items-center gap-6">
             <div className="flex items-center gap-3">
               <TrendingUp className="h-6 w-6 text-blue-600" />
-              <h2 className="text-lg font-semibold text-gray-900">Market Intelligence</h2>
+              <div>
+                <h2 className="text-lg font-semibold text-gray-900">Your Pricing Preferences</h2>
+                <p className="text-sm text-gray-600 mt-0.5">Help us understand your budget and site preferences to find the best matches</p>
+              </div>
             </div>
             
             {loading ? (
               <div className="flex items-center gap-2 text-gray-500">
                 <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-blue-600"></div>
-                <span className="text-sm">Loading market data...</span>
+                <span className="text-sm">Finding sites that match your preferences...</span>
               </div>
             ) : estimate ? (
-              <div className="flex items-center gap-6 text-sm">
-                <div className="flex items-center gap-2">
-                  <div className="w-3 h-3 bg-green-500 rounded-full"></div>
-                  <span className="font-semibold text-gray-900">
-                    {estimate.count.toLocaleString()} available sites
-                  </span>
-                </div>
-                <div className="text-gray-600">
-                  <span className="font-medium text-gray-900">{formatCurrency(estimate.wholesaleMedian)}</span> median site cost
-                </div>
-                <div className="text-gray-600">
-                  <span className="font-medium text-gray-900">{formatCurrency(estimate.wholesaleAverage)}</span> average site cost
-                </div>
-                <div className="text-gray-600">
-                  Site cost range: <span className="font-medium text-gray-900">{formatCurrency(estimate.wholesaleMin)} - {formatCurrency(estimate.wholesaleMax)}</span>
+              <div className="bg-green-50 border border-green-200 rounded-lg px-4 py-3">
+                <div className="flex items-center gap-6 text-sm">
+                  <div className="flex items-center gap-2">
+                    <div className="w-3 h-3 bg-green-500 rounded-full"></div>
+                    <span className="font-semibold text-gray-900">
+                      {estimate.count.toLocaleString()} sites match your preferences
+                    </span>
+                  </div>
+                  <div className="text-gray-600">
+                    Typical price: <span className="font-medium text-gray-900">{formatCurrency(estimate.clientMedian)}</span>
+                    <span className="text-xs text-gray-500 ml-1">(site + content)</span>
+                  </div>
+                  <div className="text-gray-600">
+                    Price range: <span className="font-medium text-gray-900">{formatCurrency(estimate.clientMin)} - {formatCurrency(estimate.clientMax)}</span>
+                  </div>
                 </div>
               </div>
             ) : (
-              <span className="text-sm text-gray-500">Configure filters to see market availability</span>
+              <span className="text-sm text-gray-500">Set your preferences to see available sites and pricing</span>
             )}
+          </div>
+        </div>
+
+        {/* Guidance Notice */}
+        <div className="bg-blue-50 border border-blue-200 rounded-lg p-4 mb-6">
+          <div className="flex items-start gap-3">
+            <div className="flex-shrink-0">
+              <div className="w-5 h-5 bg-blue-600 rounded-full flex items-center justify-center">
+                <span className="text-white text-xs font-bold">i</span>
+              </div>
+            </div>
+            <div className="flex-1">
+              <h3 className="text-sm font-semibold text-blue-900 mb-1">How This Works</h3>
+              <div className="text-sm text-blue-800 space-y-1">
+                <div className="flex items-center gap-2">
+                  <span className="w-1.5 h-1.5 bg-blue-600 rounded-full flex-shrink-0"></span>
+                  <span><strong>Filters available sites:</strong> We'll show you options that match your criteria</span>
+                </div>
+                <div className="flex items-center gap-2">
+                  <span className="w-1.5 h-1.5 bg-blue-600 rounded-full flex-shrink-0"></span>
+                  <span><strong>Communicates your budget:</strong> Helps our team understand your investment preferences</span>
+                </div>
+                <div className="flex items-center gap-2">
+                  <span className="w-1.5 h-1.5 bg-blue-600 rounded-full flex-shrink-0"></span>
+                  <span><strong>Guidance, not limits:</strong> We may suggest great sites slightly outside these ranges</span>
+                </div>
+              </div>
+            </div>
           </div>
         </div>
 
         {/* Enhanced Filter Controls */}
         <div className="grid grid-cols-6 gap-4">
           <div className="space-y-2">
-            <label className="text-xs font-medium text-gray-500 uppercase tracking-wide">Price Range</label>
+            <label className="text-xs font-medium text-gray-500 uppercase tracking-wide">
+              Price Range
+              <span className="ml-1 text-blue-500" title="Total cost per link including site cost + $79 content package">ⓘ</span>
+            </label>
             <FilterDropdown
               label=""
               value={selectedPrice}
@@ -459,7 +493,10 @@ export default function PricingEstimator({ className = '', onEstimateChange, ini
           </div>
           
           <div className="space-y-2">
-            <label className="text-xs font-medium text-gray-500 uppercase tracking-wide">Domain Rating</label>
+            <label className="text-xs font-medium text-gray-500 uppercase tracking-wide">
+              Domain Authority (DR)
+              <span className="ml-1 text-blue-500" title="Site authority score from Ahrefs (higher = more authoritative)">ⓘ</span>
+            </label>
             <FilterDropdown
               label=""
               value={selectedDR}
@@ -477,7 +514,10 @@ export default function PricingEstimator({ className = '', onEstimateChange, ini
           </div>
           
           <div className="space-y-2">
-            <label className="text-xs font-medium text-gray-500 uppercase tracking-wide">Monthly Traffic</label>
+            <label className="text-xs font-medium text-gray-500 uppercase tracking-wide">
+              Monthly Traffic
+              <span className="ml-1 text-blue-500" title="Estimated monthly visitors to the website">ⓘ</span>
+            </label>
             <FilterDropdown
               label=""
               value={selectedTraffic}
@@ -491,7 +531,10 @@ export default function PricingEstimator({ className = '', onEstimateChange, ini
           </div>
           
           <div className="space-y-2">
-            <label className="text-xs font-medium text-gray-500 uppercase tracking-wide">Category</label>
+            <label className="text-xs font-medium text-gray-500 uppercase tracking-wide">
+              Industry/Category
+              <span className="ml-1 text-blue-500" title="Prefer sites in specific industries or any category">ⓘ</span>
+            </label>
             <FilterDropdown
               label=""
               value={selectedCategory}
@@ -501,7 +544,10 @@ export default function PricingEstimator({ className = '', onEstimateChange, ini
           </div>
           
           <div className="space-y-2">
-            <label className="text-xs font-medium text-gray-500 uppercase tracking-wide">Niche</label>
+            <label className="text-xs font-medium text-gray-500 uppercase tracking-wide">
+              Topic/Niche
+              <span className="ml-1 text-blue-500" title="Preferred content topics and niches">ⓘ</span>
+            </label>
             <FilterDropdown
               label=""
               value={selectedNiche}
@@ -511,7 +557,10 @@ export default function PricingEstimator({ className = '', onEstimateChange, ini
           </div>
           
           <div className="space-y-2">
-            <label className="text-xs font-medium text-gray-500 uppercase tracking-wide">Website Type</label>
+            <label className="text-xs font-medium text-gray-500 uppercase tracking-wide">
+              Site Type
+              <span className="ml-1 text-blue-500" title="Type of website (blog, news site, business site, etc.)">ⓘ</span>
+            </label>
             <FilterDropdown
               label=""
               value={selectedType}
