@@ -5,7 +5,7 @@ import { orders } from '@/lib/db/orderSchema';
 import { accounts } from '@/lib/db/accountSchema';
 import { eq, and, desc, sql } from 'drizzle-orm';
 import { EmailService } from './emailService';
-import { InvoiceRevisionService } from './invoiceRevisionService';
+// import { InvoiceRevisionService } from './invoiceRevisionService'; // TODO: Implement invoice revision service
 
 // Initialize Stripe
 const stripe = new Stripe(process.env.STRIPE_SECRET_KEY!, {
@@ -161,7 +161,9 @@ export class RefundService {
         return newRefund;
       });
 
-      // Create invoice revision if invoice exists
+      // TODO: Create invoice revision when InvoiceRevisionService is implemented
+      // Currently skipping invoice revision to avoid runtime errors
+      /*
       try {
         const invoice = await db.query.invoices.findFirst({
           where: eq(invoices.orderId, orderId)
@@ -185,6 +187,7 @@ export class RefundService {
         console.error('Error creating invoice revision:', revisionError);
         // Don't fail the refund if revision fails
       }
+      */
 
       // Send refund confirmation email
       try {

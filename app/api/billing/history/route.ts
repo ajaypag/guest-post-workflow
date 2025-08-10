@@ -5,6 +5,15 @@ import { payments, refunds } from '@/lib/db/paymentSchema';
 import { orders } from '@/lib/db/orderSchema';
 import { eq, and, gte, lte, desc, or } from 'drizzle-orm';
 
+// Helper function to validate date format (YYYY-MM-DD)
+function isValidDate(dateString: string): boolean {
+  const regex = /^\d{4}-\d{2}-\d{2}$/;
+  if (!regex.test(dateString)) return false;
+  
+  const date = new Date(dateString);
+  return date instanceof Date && !isNaN(date.getTime());
+}
+
 export async function GET(request: NextRequest) {
   try {
     const session = await AuthServiceServer.getSession(request);
@@ -21,6 +30,35 @@ export async function GET(request: NextRequest) {
     const filter = searchParams.get('filter') || 'all';
     const startDate = searchParams.get('startDate');
     const endDate = searchParams.get('endDate');
+
+    // Validate filter parameter
+    const validFilters = ['all', 'payments', 'refunds', 'invoices'];
+    if (!validFilters.includes(filter)) {
+      return NextResponse.json({ error: 'Invalid filter parameter' }, { status: 400 });
+    }
+
+    // Validate date parameters
+    if (startDate && !isValidDate(startDate)) {
+      return NextResponse.json({ error: 'Invalid start date format' }, { status: 400 });
+    }
+    if (endDate && !isValidDate(endDate)) {
+      return NextResponse.json({ error: 'Invalid end date format' }, { status: 400 });
+    }
+    
+    // Ensure date range is reasonable (max 1 year)
+    if (startDate && endDate) {
+      const start = new Date(startDate);
+      const end = new Date(endDate);
+      const yearInMs = 365 * 24 * 60 * 60 * 1000;
+      
+      if (end < start) {
+        return NextResponse.json({ error: 'End date must be after start date' }, { status: 400 });
+      }
+      
+      if (end.getTime() - start.getTime() > yearInMs) {
+        return NextResponse.json({ error: 'Date range cannot exceed 1 year' }, { status: 400 });
+      }
+    }
 
     // Build date conditions
     const dateConditions = [];
