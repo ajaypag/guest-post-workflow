@@ -92,7 +92,7 @@ export default function PaymentSuccessPage() {
               <div className="flex justify-between">
                 <span className="text-gray-600">Amount Paid:</span>
                 <span className="font-semibold text-green-600">
-                  ${((order.totalPrice || 0) / 100).toFixed(2)}
+                  ${((order.totalRetail || order.totalPrice || 0) / 100).toFixed(2)}
                 </span>
               </div>
               
@@ -173,6 +173,10 @@ export default function PaymentSuccessPage() {
               Need help? Contact our support team at{' '}
               <a href="mailto:support@postflow.outreachlabs.net" className="text-blue-600 hover:underline">
                 support@postflow.outreachlabs.net
+              </a>{' '}
+              or call us at{' '}
+              <a href="tel:+18443782473" className="text-blue-600 hover:underline">
+                (844) 378-2473
               </a>
             </p>
           </div>

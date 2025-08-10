@@ -143,9 +143,10 @@ export default function OrderPaymentPage({ order, className }: OrderPaymentPageP
                 <span className="capitalize font-medium text-blue-600">{order.state?.replace('_', ' ') || 'Unknown'}</span>
               </div>
               
+              {/* Show approved/estimated links count */}
               {order.estimatedLinksCount && (
                 <div className="flex justify-between">
-                  <span className="text-gray-600">Estimated Links:</span>
+                  <span className="text-gray-600">Links:</span>
                   <span>{order.estimatedLinksCount}</span>
                 </div>
               )}
@@ -251,14 +252,14 @@ export default function OrderPaymentPage({ order, className }: OrderPaymentPageP
             <div className="space-y-1 text-sm">
               <p>
                 <span className="text-gray-600">Email:</span>{' '}
-                <a href="mailto:support@example.com" className="text-blue-600 hover:underline">
-                  support@example.com
+                <a href="mailto:support@postflow.outreachlabs.net" className="text-blue-600 hover:underline">
+                  support@postflow.outreachlabs.net
                 </a>
               </p>
               <p>
                 <span className="text-gray-600">Phone:</span>{' '}
-                <a href="tel:+1234567890" className="text-blue-600 hover:underline">
-                  (123) 456-7890
+                <a href="mailto:support@postflow.outreachlabs.net" className="text-blue-600 hover:underline">
+                  Email Support
                 </a>
               </p>
             </div>

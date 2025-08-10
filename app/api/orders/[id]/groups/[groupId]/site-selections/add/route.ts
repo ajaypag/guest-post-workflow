@@ -132,17 +132,59 @@ export async function POST(
         })
       : [];
     
-    // Create a map for website data lookup
-    const websiteMap = new Map(websiteData.map(w => [w.domain.toLowerCase(), w]));
+    // Create multiple maps for robust domain matching
+    const websiteMap = new Map();
+    const websiteByCleanDomain = new Map();
+    
+    websiteData.forEach(w => {
+      const originalDomain = w.domain.toLowerCase();
+      const cleanedDomain = originalDomain
+        .replace(/^https?:\/\//, '')
+        .replace(/^www\./, '')
+        .replace(/\/$/, '')
+        .trim();
+      
+      // Store by original domain
+      websiteMap.set(originalDomain, w);
+      
+      // Store by cleaned domain  
+      websiteByCleanDomain.set(cleanedDomain, w);
+      
+      // Also store with www prefix if not already present
+      if (!originalDomain.startsWith('www.')) {
+        websiteMap.set(`www.${originalDomain}`, w);
+      }
+    });
 
     // Prepare new submissions (only non-duplicates) with pool assignments
     const timestamp = new Date();
     const newSubmissions = domains
       .filter(d => validDomainIds.has(d.domainId) && !existingDomainIds.has(d.domainId))
       .map(domain => {
-        // Get the bulk domain and website data
+        // Get the bulk domain and website data with enhanced matching
         const bulkDomain = bulkDomainMap.get(domain.domainId);
-        const website = bulkDomain ? websiteMap.get(bulkDomain.domain.toLowerCase()) : null;
+        let website = null;
+        
+        if (bulkDomain) {
+          const bulkDomainLower = bulkDomain.domain.toLowerCase();
+          const bulkDomainCleaned = bulkDomainLower
+            .replace(/^https?:\/\//, '')
+            .replace(/^www\./, '')
+            .replace(/\/$/, '')
+            .trim();
+          
+          // Try multiple matching strategies
+          website = websiteMap.get(bulkDomainLower) ||
+                   websiteMap.get(`www.${bulkDomainLower}`) ||
+                   websiteByCleanDomain.get(bulkDomainCleaned) ||
+                   websiteByCleanDomain.get(`www.${bulkDomainCleaned}`);
+          
+          // Log for debugging domain matching issues
+          if (!website) {
+            console.warn(`No website data found for domain: ${bulkDomain.domain}. Tried: ${bulkDomainLower}, www.${bulkDomainLower}, ${bulkDomainCleaned}, www.${bulkDomainCleaned}`);
+            console.log('Available website domains:', Array.from(websiteMap.keys()).slice(0, 5));
+          }
+        }
         const targetUrl = domain.targetPageUrl || 'unassigned';
         const requiredCount = targetUrlCounts.get(targetUrl) || 0;
         const currentPrimaryCount = existingByUrl.get(targetUrl) || 0;
@@ -166,8 +208,24 @@ export async function POST(
           poolRank = existingAlternatives + 1;
         }
 
-        // Calculate prices if we have website data
-        const guestPostCost = website?.guestPostCost ? parseFloat(website.guestPostCost) : 0;
+        // Calculate prices if we have website data, with manual fallback support
+        let guestPostCost = website?.guestPostCost ? parseFloat(website.guestPostCost) : 0;
+        let domainRating = website?.domainRating || null;
+        let totalTraffic = website?.totalTraffic || null;
+        
+        // Manual data fallback if automated matching failed
+        if (!website && domain.manualData) {
+          guestPostCost = domain.manualData.guestPostCost || 0;
+          domainRating = domain.manualData.domainRating || null;
+          totalTraffic = domain.manualData.totalTraffic || null;
+          
+          console.log(`Using manual data for ${bulkDomain?.domain}:`, {
+            guestPostCost,
+            domainRating, 
+            totalTraffic
+          });
+        }
+        
         const wholesalePrice = guestPostCost ? Math.round(guestPostCost * 100) : 0; // Convert to cents
         const serviceFee = 7900; // $79 service fee in cents
         const retailPrice = wholesalePrice + serviceFee;
@@ -191,11 +249,12 @@ export async function POST(
             targetPageUrl: domain.targetPageUrl || null,
             anchorText: domain.anchorText || null,
             specialInstructions: domain.specialInstructions || null,
-            // Include website metrics from websites table
+            // Include website metrics from websites table or manual data
             domain: bulkDomain?.domain || null,
-            dr: website?.domainRating || null,
-            traffic: website?.totalTraffic || null,
-            guestPostCost: website?.guestPostCost ? parseFloat(website.guestPostCost) : null,
+            dr: domainRating,
+            traffic: totalTraffic,
+            guestPostCost: guestPostCost || null,
+            dataSource: website ? 'automated' : (domain.manualData ? 'manual' : 'none'),
             // Track suggestion metadata
             suggestedBy: session.userId,
             suggestedAt: timestamp.toISOString(),

@@ -49,7 +49,10 @@ export default function OrderDetailsTable({
     
     // Analysis phase - show progress
     if (order.state === 'analyzing' || order.status === 'pending_confirmation') {
-      columns.push('status');
+      // Only show status column if we have meaningful status information
+      if (order.status && order.status !== 'pending_confirmation') {
+        columns.push('status');
+      }
       return columns;
     }
     
@@ -448,6 +451,11 @@ export default function OrderDetailsTable({
                     ) : order.status === 'draft' ? (
                       <span className="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-gray-100 text-gray-600">
                         Draft
+                      </span>
+                    ) : order.status === 'pending_confirmation' ? (
+                      <span className="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-yellow-100 text-yellow-800">
+                        <Clock className="h-3 w-3 mr-1" />
+                        Awaiting Confirmation
                       </span>
                     ) : order.status === 'cancelled' ? (
                       <span className="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-gray-100 text-gray-600">

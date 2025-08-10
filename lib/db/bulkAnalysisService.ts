@@ -441,6 +441,7 @@ export class BulkAnalysisService {
           switch (resolution.resolution) {
             case 'keep_both':
               // Create new entry alongside existing one
+              // Use ON CONFLICT DO NOTHING to handle constraint violation gracefully
               const duplicateDomain = {
                 id: uuidv4(),
                 clientId,
@@ -462,18 +463,66 @@ export class BulkAnalysisService {
                 updatedAt: now,
               };
               
-              // Insert the domain - now it should work with the new constraint
-              const insertedDup = await db
-                .insert(bulkAnalysisDomains)
-                .values(duplicateDomain)
-                .returning();
+              try {
+                // Insert the domain with conflict resolution
+                const insertedDup = await db
+                  .insert(bulkAnalysisDomains)
+                  .values(duplicateDomain)
+                  .onConflictDoUpdate({
+                    target: [bulkAnalysisDomains.clientId, bulkAnalysisDomains.domain],
+                    set: {
+                      projectId,
+                      targetPageIds,
+                      keywordCount,
+                      duplicateResolution: 'keep_both',
+                      duplicateResolvedBy: userId,
+                      duplicateResolvedAt: now,
+                      updatedAt: now,
+                    },
+                  })
+                  .returning();
               
-              if (insertedDup.length > 0) {
-                results.push({
-                  ...insertedDup[0],
-                  targetPages: pages,
-                  keywords: Array.from(allKeywords),
-                });
+                if (insertedDup.length > 0) {
+                  results.push({
+                    ...insertedDup[0],
+                    targetPages: pages,
+                    keywords: Array.from(allKeywords),
+                  });
+                }
+              } catch (error: any) {
+                console.error(`Failed to handle duplicate for domain ${cleanDomain}:`, error);
+                // If constraint violation persists, try to update the existing record
+                if (error.message?.includes('duplicate key value violates unique constraint')) {
+                  try {
+                    const updated = await db
+                      .update(bulkAnalysisDomains)
+                      .set({
+                        targetPageIds,
+                        keywordCount,
+                        duplicateResolution: 'keep_both',
+                        duplicateResolvedBy: userId,
+                        duplicateResolvedAt: now,
+                        updatedAt: now,
+                      })
+                      .where(
+                        and(
+                          eq(bulkAnalysisDomains.clientId, clientId),
+                          eq(bulkAnalysisDomains.domain, cleanDomain)
+                        )
+                      )
+                      .returning();
+                    
+                    if (updated.length > 0) {
+                      results.push({
+                        ...updated[0],
+                        targetPages: pages,
+                        keywords: Array.from(allKeywords),
+                      });
+                    }
+                  } catch (updateError) {
+                    console.error(`Failed to update existing domain ${cleanDomain}:`, updateError);
+                  }
+                }
               }
               break;
               
