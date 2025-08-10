@@ -63,10 +63,10 @@ function AccountLoginForm() {
             Linkio
           </h2>
           <p className="mt-3 text-lg text-gray-600">
-            Guest Post Workflow Management Platform
+            Link Building That Gets You Cited by AI
           </p>
           <p className="mt-4 text-sm text-gray-500 max-w-sm mx-auto">
-            Streamline your content outreach with automated workflows, AI-powered article generation, and comprehensive analytics
+            We find hidden gems with real ranking potential. Your brand gets mentioned in ChatGPT, Claude, and Perplexity responses.
           </p>
         </div>
 

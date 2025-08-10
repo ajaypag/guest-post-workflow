@@ -54,10 +54,10 @@ function LoginForm() {
             Linkio
           </h2>
           <p className="mt-3 text-lg text-gray-600">
-            Guest Post Workflow Management Platform
+            Link Building That Gets You Cited by AI
           </p>
           <p className="mt-4 text-sm text-gray-500 max-w-sm mx-auto">
-            Streamline your content outreach with automated workflows, AI-powered article generation, and comprehensive analytics
+            We find hidden gems with real ranking potential. Your brand gets mentioned in ChatGPT, Claude, and Perplexity responses.
           </p>
         </div>
 
@@ -65,21 +65,21 @@ function LoginForm() {
         <div className="grid grid-cols-3 gap-4 text-center">
           <div className="space-y-2">
             <div className="mx-auto w-12 h-12 bg-blue-100 rounded-xl flex items-center justify-center">
-              <Users className="w-6 h-6 text-blue-600" />
+              <Sparkles className="w-6 h-6 text-blue-600" />
             </div>
-            <p className="text-xs text-gray-600">Multi-user Collaboration</p>
+            <p className="text-xs text-gray-600">AI Citations</p>
           </div>
           <div className="space-y-2">
             <div className="mx-auto w-12 h-12 bg-purple-100 rounded-xl flex items-center justify-center">
-              <Mail className="w-6 h-6 text-purple-600" />
+              <Users className="w-6 h-6 text-purple-600" />
             </div>
-            <p className="text-xs text-gray-600">Automated Outreach</p>
+            <p className="text-xs text-gray-600">Real Authority</p>
           </div>
           <div className="space-y-2">
             <div className="mx-auto w-12 h-12 bg-green-100 rounded-xl flex items-center justify-center">
               <BarChart3 className="w-6 h-6 text-green-600" />
             </div>
-            <p className="text-xs text-gray-600">Performance Analytics</p>
+            <p className="text-xs text-gray-600">Proven Results</p>
           </div>
         </div>
         
