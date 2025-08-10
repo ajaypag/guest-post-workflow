@@ -36,10 +36,31 @@ export default function ExternalOrderReviewPage() {
   const [actionLoading, setActionLoading] = useState(false);
   const [lineItems, setLineItems] = useState<LineItem[]>([]);
   const [benchmarkData, setBenchmarkData] = useState<any>(null);
+  const [comparisonData, setComparisonData] = useState<any>(null);
 
   useEffect(() => {
     fetchOrder();
   }, [orderId]);
+
+  const loadBenchmarkData = async (orderStatus?: string) => {
+    // Use passed status or current order status
+    const status = orderStatus || order?.status;
+    if (!status) return;
+    
+    // Fetch benchmark data if order is in appropriate status
+    if (status === 'confirmed' || status === 'paid' || status === 'pending_confirmation') {
+      try {
+        const benchmarkRes = await fetch(`/api/orders/${orderId}/benchmark?comparison=true`);
+        if (benchmarkRes.ok) {
+          const benchData = await benchmarkRes.json();
+          setBenchmarkData(benchData.benchmark || benchData);
+          setComparisonData(benchData.comparison || null);
+        }
+      } catch (error) {
+        console.error('Failed to load benchmark:', error);
+      }
+    }
+  };
 
   const fetchOrder = async () => {
     try {
@@ -93,15 +114,16 @@ export default function ExternalOrderReviewPage() {
         console.log('[REVIEW PAGE] Order uses line items, skipping group submissions fetch');
       }
       
-      // Fetch benchmark data if order is confirmed
-      if (orderData.status === 'confirmed' || orderData.status === 'paid') {
+      // Fetch benchmark data if order is confirmed, paid, or pending confirmation (for external review)
+      if (orderData.status === 'confirmed' || orderData.status === 'paid' || orderData.status === 'pending_confirmation') {
         try {
-          const benchmarkRes = await fetch(`/api/orders/${orderId}/benchmark`);
+          const benchmarkRes = await fetch(`/api/orders/${orderId}/benchmark?comparison=true`);
           if (benchmarkRes.ok) {
             const benchData = await benchmarkRes.json();
-            // The API returns { benchmark: ..., hasBenchmark: true }
-            // We need to pass just the benchmark object to the component
+            // The API returns { benchmark: ..., comparison: ..., hasBenchmark: true }
+            // We need to pass both benchmark and comparison objects to the component
             setBenchmarkData(benchData.benchmark || benchData);
+            setComparisonData(benchData.comparison || null);
           }
         } catch (error) {
           console.error('Failed to load benchmark:', error);
@@ -207,6 +229,8 @@ export default function ExternalOrderReviewPage() {
       if (!response.ok) throw new Error('Failed to update status');
       
       await fetchOrder();
+      // Reload benchmark to reflect new comparison after status change
+      await loadBenchmarkData();
     } catch (error) {
       console.error('Error updating status:', error);
     }
@@ -440,6 +464,7 @@ export default function ExternalOrderReviewPage() {
               <div className="mt-6">
                 <BenchmarkDisplay 
                   benchmark={benchmarkData}
+                  comparison={comparisonData}
                   orderId={orderId}
                   userType="account"
                 />
