@@ -7,14 +7,19 @@ import { formatCurrency } from '@/lib/utils/formatting';
 // Service fee constant - $79 per link
 const SERVICE_FEE_CENTS = 7900;
 
-// Smart filter options
+// Smart filter options - expanded price ranges
 const PRICE_OPTIONS = [
   { label: 'Any Price', min: 0, max: 999999 },
-  { label: '<$50', min: 0, max: 5000 },
-  { label: '<$100', min: 0, max: 10000 },
-  { label: '<$200', min: 0, max: 20000 },
-  { label: '<$300', min: 0, max: 30000 },
-  { label: '$300+', min: 30000, max: 999999 }
+  { label: 'Under $150', min: 0, max: 15000 },
+  { label: 'Under $200', min: 0, max: 20000 },
+  { label: 'Under $250', min: 0, max: 25000 },
+  { label: 'Under $300', min: 0, max: 30000 },
+  { label: 'Under $400', min: 0, max: 40000 },
+  { label: 'Under $500', min: 0, max: 50000 },
+  { label: '$150-$300', min: 15000, max: 30000 },
+  { label: '$200-$400', min: 20000, max: 40000 },
+  { label: '$300-$500', min: 30000, max: 50000 },
+  { label: 'Over $500', min: 50000, max: 999999 }
 ];
 
 const NICHE_OPTIONS = [
@@ -331,14 +336,14 @@ export default function PricingEstimator({ className = '', onEstimateChange, ini
           aria-haspopup="listbox"
           aria-expanded={isOpen}
         >
-          <span className="font-medium text-gray-900 truncate">{displayValue}</span>
+          <span className="font-medium text-gray-900 truncate pr-1" title={displayValue}>{displayValue}</span>
           <ChevronDown className={`h-4 w-4 text-gray-400 flex-shrink-0 ml-2 transition-transform ${isOpen ? 'rotate-180' : ''}`} />
         </button>
         
         {isOpen && (
           <div 
             ref={dropdownRef}
-            className={`absolute ${dropdownDirection === 'up' ? 'bottom-full mb-1' : 'top-full mt-1'} left-0 w-full bg-white border border-gray-300 rounded-md shadow-xl z-50 max-h-64 overflow-hidden`}
+            className={`absolute ${dropdownDirection === 'up' ? 'bottom-full mb-1' : 'top-full mt-1'} left-0 min-w-full w-max bg-white border border-gray-300 rounded-md shadow-xl z-50 max-h-64 overflow-hidden`}
             role="listbox"
           >
             <div className="max-h-60 overflow-y-auto" style={{
@@ -370,10 +375,10 @@ export default function PricingEstimator({ className = '', onEstimateChange, ini
             
             {allowCustom && (
               <div className="border-t border-gray-200 p-3 bg-gray-50">
-                <label className="text-xs font-medium text-gray-500 mb-1 block uppercase tracking-wide">Custom Range</label>
+                <label className="text-xs font-medium text-gray-700 mb-1.5 block">Custom Range</label>
                 <input
                   type="text"
-                  placeholder={placeholder}
+                  placeholder={placeholder || "Min-Max (e.g. 30-70)"}
                   value={customValue || ''}
                   onChange={(e) => {
                     if (onCustomChange) {
@@ -390,6 +395,7 @@ export default function PricingEstimator({ className = '', onEstimateChange, ini
                   onClick={(e) => e.stopPropagation()}
                   autoFocus={false}
                 />
+                <div className="text-xs text-gray-500 mt-1.5">Enter min-max separated by dash</div>
               </div>
             )}
           </div>
@@ -441,36 +447,8 @@ export default function PricingEstimator({ className = '', onEstimateChange, ini
           </div>
         </div>
 
-        {/* Guidance Notice */}
-        <div className="bg-blue-50 border border-blue-200 rounded-lg p-4 mb-6">
-          <div className="flex items-start gap-3">
-            <div className="flex-shrink-0">
-              <div className="w-5 h-5 bg-blue-600 rounded-full flex items-center justify-center">
-                <span className="text-white text-xs font-bold">i</span>
-              </div>
-            </div>
-            <div className="flex-1">
-              <h3 className="text-sm font-semibold text-blue-900 mb-1">How This Works</h3>
-              <div className="text-sm text-blue-800 space-y-1">
-                <div className="flex items-center gap-2">
-                  <span className="w-1.5 h-1.5 bg-blue-600 rounded-full flex-shrink-0"></span>
-                  <span><strong>Filters available sites:</strong> We'll show you options that match your criteria</span>
-                </div>
-                <div className="flex items-center gap-2">
-                  <span className="w-1.5 h-1.5 bg-blue-600 rounded-full flex-shrink-0"></span>
-                  <span><strong>Communicates your budget:</strong> Helps our team understand your investment preferences</span>
-                </div>
-                <div className="flex items-center gap-2">
-                  <span className="w-1.5 h-1.5 bg-blue-600 rounded-full flex-shrink-0"></span>
-                  <span><strong>Guidance, not limits:</strong> We may suggest great sites slightly outside these ranges</span>
-                </div>
-              </div>
-            </div>
-          </div>
-        </div>
-
         {/* Enhanced Filter Controls */}
-        <div className="grid grid-cols-6 gap-4">
+        <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-6 gap-3">
           <div className="space-y-2">
             <label className="text-xs font-medium text-gray-500 uppercase tracking-wide">
               Price Range

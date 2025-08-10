@@ -83,6 +83,8 @@ export const bulkAnalysisDomains = pgTable('bulk_analysis_domains', {
 }, (table) => {
   return {
     projectIdIdx: index('idx_bulk_domains_project').on(table.projectId),
+    // Note: There should be a unique constraint on (clientId, domain) for upsert operations
+    // This is added via migration 0029_add_bulk_analysis_unique_constraint.sql
     clientDomainIdx: index('idx_bulk_domains_client_domain').on(table.clientId, table.domain),
   };
 });
