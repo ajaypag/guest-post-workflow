@@ -6,10 +6,15 @@ import { eq, and, gte, lte, sql, isNull, or } from 'drizzle-orm';
 import { AuthServiceServer } from '@/lib/auth-server';
 import Stripe from 'stripe';
 
-// Initialize Stripe
-const stripe = new Stripe(process.env.STRIPE_SECRET_KEY!, {
-  apiVersion: '2025-07-30.basil',
-});
+// Initialize Stripe lazily to avoid build-time errors
+const getStripeClient = () => {
+  if (!process.env.STRIPE_SECRET_KEY) {
+    throw new Error('STRIPE_SECRET_KEY is not configured');
+  }
+  return new Stripe(process.env.STRIPE_SECRET_KEY, {
+    apiVersion: '2025-07-30.basil',
+  });
+};
 
 export async function GET(request: NextRequest) {
   try {
@@ -159,7 +164,7 @@ export async function GET(request: NextRequest) {
 
         for (const intentId of intentIdsToCheck) {
           try {
-            const stripePI = await stripe.paymentIntents.retrieve(intentId);
+            const stripePI = await getStripeClient().paymentIntents.retrieve(intentId);
             const dbRecord = reconciliation.paymentIntents.find(pi => pi.paymentIntentId === intentId);
             
             if (dbRecord) {
@@ -241,7 +246,7 @@ export async function POST(request: NextRequest) {
 
     if (action === 'sync_from_stripe') {
       // Sync payment intent status from Stripe
-      const stripePI = await stripe.paymentIntents.retrieve(paymentIntentId);
+      const stripePI = await getStripeClient().paymentIntents.retrieve(paymentIntentId);
       
       await db
         .update(stripePaymentIntents)

@@ -94,7 +94,7 @@ export default function EditOrderPage({ params }: { params: Promise<{ id: string
   const [total, setTotal] = useState(0);
   
   // Pricing state - flat service fee model
-  const [estimatedPricePerLink, setEstimatedPricePerLink] = useState(PRICING_CONFIG.defaults.retailPricePerLink);
+  const [estimatedPricePerLink, setEstimatedPricePerLink] = useState<number>(PRICING_CONFIG.defaults.retailPricePerLink);
   const [estimatedWholesalePerLink, setEstimatedWholesalePerLink] = useState(20000); // Default $200, updated by pricing estimator
   const [orderPreferences, setOrderPreferences] = useState<any>(null);
   

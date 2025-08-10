@@ -159,7 +159,7 @@ export class PaymentRecoveryService {
       } catch (error) {
         console.error(`Retry failed for webhook ${webhook.stripeEventId}:`, error);
         
-        const newRetryCount = webhook.retryCount + 1;
+        const newRetryCount = (webhook.retryCount || 0) + 1;
         const maxRetries = 5;
         
         if (newRetryCount >= maxRetries) {
@@ -256,7 +256,7 @@ export class PaymentRecoveryService {
       }
       
       return {
-        recovered: paymentIntent.status === 'succeeded',
+        recovered: (paymentIntent.status as string) === 'succeeded',
         currentStatus: paymentIntent.status,
         actionTaken,
       };

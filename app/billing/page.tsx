@@ -2,7 +2,7 @@
 
 import { useState, useEffect } from 'react';
 import { useRouter } from 'next/navigation';
-import AuthWrapper from '@/components/AuthWrapper';
+import AccountAuthWrapper from '@/components/AccountAuthWrapper';
 import Header from '@/components/Header';
 import { 
   CreditCard, 
@@ -143,7 +143,7 @@ export default function BillingHistoryPage() {
   };
 
   return (
-    <AuthWrapper requireAccount>
+    <AccountAuthWrapper>
       <div className="min-h-screen bg-gray-50">
         <Header />
         
@@ -360,6 +360,6 @@ export default function BillingHistoryPage() {
           </div>
         </div>
       </div>
-    </AuthWrapper>
+    </AccountAuthWrapper>
   );
 }

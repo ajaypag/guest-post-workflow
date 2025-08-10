@@ -22,7 +22,6 @@ export class PaymentPerformanceService {
     if (redisUrl) {
       try {
         this.redis = new Redis(redisUrl, {
-          retryDelayOnFailover: 100,
           maxRetriesPerRequest: 3,
           lazyConnect: true,
         });
@@ -267,7 +266,7 @@ export class PaymentPerformanceService {
 
     const totalWebhooks = webhookStats.length;
     const failedWebhooks = webhookStats.filter(w => w.status === 'failed' || w.status === 'failed_permanent').length;
-    const retriedWebhooks = webhookStats.filter(w => w.retryCount > 0).length;
+    const retriedWebhooks = webhookStats.filter(w => (w.retryCount || 0) > 0).length;
     
     const webhookProcessingTimes = webhookStats
       .map(w => w.processingTime)
@@ -472,11 +471,11 @@ export class PaymentPerformanceService {
     }
     
     if (status) {
-      queryConditions.push(eq(payments.status, status));
+      queryConditions.push(eq(payments.status, status as any));
     }
     
     if (method) {
-      queryConditions.push(eq(payments.method, method));
+      queryConditions.push(eq(payments.method, method as any));
     }
     
     if (amountRange) {
@@ -536,11 +535,16 @@ export class PaymentPerformanceService {
     issues: string[];
   }> {
     const issues: string[] = [];
-    const components = {
-      database: { status: 'up' as const, latency: 0 },
-      stripe: { status: 'up' as const, latency: 0 },
-      redis: { status: 'not_configured' as const, latency: 0 },
-      webhooks: { status: 'healthy' as const },
+    const components: {
+      database: { status: 'up' | 'down'; latency: number };
+      stripe: { status: 'up' | 'down'; latency: number };
+      redis: { status: 'up' | 'down' | 'not_configured'; latency: number };
+      webhooks: { status: 'healthy' | 'delayed' | 'failing' };
+    } = {
+      database: { status: 'up', latency: 0 },
+      stripe: { status: 'up', latency: 0 },
+      redis: { status: 'not_configured', latency: 0 },
+      webhooks: { status: 'healthy' },
     };
 
     // Check database

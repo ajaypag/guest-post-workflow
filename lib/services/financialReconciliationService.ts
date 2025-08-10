@@ -649,8 +649,8 @@ export class FinancialReconciliationService {
   // Helper methods
 
   private static generateTimeBreakdown(
-    payments: Array<{ payment: typeof payments.$inferSelect }>,
-    refunds: Array<{ payment: typeof payments.$inferSelect }>,
+    paymentRecords: Array<{ payment: typeof payments.$inferSelect }>,
+    refundRecords: Array<{ payment: typeof payments.$inferSelect }>,
     groupBy: 'day' | 'week' | 'month',
     startDate: Date,
     endDate: Date
@@ -697,7 +697,7 @@ export class FinancialReconciliationService {
     }
 
     // Add payment data
-    for (const { payment } of payments) {
+    for (const { payment } of paymentRecords) {
       let periodKey: string;
       
       switch (groupBy) {
@@ -720,7 +720,7 @@ export class FinancialReconciliationService {
     }
 
     // Add refund data
-    for (const { payment } of refunds) {
+    for (const { payment } of refundRecords) {
       let periodKey: string;
       
       switch (groupBy) {

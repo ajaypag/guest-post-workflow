@@ -95,8 +95,8 @@ export class AdvancedStripeService extends StripeService {
       setupFutureUsage: savePaymentMethod ? 'off_session' as const : undefined,
       metadata: {
         paymentTiming,
-        depositPercentage: depositPercentage?.toString(),
-        netTermsDays: netTermsDays?.toString(),
+        depositPercentage: depositPercentage?.toString() || '',
+        netTermsDays: netTermsDays?.toString() || '',
         hasFuturePayments: futurePayments.length > 0 ? 'true' : 'false',
         ...options.metadata,
       },
@@ -132,19 +132,8 @@ export class AdvancedStripeService extends StripeService {
     const session = await stripe.billingPortal.sessions.create({
       customer: customer.stripeCustomerId,
       return_url: returnUrl,
-      configuration: {
-        business_profile: {
-          headline: 'Manage your payment methods and billing',
-        },
-        features: {
-          payment_method_update: { enabled: true },
-          invoice_history: { enabled: true },
-          customer_update: {
-            enabled: true,
-            allowed_updates: ['email', 'address'],
-          },
-        },
-      },
+      // Configuration must be created via Stripe Dashboard or API separately
+      // For now, use default configuration
     });
 
     return session.url;
@@ -192,12 +181,21 @@ export class AdvancedStripeService extends StripeService {
       },
     });
 
+    // Get the order to find the accountId
+    const order = await db.query.orders.findFirst({
+      where: eq(orders.id, paymentRecord.orderId)
+    });
+
+    if (!order || !order.accountId) {
+      throw new Error('Order or account not found for refund');
+    }
+
     // Create refund record in our database
     const [dbRefund] = await db
       .insert(payments)
       .values({
         orderId: paymentRecord.orderId,
-        accountId: paymentRecord.metadata?.accountId as string,
+        accountId: order.accountId,
         amount: -(refund.amount), // Negative amount for refund
         currency: refund.currency.toUpperCase(),
         status: 'completed',

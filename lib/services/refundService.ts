@@ -7,10 +7,20 @@ import { eq, and, desc, sql } from 'drizzle-orm';
 import { EmailService } from './emailService';
 // import { InvoiceRevisionService } from './invoiceRevisionService'; // TODO: Implement invoice revision service
 
-// Initialize Stripe
-const stripe = new Stripe(process.env.STRIPE_SECRET_KEY!, {
-  apiVersion: '2025-07-30.basil',
-});
+// Lazy initialization to avoid build-time errors
+let stripe: Stripe | null = null;
+
+const getStripeClient = (): Stripe => {
+  if (!stripe) {
+    if (!process.env.STRIPE_SECRET_KEY) {
+      throw new Error('STRIPE_SECRET_KEY is not configured');
+    }
+    stripe = new Stripe(process.env.STRIPE_SECRET_KEY, {
+      apiVersion: '2025-07-30.basil',
+    });
+  }
+  return stripe;
+};
 
 export interface RefundRequest {
   orderId: string;
@@ -98,7 +108,7 @@ export class RefundService {
       // Create Stripe refund
       let stripeRefund: Stripe.Refund;
       try {
-        stripeRefund = await stripe.refunds.create({
+        stripeRefund = await getStripeClient().refunds.create({
           payment_intent: payment.stripePaymentIntentId,
           amount: refundAmount,
           reason: reason as Stripe.RefundCreateParams.Reason,
@@ -115,6 +125,9 @@ export class RefundService {
           error: `Stripe error: ${stripeError.message}` 
         };
       }
+
+      // Calculate if this is a full refund
+      const isFullRefund = (totalRefunded + refundAmount) === payment.amount;
 
       // Use database transaction for atomicity
       const refundRecord = await db.transaction(async (tx) => {
@@ -138,7 +151,6 @@ export class RefundService {
         }).returning();
 
         // Update order state if fully refunded
-        const isFullRefund = (totalRefunded + refundAmount) === payment.amount;
         if (isFullRefund) {
           await tx.update(orders)
             .set({
@@ -214,7 +226,7 @@ export class RefundService {
         refundId: refundRecord.id,
         stripeRefundId: stripeRefund.id,
         amount: refundAmount,
-        status: stripeRefund.status
+        status: stripeRefund.status || undefined
       };
 
     } catch (error: any) {
@@ -243,7 +255,7 @@ export class RefundService {
    */
   static async checkRefundStatus(stripeRefundId: string) {
     try {
-      const stripeRefund = await stripe.refunds.retrieve(stripeRefundId);
+      const stripeRefund = await getStripeClient().refunds.retrieve(stripeRefundId);
       
       // Update our database with current status
       await db.update(refunds)
@@ -285,7 +297,7 @@ export class RefundService {
 
       // Try to cancel with Stripe
       try {
-        await stripe.refunds.cancel(refundRecord.stripeRefundId);
+        await getStripeClient().refunds.cancel(refundRecord.stripeRefundId);
       } catch (stripeError: any) {
         // If Stripe says it's already succeeded or failed, update our records
         if (stripeError.code === 'refund_already_completed') {

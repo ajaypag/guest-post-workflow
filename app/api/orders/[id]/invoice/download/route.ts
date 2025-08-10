@@ -36,9 +36,13 @@ export async function GET(
       return NextResponse.json({ error: 'Invoice not generated yet' }, { status: 400 });
     }
 
-    // Generate PDF
+    // Generate PDF - handle nullable accountId
     const invoiceData = order.invoiceData as any;
-    const pdfBuffer = InvoicePdfService.generateInvoicePdf(invoiceData, order);
+    const orderForPdf = {
+      ...order,
+      accountId: order.accountId || '' // Ensure accountId is always a string
+    };
+    const pdfBuffer = InvoicePdfService.generateInvoicePdf(invoiceData, orderForPdf as any);
 
     // Return PDF as download
     const filename = `invoice-${invoiceData.invoiceNumber || orderId.substring(0, 8)}.pdf`;

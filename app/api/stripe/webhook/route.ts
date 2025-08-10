@@ -533,7 +533,7 @@ async function handlePaymentFailure(paymentIntent: Stripe.PaymentIntent): Promis
 
         // Notify internal team about payment failure
         const adminEmail = process.env.ADMIN_NOTIFICATION_EMAIL || 'admin@postflow.outreachlabs.net';
-        await EmailService.send({
+        await EmailService.send('notification', {
           to: adminEmail,
           subject: `Payment Failed - Order ${orderId.substring(0, 8)}`,
           text: `Payment failed for Order ${orderId}. Error: ${errorCode} - ${errorMessage}`,
@@ -747,7 +747,7 @@ async function handleDisputeCreated(event: Stripe.Event, webhookRecordId: string
 
     // Send admin notification
     const adminEmail = process.env.ADMIN_NOTIFICATION_EMAIL || 'admin@postflow.outreachlabs.net';
-    await EmailService.send({
+    await EmailService.send('notification', {
       to: adminEmail,
       subject: `⚠️ Payment Dispute - Order ${paymentIntentRecord.orderId.substring(0, 8)}`,
       text: `A payment dispute has been created for Order ${paymentIntentRecord.orderId}. Amount: $${dispute.amount / 100}. Reason: ${dispute.reason}`,
@@ -781,7 +781,7 @@ async function sendRefundFailureNotification(orderId: string, failureReason?: st
       });
 
       if (account) {
-        await EmailService.send({
+        await EmailService.send('notification', {
           to: account.email,
           subject: `Refund Failed - Order #${orderId.substring(0, 8)}`,
           text: `Your refund for Order #${orderId.substring(0, 8)} has failed. Reason: ${failureReason || 'Unknown'}. Please contact support.`,

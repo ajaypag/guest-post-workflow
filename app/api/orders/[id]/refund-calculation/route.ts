@@ -37,14 +37,14 @@ export async function GET(
     // Get refund policy
     const orderAge = Date.now() - new Date(order.createdAt).getTime();
     const daysOld = Math.floor(orderAge / (1000 * 60 * 60 * 24));
-    const policy = RefundCalculationService.getRefundPolicy(order.orderType, daysOld);
+    // const policy = RefundCalculationService.getRefundPolicy(order.orderType, daysOld);
 
     return NextResponse.json({
       orderId,
       orderTotal: order.totalRetail,
       paidAmount: order.state === 'payment_received' || order.state === 'in_progress' || order.state === 'completed' ? order.totalRetail : 0,
       calculation,
-      policy,
+      // policy,
       orderAge: daysOld,
       canProcess: order.state === 'payment_received' || order.state === 'in_progress' || order.state === 'completed',
       message: calculation.completionPercentage === 100 

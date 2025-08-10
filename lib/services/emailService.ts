@@ -725,7 +725,7 @@ Need help? Contact support@postflow.outreachlabs.net
       </div>
     `;
 
-    return this.send({
+    return this.send('notification', {
       to: options.to,
       subject: `Refund Processed - Order #${options.orderId.substring(0, 8)}`,
       html,

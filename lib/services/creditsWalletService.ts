@@ -130,9 +130,9 @@ export class CreditsWalletService {
         description: credit.description,
         expiresAt: credit.expiresAt,
         restrictions: {
-          minimumOrderAmount: credit.minimumOrderAmount,
-          maximumUsageAmount: credit.maximumUsageAmount,
-          applicableOrderTypes: credit.applicableOrderTypes,
+          minimumOrderAmount: credit.minimumOrderAmount || undefined,
+          maximumUsageAmount: credit.maximumUsageAmount || undefined,
+          applicableOrderTypes: credit.applicableOrderTypes || undefined,
         },
       })),
     };
