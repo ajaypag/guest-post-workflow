@@ -1,7 +1,8 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { db } from '@/lib/db/connection';
-import { sql } from 'drizzle-orm';
+import { sql, inArray } from 'drizzle-orm';
 import { AuthServiceServer } from '@/lib/auth-server';
+import { bulkAnalysisDomains } from '@/lib/db/bulkAnalysisSchema';
 
 export async function GET(request: NextRequest) {
   // For critical database fixes, allow both authenticated and local development access
@@ -171,13 +172,12 @@ export async function POST(request: NextRequest) {
       
       // Keep the first one (best according to our criteria), delete the rest
       const toKeep = records.rows[0];
-      const toDelete = records.rows.slice(1).map(r => r.id);
+      const toDelete: string[] = records.rows.slice(1).map(r => r.id as string);
       
       if (toDelete.length > 0) {
-        await db.execute(sql`
-          DELETE FROM bulk_analysis_domains
-          WHERE id = ANY(${toDelete})
-        `);
+        // Use Drizzle's delete with inArray for better performance
+        await db.delete(bulkAnalysisDomains)
+          .where(inArray(bulkAnalysisDomains.id, toDelete));
         cleanedCount += toDelete.length;
       }
     }
