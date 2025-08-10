@@ -324,9 +324,11 @@ export default function OrderSiteReviewTableV2({
   // Get status badge color
   const getStatusColor = (status: 'included' | 'excluded' | 'saved_for_later') => {
     switch (status) {
-      case 'included': return 'bg-green-100 text-green-800';
-      case 'excluded': return 'bg-red-100 text-red-800';
-      case 'saved_for_later': return 'bg-yellow-100 text-yellow-800';
+      case 'included': return 'bg-green-100 text-green-800 border-green-300';
+      case 'excluded': return 'bg-red-100 text-red-800 border-red-300';
+      case 'saved_for_later': return userType === 'account' 
+        ? 'bg-purple-100 text-purple-800 border-purple-300' 
+        : 'bg-yellow-100 text-yellow-800 border-yellow-300';
     }
   };
 
@@ -623,15 +625,15 @@ export default function OrderSiteReviewTableV2({
                                 className={`px-2 py-1 text-sm rounded border ${getStatusColor(status)}`}
                                 disabled={actionLoading[submission.id]}
                               >
-                                <option value="included">✓ Included</option>
-                                <option value="excluded">✗ Excluded</option>
-                                <option value="saved_for_later">⏸ Saved</option>
+                                <option value="included">{userType === 'account' ? '✅ Use This Site' : '✓ Included'}</option>
+                                <option value="excluded">{userType === 'account' ? '❌ Not Interested' : '✗ Excluded'}</option>
+                                <option value="saved_for_later">{userType === 'account' ? '💾 Save for Later' : '⏸ Saved'}</option>
                               </select>
                             ) : (
                               <span className={`px-2 py-1 text-sm rounded ${getStatusColor(status)}`}>
-                                {status === 'included' && '✓ Included'}
-                                {status === 'excluded' && '✗ Excluded'}
-                                {status === 'saved_for_later' && '⏸ Saved'}
+                                {status === 'included' && (userType === 'account' ? '✅ Using' : '✓ Included')}
+                                {status === 'excluded' && (userType === 'account' ? '❌ Skipped' : '✗ Excluded')}
+                                {status === 'saved_for_later' && (userType === 'account' ? '💾 Banked' : '⏸ Saved')}
                               </span>
                             )}
                             {status === 'excluded' && submission.exclusionReason && (

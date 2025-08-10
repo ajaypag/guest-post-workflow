@@ -473,17 +473,27 @@ export default function ExternalOrderReviewPage() {
 
             {/* Progress Stats - Simple included/excluded counts */}
             <div className="grid grid-cols-3 gap-4 mt-6">
-              <div className="text-center">
+              <div className="text-center bg-green-50 rounded-lg p-3 border border-green-200">
                 <p className="text-2xl font-semibold text-green-600">{includedCount}</p>
-                <p className="text-xs text-gray-500">Included</p>
+                <p className="text-xs text-green-700 font-medium">In This Order</p>
               </div>
-              <div className="text-center">
-                <p className="text-2xl font-semibold text-amber-600">{savedForLaterCount}</p>
-                <p className="text-xs text-gray-500">Saved for Later</p>
+              <div className="text-center bg-purple-50 rounded-lg p-3 border border-purple-200 relative group">
+                <p className="text-2xl font-semibold text-purple-600">{savedForLaterCount}</p>
+                <p className="text-xs text-purple-700 font-medium">Site Bank</p>
+                {savedForLaterCount > 0 && (
+                  <div className="absolute bottom-full left-1/2 transform -translate-x-1/2 mb-2 hidden group-hover:block z-10">
+                    <div className="bg-gray-900 text-white text-xs rounded-lg py-2 px-3 whitespace-nowrap">
+                      Available for future orders
+                      <div className="absolute top-full left-1/2 transform -translate-x-1/2 -mt-1">
+                        <div className="border-4 border-transparent border-t-gray-900"></div>
+                      </div>
+                    </div>
+                  </div>
+                )}
               </div>
-              <div className="text-center">
+              <div className="text-center bg-gray-50 rounded-lg p-3 border border-gray-200">
                 <p className="text-2xl font-semibold text-gray-400">{excludedCount}</p>
-                <p className="text-xs text-gray-500">Excluded</p>
+                <p className="text-xs text-gray-600 font-medium">Not Interested</p>
               </div>
             </div>
           </div>
