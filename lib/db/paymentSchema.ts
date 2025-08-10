@@ -37,6 +37,7 @@ export const payments = pgTable('payments', {
   
   // Transaction details
   transactionId: varchar('transaction_id', { length: 255 }),
+  stripePaymentIntentId: varchar('stripe_payment_intent_id', { length: 255 }),
   processorResponse: jsonb('processor_response'), // Store raw response from payment processor
   
   // Additional info
@@ -52,7 +53,12 @@ export const payments = pgTable('payments', {
   // For partial payments
   isPartial: boolean('is_partial').default(false),
   remainingAmount: integer('remaining_amount'), // For tracking partial payments
-});
+}, (table) => ({
+  stripePaymentIntentIdx: index('idx_payments_stripe_intent').on(table.stripePaymentIntentId),
+  orderIdx: index('idx_payments_order').on(table.orderId),
+  accountIdx: index('idx_payments_account').on(table.accountId),
+  statusIdx: index('idx_payments_status').on(table.status),
+}));
 
 // Invoices table
 export const invoices = pgTable('invoices', {

@@ -3,7 +3,7 @@ import { db } from '@/lib/db/connection';
 import { payments, refunds } from '@/lib/db/paymentSchema';
 import { orders } from '@/lib/db/orderSchema';
 import { accounts } from '@/lib/db/accountSchema';
-import { eq, and, desc } from 'drizzle-orm';
+import { eq, and, desc, sql } from 'drizzle-orm';
 import { EmailService } from './emailService';
 
 // Initialize Stripe
@@ -115,45 +115,50 @@ export class RefundService {
         };
       }
 
-      // Save refund record to database
-      const [refundRecord] = await db.insert(refunds).values({
-        paymentId: payment.id,
-        orderId,
-        stripeRefundId: stripeRefund.id,
-        amount: refundAmount,
-        currency: payment.currency,
-        status: stripeRefund.status || 'pending',
-        reason,
-        notes,
-        initiatedBy,
-        metadata: {
-          stripeResponse: stripeRefund
-        },
-        processedAt: new Date(),
-        createdAt: new Date(),
-        updatedAt: new Date()
-      }).returning();
+      // Use database transaction for atomicity
+      const refundRecord = await db.transaction(async (tx) => {
+        // Save refund record to database
+        const [newRefund] = await tx.insert(refunds).values({
+          paymentId: payment.id,
+          orderId,
+          stripeRefundId: stripeRefund.id,
+          amount: refundAmount,
+          currency: payment.currency,
+          status: stripeRefund.status || 'pending',
+          reason,
+          notes,
+          initiatedBy,
+          metadata: {
+            stripeResponse: stripeRefund
+          },
+          processedAt: new Date(),
+          createdAt: new Date(),
+          updatedAt: new Date()
+        }).returning();
 
-      // Update order state if fully refunded
-      const isFullRefund = (totalRefunded + refundAmount) === payment.amount;
-      if (isFullRefund) {
-        await db.update(orders)
-          .set({
-            state: 'refunded',
-            refundedAt: new Date(),
-            updatedAt: new Date()
-          })
-          .where(eq(orders.id, orderId));
-      } else {
-        // Partial refund - update order to reflect partial refund state
-        await db.update(orders)
-          .set({
-            state: 'partially_refunded',
-            partialRefundAmount: totalRefunded + refundAmount,
-            updatedAt: new Date()
-          })
-          .where(eq(orders.id, orderId));
-      }
+        // Update order state if fully refunded
+        const isFullRefund = (totalRefunded + refundAmount) === payment.amount;
+        if (isFullRefund) {
+          await tx.update(orders)
+            .set({
+              state: 'refunded',
+              refundedAt: new Date(),
+              updatedAt: new Date()
+            })
+            .where(eq(orders.id, orderId));
+        } else {
+          // Partial refund - update order to reflect partial refund state
+          await tx.update(orders)
+            .set({
+              state: 'partially_refunded',
+              partialRefundAmount: totalRefunded + refundAmount,
+              updatedAt: new Date()
+            })
+            .where(eq(orders.id, orderId));
+        }
+
+        return newRefund;
+      });
 
       // Send refund confirmation email
       try {

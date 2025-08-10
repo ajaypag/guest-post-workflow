@@ -24,6 +24,27 @@ export async function POST(
     const body = await request.json();
     const { amount, reason, notes } = body;
 
+    // Validate input
+    if (amount !== undefined) {
+      if (typeof amount !== 'number' || amount <= 0) {
+        return NextResponse.json({ 
+          error: 'Invalid refund amount. Must be a positive number.' 
+        }, { status: 400 });
+      }
+      
+      if (!Number.isInteger(amount)) {
+        return NextResponse.json({ 
+          error: 'Refund amount must be in cents (integer).' 
+        }, { status: 400 });
+      }
+    }
+
+    if (reason && !['duplicate', 'fraudulent', 'requested_by_customer', 'other'].includes(reason)) {
+      return NextResponse.json({ 
+        error: 'Invalid refund reason. Must be: duplicate, fraudulent, requested_by_customer, or other.' 
+      }, { status: 400 });
+    }
+
     // Validate order exists
     const order = await db.query.orders.findFirst({
       where: eq(orders.id, orderId)
@@ -31,6 +52,13 @@ export async function POST(
 
     if (!order) {
       return NextResponse.json({ error: 'Order not found' }, { status: 404 });
+    }
+
+    // Additional validation if amount is provided
+    if (amount !== undefined && amount > order.totalRetail) {
+      return NextResponse.json({ 
+        error: `Refund amount ($${amount / 100}) exceeds order total ($${order.totalRetail / 100})` 
+      }, { status: 400 });
     }
 
     // Process refund

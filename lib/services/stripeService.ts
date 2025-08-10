@@ -330,6 +330,7 @@ export class StripeService {
       status: 'completed',
       method: 'stripe',
       transactionId: paymentIntent.id,
+      stripePaymentIntentId: paymentIntent.id,
       processorResponse: JSON.stringify(paymentIntent),
       processedAt: new Date(),
       createdAt: new Date(),

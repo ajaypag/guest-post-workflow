@@ -17,7 +17,8 @@ export const orders = pgTable('orders', {
   // Status tracking
   status: varchar('status', { length: 50 }).notNull().default('draft'),
   state: varchar('state', { length: 50 }).default('configuring'),
-  // States: configuring → analyzing → reviewing → payment_pending → in_progress → completed
+  // Valid states: configuring, analyzing, reviewing, payment_pending, payment_received, 
+  // payment_failed, in_progress, completed, cancelled, refunded, partially_refunded
   
   // Pricing (in cents)
   subtotalRetail: integer('subtotal_retail').notNull().default(0),

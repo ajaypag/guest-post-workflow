@@ -2,7 +2,7 @@ import { NextRequest, NextResponse } from 'next/server';
 import { headers } from 'next/headers';
 import { StripeService } from '@/lib/services/stripeService';
 import { db } from '@/lib/db/connection';
-import { stripeWebhooks, stripePaymentIntents } from '@/lib/db/paymentSchema';
+import { stripeWebhooks, stripePaymentIntents, refunds, payments } from '@/lib/db/paymentSchema';
 import { orders } from '@/lib/db/orderSchema';
 import { accounts } from '@/lib/db/accountSchema';
 import { eq } from 'drizzle-orm';
@@ -249,6 +249,18 @@ async function processWebhookEvent(event: Stripe.Event, webhookRecordId: string)
 
     case 'payment_intent.processing':
       await handlePaymentIntentProcessing(event, webhookRecordId);
+      break;
+
+    case 'charge.refunded':
+      await handleChargeRefunded(event, webhookRecordId);
+      break;
+
+    case 'charge.refund.updated':
+      await handleRefundUpdated(event, webhookRecordId);
+      break;
+
+    case 'charge.dispute.created':
+      await handleDisputeCreated(event, webhookRecordId);
       break;
 
     case 'payment_method.attached':
@@ -606,5 +618,185 @@ async function handlePaymentActionRequired(paymentIntent: Stripe.PaymentIntent):
     }
   } catch (error) {
     console.error('Error handling payment action required:', error);
+  }
+}
+
+/**
+ * Handle charge refunded event - update refund status
+ */
+async function handleChargeRefunded(event: Stripe.Event, webhookRecordId: string): Promise<void> {
+  const charge = event.data.object as Stripe.Charge;
+  
+  console.log(`Charge refunded: ${charge.id}, amount: ${charge.amount_refunded}`);
+
+  // Update webhook record with related entities
+  await updateWebhookRelations(webhookRecordId, charge.payment_intent as string);
+
+  // Find the payment record
+  const payment = await db.query.payments.findFirst({
+    where: eq(payments.stripePaymentIntentId, charge.payment_intent as string)
+  });
+
+  if (!payment) {
+    console.error(`Payment not found for charge ${charge.id}`);
+    return;
+  }
+
+  // Update refund records if they exist
+  if (charge.refunds?.data && charge.refunds.data.length > 0) {
+    for (const refund of charge.refunds.data) {
+      // Check if refund record exists
+      const existingRefund = await db.query.refunds.findFirst({
+        where: eq(refunds.stripeRefundId, refund.id)
+      });
+
+      if (existingRefund) {
+        // Update existing refund status
+        await db.update(refunds)
+          .set({
+            status: refund.status || 'succeeded',
+            updatedAt: new Date()
+          })
+          .where(eq(refunds.stripeRefundId, refund.id));
+      } else {
+        // Create new refund record if it doesn't exist (webhook arrived before API response)
+        await db.insert(refunds).values({
+          paymentId: payment.id,
+          orderId: payment.orderId,
+          stripeRefundId: refund.id,
+          amount: refund.amount,
+          currency: refund.currency.toUpperCase(),
+          status: refund.status || 'succeeded',
+          reason: refund.reason,
+          metadata: { webhookCreated: true, refundData: refund },
+          processedAt: new Date(refund.created * 1000),
+          initiatedBy: payment.accountId, // Default to account that made payment
+          createdAt: new Date(),
+          updatedAt: new Date()
+        });
+      }
+    }
+  }
+}
+
+/**
+ * Handle refund updated event - update refund status
+ */
+async function handleRefundUpdated(event: Stripe.Event, webhookRecordId: string): Promise<void> {
+  const refund = event.data.object as Stripe.Refund;
+  
+  console.log(`Refund updated: ${refund.id}, status: ${refund.status}`);
+
+  // Update refund record
+  const existingRefund = await db.query.refunds.findFirst({
+    where: eq(refunds.stripeRefundId, refund.id)
+  });
+
+  if (existingRefund) {
+    await db.update(refunds)
+      .set({
+        status: refund.status || 'unknown',
+        failureReason: refund.failure_reason,
+        updatedAt: new Date()
+      })
+      .where(eq(refunds.stripeRefundId, refund.id));
+
+    // If refund failed, update order state back
+    if (refund.status === 'failed') {
+      await db.update(orders)
+        .set({
+          state: 'payment_received', // Revert to paid state
+          updatedAt: new Date()
+        })
+        .where(eq(orders.id, existingRefund.orderId));
+
+      // Send failure notification
+      await sendRefundFailureNotification(existingRefund.orderId, refund.failure_reason);
+    }
+  }
+}
+
+/**
+ * Handle dispute created event
+ */
+async function handleDisputeCreated(event: Stripe.Event, webhookRecordId: string): Promise<void> {
+  const dispute = event.data.object as Stripe.Dispute;
+  
+  console.log(`Dispute created: ${dispute.id}, amount: ${dispute.amount}`);
+
+  // Find the payment intent
+  const paymentIntent = dispute.payment_intent as string;
+  if (!paymentIntent) return;
+
+  // Update webhook record
+  await updateWebhookRelations(webhookRecordId, paymentIntent);
+
+  // Find the order
+  const paymentIntentRecord = await db.query.stripePaymentIntents.findFirst({
+    where: eq(stripePaymentIntents.stripePaymentIntentId, paymentIntent)
+  });
+
+  if (paymentIntentRecord) {
+    // Update order state to disputed
+    await db.update(orders)
+      .set({
+        state: 'disputed',
+        updatedAt: new Date()
+      })
+      .where(eq(orders.id, paymentIntentRecord.orderId));
+
+    // Send admin notification
+    const adminEmail = process.env.ADMIN_NOTIFICATION_EMAIL || 'admin@postflow.outreachlabs.net';
+    await EmailService.send({
+      to: adminEmail,
+      subject: `⚠️ Payment Dispute - Order ${paymentIntentRecord.orderId.substring(0, 8)}`,
+      text: `A payment dispute has been created for Order ${paymentIntentRecord.orderId}. Amount: $${dispute.amount / 100}. Reason: ${dispute.reason}`,
+      html: `
+        <div style="font-family: Arial, sans-serif;">
+          <h2 style="color: #d32f2f;">⚠️ Payment Dispute Created</h2>
+          <p><strong>Order:</strong> ${paymentIntentRecord.orderId}</p>
+          <p><strong>Amount:</strong> $${dispute.amount / 100}</p>
+          <p><strong>Reason:</strong> ${dispute.reason}</p>
+          <p><strong>Status:</strong> ${dispute.status}</p>
+          <p><strong>Due By:</strong> ${new Date(dispute.evidence_details?.due_by! * 1000).toLocaleDateString()}</p>
+          <p>Please respond to this dispute in your Stripe dashboard immediately.</p>
+        </div>
+      `,
+    });
+  }
+}
+
+/**
+ * Send refund failure notification
+ */
+async function sendRefundFailureNotification(orderId: string, failureReason?: string): Promise<void> {
+  try {
+    const order = await db.query.orders.findFirst({
+      where: eq(orders.id, orderId)
+    });
+
+    if (order?.accountId) {
+      const account = await db.query.accounts.findFirst({
+        where: eq(accounts.id, order.accountId)
+      });
+
+      if (account) {
+        await EmailService.send({
+          to: account.email,
+          subject: `Refund Failed - Order #${orderId.substring(0, 8)}`,
+          text: `Your refund for Order #${orderId.substring(0, 8)} has failed. Reason: ${failureReason || 'Unknown'}. Please contact support.`,
+          html: `
+            <div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto;">
+              <h2 style="color: #d32f2f;">Refund Failed</h2>
+              <p>We were unable to process your refund for Order #${orderId.substring(0, 8)}.</p>
+              <p><strong>Reason:</strong> ${failureReason || 'Unknown error'}</p>
+              <p>Please contact our support team for assistance.</p>
+            </div>
+          `,
+        });
+      }
+    }
+  } catch (error) {
+    console.error('Error sending refund failure notification:', error);
   }
 }
