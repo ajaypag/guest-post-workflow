@@ -30,7 +30,9 @@ export async function POST(
       );
     }
 
-    const { userType, userId, accountId } = session;
+    const { userType, userId } = session;
+    // For account users, userId IS the accountId
+    const accountId = userType === 'account' ? userId : session.accountId;
 
     // Parse request body - handle empty body gracefully
     let body = {};
@@ -53,12 +55,18 @@ export async function POST(
     // For internal users, allow access to any order
     let orderQuery;
     if (userType === 'account') {
-      if (!accountId) {
+      if (!userId) {
         return NextResponse.json(
           { error: 'Account ID required' },
           { status: 400 }
         );
       }
+      
+      console.log('[PAYMENT INTENT] Account user access check:', {
+        userType,
+        userId,
+        orderId
+      });
       
       orderQuery = db
         .select({
@@ -70,7 +78,7 @@ export async function POST(
         .where(
           and(
             eq(orders.id, orderId),
-            eq(orders.accountId, accountId)
+            eq(orders.accountId, userId) // userId IS the accountId for account users
           )
         );
     } else {
@@ -144,9 +152,31 @@ export async function POST(
     // Use the order's total retail amount for payment
     const amount = order.totalRetail;
     
+    console.log('[PAYMENT INTENT] Order payment details:', {
+      orderId,
+      totalRetail: order.totalRetail,
+      subtotalRetail: order.subtotalRetail,
+      state: order.state,
+      invoicedAt: order.invoicedAt,
+      hasInvoiceData: !!order.invoiceData
+    });
+    
     if (!amount || amount <= 0) {
+      console.error('[PAYMENT INTENT] Invalid amount:', {
+        amount,
+        totalRetail: order.totalRetail,
+        orderState: order.state
+      });
       return NextResponse.json(
-        { error: 'Order has no valid amount to collect payment for' },
+        { 
+          error: 'Order has no valid amount to collect payment for',
+          debug: {
+            amount,
+            totalRetail: order.totalRetail,
+            state: order.state,
+            invoicedAt: order.invoicedAt
+          }
+        },
         { status: 400 }
       );
     }
@@ -189,7 +219,11 @@ export async function POST(
     });
 
   } catch (error) {
-    console.error('Error creating payment intent:', error);
+    console.error('[PAYMENT INTENT] Error creating payment intent:', {
+      error: error instanceof Error ? error.message : error,
+      orderId: (await params).id,
+      stack: error instanceof Error ? error.stack : undefined
+    });
     
     if (error instanceof z.ZodError) {
       return NextResponse.json(
