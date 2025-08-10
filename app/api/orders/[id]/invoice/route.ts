@@ -132,10 +132,20 @@ export async function POST(
         }
 
         // Check if all sites have been reviewed
-        // Sites with inclusionStatus set have been reviewed (included/excluded/saved_for_later)
-        const pendingSubmissions = allSubmissions.filter(s => 
-          !s.inclusionStatus && (s.submissionStatus === 'pending' || s.submissionStatus === 'submitted')
-        );
+        // Sites are considered reviewed if:
+        // 1. They have an inclusionStatus (new system)
+        // 2. They have a selectionPool (legacy system - primary/alternative)
+        // 3. They have been client_approved/client_rejected (old system)
+        const pendingSubmissions = allSubmissions.filter(s => {
+          // Has explicit inclusion status - reviewed
+          if (s.inclusionStatus) return false;
+          // Has selection pool - reviewed (primary = included, alternative = saved)
+          if (s.selectionPool) return false;
+          // Has been approved/rejected - reviewed
+          if (s.submissionStatus === 'client_approved' || s.submissionStatus === 'client_rejected') return false;
+          // Otherwise check if it's pending
+          return s.submissionStatus === 'pending' || s.submissionStatus === 'submitted';
+        });
         pendingCount = pendingSubmissions.length;
         
         if (pendingCount > 0) {
@@ -145,15 +155,32 @@ export async function POST(
           }, { status: 400 });
         }
 
-        // Check for approved items using both old and new status systems
-        approvedItems = allSubmissions.filter(s => 
-          s.submissionStatus === 'client_approved' || 
-          s.inclusionStatus === 'included'
-        );
+        // Check for approved items using all status systems
+        approvedItems = allSubmissions.filter(s => {
+          // New system: explicit inclusion
+          if (s.inclusionStatus === 'included') return true;
+          // Legacy system: primary pool = included
+          if (s.selectionPool === 'primary') return true;
+          // Old system: client approved
+          if (s.submissionStatus === 'client_approved') return true;
+          return false;
+        });
 
         if (approvedItems.length === 0) {
+          console.log('[INVOICE] No approved items found. Submission details:');
+          allSubmissions.forEach(s => {
+            console.log(`- ID: ${s.id.substring(0,8)}, inclusionStatus: ${s.inclusionStatus}, selectionPool: ${s.selectionPool}, submissionStatus: ${s.submissionStatus}`);
+          });
           return NextResponse.json({ 
-            error: 'Cannot generate invoice - no approved sites' 
+            error: 'Cannot generate invoice - no approved sites',
+            debug: {
+              totalSubmissions: allSubmissions.length,
+              submissions: allSubmissions.map(s => ({
+                inclusionStatus: s.inclusionStatus,
+                selectionPool: s.selectionPool,
+                submissionStatus: s.submissionStatus
+              }))
+            }
           }, { status: 400 });
         }
       }
