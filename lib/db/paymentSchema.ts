@@ -204,6 +204,38 @@ export const stripeWebhooks = pgTable('stripe_webhooks', {
   createdIdx: index('idx_stripe_webhooks_created').on(table.createdAt),
 }));
 
+// Refunds table
+export const refunds = pgTable('refunds', {
+  id: uuid('id').defaultRandom().primaryKey(),
+  paymentId: uuid('payment_id').notNull().references(() => payments.id),
+  orderId: uuid('order_id').notNull().references(() => orders.id),
+  
+  // Refund details
+  stripeRefundId: varchar('stripe_refund_id', { length: 255 }).notNull(),
+  amount: integer('amount').notNull(), // Amount in cents
+  currency: varchar('currency', { length: 3 }).notNull().default('USD'),
+  status: varchar('status', { length: 50 }).notNull(), // pending, succeeded, failed, canceled
+  
+  // Reason and notes
+  reason: varchar('reason', { length: 50 }), // duplicate, fraudulent, requested_by_customer, other
+  notes: text('notes'),
+  failureReason: varchar('failure_reason', { length: 500 }),
+  
+  // Tracking
+  initiatedBy: uuid('initiated_by').notNull().references(() => users.id),
+  metadata: jsonb('metadata'),
+  
+  // Timestamps
+  processedAt: timestamp('processed_at'),
+  canceledAt: timestamp('canceled_at'),
+  createdAt: timestamp('created_at').defaultNow().notNull(),
+  updatedAt: timestamp('updated_at').defaultNow().notNull(),
+}, (table) => ({
+  stripeRefundIdIdx: unique('idx_refunds_stripe_id').on(table.stripeRefundId),
+  paymentIdx: index('idx_refunds_payment').on(table.paymentId),
+  orderIdx: index('idx_refunds_order').on(table.orderId),
+  statusIdx: index('idx_refunds_status').on(table.status),
+}));
 
 // Type exports
 export type Payment = typeof payments.$inferSelect;
@@ -216,3 +248,5 @@ export type StripeCustomer = typeof stripeCustomers.$inferSelect;
 export type NewStripeCustomer = typeof stripeCustomers.$inferInsert;
 export type StripeWebhook = typeof stripeWebhooks.$inferSelect;
 export type NewStripeWebhook = typeof stripeWebhooks.$inferInsert;
+export type Refund = typeof refunds.$inferSelect;
+export type NewRefund = typeof refunds.$inferInsert;

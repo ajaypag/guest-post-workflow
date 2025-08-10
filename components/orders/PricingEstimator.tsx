@@ -3,9 +3,7 @@
 import React, { useState, useEffect, useCallback, useRef } from 'react';
 import { TrendingUp, ChevronDown } from 'lucide-react';
 import { formatCurrency } from '@/lib/utils/formatting';
-
-// Service fee constant - $79 per link
-const SERVICE_FEE_CENTS = 7900;
+import { SERVICE_FEE_CENTS } from '@/lib/config/pricing';
 
 // Smart filter options - expanded price ranges
 const PRICE_OPTIONS = [

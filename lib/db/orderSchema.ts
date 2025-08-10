@@ -94,6 +94,8 @@ export const orders = pgTable('orders', {
   paidAt: timestamp('paid_at'),
   completedAt: timestamp('completed_at'),
   cancelledAt: timestamp('cancelled_at'),
+  refundedAt: timestamp('refunded_at'),
+  partialRefundAmount: integer('partial_refund_amount'), // Amount refunded for partial refunds
   
   // Metadata
   createdBy: uuid('created_by').notNull().references(() => users.id),

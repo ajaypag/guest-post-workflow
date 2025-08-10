@@ -654,6 +654,86 @@ Need help? Contact support@postflow.outreachlabs.net
   }
 
   /**
+   * Send refund confirmation email
+   */
+  static async sendRefundConfirmationEmail(options: {
+    to: string;
+    orderId: string;
+    refundAmount: number;
+    isFullRefund: boolean;
+    orderViewUrl: string;
+  }): Promise<{ success: boolean; id?: string; error?: string }> {
+    const formattedAmount = (options.refundAmount / 100).toFixed(2);
+    
+    const html = `
+      <div style="font-family: Arial, sans-serif; line-height: 1.6; color: #333; max-width: 600px; margin: 0 auto;">
+        <h2 style="color: #ff9800;">Refund Processed</h2>
+        <p>We've successfully processed your refund for Order #${options.orderId.substring(0, 8)}.</p>
+        
+        <div style="background-color: #fff3e0; padding: 20px; border-radius: 5px; margin: 20px 0; border-left: 4px solid #ff9800;">
+          <h3 style="margin-top: 0; color: #e65100;">Refund Details:</h3>
+          <table style="width: 100%;">
+            <tr>
+              <td style="padding: 8px 0;"><strong>Order ID:</strong></td>
+              <td style="padding: 8px 0; font-family: monospace;">${options.orderId.substring(0, 8)}</td>
+            </tr>
+            <tr>
+              <td style="padding: 8px 0;"><strong>Refund Amount:</strong></td>
+              <td style="padding: 8px 0; color: #e65100; font-weight: bold;">$${formattedAmount} USD</td>
+            </tr>
+            <tr>
+              <td style="padding: 8px 0;"><strong>Refund Type:</strong></td>
+              <td style="padding: 8px 0;">${options.isFullRefund ? 'Full Refund' : 'Partial Refund'}</td>
+            </tr>
+            <tr>
+              <td style="padding: 8px 0;"><strong>Date Processed:</strong></td>
+              <td style="padding: 8px 0;">${new Date().toLocaleDateString('en-US', { 
+                year: 'numeric', 
+                month: 'long', 
+                day: 'numeric'
+              })}</td>
+            </tr>
+          </table>
+        </div>
+        
+        <div style="margin: 30px 0;">
+          <h3>What happens next?</h3>
+          <ul style="line-height: 2;">
+            <li>The refund will appear in your account within 5-10 business days</li>
+            <li>You'll receive a confirmation from your payment provider</li>
+            ${!options.isFullRefund ? '<li>Any remaining balance on this order is still being processed</li>' : ''}
+          </ul>
+        </div>
+        
+        <div style="text-align: center; margin: 30px 0;">
+          <a href="${options.orderViewUrl}" 
+             style="background-color: #ff9800; color: white; padding: 12px 30px; text-decoration: none; border-radius: 5px; display: inline-block;">
+            View Order Details
+          </a>
+        </div>
+        
+        <div style="background-color: #f5f5f5; padding: 15px; border-radius: 5px; margin-top: 30px;">
+          <p style="margin: 0; font-size: 14px; color: #666;">
+            If you have any questions about this refund, please contact our support team.
+          </p>
+        </div>
+        
+        <div style="margin-top: 30px; padding-top: 20px; border-top: 1px solid #e0e0e0; font-size: 12px; color: #999;">
+          <p>Thank you for your business. We apologize for any inconvenience.</p>
+          <p>© ${new Date().getFullYear()} PostFlow. All rights reserved.</p>
+        </div>
+      </div>
+    `;
+
+    return this.send({
+      to: options.to,
+      subject: `Refund Processed - Order #${options.orderId.substring(0, 8)}`,
+      html,
+      text: `Your refund of $${formattedAmount} has been processed for Order #${options.orderId.substring(0, 8)}. The refund will appear in your account within 5-10 business days.`,
+    });
+  }
+
+  /**
    * Send account welcome email
    */
   static async sendAccountWelcome(data: {

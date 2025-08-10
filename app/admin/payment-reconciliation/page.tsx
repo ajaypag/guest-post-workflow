@@ -78,7 +78,7 @@ export default function PaymentReconciliationPage() {
   };
 
   return (
-    <AuthWrapper requireInternal>
+    <AuthWrapper requireAdmin>
       <Header />
       <div className="min-h-screen bg-gray-50 py-8">
         <div className="max-w-7xl mx-auto px-4">

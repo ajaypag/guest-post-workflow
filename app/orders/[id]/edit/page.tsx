@@ -18,9 +18,7 @@ import {
   AlertCircle, Copy, Trash2, User, Globe, ExternalLink,
   ArrowLeft, Loader2, Clock, Users, CreditCard
 } from 'lucide-react';
-
-// Service fee constant - $79 per link
-const SERVICE_FEE_CENTS = 7900;
+import { SERVICE_FEE_CENTS, PRICING_CONFIG } from '@/lib/config/pricing';
 
 interface OrderLineItem {
   id: string;
@@ -96,7 +94,7 @@ export default function EditOrderPage({ params }: { params: Promise<{ id: string
   const [total, setTotal] = useState(0);
   
   // Pricing state - flat service fee model
-  const [estimatedPricePerLink, setEstimatedPricePerLink] = useState(27900); // Default $279
+  const [estimatedPricePerLink, setEstimatedPricePerLink] = useState(PRICING_CONFIG.defaults.retailPricePerLink);
   const [estimatedWholesalePerLink, setEstimatedWholesalePerLink] = useState(20000); // Default $200, updated by pricing estimator
   const [orderPreferences, setOrderPreferences] = useState<any>(null);
   

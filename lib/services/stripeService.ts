@@ -255,7 +255,7 @@ export class StripeService {
         setupFutureUsage: paymentIntent.setup_future_usage as string,
         amountCapturable: paymentIntent.amount_capturable,
         amountCaptured: paymentIntent.amount_captured || 0,
-        amountReceived: paymentIntent.amount_received || 0
+        amountReceived: paymentIntent.amount_received || 0,
         createdAt: new Date(),
         updatedAt: new Date(),
       })
@@ -294,7 +294,7 @@ export class StripeService {
         paymentMethodId: paymentIntent.payment_method as string,
         amountCapturable: paymentIntent.amount_capturable,
         amountCaptured: paymentIntent.amount_captured || 0,
-        amountReceived: paymentIntent.amount_received || 0
+        amountReceived: paymentIntent.amount_received || 0,
         lastWebhookEventId: eventId,
         lastError: paymentIntent.last_payment_error ? JSON.stringify(paymentIntent.last_payment_error) : null,
         failureCode: paymentIntent.last_payment_error?.code || null,
