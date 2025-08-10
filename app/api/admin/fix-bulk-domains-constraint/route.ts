@@ -175,7 +175,20 @@ export async function POST(request: NextRequest) {
       const toDelete: string[] = records.rows.slice(1).map(r => r.id as string);
       
       if (toDelete.length > 0) {
-        // Use Drizzle's delete with inArray for better performance
+        // Handle foreign key constraints by clearing references
+        // First, find any records that point to the ones we're deleting via duplicate_of
+        for (const idToDelete of toDelete) {
+          // Update any records that reference this one
+          await db.execute(sql`
+            UPDATE bulk_analysis_domains 
+            SET duplicate_of = NULL,
+                duplicate_resolution = 'auto_cleaned',
+                duplicate_resolved_at = NOW()
+            WHERE duplicate_of = ${idToDelete}
+          `);
+        }
+        
+        // Now we can safely delete the duplicates
         await db.delete(bulkAnalysisDomains)
           .where(inArray(bulkAnalysisDomains.id, toDelete));
         cleanedCount += toDelete.length;
