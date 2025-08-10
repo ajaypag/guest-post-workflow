@@ -15,6 +15,12 @@ interface ConstraintStatus {
   details?: string;
   duplicatesFound?: number;
   recordsRemoved?: number;
+  canClean?: boolean;
+  duplicateCount?: number;
+  specificDuplicate?: {
+    client_id: string;
+    domain: string;
+  };
 }
 
 export default function FixBulkDomainsConstraintPage() {
@@ -60,7 +66,7 @@ export default function FixBulkDomainsConstraintPage() {
       
       if (data.success) {
         setStatus('success');
-      } else if (data.error && data.duplicates) {
+      } else if (data.error && (data.duplicates || data.canClean)) {
         setStatus('error');
         setShowDuplicates(true);
       } else {
@@ -165,7 +171,7 @@ export default function FixBulkDomainsConstraintPage() {
                 )}
               </button>
 
-              {showDuplicates && (
+              {(showDuplicates || (result && result.canClean)) && (
                 <button
                   onClick={cleanDuplicates}
                   disabled={status === 'checking' || status === 'applying' || status === 'cleaning'}
@@ -228,46 +234,71 @@ export default function FixBulkDomainsConstraintPage() {
                   </div>
                 )}
 
-                {result.duplicates && result.duplicates.length > 0 && (
+                {(result.duplicates && result.duplicates.length > 0) || result.canClean ? (
                   <div className="rounded-md border border-yellow-500 bg-yellow-50 p-4">
                     <div className="flex">
-                      <AlertCircle className="h-5 w-5 text-yellow-600" />
+                      <AlertCircle className="h-5 w-5 text-yellow-600 flex-shrink-0" />
                       <div className="ml-3 flex-1">
                         <h3 className="text-sm font-medium text-yellow-800">Duplicate Entries Found</h3>
                         <div className="mt-2 text-sm text-yellow-700">
-                          <p className="mb-2">{result.message}</p>
-                          <div className="mt-3 space-y-2">
-                            <p className="font-semibold">Sample duplicates (showing first 10):</p>
-                            <div className="bg-white border rounded p-2 max-h-48 overflow-y-auto">
-                              <table className="w-full text-sm">
-                                <thead>
-                                  <tr className="border-b">
-                                    <th className="text-left p-1">Client ID</th>
-                                    <th className="text-left p-1">Domain</th>
-                                    <th className="text-left p-1">Count</th>
-                                  </tr>
-                                </thead>
-                                <tbody>
-                                  {result.duplicates.map((dup, idx) => (
-                                    <tr key={idx} className="border-b">
-                                      <td className="p-1 font-mono text-xs">{dup.client_id}</td>
-                                      <td className="p-1">{dup.domain}</td>
-                                      <td className="p-1">{dup.count}</td>
-                                    </tr>
-                                  ))}
-                                </tbody>
-                              </table>
+                          <p className="mb-2">{result.message || 'Duplicate entries detected in the database.'}</p>
+                          
+                          {result.specificDuplicate && (
+                            <div className="mb-3 p-2 bg-yellow-100 rounded">
+                              <p className="font-semibold">Example duplicate causing the error:</p>
+                              <p className="mt-1 font-mono text-xs">
+                                Client: {result.specificDuplicate.client_id}<br />
+                                Domain: {result.specificDuplicate.domain}
+                              </p>
                             </div>
-                            <p className="text-sm mt-2">
-                              Click "Clean Duplicates & Retry" to automatically remove duplicates 
-                              (keeping the best record for each) and apply the constraint.
+                          )}
+                          
+                          {result.duplicates && result.duplicates.length > 0 && (
+                            <div className="mt-3 space-y-2">
+                              <p className="font-semibold">
+                                All duplicates found ({result.duplicateCount || result.duplicates.length} total, showing first {Math.min(20, result.duplicates.length)}):
+                              </p>
+                              <div className="bg-white border rounded p-2 max-h-64 overflow-y-auto">
+                                <table className="w-full text-sm">
+                                  <thead className="sticky top-0 bg-white">
+                                    <tr className="border-b">
+                                      <th className="text-left p-1">Client ID</th>
+                                      <th className="text-left p-1">Domain</th>
+                                      <th className="text-left p-1">Count</th>
+                                    </tr>
+                                  </thead>
+                                  <tbody>
+                                    {result.duplicates.map((dup: any, idx: number) => (
+                                      <tr key={idx} className="border-b hover:bg-gray-50">
+                                        <td className="p-1 font-mono text-xs">{dup.client_id}</td>
+                                        <td className="p-1">{dup.domain}</td>
+                                        <td className="p-1 text-center font-semibold">{dup.count}</td>
+                                      </tr>
+                                    ))}
+                                  </tbody>
+                                </table>
+                              </div>
+                            </div>
+                          )}
+                          
+                          <div className="mt-4 p-3 bg-white rounded border border-yellow-300">
+                            <p className="font-semibold text-yellow-900">👉 Action Required:</p>
+                            <p className="text-sm mt-1">
+                              Click the <strong>"Clean Duplicates & Retry"</strong> button below to:
+                            </p>
+                            <ol className="list-decimal list-inside text-sm mt-2 space-y-1">
+                              <li>Automatically remove duplicate entries (keeping the best record for each)</li>
+                              <li>Apply the unique constraint to prevent future duplicates</li>
+                            </ol>
+                            <p className="text-xs mt-2 text-gray-600">
+                              The cleanup prioritizes records with workflows and higher quality ratings.
                             </p>
                           </div>
                         </div>
                       </div>
                     </div>
                   </div>
-                )}
+                ) : null}
 
                 {result.constraint && (
                   <div className="rounded-md border border-gray-200 bg-gray-50 p-4">

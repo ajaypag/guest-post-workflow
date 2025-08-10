@@ -64,27 +64,58 @@ export async function GET(request: NextRequest) {
     console.error('Error adding unique constraint:', error);
     
     // Check if it's a duplicate key error (meaning we have duplicate data)
-    if (error.code === '23505') {
-      // Find the duplicates
+    // PostgreSQL error code 23505 is for unique_violation
+    // Also check for the error detail which contains the duplicate key
+    if (error.code === '23505' || (error.cause && error.cause.code === '23505') || 
+        (error.message && error.message.includes('could not create unique index')) ||
+        (error.detail && error.detail.includes('is duplicated'))) {
+      
+      // Extract the duplicate key from the error detail if available
+      let duplicateInfo = null;
+      if (error.detail || (error.cause && error.cause.detail)) {
+        const detail = error.detail || error.cause.detail;
+        const match = detail.match(/Key \(client_id, domain\)=\(([^,]+), ([^)]+)\)/);
+        if (match) {
+          duplicateInfo = {
+            client_id: match[1],
+            domain: match[2]
+          };
+        }
+      }
+      
+      // Find all duplicates
       const duplicates = await db.execute(sql`
         SELECT client_id, domain, COUNT(*) as count
         FROM bulk_analysis_domains
         GROUP BY client_id, domain
         HAVING COUNT(*) > 1
-        LIMIT 10
+        ORDER BY COUNT(*) DESC
+        LIMIT 20
       `);
       
       return NextResponse.json({
         error: 'Cannot add unique constraint due to duplicate entries',
         duplicates: duplicates.rows,
-        message: 'You need to resolve duplicate (client_id, domain) pairs first. Visit /api/admin/clean-duplicate-domains to fix this.'
+        duplicateCount: duplicates.rows.length,
+        specificDuplicate: duplicateInfo,
+        message: `Found ${duplicates.rows.length} duplicate (client_id, domain) pairs. Click "Clean Duplicates & Retry" to automatically fix this.`,
+        canClean: true
       }, { status: 400 });
     }
     
     return NextResponse.json({
       error: 'Failed to add unique constraint',
       details: error.message,
-      code: error.code
+      code: error.code || (error.cause && error.cause.code),
+      fullError: {
+        message: error.message,
+        code: error.code,
+        cause: error.cause ? {
+          code: error.cause.code,
+          detail: error.cause.detail,
+          severity: error.cause.severity
+        } : undefined
+      }
     }, { status: 500 });
   }
 }
