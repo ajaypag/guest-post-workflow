@@ -444,16 +444,20 @@ export default function ExternalOrderReviewPage() {
               </div>
             </div>
 
-            {/* Notification if recently marked ready */}
-            {order.state === 'sites_ready' && (
+            {/* Clear instructions for users */}
+            {totalSubmissions > 0 && (
               <div className="bg-blue-50 border border-blue-200 rounded-lg p-3 mb-4 flex items-center gap-3">
                 <Bell className="h-5 w-5 text-blue-600" />
                 <div className="flex-1">
                   <p className="text-sm font-medium text-blue-900">
-                    Sites are ready for your review!
+                    {includedCount > 0 
+                      ? `${includedCount} sites are ready for your order` 
+                      : 'Review and select sites for your order'}
                   </p>
                   <p className="text-xs text-blue-700 mt-0.5">
-                    Our team has carefully selected sites based on your requirements. Please review and approve the ones you'd like to proceed with.
+                    Our team has pre-organized sites based on your requirements. Sites marked as "✅ Use This Site" will be included in your order.
+                    You can adjust the selection using the status dropdown in the table below.
+                    {savedForLaterCount > 0 && ` ${savedForLaterCount} additional sites have been saved to your Site Bank for future orders.`}
                   </p>
                 </div>
               </div>
@@ -498,36 +502,7 @@ export default function ExternalOrderReviewPage() {
             </div>
           </div>
 
-          {/* Action Bar */}
-          {pendingCount > 0 && (
-            <div className="bg-white rounded-lg shadow-sm border border-gray-200 p-4 mb-6">
-              <div className="flex items-center justify-between">
-                <div className="flex items-center gap-2">
-                  <span className="text-sm text-gray-600">
-                    {selectedSubmissions.size} sites selected
-                  </span>
-                </div>
-                <div className="flex items-center gap-2">
-                  <button
-                    onClick={() => handleBulkAction('approve')}
-                    disabled={selectedSubmissions.size === 0 || actionLoading}
-                    className="inline-flex items-center px-4 py-2 bg-green-600 text-white rounded-lg hover:bg-green-700 disabled:opacity-50 disabled:cursor-not-allowed"
-                  >
-                    <CheckCircle className="w-4 h-4 mr-2" />
-                    Approve Selected
-                  </button>
-                  <button
-                    onClick={() => handleBulkAction('reject')}
-                    disabled={selectedSubmissions.size === 0 || actionLoading}
-                    className="inline-flex items-center px-4 py-2 bg-red-600 text-white rounded-lg hover:bg-red-700 disabled:opacity-50 disabled:cursor-not-allowed"
-                  >
-                    <XCircle className="w-4 h-4 mr-2" />
-                    Reject Selected
-                  </button>
-                </div>
-              </div>
-            </div>
-          )}
+          {/* Remove confusing action bar - users should use status dropdown instead */}
 
           {/* Site Review Table */}
           <OrderSiteReviewTableV2
@@ -537,7 +512,7 @@ export default function ExternalOrderReviewPage() {
             siteSubmissions={siteSubmissions}
             userType="account"
             permissions={{
-              canApproveReject: true,
+              canApproveReject: false,  // Disable confusing approve/reject buttons
               canViewPricing: true,
               canViewInternalTools: false,
               canChangeStatus: true,  // External users CAN organize sites (included/excluded/saved)
@@ -634,23 +609,41 @@ export default function ExternalOrderReviewPage() {
             </div>
           )}
 
-          {/* Proceed Button - Show when sites have been selected */}
-          {includedCount > 0 && (
-            <div className="mt-6 text-center">
-              <button
-                onClick={handleProceed}
-                className="inline-flex items-center px-6 py-3 bg-blue-600 text-white rounded-lg hover:bg-blue-700 font-medium"
-              >
-                Generate Invoice ({includedCount} sites)
-                <ArrowRight className="w-5 h-5 ml-2" />
-              </button>
-              {pendingCount > 0 && (
+          {/* Proceed Button - Always visible with clear messaging */}
+          <div className="mt-6 text-center">
+            {includedCount > 0 ? (
+              <>
+                <button
+                  onClick={handleProceed}
+                  className="inline-flex items-center px-6 py-3 bg-blue-600 text-white rounded-lg hover:bg-blue-700 font-medium shadow-lg"
+                >
+                  Generate Invoice for {includedCount} Site{includedCount !== 1 ? 's' : ''}
+                  <ArrowRight className="w-5 h-5 ml-2" />
+                </button>
                 <p className="text-sm text-gray-600 mt-2">
-                  {pendingCount} sites still pending review
+                  You can adjust your selection using the status dropdowns above
                 </p>
-              )}
-            </div>
-          )}
+              </>
+            ) : totalSubmissions > 0 ? (
+              <div className="bg-gray-50 rounded-lg p-6 border border-gray-200">
+                <p className="text-gray-600 mb-2">
+                  No sites selected for this order
+                </p>
+                <p className="text-sm text-gray-500">
+                  Change sites to "✅ Use This Site" in the table above to include them in your order
+                </p>
+              </div>
+            ) : (
+              <div className="bg-yellow-50 rounded-lg p-6 border border-yellow-200">
+                <p className="text-yellow-800 mb-2">
+                  No sites have been suggested yet
+                </p>
+                <p className="text-sm text-yellow-700">
+                  Our team is working on finding the best sites for your requirements
+                </p>
+              </div>
+            )}
+          </div>
         </div>
       </div>
     </AuthWrapper>
