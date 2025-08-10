@@ -182,7 +182,7 @@ export async function POST(request: NextRequest) {
           await db.execute(sql`
             UPDATE bulk_analysis_domains 
             SET duplicate_of = NULL,
-                duplicate_resolution = 'auto_cleaned',
+                duplicate_resolution = 'skip',
                 duplicate_resolved_at = NOW()
             WHERE duplicate_of = ${idToDelete}
           `);
