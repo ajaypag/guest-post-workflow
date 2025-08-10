@@ -16,11 +16,31 @@ let stripe: Stripe | null = null;
 
 const getStripeClient = (): Stripe => {
   if (!stripe) {
-    if (!process.env.STRIPE_SECRET_KEY) {
+    const secretKey = process.env.STRIPE_SECRET_KEY;
+    
+    if (!secretKey) {
+      console.error('[STRIPE] STRIPE_SECRET_KEY is not configured');
       throw new Error('STRIPE_SECRET_KEY is not configured');
     }
-    stripe = new Stripe(process.env.STRIPE_SECRET_KEY, {
-      apiVersion: '2025-07-30.basil', // Latest stable API version
+    
+    // Validate that we're using a secret key (starts with 'sk_')
+    if (!secretKey.startsWith('sk_')) {
+      console.error('[STRIPE] Invalid secret key format - appears to be a publishable key:', {
+        keyPrefix: secretKey.substring(0, 3),
+        isPublishable: secretKey.startsWith('pk_')
+      });
+      throw new Error('STRIPE_SECRET_KEY appears to be a publishable key. Secret keys should start with "sk_"');
+    }
+    
+    // Log key type for debugging (without exposing the actual key)
+    console.log('[STRIPE] Initializing Stripe client with key type:', {
+      isTest: secretKey.startsWith('sk_test_'),
+      isLive: secretKey.startsWith('sk_live_'),
+      keyLength: secretKey.length
+    });
+    
+    stripe = new Stripe(secretKey, {
+      apiVersion: '2024-12-18.acacia', // Latest stable API version
       typescript: true,
     });
   }
@@ -186,6 +206,13 @@ export class StripeService {
     }
 
     // Create payment intent in Stripe
+    console.log('[STRIPE] Creating payment intent:', {
+      amount,
+      currency: currency.toLowerCase(),
+      orderId: orderId.substring(0, 8),
+      hasCustomer: !!stripeCustomer.id
+    });
+    
     const paymentIntent = await getStripeClient().paymentIntents.create({
       amount,
       currency: currency.toLowerCase(),
@@ -227,8 +254,8 @@ export class StripeService {
         confirmationMethod: paymentIntent.confirmation_method as string,
         setupFutureUsage: paymentIntent.setup_future_usage as string,
         amountCapturable: paymentIntent.amount_capturable,
-        amountCaptured: 0, // Will be updated via webhook when payment is captured
-        amountReceived: 0, // Will be updated via webhook when payment is received
+        amountCaptured: paymentIntent.amount_captured || 0,
+        amountReceived: paymentIntent.amount_received || 0
         createdAt: new Date(),
         updatedAt: new Date(),
       })
@@ -266,8 +293,8 @@ export class StripeService {
         status: paymentIntent.status,
         paymentMethodId: paymentIntent.payment_method as string,
         amountCapturable: paymentIntent.amount_capturable,
-        amountCaptured: 0, // Will be updated when payment is captured
-        amountReceived: 0, // Will be updated when payment is received
+        amountCaptured: paymentIntent.amount_captured || 0,
+        amountReceived: paymentIntent.amount_received || 0
         lastWebhookEventId: eventId,
         lastError: paymentIntent.last_payment_error ? JSON.stringify(paymentIntent.last_payment_error) : null,
         failureCode: paymentIntent.last_payment_error?.code || null,

@@ -503,24 +503,12 @@ async function handlePaymentFailure(paymentIntent: Stripe.PaymentIntent): Promis
           retryUrl: `${process.env.NEXTAUTH_URL || 'https://postflow.outreachlabs.net'}/orders/${orderId}/payment`
         });
 
-        // Also notify internal team
-        /*await EmailService.send({
-          to: order.account.email,
-          subject: `Payment Failed - Order #${orderId.substring(0, 8)}`,
-          text: `Your payment for Order #${orderId.substring(0, 8)} has failed. Please try again or contact support.\n\nError: ${errorMessage}`,
-          html: `
-            <div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto;">
-              <h2>Payment Failed</h2>
-              <p>Your payment for Order #${orderId.substring(0, 8)} has failed.</p>
-              <p><strong>Error:</strong> ${errorMessage}</p>
-              <p>Please try submitting your payment again, or contact our support team if you continue to experience issues.</p>
-              <p>Best regards,<br>The PostFlow Team</p>
-            </div>
-          `,
-        });*/
+        // Notify customer about payment failure
+        // Note: We're already using sendPaymentFailureEmail above, so this may be redundant
+        // Keeping commented to avoid duplicate emails
 
-        // Also notify internal team
-        /*await EmailService.send({
+        // Notify internal team about payment failure
+        await EmailService.send({
           to: 'admin@postflow.outreachlabs.net',
           subject: `Payment Failed - Order ${orderId.substring(0, 8)}`,
           text: `Payment failed for Order ${orderId}. Error: ${errorCode} - ${errorMessage}`,
@@ -528,13 +516,13 @@ async function handlePaymentFailure(paymentIntent: Stripe.PaymentIntent): Promis
             <div style="font-family: Arial, sans-serif;">
               <h3>Payment Failed</h3>
               <p><strong>Order:</strong> ${orderId}</p>
-              <p><strong>Customer:</strong> ${order.account.email}</p>
+              <p><strong>Customer:</strong> ${accountEmail}</p>
               <p><strong>Error Code:</strong> ${errorCode}</p>
               <p><strong>Error Message:</strong> ${errorMessage}</p>
               <p><strong>Payment Intent:</strong> ${paymentIntent.id}</p>
             </div>
           `,
-        });*/
+        });
       } catch (emailError) {
         console.error('Failed to send payment failure notification email:', emailError);
       }
