@@ -44,6 +44,8 @@ export default function RefundsPage() {
   const [success, setSuccess] = useState('');
   const [refundHistory, setRefundHistory] = useState<RefundHistory[]>([]);
   const [loadingHistory, setLoadingHistory] = useState(false);
+  const [refundCalculation, setRefundCalculation] = useState<any>(null);
+  const [loadingCalculation, setLoadingCalculation] = useState(false);
 
   const searchOrder = async () => {
     if (!searchTerm) return;
@@ -77,6 +79,9 @@ export default function RefundsPage() {
       
       // Load refund history
       loadRefundHistory(order.id);
+      
+      // Load refund calculation
+      loadRefundCalculation(order.id);
     } catch (err) {
       console.error('Error searching order:', err);
       setError('Failed to search order');
@@ -95,6 +100,27 @@ export default function RefundsPage() {
       console.error('Error loading refund history:', err);
     } finally {
       setLoadingHistory(false);
+    }
+  };
+
+  const loadRefundCalculation = async (orderId: string) => {
+    setLoadingCalculation(true);
+    setRefundCalculation(null);
+    try {
+      const response = await fetch(`/api/orders/${orderId}/refund-calculation`);
+      if (response.ok) {
+        const data = await response.json();
+        setRefundCalculation(data);
+        
+        // Auto-set suggested amount if no refunds have been processed
+        if (refundHistory.length === 0 && data.calculation?.suggestedAmount) {
+          setRefundAmount((data.calculation.suggestedAmount / 100).toString());
+        }
+      }
+    } catch (err) {
+      console.error('Error loading refund calculation:', err);
+    } finally {
+      setLoadingCalculation(false);
     }
   };
 
@@ -265,6 +291,35 @@ export default function RefundsPage() {
                       <strong>Previous Refunds:</strong> {refundHistory.length} refund(s) totaling{' '}
                       {formatCurrency(refundHistory.reduce((sum, r) => sum + r.amount, 0))}
                     </p>
+                  </div>
+                )}
+
+                {/* Refund Calculation */}
+                {refundCalculation && (
+                  <div className="mb-6 p-4 bg-blue-50 border border-blue-200 rounded-lg">
+                    <h4 className="font-semibold text-blue-900 mb-2">Suggested Refund Calculation</h4>
+                    <div className="space-y-2 text-sm">
+                      <p className="text-blue-800">
+                        <strong>Completion:</strong> {refundCalculation.calculation.completedItems} of {refundCalculation.calculation.totalItems} items completed ({refundCalculation.calculation.completionPercentage}%)
+                      </p>
+                      <p className="text-blue-800">
+                        <strong>Suggested Amount:</strong> {formatCurrency(refundCalculation.calculation.suggestedAmount)}
+                      </p>
+                      <p className="text-blue-700 text-xs">
+                        {refundCalculation.calculation.reason}
+                      </p>
+                      {refundCalculation.calculation.policyDetails && (
+                        <p className="text-blue-600 text-xs italic">
+                          {refundCalculation.calculation.policyDetails}
+                        </p>
+                      )}
+                      <button
+                        onClick={() => setRefundAmount((refundCalculation.calculation.suggestedAmount / 100).toString())}
+                        className="mt-2 px-3 py-1 bg-blue-600 text-white text-xs rounded hover:bg-blue-700 transition-colors"
+                      >
+                        Use Suggested Amount
+                      </button>
+                    </div>
                   </div>
                 )}
 

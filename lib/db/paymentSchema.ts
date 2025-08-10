@@ -243,6 +243,109 @@ export const refunds = pgTable('refunds', {
   statusIdx: index('idx_refunds_status').on(table.status),
 }));
 
+// Payment Recovery Attempts table
+export const paymentRecoveryAttempts = pgTable('payment_recovery_attempts', {
+  id: uuid('id').defaultRandom().primaryKey(),
+  paymentIntentId: uuid('payment_intent_id').notNull().references(() => stripePaymentIntents.id),
+  orderId: uuid('order_id').notNull().references(() => orders.id),
+  
+  // Recovery details
+  attemptNumber: integer('attempt_number').notNull(),
+  strategy: varchar('strategy', { length: 50 }).notNull(), // retry_same_method, request_new_method, manual_intervention, email_reminder
+  status: varchar('status', { length: 50 }).notNull().default('pending'), // pending, in_progress, succeeded, failed, abandoned
+  
+  // Failure tracking
+  failureReason: text('failure_reason'),
+  errorDetails: jsonb('error_details'), // Store detailed error information
+  
+  // Scheduling
+  nextAttemptAt: timestamp('next_attempt_at'),
+  maxRetries: integer('max_retries').default(3),
+  backoffMultiplier: integer('backoff_multiplier').default(2),
+  
+  // Metadata
+  metadata: jsonb('metadata'),
+  
+  // Timestamps
+  createdAt: timestamp('created_at').defaultNow().notNull(),
+  updatedAt: timestamp('updated_at').defaultNow().notNull(),
+  completedAt: timestamp('completed_at'),
+}, (table) => ({
+  paymentIntentIdx: index('idx_recovery_attempts_payment_intent').on(table.paymentIntentId),
+  orderIdx: index('idx_recovery_attempts_order').on(table.orderId),
+  statusIdx: index('idx_recovery_attempts_status').on(table.status),
+  nextAttemptIdx: index('idx_recovery_attempts_next_attempt').on(table.nextAttemptAt),
+}));
+
+// Payment Analytics table for tracking metrics
+export const paymentAnalytics = pgTable('payment_analytics', {
+  id: uuid('id').defaultRandom().primaryKey(),
+  
+  // Date dimension
+  date: timestamp('date').notNull(),
+  period: varchar('period', { length: 20 }).notNull(), // daily, weekly, monthly
+  
+  // Revenue metrics (in cents)
+  totalRevenue: integer('total_revenue').default(0),
+  successfulPayments: integer('successful_payments').default(0),
+  failedPayments: integer('failed_payments').default(0),
+  refundedAmount: integer('refunded_amount').default(0),
+  
+  // Performance metrics
+  averagePaymentTime: integer('average_payment_time'), // seconds
+  successRate: integer('success_rate'), // percentage * 100
+  
+  // Recovery metrics
+  recoveryAttempts: integer('recovery_attempts').default(0),
+  successfulRecoveries: integer('successful_recoveries').default(0),
+  
+  // Method breakdown
+  paymentMethodBreakdown: jsonb('payment_method_breakdown').$type<{
+    stripe: number;
+    manual: number;
+    other: number;
+  }>(),
+  
+  // Geographic data
+  countryBreakdown: jsonb('country_breakdown'),
+  
+  createdAt: timestamp('created_at').defaultNow().notNull(),
+  updatedAt: timestamp('updated_at').defaultNow().notNull(),
+}, (table) => ({
+  dateIdx: index('idx_payment_analytics_date').on(table.date),
+  periodIdx: index('idx_payment_analytics_period').on(table.period),
+  uniqueDatePeriod: unique('unique_payment_analytics_date_period').on(table.date, table.period),
+}));
+
+// Enhanced invoices with revision tracking
+export const invoiceRevisions = pgTable('invoice_revisions', {
+  id: uuid('id').defaultRandom().primaryKey(),
+  invoiceId: uuid('invoice_id').notNull().references(() => invoices.id),
+  
+  // Revision details
+  revisionNumber: integer('revision_number').notNull(),
+  revisionType: varchar('revision_type', { length: 50 }).notNull(), // partial_refund, correction, reissue
+  reason: text('reason'),
+  
+  // Previous and new amounts (in cents)
+  previousTotal: integer('previous_total').notNull(),
+  newTotal: integer('new_total').notNull(),
+  adjustmentAmount: integer('adjustment_amount').notNull(), // difference
+  
+  // Line items changes
+  changedItems: jsonb('changed_items').notNull(),
+  
+  // PDF storage
+  fileUrl: varchar('file_url', { length: 500 }), // URL to revised invoice PDF
+  
+  // Timestamps
+  createdAt: timestamp('created_at').defaultNow().notNull(),
+  createdBy: uuid('created_by').notNull().references(() => users.id),
+}, (table) => ({
+  invoiceIdx: index('idx_invoice_revisions_invoice').on(table.invoiceId),
+  revisionIdx: index('idx_invoice_revisions_revision').on(table.revisionNumber),
+}));
+
 // Type exports
 export type Payment = typeof payments.$inferSelect;
 export type NewPayment = typeof payments.$inferInsert;
@@ -256,3 +359,71 @@ export type StripeWebhook = typeof stripeWebhooks.$inferSelect;
 export type NewStripeWebhook = typeof stripeWebhooks.$inferInsert;
 export type Refund = typeof refunds.$inferSelect;
 export type NewRefund = typeof refunds.$inferInsert;
+export type PaymentRecoveryAttempt = typeof paymentRecoveryAttempts.$inferSelect;
+export type NewPaymentRecoveryAttempt = typeof paymentRecoveryAttempts.$inferInsert;
+export type PaymentAnalytics = typeof paymentAnalytics.$inferSelect;
+export type NewPaymentAnalytics = typeof paymentAnalytics.$inferInsert;
+export type InvoiceRevision = typeof invoiceRevisions.$inferSelect;
+export type NewInvoiceRevision = typeof invoiceRevisions.$inferInsert;
+
+// Payment audit logs table for comprehensive security and compliance tracking
+export const paymentAuditLogs = pgTable('payment_audit_logs', {
+  id: uuid('id').defaultRandom().primaryKey(),
+  
+  // Event details
+  eventType: varchar('event_type', { length: 100 }).notNull(),
+  entityType: varchar('entity_type', { length: 50 }).notNull(),
+  entityId: uuid('entity_id').notNull(),
+  
+  // User context
+  userId: uuid('user_id').references(() => users.id),
+  userType: varchar('user_type', { length: 20 }),
+  userEmail: varchar('user_email', { length: 255 }),
+  
+  // Request context
+  ipAddress: varchar('ip_address', { length: 45 }),
+  userAgent: text('user_agent'),
+  sessionId: varchar('session_id', { length: 255 }),
+  
+  // Action details
+  action: varchar('action', { length: 100 }).notNull(),
+  description: text('description').notNull(),
+  
+  // Data changes
+  oldValues: jsonb('old_values'),
+  newValues: jsonb('new_values'),
+  metadata: jsonb('metadata'),
+  
+  // Financial data
+  amountInvolved: varchar('amount_involved', { length: 20 }),
+  currency: varchar('currency', { length: 3 }).default('USD'),
+  
+  // Status and outcomes
+  success: boolean('success').notNull(),
+  errorCode: varchar('error_code', { length: 100 }),
+  errorMessage: text('error_message'),
+  
+  // Timing
+  timestamp: timestamp('timestamp').defaultNow().notNull(),
+  processingTimeMs: varchar('processing_time_ms', { length: 20 }),
+  
+  // Security flags
+  isSuspicious: boolean('is_suspicious').default(false),
+  riskScore: varchar('risk_score', { length: 10 }),
+  securityFlags: text('security_flags').array(),
+  
+  // Compliance
+  pciCompliant: boolean('pci_compliant').default(true),
+  gdprRelevant: boolean('gdpr_relevant').default(false),
+  
+}, (table) => ({
+  eventTypeIdx: index('idx_audit_event_type').on(table.eventType),
+  entityIdx: index('idx_audit_entity').on(table.entityType, table.entityId),
+  userIdx: index('idx_audit_user').on(table.userId),
+  timestampIdx: index('idx_audit_timestamp').on(table.timestamp),
+  suspiciousIdx: index('idx_audit_suspicious').on(table.isSuspicious),
+  ipAddressIdx: index('idx_audit_ip').on(table.ipAddress),
+}));
+
+export type PaymentAuditLog = typeof paymentAuditLogs.$inferSelect;
+export type NewPaymentAuditLog = typeof paymentAuditLogs.$inferInsert;

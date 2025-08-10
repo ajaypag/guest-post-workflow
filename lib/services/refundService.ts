@@ -1,10 +1,11 @@
 import Stripe from 'stripe';
 import { db } from '@/lib/db/connection';
-import { payments, refunds } from '@/lib/db/paymentSchema';
+import { payments, refunds, invoices } from '@/lib/db/paymentSchema';
 import { orders } from '@/lib/db/orderSchema';
 import { accounts } from '@/lib/db/accountSchema';
 import { eq, and, desc, sql } from 'drizzle-orm';
 import { EmailService } from './emailService';
+import { InvoiceRevisionService } from './invoiceRevisionService';
 
 // Initialize Stripe
 const stripe = new Stripe(process.env.STRIPE_SECRET_KEY!, {
@@ -159,6 +160,31 @@ export class RefundService {
 
         return newRefund;
       });
+
+      // Create invoice revision if invoice exists
+      try {
+        const invoice = await db.query.invoices.findFirst({
+          where: eq(invoices.orderId, orderId)
+        });
+
+        if (invoice) {
+          const revisionResult = await InvoiceRevisionService.createRevisionForRefund(
+            invoice.id,
+            refundRecord.id,
+            initiatedBy
+          );
+
+          if (!revisionResult.success) {
+            console.error('Failed to create invoice revision:', revisionResult.error);
+            // Don't fail the refund if invoice revision fails
+          } else {
+            console.log(`Invoice revision created for refund ${refundRecord.id}`);
+          }
+        }
+      } catch (revisionError) {
+        console.error('Error creating invoice revision:', revisionError);
+        // Don't fail the refund if revision fails
+      }
 
       // Send refund confirmation email
       try {
