@@ -8,7 +8,7 @@ import Stripe from 'stripe';
 
 // Initialize Stripe
 const stripe = new Stripe(process.env.STRIPE_SECRET_KEY!, {
-  apiVersion: '2024-12-18.acacia',
+  apiVersion: '2025-07-30.basil',
 });
 
 export async function GET(request: NextRequest) {
@@ -264,19 +264,27 @@ export async function POST(request: NextRequest) {
           });
 
           if (paymentIntentRecord) {
-            await db.insert(payments).values({
-              orderId: paymentIntentRecord.orderId,
-              amount: stripePI.amount,
-              currency: stripePI.currency.toUpperCase(),
-              status: 'completed',
-              provider: 'stripe',
-              stripePaymentIntentId: paymentIntentId,
-              metadata: {
-                customerId: stripePI.customer as string,
-                paymentMethodId: stripePI.payment_method as string
-              },
-              processedAt: new Date()
+            // Get the order to find the accountId
+            const order = await db.query.orders.findFirst({
+              where: eq(orders.id, paymentIntentRecord.orderId)
             });
+
+            if (order && order.accountId) {
+              await db.insert(payments).values({
+                orderId: paymentIntentRecord.orderId,
+                accountId: order.accountId,
+                amount: stripePI.amount,
+                currency: stripePI.currency.toUpperCase(),
+                status: 'completed',
+                method: 'stripe',
+                stripePaymentIntentId: paymentIntentId,
+                processorResponse: {
+                  customerId: stripePI.customer as string,
+                  paymentMethodId: stripePI.payment_method as string
+                },
+                processedAt: new Date()
+              });
+            }
           }
         }
 

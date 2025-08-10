@@ -96,7 +96,7 @@ export async function GET(request: NextRequest) {
     }
 
     // Build transactions array
-    const transactions = [];
+    const transactions: any[] = [];
 
     // Get payments if not filtering for refunds only
     if (filter === 'all' || filter === 'payments' || filter === 'invoices') {
@@ -129,14 +129,14 @@ export async function GET(request: NextRequest) {
             status: payment.status,
             description: `Payment for Order #${payment.orderId.substring(0, 8)}`,
             orderId: payment.orderId,
-            paymentMethod: payment.paymentMethod || 'card'
+            paymentMethod: payment.method || 'card'
           });
         }
 
-        // Add invoice transaction if payment has invoice
-        if ((filter === 'all' || filter === 'invoices') && payment.invoiceId) {
+        // Add invoice transaction if payment is completed (invoice available)
+        if ((filter === 'all' || filter === 'invoices') && payment.status === 'completed') {
           transactions.push({
-            id: payment.invoiceId,
+            id: `inv_${payment.id}`,
             type: 'invoice',
             date: payment.processedAt?.toISOString() || payment.createdAt.toISOString(),
             amount: payment.amount,

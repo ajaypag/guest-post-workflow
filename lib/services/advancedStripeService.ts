@@ -338,7 +338,7 @@ export class AdvancedStripeService extends StripeService {
       throw new Error('STRIPE_SECRET_KEY is not configured');
     }
     return new Stripe(secretKey, {
-      apiVersion: '2024-12-18.acacia',
+      apiVersion: '2025-07-30.basil',
       typescript: true,
     });
   }

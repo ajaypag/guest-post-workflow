@@ -561,7 +561,7 @@ export class PaymentPerformanceService {
       const start = Date.now();
       // Simple API call to check Stripe connectivity
       const stripe = new (await import('stripe')).default(process.env.STRIPE_SECRET_KEY!, {
-        apiVersion: '2024-12-18.acacia',
+        apiVersion: '2025-07-30.basil',
       });
       await stripe.paymentIntents.list({ limit: 1 });
       components.stripe = {

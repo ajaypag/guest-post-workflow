@@ -31,7 +31,7 @@ export async function GET(request: NextRequest) {
         length: publishableKey.length,
         prefix: publishableKey.substring(0, 7) + '...'
       } : null,
-      issues: []
+      issues: [] as string[]
     };
     
     // Check for common configuration issues

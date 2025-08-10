@@ -40,7 +40,7 @@ const getStripeClient = (): Stripe => {
     });
     
     stripe = new Stripe(secretKey, {
-      apiVersion: '2024-12-18.acacia', // Latest stable API version
+      apiVersion: '2025-07-30.basil', // Latest stable API version
       typescript: true,
     });
   }
