@@ -169,6 +169,46 @@ const blogPosts = [
     category: 'Email Outreach',
     readTime: '8 min read',
     date: 'January 2024'
+  },
+  {
+    title: '111 Cold Email Outreach Templates for Link Building (Free)',
+    href: '/email-outreach-templates',
+    excerpt: 'Get 111 proven email outreach templates for link building campaigns. Broken link building, guest post pitches, resource pages, and more. Ready to copy & customize.',
+    category: 'Email Outreach',
+    readTime: '20 min read',
+    date: 'January 2021'
+  },
+  {
+    title: 'How to Create Link Bait (+ Linkable Asset Examples)',
+    href: '/how-to-create-link-bait',
+    excerpt: 'Learn 10 proven strategies to create link bait content that attracts natural backlinks. Includes real examples and actionable tips for creating linkable assets.',
+    category: 'Link Building',
+    readTime: '15 min read',
+    date: 'April 2021'
+  },
+  {
+    title: 'Resource Page Link Building Guide: Complete Strategy & Templates',
+    href: '/resource-page-link-building-guide',
+    excerpt: 'Master resource page link building with our comprehensive guide. Learn how to find opportunities, craft outreach emails, and build high-quality backlinks from resource pages.',
+    category: 'Link Building',
+    readTime: '15 min read',
+    date: 'November 2020'
+  },
+  {
+    title: 'Best Citation Building Services (30+ Reviewed)',
+    href: '/best-citation-building-services',
+    excerpt: 'Comprehensive review of the top 30+ citation building services to help improve your local SEO. Compare features, pricing, and find the right service for your business.',
+    category: 'Local SEO',
+    readTime: '12 min read',
+    date: 'August 2022'
+  },
+  {
+    title: 'SEO Webinars (On-Page, Off-Page and More)',
+    href: '/seo-webinars',
+    excerpt: 'Watch our collection of SEO webinars covering on-page optimization, off-page SEO, link building, and more. Learn from industry experts.',
+    category: 'SEO',
+    readTime: '20 min read',
+    date: 'December 2020'
   }
 ];
 
