@@ -6,6 +6,26 @@ import { v4 as uuidv4 } from 'uuid';
 
 export type DuplicateResolution = 'keep_both' | 'move_to_new' | 'skip' | 'update_original';
 
+/**
+ * Helper function to sanitize UUID fields (convert empty strings to null)
+ */
+function sanitizeUUID(value: string | null | undefined): string | null {
+  if (value === '' || value === undefined) {
+    return null;
+  }
+  return value;
+}
+
+/**
+ * Helper function to deduplicate array values
+ */
+function deduplicateArray(arr: any[] | null | undefined): any[] | null {
+  if (!arr || !Array.isArray(arr)) {
+    return arr || null;
+  }
+  return [...new Set(arr)];
+}
+
 export interface DuplicateResolutionChoice {
   domain: string;
   existingDomainId: string;
@@ -150,12 +170,12 @@ export class BulkAnalysisService {
           clientId,
           domain: cleanDomain,
           qualificationStatus: 'pending' as const,
-          targetPageIds: targetPageIds,
+          targetPageIds: deduplicateArray(targetPageIds),
           keywordCount,
           checkedBy: null,
           checkedAt: null,
           notes: null,
-          projectId: projectId,
+          projectId: sanitizeUUID(projectId),
           projectAddedAt: new Date(),
           createdAt: new Date(),
           updatedAt: new Date(),
@@ -447,42 +467,62 @@ export class BulkAnalysisService {
                 clientId,
                 domain: cleanDomain,
                 qualificationStatus: 'pending' as const,
-                targetPageIds,
+                targetPageIds: deduplicateArray(targetPageIds),
                 keywordCount,
-                projectId,
+                projectId: sanitizeUUID(projectId),
                 projectAddedAt: now,
-                duplicateOf: resolution.existingDomainId,
+                duplicateOf: sanitizeUUID(resolution.existingDomainId),
                 duplicateResolution: 'keep_both' as const,
-                duplicateResolvedBy: userId,
+                duplicateResolvedBy: sanitizeUUID(userId),
                 duplicateResolvedAt: now,
+                originalProjectId: sanitizeUUID(resolution.existingProjectId),
                 resolutionMetadata: {
                   originalProject: resolution.existingProjectName,
-                  originalProjectId: resolution.existingProjectId,
+                  originalProjectId: sanitizeUUID(resolution.existingProjectId),
                 },
                 createdAt: now,
                 updatedAt: now,
               };
               
               try {
-                // Insert the domain with conflict resolution
+                // For keep_both, try to insert with DO NOTHING on conflict
+                // This avoids the unique constraint violation
                 const insertedDup = await db
                   .insert(bulkAnalysisDomains)
                   .values(duplicateDomain)
-                  .onConflictDoUpdate({
+                  .onConflictDoNothing({
                     target: [bulkAnalysisDomains.clientId, bulkAnalysisDomains.domain],
-                    set: {
-                      projectId,
-                      targetPageIds,
-                      keywordCount,
-                      duplicateResolution: 'keep_both',
-                      duplicateResolvedBy: userId,
-                      duplicateResolvedAt: now,
-                      updatedAt: now,
-                    },
                   })
                   .returning();
-              
-                if (insertedDup.length > 0) {
+                
+                // If no insert happened (conflict), update existing record
+                if (insertedDup.length === 0) {
+                  const updated = await db
+                    .update(bulkAnalysisDomains)
+                    .set({
+                      projectId: sanitizeUUID(projectId),
+                      targetPageIds: deduplicateArray(targetPageIds),
+                      keywordCount,
+                      duplicateResolution: 'keep_both',
+                      duplicateResolvedBy: sanitizeUUID(userId),
+                      duplicateResolvedAt: now,
+                      originalProjectId: sanitizeUUID(resolution.existingProjectId),
+                      updatedAt: now,
+                    })
+                    .where(and(
+                      eq(bulkAnalysisDomains.clientId, clientId),
+                      eq(bulkAnalysisDomains.domain, cleanDomain)
+                    ))
+                    .returning();
+                  
+                  if (updated.length > 0) {
+                    results.push({
+                      ...updated[0],
+                      targetPages: pages,
+                      keywords: Array.from(allKeywords),
+                    });
+                  }
+                } else {
                   results.push({
                     ...insertedDup[0],
                     targetPages: pages,
@@ -497,11 +537,12 @@ export class BulkAnalysisService {
                     const updated = await db
                       .update(bulkAnalysisDomains)
                       .set({
-                        targetPageIds,
+                        targetPageIds: deduplicateArray(targetPageIds),
                         keywordCount,
                         duplicateResolution: 'keep_both',
-                        duplicateResolvedBy: userId,
+                        duplicateResolvedBy: sanitizeUUID(userId),
                         duplicateResolvedAt: now,
+                        originalProjectId: sanitizeUUID(resolution.existingProjectId),
                         updatedAt: now,
                       })
                       .where(
@@ -531,16 +572,16 @@ export class BulkAnalysisService {
               const [moved] = await db
                 .update(bulkAnalysisDomains)
                 .set({
-                  projectId,
-                  targetPageIds,
+                  projectId: sanitizeUUID(projectId),
+                  targetPageIds: deduplicateArray(targetPageIds),
                   keywordCount,
-                  originalProjectId: resolution.existingProjectId,
+                  originalProjectId: sanitizeUUID(resolution.existingProjectId),
                   duplicateResolution: 'move_to_new' as const,
-                  duplicateResolvedBy: userId,
+                  duplicateResolvedBy: sanitizeUUID(userId),
                   duplicateResolvedAt: now,
                   resolutionMetadata: {
                     originalProject: resolution.existingProjectName,
-                    movedFrom: resolution.existingProjectId,
+                    movedFrom: sanitizeUUID(resolution.existingProjectId),
                   },
                   updatedAt: now,
                 })
@@ -561,16 +602,16 @@ export class BulkAnalysisService {
               const [updated] = await db
                 .update(bulkAnalysisDomains)
                 .set({
-                  targetPageIds,
+                  targetPageIds: deduplicateArray(targetPageIds),
                   keywordCount,
                   duplicateResolution: 'update_original' as const,
-                  duplicateResolvedBy: userId,
+                  duplicateResolvedBy: sanitizeUUID(userId),
                   duplicateResolvedAt: now,
                   resolutionMetadata: {
                     updatedWith: {
-                      targetPageIds,
+                      targetPageIds: deduplicateArray(targetPageIds),
                       keywordCount,
-                      projectId,
+                      projectId: sanitizeUUID(projectId),
                     },
                   },
                   updatedAt: now,
