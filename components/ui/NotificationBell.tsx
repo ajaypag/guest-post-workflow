@@ -2,7 +2,7 @@
 
 import React, { useState } from 'react';
 import Link from 'next/link';
-import { Bell, AlertCircle, Clock, ChevronRight } from 'lucide-react';
+import { Bell, AlertCircle, Clock, ChevronRight, RefreshCw, Users } from 'lucide-react';
 import { useNotifications } from '@/lib/contexts/NotificationContext';
 
 export default function NotificationBell() {
@@ -21,6 +21,7 @@ export default function NotificationBell() {
 
   const hasActionRequired = notifications.actionRequiredCount > 0;
   const hasRecentUpdates = notifications.recentUpdatesCount > 0;
+  const hasMoreSuggestionsNeeded = (notifications.moreSuggestionsCount || 0) > 0;
   const totalNotifications = notifications.actionRequiredCount;
 
   return (
@@ -68,18 +69,61 @@ export default function NotificationBell() {
 
           {/* Content */}
           <div className="max-h-80 overflow-y-auto">
-            {/* Action Required Section */}
-            {hasActionRequired && (
-              <div className="p-4 border-b border-gray-100">
+            {/* More Suggestions Needed Section - High Priority */}
+            {hasMoreSuggestionsNeeded && (
+              <div className="p-4 border-b border-gray-100 bg-gradient-to-r from-purple-50 to-purple-100">
                 <div className="flex items-center gap-2 mb-3">
-                  <AlertCircle className="h-4 w-4 text-red-600" />
-                  <span className="font-medium text-red-900">
-                    {notifications.actionRequiredCount} order{notifications.actionRequiredCount !== 1 ? 's' : ''} need{notifications.actionRequiredCount === 1 ? 's' : ''} attention
+                  <RefreshCw className="h-4 w-4 text-purple-600" />
+                  <span className="font-semibold text-purple-900">
+                    {notifications.moreSuggestionsCount} client{notifications.moreSuggestionsCount !== 1 ? 's' : ''} need{notifications.moreSuggestionsCount === 1 ? 's' : ''} more sites
+                  </span>
+                  <span className="px-2 py-1 bg-purple-200 text-purple-800 text-xs rounded-full font-medium">
+                    HIGH PRIORITY
                   </span>
                 </div>
                 
                 <div className="space-y-2">
-                  {notifications.urgentOrders.map(order => (
+                  {notifications.urgentOrders
+                    .filter(order => order.message.includes('more sit') || order.message.includes('suggestions'))
+                    .map(order => (
+                    <Link
+                      key={order.id}
+                      href={`/orders/${order.id}/internal`}
+                      onClick={() => setShowDropdown(false)}
+                      className="block p-3 bg-purple-100 hover:bg-purple-200 rounded-lg border border-purple-300 transition-colors group"
+                    >
+                      <div className="flex items-center justify-between">
+                        <div className="flex-1">
+                          <div className="font-medium text-purple-900 text-sm flex items-center gap-2">
+                            <Users className="h-3 w-3" />
+                            Order #{order.shortId}
+                          </div>
+                          <div className="text-purple-800 text-xs mt-1">
+                            {order.message}
+                          </div>
+                        </div>
+                        <ChevronRight className="h-4 w-4 text-purple-700 group-hover:translate-x-1 transition-transform" />
+                      </div>
+                    </Link>
+                  ))}
+                </div>
+              </div>
+            )}
+
+            {/* Action Required Section */}
+            {hasActionRequired && (notifications.actionRequiredCount - (notifications.moreSuggestionsCount || 0)) > 0 && (
+              <div className="p-4 border-b border-gray-100">
+                <div className="flex items-center gap-2 mb-3">
+                  <AlertCircle className="h-4 w-4 text-red-600" />
+                  <span className="font-medium text-red-900">
+                    {notifications.actionRequiredCount - (notifications.moreSuggestionsCount || 0)} other order{(notifications.actionRequiredCount - (notifications.moreSuggestionsCount || 0)) !== 1 ? 's' : ''} need{(notifications.actionRequiredCount - (notifications.moreSuggestionsCount || 0)) === 1 ? 's' : ''} attention
+                  </span>
+                </div>
+                
+                <div className="space-y-2">
+                  {notifications.urgentOrders
+                    .filter(order => !(order.message.includes('more sit') || order.message.includes('suggestions')))
+                    .map(order => (
                     <Link
                       key={order.id}
                       href={`/orders/${order.id}`}
@@ -119,7 +163,7 @@ export default function NotificationBell() {
             )}
 
             {/* Empty State */}
-            {!hasActionRequired && !hasRecentUpdates && (
+            {!hasActionRequired && !hasRecentUpdates && !hasMoreSuggestionsNeeded && (
               <div className="p-6 text-center">
                 <Bell className="h-8 w-8 text-gray-300 mx-auto mb-3" />
                 <p className="text-gray-500 text-sm">No new notifications</p>

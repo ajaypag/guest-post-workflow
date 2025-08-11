@@ -493,6 +493,17 @@ export {
   orderSiteSelectionsRelations
 } from './orderGroupSchema';
 
+// Re-export payment schema tables
+export {
+  payments,
+  invoices,
+  stripePaymentIntents,
+  stripeCustomers,
+  stripeWebhooks,
+  paymentStatusEnum,
+  paymentMethodEnum
+} from './paymentSchema';
+
 // Outline sessions for tracking deep research outline generation with clarifications
 export const outlineSessions = pgTable('outline_sessions', {
   id: uuid('id').primaryKey(),

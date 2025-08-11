@@ -14,6 +14,7 @@ interface NotificationSummary {
     message: string;
   }>;
   totalOrders: number;
+  moreSuggestionsCount?: number; // NEW: Count of orders needing more suggestions
 }
 
 interface NotificationContextType {

@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from 'next/server';
 import { AuthServiceServer } from '@/lib/auth-server';
 import { db } from '@/lib/db/connection';
 import { orders } from '@/lib/db/orderSchema';
+import { orderGroups } from '@/lib/db/orderGroupSchema';
 import { eq, and, sql, desc } from 'drizzle-orm';
 
 export async function GET(request: NextRequest) {
@@ -20,26 +21,60 @@ export async function GET(request: NextRequest) {
       whereConditions.push(eq(orders.accountId, session.userId));
     }
 
-    // Get all orders for notification counting
-    const allOrders = await db.query.orders.findMany({
-      where: whereConditions.length > 0 ? and(...whereConditions) : undefined,
-      orderBy: [desc(orders.updatedAt)],
-      columns: {
-        id: true,
-        status: true,
-        state: true,
-        updatedAt: true,
-        accountId: true
+    // Get all orders with their groups to check for more suggestions needed
+    const allOrders = await db
+      .select({
+        id: orders.id,
+        status: orders.status,
+        state: orders.state,
+        updatedAt: orders.updatedAt,
+        accountId: orders.accountId,
+        orderGroups: orderGroups
+      })
+      .from(orders)
+      .leftJoin(orderGroups, eq(orders.id, orderGroups.orderId))
+      .where(whereConditions.length > 0 ? and(...whereConditions) : undefined)
+      .orderBy(desc(orders.updatedAt));
+
+    // Group orders by ID to handle multiple order groups per order
+    const orderMap = new Map();
+    allOrders.forEach(row => {
+      if (!orderMap.has(row.id)) {
+        orderMap.set(row.id, {
+          id: row.id,
+          status: row.status,
+          state: row.state,
+          updatedAt: row.updatedAt,
+          accountId: row.accountId,
+          orderGroups: []
+        });
+      }
+      if (row.orderGroups) {
+        orderMap.get(row.id).orderGroups.push(row.orderGroups);
       }
     });
 
-    // Count action-required orders
+    const uniqueOrders = Array.from(orderMap.values());
+
+    // Count action-required orders and categorize them
     let actionRequiredCount = 0;
+    let moreSuggestionsCount = 0;
     
-    allOrders.forEach(order => {
+    uniqueOrders.forEach(order => {
       const needsAction = getOrderNeedsAction(order, isInternal);
       if (needsAction) {
         actionRequiredCount++;
+        
+        // Check if this order needs more suggestions specifically
+        const hasMoreSuggestionsNeeded = isInternal && order.orderGroups && 
+          order.orderGroups.some((group: any) => {
+            const metadata = (group.requirementOverrides as any) || {};
+            return metadata.needsMoreSuggestions === true;
+          });
+        
+        if (hasMoreSuggestionsNeeded) {
+          moreSuggestionsCount++;
+        }
       }
     });
 
@@ -47,12 +82,12 @@ export async function GET(request: NextRequest) {
     const sevenDaysAgo = new Date();
     sevenDaysAgo.setDate(sevenDaysAgo.getDate() - 7);
     
-    const recentUpdates = allOrders.filter(order => 
+    const recentUpdates = uniqueOrders.filter(order => 
       new Date(order.updatedAt) > sevenDaysAgo
     ).length;
 
     // Get most urgent orders for display
-    const urgentOrders = allOrders
+    const urgentOrders = uniqueOrders
       .filter(order => getOrderNeedsAction(order, isInternal))
       .slice(0, 5)
       .map(order => ({
@@ -67,7 +102,8 @@ export async function GET(request: NextRequest) {
       actionRequiredCount,
       recentUpdatesCount: recentUpdates,
       urgentOrders,
-      totalOrders: allOrders.length
+      totalOrders: uniqueOrders.length,
+      moreSuggestionsCount: moreSuggestionsCount // NEW: Count of orders needing more suggestions
     });
 
   } catch (error) {
@@ -80,17 +116,27 @@ export async function GET(request: NextRequest) {
 }
 
 function getOrderNeedsAction(order: any, isInternal: boolean): boolean {
+  // Add defensive check for order existence
+  if (!order || !order.status) return false;
+  
+  // Check if any order groups need more suggestions (for internal users)
+  const hasMoreSuggestionsNeeded = isInternal && order.orderGroups && 
+    order.orderGroups.some((group: any) => {
+      const metadata = (group.requirementOverrides as any) || {};
+      return metadata.needsMoreSuggestions === true;
+    });
+  
   if (isInternal) {
     // Internal user action items
     if (order.status === 'pending_confirmation') return true;
-    if (order.status === 'confirmed' && order.state === 'site_review') return true;
+    if (order.status === 'confirmed' && order.state === 'sites_ready') return true;
+    if (hasMoreSuggestionsNeeded) return true; // NEW: Check for more suggestions needed
     return false;
   } else {
     // External user action items
     if (order.status === 'draft') return true;
-    if (order.status === 'confirmed' && (
+    if (order.status === 'confirmed' && order.state && (
       order.state === 'sites_ready' || 
-      order.state === 'site_review' || 
       order.state === 'client_reviewing'
     )) return true;
     if (order.status === 'confirmed' && order.state === 'payment_pending') return true;
@@ -99,15 +145,36 @@ function getOrderNeedsAction(order: any, isInternal: boolean): boolean {
 }
 
 function getActionMessage(order: any, isInternal: boolean): string {
+  // Add defensive check for order existence
+  if (!order || !order.status) return 'Needs attention';
+  
+  // Check if any order groups need more suggestions (for internal users)
+  const hasMoreSuggestionsNeeded = isInternal && order.orderGroups && 
+    order.orderGroups.some((group: any) => {
+      const metadata = (group.requirementOverrides as any) || {};
+      return metadata.needsMoreSuggestions === true;
+    });
+
+  // Get count of groups needing more suggestions
+  const moreSuggestionsCount = isInternal && order.orderGroups ? 
+    order.orderGroups.filter((group: any) => {
+      const metadata = (group.requirementOverrides as any) || {};
+      return metadata.needsMoreSuggestions === true;
+    }).length : 0;
+  
   if (isInternal) {
+    if (hasMoreSuggestionsNeeded) {
+      return moreSuggestionsCount > 1 
+        ? `${moreSuggestionsCount} groups need more sites`
+        : 'Client needs more site suggestions';
+    }
     if (order.status === 'pending_confirmation') return 'Needs confirmation';
-    if (order.status === 'confirmed' && order.state === 'site_review') return 'Ready to send to client';
+    if (order.status === 'confirmed' && order.state === 'sites_ready') return 'Ready to send to client';
     return 'Needs attention';
   } else {
     if (order.status === 'draft') return 'Finish setup';
-    if (order.status === 'confirmed' && (
+    if (order.status === 'confirmed' && order.state && (
       order.state === 'sites_ready' || 
-      order.state === 'site_review' || 
       order.state === 'client_reviewing'
     )) return 'Review sites';
     if (order.status === 'confirmed' && order.state === 'payment_pending') return 'Payment due';

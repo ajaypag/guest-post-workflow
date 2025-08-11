@@ -3,18 +3,21 @@
 import React, { useState, useEffect, useCallback, useRef } from 'react';
 import { TrendingUp, ChevronDown } from 'lucide-react';
 import { formatCurrency } from '@/lib/utils/formatting';
+import { SERVICE_FEE_CENTS } from '@/lib/config/pricing';
 
-// Service fee constant - $79 per link
-const SERVICE_FEE_CENTS = 7900;
-
-// Smart filter options
+// Smart filter options - expanded price ranges
 const PRICE_OPTIONS = [
   { label: 'Any Price', min: 0, max: 999999 },
-  { label: '<$50', min: 0, max: 5000 },
-  { label: '<$100', min: 0, max: 10000 },
-  { label: '<$200', min: 0, max: 20000 },
-  { label: '<$300', min: 0, max: 30000 },
-  { label: '$300+', min: 30000, max: 999999 }
+  { label: 'Under $150', min: 0, max: 15000 },
+  { label: 'Under $200', min: 0, max: 20000 },
+  { label: 'Under $250', min: 0, max: 25000 },
+  { label: 'Under $300', min: 0, max: 30000 },
+  { label: 'Under $400', min: 0, max: 40000 },
+  { label: 'Under $500', min: 0, max: 50000 },
+  { label: '$150-$300', min: 15000, max: 30000 },
+  { label: '$200-$400', min: 20000, max: 40000 },
+  { label: '$300-$500', min: 30000, max: 50000 },
+  { label: 'Over $500', min: 50000, max: 999999 }
 ];
 
 const NICHE_OPTIONS = [
@@ -107,6 +110,45 @@ export default function PricingEstimator({ className = '', onEstimateChange, ini
   // Pricing estimate
   const [estimate, setEstimate] = useState<PricingEstimate | null>(null);
   const [error, setError] = useState<string | null>(null);
+  const [hasLoadedInitial, setHasLoadedInitial] = useState(false);
+
+  // Load initial preferences if provided
+  useEffect(() => {
+    if (initialPreferences && !hasLoadedInitial) {
+      // Set DR range
+      if (initialPreferences.drRange) {
+        const [drMin, drMax] = initialPreferences.drRange;
+        // Find matching DR option or use custom
+        const drOption = DR_OPTIONS.findIndex(opt => opt.value === drMin);
+        if (drOption >= 0) {
+          setSelectedDR(drOption);
+        } else {
+          setCustomDRMin(drMin.toString());
+          setCustomDRMax(drMax.toString());
+        }
+      }
+      
+      // Set traffic minimum
+      if (initialPreferences.minTraffic !== undefined) {
+        const trafficOption = TRAFFIC_OPTIONS.findIndex(opt => opt.value === initialPreferences.minTraffic);
+        if (trafficOption >= 0) {
+          setSelectedTraffic(trafficOption);
+        } else {
+          setCustomTraffic(initialPreferences.minTraffic.toString());
+        }
+      }
+      
+      // Set categories and types
+      if (initialPreferences.categories && initialPreferences.categories.length > 0) {
+        setSelectedCategory(initialPreferences.categories[0]);
+      }
+      if (initialPreferences.types && initialPreferences.types.length > 0) {
+        setSelectedType(initialPreferences.types[0]);
+      }
+      
+      setHasLoadedInitial(true);
+    }
+  }, [initialPreferences, hasLoadedInitial]);
 
   // Fetch available filter options on mount
   useEffect(() => {
@@ -292,14 +334,14 @@ export default function PricingEstimator({ className = '', onEstimateChange, ini
           aria-haspopup="listbox"
           aria-expanded={isOpen}
         >
-          <span className="font-medium text-gray-900 truncate">{displayValue}</span>
+          <span className="font-medium text-gray-900 truncate pr-1" title={displayValue}>{displayValue}</span>
           <ChevronDown className={`h-4 w-4 text-gray-400 flex-shrink-0 ml-2 transition-transform ${isOpen ? 'rotate-180' : ''}`} />
         </button>
         
         {isOpen && (
           <div 
             ref={dropdownRef}
-            className={`absolute ${dropdownDirection === 'up' ? 'bottom-full mb-1' : 'top-full mt-1'} left-0 w-full bg-white border border-gray-300 rounded-md shadow-xl z-50 max-h-64 overflow-hidden`}
+            className={`absolute ${dropdownDirection === 'up' ? 'bottom-full mb-1' : 'top-full mt-1'} left-0 min-w-full w-max bg-white border border-gray-300 rounded-md shadow-xl z-50 max-h-64 overflow-hidden`}
             role="listbox"
           >
             <div className="max-h-60 overflow-y-auto" style={{
@@ -331,10 +373,10 @@ export default function PricingEstimator({ className = '', onEstimateChange, ini
             
             {allowCustom && (
               <div className="border-t border-gray-200 p-3 bg-gray-50">
-                <label className="text-xs font-medium text-gray-500 mb-1 block uppercase tracking-wide">Custom Range</label>
+                <label className="text-xs font-medium text-gray-700 mb-1.5 block">Custom Range</label>
                 <input
                   type="text"
-                  placeholder={placeholder}
+                  placeholder={placeholder || "Min-Max (e.g. 30-70)"}
                   value={customValue || ''}
                   onChange={(e) => {
                     if (onCustomChange) {
@@ -351,6 +393,7 @@ export default function PricingEstimator({ className = '', onEstimateChange, ini
                   onClick={(e) => e.stopPropagation()}
                   autoFocus={false}
                 />
+                <div className="text-xs text-gray-500 mt-1.5">Enter min-max separated by dash</div>
               </div>
             )}
           </div>
@@ -362,47 +405,53 @@ export default function PricingEstimator({ className = '', onEstimateChange, ini
   return (
     <div className={`bg-white border-b border-gray-200 ${className}`}>
       <div className="px-6 py-4">
-        {/* Market Overview Header */}
+        {/* Pricing Preferences Header with Clear Explanation */}
         <div className="flex items-center justify-between mb-4">
           <div className="flex items-center gap-6">
             <div className="flex items-center gap-3">
               <TrendingUp className="h-6 w-6 text-blue-600" />
-              <h2 className="text-lg font-semibold text-gray-900">Market Intelligence</h2>
+              <div>
+                <h2 className="text-lg font-semibold text-gray-900">Your Pricing Preferences</h2>
+                <p className="text-sm text-gray-600 mt-0.5">Help us understand your budget and site preferences to find the best matches</p>
+              </div>
             </div>
             
             {loading ? (
               <div className="flex items-center gap-2 text-gray-500">
                 <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-blue-600"></div>
-                <span className="text-sm">Loading market data...</span>
+                <span className="text-sm">Finding sites that match your preferences...</span>
               </div>
             ) : estimate ? (
-              <div className="flex items-center gap-6 text-sm">
-                <div className="flex items-center gap-2">
-                  <div className="w-3 h-3 bg-green-500 rounded-full"></div>
-                  <span className="font-semibold text-gray-900">
-                    {estimate.count.toLocaleString()} available sites
-                  </span>
-                </div>
-                <div className="text-gray-600">
-                  <span className="font-medium text-gray-900">{formatCurrency(estimate.wholesaleMedian)}</span> median site cost
-                </div>
-                <div className="text-gray-600">
-                  <span className="font-medium text-gray-900">{formatCurrency(estimate.wholesaleAverage)}</span> average site cost
-                </div>
-                <div className="text-gray-600">
-                  Site cost range: <span className="font-medium text-gray-900">{formatCurrency(estimate.wholesaleMin)} - {formatCurrency(estimate.wholesaleMax)}</span>
+              <div className="bg-green-50 border border-green-200 rounded-lg px-4 py-3">
+                <div className="flex items-center gap-6 text-sm">
+                  <div className="flex items-center gap-2">
+                    <div className="w-3 h-3 bg-green-500 rounded-full"></div>
+                    <span className="font-semibold text-gray-900">
+                      {estimate.count.toLocaleString()} sites match your preferences
+                    </span>
+                  </div>
+                  <div className="text-gray-600">
+                    Typical price: <span className="font-medium text-gray-900">{formatCurrency(estimate.clientMedian)}</span>
+                    <span className="text-xs text-gray-500 ml-1">(site + content)</span>
+                  </div>
+                  <div className="text-gray-600">
+                    Price range: <span className="font-medium text-gray-900">{formatCurrency(estimate.clientMin)} - {formatCurrency(estimate.clientMax)}</span>
+                  </div>
                 </div>
               </div>
             ) : (
-              <span className="text-sm text-gray-500">Configure filters to see market availability</span>
+              <span className="text-sm text-gray-500">Set your preferences to see available sites and pricing</span>
             )}
           </div>
         </div>
 
         {/* Enhanced Filter Controls */}
-        <div className="grid grid-cols-6 gap-4">
+        <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-6 gap-3">
           <div className="space-y-2">
-            <label className="text-xs font-medium text-gray-500 uppercase tracking-wide">Price Range</label>
+            <label className="text-xs font-medium text-gray-500 uppercase tracking-wide">
+              Price Range
+              <span className="ml-1 text-blue-500" title="Total cost per link including site cost + $79 content package">ⓘ</span>
+            </label>
             <FilterDropdown
               label=""
               value={selectedPrice}
@@ -420,7 +469,10 @@ export default function PricingEstimator({ className = '', onEstimateChange, ini
           </div>
           
           <div className="space-y-2">
-            <label className="text-xs font-medium text-gray-500 uppercase tracking-wide">Domain Rating</label>
+            <label className="text-xs font-medium text-gray-500 uppercase tracking-wide">
+              Domain Authority (DR)
+              <span className="ml-1 text-blue-500" title="Site authority score from Ahrefs (higher = more authoritative)">ⓘ</span>
+            </label>
             <FilterDropdown
               label=""
               value={selectedDR}
@@ -438,7 +490,10 @@ export default function PricingEstimator({ className = '', onEstimateChange, ini
           </div>
           
           <div className="space-y-2">
-            <label className="text-xs font-medium text-gray-500 uppercase tracking-wide">Monthly Traffic</label>
+            <label className="text-xs font-medium text-gray-500 uppercase tracking-wide">
+              Monthly Traffic
+              <span className="ml-1 text-blue-500" title="Estimated monthly visitors to the website">ⓘ</span>
+            </label>
             <FilterDropdown
               label=""
               value={selectedTraffic}
@@ -452,7 +507,10 @@ export default function PricingEstimator({ className = '', onEstimateChange, ini
           </div>
           
           <div className="space-y-2">
-            <label className="text-xs font-medium text-gray-500 uppercase tracking-wide">Category</label>
+            <label className="text-xs font-medium text-gray-500 uppercase tracking-wide">
+              Industry/Category
+              <span className="ml-1 text-blue-500" title="Prefer sites in specific industries or any category">ⓘ</span>
+            </label>
             <FilterDropdown
               label=""
               value={selectedCategory}
@@ -462,7 +520,10 @@ export default function PricingEstimator({ className = '', onEstimateChange, ini
           </div>
           
           <div className="space-y-2">
-            <label className="text-xs font-medium text-gray-500 uppercase tracking-wide">Niche</label>
+            <label className="text-xs font-medium text-gray-500 uppercase tracking-wide">
+              Topic/Niche
+              <span className="ml-1 text-blue-500" title="Preferred content topics and niches">ⓘ</span>
+            </label>
             <FilterDropdown
               label=""
               value={selectedNiche}
@@ -472,7 +533,10 @@ export default function PricingEstimator({ className = '', onEstimateChange, ini
           </div>
           
           <div className="space-y-2">
-            <label className="text-xs font-medium text-gray-500 uppercase tracking-wide">Website Type</label>
+            <label className="text-xs font-medium text-gray-500 uppercase tracking-wide">
+              Site Type
+              <span className="ml-1 text-blue-500" title="Type of website (blog, news site, business site, etc.)">ⓘ</span>
+            </label>
             <FilterDropdown
               label=""
               value={selectedType}

@@ -114,10 +114,10 @@ export function OrdersTableMultiClient({
       if (order.status === 'pending_confirmation') {
         return { text: 'Needs Confirmation', color: 'text-red-600', priority: 'high' };
       }
-      if (order.status === 'confirmed' && (order.state === 'analyzing' || order.state === 'finding_sites')) {
+      if (order.status === 'confirmed' && (order.state === 'analyzing')) {
         return { text: 'Processing', color: 'text-blue-600', priority: 'medium' };
       }
-      if (order.status === 'confirmed' && order.state === 'site_review') {
+      if (order.status === 'confirmed' && order.state === 'sites_ready') {
         return { text: 'Ready to Send', color: 'text-yellow-600', priority: 'medium' };
       }
     }
@@ -126,13 +126,13 @@ export function OrdersTableMultiClient({
       if (order.status === 'draft') {
         return { text: 'Finish Setup', color: 'text-red-600', priority: 'high' };
       }
-      if (order.status === 'confirmed' && (order.state === 'sites_ready' || order.state === 'site_review' || order.state === 'client_reviewing')) {
+      if (order.status === 'confirmed' && (order.state === 'sites_ready' || order.state === 'client_reviewing')) {
         return { text: 'Review Sites', color: 'text-red-600', priority: 'high' };
       }
       if (order.status === 'confirmed' && order.state === 'payment_pending') {
         return { text: 'Payment Due', color: 'text-red-600', priority: 'high' };
       }
-      if (order.status === 'confirmed' && (order.state === 'analyzing' || order.state === 'finding_sites')) {
+      if (order.status === 'confirmed' && (order.state === 'analyzing')) {
         return { text: 'In Progress', color: 'text-blue-600', priority: 'low' };
       }
     }
@@ -373,7 +373,7 @@ export function OrdersTableMultiClient({
                                     method: 'POST',
                                     headers: { 'Content-Type': 'application/json' },
                                     body: JSON.stringify({ 
-                                      state: 'site_review',
+                                      state: 'sites_ready',
                                       notes: 'Sites ready for client review'
                                     })
                                   });
@@ -395,6 +395,18 @@ export function OrdersTableMultiClient({
                             <Users className="h-4 w-4 mr-1" />
                             Sites Ready
                           </button>
+                        )}
+                        {/* Payment button for orders pending payment */}
+                        {order.state === 'payment_pending' && !order.paidAt && (
+                          <a
+                            href={`/orders/${order.id}/payment`}
+                            className="inline-flex items-center px-3 py-1.5 bg-orange-600 text-white text-sm rounded-md hover:bg-orange-700"
+                          >
+                            <svg className="h-4 w-4 mr-1" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M3 10h18M7 15h1m4 0h1m-7 4h12a3 3 0 003-3V8a3 3 0 00-3-3H6a3 3 0 00-3 3v8a3 3 0 003 3z" />
+                            </svg>
+                            Pay ${((order.totalRetail || 0) / 100).toFixed(0)}
+                          </a>
                         )}
                         {isInternal && order.shareToken && (
                           <button

@@ -36,15 +36,8 @@ export async function PATCH(
       }, { status: 400 });
     }
 
-    // External users have limited permissions
-    if (session.userType === 'account') {
-      // They can only mark things as saved_for_later, not exclude
-      if (inclusionStatus === 'excluded') {
-        return NextResponse.json({ 
-          error: 'External users cannot exclude domains' 
-        }, { status: 403 });
-      }
-    }
+    // External users can change inclusion status but not set internal exclusion reasons
+    // (They can exclude sites, just not add internal notes about why)
 
     const result = await db.transaction(async (tx) => {
       // Get the submission
@@ -110,7 +103,10 @@ export async function PATCH(
       }
 
       if (exclusionReason !== undefined) {
-        updateData.exclusionReason = inclusionStatus === 'excluded' ? exclusionReason : null;
+        // Only internal users can set exclusion reasons (internal notes)
+        if (session.userType === 'internal') {
+          updateData.exclusionReason = inclusionStatus === 'excluded' ? exclusionReason : null;
+        }
       }
 
       // Update the submission

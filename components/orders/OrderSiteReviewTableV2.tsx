@@ -13,6 +13,136 @@ import DomainCell from './DomainCell';
 import ExpandedDomainDetails from './ExpandedDomainDetails';
 import FilterBar, { type FilterOptions } from './FilterBar';
 
+// Feedback Modal Component for collecting rejection reasons
+interface FeedbackModalProps {
+  isOpen: boolean;
+  siteDomain: string;
+  onClose: () => void;
+  onSubmit: (feedback: { reason: string; notes: string }) => void;
+  userType: 'internal' | 'account';
+}
+
+function FeedbackModal({ isOpen, siteDomain, onClose, onSubmit, userType }: FeedbackModalProps) {
+  const [selectedReason, setSelectedReason] = useState('');
+  const [notes, setNotes] = useState('');
+  const [isSubmitting, setIsSubmitting] = useState(false);
+
+  const commonReasons = [
+    'Low Domain Rating/Authority',
+    'Irrelevant Niche/Industry',
+    'Poor Content Quality',
+    'Too Expensive',
+    'Site Appears Spammy',
+    'Not Accepting Guest Posts',
+    'Technical Issues (Site Down/Slow)',
+    'Competitor Site',
+    'Other'
+  ];
+
+  const handleSubmit = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!selectedReason) return;
+
+    setIsSubmitting(true);
+    try {
+      await onSubmit({ reason: selectedReason, notes });
+      onClose();
+      setSelectedReason('');
+      setNotes('');
+    } finally {
+      setIsSubmitting(false);
+    }
+  };
+
+  if (!isOpen) return null;
+
+  return (
+    <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
+      <div className="bg-white rounded-lg p-6 w-full max-w-md mx-4">
+        <div className="flex items-center justify-between mb-4">
+          <h3 className="text-lg font-semibold">
+            {userType === 'account' ? 'Why not interested?' : 'Rejection Reason'}
+          </h3>
+          <button
+            onClick={onClose}
+            className="text-gray-400 hover:text-gray-600"
+          >
+            <X className="h-5 w-5" />
+          </button>
+        </div>
+
+        <div className="mb-4">
+          <p className="text-sm text-gray-600 mb-2">
+            Site: <span className="font-medium">{siteDomain}</span>
+          </p>
+        </div>
+
+        <form onSubmit={handleSubmit}>
+          <div className="mb-4">
+            <label className="block text-sm font-medium text-gray-700 mb-2">
+              {userType === 'account' ? 'Primary reason:' : 'Rejection reason:'}
+            </label>
+            <div className="space-y-2">
+              {commonReasons.map((reason) => (
+                <label key={reason} className="flex items-center">
+                  <input
+                    type="radio"
+                    name="reason"
+                    value={reason}
+                    checked={selectedReason === reason}
+                    onChange={(e) => setSelectedReason(e.target.value)}
+                    className="mr-2"
+                  />
+                  <span className="text-sm">{reason}</span>
+                </label>
+              ))}
+            </div>
+          </div>
+
+          <div className="mb-4">
+            <label className="block text-sm font-medium text-gray-700 mb-2">
+              Additional notes (optional):
+            </label>
+            <textarea
+              value={notes}
+              onChange={(e) => setNotes(e.target.value)}
+              placeholder={userType === 'account' 
+                ? "Any specific details that would help us find better sites..." 
+                : "Additional details about the rejection..."}
+              className="w-full p-2 border border-gray-300 rounded-md text-sm"
+              rows={3}
+            />
+          </div>
+
+          <div className="flex justify-end gap-2">
+            <button
+              type="button"
+              onClick={onClose}
+              className="px-4 py-2 text-sm text-gray-600 hover:text-gray-800"
+            >
+              Cancel
+            </button>
+            <button
+              type="submit"
+              disabled={!selectedReason || isSubmitting}
+              className="px-4 py-2 bg-red-600 text-white text-sm rounded-md hover:bg-red-700 disabled:opacity-50 disabled:cursor-not-allowed"
+            >
+              {isSubmitting ? (
+                <>
+                  <Loader2 className="h-4 w-4 mr-2 animate-spin inline" />
+                  {userType === 'account' ? 'Skipping...' : 'Rejecting...'}
+                </>
+              ) : (
+                userType === 'account' ? 'Skip Site' : 'Reject Site'
+              )}
+            </button>
+          </div>
+        </form>
+      </div>
+    </div>
+  );
+}
+
 // Permission-based configuration
 export interface TablePermissions {
   canChangeStatus?: boolean;
@@ -208,6 +338,14 @@ export default function OrderSiteReviewTableV2({
     qualification: 'all',
     overlap: 'all'
   });
+  
+  // Feedback modal state
+  const [feedbackModal, setFeedbackModal] = useState<{
+    isOpen: boolean;
+    submissionId: string;
+    groupId: string;
+    siteDomain: string;
+  } | null>(null);
 
   // Group line items by client for easy access
   const lineItemsByClient = React.useMemo(() => {
@@ -267,9 +405,9 @@ export default function OrderSiteReviewTableV2({
     return 'matches_benchmark';
   };
 
-  // Filter submissions by all criteria
+  // Filter and sort submissions by all criteria
   const filterSubmissions = (submissions: SiteSubmission[]): SiteSubmission[] => {
-    return submissions.filter(submission => {
+    const filtered = submissions.filter(submission => {
       // Status filter
       if (filters.status !== 'all' && getInclusionStatus(submission) !== filters.status) {
         return false;
@@ -319,14 +457,34 @@ export default function OrderSiteReviewTableV2({
       
       return true;
     });
+
+    // Sort submissions: 'included' first, then 'saved_for_later', then others
+    return filtered.sort((a, b) => {
+      const statusA = getInclusionStatus(a);
+      const statusB = getInclusionStatus(b);
+      
+      // Priority order: included (1), saved_for_later (2), excluded (3)
+      const getPriority = (status: string) => {
+        switch (status) {
+          case 'included': return 1;
+          case 'saved_for_later': return 2;
+          case 'excluded': return 3;
+          default: return 4;
+        }
+      };
+      
+      return getPriority(statusA) - getPriority(statusB);
+    });
   };
 
   // Get status badge color
   const getStatusColor = (status: 'included' | 'excluded' | 'saved_for_later') => {
     switch (status) {
-      case 'included': return 'bg-green-100 text-green-800';
-      case 'excluded': return 'bg-red-100 text-red-800';
-      case 'saved_for_later': return 'bg-yellow-100 text-yellow-800';
+      case 'included': return 'bg-green-100 text-green-800 border-green-300';
+      case 'excluded': return 'bg-red-100 text-red-800 border-red-300';
+      case 'saved_for_later': return userType === 'account' 
+        ? 'bg-purple-100 text-purple-800 border-purple-300' 
+        : 'bg-yellow-100 text-yellow-800 border-yellow-300';
     }
   };
 
@@ -403,18 +561,118 @@ export default function OrderSiteReviewTableV2({
   const handleChangeStatus = async (submissionId: string, groupId: string, status: 'included' | 'excluded' | 'saved_for_later') => {
     if (!onChangeInclusionStatus) return;
     
+    // If user is excluding a site, show feedback modal to collect reason
+    if (status === 'excluded') {
+      // Find the submission to get the site domain
+      const submission = Object.values(siteSubmissions)
+        .flat()
+        .find(s => s.id === submissionId);
+      
+      const siteDomain = submission?.domain?.domain || submission?.domainId || 'Unknown site';
+      
+      setFeedbackModal({
+        isOpen: true,
+        submissionId,
+        groupId,
+        siteDomain
+      });
+      return;
+    }
+    
+    // For non-excluded status changes, proceed immediately
     setActionLoading({ ...actionLoading, [submissionId]: true });
     try {
-      let reason: string | undefined;
-      if (status === 'excluded' && userType === 'internal') {
-        reason = prompt('Please provide a reason for exclusion:') || undefined;
-      }
-      await onChangeInclusionStatus(submissionId, groupId, status, reason);
+      await onChangeInclusionStatus(submissionId, groupId, status);
       if (onRefresh) await onRefresh();
     } catch (error) {
       console.error('Failed to change status:', error);
     } finally {
       setActionLoading({ ...actionLoading, [submissionId]: false });
+    }
+  };
+
+  const handleFeedbackSubmit = async (feedback: { reason: string; notes: string }) => {
+    if (!feedbackModal || !onChangeInclusionStatus) return;
+
+    const { submissionId, groupId } = feedbackModal;
+    
+    setActionLoading({ ...actionLoading, [submissionId]: true });
+    try {
+      const combinedReason = feedback.notes 
+        ? `${feedback.reason}: ${feedback.notes}`
+        : feedback.reason;
+        
+      await onChangeInclusionStatus(submissionId, groupId, 'excluded', combinedReason);
+      if (onRefresh) await onRefresh();
+    } catch (error) {
+      console.error('Failed to change status:', error);
+    } finally {
+      setActionLoading({ ...actionLoading, [submissionId]: false });
+      setFeedbackModal(null);
+    }
+  };
+
+  const handleRequestMoreSites = async (groupId: string, groupData: OrderGroup) => {
+    const submissions = siteSubmissions[groupId] || [];
+    const approvedCount = submissions.filter(s => getInclusionStatus(s) === 'included').length;
+    const rejectedSubmissions = submissions.filter(s => getInclusionStatus(s) === 'excluded');
+    const shortfallCount = Math.max(0, groupData.linkCount - approvedCount);
+    
+    if (shortfallCount <= 0) {
+      alert('No additional sites needed - you have already approved enough sites!');
+      return;
+    }
+
+    // Collect rejection reasons from the excluded submissions
+    const rejectionReasons: Record<string, { reason: string; notes: string }> = {};
+    rejectedSubmissions.forEach(submission => {
+      if (submission.exclusionReason) {
+        const [reason, ...notesParts] = submission.exclusionReason.split(': ');
+        rejectionReasons[submission.id] = {
+          reason: reason || 'Other',
+          notes: notesParts.join(': ') || ''
+        };
+      }
+    });
+
+    // Prompt for general feedback
+    const generalFeedback = prompt(
+      `You've approved ${approvedCount} of ${groupData.linkCount} requested sites. ` +
+      `We'll request ${shortfallCount} additional sites.\n\n` +
+      `Any specific requirements for the additional sites? (Optional)`
+    ) || '';
+
+    setActionLoading({ ...actionLoading, [`request-more-${groupId}`]: true });
+    try {
+      const response = await fetch(`/api/orders/${orderId}/groups/${groupId}/request-more-sites`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        credentials: 'include',
+        body: JSON.stringify({
+          shortfallCount,
+          rejectionReasons,
+          requestedTotal: groupData.linkCount,
+          approvedCount,
+          generalFeedback
+        })
+      });
+
+      if (!response.ok) {
+        throw new Error('Failed to request more sites');
+      }
+
+      const result = await response.json();
+      
+      // Show success message
+      alert(`✅ Successfully requested ${shortfallCount} additional sites. ` +
+            `Our team will find more sites based on your feedback and notify you when ready for review.`);
+            
+      if (onRefresh) await onRefresh();
+    } catch (error) {
+      console.error('Failed to request more sites:', error);
+      alert('❌ Failed to request more sites. Please try again or contact support.');
+    } finally {
+      setActionLoading({ ...actionLoading, [`request-more-${groupId}`]: false });
     }
   };
 
@@ -516,6 +774,30 @@ export default function OrderSiteReviewTableV2({
                   </div>
                 </div>
               </div>
+
+              {/* Request More Sites Button - Show for account users when they have shortfall */}
+              {userType === 'account' && includedCount < group.linkCount && excludedCount > 0 && (
+                <button
+                  onClick={(e) => {
+                    e.stopPropagation(); // Prevent group toggle
+                    handleRequestMoreSites(group.id, group);
+                  }}
+                  disabled={actionLoading[`request-more-${group.id}`]}
+                  className="px-3 py-1 bg-blue-600 text-white text-sm rounded-md hover:bg-blue-700 disabled:opacity-50 disabled:cursor-not-allowed flex items-center gap-2"
+                >
+                  {actionLoading[`request-more-${group.id}`] ? (
+                    <>
+                      <Loader2 className="h-4 w-4 animate-spin" />
+                      Requesting...
+                    </>
+                  ) : (
+                    <>
+                      <RefreshCw className="h-4 w-4" />
+                      Request More Sites ({group.linkCount - includedCount})
+                    </>
+                  )}
+                </button>
+              )}
             </div>
 
             {/* Submissions Table */}
@@ -602,11 +884,13 @@ export default function OrderSiteReviewTableV2({
                               </div>
                             </td>
                             <td className="py-3 text-center">
-                              {submission.metadata?.dr || '-'}
+                              {submission.domainRating || '-'}
                             </td>
                             <td className="py-3 text-center">
-                              {submission.metadata?.traffic ? 
-                                submission.metadata.traffic.toLocaleString() :
+                              {submission.traffic ? 
+                                (typeof submission.traffic === 'number' ? 
+                                  submission.traffic.toLocaleString() : 
+                                  submission.traffic) :
                                 '-'}
                             </td>
                           <td className="py-3">
@@ -621,15 +905,15 @@ export default function OrderSiteReviewTableV2({
                                 className={`px-2 py-1 text-sm rounded border ${getStatusColor(status)}`}
                                 disabled={actionLoading[submission.id]}
                               >
-                                <option value="included">✓ Included</option>
-                                <option value="excluded">✗ Excluded</option>
-                                <option value="saved_for_later">⏸ Saved</option>
+                                <option value="included">{userType === 'account' ? '✅ Use This Site' : '✓ Included'}</option>
+                                <option value="excluded">{userType === 'account' ? '❌ Not Interested' : '✗ Excluded'}</option>
+                                <option value="saved_for_later">{userType === 'account' ? '💾 Save for Later' : '⏸ Saved'}</option>
                               </select>
                             ) : (
                               <span className={`px-2 py-1 text-sm rounded ${getStatusColor(status)}`}>
-                                {status === 'included' && '✓ Included'}
-                                {status === 'excluded' && '✗ Excluded'}
-                                {status === 'saved_for_later' && '⏸ Saved'}
+                                {status === 'included' && (userType === 'account' ? '✅ Using' : '✓ Included')}
+                                {status === 'excluded' && (userType === 'account' ? '❌ Skipped' : '✗ Excluded')}
+                                {status === 'saved_for_later' && (userType === 'account' ? '💾 Banked' : '⏸ Saved')}
                               </span>
                             )}
                             {status === 'excluded' && submission.exclusionReason && (
@@ -923,6 +1207,15 @@ export default function OrderSiteReviewTableV2({
           </div>
         </div>
       )}
+
+      {/* Feedback Modal */}
+      <FeedbackModal
+        isOpen={feedbackModal?.isOpen || false}
+        siteDomain={feedbackModal?.siteDomain || ''}
+        onClose={() => setFeedbackModal(null)}
+        onSubmit={handleFeedbackSubmit}
+        userType={userType}
+      />
     </div>
   );
 }

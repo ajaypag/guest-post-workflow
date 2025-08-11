@@ -38,7 +38,7 @@ export default function OrderDetailsTable({
     
     // Map order status and state to determine what to show
     // Status values: draft, pending_confirmation, confirmed, paid, completed, cancelled
-    // State values: configuring, analyzing, finding_sites, sites_ready, site_review, 
+    // State values: configuring, analyzing, sites_ready, 
     //               client_reviewing, payment_pending, payment_received, workflows_generated, in_progress
     
     // Early states - just show basic info
@@ -48,13 +48,16 @@ export default function OrderDetailsTable({
     }
     
     // Analysis phase - show progress
-    if (order.state === 'analyzing' || order.state === 'finding_sites' || order.status === 'pending_confirmation') {
-      columns.push('status');
+    if (order.state === 'analyzing' || order.status === 'pending_confirmation') {
+      // Only show status column if we have meaningful status information
+      if (order.status && order.status !== 'pending_confirmation') {
+        columns.push('status');
+      }
       return columns;
     }
     
     // Review phase - show suggestions and pricing
-    if (order.state === 'sites_ready' || order.state === 'site_review' || order.state === 'client_reviewing') {
+    if (order.state === 'sites_ready' || order.state === 'client_reviewing') {
       columns.push('suggestedSite', 'siteMetrics', 'price', 'status');
       return columns;
     }
@@ -231,9 +234,9 @@ export default function OrderDetailsTable({
           {order.status === 'pending_confirmation' && 'Awaiting order confirmation'}
           {order.state === 'configuring' && 'Setting up order details'}
           {order.state === 'analyzing' && 'Analyzing target pages and finding sites'}
-          {order.state === 'finding_sites' && 'Finding suitable guest post sites'}
+          {order.state === 'analyzing' && 'Finding suitable guest post sites'}
           {order.state === 'sites_ready' && 'Review and approve recommended sites'}
-          {order.state === 'site_review' && 'Sites under review'}
+          {order.state === 'sites_ready' && 'Sites under review'}
           {order.state === 'client_reviewing' && 'Client reviewing site suggestions'}
           {order.state === 'payment_pending' && 'Invoice generated - awaiting payment'}
           {order.state === 'payment_received' && 'Payment received - preparing content creation'}
@@ -440,7 +443,7 @@ export default function OrderDetailsTable({
                         <Clock className="h-3 w-3 mr-1 animate-spin" />
                         Analyzing
                       </span>
-                    ) : order.state === 'finding_sites' && !item.submission ? (
+                    ) : order.state === 'analyzing' && !item.submission ? (
                       <span className="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-blue-100 text-blue-800">
                         <Clock className="h-3 w-3 mr-1 animate-spin" />
                         Finding Sites
@@ -448,6 +451,11 @@ export default function OrderDetailsTable({
                     ) : order.status === 'draft' ? (
                       <span className="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-gray-100 text-gray-600">
                         Draft
+                      </span>
+                    ) : order.status === 'pending_confirmation' ? (
+                      <span className="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-yellow-100 text-yellow-800">
+                        <Clock className="h-3 w-3 mr-1" />
+                        Awaiting Confirmation
                       </span>
                     ) : order.status === 'cancelled' ? (
                       <span className="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-gray-100 text-gray-600">
@@ -505,7 +513,7 @@ export default function OrderDetailsTable({
                   {order.status === 'draft' ? 'No items added to this draft order yet' :
                    order.state === 'configuring' ? 'Order is being configured...' :
                    order.state === 'analyzing' ? 'Analyzing requirements...' :
-                   order.state === 'finding_sites' ? 'Finding suitable sites...' :
+                   order.state === 'analyzing' ? 'Finding suitable sites...' :
                    'No line items available'}
                 </td>
               </tr>

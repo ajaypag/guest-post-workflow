@@ -29,7 +29,7 @@ const PROGRESS_STEPS: Step[] = [
     description: 'Our team is identifying suitable sites' 
   },
   { 
-    id: 'site_review', 
+    id: 'sites_ready', 
     label: 'Review Sites', 
     icon: Users, 
     description: 'Site recommendations ready for your review' 
@@ -66,9 +66,9 @@ export function getProgressSteps(status: string, state?: string) {
     currentStep = 1; // Default to confirmed
     
     // Check the state for more specific progress
-    if (state === 'analyzing' || state === 'finding_sites') {
+    if (state === 'analyzing') {
       currentStep = 1;
-    } else if (state === 'site_review' || state === 'sites_ready' || state === 'client_reviewing') {
+    } else if (state === 'sites_ready' || state === 'client_reviewing') {
       currentStep = 2;
     } else if (state === 'payment_pending') {
       currentStep = 3;
@@ -101,9 +101,7 @@ export function getStateDisplay(status: string, state?: string) {
   // For confirmed/paid orders, show the state
   switch (state) {
     case 'analyzing':
-    case 'finding_sites':
       return { label: 'Finding Sites', color: 'bg-blue-100 text-blue-700' };
-    case 'site_review':
     case 'sites_ready':
     case 'client_reviewing':
       return { label: 'Ready for Review', color: 'bg-purple-100 text-purple-700' };

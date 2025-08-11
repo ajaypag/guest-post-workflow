@@ -9,6 +9,7 @@ import { bulkAnalysisDomains } from '@/lib/db/bulkAnalysisSchema';
 import { eq, and } from 'drizzle-orm';
 import { AuthServiceServer } from '@/lib/auth-server';
 import { isLineItemsSystemEnabled } from '@/lib/config/featureFlags';
+import { PRICING_CONFIG } from '@/lib/config/pricing';
 
 export async function POST(
   request: NextRequest,
@@ -45,11 +46,15 @@ export async function POST(
     }
 
     if (action === 'generate_invoice' || action === 'regenerate_invoice') {
+      console.log(`[INVOICE API] Starting invoice generation for order ${orderId}`);
+      console.log(`[INVOICE API] Order state: ${order.state}, Account: ${order.accountId}`);
+      
       // Check if regenerating
       const isRegenerate = action === 'regenerate_invoice';
       
       // If regenerating, check if invoice exists
       if (isRegenerate && !order.invoicedAt) {
+        console.log('[INVOICE API] Regenerate requested but no invoice exists');
         return NextResponse.json({ 
           error: 'Cannot regenerate - no invoice exists yet' 
         }, { status: 400 });
@@ -128,10 +133,20 @@ export async function POST(
         }
 
         // Check if all sites have been reviewed
-        // Sites with inclusionStatus set have been reviewed (included/excluded/saved_for_later)
-        const pendingSubmissions = allSubmissions.filter(s => 
-          !s.inclusionStatus && (s.submissionStatus === 'pending' || s.submissionStatus === 'submitted')
-        );
+        // Sites are considered reviewed if:
+        // 1. They have an inclusionStatus (new system)
+        // 2. They have a selectionPool (legacy system - primary/alternative)
+        // 3. They have been client_approved/client_rejected (old system)
+        const pendingSubmissions = allSubmissions.filter(s => {
+          // Has explicit inclusion status - reviewed
+          if (s.inclusionStatus) return false;
+          // Has selection pool - reviewed (primary = included, alternative = saved)
+          if (s.selectionPool) return false;
+          // Has been approved/rejected - reviewed
+          if (s.submissionStatus === 'client_approved' || s.submissionStatus === 'client_rejected') return false;
+          // Otherwise check if it's pending
+          return s.submissionStatus === 'pending' || s.submissionStatus === 'submitted';
+        });
         pendingCount = pendingSubmissions.length;
         
         if (pendingCount > 0) {
@@ -141,15 +156,32 @@ export async function POST(
           }, { status: 400 });
         }
 
-        // Check for approved items using both old and new status systems
-        approvedItems = allSubmissions.filter(s => 
-          s.submissionStatus === 'client_approved' || 
-          s.inclusionStatus === 'included'
-        );
+        // Check for approved items using all status systems
+        approvedItems = allSubmissions.filter(s => {
+          // New system: explicit inclusion
+          if (s.inclusionStatus === 'included') return true;
+          // Legacy system: primary pool = included
+          if (s.selectionPool === 'primary') return true;
+          // Old system: client approved
+          if (s.submissionStatus === 'client_approved') return true;
+          return false;
+        });
 
         if (approvedItems.length === 0) {
+          console.log('[INVOICE] No approved items found. Submission details:');
+          allSubmissions.forEach(s => {
+            console.log(`- ID: ${s.id.substring(0,8)}, inclusionStatus: ${s.inclusionStatus}, selectionPool: ${s.selectionPool}, submissionStatus: ${s.submissionStatus}`);
+          });
           return NextResponse.json({ 
-            error: 'Cannot generate invoice - no approved sites' 
+            error: 'Cannot generate invoice - no approved sites',
+            debug: {
+              totalSubmissions: allSubmissions.length,
+              submissions: allSubmissions.map(s => ({
+                inclusionStatus: s.inclusionStatus,
+                selectionPool: s.selectionPool,
+                submissionStatus: s.submissionStatus
+              }))
+            }
           }, { status: 400 });
         }
       }
@@ -177,9 +209,9 @@ export async function POST(
         // Generate invoice from line items
         for (const lineItem of approvedItems) {
           // Use approved price if set, otherwise estimated price
-          const retailPrice = lineItem.approvedPrice || lineItem.estimatedPrice || 27900;
-          const wholesalePrice = lineItem.wholesalePrice || (retailPrice - 7900);
-          const serviceFee = 7900; // $79 service fee
+          const retailPrice = lineItem.approvedPrice || lineItem.estimatedPrice || PRICING_CONFIG.defaults.retailPricePerLink;
+          const wholesalePrice = lineItem.wholesalePrice || PRICING_CONFIG.calculateWholesalePrice(retailPrice);
+          const serviceFee = PRICING_CONFIG.serviceFee.standard;
           
           sitesSubtotal += retailPrice;
           wholesaleTotal += wholesalePrice;
@@ -209,9 +241,9 @@ export async function POST(
           });
           
           // Use price snapshot if available, fallback to default pricing
-          const retailPrice = submission.retailPriceSnapshot || 27900;
-          const wholesalePrice = submission.wholesalePriceSnapshot || (retailPrice - 7900);
-          const serviceFee = submission.serviceFeeSnapshot || 7900;
+          const retailPrice = submission.retailPriceSnapshot || PRICING_CONFIG.defaults.retailPricePerLink;
+          const wholesalePrice = submission.wholesalePriceSnapshot || PRICING_CONFIG.calculateWholesalePrice(retailPrice);
+          const serviceFee = submission.serviceFeeSnapshot || PRICING_CONFIG.serviceFee.standard;
           
           sitesSubtotal += retailPrice;
           wholesaleTotal += wholesalePrice;

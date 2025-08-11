@@ -290,8 +290,8 @@ export default function InternalOrderManagementPage() {
     if (order?.status === 'pending_confirmation') {
       checkTargetPageStatuses();
     }
-    // Load benchmark data for confirmed orders
-    if (order?.status === 'confirmed') {
+    // Load benchmark data for confirmed orders and orders awaiting confirmation
+    if (order?.status === 'confirmed' || order?.status === 'pending_confirmation') {
       loadBenchmarkData();
     }
   }, [order?.state, order?.orderGroups, order?.status]);
@@ -468,7 +468,7 @@ export default function InternalOrderManagementPage() {
   const handleRefresh = async () => {
     setRefreshing(true);
     await loadOrder();
-    if (order?.state === 'sites_ready' || order?.state === 'site_review' || order?.state === 'client_reviewing') {
+    if (order?.state === 'sites_ready' || order?.state === 'client_reviewing') {
       await loadSiteSubmissions();
     }
     if (order?.status === 'pending_confirmation') {
@@ -1620,10 +1620,10 @@ export default function InternalOrderManagementPage() {
                     )}
                     
                     {/* Bulk Analysis Links - Available during analysis and review phases (orderGroups mode only) */}
-                    {!useLineItemsView && (order.state === 'analyzing' || order.state === 'finding_sites' || order.state === 'sites_ready' || order.state === 'site_review' || order.state === 'client_reviewing') && order.orderGroups && (
+                    {!useLineItemsView && (order.state === 'analyzing' || order.state === 'sites_ready' || order.state === 'client_reviewing') && order.orderGroups && (
                       <div className="space-y-2">
                         <div className="text-xs text-gray-600 mb-1">
-                          {(order.state === 'sites_ready' || order.state === 'site_review' || order.state === 'client_reviewing') ? 
+                          {(order.state === 'sites_ready' || order.state === 'client_reviewing') ? 
                             'Bulk Analysis Projects:' : 
                             'Find and analyze sites:'
                           }
@@ -1657,7 +1657,7 @@ export default function InternalOrderManagementPage() {
                     )}
                     
                     {/* Site Readiness */}
-                    {(order.state === 'analyzing' || order.state === 'finding_sites') && (
+                    {(order.state === 'analyzing') && (
                       <button
                         onClick={handleMarkSitesReady}
                         disabled={actionLoading.sites_ready}
@@ -1864,8 +1864,14 @@ export default function InternalOrderManagementPage() {
                     {order.estimatedPricePerLink && (
                       <div className="mt-3 p-2 bg-blue-50 rounded">
                         <div className="flex justify-between text-sm">
-                          <dt className="text-blue-900">Customer Target</dt>
+                          <dt className="text-blue-900">Target per Link</dt>
                           <dd className="font-medium text-blue-700">{formatCurrency(order.estimatedPricePerLink)}</dd>
+                        </div>
+                        <div className="flex justify-between text-sm mt-1">
+                          <dt className="text-blue-900">Current avg per Link</dt>
+                          <dd className="font-medium text-blue-700">
+                            {formatCurrency(order.totalPrice / (order.orderGroups?.reduce((sum, g) => sum + g.linkCount, 0) || 1))}
+                          </dd>
                         </div>
                         <div className="text-xs text-blue-600 mt-1">
                           {getAveragePricePerLink(order) <= order.estimatedPricePerLink ? 
@@ -1976,7 +1982,7 @@ export default function InternalOrderManagementPage() {
             {/* Middle/Right Columns - Order Details Table */}
             <div className="lg:col-span-2">
               {/* Site Review Summary Card */}
-              {(order.state === 'sites_ready' || order.state === 'site_review' || order.state === 'client_reviewing') && Object.keys(siteSubmissions).length > 0 && (
+              {(order.state === 'sites_ready' || order.state === 'client_reviewing') && Object.keys(siteSubmissions).length > 0 && (
                 <div className="bg-purple-50 border border-purple-200 rounded-lg p-6 mb-6">
                   <div className="flex items-start justify-between">
                     <div>
@@ -2160,7 +2166,7 @@ export default function InternalOrderManagementPage() {
                     <h3 className="text-lg font-semibold text-gray-900">Internal Activity</h3>
                   </div>
                   <div className="space-y-3">
-                    {(order.state === 'analyzing' || order.state === 'finding_sites') && (
+                    {(order.state === 'analyzing') && (
                       <div className="flex items-start gap-3">
                         <div className="w-2 h-2 bg-blue-500 rounded-full mt-1.5 animate-pulse" />
                         <div>
@@ -2169,7 +2175,7 @@ export default function InternalOrderManagementPage() {
                         </div>
                       </div>
                     )}
-                    {(order.state === 'sites_ready' || order.state === 'site_review') && (
+                    {(order.state === 'sites_ready') && (
                       <div className="flex items-start gap-3">
                         <div className="w-2 h-2 bg-purple-500 rounded-full mt-1.5" />
                         <div>

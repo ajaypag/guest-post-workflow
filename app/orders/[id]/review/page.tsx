@@ -36,10 +36,31 @@ export default function ExternalOrderReviewPage() {
   const [actionLoading, setActionLoading] = useState(false);
   const [lineItems, setLineItems] = useState<LineItem[]>([]);
   const [benchmarkData, setBenchmarkData] = useState<any>(null);
+  const [comparisonData, setComparisonData] = useState<any>(null);
 
   useEffect(() => {
     fetchOrder();
   }, [orderId]);
+
+  const loadBenchmarkData = async (orderStatus?: string) => {
+    // Use passed status or current order status
+    const status = orderStatus || order?.status;
+    if (!status) return;
+    
+    // Fetch benchmark data if order is in appropriate status
+    if (status === 'confirmed' || status === 'paid' || status === 'pending_confirmation') {
+      try {
+        const benchmarkRes = await fetch(`/api/orders/${orderId}/benchmark?comparison=true`);
+        if (benchmarkRes.ok) {
+          const benchData = await benchmarkRes.json();
+          setBenchmarkData(benchData.benchmark || benchData);
+          setComparisonData(benchData.comparison || null);
+        }
+      } catch (error) {
+        console.error('Failed to load benchmark:', error);
+      }
+    }
+  };
 
   const fetchOrder = async () => {
     try {
@@ -93,15 +114,16 @@ export default function ExternalOrderReviewPage() {
         console.log('[REVIEW PAGE] Order uses line items, skipping group submissions fetch');
       }
       
-      // Fetch benchmark data if order is confirmed
-      if (orderData.status === 'confirmed' || orderData.status === 'paid') {
+      // Fetch benchmark data if order is confirmed, paid, or pending confirmation (for external review)
+      if (orderData.status === 'confirmed' || orderData.status === 'paid' || orderData.status === 'pending_confirmation') {
         try {
-          const benchmarkRes = await fetch(`/api/orders/${orderId}/benchmark`);
+          const benchmarkRes = await fetch(`/api/orders/${orderId}/benchmark?comparison=true`);
           if (benchmarkRes.ok) {
             const benchData = await benchmarkRes.json();
-            // The API returns { benchmark: ..., hasBenchmark: true }
-            // We need to pass just the benchmark object to the component
+            // The API returns { benchmark: ..., comparison: ..., hasBenchmark: true }
+            // We need to pass both benchmark and comparison objects to the component
             setBenchmarkData(benchData.benchmark || benchData);
+            setComparisonData(benchData.comparison || null);
           }
         } catch (error) {
           console.error('Failed to load benchmark:', error);
@@ -207,6 +229,8 @@ export default function ExternalOrderReviewPage() {
       if (!response.ok) throw new Error('Failed to update status');
       
       await fetchOrder();
+      // Reload benchmark to reflect new comparison after status change
+      await loadBenchmarkData();
     } catch (error) {
       console.error('Error updating status:', error);
     }
@@ -308,6 +332,8 @@ export default function ExternalOrderReviewPage() {
     // After selecting sites (included status), check if order needs invoicing
     if (order && includedCount > 0) {
       try {
+        console.log(`[INVOICE] Generating invoice for order ${orderId} with ${includedCount} included sites`);
+        
         // Trigger invoice generation for included sites
         const response = await fetch(`/api/orders/${orderId}/invoice`, {
           method: 'POST',
@@ -316,16 +342,27 @@ export default function ExternalOrderReviewPage() {
         });
         
         if (response.ok) {
+          const result = await response.json();
+          console.log('[INVOICE] Generated successfully:', result);
           // Invoice generated successfully, redirect to invoice page
           router.push(`/orders/${orderId}/invoice`);
         } else {
-          // If invoice generation fails, go to order status page
-          router.push(`/account/orders/${orderId}/status`);
+          // Log the error details for debugging
+          const errorData = await response.json().catch(() => ({ error: 'Unknown error' }));
+          console.error('[INVOICE] Failed to generate invoice:', {
+            status: response.status,
+            statusText: response.statusText,
+            error: errorData
+          });
+          
+          // Show error message to user
+          alert(`Failed to generate invoice: ${errorData.error || 'Unknown error'}. Please try again or contact support.`);
+          
+          // Don't redirect automatically - let user decide next step
         }
       } catch (error) {
-        console.error('Error generating invoice:', error);
-        // Fallback to order status page
-        router.push(`/account/orders/${orderId}/status`);
+        console.error('[INVOICE] Error generating invoice:', error);
+        alert('Failed to generate invoice due to network error. Please try again.');
       }
     } else {
       // No approved sites, go to order page
@@ -407,16 +444,20 @@ export default function ExternalOrderReviewPage() {
               </div>
             </div>
 
-            {/* Notification if recently marked ready */}
-            {order.state === 'sites_ready' && (
+            {/* Clear instructions for users */}
+            {totalSubmissions > 0 && (
               <div className="bg-blue-50 border border-blue-200 rounded-lg p-3 mb-4 flex items-center gap-3">
                 <Bell className="h-5 w-5 text-blue-600" />
                 <div className="flex-1">
                   <p className="text-sm font-medium text-blue-900">
-                    Sites are ready for your review!
+                    {includedCount > 0 
+                      ? `${includedCount} sites are ready for your order` 
+                      : 'Review and select sites for your order'}
                   </p>
                   <p className="text-xs text-blue-700 mt-0.5">
-                    Our team has carefully selected sites based on your requirements. Please review and approve the ones you'd like to proceed with.
+                    Our team has pre-organized sites based on your requirements. Sites marked as "✅ Use This Site" will be included in your order.
+                    You can adjust the selection using the status dropdown in the table below.
+                    {savedForLaterCount > 0 && ` ${savedForLaterCount} additional sites have been saved to your Site Bank for future orders.`}
                   </p>
                 </div>
               </div>
@@ -427,6 +468,7 @@ export default function ExternalOrderReviewPage() {
               <div className="mt-6">
                 <BenchmarkDisplay 
                   benchmark={benchmarkData}
+                  comparison={comparisonData}
                   orderId={orderId}
                   userType="account"
                 />
@@ -435,51 +477,32 @@ export default function ExternalOrderReviewPage() {
 
             {/* Progress Stats - Simple included/excluded counts */}
             <div className="grid grid-cols-3 gap-4 mt-6">
-              <div className="text-center">
+              <div className="text-center bg-green-50 rounded-lg p-3 border border-green-200">
                 <p className="text-2xl font-semibold text-green-600">{includedCount}</p>
-                <p className="text-xs text-gray-500">Included</p>
+                <p className="text-xs text-green-700 font-medium">In This Order</p>
               </div>
-              <div className="text-center">
-                <p className="text-2xl font-semibold text-amber-600">{savedForLaterCount}</p>
-                <p className="text-xs text-gray-500">Saved for Later</p>
+              <div className="text-center bg-purple-50 rounded-lg p-3 border border-purple-200 relative group">
+                <p className="text-2xl font-semibold text-purple-600">{savedForLaterCount}</p>
+                <p className="text-xs text-purple-700 font-medium">Site Bank</p>
+                {savedForLaterCount > 0 && (
+                  <div className="absolute bottom-full left-1/2 transform -translate-x-1/2 mb-2 hidden group-hover:block z-10">
+                    <div className="bg-gray-900 text-white text-xs rounded-lg py-2 px-3 whitespace-nowrap">
+                      Available for future orders
+                      <div className="absolute top-full left-1/2 transform -translate-x-1/2 -mt-1">
+                        <div className="border-4 border-transparent border-t-gray-900"></div>
+                      </div>
+                    </div>
+                  </div>
+                )}
               </div>
-              <div className="text-center">
+              <div className="text-center bg-gray-50 rounded-lg p-3 border border-gray-200">
                 <p className="text-2xl font-semibold text-gray-400">{excludedCount}</p>
-                <p className="text-xs text-gray-500">Excluded</p>
+                <p className="text-xs text-gray-600 font-medium">Not Interested</p>
               </div>
             </div>
           </div>
 
-          {/* Action Bar */}
-          {pendingCount > 0 && (
-            <div className="bg-white rounded-lg shadow-sm border border-gray-200 p-4 mb-6">
-              <div className="flex items-center justify-between">
-                <div className="flex items-center gap-2">
-                  <span className="text-sm text-gray-600">
-                    {selectedSubmissions.size} sites selected
-                  </span>
-                </div>
-                <div className="flex items-center gap-2">
-                  <button
-                    onClick={() => handleBulkAction('approve')}
-                    disabled={selectedSubmissions.size === 0 || actionLoading}
-                    className="inline-flex items-center px-4 py-2 bg-green-600 text-white rounded-lg hover:bg-green-700 disabled:opacity-50 disabled:cursor-not-allowed"
-                  >
-                    <CheckCircle className="w-4 h-4 mr-2" />
-                    Approve Selected
-                  </button>
-                  <button
-                    onClick={() => handleBulkAction('reject')}
-                    disabled={selectedSubmissions.size === 0 || actionLoading}
-                    className="inline-flex items-center px-4 py-2 bg-red-600 text-white rounded-lg hover:bg-red-700 disabled:opacity-50 disabled:cursor-not-allowed"
-                  >
-                    <XCircle className="w-4 h-4 mr-2" />
-                    Reject Selected
-                  </button>
-                </div>
-              </div>
-            </div>
-          )}
+          {/* Remove confusing action bar - users should use status dropdown instead */}
 
           {/* Site Review Table */}
           <OrderSiteReviewTableV2
@@ -489,7 +512,7 @@ export default function ExternalOrderReviewPage() {
             siteSubmissions={siteSubmissions}
             userType="account"
             permissions={{
-              canApproveReject: true,
+              canApproveReject: false,  // Disable confusing approve/reject buttons
               canViewPricing: true,
               canViewInternalTools: false,
               canChangeStatus: true,  // External users CAN organize sites (included/excluded/saved)
@@ -586,23 +609,41 @@ export default function ExternalOrderReviewPage() {
             </div>
           )}
 
-          {/* Proceed Button - Show when sites have been selected */}
-          {includedCount > 0 && (
-            <div className="mt-6 text-center">
-              <button
-                onClick={handleProceed}
-                className="inline-flex items-center px-6 py-3 bg-blue-600 text-white rounded-lg hover:bg-blue-700 font-medium"
-              >
-                Generate Invoice ({includedCount} sites)
-                <ArrowRight className="w-5 h-5 ml-2" />
-              </button>
-              {pendingCount > 0 && (
+          {/* Proceed Button - Always visible with clear messaging */}
+          <div className="mt-6 text-center">
+            {includedCount > 0 ? (
+              <>
+                <button
+                  onClick={handleProceed}
+                  className="inline-flex items-center px-6 py-3 bg-blue-600 text-white rounded-lg hover:bg-blue-700 font-medium shadow-lg"
+                >
+                  Generate Invoice for {includedCount} Site{includedCount !== 1 ? 's' : ''}
+                  <ArrowRight className="w-5 h-5 ml-2" />
+                </button>
                 <p className="text-sm text-gray-600 mt-2">
-                  {pendingCount} sites still pending review
+                  You can adjust your selection using the status dropdowns above
                 </p>
-              )}
-            </div>
-          )}
+              </>
+            ) : totalSubmissions > 0 ? (
+              <div className="bg-gray-50 rounded-lg p-6 border border-gray-200">
+                <p className="text-gray-600 mb-2">
+                  No sites selected for this order
+                </p>
+                <p className="text-sm text-gray-500">
+                  Change sites to "✅ Use This Site" in the table above to include them in your order
+                </p>
+              </div>
+            ) : (
+              <div className="bg-yellow-50 rounded-lg p-6 border border-yellow-200">
+                <p className="text-yellow-800 mb-2">
+                  No sites have been suggested yet
+                </p>
+                <p className="text-sm text-yellow-700">
+                  Our team is working on finding the best sites for your requirements
+                </p>
+              </div>
+            )}
+          </div>
         </div>
       </div>
     </AuthWrapper>

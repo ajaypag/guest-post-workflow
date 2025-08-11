@@ -438,6 +438,165 @@ export class EmailService {
   }
 
   /**
+   * Send payment failed email with retry link
+   */
+  static async sendPaymentFailedEmail(options: {
+    to: string;
+    orderId: string;
+    errorMessage: string;
+    retryUrl: string;
+  }): Promise<{ success: boolean; id?: string; error?: string }> {
+    const html = `
+      <div style="font-family: Arial, sans-serif; line-height: 1.6; color: #333; max-width: 600px; margin: 0 auto;">
+        <h2 style="color: #d32f2f;">Payment Failed</h2>
+        <p>We were unable to process your payment for Order #${options.orderId.substring(0, 8)}.</p>
+        
+        <div style="background-color: #fff3e0; padding: 20px; border-radius: 5px; margin: 20px 0; border-left: 4px solid #f57c00;">
+          <h3 style="margin-top: 0; color: #e65100;">Error Details:</h3>
+          <p style="margin: 10px 0;">${options.errorMessage}</p>
+        </div>
+        
+        <div style="margin: 30px 0;">
+          <p><strong>What to do next:</strong></p>
+          <ul>
+            <li>Check that your card details are correct</li>
+            <li>Ensure you have sufficient funds available</li>
+            <li>Contact your bank if the issue persists</li>
+          </ul>
+        </div>
+        
+        <div style="text-align: center; margin: 30px 0;">
+          <a href="${options.retryUrl}" style="display: inline-block; padding: 12px 30px; background-color: #1976d2; color: white; text-decoration: none; border-radius: 5px; font-weight: bold;">
+            Try Payment Again
+          </a>
+        </div>
+        
+        <p style="color: #666; font-size: 14px;">
+          If you continue to experience issues, please contact our support team at support@postflow.outreachlabs.net
+        </p>
+      </div>
+    `;
+
+    const text = `
+Payment Failed - Order #${options.orderId.substring(0, 8)}
+
+We were unable to process your payment.
+
+Error: ${options.errorMessage}
+
+Please try again at: ${options.retryUrl}
+
+If you continue to experience issues, contact support@postflow.outreachlabs.net
+    `;
+
+    return await this.send('notification', {
+      to: options.to,
+      subject: `Payment Failed - Order #${options.orderId.substring(0, 8)}`,
+      text,
+      html,
+    });
+  }
+
+  /**
+   * Send payment success confirmation email
+   */
+  static async sendPaymentSuccessEmail(options: {
+    to: string;
+    orderId: string;
+    amount: number;
+    paymentIntentId: string;
+    orderViewUrl: string;
+  }): Promise<{ success: boolean; id?: string; error?: string }> {
+    const formattedAmount = (options.amount / 100).toFixed(2);
+    
+    const html = `
+      <div style="font-family: Arial, sans-serif; line-height: 1.6; color: #333; max-width: 600px; margin: 0 auto;">
+        <h2 style="color: #4caf50;">Payment Successful!</h2>
+        <p>Thank you! We've successfully received your payment for Order #${options.orderId.substring(0, 8)}.</p>
+        
+        <div style="background-color: #e8f5e9; padding: 20px; border-radius: 5px; margin: 20px 0; border-left: 4px solid #4caf50;">
+          <h3 style="margin-top: 0; color: #2e7d32;">Payment Details:</h3>
+          <table style="width: 100%;">
+            <tr>
+              <td style="padding: 8px 0;"><strong>Order ID:</strong></td>
+              <td style="padding: 8px 0; font-family: monospace;">${options.orderId.substring(0, 8)}</td>
+            </tr>
+            <tr>
+              <td style="padding: 8px 0;"><strong>Amount Paid:</strong></td>
+              <td style="padding: 8px 0; color: #2e7d32; font-weight: bold;">$${formattedAmount} USD</td>
+            </tr>
+            <tr>
+              <td style="padding: 8px 0;"><strong>Transaction ID:</strong></td>
+              <td style="padding: 8px 0; font-family: monospace; font-size: 12px;">${options.paymentIntentId}</td>
+            </tr>
+            <tr>
+              <td style="padding: 8px 0;"><strong>Date:</strong></td>
+              <td style="padding: 8px 0;">${new Date().toLocaleDateString('en-US', { 
+                year: 'numeric', 
+                month: 'long', 
+                day: 'numeric',
+                hour: '2-digit',
+                minute: '2-digit'
+              })}</td>
+            </tr>
+          </table>
+        </div>
+        
+        <div style="margin: 30px 0;">
+          <h3>What happens next?</h3>
+          <ol style="line-height: 2;">
+            <li>Our team will begin processing your order immediately</li>
+            <li>You'll receive regular updates on your order progress</li>
+            <li>Estimated delivery time will be provided within 24 hours</li>
+            <li>You can track your order status anytime from your dashboard</li>
+          </ol>
+        </div>
+        
+        <div style="text-align: center; margin: 30px 0;">
+          <a href="${options.orderViewUrl}" style="display: inline-block; padding: 12px 30px; background-color: #1976d2; color: white; text-decoration: none; border-radius: 5px; font-weight: bold;">
+            View Order Details
+          </a>
+        </div>
+        
+        <div style="background-color: #f5f5f5; padding: 15px; border-radius: 5px; margin-top: 30px;">
+          <p style="margin: 0; font-size: 14px; color: #666;">
+            <strong>Need help?</strong><br>
+            Contact our support team at support@postflow.outreachlabs.net<br>
+            or reply to this email with any questions.
+          </p>
+        </div>
+      </div>
+    `;
+
+    const text = `
+Payment Successful - Order #${options.orderId.substring(0, 8)}
+
+Thank you! We've successfully received your payment.
+
+Payment Details:
+- Order ID: ${options.orderId.substring(0, 8)}
+- Amount Paid: $${formattedAmount} USD
+- Transaction ID: ${options.paymentIntentId}
+- Date: ${new Date().toLocaleString()}
+
+What happens next:
+1. Our team will begin processing your order immediately
+2. You'll receive regular updates on your order progress
+3. Estimated delivery time will be provided within 24 hours
+4. You can track your order status at: ${options.orderViewUrl}
+
+Need help? Contact support@postflow.outreachlabs.net
+    `;
+
+    return await this.send('notification', {
+      to: options.to,
+      subject: `Payment Confirmed - Order #${options.orderId.substring(0, 8)}`,
+      text,
+      html,
+    });
+  }
+
+  /**
    * Send payment confirmation email
    */
   static async sendPaymentConfirmation(email: string, data: {
@@ -491,6 +650,86 @@ export class EmailService {
       subject: `Payment Confirmed - Order #${data.orderNumber}`,
       html,
       text: `Payment confirmed for order #${data.orderNumber}. Amount: $${data.amount}`,
+    });
+  }
+
+  /**
+   * Send refund confirmation email
+   */
+  static async sendRefundConfirmationEmail(options: {
+    to: string;
+    orderId: string;
+    refundAmount: number;
+    isFullRefund: boolean;
+    orderViewUrl: string;
+  }): Promise<{ success: boolean; id?: string; error?: string }> {
+    const formattedAmount = (options.refundAmount / 100).toFixed(2);
+    
+    const html = `
+      <div style="font-family: Arial, sans-serif; line-height: 1.6; color: #333; max-width: 600px; margin: 0 auto;">
+        <h2 style="color: #ff9800;">Refund Processed</h2>
+        <p>We've successfully processed your refund for Order #${options.orderId.substring(0, 8)}.</p>
+        
+        <div style="background-color: #fff3e0; padding: 20px; border-radius: 5px; margin: 20px 0; border-left: 4px solid #ff9800;">
+          <h3 style="margin-top: 0; color: #e65100;">Refund Details:</h3>
+          <table style="width: 100%;">
+            <tr>
+              <td style="padding: 8px 0;"><strong>Order ID:</strong></td>
+              <td style="padding: 8px 0; font-family: monospace;">${options.orderId.substring(0, 8)}</td>
+            </tr>
+            <tr>
+              <td style="padding: 8px 0;"><strong>Refund Amount:</strong></td>
+              <td style="padding: 8px 0; color: #e65100; font-weight: bold;">$${formattedAmount} USD</td>
+            </tr>
+            <tr>
+              <td style="padding: 8px 0;"><strong>Refund Type:</strong></td>
+              <td style="padding: 8px 0;">${options.isFullRefund ? 'Full Refund' : 'Partial Refund'}</td>
+            </tr>
+            <tr>
+              <td style="padding: 8px 0;"><strong>Date Processed:</strong></td>
+              <td style="padding: 8px 0;">${new Date().toLocaleDateString('en-US', { 
+                year: 'numeric', 
+                month: 'long', 
+                day: 'numeric'
+              })}</td>
+            </tr>
+          </table>
+        </div>
+        
+        <div style="margin: 30px 0;">
+          <h3>What happens next?</h3>
+          <ul style="line-height: 2;">
+            <li>The refund will appear in your account within 5-10 business days</li>
+            <li>You'll receive a confirmation from your payment provider</li>
+            ${!options.isFullRefund ? '<li>Any remaining balance on this order is still being processed</li>' : ''}
+          </ul>
+        </div>
+        
+        <div style="text-align: center; margin: 30px 0;">
+          <a href="${options.orderViewUrl}" 
+             style="background-color: #ff9800; color: white; padding: 12px 30px; text-decoration: none; border-radius: 5px; display: inline-block;">
+            View Order Details
+          </a>
+        </div>
+        
+        <div style="background-color: #f5f5f5; padding: 15px; border-radius: 5px; margin-top: 30px;">
+          <p style="margin: 0; font-size: 14px; color: #666;">
+            If you have any questions about this refund, please contact our support team.
+          </p>
+        </div>
+        
+        <div style="margin-top: 30px; padding-top: 20px; border-top: 1px solid #e0e0e0; font-size: 12px; color: #999;">
+          <p>Thank you for your business. We apologize for any inconvenience.</p>
+          <p>© ${new Date().getFullYear()} PostFlow. All rights reserved.</p>
+        </div>
+      </div>
+    `;
+
+    return this.send('notification', {
+      to: options.to,
+      subject: `Refund Processed - Order #${options.orderId.substring(0, 8)}`,
+      html,
+      text: `Your refund of $${formattedAmount} has been processed for Order #${options.orderId.substring(0, 8)}. The refund will appear in your account within 5-10 business days.`,
     });
   }
 

@@ -128,7 +128,35 @@ export default function InvoicePage() {
           </button>
           
           <div className="flex gap-3">
-            {/* Removed print and payment buttons */}
+            <button
+              onClick={() => window.open(`/api/orders/${orderId}/invoice/download`, '_blank')}
+              className="inline-flex items-center px-4 py-2 bg-gray-600 text-white rounded-lg hover:bg-gray-700 font-medium transition-colors"
+            >
+              <svg className="w-4 h-4 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 10v6m0 0l-3-3m3 3l3-3m2 8H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
+              </svg>
+              Download PDF
+            </button>
+            <button
+              onClick={() => window.print()}
+              className="inline-flex items-center px-4 py-2 bg-gray-600 text-white rounded-lg hover:bg-gray-700 font-medium transition-colors"
+            >
+              <svg className="w-4 h-4 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M17 17h2a2 2 0 002-2v-4a2 2 0 00-2-2H5a2 2 0 00-2 2v4a2 2 0 002 2h2m2 4h6a2 2 0 002-2v-4a2 2 0 00-2-2H9a2 2 0 00-2 2v4a2 2 0 002 2zm8-12V5a2 2 0 00-2-2H9a2 2 0 00-2 2v4h10z" />
+              </svg>
+              Print
+            </button>
+            {!isPaid && order.state === 'payment_pending' && (
+              <a
+                href={`/orders/${orderId}/payment`}
+                className="inline-flex items-center px-6 py-3 bg-blue-600 text-white rounded-lg hover:bg-blue-700 font-medium transition-colors"
+              >
+                <svg className="w-4 h-4 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M3 10h18M7 15h1m4 0h1m-7 4h12a3 3 0 003-3V8a3 3 0 00-3-3H6a3 3 0 00-3 3v8a3 3 0 003 3z" />
+                </svg>
+                Pay Now - {formatCurrency(invoice.total)}
+              </a>
+            )}
           </div>
         </div>
 
@@ -239,12 +267,35 @@ export default function InvoicePage() {
               </p>
             </div>
           ) : (
-            <div className="mt-8 pt-8 border-t border-gray-200 bg-blue-50 p-4 rounded-lg">
-              <p className="text-sm font-semibold text-blue-900 mb-2">Payment Information</p>
-              <p className="text-sm text-blue-800">
-                Our team will contact you shortly with payment options and instructions. 
-                Payment is due within 2 business days of invoice date.
-              </p>
+            <div className="mt-8 pt-8 border-t border-gray-200">
+              {order.state === 'payment_pending' ? (
+                <div className="bg-green-50 border border-green-200 rounded-lg p-6 text-center">
+                  <h3 className="text-lg font-semibold text-green-900 mb-2">Ready for Payment</h3>
+                  <p className="text-sm text-green-700 mb-4">
+                    Your invoice is ready! Click below to proceed with secure payment.
+                  </p>
+                  <a
+                    href={`/orders/${orderId}/payment`}
+                    className="inline-flex items-center px-6 py-3 bg-green-600 text-white rounded-lg hover:bg-green-700 font-medium transition-colors"
+                  >
+                    <svg className="w-4 h-4 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M3 10h18M7 15h1m4 0h1m-7 4h12a3 3 0 003-3V8a3 3 0 00-3-3H6a3 3 0 00-3 3v8a3 3 0 003 3z" />
+                    </svg>
+                    Pay {formatCurrency(invoice.total)} Now
+                  </a>
+                  <p className="text-xs text-green-600 mt-2">
+                    Secure payment powered by Stripe
+                  </p>
+                </div>
+              ) : (
+                <div className="bg-blue-50 p-4 rounded-lg">
+                  <p className="text-sm font-semibold text-blue-900 mb-2">Payment Information</p>
+                  <p className="text-sm text-blue-800">
+                    Our team will contact you shortly with payment options and instructions. 
+                    Payment is due within 2 business days of invoice date.
+                  </p>
+                </div>
+              )}
             </div>
           )}
 

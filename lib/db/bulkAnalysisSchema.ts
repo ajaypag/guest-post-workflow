@@ -71,11 +71,20 @@ export const bulkAnalysisDomains = pgTable('bulk_analysis_domains', {
   // Project support - required going forward
   projectId: uuid('project_id').references(() => bulkAnalysisProjects.id, { onDelete: 'cascade' }),
   projectAddedAt: timestamp('project_added_at'),
+  // Duplicate tracking fields
+  duplicateOf: uuid('duplicate_of'),
+  duplicateResolution: varchar('duplicate_resolution', { length: 50 }),
+  duplicateResolvedBy: uuid('duplicate_resolved_by').references(() => users.id),
+  duplicateResolvedAt: timestamp('duplicate_resolved_at'),
+  originalProjectId: uuid('original_project_id').references(() => bulkAnalysisProjects.id),
+  resolutionMetadata: jsonb('resolution_metadata'),
   createdAt: timestamp('created_at').notNull(),
   updatedAt: timestamp('updated_at').notNull(),
 }, (table) => {
   return {
     projectIdIdx: index('idx_bulk_domains_project').on(table.projectId),
+    // Note: There should be a unique constraint on (clientId, domain) for upsert operations
+    // This is added via migration 0029_add_bulk_analysis_unique_constraint.sql
     clientDomainIdx: index('idx_bulk_domains_client_domain').on(table.clientId, table.domain),
   };
 });
