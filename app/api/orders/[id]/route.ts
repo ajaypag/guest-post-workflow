@@ -170,7 +170,7 @@ export async function PUT(
         return NextResponse.json({ error: 'Forbidden' }, { status: 403 });
       }
       // Define which statuses allow editing by account users
-      // Orders are editable up until payment is received
+      // Orders are editable until payment is ACTUALLY received (not just invoiced)
       const editableStatuses = [
         'draft',                  // Creating order
         'pending_confirmation',   // Submitted but not confirmed
@@ -178,17 +178,56 @@ export async function PUT(
         'sites_ready',           // Sites selected for review
         'client_reviewing',      // Client reviewing sites
         'client_approved',       // Client approved sites
-        'invoiced'              // Invoice sent but not paid
+        'invoiced'               // Invoice sent but not paid - user can still edit
+      ];
+      
+      // Check for payment-related states that should never be editable by accounts
+      const paymentLockedStatuses = [
+        'payment_pending',       // Payment intent created - payment in process
+        'payment_processing',    // Payment being processed
+        'paid',                  // Payment received - LOCK HERE
+        'in_progress',           // Work started
+        'completed',             // Order completed
+        'refunded',              // Refunded
+        'partially_refunded'     // Partially refunded
       ];
       
       if (!editableStatuses.includes(existingOrder.status)) {
+        if (paymentLockedStatuses.includes(existingOrder.status)) {
+          return NextResponse.json({ 
+            error: `Orders are locked for editing once payment process begins. Current status: '${existingOrder.status}'. Please contact support if changes are needed.` 
+          }, { status: 400 });
+        }
         return NextResponse.json({ 
-          error: `Orders cannot be edited after payment. Current status: '${existingOrder.status}'` 
+          error: `Orders cannot be edited in status: '${existingOrder.status}'` 
         }, { status: 400 });
       }
     } else if (session.userType !== 'internal') {
       // Only internal users and account owners can update orders
       return NextResponse.json({ error: 'Forbidden' }, { status: 403 });
+    }
+
+    // For internal users, add audit logging for admin overrides
+    if (session.userType === 'internal') {
+      // Get user details for audit
+      const user = await db.query.users.findFirst({
+        where: eq(users.id, session.userId)
+      });
+      
+      if (user) {
+        const isPostPaymentEdit = ['invoiced', 'payment_pending', 'payment_processing', 'paid', 'in_progress', 'completed', 'refunded', 'partially_refunded'].includes(existingOrder.status);
+        const isAdminOverride = user.role === 'admin' && isPostPaymentEdit;
+        
+        // Log significant admin actions for audit trail
+        if (isAdminOverride || user.role === 'admin') {
+          console.log(`ADMIN EDIT: User ${user.email} (${user.id}) editing order ${id}`);
+          console.log(`Order Status: ${existingOrder.status} -> Admin Override: ${isAdminOverride}`);
+          console.log(`Account: ${existingOrder.accountId}, Changes: ${Object.keys(data).join(', ')}`);
+          
+          // In a production system, this should go to a proper audit table
+          // For now, console logging provides the audit trail needed
+        }
+      }
     }
 
     // Start a transaction to update order and groups

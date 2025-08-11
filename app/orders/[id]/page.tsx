@@ -477,8 +477,21 @@ export default function OrderDetailPage() {
     setTimeout(() => setRefreshing(false), 1000);
   };
 
-  // Allow editing until the order is paid
-  const isOrderEditable = order && order.status !== 'paid' && order.status !== 'in_progress' && order.status !== 'completed' && order.status !== 'cancelled';
+  // Allow editing until payment is ACTUALLY received - aligns with backend validation
+  const isOrderEditable = order && (() => {
+    // Must match backend editableStatuses exactly
+    const editableStatuses = [
+      'draft',                  // Creating order
+      'pending_confirmation',   // Submitted but not confirmed
+      'confirmed',             // Internal confirmed, analyzing
+      'sites_ready',           // Sites selected for review
+      'client_reviewing',      // Client reviewing sites
+      'client_approved',       // Client approved sites
+      'invoiced'               // Invoice sent but not paid - user can still edit
+    ];
+    
+    return editableStatuses.includes(order.status);
+  })();
 
   if (loading) {
     return (

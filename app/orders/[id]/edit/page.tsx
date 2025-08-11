@@ -16,7 +16,7 @@ import {
   Building, Package, Plus, X, ChevronDown, ChevronUp, ChevronRight,
   Search, Target, Link as LinkIcon, Type, CheckCircle,
   AlertCircle, Copy, Trash2, User, Globe, ExternalLink,
-  ArrowLeft, Loader2, Clock, Users, CreditCard
+  ArrowLeft, Loader2, Clock, Users, CreditCard, AlertTriangle
 } from 'lucide-react';
 import { SERVICE_FEE_CENTS, PRICING_CONFIG } from '@/lib/config/pricing';
 
@@ -190,7 +190,7 @@ export default function EditOrderPage({ params }: { params: Promise<{ id: string
         updateLineItem(requestingLineItemId, {
           targetPageUrl: firstPage.url,
           targetPageId: firstPage.id,
-          anchorText: generateAnchorText(requestingItem.clientName)
+          anchorText: requestingItem.anchorText || generateAnchorText(requestingItem.clientName)
         });
         
         // Create additional line items for remaining pages
@@ -847,7 +847,7 @@ export default function EditOrderPage({ params }: { params: Promise<{ id: string
           ...updated[placeholderIndex],
           targetPageId: target.id,
           targetPageUrl: target.url,
-          anchorText: generateAnchorText(target.clientName),
+          anchorText: updated[placeholderIndex].anchorText || generateAnchorText(target.clientName),
         };
         return updated;
       } else {
@@ -858,7 +858,7 @@ export default function EditOrderPage({ params }: { params: Promise<{ id: string
           clientName: target.clientName,
           targetPageId: target.id,
           targetPageUrl: target.url,
-          anchorText: generateAnchorText(target.clientName),
+          anchorText: generateAnchorText(target.clientName), // New items get generated anchor text
           wholesalePrice: getCurrentWholesaleEstimate(), // Dynamic wholesale from pricing estimator
           price: getCurrentWholesaleEstimate() + SERVICE_FEE_CENTS
         };
@@ -1040,6 +1040,24 @@ export default function EditOrderPage({ params }: { params: Promise<{ id: string
           const data = await response.json();
           throw new Error(data.error || 'Failed to submit order');
         }
+      } else if (orderStatus === 'pending_confirmation' || orderStatus === 'confirmed') {
+        // Resubmit the order for review with optional notes
+        const resubmitNotes = (document.getElementById('resubmit-notes') as HTMLTextAreaElement)?.value || '';
+        
+        const response = await fetch(`/api/orders/${draftOrderId}/resubmit`, {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          credentials: 'include',
+          body: JSON.stringify({ notes: resubmitNotes })
+        });
+        
+        if (!response.ok) {
+          const data = await response.json();
+          throw new Error(data.error || 'Failed to resubmit order');
+        }
+        
+        const result = await response.json();
+        console.log('Order resubmitted:', result.message);
       }
       
       // Close modal and redirect back to order details
@@ -1724,7 +1742,7 @@ export default function EditOrderPage({ params }: { params: Promise<{ id: string
                                     <td className="px-4 py-3">
                                       <input
                                         type="text"
-                                        value={item.anchorText}
+                                        value={item.anchorText || ''}
                                         onChange={(e) => updateLineItem(item.id, { anchorText: e.target.value })}
                                         placeholder="Enter anchor text..."
                                         className="w-full px-3 py-1.5 border border-gray-300 rounded text-sm"
@@ -1830,8 +1848,17 @@ export default function EditOrderPage({ params }: { params: Promise<{ id: string
                              transition-colors flex items-center disabled:bg-gray-300 disabled:cursor-not-allowed"
                   >
                     <CheckCircle className="h-5 w-5 mr-2" />
-                    <span className="hidden md:inline">{isNewOrder ? 'Review & Submit Order' : 'Save Changes'}</span>
-                    <span className="md:hidden">{isNewOrder ? 'Submit' : 'Save'}</span>
+                    <span className="hidden md:inline">
+                      {isNewOrder ? 'Review & Submit Order' : 
+                       orderStatus === 'pending_confirmation' ? 'Resubmit for Review' :
+                       orderStatus === 'confirmed' ? 'Request Changes' :
+                       'Save Changes'}
+                    </span>
+                    <span className="md:hidden">
+                      {isNewOrder ? 'Submit' : 
+                       orderStatus === 'pending_confirmation' ? 'Resubmit' :
+                       'Save'}
+                    </span>
                   </button>
                 </div>
               </div>
@@ -1863,7 +1890,12 @@ export default function EditOrderPage({ params }: { params: Promise<{ id: string
             <div className="bg-white rounded-lg max-w-2xl w-full max-h-[90vh] overflow-y-auto">
               <div className="p-6">
                 <div className="flex items-center justify-between mb-6">
-                  <h2 className="text-2xl font-bold text-gray-900">{isNewOrder ? 'Confirm Your Order' : 'Confirm Order Updates'}</h2>
+                  <h2 className="text-2xl font-bold text-gray-900">
+                    {isNewOrder ? 'Confirm Your Order' : 
+                     orderStatus === 'pending_confirmation' ? 'Resubmit Order for Review' :
+                     orderStatus === 'confirmed' ? 'Request Order Changes' :
+                     'Confirm Order Updates'}
+                  </h2>
                   <button
                     onClick={() => setShowConfirmModal(false)}
                     className="text-gray-400 hover:text-gray-600"
@@ -1929,6 +1961,22 @@ export default function EditOrderPage({ params }: { params: Promise<{ id: string
                   </div>
                 </div>
                 
+                {/* Resubmission Notes (only for pending_confirmation or confirmed orders) */}
+                {(orderStatus === 'pending_confirmation' || orderStatus === 'confirmed') && (
+                  <div className="mb-6">
+                    <h3 className="font-semibold text-gray-900 mb-2">What Changed?</h3>
+                    <textarea
+                      id="resubmit-notes"
+                      placeholder="Briefly describe what you changed in this order (optional)"
+                      className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-blue-500 focus:border-blue-500"
+                      rows={3}
+                    />
+                    <p className="text-xs text-gray-500 mt-1">
+                      This helps our team quickly understand what needs to be reviewed
+                    </p>
+                  </div>
+                )}
+                
                 {/* What Happens Next */}
                 <div className="bg-blue-50 rounded-lg p-4 mb-6">
                   <h3 className="font-semibold text-blue-900 mb-2">What Happens Next?</h3>
@@ -1963,6 +2011,40 @@ export default function EditOrderPage({ params }: { params: Promise<{ id: string
                             <div>
                               <div className="font-medium">Pay invoice to start content creation</div>
                               <div className="text-xs text-gray-500">Final pricing based on approved sites</div>
+                            </div>
+                          </div>
+                        </>
+                      ) : orderStatus === 'pending_confirmation' ? (
+                        <>
+                          <div className="flex items-start gap-3">
+                            <CheckCircle className="h-4 w-4 text-green-500 mt-0.5" />
+                            <div>
+                              <div className="font-medium">Your changes will be saved and resubmitted</div>
+                              <div className="text-xs text-gray-500">Our team will be notified to review your updated order</div>
+                            </div>
+                          </div>
+                          <div className="flex items-start gap-3">
+                            <AlertCircle className="h-4 w-4 text-blue-500 mt-0.5" />
+                            <div>
+                              <div className="font-medium">Team will review within 24 hours</div>
+                              <div className="text-xs text-gray-500">You'll receive confirmation once the review is complete</div>
+                            </div>
+                          </div>
+                        </>
+                      ) : orderStatus === 'confirmed' ? (
+                        <>
+                          <div className="flex items-start gap-3">
+                            <AlertTriangle className="h-4 w-4 text-yellow-500 mt-0.5" />
+                            <div>
+                              <div className="font-medium">Requesting changes to confirmed order</div>
+                              <div className="text-xs text-gray-500">Our team will review if changes can be accommodated</div>
+                            </div>
+                          </div>
+                          <div className="flex items-start gap-3">
+                            <Clock className="h-4 w-4 text-blue-500 mt-0.5" />
+                            <div>
+                              <div className="font-medium">May affect site selection timeline</div>
+                              <div className="text-xs text-gray-500">Significant changes may require new site research</div>
                             </div>
                           </div>
                         </>
@@ -2010,7 +2092,11 @@ export default function EditOrderPage({ params }: { params: Promise<{ id: string
                     ) : (
                       <>
                         <CheckCircle className="h-4 w-4 mr-2" />
-                        {isNewOrder ? 'Create Order' : `Save & ${orderStatus === 'draft' ? 'Submit' : 'Update'} Order`}
+                        {isNewOrder ? 'Create Order' : 
+                         orderStatus === 'draft' ? 'Save & Submit Order' :
+                         orderStatus === 'pending_confirmation' ? 'Save & Resubmit for Review' :
+                         orderStatus === 'confirmed' ? 'Save & Request Changes' :
+                         'Save & Update Order'}
                       </>
                     )}
                   </button>

@@ -181,32 +181,38 @@ export async function POST(
       );
     }
 
-    // Create new payment intent
-    const { paymentIntent, dbPaymentIntent } = await StripeService.createPaymentIntent({
-      orderId,
-      accountId: account.id,
-      amount,
-      currency: validatedData.currency,
-      description: validatedData.description || `Payment for Order #${orderId.substring(0, 8)}`,
-      automaticPaymentMethods: validatedData.automaticPaymentMethods,
-      setupFutureUsage: validatedData.setupFutureUsage,
-      metadata: {
-        orderType: order.orderType,
-        orderState: order.state || 'unknown',
-        companyName: account.companyName || account.contactName || 'Unknown',
-      },
-    });
+    // Create payment intent and update order state atomically to prevent race conditions
+    const { paymentIntent, dbPaymentIntent } = await db.transaction(async (tx) => {
+      // First create the payment intent (this might fail)
+      const paymentIntentResult = await StripeService.createPaymentIntent({
+        orderId,
+        accountId: account.id,
+        amount,
+        currency: validatedData.currency,
+        description: validatedData.description || `Payment for Order #${orderId.substring(0, 8)}`,
+        automaticPaymentMethods: validatedData.automaticPaymentMethods,
+        setupFutureUsage: validatedData.setupFutureUsage,
+        metadata: {
+          orderType: order.orderType,
+          orderState: order.state || 'unknown',
+          companyName: account.companyName || account.contactName || 'Unknown',
+        },
+      });
 
-    // Update order state to payment_pending if not already
-    if (order.state !== 'payment_pending') {
-      await db
-        .update(orders)
-        .set({
-          state: 'payment_pending',
-          updatedAt: new Date(),
-        })
-        .where(eq(orders.id, orderId));
-    }
+      // Only update order state if payment intent creation succeeded
+      if (order.state !== 'payment_pending') {
+        await tx
+          .update(orders)
+          .set({
+            state: 'payment_pending',
+            status: 'payment_pending', // Also update status for consistency
+            updatedAt: new Date(),
+          })
+          .where(eq(orders.id, orderId));
+      }
+
+      return paymentIntentResult;
+    });
 
     return NextResponse.json({
       success: true,

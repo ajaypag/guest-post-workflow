@@ -152,15 +152,48 @@ export async function POST(
       return NextResponse.json({ error: 'Order not found' }, { status: 404 });
     }
 
-    // Check permissions
+    // Check permissions - align with main order edit logic
     const canAdd = session.userType === 'internal' || 
-                   (session.userType === 'account' && order.accountId === session.userId && 
-                    ['draft', 'pending_confirmation'].includes(order.status));
+                   (session.userType === 'account' && order.accountId === session.userId);
 
     if (!canAdd) {
       return NextResponse.json({ 
         error: 'Cannot add line items to this order' 
       }, { status: 403 });
+    }
+
+    // For account users, check if order is still editable (before payment phase)
+    if (session.userType === 'account') {
+      const editableStatuses = [
+        'draft',                  // Creating order
+        'pending_confirmation',   // Submitted but not confirmed
+        'confirmed',             // Internal confirmed, analyzing
+        'sites_ready',           // Sites selected for review
+        'client_reviewing',      // Client reviewing sites
+        'client_approved',       // Client approved sites
+        'invoiced'               // Invoice sent but not paid - user can still edit
+      ];
+      
+      const paymentLockedStatuses = [
+        'payment_pending',       // Payment intent created - payment in process
+        'payment_processing',    // Payment being processed
+        'paid',                  // Payment received - LOCK HERE
+        'in_progress',           // Work started
+        'completed',             // Order completed
+        'refunded',              // Refunded
+        'partially_refunded'     // Partially refunded
+      ];
+
+      if (!editableStatuses.includes(order.status)) {
+        if (paymentLockedStatuses.includes(order.status)) {
+          return NextResponse.json({ 
+            error: `Cannot add line items once payment process begins. Current status: '${order.status}'. Please contact support for assistance.` 
+          }, { status: 400 });
+        }
+        return NextResponse.json({ 
+          error: `Cannot add line items in status: '${order.status}'` 
+        }, { status: 400 });
+      }
     }
 
     // Get current max display order
@@ -297,6 +330,40 @@ export async function PATCH(
       return NextResponse.json({ 
         error: 'Cannot edit line items for this order' 
       }, { status: 403 });
+    }
+
+    // For account users, check if order is still editable (before payment phase)
+    if (session.userType === 'account') {
+      const editableStatuses = [
+        'draft',                  // Creating order
+        'pending_confirmation',   // Submitted but not confirmed
+        'confirmed',             // Internal confirmed, analyzing
+        'sites_ready',           // Sites selected for review
+        'client_reviewing',      // Client reviewing sites
+        'client_approved',       // Client approved sites
+        'invoiced'               // Invoice sent but not paid - user can still edit
+      ];
+      
+      const paymentLockedStatuses = [
+        'payment_pending',       // Payment intent created - payment in process
+        'payment_processing',    // Payment being processed
+        'paid',                  // Payment received - LOCK HERE
+        'in_progress',           // Work started
+        'completed',             // Order completed
+        'refunded',              // Refunded
+        'partially_refunded'     // Partially refunded
+      ];
+
+      if (!editableStatuses.includes(order.status)) {
+        if (paymentLockedStatuses.includes(order.status)) {
+          return NextResponse.json({ 
+            error: `Cannot edit line items once payment process begins. Current status: '${order.status}'. Please contact support for assistance.` 
+          }, { status: 400 });
+        }
+        return NextResponse.json({ 
+          error: `Cannot edit line items in status: '${order.status}'` 
+        }, { status: 400 });
+      }
     }
 
     // Execute updates with change tracking
@@ -465,13 +532,46 @@ export async function DELETE(
 
     // Check permissions
     const canDelete = session.userType === 'internal' || 
-                      (session.userType === 'account' && order.accountId === session.userId && 
-                       ['draft', 'pending_confirmation'].includes(order.status));
+                      (session.userType === 'account' && order.accountId === session.userId);
 
     if (!canDelete) {
       return NextResponse.json({ 
         error: 'Cannot delete line items from this order' 
       }, { status: 403 });
+    }
+
+    // For account users, check if order is still editable (before payment phase)
+    if (session.userType === 'account') {
+      const editableStatuses = [
+        'draft',                  // Creating order
+        'pending_confirmation',   // Submitted but not confirmed
+        'confirmed',             // Internal confirmed, analyzing
+        'sites_ready',           // Sites selected for review
+        'client_reviewing',      // Client reviewing sites
+        'client_approved',       // Client approved sites
+        'invoiced'               // Invoice sent but not paid - user can still edit
+      ];
+      
+      const paymentLockedStatuses = [
+        'payment_pending',       // Payment intent created - payment in process
+        'payment_processing',    // Payment being processed
+        'paid',                  // Payment received - LOCK HERE
+        'in_progress',           // Work started
+        'completed',             // Order completed
+        'refunded',              // Refunded
+        'partially_refunded'     // Partially refunded
+      ];
+
+      if (!editableStatuses.includes(order.status)) {
+        if (paymentLockedStatuses.includes(order.status)) {
+          return NextResponse.json({ 
+            error: `Cannot delete line items once payment process begins. Current status: '${order.status}'. Please contact support for assistance.` 
+          }, { status: 400 });
+        }
+        return NextResponse.json({ 
+          error: `Cannot delete line items in status: '${order.status}'` 
+        }, { status: 400 });
+      }
     }
 
     // Cancel line items (soft delete)
