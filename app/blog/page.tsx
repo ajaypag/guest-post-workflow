@@ -273,6 +273,14 @@ const blogPosts = [
     category: 'SEO',
     readTime: '18 min read',
     date: 'May 2021'
+  },
+  {
+    title: 'Top SEO Agencies (10 Best Ranked)',
+    href: '/top-seo-agencies',
+    excerpt: 'Discover the top 10 SEO agencies ranked by performance. Compare First Page Digital, SEO Locale, VELOX Media and more to find the right agency for your business.',
+    category: 'SEO',
+    readTime: '20 min read',
+    date: 'February 2024'
   }
 ];
 
