@@ -16,7 +16,7 @@ import {
   Building, Package, Plus, X, ChevronDown, ChevronUp, ChevronRight,
   Search, Target, Link as LinkIcon, Type, CheckCircle,
   AlertCircle, Copy, Trash2, User, Globe, ExternalLink,
-  ArrowLeft, Loader2, Clock, Users, CreditCard, AlertTriangle
+  ArrowLeft, Loader2, Clock, Users, CreditCard, AlertTriangle, TrendingUp
 } from 'lucide-react';
 import { SERVICE_FEE_CENTS, PRICING_CONFIG } from '@/lib/config/pricing';
 
@@ -144,6 +144,7 @@ export default function EditOrderPage({ params }: { params: Promise<{ id: string
   
   // Mobile view state
   const [mobileView, setMobileView] = useState<'clients' | 'order' | 'targets'>('order');
+  const [showMobilePricing, setShowMobilePricing] = useState(false);
 
   const loadClients = useCallback(async () => {
     try {
