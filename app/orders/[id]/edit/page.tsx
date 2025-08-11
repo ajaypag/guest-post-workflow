@@ -143,7 +143,7 @@ export default function EditOrderPage({ params }: { params: Promise<{ id: string
   const [accountDetails, setAccountDetails] = useState<{ email: string; name: string; company?: string } | null>(null);
   
   // Mobile view state
-  const [mobileView, setMobileView] = useState<'clients' | 'order' | 'targets'>('order');
+  const [mobileView, setMobileView] = useState<'clients' | 'order' | 'targets'>('clients'); // Default to brands on mobile
   const [showMobilePricing, setShowMobilePricing] = useState(false);
 
   const loadClients = useCallback(async () => {
@@ -1235,7 +1235,97 @@ export default function EditOrderPage({ params }: { params: Promise<{ id: string
           </div>
         </div>
         
-        {/* Pricing Estimator - Hidden on mobile, shown on desktop */}
+        {/* Mobile Pricing Summary - Collapsible */}
+        <div className="md:hidden bg-white border-b border-gray-200">
+          <button 
+            onClick={() => setShowMobilePricing(!showMobilePricing)}
+            className="w-full px-4 py-3 flex items-center justify-between hover:bg-gray-50 transition-colors"
+          >
+            <div className="flex items-center gap-3">
+              <TrendingUp className="h-4 w-4 text-blue-600" />
+              <div className="text-left">
+                <p className="text-sm font-medium text-gray-900">
+                  Pricing: {estimatedPricePerLink > 0 ? formatCurrency(estimatedPricePerLink) : '$250'}/link
+                </p>
+                <p className="text-xs text-gray-500">
+                  {orderPreferences?.estimatorSnapshot?.sitesAvailable || 'Set preferences to see'} sites available
+                </p>
+              </div>
+            </div>
+            <ChevronDown className={`h-4 w-4 text-gray-400 transition-transform ${
+              showMobilePricing ? 'rotate-180' : ''
+            }`} />
+          </button>
+          
+          {showMobilePricing && (
+            <div className="border-t border-gray-200">
+              <PricingEstimator 
+                className=""
+                initialPreferences={orderPreferences || undefined}
+                onEstimateChange={(estimate, preferences) => {
+                  // Store preferences for saving with the order
+                  if (estimate && preferences) {
+                    // Update the estimated price per link (wholesale + service fee)
+                    setEstimatedPricePerLink(estimate.clientMedian);
+                    // Update wholesale estimate for new line items
+                    setEstimatedWholesalePerLink(estimate.wholesaleMedian);
+                    
+                    // Calculate budget range based on total links and price range
+                    const clientLinksTotal = Array.from(selectedClients.values()).reduce((sum, client) => 
+                      sum + (client.selected ? client.linkCount : 0), 0);
+                    const totalLinks = clientLinksTotal > 0 ? clientLinksTotal : 
+                                      (lineItems.length > 0 ? lineItems.length : 
+                                      preferences.linkCount || 1);
+                    const budgetMin = totalLinks * estimate.clientMin;
+                    const budgetMax = totalLinks * estimate.clientMax;
+                    
+                    // Create estimator snapshot of what user saw
+                    const estimatorSnapshot = {
+                      sitesAvailable: estimate.count,
+                      medianPrice: estimate.wholesaleMedian,
+                      averagePrice: estimate.wholesaleAverage,
+                      priceRange: { min: estimate.wholesaleMin, max: estimate.wholesaleMax },
+                      examples: estimate.examples || [],
+                      timestamp: new Date().toISOString()
+                    };
+                    
+                    const enhancedPreferences = {
+                      ...preferences,
+                      linkCount: totalLinks,
+                      estimatedBudgetMin: budgetMin,
+                      estimatedBudgetMax: budgetMax,
+                      estimatorSnapshot: estimatorSnapshot
+                    };
+                    
+                    setOrderPreferences(enhancedPreferences);
+                    
+                    // Save to local state for persistence
+                    sessionStorage.setItem('orderPreferences', JSON.stringify({
+                      estimate,
+                      preferences: enhancedPreferences,
+                      timestamp: new Date().toISOString()
+                    }));
+                    
+                    // Update line items that are still using default pricing
+                    setLineItems(prev => prev.map(item => {
+                      const isDefaultPricing = !item.wholesalePrice || item.wholesalePrice === 20000 || item.price === (item.wholesalePrice + SERVICE_FEE_CENTS);
+                      if (isDefaultPricing) {
+                        return {
+                          ...item,
+                          wholesalePrice: estimate.wholesaleMedian,
+                          price: estimate.clientMedian
+                        };
+                      }
+                      return item;
+                    }));
+                  }
+                }}
+              />
+            </div>
+          )}
+        </div>
+        
+        {/* Desktop Pricing Estimator - Full featured */}
         <div className="hidden md:block">
           <PricingEstimator 
             className=""
@@ -1615,7 +1705,68 @@ export default function EditOrderPage({ params }: { params: Promise<{ id: string
                 </div>
               ) : groupByMode === 'none' ? (
                 <div className="h-full overflow-y-auto">
-                  <table className="w-full">
+                  {/* Mobile Cards View */}
+                  <div className="md:hidden space-y-3 p-3">
+                    {lineItems.map((item, index) => (
+                      <div key={item.id} className="bg-white border border-gray-200 rounded-lg p-4 shadow-sm">
+                        <div className="flex items-start justify-between mb-3">
+                          <div>
+                            <span className="text-xs text-gray-500">#{index + 1}</span>
+                            <h3 className="font-medium text-gray-900">{item.clientName}</h3>
+                          </div>
+                          <button
+                            onClick={() => removeLineItem(item.id)}
+                            className="text-gray-400 hover:text-red-500 transition-colors p-1"
+                          >
+                            <X className="h-4 w-4" />
+                          </button>
+                        </div>
+                        
+                        <div className="space-y-3">
+                          <div>
+                            <label className="text-xs text-gray-500 font-medium">Target Page</label>
+                            {item.targetPageUrl ? (
+                              <div className="flex items-center gap-1 mt-1">
+                                <p className="text-sm text-gray-600 truncate" title={item.targetPageUrl}>
+                                  {item.targetPageUrl}
+                                </p>
+                                <ExternalLink className="h-3 w-3 text-gray-400 flex-shrink-0" />
+                              </div>
+                            ) : (
+                              <p className="text-sm text-gray-400 italic mt-1">Tap a target page →</p>
+                            )}
+                          </div>
+                          
+                          <div>
+                            <label className="text-xs text-gray-500 font-medium">Anchor Text</label>
+                            <input
+                              type="text"
+                              value={item.anchorText || ''}
+                              onChange={(e) => updateLineItem(item.id, { anchorText: e.target.value })}
+                              placeholder="Enter anchor text..."
+                              className="w-full mt-1 px-2 py-1.5 text-sm border border-gray-200 rounded focus:outline-none focus:ring-1 focus:ring-blue-500"
+                              disabled={!item.targetPageUrl}
+                            />
+                          </div>
+                          
+                          <div className="pt-2 border-t border-gray-100">
+                            <div className="flex items-center justify-between">
+                              <span className="text-xs text-gray-500">Total Investment</span>
+                              <span className="text-lg font-semibold text-gray-900">
+                                ${(item.price / 100).toFixed(0)}
+                              </span>
+                            </div>
+                            <div className="text-xs text-gray-500 mt-1">
+                              ${((item.wholesalePrice || (item.price - SERVICE_FEE_CENTS)) / 100).toFixed(0)} site + $79 content
+                            </div>
+                          </div>
+                        </div>
+                      </div>
+                    ))}
+                  </div>
+                  
+                  {/* Desktop Table View */}
+                  <table className="w-full hidden md:table">
                     <thead className="bg-gray-50 border-b border-gray-200 sticky top-0">
                       <tr>
                         <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Brand</th>
