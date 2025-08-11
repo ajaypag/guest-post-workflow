@@ -642,14 +642,15 @@ export default function OrderDetailPage() {
                         }
                       }
                     }}
-                    className={`inline-flex items-center px-3 py-2 border ${
+                    className={`inline-flex items-center px-2 sm:px-3 py-1.5 sm:py-2 border ${
                       order.status !== 'draft' && user?.role === 'admin' 
                         ? 'border-red-300 text-red-700 hover:bg-red-50' 
                         : 'border-red-300 text-red-600 hover:bg-red-50'
-                    } rounded-md`}
+                    } rounded-md text-xs sm:text-sm`}
                   >
-                    <Trash2 className="h-4 w-4 mr-2" />
-                    Delete Order
+                    <Trash2 className="h-3 sm:h-4 w-3 sm:w-4 mr-1 sm:mr-2" />
+                    <span className="hidden sm:inline">Delete Order</span>
+                    <span className="sm:hidden">Delete</span>
                   </button>
                 )}
               </div>
@@ -954,17 +955,17 @@ export default function OrderDetailPage() {
               {/* OLD TABLE CODE REMOVED - NOW USING OrderDetailsTable COMPONENT */}
               
               {/* Additional Information Cards */}
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-6 mt-6">
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 sm:gap-6 mt-4 sm:mt-6">
                 {/* Timeline */}
-                <div className="bg-white rounded-lg border border-gray-200 shadow-sm p-6">
-                  <h3 className="text-lg font-semibold mb-4">Timeline</h3>
-                  <div className="space-y-3">
+                <div className="bg-white rounded-lg border border-gray-200 shadow-sm p-4 sm:p-6">
+                  <h3 className="text-base sm:text-lg font-semibold mb-3 sm:mb-4">Timeline</h3>
+                  <div className="space-y-2 sm:space-y-3">
                     {/* Order Created */}
-                    <div className="flex items-start gap-3">
-                      <Clock className="h-4 w-4 text-gray-400 mt-0.5" />
+                    <div className="flex items-start gap-2 sm:gap-3">
+                      <Clock className="h-3 sm:h-4 w-3 sm:w-4 text-gray-400 mt-0.5" />
                       <div>
-                        <p className="text-sm font-medium text-gray-900">Order Created</p>
-                        <p className="text-sm text-gray-600">{new Date(order.createdAt).toLocaleDateString()}</p>
+                        <p className="text-xs sm:text-sm font-medium text-gray-900">Order Created</p>
+                        <p className="text-xs sm:text-sm text-gray-600">{new Date(order.createdAt).toLocaleDateString()}</p>
                       </div>
                     </div>
                     
@@ -1030,12 +1031,12 @@ export default function OrderDetailPage() {
                 </div>
                 
                 {/* Recent Activity */}
-                <div className="bg-white rounded-lg border border-gray-200 shadow-sm p-6">
-                  <div className="flex items-center gap-2 mb-4">
-                    <Activity className="h-5 w-5 text-gray-600" />
-                    <h3 className="text-lg font-semibold text-gray-900">Current Status</h3>
+                <div className="bg-white rounded-lg border border-gray-200 shadow-sm p-4 sm:p-6">
+                  <div className="flex items-center gap-2 mb-3 sm:mb-4">
+                    <Activity className="h-4 sm:h-5 w-4 sm:w-5 text-gray-600" />
+                    <h3 className="text-base sm:text-lg font-semibold text-gray-900">Current Status</h3>
                   </div>
-                  <div className="space-y-3">
+                  <div className="space-y-2 sm:space-y-3">
                     {/* Awaiting Confirmation State */}
                     {(order.status === 'pending_confirmation' || order.status === 'draft') && (
                       <div className="flex items-start gap-3">
