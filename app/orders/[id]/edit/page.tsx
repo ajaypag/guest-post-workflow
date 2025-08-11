@@ -142,9 +142,23 @@ export default function EditOrderPage({ params }: { params: Promise<{ id: string
   const [requestingLineItemId, setRequestingLineItemId] = useState<string | null>(null);
   const [accountDetails, setAccountDetails] = useState<{ email: string; name: string; company?: string } | null>(null);
   
-  // Mobile view state
+  // Mobile view state with localStorage persistence
   const [mobileView, setMobileView] = useState<'clients' | 'order' | 'targets'>('clients'); // Default to brands on mobile
-  const [showMobilePricing, setShowMobilePricing] = useState(false);
+  const [showMobilePricing, setShowMobilePricing] = useState(() => {
+    // Persist mobile pricing state in localStorage
+    if (typeof window !== 'undefined') {
+      const saved = localStorage.getItem('showMobilePricing');
+      return saved === 'true';
+    }
+    return false;
+  });
+
+  // Update localStorage when mobile pricing state changes
+  useEffect(() => {
+    if (typeof window !== 'undefined') {
+      localStorage.setItem('showMobilePricing', showMobilePricing.toString());
+    }
+  }, [showMobilePricing]);
 
   const loadClients = useCallback(async () => {
     try {

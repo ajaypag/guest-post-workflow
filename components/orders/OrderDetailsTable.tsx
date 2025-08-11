@@ -248,7 +248,118 @@ export default function OrderDetailsTable({
         </p>
       </div>
       
-      <div className="overflow-x-auto">
+      {/* Mobile Card View */}
+      <div className="md:hidden space-y-3">
+        {lineItems.length > 0 ? lineItems.map((item, index) => (
+          <div key={item.id} className="bg-white border border-gray-200 rounded-lg p-4 shadow-sm">
+            {/* Header with index and status */}
+            <div className="flex items-start justify-between mb-3">
+              <div>
+                <span className="text-xs text-gray-500">#{index + 1}</span>
+                <h3 className="font-medium text-gray-900">{item.client}</h3>
+              </div>
+              {visibleColumns.includes('status') && (
+                <span className={`px-2 py-1 text-xs font-medium rounded-full ${
+                  item.status === 'pending' ? 'bg-yellow-100 text-yellow-800' :
+                  item.status === 'approved' ? 'bg-green-100 text-green-800' :
+                  item.status === 'rejected' ? 'bg-red-100 text-red-800' :
+                  item.status === 'completed' ? 'bg-blue-100 text-blue-800' :
+                  'bg-gray-100 text-gray-800'
+                }`}>
+                  {item.status}
+                </span>
+              )}
+            </div>
+            
+            {/* Target Page */}
+            {item.targetPageUrl && (
+              <div className="mb-2">
+                <label className="text-xs text-gray-500 font-medium">Target Page</label>
+                <p className="text-sm text-gray-600 truncate">{item.targetPageUrl}</p>
+              </div>
+            )}
+            
+            {/* Anchor Text */}
+            {visibleColumns.includes('anchorText') && (
+              <div className="mb-2">
+                <label className="text-xs text-gray-500 font-medium">Anchor Text</label>
+                <p className="text-sm text-gray-900">{item.anchorText || '-'}</p>
+              </div>
+            )}
+            
+            {/* Suggested/Approved Site */}
+            {(visibleColumns.includes('suggestedSite') || visibleColumns.includes('approvedSite')) && (
+              <div className="mb-2">
+                <label className="text-xs text-gray-500 font-medium">
+                  {visibleColumns.includes('approvedSite') ? 'Guest Post Site' : 'Suggested Site'}
+                </label>
+                <div className="flex items-center gap-2 mt-1">
+                  <Globe className="h-3 w-3 text-gray-400" />
+                  <span className="text-sm text-gray-900">
+                    {item.approvedSite || item.suggestedSite || 'Finding sites...'}
+                  </span>
+                </div>
+              </div>
+            )}
+            
+            {/* Metrics */}
+            {visibleColumns.includes('siteMetrics') && item.siteMetrics && (
+              <div className="mb-2">
+                <label className="text-xs text-gray-500 font-medium">Metrics</label>
+                <div className="flex items-center gap-3 mt-1 text-xs">
+                  <span>DR: {item.siteMetrics.dr || '-'}</span>
+                  <span>Traffic: {item.siteMetrics.traffic ? `${(item.siteMetrics.traffic / 1000).toFixed(0)}k` : '-'}</span>
+                </div>
+              </div>
+            )}
+            
+            {/* Content Status */}
+            {visibleColumns.includes('contentStatus') && (
+              <div className="mb-2">
+                <label className="text-xs text-gray-500 font-medium">Content</label>
+                <p className="text-sm text-gray-900">{item.contentStatus || 'Not started'}</p>
+              </div>
+            )}
+            
+            {/* Published URL */}
+            {visibleColumns.includes('publishedUrl') && item.publishedUrl && (
+              <div className="mb-2">
+                <label className="text-xs text-gray-500 font-medium">Published</label>
+                <a href={item.publishedUrl} target="_blank" rel="noopener noreferrer" 
+                   className="text-sm text-blue-600 hover:text-blue-800 flex items-center gap-1">
+                  View Post
+                  <ExternalLink className="h-3 w-3" />
+                </a>
+              </div>
+            )}
+            
+            {/* Price */}
+            {(visibleColumns.includes('price') || visibleColumns.includes('finalPrice')) && (
+              <div className="pt-2 border-t border-gray-100">
+                <div className="flex items-center justify-between">
+                  <span className="text-xs text-gray-500">Total Investment</span>
+                  <span className="text-lg font-semibold text-gray-900">
+                    {formatCurrency(item.price || 0)}
+                  </span>
+                </div>
+                {item.wholesalePrice && (
+                  <div className="text-xs text-gray-500 text-right mt-1">
+                    ${(item.wholesalePrice / 100).toFixed(0)} site + $79 content
+                  </div>
+                )}
+              </div>
+            )}
+          </div>
+        )) : (
+          <div className="text-center py-8 text-gray-500">
+            <Package className="h-12 w-12 mx-auto mb-3 text-gray-300" />
+            <p className="text-sm">No line items to display</p>
+          </div>
+        )}
+      </div>
+      
+      {/* Desktop Table View */}
+      <div className="hidden md:block overflow-x-auto">
         <table className="w-full">
           <thead className="bg-gray-50 border-b border-gray-200">
             <tr>
