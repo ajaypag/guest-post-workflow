@@ -4,6 +4,7 @@ import { useState, useEffect } from 'react';
 import { useRouter } from 'next/navigation';
 import AccountAuthWrapper from '@/components/AccountAuthWrapper';
 import Header from '@/components/Header';
+import AccountLayout from '@/components/AccountLayout';
 import { 
   CreditCard, 
   FileText, 
@@ -144,17 +145,13 @@ export default function BillingHistoryPage() {
 
   return (
     <AccountAuthWrapper>
-      <div className="min-h-screen bg-gray-50">
+      <>
         <Header />
-        
-        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
-          <div className="mb-8">
-            <h1 className="text-3xl font-bold text-gray-900">Billing History</h1>
-            <p className="text-gray-600 mt-2">View your payment history, invoices, and refunds</p>
-          </div>
+        <AccountLayout>
+          <div className="space-y-8">
 
-          {/* Summary Cards */}
-          <div className="grid grid-cols-1 md:grid-cols-4 gap-4 mb-8">
+            {/* Summary Cards */}
+            <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
             <div className="bg-white rounded-lg shadow p-6">
               <div className="flex items-center justify-between">
                 <div>
@@ -202,10 +199,10 @@ export default function BillingHistoryPage() {
                 <FileText className="w-8 h-8 text-purple-500" />
               </div>
             </div>
-          </div>
+            </div>
 
-          {/* Filters */}
-          <div className="bg-white rounded-lg shadow p-6 mb-6">
+            {/* Filters */}
+            <div className="bg-white rounded-lg shadow p-6">
             <div className="flex flex-wrap gap-4 items-end">
               <div>
                 <label className="block text-sm font-medium text-gray-700 mb-2">
@@ -255,10 +252,10 @@ export default function BillingHistoryPage() {
                 Refresh
               </button>
             </div>
-          </div>
+            </div>
 
-          {/* Transactions Table */}
-          <div className="bg-white rounded-lg shadow overflow-hidden">
+            {/* Transactions Table */}
+            <div className="bg-white rounded-lg shadow overflow-hidden">
             {loading ? (
               <div className="p-8 text-center">
                 <RefreshCw className="w-8 h-8 animate-spin text-blue-600 mx-auto mb-4" />
@@ -357,9 +354,10 @@ export default function BillingHistoryPage() {
                 </table>
               </div>
             )}
+            </div>
           </div>
-        </div>
-      </div>
+        </AccountLayout>
+      </>
     </AccountAuthWrapper>
   );
 }

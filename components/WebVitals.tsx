@@ -1,7 +1,16 @@
 'use client';
 
 import { useEffect } from 'react';
-import { onCLS, onFCP, onLCP, onTTFB, onINP, Metric } from 'web-vitals';
+// import { onCLS, onFCP, onLCP, onTTFB, onINP, Metric } from 'web-vitals';
+
+// Temporary placeholder interfaces for web-vitals
+interface Metric {
+  name: string;
+  value: number;
+  rating: string;
+  delta: number;
+  id: string;
+}
 
 function sendToAnalytics(metric: Metric) {
   // Send to Google Analytics 4
@@ -43,14 +52,16 @@ function sendToAnalytics(metric: Metric) {
 
 export function WebVitals() {
   useEffect(() => {
-    // Core Web Vitals
-    onCLS(sendToAnalytics);
-    onINP(sendToAnalytics); // INP replaced FID in Core Web Vitals
-    onLCP(sendToAnalytics);
+    // Core Web Vitals - temporarily disabled due to missing web-vitals package
+    // onCLS(sendToAnalytics);
+    // onINP(sendToAnalytics); // INP replaced FID in Core Web Vitals
+    // onLCP(sendToAnalytics);
     
     // Other metrics
-    onFCP(sendToAnalytics);
-    onTTFB(sendToAnalytics);
+    // onFCP(sendToAnalytics);
+    // onTTFB(sendToAnalytics);
+    
+    console.log('[WebVitals] Temporarily disabled - web-vitals package not installed');
   }, []);
 
   return null;

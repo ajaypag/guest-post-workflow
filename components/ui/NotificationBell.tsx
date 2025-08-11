@@ -33,7 +33,7 @@ export default function NotificationBell() {
             refreshNotifications(); // Refresh when opening
           }
         }}
-        className="relative p-2 text-gray-600 hover:text-gray-900 rounded-full hover:bg-gray-100 transition-colors"
+        className="relative p-2 text-gray-600 hover:text-gray-900 rounded-full hover:bg-gray-100 transition-colors min-w-[44px] min-h-[44px] flex items-center justify-center"
       >
         <Bell className={`h-5 w-5 ${hasActionRequired ? 'text-red-600' : ''}`} />
         
@@ -52,7 +52,7 @@ export default function NotificationBell() {
 
       {/* Dropdown */}
       {showDropdown && (
-        <div className="absolute right-0 top-full mt-2 w-80 bg-white rounded-lg shadow-xl border border-gray-200 z-50 max-h-96 overflow-hidden">
+        <div className="absolute right-0 top-full mt-2 w-80 max-w-[calc(100vw-2rem)] bg-white rounded-lg shadow-xl border border-gray-200 z-50 max-h-96 overflow-hidden">
           {/* Header */}
           <div className="px-4 py-3 border-b border-gray-200 bg-gray-50">
             <div className="flex items-center justify-between">
