@@ -436,9 +436,9 @@ export class BulkAnalysisService {
             clientId,
             domain: cleanDomain,
             qualificationStatus: 'pending' as const,
-            targetPageIds,
+            targetPageIds: deduplicateArray(targetPageIds),
             keywordCount,
-            projectId,
+            projectId: sanitizeUUID(projectId),
             projectAddedAt: now,
             createdAt: now,
             updatedAt: now,
@@ -447,6 +447,15 @@ export class BulkAnalysisService {
           const inserted = await db
             .insert(bulkAnalysisDomains)
             .values(newDomain)
+            .onConflictDoUpdate({
+              target: [bulkAnalysisDomains.clientId, bulkAnalysisDomains.domain],
+              set: {
+                targetPageIds: deduplicateArray(targetPageIds),
+                keywordCount: sql`excluded.keyword_count`,
+                projectId: sanitizeUUID(projectId),
+                updatedAt: new Date(),
+              },
+            })
             .returning();
           
           if (inserted.length === 0) continue;
