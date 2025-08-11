@@ -65,7 +65,7 @@ export default function SaaSLinkBuildingPage() {
             <p className="text-xl text-gray-600 mb-8 max-w-4xl mx-auto leading-relaxed">
               Software is more competitive than ever. To get users, you must be discoverable. 
               While Google remains #1, Perplexity, ChatGPT, and Claude are taking market share. 
-              We help you dominate citations across all platforms.
+              We help you get cited across all platforms.
             </p>
 
             <div className="flex flex-col sm:flex-row gap-4 justify-center">
@@ -73,7 +73,7 @@ export default function SaaSLinkBuildingPage() {
                 href="/signup"
                 className="inline-flex items-center justify-center gap-2 px-8 py-4 bg-gradient-to-r from-blue-600 to-purple-600 text-white font-semibold rounded-lg hover:from-blue-700 hover:to-purple-700 transition-colors text-lg"
               >
-                Start SaaS Domination
+                Get Started
                 <ArrowRight className="w-5 h-5" />
               </Link>
               <a
@@ -90,7 +90,7 @@ export default function SaaSLinkBuildingPage() {
           <div className="grid md:grid-cols-4 gap-6 bg-white rounded-2xl p-8 shadow-lg">
             <div className="text-center">
               <div className="text-3xl font-bold text-blue-600 mb-2">50+</div>
-              <div className="text-sm text-gray-600">Industry Niches Covered</div>
+              <div className="text-sm text-gray-600">Hidden Gems Found</div>
             </div>
             <div className="text-center">
               <div className="text-3xl font-bold text-purple-600 mb-2">3X</div>
@@ -172,7 +172,7 @@ export default function SaaSLinkBuildingPage() {
               <ul className="space-y-3 text-blue-700">
                 <li className="flex items-start gap-2">
                   <CheckCircle className="w-5 h-5 text-blue-600 mt-0.5 flex-shrink-0" />
-                  <span>50+ niche coverage ensures maximum visibility</span>
+                  <span>Strategic placements where AI systems find authoritative sources</span>
                 </li>
                 <li className="flex items-start gap-2">
                   <CheckCircle className="w-5 h-5 text-blue-600 mt-0.5 flex-shrink-0" />
@@ -549,7 +549,7 @@ export default function SaaSLinkBuildingPage() {
 
       {/* Final CTA */}
       <MarketingCTA 
-        title="Ready to Dominate Your Industry's AI Citations?"
+        title="Ready to Get Your SaaS Cited by AI?"
         description="Join forward-thinking SaaS companies who are building authority for the AI-powered future of search."
         primaryButtonText="Start SaaS Strategy"
         primaryButtonHref="/signup"

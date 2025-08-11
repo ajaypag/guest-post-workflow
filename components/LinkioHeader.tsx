@@ -165,7 +165,7 @@ export default function LinkioHeader({
                 </Link>
                 
                 <Link 
-                  href="https://postflow.outreachlabs.net/login"
+                  href="https://www.linkio.com/login"
                   target="_blank"
                   rel="noopener noreferrer" 
                   className="text-gray-600 hover:text-gray-900 text-sm font-medium transition-colors"
@@ -285,7 +285,7 @@ export default function LinkioHeader({
             
             <div className="pt-4 border-t border-gray-100">
               <Link
-                href="https://postflow.outreachlabs.net/login"
+                href="https://www.linkio.com/login"
                 target="_blank"
                 rel="noopener noreferrer"
                 onClick={closeMobileMenu}

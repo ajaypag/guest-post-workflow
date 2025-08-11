@@ -49,7 +49,7 @@ export function BaseEmail({
           <Hr style={hr} />
           <Section style={footer}>
             <Text style={footerTextStyle}>{footerText}</Text>
-            <Link href="https://postflow.outreachlabs.net" style={footerLink}>
+            <Link href="https://www.linkio.com" style={footerLink}>
               Visit PostFlow
             </Link>
             <Text style={footerAddress}>

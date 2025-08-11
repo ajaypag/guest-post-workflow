@@ -11,7 +11,7 @@ interface WelcomeEmailProps {
 export function WelcomeEmail({
   userName,
   userEmail,
-  loginUrl = 'https://postflow.outreachlabs.net/login',
+  loginUrl = 'https://www.linkio.com/login',
 }: WelcomeEmailProps) {
   return (
     <BaseEmail
@@ -38,11 +38,11 @@ export function WelcomeEmail({
           <strong>What you can do with PostFlow:</strong>
         </Text>
         <Text style={{ ...emailStyles.text, margin: '8px 0 0', fontSize: '14px' }}>
-          • Create and manage guest post workflows<br />
-          • Track website outreach and contacts<br />
-          • Analyze domain metrics and qualify prospects<br />
-          • Collaborate with your team on content projects<br />
-          • Generate AI-powered content drafts
+          • Get your brand cited by ChatGPT, Claude, and Perplexity<br />
+          • Find hidden gem publications with real ranking potential<br />
+          • Track your AI citations and brand mentions<br />
+          • Build lasting authority without chasing vanity metrics<br />
+          • See results from smart link placements, not just high DR sites
         </Text>
       </Section>
 

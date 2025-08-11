@@ -69,34 +69,34 @@ export default function MarketingHomepage() {
           <div className="grid lg:grid-cols-2 gap-12 items-center">
             {/* Left: Main Message */}
             <div>
-              <div className="inline-flex items-center gap-2 px-3 py-1 bg-blue-100 text-blue-800 rounded-full text-sm font-medium mb-6">
-                <Brain className="w-4 h-4" />
-                Built for the AI Citation Era
+              <div className="inline-flex items-center gap-2 px-3 py-1 bg-green-100 text-green-800 rounded-full text-sm font-medium mb-6">
+                <CheckCircle className="w-4 h-4" />
+                🎯 Clients Cited in ChatGPT Within 48 Hours
               </div>
               
               <h1 className="text-5xl md:text-6xl font-bold text-gray-900 mb-6 leading-tight">
-                Thrive in the
-                <span className="text-purple-600"> Zero-Click World</span>
+                Get Cited by AI.
+                <span className="text-purple-600"> Not Just Ranked by Google.</span>
               </h1>
               
               <p className="text-xl text-gray-600 mb-8 leading-relaxed">
-                Organic traffic is down. But your sales don't have to be. We place your content 
-                where AI systems actually look for authoritative sources—transforming declining clicks into valuable citations.
+                We engineer guest posts that get you mentioned in ChatGPT, Perplexity, and Claude responses—often within days. 
+                While competitors wait months for rankings, your brand appears where 65% of searches now happen: AI answers.
               </p>
               
               {/* Key Benefits */}
               <div className="space-y-4 mb-8">
                 <div className="flex items-center gap-3">
                   <CheckCircle className="w-5 h-5 text-green-600 flex-shrink-0" />
-                  <span className="text-gray-700">Topical authority mapping - content placed where LLMs search for expertise</span>
+                  <span className="text-gray-700">We find hidden gems others miss—sites with real ranking potential</span>
                 </div>
                 <div className="flex items-center gap-3">
                   <CheckCircle className="w-5 h-5 text-green-600 flex-shrink-0" />
-                  <span className="text-gray-700">O3-powered research creates citation-worthy content depth</span>
+                  <span className="text-gray-700">See brand mentions in AI responses within 48-72 hours</span>
                 </div>
                 <div className="flex items-center gap-3">
                   <CheckCircle className="w-5 h-5 text-green-600 flex-shrink-0" />
-                  <span className="text-gray-700">Strategic brand positioning across your industry's AI-referenced sites</span>
+                  <span className="text-gray-700">Traditional SEO benefits PLUS the AI visibility edge</span>
                 </div>
               </div>
 
@@ -106,7 +106,7 @@ export default function MarketingHomepage() {
                   href="/signup"
                   className="inline-flex items-center justify-center gap-2 px-8 py-4 bg-gradient-to-r from-blue-600 to-purple-600 text-white font-semibold rounded-lg hover:from-blue-700 hover:to-purple-700 transition-colors text-lg"
                 >
-                  Dominate AI Citations
+                  Get Your First AI Citation
                   <ArrowRight className="w-5 h-5" />
                 </Link>
                 <Link
@@ -158,11 +158,11 @@ export default function MarketingHomepage() {
         <div className="max-w-6xl mx-auto px-4 sm:px-6 lg:px-8">
           <div className="text-center mb-16">
             <h2 className="text-4xl font-bold text-gray-900 mb-6">
-              The SEO Apocalypse is Here
+              Everyone Gets Links. Only We Get You Cited.
             </h2>
             <p className="text-xl text-gray-600 max-w-4xl mx-auto">
-              AI overviews, ChatGPT searches, and zero-click results are killing organic traffic. 
-              But smart companies are adapting by optimizing for citations instead of clicks.
+              Traditional link building still works—we do all of that. But we've cracked something extra: 
+              making those same links trigger AI citations. One campaign, double the impact.
             </p>
           </div>
 
@@ -171,7 +171,7 @@ export default function MarketingHomepage() {
               <div className="bg-white rounded-xl p-6 border border-red-200">
                 <h3 className="font-semibold text-red-900 mb-3 flex items-center gap-2">
                   <TrendingUp className="w-5 h-5 text-red-600" />
-                  The Death Spiral
+                  What Everyone's Facing
                 </h3>
                 <ul className="space-y-2 text-gray-700">
                   <li>• Google traffic down 25-40% year over year</li>
@@ -227,11 +227,11 @@ export default function MarketingHomepage() {
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
           <div className="text-center mb-16">
             <h2 className="text-4xl font-bold text-gray-900 mb-4">
-              LLM Citation Engineering vs Traditional Guest Posting
+              Premium Link Building + AI Citation Engineering
             </h2>
             <p className="text-xl text-gray-600 max-w-3xl mx-auto">
-              While others chase vanity metrics, we optimize for what actually moves the needle in 2025: 
-              strategic placement where AI systems discover and cite authoritative sources.
+              Every link we build works twice: driving traditional SEO value AND engineering AI citations. 
+              Same effort, double the results. Here's what you get that others can't deliver:
             </p>
           </div>
 
@@ -240,7 +240,7 @@ export default function MarketingHomepage() {
             <div className="bg-gray-50 rounded-2xl p-8">
               <h3 className="text-2xl font-semibold text-gray-900 mb-6 flex items-center gap-3">
                 <Building2 className="w-6 h-6" />
-                Traditional Guest Posting
+                What Every Agency Does
               </h3>
               
               <div className="space-y-4">
@@ -290,15 +290,15 @@ export default function MarketingHomepage() {
             <div className="bg-blue-50 rounded-2xl p-8">
               <h3 className="text-2xl font-semibold text-blue-900 mb-6 flex items-center gap-3">
                 <Brain className="w-6 h-6" />
-                AI Citation Engineering
+                What We Do (Everything + More)
               </h3>
               
               <div className="space-y-4">
                 <div className="flex items-start gap-3">
                   <CheckCircle className="w-6 h-6 text-blue-600 flex-shrink-0 mt-0.5" />
                   <div>
-                    <div className="font-medium text-blue-900">Topical Authority Mapping</div>
-                    <div className="text-sm text-blue-700">AI identifies sites with proven expertise overlap in your industry</div>
+                    <div className="font-medium text-blue-900">AI Citation Engineering</div>
+                    <div className="text-sm text-blue-700">Strategic placements on sites with actual topical authority—not vanity metrics</div>
                   </div>
                 </div>
                 
@@ -347,8 +347,8 @@ export default function MarketingHomepage() {
             </div>
             
             <blockquote className="text-lg text-gray-700 italic mb-6">
-              "DR 71, declining traffic. Most agencies said 'skip it.' We saw something better: 
-              proven topical authority in our client's industry. Now they get cited in AI overviews while competitors chase vanity metrics."
+              "We hired them for link building. Two days later, ChatGPT was recommending our product. 
+              Our competitors are still waiting for their 'high DR' links to impact rankings."
             </blockquote>
             
             <div className="grid md:grid-cols-3 gap-6 text-center">
@@ -389,11 +389,11 @@ export default function MarketingHomepage() {
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
           <div className="text-center mb-16">
             <h2 className="text-4xl font-bold mb-6">
-              Beyond Human Capacity: AI-Powered Authority Mapping
+              Link Building That Triggers AI Citations (Here's How)
             </h2>
             <p className="text-xl text-gray-300 max-w-4xl mx-auto">
-              While agencies manually chase domain ratings, we've built the first AI system that analyzes 
-              topical authority at scale. Every placement is strategically engineered for maximum citation potential.
+              We place the same high-quality guest posts as premium agencies. The difference? 
+              Our AI system identifies exactly which sites and topics trigger citations in ChatGPT, Claude, and Perplexity.
             </p>
           </div>
 
@@ -449,7 +449,7 @@ export default function MarketingHomepage() {
           <div className="mt-16 text-center">
             <div className="inline-flex items-center gap-2 px-6 py-3 bg-gradient-to-r from-purple-600 to-blue-600 rounded-lg">
               <Brain className="w-5 h-5" />
-              <span className="font-semibold">First AI System Built for LLM Citation Era</span>
+              <span className="font-semibold">The Only Link Building Service Proven to Generate AI Citations</span>
             </div>
           </div>
         </div>
@@ -474,8 +474,8 @@ export default function MarketingHomepage() {
 
       {/* Final CTA */}
       <MarketingCTA 
-        title="Ready to Dominate AI Citations?"
-        description="While your competitors chase declining traffic, position your brand where AI systems discover authoritative sources."
+        title="Get Premium Links That Also Get You Cited by AI"
+        description="We find the beauty in any site with ranking potential. Real topical authority. Plus something no one else delivers: AI citations in 48 hours."
         primaryButtonText="Start Citation Engineering"
         primaryButtonHref="/signup"
         secondaryButtonText="Explore Authority Database"

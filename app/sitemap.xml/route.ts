@@ -62,7 +62,7 @@ const pages = [
   { path: 'anchor-text-optimizer', priority: 0.8, changefreq: 'weekly' },
   { path: 'guest-posting-sites', priority: 0.8, changefreq: 'weekly' },
   
-  // Educational content
+  // Educational content & Blog articles
   { path: 'seo-tutorial', priority: 0.8, changefreq: 'monthly' },
   { path: 'seo-case-study', priority: 0.8, changefreq: 'monthly' },
   { path: 'ecommerce-seo-case-study', priority: 0.8, changefreq: 'monthly' },
@@ -70,6 +70,25 @@ const pages = [
   { path: 'edu-link-building-guide', priority: 0.8, changefreq: 'monthly' },
   { path: 'how-to-get-high-authority-backlinks', priority: 0.8, changefreq: 'monthly' },
   { path: 'link-building-costs', priority: 0.8, changefreq: 'monthly' },
+  { path: 'anchor-text', priority: 0.7, changefreq: 'monthly' },
+  { path: 'how-to-find-email-addresses', priority: 0.7, changefreq: 'monthly' },
+  { path: 'best-seo-books-recommended-by-pros', priority: 0.7, changefreq: 'monthly' },
+  { path: 'how-to-write-listicles', priority: 0.7, changefreq: 'monthly' },
+  { path: 'easy-backlinks-simple-strategies', priority: 0.7, changefreq: 'monthly' },
+  { path: 'best-rank-tracking-tools-local-businesses', priority: 0.7, changefreq: 'monthly' },
+  { path: 'follow-up-email', priority: 0.7, changefreq: 'monthly' },
+  { path: 'email-outreach-templates', priority: 0.7, changefreq: 'monthly' },
+  { path: 'how-to-create-link-bait', priority: 0.7, changefreq: 'monthly' },
+  { path: 'resource-page-link-building-guide', priority: 0.7, changefreq: 'monthly' },
+  { path: 'seo-webinars', priority: 0.7, changefreq: 'monthly' },
+  { path: 'best-directory-submission-services', priority: 0.7, changefreq: 'monthly' },
+  { path: 'guide-to-grow-your-blogs-audience', priority: 0.7, changefreq: 'monthly' },
+  { path: 'how-to-track-multiple-vehicles', priority: 0.7, changefreq: 'monthly' },
+  { path: 'how-to-use-seo-to-improve-conversion-rate', priority: 0.7, changefreq: 'monthly' },
+  { path: 'link-disavows-good-or-bad', priority: 0.7, changefreq: 'monthly' },
+  { path: 'how-to-sort-and-filter-link-prospects', priority: 0.7, changefreq: 'monthly' },
+  { path: 'using-seo-for-lead-generation', priority: 0.7, changefreq: 'monthly' },
+  { path: 'top-seo-agencies', priority: 0.7, changefreq: 'monthly' },
   
   // Resource pages
   { path: 'best-content-seo-tools', priority: 0.7, changefreq: 'monthly' },

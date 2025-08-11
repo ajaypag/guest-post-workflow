@@ -180,7 +180,7 @@ export default function SignupPage() {
             <Building className="h-8 w-8 text-white" />
           </div>
           <h1 className="text-3xl font-bold text-gray-900">Create Account</h1>
-          <p className="text-gray-600 mt-2">Start managing your guest post campaigns</p>
+          <p className="text-gray-600 mt-2">Start getting cited by AI through smart link building</p>
         </div>
         
         {/* Signup Form */}
