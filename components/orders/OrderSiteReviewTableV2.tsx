@@ -267,9 +267,9 @@ export default function OrderSiteReviewTableV2({
     return 'matches_benchmark';
   };
 
-  // Filter submissions by all criteria
+  // Filter and sort submissions by all criteria
   const filterSubmissions = (submissions: SiteSubmission[]): SiteSubmission[] => {
-    return submissions.filter(submission => {
+    const filtered = submissions.filter(submission => {
       // Status filter
       if (filters.status !== 'all' && getInclusionStatus(submission) !== filters.status) {
         return false;
@@ -318,6 +318,24 @@ export default function OrderSiteReviewTableV2({
       }
       
       return true;
+    });
+
+    // Sort submissions: 'included' first, then 'saved_for_later', then others
+    return filtered.sort((a, b) => {
+      const statusA = getInclusionStatus(a);
+      const statusB = getInclusionStatus(b);
+      
+      // Priority order: included (1), saved_for_later (2), excluded (3)
+      const getPriority = (status: string) => {
+        switch (status) {
+          case 'included': return 1;
+          case 'saved_for_later': return 2;
+          case 'excluded': return 3;
+          default: return 4;
+        }
+      };
+      
+      return getPriority(statusA) - getPriority(statusB);
     });
   };
 

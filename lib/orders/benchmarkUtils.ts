@@ -199,12 +199,12 @@ export async function compareToBenchmark(orderId: string, userId?: string) {
       where: eq(orderSiteSubmissions.orderGroupId, group.id)
     });
 
-    // Count by status - include 'pending' (selected sites awaiting client review) and 'included' as delivered for internal tracking
+    // Count only sites that are truly included and accepted by client
     const delivered = submissions.filter(s => 
-      s.submissionStatus === 'completed' || 
-      s.submissionStatus === 'client_approved' ||
-      s.submissionStatus === 'pending' ||  // Sites selected but awaiting client review
-      s.inclusionStatus === 'included'     // Sites marked as included in the selection
+      s.inclusionStatus === 'included' && (
+        s.submissionStatus === 'completed' || 
+        s.submissionStatus === 'client_approved'
+      )
     ).length;
     
     const inProgress = submissions.filter(s => 
@@ -306,12 +306,7 @@ export async function compareToBenchmark(orderId: string, userId?: string) {
     const submissions = await db.query.orderSiteSubmissions.findMany({
       where: and(
         eq(orderSiteSubmissions.orderGroupId, group.id),
-        or(
-          eq(orderSiteSubmissions.submissionStatus, 'completed'),
-          eq(orderSiteSubmissions.submissionStatus, 'client_approved'),
-          eq(orderSiteSubmissions.submissionStatus, 'pending'),
-          eq(orderSiteSubmissions.inclusionStatus, 'included')
-        )
+        eq(orderSiteSubmissions.inclusionStatus, 'included')
       )
     });
     

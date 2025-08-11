@@ -301,13 +301,13 @@ export default function BenchmarkDisplay({
           {/* Quick Status */}
           {comparison && (
             <div className="text-sm">
-              <span className="text-gray-600">Progress: </span>
+              <span className="text-gray-600">Delivered: </span>
               <span className={`font-medium ${
                 comparison.comparisonData.completionPercentage >= 100 ? 'text-green-600' :
                 comparison.comparisonData.completionPercentage >= 50 ? 'text-yellow-600' : 
                 'text-red-600'
               }`}>
-                {comparison.comparisonData.deliveredLinks}/{comparison.comparisonData.requestedLinks} links ({comparison.comparisonData.completionPercentage}%)
+                {comparison.comparisonData.deliveredLinks}/{comparison.comparisonData.requestedLinks} links
               </span>
             </div>
           )}
@@ -487,50 +487,6 @@ export default function BenchmarkDisplay({
       )}
 
       {/* Comparison Section */}
-      {comparison && (
-        <div className="bg-white border rounded-lg p-4">
-          <h4 className="font-semibold mb-3 flex items-center gap-2">
-            <TrendingUp className="h-4 w-4" />
-            Delivery Progress
-          </h4>
-
-          {/* Progress Bar */}
-          <div className="mb-4">
-            <div className="flex justify-between text-sm mb-1">
-              <span>{comparison.comparisonData.deliveredLinks} of {comparison.comparisonData.requestedLinks} delivered</span>
-              <span>{Math.min(100, comparison.comparisonData.completionPercentage)}%</span>
-            </div>
-            <div className="w-full bg-gray-200 rounded-full h-2">
-              <div 
-                className="bg-green-600 h-2 rounded-full"
-                style={{ width: `${Math.min(100, comparison.comparisonData.completionPercentage)}%` }}
-              />
-            </div>
-          </div>
-
-          {/* Issues */}
-          {comparison.comparisonData.issues.length > 0 && (
-            <div className="bg-yellow-50 border border-yellow-200 rounded p-3 mb-3">
-              <div className="flex items-center gap-2 mb-2">
-                <AlertTriangle className="h-4 w-4 text-yellow-600" />
-                <span className="font-medium text-sm">Issues Detected</span>
-              </div>
-              <ul className="text-sm space-y-1">
-                {comparison.comparisonData.issues.map((issue, idx) => (
-                  <li key={idx} className="flex items-start gap-1">
-                    <span className="text-yellow-600">•</span>
-                    <span>{issue.description}</span>
-                  </li>
-                ))}
-              </ul>
-            </div>
-          )}
-
-          <div className="text-xs text-gray-500">
-            Last compared {new Date(comparison.comparedAt).toLocaleString()}
-          </div>
-        </div>
-      )}
 
       {/* Detailed Breakdown */}
       <div className="bg-white border rounded-lg">

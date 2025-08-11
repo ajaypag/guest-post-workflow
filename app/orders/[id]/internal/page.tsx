@@ -290,8 +290,8 @@ export default function InternalOrderManagementPage() {
     if (order?.status === 'pending_confirmation') {
       checkTargetPageStatuses();
     }
-    // Load benchmark data for confirmed orders
-    if (order?.status === 'confirmed') {
+    // Load benchmark data for confirmed orders and orders awaiting confirmation
+    if (order?.status === 'confirmed' || order?.status === 'pending_confirmation') {
       loadBenchmarkData();
     }
   }, [order?.state, order?.orderGroups, order?.status]);
