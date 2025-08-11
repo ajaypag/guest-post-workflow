@@ -1084,21 +1084,22 @@ export default function EditOrderPage({ params }: { params: Promise<{ id: string
         <Header />
         
         {/* Header */}
-        <div className="bg-white border-b border-gray-200 px-6 py-4">
-          <div className="flex items-center justify-between">
-            <div className="flex items-center gap-4">
+        <div className="bg-white border-b border-gray-200 px-4 sm:px-6 py-3 sm:py-4">
+          <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-2 sm:gap-4">
+            <div className="flex items-center gap-2 sm:gap-4">
               <Link
                 href={isNewOrder ? '/orders' : `/orders/${draftOrderId || ''}`}
-                className="inline-flex items-center text-gray-600 hover:text-gray-900"
+                className="inline-flex items-center text-gray-600 hover:text-gray-900 text-sm sm:text-base"
               >
-                <ArrowLeft className="h-4 w-4 mr-2" />
-                {isNewOrder ? 'Back to Orders' : 'Back to Order'}
+                <ArrowLeft className="h-4 w-4 mr-1 sm:mr-2" />
+                <span className="sm:hidden">Back</span>
+                <span className="hidden sm:inline">{isNewOrder ? 'Back to Orders' : 'Back to Order'}</span>
               </Link>
-              <div>
-                <h1 className="text-2xl font-semibold text-gray-900">
-                  {isNewOrder ? 'Create New Order' : `Edit Order ${draftOrderId ? '#' + draftOrderId.slice(0, 8) : ''}`}
+              <div className="flex-1">
+                <h1 className="text-lg sm:text-2xl font-semibold text-gray-900">
+                  {isNewOrder ? 'New Order' : `Order ${draftOrderId ? '#' + draftOrderId.slice(0, 8) : ''}`}
                 </h1>
-                <p className="text-sm text-gray-600 mt-1">
+                <p className="text-xs sm:text-sm text-gray-600 mt-0.5 sm:mt-1 hidden sm:block">
                   {isNewOrder ? 'Build your guest post campaign' : 'Update your guest post order details'}
                 </p>
               </div>
@@ -1122,10 +1123,10 @@ export default function EditOrderPage({ params }: { params: Promise<{ id: string
 
         {/* Account Selection (Internal Users Only) */}
         {session?.userType === 'internal' && (
-          <div className="bg-white border-b border-gray-200 px-6 py-4">
-            <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
-              <div>
-                <label className="block text-sm font-medium text-gray-700 mb-1">Select Account *</label>
+          <div className="bg-white border-b border-gray-200 px-4 sm:px-6 py-3 sm:py-4">
+            <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-4 gap-3 sm:gap-4">
+              <div className="sm:col-span-2 md:col-span-1">
+                <label className="block text-xs sm:text-sm font-medium text-gray-700 mb-1">Select Account *</label>
                 <select
                   value={selectedAccountId || ''}
                   onChange={(e) => {
@@ -1139,7 +1140,7 @@ export default function EditOrderPage({ params }: { params: Promise<{ id: string
                       setSelectedAccountCompany(account.companyName || '');
                     }
                   }}
-                  className="w-full px-3 py-2 border border-gray-300 rounded-md focus:ring-blue-500 focus:border-blue-500"
+                  className="w-full px-2 sm:px-3 py-1.5 sm:py-2 text-xs sm:text-sm border border-gray-300 rounded-md focus:ring-blue-500 focus:border-blue-500"
                   required
                 >
                   <option value="">Choose an account...</option>
@@ -1152,33 +1153,33 @@ export default function EditOrderPage({ params }: { params: Promise<{ id: string
               </div>
               {selectedAccountId && (
                 <>
-                  <div>
-                    <label className="block text-sm font-medium text-gray-700 mb-1">Contact Name</label>
+                  <div className="hidden sm:block">
+                    <label className="block text-xs sm:text-sm font-medium text-gray-700 mb-1">Contact Name</label>
                     <input
                       type="text"
                       value={selectedAccountName}
                       onChange={(e) => setSelectedAccountName(e.target.value)}
-                      className="w-full px-3 py-2 border border-gray-300 rounded-md bg-gray-50"
+                      className="w-full px-2 sm:px-3 py-1.5 sm:py-2 text-xs sm:text-sm border border-gray-300 rounded-md bg-gray-50"
                       readOnly
                     />
                   </div>
-                  <div>
-                    <label className="block text-sm font-medium text-gray-700 mb-1">Email</label>
+                  <div className="hidden md:block">
+                    <label className="block text-xs sm:text-sm font-medium text-gray-700 mb-1">Email</label>
                     <input
                       type="email"
                       value={selectedAccountEmail}
                       onChange={(e) => setSelectedAccountEmail(e.target.value)}
-                      className="w-full px-3 py-2 border border-gray-300 rounded-md bg-gray-50"
+                      className="w-full px-2 sm:px-3 py-1.5 sm:py-2 text-xs sm:text-sm border border-gray-300 rounded-md bg-gray-50"
                       readOnly
                     />
                   </div>
-                  <div>
-                    <label className="block text-sm font-medium text-gray-700 mb-1">Company</label>
+                  <div className="hidden md:block">
+                    <label className="block text-xs sm:text-sm font-medium text-gray-700 mb-1">Company</label>
                     <input
                       type="text"
                       value={selectedAccountCompany}
                       onChange={(e) => setSelectedAccountCompany(e.target.value)}
-                      className="w-full px-3 py-2 border border-gray-300 rounded-md"
+                      className="w-full px-2 sm:px-3 py-1.5 sm:py-2 text-xs sm:text-sm border border-gray-300 rounded-md"
                       placeholder="Company name (optional)"
                     />
                   </div>
@@ -1189,45 +1190,55 @@ export default function EditOrderPage({ params }: { params: Promise<{ id: string
         )}
         
         {/* Mobile Navigation (shown on small screens) */}
-        <div className="md:hidden bg-white border-b border-gray-200">
+        <div className="md:hidden bg-white border-b border-gray-200 sticky top-0 z-20">
           <div className="flex">
             <button
               onClick={() => setMobileView('clients')}
-              className={`flex-1 px-4 py-3 text-sm font-medium border-b-2 transition-colors ${
+              className={`flex-1 px-3 py-3 text-xs font-medium border-b-2 transition-colors relative ${
                 mobileView === 'clients' 
                   ? 'text-blue-600 border-blue-600' 
                   : 'text-gray-600 border-transparent hover:text-gray-900'
               }`}
             >
-              Brands ({selectedClients.size})
+              <span>Brands</span>
+              <span className={`ml-1 px-1.5 py-0.5 text-xs rounded-full ${
+                mobileView === 'clients' ? 'bg-blue-100 text-blue-700' : 'bg-gray-100 text-gray-600'
+              }`}>{selectedClients.size}</span>
             </button>
             <button
               onClick={() => setMobileView('targets')}
-              className={`flex-1 px-4 py-3 text-sm font-medium border-b-2 transition-colors ${
+              className={`flex-1 px-3 py-3 text-xs font-medium border-b-2 transition-colors relative ${
                 mobileView === 'targets' 
                   ? 'text-blue-600 border-blue-600' 
                   : 'text-gray-600 border-transparent hover:text-gray-900'
               }`}
             >
-              Targets ({availableTargets.length})
+              <span>Targets</span>
+              <span className={`ml-1 px-1.5 py-0.5 text-xs rounded-full ${
+                mobileView === 'targets' ? 'bg-blue-100 text-blue-700' : 'bg-gray-100 text-gray-600'
+              }`}>{availableTargets.length}</span>
             </button>
             <button
               onClick={() => setMobileView('order')}
-              className={`flex-1 px-4 py-3 text-sm font-medium border-b-2 transition-colors ${
+              className={`flex-1 px-3 py-3 text-xs font-medium border-b-2 transition-colors relative ${
                 mobileView === 'order' 
                   ? 'text-blue-600 border-blue-600' 
                   : 'text-gray-600 border-transparent hover:text-gray-900'
               }`}
             >
-              Order ({lineItems.length})
+              <span>Order</span>
+              <span className={`ml-1 px-1.5 py-0.5 text-xs rounded-full ${
+                mobileView === 'order' ? 'bg-blue-100 text-blue-700' : 'bg-gray-100 text-gray-600'
+              }`}>{lineItems.length}</span>
             </button>
           </div>
         </div>
         
-        {/* Pricing Estimator */}
-        <PricingEstimator 
-          className=""
-          initialPreferences={orderPreferences || undefined}
+        {/* Pricing Estimator - Hidden on mobile, shown on desktop */}
+        <div className="hidden md:block">
+          <PricingEstimator 
+            className=""
+            initialPreferences={orderPreferences || undefined}
             onEstimateChange={(estimate, preferences) => {
               // Store preferences for saving with the order
               if (estimate && preferences) {
@@ -1290,9 +1301,10 @@ export default function EditOrderPage({ params }: { params: Promise<{ id: string
               }
             }}
           />
+        </div>
         
         {/* Main Content Area - Three Column Layout (Desktop) / Single Column (Mobile) */}
-        <div className="flex-1 flex flex-col md:flex-row gap-4 p-4 pt-0 overflow-hidden bg-gray-100" style={{height: 'calc(100vh - 64px - 80px)'}}>
+        <div className="flex-1 flex flex-col md:flex-row gap-2 md:gap-4 p-2 sm:p-4 pt-0 overflow-hidden bg-gray-100 md:style-height" style={{height: 'auto'}}>
           {error && (
             <div className="absolute top-4 left-1/2 transform -translate-x-1/2 z-50 bg-red-50 border border-red-200 rounded-lg p-4 flex items-start shadow-lg">
               <AlertCircle className="h-5 w-5 text-red-600 mt-0.5 mr-3" />
@@ -1312,11 +1324,11 @@ export default function EditOrderPage({ params }: { params: Promise<{ id: string
           <div className={`w-full md:w-64 bg-white rounded-lg shadow-sm flex flex-col h-full ${
             mobileView === 'clients' ? 'block md:block' : 'hidden md:block'
           }`}>
-            <div className="p-4 border-b bg-gray-50">
+            <div className="p-3 sm:p-4 border-b bg-gray-50">
               <div className="flex items-center justify-between">
                 <div>
-                  <h2 className="text-lg font-semibold text-gray-900">Select Brands</h2>
-                  <p className="text-sm text-gray-600 mt-1">
+                  <h2 className="text-base sm:text-lg font-semibold text-gray-900">Select Brands</h2>
+                  <p className="text-xs sm:text-sm text-gray-600 mt-0.5 sm:mt-1">
                     {selectedClients.size} of {clients.length} selected
                   </p>
                 </div>
@@ -1555,11 +1567,11 @@ export default function EditOrderPage({ params }: { params: Promise<{ id: string
           <div className={`flex-1 bg-white rounded-lg shadow-sm flex flex-col h-full ${
             mobileView === 'order' ? 'block md:block' : 'hidden md:block'
           }`}>
-            <div className="p-4 border-b border-gray-200">
-              <div className="flex items-center justify-between">
+            <div className="p-3 sm:p-4 border-b border-gray-200">
+              <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-2">
                 <div>
-                  <div className="flex items-center space-x-3">
-                    <h2 className="text-lg font-semibold text-gray-900">Order Details</h2>
+                  <div className="flex items-center space-x-2 sm:space-x-3">
+                    <h2 className="text-base sm:text-lg font-semibold text-gray-900">Order Details</h2>
                     {saveStatus !== 'idle' && (
                       <span className={`text-xs px-2 py-1 rounded ${
                         saveStatus === 'saving' ? 'bg-yellow-100 text-yellow-700' :
@@ -1572,10 +1584,10 @@ export default function EditOrderPage({ params }: { params: Promise<{ id: string
                       </span>
                     )}
                   </div>
-                  <p className="text-sm text-gray-600 mt-1">
+                  <p className="text-xs sm:text-sm text-gray-600 mt-0.5 sm:mt-1">
                     {lineItems.length} items • {lineItems.filter(item => item.targetPageUrl).length} assigned
                     {lastSaved && (
-                      <span className="text-gray-400"> • Last saved {new Date(lastSaved).toLocaleTimeString()}</span>
+                      <span className="text-gray-400 hidden sm:inline"> • Last saved {new Date(lastSaved).toLocaleTimeString()}</span>
                     )}
                   </p>
                 </div>
@@ -1583,11 +1595,11 @@ export default function EditOrderPage({ params }: { params: Promise<{ id: string
                   <select 
                     value={groupByMode}
                     onChange={(e) => setGroupByMode(e.target.value as 'client' | 'status' | 'none')}
-                    className="text-sm border border-gray-300 rounded px-2 py-1"
+                    className="text-xs sm:text-sm border border-gray-300 rounded px-2 py-1"
                   >
                     <option value="client">Group by Brand</option>
-                    <option value="status">Group by Status</option>
-                    <option value="none">No Grouping</option>
+                    <option value="status" className="hidden sm:block">Group by Status</option>
+                    <option value="none" className="hidden sm:block">No Grouping</option>
                   </select>
                 </div>
               </div>
@@ -1787,10 +1799,31 @@ export default function EditOrderPage({ params }: { params: Promise<{ id: string
         
         {/* Fixed Bottom Bar */}
         <div className="bg-white border-t border-gray-200 shadow-lg">
-          <div className="px-4 md:px-6 py-4">
-            <div className="flex flex-col md:flex-row items-center justify-between gap-4">
-              {/* Left Side - Order Summary Stats and Package Selection */}
-              <div className="flex flex-col md:flex-row items-center gap-4 md:space-x-6 w-full md:w-auto">
+          <div className="px-3 sm:px-4 md:px-6 py-3 sm:py-4">
+            <div className="flex flex-col sm:flex-row items-center justify-between gap-3 sm:gap-4">
+              {/* Mobile: Compact Stats */}
+              <div className="flex sm:hidden items-center justify-around w-full text-xs">
+                <div className="flex items-center space-x-1">
+                  <Building className="h-3 w-3 text-gray-400" />
+                  <span className="font-medium text-gray-900">{getTotalClients()}</span>
+                  <span className="text-gray-500">brands</span>
+                </div>
+                <div className="flex items-center space-x-1">
+                  <LinkIcon className="h-3 w-3 text-gray-400" />
+                  <span className="font-medium text-gray-900">{getTotalLinks()}</span>
+                  <span className="text-gray-500">links</span>
+                </div>
+                <div className="flex items-center space-x-1">
+                  <Target className="h-3 w-3 text-gray-400" />
+                  <span className="font-medium text-gray-900">
+                    {new Set(lineItems.map(item => item.targetPageId).filter(Boolean)).size}
+                  </span>
+                  <span className="text-gray-500">targets</span>
+                </div>
+              </div>
+              
+              {/* Desktop: Full Stats */}
+              <div className="hidden sm:flex flex-col md:flex-row items-center gap-4 md:space-x-6 w-full md:w-auto">
                 <div className="hidden md:flex items-center space-x-4">
                   <span className="text-sm font-medium text-gray-700">Pricing:</span>
                   <div className="flex items-center space-x-2 bg-green-50 px-3 py-1.5 rounded-lg">
@@ -1826,28 +1859,28 @@ export default function EditOrderPage({ params }: { params: Promise<{ id: string
               </div>
               
               {/* Right Side - Total and Continue */}
-              <div className="flex items-center space-x-4 md:space-x-6 w-full md:w-auto">
-                <div className="text-right">
-                  <p className="text-sm text-gray-500">Total Investment</p>
-                  <p className="text-2xl font-bold text-gray-900">{formatCurrency(total)}</p>
-                  <p className="text-xs text-gray-400">Site costs + strategic SEO content creation</p>
+              <div className="flex items-center justify-between sm:justify-end space-x-3 sm:space-x-4 md:space-x-6 w-full sm:w-auto">
+                <div className="text-left sm:text-right">
+                  <p className="text-xs sm:text-sm text-gray-500">Total</p>
+                  <p className="text-xl sm:text-2xl font-bold text-gray-900">{formatCurrency(total)}</p>
+                  <p className="text-xs text-gray-400 hidden sm:block">Site costs + strategic SEO content creation</p>
                 </div>
                 
-                <div className="flex items-center gap-3">
+                <div className="flex items-center gap-2 sm:gap-3">
                   <Link
                     href={isNewOrder ? '/orders' : `/orders/${draftOrderId || ''}`}
-                    className="px-4 md:px-6 py-2 md:py-3 border border-gray-300 text-gray-700 font-medium rounded-lg hover:bg-gray-50 
-                             transition-colors flex items-center"
+                    className="px-3 sm:px-4 md:px-6 py-2 sm:py-2 md:py-3 border border-gray-300 text-gray-700 font-medium text-xs sm:text-sm 
+                             rounded-lg hover:bg-gray-50 transition-colors flex items-center"
                   >
                     Cancel
                   </Link>
                   <button
                     onClick={handleSubmit}
                     disabled={lineItems.length === 0 || lineItems.some(item => !item.clientId)}
-                    className="px-4 md:px-6 py-2 md:py-3 bg-blue-600 text-white font-medium rounded-lg hover:bg-blue-700 
-                             transition-colors flex items-center disabled:bg-gray-300 disabled:cursor-not-allowed"
+                    className="px-3 sm:px-4 md:px-6 py-2 sm:py-2 md:py-3 bg-blue-600 text-white font-medium text-xs sm:text-sm 
+                             rounded-lg hover:bg-blue-700 transition-colors flex items-center disabled:bg-gray-300 disabled:cursor-not-allowed"
                   >
-                    <CheckCircle className="h-5 w-5 mr-2" />
+                    <CheckCircle className="h-4 sm:h-5 w-4 sm:w-5 mr-1 sm:mr-2" />
                     <span className="hidden md:inline">
                       {isNewOrder ? 'Review & Submit Order' : 
                        orderStatus === 'pending_confirmation' ? 'Resubmit for Review' :
@@ -1887,10 +1920,10 @@ export default function EditOrderPage({ params }: { params: Promise<{ id: string
         {/* Order Confirmation Modal */}
         {showConfirmModal && (
           <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4">
-            <div className="bg-white rounded-lg max-w-2xl w-full max-h-[90vh] overflow-y-auto">
-              <div className="p-6">
-                <div className="flex items-center justify-between mb-6">
-                  <h2 className="text-2xl font-bold text-gray-900">
+            <div className="bg-white rounded-lg max-w-2xl w-full max-h-[85vh] sm:max-h-[90vh] overflow-y-auto">
+              <div className="p-4 sm:p-6">
+                <div className="flex items-center justify-between mb-4 sm:mb-6">
+                  <h2 className="text-lg sm:text-2xl font-bold text-gray-900">
                     {isNewOrder ? 'Confirm Your Order' : 
                      orderStatus === 'pending_confirmation' ? 'Resubmit Order for Review' :
                      orderStatus === 'confirmed' ? 'Request Order Changes' :
@@ -1898,9 +1931,9 @@ export default function EditOrderPage({ params }: { params: Promise<{ id: string
                   </h2>
                   <button
                     onClick={() => setShowConfirmModal(false)}
-                    className="text-gray-400 hover:text-gray-600"
+                    className="text-gray-400 hover:text-gray-600 p-1"
                   >
-                    <X className="h-6 w-6" />
+                    <X className="h-5 sm:h-6 w-5 sm:w-6" />
                   </button>
                 </div>
                 
