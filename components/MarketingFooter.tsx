@@ -94,7 +94,7 @@ export default function MarketingFooter() {
               </li>
               <li>
                 <a 
-                  href="https://postflow.outreachlabs.net/login" 
+                  href="https://www.linkio.com/login" 
                   target="_blank"
                   rel="noopener noreferrer"
                   className="text-gray-400 hover:text-white transition-colors"

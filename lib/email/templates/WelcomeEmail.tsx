@@ -11,7 +11,7 @@ interface WelcomeEmailProps {
 export function WelcomeEmail({
   userName,
   userEmail,
-  loginUrl = 'https://postflow.outreachlabs.net/login',
+  loginUrl = 'https://www.linkio.com/login',
 }: WelcomeEmailProps) {
   return (
     <BaseEmail
