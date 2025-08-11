@@ -12,7 +12,6 @@ export default function EmailOutreachTemplatesPage() {
       metaDescription="Get 111 proven email outreach templates for link building campaigns. Broken link building, guest post pitches, resource pages, and more. Ready to copy & customize."
       publishDate="January 15, 2021"
       author="Ajay Paghdal"
-      authorRole="Founder and Marketer for Linkio"
       readTime="20 min read"
       heroImage=""
       heroImageAlt="Email Outreach Templates for Link Building"

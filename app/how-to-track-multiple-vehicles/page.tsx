@@ -12,7 +12,6 @@ export default function HowToTrackMultipleVehiclesPage() {
       metaDescription="Learn how to efficiently track multiple vehicles using GPS tracking software. Discover real-time monitoring, route planning, and fleet management strategies."
       publishDate="April 20, 2021"
       author="Ajay Paghdal"
-      authorRole="Founder and Marketer for Linkio"
       readTime="8 min read"
       heroImage=""
       heroImageAlt="Vehicle Tracking Software Guide"

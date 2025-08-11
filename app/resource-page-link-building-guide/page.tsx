@@ -12,7 +12,6 @@ export default function ResourcePageLinkBuildingGuidePage() {
       metaDescription="Master resource page link building with our comprehensive guide. Learn how to find opportunities, craft outreach emails, and build high-quality backlinks from resource pages."
       publishDate="November 10, 2020"
       author="Ajay Paghdal"
-      authorRole="Founder and Marketer for Linkio"
       readTime="15 min read"
       heroImage="/resource-link-building-featured-image.png"
       heroImageAlt="Resource Page Link Building Guide"

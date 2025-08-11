@@ -12,7 +12,6 @@ export default function HowToUseSeoToImproveConversionRatePage() {
       metaDescription="Learn how to use SEO strategies to improve conversion rates. Discover keyword research, on-page optimization, content strategies, and technical improvements."
       publishDate="July 20, 2021"
       author="Burkhard Berger"
-      authorRole="Founder of Novum™"
       readTime="15 min read"
       heroImage=""
       heroImageAlt="SEO Conversion Rate Optimization"

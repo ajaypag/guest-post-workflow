@@ -12,7 +12,6 @@ export default function UsingSeoForLeadGenerationPage() {
       metaDescription="Master SEO lead generation with 10 proven techniques. Learn long-tail keywords, featured snippets, voice search optimization, and more to grow your business."
       publishDate="May 15, 2021"
       author="Burkhard Berger"
-      authorRole="Founder of Novum™"
       readTime="18 min read"
       heroImage=""
       heroImageAlt="SEO Lead Generation Guide"

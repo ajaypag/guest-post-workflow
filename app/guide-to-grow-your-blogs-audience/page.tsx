@@ -12,7 +12,6 @@ export default function GuideToGrowYourBlogsAudiencePage() {
       metaDescription="Learn proven strategies to grow your blog audience in 2024. From SEO and keyword research to visual communication and networking tips for bloggers."
       publishDate="June 10, 2021"
       author="Anahit Babkenyan"
-      authorRole="Content Writer"
       readTime="12 min read"
       heroImage=""
       heroImageAlt="Guide to Growing Your Blog Audience"

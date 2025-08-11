@@ -12,7 +12,6 @@ export default function HowToCreateLinkBaitPage() {
       metaDescription="Learn 10 proven strategies to create link bait content that attracts natural backlinks. Includes real examples and actionable tips for creating linkable assets."
       publishDate="April 28, 2021"
       author="Linkio Team"
-      authorRole="Link Building Experts"
       readTime="15 min read"
       heroImage=""
       heroImageAlt="Link Bait Creation Guide"
