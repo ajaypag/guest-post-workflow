@@ -159,6 +159,19 @@ function LoginForm() {
           </form>
         </div>
 
+        {/* Quick start without account */}
+        <div className="mt-6 p-4 bg-gradient-to-r from-blue-50 to-purple-50 rounded-xl border border-blue-200">
+          <p className="text-sm text-gray-700 mb-3 text-center">
+            Want to see how it works first?
+          </p>
+          <a
+            href="/get-started"
+            className="block w-full text-center py-2 px-4 bg-white border border-blue-300 rounded-lg text-blue-600 font-medium hover:bg-blue-50 transition-colors"
+          >
+            Try Quick Start (No Account Needed)
+          </a>
+        </div>
+
         <div className="text-center">
           <p className="text-xs text-gray-400">
             © 2025 Linkio. All rights reserved.
