@@ -209,6 +209,70 @@ const blogPosts = [
     category: 'SEO',
     readTime: '20 min read',
     date: 'December 2020'
+  },
+  {
+    title: 'Best Directory Submission Services 2024: Top 36 Companies Reviewed',
+    href: '/best-directory-submission-services',
+    excerpt: 'Compare the top 36 directory submission services for SEO. Detailed reviews of SubmitShop, Directory Maximizer, AdviceLocal and more. Find the right service for your needs.',
+    category: 'Link Building',
+    readTime: '15 min read',
+    date: 'March 2021'
+  },
+  {
+    title: 'The Definitive Guide To Growing Your Blog\'s Audience in 2024',
+    href: '/guide-to-grow-your-blogs-audience',
+    excerpt: 'Learn proven strategies to grow your blog audience in 2024. From SEO and keyword research to visual communication and networking tips for bloggers.',
+    category: 'Content Marketing',
+    readTime: '12 min read',
+    date: 'June 2021'
+  },
+  {
+    title: 'How to Track Multiple Vehicles With Vehicle Tracking Software',
+    href: '/how-to-track-multiple-vehicles',
+    excerpt: 'Learn how to efficiently track multiple vehicles using GPS tracking software. Discover real-time monitoring, route planning, and fleet management strategies.',
+    category: 'Resources',
+    readTime: '8 min read',
+    date: 'April 2021'
+  },
+  {
+    title: 'How To Use SEO To Improve Your Conversion Rate (7 Proven Methods)',
+    href: '/how-to-use-seo-to-improve-conversion-rate',
+    excerpt: 'Learn how to use SEO strategies to improve conversion rates. Discover keyword research, on-page optimization, content strategies, and technical improvements.',
+    category: 'SEO',
+    readTime: '15 min read',
+    date: 'July 2021'
+  },
+  {
+    title: 'Link Disavows Good or Bad?',
+    href: '/link-disavows-good-or-bad',
+    excerpt: 'Learn whether link disavows are good or bad for your SEO. Discover what links to disavow, when to do it, and best practices for protecting your rankings.',
+    category: 'Link Building',
+    readTime: '15 min read',
+    date: 'January 2023'
+  },
+  {
+    title: 'How to Sort and Filter Link Prospects',
+    href: '/how-to-sort-and-filter-link-prospects',
+    excerpt: 'Complete guide on sorting and filtering link prospects. Learn to identify quality links, remove duplicates, and build an effective outreach list.',
+    category: 'Link Building',
+    readTime: '25 min read',
+    date: 'February 2021'
+  },
+  {
+    title: 'SEO Case Study (Building An Authority Site)',
+    href: '/seo-case-study',
+    excerpt: '16-month SEO case study showing how we built an authority site from scratch. See month-by-month progress, strategies, and results.',
+    category: 'Case Studies',
+    readTime: '30 min read',
+    date: 'September 2017'
+  },
+  {
+    title: 'Using SEO For Lead Generation – Everything You Need To Know',
+    href: '/using-seo-for-lead-generation',
+    excerpt: 'Master SEO lead generation with 10 proven techniques. Learn long-tail keywords, featured snippets, voice search optimization, and more to grow your business.',
+    category: 'SEO',
+    readTime: '18 min read',
+    date: 'May 2021'
   }
 ];
 
