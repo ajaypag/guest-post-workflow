@@ -100,7 +100,7 @@ export default function QuickStartFlow({ session }: QuickStartFlowProps) {
             orderPreferences
           }));
         }
-        router.push(`/login?redirect=${encodeURIComponent('/get-started')}`);
+        router.push('/signup');
         return;
       }
       

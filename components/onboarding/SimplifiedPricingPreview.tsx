@@ -17,7 +17,7 @@ export default function SimplifiedPricingPreview({
   const [drMin, setDrMin] = useState(30);
   const [drMax, setDrMax] = useState(100);
   const [minTraffic, setMinTraffic] = useState(0);
-  const [priceMax, setPriceMax] = useState(500);
+  const [priceMax, setPriceMax] = useState(200);
   
   // Start with 900 sites, filter down based on selections
   const calculateAvailableSites = () => {
@@ -90,7 +90,10 @@ export default function SimplifiedPricingPreview({
               min="0"
               max="100"
               value={drMin}
-              onChange={(e) => setDrMin(Math.min(parseInt(e.target.value) || 0, drMax - 1))}
+              onChange={(e) => {
+                const value = e.target.value === '' ? 0 : Math.min(parseInt(e.target.value) || 0, drMax - 1);
+                setDrMin(value);
+              }}
               className="w-20 px-3 py-2 border border-gray-300 rounded-lg text-sm"
               placeholder="Min"
             />
@@ -100,7 +103,10 @@ export default function SimplifiedPricingPreview({
               min="0"
               max="100"
               value={drMax}
-              onChange={(e) => setDrMax(Math.max(parseInt(e.target.value) || 100, drMin + 1))}
+              onChange={(e) => {
+                const value = e.target.value === '' ? 100 : Math.max(parseInt(e.target.value) || 100, drMin + 1);
+                setDrMax(value);
+              }}
               className="w-20 px-3 py-2 border border-gray-300 rounded-lg text-sm"
               placeholder="Max"
             />
@@ -140,9 +146,12 @@ export default function SimplifiedPricingPreview({
               max="1000"
               step="10"
               value={priceMax}
-              onChange={(e) => setPriceMax(Math.max(179, parseInt(e.target.value) || 179))}
+              onChange={(e) => {
+                const value = e.target.value === '' ? 179 : Math.max(179, parseInt(e.target.value) || 179);
+                setPriceMax(value);
+              }}
               className="flex-1 px-3 py-2 border border-gray-300 rounded-lg text-sm"
-              placeholder="500"
+              placeholder="200"
             />
           </div>
           <p className="text-xs text-gray-500 mt-1">Includes site cost + $79 content creation</p>
