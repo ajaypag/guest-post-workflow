@@ -8,10 +8,8 @@ import {
   Lock, 
   User, 
   Building, 
-  Phone,
   Loader2, 
   AlertCircle,
-  CheckCircle,
   Eye,
   EyeOff,
   ArrowRight
@@ -24,16 +22,11 @@ export default function SignupPage() {
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState('');
   const [showPassword, setShowPassword] = useState(false);
-  const [showConfirmPassword, setShowConfirmPassword] = useState(false);
-  const [showOptionalFields, setShowOptionalFields] = useState(false);
   
   const [formData, setFormData] = useState({
     email: '',
     password: '',
-    confirmPassword: '',
-    contactName: '',
-    companyName: '',
-    phone: ''
+    contactName: ''
   });
   
   // Check if coming from QuickStart flow  
@@ -44,24 +37,13 @@ export default function SignupPage() {
     const quickstartState = typeof window !== 'undefined' ? sessionStorage.getItem('quickstart_state') : null;
     if (quickstartState) {
       setIsQuickStartUser(true);
-      // Pre-fill company name if available from quickstart
-      try {
-        const state = JSON.parse(quickstartState);
-        if (state.brandName) {
-          setFormData(prev => ({ ...prev, companyName: state.brandName }));
-        }
-      } catch (e) {
-        console.error('Error parsing quickstart state:', e);
-      }
     }
   }, []);
   
   const [errors, setErrors] = useState({
     email: '',
     password: '',
-    confirmPassword: '',
-    contactName: '',
-    companyName: ''
+    contactName: ''
   });
 
   const validateEmail = (email: string) => {
@@ -86,12 +68,8 @@ export default function SignupPage() {
         return validateEmail(value);
       case 'password':
         return validatePassword(value);
-      case 'confirmPassword':
-        return value !== formData.password ? 'Passwords do not match' : '';
       case 'contactName':
         return !value.trim() ? 'Name is required' : '';
-      case 'companyName':
-        return !value.trim() ? 'Company name is required' : '';
       default:
         return '';
     }
@@ -107,52 +85,18 @@ export default function SignupPage() {
     // Validate field
     const fieldError = validateField(name, value);
     setErrors(prev => ({ ...prev, [name]: fieldError }));
-    
-    // Also validate confirm password when password changes
-    if (name === 'password' && formData.confirmPassword) {
-      const confirmError = formData.confirmPassword !== value ? 'Passwords do not match' : '';
-      setErrors(prev => ({ ...prev, confirmPassword: confirmError }));
-    }
   };
 
-  const formatPhoneNumber = (value: string) => {
-    // Remove all non-digits
-    const numbers = value.replace(/\D/g, '');
-    
-    // Format as US phone number
-    if (numbers.length <= 3) {
-      return numbers;
-    } else if (numbers.length <= 6) {
-      return `(${numbers.slice(0, 3)}) ${numbers.slice(3)}`;
-    } else if (numbers.length <= 10) {
-      return `(${numbers.slice(0, 3)}) ${numbers.slice(3, 6)}-${numbers.slice(6)}`;
-    } else {
-      return `(${numbers.slice(0, 3)}) ${numbers.slice(3, 6)}-${numbers.slice(6, 10)}`;
-    }
-  };
-
-  const handlePhoneChange = (e: React.ChangeEvent<HTMLInputElement>) => {
-    const formatted = formatPhoneNumber(e.target.value);
-    setFormData(prev => ({ ...prev, phone: formatted }));
-  };
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     setError('');
     
-    // For QuickStart users, only validate essential fields
-    const newErrors = isQuickStartUser ? {
+    // Validate all fields
+    const newErrors = {
       email: validateField('email', formData.email),
       password: validateField('password', formData.password),
-      confirmPassword: validateField('confirmPassword', formData.confirmPassword),
-      contactName: '', // Optional for quickstart
-      companyName: '' // Optional for quickstart
-    } : {
-      email: validateField('email', formData.email),
-      password: validateField('password', formData.password),
-      confirmPassword: validateField('confirmPassword', formData.confirmPassword),
-      contactName: showOptionalFields ? validateField('contactName', formData.contactName) : '',
-      companyName: showOptionalFields ? validateField('companyName', formData.companyName) : ''
+      contactName: validateField('contactName', formData.contactName)
     };
     
     setErrors(newErrors);
@@ -174,9 +118,9 @@ export default function SignupPage() {
         body: JSON.stringify({
           email: formData.email.toLowerCase(),
           password: formData.password,
-          contactName: formData.contactName || 'User',
-          companyName: formData.companyName || formData.email.split('@')[1] || 'Company',
-          phone: formData.phone || null
+          contactName: formData.contactName,
+          companyName: formData.email.split('@')[1] || 'Company', // Default from email domain
+          phone: null
         }),
       });
       
@@ -240,6 +184,30 @@ export default function SignupPage() {
               </div>
             )}
             
+            {/* Name */}
+            <div>
+              <label className="block text-sm font-medium text-gray-700 mb-1">
+                Your Name
+              </label>
+              <div className="relative">
+                <User className="absolute left-3 top-3 h-5 w-5 text-gray-400" />
+                <input
+                  type="text"
+                  name="contactName"
+                  value={formData.contactName}
+                  onChange={handleInputChange}
+                  className={`w-full pl-10 pr-4 py-2.5 border rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 ${
+                    errors.contactName ? 'border-red-300' : 'border-gray-300'
+                  }`}
+                  placeholder="John Smith"
+                  autoComplete="name"
+                />
+              </div>
+              {errors.contactName && (
+                <p className="mt-1 text-sm text-red-600">{errors.contactName}</p>
+              )}
+            </div>
+            
             {/* Email */}
             <div>
               <label className="block text-sm font-medium text-gray-700 mb-1">
@@ -263,90 +231,6 @@ export default function SignupPage() {
                 <p className="mt-1 text-sm text-red-600">{errors.email}</p>
               )}
             </div>
-            
-            {/* Show optional fields toggle for non-quickstart users */}
-            {!isQuickStartUser && !showOptionalFields && (
-              <button
-                type="button"
-                onClick={() => setShowOptionalFields(true)}
-                className="w-full py-2 px-4 bg-gray-50 border border-gray-200 rounded-lg text-gray-600 hover:bg-gray-100 text-sm font-medium"
-              >
-                + Add company details (optional)
-              </button>
-            )}
-            
-            {/* Name - Only show if not quickstart or if optional fields shown */}
-            {(!isQuickStartUser || showOptionalFields) && (
-            <div>
-              <label className="block text-sm font-medium text-gray-700 mb-1">
-                Your Name
-              </label>
-              <div className="relative">
-                <User className="absolute left-3 top-3 h-5 w-5 text-gray-400" />
-                <input
-                  type="text"
-                  name="contactName"
-                  value={formData.contactName}
-                  onChange={handleInputChange}
-                  className={`w-full pl-10 pr-4 py-2.5 border rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 ${
-                    errors.contactName ? 'border-red-300' : 'border-gray-300'
-                  }`}
-                  placeholder="John Smith"
-                  autoComplete="name"
-                />
-              </div>
-              {errors.contactName && (
-                <p className="mt-1 text-sm text-red-600">{errors.contactName}</p>
-              )}
-            </div>
-            )}
-            
-            {/* Company - Only show if not quickstart or if optional fields shown */}
-            {(!isQuickStartUser || showOptionalFields) && (
-            <div>
-              <label className="block text-sm font-medium text-gray-700 mb-1">
-                Company Name
-              </label>
-              <div className="relative">
-                <Building className="absolute left-3 top-3 h-5 w-5 text-gray-400" />
-                <input
-                  type="text"
-                  name="companyName"
-                  value={formData.companyName}
-                  onChange={handleInputChange}
-                  className={`w-full pl-10 pr-4 py-2.5 border rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 ${
-                    errors.companyName ? 'border-red-300' : 'border-gray-300'
-                  }`}
-                  placeholder="Acme Corporation"
-                  autoComplete="organization"
-                />
-              </div>
-              {errors.companyName && (
-                <p className="mt-1 text-sm text-red-600">{errors.companyName}</p>
-              )}
-            </div>
-            )}
-            
-            {/* Phone (Optional) - Only show if optional fields shown */}
-            {(showOptionalFields && !isQuickStartUser) && (
-            <div>
-              <label className="block text-sm font-medium text-gray-700 mb-1">
-                Phone Number <span className="text-gray-500">(optional)</span>
-              </label>
-              <div className="relative">
-                <Phone className="absolute left-3 top-3 h-5 w-5 text-gray-400" />
-                <input
-                  type="tel"
-                  name="phone"
-                  value={formData.phone}
-                  onChange={handlePhoneChange}
-                  className="w-full pl-10 pr-4 py-2.5 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
-                  placeholder="(555) 123-4567"
-                  autoComplete="tel"
-                />
-              </div>
-            </div>
-            )}
             
             {/* Password */}
             <div>
@@ -380,37 +264,6 @@ export default function SignupPage() {
               <p className="mt-1 text-xs text-gray-500">
                 At least 8 characters with uppercase, lowercase, and numbers
               </p>
-            </div>
-            
-            {/* Confirm Password */}
-            <div>
-              <label className="block text-sm font-medium text-gray-700 mb-1">
-                Confirm Password
-              </label>
-              <div className="relative">
-                <Lock className="absolute left-3 top-3 h-5 w-5 text-gray-400" />
-                <input
-                  type={showConfirmPassword ? "text" : "password"}
-                  name="confirmPassword"
-                  value={formData.confirmPassword}
-                  onChange={handleInputChange}
-                  className={`w-full pl-10 pr-10 py-2.5 border rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 ${
-                    errors.confirmPassword ? 'border-red-300' : 'border-gray-300'
-                  }`}
-                  placeholder="Confirm password"
-                  autoComplete="new-password"
-                />
-                <button
-                  type="button"
-                  onClick={() => setShowConfirmPassword(!showConfirmPassword)}
-                  className="absolute right-3 top-3 text-gray-400 hover:text-gray-600"
-                >
-                  {showConfirmPassword ? <EyeOff className="h-5 w-5" /> : <Eye className="h-5 w-5" />}
-                </button>
-              </div>
-              {errors.confirmPassword && (
-                <p className="mt-1 text-sm text-red-600">{errors.confirmPassword}</p>
-              )}
             </div>
             
             <button

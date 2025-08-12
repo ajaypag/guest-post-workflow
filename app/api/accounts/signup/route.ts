@@ -14,9 +14,9 @@ export async function POST(request: NextRequest) {
     const { email, password, contactName, companyName, phone } = data;
 
     // Validate required fields
-    if (!email || !password || !contactName || !companyName) {
+    if (!email || !password || !contactName) {
       return NextResponse.json(
-        { error: 'All fields except phone are required' },
+        { error: 'Name, email and password are required' },
         { status: 400 }
       );
     }
@@ -69,7 +69,7 @@ export async function POST(request: NextRequest) {
       email: email.toLowerCase(),
       password: hashedPassword,
       contactName: contactName.trim(),
-      companyName: companyName.trim(),
+      companyName: companyName?.trim() || email.split('@')[1] || 'Company',
       phone: phone || null,
       role: 'viewer', // Default role for self-signup
       status: 'active',
