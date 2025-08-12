@@ -199,12 +199,10 @@ export async function compareToBenchmark(orderId: string, userId?: string) {
       where: eq(orderSiteSubmissions.orderGroupId, group.id)
     });
 
-    // Count only sites that are truly included and accepted by client
+    // Count sites that are included (selected by internal team)
+    // This includes pending sites awaiting client approval
     const delivered = submissions.filter(s => 
-      s.inclusionStatus === 'included' && (
-        s.submissionStatus === 'completed' || 
-        s.submissionStatus === 'client_approved'
-      )
+      s.inclusionStatus === 'included'
     ).length;
     
     const inProgress = submissions.filter(s => 
