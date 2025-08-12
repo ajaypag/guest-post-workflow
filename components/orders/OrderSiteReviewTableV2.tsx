@@ -942,10 +942,6 @@ export default function OrderSiteReviewTableV2({
                           <div className="mt-4 pt-4 border-t border-gray-100">
                             <ExpandedDomainDetails 
                               submission={submission}
-                              userType={userType}
-                              permissions={permissions}
-                              onEdit={permissions.canEditDomainAssignments ? handleEditSubmission : undefined}
-                              onRemove={permissions.canEditDomainAssignments ? handleRemoveSubmission : undefined}
                             />
                           </div>
                         )}
