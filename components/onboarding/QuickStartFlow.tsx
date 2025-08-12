@@ -3,7 +3,7 @@
 import React, { useState, useEffect } from 'react';
 import { useRouter } from 'next/navigation';
 import { ArrowRight, Globe, Target, DollarSign, Sparkles, Check, TrendingUp, Info } from 'lucide-react';
-import PricingEstimator from '@/components/orders/PricingEstimator';
+// PricingEstimator removed to prevent unauthorized API calls
 import SimplifiedPricingPreview from '@/components/onboarding/SimplifiedPricingPreview';
 import { formatCurrency } from '@/lib/utils/formatting';
 import { SERVICE_FEE_CENTS } from '@/lib/config/pricing';
@@ -87,8 +87,8 @@ export default function QuickStartFlow({ session }: QuickStartFlowProps) {
     setError('');
     
     try {
-      // Check if user is logged in first
-      if (!session) {
+      // Check if user is logged in first  
+      if (!session || (!session.user && !session.userId)) {
         // Save state and redirect to login
         if (typeof window !== 'undefined') {
           sessionStorage.setItem('quickstart_state', JSON.stringify({
@@ -356,24 +356,14 @@ export default function QuickStartFlow({ session }: QuickStartFlowProps) {
                 </div>
               </div>
 
-              {/* Use simplified preview for non-auth users, real estimator for logged in */}
-              {!session ? (
-                <SimplifiedPricingPreview
-                  onPreferencesChange={(prefs, estimate) => {
-                    setOrderPreferences(prefs);
-                    setPricingEstimate(estimate);
-                  }}
-                  linkCount={linkCount}
-                />
-              ) : (
-                <PricingEstimator
-                  onEstimateChange={(estimate, preferences) => {
-                    setPricingEstimate(estimate);
-                    setOrderPreferences(preferences);
-                  }}
-                  className="mb-6"
-                />
-              )}
+              {/* Always use SimplifiedPricingPreview to avoid auth issues */}
+              <SimplifiedPricingPreview
+                onPreferencesChange={(prefs, estimate) => {
+                  setOrderPreferences(prefs);
+                  setPricingEstimate(estimate);
+                }}
+                linkCount={linkCount}
+              />
 
               {/* Number of links */}
               <div className="mt-6 p-6 bg-gray-50 rounded-lg">

@@ -16,8 +16,22 @@ export default function GetStartedPage() {
     setMounted(true);
     // Check for session
     fetch('/api/auth/session')
-      .then(res => res.json())
-      .then(data => setSession(data))
+      .then(res => {
+        if (res.ok) {
+          return res.json();
+        } else {
+          // 401 or other error - not authenticated
+          return null;
+        }
+      })
+      .then(data => {
+        // Only set session if it has a valid user
+        if (data && (data.user || data.userId)) {
+          setSession(data);
+        } else {
+          setSession(null);
+        }
+      })
       .catch(() => setSession(null));
   }, []);
 
