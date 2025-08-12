@@ -155,7 +155,20 @@ export default function QuickStartFlow({ session }: QuickStartFlowProps) {
   };
 
   const createOrderWithClient = async (clientId: string) => {
-    // First create a draft order
+    // First, create the target page for the client
+    const targetPageRes = await fetch(`/api/clients/${clientId}/target-pages`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        urls: [targetUrl]
+      })
+    });
+    
+    if (!targetPageRes.ok) {
+      throw new Error('Failed to create target page');
+    }
+    
+    // Create a draft order
     const orderRes = await fetch('/api/orders', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
@@ -172,31 +185,24 @@ export default function QuickStartFlow({ session }: QuickStartFlowProps) {
     
     const { orderId } = await orderRes.json();
     
-    // Update order with client and preferences
-    const updateData: any = {
+    // Store quickstart data for the order edit page to auto-populate
+    const quickstartData = {
       clientId,
-      targetPages: [{
-        url: targetUrl,
-        anchorText: brandName,
-        keywords: [brandName.toLowerCase()]
-      }],
-      linkCount
-    };
-    
-    // Add pricing preferences if available
-    if (orderPreferences) {
-      updateData.preferences = {
+      targetUrl,
+      brandName,
+      linkCount,
+      preferences: orderPreferences ? {
         drMin: orderPreferences.drRange?.[0] || 30,
         drMax: orderPreferences.drRange?.[1] || 100,
         minTraffic: orderPreferences.minTraffic || 100,
+        maxPrice: orderPreferences.maxPrice || 20000,
         categories: orderPreferences.categories || [],
         types: orderPreferences.types || []
-      };
-    }
+      } : null
+    };
     
-    // Save to localStorage for the order edit page to pick up
     if (typeof window !== 'undefined') {
-      localStorage.setItem(`order_${orderId}_quickstart`, JSON.stringify(updateData));
+      localStorage.setItem(`order_${orderId}_quickstart`, JSON.stringify(quickstartData));
     }
     
     // Redirect to order edit page with quickstart flag

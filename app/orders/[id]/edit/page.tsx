@@ -437,6 +437,9 @@ export default function EditOrderPage({ params }: { params: Promise<{ id: string
         
         // Then load the draft order with the client list
         await loadDraftOrder(id, activeClients);
+        
+        // Handle quickstart data if present
+        await handleQuickstartData(id, activeClients);
       }
       setLoadingClients(false);
     };
@@ -740,6 +743,34 @@ export default function EditOrderPage({ params }: { params: Promise<{ id: string
     }
   }, [session, draftOrderId, lineItems, selectedClients, clients, subtotal, total, estimatedPricePerLink,
       selectedAccountId, selectedAccountEmail, selectedAccountName, selectedAccountCompany]);
+
+  // Handle quickstart data from localStorage
+  const handleQuickstartData = async (orderId: string, activeClients: any[]) => {
+    try {
+      const quickstartData = localStorage.getItem(`order_${orderId}_quickstart`);
+      if (!quickstartData) return;
+
+      const data = JSON.parse(quickstartData);
+      console.log('Found quickstart data:', data);
+
+      // Auto-select the client
+      if (data.clientId) {
+        const client = activeClients.find(c => c.id === data.clientId);
+        if (client) {
+          const clientMap = new Map();
+          clientMap.set(data.clientId, { selected: true, linkCount: data.linkCount || 1 });
+          setSelectedClients(clientMap);
+          
+          // Clear the quickstart data so it doesn't interfere later
+          localStorage.removeItem(`order_${orderId}_quickstart`);
+          
+          console.log('Auto-selected client for quickstart:', client.name);
+        }
+      }
+    } catch (error) {
+      console.error('Error handling quickstart data:', error);
+    }
+  };
   
   // Auto-save removed - manual save only
   
