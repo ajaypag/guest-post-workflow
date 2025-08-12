@@ -417,28 +417,28 @@ export default function ExternalOrderReviewPage() {
     <AuthWrapper>
       <Header />
       <div className="min-h-screen bg-gray-50">
-        <div className="max-w-7xl mx-auto px-4 py-8">
+        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-4 sm:py-8">
           {/* Header */}
-          <div className="bg-white rounded-lg shadow-sm border border-gray-200 p-6 mb-6">
+          <div className="bg-white rounded-lg shadow-sm border border-gray-200 p-4 sm:p-6 mb-4 sm:mb-6">
             <div className="flex items-center gap-4 mb-4">
               <Link
                 href={`/orders/${orderId}`}
-                className="inline-flex items-center text-gray-600 hover:text-gray-900 transition-colors"
+                className="inline-flex items-center text-gray-600 hover:text-gray-900 transition-colors min-h-[44px]"
               >
                 <ArrowLeft className="h-4 w-4 mr-2" />
                 Back to Order
               </Link>
             </div>
-            <div className="flex items-center justify-between mb-4">
+            <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 mb-4">
               <div>
-                <h1 className="text-2xl font-bold text-gray-900">
+                <h1 className="text-xl sm:text-2xl font-bold text-gray-900">
                   Review Site Recommendations
                 </h1>
                 <p className="text-gray-600 mt-1">
                   Order #{order.id.slice(0, 8)}
                 </p>
               </div>
-              <div className="text-right">
+              <div className="text-left sm:text-right">
                 <p className="text-sm text-gray-500">Total Sites</p>
                 <p className="text-2xl font-bold text-gray-900">{totalSubmissions}</p>
               </div>
@@ -476,14 +476,14 @@ export default function ExternalOrderReviewPage() {
             )}
 
             {/* Progress Stats - Simple included/excluded counts */}
-            <div className="grid grid-cols-3 gap-4 mt-6">
-              <div className="text-center bg-green-50 rounded-lg p-3 border border-green-200">
+            <div className="grid grid-cols-1 sm:grid-cols-3 gap-3 sm:gap-4 mt-6">
+              <div className="text-center bg-green-50 rounded-lg p-4 sm:p-3 border border-green-200">
                 <p className="text-2xl font-semibold text-green-600">{includedCount}</p>
-                <p className="text-xs text-green-700 font-medium">In This Order</p>
+                <p className="text-sm sm:text-xs text-green-700 font-medium">In This Order</p>
               </div>
-              <div className="text-center bg-purple-50 rounded-lg p-3 border border-purple-200 relative group">
+              <div className="text-center bg-purple-50 rounded-lg p-4 sm:p-3 border border-purple-200 relative group">
                 <p className="text-2xl font-semibold text-purple-600">{savedForLaterCount}</p>
-                <p className="text-xs text-purple-700 font-medium">Site Bank</p>
+                <p className="text-sm sm:text-xs text-purple-700 font-medium">Site Bank</p>
                 {savedForLaterCount > 0 && (
                   <div className="absolute bottom-full left-1/2 transform -translate-x-1/2 mb-2 hidden group-hover:block z-10">
                     <div className="bg-gray-900 text-white text-xs rounded-lg py-2 px-3 whitespace-nowrap">
@@ -495,9 +495,9 @@ export default function ExternalOrderReviewPage() {
                   </div>
                 )}
               </div>
-              <div className="text-center bg-gray-50 rounded-lg p-3 border border-gray-200">
+              <div className="text-center bg-gray-50 rounded-lg p-4 sm:p-3 border border-gray-200">
                 <p className="text-2xl font-semibold text-gray-400">{excludedCount}</p>
-                <p className="text-xs text-gray-600 font-medium">Not Interested</p>
+                <p className="text-sm sm:text-xs text-gray-600 font-medium">Not Interested</p>
               </div>
             </div>
           </div>
@@ -547,11 +547,11 @@ export default function ExternalOrderReviewPage() {
 
           {/* Pricing Summary for Selected Sites */}
           {includedCount > 0 && (
-            <div className="mt-6 bg-white rounded-lg shadow-sm border border-gray-200 p-6">
+            <div className="mt-4 sm:mt-6 bg-white rounded-lg shadow-sm border border-gray-200 p-4 sm:p-6">
               <div className="flex items-center justify-between mb-4">
                 <div className="flex items-center gap-2">
                   <DollarSign className="w-5 h-5 text-gray-500" />
-                  <h3 className="text-lg font-semibold text-gray-900">Order Summary</h3>
+                  <h3 className="text-base sm:text-lg font-semibold text-gray-900">Order Summary</h3>
                 </div>
               </div>
               
@@ -566,14 +566,14 @@ export default function ExternalOrderReviewPage() {
                   const groupTotal = includedSubmissions.reduce((sum, sub) => sum + (sub.price || 0), 0);
                   
                   return (
-                    <div key={groupId} className="flex justify-between py-2 border-b border-gray-100 last:border-b-0">
+                    <div key={groupId} className="flex flex-col sm:flex-row sm:justify-between py-3 border-b border-gray-100 last:border-b-0 gap-1 sm:gap-0">
                       <div>
                         <span className="font-medium text-gray-900">{group?.client.name || 'Unknown Client'}</span>
                         <span className="text-sm text-gray-500 ml-2">
                           ({includedSubmissions.length} site{includedSubmissions.length > 1 ? 's' : ''})
                         </span>
                       </div>
-                      <span className="font-medium text-gray-900">
+                      <span className="font-medium text-gray-900 text-right sm:text-left">
                         {groupTotal > 0 ? formatCurrency(groupTotal) : (
                           <span className="text-gray-500 italic text-sm">Pricing pending</span>
                         )}
@@ -584,7 +584,7 @@ export default function ExternalOrderReviewPage() {
                 
                 {/* Total */}
                 <div className="pt-3 border-t border-gray-200">
-                  <div className="flex justify-between items-center">
+                  <div className="flex flex-col sm:flex-row sm:justify-between sm:items-center gap-2 sm:gap-0">
                     <span className="text-lg font-semibold text-gray-900">Total Investment</span>
                     <span className="text-lg font-bold text-gray-900">
                       {(() => {
@@ -601,7 +601,7 @@ export default function ExternalOrderReviewPage() {
                       })()}
                     </span>
                   </div>
-                  <p className="text-xs text-gray-500 mt-1 text-right">
+                  <p className="text-xs text-gray-500 mt-1 text-left sm:text-right">
                     Final pricing confirmed at approval
                   </p>
                 </div>
@@ -610,12 +610,12 @@ export default function ExternalOrderReviewPage() {
           )}
 
           {/* Proceed Button - Always visible with clear messaging */}
-          <div className="mt-6 text-center">
+          <div className="mt-4 sm:mt-6 text-center">
             {includedCount > 0 ? (
               <>
                 <button
                   onClick={handleProceed}
-                  className="inline-flex items-center px-6 py-3 bg-blue-600 text-white rounded-lg hover:bg-blue-700 font-medium shadow-lg"
+                  className="inline-flex items-center justify-center w-full sm:w-auto px-6 py-3 bg-blue-600 text-white rounded-lg hover:bg-blue-700 font-medium shadow-lg min-h-[44px]"
                 >
                   Generate Invoice for {includedCount} Site{includedCount !== 1 ? 's' : ''}
                   <ArrowRight className="w-5 h-5 ml-2" />
@@ -625,7 +625,7 @@ export default function ExternalOrderReviewPage() {
                 </p>
               </>
             ) : totalSubmissions > 0 ? (
-              <div className="bg-gray-50 rounded-lg p-6 border border-gray-200">
+              <div className="bg-gray-50 rounded-lg p-4 sm:p-6 border border-gray-200">
                 <p className="text-gray-600 mb-2">
                   No sites selected for this order
                 </p>
@@ -634,7 +634,7 @@ export default function ExternalOrderReviewPage() {
                 </p>
               </div>
             ) : (
-              <div className="bg-yellow-50 rounded-lg p-6 border border-yellow-200">
+              <div className="bg-yellow-50 rounded-lg p-4 sm:p-6 border border-yellow-200">
                 <p className="text-yellow-800 mb-2">
                   No sites have been suggested yet
                 </p>

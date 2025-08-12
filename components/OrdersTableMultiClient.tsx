@@ -246,10 +246,10 @@ export function OrdersTableMultiClient({
                   <div className="bg-gray-50 rounded-lg p-3">
                     <p className="text-xs text-gray-500 mb-1">Account</p>
                     <p className="text-sm font-medium text-gray-900">
-                      {order.accountName || 'Unknown'}
+                      {order.account?.contactName || order.account?.companyName || 'Unknown'}
                     </p>
                     <p className="text-xs text-gray-600">
-                      {order.accountEmail}
+                      {order.account?.email}
                     </p>
                   </div>
 
@@ -262,7 +262,7 @@ export function OrdersTableMultiClient({
                     <div>
                       <p className="text-xs text-gray-500">Items</p>
                       <p className="text-sm font-semibold text-gray-900">
-                        {order.orderGroups?.reduce((sum, g) => sum + (g.totalItems || 0), 0) || order.lineItems?.length || 0}
+                        {order.orderGroups?.reduce((sum, g) => sum + (g.linkCount || 0), 0) || order.itemCount || 0}
                       </p>
                     </div>
                     <div>
@@ -286,7 +286,7 @@ export function OrdersTableMultiClient({
                   {/* Expand/Collapse for Groups */}
                   {hasGroups && (
                     <button
-                      onClick={() => toggleExpanded(order.id)}
+                      onClick={() => toggleOrderExpanded(order.id)}
                       className="w-full flex items-center justify-center gap-2 py-2 text-sm text-gray-600 hover:text-gray-900 hover:bg-gray-50 rounded-lg transition-colors"
                     >
                       {isExpanded ? (
@@ -325,7 +325,7 @@ export function OrdersTableMultiClient({
                 {/* Expanded Client Groups */}
                 {isExpanded && hasGroups && (
                   <div className="mt-4 space-y-3 pl-4 border-l-2 border-gray-200">
-                    {order.orderGroups.map((group) => (
+                    {order.orderGroups?.map((group) => (
                       <div key={group.id} className="bg-gray-50 rounded-lg p-3">
                         <div className="flex items-start justify-between mb-2">
                           <div>
@@ -333,11 +333,11 @@ export function OrdersTableMultiClient({
                               {group.clientName}
                             </p>
                             <p className="text-xs text-gray-500">
-                              {group.totalItems} items
+                              {group.linkCount} links
                             </p>
                           </div>
                           <span className="text-sm font-medium text-gray-900">
-                            {formatCurrency((group.totalPrice || 0) / 100)}
+                            {formatCurrency(0)}
                           </span>
                         </div>
                         {group.notes && (

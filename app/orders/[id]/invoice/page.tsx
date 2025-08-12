@@ -94,7 +94,7 @@ export default function InvoicePage() {
           <p className="text-red-600 mb-4">{error}</p>
           <button
             onClick={() => router.back()}
-            className="text-blue-600 hover:text-blue-800"
+            className="text-blue-600 hover:text-blue-800 px-4 py-2 min-h-[44px] flex items-center justify-center"
           >
             Go back
           </button>
@@ -118,19 +118,19 @@ export default function InvoicePage() {
     <div className="min-h-screen bg-gray-50 py-8">
       <div className="max-w-4xl mx-auto px-4">
         {/* Actions Bar - Hidden in print */}
-        <div className="mb-6 flex justify-between items-center print:hidden">
+        <div className="mb-6 flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4 print:hidden">
           <button
             onClick={() => router.back()}
-            className="flex items-center gap-2 text-gray-600 hover:text-gray-900"
+            className="flex items-center gap-2 text-gray-600 hover:text-gray-900 min-h-[44px]"
           >
             <ArrowLeft className="w-4 h-4" />
             Back to Order
           </button>
           
-          <div className="flex gap-3">
+          <div className="flex flex-wrap gap-3 w-full sm:w-auto">
             <button
               onClick={() => window.open(`/api/orders/${orderId}/invoice/download`, '_blank')}
-              className="inline-flex items-center px-4 py-2 bg-gray-600 text-white rounded-lg hover:bg-gray-700 font-medium transition-colors"
+              className="inline-flex items-center px-4 py-3 bg-gray-600 text-white rounded-lg hover:bg-gray-700 font-medium transition-colors min-h-[44px] flex-1 sm:flex-initial justify-center"
             >
               <svg className="w-4 h-4 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                 <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 10v6m0 0l-3-3m3 3l3-3m2 8H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
@@ -139,7 +139,7 @@ export default function InvoicePage() {
             </button>
             <button
               onClick={() => window.print()}
-              className="inline-flex items-center px-4 py-2 bg-gray-600 text-white rounded-lg hover:bg-gray-700 font-medium transition-colors"
+              className="inline-flex items-center px-4 py-3 bg-gray-600 text-white rounded-lg hover:bg-gray-700 font-medium transition-colors min-h-[44px] flex-1 sm:flex-initial justify-center"
             >
               <svg className="w-4 h-4 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                 <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M17 17h2a2 2 0 002-2v-4a2 2 0 00-2-2H5a2 2 0 00-2 2v4a2 2 0 002 2h2m2 4h6a2 2 0 002-2v-4a2 2 0 00-2-2H9a2 2 0 00-2 2v4a2 2 0 002 2zm8-12V5a2 2 0 00-2-2H9a2 2 0 00-2 2v4h10z" />
@@ -149,7 +149,7 @@ export default function InvoicePage() {
             {!isPaid && order.state === 'payment_pending' && (
               <a
                 href={`/orders/${orderId}/payment`}
-                className="inline-flex items-center px-6 py-3 bg-blue-600 text-white rounded-lg hover:bg-blue-700 font-medium transition-colors"
+                className="inline-flex items-center px-6 py-3 bg-blue-600 text-white rounded-lg hover:bg-blue-700 font-medium transition-colors min-h-[44px] flex-1 sm:flex-initial justify-center"
               >
                 <svg className="w-4 h-4 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                   <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M3 10h18M7 15h1m4 0h1m-7 4h12a3 3 0 003-3V8a3 3 0 00-3-3H6a3 3 0 00-3 3v8a3 3 0 003 3z" />
@@ -177,7 +177,7 @@ export default function InvoicePage() {
           </div>
 
           {/* Company Info */}
-          <div className="grid grid-cols-2 gap-8 mb-8">
+          <div className="grid grid-cols-1 sm:grid-cols-2 gap-6 sm:gap-8 mb-8">
             <div>
               <h3 className="font-semibold text-gray-900 mb-2">From:</h3>
               <p className="text-gray-600">Linkio</p>
@@ -204,7 +204,7 @@ export default function InvoicePage() {
           </div>
 
           {/* Dates */}
-          <div className="grid grid-cols-2 gap-8 mb-8">
+          <div className="grid grid-cols-1 sm:grid-cols-2 gap-6 sm:gap-8 mb-8">
             <div>
               <p className="text-sm text-gray-600">Issue Date</p>
               <p className="font-semibold">{new Date(invoice.issueDate).toLocaleDateString()}</p>
@@ -217,31 +217,55 @@ export default function InvoicePage() {
 
           {/* Line Items */}
           <div className="mb-8">
-            <table className="w-full">
-              <thead>
-                <tr className="border-b border-gray-200">
-                  <th className="text-left py-3 text-sm font-semibold text-gray-900">Description</th>
-                  <th className="text-right py-3 text-sm font-semibold text-gray-900">Qty</th>
-                  <th className="text-right py-3 text-sm font-semibold text-gray-900">Unit Price</th>
-                  <th className="text-right py-3 text-sm font-semibold text-gray-900">Total</th>
-                </tr>
-              </thead>
-              <tbody>
-                {invoice.items.map((item, index) => (
-                  <tr key={index} className="border-b border-gray-100">
-                    <td className="py-3 text-gray-600">{item.description}</td>
-                    <td className="py-3 text-right text-gray-600">{item.quantity}</td>
-                    <td className="py-3 text-right text-gray-600">{formatCurrency(item.unitPrice)}</td>
-                    <td className="py-3 text-right text-gray-900 font-medium">{formatCurrency(item.total)}</td>
+            {/* Mobile Cards View */}
+            <div className="md:hidden space-y-4">
+              <h3 className="text-sm font-semibold text-gray-900 mb-4">Line Items</h3>
+              {invoice.items.map((item, index) => (
+                <div key={index} className="bg-gray-50 rounded-lg p-4 border border-gray-200">
+                  <div className="flex justify-between items-start mb-2">
+                    <h4 className="font-medium text-gray-900 flex-1 pr-2">{item.description}</h4>
+                    <span className="text-lg font-semibold text-gray-900">{formatCurrency(item.total)}</span>
+                  </div>
+                  <div className="grid grid-cols-2 gap-4 text-sm text-gray-600">
+                    <div>
+                      <span className="font-medium">Quantity:</span> {item.quantity}
+                    </div>
+                    <div className="text-right">
+                      <span className="font-medium">Unit Price:</span> {formatCurrency(item.unitPrice)}
+                    </div>
+                  </div>
+                </div>
+              ))}
+            </div>
+
+            {/* Desktop Table View */}
+            <div className="hidden md:block">
+              <table className="w-full">
+                <thead>
+                  <tr className="border-b border-gray-200">
+                    <th className="text-left py-3 text-sm font-semibold text-gray-900">Description</th>
+                    <th className="text-right py-3 text-sm font-semibold text-gray-900">Qty</th>
+                    <th className="text-right py-3 text-sm font-semibold text-gray-900">Unit Price</th>
+                    <th className="text-right py-3 text-sm font-semibold text-gray-900">Total</th>
                   </tr>
-                ))}
-              </tbody>
-            </table>
+                </thead>
+                <tbody>
+                  {invoice.items.map((item, index) => (
+                    <tr key={index} className="border-b border-gray-100">
+                      <td className="py-3 text-gray-600">{item.description}</td>
+                      <td className="py-3 text-right text-gray-600">{item.quantity}</td>
+                      <td className="py-3 text-right text-gray-600">{formatCurrency(item.unitPrice)}</td>
+                      <td className="py-3 text-right text-gray-900 font-medium">{formatCurrency(item.total)}</td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+            </div>
           </div>
 
           {/* Totals */}
           <div className="flex justify-end">
-            <div className="w-64">
+            <div className="w-full max-w-sm">
               <div className="flex justify-between py-2">
                 <span className="text-gray-600">Subtotal:</span>
                 <span className="text-gray-900">{formatCurrency(invoice.subtotal)}</span>
@@ -276,7 +300,7 @@ export default function InvoicePage() {
                   </p>
                   <a
                     href={`/orders/${orderId}/payment`}
-                    className="inline-flex items-center px-6 py-3 bg-green-600 text-white rounded-lg hover:bg-green-700 font-medium transition-colors"
+                    className="inline-flex items-center px-6 py-3 bg-green-600 text-white rounded-lg hover:bg-green-700 font-medium transition-colors min-h-[44px] justify-center"
                   >
                     <svg className="w-4 h-4 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                       <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M3 10h18M7 15h1m4 0h1m-7 4h12a3 3 0 003-3V8a3 3 0 00-3-3H6a3 3 0 00-3 3v8a3 3 0 003 3z" />

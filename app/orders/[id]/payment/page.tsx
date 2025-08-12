@@ -96,7 +96,7 @@ export default function PaymentPage() {
             <p className="text-red-700">{error}</p>
             <a
               href="/orders"
-              className="inline-block mt-4 bg-red-600 text-white px-4 py-2 rounded-lg hover:bg-red-700 transition-colors"
+              className="inline-block mt-4 bg-red-600 text-white px-4 py-3 rounded-lg hover:bg-red-700 transition-colors min-h-[44px] flex items-center justify-center"
             >
               Back to Orders
             </a>
@@ -115,7 +115,7 @@ export default function PaymentPage() {
             <p className="text-yellow-700">The order you're looking for could not be found.</p>
             <a
               href="/orders"
-              className="inline-block mt-4 bg-yellow-600 text-white px-4 py-2 rounded-lg hover:bg-yellow-700 transition-colors"
+              className="inline-block mt-4 bg-yellow-600 text-white px-4 py-3 rounded-lg hover:bg-yellow-700 transition-colors min-h-[44px] flex items-center justify-center"
             >
               Back to Orders
             </a>
@@ -139,7 +139,7 @@ export default function PaymentPage() {
             </p>
             <a
               href={`/orders/${order.id}`}
-              className="inline-block mt-4 bg-yellow-600 text-white px-4 py-2 rounded-lg hover:bg-yellow-700 transition-colors"
+              className="inline-block mt-4 bg-yellow-600 text-white px-4 py-3 rounded-lg hover:bg-yellow-700 transition-colors min-h-[44px] flex items-center justify-center"
             >
               Return to Order
             </a>
@@ -164,7 +164,7 @@ export default function PaymentPage() {
             </p>
             <a
               href={`/orders/${order.id}`}
-              className="inline-block mt-4 bg-yellow-600 text-white px-4 py-2 rounded-lg hover:bg-yellow-700 transition-colors"
+              className="inline-block mt-4 bg-yellow-600 text-white px-4 py-3 rounded-lg hover:bg-yellow-700 transition-colors min-h-[44px] flex items-center justify-center"
             >
               View Order Details
             </a>
