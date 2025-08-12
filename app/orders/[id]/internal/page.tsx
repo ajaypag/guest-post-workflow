@@ -9,6 +9,7 @@ import OrderSiteReviewTableV2 from '@/components/orders/OrderSiteReviewTableV2';
 import BenchmarkDisplay from '@/components/orders/BenchmarkDisplay';
 import OrderProgressSteps, { getStateDisplay, getProgressSteps } from '@/components/orders/OrderProgressSteps';
 import LineItemsTable from '@/components/orders/LineItemsTable';
+import TargetPageSelector from '@/components/orders/TargetPageSelector';
 import { isLineItemsSystemEnabled, enableLineItemsForOrder } from '@/lib/config/featureFlags';
 import ChangeBulkAnalysisProject from '@/components/orders/ChangeBulkAnalysisProject';
 import { AuthService, type AuthSession } from '@/lib/auth';
@@ -231,6 +232,7 @@ export default function InternalOrderManagementPage() {
   const [benchmarkData, setBenchmarkData] = useState<any>(null);
   const [comparisonData, setComparisonData] = useState<any>(null);
   const [useLineItemsView, setUseLineItemsView] = useState(false);
+  const [selectedTargets, setSelectedTargets] = useState<Record<string, { targetPageUrl: string; anchorText: string }>>({});
 
   // Auto-dismiss success messages after 5 seconds
   useEffect(() => {
@@ -412,6 +414,71 @@ export default function InternalOrderManagementPage() {
     } catch (error) {
       console.error('Failed to load benchmark data:', error);
     }
+  };
+
+  // Extract available target pages from benchmark or order groups
+  const getAvailableTargetPages = (groupId: string) => {
+    const targetPages: Array<{ url: string; anchorText?: string; requestedLinks?: number }> = [];
+    
+    // First try to get from latest benchmark
+    if (benchmarkData?.benchmarkData) {
+      const benchmarkClientGroups = benchmarkData.benchmarkData.clientGroups || [];
+      const orderGroup = order?.orderGroups?.find(g => g.id === groupId);
+      
+      if (orderGroup) {
+        // Find matching client group in benchmark
+        const benchmarkGroup = benchmarkClientGroups.find(
+          (bg: any) => bg.clientId === orderGroup.clientId
+        );
+        
+        if (benchmarkGroup?.targetPages) {
+          benchmarkGroup.targetPages.forEach((page: any) => {
+            // For each target page, we might have multiple requested domains with different anchors
+            const anchors = new Set<string>();
+            
+            if (page.requestedDomains && page.requestedDomains.length > 0) {
+              page.requestedDomains.forEach((domain: any) => {
+                if (domain.anchorText) {
+                  anchors.add(domain.anchorText);
+                }
+              });
+            }
+            
+            // If we have specific anchors from domains, create an entry for each
+            if (anchors.size > 0) {
+              anchors.forEach(anchorText => {
+                targetPages.push({
+                  url: page.url,
+                  anchorText: anchorText,
+                  requestedLinks: page.requestedLinks
+                });
+              });
+            } else {
+              // No specific anchors, just add the page
+              targetPages.push({
+                url: page.url,
+                requestedLinks: page.requestedLinks
+              });
+            }
+          });
+        }
+      }
+    }
+    
+    // Fallback to order group data if no benchmark or no pages found
+    if (targetPages.length === 0) {
+      const orderGroup = order?.orderGroups?.find(g => g.id === groupId);
+      if (orderGroup?.targetPages) {
+        orderGroup.targetPages.forEach((page: any, index: number) => {
+          targetPages.push({
+            url: page.url,
+            anchorText: orderGroup.anchorTexts?.[index] || ''
+          });
+        });
+      }
+    }
+    
+    return targetPages;
   };
 
   const handleCreateBenchmark = async () => {
@@ -782,7 +849,12 @@ export default function InternalOrderManagementPage() {
     }
   };
 
-  const handleAssignTargetPage = async (submissionId: string, targetPageUrl: string, groupId: string) => {
+  const handleAssignTargetPage = async (
+    submissionId: string, 
+    targetPageUrl: string, 
+    groupId: string,
+    anchorText?: string
+  ) => {
     try {
       setAssigningDomain(submissionId);
       
@@ -798,7 +870,7 @@ export default function InternalOrderManagementPage() {
         signal: controller.signal,
         body: JSON.stringify({ 
           targetPageUrl,
-          anchorText: null // Can be set later
+          anchorText: anchorText || null // Pass anchor text if provided
         })
       }).finally(() => clearTimeout(timeoutId));
       
@@ -2089,10 +2161,82 @@ export default function InternalOrderManagementPage() {
                   }}
                 />
               ) : (
-                <OrderSiteReviewTableV2
-                  orderId={orderId}
-                  orderGroups={order.orderGroups || []}
-                  siteSubmissions={siteSubmissions}
+                <>
+                  {/* Target Page Quick Assignment - Only show when sites are available */}
+                  {order.orderGroups && order.orderGroups.length > 0 && Object.keys(siteSubmissions).length > 0 && (
+                    <div className="mb-6 bg-blue-50 border border-blue-200 rounded-lg p-4">
+                      <div className="flex items-center justify-between mb-3">
+                        <h3 className="text-sm font-medium text-blue-900">Quick Target Page Assignment</h3>
+                        <p className="text-xs text-blue-600">
+                          Select target pages to auto-fill anchor text for new domain assignments
+                        </p>
+                      </div>
+                      <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
+                        {order.orderGroups.map((group) => {
+                          const availableTargets = getAvailableTargetPages(group.id);
+                          const groupSubmissions = siteSubmissions[group.id] || [];
+                          const unassignedSubmissions = groupSubmissions.filter(
+                            s => !s.metadata?.targetPageUrl
+                          );
+                          
+                          if (availableTargets.length === 0) return null;
+                          
+                          return (
+                            <div key={group.id} className="space-y-2">
+                              <div className="text-xs font-medium text-blue-800">
+                                {group.clientName} ({unassignedSubmissions.length} unassigned sites)
+                              </div>
+                              <TargetPageSelector
+                                value={selectedTargets[group.id]}
+                                onChange={(value) => {
+                                  setSelectedTargets(prev => ({
+                                    ...prev,
+                                    [group.id]: value
+                                  }));
+                                }}
+                                availableTargetPages={availableTargets}
+                                groupName={group.clientName}
+                                allowCustom={true}
+                                disabled={unassignedSubmissions.length === 0}
+                                className="w-full"
+                              />
+                              {selectedTargets[group.id] && unassignedSubmissions.length > 0 && (
+                                <button
+                                  onClick={async () => {
+                                    const target = selectedTargets[group.id];
+                                    if (target && unassignedSubmissions.length > 0) {
+                                      // Apply to first unassigned submission
+                                      const submission = unassignedSubmissions[0];
+                                      await handleAssignTargetPage(
+                                        submission.id,
+                                        target.targetPageUrl,
+                                        group.id,
+                                        target.anchorText
+                                      );
+                                      // Clear selection after applying
+                                      setSelectedTargets(prev => {
+                                        const updated = { ...prev };
+                                        delete updated[group.id];
+                                        return updated;
+                                      });
+                                    }
+                                  }}
+                                  className="text-xs px-3 py-1 bg-blue-600 text-white rounded hover:bg-blue-700"
+                                >
+                                  Apply to next unassigned site
+                                </button>
+                              )}
+                            </div>
+                          );
+                        })}
+                      </div>
+                    </div>
+                  )}
+                  
+                  <OrderSiteReviewTableV2
+                    orderId={orderId}
+                    orderGroups={order.orderGroups || []}
+                    siteSubmissions={siteSubmissions}
                   userType="internal"
                   permissions={{
                     canChangeStatus: true,
@@ -2117,6 +2261,7 @@ export default function InternalOrderManagementPage() {
                   useLineItems={isLineItemsSystemEnabled()}
                   benchmarkData={benchmarkData}
                 />
+                </>
               )}
               
               {/* Additional Information Cards */}
