@@ -233,6 +233,8 @@ export default function InternalOrderManagementPage() {
   const [comparisonData, setComparisonData] = useState<any>(null);
   const [useLineItemsView, setUseLineItemsView] = useState(false);
   const [selectedTargets, setSelectedTargets] = useState<Record<string, { targetPageUrl: string; anchorText: string }>>({});
+  const [loadingBenchmark, setLoadingBenchmark] = useState(false);
+  const [benchmarkVersion, setBenchmarkVersion] = useState<number>(0);
 
   // Auto-dismiss success messages after 5 seconds
   useEffect(() => {
@@ -404,21 +406,46 @@ export default function InternalOrderManagementPage() {
   };
 
   const loadBenchmarkData = async () => {
+    if (loadingBenchmark) {
+      console.log('Benchmark load already in progress, skipping...');
+      return;
+    }
+    
+    setLoadingBenchmark(true);
     try {
       const response = await fetch(`/api/orders/${orderId}/benchmark?comparison=true`);
       if (response.ok) {
         const data = await response.json();
         setBenchmarkData(data.benchmark);
         setComparisonData(data.comparison);
+        
+        // Track benchmark version to detect changes
+        if (data.benchmark?.version) {
+          setBenchmarkVersion(data.benchmark.version);
+        }
       }
     } catch (error) {
       console.error('Failed to load benchmark data:', error);
+    } finally {
+      setLoadingBenchmark(false);
     }
   };
 
   // Extract available target pages from benchmark or order groups
   const getAvailableTargetPages = (groupId: string) => {
     const targetPages: Array<{ url: string; anchorText?: string; requestedLinks?: number }> = [];
+    const processedUrls = new Set<string>(); // Track to avoid duplicates
+    
+    // Helper to validate and normalize URL
+    const normalizeUrl = (url: string): string | null => {
+      try {
+        const normalized = new URL(url);
+        return normalized.href;
+      } catch {
+        console.warn(`Invalid URL detected: ${url}`);
+        return null;
+      }
+    };
     
     // First try to get from latest benchmark
     if (benchmarkData?.benchmarkData) {
@@ -432,7 +459,12 @@ export default function InternalOrderManagementPage() {
         );
         
         if (benchmarkGroup?.targetPages) {
+          console.log(`Using benchmark v${benchmarkData.version} for target pages (groupId: ${groupId})`);
+          
           benchmarkGroup.targetPages.forEach((page: any) => {
+            const normalizedUrl = normalizeUrl(page.url);
+            if (!normalizedUrl) return; // Skip invalid URLs
+            
             // For each target page, we might have multiple requested domains with different anchors
             const anchors = new Set<string>();
             
@@ -447,18 +479,25 @@ export default function InternalOrderManagementPage() {
             // If we have specific anchors from domains, create an entry for each
             if (anchors.size > 0) {
               anchors.forEach(anchorText => {
-                targetPages.push({
-                  url: page.url,
-                  anchorText: anchorText,
-                  requestedLinks: page.requestedLinks
-                });
+                const key = `${normalizedUrl}-${anchorText}`;
+                if (!processedUrls.has(key)) {
+                  processedUrls.add(key);
+                  targetPages.push({
+                    url: normalizedUrl,
+                    anchorText: anchorText,
+                    requestedLinks: page.requestedLinks
+                  });
+                }
               });
             } else {
               // No specific anchors, just add the page
-              targetPages.push({
-                url: page.url,
-                requestedLinks: page.requestedLinks
-              });
+              if (!processedUrls.has(normalizedUrl)) {
+                processedUrls.add(normalizedUrl);
+                targetPages.push({
+                  url: normalizedUrl,
+                  requestedLinks: page.requestedLinks
+                });
+              }
             }
           });
         }
@@ -469,19 +508,42 @@ export default function InternalOrderManagementPage() {
     if (targetPages.length === 0) {
       const orderGroup = order?.orderGroups?.find(g => g.id === groupId);
       if (orderGroup?.targetPages) {
+        console.log(`Using orderGroup.targetPages as fallback (no benchmark data) for groupId: ${groupId}`);
+        
         orderGroup.targetPages.forEach((page: any, index: number) => {
-          targetPages.push({
-            url: page.url,
-            anchorText: orderGroup.anchorTexts?.[index] || ''
-          });
+          const normalizedUrl = normalizeUrl(page.url);
+          if (!normalizedUrl) return; // Skip invalid URLs
+          
+          const anchorText = orderGroup.anchorTexts?.[index] || '';
+          const key = anchorText ? `${normalizedUrl}-${anchorText}` : normalizedUrl;
+          
+          if (!processedUrls.has(key)) {
+            processedUrls.add(key);
+            targetPages.push({
+              url: normalizedUrl,
+              anchorText: anchorText,
+              requestedLinks: 1 // Default to 1 if not specified in order group
+            });
+          }
         });
       }
+    }
+    
+    // Log for debugging
+    if (targetPages.length === 0) {
+      console.warn(`No target pages found for groupId: ${groupId}`);
     }
     
     return targetPages;
   };
 
   const handleCreateBenchmark = async () => {
+    if (loadingBenchmark) {
+      console.warn('Benchmark operation already in progress');
+      return;
+    }
+    
+    setLoadingBenchmark(true);
     try {
       const response = await fetch(`/api/orders/${orderId}/benchmark`, {
         method: 'POST',
@@ -492,6 +554,7 @@ export default function InternalOrderManagementPage() {
       if (response.ok) {
         const data = await response.json();
         setBenchmarkData(data.benchmark);
+        setLoadingBenchmark(false); // Reset flag before reload
         await loadBenchmarkData(); // Reload to get comparison
         setMessage({
           type: 'success',
@@ -504,6 +567,8 @@ export default function InternalOrderManagementPage() {
         type: 'error',
         text: 'Failed to create benchmark'
       });
+    } finally {
+      setLoadingBenchmark(false);
     }
   };
 
@@ -2184,7 +2249,7 @@ export default function InternalOrderManagementPage() {
                           return (
                             <div key={group.id} className="space-y-2">
                               <div className="text-xs font-medium text-blue-800">
-                                {group.clientName} ({unassignedSubmissions.length} unassigned sites)
+                                {group.client?.name || 'Unknown Client'} ({unassignedSubmissions.length} unassigned sites)
                               </div>
                               <TargetPageSelector
                                 value={selectedTargets[group.id]}
@@ -2195,7 +2260,7 @@ export default function InternalOrderManagementPage() {
                                   }));
                                 }}
                                 availableTargetPages={availableTargets}
-                                groupName={group.clientName}
+                                groupName={group.client?.name}
                                 allowCustom={true}
                                 disabled={unassignedSubmissions.length === 0}
                                 className="w-full"
