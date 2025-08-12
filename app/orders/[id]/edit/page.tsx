@@ -1744,8 +1744,8 @@ export default function EditOrderPage({ params }: { params: Promise<{ id: string
                 </div>
               ) : groupByMode === 'none' ? (
                 <div className="h-full overflow-y-auto">
-                  {/* Mobile Cards View */}
-                  <div className="md:hidden space-y-3 p-3">
+                  {/* Cards View (Mobile + Small Desktop) */}
+                  <div className="xl:hidden space-y-3 p-3">
                     {lineItems.map((item, index) => (
                       <div key={item.id} className="bg-white border border-gray-200 rounded-lg p-4 shadow-sm">
                         <div className="flex items-start justify-between mb-3">
@@ -1816,8 +1816,8 @@ export default function EditOrderPage({ params }: { params: Promise<{ id: string
                     ))}
                   </div>
                   
-                  {/* Desktop Table View - With Horizontal Scroll */}
-                  <div className="hidden md:block overflow-x-auto">
+                  {/* Desktop Table View - Large Screens Only */}
+                  <div className="hidden xl:block overflow-x-auto">
                     <table className="w-full min-w-[800px]">
                       <thead className="bg-gray-50 border-b border-gray-200 sticky top-0">
                         <tr>
@@ -1886,8 +1886,8 @@ export default function EditOrderPage({ params }: { params: Promise<{ id: string
                       ))}
                     </tbody>
                     </table>
-                    {/* Scroll indicator for mobile */}
-                    <div className="text-xs text-gray-500 text-center mt-2 md:hidden">
+                    {/* Scroll indicator for smaller screens */}
+                    <div className="text-xs text-gray-500 text-center mt-2 xl:hidden">
                       ← Scroll horizontally to see all columns →
                     </div>
                   </div>
@@ -1937,8 +1937,8 @@ export default function EditOrderPage({ params }: { params: Promise<{ id: string
                         
                         {isExpanded && (
                           <>
-                            {/* Mobile Cards for Grouped View */}
-                            <div className="md:hidden space-y-3 p-3">
+                            {/* Cards for Grouped View (Mobile + Small Desktop) */}
+                            <div className="xl:hidden space-y-3 p-3">
                               {items.map((item, index) => (
                                 <div key={item.id} className="bg-white border border-gray-200 rounded-lg p-4 shadow-sm">
                                   <div className="flex items-start justify-between mb-3">
@@ -2009,8 +2009,8 @@ export default function EditOrderPage({ params }: { params: Promise<{ id: string
                               ))}
                             </div>
                             
-                            {/* Desktop Table for Grouped View */}
-                            <div className="hidden md:block">
+                            {/* Desktop Table for Grouped View - Large Screens Only */}
+                            <div className="hidden xl:block">
                               <table className="w-full">
                               <tbody className="divide-y divide-gray-100">
                                 {items.map((item, index) => (
