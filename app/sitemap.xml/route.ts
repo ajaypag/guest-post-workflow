@@ -69,6 +69,7 @@ const pages = [
   { path: 'broken-link-building-guide', priority: 0.8, changefreq: 'monthly' },
   { path: 'edu-link-building-guide', priority: 0.8, changefreq: 'monthly' },
   { path: 'how-to-get-high-authority-backlinks', priority: 0.8, changefreq: 'monthly' },
+  { path: 'link-prospecting', priority: 0.8, changefreq: 'monthly' },
   { path: 'link-building-costs', priority: 0.8, changefreq: 'monthly' },
   { path: 'anchor-text', priority: 0.7, changefreq: 'monthly' },
   { path: 'how-to-find-email-addresses', priority: 0.7, changefreq: 'monthly' },

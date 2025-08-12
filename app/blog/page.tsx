@@ -83,6 +83,14 @@ const blogPosts = [
     date: 'January 2024'
   },
   {
+    title: 'Link Prospecting: How to Find Link Building Prospects',
+    href: '/link-prospecting',
+    excerpt: 'Learn 8 proven link prospecting strategies to find high-quality link building opportunities while avoiding oversaturated targets. Get better response rates with these advanced techniques.',
+    category: 'Link Building',
+    readTime: '18 min read',
+    date: 'November 2020'
+  },
+  {
     title: 'Best Email Finders (Free & Paid)',
     href: '/best-email-finders',
     excerpt: 'Comprehensive comparison of 28+ email finder tools with pricing and features.',
