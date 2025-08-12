@@ -1765,16 +1765,28 @@ export default function EditOrderPage({ params }: { params: Promise<{ id: string
                         <div className="space-y-3">
                           <div>
                             <label className="text-xs text-gray-500 font-medium">Target Page</label>
-                            {item.targetPageUrl ? (
-                              <div className="flex items-center gap-1 mt-1">
-                                <p className="text-sm text-gray-600 truncate max-w-[250px] block" title={item.targetPageUrl}>
-                                  {item.targetPageUrl}
-                                </p>
-                                <ExternalLink className="h-3 w-3 text-gray-400 flex-shrink-0" />
-                              </div>
-                            ) : (
-                              <p className="text-sm text-gray-400 italic mt-1">Tap a target page →</p>
-                            )}
+                            <select
+                              value={item.targetPageUrl || ''}
+                              onChange={(e) => {
+                                if (e.target.value === '__ADD_NEW__') {
+                                  setRequestingLineItemId(item.id);
+                                  setShowCreateTargetPageModal(true);
+                                } else {
+                                  handleTargetPageChange(item.id, e.target.value);
+                                }
+                              }}
+                              className="w-full mt-1 px-3 py-2 text-sm border border-gray-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500 min-h-[44px] touch-manipulation"
+                            >
+                              <option value="">Select target page...</option>
+                              {getClientTargetPages(item.clientId).map(page => (
+                                <option key={page.id} value={page.url}>
+                                  {page.url} {page.usageCount > 0 && `(${page.usageCount})`}
+                                </option>
+                              ))}
+                              <option value="__ADD_NEW__" className="text-blue-600 font-medium">
+                                + Add new target page...
+                              </option>
+                            </select>
                           </div>
                           
                           <div>
@@ -1785,7 +1797,6 @@ export default function EditOrderPage({ params }: { params: Promise<{ id: string
                               onChange={(e) => updateLineItem(item.id, { anchorText: e.target.value })}
                               placeholder="Enter anchor text..."
                               className="w-full mt-1 px-3 py-2 text-sm border border-gray-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500 min-h-[44px] touch-manipulation"
-                              disabled={!item.targetPageUrl}
                             />
                           </div>
                           
