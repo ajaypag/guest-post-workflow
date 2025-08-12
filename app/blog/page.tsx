@@ -43,6 +43,14 @@ const blogPosts = [
     date: 'January 2024'
   },
   {
+    title: 'Top 10 White Hat Link Building Techniques',
+    href: '/top-10-link-building-techniques',
+    excerpt: 'Discover 10 proven white hat link building techniques that deliver sustainable SEO results. From guest posting to broken link building - master ethical strategies.',
+    category: 'Link Building',
+    readTime: '15 min read',
+    date: 'January 2025'
+  },
+  {
     title: 'Best Link Building Services (50+ Agencies Reviewed)',
     href: '/best-link-building-services',
     excerpt: 'We contacted and reviewed every single vendor to bring you comprehensive insights on pricing, tactics, and real blogger outreach capabilities.',

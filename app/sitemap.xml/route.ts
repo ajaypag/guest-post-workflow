@@ -63,6 +63,7 @@ const pages = [
   { path: 'guest-posting-sites', priority: 0.8, changefreq: 'weekly' },
   
   // Educational content & Blog articles
+  { path: 'top-10-link-building-techniques', priority: 0.8, changefreq: 'monthly' },
   { path: 'how-to-increase-domain-authority', priority: 0.8, changefreq: 'monthly' },
   { path: 'seo-tutorial', priority: 0.8, changefreq: 'monthly' },
   { path: 'seo-case-study', priority: 0.8, changefreq: 'monthly' },
