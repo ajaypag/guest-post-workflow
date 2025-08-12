@@ -8,11 +8,7 @@ import SimplifiedPricingPreview from '@/components/onboarding/SimplifiedPricingP
 import { formatCurrency } from '@/lib/utils/formatting';
 import { SERVICE_FEE_CENTS } from '@/lib/config/pricing';
 
-interface QuickStartFlowProps {
-  session?: any;
-}
-
-export default function QuickStartFlow({ session }: QuickStartFlowProps) {
+export default function QuickStartFlow() {
   const router = useRouter();
   const [step, setStep] = useState(1);
   const [loading, setLoading] = useState(false);
@@ -24,9 +20,9 @@ export default function QuickStartFlow({ session }: QuickStartFlowProps) {
   const [orderPreferences, setOrderPreferences] = useState<any>(null);
   const [error, setError] = useState('');
   
-  // Restore state after login redirect
+  // Restore state after login redirect (no longer needed since auth is required)
   useEffect(() => {
-    if (typeof window !== 'undefined' && session) {
+    if (typeof window !== 'undefined') {
       const savedState = sessionStorage.getItem('quickstart_state');
       if (savedState) {
         const state = JSON.parse(savedState);
@@ -42,7 +38,7 @@ export default function QuickStartFlow({ session }: QuickStartFlowProps) {
         sessionStorage.removeItem('quickstart_state');
       }
     }
-  }, [session]);
+  }, []);
 
   // Auto-extract brand from URL
   useEffect(() => {
@@ -87,24 +83,8 @@ export default function QuickStartFlow({ session }: QuickStartFlowProps) {
     setError('');
     
     try {
-      // Check if user is logged in first  
-      if (!session || (!session.user && !session.userId)) {
-        // Save state and redirect to login
-        if (typeof window !== 'undefined') {
-          sessionStorage.setItem('quickstart_state', JSON.stringify({
-            targetUrl,
-            brandName,
-            brandDomain,
-            linkCount,
-            pricingEstimate,
-            orderPreferences
-          }));
-        }
-        router.push('/signup');
-        return;
-      }
-      
-      // For logged in users, create or find client
+      // User is already authenticated via AuthWrapper
+      // Create or find client
       let clientId;
       
       try {
@@ -115,8 +95,7 @@ export default function QuickStartFlow({ session }: QuickStartFlowProps) {
           body: JSON.stringify({
             name: brandName,
             domain: brandDomain,
-            creationPath: session.userType === 'account' ? 'existing_account' : undefined,
-            accountId: session.userType === 'account' ? session.userId : undefined
+            creationPath: 'quick_start'
           })
         });
         
@@ -523,14 +502,6 @@ export default function QuickStartFlow({ session }: QuickStartFlowProps) {
                   )}
                 </div>
               </div>
-
-              {!session && (
-                <div className="p-4 bg-yellow-50 border border-yellow-200 rounded-lg">
-                  <p className="text-sm text-yellow-800">
-                    <span className="font-medium">Note:</span> You'll need to create an account or sign in to complete your order
-                  </p>
-                </div>
-              )}
             </div>
 
             {error && (

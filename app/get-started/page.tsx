@@ -3,36 +3,17 @@
 import { useEffect, useState } from 'react';
 import { useRouter } from 'next/navigation';
 import QuickStartFlow from '@/components/onboarding/QuickStartFlow';
-import LinkioHeader from '@/components/LinkioHeader';
+import AuthWrapper from '@/components/AuthWrapper';
+import Header from '@/components/Header';
 import MarketingFooter from '@/components/MarketingFooter';
-import { Shield, Zap, Users, Star } from 'lucide-react';
+import { Shield, Zap, Users, Star, Loader2 } from 'lucide-react';
 
 export default function GetStartedPage() {
   const router = useRouter();
   const [mounted, setMounted] = useState(false);
-  const [session, setSession] = useState<any>(null);
 
   useEffect(() => {
     setMounted(true);
-    // Check for session
-    fetch('/api/auth/session')
-      .then(res => {
-        if (res.ok) {
-          return res.json();
-        } else {
-          // 401 or other error - not authenticated
-          return null;
-        }
-      })
-      .then(data => {
-        // Only set session if it has a valid user
-        if (data && (data.user || data.userId)) {
-          setSession(data);
-        } else {
-          setSession(null);
-        }
-      })
-      .catch(() => setSession(null));
   }, []);
 
   if (!mounted) {
@@ -40,8 +21,9 @@ export default function GetStartedPage() {
   }
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-blue-50 via-white to-purple-50">
-      <LinkioHeader variant="default" />
+    <AuthWrapper>
+      <div className="min-h-screen bg-gradient-to-br from-blue-50 via-white to-purple-50">
+        <Header />
       
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-12">
         {/* Hero Section */}
@@ -83,7 +65,7 @@ export default function GetStartedPage() {
         </div>
 
         {/* Quick Start Flow Component */}
-        <QuickStartFlow session={session} />
+        <QuickStartFlow />
 
         {/* FAQ Section */}
         <div className="mt-16 max-w-3xl mx-auto">
@@ -137,5 +119,6 @@ export default function GetStartedPage() {
       
       <MarketingFooter />
     </div>
+    </AuthWrapper>
   );
 }
