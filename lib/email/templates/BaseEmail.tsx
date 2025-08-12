@@ -24,7 +24,7 @@ export function BaseEmail({
   preview,
   heading,
   children,
-  footerText = 'PostFlow - Guest Post Workflow Management',
+  footerText = 'Linkio - Guest Post Workflow Management',
 }: BaseEmailProps) {
   return (
     <Html>
@@ -34,7 +34,7 @@ export function BaseEmail({
         <Container style={container}>
           {/* Logo */}
           <Section style={logoContainer}>
-            <Heading style={logo}>PostFlow</Heading>
+            <Heading style={logo}>Linkio</Heading>
           </Section>
 
           {/* Main heading */}
@@ -50,7 +50,7 @@ export function BaseEmail({
           <Section style={footer}>
             <Text style={footerTextStyle}>{footerText}</Text>
             <Link href="https://www.linkio.com" style={footerLink}>
-              Visit PostFlow
+              Visit Linkio
             </Link>
             <Text style={footerAddress}>
               © {new Date().getFullYear()} OutreachLabs. All rights reserved.

@@ -641,7 +641,7 @@ Need help? Contact info@linkio.com
         
         <p>If you have any questions, please don't hesitate to contact us.</p>
         
-        <p>Best regards,<br>The PostFlow Team</p>
+        <p>Best regards,<br>The Linkio Team</p>
       </div>
     `;
 
@@ -720,7 +720,7 @@ Need help? Contact info@linkio.com
         
         <div style="margin-top: 30px; padding-top: 20px; border-top: 1px solid #e0e0e0; font-size: 12px; color: #999;">
           <p>Thank you for your business. We apologize for any inconvenience.</p>
-          <p>© ${new Date().getFullYear()} PostFlow. All rights reserved.</p>
+          <p>© ${new Date().getFullYear()} Linkio. All rights reserved.</p>
         </div>
       </div>
     `;
@@ -744,7 +744,7 @@ Need help? Contact info@linkio.com
     const html = `
       <div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto;">
         <div style="background: linear-gradient(to right, #2563EB, #1D4ED8); color: white; padding: 40px 30px; border-radius: 8px 8px 0 0;">
-          <h1 style="margin: 0; font-size: 28px;">Welcome to PostFlow!</h1>
+          <h1 style="margin: 0; font-size: 28px;">Welcome to Linkio!</h1>
           <p style="margin: 10px 0 0 0; opacity: 0.9;">Your guest posting journey starts here</p>
         </div>
         
@@ -752,7 +752,7 @@ Need help? Contact info@linkio.com
           <p style="font-size: 16px; color: #374151;">Hi ${data.name},</p>
           
           <p style="font-size: 16px; color: #374151; line-height: 1.6;">
-            Welcome aboard! Your PostFlow account has been successfully created. 
+            Welcome aboard! Your Linkio account has been successfully created. 
             ${data.company ? `We're excited to help ${data.company} grow its online presence through high-quality guest posting.` : 'We\'re excited to help you grow your online presence through high-quality guest posting.'}
           </p>
           
@@ -786,7 +786,7 @@ Need help? Contact info@linkio.com
         </div>
         
         <div style="text-align: center; padding: 20px; color: #9CA3AF; font-size: 12px;">
-          <p style="margin: 0;">© ${new Date().getFullYear()} PostFlow. All rights reserved.</p>
+          <p style="margin: 0;">© ${new Date().getFullYear()} Linkio. All rights reserved.</p>
           <p style="margin: 5px 0 0 0;">
             <a href="${process.env.NEXTAUTH_URL}/terms" style="color: #9CA3AF; text-decoration: none;">Terms</a> · 
             <a href="${process.env.NEXTAUTH_URL}/privacy" style="color: #9CA3AF; text-decoration: none;">Privacy</a>
@@ -797,9 +797,9 @@ Need help? Contact info@linkio.com
 
     return this.send('account_welcome', {
       to: data.email,
-      subject: 'Welcome to PostFlow - Your Account is Ready',
+      subject: 'Welcome to Linkio - Your Account is Ready',
       html,
-      text: `Welcome to PostFlow, ${data.name}! Your account has been created successfully. Visit ${process.env.NEXTAUTH_URL}/account/dashboard to get started.`,
+      text: `Welcome to Linkio, ${data.name}! Your account has been created successfully. Visit ${process.env.NEXTAUTH_URL}/account/dashboard to get started.`,
     });
   }
 
@@ -814,7 +814,7 @@ Need help? Contact info@linkio.com
     const html = `
       <div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto;">
         <div style="background: linear-gradient(to right, #2563EB, #1D4ED8); color: white; padding: 40px 30px; border-radius: 8px 8px 0 0;">
-          <h1 style="margin: 0; font-size: 28px;">Welcome to PostFlow!</h1>
+          <h1 style="margin: 0; font-size: 28px;">Welcome to Linkio!</h1>
           <p style="margin: 10px 0 0 0; opacity: 0.9;">Your guest posting journey starts here</p>
         </div>
         
@@ -824,12 +824,12 @@ Need help? Contact info@linkio.com
           </p>
           
           <p style="font-size: 16px; color: #374151; margin: 0 0 30px 0;">
-            Welcome to PostFlow! Your account has been created successfully${data.company ? ` for ${data.company}` : ''}.
+            Welcome to Linkio! Your account has been created successfully${data.company ? ` for ${data.company}` : ''}.
           </p>
           
           <div style="background: #F3F4F6; padding: 20px; border-radius: 8px; margin: 0 0 30px 0;">
             <h2 style="margin: 0 0 15px 0; font-size: 20px; color: #1F2937;">Get Started with Your Dashboard</h2>
-            <p style="margin: 0 0 20px 0; color: #4B5563;">Complete these steps to make the most of PostFlow:</p>
+            <p style="margin: 0 0 20px 0; color: #4B5563;">Complete these steps to make the most of Linkio:</p>
             
             <div style="margin: 0 0 15px 0;">
               <div style="display: flex; align-items: center; margin-bottom: 10px;">
@@ -872,7 +872,7 @@ Need help? Contact info@linkio.com
         </div>
         
         <div style="text-align: center; padding: 20px; color: #9CA3AF; font-size: 12px;">
-          <p style="margin: 0;">© ${new Date().getFullYear()} PostFlow. All rights reserved.</p>
+          <p style="margin: 0;">© ${new Date().getFullYear()} Linkio. All rights reserved.</p>
           <p style="margin: 5px 0 0 0;">
             <a href="${process.env.NEXTAUTH_URL}/terms" style="color: #9CA3AF; text-decoration: none;">Terms</a> · 
             <a href="${process.env.NEXTAUTH_URL}/privacy" style="color: #9CA3AF; text-decoration: none;">Privacy</a>
@@ -883,9 +883,9 @@ Need help? Contact info@linkio.com
 
     return this.send('account_welcome', {
       to: data.email,
-      subject: 'Welcome to PostFlow - Get Started Today',
+      subject: 'Welcome to Linkio - Get Started Today',
       html,
-      text: `Welcome to PostFlow, ${data.name}! Your account has been created successfully. Visit ${process.env.NEXTAUTH_URL}/account/dashboard to get started with your onboarding checklist.`,
+      text: `Welcome to Linkio, ${data.name}! Your account has been created successfully. Visit ${process.env.NEXTAUTH_URL}/account/dashboard to get started with your onboarding checklist.`,
     });
   }
 
@@ -901,12 +901,12 @@ Need help? Contact info@linkio.com
   }): Promise<{ success: boolean; id?: string; error?: string }> {
     const html = `
       <div style="font-family: Arial, sans-serif; line-height: 1.6; color: #333;">
-        <h2>You're Invited to Join PostFlow</h2>
+        <h2>You're Invited to Join Linkio</h2>
         <p>Hi${data.contactName ? ` ${data.contactName}` : ''},</p>
         
-        <p>${data.invitedBy} has invited you to create an account${data.companyName ? ` for ${data.companyName}` : ''} on PostFlow, our guest post management platform.</p>
+        <p>${data.invitedBy} has invited you to create an account${data.companyName ? ` for ${data.companyName}` : ''} on Linkio, our guest post management platform.</p>
         
-        <p>With your PostFlow account, you'll be able to:</p>
+        <p>With your Linkio account, you'll be able to:</p>
         <ul>
           <li>Review and approve guest post orders</li>
           <li>Track the progress of your content campaigns</li>
@@ -922,15 +922,15 @@ Need help? Contact info@linkio.com
         
         <p>If you have any questions, please don't hesitate to reach out.</p>
         
-        <p>Best regards,<br>The PostFlow Team</p>
+        <p>Best regards,<br>The Linkio Team</p>
       </div>
     `;
 
     return this.send('account_invitation', {
       to: email,
-      subject: `You're invited to join PostFlow${data.companyName ? ` - ${data.companyName}` : ''}`,
+      subject: `You're invited to join Linkio${data.companyName ? ` - ${data.companyName}` : ''}`,
       html,
-      text: `You've been invited to create an account on PostFlow. Visit ${data.inviteUrl} to accept the invitation.`,
+      text: `You've been invited to create an account on Linkio. Visit ${data.inviteUrl} to accept the invitation.`,
     });
   }
 
@@ -948,7 +948,7 @@ Need help? Contact info@linkio.com
         <h2>Password Reset Request</h2>
         <p>Hi ${data.contactName},</p>
         
-        <p>We received a request to reset your password for your PostFlow account. If you didn't make this request, you can safely ignore this email.</p>
+        <p>We received a request to reset your password for your Linkio account. If you didn't make this request, you can safely ignore this email.</p>
         
         <p>To reset your password, click the button below:</p>
         
@@ -961,7 +961,7 @@ Need help? Contact info@linkio.com
         <p>If you're having trouble clicking the button, copy and paste this URL into your browser:</p>
         <p style="color: #666; font-size: 14px; word-break: break-all;">${data.resetUrl}</p>
         
-        <p>Best regards,<br>The PostFlow Team</p>
+        <p>Best regards,<br>The Linkio Team</p>
         
         <hr style="margin: 30px 0; border: none; border-top: 1px solid #eee;">
         <p style="color: #999; font-size: 12px;">This is an automated message. Please do not reply to this email.</p>
@@ -970,7 +970,7 @@ Need help? Contact info@linkio.com
 
     return this.send('password-reset', {
       to: data.to,
-      subject: 'Reset Your PostFlow Password',
+      subject: 'Reset Your Linkio Password',
       html,
       text: `Hi ${data.contactName}, We received a request to reset your password. Visit ${data.resetUrl} to reset your password. This link will expire in ${data.expiresIn}.`,
     });
@@ -1004,7 +1004,7 @@ Need help? Contact info@linkio.com
         
         <p>If you have any questions about this order, please don't hesitate to reach out.</p>
         
-        <p>Best regards,<br>The PostFlow Team</p>
+        <p>Best regards,<br>The Linkio Team</p>
       </div>
     `;
 

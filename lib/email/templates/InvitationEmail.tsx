@@ -27,7 +27,7 @@ export function InvitationEmail({
   const roleDisplay = role === 'admin' ? 'Administrator' : 'User';
 
   return (
-    <BaseEmail preview={`You're invited to join PostFlow as a ${userTypeDisplay}`}>
+    <BaseEmail preview={`You're invited to join Linkio as a ${userTypeDisplay}`}>
       <div style={{ maxWidth: '600px', margin: '0 auto', fontFamily: 'Arial, sans-serif' }}>
         {/* Header */}
         <div style={{ 
@@ -49,7 +49,7 @@ export function InvitationEmail({
             margin: '0',
             fontSize: '16px'
           }}>
-            Join the PostFlow Guest Post Workflow System
+            Join the Linkio Guest Post Workflow System
           </p>
         </div>
 
@@ -60,7 +60,7 @@ export function InvitationEmail({
           </p>
           
           <p style={{ fontSize: '16px', lineHeight: '1.6', marginBottom: '20px', color: '#333' }}>
-            <strong>{invitedBy}</strong> has invited you to join the PostFlow Guest Post Workflow System as a <strong>{userTypeDisplay}</strong> with <strong>{roleDisplay}</strong> access.
+            <strong>{invitedBy}</strong> has invited you to join the Linkio Guest Post Workflow System as a <strong>{userTypeDisplay}</strong> with <strong>{roleDisplay}</strong> access.
           </p>
 
           {/* Invitation Details */}
@@ -155,7 +155,7 @@ export function InvitationEmail({
             <ul style={{ paddingLeft: '20px', margin: '0' }}>
               <li style={{ marginBottom: '5px' }}>Click the invitation link above</li>
               <li style={{ marginBottom: '5px' }}>Complete your account setup with a secure password</li>
-              <li style={{ marginBottom: '5px' }}>Start using the PostFlow system immediately</li>
+              <li style={{ marginBottom: '5px' }}>Start using the Linkio system immediately</li>
             </ul>
           </div>
 

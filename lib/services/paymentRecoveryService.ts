@@ -374,7 +374,7 @@ export class PaymentRecoveryService {
               If you continue to have issues, please contact our support team at info@linkio.com
             </p>
             
-            <p>Best regards,<br>The PostFlow Team</p>
+            <p>Best regards,<br>The Linkio Team</p>
           </div>
         `,
         text: `
@@ -393,7 +393,7 @@ Complete your payment at: ${process.env.NEXTAUTH_URL}/orders/${order.id}/payment
 If you continue to have issues, please contact our support team at info@linkio.com
 
 Best regards,
-The PostFlow Team
+The Linkio Team
         `,
       });
       
