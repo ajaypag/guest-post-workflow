@@ -89,9 +89,16 @@ const pages = [
   { path: 'how-to-sort-and-filter-link-prospects', priority: 0.7, changefreq: 'monthly' },
   { path: 'using-seo-for-lead-generation', priority: 0.7, changefreq: 'monthly' },
   { path: 'top-seo-agencies', priority: 0.7, changefreq: 'monthly' },
+  { path: 'simple-backlink-strategies', priority: 0.7, changefreq: 'monthly' },
+  { path: 'best-content-seo-tools', priority: 0.7, changefreq: 'monthly' },
+  { path: 'how-to-write-listicles', priority: 0.7, changefreq: 'monthly' },
+  { path: 'best-rank-tracking-tools-for-local-businesses', priority: 0.7, changefreq: 'monthly' },
+  { path: 'the-best-books-to-learn-seo', priority: 0.7, changefreq: 'monthly' },
+  { path: 'how-to-create-a-content-marketing-strategy-for-ecommerce', priority: 0.7, changefreq: 'monthly' },
+  { path: 'how-to-choose-the-best-seo-software-for-your-business', priority: 0.7, changefreq: 'monthly' },
+  { path: 'why-every-business-needs-a-website', priority: 0.7, changefreq: 'monthly' },
   
   // Resource pages
-  { path: 'best-content-seo-tools', priority: 0.7, changefreq: 'monthly' },
   { path: 'best-email-finders', priority: 0.7, changefreq: 'monthly' },
   { path: 'best-seo-newsletters', priority: 0.6, changefreq: 'monthly' },
   { path: 'googles-latest-algorithm-updates', priority: 0.7, changefreq: 'weekly' },

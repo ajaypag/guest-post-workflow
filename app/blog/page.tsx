@@ -281,10 +281,74 @@ const blogPosts = [
     category: 'SEO',
     readTime: '20 min read',
     date: 'February 2024'
+  },
+  {
+    title: 'Easy Backlinks: 7 Simple Ways to Get Them In 2024',
+    href: '/simple-backlink-strategies',
+    excerpt: 'Learn 7 proven strategies to get easy backlinks that boost your search engine ranking. From HARO to broken link building, discover simple tactics that work.',
+    category: 'Link Building',
+    readTime: '8 min read',
+    date: 'January 2024'
+  },
+  {
+    title: 'Best Content SEO Tools for On-Page & Off-Page Optimization',
+    href: '/best-content-seo-tools',
+    excerpt: 'Discover the top SEO tools for content optimization. Compare features and pricing for Narrato, Linkio, Screaming Frog, Moz, Ahrefs and more to boost your rankings.',
+    category: 'SEO Tools',
+    readTime: '12 min read',
+    date: 'January 2024'
+  },
+  {
+    title: 'How To Write Winning Listicles That People Will Actually Read',
+    href: '/how-to-write-listicles',
+    excerpt: 'Learn how to write engaging listicles with our 9-step guide. Discover formatting tips, examples, and strategies to create list articles that rank and convert.',
+    category: 'Content Marketing',
+    readTime: '10 min read',
+    date: 'January 2024'
+  },
+  {
+    title: 'Best Rank Tracking Tools for Local Businesses: What Actually Matters?',
+    href: '/best-rank-tracking-tools-for-local-businesses',
+    excerpt: 'Discover the best rank tracking tools for local SEO. Compare Whitespark, Nightwatch, SE Ranking, BrightLocal, and more with honest pricing and features analysis.',
+    category: 'Local SEO',
+    readTime: '6 min read',
+    date: 'February 2024'
+  },
+  {
+    title: 'The Best Books To Learn SEO Recommended by Pros',
+    href: '/the-best-books-to-learn-seo',
+    excerpt: 'Discover the top 8 SEO books recommended by industry professionals. From beginner guides to advanced strategies, master SEO with these expert-approved resources.',
+    category: 'Resources',
+    readTime: '15 min read',
+    date: 'February 2024'
+  },
+  {
+    title: 'How to Create a Content Marketing Strategy for eCommerce',
+    href: '/how-to-create-a-content-marketing-strategy-for-ecommerce',
+    excerpt: 'Learn how to create a powerful content marketing strategy for your eCommerce business. Step-by-step guide covering goals, audience targeting, SEO optimization, and content promotion.',
+    category: 'Content Marketing',
+    readTime: '12 min read',
+    date: 'February 2024'
+  },
+  {
+    title: 'How to Choose the Best SEO Software for Your Business',
+    href: '/how-to-choose-the-best-seo-software-for-your-business',
+    excerpt: 'Discover how to select the perfect SEO software for your business. Compare top tools like Semrush, Ahrefs, SearchAtlas, and more to boost your search rankings.',
+    category: 'SEO Tools',
+    readTime: '8 min read',
+    date: 'February 2024'
+  },
+  {
+    title: 'Why Every Business Needs a Website',
+    href: '/why-every-business-needs-a-website',
+    excerpt: 'Discover why having a website is crucial for business success. Learn about building credibility, driving organic traffic, reaching global audiences, and essential website creation tips.',
+    category: 'Digital Marketing',
+    readTime: '8 min read',
+    date: 'February 2024'
   }
 ];
 
-const categories = ['All', 'Link Building', 'SEO', 'Email Outreach', 'Content Marketing', 'Case Studies', 'Resources', 'SEO Tools', 'Local SEO'];
+const categories = ['All', 'Link Building', 'SEO', 'Email Outreach', 'Content Marketing', 'Digital Marketing', 'Case Studies', 'Resources', 'SEO Tools', 'Local SEO'];
 
 export default function BlogPage() {
   return (
