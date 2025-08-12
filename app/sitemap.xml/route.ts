@@ -83,7 +83,6 @@ const pages = [
   { path: 'seo-webinars', priority: 0.7, changefreq: 'monthly' },
   { path: 'best-directory-submission-services', priority: 0.7, changefreq: 'monthly' },
   { path: 'guide-to-grow-your-blogs-audience', priority: 0.7, changefreq: 'monthly' },
-  { path: 'how-to-track-multiple-vehicles', priority: 0.7, changefreq: 'monthly' },
   { path: 'how-to-use-seo-to-improve-conversion-rate', priority: 0.7, changefreq: 'monthly' },
   { path: 'link-disavows-good-or-bad', priority: 0.7, changefreq: 'monthly' },
   { path: 'how-to-sort-and-filter-link-prospects', priority: 0.7, changefreq: 'monthly' },

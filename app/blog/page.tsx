@@ -227,14 +227,6 @@ const blogPosts = [
     date: 'June 2021'
   },
   {
-    title: 'How to Track Multiple Vehicles With Vehicle Tracking Software',
-    href: '/how-to-track-multiple-vehicles',
-    excerpt: 'Learn how to efficiently track multiple vehicles using GPS tracking software. Discover real-time monitoring, route planning, and fleet management strategies.',
-    category: 'Resources',
-    readTime: '8 min read',
-    date: 'April 2021'
-  },
-  {
     title: 'How To Use SEO To Improve Your Conversion Rate (7 Proven Methods)',
     href: '/how-to-use-seo-to-improve-conversion-rate',
     excerpt: 'Learn how to use SEO strategies to improve conversion rates. Discover keyword research, on-page optimization, content strategies, and technical improvements.',
