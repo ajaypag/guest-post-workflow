@@ -23,145 +23,338 @@ export default function BestContentSeoToolsPage() {
       author="Akshita Sharma"
       readTime="12 min read"
     >
-      <p className="lead">
-        But SEO today is vastly different from what it used to be. Stuffing your content with keywords and adding backlinks left and right will not get you the results.
-      </p>
+      <div className="bg-red-50 border-l-4 border-red-400 p-6 my-6">
+        <p className="lead text-red-800">
+          SEO today is vastly different from what it used to be. Stuffing your content with keywords and adding backlinks left and right will not get you the results.
+        </p>
+      </div>
 
       <p>
-        SEO, as it exists today, is a sophisticated technique that is influenced by the audience's behavior. It is an amalgamation of both on-page and off-page tactics that help you rank higher on SERPs. And there are some great tools to help you with that.
+        SEO, as it exists today, is a sophisticated technique that is influenced by audience behavior. It's an amalgamation of both on-page and off-page tactics that help you rank higher on SERPs. And there are some great tools to help you with that.
       </p>
 
-      <p>
-        In this article, we'll be covering some excellent on-page and off-page SEO software that can help you achieve your growth objectives.
-      </p>
+      <div className="bg-blue-50 p-6 rounded-lg my-6">
+        <p className="text-lg font-medium text-blue-900">
+          In this article, we'll cover some excellent on-page and off-page SEO software that can help you achieve your growth objectives.
+        </p>
+      </div>
 
       <h2>What is on-page and off-page SEO?</h2>
 
-      <p>
-        A well-rounded SEO strategy comprises on-page SEO and off-page SEO. Think of them as two sides of the same coin. With on-page SEO techniques, you'll be optimizing those sections (of your website) that you have control over.
-      </p>
+      <div className="bg-gradient-to-r from-purple-50 to-pink-50 p-6 rounded-lg my-6">
+        <p className="text-lg font-medium text-gray-800 mb-4">
+          A well-rounded SEO strategy comprises on-page SEO and off-page SEO. Think of them as two sides of the same coin.
+        </p>
+      </div>
 
-      <p>
-        The focus of on-page SEO is on producing good content with keyword optimization, the right title tags, and more. Utilizing an on-page SEO checker can help ensure that your website meets best practices by analyzing key factors like meta tags, headings, and content structure.
-      </p>
+      <div className="grid md:grid-cols-2 gap-6 my-8">
+        <div className="bg-white border-2 border-green-200 rounded-lg p-6">
+          <div className="flex items-center mb-4">
+            <div className="bg-green-500 text-white rounded-full w-10 h-10 flex items-center justify-center mr-3">
+              <span className="font-bold">ON</span>
+            </div>
+            <h3 className="text-xl font-semibold text-gray-900">On-Page SEO</h3>
+          </div>
+          <p className="text-gray-700 mb-4">
+            Optimizing sections of your website that you have control over.
+          </p>
+          <div className="bg-green-50 p-4 rounded-lg">
+            <h4 className="font-semibold text-green-800 mb-2">Focus Areas:</h4>
+            <ul className="text-green-700 space-y-1">
+              <li>• Content quality and keyword optimization</li>
+              <li>• Title tags and meta descriptions</li>
+              <li>• Headers and content structure</li>
+              <li>• Internal linking</li>
+              <li>• Page load speed</li>
+            </ul>
+          </div>
+        </div>
 
-      <p>
-        With off-page SEO, on the other hand, the focus is on increasing your website's authority on the search engine results pages (SERPs) through various measures. Off-page SEO consists of link building, link exchange, and other techniques.
-      </p>
+        <div className="bg-white border-2 border-blue-200 rounded-lg p-6">
+          <div className="flex items-center mb-4">
+            <div className="bg-blue-500 text-white rounded-full w-10 h-10 flex items-center justify-center mr-3">
+              <span className="font-bold">OFF</span>
+            </div>
+            <h3 className="text-xl font-semibold text-gray-900">Off-Page SEO</h3>
+          </div>
+          <p className="text-gray-700 mb-4">
+            Increasing your website's authority through external measures.
+          </p>
+          <div className="bg-blue-50 p-4 rounded-lg">
+            <h4 className="font-semibold text-blue-800 mb-2">Focus Areas:</h4>
+            <ul className="text-blue-700 space-y-1">
+              <li>• Link building campaigns</li>
+              <li>• Social media signals</li>
+              <li>• Brand mentions</li>
+              <li>• Guest posting</li>
+              <li>• Influencer partnerships</li>
+            </ul>
+          </div>
+        </div>
+      </div>
 
-      <p>
-        Both of these techniques are important for the success of an SEO campaign.
-      </p>
+      <div className="bg-yellow-50 border-l-4 border-yellow-400 p-4 my-6">
+        <p className="text-yellow-800 font-medium">
+          <strong>Key Point:</strong> Both techniques are essential for SEO success. They work together to improve your search rankings and drive organic traffic.
+        </p>
+      </div>
 
       <h2>Best On-Page and Off-Page SEO Tools</h2>
 
-      <h3>1. Narrato</h3>
+      <div className="bg-white border-2 border-purple-200 rounded-lg p-6 my-8">
+        <div className="flex items-center mb-6">
+          <span className="bg-purple-500 text-white rounded-full w-10 h-10 flex items-center justify-center font-bold mr-4">1</span>
+          <div>
+            <h3 className="text-2xl font-semibold text-gray-900 m-0">Narrato</h3>
+            <span className="bg-purple-100 text-purple-800 text-sm font-medium px-3 py-1 rounded-full">AI-Powered Content & SEO</span>
+          </div>
+        </div>
 
-      <p>
-        This all-in-one tool for content creators comes with a great AI writing and SEO tool that's excellent for optimizing your content for greater visibility even as you write. Narrato's SEO brief generator analyzes the top-ranking content for a search term or topic, and provides you with recommendations for –
-      </p>
+        <p className="text-gray-700 mb-6">
+          This all-in-one tool for content creators comes with a great AI writing and SEO tool that's excellent for optimizing your content for greater visibility even as you write.
+        </p>
 
-      <ul>
-        <li>Keywords to include and keyword counts</li>
-        <li>Questions to answer</li>
-        <li>Competitor links/references, simplifying your content research</li>
-        <li>Target word count, and more.</li>
-      </ul>
+        <div className="grid md:grid-cols-2 gap-6 mb-6">
+          <div className="bg-purple-50 p-4 rounded-lg">
+            <h4 className="font-semibold text-purple-800 mb-3">SEO Brief Generator Provides:</h4>
+            <ul className="text-purple-700 space-y-2">
+              <li>✓ Keywords to include and keyword counts</li>
+              <li>✓ Questions to answer</li>
+              <li>✓ Competitor links/references</li>
+              <li>✓ Target word count recommendations</li>
+            </ul>
+          </div>
 
-      <p>
-        What's great is that you can track the keyword count on your content tasks as you write, which makes optimization even easier. You can also add your own keywords while creating a new content piece on Narrato Workspace.
-      </p>
+          <div className="bg-indigo-50 p-4 rounded-lg">
+            <h4 className="font-semibold text-indigo-800 mb-3">AI Writer Features:</h4>
+            <ul className="text-indigo-700 space-y-2">
+              <li>✓ Blog content generation</li>
+              <li>✓ Email and copy creation</li>
+              <li>✓ Video content scripts</li>
+              <li>✓ SEO meta descriptions</li>
+            </ul>
+          </div>
+        </div>
 
-      <p>
-        Narrato also provides an AI writer, which auto-generates content for a variety of use cases. Use it for your blogs, copies, emails, video, or even SEO copy and meta descriptions. If you're looking for a tool that can simplify all your content needs (content creation, optimization, collaboration, planning), Narrato is your answer.
-      </p>
+        <div className="bg-green-50 border-l-4 border-green-400 p-4 mb-4">
+          <h4 className="font-semibold text-green-800 mb-2">Key Benefits:</h4>
+          <p className="text-green-700">
+            Track keyword count in real-time as you write, add custom keywords, and simplify all content needs (creation, optimization, collaboration, planning).
+          </p>
+        </div>
 
-      <p>
-        <strong>Pricing:</strong> Teams that are just starting out can use Narrato for free. The free plan comes with 3 SEO content briefs per user per month. With the paid plans that start from $9 per user per month, the number of SEO content briefs you can generate per month increases. Narrato can also customize a plan for you based on your requirements.
-      </p>
+        <div className="bg-gray-100 p-4 rounded-lg">
+          <h4 className="font-semibold text-gray-800 mb-2">💰 Pricing:</h4>
+          <div className="grid md:grid-cols-2 gap-4">
+            <div>
+              <p className="text-gray-700"><strong>Free Plan:</strong> 3 SEO content briefs per user/month</p>
+            </div>
+            <div>
+              <p className="text-gray-700"><strong>Paid Plans:</strong> Starting from $9/user/month</p>
+            </div>
+          </div>
+          <p className="text-gray-600 text-sm mt-2">Custom plans available based on requirements</p>
+        </div>
+      </div>
 
-      <h3>2. Linkio</h3>
+      <div className="bg-white border-2 border-blue-200 rounded-lg p-6 my-8">
+        <div className="flex items-center mb-6">
+          <span className="bg-blue-500 text-white rounded-full w-10 h-10 flex items-center justify-center font-bold mr-4">2</span>
+          <div>
+            <h3 className="text-2xl font-semibold text-gray-900 m-0">Linkio</h3>
+            <span className="bg-blue-100 text-blue-800 text-sm font-medium px-3 py-1 rounded-full">Off-Page SEO & Link Building</span>
+          </div>
+        </div>
 
-      <p>
-        Linkio is an off-page SEO tool that has the power to redefine lead generation, link building, and search engine optimization for you. At its core, Linkio is a cold outreach software that aids with prospecting and automating outreach. There are three modules that work in sync to give the users the most efficient automated SEO solutions. Here is a look at the three modules, along with the features of each –
-      </p>
+        <p className="text-gray-700 mb-6">
+          Linkio is an off-page SEO tool that redefines lead generation, link building, and search engine optimization. At its core, it's cold outreach software that aids with prospecting and automating outreach.
+        </p>
 
-      <ul>
-        <li>Anchor text suggestions</li>
-        <li>Anchor text profile planner</li>
-        <li>Anchor text categorizer</li>
-        <li>Set anchor text percentages</li>
-        <li>Backlink index checker</li>
-        <li>Backlink crawler and validator</li>
-        <li>Team management features</li>
-        <li>Backlink monitoring</li>
-        <li>Automated backlink importing</li>
-        <li>Monitor link changes</li>
-        <li>Automatic checking of popular metrics</li>
-        <li>Email reports of link changes</li>
-        <li>View aggregate metrics</li>
-        <li>Keyword rank tracker</li>
-        <li>Daily ranking updates</li>
-        <li>Track desktop and mobile results</li>
-        <li>Track results from 500+ search engines</li>
-        <li>Page-level insights</li>
-        <li>Local rankings</li>
-        <li>Visualize SEO processes</li>
-      </ul>
+        <div className="grid md:grid-cols-3 gap-4 mb-6">
+          <div className="bg-blue-50 p-4 rounded-lg">
+            <h4 className="font-semibold text-blue-800 mb-3">Anchor Text Module:</h4>
+            <ul className="text-blue-700 space-y-1 text-sm">
+              <li>✓ Anchor text suggestions</li>
+              <li>✓ Profile planner</li>
+              <li>✓ Text categorizer</li>
+              <li>✓ Set percentages</li>
+            </ul>
+          </div>
 
-      <p>
-        <strong>Pricing:</strong> Linkio provides 4 plans – Personal, Starter, Standard, and Plus. These start from $19.99 per month. There is also a 7-day free trial on offer.
-      </p>
+          <div className="bg-green-50 p-4 rounded-lg">
+            <h4 className="font-semibold text-green-800 mb-3">Link Management:</h4>
+            <ul className="text-green-700 space-y-1 text-sm">
+              <li>✓ Backlink index checker</li>
+              <li>✓ Crawler and validator</li>
+              <li>✓ Automated importing</li>
+              <li>✓ Monitor link changes</li>
+            </ul>
+          </div>
 
-      <h3>3. Screaming Frog SEO Spider</h3>
+          <div className="bg-purple-50 p-4 rounded-lg">
+            <h4 className="font-semibold text-purple-800 mb-3">Tracking & Reports:</h4>
+            <ul className="text-purple-700 space-y-1 text-sm">
+              <li>✓ Keyword rank tracker</li>
+              <li>✓ Daily ranking updates</li>
+              <li>✓ 500+ search engines</li>
+              <li>✓ Email reports</li>
+            </ul>
+          </div>
+        </div>
 
-      <p>
-        An industry leader in on-page SEO optimization, Screaming Frog is one of the oldest SEO tools that is used by thousands of businesses around the world. Its innovative little tool, known as the SEO Spider, can help you with all your SEO needs, from crawling through all the selected URLs to fetching onsite elements for analysis. It gives you relevant on-site information and creates digestible statistics and reports.
-      </p>
+        <div className="bg-gray-100 p-4 rounded-lg">
+          <h4 className="font-semibold text-gray-800 mb-2">💰 Pricing:</h4>
+          <div className="grid md:grid-cols-2 gap-4">
+            <div>
+              <p className="text-gray-700"><strong>4 Plans Available:</strong> Personal, Starter, Standard, Plus</p>
+            </div>
+            <div>
+              <p className="text-gray-700"><strong>Starting:</strong> $19.99/month + 7-day free trial</p>
+            </div>
+          </div>
+        </div>
+      </div>
 
-      <ul>
-        <li>Find broken links</li>
-        <li>Analyze the page titles</li>
-        <li>Discover duplicate content</li>
-        <li>Check temporary and permanent redirects (if they've been created properly)</li>
-        <li>Generate XML sitemaps</li>
-        <li>Site architecture analysis</li>
-        <li>Metadata analysis</li>
-        <li>Review robots.txt and other directives</li>
-      </ul>
+      <div className="bg-white border-2 border-green-200 rounded-lg p-6 my-8">
+        <div className="flex items-center mb-6">
+          <span className="bg-green-500 text-white rounded-full w-10 h-10 flex items-center justify-center font-bold mr-4">3</span>
+          <div>
+            <h3 className="text-2xl font-semibold text-gray-900 m-0">Screaming Frog SEO Spider</h3>
+            <span className="bg-green-100 text-green-800 text-sm font-medium px-3 py-1 rounded-full">Technical SEO Crawler</span>
+          </div>
+        </div>
 
-      <p>
-        <strong>Pricing:</strong> Screaming Frog SEO Spider can be used for free. You can also purchase a license for $209 per year to access the advanced features and crawl more than 500 URLs.
-      </p>
+        <p className="text-gray-700 mb-6">
+          An industry leader in on-page SEO optimization, Screaming Frog is one of the oldest SEO tools used by thousands of businesses worldwide. The SEO Spider helps with all your SEO needs, from crawling URLs to fetching onsite elements for analysis.
+        </p>
 
-      <h3>4. Moz On-Page Grader</h3>
+        <div className="grid md:grid-cols-2 gap-6 mb-6">
+          <div className="bg-green-50 p-4 rounded-lg">
+            <h4 className="font-semibold text-green-800 mb-3">Technical Analysis:</h4>
+            <ul className="text-green-700 space-y-2">
+              <li>✓ Find broken links</li>
+              <li>✓ Analyze page titles</li>
+              <li>✓ Discover duplicate content</li>
+              <li>✓ Check redirects (301/302)</li>
+            </ul>
+          </div>
 
-      <p>
-        Moz On-Page Grader is an SEO tool that analyzes all your pages, comparing them to your existing checklist of SEO factors. The tool provides you with the overall results of your website pages, so you can make the necessary changes. It also provides SEO suggestions on a more granular level. The great thing about this on-page SEO tool is that it's incredibly easy to use. The clean and intuitive design and easy-to-understand on-page reports make it an ideal tool for beginners and teams just starting out with SEO.
-      </p>
+          <div className="bg-teal-50 p-4 rounded-lg">
+            <h4 className="font-semibold text-teal-800 mb-3">Site Structure:</h4>
+            <ul className="text-teal-700 space-y-2">
+              <li>✓ Generate XML sitemaps</li>
+              <li>✓ Site architecture analysis</li>
+              <li>✓ Metadata analysis</li>
+              <li>✓ Review robots.txt directives</li>
+            </ul>
+          </div>
+        </div>
 
-      <p>Key features of this tool are –</p>
+        <div className="bg-blue-50 border-l-4 border-blue-400 p-4 mb-4">
+          <p className="text-blue-800">
+            <strong>Industry Standard:</strong> Creates digestible statistics and reports with relevant on-site information for comprehensive SEO audits.
+          </p>
+        </div>
 
-      <ul>
-        <li>In-app recommendations for immediate action.</li>
-        <li>Ensure that the important website pages are ranking for target keywords</li>
-        <li>Discover gaps in keyword usage with the help of page-by-page grades</li>
-        <li>Automatic weekly audits</li>
-      </ul>
+        <div className="bg-gray-100 p-4 rounded-lg">
+          <h4 className="font-semibold text-gray-800 mb-2">💰 Pricing:</h4>
+          <div className="grid md:grid-cols-2 gap-4">
+            <div className="bg-green-100 p-3 rounded">
+              <p className="text-green-800"><strong>Free Version:</strong> Up to 500 URLs</p>
+            </div>
+            <div className="bg-blue-100 p-3 rounded">
+              <p className="text-blue-800"><strong>Licensed:</strong> $209/year (unlimited URLs + advanced features)</p>
+            </div>
+          </div>
+        </div>
+      </div>
 
-      <p>
-        <strong>Pricing:</strong> Teams that are just starting out can try the Moz 30-day free trial. The Moz Pro paid plans start from $99 per month.
-      </p>
+      <div className="bg-white border-2 border-orange-200 rounded-lg p-6 my-8">
+        <div className="flex items-center mb-6">
+          <span className="bg-orange-500 text-white rounded-full w-10 h-10 flex items-center justify-center font-bold mr-4">4</span>
+          <div>
+            <h3 className="text-2xl font-semibold text-gray-900 m-0">Moz On-Page Grader</h3>
+            <span className="bg-orange-100 text-orange-800 text-sm font-medium px-3 py-1 rounded-full">Page Analysis & Optimization</span>
+          </div>
+        </div>
 
-      <h3>5. Google Page Speed Insights</h3>
+        <p className="text-gray-700 mb-6">
+          Moz On-Page Grader analyzes all your pages, comparing them to your existing checklist of SEO factors. The clean and intuitive design makes it ideal for beginners and teams just starting with SEO.
+        </p>
 
-      <p>
-        The Page Speed Insights tool by Google is a great on-page search engine optimization tool that analyzes your page to identify any areas that need improvement. Page Speed Insights provides you with reports on the user experience of your pages on both desktop and mobile devices. With this tool, you can ensure that your page loads faster, which eventually allows you to rank higher on search engines.
-      </p>
+        <div className="bg-orange-50 p-4 rounded-lg mb-6">
+          <h4 className="font-semibold text-orange-800 mb-3">Key Features:</h4>
+          <ul className="text-orange-700 space-y-2">
+            <li>✓ In-app recommendations for immediate action</li>
+            <li>✓ Ensure pages rank for target keywords</li>
+            <li>✓ Discover keyword usage gaps with page-by-page grades</li>
+            <li>✓ Automatic weekly audits</li>
+          </ul>
+        </div>
 
-      <p>
-        Page Speed Insights provides you with both lab and field data about your website pages. The lab data is collected in a controlled environment, which makes it useful for debugging any issues. For the real-world bottlenecks in user experience, field data is more useful.
-      </p>
+        <div className="bg-blue-50 border-l-4 border-blue-400 p-4 mb-4">
+          <p className="text-blue-800">
+            <strong>Perfect For:</strong> Beginners and teams new to SEO who need easy-to-understand reports and granular SEO suggestions.
+          </p>
+        </div>
+
+        <div className="bg-gray-100 p-4 rounded-lg">
+          <h4 className="font-semibold text-gray-800 mb-2">💰 Pricing:</h4>
+          <div className="grid md:grid-cols-2 gap-4">
+            <div>
+              <p className="text-gray-700"><strong>Free Trial:</strong> 30 days</p>
+            </div>
+            <div>
+              <p className="text-gray-700"><strong>Moz Pro:</strong> Starting from $99/month</p>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <div className="bg-white border-2 border-red-200 rounded-lg p-6 my-8">
+        <div className="flex items-center mb-6">
+          <span className="bg-red-500 text-white rounded-full w-10 h-10 flex items-center justify-center font-bold mr-4">5</span>
+          <div>
+            <h3 className="text-2xl font-semibold text-gray-900 m-0">Google Page Speed Insights</h3>
+            <span className="bg-red-100 text-red-800 text-sm font-medium px-3 py-1 rounded-full">Free Performance Tool</span>
+          </div>
+        </div>
+
+        <p className="text-gray-700 mb-6">
+          Google's Page Speed Insights is a great on-page SEO tool that analyzes your page to identify areas needing improvement. It provides reports on user experience for both desktop and mobile devices.
+        </p>
+
+        <div className="grid md:grid-cols-2 gap-6 mb-6">
+          <div className="bg-red-50 p-4 rounded-lg">
+            <h4 className="font-semibold text-red-800 mb-3">Lab Data:</h4>
+            <ul className="text-red-700 space-y-1">
+              <li>✓ Controlled environment testing</li>
+              <li>✓ Useful for debugging issues</li>
+              <li>✓ Consistent measurements</li>
+            </ul>
+          </div>
+
+          <div className="bg-pink-50 p-4 rounded-lg">
+            <h4 className="font-semibold text-pink-800 mb-3">Field Data:</h4>
+            <ul className="text-pink-700 space-y-1">
+              <li>✓ Real-world user experience</li>
+              <li>✓ Identifies actual bottlenecks</li>
+              <li>✓ Performance insights</li>
+            </ul>
+          </div>
+        </div>
+
+        <div className="bg-green-50 border-l-4 border-green-400 p-4 mb-4">
+          <p className="text-green-800">
+            <strong>SEO Impact:</strong> Faster page loads directly improve search engine rankings. This tool helps ensure optimal performance across all devices.
+          </p>
+        </div>
+
+        <div className="bg-gray-100 p-4 rounded-lg">
+          <h4 className="font-semibold text-gray-800 mb-2">💰 Pricing:</h4>
+          <p className="text-green-700 font-medium">100% FREE - Google's official tool</p>
+        </div>
+      </div>
 
       <p>
         <strong>Pricing:</strong> Google Page Speed Insights tool is free to use.
@@ -256,44 +449,156 @@ export default function BestContentSeoToolsPage() {
 
       <h2>Complete SEO Checklist</h2>
 
-      <p>
-        So, what are some things that should be covered in on-page and off-page search engine optimization? Here's a complete checklist covering all aspects of SEO –
-      </p>
+      <div className="bg-gradient-to-r from-indigo-50 to-purple-50 p-6 rounded-lg my-6">
+        <p className="text-lg font-medium text-gray-800">
+          What should be covered in on-page and off-page search engine optimization? Here's a complete checklist covering all aspects of SEO:
+        </p>
+      </div>
 
-      <h3>On-Page SEO Checklist:</h3>
-      
-      <ul>
-        <li>Use appropriate title tags</li>
-        <li>Include optimized and relevant headings</li>
-        <li>Don't forget about alt text</li>
-        <li>Consider your URL structure</li>
-        <li>Optimize page load speed</li>
-        <li>Add meta descriptions</li>
-        <li>Add relevant internal links</li>
-        <li>Make the design responsive</li>
-        <li>Include high-performing keywords</li>
-      </ul>
+      <div className="grid md:grid-cols-2 gap-8 my-10">
+        <div className="bg-white border-2 border-green-200 rounded-lg p-6">
+          <div className="flex items-center mb-6">
+            <div className="bg-green-500 text-white rounded-lg p-3 mr-4">
+              <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
+              </svg>
+            </div>
+            <h3 className="text-xl font-semibold text-gray-900">On-Page SEO Checklist</h3>
+          </div>
+          
+          <div className="space-y-3">
+            <div className="flex items-center">
+              <div className="w-2 h-2 bg-green-500 rounded-full mr-3"></div>
+              <span className="text-gray-700">Use appropriate title tags</span>
+            </div>
+            <div className="flex items-center">
+              <div className="w-2 h-2 bg-green-500 rounded-full mr-3"></div>
+              <span className="text-gray-700">Include optimized and relevant headings</span>
+            </div>
+            <div className="flex items-center">
+              <div className="w-2 h-2 bg-green-500 rounded-full mr-3"></div>
+              <span className="text-gray-700">Don't forget about alt text</span>
+            </div>
+            <div className="flex items-center">
+              <div className="w-2 h-2 bg-green-500 rounded-full mr-3"></div>
+              <span className="text-gray-700">Consider your URL structure</span>
+            </div>
+            <div className="flex items-center">
+              <div className="w-2 h-2 bg-green-500 rounded-full mr-3"></div>
+              <span className="text-gray-700">Optimize page load speed</span>
+            </div>
+            <div className="flex items-center">
+              <div className="w-2 h-2 bg-green-500 rounded-full mr-3"></div>
+              <span className="text-gray-700">Add meta descriptions</span>
+            </div>
+            <div className="flex items-center">
+              <div className="w-2 h-2 bg-green-500 rounded-full mr-3"></div>
+              <span className="text-gray-700">Add relevant internal links</span>
+            </div>
+            <div className="flex items-center">
+              <div className="w-2 h-2 bg-green-500 rounded-full mr-3"></div>
+              <span className="text-gray-700">Make the design responsive</span>
+            </div>
+            <div className="flex items-center">
+              <div className="w-2 h-2 bg-green-500 rounded-full mr-3"></div>
+              <span className="text-gray-700">Include high-performing keywords</span>
+            </div>
+          </div>
+        </div>
 
-      <h3>Off-Page SEO Checklist</h3>
-
-      <ul>
-        <li>Examine your backlink profile</li>
-        <li>Examine your competitors' backlink status</li>
-        <li>Fix 404 errors</li>
-        <li>Improve internal linking</li>
-        <li>Assess your options for link building</li>
-        <li>Outreach efforts to increase your content's visibility</li>
-        <li>Update local citation profiles</li>
-        <li>Promote content on social media using a free social media scheduler</li>
-        <li>Promote content through paid ads</li>
-        <li>Do guest blogging</li>
-      </ul>
+        <div className="bg-white border-2 border-blue-200 rounded-lg p-6">
+          <div className="flex items-center mb-6">
+            <div className="bg-blue-500 text-white rounded-lg p-3 mr-4">
+              <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13.828 10.172a4 4 0 00-5.656 0l-4 4a4 4 0 105.656 5.656l1.102-1.101m-.758-4.899a4 4 0 005.656 0l4-4a4 4 0 00-5.656-5.656l-1.1 1.1" />
+              </svg>
+            </div>
+            <h3 className="text-xl font-semibold text-gray-900">Off-Page SEO Checklist</h3>
+          </div>
+          
+          <div className="space-y-3">
+            <div className="flex items-center">
+              <div className="w-2 h-2 bg-blue-500 rounded-full mr-3"></div>
+              <span className="text-gray-700">Examine your backlink profile</span>
+            </div>
+            <div className="flex items-center">
+              <div className="w-2 h-2 bg-blue-500 rounded-full mr-3"></div>
+              <span className="text-gray-700">Examine competitors' backlink status</span>
+            </div>
+            <div className="flex items-center">
+              <div className="w-2 h-2 bg-blue-500 rounded-full mr-3"></div>
+              <span className="text-gray-700">Fix 404 errors</span>
+            </div>
+            <div className="flex items-center">
+              <div className="w-2 h-2 bg-blue-500 rounded-full mr-3"></div>
+              <span className="text-gray-700">Improve internal linking</span>
+            </div>
+            <div className="flex items-center">
+              <div className="w-2 h-2 bg-blue-500 rounded-full mr-3"></div>
+              <span className="text-gray-700">Assess link building options</span>
+            </div>
+            <div className="flex items-center">
+              <div className="w-2 h-2 bg-blue-500 rounded-full mr-3"></div>
+              <span className="text-gray-700">Outreach to increase visibility</span>
+            </div>
+            <div className="flex items-center">
+              <div className="w-2 h-2 bg-blue-500 rounded-full mr-3"></div>
+              <span className="text-gray-700">Update local citation profiles</span>
+            </div>
+            <div className="flex items-center">
+              <div className="w-2 h-2 bg-blue-500 rounded-full mr-3"></div>
+              <span className="text-gray-700">Promote on social media</span>
+            </div>
+            <div className="flex items-center">
+              <div className="w-2 h-2 bg-blue-500 rounded-full mr-3"></div>
+              <span className="text-gray-700">Do guest blogging</span>
+            </div>
+          </div>
+        </div>
+      </div>
 
       <h2>Wrapping Up</h2>
 
-      <p>
-        With this, we've covered some of the best tools for on-page and off-page SEO that will help you rank higher on the search engine results pages. Remember that a complete SEO strategy requires both on-page and off-page SEO since they work together in improving your search rankings. But it's always a good idea to start with on-page SEO first since it forms the foundation on which you can improve your off-page SEO.
-      </p>
+      <div className="bg-gradient-to-r from-blue-50 to-purple-50 p-8 rounded-lg my-8">
+        <div className="text-center mb-6">
+          <h3 className="text-2xl font-bold text-gray-900 mb-4">Key Takeaways</h3>
+          <p className="text-lg text-gray-700 mb-6">
+            We've covered some of the best tools for on-page and off-page SEO that will help you rank higher on search engine results pages.
+          </p>
+        </div>
+
+        <div className="grid md:grid-cols-2 gap-6 mb-6">
+          <div className="bg-white p-6 rounded-lg border-2 border-green-200">
+            <div className="flex items-center mb-4">
+              <div className="bg-green-500 text-white rounded-full w-8 h-8 flex items-center justify-center mr-3">
+                ✓
+              </div>
+              <h4 className="font-semibold text-green-800">Complete Strategy Required</h4>
+            </div>
+            <p className="text-gray-700">
+              Both on-page and off-page SEO work together to improve your search rankings. You need both for success.
+            </p>
+          </div>
+
+          <div className="bg-white p-6 rounded-lg border-2 border-blue-200">
+            <div className="flex items-center mb-4">
+              <div className="bg-blue-500 text-white rounded-full w-8 h-8 flex items-center justify-center mr-3">
+                1
+              </div>
+              <h4 className="font-semibold text-blue-800">Start with On-Page</h4>
+            </div>
+            <p className="text-gray-700">
+              Begin with on-page SEO first since it forms the foundation for your off-page SEO efforts.
+            </p>
+          </div>
+        </div>
+
+        <div className="bg-yellow-50 border-l-4 border-yellow-400 p-4 rounded">
+          <p className="text-yellow-800 font-medium">
+            <strong>Pro Tip:</strong> Choose tools that fit your budget and skill level. Start with free tools and upgrade as your SEO strategy matures.
+          </p>
+        </div>
+      </div>
 
       <div className="mt-12 p-6 bg-gray-50 rounded-lg">
         <h3 className="text-lg font-semibold mb-3">About the Author</h3>
