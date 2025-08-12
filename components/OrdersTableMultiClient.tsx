@@ -1,7 +1,7 @@
 'use client';
 
 import React, { useState, useEffect } from 'react';
-import { Package, ChevronDown, ChevronRight, Users, Link as LinkIcon, Eye, Copy, Check, Trash2, CheckCircle, Activity } from 'lucide-react';
+import { Package, ChevronDown, ChevronRight, ChevronUp, Users, Link as LinkIcon, Eye, Copy, Check, Trash2, CheckCircle, Activity } from 'lucide-react';
 import Link from 'next/link';
 import { AuthService } from '@/lib/auth';
 import { AuthSession } from '@/lib/types/auth';
@@ -209,7 +209,154 @@ export function OrdersTableMultiClient({
 
   return (
     <div className="bg-white rounded-lg border border-gray-200 shadow-sm">
-      <div className="overflow-x-auto">
+      {/* Mobile Cards View */}
+      <div className="md:hidden">
+        <div className="divide-y divide-gray-200">
+          {orders.map((order) => {
+            const isExpanded = expandedOrders.has(order.id);
+            const hasGroups = order.orderGroups && order.orderGroups.length > 0;
+            const totalClients = order.orderGroups?.length || 1;
+            const orderStatus = order.state || order.status;
+            
+            return (
+              <div key={order.id} className="p-4">
+                {/* Main Order Card */}
+                <div className="space-y-3">
+                  {/* Header with Order ID and Status */}
+                  <div className="flex items-start justify-between">
+                    <div>
+                      <Link 
+                        href={`/orders/${order.id}`}
+                        className="text-sm font-semibold text-blue-600 hover:text-blue-800"
+                      >
+                        #{order.id.slice(0, 8)}
+                      </Link>
+                      <p className="text-xs text-gray-500 mt-1">
+                        {new Date(order.createdAt).toLocaleDateString()}
+                      </p>
+                    </div>
+                    <span className={`px-2 py-1 text-xs font-medium rounded-full ${
+                      getStatusColor(order.status)
+                    }`}>
+                      {order.status.replace(/_/g, ' ')}
+                    </span>
+                  </div>
+
+                  {/* Account Info */}
+                  <div className="bg-gray-50 rounded-lg p-3">
+                    <p className="text-xs text-gray-500 mb-1">Account</p>
+                    <p className="text-sm font-medium text-gray-900">
+                      {order.accountName || 'Unknown'}
+                    </p>
+                    <p className="text-xs text-gray-600">
+                      {order.accountEmail}
+                    </p>
+                  </div>
+
+                  {/* Stats Row */}
+                  <div className="grid grid-cols-3 gap-3 text-center">
+                    <div>
+                      <p className="text-xs text-gray-500">Clients</p>
+                      <p className="text-sm font-semibold text-gray-900">{totalClients}</p>
+                    </div>
+                    <div>
+                      <p className="text-xs text-gray-500">Items</p>
+                      <p className="text-sm font-semibold text-gray-900">
+                        {order.orderGroups?.reduce((sum, g) => sum + (g.totalItems || 0), 0) || order.lineItems?.length || 0}
+                      </p>
+                    </div>
+                    <div>
+                      <p className="text-xs text-gray-500">Value</p>
+                      <p className="text-sm font-semibold text-gray-900">
+                        {formatCurrency((order.totalRetail || 0) / 100)}
+                      </p>
+                    </div>
+                  </div>
+
+                  {/* Action Status */}
+                  {orderStatus && orderStatus !== order.status && (
+                    <div className="flex items-center gap-2">
+                      <span className="text-xs text-gray-500">Action:</span>
+                      <span className="text-xs font-medium text-blue-600">
+                        {orderStatus.replace(/_/g, ' ')}
+                      </span>
+                    </div>
+                  )}
+
+                  {/* Expand/Collapse for Groups */}
+                  {hasGroups && (
+                    <button
+                      onClick={() => toggleExpanded(order.id)}
+                      className="w-full flex items-center justify-center gap-2 py-2 text-sm text-gray-600 hover:text-gray-900 hover:bg-gray-50 rounded-lg transition-colors"
+                    >
+                      {isExpanded ? (
+                        <>
+                          <ChevronUp className="h-4 w-4" />
+                          Hide Details
+                        </>
+                      ) : (
+                        <>
+                          <ChevronDown className="h-4 w-4" />
+                          Show {totalClients} Clients
+                        </>
+                      )}
+                    </button>
+                  )}
+
+                  {/* Action Buttons */}
+                  <div className="flex gap-2 pt-2">
+                    <Link
+                      href={`/orders/${order.id}`}
+                      className="flex-1 px-3 py-2 bg-blue-600 text-white text-sm font-medium rounded-lg hover:bg-blue-700 text-center min-h-[44px] flex items-center justify-center"
+                    >
+                      View Order
+                    </Link>
+                    {order.status === 'confirmed' && (
+                      <Link
+                        href={`/orders/${order.id}/review`}
+                        className="flex-1 px-3 py-2 border border-blue-600 text-blue-600 text-sm font-medium rounded-lg hover:bg-blue-50 text-center min-h-[44px] flex items-center justify-center"
+                      >
+                        Review
+                      </Link>
+                    )}
+                  </div>
+                </div>
+
+                {/* Expanded Client Groups */}
+                {isExpanded && hasGroups && (
+                  <div className="mt-4 space-y-3 pl-4 border-l-2 border-gray-200">
+                    {order.orderGroups.map((group) => (
+                      <div key={group.id} className="bg-gray-50 rounded-lg p-3">
+                        <div className="flex items-start justify-between mb-2">
+                          <div>
+                            <p className="text-sm font-medium text-gray-900">
+                              {group.clientName}
+                            </p>
+                            <p className="text-xs text-gray-500">
+                              {group.totalItems} items
+                            </p>
+                          </div>
+                          <span className="text-sm font-medium text-gray-900">
+                            {formatCurrency((group.totalPrice || 0) / 100)}
+                          </span>
+                        </div>
+                        {group.notes && (
+                          <p className="text-xs text-gray-600 mt-2">
+                            {group.notes}
+                          </p>
+                        )}
+                      </div>
+                    ))}
+                  </div>
+                )}
+              </div>
+            );
+          })}
+        </div>
+      </div>
+
+      {/* Desktop Table View */}
+      <div className="hidden md:block overflow-x-auto">
         <table className="min-w-full divide-y divide-gray-200">
           <thead className="bg-gray-50">
             <tr>
