@@ -7,6 +7,7 @@ import { ArrowRight, Globe, Target, DollarSign, Sparkles, Check, TrendingUp, Inf
 import SimplifiedPricingPreview from '@/components/onboarding/SimplifiedPricingPreview';
 import { formatCurrency } from '@/lib/utils/formatting';
 import { SERVICE_FEE_CENTS } from '@/lib/config/pricing';
+import { parseUrl, validateUrl } from '@/lib/utils/urlParser';
 
 export default function QuickStartFlow() {
   const router = useRouter();
@@ -43,21 +44,10 @@ export default function QuickStartFlow() {
   // Auto-extract brand from URL
   useEffect(() => {
     if (targetUrl) {
-      try {
-        const url = new URL(targetUrl.startsWith('http') ? targetUrl : `https://${targetUrl}`);
-        const domain = url.hostname.replace('www.', '');
-        setBrandDomain(domain);
-        
-        // Create brand name from domain
-        const name = domain.split('.')[0]
-          .replace(/-/g, ' ')
-          .replace(/_/g, ' ')
-          .split(' ')
-          .map(word => word.charAt(0).toUpperCase() + word.slice(1))
-          .join(' ');
-        setBrandName(name);
-      } catch (e) {
-        // Invalid URL, will handle in validation
+      const parsed = parseUrl(targetUrl);
+      if (parsed.isValid && parsed.rootDomain && parsed.brandName) {
+        setBrandDomain(parsed.rootDomain);
+        setBrandName(parsed.brandName);
       }
     }
   }, [targetUrl]);
@@ -67,14 +57,19 @@ export default function QuickStartFlow() {
     setError('');
     
     // Validate URL
-    try {
-      const url = new URL(targetUrl.startsWith('http') ? targetUrl : `https://${targetUrl}`);
-      if (!url.hostname.includes('.')) {
-        throw new Error('Invalid domain');
+    const validation = validateUrl(targetUrl);
+    if (validation.isValid) {
+      // Parse to get normalized URL
+      const parsed = parseUrl(targetUrl);
+      if (parsed.isValid && parsed.fullUrl) {
+        // Update targetUrl with the full normalized URL
+        setTargetUrl(parsed.fullUrl);
+        setStep(2);
+      } else {
+        setError(parsed.error || 'Please enter a valid website URL');
       }
-      setStep(2);
-    } catch (e) {
-      setError('Please enter a valid website URL');
+    } else {
+      setError(validation.error || 'Please enter a valid website URL');
     }
   };
 
