@@ -551,41 +551,45 @@ export default function OrderDetailPage() {
   return (
     <AuthWrapper>
       <Header />
-      <div className="container mx-auto px-4 py-8">
+      <div className="container mx-auto px-3 sm:px-4 py-4 sm:py-8">
         <div className="max-w-7xl mx-auto">
           {/* Header */}
           <div className="mb-6">
-            <div className="flex items-center justify-between">
-              <div className="flex items-center gap-4">
+            <div className="flex flex-col lg:flex-row lg:items-center lg:justify-between gap-4">
+              <div className="flex flex-col sm:flex-row sm:items-center gap-2 sm:gap-4">
                 <Link
                   href="/orders"
-                  className="inline-flex items-center text-gray-600 hover:text-gray-900"
+                  className="inline-flex items-center text-gray-600 hover:text-gray-900 text-sm sm:text-base"
                 >
-                  <ArrowLeft className="h-4 w-4 mr-2" />
+                  <ArrowLeft className="h-3 sm:h-4 w-3 sm:w-4 mr-1 sm:mr-2" />
                   Back to Orders
                 </Link>
-                <h1 className="text-2xl font-bold text-gray-900">Order #{order.id.slice(0, 8)}</h1>
-                <span className={`px-3 py-1 rounded-full text-sm font-medium ${stateDisplay.color}`}>
-                  {stateDisplay.label}
-                </span>
+                <div className="flex items-center gap-2 sm:gap-4">
+                  <h1 className="text-lg sm:text-2xl font-bold text-gray-900">Order #{order.id.slice(0, 8)}</h1>
+                  <span className={`px-2 sm:px-3 py-0.5 sm:py-1 rounded-full text-xs sm:text-sm font-medium ${stateDisplay.color}`}>
+                    {stateDisplay.label}
+                  </span>
+                </div>
               </div>
               
-              <div className="flex items-center gap-3">
+              <div className="flex flex-wrap items-center gap-2 sm:gap-3">
                 <button
                   onClick={handleRefresh}
                   disabled={refreshing}
-                  className="inline-flex items-center px-3 py-2 border border-gray-300 rounded-md text-gray-700 hover:bg-gray-50 disabled:opacity-50"
+                  className="inline-flex items-center px-2 sm:px-3 py-1.5 sm:py-2 border border-gray-300 rounded-md text-gray-700 hover:bg-gray-50 disabled:opacity-50 text-xs sm:text-sm min-h-[44px]"
                 >
-                  <RefreshCw className={`w-4 h-4 mr-2 ${refreshing ? 'animate-spin' : ''}`} />
-                  Refresh
+                  <RefreshCw className={`w-3 sm:w-4 h-3 sm:h-4 mr-1 sm:mr-2 ${refreshing ? 'animate-spin' : ''}`} />
+                  <span className="hidden sm:inline">Refresh</span>
+                  <span className="sm:hidden">Refresh</span>
                 </button>
                 {isOrderEditable && (
                   <Link
                     href={`/orders/${order.id}/edit`}
-                    className="inline-flex items-center px-4 py-2 bg-blue-600 text-white rounded-md hover:bg-blue-700"
+                    className="inline-flex items-center px-3 sm:px-4 py-1.5 sm:py-2 bg-blue-600 text-white rounded-md hover:bg-blue-700 text-xs sm:text-sm min-h-[44px]"
                   >
-                    <Edit className="h-4 w-4 mr-2" />
-                    Edit Order
+                    <Edit className="h-3 sm:h-4 w-3 sm:w-4 mr-1 sm:mr-2" />
+                    <span className="hidden sm:inline">Edit Order</span>
+                    <span className="sm:hidden">Edit</span>
                   </Link>
                 )}
                 {user?.userType === 'internal' && (
@@ -596,17 +600,19 @@ export default function OrderDetailPage() {
                     />
                     <button
                       onClick={() => setShowTransferModal(true)}
-                      className="inline-flex items-center px-3 py-2 border border-gray-300 text-gray-700 rounded-md hover:bg-gray-50"
+                      className="inline-flex items-center px-2 sm:px-3 py-1.5 sm:py-2 border border-gray-300 text-gray-700 rounded-md hover:bg-gray-50 text-xs sm:text-sm min-h-[44px]"
                     >
-                      <ArrowRightLeft className="h-4 w-4 mr-2" />
-                      Transfer
+                      <ArrowRightLeft className="h-3 sm:h-4 w-3 sm:w-4 mr-1 sm:mr-2" />
+                      <span className="hidden sm:inline">Transfer</span>
+                      <span className="sm:hidden">Transfer</span>
                     </button>
                     <Link
                       href={`/orders/${order.id}/internal`}
-                      className="inline-flex items-center px-4 py-2 bg-purple-600 text-white rounded-md hover:bg-purple-700"
+                      className="inline-flex items-center px-3 sm:px-4 py-1.5 sm:py-2 bg-purple-600 text-white rounded-md hover:bg-purple-700 text-xs sm:text-sm min-h-[44px]"
                     >
-                      <Activity className="h-4 w-4 mr-2" />
-                      Manage Order
+                      <Activity className="h-3 sm:h-4 w-3 sm:w-4 mr-1 sm:mr-2" />
+                      <span className="hidden sm:inline">Manage Order</span>
+                      <span className="sm:hidden">Manage</span>
                     </Link>
                   </>
                 )}
@@ -646,7 +652,7 @@ export default function OrderDetailPage() {
                       order.status !== 'draft' && user?.role === 'admin' 
                         ? 'border-red-300 text-red-700 hover:bg-red-50' 
                         : 'border-red-300 text-red-600 hover:bg-red-50'
-                    } rounded-md text-xs sm:text-sm`}
+                    } rounded-md text-xs sm:text-sm min-h-[44px]`}
                   >
                     <Trash2 className="h-3 sm:h-4 w-3 sm:w-4 mr-1 sm:mr-2" />
                     <span className="hidden sm:inline">Delete Order</span>
@@ -669,7 +675,7 @@ export default function OrderDetailPage() {
           )}
 
           {/* Three Column Layout */}
-          <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
+          <div className="grid grid-cols-1 lg:grid-cols-3 gap-4 sm:gap-6">
             {/* Left Column - Progress Steps */}
             <div className="lg:col-span-1">
               <div className="bg-white rounded-lg border border-gray-200 shadow-sm p-6">

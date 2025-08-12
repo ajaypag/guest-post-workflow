@@ -82,10 +82,11 @@ export default function ShareOrderButton({ orderId, currentShareToken }: ShareOr
     <>
       <button
         onClick={() => setShowModal(true)}
-        className="inline-flex items-center px-3 py-2 border border-gray-300 text-gray-700 text-sm rounded-md hover:bg-gray-50"
+        className="inline-flex items-center px-2 sm:px-3 py-1.5 sm:py-2 border border-gray-300 text-gray-700 text-xs sm:text-sm rounded-md hover:bg-gray-50 min-h-[44px]"
       >
-        <Share2 className="h-4 w-4 mr-2" />
-        Share for Transfer
+        <Share2 className="h-3 sm:h-4 w-3 sm:w-4 mr-1 sm:mr-2" />
+        <span className="hidden sm:inline">Share for Transfer</span>
+        <span className="sm:hidden">Share</span>
       </button>
 
       {showModal && (
