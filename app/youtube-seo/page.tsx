@@ -324,7 +324,7 @@ export default function YouTubeSEOPage() {
         </div>
 
         <p className="text-gray-700 mb-6">
-          To set a default category for your channel, you can manage it through YouTube Studio. You can head to Settings > Upload Defaults > Advanced Settings and choose a default category for your channel. You can also set a default description and visibility for all your videos.
+          To set a default category for your channel, you can manage it through YouTube Studio. You can head to Settings &gt; Upload Defaults &gt; Advanced Settings and choose a default category for your channel. You can also set a default description and visibility for all your videos.
         </p>
 
         <p className="text-gray-700 mb-6">
