@@ -93,6 +93,13 @@ export default function BestRankTrackingToolsPage() {
       <p>
         The takeaway: find the balance that fits your business—affordable enough to justify, powerful enough to deliver real insights. Ignore the fluff; chase the clarity.
       </p>
+
+      <div className="mt-12 p-6 bg-gray-50 rounded-lg">
+        <h3 className="text-lg font-semibold mb-3">About the Author</h3>
+        <p className="text-gray-700">
+          Written by the Linkio Team - experts in local SEO, rank tracking, and helping businesses improve their search visibility. Our team tests and reviews SEO tools to provide honest, actionable insights for local business owners.
+        </p>
+      </div>
     </BlogPostTemplate>
   );
 }

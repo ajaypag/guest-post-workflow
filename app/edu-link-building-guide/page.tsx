@@ -23,137 +23,480 @@ export default function EduLinkBuildingGuidePage() {
       author="Linkio Team"
       readTime="18 min read"
     >
-      <p className="lead">
-        There are a lot of link building strategies in the world of search engine optimization. And out of all of them, .EDU link building seems to be shrouded in somewhat of a mystery. Alright, maybe "mystery" is a bit too dramatic of a word, but there certainly are some misconceptions surrounding this technique.
-      </p>
+      <div className="bg-gradient-to-r from-blue-50 to-indigo-50 p-8 rounded-lg my-6">
+        <p className="lead text-blue-900 font-medium mb-4">
+          There are a lot of link building strategies in the world of search engine optimization. And out of all of them, .EDU link building seems to be shrouded in somewhat of a mystery.
+        </p>
+        <div className="bg-white p-4 rounded-lg border-l-4 border-blue-500">
+          <p className="text-blue-800">
+            Alright, maybe "mystery" is a bit too dramatic of a word, but there certainly are some misconceptions surrounding this technique.
+          </p>
+        </div>
+      </div>
 
-      <p>
-        Today, we will be covering scholarship link building, clearing all of those misconceptions out, and give you some advice on how to get the most out of your .EDU link building campaign.
-      </p>
+      <div className="bg-yellow-50 p-6 rounded-lg my-6">
+        <h3 className="text-lg font-semibold text-yellow-900 mb-3">What We'll Cover Today</h3>
+        <p className="text-yellow-800">
+          Today, we will be covering scholarship link building, clearing all of those misconceptions out, and give you some advice on how to get the most out of your .EDU link building campaign.
+        </p>
+      </div>
 
-      <p>
-        But, first of all, we have to answer a simple question.
-      </p>
+      <div className="bg-red-50 border-l-4 border-red-400 p-4 my-6">
+        <p className="text-red-800 font-medium">
+          But, first of all, we have to answer a simple question.
+        </p>
+      </div>
 
       <h2>What is Scholarship Link Building?</h2>
 
-      <p>
-        Scholarship link building is the process of acquiring backlinks on .EDU resources, such as colleges, universities, and other institutional establishments. Can you guess how you would secure a link on an educational site? That's right, by offering scholarships to that school's students.
-      </p>
+      <div className="bg-white border-2 border-green-200 rounded-lg p-6 my-8">
+        <div className="flex items-center mb-4">
+          <div className="bg-green-500 text-white rounded-full w-12 h-12 flex items-center justify-center mr-4">
+            <span className="text-2xl">🎓</span>
+          </div>
+          <h3 className="text-xl font-semibold text-gray-900">Definition</h3>
+        </div>
+        <p className="text-gray-700 mb-4">
+          Scholarship link building is the process of acquiring backlinks on .EDU resources, such as colleges, universities, and other institutional establishments.
+        </p>
+        <div className="bg-green-50 p-4 rounded-lg border-l-4 border-green-400">
+          <p className="text-green-800 font-medium">
+            Can you guess how you would secure a link on an educational site? That's right, by offering scholarships to that school's students.
+          </p>
+        </div>
+      </div>
 
-      <p>
-        It is an awesome way of supporting your local community, and an even better way of improving your brand's image. WordPress LMS plugin empowers educational institutions making it easier to provide quality online education while enhancing their digital presence through strategic partnerships and collaborations.
-      </p>
+      <div className="grid md:grid-cols-3 gap-6 my-8">
+        <div className="bg-blue-50 border-2 border-blue-200 rounded-lg p-6">
+          <div className="flex items-center mb-4">
+            <div className="bg-blue-500 text-white rounded-full w-10 h-10 flex items-center justify-center mr-3">
+              🏠
+            </div>
+            <h4 className="font-semibold text-blue-800">Community Support</h4>
+          </div>
+          <p className="text-blue-700">
+            Awesome way of supporting your local community and improving your brand's image.
+          </p>
+        </div>
 
-      <p>
-        And it's healthy for your site's SEO! A lot of search engine optimization agencies proudly advertise their .EDU link building services as if it was a be-all-end-all tactic that will blast your website to the top of Google's search results within days.
-      </p>
+        <div className="bg-purple-50 border-2 border-purple-200 rounded-lg p-6">
+          <div className="flex items-center mb-4">
+            <div className="bg-purple-500 text-white rounded-full w-10 h-10 flex items-center justify-center mr-3">
+              💼
+            </div>
+            <h4 className="font-semibold text-purple-800">Brand Image</h4>
+          </div>
+          <p className="text-purple-700">
+            WordPress LMS plugin empowers educational institutions through strategic partnerships.
+          </p>
+        </div>
 
-      <p>
-        But there seems to be a myth going around the Internet stating that .EDU link building is somehow dead. And this is the very first misconception about this strategy that we would like to discuss.
-      </p>
+        <div className="bg-orange-50 border-2 border-orange-200 rounded-lg p-6">
+          <div className="flex items-center mb-4">
+            <div className="bg-orange-500 text-white rounded-full w-10 h-10 flex items-center justify-center mr-3">
+              📈
+            </div>
+            <h4 className="font-semibold text-orange-800">SEO Benefits</h4>
+          </div>
+          <p className="text-orange-700">
+            Healthy for your site's SEO! Many agencies advertise .EDU link building services.
+          </p>
+        </div>
+      </div>
+
+      <div className="bg-red-100 border-2 border-red-300 p-6 rounded-lg my-8">
+        <div className="flex items-center mb-4">
+          <span className="text-3xl mr-4">⚠️</span>
+          <h3 className="text-lg font-semibold text-red-900">Common Misconception Alert</h3>
+        </div>
+        <p className="text-red-800">
+          There seems to be a myth going around the Internet stating that .EDU link building is somehow dead. This is the very first misconception about this strategy that we would like to discuss.
+        </p>
+      </div>
 
       <h2>Does Scholarship Link Building Still Work?</h2>
 
-      <p>
-        When I was doing my research for this article, I found out that a shocking amount of people are convinced that this tactic simply does not work anymore. So, does it?
-      </p>
+      <div className="bg-gradient-to-r from-orange-50 to-red-50 p-6 rounded-lg my-6">
+        <p className="text-orange-800 text-lg font-medium mb-3">
+          When I was doing my research for this article, I found out that a shocking amount of people are convinced that this tactic simply does not work anymore.
+        </p>
+        <p className="text-red-800 font-bold text-xl">
+          So, does it?
+        </p>
+      </div>
 
-      <p>
-        Yes, scholarship link building still works. Despite the belief that this tactic is dead, it is perfectly viable to this day. But, as with everything, there is a trick to it, and you need to know what you're doing in order to see success with this strategy.
-      </p>
+      <div className="bg-green-100 border-2 border-green-300 p-8 rounded-lg my-8 text-center">
+        <div className="text-6xl text-green-600 mb-4">✅</div>
+        <h3 className="text-3xl font-bold text-green-900 mb-4">YES, IT STILL WORKS!</h3>
+        <p className="text-green-800 text-lg">
+          Despite the belief that this tactic is dead, it is perfectly viable to this day. But, as with everything, there is a trick to it, and you need to know what you're doing in order to see success with this strategy.
+        </p>
+      </div>
 
-      <p>
-        Before we move on, let's take a look at why people would say scholarship link building is dead. And the reason for this is simple: too many businesses have offered too many scholarships to too many schools and didn't follow-up on their promises too many times. So, when students applied for these scholarships and ended up receiving nothing, that left a bit of a sour aftertaste. As a result, a lot of schools actually stopped receiving scholarships from third-party businesses because of the fear of getting scammed.
-      </p>
+      <div className="bg-white border-2 border-yellow-200 rounded-lg p-6 my-8">
+        <div className="flex items-center mb-6">
+          <span className="text-4xl mr-4">🤔</span>
+          <h3 className="text-xl font-semibold text-gray-900">Why Do People Think It's Dead?</h3>
+        </div>
+        
+        <div className="bg-red-50 p-4 rounded-lg border-l-4 border-red-400 mb-4">
+          <h4 className="font-semibold text-red-800 mb-3">The Problem:</h4>
+          <p className="text-red-700 mb-3">
+            Too many businesses have offered too many scholarships to too many schools and didn't follow-up on their promises too many times.
+          </p>
+          <div className="bg-white p-3 rounded border-2 border-red-200">
+            <p className="text-red-800 font-medium">
+              👨‍🎓 Students applied → 💸 Received nothing → 😞 Sour aftertaste
+            </p>
+          </div>
+        </div>
 
-      <p>
-        But not all of them, and there are still plenty of schools that are completely open to scholarships.
-      </p>
+        <div className="bg-yellow-50 p-4 rounded-lg border-l-4 border-yellow-400">
+          <h4 className="font-semibold text-yellow-800 mb-2">The Result:</h4>
+          <p className="text-yellow-700">
+            A lot of schools actually stopped receiving scholarships from third-party businesses because of the fear of getting scammed.
+          </p>
+        </div>
+      </div>
+
+      <div className="bg-blue-50 border-2 border-blue-200 p-6 rounded-lg my-8">
+        <div className="flex items-center mb-4">
+          <span className="text-3xl mr-3">🎆</span>
+          <h3 className="text-lg font-semibold text-blue-900">The Good News</h3>
+        </div>
+        <p className="text-blue-800 text-lg font-medium">
+          But not all of them, and there are still plenty of schools that are completely open to scholarships.
+        </p>
+      </div>
 
       <h2>Pros and Cons of Scholarship Link Building</h2>
 
-      <p>
-        As with everything, there are some downsides to building links using scholarships. But, let's take a look at the pros first.
-      </p>
+      <div className="bg-gray-50 p-6 rounded-lg my-6">
+        <p className="text-lg font-medium text-gray-800">
+          As with everything, there are some downsides to building links using scholarships. But, let's take a look at the pros first.
+        </p>
+      </div>
 
-      <h3>Pros:</h3>
+      <div className="grid md:grid-cols-2 gap-8 my-8">
+        <div className="bg-white border-2 border-green-200 rounded-lg p-6">
+          <div className="flex items-center mb-6">
+            <div className="bg-green-500 text-white rounded-lg p-3 mr-4">
+              <span className="text-2xl">✅</span>
+            </div>
+            <h3 className="text-xl font-semibold text-green-900">Pros</h3>
+          </div>
+          
+          <div className="space-y-4">
+            <div className="bg-green-50 p-4 rounded-lg border-l-4 border-green-400">
+              <div className="flex items-center mb-2">
+                <span className="bg-green-500 text-white rounded-full w-6 h-6 flex items-center justify-center text-sm mr-2">1</span>
+                <h4 className="font-semibold text-green-800">Brand Image Boost</h4>
+              </div>
+              <p className="text-green-700 text-sm">
+                Offering scholarships is extremely charitable and improves SEO (but people don't need to know that).
+              </p>
+            </div>
 
-      <ul>
-        <li>It improves your brand image. Offering scholarships to cover students' expenses is extremely charitable and generally a good thing to do (even though there is benefit in it for you in the form of improved SEO, but hey, people don't need to know that).</li>
-        <li>If you run an essay competition for your scholarship, you will get a lot of potential content to publish on your resource, for practically free.</li>
-        <li>It's great for your local SEO.</li>
-        <li>Depending on your campaign, .EDU links can turn out to be cheaper to build than other links.</li>
-      </ul>
+            <div className="bg-green-50 p-4 rounded-lg border-l-4 border-green-400">
+              <div className="flex items-center mb-2">
+                <span className="bg-green-500 text-white rounded-full w-6 h-6 flex items-center justify-center text-sm mr-2">2</span>
+                <h4 className="font-semibold text-green-800">Free Content</h4>
+              </div>
+              <p className="text-green-700 text-sm">
+                Essay competitions give you lots of potential content to publish, practically free.
+              </p>
+            </div>
 
-      <h3>Cons:</h3>
+            <div className="bg-green-50 p-4 rounded-lg border-l-4 border-green-400">
+              <div className="flex items-center mb-2">
+                <span className="bg-green-500 text-white rounded-full w-6 h-6 flex items-center justify-center text-sm mr-2">3</span>
+                <h4 className="font-semibold text-green-800">Local SEO Gold</h4>
+              </div>
+              <p className="text-green-700 text-sm">
+                It's great for your local SEO strategy.
+              </p>
+            </div>
 
-      <ul>
-        <li>Contrary to a common misconception, .EDU links don't have extra magical power simply because they're different from .com sites. They are still viewed as regular resources by search engines.</li>
-        <li>Offering full-on scholarships is expensive.</li>
-        <li>It can take a long time to go through all of your submissions.</li>
-        <li>Sometimes your links will have the NoFollow attributes, and might not count towards your rankings.</li>
-        <li>Scholarships lists can be viewed as link schemes by Google.</li>
-        <li>If done excessively, your site might be flagged as being about scholarships, even if most of your content is on different topics.</li>
-        <li>The traffic will be directed to your Scholarship page, and not your homepage/landing page;</li>
-        <li>Your link will be removed after a scholarship ends.</li>
-      </ul>
+            <div className="bg-green-50 p-4 rounded-lg border-l-4 border-green-400">
+              <div className="flex items-center mb-2">
+                <span className="bg-green-500 text-white rounded-full w-6 h-6 flex items-center justify-center text-sm mr-2">4</span>
+                <h4 className="font-semibold text-green-800">Cost Effective</h4>
+              </div>
+              <p className="text-green-700 text-sm">
+                .EDU links can turn out to be cheaper to build than other links.
+              </p>
+            </div>
+          </div>
+        </div>
+
+        <div className="bg-white border-2 border-red-200 rounded-lg p-6">
+          <div className="flex items-center mb-6">
+            <div className="bg-red-500 text-white rounded-lg p-3 mr-4">
+              <span className="text-2xl">❌</span>
+            </div>
+            <h3 className="text-xl font-semibold text-red-900">Cons</h3>
+          </div>
+          
+          <div className="space-y-3">
+            <div className="bg-red-50 p-3 rounded-lg">
+              <p className="text-red-700 text-sm">
+                <strong>•</strong> .EDU links don't have extra magical power - they're viewed as regular resources.
+              </p>
+            </div>
+            <div className="bg-red-50 p-3 rounded-lg">
+              <p className="text-red-700 text-sm">
+                <strong>•</strong> Offering full-on scholarships is expensive.
+              </p>
+            </div>
+            <div className="bg-red-50 p-3 rounded-lg">
+              <p className="text-red-700 text-sm">
+                <strong>•</strong> Takes a long time to go through all submissions.
+              </p>
+            </div>
+            <div className="bg-red-50 p-3 rounded-lg">
+              <p className="text-red-700 text-sm">
+                <strong>•</strong> Sometimes links have NoFollow attributes.
+              </p>
+            </div>
+            <div className="bg-red-50 p-3 rounded-lg">
+              <p className="text-red-700 text-sm">
+                <strong>•</strong> Can be viewed as link schemes by Google.
+              </p>
+            </div>
+            <div className="bg-red-50 p-3 rounded-lg">
+              <p className="text-red-700 text-sm">
+                <strong>•</strong> Site might be flagged as being about scholarships.
+              </p>
+            </div>
+            <div className="bg-red-50 p-3 rounded-lg">
+              <p className="text-red-700 text-sm">
+                <strong>•</strong> Traffic goes to Scholarship page, not homepage.
+              </p>
+            </div>
+            <div className="bg-red-50 p-3 rounded-lg">
+              <p className="text-red-700 text-sm">
+                <strong>•</strong> Link removed after scholarship ends.
+              </p>
+            </div>
+          </div>
+        </div>
+      </div>
 
       <h2>How Much Does a Campaign Cost? Not so Obvious Fees</h2>
 
-      <p>
-        The biggest determining factor in this question is how much money are you willing to give out on scholarships. You could offer $5000, or you could offer $500 per scholarship, and end up getting pretty much the same result.
-      </p>
+      <div className="bg-gradient-to-r from-green-50 to-blue-50 p-6 rounded-lg my-6">
+        <h3 className="text-lg font-semibold text-gray-900 mb-3">💰 Main Cost Factor</h3>
+        <p className="text-gray-700">
+          The biggest determining factor in this question is how much money are you willing to give out on scholarships. You could offer $5000, or you could offer $500 per scholarship, and end up getting pretty much the same result.
+        </p>
+      </div>
 
-      <p>
-        You can expect to land at least 15-30 responses from 200 outreach emails, basically landing you 15-30 backlinks for one scholarship. If you're offering $500, that sounds more than a fair deal, especially considering that the average price for a backlink built by an agency is about $250.
-      </p>
+      <div className="bg-white border-2 border-blue-200 rounded-lg p-6 my-8">
+        <div className="flex items-center mb-6">
+          <div className="bg-blue-500 text-white rounded-full w-12 h-12 flex items-center justify-center mr-4">
+            <span className="text-2xl">📊</span>
+          </div>
+          <h3 className="text-xl font-semibold text-gray-900">Expected Results</h3>
+        </div>
+        
+        <div className="grid md:grid-cols-3 gap-4 mb-6">
+          <div className="bg-blue-50 p-4 rounded-lg text-center">
+            <div className="text-3xl font-bold text-blue-600 mb-2">200</div>
+            <p className="text-blue-700 font-medium">Outreach Emails</p>
+          </div>
+          <div className="bg-green-50 p-4 rounded-lg text-center">
+            <div className="text-3xl font-bold text-green-600 mb-2">15-30</div>
+            <p className="text-green-700 font-medium">Responses Expected</p>
+          </div>
+          <div className="bg-purple-50 p-4 rounded-lg text-center">
+            <div className="text-3xl font-bold text-purple-600 mb-2">15-30</div>
+            <p className="text-purple-700 font-medium">Backlinks Gained</p>
+          </div>
+        </div>
 
-      <p>
-        As you can see, none of the external scholarships on the Colby Community College website exceed $1,500. So, it doesn't really need to be any more than that.
-      </p>
+        <div className="bg-green-100 p-4 rounded-lg border-l-4 border-green-400">
+          <p className="text-green-800">
+            <strong>💵 Cost Analysis:</strong> If you're offering $500, that's 15-30 backlinks for one scholarship. Considering the average price for a backlink built by an agency is about $250, this sounds like a fair deal!
+          </p>
+        </div>
+      </div>
 
-      <p>
-        But the scholarship itself is not the only expense you have to be ready for. What you also should be keeping in mind is:
-      </p>
+      <div className="bg-yellow-50 border-2 border-yellow-200 p-6 rounded-lg my-8">
+        <div className="flex items-center mb-4">
+          <span className="text-2xl mr-3">🏢</span>
+          <h3 className="text-lg font-semibold text-yellow-900">Real Example</h3>
+        </div>
+        <p className="text-yellow-800">
+          None of the external scholarships on the Colby Community College website exceed $1,500. So, it doesn't really need to be any more than that.
+        </p>
+      </div>
 
-      <ul>
-        <li>The price of creating a Scholarship page.</li>
-        <li>The price for running an outreach campaign (unless you're doing it yourself).</li>
-        <li>The price of reviewing all of your scholarship applications (unless you're doing it yourself again, but be prepared for hundreds upon hundreds of them).</li>
-      </ul>
+      <div className="bg-red-50 border-2 border-red-200 p-6 rounded-lg my-8">
+        <div className="flex items-center mb-6">
+          <span className="text-3xl mr-4">⚠️</span>
+          <h3 className="text-xl font-semibold text-red-900">Hidden Costs Alert!</h3>
+        </div>
+        <p className="text-red-800 mb-4">
+          The scholarship itself is not the only expense you have to be ready for. What you also should be keeping in mind is:
+        </p>
+        
+        <div className="space-y-4">
+          <div className="flex items-center p-3 bg-white rounded-lg border-2 border-red-300">
+            <span className="bg-red-500 text-white rounded-full w-8 h-8 flex items-center justify-center font-bold mr-3">1</span>
+            <div>
+              <h4 className="font-semibold text-red-800">Scholarship Page Creation</h4>
+              <p className="text-red-700 text-sm">Professional page design and development</p>
+            </div>
+          </div>
+          
+          <div className="flex items-center p-3 bg-white rounded-lg border-2 border-red-300">
+            <span className="bg-red-500 text-white rounded-full w-8 h-8 flex items-center justify-center font-bold mr-3">2</span>
+            <div>
+              <h4 className="font-semibold text-red-800">Outreach Campaign</h4>
+              <p className="text-red-700 text-sm">Unless you're doing it yourself</p>
+            </div>
+          </div>
+          
+          <div className="flex items-center p-3 bg-white rounded-lg border-2 border-red-300">
+            <span className="bg-red-500 text-white rounded-full w-8 h-8 flex items-center justify-center font-bold mr-3">3</span>
+            <div>
+              <h4 className="font-semibold text-red-800">Application Review</h4>
+              <p className="text-red-700 text-sm">Hundreds upon hundreds of applications to review</p>
+            </div>
+          </div>
+        </div>
+      </div>
 
-      <p>
-        So, in total, you won't be looking at more than $2000, if you decide to go for the $500 scholarship.
-      </p>
+      <div className="bg-gradient-to-r from-blue-100 to-green-100 p-8 rounded-lg my-8 text-center">
+        <h3 className="text-2xl font-bold text-gray-900 mb-4">💰 Total Investment</h3>
+        <div className="text-4xl font-bold text-green-600 mb-2">~$2,000</div>
+        <p className="text-gray-700 text-lg">
+          Maximum cost if you decide to go for the $500 scholarship (including all hidden fees)
+        </p>
+      </div>
 
       <h2>What Is Cheaper – Buying Links or Building Them?</h2>
 
-      <p>
-        If you look at the average link building prices, a strong link from a decent resource will cost you no less than $250. If out of your 200 outreach emails for your $500 scholarships, only 10 schools accept it, you're still looking at $200/link.
-      </p>
+      <div className="bg-white border-2 border-purple-200 rounded-lg p-6 my-8">
+        <h3 className="text-xl font-semibold text-purple-900 mb-6">Cost Comparison Analysis</h3>
+        
+        <div className="grid md:grid-cols-2 gap-6 mb-6">
+          <div className="bg-red-50 p-6 rounded-lg border-2 border-red-200">
+            <div className="flex items-center mb-4">
+              <span className="bg-red-500 text-white rounded-full w-10 h-10 flex items-center justify-center font-bold mr-3">💳</span>
+              <h4 className="font-semibold text-red-800">Buying Links</h4>
+            </div>
+            <div className="text-center">
+              <div className="text-3xl font-bold text-red-600 mb-2">$250+</div>
+              <p className="text-red-700">Per strong link from decent resource</p>
+            </div>
+          </div>
 
-      <p>
-        So the answer to this question is simple: it is much cheaper to build those links yourself than straight up buy them.
-      </p>
+          <div className="bg-green-50 p-6 rounded-lg border-2 border-green-200">
+            <div className="flex items-center mb-4">
+              <span className="bg-green-500 text-white rounded-full w-10 h-10 flex items-center justify-center font-bold mr-3">🔨</span>
+              <h4 className="font-semibold text-green-800">Building Links</h4>
+            </div>
+            <div className="text-center">
+              <div className="text-3xl font-bold text-green-600 mb-2">$200</div>
+              <p className="text-green-700">Per link (worst case: only 10 schools accept)</p>
+            </div>
+          </div>
+        </div>
+
+        <div className="bg-purple-100 p-4 rounded-lg border-l-4 border-purple-500">
+          <h4 className="font-semibold text-purple-800 mb-2">🧐 The Math:</h4>
+          <p className="text-purple-700">
+            200 outreach emails → 10 schools accept → $500 scholarship ÷ 10 links = $50/link + overhead = ~$200/link
+          </p>
+        </div>
+      </div>
+
+      <div className="bg-gradient-to-r from-green-100 to-blue-100 p-8 rounded-lg text-center">
+        <h3 className="text-2xl font-bold text-gray-900 mb-4">🏆 Winner: Building Links Yourself</h3>
+        <p className="text-lg text-gray-700">
+          It is much cheaper to build those links yourself than straight up buy them.
+        </p>
+      </div>
 
       <h2>Will Educational Links Help You Rank Higher on Google?</h2>
 
-      <p>
-        Yes. They will. But there are some misconceptions floating around .EDU links actual worth. Some people think that .EDU and .GOV links are more valuable simply because they are governmental. In reality, Google treats all links the same way, regardless of their domain.
-      </p>
+      <div className="bg-gradient-to-r from-green-100 to-blue-100 p-8 rounded-lg my-8 text-center">
+        <div className="text-6xl text-green-600 mb-4">✅</div>
+        <h3 className="text-3xl font-bold text-green-900 mb-4">YES, THEY WILL!</h3>
+        <p className="text-gray-700 text-lg">
+          But there are some misconceptions floating around .EDU links actual worth.
+        </p>
+      </div>
 
-      <p>
-        But that doesn't mean that .EDU links are not valuable. In fact, they are often more valuable than regular links, but for a different reason. And that reason is that .EDU websites are usually decades old. We live in a world where anyone can start a website of their own within days, and because of that, there are literally millions of trashy resources around.
-      </p>
+      <div className="grid md:grid-cols-2 gap-8 my-8">
+        <div className="bg-white border-2 border-red-200 rounded-lg p-6">
+          <div className="flex items-center mb-6">
+            <span className="text-4xl mr-4">❌</span>
+            <h3 className="text-xl font-semibold text-red-900">Common Misconception</h3>
+          </div>
+          <p className="text-red-700 mb-4">
+            Some people think that .EDU and .GOV links are more valuable simply because they are governmental.
+          </p>
+          <div className="bg-red-50 p-4 rounded-lg border-l-4 border-red-400">
+            <p className="text-red-800 font-medium">
+              🎯 Reality: Google treats all links the same way, regardless of their domain.
+            </p>
+          </div>
+        </div>
 
-      <p>
-        With age, .EDU websites have accumulated thousands upon thousands of backlinks themselves and boosted their authority to an extremely high level. And backlinks from high-authority resources are much more valuable than links from tiny blogs that have just started out on the Internet.
-      </p>
+        <div className="bg-white border-2 border-green-200 rounded-lg p-6">
+          <div className="flex items-center mb-6">
+            <span className="text-4xl mr-4">✅</span>
+            <h3 className="text-xl font-semibold text-green-900">Why They're Actually Valuable</h3>
+          </div>
+          <p className="text-green-700 mb-4">
+            .EDU links are often more valuable than regular links, but for different reasons:
+          </p>
+          <div className="space-y-3">
+            <div className="bg-green-50 p-3 rounded-lg">
+              <p className="text-green-800 font-medium text-sm">
+                🗺 Age Factor: Usually decades old
+              </p>
+            </div>
+            <div className="bg-green-50 p-3 rounded-lg">
+              <p className="text-green-800 font-medium text-sm">
+                🔗 Authority: Thousands of backlinks accumulated
+              </p>
+            </div>
+          </div>
+        </div>
+      </div>
 
-      <p>
-        Another factor that puts .EDU websites above others is the content they publish. Have you ever seen a university publish an article that's not supported by any kind of study or research? Exactly. When they post something, they know exactly what they are talking about.
-      </p>
+      <div className="bg-blue-50 border-2 border-blue-200 p-6 rounded-lg my-8">
+        <div className="flex items-center mb-4">
+          <span className="text-3xl mr-4">🎯</span>
+          <h3 className="text-lg font-semibold text-blue-900">The Authority Factor</h3>
+        </div>
+        <p className="text-blue-800 mb-4">
+          We live in a world where anyone can start a website within days, creating millions of trashy resources. With age, .EDU websites have accumulated thousands upon thousands of backlinks and boosted their authority to an extremely high level.
+        </p>
+        <div className="bg-white p-4 rounded-lg border-l-4 border-blue-400">
+          <p className="text-blue-800 font-medium">
+            🏆 Backlinks from high-authority resources are much more valuable than links from tiny blogs that just started.
+          </p>
+        </div>
+      </div>
+
+      <div className="bg-purple-50 border-2 border-purple-200 p-6 rounded-lg my-8">
+        <div className="flex items-center mb-4">
+          <span className="text-3xl mr-4">📚</span>
+          <h3 className="text-lg font-semibold text-purple-900">Content Quality Factor</h3>
+        </div>
+        <p className="text-purple-800 mb-4">
+          Another factor that puts .EDU websites above others is the content they publish.
+        </p>
+        <div className="bg-white p-4 rounded-lg border-l-4 border-purple-400">
+          <p className="text-purple-800 font-medium">
+            🤔 Have you ever seen a university publish an article that's not supported by any study or research? Exactly. When they post something, they know exactly what they are talking about.
+          </p>
+        </div>
+      </div>
 
       <h2>Scholarship Links and Domain Authority (and Other Third-party Metrics)</h2>
 
@@ -448,13 +791,50 @@ export default function EduLinkBuildingGuidePage() {
 
       <h2>Conclusion</h2>
 
-      <p>
-        So, scholarship link building is not dead after all. And if this was your initial thought before you read this article, I hope I managed to change your mind!
-      </p>
+      <div className="bg-gradient-to-r from-blue-50 to-purple-50 p-8 rounded-lg my-8">
+        <div className="text-center mb-6">
+          <h3 className="text-2xl font-bold text-gray-900 mb-4">Key Takeaways</h3>
+        </div>
 
-      <p>
-        As with everything, .EDU link building is only beneficial in moderation. To keep a healthy backlink profile, you need to acquire all types of links, and focusing on only one would do you more harm than good.
-      </p>
+        <div className="grid md:grid-cols-2 gap-6 mb-6">
+          <div className="bg-white p-6 rounded-lg border-2 border-green-200">
+            <div className="flex items-center mb-4">
+              <div className="bg-green-500 text-white rounded-full w-8 h-8 flex items-center justify-center mr-3">
+                ✅
+              </div>
+              <h4 className="font-semibold text-green-800">Still Very Much Alive</h4>
+            </div>
+            <p className="text-gray-700">
+              Scholarship link building is not dead after all. If this was your initial thought before reading this article, we hope we managed to change your mind!
+            </p>
+          </div>
+
+          <div className="bg-white p-6 rounded-lg border-2 border-blue-200">
+            <div className="flex items-center mb-4">
+              <div className="bg-blue-500 text-white rounded-full w-8 h-8 flex items-center justify-center mr-3">
+                ⚖️
+              </div>
+              <h4 className="font-semibold text-blue-800">Moderation is Key</h4>
+            </div>
+            <p className="text-gray-700">
+              .EDU link building is only beneficial in moderation. You need to acquire all types of links for a healthy backlink profile.
+            </p>
+          </div>
+        </div>
+
+        <div className="bg-yellow-50 border-l-4 border-yellow-400 p-4 rounded">
+          <p className="text-yellow-800 font-medium">
+            <strong>Remember:</strong> Focusing on only one type of link would do you more harm than good.
+          </p>
+        </div>
+      </div>
+
+      <div className="mt-12 p-6 bg-gray-50 rounded-lg">
+        <h3 className="text-lg font-semibold mb-3">About the Author</h3>
+        <p className="text-gray-700">
+          Written by the Linkio Team - link building specialists with extensive experience in .EDU link acquisition and scholarship campaigns. Our team has helped hundreds of businesses successfully implement ethical scholarship link building strategies while supporting educational communities.
+        </p>
+      </div>
     </BlogPostTemplate>
   );
 }
