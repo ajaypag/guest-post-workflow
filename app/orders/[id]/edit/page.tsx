@@ -1925,7 +1925,7 @@ export default function EditOrderPage({ params }: { params: Promise<{ id: string
                         </button>
                         
                         {isExpanded && (
-                          <div className="">
+                          <div className="hidden md:block">
                             <table className="w-full">
                               <tbody className="divide-y divide-gray-100">
                                 {items.map((item, index) => (
