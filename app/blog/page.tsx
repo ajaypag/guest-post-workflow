@@ -59,6 +59,14 @@ const blogPosts = [
     date: 'March 2023'
   },
   {
+    title: 'How to Increase Domain Authority (10 Proven Steps)',
+    href: '/how-to-increase-domain-authority',
+    excerpt: 'Learn how to increase domain authority with 10 proven steps. From high-quality content to strong backlinks - boost your DA score and improve SERP rankings.',
+    category: 'SEO',
+    readTime: '12 min read',
+    date: 'January 2025'
+  },
+  {
     title: 'SEO Tutorial: Complete Guide for Beginners',
     href: '/seo-tutorial',
     excerpt: 'Comprehensive SEO tutorial covering on-page, off-page, and technical optimization.',
