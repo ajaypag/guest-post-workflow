@@ -1925,8 +1925,82 @@ export default function EditOrderPage({ params }: { params: Promise<{ id: string
                         </button>
                         
                         {isExpanded && (
-                          <div className="hidden md:block">
-                            <table className="w-full">
+                          <>
+                            {/* Mobile Cards for Grouped View */}
+                            <div className="md:hidden space-y-3 p-3">
+                              {items.map((item, index) => (
+                                <div key={item.id} className="bg-white border border-gray-200 rounded-lg p-4 shadow-sm">
+                                  <div className="flex items-start justify-between mb-3">
+                                    <div>
+                                      <span className="text-xs text-gray-500">#{index + 1}</span>
+                                      <h3 className="font-medium text-gray-900">{item.clientName}</h3>
+                                    </div>
+                                    <button
+                                      onClick={() => removeLineItem(item.id)}
+                                      className="text-gray-400 hover:text-red-500 transition-colors p-2 min-h-[44px] min-w-[44px] flex items-center justify-center rounded-lg hover:bg-red-50"
+                                      title="Remove line item"
+                                    >
+                                      <X className="h-4 w-4" />
+                                    </button>
+                                  </div>
+                                  
+                                  <div className="space-y-3">
+                                    <div>
+                                      <label className="text-xs text-gray-500 font-medium">Target Page</label>
+                                      <select
+                                        value={item.targetPageUrl || ''}
+                                        onChange={(e) => {
+                                          if (e.target.value === '__ADD_NEW__') {
+                                            setRequestingLineItemId(item.id);
+                                            setShowCreateTargetPageModal(true);
+                                          } else {
+                                            handleTargetPageChange(item.id, e.target.value);
+                                          }
+                                        }}
+                                        className="w-full mt-1 px-3 py-2 text-sm border border-gray-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500 min-h-[44px] touch-manipulation"
+                                      >
+                                        <option value="">Select target page...</option>
+                                        {getClientTargetPages(item.clientId).map(page => (
+                                          <option key={page.id} value={page.url}>
+                                            {page.url} {page.usageCount > 0 && `(${page.usageCount})`}
+                                          </option>
+                                        ))}
+                                        <option value="__ADD_NEW__" className="text-blue-600 font-medium">
+                                          + Add new target page...
+                                        </option>
+                                      </select>
+                                    </div>
+                                    
+                                    <div>
+                                      <label className="text-xs text-gray-500 font-medium">Anchor Text</label>
+                                      <input
+                                        type="text"
+                                        value={item.anchorText || ''}
+                                        onChange={(e) => updateLineItem(item.id, { anchorText: e.target.value })}
+                                        placeholder="Enter anchor text..."
+                                        className="w-full mt-1 px-3 py-2 text-sm border border-gray-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500 min-h-[44px] touch-manipulation"
+                                      />
+                                    </div>
+                                    
+                                    <div className="pt-2 border-t border-gray-100">
+                                      <div className="flex items-center justify-between">
+                                        <span className="text-xs text-gray-500">Total Investment</span>
+                                        <span className="text-lg font-semibold text-gray-900">
+                                          ${(item.price / 100).toFixed(0)}
+                                        </span>
+                                      </div>
+                                      <div className="text-xs text-gray-500 mt-1">
+                                        ${((item.wholesalePrice || (item.price - SERVICE_FEE_CENTS)) / 100).toFixed(0)} site + $79 content
+                                      </div>
+                                    </div>
+                                  </div>
+                                </div>
+                              ))}
+                            </div>
+                            
+                            {/* Desktop Table for Grouped View */}
+                            <div className="hidden md:block">
+                              <table className="w-full">
                               <tbody className="divide-y divide-gray-100">
                                 {items.map((item, index) => (
                                   <tr key={item.id} className="hover:bg-gray-50">
@@ -1982,9 +2056,10 @@ export default function EditOrderPage({ params }: { params: Promise<{ id: string
                                     </td>
                                   </tr>
                                 ))}
-                              </tbody>
-                            </table>
-                          </div>
+                                </tbody>
+                              </table>
+                            </div>
+                          </>
                         )}
                       </div>
                     );
