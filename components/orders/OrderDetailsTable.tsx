@@ -1,7 +1,7 @@
 'use client';
 
 import React from 'react';
-import { Globe, CheckCircle, Clock, XCircle, AlertCircle, ExternalLink, DollarSign } from 'lucide-react';
+import { Globe, CheckCircle, Clock, XCircle, AlertCircle, ExternalLink, DollarSign, Package } from 'lucide-react';
 import { formatCurrency } from '@/lib/utils/formatting';
 
 interface OrderDetailsTableProps {

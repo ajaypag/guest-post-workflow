@@ -1,7 +1,6 @@
 'use client';
 
 import React from 'react';
-import { cn } from '@/lib/utils';
 
 interface TouchButtonProps extends React.ButtonHTMLAttributes<HTMLButtonElement> {
   size?: 'sm' | 'md' | 'lg';
@@ -37,16 +36,16 @@ export default function TouchButton({
 }: TouchButtonProps) {
   return (
     <button
-      className={cn(
-        'inline-flex items-center justify-center font-medium rounded-md transition-colors',
-        'focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-2',
-        'disabled:cursor-not-allowed disabled:opacity-50',
-        'touch-manipulation', // Improves touch responsiveness
-        sizeClasses[size],
-        variantClasses[variant],
-        fullWidth && 'w-full',
-        className
-      )}
+      className={`
+        inline-flex items-center justify-center font-medium rounded-md transition-colors
+        focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-2
+        disabled:cursor-not-allowed disabled:opacity-50
+        touch-manipulation
+        ${sizeClasses[size]}
+        ${variantClasses[variant]}
+        ${fullWidth ? 'w-full' : ''}
+        ${className}
+      `.trim().replace(/\s+/g, ' ')}
       disabled={disabled}
       {...props}
     >
@@ -79,15 +78,15 @@ export function TouchLink({
   return (
     <a
       href={href}
-      className={cn(
-        'inline-flex items-center justify-center font-medium rounded-md transition-colors',
-        'focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-2',
-        'touch-manipulation',
-        sizeClasses[size],
-        variantClasses[variant],
-        fullWidth && 'w-full',
-        className
-      )}
+      className={`
+        inline-flex items-center justify-center font-medium rounded-md transition-colors
+        focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-2
+        touch-manipulation
+        ${sizeClasses[size]}
+        ${variantClasses[variant]}
+        ${fullWidth ? 'w-full' : ''}
+        ${className}
+      `.trim().replace(/\s+/g, ' ')}
       {...props}
     >
       {icon && <span className="mr-2 flex-shrink-0">{icon}</span>}

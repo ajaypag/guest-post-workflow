@@ -1,7 +1,6 @@
 'use client';
 
 import React from 'react';
-import { cn } from '@/lib/utils';
 
 interface Column<T> {
   key: string;
@@ -60,7 +59,7 @@ export default function ResponsiveTable<T>({
 
   if (data.length === 0) {
     return (
-      <div className={cn('text-center py-8 text-gray-500', className)}>
+      <div className={`text-center py-8 text-gray-500 ${className}`}>
         {emptyIcon && <div className="mb-3">{emptyIcon}</div>}
         <p className="text-sm">{emptyMessage}</p>
       </div>
@@ -70,7 +69,7 @@ export default function ResponsiveTable<T>({
   return (
     <div className={className}>
       {/* Mobile Card View */}
-      <div className={cn(breakpointClass, 'space-y-3')}>
+      <div className={`${breakpointClass} space-y-3`}>
         {data.map((item, index) => {
           // Use custom renderer if provided
           if (mobileCardRenderer) {
@@ -85,10 +84,7 @@ export default function ResponsiveTable<T>({
           return (
             <div
               key={keyExtractor(item, index)}
-              className={cn(
-                'bg-white border border-gray-200 rounded-lg p-4 shadow-sm',
-                cardClassName
-              )}
+              className={`bg-white border border-gray-200 rounded-lg p-4 shadow-sm ${cardClassName}`}
             >
               <div className="space-y-3">
                 {columns
@@ -100,7 +96,7 @@ export default function ResponsiveTable<T>({
                           {column.mobileLabel || column.header}
                         </label>
                       )}
-                      <div className={cn('text-sm text-gray-900', column.className)}>
+                      <div className={`text-sm text-gray-900 ${column.className || ''}`}>
                         {column.accessor(item)}
                       </div>
                     </div>
@@ -112,18 +108,14 @@ export default function ResponsiveTable<T>({
       </div>
 
       {/* Desktop Table View */}
-      <div className={cn(breakpointTableClass, 'overflow-x-auto', tableClassName)}>
+      <div className={`${breakpointTableClass} overflow-x-auto ${tableClassName}`}>
         <table className="w-full">
           <thead className="bg-gray-50 border-b border-gray-200">
             <tr>
               {columns.map(column => (
                 <th
                   key={column.key}
-                  className={cn(
-                    'px-6 py-3 text-xs font-medium text-gray-500 uppercase tracking-wider',
-                    alignmentClasses[column.align || 'left'],
-                    column.className
-                  )}
+                  className={`px-6 py-3 text-xs font-medium text-gray-500 uppercase tracking-wider ${alignmentClasses[column.align || 'left']} ${column.className || ''}`}
                 >
                   {column.header}
                 </th>
@@ -136,11 +128,7 @@ export default function ResponsiveTable<T>({
                 {columns.map(column => (
                   <td
                     key={column.key}
-                    className={cn(
-                      'px-6 py-4 text-sm text-gray-900',
-                      alignmentClasses[column.align || 'left'],
-                      column.className
-                    )}
+                    className={`px-6 py-4 text-sm text-gray-900 ${alignmentClasses[column.align || 'left']} ${column.className || ''}`}
                   >
                     {column.accessor(item)}
                   </td>
