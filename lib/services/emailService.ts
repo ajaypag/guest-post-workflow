@@ -20,8 +20,8 @@ function getResendClient(): Resend {
 
 // Email configuration
 export const EMAIL_CONFIG = {
-  FROM_EMAIL: process.env.EMAIL_FROM || 'noreply@postflow.outreachlabs.net',
-  FROM_NAME: process.env.EMAIL_FROM_NAME || 'PostFlow',
+  FROM_EMAIL: process.env.EMAIL_FROM || 'info@linkio.com',
+  FROM_NAME: process.env.EMAIL_FROM_NAME || 'Linkio',
   REPLY_TO: process.env.EMAIL_REPLY_TO || 'info@linkio.com',
 };
 
@@ -472,7 +472,7 @@ export class EmailService {
         </div>
         
         <p style="color: #666; font-size: 14px;">
-          If you continue to experience issues, please contact our support team at support@postflow.outreachlabs.net
+          If you continue to experience issues, please contact our support team at info@linkio.com
         </p>
       </div>
     `;
@@ -486,7 +486,7 @@ Error: ${options.errorMessage}
 
 Please try again at: ${options.retryUrl}
 
-If you continue to experience issues, contact support@postflow.outreachlabs.net
+If you continue to experience issues, contact info@linkio.com
     `;
 
     return await this.send('notification', {
@@ -561,7 +561,7 @@ If you continue to experience issues, contact support@postflow.outreachlabs.net
         <div style="background-color: #f5f5f5; padding: 15px; border-radius: 5px; margin-top: 30px;">
           <p style="margin: 0; font-size: 14px; color: #666;">
             <strong>Need help?</strong><br>
-            Contact our support team at support@postflow.outreachlabs.net<br>
+            Contact our support team at info@linkio.com<br>
             or reply to this email with any questions.
           </p>
         </div>
@@ -585,7 +585,7 @@ What happens next:
 3. Estimated delivery time will be provided within 24 hours
 4. You can track your order status at: ${options.orderViewUrl}
 
-Need help? Contact support@postflow.outreachlabs.net
+Need help? Contact info@linkio.com
     `;
 
     return await this.send('notification', {

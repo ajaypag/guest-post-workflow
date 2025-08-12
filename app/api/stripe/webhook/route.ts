@@ -193,7 +193,7 @@ export async function POST(request: NextRequest) {
         // Send alert to admin about permanent failure
         try {
           await EmailService.send('notification', {
-            to: 'admin@postflow.outreachlabs.net',
+            to: 'info@linkio.com',
             subject: `🚨 Webhook Permanently Failed - ${event.type}`,
             text: `Webhook event ${event.id} of type ${event.type} has permanently failed after ${maxRetries} attempts.\n\nError: ${error instanceof Error ? error.message : 'Unknown error'}\n\nPlease investigate and manually reconcile if needed.`,
             html: `
@@ -532,7 +532,7 @@ async function handlePaymentFailure(paymentIntent: Stripe.PaymentIntent): Promis
         // Keeping commented to avoid duplicate emails
 
         // Notify internal team about payment failure
-        const adminEmail = process.env.ADMIN_NOTIFICATION_EMAIL || 'admin@postflow.outreachlabs.net';
+        const adminEmail = process.env.ADMIN_NOTIFICATION_EMAIL || 'info@linkio.com';
         await EmailService.send('notification', {
           to: adminEmail,
           subject: `Payment Failed - Order ${orderId.substring(0, 8)}`,
@@ -746,7 +746,7 @@ async function handleDisputeCreated(event: Stripe.Event, webhookRecordId: string
       .where(eq(orders.id, paymentIntentRecord.orderId));
 
     // Send admin notification
-    const adminEmail = process.env.ADMIN_NOTIFICATION_EMAIL || 'admin@postflow.outreachlabs.net';
+    const adminEmail = process.env.ADMIN_NOTIFICATION_EMAIL || 'info@linkio.com';
     await EmailService.send('notification', {
       to: adminEmail,
       subject: `⚠️ Payment Dispute - Order ${paymentIntentRecord.orderId.substring(0, 8)}`,
