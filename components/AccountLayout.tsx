@@ -88,8 +88,8 @@ export default function AccountLayout({
   const currentPage = getCurrentPageInfo();
 
   return (
-    <div className="min-h-screen bg-gray-50">
-      <div className="max-w-7xl mx-auto">
+    <div className="bg-gray-50 min-h-[calc(100vh-4rem)]">
+      <div className="max-w-7xl mx-auto py-8">
         <div className="lg:grid lg:grid-cols-12 lg:gap-8">
           {/* Sidebar */}
           <div className="hidden lg:block lg:col-span-3 xl:col-span-2">
