@@ -142,8 +142,18 @@ export default function EditOrderPage({ params }: { params: Promise<{ id: string
   const [requestingLineItemId, setRequestingLineItemId] = useState<string | null>(null);
   const [accountDetails, setAccountDetails] = useState<{ email: string; name: string; company?: string } | null>(null);
   
-  // Mobile view state with localStorage persistence
-  const [mobileView, setMobileView] = useState<'clients' | 'order' | 'targets'>('clients'); // Default to brands on mobile
+  // Mobile view state with improved localStorage persistence
+  const [mobileView, setMobileView] = useState<'clients' | 'order' | 'targets'>(() => {
+    // Persist mobile view in localStorage
+    if (typeof window !== 'undefined') {
+      const saved = localStorage.getItem('orderEdit-mobileView');
+      if (saved && ['clients', 'order', 'targets'].includes(saved)) {
+        return saved as 'clients' | 'order' | 'targets';
+      }
+    }
+    return 'clients'; // Default to brands on mobile
+  });
+  
   const [showMobilePricing, setShowMobilePricing] = useState(() => {
     // Persist mobile pricing state in localStorage
     if (typeof window !== 'undefined') {
@@ -1208,8 +1218,13 @@ export default function EditOrderPage({ params }: { params: Promise<{ id: string
         <div className="md:hidden bg-white border-b border-gray-200 sticky top-0 z-20">
           <div className="flex">
             <button
-              onClick={() => setMobileView('clients')}
-              className={`flex-1 px-3 py-3 text-xs font-medium border-b-2 transition-colors relative ${
+              onClick={() => {
+                setMobileView('clients');
+                if (typeof window !== 'undefined') {
+                  localStorage.setItem('orderEdit-mobileView', 'clients');
+                }
+              }}
+              className={`flex-1 px-3 py-3 text-xs font-medium border-b-2 transition-colors relative touch-manipulation min-h-[44px] flex items-center justify-center ${
                 mobileView === 'clients' 
                   ? 'text-blue-600 border-blue-600' 
                   : 'text-gray-600 border-transparent hover:text-gray-900'
@@ -1221,8 +1236,13 @@ export default function EditOrderPage({ params }: { params: Promise<{ id: string
               }`}>{selectedClients.size}</span>
             </button>
             <button
-              onClick={() => setMobileView('targets')}
-              className={`flex-1 px-3 py-3 text-xs font-medium border-b-2 transition-colors relative ${
+              onClick={() => {
+                setMobileView('targets');
+                if (typeof window !== 'undefined') {
+                  localStorage.setItem('orderEdit-mobileView', 'targets');
+                }
+              }}
+              className={`flex-1 px-3 py-3 text-xs font-medium border-b-2 transition-colors relative touch-manipulation min-h-[44px] flex items-center justify-center ${
                 mobileView === 'targets' 
                   ? 'text-blue-600 border-blue-600' 
                   : 'text-gray-600 border-transparent hover:text-gray-900'
@@ -1234,8 +1254,13 @@ export default function EditOrderPage({ params }: { params: Promise<{ id: string
               }`}>{availableTargets.length}</span>
             </button>
             <button
-              onClick={() => setMobileView('order')}
-              className={`flex-1 px-3 py-3 text-xs font-medium border-b-2 transition-colors relative ${
+              onClick={() => {
+                setMobileView('order');
+                if (typeof window !== 'undefined') {
+                  localStorage.setItem('orderEdit-mobileView', 'order');
+                }
+              }}
+              className={`flex-1 px-3 py-3 text-xs font-medium border-b-2 transition-colors relative touch-manipulation min-h-[44px] flex items-center justify-center ${
                 mobileView === 'order' 
                   ? 'text-blue-600 border-blue-600' 
                   : 'text-gray-600 border-transparent hover:text-gray-900'
@@ -1730,7 +1755,8 @@ export default function EditOrderPage({ params }: { params: Promise<{ id: string
                           </div>
                           <button
                             onClick={() => removeLineItem(item.id)}
-                            className="text-gray-400 hover:text-red-500 transition-colors p-1"
+                            className="text-gray-400 hover:text-red-500 transition-colors p-2 min-h-[44px] min-w-[44px] flex items-center justify-center rounded-lg hover:bg-red-50"
+                            title="Remove line item"
                           >
                             <X className="h-4 w-4" />
                           </button>
@@ -1741,7 +1767,7 @@ export default function EditOrderPage({ params }: { params: Promise<{ id: string
                             <label className="text-xs text-gray-500 font-medium">Target Page</label>
                             {item.targetPageUrl ? (
                               <div className="flex items-center gap-1 mt-1">
-                                <p className="text-sm text-gray-600 truncate" title={item.targetPageUrl}>
+                                <p className="text-sm text-gray-600 truncate max-w-[250px] block" title={item.targetPageUrl}>
                                   {item.targetPageUrl}
                                 </p>
                                 <ExternalLink className="h-3 w-3 text-gray-400 flex-shrink-0" />
@@ -1758,7 +1784,7 @@ export default function EditOrderPage({ params }: { params: Promise<{ id: string
                               value={item.anchorText || ''}
                               onChange={(e) => updateLineItem(item.id, { anchorText: e.target.value })}
                               placeholder="Enter anchor text..."
-                              className="w-full mt-1 px-2 py-1.5 text-sm border border-gray-200 rounded focus:outline-none focus:ring-1 focus:ring-blue-500"
+                              className="w-full mt-1 px-3 py-2 text-sm border border-gray-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500 min-h-[44px] touch-manipulation"
                               disabled={!item.targetPageUrl}
                             />
                           </div>
@@ -1779,18 +1805,19 @@ export default function EditOrderPage({ params }: { params: Promise<{ id: string
                     ))}
                   </div>
                   
-                  {/* Desktop Table View */}
-                  <table className="w-full hidden md:table">
-                    <thead className="bg-gray-50 border-b border-gray-200 sticky top-0">
-                      <tr>
-                        <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Brand</th>
-                        <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Target Page</th>
-                        <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Anchor Text</th>
-                        <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Investment Details</th>
-                        <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Price</th>
-                        <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider"></th>
-                      </tr>
-                    </thead>
+                  {/* Desktop Table View - With Horizontal Scroll */}
+                  <div className="hidden md:block overflow-x-auto">
+                    <table className="w-full min-w-[800px]">
+                      <thead className="bg-gray-50 border-b border-gray-200 sticky top-0">
+                        <tr>
+                          <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider min-w-[120px]">Brand</th>
+                          <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider min-w-[200px]">Target Page</th>
+                          <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider min-w-[150px]">Anchor Text</th>
+                          <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider min-w-[180px]">Investment Details</th>
+                          <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider min-w-[100px]">Price</th>
+                          <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider min-w-[60px]"></th>
+                        </tr>
+                      </thead>
                     <tbody className="divide-y divide-gray-100">
                       {lineItems.map((item) => (
                         <tr key={item.id} className="hover:bg-gray-50 transition-colors">
@@ -1815,7 +1842,7 @@ export default function EditOrderPage({ params }: { params: Promise<{ id: string
                               value={item.anchorText || ''}
                               onChange={(e) => updateLineItem(item.id, { anchorText: e.target.value })}
                               placeholder="Enter anchor text..."
-                              className="w-full px-2 py-1 text-sm border border-gray-200 rounded focus:outline-none focus:ring-1 focus:ring-blue-500 focus:border-blue-500"
+                              className="w-full px-3 py-2 text-sm border border-gray-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500 min-h-[44px] touch-manipulation"
                               disabled={!item.targetPageUrl}
                             />
                           </td>
@@ -1838,7 +1865,8 @@ export default function EditOrderPage({ params }: { params: Promise<{ id: string
                           <td className="px-4 py-3">
                             <button
                               onClick={() => removeLineItem(item.id)}
-                              className="text-gray-400 hover:text-red-500 transition-colors"
+                              className="text-gray-400 hover:text-red-500 transition-colors p-2 min-h-[44px] min-w-[44px] flex items-center justify-center rounded"
+                              title="Remove line item"
                             >
                               <X className="h-4 w-4" />
                             </button>
@@ -1846,7 +1874,12 @@ export default function EditOrderPage({ params }: { params: Promise<{ id: string
                         </tr>
                       ))}
                     </tbody>
-                  </table>
+                    </table>
+                    {/* Scroll indicator for mobile */}
+                    <div className="text-xs text-gray-500 text-center mt-2 md:hidden">
+                      ← Scroll horizontally to see all columns →
+                    </div>
+                  </div>
                 </div>
               ) : (
                 <div className="h-full overflow-y-auto">
