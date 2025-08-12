@@ -4,6 +4,7 @@ import React, { useState, useEffect } from 'react';
 import { useRouter } from 'next/navigation';
 import { ArrowRight, Globe, Target, DollarSign, Sparkles, Check, TrendingUp, Info } from 'lucide-react';
 import PricingEstimator from '@/components/orders/PricingEstimator';
+import SimplifiedPricingPreview from '@/components/onboarding/SimplifiedPricingPreview';
 import { formatCurrency } from '@/lib/utils/formatting';
 import { SERVICE_FEE_CENTS } from '@/lib/config/pricing';
 
@@ -355,14 +356,24 @@ export default function QuickStartFlow({ session }: QuickStartFlowProps) {
                 </div>
               </div>
 
-              {/* Pricing Estimator Component */}
-              <PricingEstimator
-                onEstimateChange={(estimate, preferences) => {
-                  setPricingEstimate(estimate);
-                  setOrderPreferences(preferences);
-                }}
-                className="mb-6"
-              />
+              {/* Use simplified preview for non-auth users, real estimator for logged in */}
+              {!session ? (
+                <SimplifiedPricingPreview
+                  onPreferencesChange={(prefs, estimate) => {
+                    setOrderPreferences(prefs);
+                    setPricingEstimate(estimate);
+                  }}
+                  linkCount={linkCount}
+                />
+              ) : (
+                <PricingEstimator
+                  onEstimateChange={(estimate, preferences) => {
+                    setPricingEstimate(estimate);
+                    setOrderPreferences(preferences);
+                  }}
+                  className="mb-6"
+                />
+              )}
 
               {/* Number of links */}
               <div className="mt-6 p-6 bg-gray-50 rounded-lg">
@@ -385,16 +396,16 @@ export default function QuickStartFlow({ session }: QuickStartFlowProps) {
                   ))}
                 </div>
                 
-                {pricingEstimate && linkCount > 1 && (
+                {linkCount > 1 && (
                   <div className="mt-4 p-4 bg-white rounded-lg border border-gray-200">
                     <div className="flex items-center justify-between">
                       <span className="text-gray-600">Estimated total:</span>
                       <span className="text-2xl font-bold text-gray-900">
-                        {formatCurrency(pricingEstimate.clientMedian * linkCount)}
+                        {formatCurrency((pricingEstimate?.clientMedian || 27900) * linkCount)}
                       </span>
                     </div>
                     <p className="text-xs text-gray-500 mt-1">
-                      {linkCount} links × {formatCurrency(pricingEstimate.clientMedian)} average per link
+                      {linkCount} links × {formatCurrency(pricingEstimate?.clientMedian || 27900)} average per link
                     </p>
                   </div>
                 )}
@@ -425,8 +436,7 @@ export default function QuickStartFlow({ session }: QuickStartFlowProps) {
                 </button>
                 <button
                   onClick={() => setStep(3)}
-                  disabled={!pricingEstimate}
-                  className="flex-1 py-3 bg-blue-600 text-white rounded-lg font-medium hover:bg-blue-700 transition-colors disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center gap-2"
+                  className="flex-1 py-3 bg-blue-600 text-white rounded-lg font-medium hover:bg-blue-700 transition-colors flex items-center justify-center gap-2"
                 >
                   Review Order
                   <ArrowRight className="w-5 h-5" />
@@ -471,11 +481,15 @@ export default function QuickStartFlow({ session }: QuickStartFlowProps) {
                     <span className="text-gray-600">Number of Links:</span>
                     <span className="text-gray-900 font-medium">{linkCount}</span>
                   </div>
-                  {pricingEstimate && (
+                  {pricingEstimate ? (
                     <>
                       <div className="flex justify-between">
                         <span className="text-gray-600">Available Sites:</span>
-                        <span className="text-gray-900 font-medium">{pricingEstimate.count.toLocaleString()}</span>
+                        <span className="text-gray-900 font-medium">
+                          {typeof pricingEstimate.count === 'string' ? 
+                            pricingEstimate.count : 
+                            pricingEstimate.count.toLocaleString()}
+                        </span>
                       </div>
                       <div className="border-t border-gray-200 pt-2 mt-2">
                         <div className="flex justify-between">
@@ -489,6 +503,18 @@ export default function QuickStartFlow({ session }: QuickStartFlowProps) {
                         </p>
                       </div>
                     </>
+                  ) : (
+                    <div className="border-t border-gray-200 pt-2 mt-2">
+                      <div className="flex justify-between">
+                        <span className="text-gray-900 font-medium">Estimated Total:</span>
+                        <span className="text-xl font-bold text-gray-900">
+                          {formatCurrency(27900 * linkCount)}
+                        </span>
+                      </div>
+                      <p className="text-xs text-gray-500 mt-1 text-right">
+                        Typical pricing for {linkCount} {linkCount === 1 ? 'link' : 'links'}
+                      </p>
+                    </div>
                   )}
                 </div>
               </div>
