@@ -2747,8 +2747,8 @@ Thanks,
           You now have 111 proven email templates to jumpstart your link building campaigns.
         </p>
         <div className="bg-white bg-opacity-20 rounded-lg p-6 max-w-md mx-auto">
-          <h4 className="font-bold mb-3">Remember the Golden Rules:</h4>
-          <ul className="text-left space-y-2 text-sm">
+          <h4 className="font-bold mb-3 text-white">Remember the Golden Rules:</h4>
+          <ul className="text-left space-y-2 text-sm text-white">
             <li>✅ Always personalize your emails</li>
             <li>✅ Focus on providing value first</li>
             <li>✅ Be genuine and authentic</li>

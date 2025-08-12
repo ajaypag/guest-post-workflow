@@ -97,6 +97,14 @@ export default function BlogPostTemplate({
       {/* Article Header */}
       <article className="py-12">
         <div className="max-w-4xl mx-auto px-4 sm:px-6 lg:px-8">
+          {/* Breadcrumb Navigation */}
+          <div className="flex items-center gap-2 text-sm text-gray-500 mb-6">
+            <Link href="/blog" className="hover:text-blue-600 transition-colors flex items-center gap-1">
+              <ArrowLeft className="w-4 h-4" />
+              Back to Blog
+            </Link>
+          </div>
+          
           {/* Meta Info */}
           <div className="flex items-center gap-4 text-sm text-gray-600 mb-6">
             <div className="flex items-center gap-1">
