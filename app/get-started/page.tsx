@@ -33,14 +33,14 @@ export default function GetStartedPage() {
         {/* Hero Section */}
         <div className="text-center mb-12">
           <h1 className="text-4xl sm:text-5xl font-bold text-gray-900 mb-4">
-            Get Quality Backlinks in{' '}
+            Get Cited by AI in{' '}
             <span className="text-transparent bg-clip-text bg-gradient-to-r from-blue-600 to-purple-600">
-              3 Simple Steps
+              48 Hours
             </span>
           </h1>
           <p className="text-xl text-gray-600 max-w-3xl mx-auto">
-            Start with your target page, choose your preferences, and we'll find the perfect sites for your brand. 
-            Real inventory, transparent pricing, professional content included.
+            While competitors wait months for rankings, get your brand mentioned in ChatGPT, Claude, and Perplexity responses. 
+            Strategic placement on sites with real topical authority—not vanity metrics.
           </p>
         </div>
 
@@ -48,23 +48,23 @@ export default function GetStartedPage() {
         <div className="grid grid-cols-2 md:grid-cols-4 gap-6 mb-12">
           <div className="bg-white rounded-xl p-6 border border-gray-200 text-center">
             <Shield className="w-8 h-8 text-blue-600 mx-auto mb-3" />
-            <div className="text-2xl font-bold text-gray-900">1000+</div>
-            <div className="text-sm text-gray-600">Verified Sites</div>
+            <div className="text-2xl font-bold text-gray-900">Cited</div>
+            <div className="text-sm text-gray-600">In AI Responses</div>
           </div>
           <div className="bg-white rounded-xl p-6 border border-gray-200 text-center">
             <Zap className="w-8 h-8 text-purple-600 mx-auto mb-3" />
-            <div className="text-2xl font-bold text-gray-900">Real-time</div>
-            <div className="text-sm text-gray-600">Pricing</div>
+            <div className="text-2xl font-bold text-gray-900">48 Hours</div>
+            <div className="text-sm text-gray-600">To First Citation</div>
           </div>
           <div className="bg-white rounded-xl p-6 border border-gray-200 text-center">
             <Users className="w-8 h-8 text-green-600 mx-auto mb-3" />
-            <div className="text-2xl font-bold text-gray-900">500+</div>
-            <div className="text-sm text-gray-600">Happy Clients</div>
+            <div className="text-2xl font-bold text-gray-900">O3</div>
+            <div className="text-sm text-gray-600">Research Model</div>
           </div>
           <div className="bg-white rounded-xl p-6 border border-gray-200 text-center">
             <Star className="w-8 h-8 text-yellow-600 mx-auto mb-3" />
-            <div className="text-2xl font-bold text-gray-900">4.9/5</div>
-            <div className="text-sm text-gray-600">Average Rating</div>
+            <div className="text-2xl font-bold text-gray-900">Zero</div>
+            <div className="text-sm text-gray-600">Click Dependence</div>
           </div>
         </div>
 
@@ -80,41 +80,41 @@ export default function GetStartedPage() {
           <div className="space-y-4">
             <div className="bg-white rounded-lg p-6 border border-gray-200">
               <h3 className="font-semibold text-gray-900 mb-2">
-                How does the pricing work?
+                How is this different from traditional link building?
               </h3>
               <p className="text-gray-600 text-sm">
-                Each link has two components: the wholesale site cost (varies by site quality) and our $79 content creation fee. 
-                You see real-time pricing based on actual available inventory matching your preferences.
+                Everyone can get you links. We engineer AI citations. Our O3-powered research creates content that AI systems 
+                actually reference. When ChatGPT needs expert sources, it finds your strategically placed content.
               </p>
             </div>
             
             <div className="bg-white rounded-lg p-6 border border-gray-200">
               <h3 className="font-semibold text-gray-900 mb-2">
-                What's included in the $79 content fee?
+                What makes content "citation-worthy" to AI?
               </h3>
               <p className="text-gray-600 text-sm">
-                Professional SEO-optimized article writing, natural link integration, editing, publishing coordination, 
-                and performance tracking. All content is unique and tailored to fit naturally on each site.
+                Our O3 research model spends 10-15 minutes analyzing each topic. We create comprehensive, expert-level content 
+                with semantic SEO optimization that AI systems recognize as authoritative sources worth citing.
               </p>
             </div>
             
             <div className="bg-white rounded-lg p-6 border border-gray-200">
               <h3 className="font-semibold text-gray-900 mb-2">
-                How quickly will I see results?
+                Why do AI citations matter more than rankings?
               </h3>
               <p className="text-gray-600 text-sm">
-                Links typically go live within 5-7 business days. SEO impact usually becomes noticeable within 4-8 weeks, 
-                with full benefits developing over 3-6 months as Google processes the new links.
+                65% of searches now happen in AI. Zero-click searches dominate. When users ask ChatGPT about your industry, 
+                being cited means brand awareness without dependency on declining organic click-through rates.
               </p>
             </div>
             
             <div className="bg-white rounded-lg p-6 border border-gray-200">
               <h3 className="font-semibold text-gray-900 mb-2">
-                Can I review sites before they publish?
+                How do you find sites with real topical authority?
               </h3>
               <p className="text-gray-600 text-sm">
-                Yes! After placing your order, you'll receive a curated list of suggested sites matching your preferences. 
-                You can approve or reject each site before we proceed with content creation.
+                We analyze proven expertise overlap, not vanity metrics. Our AI maps keyword rankings, authority clusters, 
+                and strategic topic overlap to find hidden gems with actual ranking potential in your industry.
               </p>
             </div>
           </div>
