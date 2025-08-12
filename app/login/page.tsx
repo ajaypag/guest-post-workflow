@@ -33,7 +33,14 @@ function LoginForm() {
         throw new Error('Invalid email or password');
       }
       
-      router.push(redirectTo);
+      // Check if user was in middle of quick start flow
+      const quickstartState = typeof window !== 'undefined' ? sessionStorage.getItem('quickstart_state') : null;
+      if (quickstartState) {
+        // Return to get-started page to complete order
+        router.push('/get-started');
+      } else {
+        router.push(redirectTo);
+      }
     } catch (error: any) {
       setError(error.message);
     } finally {

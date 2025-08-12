@@ -25,6 +25,7 @@ export default function SignupPage() {
   const [error, setError] = useState('');
   const [showPassword, setShowPassword] = useState(false);
   const [showConfirmPassword, setShowConfirmPassword] = useState(false);
+  const [showOptionalFields, setShowOptionalFields] = useState(false);
   
   const [formData, setFormData] = useState({
     email: '',
@@ -34,6 +35,26 @@ export default function SignupPage() {
     companyName: '',
     phone: ''
   });
+  
+  // Check if coming from QuickStart flow  
+  const [isQuickStartUser, setIsQuickStartUser] = useState(false);
+  
+  React.useEffect(() => {
+    // Check if user is coming from QuickStart
+    const quickstartState = typeof window !== 'undefined' ? sessionStorage.getItem('quickstart_state') : null;
+    if (quickstartState) {
+      setIsQuickStartUser(true);
+      // Pre-fill company name if available from quickstart
+      try {
+        const state = JSON.parse(quickstartState);
+        if (state.brandName) {
+          setFormData(prev => ({ ...prev, companyName: state.brandName }));
+        }
+      } catch (e) {
+        console.error('Error parsing quickstart state:', e);
+      }
+    }
+  }, []);
   
   const [errors, setErrors] = useState({
     email: '',
@@ -119,13 +140,19 @@ export default function SignupPage() {
     e.preventDefault();
     setError('');
     
-    // Validate all fields
-    const newErrors = {
+    // For QuickStart users, only validate essential fields
+    const newErrors = isQuickStartUser ? {
       email: validateField('email', formData.email),
       password: validateField('password', formData.password),
       confirmPassword: validateField('confirmPassword', formData.confirmPassword),
-      contactName: validateField('contactName', formData.contactName),
-      companyName: validateField('companyName', formData.companyName)
+      contactName: '', // Optional for quickstart
+      companyName: '' // Optional for quickstart
+    } : {
+      email: validateField('email', formData.email),
+      password: validateField('password', formData.password),
+      confirmPassword: validateField('confirmPassword', formData.confirmPassword),
+      contactName: showOptionalFields ? validateField('contactName', formData.contactName) : '',
+      companyName: showOptionalFields ? validateField('companyName', formData.companyName) : ''
     };
     
     setErrors(newErrors);
@@ -147,8 +174,8 @@ export default function SignupPage() {
         body: JSON.stringify({
           email: formData.email.toLowerCase(),
           password: formData.password,
-          contactName: formData.contactName,
-          companyName: formData.companyName,
+          contactName: formData.contactName || 'User',
+          companyName: formData.companyName || formData.email.split('@')[1] || 'Company',
           phone: formData.phone || null
         }),
       });
@@ -156,8 +183,15 @@ export default function SignupPage() {
       const data = await response.json();
       
       if (response.ok) {
-        // Auto-login after signup
-        router.push('/account/dashboard');
+        // Check if user was in middle of quick start flow
+        const quickstartState = sessionStorage.getItem('quickstart_state');
+        if (quickstartState) {
+          // Return to get-started page to complete order
+          router.push('/get-started');
+        } else {
+          // Normal signup - go to dashboard
+          router.push('/account/dashboard');
+        }
       } else {
         setError(data.error || 'Failed to create account');
       }
@@ -179,8 +213,21 @@ export default function SignupPage() {
           <div className="inline-flex items-center justify-center w-16 h-16 bg-blue-600 rounded-full mb-4">
             <Building className="h-8 w-8 text-white" />
           </div>
-          <h1 className="text-3xl font-bold text-gray-900">Create Account</h1>
-          <p className="text-gray-600 mt-2">Start getting cited by AI through smart link building</p>
+          <h1 className="text-3xl font-bold text-gray-900">
+            {isQuickStartUser ? 'Almost There!' : 'Create Account'}
+          </h1>
+          <p className="text-gray-600 mt-2">
+            {isQuickStartUser 
+              ? 'Create your account to complete your order'
+              : 'Start getting cited by AI through smart link building'}
+          </p>
+          {isQuickStartUser && (
+            <div className="mt-4 p-3 bg-green-50 border border-green-200 rounded-lg">
+              <p className="text-sm text-green-800">
+                ✨ Your order details have been saved and will be restored after signup
+              </p>
+            </div>
+          )}
         </div>
         
         {/* Signup Form */}
@@ -217,7 +264,19 @@ export default function SignupPage() {
               )}
             </div>
             
-            {/* Name */}
+            {/* Show optional fields toggle for non-quickstart users */}
+            {!isQuickStartUser && !showOptionalFields && (
+              <button
+                type="button"
+                onClick={() => setShowOptionalFields(true)}
+                className="w-full py-2 px-4 bg-gray-50 border border-gray-200 rounded-lg text-gray-600 hover:bg-gray-100 text-sm font-medium"
+              >
+                + Add company details (optional)
+              </button>
+            )}
+            
+            {/* Name - Only show if not quickstart or if optional fields shown */}
+            {(!isQuickStartUser || showOptionalFields) && (
             <div>
               <label className="block text-sm font-medium text-gray-700 mb-1">
                 Your Name
@@ -240,8 +299,10 @@ export default function SignupPage() {
                 <p className="mt-1 text-sm text-red-600">{errors.contactName}</p>
               )}
             </div>
+            )}
             
-            {/* Company */}
+            {/* Company - Only show if not quickstart or if optional fields shown */}
+            {(!isQuickStartUser || showOptionalFields) && (
             <div>
               <label className="block text-sm font-medium text-gray-700 mb-1">
                 Company Name
@@ -264,8 +325,10 @@ export default function SignupPage() {
                 <p className="mt-1 text-sm text-red-600">{errors.companyName}</p>
               )}
             </div>
+            )}
             
-            {/* Phone (Optional) */}
+            {/* Phone (Optional) - Only show if optional fields shown */}
+            {(showOptionalFields && !isQuickStartUser) && (
             <div>
               <label className="block text-sm font-medium text-gray-700 mb-1">
                 Phone Number <span className="text-gray-500">(optional)</span>
@@ -283,6 +346,7 @@ export default function SignupPage() {
                 />
               </div>
             </div>
+            )}
             
             {/* Password */}
             <div>
