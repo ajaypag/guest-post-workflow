@@ -631,71 +631,72 @@ export default function ClientDetailPage() {
               </button>
             </div>
             
-            <div className="flex justify-between items-start">
-              <div>
-                <h1 className="text-2xl font-bold text-gray-900">{client.name}</h1>
+            <div className="flex flex-col lg:flex-row lg:justify-between lg:items-start gap-4">
+              <div className="min-w-0 flex-1">
+                <h1 className="text-xl sm:text-2xl font-bold text-gray-900 break-words">{client.name}</h1>
                 <a
                   href={client.website}
                   target="_blank"
                   rel="noopener noreferrer"
-                  className="text-blue-600 hover:text-blue-800 flex items-center mt-1"
+                  className="text-blue-600 hover:text-blue-800 inline-flex items-center mt-1 break-all"
                 >
-                  <Globe className="w-4 h-4 mr-1" />
-                  {client.website}
-                  <ExternalLink className="w-3 h-3 ml-1" />
+                  <Globe className="w-4 h-4 mr-1 flex-shrink-0" />
+                  <span className="truncate sm:break-all">{client.website}</span>
+                  <ExternalLink className="w-3 h-3 ml-1 flex-shrink-0" />
                 </a>
                 <div className="mt-2">
                   {(client as any).accountId ? (
                     accountInfo ? (
-                      <span className="inline-flex items-center px-3 py-1 text-sm font-medium text-blue-700 bg-blue-50 rounded-full">
-                        <Users className="w-4 h-4 mr-1" />
-                        Owned by: {accountInfo.name || accountInfo.email}
+                      <span className="inline-flex items-center px-2 py-1 sm:px-3 text-xs sm:text-sm font-medium text-blue-700 bg-blue-50 rounded-full">
+                        <Users className="w-4 h-4 mr-1 flex-shrink-0" />
+                        <span className="truncate">Owned by: {accountInfo.name || accountInfo.email}</span>
                       </span>
                     ) : (
-                      <span className="inline-flex items-center px-3 py-1 text-sm font-medium text-gray-600 bg-gray-100 rounded-full">
-                        <Users className="w-4 h-4 mr-1" />
+                      <span className="inline-flex items-center px-2 py-1 sm:px-3 text-xs sm:text-sm font-medium text-gray-600 bg-gray-100 rounded-full">
+                        <Users className="w-4 h-4 mr-1 flex-shrink-0" />
                         Loading account...
                       </span>
                     )
                   ) : (
-                    <span className="inline-flex items-center px-3 py-1 text-sm font-medium text-orange-700 bg-orange-50 rounded-full">
-                      <AlertCircle className="w-4 h-4 mr-1" />
-                      No Account - This client needs to be assigned
+                    <span className="inline-flex items-center px-2 py-1 sm:px-3 text-xs sm:text-sm font-medium text-orange-700 bg-orange-50 rounded-full">
+                      <AlertCircle className="w-4 h-4 mr-1 flex-shrink-0" />
+                      <span className="hidden sm:inline">No Account - This client needs to be assigned</span>
+                      <span className="sm:hidden">No Account</span>
                     </span>
                   )}
                 </div>
               </div>
               
-              <div className="flex space-x-3">
+              <div className="flex flex-wrap gap-2 sm:gap-3">
                 {userType === 'internal' && (
                   <>
                     <Link
                       href={`/workflow/new?clientId=${client.id}`}
-                      className="inline-flex items-center px-4 py-2 bg-green-600 text-white text-sm font-medium rounded-md hover:bg-green-700"
+                      className="inline-flex items-center px-3 py-2 sm:px-4 bg-green-600 text-white text-xs sm:text-sm font-medium rounded-md hover:bg-green-700"
                     >
                       Create Workflow
                     </Link>
                     <Link
                       href={`/clients/${client.id}/bulk-analysis`}
-                      className="inline-flex items-center px-4 py-2 bg-indigo-600 text-white text-sm font-medium rounded-md hover:bg-indigo-700"
+                      className="inline-flex items-center px-3 py-2 sm:px-4 bg-indigo-600 text-white text-xs sm:text-sm font-medium rounded-md hover:bg-indigo-700"
                     >
-                      <BarChart2 className="w-4 h-4 mr-2" />
+                      <BarChart2 className="w-4 h-4 mr-1 sm:mr-2" />
                       Bulk Analysis
                     </Link>
                   </>
                 )}
                 <button
                   onClick={() => setShowKeywordPrefs(true)}
-                  className="inline-flex items-center px-4 py-2 bg-purple-600 text-white text-sm font-medium rounded-md hover:bg-purple-700"
+                  className="inline-flex items-center px-3 py-2 sm:px-4 bg-purple-600 text-white text-xs sm:text-sm font-medium rounded-md hover:bg-purple-700"
                 >
-                  <Settings className="w-4 h-4 mr-2" />
+                  <Settings className="w-4 h-4 mr-1 sm:mr-2" />
                   Topic Preferences
                 </button>
                 <button
                   onClick={() => setShowAddForm(true)}
-                  className="inline-flex items-center px-4 py-2 bg-blue-600 text-white text-sm font-medium rounded-md hover:bg-blue-700"
+                  className="inline-flex items-center px-3 py-2 sm:px-4 bg-blue-600 text-white text-xs sm:text-sm font-medium rounded-md hover:bg-blue-700"
                 >
-                  <Plus className="w-4 h-4 mr-2" />
+                  <Plus className="w-4 h-4 mr-1 sm:mr-2" />
                   Add Pages
                 </button>
               </div>
@@ -725,22 +726,22 @@ export default function ClientDetailPage() {
           )}
 
           {/* Stats */}
-          <div className="grid grid-cols-2 md:grid-cols-4 gap-4 mb-6">
-            <div className="bg-white p-4 rounded-lg shadow">
-              <div className="text-2xl font-bold text-gray-900">{stats.total}</div>
-              <div className="text-sm text-gray-600">Total Pages</div>
+          <div className="grid grid-cols-2 md:grid-cols-4 gap-2 sm:gap-4 mb-6">
+            <div className="bg-white p-3 sm:p-4 rounded-lg shadow">
+              <div className="text-xl sm:text-2xl font-bold text-gray-900">{stats.total}</div>
+              <div className="text-xs sm:text-sm text-gray-600">Total Pages</div>
             </div>
-            <div className="bg-white p-4 rounded-lg shadow">
-              <div className="text-2xl font-bold text-green-600">{stats.active}</div>
-              <div className="text-sm text-gray-600">Active</div>
+            <div className="bg-white p-3 sm:p-4 rounded-lg shadow">
+              <div className="text-xl sm:text-2xl font-bold text-green-600">{stats.active}</div>
+              <div className="text-xs sm:text-sm text-gray-600">Active</div>
             </div>
-            <div className="bg-white p-4 rounded-lg shadow">
-              <div className="text-2xl font-bold text-orange-600">{stats.inactive}</div>
-              <div className="text-sm text-gray-600">Inactive</div>
+            <div className="bg-white p-3 sm:p-4 rounded-lg shadow">
+              <div className="text-xl sm:text-2xl font-bold text-orange-600">{stats.inactive}</div>
+              <div className="text-xs sm:text-sm text-gray-600">Inactive</div>
             </div>
-            <div className="bg-white p-4 rounded-lg shadow">
-              <div className="text-2xl font-bold text-blue-600">{stats.completed}</div>
-              <div className="text-sm text-gray-600">Completed</div>
+            <div className="bg-white p-3 sm:p-4 rounded-lg shadow">
+              <div className="text-xl sm:text-2xl font-bold text-blue-600">{stats.completed}</div>
+              <div className="text-xs sm:text-sm text-gray-600">Completed</div>
             </div>
           </div>
 
@@ -797,17 +798,17 @@ export default function ClientDetailPage() {
                     required
                   />
                 </div>
-                <div className="flex space-x-3">
+                <div className="flex gap-2 sm:gap-3">
                   <button
                     type="submit"
-                    className="px-4 py-2 bg-blue-600 text-white text-sm font-medium rounded-md hover:bg-blue-700"
+                    className="px-3 py-2 sm:px-4 bg-blue-600 text-white text-xs sm:text-sm font-medium rounded-md hover:bg-blue-700"
                   >
                     Add Pages
                   </button>
                   <button
                     type="button"
                     onClick={() => setShowAddForm(false)}
-                    className="px-4 py-2 bg-gray-200 text-gray-800 text-sm font-medium rounded-md hover:bg-gray-300"
+                    className="px-3 py-2 sm:px-4 bg-gray-200 text-gray-800 text-xs sm:text-sm font-medium rounded-md hover:bg-gray-300"
                   >
                     Cancel
                   </button>
@@ -832,16 +833,16 @@ export default function ClientDetailPage() {
                   The process takes about 2-3 seconds per page (both APIs run in parallel).
                 </p>
               </div>
-              <div className="flex space-x-3">
+              <div className="flex flex-col sm:flex-row gap-2 sm:gap-3">
                 <button
                   onClick={handleBulkKeywordAndDescriptionGeneration}
-                  className="px-4 py-2 bg-purple-600 text-white text-sm font-medium rounded-md hover:bg-purple-700"
+                  className="px-3 py-2 sm:px-4 bg-purple-600 text-white text-xs sm:text-sm font-medium rounded-md hover:bg-purple-700"
                 >
                   Yes, Generate Keywords & Descriptions
                 </button>
                 <button
                   onClick={cancelBulkKeywordGeneration}
-                  className="px-4 py-2 bg-gray-200 text-gray-800 text-sm font-medium rounded-md hover:bg-gray-300"
+                  className="px-3 py-2 sm:px-4 bg-gray-200 text-gray-800 text-xs sm:text-sm font-medium rounded-md hover:bg-gray-300"
                 >
                   Skip for Now
                 </button>
@@ -876,12 +877,12 @@ export default function ClientDetailPage() {
             <div className="p-4 border-b">
               <div className="flex flex-wrap items-center justify-between gap-4">
                 {/* Filters */}
-                <div className="flex items-center space-x-2">
-                  <span className="text-sm font-medium text-gray-700">Filter:</span>
+                <div className="flex flex-col sm:flex-row sm:items-center gap-2 sm:gap-x-2">
+                  <span className="text-xs sm:text-sm font-medium text-gray-700">Filter:</span>
                   <select
                     value={filter}
                     onChange={(e) => setFilter(e.target.value as any)}
-                    className="text-sm border border-gray-300 rounded-md px-3 py-1"
+                    className="text-xs sm:text-sm border border-gray-300 rounded-md px-2 sm:px-3 py-1"
                   >
                     <option value="all">All Pages ({stats.total})</option>
                     <option value="active">Active ({stats.active})</option>
@@ -892,14 +893,14 @@ export default function ClientDetailPage() {
 
                 {/* Bulk Actions */}
                 {selectedPages.length > 0 && (
-                  <div className="flex items-center space-x-2">
-                    <span className="text-sm text-gray-700">
+                  <div className="flex flex-col sm:flex-row sm:items-center gap-2 sm:gap-x-2">
+                    <span className="text-xs sm:text-sm text-gray-700">
                       {selectedPages.length} selected
                     </span>
                     <select
                       value={bulkAction}
                       onChange={(e) => setBulkAction(e.target.value as any)}
-                      className="text-sm border border-gray-300 rounded-md px-3 py-1"
+                      className="text-xs sm:text-sm border border-gray-300 rounded-md px-2 sm:px-3 py-1"
                     >
                       <option value="">Bulk Action...</option>
                       <option value="active">Mark as Active</option>
@@ -913,7 +914,7 @@ export default function ClientDetailPage() {
                     <button
                       onClick={handleBulkAction}
                       disabled={!bulkAction}
-                      className="px-3 py-1 bg-blue-600 text-white text-sm rounded-md hover:bg-blue-700 disabled:opacity-50"
+                      className="px-2 sm:px-3 py-1 bg-blue-600 text-white text-xs sm:text-sm rounded-md hover:bg-blue-700 disabled:opacity-50"
                     >
                       Apply
                     </button>
@@ -956,16 +957,18 @@ export default function ClientDetailPage() {
                               href={page.url}
                               target="_blank"
                               rel="noopener noreferrer"
-                              className="text-blue-600 hover:text-blue-800 font-medium truncate mr-2"
+                              className="text-blue-600 hover:text-blue-800 text-sm sm:font-medium truncate mr-2"
                             >
                               {page.url}
                             </a>
-                            <ExternalLink className="w-3 h-3 text-gray-400" />
+                            <ExternalLink className="w-3 h-3 text-gray-400 flex-shrink-0" />
                           </div>
-                          <div className="text-sm text-gray-500 mt-1">
-                            Domain: {page.domain} • Added: {new Date(page.addedAt).toLocaleDateString()}
+                          <div className="text-xs sm:text-sm text-gray-500 mt-1">
+                            <span className="hidden sm:inline">Domain: {page.domain} • </span>
+                            <span className="sm:hidden">{page.domain} • </span>
+                            Added: {new Date(page.addedAt).toLocaleDateString()}
                             {page.completedAt && (
-                              <> • Completed: {new Date(page.completedAt).toLocaleDateString()}</>
+                              <span className="hidden sm:inline"> • Completed: {new Date(page.completedAt).toLocaleDateString()}</span>
                             )}
                           </div>
                           

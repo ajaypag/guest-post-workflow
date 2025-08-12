@@ -16,7 +16,7 @@ import {
   Building, Package, Plus, X, ChevronDown, ChevronUp, ChevronRight,
   Search, Target, Link as LinkIcon, Type, CheckCircle,
   AlertCircle, Copy, Trash2, User, Globe, ExternalLink,
-  ArrowLeft, Loader2, Clock, Users, CreditCard, AlertTriangle
+  ArrowLeft, Loader2, Clock, Users, CreditCard, AlertTriangle, TrendingUp
 } from 'lucide-react';
 import { SERVICE_FEE_CENTS, PRICING_CONFIG } from '@/lib/config/pricing';
 
@@ -142,8 +142,33 @@ export default function EditOrderPage({ params }: { params: Promise<{ id: string
   const [requestingLineItemId, setRequestingLineItemId] = useState<string | null>(null);
   const [accountDetails, setAccountDetails] = useState<{ email: string; name: string; company?: string } | null>(null);
   
-  // Mobile view state
-  const [mobileView, setMobileView] = useState<'clients' | 'order' | 'targets'>('order');
+  // Mobile view state with improved localStorage persistence
+  const [mobileView, setMobileView] = useState<'clients' | 'order' | 'targets'>(() => {
+    // Persist mobile view in localStorage
+    if (typeof window !== 'undefined') {
+      const saved = localStorage.getItem('orderEdit-mobileView');
+      if (saved && ['clients', 'order', 'targets'].includes(saved)) {
+        return saved as 'clients' | 'order' | 'targets';
+      }
+    }
+    return 'clients'; // Default to brands on mobile
+  });
+  
+  const [showMobilePricing, setShowMobilePricing] = useState(() => {
+    // Persist mobile pricing state in localStorage
+    if (typeof window !== 'undefined') {
+      const saved = localStorage.getItem('showMobilePricing');
+      return saved === 'true';
+    }
+    return false;
+  });
+
+  // Update localStorage when mobile pricing state changes
+  useEffect(() => {
+    if (typeof window !== 'undefined') {
+      localStorage.setItem('showMobilePricing', showMobilePricing.toString());
+    }
+  }, [showMobilePricing]);
 
   const loadClients = useCallback(async () => {
     try {
@@ -1084,21 +1109,22 @@ export default function EditOrderPage({ params }: { params: Promise<{ id: string
         <Header />
         
         {/* Header */}
-        <div className="bg-white border-b border-gray-200 px-6 py-4">
-          <div className="flex items-center justify-between">
-            <div className="flex items-center gap-4">
+        <div className="bg-white border-b border-gray-200 px-4 sm:px-6 py-3 sm:py-4">
+          <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-2 sm:gap-4">
+            <div className="flex items-center gap-2 sm:gap-4">
               <Link
                 href={isNewOrder ? '/orders' : `/orders/${draftOrderId || ''}`}
-                className="inline-flex items-center text-gray-600 hover:text-gray-900"
+                className="inline-flex items-center text-gray-600 hover:text-gray-900 text-sm sm:text-base"
               >
-                <ArrowLeft className="h-4 w-4 mr-2" />
-                {isNewOrder ? 'Back to Orders' : 'Back to Order'}
+                <ArrowLeft className="h-4 w-4 mr-1 sm:mr-2" />
+                <span className="sm:hidden">Back</span>
+                <span className="hidden sm:inline">{isNewOrder ? 'Back to Orders' : 'Back to Order'}</span>
               </Link>
-              <div>
-                <h1 className="text-2xl font-semibold text-gray-900">
-                  {isNewOrder ? 'Create New Order' : `Edit Order ${draftOrderId ? '#' + draftOrderId.slice(0, 8) : ''}`}
+              <div className="flex-1">
+                <h1 className="text-lg sm:text-2xl font-semibold text-gray-900">
+                  {isNewOrder ? 'New Order' : `Order ${draftOrderId ? '#' + draftOrderId.slice(0, 8) : ''}`}
                 </h1>
-                <p className="text-sm text-gray-600 mt-1">
+                <p className="text-xs sm:text-sm text-gray-600 mt-0.5 sm:mt-1 hidden sm:block">
                   {isNewOrder ? 'Build your guest post campaign' : 'Update your guest post order details'}
                 </p>
               </div>
@@ -1122,10 +1148,10 @@ export default function EditOrderPage({ params }: { params: Promise<{ id: string
 
         {/* Account Selection (Internal Users Only) */}
         {session?.userType === 'internal' && (
-          <div className="bg-white border-b border-gray-200 px-6 py-4">
-            <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
-              <div>
-                <label className="block text-sm font-medium text-gray-700 mb-1">Select Account *</label>
+          <div className="bg-white border-b border-gray-200 px-4 sm:px-6 py-3 sm:py-4">
+            <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-4 gap-3 sm:gap-4">
+              <div className="sm:col-span-2 md:col-span-1">
+                <label className="block text-xs sm:text-sm font-medium text-gray-700 mb-1">Select Account *</label>
                 <select
                   value={selectedAccountId || ''}
                   onChange={(e) => {
@@ -1139,7 +1165,7 @@ export default function EditOrderPage({ params }: { params: Promise<{ id: string
                       setSelectedAccountCompany(account.companyName || '');
                     }
                   }}
-                  className="w-full px-3 py-2 border border-gray-300 rounded-md focus:ring-blue-500 focus:border-blue-500"
+                  className="w-full px-2 sm:px-3 py-1.5 sm:py-2 text-xs sm:text-sm border border-gray-300 rounded-md focus:ring-blue-500 focus:border-blue-500"
                   required
                 >
                   <option value="">Choose an account...</option>
@@ -1152,33 +1178,33 @@ export default function EditOrderPage({ params }: { params: Promise<{ id: string
               </div>
               {selectedAccountId && (
                 <>
-                  <div>
-                    <label className="block text-sm font-medium text-gray-700 mb-1">Contact Name</label>
+                  <div className="hidden sm:block">
+                    <label className="block text-xs sm:text-sm font-medium text-gray-700 mb-1">Contact Name</label>
                     <input
                       type="text"
                       value={selectedAccountName}
                       onChange={(e) => setSelectedAccountName(e.target.value)}
-                      className="w-full px-3 py-2 border border-gray-300 rounded-md bg-gray-50"
+                      className="w-full px-2 sm:px-3 py-1.5 sm:py-2 text-xs sm:text-sm border border-gray-300 rounded-md bg-gray-50"
                       readOnly
                     />
                   </div>
-                  <div>
-                    <label className="block text-sm font-medium text-gray-700 mb-1">Email</label>
+                  <div className="hidden md:block">
+                    <label className="block text-xs sm:text-sm font-medium text-gray-700 mb-1">Email</label>
                     <input
                       type="email"
                       value={selectedAccountEmail}
                       onChange={(e) => setSelectedAccountEmail(e.target.value)}
-                      className="w-full px-3 py-2 border border-gray-300 rounded-md bg-gray-50"
+                      className="w-full px-2 sm:px-3 py-1.5 sm:py-2 text-xs sm:text-sm border border-gray-300 rounded-md bg-gray-50"
                       readOnly
                     />
                   </div>
-                  <div>
-                    <label className="block text-sm font-medium text-gray-700 mb-1">Company</label>
+                  <div className="hidden md:block">
+                    <label className="block text-xs sm:text-sm font-medium text-gray-700 mb-1">Company</label>
                     <input
                       type="text"
                       value={selectedAccountCompany}
                       onChange={(e) => setSelectedAccountCompany(e.target.value)}
-                      className="w-full px-3 py-2 border border-gray-300 rounded-md"
+                      className="w-full px-2 sm:px-3 py-1.5 sm:py-2 text-xs sm:text-sm border border-gray-300 rounded-md"
                       placeholder="Company name (optional)"
                     />
                   </div>
@@ -1189,45 +1215,160 @@ export default function EditOrderPage({ params }: { params: Promise<{ id: string
         )}
         
         {/* Mobile Navigation (shown on small screens) */}
-        <div className="md:hidden bg-white border-b border-gray-200">
+        <div className="md:hidden bg-white border-b border-gray-200 sticky top-0 z-20">
           <div className="flex">
             <button
-              onClick={() => setMobileView('clients')}
-              className={`flex-1 px-4 py-3 text-sm font-medium border-b-2 transition-colors ${
+              onClick={() => {
+                setMobileView('clients');
+                if (typeof window !== 'undefined') {
+                  localStorage.setItem('orderEdit-mobileView', 'clients');
+                }
+              }}
+              className={`flex-1 px-3 py-3 text-xs font-medium border-b-2 transition-colors relative touch-manipulation min-h-[44px] flex items-center justify-center ${
                 mobileView === 'clients' 
                   ? 'text-blue-600 border-blue-600' 
                   : 'text-gray-600 border-transparent hover:text-gray-900'
               }`}
             >
-              Brands ({selectedClients.size})
+              <span>Brands</span>
+              <span className={`ml-1 px-1.5 py-0.5 text-xs rounded-full ${
+                mobileView === 'clients' ? 'bg-blue-100 text-blue-700' : 'bg-gray-100 text-gray-600'
+              }`}>{selectedClients.size}</span>
             </button>
             <button
-              onClick={() => setMobileView('targets')}
-              className={`flex-1 px-4 py-3 text-sm font-medium border-b-2 transition-colors ${
+              onClick={() => {
+                setMobileView('targets');
+                if (typeof window !== 'undefined') {
+                  localStorage.setItem('orderEdit-mobileView', 'targets');
+                }
+              }}
+              className={`flex-1 px-3 py-3 text-xs font-medium border-b-2 transition-colors relative touch-manipulation min-h-[44px] flex items-center justify-center ${
                 mobileView === 'targets' 
                   ? 'text-blue-600 border-blue-600' 
                   : 'text-gray-600 border-transparent hover:text-gray-900'
               }`}
             >
-              Targets ({availableTargets.length})
+              <span>Targets</span>
+              <span className={`ml-1 px-1.5 py-0.5 text-xs rounded-full ${
+                mobileView === 'targets' ? 'bg-blue-100 text-blue-700' : 'bg-gray-100 text-gray-600'
+              }`}>{availableTargets.length}</span>
             </button>
             <button
-              onClick={() => setMobileView('order')}
-              className={`flex-1 px-4 py-3 text-sm font-medium border-b-2 transition-colors ${
+              onClick={() => {
+                setMobileView('order');
+                if (typeof window !== 'undefined') {
+                  localStorage.setItem('orderEdit-mobileView', 'order');
+                }
+              }}
+              className={`flex-1 px-3 py-3 text-xs font-medium border-b-2 transition-colors relative touch-manipulation min-h-[44px] flex items-center justify-center ${
                 mobileView === 'order' 
                   ? 'text-blue-600 border-blue-600' 
                   : 'text-gray-600 border-transparent hover:text-gray-900'
               }`}
             >
-              Order ({lineItems.length})
+              <span>Order</span>
+              <span className={`ml-1 px-1.5 py-0.5 text-xs rounded-full ${
+                mobileView === 'order' ? 'bg-blue-100 text-blue-700' : 'bg-gray-100 text-gray-600'
+              }`}>{lineItems.length}</span>
             </button>
           </div>
         </div>
         
-        {/* Pricing Estimator */}
-        <PricingEstimator 
-          className=""
-          initialPreferences={orderPreferences || undefined}
+        {/* Mobile Pricing Summary - Collapsible */}
+        <div className="md:hidden bg-white border-b border-gray-200">
+          <button 
+            onClick={() => setShowMobilePricing(!showMobilePricing)}
+            className="w-full px-4 py-3 flex items-center justify-between hover:bg-gray-50 transition-colors"
+          >
+            <div className="flex items-center gap-3">
+              <TrendingUp className="h-4 w-4 text-blue-600" />
+              <div className="text-left">
+                <p className="text-sm font-medium text-gray-900">
+                  Pricing: {estimatedPricePerLink > 0 ? formatCurrency(estimatedPricePerLink) : '$250'}/link
+                </p>
+                <p className="text-xs text-gray-500">
+                  {orderPreferences?.estimatorSnapshot?.sitesAvailable || 'Set preferences to see'} sites available
+                </p>
+              </div>
+            </div>
+            <ChevronDown className={`h-4 w-4 text-gray-400 transition-transform ${
+              showMobilePricing ? 'rotate-180' : ''
+            }`} />
+          </button>
+          
+          {showMobilePricing && (
+            <div className="border-t border-gray-200">
+              <PricingEstimator 
+                className=""
+                initialPreferences={orderPreferences || undefined}
+                onEstimateChange={(estimate, preferences) => {
+                  // Store preferences for saving with the order
+                  if (estimate && preferences) {
+                    // Update the estimated price per link (wholesale + service fee)
+                    setEstimatedPricePerLink(estimate.clientMedian);
+                    // Update wholesale estimate for new line items
+                    setEstimatedWholesalePerLink(estimate.wholesaleMedian);
+                    
+                    // Calculate budget range based on total links and price range
+                    const clientLinksTotal = Array.from(selectedClients.values()).reduce((sum, client) => 
+                      sum + (client.selected ? client.linkCount : 0), 0);
+                    const totalLinks = clientLinksTotal > 0 ? clientLinksTotal : 
+                                      (lineItems.length > 0 ? lineItems.length : 
+                                      preferences.linkCount || 1);
+                    const budgetMin = totalLinks * estimate.clientMin;
+                    const budgetMax = totalLinks * estimate.clientMax;
+                    
+                    // Create estimator snapshot of what user saw
+                    const estimatorSnapshot = {
+                      sitesAvailable: estimate.count,
+                      medianPrice: estimate.wholesaleMedian,
+                      averagePrice: estimate.wholesaleAverage,
+                      priceRange: { min: estimate.wholesaleMin, max: estimate.wholesaleMax },
+                      examples: estimate.examples || [],
+                      timestamp: new Date().toISOString()
+                    };
+                    
+                    const enhancedPreferences = {
+                      ...preferences,
+                      linkCount: totalLinks,
+                      estimatedBudgetMin: budgetMin,
+                      estimatedBudgetMax: budgetMax,
+                      estimatorSnapshot: estimatorSnapshot
+                    };
+                    
+                    setOrderPreferences(enhancedPreferences);
+                    
+                    // Save to local state for persistence
+                    sessionStorage.setItem('orderPreferences', JSON.stringify({
+                      estimate,
+                      preferences: enhancedPreferences,
+                      timestamp: new Date().toISOString()
+                    }));
+                    
+                    // Update line items that are still using default pricing
+                    setLineItems(prev => prev.map(item => {
+                      const isDefaultPricing = !item.wholesalePrice || item.wholesalePrice === 20000 || item.price === (item.wholesalePrice + SERVICE_FEE_CENTS);
+                      if (isDefaultPricing) {
+                        return {
+                          ...item,
+                          wholesalePrice: estimate.wholesaleMedian,
+                          price: estimate.clientMedian
+                        };
+                      }
+                      return item;
+                    }));
+                  }
+                }}
+              />
+            </div>
+          )}
+        </div>
+        
+        {/* Desktop Pricing Estimator - Full featured */}
+        <div className="hidden md:block">
+          <PricingEstimator 
+            className=""
+            initialPreferences={orderPreferences || undefined}
             onEstimateChange={(estimate, preferences) => {
               // Store preferences for saving with the order
               if (estimate && preferences) {
@@ -1290,9 +1431,10 @@ export default function EditOrderPage({ params }: { params: Promise<{ id: string
               }
             }}
           />
+        </div>
         
         {/* Main Content Area - Three Column Layout (Desktop) / Single Column (Mobile) */}
-        <div className="flex-1 flex flex-col md:flex-row gap-4 p-4 pt-0 overflow-hidden bg-gray-100" style={{height: 'calc(100vh - 64px - 80px)'}}>
+        <div className="flex-1 flex flex-col md:flex-row gap-2 md:gap-4 p-2 sm:p-4 pt-0 overflow-hidden bg-gray-100 md:style-height" style={{height: 'auto'}}>
           {error && (
             <div className="absolute top-4 left-1/2 transform -translate-x-1/2 z-50 bg-red-50 border border-red-200 rounded-lg p-4 flex items-start shadow-lg">
               <AlertCircle className="h-5 w-5 text-red-600 mt-0.5 mr-3" />
@@ -1312,11 +1454,11 @@ export default function EditOrderPage({ params }: { params: Promise<{ id: string
           <div className={`w-full md:w-64 bg-white rounded-lg shadow-sm flex flex-col h-full ${
             mobileView === 'clients' ? 'block md:block' : 'hidden md:block'
           }`}>
-            <div className="p-4 border-b bg-gray-50">
+            <div className="p-3 sm:p-4 border-b bg-gray-50">
               <div className="flex items-center justify-between">
                 <div>
-                  <h2 className="text-lg font-semibold text-gray-900">Select Brands</h2>
-                  <p className="text-sm text-gray-600 mt-1">
+                  <h2 className="text-base sm:text-lg font-semibold text-gray-900">Select Brands</h2>
+                  <p className="text-xs sm:text-sm text-gray-600 mt-0.5 sm:mt-1">
                     {selectedClients.size} of {clients.length} selected
                   </p>
                 </div>
@@ -1555,11 +1697,11 @@ export default function EditOrderPage({ params }: { params: Promise<{ id: string
           <div className={`flex-1 bg-white rounded-lg shadow-sm flex flex-col h-full ${
             mobileView === 'order' ? 'block md:block' : 'hidden md:block'
           }`}>
-            <div className="p-4 border-b border-gray-200">
-              <div className="flex items-center justify-between">
+            <div className="p-3 sm:p-4 border-b border-gray-200">
+              <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-2">
                 <div>
-                  <div className="flex items-center space-x-3">
-                    <h2 className="text-lg font-semibold text-gray-900">Order Details</h2>
+                  <div className="flex items-center space-x-2 sm:space-x-3">
+                    <h2 className="text-base sm:text-lg font-semibold text-gray-900">Order Details</h2>
                     {saveStatus !== 'idle' && (
                       <span className={`text-xs px-2 py-1 rounded ${
                         saveStatus === 'saving' ? 'bg-yellow-100 text-yellow-700' :
@@ -1572,10 +1714,10 @@ export default function EditOrderPage({ params }: { params: Promise<{ id: string
                       </span>
                     )}
                   </div>
-                  <p className="text-sm text-gray-600 mt-1">
+                  <p className="text-xs sm:text-sm text-gray-600 mt-0.5 sm:mt-1">
                     {lineItems.length} items • {lineItems.filter(item => item.targetPageUrl).length} assigned
                     {lastSaved && (
-                      <span className="text-gray-400"> • Last saved {new Date(lastSaved).toLocaleTimeString()}</span>
+                      <span className="text-gray-400 hidden sm:inline"> • Last saved {new Date(lastSaved).toLocaleTimeString()}</span>
                     )}
                   </p>
                 </div>
@@ -1583,11 +1725,11 @@ export default function EditOrderPage({ params }: { params: Promise<{ id: string
                   <select 
                     value={groupByMode}
                     onChange={(e) => setGroupByMode(e.target.value as 'client' | 'status' | 'none')}
-                    className="text-sm border border-gray-300 rounded px-2 py-1"
+                    className="text-xs sm:text-sm border border-gray-300 rounded px-2 py-1"
                   >
                     <option value="client">Group by Brand</option>
-                    <option value="status">Group by Status</option>
-                    <option value="none">No Grouping</option>
+                    <option value="status" className="hidden sm:block">Group by Status</option>
+                    <option value="none" className="hidden sm:block">No Grouping</option>
                   </select>
                 </div>
               </div>
@@ -1602,17 +1744,91 @@ export default function EditOrderPage({ params }: { params: Promise<{ id: string
                 </div>
               ) : groupByMode === 'none' ? (
                 <div className="h-full overflow-y-auto">
-                  <table className="w-full">
-                    <thead className="bg-gray-50 border-b border-gray-200 sticky top-0">
-                      <tr>
-                        <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Brand</th>
-                        <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Target Page</th>
-                        <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Anchor Text</th>
-                        <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Investment Details</th>
-                        <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Price</th>
-                        <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider"></th>
-                      </tr>
-                    </thead>
+                  {/* Cards View (Mobile + Small Desktop) */}
+                  <div className="xl:hidden space-y-3 p-3">
+                    {lineItems.map((item, index) => (
+                      <div key={item.id} className="bg-white border border-gray-200 rounded-lg p-4 shadow-sm">
+                        <div className="flex items-start justify-between mb-3">
+                          <div>
+                            <span className="text-xs text-gray-500">#{index + 1}</span>
+                            <h3 className="font-medium text-gray-900">{item.clientName}</h3>
+                          </div>
+                          <button
+                            onClick={() => removeLineItem(item.id)}
+                            className="text-gray-400 hover:text-red-500 transition-colors p-2 min-h-[44px] min-w-[44px] flex items-center justify-center rounded-lg hover:bg-red-50"
+                            title="Remove line item"
+                          >
+                            <X className="h-4 w-4" />
+                          </button>
+                        </div>
+                        
+                        <div className="space-y-3">
+                          <div>
+                            <label className="text-xs text-gray-500 font-medium">Target Page</label>
+                            <select
+                              value={item.targetPageUrl || ''}
+                              onChange={(e) => {
+                                if (e.target.value === '__ADD_NEW__') {
+                                  setRequestingLineItemId(item.id);
+                                  setShowCreateTargetPageModal(true);
+                                } else {
+                                  handleTargetPageChange(item.id, e.target.value);
+                                }
+                              }}
+                              className="w-full mt-1 px-3 py-2 text-sm border border-gray-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500 min-h-[44px] touch-manipulation"
+                            >
+                              <option value="">Select target page...</option>
+                              {getClientTargetPages(item.clientId).map(page => (
+                                <option key={page.id} value={page.url}>
+                                  {page.url} {page.usageCount > 0 && `(${page.usageCount})`}
+                                </option>
+                              ))}
+                              <option value="__ADD_NEW__" className="text-blue-600 font-medium">
+                                + Add new target page...
+                              </option>
+                            </select>
+                          </div>
+                          
+                          <div>
+                            <label className="text-xs text-gray-500 font-medium">Anchor Text</label>
+                            <input
+                              type="text"
+                              value={item.anchorText || ''}
+                              onChange={(e) => updateLineItem(item.id, { anchorText: e.target.value })}
+                              placeholder="Enter anchor text..."
+                              className="w-full mt-1 px-3 py-2 text-sm border border-gray-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500 min-h-[44px] touch-manipulation"
+                            />
+                          </div>
+                          
+                          <div className="pt-2 border-t border-gray-100">
+                            <div className="flex items-center justify-between">
+                              <span className="text-xs text-gray-500">Total Investment</span>
+                              <span className="text-lg font-semibold text-gray-900">
+                                ${(item.price / 100).toFixed(0)}
+                              </span>
+                            </div>
+                            <div className="text-xs text-gray-500 mt-1">
+                              ${((item.wholesalePrice || (item.price - SERVICE_FEE_CENTS)) / 100).toFixed(0)} site + $79 content
+                            </div>
+                          </div>
+                        </div>
+                      </div>
+                    ))}
+                  </div>
+                  
+                  {/* Desktop Table View - Large Screens Only */}
+                  <div className="hidden xl:block overflow-x-auto">
+                    <table className="w-full min-w-[800px]">
+                      <thead className="bg-gray-50 border-b border-gray-200 sticky top-0">
+                        <tr>
+                          <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider min-w-[120px]">Brand</th>
+                          <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider min-w-[200px]">Target Page</th>
+                          <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider min-w-[150px]">Anchor Text</th>
+                          <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider min-w-[180px]">Investment Details</th>
+                          <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider min-w-[100px]">Price</th>
+                          <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider min-w-[60px]"></th>
+                        </tr>
+                      </thead>
                     <tbody className="divide-y divide-gray-100">
                       {lineItems.map((item) => (
                         <tr key={item.id} className="hover:bg-gray-50 transition-colors">
@@ -1637,7 +1853,7 @@ export default function EditOrderPage({ params }: { params: Promise<{ id: string
                               value={item.anchorText || ''}
                               onChange={(e) => updateLineItem(item.id, { anchorText: e.target.value })}
                               placeholder="Enter anchor text..."
-                              className="w-full px-2 py-1 text-sm border border-gray-200 rounded focus:outline-none focus:ring-1 focus:ring-blue-500 focus:border-blue-500"
+                              className="w-full px-3 py-2 text-sm border border-gray-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500 min-h-[44px] touch-manipulation"
                               disabled={!item.targetPageUrl}
                             />
                           </td>
@@ -1660,7 +1876,8 @@ export default function EditOrderPage({ params }: { params: Promise<{ id: string
                           <td className="px-4 py-3">
                             <button
                               onClick={() => removeLineItem(item.id)}
-                              className="text-gray-400 hover:text-red-500 transition-colors"
+                              className="text-gray-400 hover:text-red-500 transition-colors p-2 min-h-[44px] min-w-[44px] flex items-center justify-center rounded"
+                              title="Remove line item"
                             >
                               <X className="h-4 w-4" />
                             </button>
@@ -1668,7 +1885,12 @@ export default function EditOrderPage({ params }: { params: Promise<{ id: string
                         </tr>
                       ))}
                     </tbody>
-                  </table>
+                    </table>
+                    {/* Scroll indicator for smaller screens */}
+                    <div className="text-xs text-gray-500 text-center mt-2 xl:hidden">
+                      ← Scroll horizontally to see all columns →
+                    </div>
+                  </div>
                 </div>
               ) : (
                 <div className="h-full overflow-y-auto">
@@ -1714,8 +1936,82 @@ export default function EditOrderPage({ params }: { params: Promise<{ id: string
                         </button>
                         
                         {isExpanded && (
-                          <div className="">
-                            <table className="w-full">
+                          <>
+                            {/* Cards for Grouped View (Mobile + Small Desktop) */}
+                            <div className="xl:hidden space-y-3 p-3">
+                              {items.map((item, index) => (
+                                <div key={item.id} className="bg-white border border-gray-200 rounded-lg p-4 shadow-sm">
+                                  <div className="flex items-start justify-between mb-3">
+                                    <div>
+                                      <span className="text-xs text-gray-500">#{index + 1}</span>
+                                      <h3 className="font-medium text-gray-900">{item.clientName}</h3>
+                                    </div>
+                                    <button
+                                      onClick={() => removeLineItem(item.id)}
+                                      className="text-gray-400 hover:text-red-500 transition-colors p-2 min-h-[44px] min-w-[44px] flex items-center justify-center rounded-lg hover:bg-red-50"
+                                      title="Remove line item"
+                                    >
+                                      <X className="h-4 w-4" />
+                                    </button>
+                                  </div>
+                                  
+                                  <div className="space-y-3">
+                                    <div>
+                                      <label className="text-xs text-gray-500 font-medium">Target Page</label>
+                                      <select
+                                        value={item.targetPageUrl || ''}
+                                        onChange={(e) => {
+                                          if (e.target.value === '__ADD_NEW__') {
+                                            setRequestingLineItemId(item.id);
+                                            setShowCreateTargetPageModal(true);
+                                          } else {
+                                            handleTargetPageChange(item.id, e.target.value);
+                                          }
+                                        }}
+                                        className="w-full mt-1 px-3 py-2 text-sm border border-gray-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500 min-h-[44px] touch-manipulation"
+                                      >
+                                        <option value="">Select target page...</option>
+                                        {getClientTargetPages(item.clientId).map(page => (
+                                          <option key={page.id} value={page.url}>
+                                            {page.url} {page.usageCount > 0 && `(${page.usageCount})`}
+                                          </option>
+                                        ))}
+                                        <option value="__ADD_NEW__" className="text-blue-600 font-medium">
+                                          + Add new target page...
+                                        </option>
+                                      </select>
+                                    </div>
+                                    
+                                    <div>
+                                      <label className="text-xs text-gray-500 font-medium">Anchor Text</label>
+                                      <input
+                                        type="text"
+                                        value={item.anchorText || ''}
+                                        onChange={(e) => updateLineItem(item.id, { anchorText: e.target.value })}
+                                        placeholder="Enter anchor text..."
+                                        className="w-full mt-1 px-3 py-2 text-sm border border-gray-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500 min-h-[44px] touch-manipulation"
+                                      />
+                                    </div>
+                                    
+                                    <div className="pt-2 border-t border-gray-100">
+                                      <div className="flex items-center justify-between">
+                                        <span className="text-xs text-gray-500">Total Investment</span>
+                                        <span className="text-lg font-semibold text-gray-900">
+                                          ${(item.price / 100).toFixed(0)}
+                                        </span>
+                                      </div>
+                                      <div className="text-xs text-gray-500 mt-1">
+                                        ${((item.wholesalePrice || (item.price - SERVICE_FEE_CENTS)) / 100).toFixed(0)} site + $79 content
+                                      </div>
+                                    </div>
+                                  </div>
+                                </div>
+                              ))}
+                            </div>
+                            
+                            {/* Desktop Table for Grouped View - Large Screens Only */}
+                            <div className="hidden xl:block">
+                              <table className="w-full">
                               <tbody className="divide-y divide-gray-100">
                                 {items.map((item, index) => (
                                   <tr key={item.id} className="hover:bg-gray-50">
@@ -1771,9 +2067,10 @@ export default function EditOrderPage({ params }: { params: Promise<{ id: string
                                     </td>
                                   </tr>
                                 ))}
-                              </tbody>
-                            </table>
-                          </div>
+                                </tbody>
+                              </table>
+                            </div>
+                          </>
                         )}
                       </div>
                     );
@@ -1787,10 +2084,31 @@ export default function EditOrderPage({ params }: { params: Promise<{ id: string
         
         {/* Fixed Bottom Bar */}
         <div className="bg-white border-t border-gray-200 shadow-lg">
-          <div className="px-4 md:px-6 py-4">
-            <div className="flex flex-col md:flex-row items-center justify-between gap-4">
-              {/* Left Side - Order Summary Stats and Package Selection */}
-              <div className="flex flex-col md:flex-row items-center gap-4 md:space-x-6 w-full md:w-auto">
+          <div className="px-3 sm:px-4 md:px-6 py-3 sm:py-4">
+            <div className="flex flex-col sm:flex-row items-center justify-between gap-3 sm:gap-4">
+              {/* Mobile: Compact Stats */}
+              <div className="flex sm:hidden items-center justify-around w-full text-xs">
+                <div className="flex items-center space-x-1">
+                  <Building className="h-3 w-3 text-gray-400" />
+                  <span className="font-medium text-gray-900">{getTotalClients()}</span>
+                  <span className="text-gray-500">brands</span>
+                </div>
+                <div className="flex items-center space-x-1">
+                  <LinkIcon className="h-3 w-3 text-gray-400" />
+                  <span className="font-medium text-gray-900">{getTotalLinks()}</span>
+                  <span className="text-gray-500">links</span>
+                </div>
+                <div className="flex items-center space-x-1">
+                  <Target className="h-3 w-3 text-gray-400" />
+                  <span className="font-medium text-gray-900">
+                    {new Set(lineItems.map(item => item.targetPageId).filter(Boolean)).size}
+                  </span>
+                  <span className="text-gray-500">targets</span>
+                </div>
+              </div>
+              
+              {/* Desktop: Full Stats */}
+              <div className="hidden sm:flex flex-col md:flex-row items-center gap-4 md:space-x-6 w-full md:w-auto">
                 <div className="hidden md:flex items-center space-x-4">
                   <span className="text-sm font-medium text-gray-700">Pricing:</span>
                   <div className="flex items-center space-x-2 bg-green-50 px-3 py-1.5 rounded-lg">
@@ -1826,28 +2144,28 @@ export default function EditOrderPage({ params }: { params: Promise<{ id: string
               </div>
               
               {/* Right Side - Total and Continue */}
-              <div className="flex items-center space-x-4 md:space-x-6 w-full md:w-auto">
-                <div className="text-right">
-                  <p className="text-sm text-gray-500">Total Investment</p>
-                  <p className="text-2xl font-bold text-gray-900">{formatCurrency(total)}</p>
-                  <p className="text-xs text-gray-400">Site costs + strategic SEO content creation</p>
+              <div className="flex items-center justify-between sm:justify-end space-x-3 sm:space-x-4 md:space-x-6 w-full sm:w-auto">
+                <div className="text-left sm:text-right">
+                  <p className="text-xs sm:text-sm text-gray-500">Total</p>
+                  <p className="text-xl sm:text-2xl font-bold text-gray-900">{formatCurrency(total)}</p>
+                  <p className="text-xs text-gray-400 hidden sm:block">Site costs + strategic SEO content creation</p>
                 </div>
                 
-                <div className="flex items-center gap-3">
+                <div className="flex items-center gap-2 sm:gap-3">
                   <Link
                     href={isNewOrder ? '/orders' : `/orders/${draftOrderId || ''}`}
-                    className="px-4 md:px-6 py-2 md:py-3 border border-gray-300 text-gray-700 font-medium rounded-lg hover:bg-gray-50 
-                             transition-colors flex items-center"
+                    className="px-3 sm:px-4 md:px-6 py-2 sm:py-2 md:py-3 border border-gray-300 text-gray-700 font-medium text-xs sm:text-sm 
+                             rounded-lg hover:bg-gray-50 transition-colors flex items-center"
                   >
                     Cancel
                   </Link>
                   <button
                     onClick={handleSubmit}
                     disabled={lineItems.length === 0 || lineItems.some(item => !item.clientId)}
-                    className="px-4 md:px-6 py-2 md:py-3 bg-blue-600 text-white font-medium rounded-lg hover:bg-blue-700 
-                             transition-colors flex items-center disabled:bg-gray-300 disabled:cursor-not-allowed"
+                    className="px-3 sm:px-4 md:px-6 py-2 sm:py-2 md:py-3 bg-blue-600 text-white font-medium text-xs sm:text-sm 
+                             rounded-lg hover:bg-blue-700 transition-colors flex items-center disabled:bg-gray-300 disabled:cursor-not-allowed"
                   >
-                    <CheckCircle className="h-5 w-5 mr-2" />
+                    <CheckCircle className="h-4 sm:h-5 w-4 sm:w-5 mr-1 sm:mr-2" />
                     <span className="hidden md:inline">
                       {isNewOrder ? 'Review & Submit Order' : 
                        orderStatus === 'pending_confirmation' ? 'Resubmit for Review' :
@@ -1887,10 +2205,10 @@ export default function EditOrderPage({ params }: { params: Promise<{ id: string
         {/* Order Confirmation Modal */}
         {showConfirmModal && (
           <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4">
-            <div className="bg-white rounded-lg max-w-2xl w-full max-h-[90vh] overflow-y-auto">
-              <div className="p-6">
-                <div className="flex items-center justify-between mb-6">
-                  <h2 className="text-2xl font-bold text-gray-900">
+            <div className="bg-white rounded-lg max-w-2xl w-full max-h-[85vh] sm:max-h-[90vh] overflow-y-auto">
+              <div className="p-4 sm:p-6">
+                <div className="flex items-center justify-between mb-4 sm:mb-6">
+                  <h2 className="text-lg sm:text-2xl font-bold text-gray-900">
                     {isNewOrder ? 'Confirm Your Order' : 
                      orderStatus === 'pending_confirmation' ? 'Resubmit Order for Review' :
                      orderStatus === 'confirmed' ? 'Request Order Changes' :
@@ -1898,9 +2216,9 @@ export default function EditOrderPage({ params }: { params: Promise<{ id: string
                   </h2>
                   <button
                     onClick={() => setShowConfirmModal(false)}
-                    className="text-gray-400 hover:text-gray-600"
+                    className="text-gray-400 hover:text-gray-600 p-1"
                   >
-                    <X className="h-6 w-6" />
+                    <X className="h-5 sm:h-6 w-5 sm:w-6" />
                   </button>
                 </div>
                 

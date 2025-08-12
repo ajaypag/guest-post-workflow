@@ -330,12 +330,12 @@ export default function PricingEstimator({ className = '', onEstimateChange, ini
         <button
           ref={buttonRef}
           onClick={handleToggle}
-          className="w-full flex items-center justify-between px-3 py-2 bg-white border border-gray-300 rounded-md text-sm hover:border-blue-400 hover:bg-blue-50 transition-all focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
+          className="w-full flex items-center justify-between px-2 sm:px-3 py-1.5 sm:py-2 bg-white border border-gray-300 rounded-md text-xs sm:text-sm hover:border-blue-400 hover:bg-blue-50 transition-all focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
           aria-haspopup="listbox"
           aria-expanded={isOpen}
         >
           <span className="font-medium text-gray-900 truncate pr-1" title={displayValue}>{displayValue}</span>
-          <ChevronDown className={`h-4 w-4 text-gray-400 flex-shrink-0 ml-2 transition-transform ${isOpen ? 'rotate-180' : ''}`} />
+          <ChevronDown className={`h-3 w-3 sm:h-4 sm:w-4 text-gray-400 flex-shrink-0 ml-1 sm:ml-2 transition-transform ${isOpen ? 'rotate-180' : ''}`} />
         </button>
         
         {isOpen && (
@@ -404,53 +404,53 @@ export default function PricingEstimator({ className = '', onEstimateChange, ini
 
   return (
     <div className={`bg-white border-b border-gray-200 ${className}`}>
-      <div className="px-6 py-4">
+      <div className="px-4 sm:px-6 py-3 sm:py-4">
         {/* Pricing Preferences Header with Clear Explanation */}
-        <div className="flex items-center justify-between mb-4">
-          <div className="flex items-center gap-6">
-            <div className="flex items-center gap-3">
-              <TrendingUp className="h-6 w-6 text-blue-600" />
+        <div className="flex flex-col lg:flex-row lg:items-center lg:justify-between gap-3 mb-3 sm:mb-4">
+          <div className="flex flex-col sm:flex-row sm:items-center gap-3 sm:gap-6">
+            <div className="flex items-center gap-2 sm:gap-3">
+              <TrendingUp className="h-5 w-5 sm:h-6 sm:w-6 text-blue-600" />
               <div>
-                <h2 className="text-lg font-semibold text-gray-900">Your Pricing Preferences</h2>
-                <p className="text-sm text-gray-600 mt-0.5">Help us understand your budget and site preferences to find the best matches</p>
+                <h2 className="text-base sm:text-lg font-semibold text-gray-900">Your Pricing Preferences</h2>
+                <p className="text-xs sm:text-sm text-gray-600 mt-0.5 hidden sm:block">Help us understand your budget and site preferences to find the best matches</p>
               </div>
             </div>
             
             {loading ? (
               <div className="flex items-center gap-2 text-gray-500">
                 <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-blue-600"></div>
-                <span className="text-sm">Finding sites that match your preferences...</span>
+                <span className="text-xs sm:text-sm">Finding sites...</span>
               </div>
             ) : estimate ? (
-              <div className="bg-green-50 border border-green-200 rounded-lg px-4 py-3">
-                <div className="flex items-center gap-6 text-sm">
+              <div className="bg-green-50 border border-green-200 rounded-lg px-3 sm:px-4 py-2 sm:py-3">
+                <div className="flex flex-col sm:flex-row sm:items-center gap-2 sm:gap-6 text-xs sm:text-sm">
                   <div className="flex items-center gap-2">
-                    <div className="w-3 h-3 bg-green-500 rounded-full"></div>
+                    <div className="w-2 sm:w-3 h-2 sm:h-3 bg-green-500 rounded-full"></div>
                     <span className="font-semibold text-gray-900">
-                      {estimate.count.toLocaleString()} sites match your preferences
+                      {estimate.count.toLocaleString()} sites match
                     </span>
                   </div>
-                  <div className="text-gray-600">
-                    Typical price: <span className="font-medium text-gray-900">{formatCurrency(estimate.clientMedian)}</span>
+                  <div className="text-gray-600 hidden sm:block">
+                    Typical: <span className="font-medium text-gray-900">{formatCurrency(estimate.clientMedian)}</span>
                     <span className="text-xs text-gray-500 ml-1">(site + content)</span>
                   </div>
-                  <div className="text-gray-600">
-                    Price range: <span className="font-medium text-gray-900">{formatCurrency(estimate.clientMin)} - {formatCurrency(estimate.clientMax)}</span>
+                  <div className="text-gray-600 hidden lg:block">
+                    Range: <span className="font-medium text-gray-900">{formatCurrency(estimate.clientMin)} - {formatCurrency(estimate.clientMax)}</span>
                   </div>
                 </div>
               </div>
             ) : (
-              <span className="text-sm text-gray-500">Set your preferences to see available sites and pricing</span>
+              <span className="text-xs sm:text-sm text-gray-500 hidden sm:inline">Set your preferences to see available sites and pricing</span>
             )}
           </div>
         </div>
 
-        {/* Enhanced Filter Controls */}
-        <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-6 gap-3">
-          <div className="space-y-2">
-            <label className="text-xs font-medium text-gray-500 uppercase tracking-wide">
-              Price Range
-              <span className="ml-1 text-blue-500" title="Total cost per link including site cost + $79 content package">ⓘ</span>
+        {/* Enhanced Filter Controls - Responsive Grid */}
+        <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-6 gap-2 sm:gap-3">
+          <div className="space-y-1 sm:space-y-2">
+            <label className="text-xs font-medium text-gray-500 uppercase tracking-wide flex items-center">
+              <span className="truncate">Price Range</span>
+              <span className="ml-1 text-blue-500 hidden sm:inline" title="Total cost per link including site cost + $79 content package">ⓘ</span>
             </label>
             <FilterDropdown
               label=""
@@ -468,10 +468,10 @@ export default function PricingEstimator({ className = '', onEstimateChange, ini
             />
           </div>
           
-          <div className="space-y-2">
-            <label className="text-xs font-medium text-gray-500 uppercase tracking-wide">
-              Domain Authority (DR)
-              <span className="ml-1 text-blue-500" title="Site authority score from Ahrefs (higher = more authoritative)">ⓘ</span>
+          <div className="space-y-1 sm:space-y-2">
+            <label className="text-xs font-medium text-gray-500 uppercase tracking-wide flex items-center">
+              <span className="truncate">DR</span>
+              <span className="ml-1 text-blue-500 hidden sm:inline" title="Site authority score from Ahrefs (higher = more authoritative)">ⓘ</span>
             </label>
             <FilterDropdown
               label=""
@@ -489,10 +489,10 @@ export default function PricingEstimator({ className = '', onEstimateChange, ini
             />
           </div>
           
-          <div className="space-y-2">
-            <label className="text-xs font-medium text-gray-500 uppercase tracking-wide">
-              Monthly Traffic
-              <span className="ml-1 text-blue-500" title="Estimated monthly visitors to the website">ⓘ</span>
+          <div className="space-y-1 sm:space-y-2">
+            <label className="text-xs font-medium text-gray-500 uppercase tracking-wide flex items-center">
+              <span className="truncate">Traffic</span>
+              <span className="ml-1 text-blue-500 hidden sm:inline" title="Estimated monthly visitors to the website">ⓘ</span>
             </label>
             <FilterDropdown
               label=""
@@ -506,10 +506,10 @@ export default function PricingEstimator({ className = '', onEstimateChange, ini
             />
           </div>
           
-          <div className="space-y-2">
-            <label className="text-xs font-medium text-gray-500 uppercase tracking-wide">
-              Industry/Category
-              <span className="ml-1 text-blue-500" title="Prefer sites in specific industries or any category">ⓘ</span>
+          <div className="space-y-1 sm:space-y-2 col-span-2 sm:col-span-1">
+            <label className="text-xs font-medium text-gray-500 uppercase tracking-wide flex items-center">
+              <span className="truncate">Category</span>
+              <span className="ml-1 text-blue-500 hidden sm:inline" title="Prefer sites in specific industries or any category">ⓘ</span>
             </label>
             <FilterDropdown
               label=""
@@ -519,10 +519,10 @@ export default function PricingEstimator({ className = '', onEstimateChange, ini
             />
           </div>
           
-          <div className="space-y-2">
-            <label className="text-xs font-medium text-gray-500 uppercase tracking-wide">
-              Topic/Niche
-              <span className="ml-1 text-blue-500" title="Preferred content topics and niches">ⓘ</span>
+          <div className="space-y-1 sm:space-y-2 hidden sm:block">
+            <label className="text-xs font-medium text-gray-500 uppercase tracking-wide flex items-center">
+              <span className="truncate">Topic/Niche</span>
+              <span className="ml-1 text-blue-500 hidden lg:inline" title="Preferred content topics and niches">ⓘ</span>
             </label>
             <FilterDropdown
               label=""
@@ -532,10 +532,10 @@ export default function PricingEstimator({ className = '', onEstimateChange, ini
             />
           </div>
           
-          <div className="space-y-2">
-            <label className="text-xs font-medium text-gray-500 uppercase tracking-wide">
-              Site Type
-              <span className="ml-1 text-blue-500" title="Type of website (blog, news site, business site, etc.)">ⓘ</span>
+          <div className="space-y-1 sm:space-y-2 hidden lg:block">
+            <label className="text-xs font-medium text-gray-500 uppercase tracking-wide flex items-center">
+              <span className="truncate">Site Type</span>
+              <span className="ml-1 text-blue-500 hidden xl:inline" title="Type of website (blog, news site, business site, etc.)">ⓘ</span>
             </label>
             <FilterDropdown
               label=""
