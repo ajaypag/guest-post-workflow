@@ -300,12 +300,21 @@ export default function QuickStartFlow({ session }: QuickStartFlowProps) {
               )}
 
               {brandDomain && (
-                <div className="p-4 bg-blue-50 border border-blue-200 rounded-lg">
-                  <p className="text-sm text-blue-900">
-                    <span className="font-medium">Brand detected:</span> {brandName}
-                  </p>
-                  <p className="text-xs text-blue-700 mt-1">
-                    We'll create a brand profile for {brandDomain}
+                <div className="p-4 bg-blue-50 border border-blue-200 rounded-lg space-y-3">
+                  <div>
+                    <label className="block text-sm font-medium text-blue-900 mb-1">
+                      Brand Name
+                    </label>
+                    <input
+                      type="text"
+                      value={brandName}
+                      onChange={(e) => setBrandName(e.target.value)}
+                      placeholder="Enter your brand name"
+                      className="w-full px-3 py-2 bg-white border border-blue-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 text-sm"
+                    />
+                  </div>
+                  <p className="text-xs text-blue-700">
+                    <span className="font-medium">Website:</span> {brandDomain} (auto-detected from your URL)
                   </p>
                 </div>
               )}
