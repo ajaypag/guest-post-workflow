@@ -4,7 +4,8 @@ import React, { useState, useEffect } from 'react';
 import { 
   BarChart3, TrendingUp, TrendingDown, AlertTriangle,
   CheckCircle, XCircle, Clock, Package, DollarSign,
-  Target, Users, ChevronDown, ChevronRight, RefreshCw
+  Target, Users, ChevronDown, ChevronRight, RefreshCw,
+  AlertCircle
 } from 'lucide-react';
 import { formatCurrency } from '@/lib/utils/formatting';
 
@@ -339,84 +340,122 @@ export default function BenchmarkDisplay({
 
       {/* Original Constraints vs Current Selection */}
       {benchmark.benchmarkData?.originalConstraints && (
-        <div className="bg-white border rounded-lg">
+        <div className="bg-white rounded-xl border border-gray-100/60 shadow-sm hover:shadow-md transition-all duration-200">
           <button
             onClick={() => setShowComparison(!showComparison)}
-            className="w-full p-3 sm:p-4 flex items-center justify-between hover:bg-gray-50 rounded-lg transition-colors touch-manipulation min-h-[44px]"
+            className="w-full p-3 sm:p-4 flex items-center justify-between hover:bg-gray-50/50 rounded-xl transition-all duration-200 touch-manipulation min-h-[44px] group"
           >
-            <div className="flex flex-col sm:flex-row sm:items-center gap-1 sm:gap-2 text-left">
+            <div className="flex flex-col sm:flex-row sm:items-center gap-1 sm:gap-3 text-left">
               <div className="flex items-center gap-2">
-                <Target className="h-3 w-3 sm:h-4 sm:w-4 text-gray-600" />
-                <h4 className="text-sm sm:text-base font-semibold">Request vs Selection</h4>
+                <div className="p-1.5 bg-gradient-to-br from-orange-50 to-red-50 rounded-lg border border-orange-100/30 group-hover:shadow-sm transition-all duration-200">
+                  <Target className="h-4 w-4 text-orange-600" />
+                </div>
+                <h4 className="text-sm sm:text-base font-semibold text-gray-900 group-hover:text-gray-700 transition-colors">Request vs Selection</h4>
               </div>
               {comparison && (
-                <span className={`text-xs px-2 py-0.5 sm:py-1 rounded inline-block ${
-                  comparison.comparisonData.completionPercentage >= 100 ? 'bg-green-100 text-green-700' :
-                  comparison.comparisonData.completionPercentage >= 50 ? 'bg-yellow-100 text-yellow-700' : 
-                  'bg-red-100 text-red-700'
+                <span className={`inline-flex items-center px-2.5 py-1 text-xs font-medium rounded-full border ${
+                  comparison.comparisonData.completionPercentage >= 100 ? 'bg-green-50 text-green-700 border-green-200/50' :
+                  comparison.comparisonData.completionPercentage >= 50 ? 'bg-yellow-50 text-yellow-700 border-yellow-200/50' : 
+                  'bg-red-50 text-red-700 border-red-200/50'
                 }`}>
+                  <span className={`w-1.5 h-1.5 rounded-full mr-1.5 ${
+                    comparison.comparisonData.completionPercentage >= 100 ? 'bg-green-500' :
+                    comparison.comparisonData.completionPercentage >= 50 ? 'bg-yellow-500' :
+                    'bg-red-500'
+                  }`}></span>
                   {comparison.comparisonData.completionPercentage}% Complete
                 </span>
               )}
             </div>
-            <ChevronDown className={`h-3 w-3 sm:h-4 sm:w-4 transition-transform flex-shrink-0 ${showComparison ? 'rotate-180' : ''}`} />
+            <ChevronDown className={`h-4 w-4 transition-transform flex-shrink-0 text-gray-400 group-hover:text-gray-600 ${showComparison ? 'rotate-180' : ''}`} />
           </button>
           
           {showComparison && (
             <div className="px-3 sm:px-4 pb-3 sm:pb-4 border-t mt-1">
               <div className="space-y-3 sm:grid sm:grid-cols-2 sm:gap-4 sm:space-y-0 text-xs sm:text-sm">
-                {/* Price Comparison - Mobile Card Style */}
+                {/* Price Comparison - Modern Card Style */}
                 {benchmark.benchmarkData.originalConstraints.estimatedPricePerLink && (
-                  <div className="bg-gray-50 rounded-lg p-2 sm:p-3">
-                    <div className="font-medium text-gray-900 mb-1 sm:mb-2">Target Price per Link</div>
-                    <div className="space-y-1">
-                      <div className="text-gray-500">
-                        <span className="text-xs">Requested:</span> {formatCurrency(benchmark.benchmarkData.originalConstraints.estimatedPricePerLink)}
+                  <div className="group bg-white rounded-xl border border-gray-100 p-3 sm:p-4 hover:shadow-md transition-all duration-200">
+                    <div className="flex items-center gap-2 mb-3">
+                      <div className="p-1.5 bg-gradient-to-br from-green-50 to-emerald-50 rounded-lg border border-green-100/30">
+                        <DollarSign className="h-3 w-3 sm:h-4 sm:w-4 text-green-600" />
                       </div>
-                      <div className="font-medium text-gray-900">
-                        <span className="text-xs">Current:</span> {
+                      <div className="font-semibold text-gray-900">Target Price per Link</div>
+                    </div>
+                    <div className="space-y-2">
+                      <div className="flex justify-between items-center">
+                        <span className="text-xs font-medium text-gray-500">Requested:</span>
+                        <span className="font-medium text-gray-900">{formatCurrency(benchmark.benchmarkData.originalConstraints.estimatedPricePerLink)}</span>
+                      </div>
+                      <div className="flex justify-between items-center">
+                        <span className="text-xs font-medium text-gray-500">Current:</span>
+                        <span className={`font-semibold ${
+                          comparison?.comparisonData?.deliveredLinks && comparison.comparisonData.deliveredLinks > 0
+                            ? 'text-green-600'
+                            : 'text-gray-400'
+                        }`}>{
                           comparison?.comparisonData?.deliveredLinks && comparison.comparisonData.deliveredLinks > 0
                             ? formatCurrency((comparison.comparisonData.actualRevenue || 0) / comparison.comparisonData.deliveredLinks)
                             : 'No sites selected'
-                        }
+                        }</span>
                       </div>
                     </div>
                   </div>
                 )}
                 
-                {/* Links Comparison - Mobile Card Style */}
+                {/* Links Comparison - Modern Card Style */}
                 {benchmark.benchmarkData.totalRequestedLinks && (
-                  <div className="bg-gray-50 rounded-lg p-2 sm:p-3">
-                    <div className="font-medium text-gray-900 mb-1 sm:mb-2">Number of Links</div>
-                    <div className="space-y-1">
-                      <div className="text-gray-500">
-                        <span className="text-xs">Requested:</span> {benchmark.benchmarkData.totalRequestedLinks}
+                  <div className="group bg-white rounded-xl border border-gray-100 p-3 sm:p-4 hover:shadow-md transition-all duration-200">
+                    <div className="flex items-center gap-2 mb-3">
+                      <div className="p-1.5 bg-gradient-to-br from-blue-50 to-indigo-50 rounded-lg border border-blue-100/30">
+                        <Package className="h-3 w-3 sm:h-4 sm:w-4 text-blue-600" />
                       </div>
-                      <div className="font-medium text-gray-900">
-                        <span className="text-xs">Current:</span> {comparison?.comparisonData?.deliveredLinks || 0} links
+                      <div className="font-semibold text-gray-900">Number of Links</div>
+                    </div>
+                    <div className="space-y-2">
+                      <div className="flex justify-between items-center">
+                        <span className="text-xs font-medium text-gray-500">Requested:</span>
+                        <span className="font-medium text-gray-900">{benchmark.benchmarkData.totalRequestedLinks}</span>
+                      </div>
+                      <div className="flex justify-between items-center">
+                        <span className="text-xs font-medium text-gray-500">Current:</span>
+                        <span className={`font-semibold ${
+                          (comparison?.comparisonData?.deliveredLinks || 0) > 0 ? 'text-blue-600' : 'text-gray-400'
+                        }`}>{comparison?.comparisonData?.deliveredLinks || 0} links</span>
                       </div>
                     </div>
                   </div>
                 )}
                 
-                {/* DR Range - Mobile Card Style */}
+                {/* DR Range - Modern Card Style */}
                 {benchmark.benchmarkData.originalConstraints.drRange.length > 0 && (
-                  <div className="bg-gray-50 rounded-lg p-2 sm:p-3">
-                    <div className="font-medium text-gray-900 mb-1 sm:mb-2">Domain Rating</div>
-                    <div className="space-y-1">
-                      <div className="text-gray-500">
-                        <span className="text-xs">Requested:</span> {benchmark.benchmarkData.originalConstraints.drRange.length === 2
-                          ? `${benchmark.benchmarkData.originalConstraints.drRange[0]} - ${benchmark.benchmarkData.originalConstraints.drRange[1]}`
-                          : `${benchmark.benchmarkData.originalConstraints.drRange[0]}+`}
+                  <div className="group bg-white rounded-xl border border-gray-100 p-3 sm:p-4 hover:shadow-md transition-all duration-200">
+                    <div className="flex items-center gap-2 mb-3">
+                      <div className="p-1.5 bg-gradient-to-br from-purple-50 to-violet-50 rounded-lg border border-purple-100/30">
+                        <TrendingUp className="h-3 w-3 sm:h-4 sm:w-4 text-purple-600" />
                       </div>
-                      <div className="font-medium text-gray-900">
-                        <span className="text-xs">Current:</span> {comparison?.comparisonData?.drRange && comparison.comparisonData.drRange.length > 0 ? (
-                          comparison.comparisonData.drRange.length === 2 ?
-                            `${comparison.comparisonData.drRange[0]} - ${comparison.comparisonData.drRange[1]}` :
-                            `${comparison.comparisonData.drRange[0]}+`
-                        ) : (
-                          <span className="text-gray-400 italic">Selection pending</span>
-                        )}
+                      <div className="font-semibold text-gray-900">Domain Rating</div>
+                    </div>
+                    <div className="space-y-2">
+                      <div className="flex justify-between items-center">
+                        <span className="text-xs font-medium text-gray-500">Requested:</span>
+                        <span className="font-medium text-gray-900">{benchmark.benchmarkData.originalConstraints.drRange.length === 2
+                          ? `${benchmark.benchmarkData.originalConstraints.drRange[0]} - ${benchmark.benchmarkData.originalConstraints.drRange[1]}`
+                          : `${benchmark.benchmarkData.originalConstraints.drRange[0]}+`}</span>
+                      </div>
+                      <div className="flex justify-between items-center">
+                        <span className="text-xs font-medium text-gray-500">Current:</span>
+                        <span className={`font-semibold ${
+                          comparison?.comparisonData?.drRange && comparison.comparisonData.drRange.length > 0 ? 'text-purple-600' : 'text-gray-400'
+                        }`}>
+                          {comparison?.comparisonData?.drRange && comparison.comparisonData.drRange.length > 0 ? (
+                            comparison.comparisonData.drRange.length === 2 ?
+                              `${comparison.comparisonData.drRange[0]} - ${comparison.comparisonData.drRange[1]}` :
+                              `${comparison.comparisonData.drRange[0]}+`
+                          ) : (
+                            'Selection pending'
+                          )}
+                        </span>
                       </div>
                     </div>
                   </div>
@@ -514,21 +553,23 @@ export default function BenchmarkDisplay({
       {/* Comparison Section */}
 
       {/* Detailed Breakdown */}
-      <div className="bg-white border rounded-lg">
+      <div className="bg-white rounded-xl border border-gray-100/60 shadow-sm hover:shadow-md transition-all duration-200">
         <button
           onClick={() => setShowBenchmarkDetails(!showBenchmarkDetails)}
-          className="w-full p-3 sm:p-4 flex items-center justify-between hover:bg-gray-50 rounded-lg transition-colors touch-manipulation min-h-[44px]"
+          className="w-full p-3 sm:p-4 flex items-center justify-between hover:bg-gray-50/50 rounded-xl transition-all duration-200 touch-manipulation min-h-[44px] group"
         >
-          <div className="flex flex-col sm:flex-row sm:items-center gap-1 sm:gap-2 text-left">
+          <div className="flex flex-col sm:flex-row sm:items-center gap-1 sm:gap-3 text-left">
             <div className="flex items-center gap-2">
-              <Package className="h-3 w-3 sm:h-4 sm:w-4 text-gray-600" />
-              <h4 className="text-sm sm:text-base font-semibold">Benchmark Details</h4>
+              <div className="p-1.5 bg-gradient-to-br from-indigo-50 to-blue-50 rounded-lg border border-indigo-100/30 group-hover:shadow-sm transition-all duration-200">
+                <Package className="h-4 w-4 text-indigo-600" />
+              </div>
+              <h4 className="text-sm sm:text-base font-semibold text-gray-900 group-hover:text-gray-700 transition-colors">Benchmark Details</h4>
             </div>
-            <span className="text-xs text-gray-500">
-              ({benchmark.benchmarkData?.clientGroups?.length || 0} client{benchmark.benchmarkData?.clientGroups?.length !== 1 ? 's' : ''})
+            <span className="inline-flex items-center px-2 py-1 text-xs font-medium bg-gray-50 text-gray-600 rounded-full border border-gray-200/50">
+              {benchmark.benchmarkData?.clientGroups?.length || 0} client{benchmark.benchmarkData?.clientGroups?.length !== 1 ? 's' : ''}
             </span>
           </div>
-          <ChevronDown className={`h-3 w-3 sm:h-4 sm:w-4 transition-transform flex-shrink-0 ${showBenchmarkDetails ? 'rotate-180' : ''}`} />
+          <ChevronDown className={`h-4 w-4 transition-transform flex-shrink-0 text-gray-400 group-hover:text-gray-600 ${showBenchmarkDetails ? 'rotate-180' : ''}`} />
         </button>
         
         {showBenchmarkDetails && benchmark.benchmarkData?.clientGroups && (
@@ -539,40 +580,53 @@ export default function BenchmarkDisplay({
               );
               
               return (
-                <div key={group.clientId} className="border rounded-lg mb-2">
+                <div key={group.clientId} className="bg-white border border-gray-100 rounded-xl mb-3 shadow-sm hover:shadow-md transition-all duration-200">
                   <button 
-                    className="w-full p-2 sm:p-3 bg-gray-50 flex flex-col sm:flex-row sm:items-center sm:justify-between cursor-pointer hover:bg-gray-100 rounded-t-lg transition-colors touch-manipulation min-h-[44px]"
+                    className="w-full p-3 sm:p-4 flex flex-col sm:flex-row sm:items-center sm:justify-between cursor-pointer hover:bg-gray-50/50 rounded-xl transition-all duration-200 touch-manipulation min-h-[44px] group"
                     onClick={() => toggleClient(group.clientId)}
                   >
-                    <div className="flex items-center gap-2">
-                      {expandedClients.has(group.clientId) ? <ChevronDown className="h-3 w-3 sm:h-4 sm:w-4" /> : <ChevronRight className="h-3 w-3 sm:h-4 sm:w-4" />}
-                      <span className="text-sm sm:text-base font-medium">{group.clientName}</span>
+                    <div className="flex items-center gap-3">
+                      <div className="p-1 bg-gradient-to-br from-blue-50 to-indigo-50 rounded-lg border border-blue-100/30 group-hover:shadow-sm transition-all duration-200">
+                        {expandedClients.has(group.clientId) ? <ChevronDown className="h-3 w-3 sm:h-4 sm:w-4 text-blue-600" /> : <ChevronRight className="h-3 w-3 sm:h-4 sm:w-4 text-blue-600" />}
+                      </div>
+                      <span className="text-sm sm:text-base font-semibold text-gray-900 group-hover:text-gray-700 transition-colors">{group.clientName}</span>
                     </div>
-                    <div className="text-xs sm:text-sm mt-1 sm:mt-0">
+                    <div className="text-xs sm:text-sm mt-1 sm:mt-0 flex flex-wrap gap-2">
                       {clientComparison ? (
-                        <span>
-                          {clientComparison.delivered}/{group.linkCount} delivered
+                        <>
+                          <span className="inline-flex items-center px-2 py-1 bg-green-50 text-green-700 rounded-full border border-green-200/50 font-medium">
+                            {clientComparison.delivered}/{group.linkCount} delivered
+                          </span>
                           {clientComparison.inProgress > 0 && (
-                            <span className="text-yellow-600 ml-2">
-                              ({clientComparison.inProgress} in progress)
+                            <span className="inline-flex items-center px-2 py-1 bg-yellow-50 text-yellow-700 rounded-full border border-yellow-200/50 font-medium">
+                              {clientComparison.inProgress} in progress
                             </span>
                           )}
-                        </span>
+                        </>
                       ) : (
-                        <span>{group.linkCount} links</span>
+                        <span className="inline-flex items-center px-2 py-1 bg-gray-50 text-gray-600 rounded-full border border-gray-200/50 font-medium">
+                          {group.linkCount} links
+                        </span>
                       )}
                     </div>
                   </button>
                   
                   {expandedClients.has(group.clientId) && (
-                    <div className="p-2 sm:p-3">
+                    <div className="px-3 sm:px-4 pb-3 sm:pb-4 border-t border-gray-100">
                       {group.originalRequest && (
-                        <div className="bg-blue-50 border border-blue-200 rounded-lg p-2 mb-2 sm:mb-3">
-                          <div className="text-xs sm:text-sm text-blue-700">
-                            <strong>Client requested:</strong> {group.linkCount} links across {group.targetPages.length} target pages
-                          </div>
-                          <div className="text-xs text-blue-600 mt-1">
-                            No sites selected yet - awaiting internal team selection
+                        <div className="bg-gradient-to-r from-blue-50 to-indigo-50 border border-blue-200/60 rounded-xl p-3 mb-3 shadow-sm">
+                          <div className="flex items-start gap-2">
+                            <div className="p-1 bg-blue-100 rounded-lg">
+                              <AlertCircle className="h-3 w-3 text-blue-600" />
+                            </div>
+                            <div>
+                              <div className="text-xs sm:text-sm text-blue-700 font-medium">
+                                <strong>Client requested:</strong> {group.linkCount} links across {group.targetPages.length} target pages
+                              </div>
+                              <div className="text-xs text-blue-600 mt-1">
+                                No sites selected yet - awaiting internal team selection
+                              </div>
+                            </div>
                           </div>
                         </div>
                       )}
@@ -582,10 +636,14 @@ export default function BenchmarkDisplay({
                         );
                         
                         return (
-                          <div key={page.url} className="mb-2 sm:mb-3 bg-gray-50 rounded-lg p-2">
-                            <div className="text-xs sm:text-sm font-medium mb-1 break-all">
-                              <Target className="h-3 w-3 inline mr-1 flex-shrink-0" />
-                              {page.url}
+                          <div key={page.url} className="mb-2 sm:mb-3 bg-white border border-gray-100 rounded-xl p-3 shadow-sm hover:shadow-md transition-all duration-200">
+                            <div className="flex items-start gap-2 mb-2">
+                              <div className="p-1 bg-gradient-to-br from-orange-50 to-red-50 rounded-lg border border-orange-100/30 flex-shrink-0">
+                                <Target className="h-3 w-3 text-orange-600" />
+                              </div>
+                              <div className="text-xs sm:text-sm font-medium break-all text-gray-900">
+                                {page.url}
+                              </div>
                             </div>
                             
                             <div className="ml-4 text-xs sm:text-sm">
