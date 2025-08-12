@@ -175,30 +175,30 @@ export default function BenchmarkDisplay({
   };
 
   return (
-    <div className="space-y-4">
+    <div className="space-y-3 sm:space-y-4">
       {/* Benchmark Header */}
-      <div className="bg-white border rounded-lg p-4">
-        <div className="flex items-center justify-between mb-3">
-          <div className="flex items-center gap-3">
-            <BarChart3 className="h-5 w-5 text-blue-600" />
-            <h3 className="text-lg font-semibold">
+      <div className="bg-white border rounded-lg p-3 sm:p-4">
+        <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3 mb-3">
+          <div className="flex flex-wrap items-center gap-2 sm:gap-3">
+            <BarChart3 className="h-4 w-4 sm:h-5 sm:w-5 text-blue-600" />
+            <h3 className="text-base sm:text-lg font-semibold">
               {userType === 'account' ? 'Your Order Wishlist' : 
                benchmark.benchmarkData?.clientGroups?.some(g => g.originalRequest) ? 
                'Client\'s Original Request' : 'Order Benchmark'}
             </h3>
-            <span className="text-sm text-gray-500">v{benchmark.version}</span>
+            <span className="text-xs sm:text-sm text-gray-500">v{benchmark.version}</span>
             {benchmark.benchmarkData?.clientGroups?.some(g => g.originalRequest) && (
-              <span className="px-2 py-1 text-xs bg-blue-100 text-blue-700 rounded">
+              <span className="px-2 py-0.5 sm:py-1 text-xs bg-blue-100 text-blue-700 rounded">
                 Initial Request
               </span>
             )}
             {benchmark.captureReason === 'client_modified' && (
-              <span className="px-2 py-1 text-xs bg-purple-100 text-purple-700 rounded">
+              <span className="px-2 py-0.5 sm:py-1 text-xs bg-purple-100 text-purple-700 rounded">
                 Client Modified
               </span>
             )}
           </div>
-          <div className="flex items-center gap-2">
+          <div className="flex flex-wrap items-center gap-2">
             {/* Edit button for external users */}
             {canEdit && !editMode && (
               <button
@@ -206,10 +206,11 @@ export default function BenchmarkDisplay({
                   setEditMode(true);
                   setEditedBenchmark(JSON.parse(JSON.stringify(benchmark.benchmarkData)));
                 }}
-                className="px-3 py-1 text-sm bg-purple-600 text-white rounded hover:bg-purple-700 flex items-center gap-1"
+                className="inline-flex items-center px-2 sm:px-3 py-1.5 sm:py-2 text-xs sm:text-sm bg-purple-600 text-white rounded-md hover:bg-purple-700 min-h-[36px] sm:min-h-[40px]"
               >
-                <Target className="h-3 w-3" />
-                Edit Wishlist
+                <Target className="h-3 w-3 sm:h-4 sm:w-4 mr-1" />
+                <span className="hidden sm:inline">Edit Wishlist</span>
+                <span className="sm:hidden">Edit</span>
               </button>
             )}
             {/* Save/Cancel buttons in edit mode */}
@@ -222,16 +223,16 @@ export default function BenchmarkDisplay({
                     }
                     setEditMode(false);
                   }}
-                  className="px-3 py-1 text-sm bg-green-600 text-white rounded hover:bg-green-700"
+                  className="inline-flex items-center px-2 sm:px-3 py-1.5 sm:py-2 text-xs sm:text-sm bg-green-600 text-white rounded-md hover:bg-green-700 min-h-[36px] sm:min-h-[40px]"
                 >
-                  Save Changes
+                  Save
                 </button>
                 <button
                   onClick={() => {
                     setEditMode(false);
                     setEditedBenchmark(null);
                   }}
-                  className="px-3 py-1 text-sm bg-gray-600 text-white rounded hover:bg-gray-700"
+                  className="inline-flex items-center px-2 sm:px-3 py-1.5 sm:py-2 text-xs sm:text-sm bg-gray-600 text-white rounded-md hover:bg-gray-700 min-h-[36px] sm:min-h-[40px]"
                 >
                   Cancel
                 </button>
@@ -241,66 +242,69 @@ export default function BenchmarkDisplay({
             {canViewHistory && onViewHistory && (
               <button
                 onClick={onViewHistory}
-                className="px-3 py-1 text-sm bg-gray-600 text-white rounded hover:bg-gray-700 flex items-center gap-1"
+                className="inline-flex items-center px-2 sm:px-3 py-1.5 sm:py-2 text-xs sm:text-sm bg-gray-600 text-white rounded-md hover:bg-gray-700 min-h-[36px] sm:min-h-[40px]"
               >
-                <Clock className="h-3 w-3" />
-                History
+                <Clock className="h-3 w-3 sm:h-4 sm:w-4 mr-1" />
+                <span className="hidden sm:inline">History</span>
+                <span className="sm:hidden">History</span>
               </button>
             )}
             {canCreateComparison && (
               <button
                 onClick={handleCreateComparison}
                 disabled={loading}
-                className="px-3 py-1 text-sm bg-blue-600 text-white rounded hover:bg-blue-700 disabled:opacity-50 flex items-center gap-1"
+                className="inline-flex items-center px-2 sm:px-3 py-1.5 sm:py-2 text-xs sm:text-sm bg-blue-600 text-white rounded-md hover:bg-blue-700 disabled:opacity-50 min-h-[36px] sm:min-h-[40px]"
               >
-                <RefreshCw className={`h-3 w-3 ${loading ? 'animate-spin' : ''}`} />
-                Update Comparison
+                <RefreshCw className={`h-3 w-3 sm:h-4 sm:w-4 mr-1 ${loading ? 'animate-spin' : ''}`} />
+                <span className="hidden sm:inline">Update Comparison</span>
+                <span className="sm:hidden">Update</span>
               </button>
             )}
             {onRefresh && (
               <button
                 onClick={onRefresh}
-                className="p-1 hover:bg-gray-100 rounded"
+                className="p-1.5 sm:p-2 hover:bg-gray-100 rounded-md min-h-[36px] sm:min-h-[40px] min-w-[36px] sm:min-w-[40px]"
                 title="Refresh"
               >
-                <RefreshCw className="h-4 w-4" />
+                <RefreshCw className="h-3 w-3 sm:h-4 sm:w-4" />
               </button>
             )}
           </div>
         </div>
 
-        {/* Summary Stats */}
-        <div className="grid grid-cols-4 gap-4">
-          <div>
-            <div className="text-2xl font-bold">{benchmark.benchmarkData?.totalRequestedLinks || 0}</div>
-            <div className="text-sm text-gray-600">Total Links</div>
+        {/* Summary Stats - Responsive Grid */}
+        <div className="grid grid-cols-2 sm:grid-cols-4 gap-2 sm:gap-3 lg:gap-4">
+          <div className="bg-gray-50 rounded-lg p-2 sm:p-3">
+            <div className="text-lg sm:text-xl lg:text-2xl font-bold text-gray-900">{benchmark.benchmarkData?.totalRequestedLinks || 0}</div>
+            <div className="text-xs sm:text-sm text-gray-600">Total Links</div>
           </div>
-          <div>
-            <div className="text-2xl font-bold">
+          <div className="bg-gray-50 rounded-lg p-2 sm:p-3">
+            <div className="text-lg sm:text-xl lg:text-2xl font-bold text-gray-900 truncate">
               {benchmark.benchmarkData?.originalConstraints?.estimatedPricePerLink ? 
                 formatCurrency(benchmark.benchmarkData.originalConstraints.estimatedPricePerLink) : 
                 'TBD'}
             </div>
-            <div className="text-sm text-gray-600">Target Price/Link</div>
+            <div className="text-xs sm:text-sm text-gray-600">Price/Link</div>
           </div>
-          <div>
-            <div className="text-2xl font-bold">{benchmark.benchmarkData?.totalTargetPages || 0}</div>
-            <div className="text-sm text-gray-600">Target Pages</div>
+          <div className="bg-gray-50 rounded-lg p-2 sm:p-3">
+            <div className="text-lg sm:text-xl lg:text-2xl font-bold text-gray-900">{benchmark.benchmarkData?.totalTargetPages || 0}</div>
+            <div className="text-xs sm:text-sm text-gray-600">Target Pages</div>
           </div>
-          <div>
-            <div className="text-2xl font-bold">{formatCurrency(benchmark.benchmarkData?.orderTotal || 0)}</div>
-            <div className="text-sm text-gray-600">Total Value</div>
+          <div className="bg-gray-50 rounded-lg p-2 sm:p-3">
+            <div className="text-lg sm:text-xl lg:text-2xl font-bold text-gray-900 truncate">{formatCurrency(benchmark.benchmarkData?.orderTotal || 0)}</div>
+            <div className="text-xs sm:text-sm text-gray-600">Total Value</div>
           </div>
         </div>
 
-        <div className="flex items-center justify-between mt-4 pt-3 border-t">
+        <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between mt-3 sm:mt-4 pt-3 border-t gap-2">
           <div className="text-xs text-gray-500">
-            Captured on {new Date(benchmark.capturedAt).toLocaleDateString()} - {benchmark.captureReason.replace(/_/g, ' ')}
+            <span className="hidden sm:inline">Captured on {new Date(benchmark.capturedAt).toLocaleDateString()} - {benchmark.captureReason.replace(/_/g, ' ')}</span>
+            <span className="sm:hidden">{new Date(benchmark.capturedAt).toLocaleDateString('en-US', { month: 'short', day: 'numeric' })}</span>
           </div>
           
           {/* Quick Status */}
           {comparison && (
-            <div className="text-sm">
+            <div className="text-xs sm:text-sm">
               <span className="text-gray-600">Delivered: </span>
               <span className={`font-medium ${
                 comparison.comparisonData.completionPercentage >= 100 ? 'text-green-600' :
@@ -319,13 +323,15 @@ export default function BenchmarkDisplay({
         <div className="bg-white border rounded-lg">
           <button
             onClick={() => setShowComparison(!showComparison)}
-            className="w-full p-4 flex items-center justify-between hover:bg-gray-50 rounded-lg transition-colors"
+            className="w-full p-3 sm:p-4 flex items-center justify-between hover:bg-gray-50 rounded-lg transition-colors touch-manipulation min-h-[44px]"
           >
-            <div className="flex items-center gap-2">
-              <Target className="h-4 w-4" />
-              <h4 className="font-semibold">Original Request vs Current Selection</h4>
+            <div className="flex flex-col sm:flex-row sm:items-center gap-1 sm:gap-2 text-left">
+              <div className="flex items-center gap-2">
+                <Target className="h-3 w-3 sm:h-4 sm:w-4 text-gray-600" />
+                <h4 className="text-sm sm:text-base font-semibold">Request vs Selection</h4>
+              </div>
               {comparison && (
-                <span className={`text-xs px-2 py-1 rounded ${
+                <span className={`text-xs px-2 py-0.5 sm:py-1 rounded inline-block ${
                   comparison.comparisonData.completionPercentage >= 100 ? 'bg-green-100 text-green-700' :
                   comparison.comparisonData.completionPercentage >= 50 ? 'bg-yellow-100 text-yellow-700' : 
                   'bg-red-100 text-red-700'
@@ -334,22 +340,22 @@ export default function BenchmarkDisplay({
                 </span>
               )}
             </div>
-            <ChevronDown className={`h-4 w-4 transition-transform ${showComparison ? 'rotate-180' : ''}`} />
+            <ChevronDown className={`h-3 w-3 sm:h-4 sm:w-4 transition-transform flex-shrink-0 ${showComparison ? 'rotate-180' : ''}`} />
           </button>
           
           {showComparison && (
-            <div className="px-4 pb-4 border-t mt-1">
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-4 text-sm">
-                {/* Price Comparison */}
+            <div className="px-3 sm:px-4 pb-3 sm:pb-4 border-t mt-1">
+              <div className="space-y-3 sm:grid sm:grid-cols-2 sm:gap-4 sm:space-y-0 text-xs sm:text-sm">
+                {/* Price Comparison - Mobile Card Style */}
                 {benchmark.benchmarkData.originalConstraints.estimatedPricePerLink && (
-                  <div className="flex justify-between">
-                    <span className="text-gray-600">Target Price per Link:</span>
-                    <div className="text-right">
+                  <div className="bg-gray-50 rounded-lg p-2 sm:p-3">
+                    <div className="font-medium text-gray-900 mb-1 sm:mb-2">Target Price per Link</div>
+                    <div className="space-y-1">
                       <div className="text-gray-500">
-                        Requested: {formatCurrency(benchmark.benchmarkData.originalConstraints.estimatedPricePerLink)}
+                        <span className="text-xs">Requested:</span> {formatCurrency(benchmark.benchmarkData.originalConstraints.estimatedPricePerLink)}
                       </div>
-                      <div className="font-medium">
-                        Current Avg per Link: {
+                      <div className="font-medium text-gray-900">
+                        <span className="text-xs">Current:</span> {
                           comparison?.comparisonData?.deliveredLinks && comparison.comparisonData.deliveredLinks > 0
                             ? formatCurrency((comparison.comparisonData.actualRevenue || 0) / comparison.comparisonData.deliveredLinks)
                             : 'No sites selected'
@@ -359,33 +365,33 @@ export default function BenchmarkDisplay({
                   </div>
                 )}
                 
-                {/* Links Comparison */}
+                {/* Links Comparison - Mobile Card Style */}
                 {benchmark.benchmarkData.totalRequestedLinks && (
-                  <div className="flex justify-between">
-                    <span className="text-gray-600">Number of Links:</span>
-                    <div className="text-right">
+                  <div className="bg-gray-50 rounded-lg p-2 sm:p-3">
+                    <div className="font-medium text-gray-900 mb-1 sm:mb-2">Number of Links</div>
+                    <div className="space-y-1">
                       <div className="text-gray-500">
-                        Requested: {benchmark.benchmarkData.totalRequestedLinks} × {benchmark.benchmarkData.originalConstraints?.estimatedPricePerLink ? formatCurrency(benchmark.benchmarkData.originalConstraints.estimatedPricePerLink) : 'TBD'}
+                        <span className="text-xs">Requested:</span> {benchmark.benchmarkData.totalRequestedLinks}
                       </div>
-                      <div className="font-medium">
-                        Current: {comparison?.comparisonData?.deliveredLinks || 0} links
+                      <div className="font-medium text-gray-900">
+                        <span className="text-xs">Current:</span> {comparison?.comparisonData?.deliveredLinks || 0} links
                       </div>
                     </div>
                   </div>
                 )}
                 
-                {/* DR Range */}
+                {/* DR Range - Mobile Card Style */}
                 {benchmark.benchmarkData.originalConstraints.drRange.length > 0 && (
-                  <div className="flex justify-between">
-                    <span className="text-gray-600">Domain Rating:</span>
-                    <div className="text-right">
+                  <div className="bg-gray-50 rounded-lg p-2 sm:p-3">
+                    <div className="font-medium text-gray-900 mb-1 sm:mb-2">Domain Rating</div>
+                    <div className="space-y-1">
                       <div className="text-gray-500">
-                        Requested: {benchmark.benchmarkData.originalConstraints.drRange.length === 2
+                        <span className="text-xs">Requested:</span> {benchmark.benchmarkData.originalConstraints.drRange.length === 2
                           ? `${benchmark.benchmarkData.originalConstraints.drRange[0]} - ${benchmark.benchmarkData.originalConstraints.drRange[1]}`
                           : `${benchmark.benchmarkData.originalConstraints.drRange[0]}+`}
                       </div>
-                      <div className="font-medium">
-                        {comparison?.comparisonData?.drRange && comparison.comparisonData.drRange.length > 0 ? (
+                      <div className="font-medium text-gray-900">
+                        <span className="text-xs">Current:</span> {comparison?.comparisonData?.drRange && comparison.comparisonData.drRange.length > 0 ? (
                           comparison.comparisonData.drRange.length === 2 ?
                             `${comparison.comparisonData.drRange[0]} - ${comparison.comparisonData.drRange[1]}` :
                             `${comparison.comparisonData.drRange[0]}+`
@@ -492,36 +498,38 @@ export default function BenchmarkDisplay({
       <div className="bg-white border rounded-lg">
         <button
           onClick={() => setShowBenchmarkDetails(!showBenchmarkDetails)}
-          className="w-full p-4 flex items-center justify-between hover:bg-gray-50 rounded-lg transition-colors"
+          className="w-full p-3 sm:p-4 flex items-center justify-between hover:bg-gray-50 rounded-lg transition-colors touch-manipulation min-h-[44px]"
         >
-          <div className="flex items-center gap-2">
-            <Package className="h-4 w-4" />
-            <h4 className="font-semibold">Benchmark Details</h4>
+          <div className="flex flex-col sm:flex-row sm:items-center gap-1 sm:gap-2 text-left">
+            <div className="flex items-center gap-2">
+              <Package className="h-3 w-3 sm:h-4 sm:w-4 text-gray-600" />
+              <h4 className="text-sm sm:text-base font-semibold">Benchmark Details</h4>
+            </div>
             <span className="text-xs text-gray-500">
               ({benchmark.benchmarkData?.clientGroups?.length || 0} client{benchmark.benchmarkData?.clientGroups?.length !== 1 ? 's' : ''})
             </span>
           </div>
-          <ChevronDown className={`h-4 w-4 transition-transform ${showBenchmarkDetails ? 'rotate-180' : ''}`} />
+          <ChevronDown className={`h-3 w-3 sm:h-4 sm:w-4 transition-transform flex-shrink-0 ${showBenchmarkDetails ? 'rotate-180' : ''}`} />
         </button>
         
         {showBenchmarkDetails && benchmark.benchmarkData?.clientGroups && (
-          <div className="px-4 pb-4 border-t mt-1">
+          <div className="px-3 sm:px-4 pb-3 sm:pb-4 border-t mt-1">
             {benchmark.benchmarkData.clientGroups.map(group => {
               const clientComparison = comparison?.comparisonData.clientAnalysis.find(
                 ca => ca.clientId === group.clientId
               );
               
               return (
-                <div key={group.clientId} className="border rounded mb-2">
-                  <div 
-                    className="p-3 bg-gray-50 flex items-center justify-between cursor-pointer"
+                <div key={group.clientId} className="border rounded-lg mb-2">
+                  <button 
+                    className="w-full p-2 sm:p-3 bg-gray-50 flex flex-col sm:flex-row sm:items-center sm:justify-between cursor-pointer hover:bg-gray-100 rounded-t-lg transition-colors touch-manipulation min-h-[44px]"
                     onClick={() => toggleClient(group.clientId)}
                   >
                     <div className="flex items-center gap-2">
-                      {expandedClients.has(group.clientId) ? <ChevronDown className="h-4 w-4" /> : <ChevronRight className="h-4 w-4" />}
-                      <span className="font-medium">{group.clientName}</span>
+                      {expandedClients.has(group.clientId) ? <ChevronDown className="h-3 w-3 sm:h-4 sm:w-4" /> : <ChevronRight className="h-3 w-3 sm:h-4 sm:w-4" />}
+                      <span className="text-sm sm:text-base font-medium">{group.clientName}</span>
                     </div>
-                    <div className="text-sm">
+                    <div className="text-xs sm:text-sm mt-1 sm:mt-0">
                       {clientComparison ? (
                         <span>
                           {clientComparison.delivered}/{group.linkCount} delivered
@@ -535,13 +543,13 @@ export default function BenchmarkDisplay({
                         <span>{group.linkCount} links</span>
                       )}
                     </div>
-                  </div>
+                  </button>
                   
                   {expandedClients.has(group.clientId) && (
-                    <div className="p-3">
+                    <div className="p-2 sm:p-3">
                       {group.originalRequest && (
-                        <div className="bg-blue-50 border border-blue-200 rounded p-2 mb-3">
-                          <div className="text-sm text-blue-700">
+                        <div className="bg-blue-50 border border-blue-200 rounded-lg p-2 mb-2 sm:mb-3">
+                          <div className="text-xs sm:text-sm text-blue-700">
                             <strong>Client requested:</strong> {group.linkCount} links across {group.targetPages.length} target pages
                           </div>
                           <div className="text-xs text-blue-600 mt-1">
@@ -555,13 +563,13 @@ export default function BenchmarkDisplay({
                         );
                         
                         return (
-                          <div key={page.url} className="mb-3">
-                            <div className="text-sm font-medium mb-1">
-                              <Target className="h-3 w-3 inline mr-1" />
+                          <div key={page.url} className="mb-2 sm:mb-3 bg-gray-50 rounded-lg p-2">
+                            <div className="text-xs sm:text-sm font-medium mb-1 break-all">
+                              <Target className="h-3 w-3 inline mr-1 flex-shrink-0" />
                               {page.url}
                             </div>
                             
-                            <div className="ml-4 text-sm">
+                            <div className="ml-4 text-xs sm:text-sm">
                               <div className="text-gray-600">
                                 {page.requestedLinks} domains requested
                                 {pageComparison && (
