@@ -843,20 +843,6 @@ export default function OrderSiteReviewTableV2({
                               </div>
                             </div>
                           </div>
-                          
-                          {/* Status badge */}
-                          <div className="flex flex-col items-end gap-2">
-                            <span className={`px-2 py-1 text-xs font-medium rounded-full ${
-                              status === 'included' ? 'bg-green-100 text-green-800' :
-                              status === 'excluded' ? 'bg-red-100 text-red-800' :
-                              status === 'saved_for_later' ? 'bg-yellow-100 text-yellow-800' :
-                              'bg-gray-100 text-gray-800'
-                            }`}>
-                              {status === 'included' ? 'Approved' :
-                               status === 'excluded' ? 'Not Interested' :
-                               status === 'saved_for_later' ? 'Saved' : 'Pending'}
-                            </span>
-                          </div>
                         </div>
 
                         {/* Line Item Assignment (if enabled) */}
@@ -898,36 +884,40 @@ export default function OrderSiteReviewTableV2({
                           </div>
                         )}
 
+                        {/* Status Selection - Mobile */}
+                        <div className="mb-3">
+                          <label className="text-xs text-gray-500 font-medium mb-1 block">Status</label>
+                          {permissions.canChangeStatus ? (
+                            <select
+                              value={status}
+                              onChange={(e) => handleChangeStatus(
+                                submission.id, 
+                                group.id, 
+                                e.target.value as 'included' | 'excluded' | 'saved_for_later'
+                              )}
+                              className={`w-full px-3 py-2 text-sm rounded-lg border min-h-[44px] ${getStatusColor(status)}`}
+                              disabled={actionLoading[submission.id]}
+                            >
+                              <option value="included">{userType === 'account' ? '✅ Use This Site' : '✓ Included'}</option>
+                              <option value="excluded">{userType === 'account' ? '❌ Not Interested' : '✗ Excluded'}</option>
+                              <option value="saved_for_later">{userType === 'account' ? '💾 Save for Later' : '⏸ Saved'}</option>
+                            </select>
+                          ) : (
+                            <div className={`px-3 py-2 text-sm rounded-lg text-center ${getStatusColor(status)}`}>
+                              {status === 'included' && (userType === 'account' ? '✅ Using This Site' : '✓ Included')}
+                              {status === 'excluded' && (userType === 'account' ? '❌ Not Interested' : '✗ Excluded')}
+                              {status === 'saved_for_later' && (userType === 'account' ? '💾 Saved for Later' : '⏸ Saved')}
+                            </div>
+                          )}
+                          {status === 'excluded' && submission.exclusionReason && (
+                            <div className="text-xs text-red-600 mt-1">
+                              Reason: {submission.exclusionReason}
+                            </div>
+                          )}
+                        </div>
+
                         {/* Action Buttons */}
                         <div className="flex gap-2 pt-2 border-t border-gray-100">
-                          {permissions.canApproveReject && userType === 'account' && status !== 'included' && status !== 'excluded' && (
-                            <>
-                              <button
-                                onClick={() => handleChangeStatus(submission.id, group.id, 'included')}
-                                disabled={actionLoading[submission.id]}
-                                className="flex-1 px-3 py-2 bg-green-600 text-white text-sm font-medium rounded-lg hover:bg-green-700 min-h-[44px] flex items-center justify-center"
-                              >
-                                {actionLoading[submission.id] ? <Loader2 className="h-4 w-4 animate-spin" /> : 'Approve'}
-                              </button>
-                              <button
-                                onClick={() => handleChangeStatus(submission.id, group.id, 'excluded')}
-                                disabled={actionLoading[submission.id]}
-                                className="flex-1 px-3 py-2 border border-red-300 text-red-600 text-sm font-medium rounded-lg hover:bg-red-50 min-h-[44px] flex items-center justify-center"
-                              >
-                                {actionLoading[submission.id] ? <Loader2 className="h-4 w-4 animate-spin" /> : 'Not Interested'}
-                              </button>
-                            </>
-                          )}
-                          
-                          {status === 'included' && permissions.canApproveReject && (
-                            <button
-                              onClick={() => handleChangeStatus(submission.id, group.id, 'excluded')}
-                              disabled={actionLoading[submission.id]}
-                              className="px-3 py-2 border border-gray-300 text-gray-600 text-sm rounded-lg hover:bg-gray-50 min-h-[44px] flex items-center justify-center"
-                            >
-                              Undo Approval
-                            </button>
-                          )}
 
                           <button
                             onClick={() => toggleExpandedDomain(submission.id)}
