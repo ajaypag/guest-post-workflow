@@ -1005,6 +1005,7 @@ export default function InternalOrderManagementPage() {
       });
       
       await loadSiteSubmissions();
+      await loadBenchmarkData(); // Update benchmark stats after changing site status
     } catch (error) {
       console.error('Error updating status:', error);
       setMessage({
