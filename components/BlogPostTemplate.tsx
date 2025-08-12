@@ -109,10 +109,6 @@ export default function BlogPostTemplate({
                   Blog
                 </Link>
               </li>
-              <li className="flex items-center gap-2">
-                <span>/</span>
-                <span className="text-gray-900 font-medium">{title}</span>
-              </li>
             </ol>
           </div>
         </nav>
