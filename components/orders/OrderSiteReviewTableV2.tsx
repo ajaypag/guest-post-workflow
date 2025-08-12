@@ -835,7 +835,7 @@ export default function OrderSiteReviewTableV2({
                               className="mt-1 rounded"
                             />
                             <div>
-                              <DomainCell domain={submission.domain} />
+                              <DomainCell domain={submission.domain} domainId={submission.domainId} />
                               <div className="flex items-center gap-3 mt-1 text-xs text-gray-500">
                                 <span>DR: {submission.domainRating || submission.metadata?.domainRating || '-'}</span>
                                 <span>Traffic: {submission.traffic || submission.metadata?.traffic ? 
@@ -893,7 +893,7 @@ export default function OrderSiteReviewTableV2({
                           <div className="mb-3">
                             <label className="text-xs text-gray-500 font-medium">Investment</label>
                             <p className="text-lg font-semibold text-gray-900">
-                              {formatCurrency(submission.retailPriceSnapshot || submission.price || 0)}
+                              {formatCurrency(submission.price || 0)}
                             </p>
                           </div>
                         )}

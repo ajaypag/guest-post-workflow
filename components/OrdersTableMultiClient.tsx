@@ -340,11 +340,6 @@ export function OrdersTableMultiClient({
                             {formatCurrency(0)}
                           </span>
                         </div>
-                        {group.notes && (
-                          <p className="text-xs text-gray-600 mt-2">
-                            {group.notes}
-                          </p>
-                        )}
                       </div>
                     ))}
                   </div>
