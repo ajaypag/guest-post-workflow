@@ -175,25 +175,31 @@ export default function BenchmarkDisplay({
   };
 
   return (
-    <div className="space-y-3 sm:space-y-4">
-      {/* Benchmark Header */}
-      <div className="bg-white border rounded-lg p-3 sm:p-4">
-        <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3 mb-3">
-          <div className="flex flex-wrap items-center gap-2 sm:gap-3">
-            <BarChart3 className="h-4 w-4 sm:h-5 sm:w-5 text-blue-600" />
-            <h3 className="text-base sm:text-lg font-semibold">
+    <div className="space-y-4 sm:space-y-6">
+      {/* Benchmark Header - Modern Elevated Card */}
+      <div className="bg-white rounded-xl border border-gray-100/60 shadow-sm hover:shadow-md transition-all duration-200 p-4 sm:p-6">
+        <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4 mb-6">
+          <div className="flex flex-wrap items-center gap-3">
+            <div className="p-2.5 bg-gradient-to-br from-blue-50 to-indigo-50 rounded-xl border border-blue-100/30">
+              <BarChart3 className="h-5 w-5 sm:h-6 sm:w-6 text-blue-600" />
+            </div>
+            <div>
+              <h3 className="text-lg sm:text-xl font-semibold text-gray-900">
               {userType === 'account' ? 'Your Order Wishlist' : 
                benchmark.benchmarkData?.clientGroups?.some(g => g.originalRequest) ? 
                'Client\'s Original Request' : 'Order Benchmark'}
-            </h3>
-            <span className="text-xs sm:text-sm text-gray-500">v{benchmark.version}</span>
+              </h3>
+              <span className="text-sm text-gray-500 font-medium">Version {benchmark.version}</span>
+            </div>
             {benchmark.benchmarkData?.clientGroups?.some(g => g.originalRequest) && (
-              <span className="px-2 py-0.5 sm:py-1 text-xs bg-blue-100 text-blue-700 rounded">
+              <span className="inline-flex items-center px-2.5 py-1 text-xs font-medium bg-blue-50 text-blue-700 rounded-full border border-blue-200/50">
+                <span className="w-1.5 h-1.5 bg-blue-500 rounded-full mr-1.5"></span>
                 Initial Request
               </span>
             )}
             {benchmark.captureReason === 'client_modified' && (
-              <span className="px-2 py-0.5 sm:py-1 text-xs bg-purple-100 text-purple-700 rounded">
+              <span className="inline-flex items-center px-2.5 py-1 text-xs font-medium bg-purple-50 text-purple-700 rounded-full border border-purple-200/50">
+                <span className="w-1.5 h-1.5 bg-purple-500 rounded-full mr-1.5"></span>
                 Client Modified
               </span>
             )}
@@ -272,27 +278,40 @@ export default function BenchmarkDisplay({
           </div>
         </div>
 
-        {/* Summary Stats - Responsive Grid */}
-        <div className="grid grid-cols-2 sm:grid-cols-4 gap-2 sm:gap-3 lg:gap-4">
-          <div className="bg-gray-50 rounded-lg p-2 sm:p-3">
-            <div className="text-lg sm:text-xl lg:text-2xl font-bold text-gray-900">{benchmark.benchmarkData?.totalRequestedLinks || 0}</div>
-            <div className="text-xs sm:text-sm text-gray-600">Total Links</div>
+        {/* Summary Stats - Modern Card Grid */}
+        <div className="grid grid-cols-2 sm:grid-cols-4 gap-3 sm:gap-4">
+          <div className="group bg-white rounded-xl border border-gray-100 p-3 sm:p-4 hover:shadow-md transition-all duration-200">
+            <div className="flex items-center justify-between mb-2">
+              <Package className="h-4 w-4 text-blue-600 opacity-60" />
+              <span className="text-xs font-medium text-green-600 bg-green-50 px-2 py-0.5 rounded-full">Active</span>
+            </div>
+            <div className="text-xl sm:text-2xl lg:text-3xl font-bold text-gray-900 group-hover:text-blue-600 transition-colors">{benchmark.benchmarkData?.totalRequestedLinks || 0}</div>
+            <div className="text-xs sm:text-sm text-gray-500 font-medium mt-1">Total Links</div>
           </div>
-          <div className="bg-gray-50 rounded-lg p-2 sm:p-3">
-            <div className="text-lg sm:text-xl lg:text-2xl font-bold text-gray-900 truncate">
+          <div className="group bg-white rounded-xl border border-gray-100 p-3 sm:p-4 hover:shadow-md transition-all duration-200">
+            <div className="flex items-center justify-between mb-2">
+              <DollarSign className="h-4 w-4 text-green-600 opacity-60" />
+            </div>
+            <div className="text-xl sm:text-2xl lg:text-3xl font-bold text-gray-900 truncate group-hover:text-green-600 transition-colors">
               {benchmark.benchmarkData?.originalConstraints?.estimatedPricePerLink ? 
                 formatCurrency(benchmark.benchmarkData.originalConstraints.estimatedPricePerLink) : 
                 'TBD'}
             </div>
-            <div className="text-xs sm:text-sm text-gray-600">Price/Link</div>
+            <div className="text-xs sm:text-sm text-gray-500 font-medium mt-1">Price/Link</div>
           </div>
-          <div className="bg-gray-50 rounded-lg p-2 sm:p-3">
-            <div className="text-lg sm:text-xl lg:text-2xl font-bold text-gray-900">{benchmark.benchmarkData?.totalTargetPages || 0}</div>
-            <div className="text-xs sm:text-sm text-gray-600">Target Pages</div>
+          <div className="group bg-white rounded-xl border border-gray-100 p-3 sm:p-4 hover:shadow-md transition-all duration-200">
+            <div className="flex items-center justify-between mb-2">
+              <Target className="h-4 w-4 text-purple-600 opacity-60" />
+            </div>
+            <div className="text-xl sm:text-2xl lg:text-3xl font-bold text-gray-900 group-hover:text-purple-600 transition-colors">{benchmark.benchmarkData?.totalTargetPages || 0}</div>
+            <div className="text-xs sm:text-sm text-gray-500 font-medium mt-1">Target Pages</div>
           </div>
-          <div className="bg-gray-50 rounded-lg p-2 sm:p-3">
-            <div className="text-lg sm:text-xl lg:text-2xl font-bold text-gray-900 truncate">{formatCurrency(benchmark.benchmarkData?.orderTotal || 0)}</div>
-            <div className="text-xs sm:text-sm text-gray-600">Total Value</div>
+          <div className="group bg-white rounded-xl border border-gray-100 p-3 sm:p-4 hover:shadow-md transition-all duration-200">
+            <div className="flex items-center justify-between mb-2">
+              <TrendingUp className="h-4 w-4 text-indigo-600 opacity-60" />
+            </div>
+            <div className="text-xl sm:text-2xl lg:text-3xl font-bold text-gray-900 truncate group-hover:text-indigo-600 transition-colors">{formatCurrency(benchmark.benchmarkData?.orderTotal || 0)}</div>
+            <div className="text-xs sm:text-sm text-gray-500 font-medium mt-1">Total Value</div>
           </div>
         </div>
 
