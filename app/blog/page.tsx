@@ -75,6 +75,62 @@ const blogPosts = [
     date: 'January 2025'
   },
   {
+    title: 'YouTube SEO 101: Complete Guide to Video Optimization (2025)',
+    href: '/youtube-seo',
+    excerpt: 'Master YouTube SEO with this complete guide. Learn 11 proven optimization strategies, best tools, and techniques to rank higher and get more views.',
+    category: 'SEO',
+    readTime: '18 min read',
+    date: 'January 2025'
+  },
+  {
+    title: 'How To Use Social Media Properly To Build Quality Links?',
+    href: '/social-media-link-building',
+    excerpt: 'Discover 10 proven social media strategies to build quality backlinks. Learn how to leverage Facebook, LinkedIn, Instagram, and other platforms for effective link building.',
+    category: 'Link Building',
+    readTime: '15 min read',
+    date: 'January 2025'
+  },
+  {
+    title: 'How To Write an Email Outreach Pitch That Gets Approved',
+    href: '/how-to-write-email-outreach-pitch',
+    excerpt: 'Master email outreach with proven strategies for subject lines, pitch structure, personalization, and response rates. Complete guide with templates and examples.',
+    category: 'Email Outreach',
+    readTime: '25 min read',
+    date: 'January 2025'
+  },
+  {
+    title: 'How to Create Link Building Outreach Subject Lines That Get Opened',
+    href: '/link-building-outreach-subject-lines',
+    excerpt: 'Master link building outreach with 100+ proven subject line examples. Learn 9 steps to create compelling email subject lines that boost open rates and conversions.',
+    category: 'Email Outreach',
+    readTime: '20 min read',
+    date: 'January 2025'
+  },
+  {
+    title: 'Blogger Outreach Strategies (and If They Really Work)',
+    href: '/blogger-outreach-strategies',
+    excerpt: 'Comprehensive guide to blogger outreach strategies that actually work. Learn from industry experts with real examples, case studies, and proven tactics for 2025.',
+    category: 'Blogger Outreach',
+    readTime: '45 min read',
+    date: 'January 2025'
+  },
+  {
+    title: 'How to Make An SEO Proposal (+ Templates)',
+    href: '/seo-proposal',
+    excerpt: 'Learn how to create winning SEO proposals with step-by-step instructions, templates, and expert tips. Master the art of presenting SEO strategies that convert prospects into clients.',
+    category: 'SEO',
+    readTime: '15 min read',
+    date: 'January 2025'
+  },
+  {
+    title: 'From Zero to Breakthrough: The Marketing Tactic That Made It Happen',
+    href: '/from-zero-to-breakthrough-the-marketing-tactic-that-made-it-happen',
+    excerpt: 'Discover 8 game-changing marketing tactics that transformed startups from obscurity to success. Real founder stories, proven strategies, and actionable insights.',
+    category: 'Case Studies',
+    readTime: '20 min read',
+    date: 'January 2025'
+  },
+  {
     title: 'SEO Tutorial: Complete Guide for Beginners',
     href: '/seo-tutorial',
     excerpt: 'Comprehensive SEO tutorial covering on-page, off-page, and technical optimization.',
