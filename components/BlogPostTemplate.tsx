@@ -94,6 +94,25 @@ export default function BlogPostTemplate({
       <div className="min-h-screen bg-white">
         <LinkioHeader variant="default" />
 
+        {/* Breadcrumb Navigation */}
+        <nav className="bg-gray-50 py-3" aria-label="Breadcrumb">
+          <div className="max-w-4xl mx-auto px-4 sm:px-6 lg:px-8">
+            <ol className="flex items-center gap-2 text-sm text-gray-500">
+              <li>
+                <Link href="/" className="hover:text-blue-600 transition-colors">
+                  Home
+                </Link>
+              </li>
+              <li className="flex items-center gap-2">
+                <span>/</span>
+                <Link href="/blog" className="hover:text-blue-600 transition-colors">
+                  Blog
+                </Link>
+              </li>
+            </ol>
+          </div>
+        </nav>
+
       {/* Article Header */}
       <article className="py-12">
         <div className="max-w-4xl mx-auto px-4 sm:px-6 lg:px-8">
