@@ -1,4 +1,5 @@
 import { Metadata } from 'next';
+import RecaptchaProvider from '@/components/RecaptchaProvider';
 
 export const metadata: Metadata = {
   title: 'Sign Up for Linkio | Start Building High-Quality Backlinks Today',
@@ -20,5 +21,10 @@ export default function SignupLayout({
 }: {
   children: React.ReactNode;
 }) {
-  return children;
+  return (
+    <>
+      <RecaptchaProvider />
+      {children}
+    </>
+  );
 }

@@ -1,5 +1,8 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { AuthServiceServer } from '@/lib/auth-server';
+import { db } from '@/lib/db/connection';
+import { accounts } from '@/lib/db/accountSchema';
+import { eq } from 'drizzle-orm';
 
 export async function GET(request: NextRequest) {
   try {
@@ -12,6 +15,15 @@ export async function GET(request: NextRequest) {
       );
     }
     
+    // Fetch account details to get emailVerified status
+    const account = await db.query.accounts.findFirst({
+      where: eq(accounts.id, session.userId),
+      columns: {
+        emailVerified: true,
+        status: true
+      }
+    });
+    
     return NextResponse.json({
       valid: true,
       user: {
@@ -20,7 +32,8 @@ export async function GET(request: NextRequest) {
         name: session.name,
         companyName: session.companyName,
         userType: session.userType,
-        clientId: session.clientId
+        clientId: session.clientId,
+        emailVerified: account?.emailVerified || false
       }
     });
     

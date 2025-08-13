@@ -977,6 +977,52 @@ Need help? Contact info@linkio.com
   }
 
   /**
+   * Send email verification email
+   */
+  static async sendEmailVerification(data: {
+    email: string;
+    name: string;
+    verificationUrl: string;
+  }): Promise<{ success: boolean; id?: string; error?: string }> {
+    const html = `
+      <div style="font-family: Arial, sans-serif; line-height: 1.6; color: #333;">
+        <h2>Verify Your Email Address</h2>
+        <p>Hi ${data.name},</p>
+        
+        <p>Thank you for signing up for Linkio! Please verify your email address to activate your account.</p>
+        
+        <div style="margin: 30px 0;">
+          <a href="${data.verificationUrl}" style="display: inline-block; padding: 12px 30px; background-color: #2563eb; color: white; text-decoration: none; border-radius: 5px; font-weight: bold;">
+            Verify Email Address
+          </a>
+        </div>
+        
+        <p>Or copy and paste this link into your browser:</p>
+        <p style="background: #f5f5f5; padding: 10px; border-radius: 5px; word-break: break-all;">
+          ${data.verificationUrl}
+        </p>
+        
+        <p style="color: #666; font-size: 14px;">
+          This link will expire in 24 hours. If you didn't create an account, you can safely ignore this email.
+        </p>
+        
+        <hr style="border: none; border-top: 1px solid #ddd; margin: 30px 0;">
+        
+        <p style="color: #999; font-size: 12px;">
+          © ${new Date().getFullYear()} Linkio. All rights reserved.
+        </p>
+      </div>
+    `;
+
+    return this.send('notification', {
+      to: data.email,
+      subject: 'Verify Your Email - Linkio',
+      html,
+      text: `Hi ${data.name}, Please verify your email address by visiting: ${data.verificationUrl}. This link will expire in 24 hours.`,
+    });
+  }
+
+  /**
    * Send order ready for review email
    */
   static async sendOrderReadyForReview(data: {

@@ -57,6 +57,10 @@ export const passwordResetRateLimiter = new RateLimiter(3, 60 * 60 * 1000); // 3
 export const claimSignupRateLimiter = new RateLimiter(3, 15 * 60 * 1000); // 3 signup attempts per 15 minutes per IP
 export const claimViewRateLimiter = new RateLimiter(10, 5 * 60 * 1000); // 10 views per 5 minutes per IP
 
+// Stricter rate limiting for signup to prevent spam
+export const signupRateLimiter = new RateLimiter(2, 60 * 60 * 1000); // 2 signups per hour per IP
+export const signupEmailRateLimiter = new RateLimiter(1, 24 * 60 * 60 * 1000); // 1 signup per email per day
+
 // Helper function to get client IP
 export function getClientIp(request: Request): string {
   // In production, use proper IP detection with X-Forwarded-For headers
