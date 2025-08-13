@@ -142,6 +142,9 @@ export async function POST(request: NextRequest) {
     // Hash password
     const hashedPassword = await bcrypt.hash(password, 10);
 
+    // Generate email verification token
+    const verificationToken = uuidv4();
+
     // Create account with onboarding tracking
     const accountId = uuidv4();
     const now = new Date();
@@ -154,8 +157,9 @@ export async function POST(request: NextRequest) {
       companyName: companyName?.trim() || email.split('@')[1] || 'Company',
       phone: phone || null,
       role: 'viewer', // Default role for self-signup
-      status: 'active',
-      emailVerified: true, // Auto-verify for self-signup
+      status: 'pending', // Pending until email verified
+      emailVerified: false, // Require email verification
+      emailVerificationToken: verificationToken,
       onboardingCompleted: false,
       onboardingSteps: JSON.stringify({
         complete_profile: false,
@@ -169,46 +173,21 @@ export async function POST(request: NextRequest) {
       updatedAt: now,
     }).returning();
 
-    // Send welcome email with onboarding info
+    // Send verification email
     try {
-      await EmailService.sendAccountWelcomeWithOnboarding({
+      const verificationUrl = `${process.env.NEXTAUTH_URL || 'http://localhost:3000'}/verify-email?token=${verificationToken}`;
+      await EmailService.sendEmailVerification({
         email: newAccount.email,
         name: newAccount.contactName,
-        company: newAccount.companyName || undefined,
+        verificationUrl,
       });
     } catch (emailError) {
-      console.error('Failed to send welcome email:', emailError);
-      // Don't fail registration if email fails
+      console.error('Failed to send verification email:', emailError);
+      // Don't fail registration if email fails, but log it
     }
 
-    // Create session and set cookie for auto-login
-    const sessionData = {
-      userId: newAccount.id,
-      accountId: newAccount.id,
-      email: newAccount.email,
-      name: newAccount.contactName || newAccount.companyName || 'Account User',
-      role: (newAccount.role || 'viewer') as 'viewer' | 'editor' | 'admin',
-      userType: 'account' as const,
-      clientId: newAccount.primaryClientId || undefined,
-      companyName: newAccount.companyName || undefined
-    };
-    
-    const token = await AuthServiceServer.createAccountToken(sessionData);
-    
-    // Set cookie - use auth-token-account for account users
-    const cookieStore = await cookies();
-    cookieStore.set('auth-token-account', token, {
-      httpOnly: true,
-      secure: process.env.NODE_ENV === 'production',
-      sameSite: 'lax',
-      maxAge: 60 * 60 * 24 * 7, // 7 days
-      path: '/',
-    });
-
-    // Update last login
-    await db.update(accounts)
-      .set({ lastLoginAt: now })
-      .where(eq(accounts.id, accountId));
+    // Don't create session for unverified users
+    // They need to verify their email first
 
     console.log('✅ Account created successfully:', email);
     
@@ -222,8 +201,9 @@ export async function POST(request: NextRequest) {
 
     return NextResponse.json({
       success: true,
-      message: 'Account created successfully',
-      accountId: accountId
+      message: 'Account created successfully. Please check your email to verify your account.',
+      accountId: accountId,
+      requiresVerification: true
     });
 
   } catch (error) {

@@ -141,14 +141,19 @@ export default function SignupPage() {
       const data = await response.json();
       
       if (response.ok) {
-        // Check if user was in middle of quick start flow
-        const quickstartState = sessionStorage.getItem('quickstart_state');
-        if (quickstartState) {
-          // Return to get-started page to complete order
-          router.push('/get-started');
+        if (data.requiresVerification) {
+          // Redirect to verification pending page
+          router.push('/verify-email/pending');
         } else {
-          // Normal signup - go to dashboard
-          router.push('/account/dashboard');
+          // Check if user was in middle of quick start flow
+          const quickstartState = sessionStorage.getItem('quickstart_state');
+          if (quickstartState) {
+            // Return to get-started page to complete order
+            router.push('/get-started');
+          } else {
+            // Normal signup - go to dashboard
+            router.push('/account/dashboard');
+          }
         }
       } else {
         setError(data.error || 'Failed to create account');

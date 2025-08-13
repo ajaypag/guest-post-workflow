@@ -11,6 +11,7 @@ interface AccountUser {
   companyName?: string;
   userType: 'account';
   clientId?: string;
+  emailVerified?: boolean;
 }
 
 interface AccountAuthWrapperProps {
@@ -44,6 +45,17 @@ export default function AccountAuthWrapper({ children }: AccountAuthWrapperProps
 
       if (response.ok) {
         const data = await response.json();
+        
+        // Check if email is verified
+        if (data.user && !data.user.emailVerified) {
+          // Allow access to verify-email pages
+          if (!pathname.startsWith('/verify-email') && 
+              !pathname.startsWith('/account/logout')) {
+            router.push('/verify-email/pending');
+            return;
+          }
+        }
+        
         setUser(data.user);
         setAuthenticated(true);
       } else {
