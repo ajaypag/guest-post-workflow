@@ -2,8 +2,7 @@ import { NextRequest, NextResponse } from 'next/server';
 import { db } from '@/lib/db/connection';
 import { orders } from '@/lib/db/orderSchema';
 import { eq } from 'drizzle-orm';
-import { getServerSession } from 'next-auth';
-import { authOptions } from '@/lib/auth';
+import { AuthServiceServer } from '@/lib/auth-server';
 
 // POST - Add video URL to an existing share token
 export async function POST(
@@ -14,8 +13,8 @@ export async function POST(
     const { token } = await params;
     
     // Check authentication
-    const session = await getServerSession(authOptions);
-    if (!session?.user) {
+    const session = await AuthServiceServer.getSession(request);
+    if (!session) {
       return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
     }
 
