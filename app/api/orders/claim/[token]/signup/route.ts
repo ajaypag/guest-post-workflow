@@ -197,7 +197,7 @@ export async function POST(
       // Send verification email (after transaction completes)
       try {
         const baseUrl = process.env.NEXTAUTH_URL || request.headers.get('origin') || 'http://localhost:3000';
-        const verificationUrl = `${baseUrl}/account/verify-email?token=${verificationToken}`;
+        const verificationUrl = `${baseUrl}/verify-email?token=${verificationToken}`;
         
         await EmailService.send('account_welcome', {
           to: email,
