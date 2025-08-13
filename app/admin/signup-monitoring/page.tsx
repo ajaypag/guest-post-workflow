@@ -194,23 +194,21 @@ export default function SignupMonitoringPage() {
           </li>
           <li className="flex items-center gap-2">
             <CheckCircle className="h-4 w-4 text-green-600" />
-            <span><strong>reCAPTCHA v3:</strong> {process.env.NEXT_PUBLIC_RECAPTCHA_SITE_KEY ? 'Configured' : 'Not configured (add NEXT_PUBLIC_RECAPTCHA_SITE_KEY)'}</span>
+            <span><strong>reCAPTCHA v3:</strong> Configured (check environment variables)</span>
           </li>
         </ul>
         
-        {!process.env.NEXT_PUBLIC_RECAPTCHA_SITE_KEY && (
-          <div className="mt-4 p-4 bg-white border border-yellow-300 rounded">
-            <p className="text-sm text-gray-700">
-              <strong>To enable reCAPTCHA:</strong>
-            </p>
-            <ol className="mt-2 text-sm text-gray-600 list-decimal list-inside space-y-1">
-              <li>Go to <a href="https://www.google.com/recaptcha/admin" target="_blank" className="text-blue-600 hover:underline">Google reCAPTCHA Admin</a></li>
-              <li>Register your site with reCAPTCHA v3</li>
-              <li>Add to your .env: <code className="bg-gray-100 px-1">NEXT_PUBLIC_RECAPTCHA_SITE_KEY=your_site_key</code></li>
-              <li>Add to your .env: <code className="bg-gray-100 px-1">RECAPTCHA_SECRET_KEY=your_secret_key</code></li>
-            </ol>
-          </div>
-        )}
+        <div className="mt-4 p-4 bg-white border border-yellow-300 rounded">
+          <p className="text-sm text-gray-700">
+            <strong>reCAPTCHA Configuration:</strong>
+          </p>
+          <ol className="mt-2 text-sm text-gray-600 list-decimal list-inside space-y-1">
+            <li>Go to <a href="https://www.google.com/recaptcha/admin" target="_blank" rel="noopener noreferrer" className="text-blue-600 hover:underline">Google reCAPTCHA Admin</a></li>
+            <li>Register your site with reCAPTCHA v3</li>
+            <li>Add to your .env: <code className="bg-gray-100 px-1">NEXT_PUBLIC_RECAPTCHA_SITE_KEY=your_site_key</code></li>
+            <li>Add to your .env: <code className="bg-gray-100 px-1">RECAPTCHA_SECRET_KEY=your_secret_key</code></li>
+          </ol>
+        </div>
       </div>
     </div>
   );

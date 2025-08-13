@@ -10,7 +10,7 @@ import { cookies } from 'next/headers';
 import { signupRateLimiter, signupEmailRateLimiter, getClientIp } from '@/lib/utils/rateLimiter';
 import { validateEmailQuality } from '@/lib/utils/emailValidation';
 import { verifyRecaptcha } from '@/lib/utils/recaptcha';
-import { trackSignupAttempt } from '@/app/api/admin/signup-stats/route';
+import { trackSignupAttempt } from '@/lib/utils/signupTracking';
 
 export async function POST(request: NextRequest) {
   try {

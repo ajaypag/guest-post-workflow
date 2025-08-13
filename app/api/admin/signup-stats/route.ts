@@ -2,27 +2,7 @@ import { NextResponse } from 'next/server';
 import { db } from '@/lib/db/connection';
 import { accounts } from '@/lib/db/accountSchema';
 import { sql } from 'drizzle-orm';
-
-// Store recent signup attempts in memory (in production, use Redis or database)
-interface SignupAttempt {
-  email: string;
-  ip: string;
-  timestamp: Date;
-  blocked: boolean;
-  reason?: string;
-}
-
-// Simple in-memory store for demo purposes
-const recentAttempts: SignupAttempt[] = [];
-
-// Function to log signup attempts (call this from signup route)
-export function logSignupAttempt(attempt: SignupAttempt) {
-  recentAttempts.unshift(attempt);
-  // Keep only last 100 attempts
-  if (recentAttempts.length > 100) {
-    recentAttempts.pop();
-  }
-}
+import { getRecentAttempts } from '@/lib/utils/signupTracking';
 
 export async function GET() {
   try {
@@ -39,6 +19,9 @@ export async function GET() {
       .execute();
     
     const totalSignups = recentSignups[0]?.count || 0;
+    
+    // Get recent attempts from tracking module
+    const recentAttempts = getRecentAttempts();
     
     // Calculate stats from in-memory attempts
     const last24HourAttempts = recentAttempts.filter(
@@ -69,6 +52,3 @@ export async function GET() {
     );
   }
 }
-
-// Export the logging function for use in signup route
-export { logSignupAttempt as trackSignupAttempt };
