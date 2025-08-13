@@ -142,7 +142,7 @@ export async function POST(
               website: originalClient.website,
               description: originalClient.description || '',
               clientType: originalClient.clientType || 'client',
-              createdBy: accountId, // Created by the new account
+              createdBy: originalClient.createdBy, // Keep original creator (must be users.id)
               defaultRequirements: originalClient.defaultRequirements || '{}',
               createdAt: new Date(),
               updatedAt: new Date()
