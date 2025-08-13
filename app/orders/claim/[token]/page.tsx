@@ -9,6 +9,7 @@ import {
 } from 'lucide-react';
 import OrderSiteReviewTableV2 from '@/components/orders/OrderSiteReviewTableV2';
 import type { OrderGroup, SiteSubmission } from '@/components/orders/OrderSiteReviewTableV2';
+import LinkioHeader from '@/components/LinkioHeader';
 
 interface OrderData {
   id: string;
@@ -38,13 +39,10 @@ export default function ClaimOrderPage() {
   const [claiming, setClaiming] = useState(false);
   const [showSignupForm, setShowSignupForm] = useState(false);
   
-  // Signup form fields
+  // Signup form fields (simplified to match main signup)
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
-  const [confirmPassword, setConfirmPassword] = useState('');
   const [contactName, setContactName] = useState('');
-  const [companyName, setCompanyName] = useState('');
-  const [phone, setPhone] = useState('');
 
   useEffect(() => {
     loadOrderByToken();
@@ -63,9 +61,9 @@ export default function ClaimOrderPage() {
       const data = await response.json();
       setOrder(data.order);
       
-      // Pre-fill company name if available
-      if (data.order?.account?.companyName) {
-        setCompanyName(data.order.account.companyName);
+      // Pre-fill contact name if available
+      if (data.order?.account?.contactName) {
+        setContactName(data.order.account.contactName);
       }
       
       // Set site submissions from API response
@@ -86,8 +84,9 @@ export default function ClaimOrderPage() {
   const handleClaimOrder = async (e: React.FormEvent) => {
     e.preventDefault();
     
-    if (password !== confirmPassword) {
-      setError('Passwords do not match');
+    // Basic validation (matches main signup form)
+    if (!email || !password || !contactName) {
+      setError('All fields are required');
       return;
     }
     
@@ -107,9 +106,7 @@ export default function ClaimOrderPage() {
         body: JSON.stringify({
           email,
           password,
-          contactName,
-          companyName,
-          phone
+          contactName
         })
       });
       
@@ -178,7 +175,9 @@ export default function ClaimOrderPage() {
   }
 
   return (
-    <div className="min-h-screen bg-gray-50">
+    <>
+      <LinkioHeader />
+      <div className="min-h-screen bg-gray-50">
       {/* Header */}
       <div className="bg-white border-b border-gray-200">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-6">
@@ -189,17 +188,13 @@ export default function ClaimOrderPage() {
                 Review the order details below and create an account to claim it
               </p>
             </div>
-            <div className="text-right">
-              <p className="text-sm text-gray-500">Order Value</p>
-              <p className="text-xl font-semibold text-gray-900">
-                {formatCurrency(order.totalPrice)}
-              </p>
-              {timeRemaining !== null && timeRemaining > 0 && (
-                <p className="text-xs text-orange-600 mt-1">
+            {timeRemaining !== null && timeRemaining > 0 && (
+              <div className="text-right">
+                <p className="text-xs text-orange-600">
                   Link expires in {timeRemaining} {timeRemaining === 1 ? 'day' : 'days'}
                 </p>
-              )}
-            </div>
+              </div>
+            )}
           </div>
         </div>
       </div>
@@ -297,9 +292,9 @@ export default function ClaimOrderPage() {
                   </div>
                 </div>
                 <div className="text-right">
-                  <p className="text-sm text-gray-600">Total Value</p>
+                  <p className="text-sm text-gray-600">Sites Analyzed</p>
                   <p className="text-2xl font-semibold text-gray-900">
-                    {formatCurrency(order.totalPrice)}
+                    {Object.values(siteSubmissions).reduce((total, submissions) => total + submissions.length, 0)}
                   </p>
                 </div>
               </div>
@@ -343,7 +338,7 @@ export default function ClaimOrderPage() {
             )}
             
             <form onSubmit={handleClaimOrder} className="space-y-6">
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+              <div className="space-y-4">
                 <div>
                   <label className="block text-sm font-medium text-gray-700 mb-2">
                     <Mail className="inline h-4 w-4 mr-1" />
@@ -361,13 +356,14 @@ export default function ClaimOrderPage() {
                 <div>
                   <label className="block text-sm font-medium text-gray-700 mb-2">
                     <User className="inline h-4 w-4 mr-1" />
-                    Contact Name *
+                    Full Name *
                   </label>
                   <input
                     type="text"
                     value={contactName}
                     onChange={(e) => setContactName(e.target.value)}
                     className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-blue-500 focus:border-blue-500"
+                    placeholder="Your full name"
                     required
                   />
                 </div>
@@ -384,46 +380,6 @@ export default function ClaimOrderPage() {
                     className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-blue-500 focus:border-blue-500"
                     placeholder="Minimum 8 characters"
                     required
-                  />
-                </div>
-                
-                <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-2">
-                    <Lock className="inline h-4 w-4 mr-1" />
-                    Confirm Password *
-                  </label>
-                  <input
-                    type="password"
-                    value={confirmPassword}
-                    onChange={(e) => setConfirmPassword(e.target.value)}
-                    className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-blue-500 focus:border-blue-500"
-                    required
-                  />
-                </div>
-                
-                <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-2">
-                    <Building className="inline h-4 w-4 mr-1" />
-                    Company Name *
-                  </label>
-                  <input
-                    type="text"
-                    value={companyName}
-                    onChange={(e) => setCompanyName(e.target.value)}
-                    className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-blue-500 focus:border-blue-500"
-                    required
-                  />
-                </div>
-                
-                <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-2">
-                    Phone (Optional)
-                  </label>
-                  <input
-                    type="tel"
-                    value={phone}
-                    onChange={(e) => setPhone(e.target.value)}
-                    className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-blue-500 focus:border-blue-500"
                   />
                 </div>
               </div>
@@ -460,5 +416,6 @@ export default function ClaimOrderPage() {
         )}
       </div>
     </div>
+    </>
   );
 }

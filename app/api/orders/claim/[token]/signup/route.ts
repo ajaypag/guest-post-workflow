@@ -33,12 +33,12 @@ export async function POST(
       });
     }
     
-    const { email, password, contactName, companyName, phone } = await request.json();
+    const { email, password, contactName } = await request.json();
 
-    // Validate required fields
-    if (!email || !password || !contactName || !companyName) {
+    // Validate required fields (simplified to match main signup)
+    if (!email || !password || !contactName) {
       return NextResponse.json({ 
-        error: 'Email, password, contact name, and company name are required' 
+        error: 'Email, password, and contact name are required' 
       }, { status: 400 });
     }
 
@@ -94,8 +94,8 @@ export async function POST(
         email,
         password: hashedPassword,
         contactName,
-        companyName,
-        phone: phone || null,
+        companyName: '', // Will be filled later during onboarding or order processing
+        phone: null,
         role: 'viewer', // Default role for claimed accounts
         status: 'pending', // Account pending until email verified
         emailVerified: false, // Require email verification for security
@@ -125,7 +125,7 @@ export async function POST(
         newStatus: order.status, // Status doesn't change, but we log the claim event
         changedBy: accountId, // New account claiming the order
         changedAt: new Date(),
-        notes: `Order claimed by ${contactName} (${email}) from company ${companyName}. IP: ${clientIp}. Share token revoked.`
+        notes: `Order claimed by ${contactName} (${email}). IP: ${clientIp}. Share token revoked.`
       });
 
       // Send verification email (after transaction completes)
