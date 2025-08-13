@@ -5,21 +5,24 @@ import { useParams, useRouter } from 'next/navigation';
 import { formatCurrency } from '@/lib/utils/formatting';
 import { 
   Loader2, CheckCircle, AlertCircle, Package, 
-  User, Mail, Lock, Building, ArrowRight
+  User, Mail, Lock, Building, ArrowRight, Globe, DollarSign, Target
 } from 'lucide-react';
+import OrderSiteReviewTableV2 from '@/components/orders/OrderSiteReviewTableV2';
+import type { OrderGroup, SiteSubmission } from '@/components/orders/OrderSiteReviewTableV2';
 
 interface OrderData {
   id: string;
   status: string;
   state?: string;
   totalPrice: number;
+  totalRetail: number;
   includesClientReview?: boolean;
   rushDelivery?: boolean;
   account?: {
     companyName?: string;
     contactName?: string;
   };
-  orderGroups?: any[];
+  orderGroups?: OrderGroup[];
   shareExpiresAt?: string;
 }
 
@@ -29,6 +32,7 @@ export default function ClaimOrderPage() {
   const token = params.token as string;
   
   const [order, setOrder] = useState<OrderData | null>(null);
+  const [siteSubmissions, setSiteSubmissions] = useState<Record<string, SiteSubmission[]>>({});
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState('');
   const [claiming, setClaiming] = useState(false);
@@ -64,6 +68,11 @@ export default function ClaimOrderPage() {
         setCompanyName(data.order.account.companyName);
       }
       
+      // Set site submissions from API response
+      if (data.siteSubmissions) {
+        setSiteSubmissions(data.siteSubmissions);
+      }
+      
     } catch (error: any) {
       console.error('Error loading order:', error);
       setError(error.message || 'Failed to load order');
@@ -71,6 +80,8 @@ export default function ClaimOrderPage() {
       setLoading(false);
     }
   };
+  
+  // No longer needed - submissions come from main API call
 
   const handleClaimOrder = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -194,54 +205,83 @@ export default function ClaimOrderPage() {
       </div>
 
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
-        {/* Order Preview */}
-        <div className="bg-white rounded-lg shadow-sm border border-gray-200 mb-8">
-          <div className="px-6 py-4 border-b border-gray-200">
-            <h2 className="text-lg font-medium text-gray-900">Order Details</h2>
-          </div>
-          
-          {/* Simple order summary - don't use OrderSiteReviewTable as it needs too much data */}
-          <div className="p-6">
-            {order.orderGroups && order.orderGroups.length > 0 ? (
-              <div className="space-y-4">
-                {order.orderGroups.map((group: any) => (
-                  <div key={group.id} className="border-l-4 border-blue-500 pl-4">
-                    <div className="flex items-center justify-between mb-2">
-                      <h3 className="font-medium text-gray-900">
-                        {group.client?.name || 'Unknown Client'}
-                      </h3>
-                      <span className="text-sm text-gray-500">
-                        {group.linkCount} {group.linkCount === 1 ? 'link' : 'links'}
-                      </span>
-                    </div>
+        {/* Order Analysis - Show detailed site analysis like internal review page */}
+        {order.orderGroups && order.orderGroups.length > 0 ? (
+          <div className="space-y-6">
+            {order.orderGroups.map((group: any) => {
+              const groupSubmissions = siteSubmissions[group.id] || [];
+              
+              if (groupSubmissions.length === 0) {
+                return (
+                  <div key={group.id} className="bg-white rounded-lg shadow-sm border border-gray-200 p-8 text-center">
+                    <h3 className="text-lg font-medium text-gray-900 mb-2">
+                      {group.client?.name || 'Unknown Client'}
+                    </h3>
+                    <p className="text-gray-600">
+                      Analysis in progress - {group.linkCount} {group.linkCount === 1 ? 'link' : 'links'} requested
+                    </p>
                     {group.client?.website && (
-                      <p className="text-sm text-gray-600">
+                      <p className="text-sm text-gray-500 mt-1">
                         Website: {group.client.website}
                       </p>
                     )}
-                    {group.targetPages && group.targetPages.length > 0 && (
-                      <div className="mt-2">
-                        <p className="text-xs text-gray-500 mb-1">Target Pages:</p>
-                        <ul className="text-sm text-gray-600 space-y-1">
-                          {group.targetPages.slice(0, 3).map((page: any, idx: number) => (
-                            <li key={idx} className="truncate">
-                              • {page.url || page}
-                            </li>
-                          ))}
-                          {group.targetPages.length > 3 && (
-                            <li className="text-gray-400">
-                              • {group.targetPages.length - 3} more...
-                            </li>
-                          )}
-                        </ul>
-                      </div>
+                  </div>
+                );
+              }
+              
+              return (
+                <div key={group.id} className="bg-white rounded-lg shadow-sm border border-gray-200">
+                  <div className="px-6 py-4 border-b border-gray-200">
+                    <div className="flex items-center justify-between">
+                      <h3 className="text-lg font-medium text-gray-900">
+                        {group.client?.name || 'Unknown Client'}
+                      </h3>
+                      <span className="text-sm text-gray-500">
+                        {groupSubmissions.length} sites analyzed • {group.linkCount} links requested
+                      </span>
+                    </div>
+                    {group.client?.website && (
+                      <p className="text-sm text-gray-600 mt-1">
+                        Website: {group.client.website}
+                      </p>
                     )}
                   </div>
-                ))}
-                
-                <div className="pt-4 border-t border-gray-200">
-                  <div className="flex justify-between items-center">
-                    <span className="text-sm text-gray-600">
+                  
+                  <div className="p-0">
+                    <OrderSiteReviewTableV2
+                      orderId={order.id}
+                      orderGroups={[group]}
+                      siteSubmissions={{ [group.id]: groupSubmissions }}
+                      userType="account" // External users are account type
+                      permissions={{
+                        canChangeStatus: false,
+                        canApproveReject: false,
+                        canGenerateWorkflows: false,
+                        canMarkSitesReady: false,
+                        canAssignTargetPages: false,
+                        canViewInternalTools: false,
+                        canViewPricing: true,
+                        canEditDomainAssignments: false,
+                        canSetExclusionReason: false
+                      }}
+                      workflowStage="client_review"
+                      useStatusSystem={true}
+                      onApprove={async () => {}} // No-op for read-only
+                      onReject={async () => {}} // No-op for read-only
+                      onChangeInclusionStatus={async () => {}} // No-op for read-only
+                    />
+                  </div>
+                </div>
+              );
+            })}
+            
+            {/* Order Summary */}
+            <div className="bg-gray-50 rounded-lg p-6">
+              <div className="flex justify-between items-center">
+                <div>
+                  <p className="text-sm text-gray-600">Order Summary</p>
+                  <div className="flex items-center gap-4 mt-2">
+                    <span className="text-sm text-gray-700">
                       Total Links: {order.orderGroups.reduce((sum: number, g: any) => sum + g.linkCount, 0)}
                     </span>
                     {order.includesClientReview && (
@@ -256,12 +296,20 @@ export default function ClaimOrderPage() {
                     )}
                   </div>
                 </div>
+                <div className="text-right">
+                  <p className="text-sm text-gray-600">Total Value</p>
+                  <p className="text-2xl font-semibold text-gray-900">
+                    {formatCurrency(order.totalPrice)}
+                  </p>
+                </div>
               </div>
-            ) : (
-              <p className="text-gray-500">No order details available</p>
-            )}
+            </div>
           </div>
-        </div>
+        ) : (
+          <div className="bg-white rounded-lg shadow-sm border border-gray-200 p-8 text-center">
+            <p className="text-gray-500">No order analysis available yet</p>
+          </div>
+        )}
 
         {/* Claim Section */}
         {!showSignupForm ? (
