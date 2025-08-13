@@ -1,7 +1,7 @@
 'use client';
 
-import React, { useState } from 'react';
-import { Brain, Search, TrendingUp, AlertCircle, Info, Clock, CheckCircle, HelpCircle, ChevronDown, ChevronUp, BookOpen } from 'lucide-react';
+import React from 'react';
+import { Brain, Search, TrendingUp, AlertCircle, Info, Clock, CheckCircle, HelpCircle } from 'lucide-react';
 
 interface ExpandedDetailsProps {
   submission: {
@@ -42,70 +42,9 @@ interface ExpandedDetailsProps {
 export default function ExpandedDomainDetails({ submission }: ExpandedDetailsProps) {
   const domain = submission.domain;
   const metadata = submission.metadata || {};
-  const [showDefinitions, setShowDefinitions] = useState(false);
   
   return (
     <div className="px-4 py-3 bg-gray-50 border-t border-gray-200">
-      {/* Tag Definitions Toggle */}
-      <div className="mb-3">
-        <button
-          onClick={() => setShowDefinitions(!showDefinitions)}
-          className="flex items-center gap-2 text-sm text-gray-600 hover:text-gray-900 transition-colors"
-        >
-          <BookOpen className="h-4 w-4" />
-          <span>What do these tags mean?</span>
-          {showDefinitions ? <ChevronUp className="h-3 w-3" /> : <ChevronDown className="h-3 w-3" />}
-        </button>
-        
-        {showDefinitions && (
-          <div className="mt-3 p-3 bg-white rounded-lg border border-gray-200">
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-4 text-xs">
-              {/* Quality Levels */}
-              <div className="space-y-2">
-                <div className="font-medium text-gray-900 mb-1">Quality Levels:</div>
-                <div className="space-y-1">
-                  <div><span className="font-medium text-green-700">High Quality:</span> Direct keyword overlap with strong rankings (positions 1-30)</div>
-                  <div><span className="font-medium text-blue-700">Good:</span> Direct overlap but weak rankings OR related topics with strong rankings</div>
-                  <div><span className="font-medium text-yellow-700">Marginal:</span> Some overlap exists but all rankings are weak (positions 61-100)</div>
-                  <div><span className="font-medium text-red-700">Not Qualified:</span> No meaningful topical overlap detected</div>
-                </div>
-              </div>
-              
-              {/* Overlap Status */}
-              <div className="space-y-2">
-                <div className="font-medium text-gray-900 mb-1">Overlap Status:</div>
-                <div className="space-y-1">
-                  <div><span className="font-medium">DIRECT:</span> Site ranks for your exact niche keywords</div>
-                  <div><span className="font-medium">RELATED:</span> Site ranks for broader industry topics</div>
-                  <div><span className="font-medium">BOTH:</span> Site has both direct and related keyword rankings</div>
-                  <div><span className="font-medium">NONE:</span> No topical relevance found</div>
-                </div>
-              </div>
-              
-              {/* Authority Score */}
-              <div className="space-y-2">
-                <div className="font-medium text-gray-900 mb-1">Authority (Ranking Strength):</div>
-                <div className="space-y-1">
-                  <div><span className="font-medium text-green-700">STRONG:</span> Rankings in positions 1-30 (pages 1-3)</div>
-                  <div><span className="font-medium text-yellow-700">MOD:</span> Rankings in positions 31-60 (pages 4-6)</div>
-                  <div><span className="font-medium text-red-700">WEAK:</span> Rankings in positions 61-100 (pages 7-10)</div>
-                </div>
-              </div>
-              
-              {/* Topic Scope */}
-              <div className="space-y-2">
-                <div className="font-medium text-gray-900 mb-1">Topic Scope (Content Strategy):</div>
-                <div className="space-y-1">
-                  <div><span className="font-medium">🎯 SHORT:</span> Site can rank for broad industry terms</div>
-                  <div><span className="font-medium">🎣 LONG:</span> Needs simple modifiers (geo, "best", "how to")</div>
-                  <div><span className="font-medium">🦾 ULTRA:</span> Requires very specific niche angles</div>
-                </div>
-              </div>
-            </div>
-          </div>
-        )}
-      </div>
-      
       <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
         
         {/* AI Analysis Section */}
