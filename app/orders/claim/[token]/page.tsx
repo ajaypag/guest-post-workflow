@@ -10,6 +10,7 @@ import {
 import OrderSiteReviewTableV2 from '@/components/orders/OrderSiteReviewTableV2';
 import type { OrderGroup, SiteSubmission } from '@/components/orders/OrderSiteReviewTableV2';
 import LinkioHeader from '@/components/LinkioHeader';
+import ProposalVideoEmbed from '@/components/ProposalVideoEmbed';
 
 interface OrderData {
   id: string;
@@ -25,6 +26,8 @@ interface OrderData {
   };
   orderGroups?: OrderGroup[];
   shareExpiresAt?: string;
+  proposalVideoUrl?: string;
+  proposalMessage?: string;
 }
 
 export default function ClaimOrderPage() {
@@ -196,6 +199,15 @@ export default function ClaimOrderPage() {
       </div>
 
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
+        {/* Personalized Video Proposal - Show if video URL exists */}
+        {order.proposalVideoUrl && (
+          <ProposalVideoEmbed 
+            videoUrl={order.proposalVideoUrl}
+            title="Your Personalized Proposal"
+            message={order.proposalMessage}
+          />
+        )}
+        
         {/* Order Analysis - Show detailed site analysis like internal review page */}
         {order.orderGroups && order.orderGroups.length > 0 ? (
           <div className="space-y-6">

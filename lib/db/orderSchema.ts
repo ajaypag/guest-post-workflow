@@ -42,6 +42,10 @@ export const orders = pgTable('orders', {
   shareToken: varchar('share_token', { length: 255 }).unique(),
   shareExpiresAt: timestamp('share_expires_at'),
   
+  // Personalized proposal fields
+  proposalVideoUrl: text('proposal_video_url'), // URL for embedded video (YouTube, Loom, Vimeo, etc.)
+  proposalMessage: text('proposal_message'), // Custom message to display with the proposal
+  
   // Order preferences and expectations
   estimatedBudgetMin: integer('estimated_budget_min'),
   estimatedBudgetMax: integer('estimated_budget_max'),

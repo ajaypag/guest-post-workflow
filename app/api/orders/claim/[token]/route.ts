@@ -176,6 +176,8 @@ export async function GET(
       includesClientReview: order.includesClientReview,
       rushDelivery: order.rushDelivery,
       shareExpiresAt: order.shareExpiresAt,
+      proposalVideoUrl: order.proposalVideoUrl,
+      proposalMessage: order.proposalMessage,
       account: order.account ? {
         companyName: order.account.companyName,
         contactName: order.account.contactName
