@@ -9,6 +9,10 @@ interface ExpandedDetailsProps {
       qualificationStatus?: string;
       aiQualificationReasoning?: string;
       topicReasoning?: string;
+      overlapStatus?: 'direct' | 'related' | 'both' | 'none';
+      authorityDirect?: 'strong' | 'moderate' | 'weak' | 'n/a';
+      authorityRelated?: 'strong' | 'moderate' | 'weak' | 'n/a';
+      topicScope?: 'short_tail' | 'long_tail' | 'ultra_long_tail';
       evidence?: {
         direct_count?: number;
         direct_median_position?: number | null;
@@ -60,15 +64,129 @@ export default function ExpandedDomainDetails({ submission }: ExpandedDetailsPro
           </div>
         )}
 
-        {/* Topic Reasoning */}
-        {domain?.topicReasoning && (
+        {/* Tag Analysis Breakdown */}
+        {domain && (domain.qualificationStatus || domain.overlapStatus || domain.topicScope) && (
           <div className="space-y-2">
             <div className="flex items-center gap-2 text-sm font-medium text-gray-700">
               <Info className="h-4 w-4" />
-              Topic Analysis
+              Analysis Breakdown
             </div>
-            <div className="text-sm text-gray-600 bg-white p-3 rounded border border-gray-200">
-              {domain.topicReasoning}
+            <div className="text-sm bg-white p-3 rounded border border-gray-200 space-y-3">
+              {/* Quality Level */}
+              {domain.qualificationStatus && (
+                <div>
+                  <div className="font-medium text-gray-900">Quality Level</div>
+                  <div className="text-gray-600 text-xs mt-1">
+                    {domain.qualificationStatus === 'high_quality' && (
+                      <>
+                        <span className="font-medium text-green-700">High Quality</span> - Direct keyword overlap with strong rankings (positions 1-60). Premium choice for maximum SEO impact.
+                      </>
+                    )}
+                    {domain.qualificationStatus === 'good_quality' && (
+                      <>
+                        <span className="font-medium text-blue-700">Good</span> - Either direct overlap with weak rankings OR related topics with strong rankings. Solid choice for link building.
+                      </>
+                    )}
+                    {domain.qualificationStatus === 'marginal_quality' && (
+                      <>
+                        <span className="font-medium text-yellow-700">Marginal</span> - Some overlap exists but all rankings are weak (61-100). Consider for volume strategies.
+                      </>
+                    )}
+                    {(domain.qualificationStatus === 'disqualified' || domain.qualificationStatus === 'not_qualified') && (
+                      <>
+                        <span className="font-medium text-red-700">Not Qualified</span> - No meaningful topical overlap detected. Not recommended.
+                      </>
+                    )}
+                  </div>
+                </div>
+              )}
+              
+              {/* Overlap Status */}
+              {domain.overlapStatus && (
+                <div>
+                  <div className="font-medium text-gray-900">Keyword Overlap</div>
+                  <div className="text-gray-600 text-xs mt-1">
+                    {domain.overlapStatus === 'direct' && (
+                      <>
+                        <span className="font-medium">Direct</span> - Site ranks for your exact niche keywords
+                      </>
+                    )}
+                    {domain.overlapStatus === 'related' && (
+                      <>
+                        <span className="font-medium">Related</span> - Site ranks for broader industry topics
+                      </>
+                    )}
+                    {domain.overlapStatus === 'both' && (
+                      <>
+                        <span className="font-medium">Both</span> - Has direct niche keywords AND related industry topics
+                      </>
+                    )}
+                    {domain.overlapStatus === 'none' && (
+                      <>
+                        <span className="font-medium">None</span> - No topical relevance found
+                      </>
+                    )}
+                  </div>
+                </div>
+              )}
+              
+              {/* Authority Scores */}
+              {(domain.authorityDirect !== 'n/a' || domain.authorityRelated !== 'n/a') && (
+                <div>
+                  <div className="font-medium text-gray-900">Ranking Authority</div>
+                  <div className="text-gray-600 text-xs mt-1 space-y-1">
+                    {domain.authorityDirect && domain.authorityDirect !== 'n/a' && (
+                      <div>
+                        <span className="font-medium">Direct Keywords:</span>{' '}
+                        {domain.authorityDirect === 'strong' && 'Strong (positions 1-30)'}
+                        {domain.authorityDirect === 'moderate' && 'Moderate (positions 31-60)'}
+                        {domain.authorityDirect === 'weak' && 'Weak (positions 61-100)'}
+                      </div>
+                    )}
+                    {domain.authorityRelated && domain.authorityRelated !== 'n/a' && (
+                      <div>
+                        <span className="font-medium">Related Keywords:</span>{' '}
+                        {domain.authorityRelated === 'strong' && 'Strong (positions 1-30)'}
+                        {domain.authorityRelated === 'moderate' && 'Moderate (positions 31-60)'}
+                        {domain.authorityRelated === 'weak' && 'Weak (positions 61-100)'}
+                      </div>
+                    )}
+                  </div>
+                </div>
+              )}
+              
+              {/* Topic Scope */}
+              {domain.topicScope && (
+                <div>
+                  <div className="font-medium text-gray-900">Content Strategy</div>
+                  <div className="text-gray-600 text-xs mt-1">
+                    {domain.topicScope === 'short_tail' && (
+                      <>
+                        <span className="font-medium">Short Tail</span> - Site can rank for broad industry terms without modifiers. Target general topics.
+                      </>
+                    )}
+                    {domain.topicScope === 'long_tail' && (
+                      <>
+                        <span className="font-medium">Long Tail</span> - Needs simple modifiers (location, "best", "how to"). Focus on specific angles.
+                      </>
+                    )}
+                    {domain.topicScope === 'ultra_long_tail' && (
+                      <>
+                        <span className="font-medium">Ultra Long Tail</span> - Requires very specific niche angles with multiple modifiers. Hyper-targeted content needed.
+                      </>
+                    )}
+                  </div>
+                </div>
+              )}
+              
+              {/* Original Topic Reasoning if it exists */}
+              {domain.topicReasoning && (
+                <div className="pt-2 border-t border-gray-100">
+                  <div className="text-xs text-gray-500">
+                    {domain.topicReasoning}
+                  </div>
+                </div>
+              )}
             </div>
           </div>
         )}
