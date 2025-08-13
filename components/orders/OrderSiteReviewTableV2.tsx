@@ -12,6 +12,7 @@ import { formatCurrency } from '@/lib/utils/formatting';
 import DomainCell from './DomainCell';
 import ExpandedDomainDetails from './ExpandedDomainDetails';
 import FilterBar, { type FilterOptions } from './FilterBar';
+import TargetPageSelector from './TargetPageSelector';
 
 // Feedback Modal Component for collecting rejection reasons
 interface FeedbackModalProps {
@@ -317,6 +318,7 @@ export default function OrderSiteReviewTableV2({
     new Set(orderGroups.map(g => g.id))
   );
   const [expandedRows, setExpandedRows] = useState<Set<string>>(new Set());
+  const [expandedDomains, setExpandedDomains] = useState<Set<string>>(new Set());
   const [selectedRows, setSelectedRows] = useState<Set<string>>(new Set());
   const [actionLoading, setActionLoading] = useState<Record<string, boolean>>({});
   const [editingSubmission, setEditingSubmission] = useState<{
@@ -612,6 +614,16 @@ export default function OrderSiteReviewTableV2({
     }
   };
 
+  const toggleExpandedDomain = (submissionId: string) => {
+    const newExpanded = new Set(expandedDomains);
+    if (newExpanded.has(submissionId)) {
+      newExpanded.delete(submissionId);
+    } else {
+      newExpanded.add(submissionId);
+    }
+    setExpandedDomains(newExpanded);
+  };
+
   const handleRequestMoreSites = async (groupId: string, groupData: OrderGroup) => {
     const submissions = siteSubmissions[groupId] || [];
     const approvedCount = submissions.filter(s => getInclusionStatus(s) === 'included').length;
@@ -800,38 +812,166 @@ export default function OrderSiteReviewTableV2({
               )}
             </div>
 
-            {/* Submissions Table */}
+            {/* Submissions Table - Desktop */}
             {expandedGroups.has(group.id) && (
-              <div className="p-4">
-                <table className="w-full">
-                  <thead>
-                    <tr className="text-left text-sm text-gray-600 border-b">
-                      <th className="pb-2 pr-2">
-                        <input
-                          type="checkbox"
-                          checked={submissions.length > 0 && submissions.every(s => selectedRows.has(s.id))}
-                          onChange={(e) => {
-                            if (e.target.checked) {
-                              selectAll(submissions);
-                            } else {
-                              clearSelection();
-                            }
-                          }}
-                          className="rounded"
-                        />
-                      </th>
-                      <th className="pb-2">Domain</th>
-                      <th className="pb-2">DR</th>
-                      <th className="pb-2">Traffic</th>
-                      <th className="pb-2">Status</th>
-                      {useLineItems && <th className="pb-2">Line Item</th>}
-                      <th className="pb-2">Target Page</th>
-                      <th className="pb-2">Anchor Text</th>
-                      {permissions.canViewPricing && <th className="pb-2">Price</th>}
-                      <th className="pb-2">Actions</th>
-                    </tr>
-                  </thead>
-                  <tbody>
+              <>
+                {/* Mobile Cards View */}
+                <div className="md:hidden p-4 space-y-4">
+                  {submissions.map(submission => {
+                    const status = getInclusionStatus(submission);
+                    const benchmarkStatus = getBenchmarkStatus(submission, group.id);
+                    const assignedLineItem = useLineItems ? lineItems.find(
+                      item => item.assignedDomainId === submission.domainId
+                    ) : null;
+
+                    return (
+                      <div key={submission.id} className="bg-white border border-gray-200 rounded-lg p-4 shadow-sm">
+                        {/* Header with checkbox and domain */}
+                        <div className="flex items-start justify-between mb-3">
+                          <div className="flex items-start gap-3">
+                            <input
+                              type="checkbox"
+                              checked={selectedRows.has(submission.id)}
+                              onChange={() => toggleRowSelection(submission.id)}
+                              className="mt-1 rounded"
+                            />
+                            <div>
+                              <DomainCell domain={submission.domain} domainId={submission.domainId} />
+                              <div className="flex items-center gap-3 mt-1 text-xs text-gray-500">
+                                <span>DR: {submission.domainRating || submission.metadata?.domainRating || '-'}</span>
+                                <span>Traffic: {submission.traffic || submission.metadata?.traffic ? 
+                                  `${((submission.traffic || submission.metadata?.traffic || 0) / 1000).toFixed(0)}k` : '-'}</span>
+                              </div>
+                            </div>
+                          </div>
+                        </div>
+
+                        {/* Line Item Assignment (if enabled) */}
+                        {useLineItems && (
+                          <div className="mb-3 p-2 bg-gray-50 rounded">
+                            <label className="text-xs text-gray-500 font-medium">Line Item Assignment</label>
+                            <div className="text-sm text-gray-900 mt-1">
+                              {assignedLineItem ? 
+                                `#${assignedLineItem.id.slice(0, 8)} - ${assignedLineItem.targetPageUrl}` :
+                                'Not assigned'
+                              }
+                            </div>
+                          </div>
+                        )}
+
+                        {/* Target Page & Anchor Text */}
+                        <div className="space-y-2 mb-3">
+                          <div>
+                            <label className="text-xs text-gray-500 font-medium">Target Page</label>
+                            <p className="text-sm text-gray-900 break-all">
+                              {submission.targetPageUrl || assignedLineItem?.targetPageUrl || '-'}
+                            </p>
+                          </div>
+                          <div>
+                            <label className="text-xs text-gray-500 font-medium">Anchor Text</label>
+                            <p className="text-sm text-gray-900">
+                              {submission.anchorText || assignedLineItem?.anchorText || '-'}
+                            </p>
+                          </div>
+                        </div>
+
+                        {/* Price */}
+                        {permissions.canViewPricing && (
+                          <div className="mb-3">
+                            <label className="text-xs text-gray-500 font-medium">Investment</label>
+                            <p className="text-lg font-semibold text-gray-900">
+                              {formatCurrency(submission.price || 0)}
+                            </p>
+                          </div>
+                        )}
+
+                        {/* Status Selection - Mobile */}
+                        <div className="mb-3">
+                          <label className="text-xs text-gray-500 font-medium mb-1 block">Status</label>
+                          {permissions.canChangeStatus ? (
+                            <select
+                              value={status}
+                              onChange={(e) => handleChangeStatus(
+                                submission.id, 
+                                group.id, 
+                                e.target.value as 'included' | 'excluded' | 'saved_for_later'
+                              )}
+                              className={`w-full px-3 py-2 text-sm rounded-lg border min-h-[44px] ${getStatusColor(status)}`}
+                              disabled={actionLoading[submission.id]}
+                            >
+                              <option value="included">{userType === 'account' ? '✅ Use This Site' : '✓ Included'}</option>
+                              <option value="excluded">{userType === 'account' ? '❌ Not Interested' : '✗ Excluded'}</option>
+                              <option value="saved_for_later">{userType === 'account' ? '💾 Save for Later' : '⏸ Saved'}</option>
+                            </select>
+                          ) : (
+                            <div className={`px-3 py-2 text-sm rounded-lg text-center ${getStatusColor(status)}`}>
+                              {status === 'included' && (userType === 'account' ? '✅ Using This Site' : '✓ Included')}
+                              {status === 'excluded' && (userType === 'account' ? '❌ Not Interested' : '✗ Excluded')}
+                              {status === 'saved_for_later' && (userType === 'account' ? '💾 Saved for Later' : '⏸ Saved')}
+                            </div>
+                          )}
+                          {status === 'excluded' && submission.exclusionReason && (
+                            <div className="text-xs text-red-600 mt-1">
+                              Reason: {submission.exclusionReason}
+                            </div>
+                          )}
+                        </div>
+
+                        {/* Action Buttons */}
+                        <div className="flex gap-2 pt-2 border-t border-gray-100">
+
+                          <button
+                            onClick={() => toggleExpandedDomain(submission.id)}
+                            className="px-3 py-2 border border-gray-300 text-gray-600 text-sm rounded-lg hover:bg-gray-50 min-h-[44px] flex items-center justify-center"
+                          >
+                            {expandedDomains.has(submission.id) ? 'Less Info' : 'More Info'}
+                          </button>
+                        </div>
+
+                        {/* Expanded Domain Details */}
+                        {expandedDomains.has(submission.id) && (
+                          <div className="mt-4 pt-4 border-t border-gray-100">
+                            <ExpandedDomainDetails 
+                              submission={submission}
+                            />
+                          </div>
+                        )}
+                      </div>
+                    );
+                  })}
+                </div>
+
+                {/* Desktop Table View */}
+                <div className="hidden md:block p-4">
+                  <table className="w-full">
+                    <thead>
+                      <tr className="text-left text-sm text-gray-600 border-b">
+                        <th className="pb-2 pr-2">
+                          <input
+                            type="checkbox"
+                            checked={submissions.length > 0 && submissions.every(s => selectedRows.has(s.id))}
+                            onChange={(e) => {
+                              if (e.target.checked) {
+                                selectAll(submissions);
+                              } else {
+                                clearSelection();
+                              }
+                            }}
+                            className="rounded"
+                          />
+                        </th>
+                        <th className="pb-2">Domain</th>
+                        <th className="pb-2">DR</th>
+                        <th className="pb-2">Traffic</th>
+                        <th className="pb-2">Status</th>
+                        {useLineItems && <th className="pb-2">Line Item</th>}
+                        <th className="pb-2">Target Page</th>
+                        <th className="pb-2">Anchor Text</th>
+                        {permissions.canViewPricing && <th className="pb-2">Price</th>}
+                        <th className="pb-2">Actions</th>
+                      </tr>
+                    </thead>
+                    <tbody>
                     {submissions.map(submission => {
                       const status = getInclusionStatus(submission);
                       const benchmarkStatus = getBenchmarkStatus(submission, group.id);
@@ -1006,9 +1146,10 @@ export default function OrderSiteReviewTableV2({
                         </React.Fragment>
                       );
                     })}
-                  </tbody>
-                </table>
-              </div>
+                    </tbody>
+                  </table>
+                </div>
+              </>
             )}
           </div>
         );
@@ -1021,30 +1162,90 @@ export default function OrderSiteReviewTableV2({
             <h3 className="text-lg font-semibold mb-4">Edit Submission</h3>
             
             <div className="space-y-4">
+              {/* Target Page Selection with Dropdown */}
               <div>
-                <label className="block text-sm font-medium mb-1">Target Page URL</label>
-                <input
-                  type="text"
-                  value={editingSubmission.targetPageUrl || ''}
-                  onChange={(e) => setEditingSubmission({
-                    ...editingSubmission,
-                    targetPageUrl: e.target.value
-                  })}
-                  className="w-full px-3 py-2 border rounded"
-                />
-              </div>
-              
-              <div>
-                <label className="block text-sm font-medium mb-1">Anchor Text</label>
-                <input
-                  type="text"
-                  value={editingSubmission.anchorText || ''}
-                  onChange={(e) => setEditingSubmission({
-                    ...editingSubmission,
-                    anchorText: e.target.value
-                  })}
-                  className="w-full px-3 py-2 border rounded"
-                />
+                <label className="block text-sm font-medium mb-1">Target Page & Anchor Text</label>
+                {(() => {
+                  // Find the group for this submission
+                  const group = orderGroups.find(g => g.id === editingSubmission.groupId);
+                  const targetPages: Array<{ url: string; anchorText?: string; requestedLinks?: number }> = [];
+                  
+                  // Build target pages array with anchor texts
+                  if (group?.targetPages) {
+                    group.targetPages.forEach((page, index) => {
+                      targetPages.push({
+                        url: page.url,
+                        anchorText: group.anchorTexts?.[index] || '',
+                        requestedLinks: 1
+                      });
+                    });
+                  }
+                  
+                  // If we have benchmark data, prefer that
+                  if (benchmarkData?.benchmarkData?.clientGroups) {
+                    const benchmarkGroup = benchmarkData.benchmarkData.clientGroups.find(
+                      (bg: any) => bg.clientId === group?.clientId
+                    );
+                    
+                    if (benchmarkGroup?.targetPages) {
+                      // Clear and rebuild from benchmark
+                      targetPages.length = 0;
+                      benchmarkGroup.targetPages.forEach((page: any) => {
+                        // Check if page has requestedDomains with anchor texts
+                        if (page.requestedDomains && page.requestedDomains.length > 0) {
+                          const anchors = new Set<string>();
+                          page.requestedDomains.forEach((domain: any) => {
+                            if (domain.anchorText) {
+                              anchors.add(domain.anchorText);
+                            }
+                          });
+                          
+                          if (anchors.size > 0) {
+                            // Create entry for each unique anchor text
+                            anchors.forEach(anchorText => {
+                              targetPages.push({
+                                url: page.url,
+                                anchorText: anchorText,
+                                requestedLinks: page.requestedLinks || 1
+                              });
+                            });
+                          } else {
+                            // No specific anchors, add without
+                            targetPages.push({
+                              url: page.url,
+                              requestedLinks: page.requestedLinks || 1
+                            });
+                          }
+                        } else {
+                          // No requested domains, use basic info
+                          targetPages.push({
+                            url: page.url,
+                            requestedLinks: page.requestedLinks || 1
+                          });
+                        }
+                      });
+                    }
+                  }
+                  
+                  return (
+                    <TargetPageSelector
+                      value={{
+                        targetPageUrl: editingSubmission.targetPageUrl,
+                        anchorText: editingSubmission.anchorText
+                      }}
+                      onChange={({ targetPageUrl, anchorText }) => {
+                        setEditingSubmission({
+                          ...editingSubmission,
+                          targetPageUrl,
+                          anchorText
+                        });
+                      }}
+                      availableTargetPages={targetPages}
+                      groupName={group?.client?.name}
+                      allowCustom={true}
+                    />
+                  );
+                })()}
               </div>
               
               <div>

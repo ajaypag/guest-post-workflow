@@ -5,7 +5,8 @@ import { orderGroups } from '@/lib/db/orderGroupSchema';
 import { bulkAnalysisDomains } from '@/lib/db/bulkAnalysisSchema';
 import { orderSiteSubmissions, projectOrderAssociations } from '@/lib/db/projectOrderAssociationsSchema';
 import { websites } from '@/lib/db/websiteSchema';
-import { eq, and, inArray, sql } from 'drizzle-orm';
+import { orderBenchmarks } from '@/lib/db/orderBenchmarkSchema';
+import { eq, and, inArray, sql, desc } from 'drizzle-orm';
 import { AuthServiceServer } from '@/lib/auth-server';
 import { v4 as uuidv4 } from 'uuid';
 
@@ -88,15 +89,51 @@ export async function POST(
     
     const existingDomainIds = new Set(existingSubmissions.map(s => s.domainId));
 
-    // Count target page requirements from order group
+    // Get the latest benchmark to determine target page requirements
+    // This handles both v1 (initial) and v2 (revised) benchmarks
+    const latestBenchmark = await db.query.orderBenchmarks.findFirst({
+      where: and(
+        eq(orderBenchmarks.orderId, orderId),
+        eq(orderBenchmarks.isLatest, true)
+      ),
+      orderBy: desc(orderBenchmarks.version)
+    });
+
+    // Count target page requirements - prefer latest benchmark, fallback to order group
     const targetUrlCounts = new Map<string, number>();
-    if (orderGroup.targetPages && Array.isArray(orderGroup.targetPages)) {
+    
+    if (latestBenchmark && latestBenchmark.benchmarkData) {
+      // Use latest benchmark data (handles v2 scenarios)
+      const benchmarkData = latestBenchmark.benchmarkData as any;
+      
+      // Find the client group in the benchmark data
+      const clientGroup = benchmarkData.clientGroups?.find(
+        (g: any) => g.clientId === orderGroup.clientId
+      );
+      
+      if (clientGroup && clientGroup.targetPages) {
+        clientGroup.targetPages.forEach((page: any) => {
+          const url = page.url;
+          if (url) {
+            // Use requestedLinks from benchmark for this target page
+            targetUrlCounts.set(url, page.requestedLinks || 0);
+          }
+        });
+      }
+      
+      console.log(`Using benchmark v${latestBenchmark.version} for target requirements:`, 
+        Array.from(targetUrlCounts.entries()));
+    } else if (orderGroup.targetPages && Array.isArray(orderGroup.targetPages)) {
+      // Fallback to original order group data (v1 only scenario)
       (orderGroup.targetPages as any[]).forEach(page => {
         const url = page.url;
         if (url) {
           targetUrlCounts.set(url, (targetUrlCounts.get(url) || 0) + 1);
         }
       });
+      
+      console.log('Using orderGroup.targetPages for requirements (no benchmark found):', 
+        Array.from(targetUrlCounts.entries()));
     }
 
     // Group existing submissions by target URL to track pool assignments
@@ -189,9 +226,16 @@ export async function POST(
         const requiredCount = targetUrlCounts.get(targetUrl) || 0;
         const currentPrimaryCount = existingByUrl.get(targetUrl) || 0;
         
-        // Determine pool assignment
+        // Determine pool assignment based on latest benchmark requirements
         const needsMorePrimary = currentPrimaryCount < requiredCount;
         const selectionPool = needsMorePrimary ? 'primary' : 'alternative';
+        
+        // Log decision for debugging
+        if (domain.targetPageUrl) {
+          console.log(`Domain ${bulkDomain?.domain} for ${targetUrl}: ` +
+            `required=${requiredCount}, current=${currentPrimaryCount}, ` +
+            `pool=${selectionPool} (using ${latestBenchmark ? `benchmark v${latestBenchmark.version}` : 'orderGroup'})`);
+        }
         
         // Calculate pool rank
         let poolRank = 1;

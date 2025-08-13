@@ -9,6 +9,7 @@ import OrderSiteReviewTableV2 from '@/components/orders/OrderSiteReviewTableV2';
 import BenchmarkDisplay from '@/components/orders/BenchmarkDisplay';
 import OrderProgressSteps, { getStateDisplay, getProgressSteps } from '@/components/orders/OrderProgressSteps';
 import LineItemsTable from '@/components/orders/LineItemsTable';
+import TargetPageSelector from '@/components/orders/TargetPageSelector';
 import { isLineItemsSystemEnabled, enableLineItemsForOrder } from '@/lib/config/featureFlags';
 import ChangeBulkAnalysisProject from '@/components/orders/ChangeBulkAnalysisProject';
 import { AuthService, type AuthSession } from '@/lib/auth';
@@ -414,6 +415,71 @@ export default function InternalOrderManagementPage() {
     }
   };
 
+  // Extract available target pages from benchmark or order groups
+  const getAvailableTargetPages = (groupId: string) => {
+    const targetPages: Array<{ url: string; anchorText?: string; requestedLinks?: number }> = [];
+    
+    // First try to get from latest benchmark
+    if (benchmarkData?.benchmarkData) {
+      const benchmarkClientGroups = benchmarkData.benchmarkData.clientGroups || [];
+      const orderGroup = order?.orderGroups?.find(g => g.id === groupId);
+      
+      if (orderGroup) {
+        // Find matching client group in benchmark
+        const benchmarkGroup = benchmarkClientGroups.find(
+          (bg: any) => bg.clientId === orderGroup.clientId
+        );
+        
+        if (benchmarkGroup?.targetPages) {
+          benchmarkGroup.targetPages.forEach((page: any) => {
+            // For each target page, we might have multiple requested domains with different anchors
+            const anchors = new Set<string>();
+            
+            if (page.requestedDomains && page.requestedDomains.length > 0) {
+              page.requestedDomains.forEach((domain: any) => {
+                if (domain.anchorText) {
+                  anchors.add(domain.anchorText);
+                }
+              });
+            }
+            
+            // If we have specific anchors from domains, create an entry for each
+            if (anchors.size > 0) {
+              anchors.forEach(anchorText => {
+                targetPages.push({
+                  url: page.url,
+                  anchorText: anchorText,
+                  requestedLinks: page.requestedLinks
+                });
+              });
+            } else {
+              // No specific anchors, just add the page
+              targetPages.push({
+                url: page.url,
+                requestedLinks: page.requestedLinks
+              });
+            }
+          });
+        }
+      }
+    }
+    
+    // Fallback to order group data if no benchmark or no pages found
+    if (targetPages.length === 0) {
+      const orderGroup = order?.orderGroups?.find(g => g.id === groupId);
+      if (orderGroup?.targetPages) {
+        orderGroup.targetPages.forEach((page: any, index: number) => {
+          targetPages.push({
+            url: page.url,
+            anchorText: orderGroup.anchorTexts?.[index] || ''
+          });
+        });
+      }
+    }
+    
+    return targetPages;
+  };
+
   const handleCreateBenchmark = async () => {
     try {
       const response = await fetch(`/api/orders/${orderId}/benchmark`, {
@@ -782,7 +848,12 @@ export default function InternalOrderManagementPage() {
     }
   };
 
-  const handleAssignTargetPage = async (submissionId: string, targetPageUrl: string, groupId: string) => {
+  const handleAssignTargetPage = async (
+    submissionId: string, 
+    targetPageUrl: string, 
+    groupId: string,
+    anchorText?: string
+  ) => {
     try {
       setAssigningDomain(submissionId);
       
@@ -798,7 +869,7 @@ export default function InternalOrderManagementPage() {
         signal: controller.signal,
         body: JSON.stringify({ 
           targetPageUrl,
-          anchorText: null // Can be set later
+          anchorText: anchorText || null // Pass anchor text if provided
         })
       }).finally(() => clearTimeout(timeoutId));
       
@@ -1005,6 +1076,7 @@ export default function InternalOrderManagementPage() {
       });
       
       await loadSiteSubmissions();
+      await loadBenchmarkData(); // Update benchmark stats after changing site status
     } catch (error) {
       console.error('Error updating status:', error);
       setMessage({
@@ -1414,36 +1486,38 @@ export default function InternalOrderManagementPage() {
     <AuthWrapper>
       <Header />
       <div className="min-h-screen bg-gray-50">
-        <div className="px-4 sm:px-6 lg:px-8 py-8">
+        <div className="px-4 sm:px-6 lg:px-8 py-4 sm:py-8">
           {/* Header */}
-          <div className="mb-6">
-            <div className="flex items-center justify-between">
-              <div className="flex items-center gap-4">
+          <div className="mb-4 sm:mb-6">
+            <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
+              <div className="flex flex-col sm:flex-row sm:items-center gap-4">
                 <Link
                   href="/orders"
-                  className="inline-flex items-center text-gray-600 hover:text-gray-900"
+                  className="inline-flex items-center text-gray-600 hover:text-gray-900 min-h-[44px]"
                 >
                   <ArrowLeft className="h-4 w-4 mr-2" />
                   Back to Orders
                 </Link>
-                <h1 className="text-2xl font-bold text-gray-900">Internal Management - Order #{order.id.slice(0, 8)}</h1>
-                <span className={`px-3 py-1 rounded-full text-sm font-medium ${stateDisplay.color}`}>
-                  {stateDisplay.label}
-                </span>
+                <div className="flex flex-col sm:flex-row sm:items-center gap-2 sm:gap-4">
+                  <h1 className="text-lg sm:text-2xl font-bold text-gray-900">Internal Management - Order #{order.id.slice(0, 8)}</h1>
+                  <span className={`px-3 py-1 rounded-full text-sm font-medium self-start sm:self-auto ${stateDisplay.color}`}>
+                    {stateDisplay.label}
+                  </span>
+                </div>
               </div>
               
-              <div className="flex items-center gap-3">
+              <div className="flex flex-col sm:flex-row items-stretch sm:items-center gap-2 sm:gap-3">
                 <button
                   onClick={handleRefresh}
                   disabled={refreshing}
-                  className="inline-flex items-center px-3 py-2 border border-gray-300 rounded-md text-gray-700 hover:bg-gray-50 disabled:opacity-50"
+                  className="inline-flex items-center justify-center px-3 py-2 border border-gray-300 rounded-md text-gray-700 hover:bg-gray-50 disabled:opacity-50 min-h-[44px]"
                 >
                   <RefreshCw className={`w-4 h-4 mr-2 ${refreshing ? 'animate-spin' : ''}`} />
                   Refresh
                 </button>
                 <Link
                   href={`/orders/${order.id}`}
-                  className="inline-flex items-center px-4 py-2 border border-gray-300 rounded-md text-gray-700 hover:bg-gray-50"
+                  className="inline-flex items-center justify-center px-4 py-2 border border-gray-300 rounded-md text-gray-700 hover:bg-gray-50 min-h-[44px]"
                 >
                   <Eye className="h-4 w-4 mr-2" />
                   View Order
@@ -1454,7 +1528,7 @@ export default function InternalOrderManagementPage() {
 
           {/* Message */}
           {message && (
-            <div className={`mb-6 p-4 rounded-lg flex items-start gap-3 ${
+            <div className={`mb-4 sm:mb-6 p-4 rounded-lg flex items-start gap-3 ${
               message.type === 'error' ? 'bg-red-50 text-red-800' :
               message.type === 'warning' ? 'bg-yellow-50 text-yellow-800' :
               message.type === 'success' ? 'bg-green-50 text-green-800' :
@@ -1469,11 +1543,11 @@ export default function InternalOrderManagementPage() {
           )}
 
           {/* Three Column Layout */}
-          <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
+          <div className="grid grid-cols-1 lg:grid-cols-3 gap-4 sm:gap-6">
             {/* Left Column - Progress Steps */}
             <div className="lg:col-span-1">
-              <div className="bg-white rounded-lg border border-gray-200 shadow-sm p-6">
-                <h2 className="text-lg font-semibold mb-4">Order Progress</h2>
+              <div className="bg-white rounded-lg border border-gray-200 shadow-sm p-4 sm:p-6">
+                <h2 className="text-base sm:text-lg font-semibold mb-4">Order Progress</h2>
                 <div className="space-y-4">
                   {steps.map((step, index) => {
                     const Icon = step.icon;
@@ -1776,8 +1850,8 @@ export default function InternalOrderManagementPage() {
               </div>
               
               {/* Account Information */}
-              <div className="bg-white rounded-lg border border-gray-200 shadow-sm p-6 mt-6">
-                <h3 className="text-lg font-semibold text-gray-900 mb-4">Account Information</h3>
+              <div className="bg-white rounded-lg border border-gray-200 shadow-sm p-4 sm:p-6 mt-4 sm:mt-6">
+                <h3 className="text-base sm:text-lg font-semibold text-gray-900 mb-4">Account Information</h3>
                 <dl className="space-y-3">
                   <div>
                     <dt className="text-sm text-gray-500">Account Name</dt>
@@ -1797,12 +1871,12 @@ export default function InternalOrderManagementPage() {
               </div>
               
               {/* Financial Summary - Internal View */}
-              <div className="bg-white rounded-lg border border-gray-200 shadow-sm p-6 mt-6">
-                <h3 className="text-lg font-semibold text-gray-900 mb-4 flex items-center">
+              <div className="bg-white rounded-lg border border-gray-200 shadow-sm p-4 sm:p-6 mt-4 sm:mt-6">
+                <h3 className="text-base sm:text-lg font-semibold text-gray-900 mb-4 flex items-center">
                   <CreditCard className="h-5 w-5 mr-2 text-green-600" />
                   Financial Summary
                 </h3>
-                <div className="grid grid-cols-2 gap-4">
+                <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                   <div>
                     <h4 className="text-sm font-medium text-gray-700 mb-3">Revenue Breakdown</h4>
                     <dl className="space-y-2">
@@ -1896,7 +1970,7 @@ export default function InternalOrderManagementPage() {
               
               {/* Customer Preferences */}
               {(order.preferencesDrMin || order.preferencesTrafficMin || order.estimatedPricePerLink) && (
-                <div className="bg-white rounded-lg border border-gray-200 shadow-sm p-6 mt-6">
+                <div className="bg-white rounded-lg border border-gray-200 shadow-sm p-4 sm:p-6 mt-4 sm:mt-6">
                   <h3 className="text-lg font-semibold text-gray-900 mb-4 flex items-center">
                     <Target className="h-5 w-5 mr-2 text-blue-600" />
                     Customer Preferences
@@ -1983,7 +2057,7 @@ export default function InternalOrderManagementPage() {
             <div className="lg:col-span-2">
               {/* Site Review Summary Card */}
               {(order.state === 'sites_ready' || order.state === 'client_reviewing') && Object.keys(siteSubmissions).length > 0 && (
-                <div className="bg-purple-50 border border-purple-200 rounded-lg p-6 mb-6">
+                <div className="bg-purple-50 border border-purple-200 rounded-lg p-4 sm:p-6 mb-4 sm:mb-6">
                   <div className="flex items-start justify-between">
                     <div>
                       <h3 className="text-lg font-semibold text-purple-900 flex items-center gap-2">
@@ -1993,7 +2067,7 @@ export default function InternalOrderManagementPage() {
                       <p className="text-sm text-purple-700 mt-1">
                         Monitor client's site selection progress
                       </p>
-                      <div className="flex items-center gap-6 mt-3 text-sm">
+                      <div className="flex flex-col sm:flex-row sm:items-center gap-2 sm:gap-6 mt-3 text-sm">
                         {Object.entries(siteSubmissions).map(([groupId, submissions]) => {
                           const group = order.orderGroups?.find(g => g.id === groupId);
                           if (!group) return null;
@@ -2036,14 +2110,14 @@ export default function InternalOrderManagementPage() {
               {/* View Toggle */}
               {isLineItemsSystemEnabled() && (
                 <div className="mb-4 bg-white rounded-lg border border-gray-200 p-4">
-                  <div className="flex items-center justify-between">
-                    <div className="flex items-center gap-3">
+                  <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
+                    <div className="flex flex-col sm:flex-row sm:items-center gap-2 sm:gap-3">
                       <h3 className="font-medium text-gray-900">Order Management View</h3>
                       <span className="text-sm text-gray-500">
                         {useLineItemsView ? 'Line Items (Beta)' : 'Traditional Groups'}
                       </span>
                     </div>
-                    <div className="flex items-center gap-2">
+                    <div className="flex items-center gap-2 self-start sm:self-auto">
                       <button
                         onClick={() => setUseLineItemsView(false)}
                         className={`px-3 py-1 text-sm rounded-md transition-colors ${
@@ -2086,10 +2160,11 @@ export default function InternalOrderManagementPage() {
                   }}
                 />
               ) : (
-                <OrderSiteReviewTableV2
-                  orderId={orderId}
-                  orderGroups={order.orderGroups || []}
-                  siteSubmissions={siteSubmissions}
+                <>
+                  <OrderSiteReviewTableV2
+                    orderId={orderId}
+                    orderGroups={order.orderGroups || []}
+                    siteSubmissions={siteSubmissions}
                   userType="internal"
                   permissions={{
                     canChangeStatus: true,
@@ -2114,6 +2189,7 @@ export default function InternalOrderManagementPage() {
                   useLineItems={isLineItemsSystemEnabled()}
                   benchmarkData={benchmarkData}
                 />
+                </>
               )}
               
               {/* Additional Information Cards */}

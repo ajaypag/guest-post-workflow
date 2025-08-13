@@ -82,7 +82,7 @@ export default function OrderPaymentPage({ order, className }: OrderPaymentPageP
           </div>
           <button
             onClick={handleViewOrder}
-            className="mt-4 bg-green-600 text-white px-4 py-2 rounded-lg hover:bg-green-700 transition-colors"
+            className="mt-4 bg-green-600 text-white px-4 py-3 rounded-lg hover:bg-green-700 transition-colors min-h-[44px] flex items-center justify-center"
           >
             View Order Details
           </button>
@@ -110,7 +110,7 @@ export default function OrderPaymentPage({ order, className }: OrderPaymentPageP
           </div>
           <button
             onClick={handleViewOrder}
-            className="mt-4 bg-yellow-600 text-white px-4 py-2 rounded-lg hover:bg-yellow-700 transition-colors"
+            className="mt-4 bg-yellow-600 text-white px-4 py-3 rounded-lg hover:bg-yellow-700 transition-colors min-h-[44px] flex items-center justify-center"
           >
             View Order Details
           </button>
@@ -225,7 +225,7 @@ export default function OrderPaymentPage({ order, className }: OrderPaymentPageP
                     <p className="text-red-700 text-sm mt-1">{error}</p>
                     <button
                       onClick={handleRetryPayment}
-                      className="mt-2 text-sm text-red-600 hover:text-red-800 underline"
+                      className="mt-2 px-3 py-2 text-sm text-red-600 hover:text-red-800 hover:bg-red-50 underline rounded min-h-[40px] flex items-center justify-center"
                     >
                       Try again
                     </button>
