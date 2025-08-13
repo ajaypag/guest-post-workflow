@@ -65,7 +65,7 @@ const result = await EmailService.sendWithTemplate(
   'invitation',
   'user@example.com',
   {
-    subject: 'You\'re invited to join PostFlow',
+    subject: 'You\'re invited to join Linkio',
     template: InvitationEmail({
       inviteeEmail: 'user@example.com',
       userType: 'internal',
@@ -183,9 +183,9 @@ const result = await EmailService.send('welcome', {
 ### Environment Variables
 ```env
 RESEND_API_KEY=re_your_api_key_here        # Required: Resend API key
-EMAIL_FROM=noreply@postflow.outreachlabs.net  # Optional: Custom from address
-EMAIL_FROM_NAME=PostFlow                    # Optional: From name
-EMAIL_REPLY_TO=support@postflow.outreachlabs.net  # Optional: Reply-to address
+EMAIL_FROM=info@linkio.com                 # Optional: Custom from address
+EMAIL_FROM_NAME=Linkio                     # Optional: From name
+EMAIL_REPLY_TO=info@linkio.com            # Optional: Reply-to address
 ```
 
 ### Current Setup (Production)
@@ -197,9 +197,9 @@ EMAIL_REPLY_TO=support@postflow.outreachlabs.net  # Optional: Reply-to address
 ### Environment Variables (Optional Override)
 Set these to customize email addresses:
 ```env
-EMAIL_FROM=noreply@postflow.outreachlabs.net  # Default from address
-EMAIL_FROM_NAME=PostFlow                      # From name
-EMAIL_REPLY_TO=info@linkio.com               # Reply-to address
+EMAIL_FROM=info@linkio.com                   # Default from address
+EMAIL_FROM_NAME=Linkio                       # From name
+EMAIL_REPLY_TO=info@linkio.com              # Reply-to address
 ```
 
 ## Database Schema

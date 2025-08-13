@@ -96,7 +96,7 @@ export class EmailService {
 
       // Prepare email data
       const emailData = {
-        from: options.from || `${EMAIL_CONFIG.FROM_NAME} <${EMAIL_CONFIG.FROM_EMAIL}>`,
+        from: `${EMAIL_CONFIG.FROM_NAME} <${EMAIL_CONFIG.FROM_EMAIL}>`,
         to: Array.isArray(options.to) ? options.to : [options.to],
         subject: options.subject,
         html: options.html,
@@ -648,7 +648,6 @@ Need help? Contact info@linkio.com
     return this.send('order_paid', {
       to: email,
       subject: `Payment Confirmed - Order #${data.orderNumber}`,
-      from: 'Linkio <info@linkio.com>', // Force the FROM address
       html,
       text: `Payment confirmed for order #${data.orderNumber}. Amount: $${data.amount}`,
     });
@@ -729,7 +728,6 @@ Need help? Contact info@linkio.com
     return this.send('notification', {
       to: options.to,
       subject: `Refund Processed - Order #${options.orderId.substring(0, 8)}`,
-      from: 'Linkio <info@linkio.com>', // Force the FROM address
       html,
       text: `Your refund of $${formattedAmount} has been processed for Order #${options.orderId.substring(0, 8)}. The refund will appear in your account within 5-10 business days.`,
     });
@@ -800,7 +798,6 @@ Need help? Contact info@linkio.com
     return this.send('account_welcome', {
       to: data.email,
       subject: 'Welcome to Linkio - Your Account is Ready',
-      from: 'Linkio <info@linkio.com>', // Force the FROM address
       html,
       text: `Welcome to Linkio, ${data.name}! Your account has been created successfully. Visit ${process.env.NEXTAUTH_URL}/account/dashboard to get started.`,
     });
@@ -887,7 +884,6 @@ Need help? Contact info@linkio.com
     return this.send('account_welcome', {
       to: data.email,
       subject: 'Welcome to Linkio - Get Started Today',
-      from: 'Linkio <info@linkio.com>', // Force the FROM address
       html,
       text: `Welcome to Linkio, ${data.name}! Your account has been created successfully. Visit ${process.env.NEXTAUTH_URL}/account/dashboard to get started with your onboarding checklist.`,
     });
@@ -933,7 +929,6 @@ Need help? Contact info@linkio.com
     return this.send('account_invitation', {
       to: email,
       subject: `You're invited to join Linkio${data.companyName ? ` - ${data.companyName}` : ''}`,
-      from: 'Linkio <info@linkio.com>', // Force the FROM address
       html,
       text: `You've been invited to create an account on Linkio. Visit ${data.inviteUrl} to accept the invitation.`,
     });
@@ -976,7 +971,6 @@ Need help? Contact info@linkio.com
     return this.send('password-reset', {
       to: data.to,
       subject: 'Reset Your Linkio Password',
-      from: 'Linkio <info@linkio.com>', // Force the FROM address
       html,
       text: `Hi ${data.contactName}, We received a request to reset your password. Visit ${data.resetUrl} to reset your password. This link will expire in ${data.expiresIn}.`,
     });
@@ -1017,7 +1011,6 @@ Need help? Contact info@linkio.com
     return this.send('order_review', {
       to: data.email,
       subject: `Guest Post Order Ready for Review - ${data.itemCount} Placement${data.itemCount > 1 ? 's' : ''}`,
-      from: 'Linkio <info@linkio.com>', // Force the FROM address
       html,
       text: `Your guest post order is ready for review. Visit ${previewUrl} to review and approve.`,
     });
