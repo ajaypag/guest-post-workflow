@@ -4,6 +4,7 @@ import React, { useState, useEffect } from 'react';
 import { useRouter } from 'next/navigation';
 import AccountAuthWrapper from '@/components/AccountAuthWrapper';
 import Header from '@/components/Header';
+import AccountLayout from '@/components/AccountLayout';
 import { 
   User, 
   Building, 
@@ -29,7 +30,9 @@ export default function AccountSettings() {
       {(authUser: any) => (
         <>
           <Header />
-          <AccountSettingsContent user={authUser} />
+          <AccountLayout>
+            <AccountSettingsContent user={authUser} />
+          </AccountLayout>
         </>
       )}
     </AccountAuthWrapper>
@@ -192,38 +195,25 @@ function AccountSettingsContent({ user }: AccountSettingsProps) {
   }
 
   return (
-    <div className="min-h-screen bg-gray-100">
-      <div className="max-w-4xl mx-auto px-4 py-8">
-        {/* Header */}
-        <div className="mb-8">
-          <Link 
-            href="/account/dashboard"
-            className="inline-flex items-center text-gray-600 hover:text-gray-900 mb-4"
-          >
-            <ArrowLeft className="h-4 w-4 mr-2" />
-            Back to Dashboard
-          </Link>
-          <h1 className="text-3xl font-bold text-gray-900">Account Settings</h1>
-          <p className="mt-1 text-gray-600">Manage your account information and security</p>
-        </div>
+    <div className="space-y-6">
 
-        {/* Notifications */}
-        {success && (
-          <div className="mb-6 bg-green-50 border border-green-200 rounded-lg p-4 flex items-center">
+      {/* Notifications */}
+      {success && (
+        <div className="bg-green-50 border border-green-200 rounded-lg p-4 flex items-center">
             <CheckCircle className="h-5 w-5 text-green-600 mr-2" />
             <span className="text-green-800">{success}</span>
           </div>
-        )}
+      )}
 
-        {error && (
-          <div className="mb-6 bg-red-50 border border-red-200 rounded-lg p-4 flex items-center">
+      {error && (
+        <div className="bg-red-50 border border-red-200 rounded-lg p-4 flex items-center">
             <AlertCircle className="h-5 w-5 text-red-600 mr-2" />
             <span className="text-red-800">{error}</span>
           </div>
-        )}
+      )}
 
-        {/* Account Information */}
-        <div className="bg-white rounded-lg shadow-md p-6 mb-6">
+      {/* Account Information */}
+      <div className="bg-white rounded-lg shadow-md p-6">
           <h2 className="text-xl font-semibold text-gray-900 mb-6 flex items-center">
             <User className="h-5 w-5 mr-2 text-gray-600" />
             Account Information
@@ -333,10 +323,10 @@ function AccountSettingsContent({ user }: AccountSettingsProps) {
               </button>
             </div>
           </form>
-        </div>
+      </div>
 
-        {/* Password Section */}
-        <div className="bg-white rounded-lg shadow-md p-6">
+      {/* Password Section */}
+      <div className="bg-white rounded-lg shadow-md p-6">
           <h2 className="text-xl font-semibold text-gray-900 mb-6 flex items-center">
             <Lock className="h-5 w-5 mr-2 text-gray-600" />
             Security
@@ -421,8 +411,7 @@ function AccountSettingsContent({ user }: AccountSettingsProps) {
                 </button>
               </div>
             </form>
-          )}
-        </div>
+        )}
       </div>
     </div>
   );

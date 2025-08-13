@@ -19,6 +19,10 @@ export async function POST(
     
     const { id: orderId } = await params;
     
+    // Parse request body for optional flags
+    const body = await request.json().catch(() => ({}));
+    const isQuickStart = body.quickStart === true;
+    
     // Start a transaction
     return await db.transaction(async (tx) => {
       // Get the order
@@ -87,11 +91,23 @@ export async function POST(
       // TODO: Send notification to internal team about new order submission
       // This could trigger an email or internal notification
       
+      // Log QuickStart orders for internal visibility
+      if (isQuickStart) {
+        console.log(`🚀 QuickStart Order Submitted: ${orderId}`);
+        console.log(`  Account: ${order.accountId}`);
+        console.log(`  Status: ${updatedOrder.status}`);
+        console.log(`  Total: $${(updatedOrder.totalRetail || 0) / 100}`);
+        // In production, this would send a Slack notification or email
+      }
+      
       return NextResponse.json({
         success: true,
         order: updatedOrder,
         benchmark: benchmark,
-        message: 'Order submitted successfully. Our team will review and begin processing shortly.'
+        message: isQuickStart 
+          ? 'Order created successfully! Our team will begin processing your order within 24 hours.'
+          : 'Order submitted successfully. Our team will review and begin processing shortly.',
+        isQuickStart
       });
     });
     

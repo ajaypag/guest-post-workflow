@@ -171,8 +171,8 @@ export default function PaymentSuccessPage() {
           <div className="mt-8 pt-8 border-t border-gray-200">
             <p className="text-center text-sm text-gray-500">
               Need help? Contact our support team at{' '}
-              <a href="mailto:support@postflow.outreachlabs.net" className="text-blue-600 hover:underline">
-                support@postflow.outreachlabs.net
+              <a href="mailto:info@linkio.com" className="text-blue-600 hover:underline">
+                info@linkio.com
               </a>{' '}
               or call us at{' '}
               <a href="tel:+18443782473" className="text-blue-600 hover:underline">

@@ -66,17 +66,10 @@ NEXTAUTH_URL=https://your-domain.com
 RESEND_API_KEY=re_your_api_key_here
 ```
 
-### OpenAI Accounts
-- info@onlyoutreach.com
-- ajay@pitchpanda.com  
-- ajay@linkio.com
-
 ### Email Configuration (Resend)
-**TEMPORARY**: Using `onboarding@resend.dev` until domain verification complete
-- **TODO**: After verifying `postflow.outreachlabs.net` in Resend:
-  1. Remove temporary override in `lib/services/emailService.ts` line 29-31
-  2. Emails will use: `noreply@postflow.outreachlabs.net`
-- **Current**: All emails send from Resend's test address
+- **From Address**: `info@linkio.com`
+- **Reply-To**: `info@linkio.com`
+- **Service**: Resend API with environment variable `RESEND_API_KEY`
 
 ## ⚠️ Active Issues & Warnings
 

@@ -182,7 +182,7 @@ export class InvoicePdfService {
     doc.setTextColor(108, 117, 125);
     doc.setFont(undefined, 'normal');
     doc.text('Thank you for your business!', 105, pageHeight - 30, { align: 'center' });
-    doc.text('For questions about this invoice, please contact: support@postflow.outreachlabs.net', 105, pageHeight - 25, { align: 'center' });
+    doc.text('For questions about this invoice, please contact: info@linkio.com', 105, pageHeight - 25, { align: 'center' });
     doc.text(`Page 1 of 1`, 105, pageHeight - 15, { align: 'center' });
 
     // Convert to buffer

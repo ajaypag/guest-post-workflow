@@ -15,11 +15,11 @@ export function WelcomeEmail({
 }: WelcomeEmailProps) {
   return (
     <BaseEmail
-      preview="Welcome to PostFlow - Your guest post workflow management platform"
-      heading={`Welcome to PostFlow, ${userName}!`}
+      preview="Welcome to Linkio - Your guest post workflow management platform"
+      heading={`Welcome to Linkio, ${userName}!`}
     >
       <Text style={emailStyles.text}>
-        We're excited to have you on board. PostFlow helps you manage your guest post
+        We're excited to have you on board. Linkio helps you manage your guest post
         workflows, track outreach campaigns, and streamline your content creation process.
       </Text>
 
@@ -35,7 +35,7 @@ export function WelcomeEmail({
 
       <Section style={emailStyles.panel}>
         <Text style={{ ...emailStyles.text, margin: 0, fontSize: '14px' }}>
-          <strong>What you can do with PostFlow:</strong>
+          <strong>What you can do with Linkio:</strong>
         </Text>
         <Text style={{ ...emailStyles.text, margin: '8px 0 0', fontSize: '14px' }}>
           • Get your brand cited by ChatGPT, Claude, and Perplexity<br />
@@ -53,7 +53,7 @@ export function WelcomeEmail({
 
       <Text style={{ ...emailStyles.text, marginTop: '20px' }}>
         Best regards,<br />
-        The PostFlow Team
+        The Linkio Team
       </Text>
     </BaseEmail>
   );

@@ -371,10 +371,10 @@ export class PaymentRecoveryService {
             </div>
             
             <p style="font-size: 14px; color: #666;">
-              If you continue to have issues, please contact our support team at support@postflow.outreachlabs.net
+              If you continue to have issues, please contact our support team at info@linkio.com
             </p>
             
-            <p>Best regards,<br>The PostFlow Team</p>
+            <p>Best regards,<br>The Linkio Team</p>
           </div>
         `,
         text: `
@@ -390,10 +390,10 @@ What you can do: ${actionMessage}
 
 Complete your payment at: ${process.env.NEXTAUTH_URL}/orders/${order.id}/payment
 
-If you continue to have issues, please contact our support team at support@postflow.outreachlabs.net
+If you continue to have issues, please contact our support team at info@linkio.com
 
 Best regards,
-The PostFlow Team
+The Linkio Team
         `,
       });
       
@@ -413,7 +413,7 @@ The PostFlow Team
   ): Promise<void> {
     try {
       await EmailService.send('notification', {
-        to: 'admin@postflow.outreachlabs.net',
+        to: 'info@linkio.com',
         subject: '🚨 Payment Stuck - Manual Review Required',
         html: `
           <div style="font-family: Arial, sans-serif;">

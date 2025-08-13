@@ -86,7 +86,7 @@ export function ContactOutreachEmail({
 
       {/* Unsubscribe notice */}
       <Text style={{ ...emailStyles.text, fontSize: '12px', color: '#9ca3af', marginTop: '32px' }}>
-        This email was sent through PostFlow's outreach management system. If you'd
+        This email was sent through Linkio's outreach management system. If you'd
         prefer not to receive future collaboration requests, please let us know.
       </Text>
     </BaseEmail>

@@ -252,13 +252,13 @@ export default function OrderPaymentPage({ order, className }: OrderPaymentPageP
             <div className="space-y-1 text-sm">
               <p>
                 <span className="text-gray-600">Email:</span>{' '}
-                <a href="mailto:support@postflow.outreachlabs.net" className="text-blue-600 hover:underline">
-                  support@postflow.outreachlabs.net
+                <a href="mailto:info@linkio.com" className="text-blue-600 hover:underline">
+                  info@linkio.com
                 </a>
               </p>
               <p>
                 <span className="text-gray-600">Phone:</span>{' '}
-                <a href="mailto:support@postflow.outreachlabs.net" className="text-blue-600 hover:underline">
+                <a href="mailto:info@linkio.com" className="text-blue-600 hover:underline">
                   Email Support
                 </a>
               </p>

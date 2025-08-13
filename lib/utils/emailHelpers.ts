@@ -9,7 +9,7 @@ export async function sendWelcomeEmail(
 ) {
   return EmailService.send('welcome', {
     to: user.email,
-    subject: 'Welcome to PostFlow',
+    subject: 'Welcome to Linkio',
     react: (await import('@/lib/email/templates/WelcomeEmail')).WelcomeEmail({
       userName: user.name,
       userEmail: user.email,
