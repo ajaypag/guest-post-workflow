@@ -85,13 +85,28 @@ export default function QuickStartFlow() {
       try {
         // Try to create new client
         // For account users, we need to use 'existing_account' as the creationPath
+        // Get current user session to determine if we need accountId
+        const sessionRes = await fetch('/api/auth/session', {
+          credentials: 'include'
+        });
+        
+        let accountId = undefined;
+        if (sessionRes.ok) {
+          const sessionData = await sessionRes.json();
+          // For account users, we need to provide their account ID
+          if (sessionData.userType === 'account') {
+            accountId = sessionData.userId;
+          }
+        }
+        
         const clientRes = await fetch('/api/clients', {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
           body: JSON.stringify({
             name: brandName,
             domain: brandDomain,
-            creationPath: 'existing_account' // Account users can only use this path
+            creationPath: 'existing_account', // Account users can only use this path
+            accountId: accountId // Required for existing_account path
           })
         });
         
