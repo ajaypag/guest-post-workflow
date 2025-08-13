@@ -47,6 +47,7 @@ export default function SimplifiedPricingPreview({
     const prefs = {
       drRange: [drMin, drMax],
       minTraffic,
+      maxPrice: priceMax, // Add maxPrice to preferences
       categories: [],
       types: [],
       linkCount: 1
