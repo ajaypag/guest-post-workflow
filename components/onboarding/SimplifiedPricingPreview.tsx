@@ -195,12 +195,6 @@ export default function SimplifiedPricingPreview({
           </div>
         </div>
       </div>
-      
-      <div className="p-4 bg-yellow-50 border border-yellow-200 rounded-lg">
-        <p className="text-sm text-yellow-800">
-          <span className="font-medium">Note:</span> Sign in to see exact sites and real-time pricing from our actual inventory.
-        </p>
-      </div>
     </div>
   );
 }

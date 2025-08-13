@@ -404,7 +404,7 @@ export default function QuickStartFlow() {
                     Choose your link building preferences
                   </h2>
                   <p className="text-gray-600 mt-1">
-                    We'll find sites that match your budget and quality requirements
+                    We recommend keeping this flexible — we focus on finding sites already ranking in your industry
                   </p>
                 </div>
               </div>
@@ -424,7 +424,7 @@ export default function QuickStartFlow() {
                   How many backlinks do you want?
                 </label>
                 <div className="grid grid-cols-5 gap-3">
-                  {[1, 3, 5, 10, 20].map(num => (
+                  {[1, 3, 5, 10].map(num => (
                     <button
                       key={num}
                       onClick={() => setLinkCount(num)}
@@ -464,7 +464,7 @@ export default function QuickStartFlow() {
                       <li>• Quality site placement (wholesale cost varies by site)</li>
                       <li>• Professional SEO content creation ($79 per link)</li>
                       <li>• Natural link integration & publishing</li>
-                      <li>• Performance tracking & reporting</li>
+                      <li>• Strategic keyword co-occurrence placement</li>
                     </ul>
                   </div>
                 </div>
@@ -478,7 +478,11 @@ export default function QuickStartFlow() {
                   Back
                 </button>
                 <button
-                  onClick={() => setStep(3)}
+                  onClick={() => {
+                    setStep(3);
+                    // Scroll to top to show the important part
+                    window.scrollTo({ top: 0, behavior: 'smooth' });
+                  }}
                   className="flex-1 py-3 bg-blue-600 text-white rounded-lg font-medium hover:bg-blue-700 transition-colors flex items-center justify-center gap-2"
                 >
                   Review Order
@@ -596,9 +600,14 @@ export default function QuickStartFlow() {
               </button>
             </div>
 
-            <p className="text-xs text-center text-gray-500 mt-6">
-              After creating your order, you'll be able to review suggested sites and customize your campaign
-            </p>
+            <div className="mt-6 space-y-2">
+              <p className="text-xs text-center text-gray-500">
+                <span className="font-medium">No payment now!</span> We'll send you site suggestions within 24 hours.
+              </p>
+              <p className="text-xs text-center text-gray-500">
+                You only pay after reviewing and approving the specific sites. Articles typically published within a week.
+              </p>
+            </div>
           </div>
         </div>
       )}

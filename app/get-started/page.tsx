@@ -29,14 +29,14 @@ export default function GetStartedPage() {
         {/* Hero Section */}
         <div className="text-center mb-12">
           <h1 className="text-4xl sm:text-5xl font-bold text-gray-900 mb-4">
-            Get Cited by AI in{' '}
+            Get Found When{' '}
             <span className="text-transparent bg-clip-text bg-gradient-to-r from-blue-600 to-purple-600">
-              48 Hours
+              Buyers Search
             </span>
           </h1>
           <p className="text-xl text-gray-600 max-w-3xl mx-auto">
-            While competitors wait months for rankings, get your brand mentioned in ChatGPT, Claude, and Perplexity responses. 
-            Strategic placement on sites with real topical authority—not vanity metrics.
+            When buyers search Google — or ask ChatGPT — does your product show up in the answer?
+            We get you in those articles (and AI citations) for the exact searches your buyers use.
           </p>
         </div>
 
@@ -44,23 +44,23 @@ export default function GetStartedPage() {
         <div className="grid grid-cols-2 md:grid-cols-4 gap-6 mb-12">
           <div className="bg-white rounded-xl p-6 border border-gray-200 text-center">
             <Shield className="w-8 h-8 text-blue-600 mx-auto mb-3" />
-            <div className="text-2xl font-bold text-gray-900">Cited</div>
-            <div className="text-sm text-gray-600">In AI Responses</div>
+            <div className="text-2xl font-bold text-gray-900">Curated</div>
+            <div className="text-sm text-gray-600">Hand-Picked Targets</div>
           </div>
           <div className="bg-white rounded-xl p-6 border border-gray-200 text-center">
             <Zap className="w-8 h-8 text-purple-600 mx-auto mb-3" />
-            <div className="text-2xl font-bold text-gray-900">48 Hours</div>
-            <div className="text-sm text-gray-600">To First Citation</div>
+            <div className="text-2xl font-bold text-gray-900">Strategic</div>
+            <div className="text-sm text-gray-600">Real Authority Sites</div>
           </div>
           <div className="bg-white rounded-xl p-6 border border-gray-200 text-center">
             <Users className="w-8 h-8 text-green-600 mx-auto mb-3" />
-            <div className="text-2xl font-bold text-gray-900">O3</div>
-            <div className="text-sm text-gray-600">Research Model</div>
+            <div className="text-2xl font-bold text-gray-900">Transparent</div>
+            <div className="text-sm text-gray-600">Clear Costs & Fit</div>
           </div>
           <div className="bg-white rounded-xl p-6 border border-gray-200 text-center">
             <Star className="w-8 h-8 text-yellow-600 mx-auto mb-3" />
-            <div className="text-2xl font-bold text-gray-900">Zero</div>
-            <div className="text-sm text-gray-600">Click Dependence</div>
+            <div className="text-2xl font-bold text-gray-900">AI-Ready</div>
+            <div className="text-sm text-gray-600">Citation-Worthy Content</div>
           </div>
         </div>
 
@@ -79,8 +79,8 @@ export default function GetStartedPage() {
                 How is this different from traditional link building?
               </h3>
               <p className="text-gray-600 text-sm">
-                Everyone can get you links. We engineer AI citations. Our O3-powered research creates content that AI systems 
-                actually reference. When ChatGPT needs expert sources, it finds your strategically placed content.
+                We focus on getting you into the articles that show up when your buyers search — both on Google and in AI tools. 
+                It's curated outreach with hand-picked targets, clear reasoning on why they fit, and transparent costs.
               </p>
             </div>
             
@@ -89,28 +89,28 @@ export default function GetStartedPage() {
                 What makes content "citation-worthy" to AI?
               </h3>
               <p className="text-gray-600 text-sm">
-                Our O3 research model spends 10-15 minutes analyzing each topic. We create comprehensive, expert-level content 
-                with semantic SEO optimization that AI systems recognize as authoritative sources worth citing.
+                We create comprehensive, expert-level content with deep research and semantic optimization. 
+                AI systems recognize and reference well-researched, authoritative content from trusted domains.
               </p>
             </div>
             
             <div className="bg-white rounded-lg p-6 border border-gray-200">
               <h3 className="font-semibold text-gray-900 mb-2">
-                Why do AI citations matter more than rankings?
+                Why do AI citations matter?
               </h3>
               <p className="text-gray-600 text-sm">
-                65% of searches now happen in AI. Zero-click searches dominate. When users ask ChatGPT about your industry, 
-                being cited means brand awareness without dependency on declining organic click-through rates.
+                More buyers are using ChatGPT and other AI tools to research products. When they ask about solutions in your space, 
+                being mentioned in the AI's response means direct brand awareness at the exact moment of research.
               </p>
             </div>
             
             <div className="bg-white rounded-lg p-6 border border-gray-200">
               <h3 className="font-semibold text-gray-900 mb-2">
-                How do you find sites with real topical authority?
+                How do you find the right sites?
               </h3>
               <p className="text-gray-600 text-sm">
-                We analyze proven expertise overlap, not vanity metrics. Our AI maps keyword rankings, authority clusters, 
-                and strategic topic overlap to find hidden gems with actual ranking potential in your industry.
+                We look for sites with real topical authority in your niche — not just high DR scores. 
+                Each target is hand-picked based on relevance, audience fit, and actual ranking potential for your buyer searches.
               </p>
             </div>
           </div>

@@ -66,10 +66,7 @@ export default function Header() {
                 </div>
                 <div className="absolute -top-1 -right-1 w-3 h-3 bg-emerald-400 rounded-full"></div>
               </div>
-              <div>
-                <div className="text-lg font-semibold text-gray-900">Linkio</div>
-                <div className="text-xs text-gray-500 -mt-1">Guest Post Automation</div>
-              </div>
+              <span className="text-lg font-semibold text-gray-900">Linkio</span>
             </Link>
           </div>
 
