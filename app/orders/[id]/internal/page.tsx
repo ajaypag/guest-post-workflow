@@ -232,7 +232,6 @@ export default function InternalOrderManagementPage() {
   const [benchmarkData, setBenchmarkData] = useState<any>(null);
   const [comparisonData, setComparisonData] = useState<any>(null);
   const [useLineItemsView, setUseLineItemsView] = useState(false);
-  const [selectedTargets, setSelectedTargets] = useState<Record<string, { targetPageUrl: string; anchorText: string }>>({});
 
   // Auto-dismiss success messages after 5 seconds
   useEffect(() => {
@@ -2162,77 +2161,6 @@ export default function InternalOrderManagementPage() {
                 />
               ) : (
                 <>
-                  {/* Target Page Quick Assignment - Only show when sites are available */}
-                  {order.orderGroups && order.orderGroups.length > 0 && Object.keys(siteSubmissions).length > 0 && (
-                    <div className="mb-6 bg-blue-50 border border-blue-200 rounded-lg p-4">
-                      <div className="flex items-center justify-between mb-3">
-                        <h3 className="text-sm font-medium text-blue-900">Quick Target Page Assignment</h3>
-                        <p className="text-xs text-blue-600">
-                          Select target pages to auto-fill anchor text for new domain assignments
-                        </p>
-                      </div>
-                      <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
-                        {order.orderGroups.map((group) => {
-                          const availableTargets = getAvailableTargetPages(group.id);
-                          const groupSubmissions = siteSubmissions[group.id] || [];
-                          const unassignedSubmissions = groupSubmissions.filter(
-                            s => !s.metadata?.targetPageUrl
-                          );
-                          
-                          if (availableTargets.length === 0) return null;
-                          
-                          return (
-                            <div key={group.id} className="space-y-2">
-                              <div className="text-xs font-medium text-blue-800">
-                                {group.client?.name || 'Unknown Client'} ({unassignedSubmissions.length} unassigned sites)
-                              </div>
-                              <TargetPageSelector
-                                value={selectedTargets[group.id]}
-                                onChange={(value) => {
-                                  setSelectedTargets(prev => ({
-                                    ...prev,
-                                    [group.id]: value
-                                  }));
-                                }}
-                                availableTargetPages={availableTargets}
-                                groupName={group.client?.name}
-                                allowCustom={true}
-                                disabled={unassignedSubmissions.length === 0}
-                                className="w-full"
-                              />
-                              {selectedTargets[group.id] && unassignedSubmissions.length > 0 && (
-                                <button
-                                  onClick={async () => {
-                                    const target = selectedTargets[group.id];
-                                    if (target && unassignedSubmissions.length > 0) {
-                                      // Apply to first unassigned submission
-                                      const submission = unassignedSubmissions[0];
-                                      await handleAssignTargetPage(
-                                        submission.id,
-                                        target.targetPageUrl,
-                                        group.id,
-                                        target.anchorText
-                                      );
-                                      // Clear selection after applying
-                                      setSelectedTargets(prev => {
-                                        const updated = { ...prev };
-                                        delete updated[group.id];
-                                        return updated;
-                                      });
-                                    }
-                                  }}
-                                  className="text-xs px-3 py-1 bg-blue-600 text-white rounded hover:bg-blue-700"
-                                >
-                                  Apply to next unassigned site
-                                </button>
-                              )}
-                            </div>
-                          );
-                        })}
-                      </div>
-                    </div>
-                  )}
-                  
                   <OrderSiteReviewTableV2
                     orderId={orderId}
                     orderGroups={order.orderGroups || []}

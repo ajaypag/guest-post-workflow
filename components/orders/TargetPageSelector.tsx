@@ -184,32 +184,35 @@ export default function TargetPageSelector({
                     className="w-full px-3 py-3 hover:bg-blue-50 text-left border-b border-gray-50 last:border-0"
                   >
                     <div className="space-y-1">
-                      <div className="flex items-center gap-2">
-                        <Link2 className="h-3 w-3 text-gray-400" />
-                        <span className="text-sm text-gray-900 break-all">
-                          {(() => {
-                            try {
-                              const url = new URL(target.url);
-                              return url.pathname === '/' ? 'Homepage' : url.pathname;
-                            } catch {
-                              return target.url;
-                            }
-                          })()}
-                        </span>
-                        {target.requestedLinks && (
-                          <span className="text-xs text-gray-500">
-                            ({target.requestedLinks} link{target.requestedLinks !== 1 ? 's' : ''})
-                          </span>
-                        )}
-                      </div>
-                      {target.anchorText && (
-                        <div className="flex items-center gap-2 ml-5">
-                          <Type className="h-3 w-3 text-gray-400" />
-                          <span className="text-xs text-gray-600">"{target.anchorText}"</span>
+                      <div className="flex items-start gap-2">
+                        <Link2 className="h-3 w-3 text-gray-400 mt-0.5 flex-shrink-0" />
+                        <div className="flex-1">
+                          <div className="flex items-center gap-2 flex-wrap">
+                            <span className="text-sm text-gray-900">
+                              {(() => {
+                                try {
+                                  const url = new URL(target.url);
+                                  return url.pathname === '/' ? 'Homepage' : url.pathname;
+                                } catch {
+                                  return target.url;
+                                }
+                              })()}
+                            </span>
+                            {target.anchorText && (
+                              <span className="text-sm font-medium text-blue-600">
+                                "{target.anchorText}"
+                              </span>
+                            )}
+                            {target.requestedLinks && (
+                              <span className="text-xs text-gray-500">
+                                ({target.requestedLinks} link{target.requestedLinks !== 1 ? 's' : ''})
+                              </span>
+                            )}
+                          </div>
+                          <div className="text-xs text-gray-400 break-all">
+                            {target.url}
+                          </div>
                         </div>
-                      )}
-                      <div className="text-xs text-gray-400 ml-5 break-all">
-                        {target.url}
                       </div>
                     </div>
                   </button>
