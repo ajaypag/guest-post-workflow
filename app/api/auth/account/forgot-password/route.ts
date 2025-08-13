@@ -86,11 +86,11 @@ export async function POST(request: NextRequest) {
     // Send email
     await EmailService.send('password-reset', {
       to: account.email,
-      subject: 'Reset Your PostFlow Account Password',
+      subject: 'Reset Your Linkio Account Password',
       text: `
 Hello ${account.contactName || account.companyName},
 
-You requested to reset your password for your PostFlow account.
+You requested to reset your password for your Linkio account.
 
 Click the link below to reset your password:
 ${resetUrl}
@@ -100,7 +100,7 @@ This link will expire in 1 hour.
 If you didn't request this password reset, please ignore this email.
 
 Best regards,
-The PostFlow Team
+The Linkio Team
       `,
       html: `
 <!DOCTYPE html>
@@ -122,7 +122,7 @@ The PostFlow Team
     </div>
     <div class="content">
       <p>Hello ${account.contactName || account.companyName},</p>
-      <p>You requested to reset your password for your PostFlow account.</p>
+      <p>You requested to reset your password for your Linkio account.</p>
       <p>Click the button below to reset your password:</p>
       <div style="text-align: center;">
         <a href="${resetUrl}" class="button">Reset Password</a>
@@ -133,8 +133,8 @@ The PostFlow Team
       <p style="word-break: break-all; color: #3b82f6;">${resetUrl}</p>
     </div>
     <div class="footer">
-      <p>Best regards,<br>The PostFlow Team</p>
-      <p>&copy; 2025 PostFlow by OutreachLabs. All rights reserved.</p>
+      <p>Best regards,<br>The Linkio Team</p>
+      <p>&copy; 2025 Linkio. All rights reserved.</p>
     </div>
   </div>
 </body>
