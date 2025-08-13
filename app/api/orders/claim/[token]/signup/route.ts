@@ -3,6 +3,9 @@ import { db } from '@/lib/db/connection';
 import { orders } from '@/lib/db/orderSchema';
 import { accounts } from '@/lib/db/accountSchema';
 import { orderStatusHistory } from '@/lib/db/orderSchema';
+import { orderGroups } from '@/lib/db/orderGroupSchema';
+import { clients } from '@/lib/db/schema';
+import { targetPages } from '@/lib/db/schema';
 import { eq } from 'drizzle-orm';
 import { v4 as uuidv4 } from 'uuid';
 import bcrypt from 'bcryptjs';
@@ -116,6 +119,69 @@ export async function POST(
         })
         .where(eq(orders.id, order.id))
         .returning();
+      
+      // Copy associated clients and target pages to the new account
+      // This ensures the new account has full access to all order-related data
+      const orderGroupsData = await tx.select().from(orderGroups).where(eq(orderGroups.orderId, order.id));
+      
+      // Track client ID mappings (old -> new) for updating order groups
+      const clientIdMap = new Map<string, string>();
+      
+      for (const group of orderGroupsData) {
+        if (group.clientId && !clientIdMap.has(group.clientId)) {
+          // Get the original client
+          const [originalClient] = await tx.select().from(clients).where(eq(clients.id, group.clientId));
+          
+          if (originalClient) {
+            // Create a copy of the client for the new account
+            const newClientId = uuidv4();
+            const [newClient] = await tx.insert(clients).values({
+              id: newClientId,
+              accountId: accountId, // Owned by new account
+              name: originalClient.name,
+              website: originalClient.website,
+              description: originalClient.description || '',
+              clientType: originalClient.clientType || 'client',
+              createdBy: accountId, // Created by the new account
+              defaultRequirements: originalClient.defaultRequirements || '{}',
+              createdAt: new Date(),
+              updatedAt: new Date()
+            }).returning();
+            
+            clientIdMap.set(group.clientId, newClientId);
+            
+            // Copy target pages for this client
+            const originalTargetPages = await tx.select().from(targetPages).where(eq(targetPages.clientId, group.clientId));
+            
+            for (const page of originalTargetPages) {
+              await tx.insert(targetPages).values({
+                id: uuidv4(),
+                clientId: newClientId, // Reference the new client
+                url: page.url,
+                normalizedUrl: page.normalizedUrl,
+                domain: page.domain,
+                keywords: page.keywords,
+                description: page.description,
+                status: page.status || 'active',
+                addedAt: new Date(),
+                completedAt: page.completedAt
+              });
+            }
+          }
+        }
+      }
+      
+      // Update order groups to reference the new client IDs
+      for (const group of orderGroupsData) {
+        if (group.clientId && clientIdMap.has(group.clientId)) {
+          await tx.update(orderGroups)
+            .set({
+              clientId: clientIdMap.get(group.clientId),
+              updatedAt: new Date()
+            })
+            .where(eq(orderGroups.id, group.id));
+        }
+      }
 
       // Add audit log entry for order claim
       await tx.insert(orderStatusHistory).values({
