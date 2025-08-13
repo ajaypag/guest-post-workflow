@@ -99,7 +99,7 @@ export async function GET(
         // Create a map for submission website data
         const submissionWebsiteMap = new Map(submissionWebsiteData.map(w => [w.domain.toLowerCase(), w]));
         
-        // Format submissions with proper domain data
+        // Format submissions with proper domain data and expanded details
         const formattedSubmissions = submissions.map(submission => {
           const domain = domainMap.get(submission.domainId);
           if (!domain) return null;
@@ -110,12 +110,23 @@ export async function GET(
           return {
             id: submission.id,
             domainId: submission.domainId,
-            domain: domain.domain,
+            domain: {
+              id: domain.id,
+              domain: domain.domain,
+              dr: website?.domainRating || null,
+              traffic: website?.totalTraffic || null,
+              // AI analysis data for expanded details
+              aiQualificationReasoning: domain.aiQualificationReasoning,
+              topicReasoning: domain.topicReasoning,
+              evidence: domain.evidence,
+              notes: domain.notes
+            },
+            // Table display fields
             url: `https://${domain.domain}`,
             dr: website?.domainRating || null,
             traffic: website?.totalTraffic || null,
             categories: website?.categories || [],
-            qualificationReasoning: domain.notes || '',
+            qualificationReasoning: domain.aiQualificationReasoning || domain.notes || '',
             wholesalePrice: submission.wholesalePriceSnapshot || 0,
             retailPrice: submission.retailPriceSnapshot || guestPostCost || 0,
             targetPageUrl: submission.metadata?.targetPageUrl || '',
@@ -125,6 +136,14 @@ export async function GET(
             inclusionStatus: submission.inclusionStatus,
             exclusionReason: submission.exclusionReason,
             submittedAt: submission.submittedAt,
+            clientReviewNotes: submission.clientReviewNotes,
+            // Enhanced metadata for expanded details
+            metadata: {
+              ...submission.metadata,
+              internalNotes: submission.metadata?.notes,
+              statusHistory: submission.metadata?.statusHistory || [],
+              reviewHistory: submission.metadata?.reviewHistory || []
+            },
             // Add analysis fields that OrderSiteReviewTableV2 expects
             topicScopeAnalysis: domain.qualificationStatus || '',
             qualityScore: website?.domainRating || 0,
