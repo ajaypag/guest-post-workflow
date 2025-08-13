@@ -117,12 +117,8 @@ export default function ClaimOrderPage() {
       
       const result = await response.json();
       
-      // Success! Redirect to login with success message and verification notice
-      if (result.requiresEmailVerification) {
-        router.push(`/account/login?claimed=true&email=${encodeURIComponent(email)}&verify=true`);
-      } else {
-        router.push(`/account/login?claimed=true&email=${encodeURIComponent(email)}`);
-      }
+      // Success! Redirect to verification pending page
+      router.push(`/orders/claim/verification-pending?email=${encodeURIComponent(email)}&orderId=${result.orderId || ''}`)
       
     } catch (error: any) {
       console.error('Error claiming order:', error);
