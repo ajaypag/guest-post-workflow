@@ -3,7 +3,9 @@ import { db } from '@/lib/db/connection';
 import { orders } from '@/lib/db/orderSchema';
 import { orderGroups } from '@/lib/db/orderGroupSchema';
 import { orderSiteSubmissions } from '@/lib/db/projectOrderAssociationsSchema';
-import { eq } from 'drizzle-orm';
+import { bulkAnalysisDomains } from '@/lib/db/bulkAnalysisSchema';
+import { websites } from '@/lib/db/schema';
+import { eq, inArray, sql } from 'drizzle-orm';
 import { claimViewRateLimiter, getClientIp } from '@/lib/utils/rateLimiter';
 
 // GET - Get order details by share token (no auth required)
@@ -76,32 +78,64 @@ export async function GET(
         orderBy: (submissions, { desc }) => [desc(submissions.submittedAt)]
       });
       
-      // Format submissions for OrderSiteReviewTableV2
-      const formattedSubmissions = submissions.map(submission => ({
-        id: submission.id,
-        domainId: submission.domainId,
-        domain: submission.metadata?.domain || '',
-        url: submission.metadata?.url || '',
-        dr: submission.metadata?.dr || 0,
-        traffic: submission.metadata?.traffic || 0,
-        categories: submission.metadata?.categories || [],
-        qualificationReasoning: submission.metadata?.qualificationReasoning || '',
-        wholesalePrice: submission.wholesalePriceSnapshot || 0,
-        retailPrice: submission.retailPriceSnapshot || 0,
-        targetPageUrl: submission.metadata?.targetPageUrl || '',
-        anchorText: submission.metadata?.anchorText || '',
-        specialInstructions: submission.metadata?.specialInstructions || '',
-        submissionStatus: submission.submissionStatus,
-        inclusionStatus: submission.inclusionStatus,
-        exclusionReason: submission.exclusionReason,
-        submittedAt: submission.submittedAt,
-        // Add analysis fields that OrderSiteReviewTableV2 expects
-        topicScopeAnalysis: submission.metadata?.topicScopeAnalysis || '',
-        qualityScore: submission.metadata?.qualityScore || 0,
-        notes: submission.metadata?.notes || ''
-      }));
-      
-      siteSubmissions[orderGroup.id] = formattedSubmissions;
+      if (submissions.length > 0) {
+        // Get domain details for submissions
+        const domainIds = submissions.map(s => s.domainId);
+        const domainsWithSubmissions = await db.query.bulkAnalysisDomains.findMany({
+          where: inArray(bulkAnalysisDomains.id, domainIds)
+        });
+        
+        // Create a map for easy lookup
+        const domainMap = new Map(domainsWithSubmissions.map(d => [d.id, d]));
+        
+        // Get website data for DR and traffic
+        const submissionDomainNames = domainsWithSubmissions.map(d => d.domain.toLowerCase());
+        const submissionWebsiteData = submissionDomainNames.length > 0
+          ? await db.query.websites.findMany({
+              where: sql`LOWER(${websites.domain}) = ANY(ARRAY[${sql.join(submissionDomainNames.map(d => sql`${d}`), sql`,`)}])`
+            })
+          : [];
+        
+        // Create a map for submission website data
+        const submissionWebsiteMap = new Map(submissionWebsiteData.map(w => [w.domain.toLowerCase(), w]));
+        
+        // Format submissions with proper domain data
+        const formattedSubmissions = submissions.map(submission => {
+          const domain = domainMap.get(submission.domainId);
+          if (!domain) return null;
+          
+          const website = submissionWebsiteMap.get(domain.domain.toLowerCase());
+          const guestPostCost = website?.guestPostCost ? parseFloat(website.guestPostCost) : null;
+          
+          return {
+            id: submission.id,
+            domainId: submission.domainId,
+            domain: domain.domain,
+            url: `https://${domain.domain}`,
+            dr: website?.domainRating || null,
+            traffic: website?.totalTraffic || null,
+            categories: website?.categories || [],
+            qualificationReasoning: domain.notes || '',
+            wholesalePrice: submission.wholesalePriceSnapshot || 0,
+            retailPrice: submission.retailPriceSnapshot || guestPostCost || 0,
+            targetPageUrl: submission.metadata?.targetPageUrl || '',
+            anchorText: submission.metadata?.anchorText || '',
+            specialInstructions: submission.metadata?.specialInstructions || '',
+            submissionStatus: submission.submissionStatus,
+            inclusionStatus: submission.inclusionStatus,
+            exclusionReason: submission.exclusionReason,
+            submittedAt: submission.submittedAt,
+            // Add analysis fields that OrderSiteReviewTableV2 expects
+            topicScopeAnalysis: domain.qualificationStatus || '',
+            qualityScore: website?.domainRating || 0,
+            notes: submission.metadata?.notes || domain.notes || ''
+          };
+        }).filter(Boolean); // Remove null entries
+        
+        siteSubmissions[orderGroup.id] = formattedSubmissions;
+      } else {
+        siteSubmissions[orderGroup.id] = [];
+      }
     }
 
     // Format response with rich analysis data for OrderSiteReviewTableV2
