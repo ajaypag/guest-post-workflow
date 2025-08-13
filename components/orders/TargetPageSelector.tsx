@@ -37,7 +37,6 @@ export default function TargetPageSelector({
   const [customUrl, setCustomUrl] = useState('');
   const [customAnchor, setCustomAnchor] = useState('');
   const [selectedTarget, setSelectedTarget] = useState<TargetPage | null>(null);
-  const [customUrlError, setCustomUrlError] = useState<string | null>(null);
 
   // Initialize selected target from value
   useEffect(() => {
@@ -67,28 +66,13 @@ export default function TargetPageSelector({
 
   const handleCustomSubmit = () => {
     if (customUrl) {
-      // Validate URL format
-      try {
-        const urlToValidate = customUrl.startsWith('http') ? customUrl : `https://${customUrl}`;
-        const validatedUrl = new URL(urlToValidate);
-        
-        // Ensure it's a valid web URL
-        if (!['http:', 'https:'].includes(validatedUrl.protocol)) {
-          setCustomUrlError('Please enter a valid HTTP or HTTPS URL');
-          return;
-        }
-        
-        const customTarget: TargetPage = {
-          url: validatedUrl.href,
-          anchorText: customAnchor
-        };
-        handleSelectTarget(customTarget);
-        setCustomUrl('');
-        setCustomAnchor('');
-        setCustomUrlError(null);
-      } catch (error) {
-        setCustomUrlError('Please enter a valid URL (e.g., https://example.com/page)');
-      }
+      const customTarget: TargetPage = {
+        url: customUrl,
+        anchorText: customAnchor
+      };
+      handleSelectTarget(customTarget);
+      setCustomUrl('');
+      setCustomAnchor('');
     }
   };
 
@@ -110,12 +94,11 @@ export default function TargetPageSelector({
       }
       acc[baseUrl].push(target);
     } catch {
-      // Invalid URL, put in "invalid" category with warning
-      if (!acc['invalid']) {
-        acc['invalid'] = [];
+      // Invalid URL, put in "other" category
+      if (!acc['other']) {
+        acc['other'] = [];
       }
-      acc['invalid'].push(target);
-      console.warn(`Invalid URL detected in target pages: ${target.url}`);
+      acc['other'].push(target);
     }
     return acc;
   }, {} as Record<string, TargetPage[]>);
@@ -182,44 +165,23 @@ export default function TargetPageSelector({
                 Available Target Pages {groupName && `for ${groupName}`}
               </h3>
               <p className="text-xs text-gray-500 mt-1">
-                {availableTargetPages.length > 0 ? (
-                  <>{availableTargetPages.length} target page{availableTargetPages.length !== 1 ? 's' : ''} defined</>
-                ) : (
-                  <span className="text-amber-600">No target pages defined - use custom entry below</span>
-                )}
+                {availableTargetPages.length} target page{availableTargetPages.length !== 1 ? 's' : ''} defined
               </p>
             </div>
 
             {/* Predefined Target Pages */}
-            {availableTargetPages.length === 0 ? (
-              <div className="p-6 text-center text-gray-500">
-                <p className="text-sm mb-2">No target pages have been defined</p>
-                <p className="text-xs">Use the custom entry option below to add a target page</p>
-              </div>
-            ) : (
-              Object.entries(groupedTargets).map(([domain, targets]) => (
+            {Object.entries(groupedTargets).map(([domain, targets]) => (
               <div key={domain} className="border-b border-gray-100">
                 <div className="px-3 py-2 bg-gray-50">
                   <p className="text-xs font-medium text-gray-600 uppercase tracking-wider">
-                    {domain === 'invalid' ? (
-                      <span className="text-red-600">⚠️ Invalid URLs (Cannot Select)</span>
-                    ) : domain === 'other' ? (
-                      'Other Pages'
-                    ) : (
-                      domain
-                    )}
+                    {domain === 'other' ? 'Other Pages' : domain}
                   </p>
                 </div>
                 {targets.map((target, idx) => (
                   <button
                     key={`${domain}-${idx}`}
-                    onClick={() => domain !== 'invalid' && handleSelectTarget(target)}
-                    disabled={domain === 'invalid'}
-                    className={`w-full px-3 py-3 text-left border-b border-gray-50 last:border-0 ${
-                      domain === 'invalid' 
-                        ? 'opacity-50 cursor-not-allowed bg-red-50' 
-                        : 'hover:bg-blue-50 cursor-pointer'
-                    }`}
+                    onClick={() => handleSelectTarget(target)}
+                    className="w-full px-3 py-3 hover:bg-blue-50 text-left border-b border-gray-50 last:border-0"
                   >
                     <div className="space-y-1">
                       <div className="flex items-center gap-2">
@@ -253,8 +215,7 @@ export default function TargetPageSelector({
                   </button>
                 ))}
               </div>
-            ))
-            )}
+            ))}
 
             {/* Custom Entry Option */}
             {allowCustom && (
@@ -276,18 +237,10 @@ export default function TargetPageSelector({
                       <input
                         type="text"
                         value={customUrl}
-                        onChange={(e) => {
-                          setCustomUrl(e.target.value);
-                          setCustomUrlError(null);
-                        }}
+                        onChange={(e) => setCustomUrl(e.target.value)}
                         placeholder="https://example.com/page"
-                        className={`w-full px-3 py-2 border rounded-md text-sm focus:ring-blue-500 focus:border-blue-500 ${
-                          customUrlError ? 'border-red-300' : 'border-gray-300'
-                        }`}
+                        className="w-full px-3 py-2 border border-gray-300 rounded-md text-sm focus:ring-blue-500 focus:border-blue-500"
                       />
-                      {customUrlError && (
-                        <p className="mt-1 text-xs text-red-600">{customUrlError}</p>
-                      )}
                     </div>
                     <div>
                       <label className="block text-xs font-medium text-gray-700 mb-1">
