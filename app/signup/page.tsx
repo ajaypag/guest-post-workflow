@@ -3,6 +3,7 @@
 import React, { useState } from 'react';
 import { useRouter } from 'next/navigation';
 import Link from 'next/link';
+import { executeRecaptcha } from '@/components/RecaptchaProvider';
 import { 
   Mail, 
   Lock, 
@@ -26,7 +27,11 @@ export default function SignupPage() {
   const [formData, setFormData] = useState({
     email: '',
     password: '',
-    contactName: ''
+    contactName: '',
+    // Honeypot fields (hidden from users, should remain empty)
+    website: '',
+    url: '',
+    company_website: ''
   });
   
   // Check if coming from QuickStart flow  
@@ -110,6 +115,9 @@ export default function SignupPage() {
     setLoading(true);
     
     try {
+      // Execute reCAPTCHA
+      const recaptchaToken = await executeRecaptcha('signup');
+      
       const response = await fetch('/api/accounts/signup', {
         method: 'POST',
         headers: {
@@ -120,7 +128,13 @@ export default function SignupPage() {
           password: formData.password,
           contactName: formData.contactName,
           companyName: formData.email.split('@')[1] || 'Company', // Default from email domain
-          phone: null
+          phone: null,
+          // Include honeypot fields
+          website: formData.website,
+          url: formData.url,
+          company_website: formData.company_website,
+          // Include reCAPTCHA token
+          recaptchaToken
         }),
       });
       
@@ -264,6 +278,37 @@ export default function SignupPage() {
               <p className="mt-1 text-xs text-gray-500">
                 At least 8 characters with uppercase, lowercase, and numbers
               </p>
+            </div>
+            
+            {/* Honeypot fields - hidden from real users */}
+            <div style={{ position: 'absolute', left: '-9999px' }}>
+              <input
+                type="text"
+                name="website"
+                value={formData.website}
+                onChange={(e) => setFormData(prev => ({ ...prev, website: e.target.value }))}
+                tabIndex={-1}
+                autoComplete="off"
+                aria-hidden="true"
+              />
+              <input
+                type="text"
+                name="url"
+                value={formData.url}
+                onChange={(e) => setFormData(prev => ({ ...prev, url: e.target.value }))}
+                tabIndex={-1}
+                autoComplete="off"
+                aria-hidden="true"
+              />
+              <input
+                type="text"
+                name="company_website"
+                value={formData.company_website}
+                onChange={(e) => setFormData(prev => ({ ...prev, company_website: e.target.value }))}
+                tabIndex={-1}
+                autoComplete="off"
+                aria-hidden="true"
+              />
             </div>
             
             <button
