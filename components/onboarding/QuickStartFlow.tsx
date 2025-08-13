@@ -197,21 +197,22 @@ export default function QuickStartFlow() {
     }];
     
     // Update the order with order groups and pricing
+    const pricePerLink = (orderPreferences?.maxPrice || 200) * 100; // Convert to cents
     const updateRes = await fetch(`/api/orders/${orderId}`, {
       method: 'PUT',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({
         orderGroups: orderGroupsData,
-        // Calculate pricing based on link count
-        subtotalRetail: linkCount * 30000, // $300 per link in cents
-        totalRetail: linkCount * 30000,
-        totalWholesale: Math.round(linkCount * 30000 * 0.6), // 60% of retail
+        // Calculate pricing based on link count and actual price per link
+        subtotalRetail: linkCount * pricePerLink,
+        totalRetail: linkCount * pricePerLink,
+        totalWholesale: Math.round(linkCount * pricePerLink * 0.6), // 60% of retail
         estimatedLinksCount: linkCount,
         // Add preferences to the order
         preferencesDrMin: orderPreferences?.drRange?.[0] || 30,
         preferencesDrMax: orderPreferences?.drRange?.[1] || 100,
         preferencesTrafficMin: orderPreferences?.minTraffic || 100,
-        estimatedPricePerLink: orderPreferences?.maxPrice || 20000,
+        estimatedPricePerLink: pricePerLink,
       })
     });
     
