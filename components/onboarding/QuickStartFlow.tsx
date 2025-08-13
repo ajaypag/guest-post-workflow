@@ -221,6 +221,28 @@ export default function QuickStartFlow() {
       throw new Error('Failed to configure order details');
     }
     
+    // Submit the order to move it from 'draft' to 'pending_confirmation'
+    const submitRes = await fetch(`/api/orders/${orderId}/submit`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      credentials: 'include',
+      body: JSON.stringify({
+        quickStart: true, // Flag to indicate this is from QuickStart flow
+        autoConfirm: false // Don't auto-confirm, let internal team review
+      })
+    });
+    
+    if (!submitRes.ok) {
+      const error = await submitRes.json();
+      console.error('Failed to submit order:', error);
+      // Still redirect even if submit fails - order is created at least
+    } else {
+      console.log('Order submitted successfully for internal review');
+    }
+    
+    // For account users, we could optionally trigger auto-confirmation here
+    // But for now, let's keep the normal flow where internal team reviews
+    
     // Redirect directly to the order page (not edit page)
     router.push(`/orders/${orderId}`);
   };
