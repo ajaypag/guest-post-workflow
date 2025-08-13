@@ -2,10 +2,10 @@ import BlogPostTemplate from '@/components/BlogPostTemplate';
 
 export const metadata = {
   title: 'How to Sort and Filter Link Prospects | Complete Guide | Linkio',
-  description: 'Complete guide on sorting and filtering link prospects. Learn to identify quality links, remove duplicates, and build an effective outreach list with advanced techniques.',
+  description: 'Complete guide on sorting and filtering link prospects. Learn to identify quality links, remove duplicates (40% of prospects!), and build an effective outreach list.',
   openGraph: {
     title: 'How to Sort and Filter Link Prospects | Complete Guide | Linkio',
-    description: 'Complete guide on sorting and filtering link prospects. Learn to identify quality links, remove duplicates, and build an effective outreach list with advanced techniques.',
+    description: 'Complete guide on sorting and filtering link prospects. Learn to identify quality links, remove duplicates (40% of prospects!), and build an effective outreach list.',
     type: 'article',
     url: 'https://linkio.com/how-to-sort-and-filter-link-prospects',
     article: {
@@ -18,7 +18,7 @@ export const metadata = {
   twitter: {
     card: 'summary_large_image',
     title: 'How to Sort and Filter Link Prospects | Complete Guide | Linkio',
-    description: 'Complete guide on sorting and filtering link prospects. Learn to identify quality links, remove duplicates, and build an effective outreach list with advanced techniques.',
+    description: 'Complete guide on sorting and filtering link prospects. Learn to identify quality links, remove duplicates (40% of prospects!), and build an effective outreach list.',
   },
   alternates: {
     canonical: 'https://linkio.com/how-to-sort-and-filter-link-prospects',
@@ -29,7 +29,7 @@ export default function HowToSortAndFilterLinkProspectsPage() {
   return (
     <BlogPostTemplate
       title="How to Sort and Filter Link Prospects"
-      metaDescription="Complete guide on sorting and filtering link prospects. Learn to identify quality links, remove duplicates, and build an effective outreach list with advanced filtering techniques."
+      metaDescription="Complete guide on sorting and filtering link prospects. Learn to identify quality links, remove duplicates (40% of prospects!), and build an effective outreach list."
       author="Ajay Paghdal"
       publishDate="February 20, 2021"
       readTime="25 min read"
@@ -37,391 +37,1211 @@ export default function HowToSortAndFilterLinkProspectsPage() {
       <div className="prose prose-lg max-w-none">
         {/* Table of Contents */}
         <nav className="bg-gray-50 rounded-lg p-6 mb-8">
-          <h3 className="text-lg font-semibold mb-4">Quick Navigation</h3>
+          <h3 className="text-lg font-semibold mb-4">Table of Contents</h3>
           <ul className="space-y-2 text-gray-700">
-            <li>• <a href="#preparation" className="hover:text-blue-600">Pre-stage: Setting Up Your Spreadsheet</a></li>
-            <li>• <a href="#remove-pages" className="hover:text-blue-600">What Referring Pages to Remove</a></li>
-            <li>• <a href="#pseudo-prospects" className="hover:text-blue-600">Identifying Pseudo Link Prospects</a></li>
-            <li>• <a href="#low-authority" className="hover:text-blue-600">Low Authority Domains: Keep or Remove?</a></li>
-            <li>• <a href="#nofollow-links" className="hover:text-blue-600">Value of Nofollow Backlinks</a></li>
-            <li>• <a href="#inactive-blogs" className="hover:text-blue-600">Dealing with Inactive Blogs</a></li>
-            <li>• <a href="#guest-posts" className="hover:text-blue-600">Target Pages That Are Guest Posts</a></li>
+            <li>• <a href="#prestage" className="hover:text-blue-600">Prestage of getting your spreadsheet with link prospects ready</a></li>
+            <li>• <a href="#referring-pages" className="hover:text-blue-600">What kind of referring pages should you get rid of?</a></li>
+            <li>• <a href="#pseudo-prospects" className="hover:text-blue-600">Which goodlooking URLs are pseudo link prospects?</a></li>
+            <li>• <a href="#low-authority" className="hover:text-blue-600">Should you gain backlinks from domains with low authority?</a></li>
+            <li>• <a href="#nofollow" className="hover:text-blue-600">Can link prospects providing nofollow backlinks be of any value?</a></li>
+            <li>• <a href="#inactive-blogs" className="hover:text-blue-600">Should you deal with blogs that haven't been updated since last year or earlier?</a></li>
+            <li>• <a href="#guest-posts" className="hover:text-blue-600">What should you do if your target referring page is a guest post?</a></li>
+            <li>• <a href="#final-word" className="hover:text-blue-600">Final Word</a></li>
           </ul>
         </nav>
 
         <p className="text-gray-700 mb-6">
-          Link prospecting goes far beyond simple metrics like domain authority, relevance, traffic, and social signals. 
-          The real challenge begins when you need to make controversial decisions about filtering your prospects.
+          Got stuck sorting out your link prospects?
         </p>
 
         <p className="text-gray-700 mb-6">
-          Should you target low-authority domains? What about nofollow links? How do you distinguish genuine content 
-          creators from time-wasters? This comprehensive guide will help you sort and filter link prospects like a pro.
+          Every other guide out there suggests that you should rely on the domain authority, relevance, traffic, and social signals. The higher, the better.
+        </p>
+
+        <p className="text-gray-700 mb-6">
+          While there's absolutely nothing wrong with such advice, it's the tip of the iceberg.
+        </p>
+
+        <p className="text-gray-700 mb-6">
+          Once you dig deeper into your spreadsheet with link prospects, you'll run into a bunch of controversies that no one explains how to deal with.
+        </p>
+
+        <p className="text-gray-700 mb-6">
+          Should you cross ALL the lowauthority domains off your list? What if you're just starting out, and influencers ignore your outreach emails?
+        </p>
+
+        <p className="text-gray-700 mb-6">
+          Are nofollow links ALWAYS nogo options? How about the fact that a backlink profile looks natural to Google only when it contains both dofollow and nofollow links?
+        </p>
+
+        <p className="text-gray-700 mb-6">
+          Is there a way to distinguish bloggers with a genuine interest in content from timewasters?
+        </p>
+
+        <p className="text-gray-700 mb-6">
+          I could go on with arguable points like these… But let me shed some light on them instead.
+        </p>
+
+        <p className="text-gray-700 mb-6">
+          This chapter talks about how to sort out link prospects in your sheet and beyond it.
+        </p>
+
+        <p className="text-gray-700 mb-6">
+          No superficial info – I'll guide you through the process from the inside, where confusion arises all the time.
         </p>
 
         <div className="bg-blue-50 border-l-4 border-blue-500 p-6 mb-8">
-          <h4 className="text-lg font-bold text-gray-900 mb-3">📊 Filtering Results</h4>
           <p className="text-gray-700">
-            After applying the filtering techniques in this guide, I kept only <strong>31% of original link prospects</strong>. 
-            This dramatic reduction led to a much higher success rate and saved countless hours of outreach time.
+            We also have a free backlink filtering tool that will save you hours on sorting through your list of prospects. You can test drive it here or use the dedicated page for a more clutterfree workspace.
           </p>
         </div>
 
-        <h2 id="preparation" className="text-2xl font-bold text-gray-900 mb-6">Pre-stage: Getting Your Spreadsheet Ready</h2>
+        <h2 id="prestage" className="text-2xl font-bold text-gray-900 mb-6">Prestage of getting your spreadsheet with link prospects ready</h2>
 
         <p className="text-gray-700 mb-6">
-          Before diving into filtering, you need a well-organized spreadsheet with the right metrics. Here's what to include:
+          But first things first. If you haven't prepared a spreadsheet with your link prospects yet, follow these three easy steps.
+        </p>
+
+        <p className="text-gray-700 mb-6">
+          <strong>0.1.</strong> Go to your backlink checker and export backlinks to your competing pages.
+        </p>
+
+        <p className="text-gray-700 mb-6">
+          Just like in the previous chapter, I'll stick with the example of needing link prospects for my compilation of keyword tools.
+        </p>
+
+        <p className="text-gray-700 mb-6">
+          For my research, I exported backlinks to 33 similar compilations, which totals 3383 URLs.
+        </p>
+
+        <p className="text-gray-700 mb-6">
+          <strong>0.2.</strong> Combine many spreadsheets into one following this easy, twominute guide.
+        </p>
+
+        <p className="text-gray-700 mb-6">
+          <strong>0.3.</strong> Depending on your backlink checker (I use Ahrefs, as it's probably the best platform for SEO for SaaS at the moment, especially when it comes to link building), your sheet will contain a lot of columns to make you dizzy.
+        </p>
+
+        <p className="text-gray-700 mb-6">
+          I suggest that you keep columns with the following metrics (or their analogs if you use a different tool):
+        </p>
+
+        <ul className="list-disc list-inside text-gray-700 space-y-2 mb-6">
+          <li>DR (how strong a backlink profile of an entire referring domain is);</li>
+          <li>UR (how strong a backlink profile of a single referring page is);</li>
+          <li>Referring Page URL;</li>
+          <li>Referring Page Title;</li>
+          <li>Link URL (the URL of your competing page);</li>
+          <li>TextPre (a snippet of text that precedes a backlink anchor);</li>
+          <li>Link Anchor (a clickable snippet of text in a hyperlink);</li>
+          <li>TextPost (a snippet of text that follows a backlink anchor);</li>
+          <li>Type (dofollow or nofollow);</li>
+          <li>Language;</li>
+          <li>Traffic (how much traffic a referring page receives from Google's organic search monthly);</li>
+          <li>Linked Domains (how many domains your target links out to via dofollow backlinks).</li>
+        </ul>
+
+        <p className="text-gray-700 mb-6">
+          As for the rest, feel free to remove them. With too many columns in your sheet, you won't know where to look first. It's distracting.
+        </p>
+
+        <p className="text-gray-700 mb-6">
+          Now that you have all the necessary data in one place, let's start.
+        </p>
+
+        <h2 id="referring-pages" className="text-2xl font-bold text-gray-900 mb-6">What kind of referring pages should you get rid of?</h2>
+
+        <p className="text-gray-700 mb-6">
+          Dealing with your actual link prospects isn't the first step, as you might have expected.
+        </p>
+
+        <p className="text-gray-700 mb-6">
+          You'll be surprised to see how much trash your spreadsheet contains.
+        </p>
+
+        <p className="text-gray-700 mb-6">
+          The crawler of your backlink checker can go into the deepest corners of the web and find links where you'd never imagine.
+        </p>
+
+        <p className="text-gray-700 mb-6">
+          My point is not all the URLs you see in your sheet are actual link prospects. Let's put on gloves and clean it up.
+        </p>
+
+        <p className="text-gray-700 mb-6">
+          Check out what kind of referring pages you should get rid of at this stage.
+        </p>
+
+        <div className="bg-yellow-50 border-l-4 border-yellow-500 p-6 mb-8">
+          <p className="text-gray-700">
+            <strong>Spoiler.</strong> Having filtered out referring pages in my sheet, I kept only almost 31% of them.
+          </p>
+        </div>
+
+        <h3 className="text-xl font-bold text-gray-900 mb-4">1.1. URLs of referring pages in foreign languages</h3>
+
+        <p className="text-gray-700 mb-6">
+          A Germanspeaking writer shouldn't suggest to the Germanspeaking audience that they check a post in Italian. Logically, most of them won't understand the copy.
+        </p>
+
+        <p className="text-gray-700 mb-6">
+          That's why you don't need to contact authors of foreignlanguage posts with a link request. To find and remove them, sort your spreadsheet by language in a corresponding column.
+        </p>
+
+        <p className="text-gray-700 mb-6">
+          At times, that column can be empty or even contain your target language code (en – English in my case), but pages are still foreign.
+        </p>
+
+        <p className="text-gray-700 mb-6">
+          To detect such cases, scroll through the sheet and doublecheck the titles of your referring pages.
+        </p>
+
+        <div className="bg-gray-50 border-l-4 border-gray-300 p-6 mb-8">
+          <p className="text-gray-700">
+            <strong>Note.</strong> If you promote a product rather than content, you can gain backlinks from foreignlanguage pages. But make sure you have a localized version of your product page.
+          </p>
+        </div>
+
+        <h3 className="text-xl font-bold text-gray-900 mb-4">1.2. URLs of duplicate referring pages</h3>
+
+        <p className="text-gray-700 mb-6">
+          This is the biggest category of unwanted URLs you'll have in your spreadsheet – <strong>40% in my case</strong>.
+        </p>
+
+        <p className="text-gray-700 mb-6">
+          The web is full of duplicate pages, which end up in backlink databases eventually.
+        </p>
+
+        <p className="text-gray-700 mb-6">
+          The reasons for such a web pollution phenomenon vary.
+        </p>
+
+        <p className="text-gray-700 mb-6">
+          Some writers repost their content on platforms like growthhackers.com and medium.com. It's called content syndication in marketing and is a good strategy indeed.
+        </p>
+
+        <p className="text-gray-700 mb-6">
+          Others repost someone else's content because they don't have time, resources, or skills (excuses vary individually:) to produce their own.
+        </p>
+
+        <p className="text-gray-700 mb-6">
+          Some bloggers don't even repost the entire copy. They just publish the first few paragraphs of the original or write a short overview of it. You can treat such cases as duplicates too.
+        </p>
+
+        <p className="text-gray-700 mb-6">
+          While sorting out your sheet, you can come across reposts of:
+        </p>
+
+        <ul className="list-disc list-inside text-gray-700 space-y-2 mb-6">
+          <li>referring pages;</li>
+          <li>competing pages;</li>
+          <li>other pages on competitors' blogs.</li>
+        </ul>
+
+        <p className="text-gray-700 mb-6">
+          Since people who do reposts aren't actual authors, there's no need to reach out to them. They won't edit the original.
+        </p>
+
+        <p className="text-gray-700 mb-6">
+          It's like changing interviewee's quotes in journalism – unethical and can have consequences if the word gets out.
+        </p>
+
+        <p className="text-gray-700 mb-6">
+          All you can do here is identify duplicates and remove them asap. Here are three quick ways to do it right in your sheet. No need to click through each URL.
+        </p>
+
+        <div className="bg-gray-50 border-l-4 border-gray-300 p-6 mb-8">
+          <p className="text-gray-700">
+            <strong>Note.</strong> When removing duplicates, make sure you keep the original. As a rule, it will have a higher DR than reposts.
+          </p>
+        </div>
+
+        <h4 className="text-lg font-bold text-gray-900 mb-4">1.2.1. Sort the data by title (Referring Page Title column).</h4>
+
+        <p className="text-gray-700 mb-6">
+          You may notice minor variations in titles of the same reposted page. It happens because some authors update their articles over time.
+        </p>
+
+        <p className="text-gray-700 mb-6">
+          As shown below, there were 8 tools on the list at first. Later, the author added a few more and rephrased the title a bit.
+        </p>
+
+        <div className="bg-blue-50 border-l-4 border-blue-300 p-6 mb-8">
+          <p className="text-gray-700">
+            <strong>Tip.</strong> When you update your content, add minor changes to the title. Leave the main keyword as is, but rephrase the surrounding text. It will help you diversify your backlink anchors in the long run.
+          </p>
+        </div>
+
+        <p className="text-gray-700 mb-6">
+          In the previous step, you should have removed domains with the same name yet different TLDs for foreign languages.
+        </p>
+
+        <p className="text-gray-700 mb-6">
+          I'm referring to cases like hostinger.pt for Portuguese, hostinger.ru for Russian, hostinger.co.id for Indonesian, etc.
+        </p>
+
+        <p className="text-gray-700 mb-6">
+          At this stage, you may still find domains with the same name and language yet different TLDs. Keep the URL with higher DR & UR metrics and delete the rest.
+        </p>
+
+        <h4 className="text-lg font-bold text-gray-900 mb-4">1.2.2. Sort the data by surrounding text (TextPre and TextPost columns).</h4>
+
+        <p className="text-gray-700 mb-6">
+          Many people who do reposts have a nasty habit of editing original titles. The most common scenario is adding blog names to the beginning of page titles.
+        </p>
+
+        <p className="text-gray-700 mb-6">
+          Due to such edits, you won't be able to identify duplicates if you sort URLs by title.
+        </p>
+
+        <p className="text-gray-700 mb-6">
+          The good thing is there's another way out.
+        </p>
+
+        <p className="text-gray-700 mb-6">
+          While page titles differ, backlink anchors and surrounding text remain the same, just like the rest of the content.
+        </p>
+
+        <p className="text-gray-700 mb-6">
+          So, you need to sort your sheet by the text preceding the anchor (TextPre) to see more identicals.
+        </p>
+
+        <div className="bg-gray-50 border-l-4 border-gray-300 p-6 mb-8">
+          <p className="text-gray-700 mb-4">
+            <strong>Note.</strong> Wonder why you should sort by the preceding text rather than anchors?
+          </p>
+          <p className="text-gray-700 mb-4">
+            The thing is identical anchors don't always signify duplicate content.
+          </p>
+          <p className="text-gray-700 mb-4">
+            Anchors can match when authors refer to brand names, entire post titles, or use natural language like "click here" or even keywords.
+          </p>
+          <p className="text-gray-700">
+            But if the surrounding text differs, these are different articles.
+          </p>
+        </div>
+
+        <p className="text-gray-700 mb-6">
+          When a link stands at the beginning of a new paragraph, there'll be no preceding text. In such cases, sort the data by the text following the anchor. (TextPost).
+        </p>
+
+        <p className="text-gray-700 mb-6">
+          To find more duplicates, check if anchors and surrounding text contain any of the following phrases:
+        </p>
+
+        <ul className="list-disc list-inside text-gray-700 space-y-2 mb-6">
+          <li>source;</li>
+          <li>original;</li>
+          <li>appeared first, etc.</li>
+        </ul>
+
+        <div className="bg-gray-50 border-l-4 border-gray-300 p-6 mb-8">
+          <p className="text-gray-700 mb-4">
+            <strong>Note.</strong> Phrases like "Source" don't necessarily indicate duplicates.
+          </p>
+          <p className="text-gray-700">
+            Writers can use them to attribute to resources whose stats or quotes they borrowed for their articles. Better doublecheck such cases by clicking through referring pages.
+          </p>
+        </div>
+
+        <h4 className="text-lg font-bold text-gray-900 mb-4">1.2.3. Check your spreadsheet for the names of popular blogging platforms.</h4>
+
+        <p className="text-gray-700 mb-6">
+          Have you noticed that tons of duplicate URLs are hosted on BlogSpot? I bet you have.
+        </p>
+
+        <p className="text-gray-700 mb-6">
+          This is a popular blogging platform where writers repost articles originally published on their blogs.
+        </p>
+
+        <p className="text-gray-700 mb-6">
+          If you still have any URLs hosted there, feel free to remove them.
+        </p>
+
+        <p className="text-gray-700 mb-6">
+          Even if they're not duplicates, their metrics are still too miserable to get any value from. Check out URLs with a zero or nearzero DR below.
+        </p>
+
+        <p className="text-gray-700 mb-6">
+          In fact, there's no need to reach out to owners of such BlogSpot pages. You can easily register there yourself and publish as many posts as you like.
+        </p>
+
+        <p className="text-gray-700 mb-6">
+          BlogSpot isn't the only platform of this kind.
+        </p>
+
+        <p className="text-gray-700 mb-6">
+          In the example below, you can see that Startup Institute reposts content on Squarespace. So do Magnetika and others.
+        </p>
+
+        <p className="text-gray-700 mb-6">
+          Here are more examples of such blogging platforms. Their names are mostly "blog" derivatives (bluxeblog, tblogz, blogolize), which will help you identify them at a glance.
+        </p>
+
+        <div className="bg-gray-50 border-l-4 border-gray-300 p-6 mb-8">
+          <p className="text-gray-700 mb-4">
+            <strong>Note.</strong> As you can see, many results have a high DR unlike pages hosted on BlogSpot and Squarespace.
+          </p>
+          <p className="text-gray-700 mb-4">
+            Don't let it mislead you. The reason for such an overrated DR is the imperfection of the tool I use, not the high quality of those pages.
+          </p>
+          <p className="text-gray-700 mb-4">
+            Ahrefs treats each subdomain on BlogSpot and Squarespace as a standalone domain, which makes sense.
+          </p>
+          <p className="text-gray-700 mb-4">
+            But they don't seem to keep track of all the blogging platforms out there, so they can't estimate DR correctly in such cases.
+          </p>
+          <p className="text-gray-700">
+            No matter what the tool you use says, these are all lowquality pages you need to delete.
+          </p>
+        </div>
+
+        <h3 className="text-xl font-bold text-gray-900 mb-4">1.3. URLs of referring pages that look like trash</h3>
+
+        <p className="text-gray-700 mb-6">
+          Once you get done with all kinds of duplicates, you'll notice more trash in your spreadsheet.
+        </p>
+
+        <p className="text-gray-700 mb-6">
+          The rule of thumb is to delete everything that doesn't look like a normal URL of a content page.
+        </p>
+
+        <h4 className="text-lg font-bold text-gray-900 mb-4">1.3.1. Remove URL shorteners.</h4>
+
+        <h4 className="text-lg font-bold text-gray-900 mb-4">1.3.2. Remove URLs with an IP instead of a domain name</h4>
+
+        <p className="text-gray-700 mb-6">
+          If you sort your sheet by the name of the referring page URL, such results will be at the top.
+        </p>
+
+        <h4 className="text-lg font-bold text-gray-900 mb-4">1.3.3. Remove URLs of feeds, social networks, and content curation platforms.</h4>
+
+        <p className="text-gray-700 mb-6">
+          Such URLs typically include "feed," "rss," "@", or user names.
+        </p>
+
+        <h4 className="text-lg font-bold text-gray-900 mb-4">1.3.4. Remove URLs that look like abracadabra.</h4>
+
+        <h4 className="text-lg font-bold text-gray-900 mb-4">1.3.5. Remove URLs that are not meaningful content pages</h4>
+
+        <p className="text-gray-700 mb-6">
+          For easier identification, check your sheet for /site/, /search/, /find/, /comment/, /tag/, signup, login and the like.
+        </p>
+
+        <p className="text-gray-700 mb-6">
+          Some referring pages can also have "domain.com" at the end of their URLs, as shown at the bottom of this screenshot.
+        </p>
+
+        <div className="bg-gray-50 border-l-4 border-gray-300 p-6 mb-8">
+          <p className="text-gray-700">
+            <strong>Note.</strong> In rare cases, sites use /tag/ in the URL structure of blog posts. Don't remove them from your list of link prospects.
+          </p>
+        </div>
+
+        <p className="text-gray-700 mb-6">
+          Pages related to coupons and promo codes are also subject to removal. Check URLs for anything like "coupon," "promo," "deal," "discount," "voucher," etc.
+        </p>
+
+        <p className="text-gray-700 mb-6">
+          These are common examples of link trash for the SEO industry. You may find some other schemes, depending on your niche.
+        </p>
+
+        <h3 className="text-xl font-bold text-gray-900 mb-4">1.4. URLs of referring pages from forums and communities.</h3>
+
+        <p className="text-gray-700 mb-6">
+          To make it clear, I don't mind building links on forums, communities, and Q&A sites.
+        </p>
+
+        <p className="text-gray-700 mb-6">
+          But since there's no need to contact anyone with a link request, you should remove such URLs from your outreach list.
+        </p>
+
+        <p className="text-gray-700 mb-6">
+          They generally contain "forum," "thread," "community," "discussion," etc.
+        </p>
+
+        <h3 className="text-xl font-bold text-gray-900 mb-4">1.5. URLs of any pages but blog posts</h3>
+
+        <p className="text-gray-700 mb-6">
+          These are homepages, about pages, portfolios, product pages, etc.
+        </p>
+
+        <p className="text-gray-700 mb-6">
+          To identify such URLs, check your sheet for /about/, /portfolio/, /product/, /service/, or simply by eye in the case of homepages.
+        </p>
+
+        <p className="text-gray-700 mb-6">
+          People prefer linking to their partners and customer testimonials from homepages.
+        </p>
+
+        <p className="text-gray-700 mb-6">
+          I hate to be the one who brings you bad news. But if you're not a wellknown figure in your niche, your testimonials aren't in demand, sorry.
+        </p>
+
+        <h3 className="text-xl font-bold text-gray-900 mb-4">1.6. URLs of podcasts, webinars, and interviews</h3>
+
+        <p className="text-gray-700 mb-6">
+          This type of content is somewhat timesensitive, at least from a link prospecting angle.
+        </p>
+
+        <p className="text-gray-700 mb-6">
+          If someone recommended your competitor's article in an interview a while ago, you can't go back in time and change it.
+        </p>
+
+        <p className="text-gray-700 mb-6">
+          What's done is done.
+        </p>
+
+        <p className="text-gray-700 mb-6">
+          No one is going to edit an audio or video file, which makes it pointless to edit its transcript.
+        </p>
+
+        <p className="text-gray-700 mb-6">
+          You can identify such pages by "episode," "podcast," "webinar," "interview," or interviewee's name in URLs.
+        </p>
+
+        <div className="bg-gray-50 border-l-4 border-gray-300 p-6 mb-8">
+          <p className="text-gray-700 mb-4">
+            <strong>Note.</strong> You can reach out to interviewees and show your content. If they still talk about your topic, they may give you a mention in their future interviews.
+          </p>
+          <p className="text-gray-700 mb-4">
+            Or you can contact podcasters and arrange to participate in one of their upcoming episodes.
+          </p>
+          <p className="text-gray-700">
+            But you won't be able to gain a backlink from past podcasts you have in the sheet.
+          </p>
+        </div>
+
+        <h2 id="pseudo-prospects" className="text-2xl font-bold text-gray-900 mb-6">Which goodlooking URLs are pseudo link prospects?</h2>
+
+        <p className="text-gray-700 mb-6">
+          Got done with duplicates and other meaningless pages?
+        </p>
+
+        <p className="text-gray-700 mb-6">
+          Take a oneminute break and welcome a new portion of trash masked behind goodlooking URLs.
+        </p>
+
+        <p className="text-gray-700 mb-6">
+          This time, the analysis of link prospects will go beyond your spreadsheet. You'll need to click through URLs and practice analytical thinking.
+        </p>
+
+        <p className="text-gray-700 mb-6">
+          Here's what kind of referring pages will drop out at this stage.
+        </p>
+
+        <h3 className="text-xl font-bold text-gray-900 mb-4">2.1. Nonopeners</h3>
+
+        <p className="text-gray-700 mb-6">
+          Check out the URLs below. In terms of structure and wording, they look pretty normal, don't they?
+        </p>
+
+        <p className="text-gray-700 mb-6">
+          But good looks can be deceiving, especially in link prospecting. None of those URLs open for one reason or another:
+        </p>
+
+        <ul className="list-disc list-inside text-gray-700 space-y-2 mb-6">
+          <li>the server is down (error 521);</li>
+          <li>the page could not be found (error 404);</li>
+          <li>the IP address could not be found;</li>
+          <li>the domain name has expired;</li>
+          <li>the website took too long to respond;</li>
+          <li>the website couldn't provide a secure connection.</li>
+        </ul>
+
+        <p className="text-gray-700 mb-6">
+          Curious about how those pages got to your spreadsheet if they don't open?
+        </p>
+
+        <p className="text-gray-700 mb-6">
+          Here's how it works.
+        </p>
+
+        <p className="text-gray-700 mb-6">
+          The bot of your tool recrawls URLs once in a while to check if links are still there. Since its database contains millions of URLs, it can't recrawl every URL every day.
+        </p>
+
+        <p className="text-gray-700 mb-6">
+          Due to such a delay, the bot can't learn about such issues immediately, so nonopeners remain in the database for a while.
+        </p>
+
+        <div className="bg-gray-50 border-l-4 border-gray-300 p-6 mb-8">
+          <p className="text-gray-700">
+            <strong>Note.</strong> Some issues can be temporary. Doublecheck later if any of those pages got back to normal.
+          </p>
+        </div>
+
+        <h3 className="text-xl font-bold text-gray-900 mb-4">2.2. URLs of referring pages with thirdrate content</h3>
+
+        <p className="text-gray-700 mb-6">
+          Let me clarify the idea of blogger outreach to loot competitors' backlinks.
+        </p>
+
+        <p className="text-gray-700 mb-6">
+          When you want someone to replace a backlink to your competitor's article with a link to yours, that person should deeply care about the content.
+        </p>
+
+        <p className="text-gray-700 mb-6">
+          Content enthusiasts usually publish longform guides, unique life hacks, studies based on their personal experience, etc.
+        </p>
+
+        <p className="text-gray-700 mb-6">
+          Are bloggers who post a few paragraphs of basic info content enthusiasts? I doubt it. At least, not to the extent of wishing to replace a current backlink with a better one.
+        </p>
+
+        <p className="text-gray-700 mb-6">
+          Nine times out of ten, a site that publishes short articles is nothing but a content farm.
+        </p>
+
+        <p className="text-gray-700 mb-6">
+          Such companies hire a lot of lowpaid writers who produce loads of thirdrate content.
+        </p>
+
+        <p className="text-gray-700 mb-6">
+          Since there's an SEO rule to link out to a few websites from each post, those writers pick the first page they find in Google. Whatever.
+        </p>
+
+        <p className="text-gray-700 mb-6">
+          They don't respond to link requests or charge fees when they do.
+        </p>
+
+        <p className="text-gray-700 mb-6">
+          Content farms usually don't reveal their writers' identities and publish articles under an unidentified admin in the bio section.
+        </p>
+
+        <div className="bg-gray-50 border-l-4 border-gray-300 p-6 mb-8">
+          <p className="text-gray-700 mb-4">
+            <strong>Note.</strong> Don't make decisions based on the word count only.
+          </p>
+          <p className="text-gray-700">
+            Some writers are skilled enough to fit their original ideas into a short piece of text. Skim through the text to figure out if the info is basic indeed and can be found in every other post in Google.
+          </p>
+        </div>
+
+        <h3 className="text-xl font-bold text-gray-900 mb-4">2.3. URLs of referring pages with rewrites</h3>
+
+        <p className="text-gray-700 mb-6">
+          Analyzing link prospects, you'll notice that some articles sound familiar to you. The socalled feeling of deja vu.
+        </p>
+
+        <p className="text-gray-700 mb-6">
+          Such pages are close to duplicates, but they aren't. I wish they were… That way, you'd be able to identify them as quickly as you did earlier, by sorting your sheet by the text surrounding anchors.
+        </p>
+
+        <p className="text-gray-700 mb-6">
+          What can disclose rewritten content is a double bio on the page.
+        </p>
+
+        <p className="text-gray-700 mb-6">
+          Or you can spot the same table of contents in different articles.
+        </p>
+
+        <p className="text-gray-700 mb-6">
+          Check out the example below. It's not even a goodquality rewrite.
+        </p>
+
+        <p className="text-gray-700 mb-6">
+          They just used a tool that automatically replaces words from the original with synonyms. The structure of sentences remains unchanged, though.
+        </p>
+
+        <h3 className="text-xl font-bold text-gray-900 mb-4">2.4. URLs of referring pages with mumbo jumbo</h3>
+
+        <p className="text-gray-700 mb-6">
+          While gaining backlinks from short articles can be debatable, you don't need them from awful copy for sure.
+        </p>
+
+        <p className="text-gray-700 mb-6">
+          I'm referring to articles with tons of grammatical errors. Commonly written by bad English speakers, they all sound like gibberish.
+        </p>
+
+        <h3 className="text-xl font-bold text-gray-900 mb-4">2.5. URLs of referring pages with awful typography</h3>
+
+        <p className="text-gray-700 mb-6">
+          Besides awful copy, you can stumble upon pages with awful typography. It devalues the content and your link prospects accordingly.
+        </p>
+
+        <p className="text-gray-700 mb-6">
+          Now, riddle me that. How many paragraphs are there in the screenshot below? One?
+        </p>
+
+        <p className="text-gray-700 mb-6">
+          It may blow your mind, but there are three more paragraphs under the first one. You need to strain your eyes to see them.
+        </p>
+
+        <p className="text-gray-700 mb-6">
+          This is the first time I've seen headings smaller than the text in paragraphs. ¯\_(ツ)_/¯
+        </p>
+
+        <p className="text-gray-700 mb-6">
+          Another example is a weirdlooking menu that takes up the entire screen space. You can call it anything but userfriendly navigation.
+        </p>
+
+        <p className="text-gray-700 mb-6">
+          What makes it all especially ridiculous is the fact that those guys provide web design and development services.
+        </p>
+
+        <p className="text-gray-700 mb-6">
+          How about creating a userfriendly menu for your site, huh?
+        </p>
+
+        <h2 id="low-authority" className="text-2xl font-bold text-gray-900 mb-6">Should you gain backlinks from domains with low authority?</h2>
+
+        <p className="text-gray-700 mb-6">
+          The main stumbling point in link prospecting is whether you should deal with domains that have a low authority score.
+        </p>
+
+        <p className="text-gray-700 mb-6">
+          To answer this question, let's figure out what this metric is all about.
+        </p>
+
+        <p className="text-gray-700 mb-6">
+          Many SEO tools have it but call it in different ways: Domain Authority, Domain Rating, Trust Flow, etc. Learn how they describe their metrics.
         </p>
 
         <div className="bg-gray-50 rounded-lg p-6 mb-8">
-          <h4 className="text-lg font-bold text-gray-900 mb-4">Essential Metrics to Keep</h4>
           <ul className="list-disc list-inside text-gray-700 space-y-2">
-            <li><strong>DR (Domain Rating):</strong> Overall domain authority</li>
-            <li><strong>UR (URL Rating):</strong> Page-level authority</li>
-            <li><strong>Referring Page URL:</strong> The actual page you'll target</li>
-            <li><strong>Link Anchor:</strong> Anchor text of existing backlinks</li>
-            <li><strong>Type:</strong> Dofollow or nofollow classification</li>
-            <li><strong>Language:</strong> Content language detection</li>
-            <li><strong>Traffic:</strong> Organic traffic estimates</li>
-            <li><strong>Linked Domains:</strong> Number of unique domains linking to the page</li>
+            <li><strong>Trust Flow (TF) by Majestic</strong></li>
+            <li><strong>Domain Authority (DA) by Moz</strong></li>
+            <li><strong>Domain Rating (DR) by Ahrefs</strong></li>
           </ul>
         </div>
 
-        <h2 id="remove-pages" className="text-2xl font-bold text-gray-900 mb-6">What Kind of Referring Pages Should You Remove?</h2>
-
-        <h3 className="text-xl font-bold text-gray-900 mb-4">1. Foreign Language URLs</h3>
         <p className="text-gray-700 mb-6">
-          Unless you're specifically targeting international audiences, remove URLs in foreign languages. 
-          Use the language detection column in your backlink checker to filter these out quickly.
+          While the names of this metric differ at each company, it's based on the same thing – backlinks and nothing else.
         </p>
-
-        <h3 className="text-xl font-bold text-gray-900 mb-4">2. Duplicate Referring Pages</h3>
-        <p className="text-gray-700 mb-4">
-          <strong>Critical insight:</strong> About 40% of typical prospect spreadsheets contain duplicates. Here's how to find them:
-        </p>
-
-        <div className="space-y-6 mb-8">
-          <div className="bg-yellow-50 border-l-4 border-yellow-500 p-6">
-            <h4 className="text-lg font-bold text-gray-900 mb-3">Method 1: Sort by Title</h4>
-            <p className="text-gray-700">
-              Sort your spreadsheet by the "Referring Page Title" column. Look for identical or very similar titles. 
-              These often indicate the same content published on multiple platforms or duplicate entries.
-            </p>
-          </div>
-
-          <div className="bg-yellow-50 border-l-4 border-yellow-500 p-6">
-            <h4 className="text-lg font-bold text-gray-900 mb-3">Method 2: Check Surrounding Text</h4>
-            <p className="text-gray-700">
-              Compare "TextPre" and "TextPost" columns (text before and after the link). Identical surrounding 
-              text usually means duplicate content, even if URLs differ.
-            </p>
-          </div>
-
-          <div className="bg-yellow-50 border-l-4 border-yellow-500 p-6">
-            <h4 className="text-lg font-bold text-gray-900 mb-3">Method 3: Popular Blogging Platforms</h4>
-            <p className="text-gray-700">
-              Check for multiple URLs from BlogSpot, Squarespace, or other popular platforms. These often 
-              indicate syndicated content or multiple blogs by the same author.
-            </p>
-          </div>
-        </div>
-
-        <h3 className="text-xl font-bold text-gray-900 mb-4">3. Trash URLs</h3>
-        <p className="text-gray-700 mb-4">Remove these low-quality URL types immediately:</p>
-
-        <ul className="list-disc list-inside text-gray-700 mb-8 space-y-2">
-          <li><strong>URL Shorteners:</strong> bit.ly, t.co, tinyurl.com, etc.</li>
-          <li><strong>IP Addresses:</strong> URLs using IP instead of domain names</li>
-          <li><strong>Feeds and Social Networks:</strong> RSS feeds, Facebook, Twitter, LinkedIn posts</li>
-          <li><strong>Content Curation Platforms:</strong> Scoop.it, Paper.li, Pinterest boards</li>
-          <li><strong>Gibberish URLs:</strong> Random character strings or auto-generated pages</li>
-          <li><strong>Non-meaningful Content:</strong> Directory listings, thin affiliate pages</li>
-        </ul>
-
-        <h3 className="text-xl font-bold text-gray-900 mb-4">4. Forums and Communities</h3>
-        <p className="text-gray-700 mb-6">
-          While forums can provide valuable backlinks, they require different outreach strategies. 
-          Unless you have a specific forum outreach plan, filter these out for traditional blogger outreach campaigns.
-        </p>
-
-        <h3 className="text-xl font-bold text-gray-900 mb-4">5. Non-Blog Pages</h3>
-        <p className="text-gray-700 mb-6">
-          Remove homepages, about pages, contact pages, and portfolios. These rarely accept guest posts 
-          or link insertions. Focus on blog posts and resource pages instead.
-        </p>
-
-        <h3 className="text-xl font-bold text-gray-900 mb-4">6. Podcasts, Webinars, and Interviews</h3>
-        <p className="text-gray-700 mb-8">
-          Audio and video content requires specialized outreach approaches. Unless you're specifically 
-          targeting podcast mentions, these should be filtered out for blog-focused campaigns.
-        </p>
-
-        <h2 id="pseudo-prospects" className="text-2xl font-bold text-gray-900 mb-6">Which Good-Looking URLs Are Pseudo Link Prospects?</h2>
 
         <p className="text-gray-700 mb-6">
-          Some URLs look promising on paper but won't deliver results. Here's how to identify them:
+          The problem is you can't get a clear idea about the entire domain quality from one angle only.
         </p>
-
-        <h3 className="text-xl font-bold text-gray-900 mb-4">1. Non-Openers</h3>
-        <ul className="list-disc list-inside text-gray-700 mb-6 space-y-2">
-          <li><strong>Error 404:</strong> Page not found</li>
-          <li><strong>Error 521:</strong> Web server is down</li>
-          <li><strong>Expired Domains:</strong> No longer maintained or owned</li>
-        </ul>
-
-        <h3 className="text-xl font-bold text-gray-900 mb-4">2. Third-Rate Content (Content Farms)</h3>
-        <p className="text-gray-700 mb-6">
-          Look for signs of low-quality content farms: excessive ads, thin content, poor grammar, 
-          or obvious keyword stuffing. These sites won't provide quality link juice or referral traffic.
-        </p>
-
-        <h3 className="text-xl font-bold text-gray-900 mb-4">3. Content Rewrites</h3>
-        <p className="text-gray-700 mb-6">
-          Watch for duplicate content disguised with synonyms. If you see identical structure but 
-          different words, it's likely spun or rewritten content with minimal value.
-        </p>
-
-        <h3 className="text-xl font-bold text-gray-900 mb-4">4. Poor Writing Quality</h3>
-        <p className="text-gray-700 mb-6">
-          Pages with obvious grammatical errors, poor sentence structure, or broken English indicate 
-          low editorial standards. These sites are less likely to drive quality traffic.
-        </p>
-
-        <h3 className="text-xl font-bold text-gray-900 mb-4">5. Awful Typography</h3>
-        <p className="text-gray-700 mb-8">
-          Sites with terrible design, unreadable fonts, or poor layout suggest low investment in quality. 
-          Users rarely engage deeply with poorly designed sites.
-        </p>
-
-        <h2 id="low-authority" className="text-2xl font-bold text-gray-900 mb-6">Should You Target Domains with Low Authority?</h2>
 
         <p className="text-gray-700 mb-6">
-          This is one of the most controversial decisions in link building. Here are two approaches:
+          To understand its true value, you should analyze more metrics and people behind it.
         </p>
 
-        <div className="space-y-8 mb-8">
-          <div className="bg-green-50 border-l-4 border-green-500 p-6">
-            <h3 className="text-xl font-bold text-gray-900 mb-4">Metrics-Based Approach</h3>
-            
-            <h4 className="text-lg font-semibold text-gray-900 mb-3">Organic Traffic Analysis</h4>
-            <p className="text-gray-700 mb-4">
-              Low DR doesn't always mean low value. Check organic traffic numbers. A site with DR 20 
-              but 50K monthly organic visitors can be more valuable than DR 50 with 500 visitors.
-            </p>
+        <h3 className="text-xl font-bold text-gray-900 mb-4">3.1. Metricsbased approach</h3>
 
-            <h4 className="text-lg font-semibold text-gray-900 mb-3">Organic Keywords Evaluation</h4>
-            <p className="text-gray-700 mb-4">
-              Look at the number and quality of keywords the domain ranks for. A site ranking for 
-              thousands of relevant keywords shows Google's trust, regardless of DR.
-            </p>
+        <p className="text-gray-700 mb-6">
+          If your SEO tool has a batch analysis feature, you're lucky. It'll save you a lot of time.
+        </p>
 
-            <h4 className="text-lg font-semibold text-gray-900 mb-3">Linked Domains Consideration</h4>
-            <p className="text-gray-700 mb-4">
-              Use this formula: <strong>Link Juice = Domain Authority / Number of Linked Domains</strong>
-            </p>
-            <p className="text-gray-700">
-              A DR 30 site linking to 100 domains gives more concentrated link juice than a DR 60 site 
-              linking to 1000 domains.
-            </p>
-          </div>
+        <p className="text-gray-700 mb-6">
+          You won't have to analyze a lot of domains with a low DR one by one. Instead, add them all to your tool to get the necessary data in one go.
+        </p>
 
-          <div className="bg-blue-50 border-l-4 border-blue-500 p-6">
-            <h3 className="text-xl font-bold text-gray-900 mb-4">Blogger-Based Approach</h3>
-            
-            <p className="text-gray-700 mb-4">
-              Research the person behind the blog. High-quality bloggers often produce valuable content 
-              regardless of current domain metrics.
-            </p>
+        <p className="text-gray-700 mb-6">
+          Here are the metrics that will tell you if a site is a worthy link prospect.
+        </p>
 
-            <h4 className="text-lg font-semibold text-gray-900 mb-3">Good Prospect Examples:</h4>
-            <ul className="list-disc list-inside text-gray-700 mb-4 space-y-2">
-              <li><strong>sammyseo.com:</strong> Low DR but expert SEO knowledge</li>
-              <li><strong>marcomm.io:</strong> Niche authority in marketing communications</li>
-            </ul>
+        <p className="text-gray-700 mb-6">
+          <strong>Organic Traffic.</strong> Let me remind you of the main purpose of link building – the growth of search rankings and traffic.
+        </p>
 
-            <h4 className="text-lg font-semibold text-gray-900 mb-3">No-Go Examples:</h4>
-            <ul className="list-disc list-inside text-gray-700 mb-4 space-y-2">
-              <li><strong>elccopywriting.com:</strong> Generic content, no clear expertise</li>
-              <li><strong>renovatiocms.com:</strong> Outdated content, inactive author</li>
-            </ul>
+        <p className="text-gray-700 mb-6">
+          Backlinks serve as proof that sites are good enough to rank in the top 10, from where they'll attract more visitors.
+        </p>
 
-            <h4 className="text-lg font-semibold text-gray-900 mb-3">Research Strategy:</h4>
-            <p className="text-gray-700">
-              Check the blogger's LinkedIn profile, Twitter activity, and professional background. 
-              Industry experts with growing audiences are excellent long-term prospects.
-            </p>
-          </div>
-        </div>
+        <p className="text-gray-700 mb-6">
+          If Google ranks some sites high without tons of backlinks, that's freaking awesome! Such sites don't suck at all, as their low DR suggests.
+        </p>
 
-        <h2 id="nofollow-links" className="text-2xl font-bold text-gray-900 mb-6">Can Nofollow Link Prospects Be Valuable?</h2>
+        <p className="text-gray-700 mb-6">
+          Some of them can get hundreds and even thousands of monthly visitors.
+        </p>
 
-        <div className="bg-yellow-50 border-l-4 border-yellow-500 p-6 mb-6">
-          <h4 className="text-lg font-bold text-gray-900 mb-3">⚡ Quick Stat</h4>
+        <p className="text-gray-700 mb-6">
+          To compare, not all sites with a mediumtohigh DR can boast of such traffic stats.
+        </p>
+
+        <p className="text-gray-700 mb-6">
+          Regardless of their heavy backlinks profiles, they drive only a few hundred visitors per month. That's when this metric doesn't indicate true domain quality.
+        </p>
+
+        <p className="text-gray-700 mb-6">
+          <strong>Organic Keywords.</strong> Some sites with a low DR aren't of low quality – they are just new. Their owners haven't earned many backlinks yet to increase their authority.
+        </p>
+
+        <p className="text-gray-700 mb-6">
+          Ranking in the top 10, from where most traffic comes, doesn't happen overnight either. That's why newcomers don't even get a hundred visitors per month, as a rule.
+        </p>
+
+        <p className="text-gray-700 mb-6">
+          On the other hand, some of them can rank for hundreds of keywords in the top 100. If Google approves ranking a site, it's not a piece of crap for sure.
+        </p>
+
+        <p className="text-gray-700 mb-6">
+          Besides traffic, always check how many organic keywords your link prospects with a low DR have.
+        </p>
+
+        <p className="text-gray-700 mb-6">
+          The sites above are still far from their goal, but they're already on their way. It's just a matter of time before they see a traffic boost.
+        </p>
+
+        <p className="text-gray-700 mb-6">
+          <strong>Linked Domains.</strong> A high DR gives the impression that such a site can send you a lot of link juice. But is it always true?
+        </p>
+
+        <p className="text-gray-700 mb-6">
+          The thing is a website's link juice spreads among all the domains it links out to via dofollow links.
+        </p>
+
+        <p className="text-gray-700 mb-6">
+          The more linked domains your prospect has, the less link juice you'll receive.
+        </p>
+
+        <p className="text-gray-700 mb-6">
+          Assuming that DR stands for the entire amount of a website's link juice, here's how it works on the example of crownmediatech.com:
+        </p>
+
+        <p className="text-gray-700 mb-6">
+          8 (DR) / 6 (linked domains) = 1.33
+        </p>
+
+        <div className="bg-gray-50 border-l-4 border-gray-300 p-6 mb-8">
           <p className="text-gray-700">
-            Only <strong>5% of nofollow link pages</strong> have organic traffic, making most of them poor prospects 
-            for referral traffic.
+            <strong>Note.</strong> It's not the exact formula of Google's algorithm, but still gives a clear idea about link juice distribution.
           </p>
         </div>
 
-        <h3 className="text-xl font-bold text-gray-900 mb-4">Pros of Nofollow Links:</h3>
-        <ul className="list-disc list-inside text-gray-700 mb-6 space-y-2">
-          <li>Contribute to a natural backlink profile</li>
-          <li>Can drive referral traffic if from high-traffic pages</li>
-          <li>May pass some SEO value despite nofollow tag</li>
-          <li>Help with brand mentions and authority building</li>
-        </ul>
-
-        <h3 className="text-xl font-bold text-gray-900 mb-4">Cons of Nofollow Links:</h3>
-        <ul className="list-disc list-inside text-gray-700 mb-6 space-y-2">
-          <li>Limited direct SEO benefit</li>
-          <li>Most nofollow pages have minimal organic traffic</li>
-          <li>Requires same effort as dofollow link acquisition</li>
-          <li>Lower ROI for link building campaigns</li>
-        </ul>
-
-        <p className="text-gray-700 mb-8">
-          <strong>Recommendation:</strong> Focus on nofollow prospects only if they have significant organic traffic 
-          (10,000+ monthly visitors) or are from highly authoritative sites in your niche.
+        <p className="text-gray-700 mb-6">
+          Now, let's compare how much link juice activerain.com with a high DR provides:
         </p>
-
-        <h2 id="inactive-blogs" className="text-2xl font-bold text-gray-900 mb-6">Should You Target Inactive Blogs?</h2>
 
         <p className="text-gray-700 mb-6">
-          Blogs that haven't been updated recently can still be valuable if the owner is active. 
-          Here's how to determine if a blog is truly dead or just dormant:
+          81 (DR) / 330,967 (linked domains) = 0.24
         </p>
-
-        <div className="grid md:grid-cols-2 gap-6 mb-8">
-          <div className="space-y-4">
-            <h3 className="text-xl font-bold text-gray-900">Signs of Activity:</h3>
-            <ul className="list-disc list-inside text-gray-700 space-y-2">
-              <li><strong>Live Chat:</strong> Active customer support</li>
-              <li><strong>Recent Comments:</strong> Fresh blog discussions</li>
-              <li><strong>Current Year Mentions:</strong> Posts referencing 2024</li>
-              <li><strong>Updated Archives:</strong> Recent sidebar updates</li>
-              <li><strong>Fresh Copyright:</strong> Current year in footer</li>
-              <li><strong>Active Social Media:</strong> Recent Twitter/LinkedIn posts</li>
-              <li><strong>Current Bio:</strong> Up-to-date author information</li>
-            </ul>
-          </div>
-          
-          <div className="space-y-4">
-            <h3 className="text-xl font-bold text-gray-900">Red Flags:</h3>
-            <ul className="list-disc list-inside text-gray-700 space-y-2">
-              <li><strong>Broken Contact Forms:</strong> Non-functional communication</li>
-              <li><strong>Dead Social Links:</strong> Inactive or deleted accounts</li>
-              <li><strong>Outdated Author Bio:</strong> Old job titles or companies</li>
-              <li><strong>Spam Comments:</strong> Unmoderated comment sections</li>
-              <li><strong>Broken Internal Links:</strong> Poor site maintenance</li>
-              <li><strong>Old Copyright:</strong> 2019 or earlier dates</li>
-              <li><strong>Expired SSL:</strong> Security certificate issues</li>
-            </ul>
-          </div>
-        </div>
-
-        <h2 id="guest-posts" className="text-2xl font-bold text-gray-900 mb-6">What If Your Target Page Is a Guest Post?</h2>
 
         <p className="text-gray-700 mb-6">
-          Finding guest posts in your prospect list isn't necessarily bad. It depends on your campaign goals:
+          As you can see, crownmediatech.com with DR 8 can send more link juice than activerain.com with DR 81:
         </p>
-
-        <div className="space-y-6 mb-8">
-          <div className="bg-green-50 border-l-4 border-green-500 p-6">
-            <h3 className="text-xl font-bold text-gray-900 mb-3">Purpose #1: Gaining Backlinks to Blog Posts</h3>
-            <p className="text-gray-700 mb-3">
-              <strong>Strategy:</strong> Contact the site owner, not the guest author. Pitch link insertions 
-              or suggest resource page additions.
-            </p>
-            <p className="text-gray-700">
-              <strong>Success Rate:</strong> Moderate. Site owners are usually responsive to quality suggestions 
-              that improve their content.
-            </p>
-          </div>
-
-          <div className="bg-blue-50 border-l-4 border-blue-500 p-6">
-            <h3 className="text-xl font-bold text-gray-900 mb-3">Purpose #2: Gaining Backlinks to Products</h3>
-            <p className="text-gray-700 mb-3">
-              <strong>Strategy:</strong> Research if the site accepts sponsored content or product reviews. 
-              Guest posts indicate openness to external content.
-            </p>
-            <p className="text-gray-700">
-              <strong>Success Rate:</strong> High for relevant, quality products. Sites with guest posts 
-              often have established content partnerships.
-            </p>
-          </div>
-
-          <div className="bg-purple-50 border-l-4 border-purple-500 p-6">
-            <h3 className="text-xl font-bold text-gray-900 mb-3">Purpose #3: Building Relationships</h3>
-            <p className="text-gray-700 mb-3">
-              <strong>Strategy:</strong> Connect with the guest author on LinkedIn or Twitter. Build 
-              relationships for future collaboration opportunities.
-            </p>
-            <p className="text-gray-700">
-              <strong>Success Rate:</strong> Very high. Guest authors are often active content creators 
-              looking for networking opportunities.
-            </p>
-          </div>
-        </div>
-
-        <div className="bg-gray-900 rounded-lg p-8 text-white mb-8">
-          <h3 className="text-xl font-bold mb-4">🎯 Final Filtering Results</h3>
-          <div className="grid md:grid-cols-3 gap-6">
-            <div className="text-center">
-              <div className="text-3xl font-bold text-blue-400 mb-2">40%</div>
-              <div className="text-gray-300">Duplicate URLs removed</div>
-            </div>
-            <div className="text-center">
-              <div className="text-3xl font-bold text-green-400 mb-2">31%</div>
-              <div className="text-gray-300">Final prospects kept</div>
-            </div>
-            <div className="text-center">
-              <div className="text-3xl font-bold text-yellow-400 mb-2">5%</div>
-              <div className="text-gray-300">Nofollow pages with traffic</div>
-            </div>
-          </div>
-        </div>
-
-        <h2 className="text-2xl font-bold text-gray-900 mb-6">Key Takeaways</h2>
-
-        <div className="bg-blue-50 rounded-lg p-6 mb-8">
-          <ul className="text-gray-700 space-y-3">
-            <li>✅ <strong>Quality over quantity:</strong> A smaller, well-filtered prospect list yields better results</li>
-            <li>✅ <strong>Research the blogger:</strong> Individual expertise often matters more than domain metrics</li>
-            <li>✅ <strong>Remove duplicates first:</strong> 40% of prospects are usually duplicates</li>
-            <li>✅ <strong>Focus on dofollow links:</strong> Only 5% of nofollow pages have meaningful traffic</li>
-            <li>✅ <strong>Check for activity:</strong> Dormant blogs can still be valuable if owners are active</li>
-            <li>✅ <strong>Leverage guest posts:</strong> Use them to identify content partnerships and networking opportunities</li>
-          </ul>
-        </div>
 
         <p className="text-gray-700 mb-6">
-          Effective link prospecting is about finding the right balance between scale and quality. By systematically 
-          filtering your prospects using these techniques, you'll save time, improve response rates, and build 
-          higher-quality backlinks.
+          1.33 vs 0.24.
         </p>
 
-        <p className="text-gray-700 mb-8">
-          Remember: it's better to reach out to 100 high-quality prospects than 1,000 low-quality ones. 
-          The filtering process might seem tedious, but it's the difference between amateur and professional 
-          link building campaigns.
+        <p className="text-gray-700 mb-6">
+          To conclude, you don't always need to approach sites with a high DR to get a lot of link juice your way.
         </p>
 
-        <div className="bg-gradient-to-r from-blue-600 to-indigo-700 rounded-lg p-8 text-white">
-          <h3 className="text-xl font-bold mb-4">🚀 Ready to Implement These Techniques?</h3>
-          <p className="mb-6">
-            Start with our free anchor text optimizer tool to plan your link building campaigns, 
-            then apply these filtering techniques to build a high-quality prospect list.
+        <h3 className="text-xl font-bold text-gray-900 mb-4">3.2. Bloggersbased approach</h3>
+
+        <p className="text-gray-700 mb-6">
+          No doubt, metrics can give useful clues about a website's overall performance. But link prospecting isn't a math lesson to use figures only.
+        </p>
+
+        <p className="text-gray-700 mb-6">
+          What if your prospects fall short of all the key metrics?
+        </p>
+
+        <p className="text-gray-700 mb-6">
+          Don't erase them from your spreadsheet straightaway! Learn more about people behind your target domains to understand if they can be of any value to you.
+        </p>
+
+        <p className="text-gray-700 mb-6">
+          You may find a few hidden gems among them.
+        </p>
+
+        <p className="text-gray-700 mb-6">
+          <strong>Prospect.</strong> Let's take sammyseo.com as an example. It looks like a nogo in terms of metrics: no traffic, 3 organic keywords, and nearzero DR.
+        </p>
+
+        <p className="text-gray-700 mb-6">
+          While this domain sucks, its owner doesn't. According to LinkedIn, Sam Partland is a director of DigiSearch and was previously the head of growth at Urban.com.au.
+        </p>
+
+        <p className="text-gray-700 mb-6">
+          No wonder he's not too active with his blog.
+        </p>
+
+        <p className="text-gray-700 mb-6">
+          With such an impressive work record, Sam is the right guy to build relationships with. The chances are he'll reward you with a backlink from a better performing domain, digisearch.com, one day.
+        </p>
+
+        <p className="text-gray-700 mb-6">
+          Besides LinkedIn, Twitter can also give you insights into your link prospects' background.
+        </p>
+
+        <p className="text-gray-700 mb-6">
+          Sam's following isn't big, but let's scroll down a bit.
+        </p>
+
+        <p className="text-gray-700 mb-6">
+          One of his latest posts got a retweet from a niche influencer with 66.2K followers, which proves he has a knack for SEO.
+        </p>
+
+        <p className="text-gray-700 mb-6">
+          <strong>Prospect.</strong> Another example is marcomm.io that doesn't look promising due to its miserable metrics.
+        </p>
+
+        <p className="text-gray-700 mb-6">
+          Let's check a LinkedIn profile of its cofounder, Michelle Burson. She launched this site about a year and a half ago with her partner.
+        </p>
+
+        <p className="text-gray-700 mb-6">
+          Just like many other startups, MarComm founders probably don't have resources for heavy link building. And there's no other way to grow a DR.
+        </p>
+
+        <p className="text-gray-700 mb-6">
+          But while their domain is relatively new, Michelle isn't a newbie in the business. She's been a marketing manager since 2007 and eventually founded her own company. Way to go!
+        </p>
+
+        <p className="text-gray-700 mb-6">
+          You should welcome people like her on your outreach list.
+        </p>
+
+        <p className="text-gray-700 mb-6">
+          <strong>Nogo.</strong> Another underperforming domain that came my way is elccopywriting.com.
+        </p>
+
+        <p className="text-gray-700 mb-6">
+          The first thing that catches the eye on the homepage is its niche. Erika who owns the blog does content writing for beauty and personal care.
+        </p>
+
+        <p className="text-gray-700 mb-6">
+          Unless it's your target niche, making friends with her won't get you anywhere.
+        </p>
+
+        <p className="text-gray-700 mb-6">
+          Whether she links to you from her blog or guest posts on beauty sites, such backlinks will be irrelevant to your domain.
+        </p>
+
+        <p className="text-gray-700 mb-6">
+          <strong>Nogo.</strong> Renovatiocms.com doesn't look promising regarding both the key SEO metrics and visual appeal.
+        </p>
+
+        <p className="text-gray-700 mb-6">
+          The outdated design suggests this site is not new. Enter archive.org to find out how long it's been around.
+        </p>
+
+        <p className="text-gray-700 mb-6">
+          Well, the history dates back to 2010. If no one from their marketing department has grown its DR for 10 years, most likely no one will 🙂
+        </p>
+
+        <p className="text-gray-700 mb-6">
+          The bottom line is, you should analyze your link prospects from different angles to make the right decision. It'll be good practice for your analytical thinking.
+        </p>
+
+        <div className="bg-gray-50 border-l-4 border-gray-300 p-6 mb-8">
+          <p className="text-gray-700 mb-4">
+            <strong>Note.</strong> While sites with a low DR don't look promising, their owners usually turn out more responsive.
           </p>
-          <a 
-            href="/anchor-text-optimizer"
-            className="inline-flex items-center px-6 py-3 bg-white text-blue-700 font-semibold rounded-lg hover:bg-gray-100 transition-colors"
-          >
-            Try Free Tool
-            <svg className="ml-2 w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5l7 7-7 7" />
-            </svg>
-          </a>
+          <p className="text-gray-700">
+            Unlike bigwigs, they haven't become cocky yet, and building connections with new people is on their priority list.
+          </p>
         </div>
+
+        <div className="bg-blue-50 border-l-4 border-blue-300 p-6 mb-8">
+          <p className="text-gray-700 mb-4">
+            <strong>Tip.</strong> Your choice of link prospects should depend on the quality of articles you're going to promote.
+          </p>
+          <p className="text-gray-700 mb-4">
+            Have you discovered anything eyeopening as a result of a massive study? Such content definitely deserves the attention of thought leaders.
+          </p>
+          <p className="text-gray-700">
+            If all you have is a banal rewrite of wellknown facts, it makes no sense to approach the big league. They already know everything you're trying to knock into their heads, and won't waste time on you. Better focus on weaker domains in such a case.
+          </p>
+        </div>
+
+        <h2 id="nofollow" className="text-2xl font-bold text-gray-900 mb-6">Can link prospects providing nofollow backlinks be of any value?</h2>
+
+        <p className="text-gray-700 mb-6">
+          The value of nofollow links is a matter of dispute in SEO circles. To cut a long story short, let's consider the pros and cons of such links.
+        </p>
+
+        <p className="text-gray-700 mb-6">
+          <strong>Con.</strong> They don't pass any link juice and therefore can't improve search rankings. You can build hundreds of nofollow links, but neither your domain authority nor organic traffic will grow as a result.
+        </p>
+
+        <p className="text-gray-700 mb-6">
+          <strong>Pro #1.</strong> Technically, nofollow links don't have a direct impact on rankings. But they can still bring you visitors who, in turn, can link to you via dofollow links.
+        </p>
+
+        <p className="text-gray-700 mb-6">
+          <strong>Pro #2.</strong> Google thinks a natural backlink profile should consist of both nofollow and dofollow links.
+        </p>
+
+        <p className="text-gray-700 mb-6">
+          Do they have a point? Let's think. How high are the chances that everyone will link to you via dofollow links without any actions on your part?
+        </p>
+
+        <p className="text-gray-700 mb-6">
+          Not much chance!
+        </p>
+
+        <p className="text-gray-700 mb-6">
+          Gaining only dofollow links will look like some sort of manipulation to Google.
+        </p>
+
+        <p className="text-gray-700 mb-6">
+          And all the manipulations have the same ending – penalties, from a decline in rankings to the entire ban from organic search. This is not what you need, believe me.
+        </p>
+
+        <p className="text-gray-700 mb-6">
+          <strong>Verdict.</strong> Based on the above reasoning, you should reach out to bloggers that link out via nofollow links, but not all of them…
+        </p>
+
+        <p className="text-gray-700 mb-6">
+          Regardless of the pros, the con is still weighty.
+        </p>
+
+        <p className="text-gray-700 mb-6">
+          Nofollow links can't help with organic traffic, and if they have no referral traffic potential, they are absolutely useless.
+        </p>
+
+        <p className="text-gray-700 mb-6">
+          I suggest that you limit your prospects' list of nofollow links to pages driving organic traffic.
+        </p>
+
+        <p className="text-gray-700 mb-6">
+          The logic is simple here.
+        </p>
+
+        <p className="text-gray-700 mb-6">
+          If someone clicks to a page from Google search, they may click to your link too. If no one visits that page, getting referral traffic is out of the question.
+        </p>
+
+        <p className="text-gray-700 mb-6">
+          Sort pages with nofollow links by traffic and remove URLs that don't have any.
+        </p>
+
+        <p className="text-gray-700 mb-6">
+          No worries, you won't have too many link prospects of this kind. So, it won't take too long to send them outreach emails.
+        </p>
+
+        <div className="bg-yellow-50 border-l-4 border-yellow-500 p-6 mb-8">
+          <p className="text-gray-700">
+            According to my study, no more than <strong>5% of pages with nofollow links</strong> usually have organic traffic.
+          </p>
+        </div>
+
+        <h2 id="inactive-blogs" className="text-2xl font-bold text-gray-900 mb-6">Should you deal with blogs that haven't been updated since last year or earlier?</h2>
+
+        <p className="text-gray-700 mb-6">
+          Once you clean all the trash off your sheet, you'll need to add one more column with the last blog update. It will help you identify abandoned domains and remove them.
+        </p>
+
+        <p className="text-gray-700 mb-6">
+          The main contenders for removal above are blogs with no updates for a year or so.
+        </p>
+
+        <p className="text-gray-700 mb-6">
+          But just like any rule, this one has exceptions.
+        </p>
+
+        <p className="text-gray-700 mb-6">
+          The lack of new content since last year doesn't always mean there's no life behind that domain.
+        </p>
+
+        <p className="text-gray-700 mb-6">
+          Also, some blogs don't show publication dates at all, which makes it hard to tell anything about their publishing schedules.
+        </p>
+
+        <p className="text-gray-700 mb-6">
+          Here are a few hacks to figure out if your target domain is still alive, and you can expect a reply.
+        </p>
+
+        <h3 className="text-xl font-bold text-gray-900 mb-4">5.1. Active live chat</h3>
+
+        <p className="text-gray-700 mb-6">
+          The last post on samadeyinka.com was published in November 2019 🙁
+        </p>
+
+        <p className="text-gray-700 mb-6">
+          Too early to give up on it!
+        </p>
+
+        <p className="text-gray-700 mb-6">
+          Look at the lower right corner of the layout. There's a live chat saying that Sam Adeyinka typically replies within a few hours. The blogger is still active regardless of such a long delay in his editorial calendar.
+        </p>
+
+        <div className="bg-gray-50 border-l-4 border-gray-300 p-6 mb-8">
+          <p className="text-gray-700 mb-4">
+            <strong>Note.</strong> Pay attention to the date when the chat was last active.
+          </p>
+          <p className="text-gray-700">
+            On peppyacademy.com, no one has used their live chat since fall, 2019. Neither have they published new content. You'll need to look for other signals of bloggers' activity, which brings us to the next hack.
+          </p>
+        </div>
+
+        <h3 className="text-xl font-bold text-gray-900 mb-4">5.2. Recent blog comments</h3>
+
+        <p className="text-gray-700 mb-6">
+          The next place to check is a comments section at the bottom of blog posts if it's not disabled.
+        </p>
+
+        <p className="text-gray-700 mb-6">
+          Readers comment on makealivingwriting.com and, most importantly, Carol Tice who owns the blog responds to them.
+        </p>
+
+        <h3 className="text-xl font-bold text-gray-900 mb-4">5.3. Post titles with the current year mentions</h3>
+
+        <p className="text-gray-700 mb-6">
+          Check the titles of the latest blog posts for the current year.
+        </p>
+
+        <p className="text-gray-700 mb-6">
+          Although youcanmakemoneyonlinenow.com has no publication dates, they posted an article about marketing trends for 2020. Looks like they've been active this year.
+        </p>
+
+        <h3 className="text-xl font-bold text-gray-900 mb-4">5.4. Archives in the sidebar</h3>
+
+        <p className="text-gray-700 mb-6">
+          On some blogs, layouts have a sidebar with monthly archives of content. There, you can check the last month when new articles were published.
+        </p>
+
+        <h3 className="text-xl font-bold text-gray-900 mb-4">5.5. Fresh copyright date</h3>
+
+        <p className="text-gray-700 mb-6">
+          Scroll down to the footer to see if blog owners have updated the year in a copyright notice.
+        </p>
+
+        <p className="text-gray-700 mb-6">
+          Is it still 2018 there? The chances of hearing back from them in 2020 are slim to none. Feel free to remove such link prospects from your sheet.
+        </p>
+
+        <p className="text-gray-700 mb-6">
+          If they've edited the year like guys from bullsolutions.co.uk have, you can try your luck with them.
+        </p>
+
+        <h3 className="text-xl font-bold text-gray-900 mb-4">5.6. Active social media profiles</h3>
+
+        <p className="text-gray-700 mb-6">
+          Are there no signs of life on your target domain? Head over to their social media profiles to check if things are different there.
+        </p>
+
+        <p className="text-gray-700 mb-6">
+          The last article on blurbpointmedia.com dates back to March 2019, but their official Twitter account is quite active.
+        </p>
+
+        <p className="text-gray-700 mb-6">
+          Read carefully what the tweet below says. Noticed? Now, they have a different domain blurbpoint.com, where they post more often.
+        </p>
+
+        <p className="text-gray-700 mb-6">
+          That's what you can discover if you do a quick analysis of your link prospects.
+        </p>
+
+        <h3 className="text-xl font-bold text-gray-900 mb-4">5.7. Current occupation of blog owners</h3>
+
+        <p className="text-gray-700 mb-6">
+          When you have seemingly abandoned personal blogs on your list, look for answers on LinkedIn.
+        </p>
+
+        <p className="text-gray-700 mb-6">
+          A common scenario is that their owners got a fulltime job and have no time for their side projects anymore.
+        </p>
+
+        <p className="text-gray-700 mb-6">
+          Brandi M Fleeks hasn't updated bellavitacontent.com for more than a year, but she hasn't abandoned it.
+        </p>
+
+        <p className="text-gray-700 mb-6">
+          According to LinkedIn, she just switched to a different project a year ago. Her personal blog is still her property.
+        </p>
+
+        <h2 id="guest-posts" className="text-2xl font-bold text-gray-900 mb-6">What should you do if your target referring page is a guest post?</h2>
+
+        <p className="text-gray-700 mb-6">
+          The next columns to add should include your link prospect's details, particularly the name, position, company, and whether that person is an inhouse employee or a guest writer.
+        </p>
+
+        <p className="text-gray-700 mb-6">
+          You'll see that a bunch of pages on your list are guest posts.
+        </p>
+
+        <p className="text-gray-700 mb-6">
+          Since guest authors don't own those domains, they have no access to the admin panel. It's beyond their power to edit their posts and embed your link there, even if they want to.
+        </p>
+
+        <p className="text-gray-700 mb-6">
+          Shall you reach out to guest contributors anyways? It all depends on your purpose.
+        </p>
+
+        <h3 className="text-xl font-bold text-gray-900 mb-4">Purpose #1. Gaining a backlink to your blog post (from that specific page).</h3>
+
+        <p className="text-gray-700 mb-6">
+          Most likely, it's a no. Especially if you're not ready to reward guest writers in return.
+        </p>
+
+        <p className="text-gray-700 mb-6">
+          No one will bother to contact blog editors and ask them for a link change. They already got what they wanted from those domains, and your weak backlink profile is your problem.
+        </p>
+
+        <p className="text-gray-700 mb-6">
+          Editors aren't dumb either. They smell link manipulations a mile off and don't tolerate such things.
+        </p>
+
+        <p className="text-gray-700 mb-6">
+          It's all like chasing windmills – long and useless.
+        </p>
+
+        <h3 className="text-xl font-bold text-gray-900 mb-4">Purpose #2. Gaining a backlink to your product (from that specific page).</h3>
+
+        <p className="text-gray-700 mb-6">
+          If there are guest posts strategically important for your business, be ready to sweat a bit.
+        </p>
+
+        <p className="text-gray-700 mb-6">
+          A common example of such content is a compilation of competing products. Sure thing you want to get yours featured there too.
+        </p>
+
+        <p className="text-gray-700 mb-6">
+          In such a case, you need to contact guest authors with an offer to test your tool. Make sure you create free accounts for them.
+        </p>
+
+        <p className="text-gray-700 mb-6">
+          No response? Then, reach out directly to blog editors or owners if editors don't reply either. Don't forget to provide free access for them.
+        </p>
+
+        <h3 className="text-xl font-bold text-gray-900 mb-4">Purpose #3. Gaining backlinks from guest writers' upcoming posts.</h3>
+
+        <p className="text-gray-700 mb-6">
+          Face it, getting your backlinks embedded in older guest posts is almost impossible.
+        </p>
+
+        <p className="text-gray-700 mb-6">
+          But why not reach out to people who do guest posting and make friends with them?
+        </p>
+
+        <p className="text-gray-700 mb-6">
+          They publish content on multiple resources – guest blogs, sites they write on behalf, their personal resources, etc. These are all your potential link targets.
+        </p>
+
+        <p className="text-gray-700 mb-6">
+          The more people will check out your content, the more links you'll earn in the long run.
+        </p>
+
+        <div className="bg-gray-50 border-l-4 border-gray-300 p-6 mb-8">
+          <p className="text-gray-700 mb-4">
+            <strong>Note.</strong> Check LinkedIn profiles of inhouse writers to make sure they still work there. In rare cases, people remain in the same company for ages.
+          </p>
+          <p className="text-gray-700 mb-4">
+            For example, Zoe Stoller created content for Splat last year.
+          </p>
+          <p className="text-gray-700 mb-4">
+            But things changed in September 2019. She migrated to a different company and is still there.
+          </p>
+          <p className="text-gray-700 mb-4">
+            Just like guest writers, former employees can't edit their posts anymore.
+          </p>
+          <p className="text-gray-700">
+            But as Zoe is a content lead at Foyr now, you have an opportunity to get a backlink from that resource.
+          </p>
+        </div>
+
+        <div className="bg-red-50 border-l-4 border-red-300 p-6 mb-8">
+          <p className="text-gray-700">
+            <strong>Exception.</strong> If you bump into guest posts by your competitor's team, feel free to remove such link prospects. They won't help you. On the other hand, you can approach owners of those domains to submit your own guest posts.
+          </p>
+        </div>
+
+        <h2 id="final-word" className="text-2xl font-bold text-gray-900 mb-6">Final Word</h2>
+
+        <p className="text-gray-700 mb-6">
+          As soon as you finish sorting out your link prospects and remove the trash, you'll come to a logical conclusion. They are not infinite, so you can't approach them carelessly and waste your opportunities.
+        </p>
+
+        <p className="text-gray-700 mb-6">
+          Invest some time in polishing your outreach emails to get link prospects on your side. This is exactly what the next chapter of this blogger outreach guide will teach you.
+        </p>
       </div>
     </BlogPostTemplate>
   );

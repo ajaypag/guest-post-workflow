@@ -63,6 +63,15 @@ const pages = [
   { path: 'guest-posting-sites', priority: 0.8, changefreq: 'weekly' },
   
   // Educational content & Blog articles
+  { path: 'top-10-link-building-techniques', priority: 0.8, changefreq: 'monthly' },
+  { path: 'how-to-increase-domain-authority', priority: 0.8, changefreq: 'monthly' },
+  { path: 'youtube-seo', priority: 0.8, changefreq: 'monthly' },
+  { path: 'social-media-link-building', priority: 0.8, changefreq: 'monthly' },
+  { path: 'how-to-write-email-outreach-pitch', priority: 0.8, changefreq: 'monthly' },
+  { path: 'link-building-outreach-subject-lines', priority: 0.8, changefreq: 'monthly' },
+  { path: 'blogger-outreach-strategies', priority: 0.8, changefreq: 'monthly' },
+  { path: 'from-zero-to-breakthrough-the-marketing-tactic-that-made-it-happen', priority: 0.8, changefreq: 'monthly' },
+  { path: 'seo-proposal', priority: 0.8, changefreq: 'monthly' },
   { path: 'seo-tutorial', priority: 0.8, changefreq: 'monthly' },
   { path: 'seo-case-study', priority: 0.8, changefreq: 'monthly' },
   { path: 'ecommerce-seo-case-study', priority: 0.8, changefreq: 'monthly' },
