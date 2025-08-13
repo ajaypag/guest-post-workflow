@@ -84,13 +84,14 @@ export default function QuickStartFlow() {
       
       try {
         // Try to create new client
+        // For account users, we need to use 'existing_account' as the creationPath
         const clientRes = await fetch('/api/clients', {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
           body: JSON.stringify({
             name: brandName,
             domain: brandDomain,
-            creationPath: 'quick_start'
+            creationPath: 'existing_account' // Account users can only use this path
           })
         });
         
