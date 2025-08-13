@@ -83,9 +83,40 @@ export default function DomainCell({ domain, domainId }: DomainCellProps) {
   const overlapBadge = getOverlapBadge(domain.overlapStatus);
   const authorityBadge = getAuthorityBadge(domain.authorityDirect, domain.authorityRelated);
   const topicScopeBadge = getTopicScopeBadge(domain.topicScope);
-  const isQualified = domain.qualificationStatus === 'high_quality' || 
-                      domain.qualificationStatus === 'good_quality' || 
-                      domain.qualificationStatus === 'marginal_quality';
+  // Helper function to get quality badge
+  const getQualityBadge = () => {
+    switch (domain.qualificationStatus) {
+      case 'high_quality':
+        return { 
+          color: 'bg-green-100 text-green-800', 
+          text: 'High Quality',
+          icon: CheckCircle
+        };
+      case 'good_quality':
+        return { 
+          color: 'bg-blue-100 text-blue-800', 
+          text: 'Good',
+          icon: CheckCircle
+        };
+      case 'marginal_quality':
+        return { 
+          color: 'bg-yellow-100 text-yellow-800', 
+          text: 'Marginal',
+          icon: AlertCircle
+        };
+      case 'weak':
+      case 'not_qualified':
+        return { 
+          color: 'bg-red-100 text-red-800', 
+          text: 'Weak',
+          icon: AlertCircle
+        };
+      default:
+        return null;
+    }
+  };
+
+  const qualityBadge = getQualityBadge();
 
   return (
     <div className="space-y-2">
@@ -109,17 +140,12 @@ export default function DomainCell({ domain, domainId }: DomainCellProps) {
       {/* Analysis badges */}
       <div className="flex flex-wrap items-center gap-1">
         {/* Qualification status */}
-        {isQualified ? (
-          <span className="inline-flex items-center gap-1 px-1.5 py-0.5 text-xs rounded bg-green-100 text-green-800">
-            <CheckCircle className="h-3 w-3" />
-            AI-OK
+        {qualityBadge && (
+          <span className={`inline-flex items-center gap-1 px-1.5 py-0.5 text-xs rounded ${qualityBadge.color}`}>
+            <qualityBadge.icon className="h-3 w-3" />
+            {qualityBadge.text}
           </span>
-        ) : domain.qualificationStatus ? (
-          <span className="inline-flex items-center gap-1 px-1.5 py-0.5 text-xs rounded bg-red-100 text-red-800">
-            <AlertCircle className="h-3 w-3" />
-            Not Qualified
-          </span>
-        ) : null}
+        )}
 
         {/* Overlap status */}
         {overlapBadge && (

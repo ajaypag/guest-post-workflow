@@ -1,11 +1,12 @@
 'use client';
 
 import React from 'react';
-import { Brain, Search, TrendingUp, AlertCircle, Info, Clock } from 'lucide-react';
+import { Brain, Search, TrendingUp, AlertCircle, Info, Clock, CheckCircle, HelpCircle } from 'lucide-react';
 
 interface ExpandedDetailsProps {
   submission: {
     domain?: {
+      qualificationStatus?: string;
       aiQualificationReasoning?: string;
       topicReasoning?: string;
       evidence?: {
@@ -42,9 +43,67 @@ export default function ExpandedDomainDetails({ submission }: ExpandedDetailsPro
   const domain = submission.domain;
   const metadata = submission.metadata || {};
   
+  // Helper function to get quality level details
+  const getQualityLevelInfo = (status?: string) => {
+    switch (status) {
+      case 'high_quality':
+        return {
+          label: 'High Quality',
+          color: 'text-green-700 bg-green-50 border-green-200',
+          icon: CheckCircle,
+          description: 'Premium site with strong domain authority (DR 70+), high traffic, excellent content quality, and direct topical relevance. Ideal for maximum SEO impact.'
+        };
+      case 'good_quality':
+        return {
+          label: 'Good',
+          color: 'text-blue-700 bg-blue-50 border-blue-200',
+          icon: CheckCircle,
+          description: 'Solid site with good domain metrics (DR 40-69), decent traffic, quality content, and good topical alignment. Reliable choice for link building.'
+        };
+      case 'marginal_quality':
+        return {
+          label: 'Marginal',
+          color: 'text-yellow-700 bg-yellow-50 border-yellow-200',
+          icon: AlertCircle,
+          description: 'Acceptable site with moderate metrics (DR 20-39), some traffic, basic content quality, or partial topical relevance. Consider for volume-based strategies.'
+        };
+      case 'weak':
+      case 'not_qualified':
+        return {
+          label: 'Weak',
+          color: 'text-red-700 bg-red-50 border-red-200',
+          icon: AlertCircle,
+          description: 'Site does not meet minimum quality standards. Low domain authority (DR <20), minimal traffic, poor content quality, or off-topic. Not recommended.'
+        };
+      default:
+        return null;
+    }
+  };
+  
+  const qualityInfo = getQualityLevelInfo(domain?.qualificationStatus);
+  
   return (
     <div className="px-4 py-3 bg-gray-50 border-t border-gray-200">
       <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+        
+        {/* Quality Level Explanation */}
+        {qualityInfo && (
+          <div className="md:col-span-2 mb-2">
+            <div className={`p-3 rounded-lg border ${qualityInfo.color}`}>
+              <div className="flex items-start gap-2">
+                <qualityInfo.icon className="h-5 w-5 mt-0.5 flex-shrink-0" />
+                <div className="space-y-1">
+                  <div className="font-medium flex items-center gap-2">
+                    AI Quality Assessment: {qualityInfo.label}
+                  </div>
+                  <div className="text-sm opacity-90">
+                    {qualityInfo.description}
+                  </div>
+                </div>
+              </div>
+            </div>
+          </div>
+        )}
         
         {/* AI Analysis Section */}
         {domain?.aiQualificationReasoning && (
