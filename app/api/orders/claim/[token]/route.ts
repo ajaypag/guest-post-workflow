@@ -113,17 +113,25 @@ export async function GET(
             domain: {
               id: domain.id,
               domain: domain.domain,
-              dr: website?.domainRating || null,
+              domainRating: website?.domainRating || null,
               traffic: website?.totalTraffic || null,
+              // AI analysis data for DomainCell tags
+              qualificationStatus: domain.qualificationStatus,
+              overlapStatus: domain.overlapStatus as 'direct' | 'related' | 'both' | 'none' | undefined,
+              authorityDirect: domain.authorityDirect as 'strong' | 'moderate' | 'weak' | 'n/a' | undefined,
+              authorityRelated: domain.authorityRelated as 'strong' | 'moderate' | 'weak' | 'n/a' | undefined,
+              topicScope: domain.topicScope as 'short_tail' | 'long_tail' | 'ultra_long_tail' | undefined,
+              keywordCount: domain.keywordCount,
+              hasDataForSeoResults: domain.hasDataForSeoResults,
               // AI analysis data for expanded details
               aiQualificationReasoning: domain.aiQualificationReasoning,
               topicReasoning: domain.topicReasoning,
               evidence: domain.evidence,
               notes: domain.notes
             },
-            // Table display fields
+            // Table display fields (use component's expected field names)
             url: `https://${domain.domain}`,
-            dr: website?.domainRating || null,
+            domainRating: website?.domainRating || null,
             traffic: website?.totalTraffic || null,
             categories: website?.categories || [],
             qualificationReasoning: domain.aiQualificationReasoning || domain.notes || '',
