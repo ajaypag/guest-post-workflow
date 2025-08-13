@@ -158,6 +158,10 @@ export default function QuickStartFlow() {
       throw new Error('Failed to create target page');
     }
     
+    const targetPageData = await targetPageRes.json();
+    // Get the created target page ID - it's usually in targetPages array
+    const targetPageId = targetPageData.targetPages?.[0]?.id || targetPageData.id;
+    
     // Create a draft order
     const orderRes = await fetch('/api/orders', {
       method: 'POST',
@@ -175,28 +179,50 @@ export default function QuickStartFlow() {
     
     const { orderId } = await orderRes.json();
     
-    // Store quickstart data for the order edit page to auto-populate
-    const quickstartData = {
+    // Now add order groups to the created order
+    const orderGroupsData = [{
       clientId,
-      targetUrl,
-      brandName,
       linkCount,
-      preferences: orderPreferences ? {
+      targetPages: targetPageId ? [{ pageId: targetPageId, url: targetUrl }] : [{ url: targetUrl }],
+      packageType: orderPreferences?.packageType || 'better',
+      packagePrice: orderPreferences?.maxPrice || 20000,
+      requirementOverrides: orderPreferences ? {
         drMin: orderPreferences.drRange?.[0] || 30,
         drMax: orderPreferences.drRange?.[1] || 100,
         minTraffic: orderPreferences.minTraffic || 100,
         maxPrice: orderPreferences.maxPrice || 20000,
         categories: orderPreferences.categories || [],
         types: orderPreferences.types || []
-      } : null
-    };
+      } : {}
+    }];
     
-    if (typeof window !== 'undefined') {
-      localStorage.setItem(`order_${orderId}_quickstart`, JSON.stringify(quickstartData));
+    // Update the order with order groups and pricing
+    const updateRes = await fetch(`/api/orders/${orderId}`, {
+      method: 'PUT',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        orderGroups: orderGroupsData,
+        // Calculate pricing based on link count
+        subtotalRetail: linkCount * 30000, // $300 per link in cents
+        totalRetail: linkCount * 30000,
+        totalWholesale: Math.round(linkCount * 30000 * 0.6), // 60% of retail
+        estimatedLinksCount: linkCount,
+        // Add preferences to the order
+        preferencesDrMin: orderPreferences?.drRange?.[0] || 30,
+        preferencesDrMax: orderPreferences?.drRange?.[1] || 100,
+        preferencesTrafficMin: orderPreferences?.minTraffic || 100,
+        estimatedPricePerLink: orderPreferences?.maxPrice || 20000,
+      })
+    });
+    
+    if (!updateRes.ok) {
+      const error = await updateRes.json();
+      console.error('Failed to update order with groups:', error);
+      throw new Error('Failed to configure order details');
     }
     
-    // Redirect to order edit page with quickstart flag
-    router.push(`/orders/${orderId}/edit?quickstart=true&clientId=${clientId}`);
+    // Redirect directly to the order page (not edit page)
+    router.push(`/orders/${orderId}`);
   };
 
   return (
