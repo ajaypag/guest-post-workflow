@@ -12,6 +12,7 @@ import { formatCurrency } from '@/lib/utils/formatting';
 import DomainCell from './DomainCell';
 import ExpandedDomainDetails from './ExpandedDomainDetails';
 import FilterBar, { type FilterOptions } from './FilterBar';
+import TargetPageSelector from './TargetPageSelector';
 
 // Feedback Modal Component for collecting rejection reasons
 interface FeedbackModalProps {
@@ -1161,30 +1162,90 @@ export default function OrderSiteReviewTableV2({
             <h3 className="text-lg font-semibold mb-4">Edit Submission</h3>
             
             <div className="space-y-4">
+              {/* Target Page Selection with Dropdown */}
               <div>
-                <label className="block text-sm font-medium mb-1">Target Page URL</label>
-                <input
-                  type="text"
-                  value={editingSubmission.targetPageUrl || ''}
-                  onChange={(e) => setEditingSubmission({
-                    ...editingSubmission,
-                    targetPageUrl: e.target.value
-                  })}
-                  className="w-full px-3 py-2 border rounded"
-                />
-              </div>
-              
-              <div>
-                <label className="block text-sm font-medium mb-1">Anchor Text</label>
-                <input
-                  type="text"
-                  value={editingSubmission.anchorText || ''}
-                  onChange={(e) => setEditingSubmission({
-                    ...editingSubmission,
-                    anchorText: e.target.value
-                  })}
-                  className="w-full px-3 py-2 border rounded"
-                />
+                <label className="block text-sm font-medium mb-1">Target Page & Anchor Text</label>
+                {(() => {
+                  // Find the group for this submission
+                  const group = orderGroups.find(g => g.id === editingSubmission.groupId);
+                  const targetPages: Array<{ url: string; anchorText?: string; requestedLinks?: number }> = [];
+                  
+                  // Build target pages array with anchor texts
+                  if (group?.targetPages) {
+                    group.targetPages.forEach((page, index) => {
+                      targetPages.push({
+                        url: page.url,
+                        anchorText: group.anchorTexts?.[index] || '',
+                        requestedLinks: 1
+                      });
+                    });
+                  }
+                  
+                  // If we have benchmark data, prefer that
+                  if (benchmarkData?.benchmarkData?.clientGroups) {
+                    const benchmarkGroup = benchmarkData.benchmarkData.clientGroups.find(
+                      (bg: any) => bg.clientId === group?.clientId
+                    );
+                    
+                    if (benchmarkGroup?.targetPages) {
+                      // Clear and rebuild from benchmark
+                      targetPages.length = 0;
+                      benchmarkGroup.targetPages.forEach((page: any) => {
+                        // Check if page has requestedDomains with anchor texts
+                        if (page.requestedDomains && page.requestedDomains.length > 0) {
+                          const anchors = new Set<string>();
+                          page.requestedDomains.forEach((domain: any) => {
+                            if (domain.anchorText) {
+                              anchors.add(domain.anchorText);
+                            }
+                          });
+                          
+                          if (anchors.size > 0) {
+                            // Create entry for each unique anchor text
+                            anchors.forEach(anchorText => {
+                              targetPages.push({
+                                url: page.url,
+                                anchorText: anchorText,
+                                requestedLinks: page.requestedLinks || 1
+                              });
+                            });
+                          } else {
+                            // No specific anchors, add without
+                            targetPages.push({
+                              url: page.url,
+                              requestedLinks: page.requestedLinks || 1
+                            });
+                          }
+                        } else {
+                          // No requested domains, use basic info
+                          targetPages.push({
+                            url: page.url,
+                            requestedLinks: page.requestedLinks || 1
+                          });
+                        }
+                      });
+                    }
+                  }
+                  
+                  return (
+                    <TargetPageSelector
+                      value={{
+                        targetPageUrl: editingSubmission.targetPageUrl,
+                        anchorText: editingSubmission.anchorText
+                      }}
+                      onChange={({ targetPageUrl, anchorText }) => {
+                        setEditingSubmission({
+                          ...editingSubmission,
+                          targetPageUrl,
+                          anchorText
+                        });
+                      }}
+                      availableTargetPages={targetPages}
+                      groupName={group?.client?.name}
+                      allowCustom={true}
+                    />
+                  );
+                })()}
               </div>
               
               <div>

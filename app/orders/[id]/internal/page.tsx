@@ -2184,7 +2184,7 @@ export default function InternalOrderManagementPage() {
                           return (
                             <div key={group.id} className="space-y-2">
                               <div className="text-xs font-medium text-blue-800">
-                                {group.clientName} ({unassignedSubmissions.length} unassigned sites)
+                                {group.client?.name || 'Unknown Client'} ({unassignedSubmissions.length} unassigned sites)
                               </div>
                               <TargetPageSelector
                                 value={selectedTargets[group.id]}
@@ -2195,7 +2195,7 @@ export default function InternalOrderManagementPage() {
                                   }));
                                 }}
                                 availableTargetPages={availableTargets}
-                                groupName={group.clientName}
+                                groupName={group.client?.name}
                                 allowCustom={true}
                                 disabled={unassignedSubmissions.length === 0}
                                 className="w-full"
