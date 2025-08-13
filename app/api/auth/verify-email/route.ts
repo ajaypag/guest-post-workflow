@@ -74,10 +74,12 @@ export async function GET(request: NextRequest) {
 
     console.log('✅ Email verified successfully:', account.email);
 
-    // Redirect to success page
-    return NextResponse.redirect(
-      new URL('/verify-email/success', request.url)
-    );
+    // Return success response (client will handle redirect)
+    return NextResponse.json({
+      success: true,
+      message: 'Email verified successfully',
+      alreadyVerified: false
+    });
 
   } catch (error) {
     console.error('Email verification error:', error);

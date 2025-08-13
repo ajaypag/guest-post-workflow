@@ -36,10 +36,10 @@ function VerifyEmailContent() {
         } else {
           setStatus('success');
           setMessage('Email verified successfully!');
-          // Redirect to dashboard after 2 seconds
+          // Redirect to success page after 1 second
           setTimeout(() => {
-            router.push('/account/dashboard');
-          }, 2000);
+            router.push('/verify-email/success');
+          }, 1000);
         }
       } else {
         setStatus('error');
