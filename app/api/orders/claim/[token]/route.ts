@@ -105,7 +105,7 @@ export async function GET(
           if (!domain) return null;
           
           const website = submissionWebsiteMap.get(domain.domain.toLowerCase());
-          const guestPostCost = website?.guestPostCost ? parseFloat(website.guestPostCost) : null;
+          const guestPostCost = website?.guestPostCost ? parseFloat(website.guestPostCost) : 0;
           
           return {
             id: submission.id,
@@ -135,8 +135,9 @@ export async function GET(
             traffic: website?.totalTraffic || null,
             categories: website?.categories || [],
             qualificationReasoning: domain.aiQualificationReasoning || domain.notes || '',
+            price: submission.retailPriceSnapshot || guestPostCost,
             wholesalePrice: submission.wholesalePriceSnapshot || 0,
-            retailPrice: submission.retailPriceSnapshot || guestPostCost || 0,
+            retailPrice: submission.retailPriceSnapshot || guestPostCost,
             targetPageUrl: submission.metadata?.targetPageUrl || '',
             anchorText: submission.metadata?.anchorText || '',
             specialInstructions: submission.metadata?.specialInstructions || '',
