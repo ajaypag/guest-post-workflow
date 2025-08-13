@@ -134,7 +134,11 @@ export async function POST(request: NextRequest) {
 
     // Send new verification email
     const { EmailService } = await import('@/lib/services/emailService');
-    const verificationUrl = `${process.env.NEXTAUTH_URL || 'http://localhost:3000'}/verify-email?token=${newToken}`;
+    // Get the base URL from environment or request headers
+    const baseUrl = process.env.NEXTAUTH_URL || 
+      (request.headers.get('x-forwarded-proto') || 'https') + '://' + 
+      request.headers.get('host');
+    const verificationUrl = `${baseUrl}/verify-email?token=${newToken}`;
     
     await EmailService.sendEmailVerification({
       email: account.email,
