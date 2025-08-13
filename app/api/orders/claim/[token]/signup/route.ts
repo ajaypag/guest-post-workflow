@@ -142,7 +142,7 @@ export async function POST(
               website: originalClient.website,
               description: originalClient.description || '',
               clientType: originalClient.clientType || 'client',
-              createdBy: originalClient.createdBy, // Keep original creator (must be users.id)
+              createdBy: originalClient.createdBy, // Keep original creator (must be users.id, not accounts.id)
               defaultRequirements: originalClient.defaultRequirements || '{}',
               createdAt: new Date(),
               updatedAt: new Date()
@@ -189,7 +189,7 @@ export async function POST(
         orderId: order.id,
         oldStatus: order.status,
         newStatus: order.status, // Status doesn't change, but we log the claim event
-        changedBy: accountId, // New account claiming the order
+        changedBy: order.createdBy, // Use original creator (users.id) since changedBy must reference users table
         changedAt: new Date(),
         notes: `Order claimed by ${contactName} (${email}). IP: ${clientIp}. Share token revoked.`
       });
