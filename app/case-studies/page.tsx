@@ -14,9 +14,9 @@ const caseStudies = [
     id: 'outreachlabs',
     client: 'OutreachLabs',
     tagline: 'B2B Link Building Agency',
-    headline: '5 Strategic Guest Posts Drive 97 New Keyword Rankings',
+    headline: '4 Strategic Guest Posts Drive 97 New Keyword Rankings',
     results: {
-      posts: 5,
+      posts: 4,
       keywords: 97,
       topRanking: '#2',
       traffic: '251+ monthly',

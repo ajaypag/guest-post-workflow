@@ -9,8 +9,27 @@ export const metadata: Metadata = {
   keywords: ['outreachlabs case study', 'link building results', 'guest post rankings', 'B2B SEO case study'],
 };
 
-// Structured data for the guest posts
+// Structured data for the guest posts (ordered by performance)
 const guestPosts = [
+  {
+    domain: 'modernmarketingpartners.com',
+    title: '9 Best White Hat Link Building Services',
+    url: 'https://www.modernmarketingpartners.com/2025/07/08/9-best-white-hat-link-building-services/',
+    strategy: 'White Hat + Long Tail',
+    targetKeywords: ['white hat link building', 'white hat link building services'],
+    topRankings: [
+      { keyword: 'white hat link building agency', position: 3, volume: 90 },
+      { keyword: 'whitehat link building service', position: 4, volume: 60 },
+      { keyword: 'white hat outreach', position: 5, volume: 200 },
+      { keyword: 'white hat link building company', position: 5, volume: 60 },
+      { keyword: 'white hat link building service', position: 11, volume: 1400 },
+    ],
+    metrics: {
+      dr: 52,
+      traffic: '7K',
+      niche: 'Marketing Services',
+    },
+  },
   {
     domain: 'webbiquity.com',
     title: 'Nine B2B Link Building Services Ranked by ROI',
@@ -18,6 +37,8 @@ const guestPosts = [
     strategy: 'B2B Marketing Authority',
     targetKeywords: ['B2B link building services', 'link acquisition services'],
     topRankings: [
+      { keyword: 'top b2b link building agencies', position: 2, volume: 10 },
+      { keyword: 'b2b link building services', position: 3, volume: 20 },
       { keyword: 'link acquisition services', position: 80, volume: 70 },
       { keyword: 'link building book', position: 97, volume: 50 },
     ],
@@ -25,6 +46,25 @@ const guestPosts = [
       dr: 65,
       traffic: '15K',
       niche: 'B2B Marketing',
+    },
+  },
+  {
+    domain: 'datadab.com',
+    title: 'Local SEO Reseller Programs',
+    url: 'https://www.datadab.com/blog/local-seo-reseller-programs/',
+    strategy: 'Local SEO + Reseller Angle',
+    targetKeywords: ['local SEO reseller', 'SEO reseller programs'],
+    topRankings: [
+      { keyword: 'local seo resellers', position: 7, volume: 350 },
+      { keyword: 'seo reseller hub', position: 7, volume: 150 },
+      { keyword: 'local seo reseller programs', position: 8, volume: 350 },
+      { keyword: 'reseller local seo', position: 10, volume: 70 },
+      { keyword: 'local seo reseller', position: 13, volume: 1000 },
+    ],
+    metrics: {
+      dr: 45,
+      traffic: '5K',
+      niche: 'Local SEO',
     },
   },
   {
@@ -43,57 +83,6 @@ const guestPosts = [
       dr: 58,
       traffic: '8K',
       niche: 'SEO Tools',
-    },
-  },
-  {
-    domain: 'publicmediasolution.com',
-    title: 'Link Building Public Relations Agency',
-    url: 'https://publicmediasolution.com/blog/link-building-public-relations-agency/',
-    strategy: 'PR Agency Focus',
-    targetKeywords: ['PR link building', 'public relations link building'],
-    topRankings: [],
-    metrics: {
-      dr: 42,
-      traffic: '3K',
-      niche: 'Public Relations',
-    },
-  },
-  {
-    domain: 'datadab.com',
-    title: 'Local SEO Reseller Programs',
-    url: 'https://www.datadab.com/blog/local-seo-reseller-programs/',
-    strategy: 'Local SEO + Reseller Angle',
-    targetKeywords: ['local SEO reseller', 'SEO reseller programs'],
-    topRankings: [
-      { keyword: 'local seo resellers', position: 7, volume: 350 },
-      { keyword: 'local seo reseller programs', position: 8, volume: 350 },
-      { keyword: 'seo reseller hub', position: 7, volume: 150 },
-      { keyword: 'reseller local seo', position: 10, volume: 70 },
-      { keyword: 'local seo reseller', position: 13, volume: 1000 },
-    ],
-    metrics: {
-      dr: 45,
-      traffic: '5K',
-      niche: 'Local SEO',
-    },
-  },
-  {
-    domain: 'modernmarketingpartners.com',
-    title: '9 Best White Hat Link Building Services',
-    url: 'https://www.modernmarketingpartners.com/2025/07/08/9-best-white-hat-link-building-services/',
-    strategy: 'White Hat + Long Tail',
-    targetKeywords: ['white hat link building', 'white hat link building services'],
-    topRankings: [
-      { keyword: 'white hat link building agency', position: 3, volume: 90 },
-      { keyword: 'whitehat link building service', position: 4, volume: 60 },
-      { keyword: 'white hat outreach', position: 5, volume: 200 },
-      { keyword: 'white hat link building company', position: 5, volume: 60 },
-      { keyword: 'white hat link building service', position: 11, volume: 1400 },
-    ],
-    metrics: {
-      dr: 52,
-      traffic: '7K',
-      niche: 'Marketing Services',
     },
   },
 ];
@@ -137,7 +126,7 @@ export default function OutreachLabsCaseStudy() {
                 </span>
               </div>
               <h1 className="text-4xl md:text-5xl font-bold text-white mb-6">
-                OutreachLabs: 97 Keywords from 5 Strategic Posts
+                OutreachLabs: 97 Keywords from 4 Strategic Posts
               </h1>
               <p className="text-xl text-blue-100 mb-8">
                 How we used AI-powered site qualification to identify perfect placement opportunities,
@@ -269,7 +258,7 @@ export default function OutreachLabsCaseStudy() {
       <section className="py-20 bg-gray-50">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
           <h2 className="text-3xl font-bold text-gray-900 mb-12 text-center">
-            The 5 Strategic Placements
+            The 4 Strategic Placements
           </h2>
           
           <div className="space-y-8">
@@ -394,7 +383,7 @@ export default function OutreachLabsCaseStudy() {
             
             <div className="grid md:grid-cols-4 gap-8">
               <div>
-                <p className="text-5xl font-bold mb-2">5</p>
+                <p className="text-5xl font-bold mb-2">4</p>
                 <p className="text-blue-100">Strategic Guest Posts</p>
               </div>
               <div>
@@ -443,7 +432,7 @@ export default function OutreachLabsCaseStudy() {
               <div>
                 <h3 className="font-semibold text-gray-900 mb-2">Quality Over Quantity</h3>
                 <p className="text-gray-600">
-                  5 well-placed guest posts outperformed what most agencies achieve with 50+ placements.
+                  4 well-placed guest posts outperformed what most agencies achieve with 50+ placements.
                   The key is matching content to sites that already have topical authority.
                 </p>
               </div>
