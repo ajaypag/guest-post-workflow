@@ -120,21 +120,10 @@ export default function DomainCell({ domain, domainId }: DomainCellProps) {
 
   return (
     <div className="space-y-2">
-      {/* Domain name and basic metrics */}
+      {/* Domain name only - DR and traffic are in separate columns */}
       <div className="flex items-center gap-2">
         <Globe className="h-4 w-4 text-gray-400" />
         <span className="font-medium">{domain.domain}</span>
-        {domain.domainRating && (
-          <span className="text-xs px-1.5 py-0.5 bg-gray-100 rounded">
-            DR: {domain.domainRating}
-          </span>
-        )}
-        {domain.traffic && (
-          <span className="text-xs px-1.5 py-0.5 bg-gray-100 rounded flex items-center gap-1">
-            <TrendingUp className="h-3 w-3" />
-            {domain.traffic.toLocaleString()}
-          </span>
-        )}
       </div>
 
       {/* Analysis badges */}
