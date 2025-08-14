@@ -408,7 +408,7 @@ export default function OutreachLabsCaseStudy() {
               </p>
               
               <Link
-                href="/register"
+                href="/signup"
                 className="inline-flex items-center gap-2 px-8 py-4 bg-white text-blue-600 rounded-lg hover:bg-gray-100 font-semibold transition-colors"
               >
                 Start Your Success Story
@@ -491,7 +491,7 @@ export default function OutreachLabsCaseStudy() {
           </p>
           <div className="flex flex-col sm:flex-row gap-4 justify-center">
             <Link
-              href="/register"
+              href="/signup"
               className="inline-flex items-center justify-center gap-2 px-8 py-4 bg-blue-600 text-white rounded-lg hover:bg-blue-700 font-semibold transition-colors"
             >
               Get Started Today

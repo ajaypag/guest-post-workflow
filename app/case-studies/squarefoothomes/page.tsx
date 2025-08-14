@@ -654,7 +654,7 @@ export default function SquareFootHomesCaseStudy() {
           </p>
           <div className="flex flex-col sm:flex-row gap-4 justify-center">
             <Link
-              href="/register"
+              href="/signup"
               className="inline-flex items-center justify-center gap-2 px-8 py-4 bg-green-600 text-white rounded-lg hover:bg-green-700 font-semibold transition-colors"
             >
               Start Your Growth Story

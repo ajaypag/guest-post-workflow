@@ -204,7 +204,7 @@ export default function CaseStudiesPage() {
             Join the growing list of brands achieving real SEO results with strategic guest posting.
           </p>
           <Link
-            href="/register"
+            href="/signup"
             className="inline-flex items-center gap-2 px-8 py-4 bg-blue-600 text-white rounded-lg hover:bg-blue-700 font-semibold transition-colors"
           >
             Get Started Today
