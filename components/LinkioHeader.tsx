@@ -30,6 +30,7 @@ export default function LinkioHeader({
   // Navigation items for default variant (Industries moved to separate dropdown)
   const navItems = [
     { href: '/how-it-works', label: 'How It Works' },
+    { href: '/case-studies', label: 'Case Studies' },
     { href: '/guest-posting-sites', label: 'Browse Sites' },
   ];
 
