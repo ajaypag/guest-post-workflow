@@ -4,13 +4,20 @@ Production-ready workflow system with PostgreSQL, multi-user auth, and AI agent 
 
 ## 🚨 Critical Production Info
 
-**Version**: v1.0.0 (Stable) | **Status**: ✅ Production on Coolify
+**Version**: v1.0.1 (Migration Phase) | **Status**: ⚠️ Pre-Production Setup
 
 ### Must Know Before Coding
 1. **Do NOT change** JSON storage model for workflows - it's working
 2. **Step components**: Use `*Clean.tsx` files, NOT original versions ([details](#step-component-warning))
 3. **VARCHAR limits**: AI content needs TEXT columns, not VARCHAR ([details](#varchar-critical))
 4. **Build must pass** before deployment - run `npm run build`
+5. **NEW: Domain Normalization** - All domains must use normalized format ([details](#domain-normalization-critical))
+6. **NEW: Run Migrations** - Critical migrations pending before production
+
+### 🚨 PENDING MIGRATIONS (Run These First!)
+1. **Publisher System**: `migrations/0035_publisher_offerings_system_fixed.sql`
+2. **Domain Normalization**: `migrations/0037_normalize_existing_domains.sql`
+3. **Use Admin Panel**: `/admin/domain-migration` for safe migration
 
 ### Recent Changes (Keep in Mind)
 - 🔄 Order Interface Redesign (2025-01-31) - IN PROGRESS
@@ -42,6 +49,21 @@ Production-ready workflow system with PostgreSQL, multi-user auth, and AI agent 
   - Bulk analysis projects auto-created on order confirmation
   - Notification system for internal users
   - **MIGRATION REQUIRED**: Run `/admin/order-groups-migration`
+- 🆕 Publisher Portal System (2025-02-14)
+  - Publishers can manage websites and offerings
+  - Internal team can use same infrastructure
+  - One website → multiple publishers (no duplicates)
+  - See: [docs/06-planning/publisher-portal-implementation.md](docs/06-planning/publisher-portal-implementation.md)
+- 🆕 Internal Portal (2025-02-14)
+  - Website management at `/internal/websites`
+  - Publisher oversight tools
+  - Bulk operations support
+  - See: [docs/06-planning/internal-portal-plan.md](docs/06-planning/internal-portal-plan.md)
+- ⚠️ Domain Normalization System (2025-02-14)
+  - CRITICAL: Prevents duplicate websites
+  - Normalizes www, protocols, casing
+  - Migration tool at `/admin/domain-migration`
+  - See: [docs/07-qa/domain-handling-qa-report.md](docs/07-qa/domain-handling-qa-report.md)
 
 ## 🔧 Quick Reference
 
@@ -91,6 +113,19 @@ approach VARCHAR(100)  -- AI text gets truncated
 approach TEXT         -- Safe for AI content
 ```
 Run `/admin/varchar-limits` to check all columns.
+
+### Domain Normalization Critical
+**Problem**: Same website stored multiple times (www.example.com, EXAMPLE.COM, https://example.com)  
+**Impact**: Duplicate data, failed matching, broken publisher assignments  
+**Solution**: All domains normalized automatically
+```typescript
+// Input variations all normalize to same domain:
+normalizeDomain('https://www.example.com') // → 'example.com'
+normalizeDomain('WWW.EXAMPLE.COM')         // → 'example.com'
+normalizeDomain('example.com/')            // → 'example.com'
+```
+**Migration**: Run `/admin/domain-migration` to normalize existing data  
+**New Code**: Use `import { normalizeDomain } from '@/lib/utils/domainNormalizer'`
 
 ### Auto-Save Race Condition (AI Agents)
 **Problem**: AI generates content → Auto-save shows success → But saves empty data!  

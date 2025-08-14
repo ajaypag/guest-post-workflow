@@ -2,6 +2,7 @@ import { pgTable, uuid, varchar, timestamp, boolean, text, index, uniqueIndex, b
 import { relations } from 'drizzle-orm';
 import { clients } from './schema';
 import { orders } from './orderSchema';
+import { websites } from './websiteSchema';
 
 /**
  * Accounts table - external clients who order guest posts
@@ -171,11 +172,16 @@ export type NewPublisherWebsite = typeof publisherWebsites.$inferInsert;
 // Relations
 export const publishersRelations = relations(publishers, ({ many }) => ({
   websites: many(publisherWebsites),
+  // Note: Legacy publisher table - new publisher CRM uses publisherContacts
 }));
 
 export const publisherWebsitesRelations = relations(publisherWebsites, ({ one }) => ({
   publisher: one(publishers, {
     fields: [publisherWebsites.publisherId],
     references: [publishers.id],
+  }),
+  website: one(websites, {
+    fields: [publisherWebsites.websiteId],
+    references: [websites.id],
   }),
 }));

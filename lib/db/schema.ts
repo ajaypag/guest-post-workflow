@@ -456,13 +456,13 @@ export {
 // Re-export website schema tables  
 export { 
   websites,
-  websiteContacts,
+  // websiteContacts removed in migration 0021
   websiteQualifications,
   projectWebsites,
   workflowWebsites,
   websiteSyncLogs,
   websitesRelations,
-  websiteContactsRelations,
+  // websiteContactsRelations removed with websiteContacts table
   websiteQualificationsRelations,
   projectWebsitesRelations,
   workflowWebsitesRelations,
@@ -702,3 +702,35 @@ export const linkOrchestrationSessionsRelations = relations(linkOrchestrationSes
 
 export type LinkOrchestrationSession = typeof linkOrchestrationSessions.$inferSelect;
 export type NewLinkOrchestrationSession = typeof linkOrchestrationSessions.$inferInsert;
+
+// Re-export publisher offerings schema
+export {
+  publisherOfferingRelationships,
+  publisherOfferings,
+  publisherPricingRules,
+  publisherPerformance,
+  publisherEmailClaims,
+  publisherOfferingRelationshipsRelations,
+  publisherOfferingsRelations,
+  publisherPricingRulesRelations,
+  publisherPerformanceRelations,
+  publisherEmailClaimsRelations,
+  OFFERING_TYPES,
+  RELATIONSHIP_TYPES,
+  VERIFICATION_STATUS,
+  LINK_TYPES,
+  AVAILABILITY_STATUS,
+  type PublisherOfferingRelationship,
+  type NewPublisherOfferingRelationship,
+  type PublisherOffering,
+  type NewPublisherOffering,
+  type PublisherPricingRule,
+  type NewPublisherPricingRule,
+  type PublisherPerformance,
+  type NewPublisherPerformance,
+  type PublisherEmailClaim,
+  type NewPublisherEmailClaim,
+  type OfferingAttributes,
+  type PricingConditions,
+  type PricingActions
+} from './publisherOfferingsSchemaFixed';

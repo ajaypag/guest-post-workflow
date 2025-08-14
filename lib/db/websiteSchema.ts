@@ -23,6 +23,38 @@ export const websites = pgTable('websites', {
   publishedOpportunities: integer('published_opportunities').default(0),
   overallQuality: varchar('overall_quality', { length: 255 }),
   
+  // Enhanced Publisher Information (added in migration 0020)
+  publisherTier: varchar('publisher_tier', { length: 20 }).default('standard'),
+  preferredContentTypes: text('preferred_content_types').array(),
+  editorialCalendarUrl: varchar('editorial_calendar_url', { length: 500 }),
+  contentGuidelinesUrl: varchar('content_guidelines_url', { length: 500 }),
+  
+  // Publishing Details (added in migration 0020)
+  typicalTurnaroundDays: integer('typical_turnaround_days').default(7),
+  acceptsDoFollow: boolean('accepts_do_follow').default(true),
+  requiresAuthorBio: boolean('requires_author_bio').default(false),
+  maxLinksPerPost: integer('max_links_per_post').default(2),
+  
+  // Business Information (added in migration 0020)
+  primaryContactId: uuid('primary_contact_id'),
+  publisherCompany: varchar('publisher_company', { length: 255 }),
+  websiteLanguage: varchar('website_language', { length: 10 }).default('en'),
+  targetAudience: text('target_audience'),
+  
+  // Performance Tracking (added in migration 0020)
+  avgResponseTimeHours: integer('avg_response_time_hours'),
+  successRatePercentage: decimal('success_rate_percentage', { precision: 5, scale: 2 }),
+  lastCampaignDate: timestamp('last_campaign_date'),
+  totalPostsPublished: integer('total_posts_published').default(0),
+  
+  // Internal Classification (added in migration 0020)
+  internalQualityScore: integer('internal_quality_score'),
+  internalNotes: text('internal_notes'),
+  accountManagerId: uuid('account_manager_id'),
+  
+  // Publisher CRM Relations (added in migration 0032)
+  organizationId: uuid('organization_id'),
+  
   // Airtable metadata
   airtableCreatedAt: timestamp('airtable_created_at').notNull(),
   airtableUpdatedAt: timestamp('airtable_updated_at').notNull(),
@@ -33,32 +65,8 @@ export const websites = pgTable('websites', {
   updatedAt: timestamp('updated_at').notNull(),
 });
 
-// Website contacts table
-export const websiteContacts = pgTable('website_contacts', {
-  id: uuid('id').primaryKey(),
-  websiteId: uuid('website_id').notNull().references(() => websites.id, { onDelete: 'cascade' }),
-  
-  email: varchar('email', { length: 255 }).notNull(),
-  isPrimary: boolean('is_primary').default(false),
-  hasPaidGuestPost: boolean('has_paid_guest_post').default(false),
-  hasSwapOption: boolean('has_swap_option').default(false),
-  guestPostCost: decimal('guest_post_cost', { precision: 10, scale: 2 }),
-  linkInsertCost: decimal('link_insert_cost', { precision: 10, scale: 2 }),
-  requirement: varchar('requirement', { length: 50 }), // 'Paid', 'Swap', etc
-  status: varchar('status', { length: 50 }).default('Active'),
-  
-  // Airtable reference
-  airtableLinkPriceId: varchar('airtable_link_price_id', { length: 255 }).unique(),
-  
-  // Local enrichment
-  lastContacted: timestamp('last_contacted'),
-  responseRate: decimal('response_rate', { precision: 5, scale: 2 }), // Percentage
-  averageResponseTime: integer('average_response_time'), // Hours
-  notes: text('notes'),
-  
-  createdAt: timestamp('created_at').notNull(),
-  updatedAt: timestamp('updated_at').notNull(),
-});
+// NOTE: websiteContacts table was removed in migration 0021
+// Replaced by publisher CRM system: publisherContacts + contactWebsiteAssociations
 
 // Website qualifications table
 export const websiteQualifications = pgTable('website_qualifications', {
@@ -147,20 +155,22 @@ export const airtableWebhookEvents = pgTable('airtable_webhook_events', {
 });
 
 // Relations
-export const websitesRelations = relations(websites, ({ many }) => ({
-  contacts: many(websiteContacts),
+export const websitesRelations = relations(websites, ({ one, many }) => ({
+  // Legacy relations
   qualifications: many(websiteQualifications),
   projectWebsites: many(projectWebsites),
   workflowWebsites: many(workflowWebsites),
   syncLogs: many(websiteSyncLogs),
-}));
-
-export const websiteContactsRelations = relations(websiteContacts, ({ one }) => ({
-  website: one(websites, {
-    fields: [websiteContacts.websiteId],
-    references: [websites.id],
+  
+  // Enhanced publisher relations (added in migration 0020/0032)
+  // Note: Relations to publisherCrmSchema defined in publisherCrmSchema.ts to avoid circular imports
+  accountManager: one(users, {
+    fields: [websites.accountManagerId],
+    references: [users.id],
   }),
 }));
+
+// websiteContactsRelations removed - table deprecated in migration 0021
 
 export const websiteQualificationsRelations = relations(websiteQualifications, ({ one }) => ({
   website: one(websites, {

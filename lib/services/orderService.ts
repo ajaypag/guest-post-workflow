@@ -19,6 +19,7 @@ import { accounts } from '@/lib/db/accountSchema';
 import { eq, and, gte, lte, or, sql, desc, isNull } from 'drizzle-orm';
 import { v4 as uuidv4 } from 'uuid';
 import crypto from 'crypto';
+import EnhancedOrderPricingService from './enhancedOrderPricingService';
 
 export interface CreateOrderInput {
   accountId: string;
@@ -109,7 +110,7 @@ export class OrderService {
       throw new Error('Domain not found');
     }
 
-    // Get pricing from websites table
+    // Get website details
     const website = await db.query.websites.findFirst({
       where: or(
         eq(websites.domain, domain.domain),
@@ -118,8 +119,18 @@ export class OrderService {
       ),
     });
 
-    const retailPrice = website?.guestPostCost ? parseFloat(website.guestPostCost) : 0;
-    const wholesalePrice = Math.floor(retailPrice * 0.6); // 40% margin
+    // Get pricing using enhanced pricing service
+    const pricing = await EnhancedOrderPricingService.getWebsitePrice(
+      website?.id || null,
+      domain.domain,
+      {
+        quantity: 1 // Single item for now
+        // accountId would come from order, not input
+      }
+    );
+
+    const retailPrice = pricing.retailPrice;
+    const wholesalePrice = pricing.wholesalePrice;
 
     const [item] = await db.insert(orderItems).values({
       id: uuidv4(),
