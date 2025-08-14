@@ -166,14 +166,14 @@ const guestPosts = [
 
 // Real Estate Silo Before/After Data (3 months ago vs today)
 const realEstateSiloResults = [
+  { keyword: 'homes for sale west palm beach florida', beforePos: 32, afterPos: 16, volume: 90, traffic: 12 },
   { keyword: 'homes for sale boca raton', beforePos: 30, afterPos: 7, volume: 900, traffic: 41 },
+  { keyword: 'royal palm beach homes for sale no hoa', beforePos: 7, afterPos: 6, volume: 30, traffic: 3 },
+  { keyword: 'century village west palm beach condos for sale', beforePos: 11, afterPos: 9, volume: 60, traffic: 2 },
+  { keyword: 'west palm beach oceanfront condos for sale', beforePos: 32, afterPos: 25, volume: 20, traffic: 1 },
+  { keyword: 'flagler pointe condos for sale west palm beach', beforePos: 18, afterPos: 12, volume: 30, traffic: 1 },
   { keyword: 'boca delray golf and country club homes for sale', beforePos: 4, afterPos: 3, volume: 90, traffic: 13 },
   { keyword: 'boca bridges homes for sale', beforePos: 24, afterPos: 14, volume: 500, traffic: 6 },
-  { keyword: 'boca delray golf and country club condos for sale', beforePos: 2, afterPos: 1, volume: 20, traffic: 4 },
-  { keyword: 'house for sale in greenacres no hoa', beforePos: 9, afterPos: 6, volume: 60, traffic: 4 },
-  { keyword: 'boca delray country club homes for sale', beforePos: 5, afterPos: 3, volume: 20, traffic: 3 },
-  { keyword: 'whisper walk homes for sale', beforePos: 19, afterPos: 10, volume: 100, traffic: 3 },
-  { keyword: 'lotus homes for sale', beforePos: 27, afterPos: 11, volume: 150, traffic: 3 },
   { keyword: '55 condos for sale in jupiter florida', beforePos: 9, afterPos: 1, volume: 40, traffic: 2 },
   { keyword: 'florida waterfront condos for sale', beforePos: 24, afterPos: 7, volume: 30, traffic: 1 },
 ];
@@ -529,15 +529,15 @@ export default function SquareFootHomesCaseStudy() {
           <div className="mt-8 text-center">
             <div className="grid md:grid-cols-3 gap-6 max-w-2xl mx-auto">
               <div className="bg-green-50 rounded-lg p-4">
-                <p className="text-2xl font-bold text-green-600">8/10</p>
+                <p className="text-2xl font-bold text-green-600">9/10</p>
                 <p className="text-sm text-gray-600">Keywords Improved</p>
               </div>
               <div className="bg-blue-50 rounded-lg p-4">
-                <p className="text-2xl font-bold text-blue-600">+18</p>
+                <p className="text-2xl font-bold text-blue-600">+12</p>
                 <p className="text-sm text-gray-600">Avg Position Gain</p>
               </div>
               <div className="bg-purple-50 rounded-lg p-4">
-                <p className="text-2xl font-bold text-purple-600">78</p>
+                <p className="text-2xl font-bold text-purple-600">82</p>
                 <p className="text-sm text-gray-600">Total Monthly Traffic</p>
               </div>
             </div>
