@@ -11,6 +11,21 @@ export const metadata: Metadata = {
 
 const caseStudies = [
   {
+    id: 'squarefoothomes',
+    client: 'Square Foot Homes',
+    tagline: 'Florida Real Estate Company',
+    headline: '243% Traffic Growth with Local Guides on National Sites',
+    results: {
+      posts: 10,
+      keywords: '1,500+',
+      topRanking: '#1',
+      traffic: '686 monthly',
+    },
+    industries: ['Real Estate', 'Local Business', 'Florida'],
+    preview: 'Discover how we solved the local link building challenge by creating strategic local guides on national outlets, transforming stagnant traffic into explosive growth.',
+    color: 'from-green-600 to-teal-600',
+  },
+  {
     id: 'outreachlabs',
     client: 'OutreachLabs',
     tagline: 'B2B Link Building Agency',
