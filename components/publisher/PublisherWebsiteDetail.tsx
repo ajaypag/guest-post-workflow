@@ -260,7 +260,7 @@ export default function PublisherWebsiteDetail({
                         <p className="text-sm text-gray-600">Total Revenue</p>
                         <p className="text-2xl font-bold text-gray-900 mt-1">
                           {performance?.totalRevenue 
-                            ? formatCurrency(parseFloat(performance.totalRevenue))
+                            ? formatCurrency(performance.totalRevenue)
                             : '$0'}
                         </p>
                       </div>

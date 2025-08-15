@@ -41,10 +41,21 @@ export const publisherOfferingRelationships = pgTable('publisher_offering_relati
   customTerms: jsonb('custom_terms').default({}),
   relationshipType: varchar('relationship_type', { length: 50 }).notNull().default('contact'),
   verificationStatus: varchar('verification_status', { length: 20 }).notNull().default('claimed'),
+  verificationMethod: varchar('verification_method', { length: 50 }),
   priorityRank: integer('priority_rank').default(100),
   isPreferred: boolean('is_preferred').default(false),
   verifiedAt: timestamp('verified_at'),
   verifiedBy: uuid('verified_by'),
+  // Contact Information
+  contactEmail: varchar('contact_email', { length: 255 }),
+  contactPhone: varchar('contact_phone', { length: 50 }),
+  contactName: varchar('contact_name', { length: 255 }),
+  // Notes
+  internalNotes: text('internal_notes'),
+  publisherNotes: text('publisher_notes'),
+  // Commission/Payment terms
+  commissionRate: varchar('commission_rate', { length: 50 }),
+  paymentTerms: varchar('payment_terms', { length: 255 }),
   createdAt: timestamp('created_at').defaultNow(),
   updatedAt: timestamp('updated_at').defaultNow(),
 });

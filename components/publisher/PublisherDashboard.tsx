@@ -175,7 +175,7 @@ export default function PublisherDashboard({ stats }: PublisherDashboardProps) {
                     <div className="flex items-center space-x-3">
                       <div className="text-right">
                         <p className="text-sm font-medium text-gray-900">
-                          {item.performance?.totalRevenue ? formatCurrency(parseFloat(item.performance.totalRevenue)) : '$0'}
+                          {item.performance?.totalRevenue ? formatCurrency(item.performance.totalRevenue) : '$0'}
                         </p>
                         <p className="text-xs text-gray-500">lifetime</p>
                       </div>

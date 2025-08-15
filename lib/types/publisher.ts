@@ -12,7 +12,13 @@ export interface PublisherWebsite {
     isPrimary?: boolean | null;
     isPreferred: boolean | null;
     priorityRank: number | null;
-    contactEmail: string | null;
+    contactEmail?: string | null;
+    contactPhone?: string | null;
+    contactName?: string | null;
+    internalNotes?: string | null;
+    publisherNotes?: string | null;
+    commissionRate?: string | null;
+    paymentTerms?: string | null;
     verifiedAt: Date | null;
     verifiedBy?: string | null;
     customTerms?: any;
@@ -123,6 +129,10 @@ export interface PublisherRelationship {
   isPreferred: boolean | null;
   priorityRank?: number | null;
   contactEmail?: string | null;
+  contactPhone?: string | null;
+  contactName?: string | null;
+  internalNotes?: string | null;
+  publisherNotes?: string | null;
   commissionRate?: string | null;
   paymentTerms?: string | null;
   customTerms?: any;
