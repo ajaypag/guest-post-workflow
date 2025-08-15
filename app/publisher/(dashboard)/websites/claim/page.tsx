@@ -63,7 +63,7 @@ export default function ClaimWebsitePage() {
     if (searchTerm) {
       try {
         const normalized = normalizeDomain(searchTerm);
-        setNormalizedSearch(normalized);
+        setNormalizedSearch(normalized.domain);
       } catch (err) {
         setNormalizedSearch('');
       }

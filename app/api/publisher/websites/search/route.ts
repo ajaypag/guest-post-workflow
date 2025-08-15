@@ -38,7 +38,8 @@ export async function POST(request: NextRequest) {
     // Normalize the domain
     let normalizedDomain: string;
     try {
-      normalizedDomain = normalizeDomain(domain);
+      const normalized = normalizeDomain(domain);
+      normalizedDomain = normalized.domain;
     } catch (err) {
       return NextResponse.json(
         { error: 'Invalid domain format' },

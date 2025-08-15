@@ -57,7 +57,8 @@ export async function POST(request: NextRequest) {
     // Normalize the domain
     let normalizedDomain: string;
     try {
-      normalizedDomain = normalizeDomain(data.domain);
+      const normalized = normalizeDomain(data.domain);
+      normalizedDomain = normalized.domain;
     } catch (err) {
       return NextResponse.json(
         { error: 'Invalid domain format' },
@@ -115,11 +116,11 @@ export async function POST(request: NextRequest) {
         // Source tracking
         source: 'publisher',
         addedByPublisherId: session.publisherId,
-        sourceMetadata: {
+        sourceMetadata: JSON.stringify({
           addedBy: session.email,
           addedAt: now.toISOString(),
           initialData: data
-        },
+        }),
         
         // Timestamps - using current time for all
         airtableCreatedAt: now,
