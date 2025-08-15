@@ -72,8 +72,8 @@ Status: Verified
 ### Access Credentials
 ```bash
 # Internal Admin
-Email: ajay@outreachlabs.com
-Password: FA64!I$nrbCauS^d
+Email: [REDACTED]
+Password: [REDACTED]
 
 # Database
 postgresql://postgres:postgres@localhost:5433/guest_post_test

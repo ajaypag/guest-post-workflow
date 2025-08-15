@@ -6,7 +6,7 @@
    - Environments: .env.local, .env
 
    Creating an optimized production build ...
- ✓ Compiled successfully in 26.0s
+ ✓ Compiled successfully in 66s
    Linting and checking validity of types ...
 
 ./app/account/orders/[id]/status/page.tsx
@@ -193,19 +193,3 @@
 95:6  Warning: React Hook useEffect has a missing dependency: 'loadWebsiteDetails'. Either include it or remove the dependency array.  react-hooks/exhaustive-deps
 
 info  - Need to disable some ESLint rules? Learn more here: https://nextjs.org/docs/app/api-reference/config/eslint#disabling-rules
-Failed to compile.
-
-./app/publisher/offerings/new/page.tsx:43:9
-Type error: Type '{ relationship: { id: string; publisherId: string; websiteId: string; relationshipType: string; verificationStatus: string; verificationMethod: string | null; verifiedAt: Date | null; ... 9 more ...; updatedAt: Date; }; website: { ...; }; }[]' is not assignable to type '{ relationship: PublisherRelationship; website: Website; }[]'.
-  Type '{ relationship: { id: string; publisherId: string; websiteId: string; relationshipType: string; verificationStatus: string; verificationMethod: string | null; verifiedAt: Date | null; ... 9 more ...; updatedAt: Date; }; website: { ...; }; }' is not assignable to type '{ relationship: PublisherRelationship; website: Website; }'.
-    Types of property 'relationship' are incompatible.
-      Property 'offeringId' is missing in type '{ id: string; publisherId: string; websiteId: string; relationshipType: string; verificationStatus: string; verificationMethod: string | null; verifiedAt: Date | null; priorityRank: number | null; ... 8 more ...; updatedAt: Date; }' but required in type 'PublisherRelationship'.
-
-[0m [90m 41 |[39m     [33m<[39m[33mdiv[39m className[33m=[39m[32m"max-w-4xl mx-auto"[39m[33m>[39m[0m
-[0m [90m 42 |[39m       [33m<[39m[33mOfferingForm[39m [0m
-[0m[31m[1m>[22m[39m[90m 43 |[39m         websites[33m=[39m{publisherWebsites}[0m
-[0m [90m    |[39m         [31m[1m^[22m[39m[0m
-[0m [90m 44 |[39m         isNew[33m=[39m{[36mtrue[39m}[0m
-[0m [90m 45 |[39m       [33m/[39m[33m>[39m[0m
-[0m [90m 46 |[39m     [33m<[39m[33m/[39m[33mdiv[39m[33m>[39m[0m
-Next.js build worker exited with code: 1 and signal: null

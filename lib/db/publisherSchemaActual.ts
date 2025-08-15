@@ -34,7 +34,7 @@ export const publisherOfferings = pgTable('publisher_offerings', {
 export const publisherOfferingRelationships = pgTable('publisher_offering_relationships', {
   id: uuid('id').primaryKey().defaultRandom(),
   publisherId: uuid('publisher_id').notNull(),
-  offeringId: uuid('offering_id').notNull(),
+  offeringId: uuid('offering_id'),  // Nullable - relationships can exist before offerings
   websiteId: uuid('website_id').notNull(),
   isPrimary: boolean('is_primary').default(false),
   isActive: boolean('is_active').default(true),

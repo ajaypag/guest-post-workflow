@@ -5,15 +5,19 @@ export interface PublisherWebsite {
     id: string;
     publisherId: string;
     websiteId: string;
+    offeringId?: string | null;  // Nullable - relationships can exist before offerings
     relationshipType: string;
     verificationStatus: string;
     isActive: boolean | null;
+    isPrimary?: boolean | null;
     isPreferred: boolean | null;
     priorityRank: number | null;
     contactEmail: string | null;
     verifiedAt: Date | null;
-    createdAt: Date;
-    updatedAt: Date;
+    verifiedBy?: string | null;
+    customTerms?: any;
+    createdAt: Date | null;
+    updatedAt: Date | null;
   };
   website: {
     id: string;
@@ -23,8 +27,8 @@ export interface PublisherWebsite {
     guestPostCost: string | null; // DECIMAL field comes as string
     publisherCompany: string | null;
     internalNotes: string | null;
-    createdAt: Date;
-    updatedAt: Date;
+    createdAt: Date | null;
+    updatedAt: Date | null;
   };
 }
 
@@ -47,8 +51,8 @@ export interface PublisherPerformanceMetrics {
   lastCalculatedAt: Date | null;
   periodStart: string | Date | null;
   periodEnd: string | Date | null;
-  createdAt: Date;
-  updatedAt: Date;
+  createdAt: Date | null;
+  updatedAt: Date | null;
 }
 
 export interface PublisherOrder {
@@ -100,27 +104,31 @@ export interface PublisherOffering {
     minimumDR?: number;
   };
   metadata?: Record<string, any>;
-  createdAt: Date;
-  updatedAt: Date;
+  createdAt: Date | null;
+  updatedAt: Date | null;
 }
 
 export interface PublisherRelationship {
   id: string;
   publisherId: string;
   websiteId: string;
+  offeringId: string | null;  // Nullable - relationships can exist before offerings
   relationshipType: string;
   verificationStatus: string;
   verificationMethod?: string | null;
   verifiedAt?: Date | null;
+  verifiedBy?: string | null;
   isActive: boolean | null;
+  isPrimary?: boolean | null;
   isPreferred: boolean | null;
   priorityRank?: number | null;
   contactEmail?: string | null;
   commissionRate?: string | null;
   paymentTerms?: string | null;
+  customTerms?: any;
   notes?: string | null;
-  createdAt: Date;
-  updatedAt: Date;
+  createdAt: Date | null;
+  updatedAt: Date | null;
 }
 
 export interface Website {
@@ -131,8 +139,8 @@ export interface Website {
   guestPostCost?: string | null;
   publisherCompany?: string | null;
   internalNotes?: string | null;
-  createdAt: Date;
-  updatedAt: Date;
+  createdAt: Date | null;
+  updatedAt: Date | null;
 }
 
 export interface PublisherStatCardProps {

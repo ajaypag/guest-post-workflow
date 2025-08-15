@@ -100,7 +100,22 @@ psql -h [host] -U [user] -d [database] -f migrations/0041_add_missing_performanc
 - `avg_order_value` (integer) - Average order value in cents
 - `last_calculated_at` (timestamp) - Last calculation timestamp
 
-### Step 7: Domain Normalization Migration
+### Step 7: Fix Offering ID Nullable (NEW 2025-08-15)
+**File**: `migrations/0042_fix_offering_id_nullable.sql`
+**Status**: ✅ Created for TypeScript compatibility
+**Required**: YES - Fixes schema design issue
+
+Makes offering_id nullable in publisher_offering_relationships table.
+
+```bash
+psql -h [host] -U [user] -d [database] -f migrations/0042_fix_offering_id_nullable.sql
+```
+
+**Changes to publisher_offering_relationships table**:
+- `offering_id` - Changed from NOT NULL to nullable
+- Allows relationships to exist before offerings are created
+
+### Step 8: Domain Normalization Migration
 **File**: `migrations/0037_normalize_existing_domains.sql`
 **Status**: ✅ Tested locally
 **Required**: YES - Prevents duplicate domains
@@ -129,7 +144,7 @@ SELECT migrate_website_pricing_to_offerings();
 - [x] Publisher offerings migration applied (6 new tables created)
 - [x] Domain normalization migration applied (948 domains normalized, 0 duplicates)
 - [x] Authentication working (JWT with userType: 'internal' for admin users)
-- [x] Login system functional (ajay@outreachlabs.com can login)
+- [x] Login system functional (admin user can login)
 - [x] Fixed DATABASE_URL connection issues (using port 5433)
 - [x] Updated password hash for local testing
 - [x] Test internal dashboard at root path (/) - Working for internal users
@@ -225,7 +240,7 @@ DROP FUNCTION IF EXISTS trigger_normalize_domain();
 **Dev Server**: Running on port 3003
 **Tables After Migrations**: 63 (57 original + 6 new publisher tables)
 **Test Users Available**: 13 users in database
-**Working Login**: ajay@outreachlabs.com with password FA64!I$nrbCauS^d
+**Working Login**: [CREDENTIALS REMOVED FOR SECURITY]
 
 ### ✅ Completed Setup Steps:
 1. Created Docker PostgreSQL container on port 5433
