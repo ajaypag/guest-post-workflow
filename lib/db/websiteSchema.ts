@@ -8,7 +8,7 @@ import { workflows } from './schema';
 // Website table to store Airtable data locally
 export const websites = pgTable('websites', {
   id: uuid('id').primaryKey(),
-  airtableId: varchar('airtable_id', { length: 255 }).notNull().unique(),
+  airtableId: varchar('airtable_id', { length: 255 }).unique(), // Now nullable to allow manual creation
   domain: varchar('domain', { length: 255 }).notNull().unique(),
   domainRating: integer('domain_rating'),
   totalTraffic: integer('total_traffic'),
@@ -54,6 +54,13 @@ export const websites = pgTable('websites', {
   
   // Publisher CRM Relations (added in migration 0032)
   organizationId: uuid('organization_id'),
+  
+  // Source tracking (added in migration 0044)
+  source: varchar('source', { length: 50 }).default('airtable'),
+  addedByPublisherId: uuid('added_by_publisher_id'),
+  addedByUserId: uuid('added_by_user_id'),
+  sourceMetadata: text('source_metadata'),
+  importBatchId: varchar('import_batch_id', { length: 100 }),
   
   // Airtable metadata
   airtableCreatedAt: timestamp('airtable_created_at').notNull(),

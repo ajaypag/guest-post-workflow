@@ -252,7 +252,7 @@ export default function PublisherWebsitesList({ websites }: PublisherWebsitesLis
           className="mt-4 sm:mt-0 inline-flex items-center px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 font-medium"
         >
           <Plus className="h-5 w-5 mr-2" />
-          Claim Website
+          Add Website
         </Link>
       </div>
 
@@ -306,7 +306,7 @@ export default function PublisherWebsitesList({ websites }: PublisherWebsitesLis
           <p className="text-gray-500 mb-6">
             {searchTerm || statusFilter !== 'all' 
               ? 'Try adjusting your filters'
-              : 'Claim your first website to start managing offerings'
+              : 'Add your first website to start managing offerings'
             }
           </p>
           {!searchTerm && statusFilter === 'all' && (
@@ -315,7 +315,7 @@ export default function PublisherWebsitesList({ websites }: PublisherWebsitesLis
               className="inline-flex items-center px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 font-medium"
             >
               <Plus className="h-5 w-5 mr-2" />
-              Claim Your First Website
+              Add Your First Website
             </Link>
           )}
         </div>
