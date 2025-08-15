@@ -1,11 +1,11 @@
 'use client';
 
-import { useState, useEffect } from 'react';
+import { useState, useEffect, Suspense } from 'react';
 import { useRouter, useSearchParams } from 'next/navigation';
 import Link from 'next/link';
 import { CheckCircle, AlertCircle, Loader2, ArrowRight } from 'lucide-react';
 
-export default function PublisherVerifyPage() {
+function VerifyContent() {
   const router = useRouter();
   const searchParams = useSearchParams();
   const [loading, setLoading] = useState(true);
@@ -143,5 +143,22 @@ export default function PublisherVerifyPage() {
         </div>
       </div>
     </div>
+  );
+}
+
+export default function PublisherVerifyPage() {
+  return (
+    <Suspense 
+      fallback={
+        <div className="min-h-screen bg-gradient-to-br from-gray-50 to-gray-100 flex items-center justify-center">
+          <div className="text-center">
+            <Loader2 className="h-12 w-12 text-blue-600 animate-spin mx-auto mb-4" />
+            <p className="text-gray-600">Loading verification...</p>
+          </div>
+        </div>
+      }
+    >
+      <VerifyContent />
+    </Suspense>
   );
 }
