@@ -1,10 +1,11 @@
 import { AuthServiceServer } from '@/lib/auth-server';
 import { redirect } from 'next/navigation';
 import { db } from '@/lib/db/connection';
-import { publisherOfferingRelationships } from '@/lib/db/publisherOfferingsSchemaFixed';
+import { publisherOfferingRelationships } from '@/lib/db/publisherSchemaActual';
 import { websites } from '@/lib/db/websiteSchema';
 import { eq, and } from 'drizzle-orm';
 import OfferingForm from '@/components/publisher/OfferingForm';
+import type { PublisherRelationship, Website } from '@/lib/types/publisher';
 
 export default async function NewOfferingPage() {
   const session = await AuthServiceServer.getSession();
@@ -19,7 +20,7 @@ export default async function NewOfferingPage() {
   }
 
   // Get publisher's websites
-  const publisherWebsites = await db
+  const rawWebsites = await db
     .select({
       relationship: publisherOfferingRelationships,
       website: websites
@@ -32,6 +33,10 @@ export default async function NewOfferingPage() {
         eq(publisherOfferingRelationships.isActive, true)
       )
     );
+
+  // Cast to match expected types
+  const publisherWebsites: Array<{ relationship: PublisherRelationship; website: Website }> = 
+    rawWebsites as any;
 
   if (publisherWebsites.length === 0) {
     redirect('/publisher/websites');

@@ -45,8 +45,8 @@ export interface PublisherPerformanceMetrics {
   contentApprovalRate: string | null;
   revisionRate: string | null;
   clientSatisfactionScore: string | null;
-  totalRevenue: string | null;
-  avgOrderValue: string | null;
+  totalRevenue: number | null;  // INTEGER field returns as number
+  avgOrderValue: number | null;  // INTEGER field returns as number
   reliabilityScore: string | null;
   lastCalculatedAt: Date | null;
   periodStart: string | Date | null;
