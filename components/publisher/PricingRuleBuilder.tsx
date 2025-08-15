@@ -27,16 +27,28 @@ import { PublisherOffering, Website } from '@/lib/types/publisher';
 interface PricingRule {
   id: string;
   publisherOfferingId: string;
-  ruleType: 'percentage' | 'fixed' | 'dynamic';
-  conditionType: string;
-  conditionValue: any;
-  adjustmentType: 'increase' | 'decrease' | 'set';
-  adjustmentValue: string;
-  priority: number;
-  isActive: boolean;
+  ruleType: string;
+  // Old schema fields (for component compatibility)
+  conditionType?: string;
+  conditionValue?: any;
+  adjustmentType?: 'increase' | 'decrease' | 'set';
+  adjustmentValue?: string;
+  // New schema fields (from database)
+  ruleName?: string;
+  description?: string | null;
+  conditions?: unknown;
+  actions?: unknown;
+  isCumulative?: boolean | null;
+  autoApply?: boolean | null;
+  requiresApproval?: boolean | null;
+  validFrom?: string | Date | null;
+  validUntil?: string | Date | null;
+  // Common fields
+  priority: number | null;
+  isActive: boolean | null;
   metadata?: Record<string, any>;
-  createdAt?: Date;
-  updatedAt?: Date;
+  createdAt: Date;
+  updatedAt: Date;
 }
 
 interface PricingRuleBuilderProps {
@@ -121,6 +133,8 @@ export default function PricingRuleBuilder({ offering, website, existingRules }:
       adjustmentValue: '',
       priority: rules.length + 1,
       isActive: true,
+      createdAt: new Date(),
+      updatedAt: new Date(),
     };
     setRules([...rules, newRule]);
     setExpandedRule(newRule.id);
@@ -160,10 +174,10 @@ export default function PricingRuleBuilder({ offering, website, existingRules }:
     // Apply rules in priority order
     const activeRules = rules
       .filter(r => r.isActive && r.adjustmentValue)
-      .sort((a, b) => a.priority - b.priority);
+      .sort((a, b) => (a.priority || 0) - (b.priority || 0));
     
     activeRules.forEach(rule => {
-      const adjustment = parseFloat(rule.adjustmentValue);
+      const adjustment = parseFloat(rule.adjustmentValue || '0');
       
       if (rule.adjustmentType === 'increase') {
         if (rule.ruleType === 'percentage') {
@@ -380,7 +394,7 @@ export default function PricingRuleBuilder({ offering, website, existingRules }:
                   <label className="flex items-center" onClick={(e) => e.stopPropagation()}>
                     <input
                       type="checkbox"
-                      checked={rule.isActive}
+                      checked={Boolean(rule.isActive)}
                       onChange={(e) => updateRule(rule.id, 'isActive', e.target.checked)}
                       className="mr-2"
                     />

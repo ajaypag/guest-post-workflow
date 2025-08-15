@@ -27,9 +27,8 @@ interface Website {
   domain: string;
   domainRating: number | null;
   totalTraffic: number | null;
-  guestPostCost: number | null;
-  linkInsertionCost: number | null;
-  qualityVerified: boolean | null;
+  guestPostCost: string | null; // Note: DECIMAL field comes as string
+  internalQualityScore: number | null;
   internalNotes: string | null;
   createdAt: Date;
   updatedAt: Date;
@@ -130,13 +129,15 @@ export default function InternalWebsitesList({
     return traffic.toString();
   };
 
-  const formatCurrency = (cents: number | null) => {
-    if (!cents) return 'N/A';
+  const formatCurrency = (amount: string | number | null) => {
+    if (!amount) return 'N/A';
+    const numericAmount = typeof amount === 'string' ? parseFloat(amount) : amount;
+    if (isNaN(numericAmount)) return 'N/A';
     return new Intl.NumberFormat('en-US', {
       style: 'currency',
       currency: 'USD',
       minimumFractionDigits: 0,
-    }).format(cents / 100);
+    }).format(numericAmount);
   };
 
   return (
@@ -411,22 +412,17 @@ export default function InternalWebsitesList({
                             GP: {formatCurrency(website.guestPostCost)}
                           </div>
                         )}
-                        {website.linkInsertionCost && (
-                          <div className="text-gray-900">
-                            LI: {formatCurrency(website.linkInsertionCost)}
-                          </div>
-                        )}
-                        {!website.guestPostCost && !website.linkInsertionCost && (
+                        {!website.guestPostCost && (
                           <span className="text-gray-500">Not set</span>
                         )}
                       </div>
                     </div>
                   </td>
                   <td className="px-6 py-4">
-                    {website.qualityVerified ? (
+                    {website.internalQualityScore !== null ? (
                       <span className="inline-flex items-center px-2 py-0.5 rounded text-xs font-medium bg-green-100 text-green-800">
                         <CheckCircle className="h-3 w-3 mr-1" />
-                        Verified
+                        Score: {website.internalQualityScore}
                       </span>
                     ) : (
                       <span className="inline-flex items-center px-2 py-0.5 rounded text-xs font-medium bg-gray-100 text-gray-800">

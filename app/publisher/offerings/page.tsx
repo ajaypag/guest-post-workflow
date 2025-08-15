@@ -1,7 +1,7 @@
 import { AuthServiceServer } from '@/lib/auth-server';
 import { redirect } from 'next/navigation';
 import { db } from '@/lib/db/connection';
-import { publisherOfferingRelationships, publisherOfferings } from '@/lib/db/publisherOfferingsSchemaFixed';
+import { publisherOfferingRelationships, publisherOfferings } from '@/lib/db/publisherSchemaActual';
 import { websites } from '@/lib/db/websiteSchema';
 import { eq, and, sql } from 'drizzle-orm';
 import PublisherOfferingsGrid from '@/components/publisher/PublisherOfferingsGrid';
@@ -18,28 +18,44 @@ export default async function PublisherOfferingsPage() {
     redirect('/publisher/login');
   }
 
-  // Get all offerings for this publisher
-  const allOfferings = await db
-    .select({
-      offering: publisherOfferings,
-      relationship: publisherOfferingRelationships,
-      website: websites
-    })
+  // Get all offerings for this publisher with their relationships and websites
+  // First, get the offerings
+  const offerings = await db
+    .select()
     .from(publisherOfferings)
-    .innerJoin(
-      publisherOfferingRelationships,
-      eq(publisherOfferings.publisherRelationshipId, publisherOfferingRelationships.id)
-    )
-    .innerJoin(websites, eq(publisherOfferingRelationships.websiteId, websites.id))
-    .where(eq(publisherOfferingRelationships.publisherId, session.publisherId));
+    .where(eq(publisherOfferings.publisherId, session.publisherId));
+
+  // Then get relationships and websites for these offerings
+  const allOfferings = await Promise.all(
+    offerings.map(async (offering) => {
+      // Get relationships for this offering
+      const relationships = await db
+        .select({
+          relationship: publisherOfferingRelationships,
+          website: websites
+        })
+        .from(publisherOfferingRelationships)
+        .innerJoin(websites, eq(publisherOfferingRelationships.websiteId, websites.id))
+        .where(eq(publisherOfferingRelationships.offeringId, offering.id));
+      
+      return relationships.map(rel => ({
+        offering,
+        relationship: rel.relationship,
+        website: rel.website
+      }));
+    })
+  );
+
+  // Flatten the array
+  const flattenedOfferings = allOfferings.flat();
 
   // Get statistics
   const stats = {
-    total: allOfferings.length,
-    active: allOfferings.filter(o => o.offering.isActive).length,
-    paused: allOfferings.filter(o => !o.offering.isActive).length,
-    websites: new Set(allOfferings.map(o => o.website.id)).size
+    total: flattenedOfferings.length,
+    active: flattenedOfferings.filter(o => o.offering.isActive).length,
+    paused: flattenedOfferings.filter(o => !o.offering.isActive).length,
+    websites: new Set(flattenedOfferings.map(o => o.website.id)).size
   };
 
-  return <PublisherOfferingsGrid offerings={allOfferings} stats={stats} />;
+  return <PublisherOfferingsGrid offerings={flattenedOfferings} stats={stats} />;
 }

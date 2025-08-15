@@ -98,10 +98,10 @@ export default function DomainCell({ domain, domainId }: DomainCellProps) {
             DR: {domain.domainRating}
           </span>
         )}
-        {domain.traffic && (
+        {domain.totalTraffic && (
           <span className="text-xs px-1.5 py-0.5 bg-gray-100 rounded flex items-center gap-1">
             <TrendingUp className="h-3 w-3" />
-            {domain.traffic.toLocaleString()}
+            {domain.totalTraffic.toLocaleString()}
           </span>
         )}
       </div>

@@ -102,11 +102,11 @@ export default function PublisherWebsitesList({ websites }: PublisherWebsitesLis
 
   // Table columns
   const columns = [
-    { key: 'website', label: 'Website' },
-    { key: 'status', label: 'Status' },
-    { key: 'metrics', label: 'Metrics' },
-    { key: 'earnings', label: 'Earnings' },
-    { key: 'actions', label: 'Actions' },
+    { key: 'website', header: 'Website', accessor: (item: any) => item.website, label: 'Website' },
+    { key: 'status', header: 'Status', accessor: (item: any) => item.status, label: 'Status' },
+    { key: 'metrics', header: 'Metrics', accessor: (item: any) => item.metrics, label: 'Metrics' },
+    { key: 'earnings', header: 'Earnings', accessor: (item: any) => item.earnings, label: 'Earnings' },
+    { key: 'actions', header: 'Actions', accessor: (item: any) => item.actions, label: 'Actions' },
   ];
 
   // Table rows
@@ -292,7 +292,8 @@ export default function PublisherWebsitesList({ websites }: PublisherWebsitesLis
       {filteredWebsites.length > 0 ? (
         <ResponsiveTable
           columns={columns}
-          rows={rows}
+          data={rows}
+          keyExtractor={(row) => row.key}
           breakpoint="lg"
           mobileCardRenderer={mobileCardRenderer}
         />

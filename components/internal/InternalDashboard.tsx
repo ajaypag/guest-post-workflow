@@ -21,7 +21,7 @@ interface DashboardStats {
     total: number;
     withPublishers: number;
     highQuality: number;
-    verified: number;
+    qualityScored: number;
   };
   publisherStats: {
     total: number;
@@ -44,7 +44,7 @@ interface DashboardStats {
     id: string;
     companyName: string | null;
     email: string;
-    isActive: boolean | null;
+    status: string | null;
     createdAt: Date;
   }>;
 }
@@ -142,8 +142,8 @@ export default function InternalDashboard({
                 <span className="font-medium">{websiteStats.highQuality}</span>
               </div>
               <div className="flex justify-between text-sm">
-                <span className="text-gray-600">Verified</span>
-                <span className="font-medium">{websiteStats.verified}</span>
+                <span className="text-gray-600">Quality Scored</span>
+                <span className="font-medium">{websiteStats.qualityScored}</span>
               </div>
             </div>
             
@@ -290,13 +290,13 @@ export default function InternalDashboard({
                       {publisher.companyName || publisher.email}
                     </p>
                     <div className="flex items-center space-x-2 mt-1">
-                      {publisher.isActive ? (
+                      {publisher.status === 'active' ? (
                         <span className="inline-flex items-center px-2 py-0.5 rounded text-xs font-medium bg-green-100 text-green-800">
                           Active
                         </span>
                       ) : (
                         <span className="inline-flex items-center px-2 py-0.5 rounded text-xs font-medium bg-gray-100 text-gray-800">
-                          Inactive
+                          {publisher.status || 'Pending'}
                         </span>
                       )}
                     </div>

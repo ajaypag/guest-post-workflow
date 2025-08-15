@@ -2,26 +2,85 @@ import { db } from '@/lib/db/connection';
 import { 
   publisherOfferingRelationships,
   publisherOfferings,
-  publisherPricingRules,
   publisherPerformance,
-  publisherEmailClaims,
+  publisherPricingRules,
+  OFFERING_TYPES,
   type PublisherOfferingRelationship,
   type NewPublisherOfferingRelationship,
   type PublisherOffering,
   type NewPublisherOffering,
+  type PublisherPerformance,
+  type NewPublisherPerformance,
   type PublisherPricingRule,
-  type NewPublisherPricingRule,
-  OFFERING_TYPES,
-  RELATIONSHIP_TYPES,
-  VERIFICATION_STATUS,
-  LINK_TYPES,
-  AVAILABILITY_STATUS
-} from '@/lib/db/publisherOfferingsSchemaFixed';
+  type NewPublisherPricingRule
+} from '@/lib/db/publisherSchemaActual';
 import { publishers } from '@/lib/db/accountSchema';
 import { websites } from '@/lib/db/websiteSchema';
 import { eq, and, desc, asc, inArray, sql } from 'drizzle-orm';
 
+// Validation constants
+const VALID_OFFERING_TYPES = Object.values(OFFERING_TYPES);
+const MAX_PRICE = 100000; // $100k max
+const MIN_PRICE = 0.01; // $0.01 min
+
 export class PublisherOfferingsService {
+  // ============================================================================
+  // Input Validation Methods
+  // ============================================================================
+  
+  private validateOfferingData(data: any): void {
+    // Validate offering type
+    if (data.offeringType && !VALID_OFFERING_TYPES.includes(data.offeringType)) {
+      throw new Error(`Invalid offering type. Must be one of: ${VALID_OFFERING_TYPES.join(', ')}`);
+    }
+    
+    // Validate price
+    if (data.basePrice !== undefined) {
+      if (typeof data.basePrice !== 'number' || isNaN(data.basePrice)) {
+        throw new Error('Base price must be a valid number');
+      }
+      if (data.basePrice < MIN_PRICE) {
+        throw new Error(`Base price must be at least $${MIN_PRICE}`);
+      }
+      if (data.basePrice > MAX_PRICE) {
+        throw new Error(`Base price cannot exceed $${MAX_PRICE}`);
+      }
+    }
+    
+    // Validate turnaround days
+    if (data.turnaroundDays !== undefined && data.turnaroundDays !== null) {
+      if (typeof data.turnaroundDays !== 'number' || data.turnaroundDays < 1 || data.turnaroundDays > 365) {
+        throw new Error('Turnaround days must be between 1 and 365');
+      }
+    }
+    
+    // Validate word counts
+    if (data.minWordCount !== undefined && data.minWordCount !== null) {
+      if (typeof data.minWordCount !== 'number' || data.minWordCount < 0) {
+        throw new Error('Minimum word count cannot be negative');
+      }
+    }
+    if (data.maxWordCount !== undefined && data.maxWordCount !== null) {
+      if (typeof data.maxWordCount !== 'number' || data.maxWordCount < 0) {
+        throw new Error('Maximum word count cannot be negative');
+      }
+      if (data.minWordCount && data.maxWordCount < data.minWordCount) {
+        throw new Error('Maximum word count must be greater than minimum word count');
+      }
+    }
+  }
+  
+  private validatePublisherId(publisherId: string): void {
+    if (!publisherId || typeof publisherId !== 'string' || publisherId.trim().length === 0) {
+      throw new Error('Publisher ID is required and must be a non-empty string');
+    }
+    // Basic UUID format validation
+    const uuidRegex = /^[0-9a-f]{8}-[0-9a-f]{4}-[1-5][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i;
+    if (!uuidRegex.test(publisherId)) {
+      throw new Error('Publisher ID must be a valid UUID');
+    }
+  }
+
   // ============================================================================
   // Publisher-Website Relationships
   // ============================================================================
@@ -32,6 +91,7 @@ export class PublisherOfferingsService {
   async createRelationship(
     publisherId: string,
     websiteId: string,
+    offeringId: string,
     data: Partial<NewPublisherOfferingRelationship> = {}
   ): Promise<PublisherOfferingRelationship> {
     const [relationship] = await db
@@ -39,8 +99,10 @@ export class PublisherOfferingsService {
       .values({
         publisherId,
         websiteId,
-        relationshipType: data.relationshipType || 'contact',
-        verificationStatus: data.verificationStatus || 'claimed',
+        offeringId,
+        isPrimary: data.isPrimary || false,
+        isActive: data.isActive !== undefined ? data.isActive : true,
+        customTerms: data.customTerms || {},
         ...data
       })
       .returning();
@@ -139,16 +201,31 @@ export class PublisherOfferingsService {
   // ============================================================================
 
   /**
-   * Create a new offering for a publisher-website relationship
+   * Create a new offering for a publisher
    */
   async createOffering(
-    relationshipId: string,
-    offeringData: Omit<NewPublisherOffering, 'publisherRelationshipId'>
+    publisherId: string,
+    offeringData: Omit<NewPublisherOffering, 'publisherId'>
   ): Promise<PublisherOffering> {
+    // Validate inputs
+    this.validatePublisherId(publisherId);
+    this.validateOfferingData(offeringData);
+    
+    // Verify publisher exists
+    const publisherExists = await db
+      .select({ id: publishers.id })
+      .from(publishers)
+      .where(eq(publishers.id, publisherId))
+      .limit(1);
+      
+    if (publisherExists.length === 0) {
+      throw new Error('Publisher not found');
+    }
+
     const [offering] = await db
       .insert(publisherOfferings)
       .values({
-        publisherRelationshipId: relationshipId,
+        publisherId: publisherId,
         ...offeringData
       })
       .returning();
@@ -163,6 +240,23 @@ export class PublisherOfferingsService {
     id: string,
     updates: Partial<PublisherOffering>
   ): Promise<PublisherOffering> {
+    // Validate inputs
+    if (!id || typeof id !== 'string') {
+      throw new Error('Offering ID is required');
+    }
+    this.validateOfferingData(updates);
+    
+    // Verify offering exists
+    const existingOffering = await db
+      .select()
+      .from(publisherOfferings)
+      .where(eq(publisherOfferings.id, id))
+      .limit(1);
+      
+    if (existingOffering.length === 0) {
+      throw new Error('Offering not found');
+    }
+
     const [updated] = await db
       .update(publisherOfferings)
       .set({
@@ -196,7 +290,7 @@ export class PublisherOfferingsService {
       .from(publisherOfferings)
       .innerJoin(
         publisherOfferingRelationships,
-        eq(publisherOfferings.publisherRelationshipId, publisherOfferingRelationships.id)
+        eq(publisherOfferings.id, publisherOfferingRelationships.offeringId)
       )
       .innerJoin(publishers, eq(publisherOfferingRelationships.publisherId, publishers.id))
       .where(whereCondition)
@@ -221,7 +315,7 @@ export class PublisherOfferingsService {
       .from(publisherOfferings)
       .innerJoin(
         publisherOfferingRelationships,
-        eq(publisherOfferings.publisherRelationshipId, publisherOfferingRelationships.id)
+        eq(publisherOfferings.id, publisherOfferingRelationships.offeringId)
       )
       .innerJoin(publishers, eq(publisherOfferingRelationships.publisherId, publishers.id))
       .where(

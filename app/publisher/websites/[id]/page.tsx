@@ -63,7 +63,7 @@ export default async function PublisherWebsiteDetailPage({ params }: PageProps) 
       website={website}
       relationship={relationship}
       offerings={offerings}
-      performance={performance}
+      performance={performance || null}
     />
   );
 }

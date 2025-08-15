@@ -22,14 +22,14 @@ export default async function InternalPortalPage() {
         where por.website_id = ${websites.id}
       ) then ${websites.id} end)`,
       highQuality: sql<number>`count(case when ${websites.domainRating} >= 50 then 1 end)`,
-      verified: sql<number>`count(case when ${websites.qualityVerified} = true then 1 end)`
+      qualityScored: sql<number>`count(case when ${websites.internalQualityScore} is not null then 1 end)`
     }).from(websites),
 
     // Publisher statistics
     db.select({
       total: sql<number>`count(*)`,
-      active: sql<number>`count(case when ${publishers.isActive} = true then 1 end)`,
-      verified: sql<number>`count(case when ${publishers.verifiedAt} is not null then 1 end)`
+      active: sql<number>`count(case when ${publishers.status} = 'active' then 1 end)`,
+      verified: sql<number>`count(case when ${publishers.emailVerified} = true then 1 end)`
     }).from(publishers),
 
     // Relationship statistics
@@ -59,7 +59,7 @@ export default async function InternalPortalPage() {
       id: publishers.id,
       companyName: publishers.companyName,
       email: publishers.email,
-      isActive: publishers.isActive,
+      status: publishers.status,
       createdAt: publishers.createdAt
     })
     .from(publishers)

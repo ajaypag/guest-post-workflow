@@ -48,6 +48,18 @@ export async function POST(request: NextRequest) {
       );
     }
 
+    // Check if email is verified
+    if (!publisher.emailVerified) {
+      return NextResponse.json(
+        { 
+          error: 'Please verify your email address before signing in.',
+          emailVerified: false,
+          email: publisher.email
+        },
+        { status: 403 }
+      );
+    }
+
     // Check if account is active
     if (publisher.status !== 'active') {
       return NextResponse.json(

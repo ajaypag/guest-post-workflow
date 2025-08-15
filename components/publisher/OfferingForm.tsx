@@ -106,7 +106,7 @@ export default function OfferingForm({ websites, offering, isNew }: OfferingForm
       };
 
       const response = await fetch(
-        isNew ? '/api/publisher/offerings' : `/api/publisher/offerings/${offering.id}`,
+        isNew ? '/api/publisher/offerings' : `/api/publisher/offerings/${offering?.id}`,
         {
           method: isNew ? 'POST' : 'PUT',
           headers: { 'Content-Type': 'application/json' },

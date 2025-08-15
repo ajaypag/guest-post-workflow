@@ -113,12 +113,10 @@ export async function POST(request: NextRequest) {
       relationshipId,
       {
         ...offeringData,
-        basePrice: offeringData.basePrice.toString(),
+        basePrice: offeringData.basePrice,
         expressDays: offeringData.expressDays || null,
-        expressPrice: offeringData.expressPrice?.toString() || null,
-        monthlyCapacity: offeringData.monthlyCapacity || null,
-        isActive: true,
-        isFeatured: false
+        expressPrice: offeringData.expressPrice || null,
+        isActive: true
       }
     );
     

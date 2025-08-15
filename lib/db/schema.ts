@@ -703,34 +703,18 @@ export const linkOrchestrationSessionsRelations = relations(linkOrchestrationSes
 export type LinkOrchestrationSession = typeof linkOrchestrationSessions.$inferSelect;
 export type NewLinkOrchestrationSession = typeof linkOrchestrationSessions.$inferInsert;
 
-// Re-export publisher offerings schema
+// Re-export publisher offerings schema - FIXED: Use actual schema that matches database
 export {
   publisherOfferingRelationships,
   publisherOfferings,
-  publisherPricingRules,
   publisherPerformance,
-  publisherEmailClaims,
-  publisherOfferingRelationshipsRelations,
   publisherOfferingsRelations,
-  publisherPricingRulesRelations,
+  publisherOfferingRelationshipsRelations,
   publisherPerformanceRelations,
-  publisherEmailClaimsRelations,
-  OFFERING_TYPES,
-  RELATIONSHIP_TYPES,
-  VERIFICATION_STATUS,
-  LINK_TYPES,
-  AVAILABILITY_STATUS,
   type PublisherOfferingRelationship,
   type NewPublisherOfferingRelationship,
   type PublisherOffering,
   type NewPublisherOffering,
-  type PublisherPricingRule,
-  type NewPublisherPricingRule,
   type PublisherPerformance,
   type NewPublisherPerformance,
-  type PublisherEmailClaim,
-  type NewPublisherEmailClaim,
-  type OfferingAttributes,
-  type PricingConditions,
-  type PricingActions
-} from './publisherOfferingsSchemaFixed';
+} from './publisherSchemaActual';

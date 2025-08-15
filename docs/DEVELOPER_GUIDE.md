@@ -13,6 +13,7 @@ Comprehensive technical documentation for the Guest Post Workflow system.
 - [Auto-Save Pattern](agents/AUTO_SAVE_PATTERN.md) - Fix race condition for AI content
 - [Retry Pattern](agents/RETRY_PATTERN.md) - Handle agent text responses
 - [V2 Pattern](agents/V2_PATTERN.md) - LLM orchestration approach
+- **[TypeScript Compilation Fixes](03-development/typescript-compilation-fixes.md)** - Complete TypeScript error resolution guide
 
 ### Database & Infrastructure  
 - [Schema Rules](db/SCHEMA_RULES.md) - VARCHAR sizes, TEXT usage

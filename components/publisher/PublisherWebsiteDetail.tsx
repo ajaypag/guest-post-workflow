@@ -45,12 +45,14 @@ export default function PublisherWebsiteDetail({
   const [showActions, setShowActions] = useState(false);
 
   // Format currency
-  const formatCurrency = (cents: number) => {
+  const formatCurrency = (amount: string | number) => {
+    const numericAmount = typeof amount === 'string' ? parseFloat(amount) : amount;
+    if (isNaN(numericAmount)) return 'N/A';
     return new Intl.NumberFormat('en-US', {
       style: 'currency',
       currency: 'USD',
       minimumFractionDigits: 0,
-    }).format(cents / 100);
+    }).format(numericAmount);
   };
 
   // Format traffic
@@ -122,7 +124,7 @@ export default function PublisherWebsiteDetail({
               
               <div className="flex items-center space-x-6 mt-2 text-sm text-gray-600">
                 <span>DR: <span className="font-medium text-gray-900">{website.domainRating || 'N/A'}</span></span>
-                <span>Traffic: <span className="font-medium text-gray-900">{formatTraffic(website.totalTraffic)}/mo</span></span>
+                <span>Traffic: <span className="font-medium text-gray-900">{formatTraffic(website.totalTraffic || null)}/mo</span></span>
                 {website.guestPostCost && (
                   <span>Base Price: <span className="font-medium text-gray-900">{formatCurrency(website.guestPostCost)}</span></span>
                 )}
@@ -244,7 +246,7 @@ export default function PublisherWebsiteDetail({
                         <p className="text-sm text-gray-600">Avg Response</p>
                         <p className="text-2xl font-bold text-gray-900 mt-1">
                           {performance?.avgResponseTimeHours 
-                            ? `${Math.round(performance.avgResponseTimeHours)}h`
+                            ? `${Math.round(parseFloat(performance.avgResponseTimeHours))}h`
                             : 'N/A'}
                         </p>
                       </div>
@@ -285,12 +287,6 @@ export default function PublisherWebsiteDetail({
                       <span className="text-gray-600">Guest Post Price:</span>
                       <p className="font-medium text-gray-900">
                         {website.guestPostCost ? formatCurrency(website.guestPostCost) : 'Not Set'}
-                      </p>
-                    </div>
-                    <div>
-                      <span className="text-gray-600">Link Insertion Price:</span>
-                      <p className="font-medium text-gray-900">
-                        {website.linkInsertionCost ? formatCurrency(website.linkInsertionCost) : 'Not Set'}
                       </p>
                     </div>
                     {relationship.verifiedAt && (

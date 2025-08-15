@@ -234,7 +234,7 @@ export class WorkflowGenerationService {
           targetPageUrl: siteSelection.targetPageUrl,
           anchorText: siteSelection.anchorText,
           dr: domain.dr || 70,
-          traffic: domain.traffic || 10000,
+          traffic: domain.totalTraffic || 10000,
           niche: domain.primaryNiche || 'General'
         };
       
@@ -324,7 +324,7 @@ export class WorkflowGenerationService {
         
         // Domain metrics snapshot
         domainRating: siteSelection.domain?.dr || 70,
-        traffic: siteSelection.domain?.traffic || 10000,
+        traffic: siteSelection.domain?.totalTraffic || 10000,
         retailPrice: retailPrice,
         wholesalePrice: wholesalePrice,
         

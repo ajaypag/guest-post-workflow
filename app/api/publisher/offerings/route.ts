@@ -31,7 +31,6 @@ export async function POST(request: NextRequest) {
     }
 
     const {
-      publisherRelationshipId,
       offeringType,
       basePrice,
       currency,
@@ -43,26 +42,27 @@ export async function POST(request: NextRequest) {
     } = body;
 
     // Validate required fields
-    if (!publisherRelationshipId || !offeringType || basePrice === undefined) {
+    if (!offeringType || basePrice === undefined) {
       return NextResponse.json(
         { error: 'Missing required fields' },
         { status: 400 }
       );
     }
 
-    // Create the offering
+    // Create the offering using the authenticated publisher's ID
     const offering = await publisherOfferingsService.createOffering(
-      publisherRelationshipId,
+      session.publisherId,
       {
         offeringType,
-        basePrice: basePrice.toString(), // Convert to string for DECIMAL
+        basePrice: Number(basePrice), // Ensure it's a number for validation
         currency: currency || 'USD',
         turnaroundDays: turnaroundDays || 7,
         isActive: isActive ?? true,
-        availability: availability || 'available',
-        contentRequirements: contentRequirements || {},
-        restrictions: restrictions || {},
-        metadata: {},
+        currentAvailability: availability || 'available',
+        attributes: {
+          contentRequirements: contentRequirements || {},
+          restrictions: restrictions || {},
+        },
       }
     );
 

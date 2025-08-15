@@ -54,7 +54,7 @@ export default function InternalLayout({ children, session }: InternalLayoutProp
   // Generate breadcrumbs
   const generateBreadcrumbs = () => {
     const parts = pathname.split('/').filter(Boolean);
-    const breadcrumbs = [];
+    const breadcrumbs: Array<{ name: string; href: string; current: boolean }> = [];
     let path = '';
 
     parts.forEach((part, index) => {

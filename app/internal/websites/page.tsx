@@ -18,7 +18,7 @@ interface SearchParams {
 export default async function InternalWebsitesPage({
   searchParams
 }: {
-  searchParams: SearchParams;
+  searchParams: Promise<SearchParams>;
 }) {
   const session = await AuthServiceServer.getSession();
   
@@ -26,14 +26,17 @@ export default async function InternalWebsitesPage({
     redirect('/login');
   }
 
+  // Await search params for Next.js 15 compatibility
+  const params = await searchParams;
+
   // Parse search params
-  const search = searchParams.search || '';
-  const sort = searchParams.sort || 'created_desc';
-  const minDR = searchParams.minDR ? parseInt(searchParams.minDR) : undefined;
-  const maxDR = searchParams.maxDR ? parseInt(searchParams.maxDR) : undefined;
-  const hasPublisher = searchParams.hasPublisher;
-  const verified = searchParams.verified;
-  const page = parseInt(searchParams.page || '1');
+  const search = params.search || '';
+  const sort = params.sort || 'created_desc';
+  const minDR = params.minDR ? parseInt(params.minDR) : undefined;
+  const maxDR = params.maxDR ? parseInt(params.maxDR) : undefined;
+  const hasPublisher = params.hasPublisher;
+  const verified = params.verified;
+  const page = parseInt(params.page || '1');
   const limit = 50;
   const offset = (page - 1) * limit;
 
@@ -41,7 +44,9 @@ export default async function InternalWebsitesPage({
   const conditions = [];
   
   if (search) {
-    conditions.push(ilike(websites.domain, `%${search}%`));
+    // Sanitize search input to prevent SQL injection
+    const sanitizedSearch = search.replace(/[%_\\]/g, '\\$&');
+    conditions.push(ilike(websites.domain, `%${sanitizedSearch}%`));
   }
   
   if (minDR !== undefined) {
@@ -53,9 +58,9 @@ export default async function InternalWebsitesPage({
   }
   
   if (verified === 'true') {
-    conditions.push(eq(websites.qualityVerified, true));
+    conditions.push(sql`${websites.internalQualityScore} IS NOT NULL`);
   } else if (verified === 'false') {
-    conditions.push(eq(websites.qualityVerified, false));
+    conditions.push(sql`${websites.internalQualityScore} IS NULL`);
   }
 
   const whereClause = conditions.length > 0 ? and(...conditions) : undefined;
@@ -92,13 +97,13 @@ export default async function InternalWebsitesPage({
       publisherCount: sql<number>`(
         SELECT COUNT(DISTINCT por.publisher_id)
         FROM ${publisherOfferingRelationships} por
-        WHERE por.website_id = ${websites.id}
+        WHERE por.website_id = websites.id
       )`,
       offeringCount: sql<number>`(
         SELECT COUNT(*)
         FROM publisher_offerings po
-        JOIN ${publisherOfferingRelationships} por ON po.publisher_relationship_id = por.id
-        WHERE por.website_id = ${websites.id}
+        JOIN ${publisherOfferingRelationships} por ON po.id = por.offering_id
+        WHERE por.website_id = websites.id
       )`
     })
     .from(websites)
@@ -129,7 +134,7 @@ export default async function InternalWebsitesPage({
       totalCount={totalCount}
       currentPage={page}
       itemsPerPage={limit}
-      searchParams={searchParams}
+      searchParams={params}
     />
   );
 }

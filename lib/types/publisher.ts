@@ -20,8 +20,7 @@ export interface PublisherWebsite {
     domain: string;
     domainRating: number | null;
     totalTraffic: number | null;
-    guestPostCost: number | null;
-    linkInsertionCost: number | null;
+    guestPostCost: string | null; // DECIMAL field comes as string
     publisherCompany: string | null;
     internalNotes: string | null;
     createdAt: Date;
@@ -33,11 +32,11 @@ export interface PublisherPerformanceMetrics {
   id: string;
   publisherId: string;
   websiteId: string | null;
-  totalOrders: number;
-  successfulOrders: number;
-  failedOrders: number;
-  avgResponseTimeHours: number | null;
-  avgTurnaroundDays: number | null;
+  totalOrders: number | null;
+  successfulOrders: number | null;
+  failedOrders: number | null;
+  avgResponseTimeHours: string | null; // DECIMAL field comes as string
+  avgTurnaroundDays: string | null; // DECIMAL field comes as string
   onTimeDeliveryRate: string | null;
   contentApprovalRate: string | null;
   revisionRate: string | null;
@@ -46,8 +45,8 @@ export interface PublisherPerformanceMetrics {
   avgOrderValue: string | null;
   reliabilityScore: string | null;
   lastCalculatedAt: Date | null;
-  periodStart: Date | null;
-  periodEnd: Date | null;
+  periodStart: string | Date | null;
+  periodEnd: string | Date | null;
   createdAt: Date;
   updatedAt: Date;
 }
@@ -83,8 +82,8 @@ export interface PublisherOffering {
   offeringType: string;
   basePrice: string;
   currency: string;
-  turnaroundDays: number;
-  isActive: boolean;
+  turnaroundDays: number | null;
+  isActive: boolean | null;
   availability?: string;
   contentRequirements?: {
     minWords?: number;
@@ -129,8 +128,7 @@ export interface Website {
   domain: string;
   domainRating?: number | null;
   totalTraffic?: number | null;
-  guestPostCost?: number | null;
-  linkInsertionCost?: number | null;
+  guestPostCost?: string | null;
   publisherCompany?: string | null;
   internalNotes?: string | null;
   createdAt: Date;
