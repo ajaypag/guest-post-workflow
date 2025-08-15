@@ -115,7 +115,28 @@ psql -h [host] -U [user] -d [database] -f migrations/0042_fix_offering_id_nullab
 - `offering_id` - Changed from NOT NULL to nullable
 - Allows relationships to exist before offerings are created
 
-### Step 8: Domain Normalization Migration
+### Step 8: Add Missing Relationship Fields (NEW 2025-08-15)
+**File**: `migrations/0043_add_missing_relationship_fields.sql`
+**Status**: ✅ Created for TypeScript compatibility
+**Required**: YES - Completes publisher_offering_relationships schema
+
+Adds missing contact and payment fields to publisher_offering_relationships.
+
+```bash
+psql -h [host] -U [user] -d [database] -f migrations/0043_add_missing_relationship_fields.sql
+```
+
+**Adds to publisher_offering_relationships table**:
+- `verification_method` (varchar 50) - How relationship was verified
+- `contact_email` (varchar 255) - Primary contact email
+- `contact_phone` (varchar 50) - Contact phone number
+- `contact_name` (varchar 255) - Contact person name
+- `internal_notes` (text) - Internal notes about relationship
+- `publisher_notes` (text) - Notes from publisher
+- `commission_rate` (varchar 50) - Commission rate for this relationship
+- `payment_terms` (varchar 255) - Payment terms agreed upon
+
+### Step 9: Domain Normalization Migration
 **File**: `migrations/0037_normalize_existing_domains.sql`
 **Status**: ✅ Tested locally
 **Required**: YES - Prevents duplicate domains

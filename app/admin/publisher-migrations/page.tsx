@@ -86,8 +86,18 @@ export default function PublisherMigrationsPage() {
       endpoint: '/api/admin/migrations/fix-offering-id-nullable'
     },
     {
+      id: 'add_missing_relationship_fields',
+      name: '7. Add Missing Relationship Fields',
+      description: 'Adds contact info, notes, and payment fields to publisher_offering_relationships table',
+      icon: <Users className="h-5 w-5 text-indigo-600" />,
+      dangerous: false,
+      required: true,
+      sqlFile: '0043_add_missing_relationship_fields.sql',
+      endpoint: '/api/admin/migrations/add-missing-relationship-fields'
+    },
+    {
       id: 'domain_normalization',
-      name: '7. Domain Normalization',
+      name: '8. Domain Normalization',
       description: 'Normalizes all existing domains to prevent duplicates, adds normalized_domain column and triggers',
       icon: <Shield className="h-5 w-5 text-orange-600" />,
       dangerous: false,
