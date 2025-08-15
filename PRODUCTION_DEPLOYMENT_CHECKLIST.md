@@ -1,6 +1,7 @@
 # Production Deployment Checklist
-**Date**: February 14, 2025
-**Purpose**: Ensure safe deployment of publisher system and domain normalization
+**Date**: August 15, 2025 (UPDATED)
+**Purpose**: Ensure safe deployment of publisher system with ALL required migrations
+**CRITICAL**: Migrations 0043 and 0044 are REQUIRED to prevent 500 errors!
 
 ## 📋 Pre-Deployment Checklist
 
@@ -43,7 +44,47 @@ psql -h [host] -U [user] -d [database] -c "SELECT column_name FROM information_s
 # Expected: 4 rows
 ```
 
-#### Migration 3: Domain Normalization
+#### Migration 3: Add Missing Website Columns
+```bash
+psql -h [host] -U [user] -d [database] -f migrations/0039_add_missing_website_columns.sql
+```
+
+#### Migration 4: Add Publisher Offering Columns
+```bash
+psql -h [host] -U [user] -d [database] -f migrations/0040_add_missing_publisher_offering_columns.sql
+```
+
+#### Migration 5: Add Performance Columns
+```bash
+psql -h [host] -U [user] -d [database] -f migrations/0041_add_missing_performance_columns.sql
+```
+
+#### Migration 6: Fix Offering ID Nullable
+```bash
+psql -h [host] -U [user] -d [database] -f migrations/0042_fix_offering_id_nullable.sql
+```
+
+#### Migration 7: Add Missing Relationship Fields (CRITICAL!)
+```bash
+# WITHOUT THIS MIGRATION, PUBLISHER PORTAL WILL HAVE 500 ERRORS!
+psql -h [host] -U [user] -d [database] -f migrations/0043_add_missing_relationship_fields.sql
+
+# Verify critical columns exist
+psql -h [host] -U [user] -d [database] -c "SELECT column_name FROM information_schema.columns WHERE table_name = 'publisher_offering_relationships' AND column_name = 'verification_method'"
+# Expected: 1 row
+```
+
+#### Migration 8: Make Airtable ID Nullable (BREAKING CHANGE!)
+```bash
+# ENABLES PUBLISHERS TO ADD WEBSITES WITHOUT AIRTABLE
+psql -h [host] -U [user] -d [database] -f migrations/0044_make_airtable_id_nullable.sql
+
+# Verify airtable_id is nullable
+psql -h [host] -U [user] -d [database] -c "SELECT is_nullable FROM information_schema.columns WHERE table_name = 'websites' AND column_name = 'airtable_id'"
+# Expected: YES
+```
+
+#### Migration 9: Domain Normalization
 ```bash
 # Normalizes all existing domains
 psql -h [host] -U [user] -d [database] -f migrations/0037_normalize_existing_domains.sql
@@ -155,11 +196,14 @@ DROP VIEW IF EXISTS v_publisher_performance_complete;
 
 ### Common Issues:
 
-**Issue**: "column does not exist" errors
-**Solution**: Ensure migration 0038 was run successfully
+**Issue**: "column publisher_offering_relationships.verification_method does not exist"
+**Solution**: Run migration 0043 immediately!
+```bash
+psql $DATABASE_URL -f migrations/0043_add_missing_relationship_fields.sql
+```
 
 **Issue**: Publisher portal pages return 500
-**Solution**: Check that all migrations were applied in order
+**Solution**: Migration 0043 is missing - this is CRITICAL for operation
 
 **Issue**: Duplicate domain errors
 **Solution**: Run domain normalization migration (0037)
@@ -174,5 +218,6 @@ DROP VIEW IF EXISTS v_publisher_performance_complete;
 - Project Manager: [Contact Info]
 
 ---
-**Last Updated**: February 14, 2025
+**Last Updated**: August 15, 2025
 **Tested On**: Local PostgreSQL with production data backup
+**Critical Migrations**: 0043 and 0044 MUST be applied or publisher portal will fail!
