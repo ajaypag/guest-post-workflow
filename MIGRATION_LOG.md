@@ -136,7 +136,33 @@ psql -h [host] -U [user] -d [database] -f migrations/0043_add_missing_relationsh
 - `commission_rate` (varchar 50) - Commission rate for this relationship
 - `payment_terms` (varchar 255) - Payment terms agreed upon
 
-### Step 9: Domain Normalization Migration
+### Step 9: Make Airtable ID Nullable (NEW 2025-08-15)
+**File**: `migrations/0044_make_airtable_id_nullable.sql`
+**Status**: ✅ Tested locally on backup database
+**Required**: YES - Enables publishers to add websites without Airtable
+**CRITICAL**: This is a breaking change that allows manual website creation
+
+This migration enables publishers and internal teams to add websites without requiring Airtable.
+
+```bash
+psql -h [host] -U [user] -d [database] -f migrations/0044_make_airtable_id_nullable.sql
+```
+
+**Changes to websites table**:
+- `airtable_id` - Changed from NOT NULL to nullable
+- `source` (varchar 50) - Tracks where website came from (airtable, publisher, internal)
+- `added_by_publisher_id` (uuid) - References publisher who added it
+- `added_by_user_id` (uuid) - References internal user who added it
+- `source_metadata` (jsonb) - Additional metadata about the source
+- `import_batch_id` (varchar 100) - For bulk import tracking
+
+**IMPORTANT NOTES**:
+- After this migration, websites can be added without Airtable
+- Existing 947 websites retain their airtable_id values
+- Source defaults to 'airtable' for existing records
+- Domain uniqueness still enforced
+
+### Step 10: Domain Normalization Migration
 **File**: `migrations/0037_normalize_existing_domains.sql`
 **Status**: ✅ Tested locally
 **Required**: YES - Prevents duplicate domains

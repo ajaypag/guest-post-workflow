@@ -96,8 +96,18 @@ export default function PublisherMigrationsPage() {
       endpoint: '/api/admin/migrations/add-missing-relationship-fields'
     },
     {
+      id: 'make_airtable_id_nullable',
+      name: '8. Make Airtable ID Nullable (CRITICAL)',
+      description: 'BREAKING CHANGE: Makes airtable_id nullable to allow publishers to add websites without Airtable. Adds source tracking columns.',
+      icon: <Database className="h-5 w-5 text-red-600" />,
+      dangerous: true,
+      required: true,
+      sqlFile: '0044_make_airtable_id_nullable.sql',
+      endpoint: '/api/admin/migrations/make-airtable-id-nullable'
+    },
+    {
       id: 'domain_normalization',
-      name: '8. Domain Normalization',
+      name: '9. Domain Normalization',
       description: 'Normalizes all existing domains to prevent duplicates, adds normalized_domain column and triggers',
       icon: <Shield className="h-5 w-5 text-orange-600" />,
       dangerous: false,
