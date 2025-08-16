@@ -114,9 +114,9 @@ CREATE TABLE IF NOT EXISTS publisher_payment_batches (
   updated_at TIMESTAMP NOT NULL DEFAULT NOW()
 );
 
-CREATE INDEX idx_payment_batches_publisher ON publisher_payment_batches(publisher_id);
-CREATE INDEX idx_payment_batches_status ON publisher_payment_batches(status);
-CREATE INDEX idx_payment_batches_created ON publisher_payment_batches(created_at);
+CREATE INDEX IF NOT EXISTS idx_payment_batches_publisher ON publisher_payment_batches(publisher_id);
+CREATE INDEX IF NOT EXISTS idx_payment_batches_status ON publisher_payment_batches(status);
+CREATE INDEX IF NOT EXISTS idx_payment_batches_created ON publisher_payment_batches(created_at);
 
 -- ============================================================================
 -- Phase 4: Publisher Order Notifications
@@ -150,10 +150,10 @@ CREATE TABLE IF NOT EXISTS publisher_order_notifications (
   created_at TIMESTAMP NOT NULL DEFAULT NOW()
 );
 
-CREATE INDEX idx_publisher_notifications_publisher ON publisher_order_notifications(publisher_id);
-CREATE INDEX idx_publisher_notifications_line_item ON publisher_order_notifications(order_line_item_id);
-CREATE INDEX idx_publisher_notifications_status ON publisher_order_notifications(status);
-CREATE INDEX idx_publisher_notifications_type ON publisher_order_notifications(notification_type);
+CREATE INDEX IF NOT EXISTS idx_publisher_notifications_publisher ON publisher_order_notifications(publisher_id);
+CREATE INDEX IF NOT EXISTS idx_publisher_notifications_line_item ON publisher_order_notifications(order_line_item_id);
+CREATE INDEX IF NOT EXISTS idx_publisher_notifications_status ON publisher_order_notifications(status);
+CREATE INDEX IF NOT EXISTS idx_publisher_notifications_type ON publisher_order_notifications(notification_type);
 
 -- ============================================================================
 -- Phase 5: Commission Configuration
@@ -196,9 +196,9 @@ CREATE TABLE IF NOT EXISTS commission_configurations (
   updated_at TIMESTAMP NOT NULL DEFAULT NOW()
 );
 
-CREATE INDEX idx_commission_config_scope ON commission_configurations(scope_type, scope_id);
-CREATE INDEX idx_commission_config_active ON commission_configurations(is_active);
-CREATE UNIQUE INDEX idx_commission_config_unique_scope ON commission_configurations(scope_type, scope_id) 
+CREATE INDEX IF NOT EXISTS idx_commission_config_scope ON commission_configurations(scope_type, scope_id);
+CREATE INDEX IF NOT EXISTS idx_commission_config_active ON commission_configurations(is_active);
+CREATE UNIQUE INDEX IF NOT EXISTS idx_commission_config_unique_scope ON commission_configurations(scope_type, scope_id) 
   WHERE is_active = true AND valid_until IS NULL;
 
 -- ============================================================================
@@ -243,9 +243,9 @@ CREATE TABLE IF NOT EXISTS publisher_order_analytics (
   UNIQUE(publisher_id, website_id, period_type, period_date)
 );
 
-CREATE INDEX idx_publisher_analytics_publisher ON publisher_order_analytics(publisher_id);
-CREATE INDEX idx_publisher_analytics_period ON publisher_order_analytics(period_type, period_date);
-CREATE INDEX idx_publisher_analytics_website ON publisher_order_analytics(website_id);
+CREATE INDEX IF NOT EXISTS idx_publisher_analytics_publisher ON publisher_order_analytics(publisher_id);
+CREATE INDEX IF NOT EXISTS idx_publisher_analytics_period ON publisher_order_analytics(period_type, period_date);
+CREATE INDEX IF NOT EXISTS idx_publisher_analytics_website ON publisher_order_analytics(website_id);
 
 -- ============================================================================
 -- Default Commission Configuration
