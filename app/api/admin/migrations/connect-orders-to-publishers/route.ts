@@ -33,8 +33,51 @@ export async function POST(request: NextRequest) {
 
     const migrationSQL = fs.readFileSync(migrationPath, 'utf8');
 
-    // Execute the migration
-    await db.execute(sql.raw(migrationSQL));
+    // Split the migration into individual statements
+    // This regex splits on semicolons that are not inside strings or comments
+    const statements = migrationSQL
+      .split(/;(?=(?:[^']*'[^']*')*[^']*$)/)
+      .map(s => s.trim())
+      .filter(s => s.length > 0 && !s.startsWith('--'));
+
+    // Execute each statement individually
+    let executedCount = 0;
+    const errors: any[] = [];
+    
+    for (const statement of statements) {
+      try {
+        // Skip empty statements and comments
+        if (!statement || statement.startsWith('--')) continue;
+        
+        // Add semicolon back if it's not there
+        const sqlStatement = statement.endsWith(';') ? statement : statement + ';';
+        
+        await db.execute(sql.raw(sqlStatement));
+        executedCount++;
+      } catch (error: any) {
+        // Check if it's a "already exists" error which we can ignore
+        if (error.message?.includes('already exists')) {
+          console.log(`Skipping (already exists): ${statement.substring(0, 50)}...`);
+          executedCount++;
+        } else {
+          errors.push({
+            statement: statement.substring(0, 100),
+            error: error.message
+          });
+          throw error; // Re-throw to stop migration
+        }
+      }
+    }
+
+    console.log(`Migration 0050 executed ${executedCount} statements successfully`);
+
+    // Record migration completion
+    await db.execute(sql`
+      INSERT INTO migration_history (migration_name, success, applied_by)
+      VALUES ('0050_connect_orders_to_publishers', true, 'admin')
+      ON CONFLICT (migration_name) DO UPDATE
+      SET executed_at = NOW(), success = true
+    `);
 
     return NextResponse.json({
       success: true,

@@ -199,6 +199,14 @@ export async function POST() {
 
     console.log('✅ Migration 0051 completed successfully');
 
+    // Record migration completion
+    await db.execute(sql`
+      INSERT INTO migration_history (migration_name, success, applied_by)
+      VALUES ('0051_publisher_payments_system', true, 'admin')
+      ON CONFLICT (migration_name) DO UPDATE
+      SET executed_at = NOW(), success = true
+    `);
+
     return NextResponse.json({
       success: true,
       message: 'Publisher payments system created successfully'

@@ -62,8 +62,7 @@ export async function GET(request: NextRequest) {
           publisherSubmittedAt: orderLineItems.publisherSubmittedAt,
           workflowId: orderLineItems.workflowId,
           publishedUrl: orderLineItems.publishedUrl,
-          deliveredAt: orderLineItems.deliveredAt,
-          addedAt: orderLineItems.addedAt
+          deliveredAt: orderLineItems.deliveredAt
         },
         order: {
           id: orders.id,
@@ -98,7 +97,7 @@ export async function GET(request: NextRequest) {
         )
       )
       .where(and(...conditions))
-      .orderBy(desc(orderLineItems.addedAt))
+      .orderBy(desc(orderLineItems.id))
       .limit(limit)
       .offset(offset);
 
@@ -138,7 +137,7 @@ export async function GET(request: NextRequest) {
       
       // General status
       overallStatus: row.lineItem.status,
-      createdAt: row.lineItem.addedAt
+      createdAt: row.lineItem.publisherNotifiedAt || new Date()
     }));
 
     // Get summary statistics

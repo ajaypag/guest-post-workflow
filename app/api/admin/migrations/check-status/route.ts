@@ -6,6 +6,41 @@ export async function GET(request: NextRequest) {
   try {
     const status: Record<string, boolean> = {};
 
+    // First check if migration_history table exists
+    const migrationTableExists = await db.execute(sql`
+      SELECT EXISTS (
+        SELECT FROM information_schema.tables 
+        WHERE table_schema = 'public' 
+        AND table_name = 'migration_history'
+      )
+    `);
+    
+    if (migrationTableExists.rows[0]?.exists) {
+      // Get all completed migrations from history
+      const completedMigrations = await db.execute(sql`
+        SELECT migration_name 
+        FROM migration_history 
+        WHERE success = true
+      `);
+      
+      // Mark migrations as completed based on history
+      for (const row of completedMigrations.rows) {
+        const migrationName = row.migration_name as string;
+        if (migrationName === '0050_connect_orders_to_publishers') {
+          status.connect_orders_to_publishers = true;
+        }
+        if (migrationName === '0051_publisher_payments_system') {
+          status.publisher_payments_system = true;
+        }
+        if (migrationName === '0000_create_migrations_table') {
+          status.create_migration_history = true;
+        }
+      }
+    } else {
+      // Migration history table doesn't exist
+      status.create_migration_history = false;
+    }
+
     // Check if publisher offerings system tables exist
     const publisherTables = await db.execute(sql`
       SELECT COUNT(*) as count 

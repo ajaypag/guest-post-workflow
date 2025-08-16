@@ -26,6 +26,16 @@ export default function PublisherMigrationsPage() {
 
   const migrations = [
     {
+      id: 'create_migration_history',
+      name: '0. Create Migration History Table (RUN FIRST)',
+      description: 'Creates the migration_history table to track which migrations have been completed. This fixes the issue where migrations show as pending even after running.',
+      icon: <Database className="h-5 w-5 text-red-600" />,
+      dangerous: false,
+      required: true,
+      sqlFile: '0000_create_migrations_table.sql',
+      endpoint: '/api/admin/migrations/create-history-table'
+    },
+    {
       id: 'publisher_offerings_system',
       name: '1. Publisher Offerings System (Core)',
       description: 'Creates 6 core tables: publisher_offerings, publisher_offering_relationships, publisher_pricing_rules, publisher_performance, publisher_payouts, publisher_email_claims',
