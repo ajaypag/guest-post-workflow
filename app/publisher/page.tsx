@@ -159,7 +159,7 @@ export default function PublisherDashboard() {
 
   if (loading) {
     return (
-      <AuthWrapper requirePublisher>
+      <AuthWrapper>
         <Header />
         <div className="flex items-center justify-center py-12">
           <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-blue-600"></div>
@@ -170,7 +170,7 @@ export default function PublisherDashboard() {
   }
 
   return (
-    <AuthWrapper requirePublisher>
+    <AuthWrapper>
       <Header />
       <div className="min-h-screen bg-gray-50 py-8">
         <div className="max-w-7xl mx-auto px-4">

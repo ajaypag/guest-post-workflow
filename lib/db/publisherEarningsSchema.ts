@@ -1,5 +1,5 @@
 import { pgTable, uuid, varchar, timestamp, bigint, decimal, text, jsonb, date, integer, boolean, uniqueIndex, index } from 'drizzle-orm/pg-core';
-import { relations } from 'drizzle-orm';
+import { relations, sql } from 'drizzle-orm';
 import { publishers } from './accountSchema';
 import { orderLineItems } from './orderLineItemSchema';
 import { orders } from './orderSchema';
@@ -177,7 +177,7 @@ export const commissionConfigurations = pgTable('commission_configurations', {
   activeIdx: index('idx_commission_config_active').on(table.isActive),
   uniqueScopeIdx: uniqueIndex('idx_commission_config_unique_scope')
     .on(table.scopeType, table.scopeId)
-    .where('is_active = true AND valid_until IS NULL'),
+    .where(sql`is_active = true AND valid_until IS NULL`),
 }));
 
 // ============================================================================

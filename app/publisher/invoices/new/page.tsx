@@ -15,7 +15,7 @@ import AuthWrapper from '@/components/AuthWrapper';
 
 export default function NewInvoicePage() {
   const [loading, setLoading] = useState(false);
-  const [error, setError] = useState(null);
+  const [error, setError] = useState<string | null>(null);
   
   const [invoiceData, setInvoiceData] = useState({
     invoiceNumber: `INV-${new Date().getFullYear()}-${String(Date.now()).slice(-3)}`,
@@ -99,7 +99,7 @@ export default function NewInvoicePage() {
       window.location.href = '/publisher/invoices';
       
     } catch (error) {
-      setError(error.message);
+      setError(error instanceof Error ? error.message : 'An error occurred');
     } finally {
       setLoading(false);
     }
@@ -108,7 +108,7 @@ export default function NewInvoicePage() {
   const { grossAmount, totalAmount } = calculateTotals();
 
   return (
-    <AuthWrapper requirePublisher>
+    <AuthWrapper>
       <Header />
       <div className="min-h-screen bg-gray-50 py-8">
         <div className="max-w-4xl mx-auto px-4">

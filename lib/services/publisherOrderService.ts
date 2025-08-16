@@ -23,7 +23,7 @@ import { websites } from '@/lib/db/websiteSchema';
 import { publishers } from '@/lib/db/accountSchema';
 import { bulkAnalysisDomains } from '@/lib/db/bulkAnalysisSchema';
 import { eq, and, sql, inArray } from 'drizzle-orm';
-import { sendEmail } from '@/lib/email';
+import { EmailService } from '@/lib/services/emailService';
 
 /**
  * Service to handle order-to-publisher connections and flow
@@ -42,10 +42,7 @@ export class PublisherOrderService {
     try {
       // Get the domain details
       const domain = await db.query.bulkAnalysisDomains.findFirst({
-        where: eq(bulkAnalysisDomains.id, domainId),
-        with: {
-          website: true
-        }
+        where: eq(bulkAnalysisDomains.id, domainId)
       });
 
       if (!domain) {
@@ -76,28 +73,17 @@ export class PublisherOrderService {
           publisherOfferingRelationships.createdAt
         ],
         with: {
-          offerings: {
-            where: and(
-              eq(publisherOfferings.offeringType, 'guest_post'),
-              eq(publisherOfferings.isActive, true)
-            ),
-            orderBy: [
-              // Prioritize featured offerings
-              sql`CASE WHEN is_featured THEN 0 ELSE 1 END`,
-              // Then by price (lower first)
-              publisherOfferings.basePrice
-            ],
-            limit: 1
-          }
+          offering: true,
+          publisher: true
         }
       });
 
-      if (!relationship || !relationship.offerings.length) {
+      if (!relationship || !relationship.offering) {
         return { publisherId: null, offeringId: null, publisherPrice: null };
       }
 
-      const offering = relationship.offerings[0];
-      const publisherPrice = Math.round(parseFloat(offering.basePrice) * 100); // Convert to cents
+      const offering = relationship.offering;
+      const publisherPrice = offering.basePrice ? Math.round(offering.basePrice * 100) : null; // Convert to cents
 
       return {
         publisherId: relationship.publisherId,
@@ -187,24 +173,32 @@ export class PublisherOrderService {
     try {
       // Get applicable commission configuration
       // Priority: publisher-specific > global
-      let config = await db.query.commissionConfigurations.findFirst({
-        where: and(
-          eq(commissionConfigurations.scopeType, 'publisher'),
-          eq(commissionConfigurations.scopeId, publisherId),
-          eq(commissionConfigurations.isActive, true)
-        ),
-        orderBy: commissionConfigurations.createdAt
-      });
+      let [config] = await db
+        .select()
+        .from(commissionConfigurations)
+        .where(
+          and(
+            eq(commissionConfigurations.scopeType, 'publisher'),
+            eq(commissionConfigurations.scopeId, publisherId),
+            eq(commissionConfigurations.isActive, true)
+          )
+        )
+        .orderBy(commissionConfigurations.createdAt)
+        .limit(1);
 
       if (!config) {
         // Fall back to global configuration
-        config = await db.query.commissionConfigurations.findFirst({
-          where: and(
-            eq(commissionConfigurations.scopeType, 'global'),
-            eq(commissionConfigurations.isActive, true)
-          ),
-          orderBy: commissionConfigurations.createdAt
-        });
+        [config] = await db
+          .select()
+          .from(commissionConfigurations)
+          .where(
+            and(
+              eq(commissionConfigurations.scopeType, 'global'),
+              eq(commissionConfigurations.isActive, true)
+            )
+          )
+          .orderBy(commissionConfigurations.createdAt)
+          .limit(1);
       }
 
       // Default to 30% if no configuration found
@@ -249,12 +243,16 @@ export class PublisherOrderService {
       }
 
       // Check if earnings already exist
-      const existingEarning = await db.query.publisherEarnings.findFirst({
-        where: and(
-          eq(publisherEarnings.orderLineItemId, lineItemId),
-          eq(publisherEarnings.earningType, EARNING_TYPES.ORDER_COMPLETION)
+      const [existingEarning] = await db
+        .select()
+        .from(publisherEarnings)
+        .where(
+          and(
+            eq(publisherEarnings.orderLineItemId, lineItemId),
+            eq(publisherEarnings.earningType, EARNING_TYPES.ORDER_COMPLETION)
+          )
         )
-      });
+        .limit(1);
 
       if (existingEarning) {
         return { success: true, earningId: existingEarning.id };
@@ -268,8 +266,7 @@ export class PublisherOrderService {
 
       // Find website for this publisher
       const relationship = await db.query.publisherOfferingRelationships.findFirst({
-        where: eq(publisherOfferingRelationships.publisherId, lineItem.publisherId),
-        limit: 1
+        where: eq(publisherOfferingRelationships.publisherId, lineItem.publisherId)
       });
 
       // Create earnings record
@@ -368,11 +365,10 @@ export class PublisherOrderService {
       // Send email notification
       if (publisher.email) {
         try {
-          await sendEmail({
+          await EmailService.send('notification', {
             to: publisher.email,
             subject: notification.subject || '',
-            html: notification.message || '',
-            from: 'orders@linkio.com'
+            html: notification.message || ''
           });
 
           // Update notification status

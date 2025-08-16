@@ -14,8 +14,16 @@ import {
 import Header from '@/components/Header';
 import AuthWrapper from '@/components/AuthWrapper';
 
+interface Invoice {
+  id: string;
+  invoice_number: string;
+  total_amount: number;
+  status: string;
+  created_at: string;
+}
+
 export default function PublisherInvoicesPage() {
-  const [invoices, setInvoices] = useState([]);
+  const [invoices, setInvoices] = useState<Invoice[]>([]);
   const [stats, setStats] = useState({
     totalInvoices: 0,
     pendingInvoices: 0,
@@ -70,7 +78,7 @@ export default function PublisherInvoicesPage() {
   };
 
   const getStatusBadge = (status: string) => {
-    const colors = {
+    const colors: Record<string, string> = {
       pending: 'bg-yellow-100 text-yellow-800',
       approved: 'bg-green-100 text-green-800',
       rejected: 'bg-red-100 text-red-800',
@@ -78,7 +86,7 @@ export default function PublisherInvoicesPage() {
     };
 
     return (
-      <span className={`inline-flex items-center px-2 py-1 rounded-full text-xs font-medium ${colors[status]}`}>
+      <span className={`inline-flex items-center px-2 py-1 rounded-full text-xs font-medium ${colors[status] || ''}`}>
         {status === 'pending' && <Clock className="h-3 w-3 mr-1" />}
         {status === 'approved' && <CheckCircle className="h-3 w-3 mr-1" />}
         {status === 'rejected' && <XCircle className="h-3 w-3 mr-1" />}
@@ -89,7 +97,7 @@ export default function PublisherInvoicesPage() {
   };
 
   return (
-    <AuthWrapper requirePublisher>
+    <AuthWrapper>
       <Header />
       <div className="min-h-screen bg-gray-50 py-8">
         <div className="max-w-7xl mx-auto px-4">

@@ -51,11 +51,12 @@ export class PublisherNotificationService {
       await db.insert(publisherOrderNotifications).values({
         publisherId,
         orderLineItemId,
-        orderId: lineItem.orderId,
         notificationType: 'assignment',
+        channel: 'email',
         status: 'sent',
         sentAt: new Date(),
         metadata: {
+          orderId: lineItem.orderId,
           assignedDomain: lineItem.assignedDomain,
           targetPageUrl: lineItem.targetPageUrl,
           anchorText: lineItem.anchorText,
@@ -95,11 +96,14 @@ export class PublisherNotificationService {
         await db.insert(publisherOrderNotifications).values({
           publisherId,
           orderLineItemId,
-          orderId: '', // We might not have this if the query failed
           notificationType: 'assignment',
+          channel: 'email',
           status: 'failed',
-          error: error instanceof Error ? error.message : 'Unknown error',
-          metadata: { errorDetails: error }
+          errorMessage: error instanceof Error ? error.message : 'Unknown error',
+          metadata: { 
+            orderId: '', // We might not have this if the query failed
+            errorDetails: error 
+          }
         });
       } catch (logError) {
         console.error('Failed to log notification error:', logError);

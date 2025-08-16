@@ -16,7 +16,7 @@ import AuthWrapper from '@/components/AuthWrapper';
 export default function PaymentProfilePage() {
   const [loading, setLoading] = useState(false);
   const [saved, setSaved] = useState(false);
-  const [error, setError] = useState(null);
+  const [error, setError] = useState<string | null>(null);
   
   const [profileData, setProfileData] = useState({
     preferredMethod: 'bank_transfer',
@@ -83,14 +83,14 @@ export default function PaymentProfilePage() {
       setTimeout(() => setSaved(false), 3000);
       
     } catch (error) {
-      setError(error.message);
+      setError(error instanceof Error ? error.message : 'An error occurred');
     } finally {
       setLoading(false);
     }
   };
 
   return (
-    <AuthWrapper requirePublisher>
+    <AuthWrapper>
       <Header />
       <div className="min-h-screen bg-gray-50 py-8">
         <div className="max-w-4xl mx-auto px-4">
