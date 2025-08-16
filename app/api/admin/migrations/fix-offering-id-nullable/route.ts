@@ -44,13 +44,20 @@ export async function POST(request: NextRequest) {
       AND column_name = 'offering_id'
     `);
 
-    // Record migration completion
-    await db.execute(sql`
-      INSERT INTO migration_history (migration_name, success, applied_by)
-      VALUES ('0042_fix_offering_id_nullable', true, 'admin')
-      ON CONFLICT (migration_name) DO UPDATE
-      SET executed_at = NOW(), success = true
-    `);
+    // Record migration completion (with error handling)
+    try {
+      await db.execute(sql`
+        INSERT INTO migration_history (migration_name, success, applied_by)
+        VALUES ('0042_fix_offering_id_nullable', true, 'admin')
+        ON CONFLICT (migration_name) DO UPDATE
+        SET executed_at = NOW(), success = true
+      `);
+      console.log('✅ Migration history recorded');
+    } catch (historyError) {
+      console.error('⚠️ Failed to record migration history:', historyError);
+      console.log('Migration succeeded but history not recorded - migration_history table may not exist');
+      // Don't fail the migration if history recording fails
+    }
 
     return NextResponse.json({
       success: true,
