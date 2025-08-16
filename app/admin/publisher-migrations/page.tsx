@@ -156,6 +156,16 @@ export default function PublisherMigrationsPage() {
       endpoint: '/api/admin/migrations/publisher-payments-system'
     },
     {
+      id: 'add_offering_name',
+      name: '13. Fix Missing Offering Name Column (URGENT)',
+      description: 'Adds the missing offering_name column to publisher_offerings table - fixes login error',
+      icon: <AlertTriangle className="h-5 w-5 text-red-600" />,
+      dangerous: false,
+      required: true,
+      sqlFile: '0052_add_offering_name_column.sql',
+      endpoint: '/api/admin/migrations/add-offering-name'
+    },
+    {
       id: 'run_all_publisher_migrations',
       name: 'Run All Publisher Migrations (Recommended)',
       description: 'Runs all publisher and domain migrations in the correct order',

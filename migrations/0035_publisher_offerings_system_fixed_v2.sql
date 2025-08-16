@@ -12,6 +12,7 @@ CREATE TABLE IF NOT EXISTS publisher_offerings (
   id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
   publisher_id UUID NOT NULL,
   offering_type VARCHAR(50) NOT NULL, -- 'guest_post', 'link_insertion', 'content_creation'
+  offering_name VARCHAR(255), -- Custom name for the offering
   base_price INTEGER NOT NULL, -- in cents
   turnaround_days INTEGER,
   min_word_count INTEGER,
