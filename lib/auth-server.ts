@@ -10,7 +10,7 @@ import { AuthSession, UserType, UserRole } from './types/auth';
 export type { AuthSession };
 
 const JWT_SECRET = new TextEncoder().encode(
-  process.env.JWT_SECRET || 'your-secret-key-change-in-production'
+  process.env.JWT_SECRET || process.env.NEXTAUTH_SECRET || 'your-secret-key-change-in-production'
 );
 
 export class AuthServiceServer {
