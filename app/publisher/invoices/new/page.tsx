@@ -11,7 +11,7 @@ import {
   AlertCircle
 } from 'lucide-react';
 import Header from '@/components/Header';
-import AuthWrapper from '@/components/AuthWrapper';
+import PublisherAuthWrapper from '@/components/PublisherAuthWrapper';
 
 export default function NewInvoicePage() {
   const [loading, setLoading] = useState(false);
@@ -108,7 +108,7 @@ export default function NewInvoicePage() {
   const { grossAmount, totalAmount } = calculateTotals();
 
   return (
-    <AuthWrapper>
+    <PublisherAuthWrapper>
       <Header />
       <div className="min-h-screen bg-gray-50 py-8">
         <div className="max-w-4xl mx-auto px-4">
@@ -309,6 +309,6 @@ export default function NewInvoicePage() {
           </form>
         </div>
       </div>
-    </AuthWrapper>
+    </PublisherAuthWrapper>
   );
 }

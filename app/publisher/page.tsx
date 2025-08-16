@@ -18,7 +18,7 @@ import {
   Users
 } from 'lucide-react';
 import Header from '@/components/Header';
-import AuthWrapper from '@/components/AuthWrapper';
+import PublisherAuthWrapper from '@/components/PublisherAuthWrapper';
 
 interface DashboardStats {
   orders: {
@@ -159,18 +159,18 @@ export default function PublisherDashboard() {
 
   if (loading) {
     return (
-      <AuthWrapper>
+      <PublisherAuthWrapper>
         <Header />
         <div className="flex items-center justify-center py-12">
           <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-blue-600"></div>
           <span className="ml-2 text-gray-600">Loading dashboard...</span>
         </div>
-      </AuthWrapper>
+      </PublisherAuthWrapper>
     );
   }
 
   return (
-    <AuthWrapper>
+    <PublisherAuthWrapper>
       <Header />
       <div className="min-h-screen bg-gray-50 py-8">
         <div className="max-w-7xl mx-auto px-4">
@@ -456,6 +456,6 @@ export default function PublisherDashboard() {
           </div>
         </div>
       </div>
-    </AuthWrapper>
+    </PublisherAuthWrapper>
   );
 }

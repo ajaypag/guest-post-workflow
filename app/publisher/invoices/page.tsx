@@ -12,7 +12,7 @@ import {
   Eye
 } from 'lucide-react';
 import Header from '@/components/Header';
-import AuthWrapper from '@/components/AuthWrapper';
+import PublisherAuthWrapper from '@/components/PublisherAuthWrapper';
 
 interface Invoice {
   id: string;
@@ -97,7 +97,7 @@ export default function PublisherInvoicesPage() {
   };
 
   return (
-    <AuthWrapper>
+    <PublisherAuthWrapper>
       <Header />
       <div className="min-h-screen bg-gray-50 py-8">
         <div className="max-w-7xl mx-auto px-4">
@@ -260,6 +260,6 @@ export default function PublisherInvoicesPage() {
           </div>
         </div>
       </div>
-    </AuthWrapper>
+    </PublisherAuthWrapper>
   );
 }
