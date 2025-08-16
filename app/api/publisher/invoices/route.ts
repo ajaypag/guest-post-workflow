@@ -38,12 +38,12 @@ export async function POST(request: NextRequest) {
     }
 
     // Check for duplicate invoice number for this publisher
-    const existingInvoice = await db.execute(sql`
+    const existingInvoiceResult = await db.execute(sql`
       SELECT id FROM publisher_invoices 
       WHERE publisher_id = ${session.publisherId} AND invoice_number = ${invoiceNumber}
     `);
 
-    if (existingInvoice.rows.length > 0) {
+    if (existingInvoiceResult.rows && existingInvoiceResult.rows.length > 0) {
       return NextResponse.json({ 
         error: 'Invoice number already exists. Please use a unique invoice number.' 
       }, { status: 400 });
@@ -125,8 +125,8 @@ export async function GET(request: NextRequest) {
       ORDER BY created_at DESC
       LIMIT $${args.length + 1} OFFSET $${args.length + 2}
     `;
-    // Using raw SQL with manual parameter binding
-    const invoicesResult = await (db as any).execute({ sql: invoicesQuery, args: finalArgs });
+    // Using Drizzle's sql.raw for dynamic query
+    const invoicesResult = await db.execute(sql.raw(invoicesQuery, finalArgs));
 
     // Get total count
     const countQuery = `
@@ -134,7 +134,7 @@ export async function GET(request: NextRequest) {
       FROM publisher_invoices 
       ${whereClause}
     `;
-    const countResult = await (db as any).execute({ sql: countQuery, args: args });
+    const countResult = await db.execute(sql.raw(countQuery, args));
 
     const totalCount = Number(countResult.rows[0].total);
     const totalPages = Math.ceil(totalCount / limit);

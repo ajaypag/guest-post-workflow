@@ -41,13 +41,42 @@ export async function GET(request: NextRequest) {
 
     const totalCount = countResult[0]?.count || 0;
 
-    // Get orders with related data
+    // Get orders with related data - select only specific fields to avoid missing columns
     const publisherOrders = await db
       .select({
-        lineItem: orderLineItems,
-        order: orders,
-        client: clients,
-        offering: publisherOfferings,
+        lineItem: {
+          id: orderLineItems.id,
+          orderId: orderLineItems.orderId,
+          clientId: orderLineItems.clientId,
+          targetPageUrl: orderLineItems.targetPageUrl,
+          anchorText: orderLineItems.anchorText,
+          status: orderLineItems.status,
+          assignedDomain: orderLineItems.assignedDomain,
+          publisherId: orderLineItems.publisherId,
+          publisherOfferingId: orderLineItems.publisherOfferingId,
+          publisherStatus: orderLineItems.publisherStatus,
+          publisherPrice: orderLineItems.publisherPrice,
+          platformFee: orderLineItems.platformFee,
+          publisherNotifiedAt: orderLineItems.publisherNotifiedAt,
+          publisherAcceptedAt: orderLineItems.publisherAcceptedAt,
+          publisherSubmittedAt: orderLineItems.publisherSubmittedAt,
+          workflowId: orderLineItems.workflowId,
+          publishedUrl: orderLineItems.publishedUrl,
+          deliveredAt: orderLineItems.deliveredAt,
+          addedAt: orderLineItems.addedAt
+        },
+        order: {
+          id: orders.id,
+          status: orders.status
+        },
+        client: {
+          id: clients.id,
+          name: clients.name
+        },
+        offering: {
+          id: publisherOfferings.id,
+          offeringName: publisherOfferings.offeringName
+        },
         earnings: {
           id: publisherEarnings.id,
           amount: publisherEarnings.netAmount,
