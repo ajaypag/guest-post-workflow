@@ -194,7 +194,7 @@ export async function POST() {
       CREATE INDEX IF NOT EXISTS idx_publisher_invoices_created_at ON publisher_invoices(created_at);
       CREATE INDEX IF NOT EXISTS idx_publisher_earnings_publisher_id ON publisher_earnings(publisher_id);
       CREATE INDEX IF NOT EXISTS idx_publisher_earnings_status ON publisher_earnings(status);
-      CREATE INDEX IF NOT EXISTS idx_publisher_earnings_earned_date ON publisher_earnings(earned_date);
+      CREATE INDEX IF NOT EXISTS idx_publisher_earnings_created_at ON publisher_earnings(created_at);
     `);
 
     console.log('✅ Migration 0051 completed successfully');

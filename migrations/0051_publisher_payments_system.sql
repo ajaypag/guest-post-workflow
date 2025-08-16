@@ -169,7 +169,7 @@ CREATE INDEX IF NOT EXISTS idx_publisher_invoices_status ON publisher_invoices(s
 CREATE INDEX IF NOT EXISTS idx_publisher_invoices_created_at ON publisher_invoices(created_at);
 CREATE INDEX IF NOT EXISTS idx_publisher_earnings_publisher_id ON publisher_earnings(publisher_id);
 CREATE INDEX IF NOT EXISTS idx_publisher_earnings_status ON publisher_earnings(status);
-CREATE INDEX IF NOT EXISTS idx_publisher_earnings_earned_date ON publisher_earnings(earned_date);
+CREATE INDEX IF NOT EXISTS idx_publisher_earnings_created_at ON publisher_earnings(created_at);
 
 -- Comments for Documentation
 COMMENT ON TABLE publisher_payment_profiles IS 'Publisher payment method preferences and tax information';
