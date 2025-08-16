@@ -309,7 +309,7 @@ export default function PublisherMigrationsPage() {
             </div>
 
             {/* Status Check Button */}
-            <div className="flex justify-end mb-4">
+            <div className="flex justify-end mb-4 gap-2">
               <button
                 onClick={checkMigrationStatus}
                 disabled={checkingStatus}
@@ -327,6 +327,61 @@ export default function PublisherMigrationsPage() {
                   </>
                 )}
               </button>
+              
+              {/* Mark as Complete Button - only show if some migrations show as not complete */}
+              {Object.keys(migrationStatus).length > 0 && Object.values(migrationStatus).some(v => !v) && (
+                <button
+                  onClick={async () => {
+                    if (!confirm('This will mark all visible migrations as complete without running them. Only do this if you know they have already been successfully run. Continue?')) {
+                      return;
+                    }
+                    
+                    const migrationsToMark = migrations
+                      .filter(m => m.id !== 'create_migration_history' && m.id !== 'run_all_publisher_migrations' && !migrationStatus[m.id])
+                      .map(m => {
+                        // Map frontend IDs to database migration names
+                        const nameMap: Record<string, string> = {
+                          'publisher_offerings_system': '0035_publisher_offerings_system_fixed',
+                          'publisher_relationship_columns': '0038_publisher_relations_and_permissions',
+                          'website_publisher_columns': '0039_website_publisher_columns',
+                          'publisher_offering_columns': '0040_add_missing_publisher_offering_columns',
+                          'publisher_performance_columns': '0041_add_missing_performance_columns',
+                          'fix_offering_id_nullable': '0042_fix_offering_id_nullable',
+                          'add_missing_relationship_fields': '0043_add_missing_relationship_fields',
+                          'make_airtable_id_nullable': '0044_make_airtable_id_nullable',
+                          'domain_normalization': '0037_normalize_existing_domains',
+                          'add_publisher_fields': '0040_add_publisher_fields',
+                          'connect_orders_to_publishers': '0050_connect_orders_to_publishers',
+                          'publisher_payments_system': '0051_publisher_payments_system'
+                        };
+                        return nameMap[m.id] || m.id;
+                      });
+                    
+                    try {
+                      const response = await fetch('/api/admin/migrations/mark-as-complete', {
+                        method: 'POST',
+                        headers: { 'Content-Type': 'application/json' },
+                        body: JSON.stringify({ migrations: migrationsToMark })
+                      });
+                      
+                      const result = await response.json();
+                      if (result.success) {
+                        alert('Migrations marked as complete. Refreshing status...');
+                        await checkMigrationStatus();
+                      } else {
+                        alert('Failed to mark migrations: ' + (result.error || 'Unknown error'));
+                      }
+                    } catch (error) {
+                      console.error('Error marking migrations:', error);
+                      alert('Failed to mark migrations as complete');
+                    }
+                  }}
+                  className="px-4 py-2 bg-yellow-600 text-white rounded-lg hover:bg-yellow-700 flex items-center gap-2"
+                >
+                  <AlertTriangle className="h-4 w-4" />
+                  Mark All As Complete (Already Run)
+                </button>
+              )}
             </div>
 
             {/* Migration List */}
