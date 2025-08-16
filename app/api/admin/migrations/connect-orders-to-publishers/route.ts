@@ -33,12 +33,52 @@ export async function POST(request: NextRequest) {
 
     const migrationSQL = fs.readFileSync(migrationPath, 'utf8');
 
-    // Split the migration into individual statements
-    // This regex splits on semicolons that are not inside strings or comments
-    const statements = migrationSQL
-      .split(/;(?=(?:[^']*'[^']*')*[^']*$)/)
-      .map(s => s.trim())
-      .filter(s => s.length > 0 && !s.startsWith('--'));
+    // Parse SQL statements properly, handling PL/pgSQL functions with $$ delimiters
+    const statements: string[] = [];
+    let currentStatement = '';
+    let inDollarQuote = false;
+    let dollarQuoteTag = '';
+    
+    const lines = migrationSQL.split('\n');
+    
+    for (const line of lines) {
+      const trimmedLine = line.trim();
+      
+      // Skip comment-only lines
+      if (trimmedLine.startsWith('--') && !inDollarQuote) {
+        continue;
+      }
+      
+      // Check for dollar quote start/end
+      const dollarMatch = line.match(/\$([A-Za-z_]*)\$/g);
+      if (dollarMatch) {
+        for (const match of dollarMatch) {
+          if (!inDollarQuote) {
+            inDollarQuote = true;
+            dollarQuoteTag = match;
+          } else if (match === dollarQuoteTag) {
+            inDollarQuote = false;
+            dollarQuoteTag = '';
+          }
+        }
+      }
+      
+      currentStatement += line + '\n';
+      
+      // If we're not in a dollar quote and line ends with semicolon, it's end of statement
+      if (!inDollarQuote && trimmedLine.endsWith(';')) {
+        const stmt = currentStatement.trim();
+        if (stmt && !stmt.startsWith('--')) {
+          statements.push(stmt);
+        }
+        currentStatement = '';
+      }
+    }
+    
+    // Add any remaining statement
+    if (currentStatement.trim()) {
+      statements.push(currentStatement.trim());
+    }
 
     // Execute each statement individually
     let executedCount = 0;
@@ -46,30 +86,25 @@ export async function POST(request: NextRequest) {
     
     for (const statement of statements) {
       try {
-        // Skip empty statements and comments
-        if (!statement || statement.startsWith('--')) continue;
-        
-        // Add semicolon back if it's not there
-        const sqlStatement = statement.endsWith(';') ? statement : statement + ';';
-        
-        await db.execute(sql.raw(sqlStatement));
+        await db.execute(sql.raw(statement));
         executedCount++;
+        console.log(`Executed statement ${executedCount}/${statements.length}`);
       } catch (error: any) {
-        // Check if it's a "already exists" error which we can ignore
-        if (error.message?.includes('already exists')) {
+        // Check if it's an "already exists" error which we can ignore
+        if (error.message?.includes('already exists') || 
+            error.message?.includes('duplicate key value') ||
+            error.message?.includes('relation') && error.message?.includes('already exists')) {
           console.log(`Skipping (already exists): ${statement.substring(0, 50)}...`);
           executedCount++;
         } else {
-          errors.push({
-            statement: statement.substring(0, 100),
-            error: error.message
-          });
+          console.error(`Failed statement: ${statement.substring(0, 100)}...`);
+          console.error(`Error: ${error.message}`);
           throw error; // Re-throw to stop migration
         }
       }
     }
 
-    console.log(`Migration 0050 executed ${executedCount} statements successfully`);
+    console.log(`Migration 0050 executed ${executedCount}/${statements.length} statements successfully`);
 
     // Record migration completion
     await db.execute(sql`
