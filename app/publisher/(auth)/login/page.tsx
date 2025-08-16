@@ -18,7 +18,7 @@ export default function PublisherLoginPage() {
     setLoading(true);
 
     try {
-      const response = await fetch('/api/publisher/auth/login', {
+      const response = await fetch('/api/auth/publisher/login', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ email, password }),
