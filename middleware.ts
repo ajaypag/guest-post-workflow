@@ -194,13 +194,15 @@ export async function middleware(request: NextRequest) {
       !path.startsWith('/account/reset-password')) {
     try {
       // For UI pages, check cookie authentication
+      // Account users use the same auth-token as internal users (set by /api/auth/login)
+      const authTokenCookie = request.cookies.get('auth-token');
       const accountTokenCookie = request.cookies.get('auth-token-account');
-      const token = accountTokenCookie?.value;
+      const token = authTokenCookie?.value || accountTokenCookie?.value;
       
       if (!token) {
-        // Redirect to account login page
+        // Redirect to main login page (handles both internal and account users)
         const url = request.nextUrl.clone();
-        url.pathname = '/account/login';
+        url.pathname = '/login';
         url.searchParams.set('redirect', path);
         return NextResponse.redirect(url);
       }
@@ -211,9 +213,9 @@ export async function middleware(request: NextRequest) {
       // Check if user is account
       const userType = payload.userType;
       if (userType !== 'account') {
-        // Redirect to account login if not an account user
+        // Redirect to login if not an account user
         const url = request.nextUrl.clone();
-        url.pathname = '/account/login';
+        url.pathname = '/login';
         url.searchParams.set('error', 'unauthorized');
         return NextResponse.redirect(url);
       }
@@ -222,9 +224,9 @@ export async function middleware(request: NextRequest) {
       return NextResponse.next();
       
     } catch (error) {
-      // Token is invalid or expired, redirect to account login
+      // Token is invalid or expired, redirect to login
       const url = request.nextUrl.clone();
-      url.pathname = '/account/login';
+      url.pathname = '/login';
       url.searchParams.set('redirect', path);
       return NextResponse.redirect(url);
     }

@@ -14,11 +14,12 @@
 ### 2. Account Users (External Clients)
 - **Table**: `accounts`
 - **User Type**: `account`
-- **Cookie**: `auth-token-account`
-- **Login Page**: `/account/login`
+- **Cookie**: `auth-token` (same as internal, differentiated by userType)
+- **Login Page**: `/login` (shared with internal users - smart routing)
 - **Dashboard**: `/account/*` pages
-- **Redirect on Auth Failure**: `/account/login`
+- **Redirect on Auth Failure**: `/login`
 - **Component Protection**: `AccountAuthWrapper` component
+- **Note**: The `/api/auth/login` endpoint intelligently checks both `users` and `accounts` tables
 
 ### 3. Publisher Users
 - **Table**: `publishers`
@@ -32,8 +33,7 @@
 
 ### Login Process
 1. User submits credentials to respective login endpoint:
-   - Internal: `/api/auth/login`
-   - Account: `/api/auth/account-login`
+   - Internal & Account: `/api/auth/login` (intelligently checks both tables)
    - Publisher: `/api/auth/publisher/login`
 
 2. Server validates credentials against respective table
@@ -45,7 +45,7 @@
 
 #### Middleware Protection (middleware.ts)
 - **Admin Pages** (`/admin/*`): Requires `internal` userType, redirects to `/login`
-- **Account Pages** (`/account/*`): Requires `account` userType, redirects to `/account/login`
+- **Account Pages** (`/account/*`): Requires `account` userType, redirects to `/login`
 - **Publisher Pages** (`/publisher/*`): Requires `publisher` userType, redirects to `/publisher/login`
 
 #### API Endpoints
@@ -67,16 +67,18 @@ if (path.startsWith('/publisher')) {
 }
 ```
 
-### 2. Account Redirect Fix
-**Problem**: Account users needed proper middleware protection
-**Solution**: Added middleware protection for account routes
+### 2. Shared Login Page for Internal & Account Users
+**Implementation**: Both internal users and account users share `/login`
+**How it works**: The `/api/auth/login` endpoint intelligently checks:
+1. First checks `users` table for internal users
+2. If not found, checks `accounts` table for account users
+3. Sets same `auth-token` cookie but with different `userType`
 
 ```typescript
 // Account pages protection
 if (path.startsWith('/account')) {
-  // Redirect to /account/login if not authenticated
-  url.pathname = '/account/login';
-}
+  // Redirect to /login (shared with internal users)
+  url.pathname = '/login';
 ```
 
 ### 3. Publisher API Protection
@@ -105,12 +107,14 @@ if (path.startsWith('/account')) {
 
 ## Cookie Management
 
-Each user type has its own cookie to prevent conflicts:
-- `auth-token`: Internal users
-- `auth-token-account`: Account users
-- `auth-token-publisher`: Publisher users
+Cookie usage by user type:
+- `auth-token`: Used by BOTH Internal users AND Account users (differentiated by `userType` in JWT)
+- `auth-token-publisher`: Publisher users only
 
-This allows users to be logged into multiple systems simultaneously without interference.
+The shared `auth-token` cookie for internal and account users is safe because:
+1. The JWT payload contains `userType` field
+2. Middleware checks `userType` to ensure proper access control
+3. Account users cannot access admin pages even with valid token
 
 ## Security Considerations
 
