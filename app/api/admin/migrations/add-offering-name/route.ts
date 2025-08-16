@@ -13,18 +13,49 @@ export async function POST(request: NextRequest) {
 
     console.log('Adding offering_name column to publisher_offerings table');
 
-    // Add the column
-    await db.execute(sql`
-      ALTER TABLE publisher_offerings 
-      ADD COLUMN IF NOT EXISTS offering_name VARCHAR(255)
+    // First check if the table exists
+    const tableCheck = await db.execute(sql`
+      SELECT EXISTS (
+        SELECT FROM information_schema.tables 
+        WHERE table_schema = 'public' 
+        AND table_name = 'publisher_offerings'
+      ) as table_exists
     `);
 
-    // Add comment
+    if (!tableCheck.rows[0]?.table_exists) {
+      throw new Error('Table publisher_offerings does not exist. Run the Publisher Offerings System migration first.');
+    }
+
+    // Check if column already exists
+    const existingColumn = await db.execute(sql`
+      SELECT column_name 
+      FROM information_schema.columns
+      WHERE table_name = 'publisher_offerings'
+      AND column_name = 'offering_name'
+    `);
+
+    let wasAdded = false;
+    if (existingColumn.rows.length === 0) {
+      console.log('Column does not exist, adding it now...');
+      
+      // Add the column
+      await db.execute(sql`
+        ALTER TABLE publisher_offerings 
+        ADD COLUMN offering_name VARCHAR(255)
+      `);
+      
+      wasAdded = true;
+      console.log('Column added successfully');
+    } else {
+      console.log('Column already exists');
+    }
+
+    // Add or update comment
     await db.execute(sql`
       COMMENT ON COLUMN publisher_offerings.offering_name IS 'Custom name for the offering'
     `);
 
-    // Verify the column was added
+    // Verify the column now exists
     const columnInfo = await db.execute(sql`
       SELECT 
         column_name,
@@ -34,6 +65,10 @@ export async function POST(request: NextRequest) {
       WHERE table_name = 'publisher_offerings'
       AND column_name = 'offering_name'
     `);
+
+    if (columnInfo.rows.length === 0) {
+      throw new Error('Failed to add offering_name column - column still does not exist after ALTER TABLE');
+    }
 
     // Record migration completion
     await db.execute(sql`
@@ -45,9 +80,10 @@ export async function POST(request: NextRequest) {
 
     return NextResponse.json({
       success: true,
-      message: 'Successfully added offering_name column',
+      message: wasAdded ? 'Successfully added offering_name column' : 'Column already exists',
       details: {
-        column: columnInfo.rows[0] || 'Column added'
+        wasAdded,
+        column: columnInfo.rows[0]
       }
     });
 
