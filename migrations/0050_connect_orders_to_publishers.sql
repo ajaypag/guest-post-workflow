@@ -66,10 +66,10 @@ CREATE TABLE IF NOT EXISTS publisher_earnings (
 );
 
 -- Indexes for earnings queries
-CREATE INDEX idx_publisher_earnings_publisher ON publisher_earnings(publisher_id);
-CREATE INDEX idx_publisher_earnings_status ON publisher_earnings(status);
-CREATE INDEX idx_publisher_earnings_created ON publisher_earnings(created_at);
-CREATE INDEX idx_publisher_earnings_payment_batch ON publisher_earnings(payment_batch_id);
+CREATE INDEX IF NOT EXISTS idx_publisher_earnings_publisher ON publisher_earnings(publisher_id);
+CREATE INDEX IF NOT EXISTS idx_publisher_earnings_status ON publisher_earnings(status);
+CREATE INDEX IF NOT EXISTS idx_publisher_earnings_created ON publisher_earnings(created_at);
+CREATE INDEX IF NOT EXISTS idx_publisher_earnings_payment_batch ON publisher_earnings(payment_batch_id);
 
 -- ============================================================================
 -- Phase 3: Publisher Payment Batches
