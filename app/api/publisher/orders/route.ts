@@ -91,10 +91,7 @@ export async function GET(request: NextRequest) {
       .leftJoin(publisherOfferings, eq(orderLineItems.publisherOfferingId, publisherOfferings.id))
       .leftJoin(
         publisherEarnings,
-        and(
-          eq(publisherEarnings.orderLineItemId, orderLineItems.id),
-          eq(publisherEarnings.earningType, 'order_completion')
-        )
+        eq(publisherEarnings.orderLineItemId, orderLineItems.id)
       )
       .where(and(...conditions))
       .orderBy(desc(orderLineItems.id))
@@ -140,14 +137,14 @@ export async function GET(request: NextRequest) {
       createdAt: row.lineItem.publisherNotifiedAt || new Date()
     }));
 
-    // Get summary statistics
+    // Get summary statistics using conditional aggregation (compatible with older PostgreSQL)
     const stats = await db
       .select({
         totalOrders: sql<number>`COUNT(*)`,
-        pendingOrders: sql<number>`COUNT(*) FILTER (WHERE publisher_status IN ('pending', 'notified'))`,
-        inProgressOrders: sql<number>`COUNT(*) FILTER (WHERE publisher_status IN ('accepted', 'in_progress', 'submitted'))`,
-        completedOrders: sql<number>`COUNT(*) FILTER (WHERE publisher_status = 'completed')`,
-        totalEarnings: sql<number>`COALESCE(SUM(publisher_price - platform_fee), 0) FILTER (WHERE publisher_status = 'completed')`
+        pendingOrders: sql<number>`SUM(CASE WHEN publisher_status IN ('pending', 'notified') THEN 1 ELSE 0 END)`,
+        inProgressOrders: sql<number>`SUM(CASE WHEN publisher_status IN ('accepted', 'in_progress', 'submitted') THEN 1 ELSE 0 END)`,
+        completedOrders: sql<number>`SUM(CASE WHEN publisher_status = 'completed' THEN 1 ELSE 0 END)`,
+        totalEarnings: sql<number>`COALESCE(SUM(CASE WHEN publisher_status = 'completed' THEN publisher_price - platform_fee ELSE 0 END), 0)`
       })
       .from(orderLineItems)
       .where(eq(orderLineItems.publisherId, session.publisherId!));
