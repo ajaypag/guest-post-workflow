@@ -75,7 +75,9 @@ export async function GET(request: NextRequest) {
         },
         offering: {
           id: publisherOfferings.id,
-          offeringName: publisherOfferings.offeringName
+          offeringName: publisherOfferings.offeringName,
+          offeringType: publisherOfferings.offeringType,
+          turnaroundDays: publisherOfferings.turnaroundDays
         },
         earnings: {
           id: publisherEarnings.id,

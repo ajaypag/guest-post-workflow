@@ -101,40 +101,51 @@ export async function GET(request: NextRequest) {
     
     const offset = (page - 1) * limit;
 
-    // Build query conditions
-    let whereClause = 'WHERE publisher_id = $1';
-    const args = [session.publisherId];
+    // Build query based on status filter
+    let invoicesResult;
+    let countResult;
     
     if (status && status !== 'all') {
-      whereClause += ' AND status = $2';
-      args.push(status);
+      // With status filter
+      invoicesResult = await db.execute(sql`
+        SELECT 
+          id, invoice_number, invoice_date, due_date,
+          gross_amount, tax_amount, total_amount, currency,
+          description, status, created_at, updated_at,
+          reviewed_at, approved_at, paid_at,
+          review_notes, payment_method, payment_reference
+        FROM publisher_invoices 
+        WHERE publisher_id = ${session.publisherId} AND status = ${status}
+        ORDER BY created_at DESC
+        LIMIT ${limit} OFFSET ${offset}
+      `);
+      
+      countResult = await db.execute(sql`
+        SELECT COUNT(*) as total
+        FROM publisher_invoices 
+        WHERE publisher_id = ${session.publisherId} AND status = ${status}
+      `);
+    } else {
+      // Without status filter
+      invoicesResult = await db.execute(sql`
+        SELECT 
+          id, invoice_number, invoice_date, due_date,
+          gross_amount, tax_amount, total_amount, currency,
+          description, status, created_at, updated_at,
+          reviewed_at, approved_at, paid_at,
+          review_notes, payment_method, payment_reference
+        FROM publisher_invoices 
+        WHERE publisher_id = ${session.publisherId}
+        ORDER BY created_at DESC
+        LIMIT ${limit} OFFSET ${offset}
+      `);
+      
+      countResult = await db.execute(sql`
+        SELECT COUNT(*) as total
+        FROM publisher_invoices 
+        WHERE publisher_id = ${session.publisherId}
+      `);
     }
-
-    // Get invoices with pagination
-    // Build query dynamically with parameterized values
-    const finalArgs = [...args, limit, offset];
-    const invoicesQuery = `
-      SELECT 
-        id, invoice_number, invoice_date, due_date,
-        gross_amount, tax_amount, total_amount, currency,
-        description, status, created_at, updated_at,
-        reviewed_at, approved_at, paid_at,
-        review_notes, payment_method, payment_reference
-      FROM publisher_invoices 
-      ${whereClause}
-      ORDER BY created_at DESC
-      LIMIT $${args.length + 1} OFFSET $${args.length + 2}
-    `;
-    // Using Drizzle's sql.raw for dynamic query
-    const invoicesResult = await db.execute(sql.raw(invoicesQuery, finalArgs));
-
-    // Get total count
-    const countQuery = `
-      SELECT COUNT(*) as total
-      FROM publisher_invoices 
-      ${whereClause}
-    `;
-    const countResult = await db.execute(sql.raw(countQuery, args));
 
     const totalCount = Number(countResult.rows[0].total);
     const totalPages = Math.ceil(totalCount / limit);
