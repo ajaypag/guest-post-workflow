@@ -42,6 +42,16 @@ export const orderLineItems = pgTable('order_line_items', {
   clientReviewedAt: timestamp('client_reviewed_at'),
   clientReviewNotes: text('client_review_notes'),
   
+  // Publisher Assignment
+  publisherId: uuid('publisher_id'),
+  publisherOfferingId: uuid('publisher_offering_id'),
+  publisherStatus: varchar('publisher_status', { length: 50 }),
+  publisherPrice: integer('publisher_price'), // In cents
+  platformFee: integer('platform_fee'), // In cents
+  publisherNotifiedAt: timestamp('publisher_notified_at'),
+  publisherAcceptedAt: timestamp('publisher_accepted_at'),
+  publisherSubmittedAt: timestamp('publisher_submitted_at'),
+  
   // Delivery Tracking
   workflowId: uuid('workflow_id'),
   draftUrl: varchar('draft_url', { length: 500 }),

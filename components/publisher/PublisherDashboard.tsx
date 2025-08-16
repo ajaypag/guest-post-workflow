@@ -64,12 +64,11 @@ export default function PublisherDashboard({ stats }: PublisherDashboardProps) {
       </div>
 
       {/* Stats Grid */}
-      <div className="grid grid-cols-2 md:grid-cols-5 gap-4">
+      <div className="grid grid-cols-2 md:grid-cols-6 gap-4">
         <PublisherStatCard
           title="Total Websites"
           value={stats.totalWebsites.toString()}
           icon={Globe}
-          trend={{ value: 0, isPositive: true }}
           color="blue"
         />
         <PublisherStatCard
@@ -79,23 +78,27 @@ export default function PublisherDashboard({ stats }: PublisherDashboardProps) {
           color="purple"
         />
         <PublisherStatCard
-          title="This Month"
-          value={formatCurrency(stats.monthlyEarnings * 100)}
+          title="Pending Earnings"
+          value={formatCurrency(stats.pendingEarnings)}
           icon={DollarSign}
-          trend={{ value: 15, isPositive: true }}
           color="green"
         />
         <PublisherStatCard
-          title="Avg Response"
-          value={formatResponseTime(stats.avgResponseTime)}
+          title="This Month"
+          value={formatCurrency(stats.monthlyEarnings)}
+          icon={TrendingUp}
+          color="emerald"
+        />
+        <PublisherStatCard
+          title="Pending Orders"
+          value={stats.pendingOrders.toString()}
           icon={Clock}
           color="yellow"
         />
         <PublisherStatCard
-          title="Reliability"
-          value={`${Math.round(stats.reliabilityScore)}%`}
-          icon={TrendingUp}
-          trend={{ value: 2, isPositive: true }}
+          title="Completed"
+          value={stats.completedOrders.toString()}
+          icon={CheckCircle}
           color="emerald"
         />
       </div>
@@ -225,11 +228,11 @@ export default function PublisherDashboard({ stats }: PublisherDashboardProps) {
             <span className="text-sm text-gray-700">View Orders</span>
           </Link>
           <Link
-            href="/publisher/settings/payments"
+            href="/publisher/earnings"
             className="flex flex-col items-center p-4 bg-white rounded-lg hover:shadow-md transition-shadow"
           >
             <DollarSign className="h-8 w-8 text-emerald-600 mb-2" />
-            <span className="text-sm text-gray-700">Payment Settings</span>
+            <span className="text-sm text-gray-700">View Earnings</span>
           </Link>
         </div>
       </div>

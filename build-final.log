@@ -6,7 +6,7 @@
    - Environments: .env.local, .env
 
    Creating an optimized production build ...
- ✓ Compiled successfully in 60s
+ ✓ Compiled successfully in 53s
    Linting and checking validity of types ...
 
 ./app/account/orders/[id]/status/page.tsx
@@ -148,6 +148,12 @@
 
 ./components/orders/StripePaymentForm.tsx
 281:6  Warning: React Hook useEffect has a missing dependency: 'initializePayment'. Either include it or remove the dependency array.  react-hooks/exhaustive-deps
+
+./components/publisher/PublisherEarningsOverview.tsx
+122:6  Warning: React Hook useEffect has a missing dependency: 'fetchEarnings'. Either include it or remove the dependency array.  react-hooks/exhaustive-deps
+
+./components/publisher/PublisherOrdersList.tsx
+120:6  Warning: React Hook useEffect has a missing dependency: 'fetchOrders'. Either include it or remove the dependency array.  react-hooks/exhaustive-deps
 
 ./components/steps/ClientLinkStep.tsx
 82:6  Warning: React Hook useEffect has missing dependencies: 'onChange' and 'step.outputs'. Either include them or remove the dependency array. If 'onChange' changes too often, find the parent component that defines it and wrap that definition in useCallback.  react-hooks/exhaustive-deps

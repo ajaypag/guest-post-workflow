@@ -116,6 +116,36 @@ export default function PublisherMigrationsPage() {
       endpoint: '/api/admin/migrations/domain-normalization'
     },
     {
+      id: 'add_publisher_fields',
+      name: '10. Add Publisher Fields to Orders',
+      description: 'Adds publisher tracking fields to order_line_items table for order-to-publisher flow',
+      icon: <BarChart3 className="h-5 w-5 text-green-600" />,
+      dangerous: false,
+      required: true,
+      sqlFile: '0040_add_publisher_fields_to_order_line_items.sql',
+      endpoint: '/api/admin/migrations/add-publisher-fields'
+    },
+    {
+      id: 'connect_orders_to_publishers',
+      name: '11. Connect Orders to Publishers',
+      description: 'Creates order-to-publisher connection system with status tracking and publisher assignment workflow',
+      icon: <Users className="h-5 w-5 text-blue-600" />,
+      dangerous: false,
+      required: true,
+      sqlFile: '0050_connect_orders_to_publishers.sql',
+      endpoint: '/api/admin/migrations/connect-orders-to-publishers'
+    },
+    {
+      id: 'publisher_payments_system',
+      name: '12. Publisher Payments System',
+      description: 'Creates complete manual payment system: payment profiles, invoices, earnings tracking, and payment batches',
+      icon: <FileText className="h-5 w-5 text-emerald-600" />,
+      dangerous: false,
+      required: true,
+      sqlFile: '0051_publisher_payments_system.sql',
+      endpoint: '/api/admin/migrations/publisher-payments-system'
+    },
+    {
       id: 'run_all_publisher_migrations',
       name: 'Run All Publisher Migrations (Recommended)',
       description: 'Runs all publisher and domain migrations in the correct order',
@@ -223,7 +253,7 @@ export default function PublisherMigrationsPage() {
                 <div>
                   <h1 className="text-2xl font-bold text-gray-900">Publisher System Migrations</h1>
                   <p className="text-sm text-gray-600 mt-1">
-                    Set up the complete publisher portal and domain normalization system
+                    Set up the complete publisher portal, order-to-publisher workflow, payment system, and domain normalization
                   </p>
                 </div>
               </div>
@@ -259,7 +289,7 @@ export default function PublisherMigrationsPage() {
                 <div>
                   <h3 className="font-semibold text-blue-900">Migration Order is Critical</h3>
                   <p className="text-sm text-blue-800 mt-1">
-                    These migrations must be run in order (1 → 2 → 3 → 4 → 5 → 6). Each builds on the previous one.
+                    These migrations must be run in order (1 → 2 → 3 → 4 → 5 → 6 → 7 → 8 → 9 → 10 → 11 → 12). Each builds on the previous one.
                   </p>
                   <p className="text-sm text-blue-800 mt-2">
                     <strong>Recommended:</strong> Use "Run All Publisher Migrations" to ensure correct order.
@@ -395,7 +425,7 @@ export default function PublisherMigrationsPage() {
                   <div>
                     <h3 className="font-semibold text-green-900">All Publisher Migrations Complete!</h3>
                     <p className="text-sm text-green-800 mt-1">
-                      Your database is now set up for the publisher portal system. All tables and columns have been created.
+                      Your database is now set up for the complete publisher workflow system including order assignment, status tracking, payment processing, and domain normalization.
                     </p>
                     <div className="flex gap-3 mt-3">
                       <Link
@@ -466,6 +496,27 @@ export default function PublisherMigrationsPage() {
                   <div>
                     <strong>Domain Normalization:</strong> Prevents duplicate domains by normalizing all existing entries
                     and adding automatic normalization for new domains.
+                  </div>
+                </div>
+                <div className="flex items-start gap-2">
+                  <span className="font-semibold">7.</span>
+                  <div>
+                    <strong>Publisher Order Fields:</strong> Adds publisher tracking fields to order line items
+                    for order assignment and status management workflow.
+                  </div>
+                </div>
+                <div className="flex items-start gap-2">
+                  <span className="font-semibold">8.</span>
+                  <div>
+                    <strong>Order-Publisher Connection:</strong> Creates the complete order-to-publisher assignment
+                    system with status tracking and notification workflow.
+                  </div>
+                </div>
+                <div className="flex items-start gap-2">
+                  <span className="font-semibold">9.</span>
+                  <div>
+                    <strong>Publisher Payments System:</strong> Creates manual payment system with payment profiles,
+                    invoice submission, earnings tracking, and bulk payment processing capabilities.
                   </div>
                 </div>
               </div>

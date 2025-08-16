@@ -76,8 +76,12 @@ export interface PublisherDashboardStats {
   totalWebsites: number;
   activeOfferings: number;
   monthlyEarnings: number;
+  pendingEarnings: number;
+  totalEarnings: number;
   avgResponseTime: number;
   reliabilityScore: number;
+  pendingOrders: number;
+  completedOrders: number;
   recentOrders: PublisherOrder[];
   topWebsites: {
     website: PublisherWebsite['website'];

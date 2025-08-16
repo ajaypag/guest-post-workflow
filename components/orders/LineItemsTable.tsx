@@ -9,6 +9,189 @@ import {
 } from 'lucide-react';
 import { formatCurrency } from '@/lib/utils/formatting';
 
+// Publisher Assignment Components
+function PublisherAssignmentDisplay({ item }: { item: LineItem }) {
+  if (item.publisher) {
+    return (
+      <div className="flex items-center gap-2">
+        <User className="h-4 w-4 text-blue-500" />
+        <div className="text-sm">
+          <div className="font-medium">{item.publisher.name}</div>
+          {item.publisherStatus && (
+            <div className={`text-xs ${getPublisherStatusColor(item.publisherStatus)}`}>
+              {item.publisherStatus.replace(/_/g, ' ')}
+            </div>
+          )}
+        </div>
+      </div>
+    );
+  }
+  
+  return (
+    <span className="text-gray-400 text-sm">
+      Not assigned
+    </span>
+  );
+}
+
+function PublisherAssignmentDropdown({ 
+  item, 
+  editData, 
+  setEditData 
+}: { 
+  item: LineItem;
+  editData: any;
+  setEditData: (data: any) => void;
+}) {
+  const [publishers, setPublishers] = useState<any[]>([]);
+  const [loading, setLoading] = useState(false);
+  const [selectedPublisher, setSelectedPublisher] = useState<any>(null);
+
+  // Load publishers when component mounts
+  useEffect(() => {
+    loadPublishers();
+  }, []);
+
+  // Set selected publisher when editData changes
+  useEffect(() => {
+    if (editData.publisherId && publishers.length > 0) {
+      const publisher = publishers.find(p => p.id === editData.publisherId);
+      setSelectedPublisher(publisher || null);
+    }
+  }, [editData.publisherId, publishers]);
+
+  const loadPublishers = async () => {
+    setLoading(true);
+    try {
+      const response = await fetch('/api/publishers/available');
+      if (response.ok) {
+        const data = await response.json();
+        setPublishers(data.publishers || []);
+      }
+    } catch (error) {
+      console.error('Error loading publishers:', error);
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const handlePublisherChange = (publisherId: string) => {
+    const publisher = publishers.find(p => p.id === publisherId);
+    
+    setEditData({
+      ...editData,
+      publisherId: publisherId || '',
+      publisherPrice: editData.publisherPrice || 0,
+      platformFee: editData.platformFee || 0,
+      publisherStatus: publisherId ? 'pending' : null
+    });
+    
+    setSelectedPublisher(publisher || null);
+  };
+
+  // Check if publisher has matching domain for this item
+  const getPublisherMatchStatus = (publisher: any) => {
+    if (!item.assignedDomain) return 'unknown';
+    
+    const itemDomain = item.assignedDomain.toLowerCase();
+    const hasMatchingDomain = publisher.domains.some((domain: string) => 
+      domain.toLowerCase() === itemDomain || 
+      itemDomain.includes(domain.toLowerCase())
+    );
+    
+    return hasMatchingDomain ? 'match' : 'no-match';
+  };
+
+  return (
+    <div className="space-y-2 min-w-48">
+      {/* Publisher Selection */}
+      <select
+        value={editData.publisherId || ''}
+        onChange={(e) => handlePublisherChange(e.target.value)}
+        className="px-2 py-1 border rounded text-sm w-full"
+        disabled={loading}
+      >
+        <option value="">Select Publisher...</option>
+        {publishers.map(publisher => {
+          const matchStatus = getPublisherMatchStatus(publisher);
+          return (
+            <option key={publisher.id} value={publisher.id}>
+              {publisher.name} ({publisher.websiteCount} sites)
+              {matchStatus === 'match' ? ' ✓' : matchStatus === 'no-match' ? ' ⚠' : ''}
+            </option>
+          );
+        })}
+      </select>
+
+      {/* Domain Match Indicator */}
+      {selectedPublisher && item.assignedDomain && (
+        <div className="text-xs">
+          {getPublisherMatchStatus(selectedPublisher) === 'match' ? (
+            <span className="text-green-600">✓ Domain match found</span>
+          ) : (
+            <span className="text-yellow-600">⚠ No exact domain match</span>
+          )}
+        </div>
+      )}
+
+      {/* Pricing Inputs */}
+      <div className="grid grid-cols-2 gap-1">
+        <input
+          type="number"
+          placeholder="Price (cents)"
+          value={editData.publisherPrice || ''}
+          onChange={(e) => setEditData({
+            ...editData,
+            publisherPrice: parseInt(e.target.value) || 0
+          })}
+          className="px-2 py-1 border rounded text-xs"
+        />
+        <input
+          type="number"
+          placeholder="Platform fee"
+          value={editData.platformFee || ''}
+          onChange={(e) => setEditData({
+            ...editData,
+            platformFee: parseInt(e.target.value) || 0
+          })}
+          className="px-2 py-1 border rounded text-xs"
+        />
+      </div>
+
+      {/* Publisher Domains Preview */}
+      {selectedPublisher && selectedPublisher.domains.length > 0 && (
+        <div className="text-xs text-gray-500 bg-gray-50 p-1 rounded max-h-20 overflow-y-auto">
+          <div className="font-medium">Publisher domains:</div>
+          {selectedPublisher.domains.slice(0, 3).map((domain: string, idx: number) => (
+            <div key={idx}>{domain}</div>
+          ))}
+          {selectedPublisher.domains.length > 3 && (
+            <div>+{selectedPublisher.domains.length - 3} more...</div>
+          )}
+        </div>
+      )}
+    </div>
+  );
+}
+
+function getPublisherStatusColor(status: string) {
+  switch (status) {
+    case 'pending':
+    case 'notified':
+      return 'text-yellow-600';
+    case 'accepted':
+    case 'in_progress':
+      return 'text-blue-600';
+    case 'completed':
+    case 'submitted':
+      return 'text-green-600';
+    case 'rejected':
+      return 'text-red-600';
+    default:
+      return 'text-gray-600';
+  }
+}
+
 interface LineItem {
   id: string;
   orderId: string;
@@ -43,6 +226,20 @@ interface LineItem {
   displayOrder: number;
   metadata?: any;
   changes?: LineItemChange[];
+  // Publisher assignment fields
+  publisherId?: string;
+  publisherOfferingId?: string;
+  publisherStatus?: string;
+  publisherPrice?: number;
+  platformFee?: number;
+  publisherNotifiedAt?: string;
+  publisherAcceptedAt?: string;
+  publisherSubmittedAt?: string;
+  publisher?: {
+    id: string;
+    name: string;
+    email: string;
+  };
 }
 
 interface LineItemChange {
@@ -135,18 +332,64 @@ export default function LineItemsTable({
   };
 
   const saveEdit = async () => {
-    if (!editingItem || !onUpdateItems) return;
+    if (!editingItem) return;
     
     setLoading(true);
     try {
-      await onUpdateItems([{
-        id: editingItem,
-        ...editData
-      }]);
+      // Handle publisher assignment separately if it changed
+      const originalItem = lineItems.find(item => item.id === editingItem);
+      const publisherChanged = editData.publisherId !== originalItem?.publisherId;
+      
+      if (publisherChanged) {
+        // Call publisher assignment API
+        const assignResponse = await fetch(`/api/orders/line-items/${editingItem}/assign-publisher`, {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+          },
+          body: JSON.stringify({
+            publisherId: editData.publisherId || null,
+            publisherPrice: editData.publisherPrice || null,
+            platformFee: editData.platformFee || null,
+            publisherOfferingId: editData.publisherOfferingId || null,
+            autoNotify: true
+          })
+        });
+
+        if (!assignResponse.ok) {
+          throw new Error('Failed to assign publisher');
+        }
+      }
+
+      // Handle other field updates with existing API
+      if (onUpdateItems) {
+        const updateData = { ...editData };
+        // Remove publisher fields from regular update since they're handled above
+        delete updateData.publisherId;
+        delete updateData.publisherPrice;
+        delete updateData.platformFee;
+        delete updateData.publisherOfferingId;
+        delete updateData.publisherStatus;
+
+        // Only call onUpdateItems if there are other fields to update
+        if (Object.keys(updateData).length > 0) {
+          await onUpdateItems([{
+            id: editingItem,
+            ...updateData
+          }]);
+        }
+      }
+
       setEditingItem(null);
       setEditData({});
+      
+      // Refresh the data to show updated publisher info
+      if (onRefresh) {
+        onRefresh();
+      }
     } catch (error) {
       console.error('Failed to save edit:', error);
+      alert('Failed to save changes. Please try again.');
     } finally {
       setLoading(false);
     }
@@ -413,6 +656,7 @@ export default function LineItemsTable({
                   </th>
                   <th className="text-left p-3">Status</th>
                   <th className="text-left p-3">Domain</th>
+                  <th className="text-left p-3">Publisher</th>
                   <th className="text-left p-3">Target Page</th>
                   <th className="text-left p-3">Anchor Text</th>
                   <th className="text-left p-3">Price</th>
@@ -469,6 +713,19 @@ export default function LineItemsTable({
                               {item.assignedDomain || <span className="text-gray-400">Not assigned</span>}
                             </span>
                           </div>
+                        )}
+                      </td>
+                      
+                      {/* Publisher Assignment Column */}
+                      <td className="p-3">
+                        {editingItem === item.id ? (
+                          <PublisherAssignmentDropdown
+                            item={item}
+                            editData={editData}
+                            setEditData={setEditData}
+                          />
+                        ) : (
+                          <PublisherAssignmentDisplay item={item} />
                         )}
                       </td>
                       
