@@ -65,6 +65,14 @@ export async function POST() {
 
     console.log('✅ Migration 0040 completed successfully');
 
+    // Record migration completion
+    await db.execute(sql`
+      INSERT INTO migration_history (migration_name, success, applied_by)
+      VALUES ('0040_add_publisher_fields', true, 'admin')
+      ON CONFLICT (migration_name) DO UPDATE
+      SET executed_at = NOW(), success = true
+    `);
+
     return NextResponse.json({
       success: true,
       message: 'Publisher fields added to order_line_items successfully'

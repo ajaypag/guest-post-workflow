@@ -120,6 +120,14 @@ export async function POST(request: NextRequest) {
       FROM websites
     `);
 
+    // Record migration completion
+    await db.execute(sql`
+      INSERT INTO migration_history (migration_name, success, applied_by)
+      VALUES ('0044_make_airtable_id_nullable', true, 'admin')
+      ON CONFLICT (migration_name) DO UPDATE
+      SET executed_at = NOW(), success = true
+    `);
+
     return NextResponse.json({
       success: true,
       message: 'Successfully made airtable_id nullable and added source tracking',

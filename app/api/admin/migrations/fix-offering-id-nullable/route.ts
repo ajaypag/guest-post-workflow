@@ -44,6 +44,14 @@ export async function POST(request: NextRequest) {
       AND column_name = 'offering_id'
     `);
 
+    // Record migration completion
+    await db.execute(sql`
+      INSERT INTO migration_history (migration_name, success, applied_by)
+      VALUES ('0042_fix_offering_id_nullable', true, 'admin')
+      ON CONFLICT (migration_name) DO UPDATE
+      SET executed_at = NOW(), success = true
+    `);
+
     return NextResponse.json({
       success: true,
       message: 'Migration completed successfully',
