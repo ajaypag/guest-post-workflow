@@ -5,7 +5,7 @@ import { AuthServiceServer } from '@/lib/auth-server';
 
 export async function POST() {
   try {
-    const session = await AuthServiceServer.getSession();
+    const session = await AuthServiceServer.getSession(request);
     
     if (!session || session.userType !== 'internal') {
       return NextResponse.json(

@@ -6,7 +6,7 @@ import { AuthServiceServer } from '@/lib/auth-server';
 export async function POST(request: NextRequest) {
   try {
     // Check authentication
-    const session = await AuthServiceServer.getSession();
+    const session = await AuthServiceServer.getSession(request);
     if (!session || session.userType !== 'internal') {
       return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
     }

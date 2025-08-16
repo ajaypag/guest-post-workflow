@@ -7,7 +7,7 @@ import path from 'path';
 
 export async function POST(request: NextRequest) {
   try {
-    const session = await AuthServiceServer.getSession();
+    const session = await AuthServiceServer.getSession(request);
     
     if (!session || session.userType !== 'internal') {
       return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
@@ -135,7 +135,7 @@ export async function POST(request: NextRequest) {
 
 export async function GET() {
   try {
-    const session = await AuthServiceServer.getSession();
+    const session = await AuthServiceServer.getSession(request);
     
     if (!session || session.userType !== 'internal') {
       return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
