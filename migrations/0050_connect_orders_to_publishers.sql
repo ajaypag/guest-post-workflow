@@ -395,6 +395,8 @@ BEGIN
 END;
 $$ LANGUAGE plpgsql;
 
+-- Drop trigger if it exists and recreate
+DROP TRIGGER IF EXISTS trigger_create_publisher_earning ON order_line_items;
 CREATE TRIGGER trigger_create_publisher_earning
 AFTER UPDATE ON order_line_items
 FOR EACH ROW
