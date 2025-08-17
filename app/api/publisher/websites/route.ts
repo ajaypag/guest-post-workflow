@@ -31,10 +31,13 @@ export async function GET(request: NextRequest) {
       .select({
         id: websites.id,
         domain: websites.domain,
-        categories: websites.categories,
+        name: sql<string>`NULL`, // Website doesn't have a name field in this schema
+        category: sql<string>`${websites.categories}[1]`, // Get first category from array
         verificationStatus: publisherOfferingRelationships.verificationStatus,
         createdAt: websites.createdAt,
-        offeringsCount: sql<number>`COUNT(DISTINCT ${publisherOfferings.id})`,
+        monthlyTraffic: sql<number>`NULL`, 
+        domainAuthority: sql<number>`NULL`,
+        publisherOfferings: sql<any[]>`ARRAY[]::json[]`, // Empty array for now
       })
       .from(websites)
       .innerJoin(
@@ -48,7 +51,13 @@ export async function GET(request: NextRequest) {
         publisherOfferings,
         eq(publisherOfferings.id, publisherOfferingRelationships.offeringId)
       )
-      .groupBy(websites.id, publisherOfferingRelationships.verificationStatus);
+      .groupBy(
+        websites.id, 
+        websites.domain,
+        websites.categories,
+        websites.createdAt,
+        publisherOfferingRelationships.verificationStatus
+      );
 
     return NextResponse.json({
       websites: publisherWebsites
@@ -102,7 +111,8 @@ export async function POST(request: NextRequest) {
     }
 
     // Normalize the domain
-    const domain = normalizeDomain(rawDomain);
+    const normalizedDomain = normalizeDomain(rawDomain);
+    const domain = normalizedDomain.domain; // Get just the domain string
 
     // Check if website already exists
     const existingWebsite = await db
@@ -141,7 +151,7 @@ export async function POST(request: NextRequest) {
       const newWebsite = await db
         .insert(websites)
         .values({
-          domain,
+          domain: domain, // This should be just the string, not an object
           categories: category ? [category] : null,
           source: 'publisher',
           addedByPublisherId: publisherId,

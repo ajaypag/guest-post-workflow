@@ -1,273 +1,204 @@
-// Test complete publisher flow after adding a website
-const puppeteer = require('puppeteer');
+const { chromium } = require('playwright');
 
-async function testPublisherCompleteFlow() {
-  const browser = await puppeteer.launch({ 
-    headless: false, // Show browser to see what's happening
-    args: ['--no-sandbox', '--disable-setuid-sandbox'],
-    defaultViewport: { width: 1280, height: 800 }
+async function testCompletePublisherFlow() {
+  const browser = await chromium.launch({ 
+    headless: false, // Show browser
+    args: ['--no-sandbox', '--disable-setuid-sandbox'] 
   });
   
-  const page = await browser.newPage();
+  const context = await browser.newContext();
+  const page = await context.newPage();
   
-  console.log('Testing Complete Publisher Flow After Adding Website');
-  console.log('====================================================\n');
-  
-  const expectedFeatures = [];
-  const actualFeatures = [];
-  const missingFeatures = [];
+  console.log('COMPLETE PUBLISHER WEBSITE ADD TEST');
+  console.log('=====================================\n');
   
   try {
-    // 1. Login as publisher
-    console.log('Step 1: Login as Publisher\n');
-    await page.goto('http://localhost:3000/publisher/login');
-    await page.type('input[type="email"]', 'test@publisher.com');
-    await page.type('input[type="password"]', 'testpublisher123');
-    await page.click('button[type="submit"]');
-    await page.waitForNavigation({ waitUntil: 'networkidle0', timeout: 10000 }).catch(() => {});
+    // Step 1: Navigate to publisher login
+    console.log('STEP 1: NAVIGATING TO PUBLISHER LOGIN');
+    console.log('----------------------------------------');
+    await page.goto('http://localhost:3001/publisher/login');
+    await page.waitForLoadState('networkidle');
+    console.log('Loaded: /publisher/login');
     
-    console.log('✅ Logged in successfully\n');
+    // Take screenshot of login page
+    await page.screenshot({ path: 'test-1-login-page.png' });
+    console.log('Screenshot saved: test-1-login-page.png\n');
     
-    // 2. Check websites list
-    console.log('Step 2: Checking Websites List\n');
-    await page.goto('http://localhost:3000/publisher/websites');
-    await new Promise(r => setTimeout(r, 2000));
+    // Step 2: Login with credentials
+    console.log('STEP 2: LOGGING IN');
+    console.log('---------------------');
+    console.log('Email: testpublisher@example.com');
+    console.log('Password: TestPass123!');
     
-    const websitesContent = await page.content();
+    await page.fill('input[type="email"]', 'testpublisher@example.com');
+    await page.fill('input[type="password"]', 'TestPass123!');
     
-    // Check what's displayed for existing website
-    if (websitesContent.includes('nikolaroza.com')) {
-      console.log('✅ Can see existing website: nikolaroza.com');
-      actualFeatures.push('View existing websites');
-      
-      // Check for website details
-      if (websitesContent.includes('Domain Rating') || websitesContent.includes('DR:')) {
-        console.log('✅ Can see domain metrics');
-        actualFeatures.push('View domain metrics');
-      }
-      
-      if (websitesContent.includes('Traffic')) {
-        console.log('✅ Can see traffic data');
-        actualFeatures.push('View traffic data');
-      }
-    }
+    // Click login and wait
+    await Promise.all([
+      page.waitForNavigation({ timeout: 10000 }).catch(() => null),
+      page.click('button[type="submit"]')
+    ]);
     
-    // 3. Add a new website
-    console.log('\nStep 3: Adding New Website\n');
-    await page.goto('http://localhost:3000/publisher/websites/claim');
-    await new Promise(r => setTimeout(r, 2000));
+    await page.waitForTimeout(2000);
     
-    // Search for a new domain
-    const testDomain = 'mynewblog' + Date.now() + '.com';
-    await page.type('input[type="text"]', testDomain);
+    const afterLoginUrl = page.url();
+    console.log('Current URL: ' + afterLoginUrl);
     
-    // Find and click search button
-    const searchButton = await page.$('button');
-    if (searchButton) {
-      await searchButton.click();
-      await new Promise(r => setTimeout(r, 3000));
-      
-      const afterSearch = await page.content();
-      
-      if (afterSearch.includes('Not Found') || afterSearch.includes('not found')) {
-        console.log('✅ Domain search works - shows not found');
-        actualFeatures.push('Search for domains');
-        
-        // Try to add the website
-        const addButton = await page.$('button:has-text("Add"), button');
-        if (addButton) {
-          console.log('✅ Add website button available');
-          actualFeatures.push('Add new websites');
-          
-          // Note: We won't actually click to avoid adding test data
-        }
-      }
-    }
-    
-    // 4. Check website details page
-    console.log('\nStep 4: Checking Website Details Page\n');
-    
-    // Navigate to existing website details
-    await page.goto('http://localhost:3000/publisher/websites');
-    await new Promise(r => setTimeout(r, 2000));
-    
-    // Try to find link to website details
-    const websiteLinks = await page.$$('a[href*="/publisher/websites/"]');
-    if (websiteLinks.length > 0) {
-      await websiteLinks[0].click();
-      await new Promise(r => setTimeout(r, 2000));
-      
-      const detailsContent = await page.content();
-      
-      // Check expected features on details page
-      console.log('Checking website details page features:');
-      
-      if (detailsContent.includes('Offering') || detailsContent.includes('offering')) {
-        console.log('✅ Can manage offerings');
-        actualFeatures.push('Manage offerings');
-      } else {
-        console.log('❌ Cannot see offerings section');
-        missingFeatures.push('Offerings management');
-      }
-      
-      if (detailsContent.includes('Pricing') || detailsContent.includes('pricing')) {
-        console.log('✅ Can see pricing options');
-        actualFeatures.push('View pricing');
-      } else {
-        console.log('❌ No pricing section');
-        missingFeatures.push('Pricing configuration');
-      }
-      
-      if (detailsContent.includes('Analytics') || detailsContent.includes('Performance')) {
-        console.log('✅ Can see analytics/performance');
-        actualFeatures.push('View analytics');
-      } else {
-        console.log('❌ No analytics section');
-        missingFeatures.push('Website analytics');
-      }
-      
-      if (detailsContent.includes('Edit') || detailsContent.includes('Update')) {
-        console.log('✅ Can edit website details');
-        actualFeatures.push('Edit website info');
-      } else {
-        console.log('❌ Cannot edit website');
-        missingFeatures.push('Edit website details');
-      }
-    }
-    
-    // 5. Check offerings page
-    console.log('\nStep 5: Checking Offerings Management\n');
-    await page.goto('http://localhost:3000/publisher/offerings');
-    await new Promise(r => setTimeout(r, 2000));
-    
-    const offeringsContent = await page.content();
-    
-    if (offeringsContent.includes('New Offering') || offeringsContent.includes('Add Offering')) {
-      console.log('✅ Can create new offerings');
-      actualFeatures.push('Create offerings');
+    if (afterLoginUrl.includes('/publisher')) {
+      console.log('Successfully logged in and on publisher dashboard\n');
+      await page.screenshot({ path: 'test-2-dashboard.png' });
+      console.log('Screenshot saved: test-2-dashboard.png\n');
     } else {
-      console.log('❌ Cannot create offerings');
-      missingFeatures.push('Create new offerings');
+      console.log('ERROR: Login failed or redirected incorrectly');
+      return;
     }
     
-    // Try new offering page
-    await page.goto('http://localhost:3000/publisher/offerings/new');
-    await new Promise(r => setTimeout(r, 2000));
+    // Step 3: Navigate to websites page
+    console.log('STEP 3: CHECKING EXISTING WEBSITES');
+    console.log('--------------------------------------');
+    await page.goto('http://localhost:3001/publisher/websites');
+    await page.waitForLoadState('networkidle');
+    await page.waitForTimeout(2000);
     
-    const newOfferingContent = await page.content();
+    // Count existing websites
+    const existingWebsites = await page.locator('table tbody tr').count();
+    console.log('Existing websites in list: ' + existingWebsites);
     
-    if (newOfferingContent.includes('Base Price') || newOfferingContent.includes('price')) {
-      console.log('✅ Can set pricing');
-      actualFeatures.push('Set base pricing');
+    await page.screenshot({ path: 'test-3-websites-list-before.png' });
+    console.log('Screenshot saved: test-3-websites-list-before.png\n');
+    
+    // Step 4: Navigate to add website page
+    console.log('STEP 4: NAVIGATING TO ADD WEBSITE PAGE');
+    console.log('------------------------------------------');
+    
+    // Try clicking Add Website button
+    const addButton = await page.locator('a:has-text("Add Website"), a:has-text("Add Your First Website")').first();
+    if (await addButton.count() > 0) {
+      console.log('Found "Add Website" button, clicking...');
+      await addButton.click();
+      await page.waitForLoadState('networkidle');
     } else {
-      missingFeatures.push('Set pricing');
+      console.log('Navigating directly to /publisher/websites/new');
+      await page.goto('http://localhost:3001/publisher/websites/new');
+      await page.waitForLoadState('networkidle');
     }
     
-    if (newOfferingContent.includes('Pricing Rules') || newOfferingContent.includes('rules')) {
-      console.log('✅ Can configure pricing rules');
-      actualFeatures.push('Configure pricing rules');
-    } else {
-      missingFeatures.push('Pricing rules builder');
-    }
+    await page.waitForTimeout(1000);
+    console.log('Current URL: ' + page.url());
     
-    if (newOfferingContent.includes('Turnaround') || newOfferingContent.includes('delivery')) {
-      console.log('✅ Can set turnaround time');
-      actualFeatures.push('Set turnaround time');
-    } else {
-      missingFeatures.push('Turnaround time settings');
-    }
+    await page.screenshot({ path: 'test-4-add-website-form.png' });
+    console.log('Screenshot saved: test-4-add-website-form.png\n');
     
-    // 6. Check other expected features
-    console.log('\nStep 6: Checking Other Features\n');
+    // Step 5: Fill the form
+    console.log('STEP 5: FILLING WEBSITE FORM');
+    console.log('--------------------------------');
     
-    // Expected features list
-    const allExpectedFeatures = [
-      'View existing websites',
-      'View domain metrics',
-      'View traffic data',
-      'Search for domains',
-      'Add new websites',
-      'Claim existing websites',
-      'Manage offerings',
-      'Create offerings',
-      'Set base pricing',
-      'Configure pricing rules',
-      'Set turnaround time',
-      'View website analytics',
-      'Edit website details',
-      'View earnings',
-      'View orders',
-      'Manage payment settings',
-      'Export data',
-      'Bulk operations',
-      'API access'
-    ];
+    const timestamp = Date.now();
+    const testDomain = 'test-site-' + timestamp + '.com';
+    const testName = 'Test Website ' + timestamp;
     
-    // Determine what's missing
-    allExpectedFeatures.forEach(feature => {
-      if (!actualFeatures.includes(feature) && !missingFeatures.includes(feature)) {
-        missingFeatures.push(feature);
+    console.log('Domain: ' + testDomain);
+    console.log('Name: ' + testName);
+    console.log('Category: Technology');
+    console.log('Description: This is a test website added via Playwright');
+    
+    // Fill form fields
+    await page.fill('input[name="domain"]', testDomain);
+    await page.fill('input[name="name"]', testName);
+    await page.selectOption('select[name="category"]', 'Technology');
+    await page.fill('textarea[name="description"]', 'This is a test website added via Playwright automated testing');
+    await page.fill('input[name="monthlyTraffic"]', '50000');
+    await page.fill('input[name="domainAuthority"]', '45');
+    
+    await page.screenshot({ path: 'test-5-form-filled.png' });
+    console.log('Screenshot saved: test-5-form-filled.png\n');
+    
+    // Step 6: Submit the form
+    console.log('STEP 6: SUBMITTING FORM');
+    console.log('---------------------------');
+    
+    // Listen for any errors
+    page.on('console', msg => {
+      if (msg.type() === 'error') {
+        console.log('Browser error:', msg.text());
       }
     });
+    
+    // Click submit
+    const submitButton = await page.locator('button[type="submit"]:has-text("Add Website")');
+    await submitButton.click();
+    console.log('Clicked submit button, waiting for response...');
+    
+    // Wait for navigation or error
+    await page.waitForTimeout(5000);
+    
+    const afterSubmitUrl = page.url();
+    console.log('Current URL after submit: ' + afterSubmitUrl);
+    
+    // Check for error messages
+    const errorElement = await page.locator('.bg-red-50, .text-red-800, [role="alert"]').first();
+    if (await errorElement.count() > 0) {
+      const errorText = await errorElement.textContent();
+      console.log('ERROR message displayed: ' + errorText);
+      await page.screenshot({ path: 'test-6-submit-error.png' });
+      console.log('Screenshot saved: test-6-submit-error.png\n');
+    }
+    
+    // Step 7: Check if redirected to websites list
+    console.log('STEP 7: VERIFYING WEBSITE WAS ADDED');
+    console.log('----------------------------------------');
+    
+    if (afterSubmitUrl.includes('/publisher/websites') && !afterSubmitUrl.includes('/new')) {
+      console.log('SUCCESS: Redirected to websites list!');
+      
+      await page.waitForTimeout(2000);
+      
+      // Count websites now
+      const newWebsiteCount = await page.locator('table tbody tr').count();
+      console.log('Websites in list now: ' + newWebsiteCount);
+      
+      // Check if our website appears
+      const ourWebsite = await page.locator('text=' + testDomain).count();
+      if (ourWebsite > 0) {
+        console.log('SUCCESS! Our website "' + testDomain + '" appears in the list!');
+      } else {
+        console.log('WARNING: Website was added but not visible in list');
+      }
+      
+      await page.screenshot({ path: 'test-7-websites-list-after.png' });
+      console.log('Screenshot saved: test-7-websites-list-after.png');
+      
+    } else if (afterSubmitUrl.includes('/publisher/websites/new')) {
+      console.log('WARNING: Still on add website page - submission may have failed');
+      console.log('Checking for our website in the list anyway...');
+      
+      await page.goto('http://localhost:3001/publisher/websites');
+      await page.waitForLoadState('networkidle');
+      await page.waitForTimeout(2000);
+      
+      const ourWebsite = await page.locator('text=' + testDomain).count();
+      if (ourWebsite > 0) {
+        console.log('SUCCESS: Website "' + testDomain + '" was added despite staying on form!');
+      } else {
+        console.log('ERROR: Website was not added');
+      }
+      
+      await page.screenshot({ path: 'test-7-final-check.png' });
+      console.log('Screenshot saved: test-7-final-check.png');
+    }
     
   } catch (error) {
-    console.error('Error during testing:', error.message);
+    console.error('\nTEST FAILED:', error.message);
+    await page.screenshot({ path: 'test-error.png' });
+    console.log('Error screenshot saved: test-error.png');
   } finally {
-    console.log('\n\n========================================');
-    console.log('FUNCTIONALITY COMPARISON REPORT');
-    console.log('========================================\n');
-    
-    console.log('WHAT PUBLISHERS SHOULD HAVE:');
-    console.log('-----------------------------');
-    const shouldHave = [
-      '✓ Add new websites without Airtable',
-      '✓ Claim existing websites from database',
-      '✓ Create multiple offerings per website',
-      '✓ Set custom pricing for each offering',
-      '✓ Configure pricing rules (DR-based, traffic-based, etc.)',
-      '✓ Set turnaround times and availability',
-      '✓ View performance analytics',
-      '✓ Track earnings and payouts',
-      '✓ Manage contact information',
-      '✓ Set content guidelines',
-      '✓ View order history',
-      '✓ Export data for reporting'
-    ];
-    shouldHave.forEach(item => console.log('  ' + item));
-    
-    console.log('\n\nWHAT PUBLISHERS ACTUALLY HAVE:');
-    console.log('-------------------------------');
-    actualFeatures.forEach(feature => {
-      console.log('  ✅ ' + feature);
-    });
-    
-    console.log('\n\nWHAT\'S MISSING OR NOT WORKING:');
-    console.log('--------------------------------');
-    missingFeatures.forEach(feature => {
-      console.log('  ❌ ' + feature);
-    });
-    
-    console.log('\n\nSUMMARY:');
-    console.log('---------');
-    console.log(`Implemented: ${actualFeatures.length} features`);
-    console.log(`Missing: ${missingFeatures.length} features`);
-    console.log(`Completion: ${Math.round((actualFeatures.length / (actualFeatures.length + missingFeatures.length)) * 100)}%`);
-    
-    console.log('\n\nKEY GAPS TO ADDRESS:');
-    console.log('--------------------');
-    const keyGaps = [
-      '1. Website details page needs offerings management UI',
-      '2. Analytics/performance data not displayed',
-      '3. Earnings tracking not implemented',
-      '4. Order management for publishers missing',
-      '5. Bulk operations not available',
-      '6. Export functionality needed'
-    ];
-    keyGaps.forEach(gap => console.log(gap));
-    
-    console.log('\n\nPress Ctrl+C to close browser...');
-    await new Promise(() => {}); // Keep browser open
+    console.log('\n=====================================');
+    console.log('TEST COMPLETE - Browser will close in 15 seconds');
+    console.log('Check the screenshot files for visual proof');
+    await page.waitForTimeout(15000);
+    await browser.close();
   }
 }
 
-testPublisherCompleteFlow();
+// Run the test
+testCompletePublisherFlow().catch(console.error);
