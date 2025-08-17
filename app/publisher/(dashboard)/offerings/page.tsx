@@ -352,13 +352,6 @@ export default function PublisherOfferingsPage() {
                         >
                           <Edit className="h-4 w-4" />
                         </Link>
-                        <Link
-                          href={`/publisher/offerings/${offering.id}/pricing-rules`}
-                          className="p-2 text-gray-600 hover:text-purple-600 hover:bg-purple-50 rounded-lg transition-colors"
-                          title="Manage Pricing Rules"
-                        >
-                          <Settings className="h-4 w-4" />
-                        </Link>
                       </div>
                       <div className="flex items-center space-x-2">
                         <button

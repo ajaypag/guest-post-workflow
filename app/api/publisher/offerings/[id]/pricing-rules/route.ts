@@ -54,10 +54,15 @@ export async function GET(
         id: rule.id,
         ruleName: rule.ruleName,
         ruleType: rule.ruleType,
-        adjustmentType: rule.adjustmentType,
-        adjustmentValue: rule.adjustmentValue,
+        description: rule.description,
         conditions: rule.conditions,
+        actions: rule.actions,
         priority: rule.priority,
+        isCumulative: rule.isCumulative,
+        autoApply: rule.autoApply,
+        requiresApproval: rule.requiresApproval,
+        validFrom: rule.validFrom,
+        validUntil: rule.validUntil,
         isActive: rule.isActive,
         createdAt: rule.createdAt,
         updatedAt: rule.updatedAt
@@ -114,9 +119,9 @@ export async function POST(
     const body = await request.json();
 
     // Validate required fields
-    if (!body.ruleName || !body.ruleType || !body.adjustmentType || body.adjustmentValue === undefined) {
+    if (!body.ruleName || !body.ruleType || !body.conditions || !body.actions) {
       return NextResponse.json(
-        { error: 'Missing required fields' },
+        { error: 'Missing required fields (ruleName, ruleType, conditions, actions)' },
         { status: 400 }
       );
     }
@@ -127,10 +132,15 @@ export async function POST(
       publisherOfferingId: offeringId,
       ruleName: body.ruleName,
       ruleType: body.ruleType, // 'word_count', 'turnaround', 'link_type', etc.
-      adjustmentType: body.adjustmentType, // 'percentage', 'fixed'
-      adjustmentValue: body.adjustmentValue,
-      conditions: body.conditions || {},
+      description: body.description || null,
+      conditions: body.conditions, // JSONB object with rule conditions
+      actions: body.actions, // JSONB object with actions (e.g., { adjustmentType: 'percentage', adjustmentValue: 10 })
       priority: body.priority || 0,
+      isCumulative: body.isCumulative || false,
+      autoApply: body.autoApply !== false,
+      requiresApproval: body.requiresApproval || false,
+      validFrom: body.validFrom ? new Date(body.validFrom) : null,
+      validUntil: body.validUntil ? new Date(body.validUntil) : null,
       isActive: body.isActive !== false,
       createdAt: new Date(),
       updatedAt: new Date()
@@ -219,10 +229,15 @@ export async function PUT(
 
     if (body.ruleName !== undefined) updateData.ruleName = body.ruleName;
     if (body.ruleType !== undefined) updateData.ruleType = body.ruleType;
-    if (body.adjustmentType !== undefined) updateData.adjustmentType = body.adjustmentType;
-    if (body.adjustmentValue !== undefined) updateData.adjustmentValue = body.adjustmentValue;
+    if (body.description !== undefined) updateData.description = body.description;
     if (body.conditions !== undefined) updateData.conditions = body.conditions;
+    if (body.actions !== undefined) updateData.actions = body.actions;
     if (body.priority !== undefined) updateData.priority = body.priority;
+    if (body.isCumulative !== undefined) updateData.isCumulative = body.isCumulative;
+    if (body.autoApply !== undefined) updateData.autoApply = body.autoApply;
+    if (body.requiresApproval !== undefined) updateData.requiresApproval = body.requiresApproval;
+    if (body.validFrom !== undefined) updateData.validFrom = body.validFrom ? new Date(body.validFrom) : null;
+    if (body.validUntil !== undefined) updateData.validUntil = body.validUntil ? new Date(body.validUntil) : null;
     if (body.isActive !== undefined) updateData.isActive = body.isActive;
 
     // Update the pricing rule

@@ -92,9 +92,10 @@ export async function GET(
         id: rule.id,
         ruleName: rule.ruleName,
         ruleType: rule.ruleType,
-        adjustmentType: rule.adjustmentType,
-        adjustmentValue: rule.adjustmentValue,
+        description: rule.description,
         conditions: rule.conditions,
+        actions: rule.actions,
+        priority: rule.priority,
         isActive: rule.isActive
       }))
     };
