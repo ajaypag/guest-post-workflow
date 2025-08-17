@@ -1,0 +1,217 @@
+
+> guest-post-workflow@1.0.0 build
+> next build
+
+   ▲ Next.js 15.3.4
+   - Environments: .env.local, .env
+
+   Creating an optimized production build ...
+ ✓ Compiled successfully in 80s
+   Linting and checking validity of types ...
+
+./app/account/orders/[id]/status/page.tsx
+132:6  Warning: React Hook useEffect has a missing dependency: 'fetchOrder'. Either include it or remove the dependency array.  react-hooks/exhaustive-deps
+
+./app/account/reset-password/page.tsx
+31:6  Warning: React Hook useEffect has a missing dependency: 'validateToken'. Either include it or remove the dependency array.  react-hooks/exhaustive-deps
+
+./app/admin/audit-images/page.tsx
+80:13  Warning: Image elements must have an alt prop, either with meaningful text, or an empty string for decorative images.  jsx-a11y/alt-text
+
+./app/admin/domain-migration/page.tsx
+63:6  Warning: React Hook useEffect has a missing dependency: 'checkMigrationStatus'. Either include it or remove the dependency array.  react-hooks/exhaustive-deps
+
+./app/admin/email/page.tsx
+105:6  Warning: React Hook useEffect has a missing dependency: 'loadLogs'. Either include it or remove the dependency array.  react-hooks/exhaustive-deps
+
+./app/admin/signup-monitoring/page.tsx
+43:6  Warning: React Hook useEffect has a missing dependency: 'fetchData'. Either include it or remove the dependency array.  react-hooks/exhaustive-deps
+
+./app/billing/page.tsx
+51:6  Warning: React Hook useEffect has a missing dependency: 'fetchBillingHistory'. Either include it or remove the dependency array.  react-hooks/exhaustive-deps
+
+./app/bulk-analysis/assigned/page.tsx
+54:6  Warning: React Hook useEffect has a missing dependency: 'router'. Either include it or remove the dependency array.  react-hooks/exhaustive-deps
+
+./app/bulk-analysis/page-old.tsx
+117:6  Warning: React Hook useEffect has a missing dependency: 'loadDomains'. Either include it or remove the dependency array.  react-hooks/exhaustive-deps
+
+./app/bulk-analysis/page.tsx
+75:6  Warning: React Hook useEffect has a missing dependency: 'loadData'. Either include it or remove the dependency array.  react-hooks/exhaustive-deps
+
+./app/claim/[token]/page.tsx
+53:6  Warning: React Hook useEffect has a missing dependency: 'validateToken'. Either include it or remove the dependency array.  react-hooks/exhaustive-deps
+
+./app/clients/[id]/bulk-analysis/page.tsx
+42:6  Warning: React Hook useEffect has a missing dependency: 'loadClient'. Either include it or remove the dependency array.  react-hooks/exhaustive-deps
+48:6  Warning: React Hook useEffect has a missing dependency: 'loadProjects'. Either include it or remove the dependency array.  react-hooks/exhaustive-deps
+
+./app/clients/[id]/bulk-analysis/projects/[projectId]/page.tsx
+287:6  Warning: React Hook useEffect has missing dependencies: 'loadClient' and 'loadProject'. Either include them or remove the dependency array.  react-hooks/exhaustive-deps
+293:6  Warning: React Hook useEffect has a missing dependency: 'loadDomains'. Either include it or remove the dependency array.  react-hooks/exhaustive-deps
+322:6  Warning: React Hook useEffect has missing dependencies: 'loadOrderContext' and 'orderContext.isLoading'. Either include them or remove the dependency array.  react-hooks/exhaustive-deps
+
+./app/clients/[id]/page.tsx
+70:6  Warning: React Hook useEffect has a missing dependency: 'loadClient'. Either include it or remove the dependency array.  react-hooks/exhaustive-deps
+
+./app/clients/page.tsx
+34:6  Warning: React Hook useEffect has a missing dependency: 'loadClients'. Either include it or remove the dependency array.  react-hooks/exhaustive-deps
+
+./app/internal/publishers/[id]/edit/page.tsx
+43:6  Warning: React Hook useEffect has a missing dependency: 'params'. Either include it or remove the dependency array.  react-hooks/exhaustive-deps
+
+./app/orders/[id]/edit/page.tsx
+440:6  Warning: React Hook useCallback has a missing dependency: 'getCurrentWholesaleEstimate'. Either include it or remove the dependency array.  react-hooks/exhaustive-deps
+486:6  Warning: React Hook useEffect has missing dependencies: 'isAccountUser', 'loadAccounts', 'loadDraftOrder', and 'session'. Either include them or remove the dependency array.  react-hooks/exhaustive-deps
+769:6  Warning: React Hook useCallback has a missing dependency: 'orderPreferences'. Either include it or remove the dependency array.  react-hooks/exhaustive-deps
+
+./app/orders/[id]/internal/page.tsx
+284:6  Warning: React Hook useEffect has missing dependencies: 'loadOrder' and 'router'. Either include them or remove the dependency array.  react-hooks/exhaustive-deps
+298:6  Warning: React Hook useEffect has missing dependencies: 'checkTargetPageStatuses', 'loadBenchmarkData', and 'loadSiteSubmissions'. Either include them or remove the dependency array.  react-hooks/exhaustive-deps
+
+./app/orders/[id]/invoice/page.tsx
+47:6  Warning: React Hook useEffect has a missing dependency: 'fetchInvoice'. Either include it or remove the dependency array.  react-hooks/exhaustive-deps
+
+./app/orders/[id]/page.tsx
+213:6  Warning: React Hook useEffect has a missing dependency: 'loadOrder'. Either include it or remove the dependency array.  react-hooks/exhaustive-deps
+233:6  Warning: React Hook useEffect has missing dependencies: 'loadBenchmarkData' and 'loadSiteSubmissions'. Either include them or remove the dependency array.  react-hooks/exhaustive-deps
+
+./app/orders/[id]/payment/page.tsx
+97:13  Warning: Do not use an `<a>` element to navigate to `/orders/`. Use `<Link />` from `next/link` instead. See: https://nextjs.org/docs/messages/no-html-link-for-pages  @next/next/no-html-link-for-pages
+116:13  Warning: Do not use an `<a>` element to navigate to `/orders/`. Use `<Link />` from `next/link` instead. See: https://nextjs.org/docs/messages/no-html-link-for-pages  @next/next/no-html-link-for-pages
+
+./app/orders/[id]/review/page.tsx
+43:6  Warning: React Hook useEffect has a missing dependency: 'fetchOrder'. Either include it or remove the dependency array.  react-hooks/exhaustive-deps
+
+./app/orders/claim/[token]/page.tsx
+47:6  Warning: React Hook useEffect has a missing dependency: 'loadOrderByToken'. Either include it or remove the dependency array.  react-hooks/exhaustive-deps
+
+./app/orders/page.tsx
+122:6  Warning: React Hook useEffect has a missing dependency: 'fetchOrders'. Either include it or remove the dependency array.  react-hooks/exhaustive-deps
+
+./app/register/account/page.tsx
+51:6  Warning: React Hook useEffect has a missing dependency: 'verifyInvitation'. Either include it or remove the dependency array.  react-hooks/exhaustive-deps
+
+./app/reset-password/page.tsx
+31:6  Warning: React Hook useEffect has a missing dependency: 'validateToken'. Either include it or remove the dependency array.  react-hooks/exhaustive-deps
+
+./app/verify-email/page.tsx
+25:6  Warning: React Hook useEffect has a missing dependency: 'verifyEmail'. Either include it or remove the dependency array.  react-hooks/exhaustive-deps
+
+./components/AccountAuthWrapper.tsx
+37:6  Warning: React Hook useEffect has missing dependencies: 'checkAuth' and 'refreshTokenIfNeeded'. Either include them or remove the dependency array.  react-hooks/exhaustive-deps
+
+./components/BulkAnalysisResultsModal.tsx
+45:6  Warning: React Hook useEffect has a missing dependency: 'fetchResults'. Either include it or remove the dependency array.  react-hooks/exhaustive-deps
+
+./components/BulkAnalysisTable.tsx
+182:6  Warning: React Hook useEffect has missing dependencies: 'props' and 'toggleExpanded'. Either include them or remove the dependency array. However, 'props' will change when *any* prop changes, so the preferred fix is to destructure the 'props' object outside of the useEffect call and refer to those specific props inside useEffect.  react-hooks/exhaustive-deps
+
+./components/DataForSeoResultsModal.tsx
+75:6  Warning: React Hook useEffect has missing dependencies: 'loadResults' and 'results.length'. Either include them or remove the dependency array.  react-hooks/exhaustive-deps
+
+./components/GuidedTriageFlow.tsx
+414:6  Warning: React Hook useEffect has missing dependencies: 'handleQualify' and 'props'. Either include them or remove the dependency array. However, 'props' will change when *any* prop changes, so the preferred fix is to destructure the 'props' object outside of the useEffect call and refer to those specific props inside useEffect.  react-hooks/exhaustive-deps
+
+./components/PublisherAuthWrapper.tsx
+37:6  Warning: React Hook useEffect has missing dependencies: 'checkAuth' and 'refreshTokenIfNeeded'. Either include them or remove the dependency array.  react-hooks/exhaustive-deps
+
+./components/StepForm.tsx
+244:6  Warning: React Hook useEffect has missing dependencies: 'autoSaveTimer', 'handleSave', and 'step.outputs.finalArticle'. Either include them or remove the dependency array.  react-hooks/exhaustive-deps
+
+./components/StructuredData.tsx
+9:5  Warning: `next/script`'s `beforeInteractive` strategy should not be used outside of `pages/_document.js`. See: https://nextjs.org/docs/messages/no-before-interactive-script-outside-document  @next/next/no-before-interactive-script-outside-document
+
+./components/WorkflowList.tsx
+29:6  Warning: React Hook useEffect has a missing dependency: 'filterWorkflows'. Either include it or remove the dependency array.  react-hooks/exhaustive-deps
+
+./components/bulk-analysis/AirtableImportModal.tsx
+45:6  Warning: React Hook useEffect has a missing dependency: 'searchWebsites'. Either include it or remove the dependency array.  react-hooks/exhaustive-deps
+
+./components/bulk-analysis/InlineDatabaseSelector.tsx
+111:6  Warning: React Hook useEffect has missing dependencies: 'loadCategories' and 'loadWebsites'. Either include them or remove the dependency array.  react-hooks/exhaustive-deps
+
+./components/bulk-analysis/MoveToProjectDialog.tsx
+41:6  Warning: React Hook useEffect has a missing dependency: 'loadProjects'. Either include it or remove the dependency array.  react-hooks/exhaustive-deps
+
+./components/orders/AdminDomainTable.tsx
+56:6  Warning: React Hook useEffect has a missing dependency: 'loadAdminData'. Either include it or remove the dependency array.  react-hooks/exhaustive-deps
+
+./components/orders/ChangeBulkAnalysisProject.tsx
+45:6  Warning: React Hook useEffect has a missing dependency: 'loadProjects'. Either include it or remove the dependency array.  react-hooks/exhaustive-deps
+
+./components/orders/OrderSelectionModal.tsx
+51:6  Warning: React Hook useEffect has missing dependencies: 'loadAssociatedOrders' and 'loadDraftOrders'. Either include them or remove the dependency array.  react-hooks/exhaustive-deps
+
+./components/orders/OrderSiteReviewTable.tsx
+214:6  Warning: React Hook useCallback has an unnecessary dependency: 'userType'. Either exclude it or remove the dependency array.  react-hooks/exhaustive-deps
+
+./components/orders/PricingEstimator.tsx
+252:6  Warning: React Hook useCallback has a missing dependency: 'onEstimateChange'. Either include it or remove the dependency array. If 'onEstimateChange' changes too often, find the parent component that defines it and wrap that definition in useCallback.  react-hooks/exhaustive-deps
+
+./components/orders/StripePaymentForm.tsx
+281:6  Warning: React Hook useEffect has a missing dependency: 'initializePayment'. Either include it or remove the dependency array.  react-hooks/exhaustive-deps
+
+./components/publisher/PublisherEarningsOverview.tsx
+122:6  Warning: React Hook useEffect has a missing dependency: 'fetchEarnings'. Either include it or remove the dependency array.  react-hooks/exhaustive-deps
+
+./components/publisher/PublisherOrdersList.tsx
+120:6  Warning: React Hook useEffect has a missing dependency: 'fetchOrders'. Either include it or remove the dependency array.  react-hooks/exhaustive-deps
+
+./components/steps/ClientLinkStep.tsx
+82:6  Warning: React Hook useEffect has missing dependencies: 'onChange' and 'step.outputs'. Either include them or remove the dependency array. If 'onChange' changes too often, find the parent component that defines it and wrap that definition in useCallback.  react-hooks/exhaustive-deps
+
+./components/steps/ClientMentionStep.tsx
+63:6  Warning: React Hook useEffect has missing dependencies: 'onChange' and 'step.outputs'. Either include them or remove the dependency array. If 'onChange' changes too often, find the parent component that defines it and wrap that definition in useCallback.  react-hooks/exhaustive-deps
+
+./components/steps/ExternalLinksStep.tsx
+63:6  Warning: React Hook useEffect has missing dependencies: 'onChange' and 'step.outputs'. Either include them or remove the dependency array. If 'onChange' changes too often, find the parent component that defines it and wrap that definition in useCallback.  react-hooks/exhaustive-deps
+
+./components/steps/InternalLinksStep.tsx
+67:6  Warning: React Hook useEffect has missing dependencies: 'onChange' and 'step.outputs'. Either include them or remove the dependency array. If 'onChange' changes too often, find the parent component that defines it and wrap that definition in useCallback.  react-hooks/exhaustive-deps
+
+./components/steps/KeywordResearchStepClean.tsx
+60:9  Warning: The 'allActiveTargetPages' logical expression could make the dependencies of useEffect Hook (at line 102) change on every render. To fix this, wrap the initialization of 'allActiveTargetPages' in its own useMemo() Hook.  react-hooks/exhaustive-deps
+60:9  Warning: The 'allActiveTargetPages' logical expression could make the dependencies of useCallback Hook (at line 171) change on every render. To fix this, wrap the initialization of 'allActiveTargetPages' in its own useMemo() Hook.  react-hooks/exhaustive-deps
+60:9  Warning: The 'allActiveTargetPages' logical expression could make the dependencies of useEffect Hook (at line 254) change on every render. To fix this, wrap the initialization of 'allActiveTargetPages' in its own useMemo() Hook.  react-hooks/exhaustive-deps
+
+./components/steps/TopicGenerationImproved.tsx
+54:6  Warning: React Hook useEffect has a missing dependency: 'loadingClient'. Either include it or remove the dependency array.  react-hooks/exhaustive-deps
+82:6  Warning: React Hook useEffect has missing dependencies: 'onChange' and 'step.outputs'. Either include them or remove the dependency array. If 'onChange' changes too often, find the parent component that defines it and wrap that definition in useCallback.  react-hooks/exhaustive-deps
+
+./components/steps/TopicGenerationStepClean.tsx
+52:6  Warning: React Hook useEffect has a missing dependency: 'loadingClient'. Either include it or remove the dependency array.  react-hooks/exhaustive-deps
+
+./components/ui/AgenticFormattingChecker.tsx
+116:6  Warning: React Hook useEffect has missing dependencies: 'hasLoadedSession' and 'onComplete'. Either include them or remove the dependency array. If 'onComplete' changes too often, find the parent component that defines it and wrap that definition in useCallback.  react-hooks/exhaustive-deps
+129:6  Warning: React Hook useEffect has missing dependencies: 'checks', 'cleanedArticle', 'fixesApplied', 'onComplete', and 'sessionId'. Either include them or remove the dependency array. If 'onComplete' changes too often, find the parent component that defines it and wrap that definition in useCallback.  react-hooks/exhaustive-deps
+
+./components/ui/AgenticOutlineGenerator.tsx
+76:6  Warning: React Hook useEffect has missing dependencies: 'connectToSSE' and 'onComplete'. Either include them or remove the dependency array. If 'onComplete' changes too often, find the parent component that defines it and wrap that definition in useCallback.  react-hooks/exhaustive-deps
+
+./components/ui/AgenticOutlineGeneratorV2.tsx
+74:6  Warning: React Hook useEffect has missing dependencies: 'onComplete' and 'startPolling'. Either include them or remove the dependency array. If 'onComplete' changes too often, find the parent component that defines it and wrap that definition in useCallback.  react-hooks/exhaustive-deps
+
+./components/ui/DuplicateResolutionModal.tsx
+41:6  Warning: React Hook useEffect has a missing dependency: 'selectedDuplicate'. Either include it or remove the dependency array.  react-hooks/exhaustive-deps
+
+./components/websites/QualificationModal.tsx
+41:6  Warning: React Hook useEffect has a missing dependency: 'loadClients'. Either include it or remove the dependency array.  react-hooks/exhaustive-deps
+
+./components/websites/WebsiteDetailModal.tsx
+95:6  Warning: React Hook useEffect has a missing dependency: 'loadWebsiteDetails'. Either include it or remove the dependency array.  react-hooks/exhaustive-deps
+
+info  - Need to disable some ESLint rules? Learn more here: https://nextjs.org/docs/app/api-reference/config/eslint#disabling-rules
+Failed to compile.
+
+./app/api/publisher/orders/route.ts:171:35
+Type error: 'error' is of type 'unknown'.
+
+[0m [90m 169 |[39m   } [36mcatch[39m (error) {[0m
+[0m [90m 170 |[39m     console[33m.[39merror([32m'Error fetching publisher orders:'[39m[33m,[39m error)[33m;[39m[0m
+[0m[31m[1m>[22m[39m[90m 171 |[39m     console[33m.[39merror([32m'Stack trace:'[39m[33m,[39m error[33m.[39mstack)[33m;[39m[0m
+[0m [90m     |[39m                                   [31m[1m^[22m[39m[0m
+[0m [90m 172 |[39m     [36mreturn[39m [33mNextResponse[39m[33m.[39mjson([0m
+[0m [90m 173 |[39m       { error[33m:[39m [32m'Failed to fetch orders'[39m[33m,[39m details[33m:[39m error[33m.[39mmessage }[33m,[39m[0m
+[0m [90m 174 |[39m       { status[33m:[39m [35m500[39m }[0m
+Next.js build worker exited with code: 1 and signal: null

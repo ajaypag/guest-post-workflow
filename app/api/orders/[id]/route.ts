@@ -4,7 +4,7 @@ import { db } from '@/lib/db/connection';
 import { orders, orderItems } from '@/lib/db/orderSchema';
 import { orderGroups, orderSiteSelections } from '@/lib/db/orderGroupSchema';
 import { orderLineItems } from '@/lib/db/orderLineItemSchema';
-import { clients, users } from '@/lib/db/schema';
+import { clients, users, publishers } from '@/lib/db/schema';
 import { eq, inArray, desc } from 'drizzle-orm';
 import { orderSiteSubmissions, projectOrderAssociations } from '@/lib/db/projectOrderAssociationsSchema';
 import { isLineItemsSystemEnabled } from '@/lib/config/featureFlags';
@@ -107,6 +107,36 @@ export async function GET(
             orderLineItems.addedAt
           ]
         });
+
+        // Fetch publisher data separately and merge it
+        const lineItemsWithPublishers = await Promise.all(
+          lineItems.map(async (item) => {
+            let publisher = null;
+            if (item.publisherId) {
+              try {
+                const publisherData = await db.query.publishers.findFirst({
+                  where: eq(publishers.id, item.publisherId),
+                  columns: {
+                    id: true,
+                    contactName: true,
+                    companyName: true,
+                    email: true
+                  }
+                });
+                publisher = publisherData || null;
+              } catch (error) {
+                console.error('Error fetching publisher:', error);
+              }
+            }
+            
+            return {
+              ...item,
+              publisher
+            };
+          })
+        );
+
+        lineItems = lineItemsWithPublishers;
       } catch (error) {
         console.error('Error loading line items:', error);
         // Continue without line items if there's an error
@@ -352,6 +382,36 @@ export async function PUT(
             orderLineItems.addedAt
           ]
         });
+
+        // Fetch publisher data separately and merge it
+        const lineItemsWithPublishers = await Promise.all(
+          lineItems.map(async (item) => {
+            let publisher = null;
+            if (item.publisherId) {
+              try {
+                const publisherData = await db.query.publishers.findFirst({
+                  where: eq(publishers.id, item.publisherId),
+                  columns: {
+                    id: true,
+                    contactName: true,
+                    companyName: true,
+                    email: true
+                  }
+                });
+                publisher = publisherData || null;
+              } catch (error) {
+                console.error('Error fetching publisher:', error);
+              }
+            }
+            
+            return {
+              ...item,
+              publisher
+            };
+          })
+        );
+
+        lineItems = lineItemsWithPublishers;
       } catch (error) {
         console.error('Error loading line items (PUT):', error);
       }

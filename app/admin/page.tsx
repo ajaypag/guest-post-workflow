@@ -107,6 +107,16 @@ export default function AdminDashboard() {
       iconColor: 'text-teal-600'
     },
     
+    // Database Migrations
+    {
+      title: '🚀 Publisher System Migrations',
+      description: 'Run all publisher & domain normalization migrations for production',
+      icon: Database,
+      href: '/admin/publisher-migrations',
+      color: 'bg-orange-50 border-orange-200 text-orange-700',
+      iconColor: 'text-orange-600'
+    },
+    
     // External Integrations
     {
       title: 'Airtable Sync',

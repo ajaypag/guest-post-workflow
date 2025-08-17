@@ -140,6 +140,149 @@ export async function middleware(request: NextRequest) {
     }
   }
   
+  // === PUBLISHER PROTECTED PAGES ===
+  // Protect publisher UI pages (require publisher users)
+  if (path.startsWith('/publisher') && 
+      !path.startsWith('/publisher/login') && 
+      !path.startsWith('/publisher/signup') &&
+      !path.startsWith('/publisher/verify') &&
+      !path.startsWith('/publisher/forgot-password')) {
+    try {
+      // For UI pages, check cookie authentication
+      const publisherTokenCookie = request.cookies.get('auth-token-publisher');
+      const token = publisherTokenCookie?.value;
+      
+      if (!token) {
+        // Redirect to publisher login page
+        const url = request.nextUrl.clone();
+        url.pathname = '/publisher/login';
+        url.searchParams.set('redirect', path);
+        return NextResponse.redirect(url);
+      }
+      
+      // Verify JWT token
+      const { payload } = await jwtVerify(token, JWT_SECRET);
+      
+      // Check if user is publisher
+      const userType = payload.userType;
+      if (userType !== 'publisher') {
+        // Redirect to publisher login if not a publisher
+        const url = request.nextUrl.clone();
+        url.pathname = '/publisher/login';
+        url.searchParams.set('error', 'unauthorized');
+        return NextResponse.redirect(url);
+      }
+      
+      // Token is valid and user is publisher, continue
+      return NextResponse.next();
+      
+    } catch (error) {
+      // Token is invalid or expired, redirect to publisher login
+      const url = request.nextUrl.clone();
+      url.pathname = '/publisher/login';
+      url.searchParams.set('redirect', path);
+      return NextResponse.redirect(url);
+    }
+  }
+
+  // === ACCOUNT PROTECTED PAGES ===
+  // Protect account UI pages (require account users)
+  if (path.startsWith('/account') && 
+      !path.startsWith('/account/login') && 
+      !path.startsWith('/account/signup') &&
+      !path.startsWith('/account/forgot-password') &&
+      !path.startsWith('/account/reset-password')) {
+    try {
+      // For UI pages, check cookie authentication
+      // Account users use the same auth-token as internal users (set by /api/auth/login)
+      const authTokenCookie = request.cookies.get('auth-token');
+      const accountTokenCookie = request.cookies.get('auth-token-account');
+      const token = authTokenCookie?.value || accountTokenCookie?.value;
+      
+      if (!token) {
+        // Redirect to main login page (handles both internal and account users)
+        const url = request.nextUrl.clone();
+        url.pathname = '/login';
+        url.searchParams.set('redirect', path);
+        return NextResponse.redirect(url);
+      }
+      
+      // Verify JWT token
+      const { payload } = await jwtVerify(token, JWT_SECRET);
+      
+      // Check if user is account
+      const userType = payload.userType;
+      if (userType !== 'account') {
+        // Redirect to login if not an account user
+        const url = request.nextUrl.clone();
+        url.pathname = '/login';
+        url.searchParams.set('error', 'unauthorized');
+        return NextResponse.redirect(url);
+      }
+      
+      // Token is valid and user is account, continue
+      return NextResponse.next();
+      
+    } catch (error) {
+      // Token is invalid or expired, redirect to login
+      const url = request.nextUrl.clone();
+      url.pathname = '/login';
+      url.searchParams.set('redirect', path);
+      return NextResponse.redirect(url);
+    }
+  }
+
+  // === PUBLISHER API ENDPOINTS ===
+  // Protect publisher API endpoints (require publisher authentication)
+  if (path.startsWith('/api/publisher/') && 
+      !path.startsWith('/api/auth/publisher/')) {
+    try {
+      // Get token from cookies or Authorization header
+      let token: string | undefined;
+      
+      // Check publisher cookie first
+      const publisherTokenCookie = request.cookies.get('auth-token-publisher');
+      token = publisherTokenCookie?.value;
+      
+      // If no cookie, check Authorization header
+      if (!token) {
+        const authHeader = request.headers.get('authorization');
+        if (authHeader?.startsWith('Bearer ')) {
+          token = authHeader.substring(7);
+        }
+      }
+      
+      if (!token) {
+        return NextResponse.json(
+          { error: 'Unauthorized - No authentication token provided' },
+          { status: 401 }
+        );
+      }
+      
+      // Verify JWT token
+      const { payload } = await jwtVerify(token, JWT_SECRET);
+      
+      // Check if user is publisher
+      const userType = payload.userType;
+      if (userType !== 'publisher') {
+        return NextResponse.json(
+          { error: 'Forbidden - Publisher access required' },
+          { status: 403 }
+        );
+      }
+      
+      // Token is valid and user is publisher, continue
+      return NextResponse.next();
+      
+    } catch (error) {
+      console.error('Publisher API auth error:', error);
+      return NextResponse.json(
+        { error: 'Unauthorized - Invalid or expired token' },
+        { status: 401 }
+      );
+    }
+  }
+
   // === PROTECTED API ENDPOINTS ===
   
   // Protect expensive/dangerous API endpoints (require any authenticated user)

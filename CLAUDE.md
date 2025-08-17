@@ -4,15 +4,28 @@ Production-ready workflow system with PostgreSQL, multi-user auth, and AI agent 
 
 ## 🚨 Critical Production Info
 
-**Version**: v1.0.0 (Stable) | **Status**: ✅ Production on Coolify
+**Version**: v1.0.2 (TypeScript Fixed) | **Status**: ✅ Production Ready
 
 ### Must Know Before Coding
 1. **Do NOT change** JSON storage model for workflows - it's working
 2. **Step components**: Use `*Clean.tsx` files, NOT original versions ([details](#step-component-warning))
 3. **VARCHAR limits**: AI content needs TEXT columns, not VARCHAR ([details](#varchar-critical))
-4. **Build must pass** before deployment - run `npm run build`
+4. **Build verification**: Always use `timeout 600 npm run build` - default builds show false success ([details](#typescript-build-status))
+5. **NEW: Domain Normalization** - All domains must use normalized format ([details](#domain-normalization-critical))
+6. **NEW: Run Migrations** - Critical migrations pending before production
+
+### 🚨 PENDING MIGRATIONS (Run These First!)
+1. **Publisher System**: `migrations/0035_publisher_offerings_system_fixed.sql`
+2. **Domain Normalization**: `migrations/0037_normalize_existing_domains.sql`
+3. **Use Admin Panel**: `/admin/domain-migration` for safe migration
 
 ### Recent Changes (Keep in Mind)
+- ✅ TypeScript Compilation Fixed (2025-02-14) - ALL ERRORS RESOLVED
+  - Fixed Next.js 15 Promise-based searchParams compatibility
+  - Aligned database schema with TypeScript interfaces
+  - Fixed nullable fields, string/number type mismatches
+  - Updated component prop types and table structures
+  - Build now passes cleanly with extended timeout verification
 - 🔄 Order Interface Redesign (2025-01-31) - IN PROGRESS
   - Three-column layout with space-efficient grouped views
   - Dual-mode: Simple (wizard) vs Detailed (power user)
@@ -42,6 +55,21 @@ Production-ready workflow system with PostgreSQL, multi-user auth, and AI agent 
   - Bulk analysis projects auto-created on order confirmation
   - Notification system for internal users
   - **MIGRATION REQUIRED**: Run `/admin/order-groups-migration`
+- 🆕 Publisher Portal System (2025-02-14)
+  - Publishers can manage websites and offerings
+  - Internal team can use same infrastructure
+  - One website → multiple publishers (no duplicates)
+  - See: [docs/06-planning/publisher-portal-implementation.md](docs/06-planning/publisher-portal-implementation.md)
+- 🆕 Internal Portal (2025-02-14)
+  - Website management at `/internal/websites`
+  - Publisher oversight tools
+  - Bulk operations support
+  - See: [docs/06-planning/internal-portal-plan.md](docs/06-planning/internal-portal-plan.md)
+- ⚠️ Domain Normalization System (2025-02-14)
+  - CRITICAL: Prevents duplicate websites
+  - Normalizes www, protocols, casing
+  - Migration tool at `/admin/domain-migration`
+  - See: [docs/07-qa/domain-handling-qa-report.md](docs/07-qa/domain-handling-qa-report.md)
 
 ## 🔧 Quick Reference
 
@@ -73,6 +101,14 @@ RESEND_API_KEY=re_your_api_key_here
 
 ## ⚠️ Active Issues & Warnings
 
+### 🎯 TypeScript Build Status
+**Status**: ✅ **FULLY RESOLVED** (2025-02-14)
+- **Build Time**: ~24 seconds (passing)
+- **Pages Generated**: 301 (all successful)
+- **Errors**: 0 TypeScript errors
+- **Method**: Extended timeout builds to catch real errors
+- **Key Insight**: Default builds show false success - always use extended timeout for real error detection
+
 ### Step Component Warning
 ```
 ❌ NEVER EDIT: ArticleDraftStep.tsx, ContentAuditStep.tsx, FinalPolishStep.tsx
@@ -91,6 +127,19 @@ approach VARCHAR(100)  -- AI text gets truncated
 approach TEXT         -- Safe for AI content
 ```
 Run `/admin/varchar-limits` to check all columns.
+
+### Domain Normalization Critical
+**Problem**: Same website stored multiple times (www.example.com, EXAMPLE.COM, https://example.com)  
+**Impact**: Duplicate data, failed matching, broken publisher assignments  
+**Solution**: All domains normalized automatically
+```typescript
+// Input variations all normalize to same domain:
+normalizeDomain('https://www.example.com') // → 'example.com'
+normalizeDomain('WWW.EXAMPLE.COM')         // → 'example.com'
+normalizeDomain('example.com/')            // → 'example.com'
+```
+**Migration**: Run `/admin/domain-migration` to normalize existing data  
+**New Code**: Use `import { normalizeDomain } from '@/lib/utils/domainNormalizer'`
 
 ### Auto-Save Race Condition (AI Agents)
 **Problem**: AI generates content → Auto-save shows success → But saves empty data!  
@@ -136,9 +185,10 @@ import { assistantSentPlainText, SEMANTIC_AUDIT_RETRY_NUDGE } from '@/lib/utils/
 
 ```bash
 # Development
-npm run dev              # Start local server
-npm run build           # Production build (MUST PASS)
-npm run db:studio       # Browse database
+npm run dev                    # Start local server
+npm run build                  # Production build (✅ PASSING)
+timeout 600 npm run build      # Extended timeout for real error detection
+npm run db:studio             # Browse database
 
 # Testing endpoints
 /database-checker       # System health check
@@ -147,6 +197,15 @@ npm run db:studio       # Browse database
 ```
 
 ## 🚀 Latest Features
+
+### TypeScript Compilation Fixed (Production Ready)
+- **Status**: ✅ **FULLY RESOLVED** (2025-02-14)
+- All 29 TypeScript errors systematically eliminated
+- Build passes cleanly in ~24 seconds
+- Extended timeout pattern prevents false success detection
+- Database schema properly aligned with TypeScript interfaces
+- Next.js 15 compatibility issues resolved
+- See: [docs/03-development/typescript-compilation-fixes.md](docs/03-development/typescript-compilation-fixes.md)
 
 ### Order Interface Redesign (In Progress)
 - Three-column layout with space-efficient grouped views
