@@ -28,7 +28,20 @@ export async function POST(request: NextRequest) {
       );
     }
     
-    const { email, password } = await request.json();
+    let email: string, password: string;
+    try {
+      const text = await request.text();
+      console.log('Received body:', text);
+      const body = JSON.parse(text);
+      email = body.email;
+      password = body.password;
+    } catch (parseError) {
+      console.error('JSON parse error:', parseError);
+      return NextResponse.json(
+        { error: 'Invalid request body' },
+        { status: 400 }
+      );
+    }
     
     // Validate input
     if (!email || !password) {

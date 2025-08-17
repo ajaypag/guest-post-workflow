@@ -47,6 +47,14 @@ export default function PublisherAuthWrapper({ children }: PublisherAuthWrapperP
         const data = await response.json();
         setUser(data.user);
         setAuthenticated(true);
+        // Store session for PublisherHeader
+        localStorage.setItem('publisherSession', JSON.stringify({
+          userId: data.user.id,
+          email: data.user.email,
+          name: data.user.name,
+          companyName: data.user.companyName,
+          userType: 'publisher'
+        }));
       } else {
         // Not authenticated or token expired
         redirectToLogin();
@@ -73,6 +81,8 @@ export default function PublisherAuthWrapper({ children }: PublisherAuthWrapperP
       });
       
       if (response.ok) {
+        // Clear session storage
+        localStorage.removeItem('publisherSession');
         // Redirect to publisher login page
         router.push('/publisher/login');
       }
@@ -95,6 +105,14 @@ export default function PublisherAuthWrapper({ children }: PublisherAuthWrapperP
         // Update user data if returned
         if (data.user) {
           setUser(data.user);
+          // Update session storage
+          localStorage.setItem('publisherSession', JSON.stringify({
+            userId: data.user.id,
+            email: data.user.email,
+            name: data.user.name,
+            companyName: data.user.companyName,
+            userType: 'publisher'
+          }));
         }
       } else if (response.status === 401) {
         // Token expired and can't be refreshed

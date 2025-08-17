@@ -10,8 +10,8 @@ import {
   AlertCircle,
   CheckCircle
 } from 'lucide-react';
-import Header from '@/components/Header';
-import PublisherAuthWrapper from '@/components/PublisherAuthWrapper';
+// PublisherHeader handled by layout.tsx
+// PublisherAuthWrapper handled by layout.tsx
 
 export default function PaymentProfilePage() {
   const [loading, setLoading] = useState(false);
@@ -90,9 +90,7 @@ export default function PaymentProfilePage() {
   };
 
   return (
-    <PublisherAuthWrapper>
-      <Header />
-      <div className="min-h-screen bg-gray-50 py-8">
+      <div className="py-8">
         <div className="max-w-4xl mx-auto px-4">
           {/* Header */}
           <div className="bg-white rounded-lg shadow-md p-6 mb-6">
@@ -438,6 +436,6 @@ export default function PaymentProfilePage() {
           </form>
         </div>
       </div>
-    </PublisherAuthWrapper>
+    
   );
 }

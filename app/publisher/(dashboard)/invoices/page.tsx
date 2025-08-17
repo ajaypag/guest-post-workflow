@@ -11,8 +11,8 @@ import {
   DollarSign,
   Eye
 } from 'lucide-react';
-import Header from '@/components/Header';
-import PublisherAuthWrapper from '@/components/PublisherAuthWrapper';
+// PublisherHeader handled by layout.tsx
+// PublisherAuthWrapper handled by layout.tsx
 
 interface Invoice {
   id: string;
@@ -97,9 +97,7 @@ export default function PublisherInvoicesPage() {
   };
 
   return (
-    <PublisherAuthWrapper>
-      <Header />
-      <div className="min-h-screen bg-gray-50 py-8">
+      <div className="py-8">
         <div className="max-w-7xl mx-auto px-4">
           {/* Header */}
           <div className="bg-white rounded-lg shadow-md p-6 mb-6">
@@ -260,6 +258,6 @@ export default function PublisherInvoicesPage() {
           </div>
         </div>
       </div>
-    </PublisherAuthWrapper>
+    
   );
 }

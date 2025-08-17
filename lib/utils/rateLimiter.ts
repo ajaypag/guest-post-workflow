@@ -25,6 +25,11 @@ class RateLimiter {
   }
   
   check(identifier: string): { allowed: boolean; retryAfter?: number } {
+    // Skip rate limiting for E2E tests
+    if (process.env.E2E_TESTING === 'true') {
+      return { allowed: true };
+    }
+    
     const now = Date.now();
     const entry = this.limits.get(identifier);
     

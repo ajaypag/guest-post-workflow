@@ -10,8 +10,8 @@ import {
   AlertCircle,
   Info
 } from 'lucide-react';
-import Header from '@/components/Header';
-import PublisherAuthWrapper from '@/components/PublisherAuthWrapper';
+// PublisherHeader handled by layout.tsx
+// PublisherAuthWrapper handled by layout.tsx
 
 export default function NewWebsitePage() {
   const router = useRouter();
@@ -99,9 +99,7 @@ export default function NewWebsitePage() {
   };
 
   return (
-    <PublisherAuthWrapper>
-      <Header />
-      <div className="min-h-screen bg-gray-50 py-8">
+      <div className="py-8">
         <div className="max-w-3xl mx-auto px-4">
           {/* Back Link */}
           <Link
@@ -348,6 +346,6 @@ export default function NewWebsitePage() {
           </form>
         </div>
       </div>
-    </PublisherAuthWrapper>
+    
   );
 }

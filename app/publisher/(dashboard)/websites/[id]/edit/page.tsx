@@ -4,8 +4,8 @@ import { useState, useEffect } from 'react';
 import { useRouter, useParams } from 'next/navigation';
 import Link from 'next/link';
 import { ArrowLeft, Save, Loader2, AlertCircle, Globe, DollarSign, Calendar, MapPin, Hash } from 'lucide-react';
-import PublisherAuthWrapper from '@/components/PublisherAuthWrapper';
-import Header from '@/components/Header';
+// PublisherAuthWrapper handled by layout.tsx
+// PublisherHeader handled by layout.tsx
 
 interface Website {
   id: string;
@@ -130,19 +130,15 @@ export default function EditWebsitePage() {
 
   if (loading) {
     return (
-      <PublisherAuthWrapper>
-        <Header />
         <div className="flex items-center justify-center py-12">
           <Loader2 className="h-8 w-8 animate-spin text-blue-600" />
         </div>
-      </PublisherAuthWrapper>
+      
     );
   }
 
   if (!website) {
     return (
-      <PublisherAuthWrapper>
-        <Header />
         <div className="max-w-4xl mx-auto px-4 py-8">
           <div className="bg-red-50 border border-red-200 rounded-lg p-6 text-center">
             <AlertCircle className="h-12 w-12 text-red-600 mx-auto mb-4" />
@@ -153,14 +149,12 @@ export default function EditWebsitePage() {
             </Link>
           </div>
         </div>
-      </PublisherAuthWrapper>
+      
     );
   }
 
   return (
-    <PublisherAuthWrapper>
-      <Header />
-      <div className="min-h-screen bg-gray-50 py-8">
+      <div className="py-8">
         <div className="max-w-4xl mx-auto px-4">
           {/* Header */}
           <div className="mb-8">
@@ -422,6 +416,6 @@ export default function EditWebsitePage() {
           </form>
         </div>
       </div>
-    </PublisherAuthWrapper>
+    
   );
 }

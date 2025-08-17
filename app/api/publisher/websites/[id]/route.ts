@@ -1,13 +1,14 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { db } from '@/lib/db/connection';
-import { websites, publisherOfferings, publisherOfferingRelationships } from '@/lib/db/publisherSchemaActual';
+import { publisherOfferings, publisherOfferingRelationships } from '@/lib/db/publisherSchemaActual';
+import { websites } from '@/lib/db/schema';
 import { eq, and } from 'drizzle-orm';
-import { AuthServiceServer } from '@/lib/services/authServiceServer';
+import { AuthServiceServer } from '@/lib/auth-server';
 
 // GET /api/publisher/websites/[id] - Get website details
 export async function GET(
   request: NextRequest,
-  { params }: { params: { id: string } }
+  { params }: { params: Promise<{ id: string }> }
 ) {
   try {
     // Check authentication
@@ -17,7 +18,7 @@ export async function GET(
     }
 
     const publisherId = session.userId;
-    const websiteId = params.id;
+    const { id: websiteId } = await params;
 
     // Get website with offering details
     const result = await db
@@ -79,7 +80,7 @@ export async function GET(
 // PUT /api/publisher/websites/[id] - Update website
 export async function PUT(
   request: NextRequest,
-  { params }: { params: { id: string } }
+  { params }: { params: Promise<{ id: string }> }
 ) {
   try {
     // Check authentication
@@ -89,7 +90,7 @@ export async function PUT(
     }
 
     const publisherId = session.userId;
-    const websiteId = params.id;
+    const { id: websiteId } = await params;
     const body = await request.json();
 
     // Check if publisher owns this website
@@ -114,11 +115,8 @@ export async function PUT(
         .update(websites)
         .set({
           categories: body.category ? [body.category] : undefined,
-          monthlyTraffic: body.monthlyTraffic,
-          domainAuthority: body.domainAuthority,
-          language: body.language,
-          country: body.country,
-          updatedAt: new Date()
+          // Note: monthlyTraffic, domainAuthority, language, country fields don't exist in websites schema
+          // These would need to be added to the schema or stored elsewhere
         })
         .where(eq(websites.id, websiteId));
     }
@@ -188,7 +186,7 @@ export async function PUT(
 // DELETE /api/publisher/websites/[id] - Delete website
 export async function DELETE(
   request: NextRequest,
-  { params }: { params: { id: string } }
+  { params }: { params: Promise<{ id: string }> }
 ) {
   try {
     // Check authentication
@@ -198,7 +196,7 @@ export async function DELETE(
     }
 
     const publisherId = session.userId;
-    const websiteId = params.id;
+    const { id: websiteId } = await params;
 
     // Check if publisher owns this website
     const relationship = await db

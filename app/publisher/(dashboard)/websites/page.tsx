@@ -12,8 +12,7 @@ import {
   Edit,
   Trash2
 } from 'lucide-react';
-import Header from '@/components/Header';
-import PublisherAuthWrapper from '@/components/PublisherAuthWrapper';
+// PublisherHeader and PublisherAuthWrapper are now handled by layout.tsx
 
 interface Website {
   id: string;
@@ -75,21 +74,16 @@ export default function PublisherWebsitesPage() {
 
   if (loading) {
     return (
-      <PublisherAuthWrapper>
-        <Header />
-        <div className="flex items-center justify-center py-12">
-          <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-blue-600"></div>
-          <span className="ml-2 text-gray-600">Loading websites...</span>
-        </div>
-      </PublisherAuthWrapper>
+      <div className="flex items-center justify-center py-12">
+        <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-blue-600"></div>
+        <span className="ml-2 text-gray-600">Loading websites...</span>
+      </div>
     );
   }
 
   return (
-    <PublisherAuthWrapper>
-      <Header />
-      <div className="min-h-screen bg-gray-50 py-8">
-        <div className="max-w-7xl mx-auto px-4">
+    <div className="py-8">
+      <div className="max-w-7xl mx-auto px-4">
           {/* Page Header */}
           <div className="bg-white rounded-lg shadow-md p-6 mb-6">
             <div className="flex items-center justify-between">
@@ -212,6 +206,5 @@ export default function PublisherWebsitesPage() {
           )}
         </div>
       </div>
-    </PublisherAuthWrapper>
   );
 }
