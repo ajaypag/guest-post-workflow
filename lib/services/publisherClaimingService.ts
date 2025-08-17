@@ -171,7 +171,7 @@ export class PublisherClaimingService {
     const verificationUrl = `${process.env.NEXTAUTH_URL}/publisher/verify-claim?token=${claim.claim.verificationToken}`;
     
     await sendEmail({
-      to: claim.claim.email,
+      to: claim.claim.emailDomain,
       subject: `Verify Your Website Claim for ${claim.website.domain}`,
       html: `
         <h2>Website Claim Verification</h2>
@@ -503,7 +503,7 @@ export class PublisherClaimingService {
         verificationStatus: 'verified',
         verificationMethod: 'email',
         verifiedAt: new Date(),
-        contactEmail: claim.email,
+        contactEmail: claim.emailDomain,
         isActive: true
       })
       .returning();
