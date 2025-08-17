@@ -127,19 +127,19 @@ export async function POST(request: NextRequest) {
       // Website already exists
       websiteId = existingWebsite[0].id;
 
-      // Check if this publisher already has an offering for this website
-      const existingOffering = await db
+      // Check if this publisher already has a relationship with this website
+      const existingRelationship = await db
         .select()
-        .from(publisherOfferings)
+        .from(publisherOfferingRelationships)
         .where(
           and(
-            eq(publisherOfferings.website_id, websiteId),
-            eq(publisherOfferings.publisher_id, publisherId)
+            eq(publisherOfferingRelationships.websiteId, websiteId),
+            eq(publisherOfferingRelationships.publisherId, publisherId)
           )
         )
         .limit(1);
 
-      if (existingOffering.length > 0) {
+      if (existingRelationship.length > 0) {
         return NextResponse.json(
           { error: 'You already have this website in your portfolio' },
           { status: 400 }
@@ -148,9 +148,11 @@ export async function POST(request: NextRequest) {
     } else {
       // Create new website
       const now = new Date();
+      const newWebsiteId = crypto.randomUUID();
       const newWebsite = await db
         .insert(websites)
         .values({
+          id: newWebsiteId,
           domain: domain, // This should be just the string, not an object
           categories: category ? [category] : null,
           source: 'publisher',

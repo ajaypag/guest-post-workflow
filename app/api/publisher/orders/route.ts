@@ -168,9 +168,9 @@ export async function GET(request: NextRequest) {
 
   } catch (error) {
     console.error('Error fetching publisher orders:', error);
-    console.error('Stack trace:', error.stack);
+    console.error('Stack trace:', (error as any).stack);
     return NextResponse.json(
-      { error: 'Failed to fetch orders', details: error.message },
+      { error: 'Failed to fetch orders', details: (error as any).message },
       { status: 500 }
     );
   }

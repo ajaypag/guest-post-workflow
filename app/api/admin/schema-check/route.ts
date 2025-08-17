@@ -24,7 +24,7 @@ export async function GET() {
     `);
     
     // Check specific tables
-    const checks = {
+    const checks: Record<string, any> = {
       publisher_offerings: false,
       publisher_offering_relationships: false,
       publisher_websites: false,
@@ -39,9 +39,9 @@ export async function GET() {
         const result = await db.execute(sql.raw(`SELECT COUNT(*) as count FROM ${tableName}`));
         checks[tableName] = { 
           exists: true, 
-          count: result.rows[0].count 
+          count: (result as any).rows[0].count 
         };
-      } catch (e) {
+      } catch (e: any) {
         checks[tableName] = { 
           exists: false, 
           error: e.message 
@@ -53,7 +53,7 @@ export async function GET() {
     let schemaIssues = [];
     
     // Check publisher_offerings structure if it exists
-    if (checks.publisher_offerings.exists) {
+    if (checks.publisher_offerings?.exists) {
       const offeringsColumns = await db.execute(sql`
         SELECT column_name, data_type 
         FROM information_schema.columns 
@@ -62,10 +62,10 @@ export async function GET() {
       `);
       
       // Check for problematic columns
-      const hasPublisherId = offeringsColumns.rows.some(c => c.column_name === 'publisher_id');
-      const hasPublisherWebsiteId = offeringsColumns.rows.some(c => c.column_name === 'publisher_website_id');
-      const hasPublisherRelationshipId = offeringsColumns.rows.some(c => c.column_name === 'publisher_relationship_id');
-      const hasOfferingName = offeringsColumns.rows.some(c => c.column_name === 'offering_name');
+      const hasPublisherId = (offeringsColumns as any).rows.some((c: any) => c.column_name === 'publisher_id');
+      const hasPublisherWebsiteId = (offeringsColumns as any).rows.some((c: any) => c.column_name === 'publisher_website_id');
+      const hasPublisherRelationshipId = (offeringsColumns as any).rows.some((c: any) => c.column_name === 'publisher_relationship_id');
+      const hasOfferingName = (offeringsColumns as any).rows.some((c: any) => c.column_name === 'offering_name');
       
       schemaIssues.push({
         table: 'publisher_offerings',
@@ -73,21 +73,21 @@ export async function GET() {
         has_publisher_website_id: hasPublisherWebsiteId,
         has_publisher_relationship_id: hasPublisherRelationshipId,
         has_offering_name: hasOfferingName,
-        total_columns: offeringsColumns.rows.length
+        total_columns: (offeringsColumns as any).rows.length
       });
     }
     
     return NextResponse.json({
-      tables: tables.rows.map(r => r.table_name),
-      migrations: migrations.rows,
+      tables: (tables as any).rows.map((r: any) => r.table_name),
+      migrations: (migrations as any).rows,
       tableChecks: checks,
       schemaIssues,
       summary: {
-        total_tables: tables.rows.length,
-        schema_version: migrations.rows[0]?.name || 'unknown'
+        total_tables: (tables as any).rows.length,
+        schema_version: (migrations as any).rows[0]?.name || 'unknown'
       }
     });
-  } catch (error) {
+  } catch (error: any) {
     return NextResponse.json({ 
       error: error.message,
       stack: error.stack 

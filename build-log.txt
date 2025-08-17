@@ -202,17 +202,3 @@
 95:6  Warning: React Hook useEffect has a missing dependency: 'loadWebsiteDetails'. Either include it or remove the dependency array.  react-hooks/exhaustive-deps
 
 info  - Need to disable some ESLint rules? Learn more here: https://nextjs.org/docs/app/api-reference/config/eslint#disabling-rules
-Failed to compile.
-
-./app/api/admin/schema-check/route.ts:40:9
-Type error: Element implicitly has an 'any' type because expression of type 'string' can't be used to index type '{ publisher_offerings: boolean; publisher_offering_relationships: boolean; publisher_websites: boolean; publishers: boolean; publisher_performance: boolean; publisher_earnings: boolean; publisher_invoices: boolean; }'.
-  No index signature with a parameter of type 'string' was found on type '{ publisher_offerings: boolean; publisher_offering_relationships: boolean; publisher_websites: boolean; publishers: boolean; publisher_performance: boolean; publisher_earnings: boolean; publisher_invoices: boolean; }'.
-
-[0m [90m 38 |[39m       [36mtry[39m {[0m
-[0m [90m 39 |[39m         [36mconst[39m result [33m=[39m [36mawait[39m db[33m.[39mexecute(sql[33m.[39mraw([32m`SELECT COUNT(*) as count FROM ${tableName}`[39m))[33m;[39m[0m
-[0m[31m[1m>[22m[39m[90m 40 |[39m         checks[tableName] [33m=[39m { [0m
-[0m [90m    |[39m         [31m[1m^[22m[39m[0m
-[0m [90m 41 |[39m           exists[33m:[39m [36mtrue[39m[33m,[39m [0m
-[0m [90m 42 |[39m           count[33m:[39m result[33m.[39mrows[[35m0[39m][33m.[39mcount [0m
-[0m [90m 43 |[39m         }[33m;[39m[0m
-Next.js build worker exited with code: 1 and signal: null

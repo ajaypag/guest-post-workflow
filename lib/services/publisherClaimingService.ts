@@ -47,7 +47,7 @@ export class PublisherClaimingService {
         .where(
           and(
             eq(publisherEmailClaims.publisherId, publisherId),
-            eq(publisherEmailClaims.email, email),
+            eq(publisherEmailClaims.emailDomain, email),
             eq(publisherEmailClaims.websiteId, website.id)
           )
         )
@@ -63,11 +63,9 @@ export class PublisherClaimingService {
         .insert(publisherEmailClaims)
         .values({
           publisherId,
-          email,
+          emailDomain: email,
           websiteId: website.id,
-          claimStatus: 'pending',
-          claimConfidence: website.confidence,
-          claimSource: website.source,
+          status: 'pending',
           verificationToken
         })
         .returning();

@@ -46,15 +46,8 @@ export async function PATCH(
     
     // Verify the publisher owns this offering
     const [offering] = await db
-      .select({
-        offering: publisherOfferings,
-        relationship: publisherOfferingRelationships
-      })
+      .select()
       .from(publisherOfferings)
-      .innerJoin(
-        publisherOfferingRelationships,
-        eq(publisherOfferings.publisherRelationshipId, publisherOfferingRelationships.id)
-      )
       .where(eq(publisherOfferings.id, offeringId))
       .limit(1);
     
@@ -66,7 +59,7 @@ export async function PATCH(
     }
     
     const publisherId = session.userId;
-    if (offering.relationship.publisherId !== publisherId) {
+    if (offering.publisherId !== publisherId) {
       return NextResponse.json(
         { error: 'You do not have permission to update this offering' },
         { status: 403 }
@@ -129,15 +122,8 @@ export async function DELETE(
     
     // Verify the publisher owns this offering
     const [offering] = await db
-      .select({
-        offering: publisherOfferings,
-        relationship: publisherOfferingRelationships
-      })
+      .select()
       .from(publisherOfferings)
-      .innerJoin(
-        publisherOfferingRelationships,
-        eq(publisherOfferings.publisherRelationshipId, publisherOfferingRelationships.id)
-      )
       .where(eq(publisherOfferings.id, offeringId))
       .limit(1);
     
@@ -149,7 +135,7 @@ export async function DELETE(
     }
     
     const publisherId = session.userId;
-    if (offering.relationship.publisherId !== publisherId) {
+    if (offering.publisherId !== publisherId) {
       return NextResponse.json(
         { error: 'You do not have permission to delete this offering' },
         { status: 403 }

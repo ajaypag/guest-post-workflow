@@ -16,7 +16,7 @@ async function checkDatabase() {
     `);
     
     console.log('Publisher Tables Found:');
-    tables.rows.forEach(r => console.log(`  - ${r.table_name}`));
+    (tables as any).rows.forEach((r: any) => console.log(`  - ${r.table_name}`));
     console.log('');
     
     // 2. Check migration history (if table exists)
@@ -29,7 +29,7 @@ async function checkDatabase() {
       `);
       
       console.log('Publisher Migrations Applied:');
-      migrations.rows.forEach(r => {
+      (migrations as any).rows.forEach((r: any) => {
         console.log(`  - ${r.name} (${new Date(r.executed_at).toISOString().split('T')[0]})`);
       });
       console.log('');
@@ -54,15 +54,15 @@ async function checkDatabase() {
           ORDER BY ordinal_position
         `);
         
-        if (columns.rows.length > 0) {
+        if ((columns as any).rows.length > 0) {
           console.log(`\n${tableName} structure:`);
-          columns.rows.forEach(c => {
+          (columns as any).rows.forEach((c: any) => {
             console.log(`  - ${c.column_name}: ${c.data_type} ${c.is_nullable === 'NO' ? 'NOT NULL' : ''}`);
           });
           
           // Count rows
           const count = await db.execute(sql.raw(`SELECT COUNT(*) as count FROM ${tableName}`));
-          console.log(`  Total rows: ${count.rows[0].count}`);
+          console.log(`  Total rows: ${(count as any).rows[0].count}`);
         }
       } catch (e) {
         console.log(`\n${tableName}: DOES NOT EXIST`);
@@ -84,7 +84,7 @@ async function checkDatabase() {
         WHERE table_name = 'publisher_offerings'
       `);
       
-      const check = offeringsCheck.rows[0];
+      const check = (offeringsCheck as any).rows[0];
       console.log('publisher_offerings column check:');
       console.log(`  publisher_id: ${check.has_publisher_id > 0 ? '✅' : '❌'}`);
       console.log(`  publisher_website_id: ${check.has_publisher_website_id > 0 ? '✅' : '❌'}`);
@@ -95,7 +95,7 @@ async function checkDatabase() {
     }
     
     console.log('\n=== SUMMARY ===\n');
-    console.log(`Total publisher tables: ${tables.rows.length}`);
+    console.log(`Total publisher tables: ${(tables as any).rows.length}`);
     
   } catch (error) {
     console.error('Error checking database:', error);

@@ -6,7 +6,7 @@
    - Environments: .env.local, .env
 
    Creating an optimized production build ...
- ✓ Compiled successfully in 2.7min
+ ✓ Compiled successfully in 80s
    Linting and checking validity of types ...
 
 ./app/account/orders/[id]/status/page.tsx
@@ -204,15 +204,14 @@
 info  - Need to disable some ESLint rules? Learn more here: https://nextjs.org/docs/app/api-reference/config/eslint#disabling-rules
 Failed to compile.
 
-./app/api/admin/schema-check/route.ts:40:9
-Type error: Element implicitly has an 'any' type because expression of type 'string' can't be used to index type '{ publisher_offerings: boolean; publisher_offering_relationships: boolean; publisher_websites: boolean; publishers: boolean; publisher_performance: boolean; publisher_earnings: boolean; publisher_invoices: boolean; }'.
-  No index signature with a parameter of type 'string' was found on type '{ publisher_offerings: boolean; publisher_offering_relationships: boolean; publisher_websites: boolean; publishers: boolean; publisher_performance: boolean; publisher_earnings: boolean; publisher_invoices: boolean; }'.
+./app/api/publisher/orders/route.ts:171:35
+Type error: 'error' is of type 'unknown'.
 
-[0m [90m 38 |[39m       [36mtry[39m {[0m
-[0m [90m 39 |[39m         [36mconst[39m result [33m=[39m [36mawait[39m db[33m.[39mexecute(sql[33m.[39mraw([32m`SELECT COUNT(*) as count FROM ${tableName}`[39m))[33m;[39m[0m
-[0m[31m[1m>[22m[39m[90m 40 |[39m         checks[tableName] [33m=[39m { [0m
-[0m [90m    |[39m         [31m[1m^[22m[39m[0m
-[0m [90m 41 |[39m           exists[33m:[39m [36mtrue[39m[33m,[39m [0m
-[0m [90m 42 |[39m           count[33m:[39m result[33m.[39mrows[[35m0[39m][33m.[39mcount [0m
-[0m [90m 43 |[39m         }[33m;[39m[0m
+[0m [90m 169 |[39m   } [36mcatch[39m (error) {[0m
+[0m [90m 170 |[39m     console[33m.[39merror([32m'Error fetching publisher orders:'[39m[33m,[39m error)[33m;[39m[0m
+[0m[31m[1m>[22m[39m[90m 171 |[39m     console[33m.[39merror([32m'Stack trace:'[39m[33m,[39m error[33m.[39mstack)[33m;[39m[0m
+[0m [90m     |[39m                                   [31m[1m^[22m[39m[0m
+[0m [90m 172 |[39m     [36mreturn[39m [33mNextResponse[39m[33m.[39mjson([0m
+[0m [90m 173 |[39m       { error[33m:[39m [32m'Failed to fetch orders'[39m[33m,[39m details[33m:[39m error[33m.[39mmessage }[33m,[39m[0m
+[0m [90m 174 |[39m       { status[33m:[39m [35m500[39m }[0m
 Next.js build worker exited with code: 1 and signal: null
