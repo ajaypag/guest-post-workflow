@@ -38,7 +38,11 @@ function LoginForm() {
       if (quickstartState) {
         // Return to get-started page to complete order
         router.push('/get-started');
+      } else if (user.userType === 'account') {
+        // Account users should go to their dashboard
+        router.push(searchParams.get('redirect') || '/account/dashboard');
       } else {
+        // Internal users go to main app
         router.push(redirectTo);
       }
     } catch (error: any) {

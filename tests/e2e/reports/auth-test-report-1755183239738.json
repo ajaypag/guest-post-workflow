@@ -1,0 +1,50 @@
+{
+  "total": 0,
+  "passed": 0,
+  "failed": 0,
+  "skipped": 0,
+  "startTime": "2025-08-14T14:53:58.032Z",
+  "endTime": "2025-08-14T14:53:59.737Z",
+  "suites": [
+    {
+      "name": "Authentication Flow Tests",
+      "file": "./specs/authentication.test.js",
+      "status": "failed",
+      "duration": 499,
+      "tests": [],
+      "errors": [
+        "Failed to parse test output: Unexpected end of JSON input"
+      ]
+    },
+    {
+      "name": "Routing Protection Tests",
+      "file": "./specs/routing.test.js",
+      "status": "failed",
+      "duration": 445,
+      "tests": [],
+      "errors": [
+        "Failed to parse test output: Unexpected end of JSON input"
+      ]
+    },
+    {
+      "name": "Permission Boundary Tests",
+      "file": "./specs/permissions.test.js",
+      "status": "failed",
+      "duration": 374,
+      "tests": [],
+      "errors": [
+        "Failed to parse test output: Unexpected end of JSON input"
+      ]
+    },
+    {
+      "name": "User Journey Tests",
+      "file": "./specs/user-journeys.test.js",
+      "status": "failed",
+      "duration": 385,
+      "tests": [],
+      "errors": [
+        "Failed to parse test output: Unexpected end of JSON input"
+      ]
+    }
+  ]
+}

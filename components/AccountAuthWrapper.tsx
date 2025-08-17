@@ -24,6 +24,7 @@ export default function AccountAuthWrapper({ children }: AccountAuthWrapperProps
   const [loading, setLoading] = useState(true);
   const [authenticated, setAuthenticated] = useState(false);
   const [user, setUser] = useState<AccountUser | null>(null);
+  
 
   useEffect(() => {
     checkAuth();

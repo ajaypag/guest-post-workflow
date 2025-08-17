@@ -30,16 +30,28 @@ function AccountLoginForm() {
     try {
       console.log('🔐 Attempting login for:', formData.email);
       
-      // Login logic only - no registration
-      const user = await AuthService.login(formData.email, formData.password);
+      // Call account-specific login endpoint
+      const response = await fetch('/api/auth/account/login', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        credentials: 'include',
+        body: JSON.stringify({ email: formData.email, password: formData.password })
+      });
+      
+      if (!response.ok) {
+        const errorData = await response.json();
+        throw new Error(errorData.error || 'Login failed');
+      }
+      
+      const { user } = await response.json();
       console.log('🔐 Login response:', user ? 'User received' : 'No user');
       
       if (!user) {
         throw new Error('Invalid email or password');
       }
       
-      // Check if cookie was set
-      console.log('🔐 Document cookies after login:', document.cookie);
+      // Account users use HTTP-only cookies, not localStorage
+      console.log('🔐 Login successful, redirecting to:', redirectTo);
       
       router.push(redirectTo);
     } catch (error: any) {
