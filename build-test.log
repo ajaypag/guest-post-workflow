@@ -6,7 +6,7 @@
    - Environments: .env.local, .env
 
    Creating an optimized production build ...
- ✓ Compiled successfully in 22.0s
+ ✓ Compiled successfully in 2.6min
    Linting and checking validity of types ...
 
 ./app/account/orders/[id]/status/page.tsx
@@ -113,6 +113,9 @@
 ./components/GuidedTriageFlow.tsx
 414:6  Warning: React Hook useEffect has missing dependencies: 'handleQualify' and 'props'. Either include them or remove the dependency array. However, 'props' will change when *any* prop changes, so the preferred fix is to destructure the 'props' object outside of the useEffect call and refer to those specific props inside useEffect.  react-hooks/exhaustive-deps
 
+./components/PublisherAuthWrapper.tsx
+37:6  Warning: React Hook useEffect has missing dependencies: 'checkAuth' and 'refreshTokenIfNeeded'. Either include them or remove the dependency array.  react-hooks/exhaustive-deps
+
 ./components/StepForm.tsx
 244:6  Warning: React Hook useEffect has missing dependencies: 'autoSaveTimer', 'handleSave', and 'step.outputs.finalArticle'. Either include them or remove the dependency array.  react-hooks/exhaustive-deps
 
@@ -148,6 +151,12 @@
 
 ./components/orders/StripePaymentForm.tsx
 281:6  Warning: React Hook useEffect has a missing dependency: 'initializePayment'. Either include it or remove the dependency array.  react-hooks/exhaustive-deps
+
+./components/publisher/PublisherEarningsOverview.tsx
+122:6  Warning: React Hook useEffect has a missing dependency: 'fetchEarnings'. Either include it or remove the dependency array.  react-hooks/exhaustive-deps
+
+./components/publisher/PublisherOrdersList.tsx
+120:6  Warning: React Hook useEffect has a missing dependency: 'fetchOrders'. Either include it or remove the dependency array.  react-hooks/exhaustive-deps
 
 ./components/steps/ClientLinkStep.tsx
 82:6  Warning: React Hook useEffect has missing dependencies: 'onChange' and 'step.outputs'. Either include them or remove the dependency array. If 'onChange' changes too often, find the parent component that defines it and wrap that definition in useCallback.  react-hooks/exhaustive-deps
@@ -193,16 +202,126 @@
 95:6  Warning: React Hook useEffect has a missing dependency: 'loadWebsiteDetails'. Either include it or remove the dependency array.  react-hooks/exhaustive-deps
 
 info  - Need to disable some ESLint rules? Learn more here: https://nextjs.org/docs/app/api-reference/config/eslint#disabling-rules
-Failed to compile.
-
-./app/api/publisher/websites/add/route.ts:60:7
-Type error: Type 'NormalizedDomain' is not assignable to type 'string'.
-
-[0m [90m 58 |[39m     [36mlet[39m normalizedDomain[33m:[39m string[33m;[39m[0m
-[0m [90m 59 |[39m     [36mtry[39m {[0m
-[0m[31m[1m>[22m[39m[90m 60 |[39m       normalizedDomain [33m=[39m normalizeDomain(data[33m.[39mdomain)[33m;[39m[0m
-[0m [90m    |[39m       [31m[1m^[22m[39m[0m
-[0m [90m 61 |[39m     } [36mcatch[39m (err) {[0m
-[0m [90m 62 |[39m       [36mreturn[39m [33mNextResponse[39m[33m.[39mjson([0m
-[0m [90m 63 |[39m         { error[33m:[39m [32m'Invalid domain format'[39m }[33m,[39m[0m
-Next.js build worker exited with code: 1 and signal: null
+   Collecting page data ...
+🔗 Database connection string: postgresql:****@localhost:5433/guest_post_test
+🔗 Database connection string: postgresql:****@localhost:5433/guest_post_test
+🔗 Database connection string: postgresql:****@localhost:5433/guest_post_test
+🔗 Database connection string: postgresql:****@localhost:5433/guest_post_test
+🔗 Database connection string: postgresql:****@localhost:5433/guest_post_test
+🔗 Database connection string: postgresql:****@localhost:5433/guest_post_test
+🔗 Database connection string: postgresql:****@localhost:5433/guest_post_test
+🔗 Database connection string: postgresql:****@localhost:5433/guest_post_test
+🔗 Database connection string: postgresql:****@localhost:5433/guest_post_test
+🔗 Database connection string: postgresql:****@localhost:5433/guest_post_test
+🔗 Database connection string: postgresql:****@localhost:5433/guest_post_test
+ ⚠ Using edge runtime on a page currently disables static generation for that page
+   Generating static pages (0/375) ...
+   Generating static pages (93/375) 
+🔗 Database connection string: postgresql:****@localhost:5433/guest_post_test
+🔗 Database connection string: postgresql:****@localhost:5433/guest_post_test
+🔗 Database connection string: postgresql:****@localhost:5433/guest_post_test
+🔗 Database connection string: postgresql:****@localhost:5433/guest_post_test
+🔗 Database connection string: postgresql:****@localhost:5433/guest_post_test
+🔗 Database connection string: postgresql:****@localhost:5433/guest_post_test
+🔗 Database connection string: postgresql:****@localhost:5433/guest_post_test
+   Generating static pages (187/375) 
+   Generating static pages (281/375) 
+Failed to check migration status: TypeError: Failed to parse URL from /api/admin/migrations/check-status
+    at <unknown> (.next/server/chunks/37719.js:1:9590)
+    at K (.next/server/chunks/37719.js:1:16445)
+    at <unknown> (.next/server/chunks/37719.js:1:19387)
+    at async C (.next/server/app/admin/publisher-migrations/page.js:1:8152) {
+  [cause]: TypeError: Invalid URL
+      at <unknown> (.next/server/chunks/37719.js:1:9590)
+      at K (.next/server/chunks/37719.js:1:16445)
+      at <unknown> (.next/server/chunks/37719.js:1:19387)
+      at async C (.next/server/app/admin/publisher-migrations/page.js:1:8152) {
+    code: 'ERR_INVALID_URL',
+    input: '/api/admin/migrations/check-status'
+  }
+}
+🔗 Database connection string: postgresql:****@localhost:5433/guest_post_test
+🔐 AuthServiceServer.getSession - Starting
+🔐 AuthServiceServer.getSession - Starting
+Session verification error: Error: Dynamic server usage: Route /publisher/analytics couldn't be rendered statically because it used `cookies`. See more info here: https://nextjs.org/docs/messages/dynamic-server-error
+    at m (.next/server/chunks/37719.js:19:10449)
+    at f (.next/server/chunks/44999.js:1:17707)
+    at p.getSession (.next/server/app/publisher/analytics/page.js:1:1221)
+    at h (.next/server/app/publisher/analytics/page.js:1:3354)
+    at stringify (<anonymous>) {
+  description: "Route /publisher/analytics couldn't be rendered statically because it used `cookies`. See more info here: https://nextjs.org/docs/messages/dynamic-server-error",
+  digest: 'DYNAMIC_SERVER_USAGE'
+}
+Session verification error: Error: Dynamic server usage: Route /publisher/orders couldn't be rendered statically because it used `cookies`. See more info here: https://nextjs.org/docs/messages/dynamic-server-error
+    at m (.next/server/chunks/37719.js:19:10449)
+    at f (.next/server/chunks/44999.js:1:17707)
+    at p.getSession (.next/server/app/publisher/analytics/page.js:1:1221)
+    at d (.next/server/app/publisher/orders/page.js:1:22536)
+    at stringify (<anonymous>) {
+  description: "Route /publisher/orders couldn't be rendered statically because it used `cookies`. See more info here: https://nextjs.org/docs/messages/dynamic-server-error",
+  digest: 'DYNAMIC_SERVER_USAGE'
+}
+🔗 Database connection string: postgresql:****@localhost:5433/guest_post_test
+🔐 AuthServiceServer.getSession - Starting
+🔐 AuthServiceServer.getSession - Starting
+🔐 AuthServiceServer.getSession - Starting
+🔐 AuthServiceServer.getSession - Starting
+🔐 AuthServiceServer.getSession - Starting
+🔐 AuthServiceServer.getSession - Starting
+Session verification error: Error: Dynamic server usage: Route /internal couldn't be rendered statically because it used `cookies`. See more info here: https://nextjs.org/docs/messages/dynamic-server-error
+    at m (.next/server/chunks/37719.js:19:10449)
+    at f (.next/server/chunks/44999.js:1:17707)
+    at h.getSession (.next/server/chunks/27255.js:1:483)
+    at c (.next/server/chunks/27255.js:13:951)
+    at stringify (<anonymous>) {
+  description: "Route /internal couldn't be rendered statically because it used `cookies`. See more info here: https://nextjs.org/docs/messages/dynamic-server-error",
+  digest: 'DYNAMIC_SERVER_USAGE'
+}
+Session verification error: Error: Dynamic server usage: Route /internal couldn't be rendered statically because it used `cookies`. See more info here: https://nextjs.org/docs/messages/dynamic-server-error
+    at m (.next/server/chunks/37719.js:19:10449)
+    at f (.next/server/chunks/44999.js:1:17707)
+    at h.getSession (.next/server/chunks/27255.js:1:483)
+    at h (.next/server/app/internal/page.js:1:12182)
+    at stringify (<anonymous>) {
+  description: "Route /internal couldn't be rendered statically because it used `cookies`. See more info here: https://nextjs.org/docs/messages/dynamic-server-error",
+  digest: 'DYNAMIC_SERVER_USAGE'
+}
+Session verification error: Error: Dynamic server usage: Route /internal/publishers/new couldn't be rendered statically because it used `cookies`. See more info here: https://nextjs.org/docs/messages/dynamic-server-error
+    at m (.next/server/chunks/37719.js:19:10449)
+    at f (.next/server/chunks/44999.js:1:17707)
+    at h.getSession (.next/server/chunks/27255.js:1:483)
+    at c (.next/server/chunks/27255.js:13:951)
+    at stringify (<anonymous>) {
+  description: "Route /internal/publishers/new couldn't be rendered statically because it used `cookies`. See more info here: https://nextjs.org/docs/messages/dynamic-server-error",
+  digest: 'DYNAMIC_SERVER_USAGE'
+}
+Session verification error: Error: Dynamic server usage: Route /internal/websites couldn't be rendered statically because it used `cookies`. See more info here: https://nextjs.org/docs/messages/dynamic-server-error
+    at m (.next/server/chunks/37719.js:19:10449)
+    at f (.next/server/chunks/44999.js:1:17707)
+    at h.getSession (.next/server/chunks/27255.js:1:483)
+    at c (.next/server/chunks/27255.js:13:951)
+    at stringify (<anonymous>) {
+  description: "Route /internal/websites couldn't be rendered statically because it used `cookies`. See more info here: https://nextjs.org/docs/messages/dynamic-server-error",
+  digest: 'DYNAMIC_SERVER_USAGE'
+}
+Session verification error: Error: Dynamic server usage: Route /internal/websites couldn't be rendered statically because it used `cookies`. See more info here: https://nextjs.org/docs/messages/dynamic-server-error
+    at m (.next/server/chunks/37719.js:19:10449)
+    at f (.next/server/chunks/44999.js:1:17707)
+    at h.getSession (.next/server/chunks/27255.js:1:483)
+    at m (.next/server/app/internal/websites/page.js:1:1985)
+    at stringify (<anonymous>) {
+  description: "Route /internal/websites couldn't be rendered statically because it used `cookies`. See more info here: https://nextjs.org/docs/messages/dynamic-server-error",
+  digest: 'DYNAMIC_SERVER_USAGE'
+}
+Session verification error: Error: Dynamic server usage: Route /internal/publishers couldn't be rendered statically because it used `cookies`. See more info here: https://nextjs.org/docs/messages/dynamic-server-error
+    at m (.next/server/chunks/37719.js:19:10449)
+    at f (.next/server/chunks/44999.js:1:17707)
+    at h.getSession (.next/server/chunks/27255.js:1:483)
+    at c (.next/server/chunks/27255.js:13:951)
+    at stringify (<anonymous>) {
+  description: "Route /internal/publishers couldn't be rendered statically because it used `cookies`. See more info here: https://nextjs.org/docs/messages/dynamic-server-error",
+  digest: 'DYNAMIC_SERVER_USAGE'
+}
+🔗 Database connection string: postgresql:****@localhost:5433/guest_post_test
+🔗 Database connection string: postgresql:****@localhost:5433/guest_post_test
+ ✓ Generating static pages (375/375)
