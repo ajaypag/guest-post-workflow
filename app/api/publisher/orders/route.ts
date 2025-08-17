@@ -4,7 +4,7 @@ import { orderLineItems } from '@/lib/db/orderLineItemSchema';
 import { orders } from '@/lib/db/orderSchema';
 import { clients } from '@/lib/db/schema';
 import { publisherEarnings } from '@/lib/db/publisherEarningsSchema';
-import { publisherOfferings } from '@/lib/db/publisherOfferingsSchemaFixed';
+import { publisherOfferings } from '@/lib/db/publisherSchemaActual';
 import { eq, and, desc, sql, inArray } from 'drizzle-orm';
 import { AuthServiceServer } from '@/lib/auth-server';
 
@@ -168,8 +168,9 @@ export async function GET(request: NextRequest) {
 
   } catch (error) {
     console.error('Error fetching publisher orders:', error);
+    console.error('Stack trace:', error.stack);
     return NextResponse.json(
-      { error: 'Failed to fetch orders' },
+      { error: 'Failed to fetch orders', details: error.message },
       { status: 500 }
     );
   }

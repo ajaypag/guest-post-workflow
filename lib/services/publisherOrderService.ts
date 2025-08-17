@@ -18,7 +18,7 @@ import {
   publisherOfferingRelationships,
   publisherOfferings,
   type PublisherOffering
-} from '@/lib/db/publisherOfferingsSchemaFixed';
+} from '@/lib/db/publisherSchemaActual';
 import { websites } from '@/lib/db/websiteSchema';
 import { publishers } from '@/lib/db/accountSchema';
 import { bulkAnalysisDomains } from '@/lib/db/bulkAnalysisSchema';

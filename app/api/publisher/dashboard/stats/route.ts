@@ -1,7 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { AuthServiceServer } from '@/lib/auth-server';
 import { db } from '@/lib/db/connection';
-import { publisherOfferingRelationships, publisherOfferings, publisherPerformance } from '@/lib/db/publisherOfferingsSchemaFixed';
+import { publisherOfferingRelationships, publisherOfferings, publisherPerformance } from '@/lib/db/publisherSchemaActual';
 import { eq, and, sql } from 'drizzle-orm';
 
 export async function GET(request: NextRequest) {
@@ -35,17 +35,13 @@ export async function GET(request: NextRequest) {
         )
       );
 
-    // Get active offerings
+    // Get active offerings (direct relationship via publisher_id)
     const activeOfferings = await db
       .select({ count: sql<number>`count(*)::int` })
       .from(publisherOfferings)
-      .innerJoin(
-        publisherOfferingRelationships,
-        eq(publisherOfferings.publisherRelationshipId, publisherOfferingRelationships.id)
-      )
       .where(
         and(
-          eq(publisherOfferingRelationships.publisherId, publisherId),
+          eq(publisherOfferings.publisherId, publisherId),
           eq(publisherOfferings.isActive, true)
         )
       );

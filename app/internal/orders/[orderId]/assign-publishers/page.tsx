@@ -4,7 +4,7 @@ import { db } from '@/lib/db/connection';
 import { orders } from '@/lib/db/orderSchema';
 import { orderLineItems } from '@/lib/db/orderLineItemSchema';
 import { publishers, websites } from '@/lib/db/schema';
-import { publisherOfferingRelationships } from '@/lib/db/publisherOfferingsSchemaFixed';
+import { publisherOfferingRelationships } from '@/lib/db/publisherSchemaActual';
 import { eq, and, sql } from 'drizzle-orm';
 // import PublisherAssignmentForm from '@/components/internal/PublisherAssignmentForm';
 

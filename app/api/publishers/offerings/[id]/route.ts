@@ -2,7 +2,7 @@ import { NextRequest, NextResponse } from 'next/server';
 import { AuthServiceServer } from '@/lib/auth-server';
 import { publisherOfferingsService } from '@/lib/services/publisherOfferingsService';
 import { db } from '@/lib/db/connection';
-import { publisherOfferings, publisherOfferingRelationships } from '@/lib/db/publisherOfferingsSchemaFixed';
+import { publisherOfferings, publisherOfferingRelationships } from '@/lib/db/publisherSchemaActual';
 import { eq } from 'drizzle-orm';
 import { z } from 'zod';
 

@@ -5,7 +5,7 @@ import {
   type PublisherEmailClaim,
   type NewPublisherEmailClaim,
   VERIFICATION_STATUS
-} from '@/lib/db/publisherOfferingsSchemaFixed';
+} from '@/lib/db/publisherSchemaActual';
 import { publishers } from '@/lib/db/accountSchema';
 import { websites } from '@/lib/db/websiteSchema';
 import { eq, and, or, like, inArray, sql, desc } from 'drizzle-orm';

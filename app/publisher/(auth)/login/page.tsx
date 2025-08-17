@@ -30,8 +30,8 @@ export default function PublisherLoginPage() {
         throw new Error(data.error || 'Login failed');
       }
 
-      // Redirect to publisher dashboard
-      router.push('/publisher');
+      // Redirect to publisher dashboard  
+      window.location.href = '/publisher';
     } catch (err) {
       setError(err instanceof Error ? err.message : 'An error occurred');
     } finally {

@@ -1,7 +1,7 @@
 import { db } from '@/lib/db/connection';
 import { websites } from '@/lib/db/websiteSchema';
 import { publisherOfferingsService } from './publisherOfferingsService';
-import { OFFERING_TYPES } from '@/lib/db/publisherOfferingsSchemaFixed';
+import { OFFERING_TYPES } from '@/lib/db/publisherSchemaActual';
 import { eq, or } from 'drizzle-orm';
 
 export class EnhancedOrderPricingService {

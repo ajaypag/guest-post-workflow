@@ -1,7 +1,7 @@
 import { NextResponse } from 'next/server';
 import { db } from '@/lib/db/connection';
 import { publishers, websites } from '@/lib/db/schema';
-import { publisherOfferingRelationships } from '@/lib/db/publisherOfferingsSchemaFixed';
+import { publisherOfferingRelationships } from '@/lib/db/publisherSchemaActual';
 import { eq, and, sql } from 'drizzle-orm';
 import { AuthServiceServer } from '@/lib/auth-server';
 

@@ -20,6 +20,7 @@ export const publisherOfferings = pgTable('publisher_offerings', {
   expressAvailable: boolean('express_available').default(false),
   expressPrice: integer('express_price'),
   expressDays: integer('express_days'),
+  offeringName: varchar('offering_name', { length: 255 }),
   minWordCount: integer('min_word_count'),
   maxWordCount: integer('max_word_count'),
   niches: text('niches').array(),
@@ -107,6 +108,21 @@ export const publisherPerformance = pgTable('publisher_performance', {
   updatedAt: timestamp('updated_at').defaultNow(),
 });
 
+// Publisher Email Claims - Based on actual database structure
+export const publisherEmailClaims = pgTable('publisher_email_claims', {
+  id: uuid('id').primaryKey().defaultRandom(),
+  publisherId: uuid('publisher_id').notNull(),
+  websiteId: uuid('website_id').notNull(),
+  emailDomain: varchar('email_domain', { length: 255 }).notNull(),
+  verificationToken: varchar('verification_token', { length: 255 }).notNull(),
+  verificationSentAt: timestamp('verification_sent_at'),
+  verifiedAt: timestamp('verified_at'),
+  status: varchar('status', { length: 50 }),
+  rejectionReason: text('rejection_reason'),
+  createdAt: timestamp('created_at').defaultNow(),
+  updatedAt: timestamp('updated_at').defaultNow(),
+});
+
 // Relations
 export const publisherOfferingsRelations = relations(publisherOfferings, ({ one, many }) => ({
   publisher: one(publishers, {
@@ -156,6 +172,13 @@ export const OFFERING_TYPES = {
   NICHE_EDIT: 'niche_edit',
 } as const;
 
+export const VERIFICATION_STATUS = {
+  PENDING: 'pending',
+  VERIFIED: 'verified',
+  FAILED: 'failed',
+  CLAIMED: 'claimed',
+} as const;
+
 // Type exports
 export type PublisherOffering = typeof publisherOfferings.$inferSelect;
 export type NewPublisherOffering = typeof publisherOfferings.$inferInsert;
@@ -168,3 +191,6 @@ export type NewPublisherPricingRule = typeof publisherPricingRules.$inferInsert;
 
 export type PublisherPerformance = typeof publisherPerformance.$inferSelect;
 export type NewPublisherPerformance = typeof publisherPerformance.$inferInsert;
+
+export type PublisherEmailClaim = typeof publisherEmailClaims.$inferSelect;
+export type NewPublisherEmailClaim = typeof publisherEmailClaims.$inferInsert;
