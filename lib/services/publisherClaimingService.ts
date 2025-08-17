@@ -66,7 +66,9 @@ export class PublisherClaimingService {
           emailDomain: email,
           websiteId: website.id,
           status: 'pending',
-          verificationToken
+          verificationToken,
+          claimConfidence: website.confidence,
+          claimSource: website.source
         })
         .returning();
       
@@ -318,7 +320,8 @@ export class PublisherClaimingService {
         <h2>Manual Website Claim Review Required</h2>
         <p><strong>Publisher:</strong> ${claim.publisher.contactName} (${claim.publisher.email})</p>
         <p><strong>Website:</strong> ${claim.website.domain}</p>
-        <p><strong>Claim Status:</strong> ${claim.claim.status || 'pending'}</p>
+        <p><strong>Claim Confidence:</strong> ${claim.claim.claimConfidence || 'unknown'}</p>
+        <p><strong>Claim Source:</strong> ${claim.claim.claimSource || 'manual'}</p>
         ${reason ? `<p><strong>Reason for Manual Review:</strong> ${reason}</p>` : ''}
         <p><strong>Website Details:</strong></p>
         <ul>
