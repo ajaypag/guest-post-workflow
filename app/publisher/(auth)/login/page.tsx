@@ -121,7 +121,7 @@ export default function PublisherLoginPage() {
 
           {/* Links */}
           <div className="mt-6 text-center space-y-2">
-            <Link href="/publisher/reset-password" className="text-sm text-blue-600 hover:text-blue-700">
+            <Link href="/publisher/forgot-password" className="text-sm text-blue-600 hover:text-blue-700">
               Forgot your password?
             </Link>
             <div className="text-sm text-gray-600">
