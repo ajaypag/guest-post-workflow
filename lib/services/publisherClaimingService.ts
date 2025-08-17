@@ -207,7 +207,7 @@ export class PublisherClaimingService {
       .where(
         and(
           eq(publisherEmailClaims.verificationToken, token),
-          eq(publisherEmailClaims.claimStatus, 'pending')
+          eq(publisherEmailClaims.status, 'pending')
         )
       )
       .limit(1);
@@ -229,7 +229,7 @@ export class PublisherClaimingService {
     await db
       .update(publisherEmailClaims)
       .set({
-        claimStatus: 'approved',
+        status: 'approved',
         verifiedAt: new Date(),
         processedAt: new Date()
       })
@@ -356,7 +356,7 @@ export class PublisherClaimingService {
     await db
       .update(publisherEmailClaims)
       .set({
-        claimStatus: 'approved',
+        status: 'approved',
         verifiedAt: new Date(),
         processedAt: new Date()
       })
@@ -377,7 +377,7 @@ export class PublisherClaimingService {
     const [claim] = await db
       .update(publisherEmailClaims)
       .set({
-        claimStatus: 'rejected',
+        status: 'rejected',
         processedAt: new Date()
       })
       .where(eq(publisherEmailClaims.id, claimId))
@@ -424,7 +424,7 @@ export class PublisherClaimingService {
       .from(publisherEmailClaims)
       .innerJoin(publishers, eq(publisherEmailClaims.publisherId, publishers.id))
       .innerJoin(websites, eq(publisherEmailClaims.websiteId, websites.id))
-      .where(eq(publisherEmailClaims.claimStatus, 'pending'))
+      .where(eq(publisherEmailClaims.status, 'pending'))
       .orderBy(desc(publisherEmailClaims.createdAt));
     
     return claims;
