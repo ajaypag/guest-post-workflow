@@ -29,12 +29,16 @@ export async function GET(
     }
 
     // Verify ownership of the offering
-    const offering = await db.query.publisherOfferings.findFirst({
-      where: and(
+    const offerings = await db
+      .select()
+      .from(publisherOfferings)
+      .where(and(
         eq(publisherOfferings.id, offeringId),
         eq(publisherOfferings.publisherId, session.publisherId)
-      )
-    });
+      ))
+      .limit(1);
+    
+    const offering = offerings[0];
 
     if (!offering) {
       return NextResponse.json(
@@ -102,12 +106,16 @@ export async function POST(
     }
 
     // Verify ownership of the offering
-    const offering = await db.query.publisherOfferings.findFirst({
-      where: and(
+    const offerings = await db
+      .select()
+      .from(publisherOfferings)
+      .where(and(
         eq(publisherOfferings.id, offeringId),
         eq(publisherOfferings.publisherId, session.publisherId)
-      )
-    });
+      ))
+      .limit(1);
+    
+    const offering = offerings[0];
 
     if (!offering) {
       return NextResponse.json(
@@ -191,12 +199,16 @@ export async function PUT(
     }
 
     // Verify ownership of the offering
-    const offering = await db.query.publisherOfferings.findFirst({
-      where: and(
+    const offerings = await db
+      .select()
+      .from(publisherOfferings)
+      .where(and(
         eq(publisherOfferings.id, offeringId),
         eq(publisherOfferings.publisherId, session.publisherId)
-      )
-    });
+      ))
+      .limit(1);
+    
+    const offering = offerings[0];
 
     if (!offering) {
       return NextResponse.json(
@@ -206,12 +218,16 @@ export async function PUT(
     }
 
     // Verify the rule exists and belongs to this offering
-    const existingRule = await db.query.publisherPricingRules.findFirst({
-      where: and(
+    const existingRules = await db
+      .select()
+      .from(publisherPricingRules)
+      .where(and(
         eq(publisherPricingRules.id, ruleId),
         eq(publisherPricingRules.publisherOfferingId, offeringId)
-      )
-    });
+      ))
+      .limit(1);
+    
+    const existingRule = existingRules[0];
 
     if (!existingRule) {
       return NextResponse.json(
@@ -287,12 +303,16 @@ export async function DELETE(
     }
 
     // Verify ownership of the offering
-    const offering = await db.query.publisherOfferings.findFirst({
-      where: and(
+    const offerings = await db
+      .select()
+      .from(publisherOfferings)
+      .where(and(
         eq(publisherOfferings.id, offeringId),
         eq(publisherOfferings.publisherId, session.publisherId)
-      )
-    });
+      ))
+      .limit(1);
+    
+    const offering = offerings[0];
 
     if (!offering) {
       return NextResponse.json(
@@ -302,12 +322,16 @@ export async function DELETE(
     }
 
     // Verify the rule exists and belongs to this offering
-    const existingRule = await db.query.publisherPricingRules.findFirst({
-      where: and(
+    const existingRules = await db
+      .select()
+      .from(publisherPricingRules)
+      .where(and(
         eq(publisherPricingRules.id, ruleId),
         eq(publisherPricingRules.publisherOfferingId, offeringId)
-      )
-    });
+      ))
+      .limit(1);
+    
+    const existingRule = existingRules[0];
 
     if (!existingRule) {
       return NextResponse.json(

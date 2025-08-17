@@ -1,7 +1,8 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { AuthServiceServer } from '@/lib/auth-server';
 import { db } from '@/lib/db/connection';
-import { publisherOfferings, publisherOfferingRelationships, publisherPricingRules, websites } from '@/lib/db/publisherSchemaActual';
+import { publisherOfferings, publisherOfferingRelationships, publisherPricingRules } from '@/lib/db/publisherSchemaActual';
+import { websites } from '@/lib/db/schema';
 import { eq, and } from 'drizzle-orm';
 
 // GET /api/publisher/offerings/[id] - Get a single offering
@@ -76,7 +77,6 @@ export async function GET(
       minWordCount: offering.minWordCount,
       maxWordCount: offering.maxWordCount,
       currentAvailability: offering.currentAvailability,
-      availableSlots: offering.availableSlots,
       expressAvailable: offering.expressAvailable,
       expressPrice: offering.expressPrice,
       expressDays: offering.expressDays,
@@ -137,12 +137,16 @@ export async function PUT(
     const body = await request.json();
 
     // Verify ownership
-    const existingOffering = await db.query.publisherOfferings.findFirst({
-      where: and(
+    const existingOfferings = await db
+      .select()
+      .from(publisherOfferings)
+      .where(and(
         eq(publisherOfferings.id, offeringId),
         eq(publisherOfferings.publisherId, session.publisherId)
-      )
-    });
+      ))
+      .limit(1);
+    
+    const existingOffering = existingOfferings[0];
 
     if (!existingOffering) {
       return NextResponse.json(
@@ -164,7 +168,6 @@ export async function PUT(
     if (body.minWordCount !== undefined) updateData.minWordCount = body.minWordCount;
     if (body.maxWordCount !== undefined) updateData.maxWordCount = body.maxWordCount;
     if (body.currentAvailability !== undefined) updateData.currentAvailability = body.currentAvailability;
-    if (body.availableSlots !== undefined) updateData.availableSlots = body.availableSlots;
     if (body.expressAvailable !== undefined) updateData.expressAvailable = body.expressAvailable;
     if (body.expressPrice !== undefined) updateData.expressPrice = body.expressPrice;
     if (body.expressDays !== undefined) updateData.expressDays = body.expressDays;
@@ -179,9 +182,13 @@ export async function PUT(
     // If websiteId is provided, update the relationship
     if (body.websiteId) {
       // Check if relationship exists
-      const existingRelationship = await db.query.publisherOfferingRelationships.findFirst({
-        where: eq(publisherOfferingRelationships.offeringId, offeringId)
-      });
+      const existingRelationships = await db
+        .select()
+        .from(publisherOfferingRelationships)
+        .where(eq(publisherOfferingRelationships.offeringId, offeringId))
+        .limit(1);
+      
+      const existingRelationship = existingRelationships[0];
 
       if (existingRelationship) {
         // Update existing relationship
@@ -242,12 +249,16 @@ export async function DELETE(
     }
 
     // Verify ownership
-    const existingOffering = await db.query.publisherOfferings.findFirst({
-      where: and(
+    const existingOfferings = await db
+      .select()
+      .from(publisherOfferings)
+      .where(and(
         eq(publisherOfferings.id, offeringId),
         eq(publisherOfferings.publisherId, session.publisherId)
-      )
-    });
+      ))
+      .limit(1);
+    
+    const existingOffering = existingOfferings[0];
 
     if (!existingOffering) {
       return NextResponse.json(
