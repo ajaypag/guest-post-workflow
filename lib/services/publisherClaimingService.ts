@@ -318,8 +318,7 @@ export class PublisherClaimingService {
         <h2>Manual Website Claim Review Required</h2>
         <p><strong>Publisher:</strong> ${claim.publisher.contactName} (${claim.publisher.email})</p>
         <p><strong>Website:</strong> ${claim.website.domain}</p>
-        <p><strong>Claim Confidence:</strong> ${claim.claim.claimConfidence}</p>
-        <p><strong>Claim Source:</strong> ${claim.claim.claimSource}</p>
+        <p><strong>Claim Status:</strong> ${claim.claim.status || 'pending'}</p>
         ${reason ? `<p><strong>Reason for Manual Review:</strong> ${reason}</p>` : ''}
         <p><strong>Website Details:</strong></p>
         <ul>
