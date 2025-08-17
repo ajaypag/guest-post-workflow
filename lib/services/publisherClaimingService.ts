@@ -231,7 +231,7 @@ export class PublisherClaimingService {
       .set({
         status: 'approved',
         verifiedAt: new Date(),
-        processedAt: new Date()
+        updatedAt: new Date()
       })
       .where(eq(publisherEmailClaims.id, claim.id));
     
@@ -358,7 +358,7 @@ export class PublisherClaimingService {
       .set({
         status: 'approved',
         verifiedAt: new Date(),
-        processedAt: new Date()
+        updatedAt: new Date()
       })
       .where(eq(publisherEmailClaims.id, claimId));
     
@@ -378,7 +378,7 @@ export class PublisherClaimingService {
       .update(publisherEmailClaims)
       .set({
         status: 'rejected',
-        processedAt: new Date()
+        updatedAt: new Date()
       })
       .where(eq(publisherEmailClaims.id, claimId))
       .returning();
