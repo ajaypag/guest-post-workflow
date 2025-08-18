@@ -82,7 +82,7 @@ async function runPreflightCheck() {
 
   // Check database connectivity
   try {
-    await db.select({ test: sql`1` }).limit(1);
+    await db.execute(sql`SELECT 1`);
     checks.push('✅ Database connectivity');
   } catch (error) {
     checks.push('❌ Database connectivity failed');
@@ -289,37 +289,45 @@ async function migrateOrderData() {
         const anchorText = anchorTexts[i] || anchorTexts[0] || null;
 
         // Calculate pricing
-        const estimatedPrice = orderGroup.packagePrice 
-          ? Math.round(orderGroup.packagePrice / linkCount * 100) // Convert to cents and divide by links
+        const packagePrice = (orderGroup.requirementOverrides as any)?.packagePrice || 0;
+        const estimatedPrice = packagePrice 
+          ? Math.round(packagePrice / linkCount) // Price already in cents, divide by links
           : 49900; // Default $499
         
         const wholesalePrice = Math.max(estimatedPrice - 7900, 0); // Subtract service fee
         const serviceFee = 7900;
 
-        await db.insert(orderLineItems).values({
-          id: lineItemId,
+        const [createdLineItem] = await db.insert(orderLineItems).values({
           orderId: order.id,
           clientId: orderGroup.clientId,
-          targetPageUrl,
-          anchorText,
+          targetPageUrl: targetPageUrl || undefined,
+          anchorText: anchorText || undefined,
           status: 'draft',
           estimatedPrice,
           wholesalePrice,
           serviceFee,
-          addedAt: new Date(),
           addedBy: '00000000-0000-0000-0000-000000000000', // System user
           displayOrder: i,
           version: 1,
           metadata: {
-            migratedFrom: 'orderGroups',
-            originalOrderGroupId: orderGroup.id,
-            migrationDate: new Date().toISOString()
+            originalGroupId: orderGroup.id,
+            bulkAnalysisProjectId: orderGroup.bulkAnalysisProjectId || undefined,
+            specialInstructions: `Migrated from orderGroup ${orderGroup.id}`,
+            changeHistory: [{
+              timestamp: new Date().toISOString(),
+              changeType: 'migration_created',
+              previousValue: null,
+              newValue: { source: 'orderGroups', groupId: orderGroup.id },
+              changedBy: '00000000-0000-0000-0000-000000000000',
+              reason: 'System migration from orderGroups to lineItems'
+            }]
           }
-        });
+        }).returning({ id: orderLineItems.id });
 
         // Create change record
         await db.insert(lineItemChanges).values({
-          lineItemId,
+          orderId: order.id,
+          lineItemId: createdLineItem.id,
           changeType: 'created',
           newValue: {
             source: 'migration',

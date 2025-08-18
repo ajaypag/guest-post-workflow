@@ -18,7 +18,7 @@ export async function GET(request: NextRequest) {
     // Check database connectivity
     let database: 'healthy' | 'degraded' | 'offline' = 'healthy';
     try {
-      await db.select({ test: sql`1` }).limit(1);
+      await db.execute(sql`SELECT 1`);
     } catch (error) {
       console.error('Database health check failed:', error);
       database = 'offline';

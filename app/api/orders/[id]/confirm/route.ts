@@ -102,7 +102,7 @@ export async function POST(
       // Create bulk analysis projects for each group/client
       const projectPromises = groups.map(async ({ orderGroup, client }) => {
         // Only create if no project exists yet
-        if (!orderGroup.bulkAnalysisProjectId) {
+        if (!orderGroup.bulkAnalysisProjectId && client) {
           const projectId = uuidv4();
           const projectName = `Order #${orderId.slice(0, 8)} - ${client.name}`;
           const projectDescription = `Bulk analysis for ${orderGroup.linkCount} links ordered for ${client.name}`;
