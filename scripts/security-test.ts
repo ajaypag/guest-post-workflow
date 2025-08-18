@@ -123,7 +123,7 @@ function printSummary(results: TestResult[]) {
   console.log('   3. Verify authentication logic in affected endpoints');
 }
 
-async function main() {
+async function securityMain() {
   const baseUrl = process.env.NEXTAUTH_URL || 'http://localhost:3000';
   
   console.log('🔒 Security Testing Tool');
@@ -140,4 +140,4 @@ async function main() {
 }
 
 // Run the test
-main().catch(console.error);
+securityMain().catch(console.error);

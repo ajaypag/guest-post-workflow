@@ -99,16 +99,18 @@ export async function POST(request: NextRequest) {
       );
     }
     
-    // Validate price if provided
-    if (offering.basePrice) {
-      const priceValidation = validatePrice(offering.basePrice);
-      if (!priceValidation.valid) {
-        return NextResponse.json(
-          { error: priceValidation.error || 'Invalid price' },
-          { status: 400 }
-        );
+    // Validate prices for all offerings
+    for (const offeringData of offeringsToProcess) {
+      if (offeringData.basePrice) {
+        const priceValidation = validatePrice(offeringData.basePrice);
+        if (!priceValidation.valid) {
+          return NextResponse.json(
+            { error: priceValidation.error || 'Invalid price' },
+            { status: 400 }
+          );
+        }
+        offeringData.basePrice = priceValidation.sanitized;
       }
-      offering.basePrice = priceValidation.sanitized;
     }
     
     // Sanitize all text fields
@@ -122,12 +124,15 @@ export async function POST(request: NextRequest) {
       }
     }
     
-    if (offering.contentRequirements) {
-      offering.contentRequirements = sanitizeText(offering.contentRequirements);
-    }
-    
-    if (offering.prohibitedTopics) {
-      offering.prohibitedTopics = sanitizeText(offering.prohibitedTopics);
+    // Sanitize text fields for all offerings
+    for (const offeringData of offeringsToProcess) {
+      if (offeringData.contentRequirements) {
+        offeringData.contentRequirements = sanitizeText(offeringData.contentRequirements);
+      }
+      
+      if (offeringData.prohibitedTopics) {
+        offeringData.prohibitedTopics = sanitizeText(offeringData.prohibitedTopics);
+      }
     }
 
     // Check if website already exists
@@ -144,24 +149,7 @@ export async function POST(request: NextRequest) {
       // Website already exists - just use it
       websiteId = existingWebsite[0].id;
 
-      // Check if this publisher already has an offering for this website
-      const existingRelationship = await db
-        .select()
-        .from(publisherOfferingRelationships)
-        .where(
-          and(
-            eq(publisherOfferingRelationships.websiteId, websiteId),
-            eq(publisherOfferingRelationships.publisherId, session.publisherId)
-          )
-        )
-        .limit(1);
-
-      if (existingRelationship.length > 0) {
-        return NextResponse.json(
-          { error: 'You already have an offering for this website' },
-          { status: 400 }
-        );
-      }
+      // Multiple offerings per website are now allowed, so no need to check for existing relationships
     } else {
       // Create new website with all the provided fields
       const newWebsiteId = uuidv4();
