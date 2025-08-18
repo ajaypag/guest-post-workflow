@@ -1,0 +1,283 @@
+Got it — I’ll clean this up into **professional, developer-friendly API documentation** (Swagger style). I’ll reorganize everything with clear headings, endpoint definitions, parameters, request/response examples, and notes where needed.
+
+Here’s a refined draft:
+
+---
+
+# ManyReach API Documentation (v1)
+
+**Base URL:**
+
+```
+https://app.manyreach.com/api
+```
+
+**Authentication:**
+All endpoints require an `apikey` parameter passed as a query string.
+Example:
+
+```
+?apikey=YOUR_API_KEY
+```
+
+---
+
+## Campaigns
+
+### Get All Campaigns
+
+**GET** `/campaigns`
+
+Retrieve a list of campaigns.
+
+**Parameters**
+
+| Name   | Type    | In    | Description                                      |
+| ------ | ------- | ----- | ------------------------------------------------ |
+| apikey | string  | query | API key for authentication                       |
+| limit  | integer | query | Max number of campaigns to return (default: 100) |
+
+**Response (200)**
+
+```json
+[
+  {
+    "id": 123,
+    "name": "Sample Campaign",
+    "status": "Active"
+  }
+]
+```
+
+---
+
+### Get Campaign by ID
+
+**GET** `/campaigns/{campaign_id}`
+
+Retrieve detailed information for a specific campaign.
+
+**Parameters**
+
+| Name         | Type    | In    | Description                |
+| ------------ | ------- | ----- | -------------------------- |
+| apikey       | string  | query | API key                    |
+| campaign\_id | integer | path  | Unique campaign identifier |
+
+**Response (200)**
+
+```json
+{
+  "id": 123,
+  "name": "Sample Campaign",
+  "status": "Active",
+  "createdAt": "2025-01-01T12:00:00Z"
+}
+```
+
+---
+
+### Get Prospects for a Campaign
+
+**GET** `/campaigns/{campaign_id}/prospects`
+
+Retrieve all prospects associated with a campaign.
+
+**Parameters**
+
+| Name         | Type    | In    | Description |
+| ------------ | ------- | ----- | ----------- |
+| apikey       | string  | query | API key     |
+| campaign\_id | integer | path  | Campaign ID |
+
+**Response (200)**
+
+```json
+[
+  {
+    "email": "prospect@example.com",
+    "firstname": "John",
+    "lastname": "Doe"
+  }
+]
+```
+
+---
+
+### Add Prospect to Campaign (GET)
+
+**GET** `/campaigns/prospects/add`
+
+Adds a single prospect using query string parameters.
+
+⚠️ **Note:** This is legacy style. Prefer using the POST version.
+
+**Parameters**
+
+| Name                            | Type    | In    | Description                                         |
+| ------------------------------- | ------- | ----- | --------------------------------------------------- |
+| apikey                          | string  | query | API key                                             |
+| campaignid                      | integer | query | Campaign ID                                         |
+| listid                          | integer | query | Optional list ID                                    |
+| newListName                     | string  | query | Name for new list (default: `AddedFromAPI`)         |
+| addOnlyIfNew                    | boolean | query | Add only if not in CRM (default: false)             |
+| notInOtherCampaign              | boolean | query | Add only if not in another campaign (default: true) |
+| sendQuickly                     | boolean | query | Prioritize immediate sending (default: false)       |
+| Prospect.email                  | string  | query | Prospect email (**required**)                       |
+| Prospect.firstname              | string  | query | First name                                          |
+| Prospect.lastname               | string  | query | Last name                                           |
+| Prospect.company                | string  | query | Company name                                        |
+| Prospect.city                   | string  | query | City                                                |
+| Prospect.country                | string  | query | Country                                             |
+| ... many more custom fields ... |         |       |                                                     |
+
+---
+
+### Add Prospect to Campaign (POST)
+
+**POST** `/campaigns/prospects/add`
+
+Adds a single prospect to a campaign using JSON body.
+
+**Parameters**
+
+| Name               | Type    | In    | Description                                         |
+| ------------------ | ------- | ----- | --------------------------------------------------- |
+| apikey             | string  | query | API key                                             |
+| campaignid         | integer | query | Campaign ID                                         |
+| listid             | integer | query | Optional list ID                                    |
+| newListName        | string  | query | Name for new list (default: `AddedFromAPI`)         |
+| addOnlyIfNew       | boolean | query | Add only if not in CRM (default: false)             |
+| notInOtherCampaign | boolean | query | Add only if not in another campaign (default: true) |
+| sendQuickly        | boolean | query | Prioritize immediate sending (default: false)       |
+| Prospect           | object  | body  | Prospect data (**email required**)                  |
+
+**Request Example**
+
+```json
+{
+  "fullName": "Jane Doe",
+  "email": "jane@example.com",
+  "company": "Example Inc",
+  "city": "New York",
+  "industry": "Software",
+  "notes": "High-value lead",
+  "tagsImport": "priority,enterprise"
+}
+```
+
+**Response (200)**
+
+```json
+{
+  "success": true,
+  "message": "Prospect added to campaign."
+}
+```
+
+---
+
+### Bulk Add Prospects
+
+**POST** `/campaigns/prospects/add/bulk`
+
+Add multiple prospects at once.
+
+**Request Example**
+
+```json
+[
+  {
+    "fullName": "John Doe",
+    "email": "john@example.com",
+    "company": "Startup Inc"
+  },
+  {
+    "fullName": "Jane Doe",
+    "email": "jane@example.com",
+    "company": "Tech Corp"
+  }
+]
+```
+
+---
+
+### Stop Prospect in Campaign (GET / POST)
+
+**GET** `/campaigns/prospects/stop`
+**POST** `/campaigns/prospects/stop`
+
+Stops all future emails to a prospect in a campaign.
+
+**Parameters**
+
+| Name       | Type    | In    | Description    |
+| ---------- | ------- | ----- | -------------- |
+| apikey     | string  | query | API key        |
+| campaignid | integer | query | Campaign ID    |
+| email      | string  | query | Prospect email |
+
+---
+
+## Prospects
+
+### Add Tags to Prospect
+
+**GET** `/prospects/prospects/tags/add`
+**POST** `/prospects/prospects/tags/add`
+
+Adds one or more tags to a prospect.
+
+---
+
+### Update Prospect Status
+
+**POST** `/prospects/status/update`
+
+Update a prospect’s sending status.
+
+---
+
+### Add Prospects to CRM (Bulk)
+
+**POST** `/prospects/crm/add/bulk`
+
+Adds multiple prospects to CRM in one request.
+
+---
+
+### Get Prospect Messages
+
+**GET** `/prospects/messages/{email}`
+
+Retrieve message history (sent/received) for a prospect.
+
+---
+
+## Senders
+
+### Get All Senders
+
+**GET** `/senders`
+
+Retrieve list of senders available to your account.
+
+---
+
+### Get Sender by Email
+
+**GET** `/senders/{email}`
+
+Retrieve sender details by email.
+
+---
+
+## Zapier Integration
+
+Zapier endpoints available for workflow automation (see Zapier dashboard).
+
+---
+
+✅ This version is developer-ready, structured, and reads like standard API docs (Swagger/OpenAPI style).
+
+Do you want me to **output this in full OpenAPI YAML/JSON format** so it can be imported directly into Swagger UI/Postman, or keep it in this **clean Markdown documentation** style?

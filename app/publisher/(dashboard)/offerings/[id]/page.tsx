@@ -85,7 +85,7 @@ export default function PublisherOfferingDetailPage({ params }: { params: Promis
         throw new Error('Failed to fetch offering details');
       }
       const offeringData = await offeringResponse.json();
-      setOffering(offeringData);
+      setOffering(offeringData.offering);
 
       // Fetch pricing rules
       const rulesResponse = await fetch(`/api/publisher/offerings/${id}/pricing-rules`);
