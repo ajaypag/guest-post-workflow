@@ -716,21 +716,71 @@ export class OrderService {
         createdAt: orders.createdAt,
         updatedAt: orders.updatedAt,
         itemCount: sql<number>`cast(count(${orderItems.id}) as int)`,
-        // Account data
-        account: accounts,
+        // Account data - select individual fields
+        accountEmail: accounts.email,
+        accountContactName: accounts.contactName,
+        accountCompanyName: accounts.companyName,
       })
       .from(orders)
       .leftJoin(orderItems, eq(orders.id, orderItems.orderId))
       .leftJoin(accounts, eq(orders.accountId, accounts.id))
-      .groupBy(orders.id, accounts.id, accounts.email, accounts.contactName, accounts.companyName)
+      .groupBy(
+        orders.id, 
+        orders.accountId,
+        orders.status,
+        orders.state,
+        orders.subtotalRetail,
+        orders.discountPercent,
+        orders.discountAmount,
+        orders.totalRetail,
+        orders.totalWholesale,
+        orders.profitMargin,
+        orders.includesClientReview,
+        orders.clientReviewFee,
+        orders.rushDelivery,
+        orders.rushFee,
+        orders.requiresClientReview,
+        orders.reviewCompletedAt,
+        orders.shareToken,
+        orders.shareExpiresAt,
+        orders.approvedAt,
+        orders.invoicedAt,
+        orders.paidAt,
+        orders.completedAt,
+        orders.cancelledAt,
+        orders.createdBy,
+        orders.assignedTo,
+        orders.internalNotes,
+        orders.accountNotes,
+        orders.cancellationReason,
+        orders.createdAt,
+        orders.updatedAt,
+        accounts.id, 
+        accounts.email, 
+        accounts.contactName, 
+        accounts.companyName
+      )
       .orderBy(desc(orders.createdAt));
 
     // Now fetch order groups for each order
     const ordersWithGroups = await Promise.all(
       ordersWithCounts.map(async (order) => {
         const groups = await this.getOrderGroups(order.id);
+        
+        // Reconstruct account object from individual fields
+        const account = order.accountEmail ? {
+          id: order.accountId,
+          email: order.accountEmail,
+          contactName: order.accountContactName,
+          companyName: order.accountCompanyName
+        } : null;
+        
+        // Remove the individual account fields and add the account object
+        const { accountEmail, accountContactName, accountCompanyName, ...orderData } = order;
+        
         return {
-          ...order,
+          ...orderData,
+          account,
           totalLinks: groups.reduce((sum, g) => sum + g.linkCount, 0) || order.itemCount,
           orderGroups: groups
         };
