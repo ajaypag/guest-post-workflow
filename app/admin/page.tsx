@@ -1,7 +1,7 @@
 'use client';
 
 import React from 'react';
-import { Database, Activity, Wrench, Users, BarChart3, Settings, AlertTriangle, Bug, FileSearch, Search, Mail, MessageSquare, GitBranch } from 'lucide-react';
+import { Database, Activity, Wrench, Users, BarChart3, Settings, AlertTriangle, Bug, FileSearch, Search, Mail, MessageSquare, GitBranch, ArrowRightLeft } from 'lucide-react';
 
 export default function AdminDashboard() {
   const adminTools = [
@@ -79,6 +79,16 @@ export default function AdminDashboard() {
       href: '/admin/order-flow-matrix',
       color: 'bg-orange-50 border-orange-200 text-orange-700',
       iconColor: 'text-orange-600'
+    },
+
+    // System Migration
+    {
+      title: 'LineItems Migration',
+      description: 'Migrate orders from orderGroups to lineItems system with full rollback capability',
+      icon: ArrowRightLeft,
+      href: '/admin/migration',
+      color: 'bg-purple-50 border-purple-200 text-purple-700',
+      iconColor: 'text-purple-600'
     },
     
     // User & Account Management
