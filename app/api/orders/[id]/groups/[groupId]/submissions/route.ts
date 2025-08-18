@@ -13,6 +13,15 @@ export async function GET(
   context: { params: Promise<{ id: string; groupId: string }> }
 ) {
   const params = await context.params;
+  
+  // MIGRATION: Return empty submissions during lineItems migration
+  if (true) {
+    return NextResponse.json({ 
+      submissions: [],
+      message: 'Order uses lineItems system instead of submissions'
+    });
+  }
+  
   try {
     // Get user session
     const session = await AuthServiceServer.getSession();

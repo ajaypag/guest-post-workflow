@@ -61,9 +61,15 @@
 
 ## Phase 3: Cleanup
 
-### Code to Remove
+### Completed
+- [x] Disabled orderGroups API endpoints (return empty/migration notices)
+  - `/api/orders/[id]/groups` returns empty groups
+  - `/api/orders/[id]/groups/[groupId]/submissions` returns empty submissions
+  - Created MIGRATION_NOTICE.ts for consistent responses
+
+### Code to Remove (After Production Migration)
 - All `/api/orders/[id]/groups/*` endpoints
-- OrderGroups components
+- OrderGroups components  
 - Database tables (via migration script)
 
 ## Database Migration Scripts
