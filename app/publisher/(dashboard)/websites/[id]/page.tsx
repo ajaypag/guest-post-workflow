@@ -337,17 +337,31 @@ export default function WebsiteViewPage({ params }: { params: Promise<{ id: stri
                 <div className="text-center py-4">
                   <Clock className="h-12 w-12 text-yellow-500 mx-auto mb-2" />
                   <p className="text-yellow-700 font-medium">Verification Pending</p>
-                  <p className="text-gray-500 text-sm mt-1">
+                  <p className="text-gray-500 text-sm mt-1 mb-4">
                     Please complete the verification process
                   </p>
+                  <Link
+                    href={`/publisher/websites/${websiteId}/verify`}
+                    className="inline-flex items-center px-4 py-2 bg-yellow-600 text-white rounded-lg hover:bg-yellow-700"
+                  >
+                    <Shield className="h-4 w-4 mr-2" />
+                    Continue Verification
+                  </Link>
                 </div>
               ) : (
                 <div className="text-center py-4">
                   <AlertCircle className="h-12 w-12 text-red-500 mx-auto mb-2" />
                   <p className="text-red-700 font-medium">Verification Required</p>
-                  <p className="text-gray-500 text-sm mt-1">
+                  <p className="text-gray-500 text-sm mt-1 mb-4">
                     This website needs to be verified
                   </p>
+                  <Link
+                    href={`/publisher/websites/${websiteId}/verify`}
+                    className="inline-flex items-center px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700"
+                  >
+                    <Shield className="h-4 w-4 mr-2" />
+                    Verify Website
+                  </Link>
                 </div>
               )}
             </div>
