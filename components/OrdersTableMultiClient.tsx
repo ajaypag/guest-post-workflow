@@ -402,9 +402,12 @@ export function OrdersTableMultiClient({
                           </button>
                         )}
                         <div>
-                          <div className="font-medium text-sm text-gray-900">
-                            {order.id.slice(0, 8)}...
-                          </div>
+                          <Link 
+                            href={`/orders/${order.id}`}
+                            className="font-medium text-sm text-blue-600 hover:text-blue-800 hover:underline"
+                          >
+                            #{order.id.slice(0, 8)}...
+                          </Link>
                           <div className="flex items-center gap-2 mt-1">
                             <span className="text-xs text-gray-500">
                               {order.totalLinks || order.itemCount || 0} links
@@ -497,6 +500,14 @@ export function OrdersTableMultiClient({
 
                     <td className="px-6 py-4 whitespace-nowrap text-right">
                       <div className="flex items-center justify-end gap-2">
+                        {/* Always show View button */}
+                        <Link
+                          href={`/orders/${order.id}`}
+                          className="inline-flex items-center px-3 py-1.5 border border-gray-300 text-gray-700 text-sm rounded-md hover:bg-gray-50"
+                        >
+                          <Eye className="h-4 w-4 mr-1" />
+                          View
+                        </Link>
                         {isInternal && order.status === 'pending_confirmation' && (
                           <Link
                             href={`/orders/${order.id}/internal`}
