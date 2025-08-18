@@ -245,14 +245,6 @@ export default function PolishHealthPage() {
                   Fix Null Bytes
                 </button>
               )}
-              {quickActions.runMigration && (
-                <button
-                  onClick={() => window.location.href = '/admin/database-migration'}
-                  className="px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700"
-                >
-                  Run Migration
-                </button>
-              )}
               <button
                 onClick={() => executeAction('clean-orphaned-sections')}
                 disabled={actionLoading === 'clean-orphaned-sections'}
