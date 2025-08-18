@@ -84,19 +84,79 @@ async function getSystemStatistics() {
     // Get last migration timestamp (from most recent completed order migration)
     let lastMigration = null;
     try {
-      // Use raw SQL to avoid Drizzle schema issues
-      const lastMigrationResult = await db.execute(sql`
-        SELECT modified_at 
-        FROM order_line_items 
-        ORDER BY modified_at DESC 
-        LIMIT 1
+      // First check if the table exists
+      const tableExistsResult = await db.execute(sql`
+        SELECT EXISTS (
+          SELECT FROM information_schema.tables 
+          WHERE table_schema = 'public' 
+          AND table_name = 'order_line_items'
+        ) as table_exists
       `);
       
-      const row = lastMigrationResult.rows[0] as any;
-      lastMigration = row?.modified_at ? new Date(row.modified_at).toISOString() : null;
+      const tableExists = (tableExistsResult.rows[0] as any)?.table_exists;
+      
+      if (tableExists) {
+        // Check if modified_at column exists
+        const columnExistsResult = await db.execute(sql`
+          SELECT EXISTS (
+            SELECT FROM information_schema.columns 
+            WHERE table_schema = 'public' 
+            AND table_name = 'order_line_items'
+            AND column_name = 'modified_at'
+          ) as column_exists
+        `);
+        
+        const columnExists = (columnExistsResult.rows[0] as any)?.column_exists;
+        
+        if (columnExists) {
+          // Use raw SQL to avoid Drizzle schema issues
+          const lastMigrationResult = await db.execute(sql`
+            SELECT modified_at 
+            FROM order_line_items 
+            ORDER BY modified_at DESC 
+            LIMIT 1
+          `);
+          
+          const row = lastMigrationResult.rows[0] as any;
+          lastMigration = row?.modified_at ? new Date(row.modified_at).toISOString() : null;
+        } else {
+          // Check if updated_at column exists instead (production database uses this)
+          const updatedAtExistsResult = await db.execute(sql`
+            SELECT EXISTS (
+              SELECT FROM information_schema.columns 
+              WHERE table_schema = 'public' 
+              AND table_name = 'order_line_items'
+              AND column_name = 'updated_at'
+            ) as column_exists
+          `);
+          
+          const updatedAtExists = (updatedAtExistsResult.rows[0] as any)?.column_exists;
+          
+          if (updatedAtExists) {
+            const lastMigrationResult = await db.execute(sql`
+              SELECT updated_at 
+              FROM order_line_items 
+              ORDER BY updated_at DESC 
+              LIMIT 1
+            `);
+            
+            const row = lastMigrationResult.rows[0] as any;
+            lastMigration = row?.updated_at ? new Date(row.updated_at).toISOString() : null;
+          } else {
+            console.log('order_line_items table exists but neither modified_at nor updated_at column exists');
+            lastMigration = 'columns_missing';
+          }
+        } else {
+          console.log('order_line_items table exists but modified_at column is missing - migration 0027 or 0055 may not have run');
+          lastMigration = 'migration_needed';
+        }
+      } else {
+        console.log('order_line_items table does not exist - migration 0027 has not been run');
+        lastMigration = 'table_missing';
+      }
     } catch (error) {
-      console.log('Could not query line items modifiedAt:', error);
-      lastMigration = null;
+      console.log('Could not query line items modifiedAt - table may not exist yet:', error);
+      lastMigration = 'error_checking';
     }
 
     return {
