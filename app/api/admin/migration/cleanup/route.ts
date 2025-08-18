@@ -62,7 +62,7 @@ export async function POST(request: NextRequest) {
       const lineItemCount = await db.execute(sql`
         SELECT COUNT(*) as count FROM order_line_items
       `);
-      results.details.lineItemCount = parseInt(lineItemCount.rows[0].count);
+      results.details.lineItemCount = parseInt((lineItemCount.rows[0] as any).count);
       
     } catch (error) {
       // Ignore errors in state checking
