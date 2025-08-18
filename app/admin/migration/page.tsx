@@ -140,7 +140,8 @@ export default function AdminMigrationPage() {
     try {
       const response = await fetch('/api/admin/migration/execute-full', {
         method: 'POST',
-        headers: { 'Content-Type': 'application/json' }
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({})
       });
       
       if (response.ok) {
@@ -152,6 +153,10 @@ export default function AdminMigrationPage() {
             setIsLoading(false);
           }
         }, 2000);
+      } else {
+        const errorData = await response.json().catch(() => ({ error: 'Unknown error' }));
+        setLogs(prev => [...prev, `❌ Migration failed: ${errorData.error || response.statusText}`]);
+        setIsLoading(false);
       }
     } catch (error: any) {
       setLogs(prev => [...prev, `❌ Migration failed: ${error.message}`]);
