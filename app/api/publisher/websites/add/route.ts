@@ -29,12 +29,15 @@ export async function POST(request: NextRequest) {
     // Parse and validate input BEFORE authentication
     // This prevents malicious payloads from reaching deeper code
     const body = await request.json();
-    const { domain: rawDomain, offering } = body;
+    const { domain: rawDomain, offering, offerings } = body;
+    
+    // Handle both single offering (backward compat) and multiple offerings
+    const offeringsToProcess = offerings || (offering ? [offering] : []);
     
     // Basic validation before auth
-    if (!rawDomain || !offering) {
+    if (!rawDomain || offeringsToProcess.length === 0) {
       return NextResponse.json(
-        { error: 'Domain and offering details are required' },
+        { error: 'Domain and at least one offering are required' },
         { status: 400 }
       );
     }
@@ -196,8 +199,8 @@ export async function POST(request: NextRequest) {
             domainAuthority: domainAuthority // Store here for now
           }),
           status: 'Active',
-          hasGuestPost: offering.offeringType === 'guest_post',
-          hasLinkInsert: offering.offeringType === 'link_insertion',
+          hasGuestPost: offeringsToProcess.some(o => o.offeringType === 'guest_post'),
+          hasLinkInsert: offeringsToProcess.some(o => o.offeringType === 'link_insertion'),
           // Timestamps
           airtableCreatedAt: now,
           airtableUpdatedAt: now,
@@ -209,53 +212,60 @@ export async function POST(request: NextRequest) {
       websiteId = newWebsite.id;
     }
 
-    // Create publisher offering with all the details from the form
-    const [newOffering] = await db
-      .insert(publisherOfferings)
-      .values({
-        publisherId: session.publisherId,
-        offeringType: offering.offeringType || 'guest_post',
-        basePrice: offering.basePrice || 10000, // Already in cents from form
-        currency: offering.currency || 'USD',
-        turnaroundDays: offering.turnaroundDays || 7,
-        minWordCount: offering.minWordCount || 500,
-        maxWordCount: offering.maxWordCount || 2000,
-        currentAvailability: offering.currentAvailability || 'available',
-        expressAvailable: offering.expressAvailable || false,
-        expressPrice: offering.expressPrice || null,
-        expressDays: offering.expressDays || null,
-        // Store additional requirements in attributes JSONB field
-        attributes: offering.attributes || {},
-        isActive: true,
-        createdAt: now,
-        updatedAt: now
-      })
-      .returning();
+    // Create multiple publisher offerings with all the details from the form
+    const newOfferings = [];
+    
+    for (const offeringData of offeringsToProcess) {
+      const [newOffering] = await db
+        .insert(publisherOfferings)
+        .values({
+          publisherId: session.publisherId,
+          offeringType: offeringData.offeringType || 'guest_post',
+          basePrice: offeringData.basePrice || 10000, // Already in cents from form
+          currency: offeringData.currency || 'USD',
+          turnaroundDays: offeringData.turnaroundDays || 7,
+          minWordCount: offeringData.minWordCount || 500,
+          maxWordCount: offeringData.maxWordCount || 2000,
+          currentAvailability: offeringData.currentAvailability || 'available',
+          expressAvailable: offeringData.expressAvailable || false,
+          expressPrice: offeringData.expressPrice || null,
+          expressDays: offeringData.expressDays || null,
+          // Store additional requirements in attributes JSONB field
+          attributes: offeringData.attributes || {},
+          isActive: true,
+          createdAt: now,
+          updatedAt: now
+        })
+        .returning();
 
-    // Create the relationship between publisher, offering, and website
-    await db
-      .insert(publisherOfferingRelationships)
-      .values({
-        publisherId: session.publisherId,
-        offeringId: newOffering.id,
-        websiteId: websiteId,
-        isPrimary: true,
-        isActive: true,
-        relationshipType: existingWebsite.length > 0 ? 'reseller' : 'owner',
-        verificationStatus: existingWebsite.length > 0 ? 'pending' : 'verified',
-        verificationMethod: existingWebsite.length > 0 ? null : 'publisher_added',
-        verifiedAt: existingWebsite.length > 0 ? null : now,
-        createdAt: now,
-        updatedAt: now
-      });
+      newOfferings.push(newOffering);
+
+      // Create the relationship between publisher, offering, and website
+      await db
+        .insert(publisherOfferingRelationships)
+        .values({
+          publisherId: session.publisherId,
+          offeringId: newOffering.id,
+          websiteId: websiteId,
+          isPrimary: newOfferings.length === 1, // First offering is primary
+          isActive: true,
+          relationshipType: existingWebsite.length > 0 ? 'reseller' : 'owner',
+          verificationStatus: existingWebsite.length > 0 ? 'pending' : 'verified',
+          verificationMethod: existingWebsite.length > 0 ? null : 'publisher_added',
+          verifiedAt: existingWebsite.length > 0 ? null : now,
+          createdAt: now,
+          updatedAt: now
+        });
+    }
 
     return NextResponse.json({
       success: true,
       websiteId,
-      offeringId: newOffering.id,
+      offeringIds: newOfferings.map(o => o.id),
+      offeringsCount: newOfferings.length,
       message: existingWebsite.length > 0 
-        ? 'Successfully created your offering for this existing website' 
-        : 'Successfully added website and created your offering'
+        ? `Successfully created ${newOfferings.length} offering(s) for this existing website` 
+        : `Successfully added website and created ${newOfferings.length} offering(s)`
     });
 
   } catch (error) {

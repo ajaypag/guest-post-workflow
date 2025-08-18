@@ -16,7 +16,9 @@ import {
   FileText,
   Check,
   Search,
-  Loader2
+  Loader2,
+  Plus,
+  X
 } from 'lucide-react';
 
 type Step = 'website' | 'offering' | 'requirements' | 'review';
@@ -34,6 +36,7 @@ export default function NewWebsitePage() {
   const [websiteTypes, setWebsiteTypes] = useState<string[]>([]);
   const [customNiche, setCustomNiche] = useState('');
   
+  
   // Website data (Step 1)
   const [websiteData, setWebsiteData] = useState({
     domain: '',
@@ -50,8 +53,9 @@ export default function NewWebsitePage() {
     editorialCalendarUrl: ''
   });
 
-  // Offering data (Step 2)
-  const [offeringData, setOfferingData] = useState({
+  // Offering data (Step 2) - Now supports multiple offerings
+  const [offerings, setOfferings] = useState([{
+    id: '1',
     offeringType: 'guest_post',
     basePrice: '',
     currency: 'USD',
@@ -62,7 +66,7 @@ export default function NewWebsitePage() {
     expressAvailable: false,
     expressPrice: '',
     expressDays: '3'
-  });
+  }]);
 
   // Requirements data (Step 3)
   const [requirementsData, setRequirementsData] = useState({
@@ -144,8 +148,35 @@ export default function NewWebsitePage() {
     }
   };
 
-  const handleOfferingChange = (field: string, value: any) => {
-    setOfferingData(prev => ({ ...prev, [field]: value }));
+  const handleOfferingChange = (offeringId: string, field: string, value: any) => {
+    setOfferings(prev => prev.map(offering => 
+      offering.id === offeringId 
+        ? { ...offering, [field]: value }
+        : offering
+    ));
+  };
+
+  const addOffering = () => {
+    const newId = String(offerings.length + 1);
+    setOfferings(prev => [...prev, {
+      id: newId,
+      offeringType: offerings.length === 0 ? 'guest_post' : 'link_insertion',
+      basePrice: '',
+      currency: 'USD',
+      turnaroundDays: '7',
+      minWordCount: '500',
+      maxWordCount: '2000',
+      currentAvailability: 'available',
+      expressAvailable: false,
+      expressPrice: '',
+      expressDays: '3'
+    }]);
+  };
+
+  const removeOffering = (offeringId: string) => {
+    if (offerings.length > 1) {
+      setOfferings(prev => prev.filter(o => o.id !== offeringId));
+    }
   };
 
   const handleRequirementsChange = (field: string, value: any) => {
@@ -183,13 +214,19 @@ export default function NewWebsitePage() {
         }
         break;
       case 'offering':
-        if (!offeringData.basePrice) {
-          setError('Base price is required');
+        if (offerings.length === 0) {
+          setError('At least one offering is required');
           return false;
         }
-        if (parseFloat(offeringData.basePrice) <= 0) {
-          setError('Base price must be greater than 0');
-          return false;
+        for (const offering of offerings) {
+          if (!offering.basePrice) {
+            setError(`Base price is required for all offerings`);
+            return false;
+          }
+          if (parseFloat(offering.basePrice) <= 0) {
+            setError(`Base price must be greater than 0 for all offerings`);
+            return false;
+          }
         }
         break;
       case 'requirements':
@@ -243,18 +280,18 @@ export default function NewWebsitePage() {
         contentGuidelinesUrl: websiteData.contentGuidelinesUrl || null,
         editorialCalendarUrl: websiteData.editorialCalendarUrl || null,
         
-        // Offering data (always sent)
-        offering: {
-          offeringType: offeringData.offeringType,
-          basePrice: Math.round(parseFloat(offeringData.basePrice) * 100), // Convert to cents
-          currency: offeringData.currency,
-          turnaroundDays: parseInt(offeringData.turnaroundDays),
-          minWordCount: parseInt(offeringData.minWordCount),
-          maxWordCount: parseInt(offeringData.maxWordCount),
-          currentAvailability: offeringData.currentAvailability,
-          expressAvailable: offeringData.expressAvailable,
-          expressPrice: offeringData.expressPrice ? Math.round(parseFloat(offeringData.expressPrice) * 100) : null,
-          expressDays: offeringData.expressDays ? parseInt(offeringData.expressDays) : null,
+        // Multiple offerings data
+        offerings: offerings.map(offering => ({
+          offeringType: offering.offeringType,
+          basePrice: Math.round(parseFloat(offering.basePrice) * 100), // Convert to cents
+          currency: offering.currency,
+          turnaroundDays: parseInt(offering.turnaroundDays),
+          minWordCount: parseInt(offering.minWordCount),
+          maxWordCount: parseInt(offering.maxWordCount),
+          currentAvailability: offering.currentAvailability,
+          expressAvailable: offering.expressAvailable,
+          expressPrice: offering.expressPrice ? Math.round(parseFloat(offering.expressPrice) * 100) : null,
+          expressDays: offering.expressDays ? parseInt(offering.expressDays) : null,
           acceptsDoFollow: requirementsData.acceptsDoFollow,
           requiresAuthorBio: requirementsData.requiresAuthorBio,
           maxLinksPerPost: parseInt(requirementsData.maxLinksPerPost),
@@ -268,7 +305,7 @@ export default function NewWebsitePage() {
             imagesRequired: requirementsData.imagesRequired,
             minImages: requirementsData.imagesRequired ? parseInt(requirementsData.minImages) : null
           }
-        }
+        }))
       };
 
       const response = await fetch('/api/publisher/websites/add', {
@@ -567,173 +604,205 @@ export default function NewWebsitePage() {
 
   const renderOfferingStep = () => (
     <div className="space-y-6">
-      <h2 className="text-lg font-semibold text-gray-900">Offering Details</h2>
-      
-      {/* Offering Type */}
-      <div>
-        <label className="block text-sm font-medium text-gray-700 mb-2">
-          Offering Type <span className="text-red-500">*</span>
-        </label>
-        <select
-          value={offeringData.offeringType}
-          onChange={(e) => handleOfferingChange('offeringType', e.target.value)}
-          className="w-full px-4 py-2 border border-gray-300 rounded-lg"
-        >
-          {offeringTypes.map(type => (
-            <option key={type.value} value={type.value}>{type.label}</option>
-          ))}
-        </select>
-      </div>
-
-      {/* Pricing */}
-      <div className="grid grid-cols-2 gap-4">
-        <div>
-          <label className="block text-sm font-medium text-gray-700 mb-2">
-            Base Price <span className="text-red-500">*</span>
-          </label>
-          <div className="relative">
-            <span className="absolute left-3 top-2 text-gray-500">$</span>
-            <input
-              type="number"
-              value={offeringData.basePrice}
-              onChange={(e) => handleOfferingChange('basePrice', e.target.value)}
-              className="w-full pl-8 pr-3 py-2 border border-gray-300 rounded-lg"
-              placeholder="100.00"
-              step="0.01"
-              min="0"
-            />
-          </div>
-        </div>
-        <div>
-          <label className="block text-sm font-medium text-gray-700 mb-2">
-            Currency
-          </label>
-          <select
-            value={offeringData.currency}
-            onChange={(e) => handleOfferingChange('currency', e.target.value)}
-            className="w-full px-4 py-2 border border-gray-300 rounded-lg"
+      <div className="flex items-center justify-between">
+        <h2 className="text-lg font-semibold text-gray-900">Offering Details</h2>
+        {offerings.length < 2 && (
+          <button
+            type="button"
+            onClick={addOffering}
+            className="text-blue-600 hover:text-blue-700 text-sm font-medium flex items-center"
           >
-            <option value="USD">USD</option>
-            <option value="EUR">EUR</option>
-            <option value="GBP">GBP</option>
-            <option value="CAD">CAD</option>
-            <option value="AUD">AUD</option>
-          </select>
-        </div>
+            <Plus className="h-4 w-4 mr-1" />
+            Add Another Offering
+          </button>
+        )}
       </div>
+      
+      {offerings.map((offering, index) => (
+        <div key={offering.id} className="border border-gray-200 rounded-lg p-5 space-y-4">
+          <div className="flex items-center justify-between mb-3">
+            <h3 className="font-medium text-gray-900">
+              Offering {index + 1}
+              {offering.offeringType && ` - ${offeringTypes.find(t => t.value === offering.offeringType)?.label}`}
+            </h3>
+            {offerings.length > 1 && (
+              <button
+                type="button"
+                onClick={() => removeOffering(offering.id)}
+                className="text-red-600 hover:text-red-700 text-sm"
+              >
+                <X className="h-4 w-4" />
+              </button>
+            )}
+          </div>
+      
+          {/* Offering Type */}
+          <div>
+            <label className="block text-sm font-medium text-gray-700 mb-2">
+              Offering Type <span className="text-red-500">*</span>
+            </label>
+            <select
+              value={offering.offeringType}
+              onChange={(e) => handleOfferingChange(offering.id, 'offeringType', e.target.value)}
+              className="w-full px-4 py-2 border border-gray-300 rounded-lg"
+            >
+              {offeringTypes.map(type => (
+                <option key={type.value} value={type.value}>{type.label}</option>
+              ))}
+            </select>
+          </div>
 
-      {/* Turnaround */}
-      <div>
-        <label className="block text-sm font-medium text-gray-700 mb-2">
-          Standard Turnaround (days) <span className="text-red-500">*</span>
-        </label>
-        <input
-          type="number"
-          value={offeringData.turnaroundDays}
-          onChange={(e) => handleOfferingChange('turnaroundDays', e.target.value)}
-          className="w-full px-3 py-2 border border-gray-300 rounded-lg"
-          min="1"
-          max="60"
-        />
-      </div>
-
-      {/* Word Count */}
-      <div className="grid grid-cols-2 gap-4">
-        <div>
-          <label className="block text-sm font-medium text-gray-700 mb-2">
-            Min Word Count
-          </label>
-          <input
-            type="number"
-            value={offeringData.minWordCount}
-            onChange={(e) => handleOfferingChange('minWordCount', e.target.value)}
-            className="w-full px-3 py-2 border border-gray-300 rounded-lg"
-            min="100"
-            step="100"
-          />
-        </div>
-        <div>
-          <label className="block text-sm font-medium text-gray-700 mb-2">
-            Max Word Count
-          </label>
-          <input
-            type="number"
-            value={offeringData.maxWordCount}
-            onChange={(e) => handleOfferingChange('maxWordCount', e.target.value)}
-            className="w-full px-3 py-2 border border-gray-300 rounded-lg"
-            min="100"
-            step="100"
-          />
-        </div>
-      </div>
-
-      {/* Availability */}
-      <div>
-        <label className="block text-sm font-medium text-gray-700 mb-2">
-          Current Availability
-        </label>
-        <select
-          value={offeringData.currentAvailability}
-          onChange={(e) => handleOfferingChange('currentAvailability', e.target.value)}
-          className="w-full px-4 py-2 border border-gray-300 rounded-lg"
-        >
-          {availabilityOptions.map(option => (
-            <option key={option.value} value={option.value}>{option.label}</option>
-          ))}
-        </select>
-      </div>
-
-      {/* Express Service */}
-      <div className="bg-gray-50 p-4 rounded-lg space-y-4">
-        <div className="flex items-center justify-between">
-          <label className="text-sm font-medium text-gray-700">
-            Offer Express Service
-          </label>
-          <input
-            type="checkbox"
-            checked={offeringData.expressAvailable}
-            onChange={(e) => handleOfferingChange('expressAvailable', e.target.checked)}
-            className="h-4 w-4"
-          />
-        </div>
-        
-        {offeringData.expressAvailable && (
-          <>
-            <div className="grid grid-cols-2 gap-4">
-              <div>
-                <label className="block text-sm font-medium text-gray-700 mb-2">
-                  Express Price
-                </label>
-                <div className="relative">
-                  <span className="absolute left-3 top-2 text-gray-500">$</span>
-                  <input
-                    type="number"
-                    value={offeringData.expressPrice}
-                    onChange={(e) => handleOfferingChange('expressPrice', e.target.value)}
-                    className="w-full pl-8 pr-3 py-2 border border-gray-300 rounded-lg"
-                    placeholder="150.00"
-                    step="0.01"
-                    min="0"
-                  />
-                </div>
-              </div>
-              <div>
-                <label className="block text-sm font-medium text-gray-700 mb-2">
-                  Express Turnaround (days)
-                </label>
+          {/* Pricing */}
+          <div className="grid grid-cols-2 gap-4">
+            <div>
+              <label className="block text-sm font-medium text-gray-700 mb-2">
+                Base Price <span className="text-red-500">*</span>
+              </label>
+              <div className="relative">
+                <span className="absolute left-3 top-2 text-gray-500">$</span>
                 <input
                   type="number"
-                  value={offeringData.expressDays}
-                  onChange={(e) => handleOfferingChange('expressDays', e.target.value)}
-                  className="w-full px-3 py-2 border border-gray-300 rounded-lg"
-                  min="1"
-                  max="7"
+                  value={offering.basePrice}
+                  onChange={(e) => handleOfferingChange(offering.id, 'basePrice', e.target.value)}
+                  className="w-full pl-8 pr-3 py-2 border border-gray-300 rounded-lg"
+                  placeholder="100.00"
+                  step="0.01"
+                  min="0"
                 />
               </div>
             </div>
-          </>
-        )}
-      </div>
+            <div>
+              <label className="block text-sm font-medium text-gray-700 mb-2">
+                Currency
+              </label>
+              <select
+                value={offering.currency}
+                onChange={(e) => handleOfferingChange(offering.id, 'currency', e.target.value)}
+                className="w-full px-4 py-2 border border-gray-300 rounded-lg"
+              >
+                <option value="USD">USD</option>
+                <option value="EUR">EUR</option>
+                <option value="GBP">GBP</option>
+                <option value="CAD">CAD</option>
+                <option value="AUD">AUD</option>
+              </select>
+            </div>
+          </div>
+
+          {/* Turnaround */}
+          <div>
+            <label className="block text-sm font-medium text-gray-700 mb-2">
+              Standard Turnaround (days) <span className="text-red-500">*</span>
+            </label>
+            <input
+              type="number"
+              value={offering.turnaroundDays}
+              onChange={(e) => handleOfferingChange(offering.id, 'turnaroundDays', e.target.value)}
+              className="w-full px-3 py-2 border border-gray-300 rounded-lg"
+              min="1"
+              max="60"
+            />
+          </div>
+
+          {/* Word Count */}
+          <div className="grid grid-cols-2 gap-4">
+            <div>
+              <label className="block text-sm font-medium text-gray-700 mb-2">
+                Min Word Count
+              </label>
+              <input
+                type="number"
+                value={offering.minWordCount}
+                onChange={(e) => handleOfferingChange(offering.id, 'minWordCount', e.target.value)}
+                className="w-full px-3 py-2 border border-gray-300 rounded-lg"
+                min="100"
+                step="100"
+              />
+            </div>
+            <div>
+              <label className="block text-sm font-medium text-gray-700 mb-2">
+                Max Word Count
+              </label>
+              <input
+                type="number"
+                value={offering.maxWordCount}
+                onChange={(e) => handleOfferingChange(offering.id, 'maxWordCount', e.target.value)}
+                className="w-full px-3 py-2 border border-gray-300 rounded-lg"
+                min="100"
+                step="100"
+              />
+            </div>
+          </div>
+
+          {/* Availability */}
+          <div>
+            <label className="block text-sm font-medium text-gray-700 mb-2">
+              Current Availability
+            </label>
+            <select
+              value={offering.currentAvailability}
+              onChange={(e) => handleOfferingChange(offering.id, 'currentAvailability', e.target.value)}
+              className="w-full px-4 py-2 border border-gray-300 rounded-lg"
+            >
+              {availabilityOptions.map(option => (
+                <option key={option.value} value={option.value}>{option.label}</option>
+              ))}
+            </select>
+          </div>
+
+          {/* Express Service */}
+          <div className="bg-gray-50 p-4 rounded-lg space-y-4">
+            <div className="flex items-center justify-between">
+              <label className="text-sm font-medium text-gray-700">
+                Offer Express Service
+              </label>
+              <input
+                type="checkbox"
+                checked={offering.expressAvailable}
+                onChange={(e) => handleOfferingChange(offering.id, 'expressAvailable', e.target.checked)}
+                className="h-4 w-4"
+              />
+            </div>
+            
+            {offering.expressAvailable && (
+              <>
+                <div className="grid grid-cols-2 gap-4">
+                  <div>
+                    <label className="block text-sm font-medium text-gray-700 mb-2">
+                      Express Price
+                    </label>
+                    <div className="relative">
+                      <span className="absolute left-3 top-2 text-gray-500">$</span>
+                      <input
+                        type="number"
+                        value={offering.expressPrice}
+                        onChange={(e) => handleOfferingChange(offering.id, 'expressPrice', e.target.value)}
+                        className="w-full pl-8 pr-3 py-2 border border-gray-300 rounded-lg"
+                        placeholder="150.00"
+                        step="0.01"
+                        min="0"
+                      />
+                    </div>
+                  </div>
+                  <div>
+                    <label className="block text-sm font-medium text-gray-700 mb-2">
+                      Express Turnaround (days)
+                    </label>
+                    <input
+                      type="number"
+                      value={offering.expressDays}
+                      onChange={(e) => handleOfferingChange(offering.id, 'expressDays', e.target.value)}
+                      className="w-full px-3 py-2 border border-gray-300 rounded-lg"
+                      min="1"
+                      max="7"
+                    />
+                  </div>
+                </div>
+              </>
+            )}
+          </div>
+        </div>
+      ))}
     </div>
   );
 
@@ -945,33 +1014,35 @@ export default function NewWebsitePage() {
         </dl>
       </div>
 
-      {/* Offering Summary */}
-      <div className="bg-gray-50 p-4 rounded-lg">
-        <h3 className="font-medium text-gray-900 mb-3">Offering Details</h3>
-        <dl className="grid grid-cols-2 gap-2 text-sm">
-          <dt className="text-gray-600">Type:</dt>
-          <dd className="font-medium">{offeringTypes.find(t => t.value === offeringData.offeringType)?.label}</dd>
-          
-          <dt className="text-gray-600">Base Price:</dt>
-          <dd className="font-medium">${offeringData.basePrice} {offeringData.currency}</dd>
-          
-          <dt className="text-gray-600">Turnaround:</dt>
-          <dd className="font-medium">{offeringData.turnaroundDays} days</dd>
-          
-          <dt className="text-gray-600">Word Count:</dt>
-          <dd className="font-medium">{offeringData.minWordCount} - {offeringData.maxWordCount} words</dd>
-          
-          <dt className="text-gray-600">Availability:</dt>
-          <dd className="font-medium">{availabilityOptions.find(a => a.value === offeringData.currentAvailability)?.label}</dd>
-          
-          {offeringData.expressAvailable && (
-            <>
-              <dt className="text-gray-600">Express Service:</dt>
-              <dd className="font-medium">${offeringData.expressPrice} ({offeringData.expressDays} days)</dd>
-            </>
-          )}
-        </dl>
-      </div>
+      {/* Offerings Summary */}
+      {offerings.map((offering, index) => (
+        <div key={offering.id} className="bg-gray-50 p-4 rounded-lg">
+          <h3 className="font-medium text-gray-900 mb-3">Offering {index + 1} Details</h3>
+          <dl className="grid grid-cols-2 gap-2 text-sm">
+            <dt className="text-gray-600">Type:</dt>
+            <dd className="font-medium">{offeringTypes.find(t => t.value === offering.offeringType)?.label}</dd>
+            
+            <dt className="text-gray-600">Base Price:</dt>
+            <dd className="font-medium">${offering.basePrice} {offering.currency}</dd>
+            
+            <dt className="text-gray-600">Turnaround:</dt>
+            <dd className="font-medium">{offering.turnaroundDays} days</dd>
+            
+            <dt className="text-gray-600">Word Count:</dt>
+            <dd className="font-medium">{offering.minWordCount} - {offering.maxWordCount} words</dd>
+            
+            <dt className="text-gray-600">Availability:</dt>
+            <dd className="font-medium">{availabilityOptions.find(a => a.value === offering.currentAvailability)?.label}</dd>
+            
+            {offering.expressAvailable && (
+              <>
+                <dt className="text-gray-600">Express Service:</dt>
+                <dd className="font-medium">${offering.expressPrice} ({offering.expressDays} days)</dd>
+              </>
+            )}
+          </dl>
+        </div>
+      ))}
 
       {/* Requirements Summary */}
       {(requirementsData.contentRequirements || requirementsData.prohibitedTopics || requirementsData.requiredElements.length > 0) && (
