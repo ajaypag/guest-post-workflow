@@ -129,11 +129,11 @@ export async function POST(request: NextRequest) {
           // Metadata
           source: 'publisher',
           addedByPublisherId: session.publisherId,
-          sourceMetadata: {
+          sourceMetadata: JSON.stringify({
             addedBy: session.email,
             addedAt: now.toISOString(),
             domainAuthority: domainAuthority // Store here for now
-          },
+          }),
           status: 'Active',
           hasGuestPost: offering.offeringType === 'guest_post',
           hasLinkInsert: offering.offeringType === 'link_insertion',
