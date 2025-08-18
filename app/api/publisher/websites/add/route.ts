@@ -173,9 +173,10 @@ export async function POST(request: NextRequest) {
           targetAudience: targetAudience || null,
           publisherTier: publisherTier || 'standard',
           typicalTurnaroundDays: typicalTurnaroundDays || 7,
-          acceptsDoFollow: acceptsDoFollow !== undefined ? acceptsDoFollow : true,
-          requiresAuthorBio: requiresAuthorBio || false,
-          maxLinksPerPost: maxLinksPerPost || 2,
+          // Remove per-offering requirements from website level (now stored per-offering)
+          acceptsDoFollow: true, // Default, overridden per-offering
+          requiresAuthorBio: false, // Default, overridden per-offering  
+          maxLinksPerPost: 2, // Default, overridden per-offering
           contentGuidelinesUrl: contentGuidelinesUrl || null,
           editorialCalendarUrl: editorialCalendarUrl || null,
           // Metadata
@@ -218,8 +219,13 @@ export async function POST(request: NextRequest) {
           expressAvailable: offeringData.expressAvailable || false,
           expressPrice: offeringData.expressPrice || null,
           expressDays: offeringData.expressDays || null,
-          // Store additional requirements in attributes JSONB field
-          attributes: offeringData.attributes || {},
+          // Store all requirements in attributes JSONB field (per-offering)
+          attributes: {
+            ...offeringData.attributes,
+            acceptsDoFollow: offeringData.acceptsDoFollow !== undefined ? offeringData.acceptsDoFollow : true,
+            requiresAuthorBio: offeringData.requiresAuthorBio || false,
+            maxLinksPerPost: offeringData.maxLinksPerPost || 2,
+          },
           isActive: true,
           createdAt: now,
           updatedAt: now

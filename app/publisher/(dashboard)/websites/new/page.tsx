@@ -53,7 +53,7 @@ export default function NewWebsitePage() {
     editorialCalendarUrl: ''
   });
 
-  // Offering data (Step 2) - Now supports multiple offerings
+  // Offering data (Step 2) - Now supports multiple offerings with per-offering requirements
   const [offerings, setOfferings] = useState([{
     id: '1',
     offeringType: 'guest_post',
@@ -65,23 +65,25 @@ export default function NewWebsitePage() {
     currentAvailability: 'available',
     expressAvailable: false,
     expressPrice: '',
-    expressDays: '3'
+    expressDays: '3',
+    // Per-offering requirements
+    requirements: {
+      contentRequirements: '',
+      prohibitedTopics: '',
+      requiredElements: [] as string[],
+      samplePostUrl: '',
+      acceptsDoFollow: true,
+      requiresAuthorBio: true,
+      maxLinksPerPost: '2',
+      authorBioRequirements: '',
+      linkRequirements: '',
+      imagesRequired: false,
+      minImages: '1'
+    }
   }]);
 
-  // Requirements data (Step 3)
-  const [requirementsData, setRequirementsData] = useState({
-    contentRequirements: '',
-    prohibitedTopics: '',
-    requiredElements: [] as string[],
-    samplePostUrl: '',
-    acceptsDoFollow: true,
-    requiresAuthorBio: false,
-    maxLinksPerPost: '2',
-    authorBioRequirements: '',
-    linkRequirements: '',
-    imagesRequired: false,
-    minImages: '1'
-  });
+  // Current offering being edited in requirements step
+  const [currentOfferingIndex, setCurrentOfferingIndex] = useState(0);
 
   // Fetch dynamic options from database
   useEffect(() => {
@@ -158,9 +160,38 @@ export default function NewWebsitePage() {
 
   const addOffering = () => {
     const newId = String(offerings.length + 1);
+    const offeringType = offerings.length === 0 ? 'guest_post' : 'link_insertion';
+    
+    // Default requirements based on offering type
+    const defaultRequirements = offeringType === 'guest_post' ? {
+      contentRequirements: '',
+      prohibitedTopics: '',
+      requiredElements: [] as string[],
+      samplePostUrl: '',
+      acceptsDoFollow: true,
+      requiresAuthorBio: true,
+      maxLinksPerPost: '2',
+      authorBioRequirements: '',
+      linkRequirements: '',
+      imagesRequired: false,
+      minImages: '1'
+    } : {
+      contentRequirements: '',
+      prohibitedTopics: '',
+      requiredElements: [] as string[],
+      samplePostUrl: '',
+      acceptsDoFollow: true,
+      requiresAuthorBio: false,
+      maxLinksPerPost: '1',
+      authorBioRequirements: '',
+      linkRequirements: '',
+      imagesRequired: false,
+      minImages: '0'
+    };
+
     setOfferings(prev => [...prev, {
       id: newId,
-      offeringType: offerings.length === 0 ? 'guest_post' : 'link_insertion',
+      offeringType,
       basePrice: '',
       currency: 'USD',
       turnaroundDays: '7',
@@ -169,7 +200,8 @@ export default function NewWebsitePage() {
       currentAvailability: 'available',
       expressAvailable: false,
       expressPrice: '',
-      expressDays: '3'
+      expressDays: '3',
+      requirements: defaultRequirements
     }]);
   };
 
@@ -179,18 +211,28 @@ export default function NewWebsitePage() {
     }
   };
 
-  const handleRequirementsChange = (field: string, value: any) => {
-    setRequirementsData(prev => ({ ...prev, [field]: value }));
+  const handleOfferingRequirementChange = (offeringId: string, field: string, value: any) => {
+    setOfferings(prev => prev.map(offering => 
+      offering.id === offeringId 
+        ? { 
+            ...offering, 
+            requirements: { ...offering.requirements, [field]: value }
+          }
+        : offering
+    ));
   };
 
   const handleArrayToggle = (field: 'categories' | 'niche' | 'websiteType' | 'requiredElements', value: string) => {
     if (field === 'requiredElements') {
-      setRequirementsData(prev => ({
-        ...prev,
-        [field]: prev[field].includes(value)
-          ? prev[field].filter(v => v !== value)
-          : [...prev[field], value]
-      }));
+      // Handle requiredElements for current offering being edited
+      const currentOffering = offerings[currentOfferingIndex];
+      if (currentOffering) {
+        handleOfferingRequirementChange(currentOffering.id, 'requiredElements', 
+          currentOffering.requirements.requiredElements.includes(value)
+            ? currentOffering.requirements.requiredElements.filter(v => v !== value)
+            : [...currentOffering.requirements.requiredElements, value]
+        );
+      }
     } else {
       setWebsiteData(prev => ({
         ...prev,
@@ -292,18 +334,18 @@ export default function NewWebsitePage() {
           expressAvailable: offering.expressAvailable,
           expressPrice: offering.expressPrice ? Math.round(parseFloat(offering.expressPrice) * 100) : null,
           expressDays: offering.expressDays ? parseInt(offering.expressDays) : null,
-          acceptsDoFollow: requirementsData.acceptsDoFollow,
-          requiresAuthorBio: requirementsData.requiresAuthorBio,
-          maxLinksPerPost: parseInt(requirementsData.maxLinksPerPost),
+          acceptsDoFollow: offering.requirements.acceptsDoFollow,
+          requiresAuthorBio: offering.requirements.requiresAuthorBio,
+          maxLinksPerPost: parseInt(offering.requirements.maxLinksPerPost),
           attributes: {
-            contentRequirements: requirementsData.contentRequirements || null,
-            prohibitedTopics: requirementsData.prohibitedTopics || null,
-            requiredElements: requirementsData.requiredElements,
-            samplePostUrl: requirementsData.samplePostUrl || null,
-            authorBioRequirements: requirementsData.authorBioRequirements || null,
-            linkRequirements: requirementsData.linkRequirements || null,
-            imagesRequired: requirementsData.imagesRequired,
-            minImages: requirementsData.imagesRequired ? parseInt(requirementsData.minImages) : null
+            contentRequirements: offering.requirements.contentRequirements || null,
+            prohibitedTopics: offering.requirements.prohibitedTopics || null,
+            requiredElements: offering.requirements.requiredElements,
+            samplePostUrl: offering.requirements.samplePostUrl || null,
+            authorBioRequirements: offering.requirements.authorBioRequirements || null,
+            linkRequirements: offering.requirements.linkRequirements || null,
+            imagesRequired: offering.requirements.imagesRequired,
+            minImages: offering.requirements.imagesRequired ? parseInt(offering.requirements.minImages) : null
           }
         }))
       };
@@ -806,180 +848,213 @@ export default function NewWebsitePage() {
     </div>
   );
 
-  const renderRequirementsStep = () => (
-    <div className="space-y-6">
-      <h2 className="text-lg font-semibold text-gray-900">Content Requirements & Policies</h2>
-      
-      {/* Link Policies */}
-      <div className="bg-gray-50 p-4 rounded-lg space-y-4">
-        <h3 className="text-sm font-semibold text-gray-700 mb-3">Link Policies</h3>
-        <div className="flex items-center justify-between">
-          <label className="text-sm font-medium text-gray-700">
-            Accepts DoFollow Links
-          </label>
-          <input
-            type="checkbox"
-            checked={requirementsData.acceptsDoFollow}
-            onChange={(e) => handleRequirementsChange('acceptsDoFollow', e.target.checked)}
-            className="h-4 w-4"
-          />
-        </div>
-        <div>
-          <label className="block text-sm font-medium text-gray-700 mb-2">
-            Max Links Per Post
-          </label>
-          <input
-            type="number"
-            value={requirementsData.maxLinksPerPost}
-            onChange={(e) => handleRequirementsChange('maxLinksPerPost', e.target.value)}
-            className="w-full px-3 py-2 border border-gray-300 rounded-lg"
-            min="1"
-            max="10"
-          />
-        </div>
-      </div>
-
-      {/* Author Bio Settings */}
-      <div className="bg-gray-50 p-4 rounded-lg space-y-4">
-        <div className="flex items-center justify-between">
-          <label className="text-sm font-medium text-gray-700">
-            Requires Author Bio
-          </label>
-          <input
-            type="checkbox"
-            checked={requirementsData.requiresAuthorBio}
-            onChange={(e) => handleRequirementsChange('requiresAuthorBio', e.target.checked)}
-            className="h-4 w-4"
-          />
-        </div>
+  const renderRequirementsStep = () => {
+    const currentOffering = offerings[currentOfferingIndex];
+    
+    return (
+      <div className="space-y-6">
+        <h2 className="text-lg font-semibold text-gray-900">Content Requirements & Policies</h2>
         
-        {requirementsData.requiresAuthorBio && (
-          <div>
-            <label className="block text-sm font-medium text-gray-700 mb-2">
-              Author Bio Requirements
-            </label>
-            <textarea
-              value={requirementsData.authorBioRequirements}
-              onChange={(e) => handleRequirementsChange('authorBioRequirements', e.target.value)}
-              className="w-full px-3 py-2 border border-gray-300 rounded-lg"
-              rows={3}
-              placeholder="Describe requirements for author bios (length, format, links allowed, etc.)"
-            />
+        {/* Offering Tabs */}
+        {offerings.length > 1 && (
+          <div className="flex space-x-1 bg-gray-100 p-1 rounded-lg">
+            {offerings.map((offering, index) => (
+              <button
+                key={offering.id}
+                onClick={() => setCurrentOfferingIndex(index)}
+                className={`px-3 py-2 text-sm font-medium rounded-md transition-colors ${
+                  index === currentOfferingIndex
+                    ? 'bg-white text-gray-900 shadow-sm'
+                    : 'text-gray-600 hover:text-gray-900'
+                }`}
+              >
+                {offering.offeringType.replace('_', ' ').replace(/\b\w/g, l => l.toUpperCase())} #{index + 1}
+              </button>
+            ))}
           </div>
         )}
-      </div>
-      
-      {/* Content Requirements */}
-      <div>
-        <label className="block text-sm font-medium text-gray-700 mb-2">
-          Content Requirements & Guidelines
-        </label>
-        <textarea
-          value={requirementsData.contentRequirements}
-          onChange={(e) => handleRequirementsChange('contentRequirements', e.target.value)}
-          className="w-full px-3 py-2 border border-gray-300 rounded-lg"
-          rows={4}
-          placeholder="Describe your content requirements, style guidelines, tone of voice, etc."
-        />
-      </div>
+        
+        {currentOffering && (
+          <div className="space-y-6">
+            <div className="bg-blue-50 border border-blue-200 rounded-lg p-3">
+              <p className="text-sm text-blue-800">
+                Configure requirements for: <strong>{currentOffering.offeringType.replace('_', ' ').replace(/\b\w/g, l => l.toUpperCase())}</strong>
+              </p>
+            </div>
+            
+            {/* Link Policies */}
+            <div className="bg-gray-50 p-4 rounded-lg space-y-4">
+              <h3 className="text-sm font-semibold text-gray-700 mb-3">Link Policies</h3>
+              <div className="flex items-center justify-between">
+                <label className="text-sm font-medium text-gray-700">
+                  Accepts DoFollow Links
+                </label>
+                <input
+                  type="checkbox"
+                  checked={currentOffering.requirements.acceptsDoFollow}
+                  onChange={(e) => handleOfferingRequirementChange(currentOffering.id, 'acceptsDoFollow', e.target.checked)}
+                  className="h-4 w-4"
+                />
+              </div>
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-2">
+                  Max Links Per Post
+                </label>
+                <input
+                  type="number"
+                  value={currentOffering.requirements.maxLinksPerPost}
+                  onChange={(e) => handleOfferingRequirementChange(currentOffering.id, 'maxLinksPerPost', e.target.value)}
+                  className="w-full px-3 py-2 border border-gray-300 rounded-lg"
+                  min="1"
+                  max="10"
+                />
+              </div>
+            </div>
 
-      {/* Prohibited Topics */}
-      <div>
-        <label className="block text-sm font-medium text-gray-700 mb-2">
-          Prohibited Topics
-        </label>
-        <textarea
-          value={requirementsData.prohibitedTopics}
-          onChange={(e) => handleRequirementsChange('prohibitedTopics', e.target.value)}
-          className="w-full px-3 py-2 border border-gray-300 rounded-lg"
-          rows={3}
-          placeholder="List any topics or industries you don't accept content about"
-        />
-      </div>
-
-      {/* Required Elements */}
-      <div>
-        <label className="block text-sm font-medium text-gray-700 mb-2">
-          Required Content Elements
-        </label>
-        <div className="space-y-2">
-          {['Statistics/Data', 'Expert Quotes', 'Case Studies', 'Original Research', 'Infographics', 'Videos'].map(element => (
-            <label key={element} className="flex items-center">
-              <input
-                type="checkbox"
-                checked={requirementsData.requiredElements.includes(element)}
-                onChange={() => handleArrayToggle('requiredElements', element)}
-                className="mr-2"
+            {/* Author Bio Settings */}
+            <div className="bg-gray-50 p-4 rounded-lg space-y-4">
+              <div className="flex items-center justify-between">
+                <label className="text-sm font-medium text-gray-700">
+                  Requires Author Bio
+                </label>
+                <input
+                  type="checkbox"
+                  checked={currentOffering.requirements.requiresAuthorBio}
+                  onChange={(e) => handleOfferingRequirementChange(currentOffering.id, 'requiresAuthorBio', e.target.checked)}
+                  className="h-4 w-4"
+                />
+              </div>
+              
+              {currentOffering.requirements.requiresAuthorBio && (
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-2">
+                    Author Bio Requirements
+                  </label>
+                  <textarea
+                    value={currentOffering.requirements.authorBioRequirements}
+                    onChange={(e) => handleOfferingRequirementChange(currentOffering.id, 'authorBioRequirements', e.target.value)}
+                    className="w-full px-3 py-2 border border-gray-300 rounded-lg"
+                    rows={3}
+                    placeholder="Describe requirements for author bios (length, format, links allowed, etc.)"
+                  />
+                </div>
+              )}
+            </div>
+            
+            {/* Content Requirements */}
+            <div>
+              <label className="block text-sm font-medium text-gray-700 mb-2">
+                Content Requirements & Guidelines
+              </label>
+              <textarea
+                value={currentOffering.requirements.contentRequirements}
+                onChange={(e) => handleOfferingRequirementChange(currentOffering.id, 'contentRequirements', e.target.value)}
+                className="w-full px-3 py-2 border border-gray-300 rounded-lg"
+                rows={4}
+                placeholder="Describe your content requirements, style guidelines, tone of voice, etc."
               />
-              <span className="text-sm">{element}</span>
-            </label>
-          ))}
-        </div>
-      </div>
+            </div>
 
-      {/* Link Requirements */}
-      <div>
-        <label className="block text-sm font-medium text-gray-700 mb-2">
-          Link Requirements
-        </label>
-        <textarea
-          value={requirementsData.linkRequirements}
-          onChange={(e) => handleRequirementsChange('linkRequirements', e.target.value)}
-          className="w-full px-3 py-2 border border-gray-300 rounded-lg"
-          rows={3}
-          placeholder="Describe any specific requirements for links (anchor text rules, placement, etc.)"
-        />
-      </div>
+            {/* Prohibited Topics */}
+            <div>
+              <label className="block text-sm font-medium text-gray-700 mb-2">
+                Prohibited Topics
+              </label>
+              <textarea
+                value={currentOffering.requirements.prohibitedTopics}
+                onChange={(e) => handleOfferingRequirementChange(currentOffering.id, 'prohibitedTopics', e.target.value)}
+                className="w-full px-3 py-2 border border-gray-300 rounded-lg"
+                rows={3}
+                placeholder="List any topics or industries you don't accept content about"
+              />
+            </div>
 
-      {/* Images */}
-      <div className="space-y-4">
-        <div className="flex items-center justify-between">
-          <label className="text-sm font-medium text-gray-700">
-            Images Required
-          </label>
-          <input
-            type="checkbox"
-            checked={requirementsData.imagesRequired}
-            onChange={(e) => handleRequirementsChange('imagesRequired', e.target.checked)}
-            className="h-4 w-4"
-          />
-        </div>
-        
-        {requirementsData.imagesRequired && (
-          <div>
-            <label className="block text-sm font-medium text-gray-700 mb-2">
-              Minimum Number of Images
-            </label>
-            <input
-              type="number"
-              value={requirementsData.minImages}
-              onChange={(e) => handleRequirementsChange('minImages', e.target.value)}
-              className="w-full px-3 py-2 border border-gray-300 rounded-lg"
-              min="1"
-              max="10"
-            />
+            {/* Required Elements */}
+            <div>
+              <label className="block text-sm font-medium text-gray-700 mb-2">
+                Required Content Elements
+              </label>
+              <div className="space-y-2">
+                {['Statistics/Data', 'Expert Quotes', 'Case Studies', 'Original Research', 'Infographics', 'Videos'].map(element => (
+                  <label key={element} className="flex items-center">
+                    <input
+                      type="checkbox"
+                      checked={currentOffering.requirements.requiredElements.includes(element)}
+                      onChange={() => handleArrayToggle('requiredElements', element)}
+                      className="mr-2"
+                    />
+                    <span className="text-sm">{element}</span>
+                  </label>
+                ))}
+              </div>
+            </div>
+
+            {/* Link Requirements */}
+            <div>
+              <label className="block text-sm font-medium text-gray-700 mb-2">
+                Link Requirements
+              </label>
+              <textarea
+                value={currentOffering.requirements.linkRequirements}
+                onChange={(e) => handleOfferingRequirementChange(currentOffering.id, 'linkRequirements', e.target.value)}
+                className="w-full px-3 py-2 border border-gray-300 rounded-lg"
+                rows={3}
+                placeholder="Describe any specific requirements for links (anchor text rules, placement, etc.)"
+              />
+            </div>
+
+            {/* Images */}
+            <div className="space-y-4">
+              <div className="flex items-center justify-between">
+                <label className="text-sm font-medium text-gray-700">
+                  Images Required
+                </label>
+                <input
+                  type="checkbox"
+                  checked={currentOffering.requirements.imagesRequired}
+                  onChange={(e) => handleOfferingRequirementChange(currentOffering.id, 'imagesRequired', e.target.checked)}
+                  className="h-4 w-4"
+                />
+              </div>
+              
+              {currentOffering.requirements.imagesRequired && (
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-2">
+                    Minimum Number of Images
+                  </label>
+                  <input
+                    type="number"
+                    value={currentOffering.requirements.minImages}
+                    onChange={(e) => handleOfferingRequirementChange(currentOffering.id, 'minImages', e.target.value)}
+                    className="w-full px-3 py-2 border border-gray-300 rounded-lg"
+                    min="1"
+                    max="10"
+                  />
+                </div>
+              )}
+            </div>
+
+            {/* Sample Post */}
+            <div>
+              <label className="block text-sm font-medium text-gray-700 mb-2">
+                Sample Post URL
+              </label>
+              <input
+                type="url"
+                value={currentOffering.requirements.samplePostUrl}
+                onChange={(e) => handleOfferingRequirementChange(currentOffering.id, 'samplePostUrl', e.target.value)}
+                className="w-full px-3 py-2 border border-gray-300 rounded-lg"
+                placeholder="https://example.com/sample-post"
+              />
+              <p className="mt-1 text-xs text-gray-500">
+                Provide a link to a sample post that represents your quality standards
+              </p>
+            </div>
           </div>
         )}
       </div>
-
-      {/* Sample Post */}
-      <div>
-        <label className="block text-sm font-medium text-gray-700 mb-2">
-          Sample Post URL
-        </label>
-        <input
-          type="url"
-          value={requirementsData.samplePostUrl}
-          onChange={(e) => handleRequirementsChange('samplePostUrl', e.target.value)}
-          className="w-full px-3 py-2 border border-gray-300 rounded-lg"
-          placeholder="https://example.com/sample-post"
-        />
-        <p className="mt-1 text-xs text-gray-500">
-          Provide a link to a sample post that represents your quality standards
-        </p>
-      </div>
-    </div>
-  );
+    );
+  };
 
   const renderReviewStep = () => (
     <div className="space-y-6">
@@ -1044,32 +1119,53 @@ export default function NewWebsitePage() {
         </div>
       ))}
 
-      {/* Requirements Summary */}
-      {(requirementsData.contentRequirements || requirementsData.prohibitedTopics || requirementsData.requiredElements.length > 0) && (
+      {/* Requirements Summary - Per Offering */}
+      {offerings.some(offering => 
+        offering.requirements.contentRequirements || 
+        offering.requirements.prohibitedTopics || 
+        offering.requirements.requiredElements.length > 0
+      ) && (
         <div className="bg-gray-50 p-4 rounded-lg">
           <h3 className="font-medium text-gray-900 mb-3">Content Requirements</h3>
-          <dl className="space-y-2 text-sm">
-            {requirementsData.contentRequirements && (
-              <div>
-                <dt className="text-gray-600 mb-1">Guidelines:</dt>
-                <dd className="font-medium">{requirementsData.contentRequirements}</dd>
-              </div>
-            )}
-            
-            {requirementsData.prohibitedTopics && (
-              <div>
-                <dt className="text-gray-600 mb-1">Prohibited Topics:</dt>
-                <dd className="font-medium">{requirementsData.prohibitedTopics}</dd>
-              </div>
-            )}
-            
-            {requirementsData.requiredElements.length > 0 && (
-              <div>
-                <dt className="text-gray-600 mb-1">Required Elements:</dt>
-                <dd className="font-medium">{requirementsData.requiredElements.join(', ')}</dd>
-              </div>
-            )}
-          </dl>
+          <div className="space-y-4">
+            {offerings.map((offering, index) => {
+              const hasRequirements = offering.requirements.contentRequirements || 
+                                      offering.requirements.prohibitedTopics || 
+                                      offering.requirements.requiredElements.length > 0;
+              
+              if (!hasRequirements) return null;
+              
+              return (
+                <div key={offering.id} className="border-l-2 border-blue-200 pl-3">
+                  <h4 className="font-medium text-gray-800 mb-2">
+                    {offering.offeringType.replace('_', ' ').replace(/\b\w/g, l => l.toUpperCase())} #{index + 1}
+                  </h4>
+                  <dl className="space-y-2 text-sm">
+                    {offering.requirements.contentRequirements && (
+                      <div>
+                        <dt className="text-gray-600 mb-1">Guidelines:</dt>
+                        <dd className="font-medium">{offering.requirements.contentRequirements}</dd>
+                      </div>
+                    )}
+                    
+                    {offering.requirements.prohibitedTopics && (
+                      <div>
+                        <dt className="text-gray-600 mb-1">Prohibited Topics:</dt>
+                        <dd className="font-medium">{offering.requirements.prohibitedTopics}</dd>
+                      </div>
+                    )}
+                    
+                    {offering.requirements.requiredElements.length > 0 && (
+                      <div>
+                        <dt className="text-gray-600 mb-1">Required Elements:</dt>
+                        <dd className="font-medium">{offering.requirements.requiredElements.join(', ')}</dd>
+                      </div>
+                    )}
+                  </dl>
+                </div>
+              );
+            })}
+          </div>
         </div>
       )}
 
