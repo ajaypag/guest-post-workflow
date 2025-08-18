@@ -6,7 +6,7 @@
    - Environments: .env.local
 
    Creating an optimized production build ...
- ✓ Compiled successfully in 5.2min
+ ✓ Compiled successfully in 6.5min
    Linting and checking validity of types ...
 
 ./app/account/orders/[id]/status/page.tsx

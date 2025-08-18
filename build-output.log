@@ -3,10 +3,10 @@
 > next build
 
    ▲ Next.js 15.3.4
-   - Environments: .env.local, .env
+   - Environments: .env.local
 
    Creating an optimized production build ...
- ✓ Compiled successfully in 2.7min
+ ✓ Compiled successfully in 107s
    Linting and checking validity of types ...
 
 ./app/account/orders/[id]/status/page.tsx
@@ -84,10 +84,19 @@
 43:6  Warning: React Hook useEffect has a missing dependency: 'fetchOrder'. Either include it or remove the dependency array.  react-hooks/exhaustive-deps
 
 ./app/orders/claim/[token]/page.tsx
-47:6  Warning: React Hook useEffect has a missing dependency: 'loadOrderByToken'. Either include it or remove the dependency array.  react-hooks/exhaustive-deps
+52:6  Warning: React Hook useEffect has a missing dependency: 'loadOrderByToken'. Either include it or remove the dependency array.  react-hooks/exhaustive-deps
 
 ./app/orders/page.tsx
 122:6  Warning: React Hook useEffect has a missing dependency: 'fetchOrders'. Either include it or remove the dependency array.  react-hooks/exhaustive-deps
+
+./app/publisher/(dashboard)/offerings/[id]/edit/page.tsx
+34:6  Warning: React Hook useEffect has a missing dependency: 'loadOffering'. Either include it or remove the dependency array.  react-hooks/exhaustive-deps
+
+./app/publisher/(dashboard)/websites/[id]/edit/page.tsx
+56:6  Warning: React Hook useEffect has a missing dependency: 'loadWebsite'. Either include it or remove the dependency array.  react-hooks/exhaustive-deps
+
+./app/publisher/(dashboard)/websites/[id]/page.tsx
+56:6  Warning: React Hook useEffect has a missing dependency: 'fetchWebsite'. Either include it or remove the dependency array.  react-hooks/exhaustive-deps
 
 ./app/register/account/page.tsx
 51:6  Warning: React Hook useEffect has a missing dependency: 'verifyInvitation'. Either include it or remove the dependency array.  react-hooks/exhaustive-deps
@@ -99,7 +108,7 @@
 25:6  Warning: React Hook useEffect has a missing dependency: 'verifyEmail'. Either include it or remove the dependency array.  react-hooks/exhaustive-deps
 
 ./components/AccountAuthWrapper.tsx
-37:6  Warning: React Hook useEffect has missing dependencies: 'checkAuth' and 'refreshTokenIfNeeded'. Either include them or remove the dependency array.  react-hooks/exhaustive-deps
+38:6  Warning: React Hook useEffect has missing dependencies: 'checkAuth' and 'refreshTokenIfNeeded'. Either include them or remove the dependency array.  react-hooks/exhaustive-deps
 
 ./components/BulkAnalysisResultsModal.tsx
 45:6  Warning: React Hook useEffect has a missing dependency: 'fetchResults'. Either include it or remove the dependency array.  react-hooks/exhaustive-deps
@@ -204,15 +213,14 @@
 info  - Need to disable some ESLint rules? Learn more here: https://nextjs.org/docs/app/api-reference/config/eslint#disabling-rules
 Failed to compile.
 
-./app/api/admin/schema-check/route.ts:40:9
-Type error: Element implicitly has an 'any' type because expression of type 'string' can't be used to index type '{ publisher_offerings: boolean; publisher_offering_relationships: boolean; publisher_websites: boolean; publishers: boolean; publisher_performance: boolean; publisher_earnings: boolean; publisher_invoices: boolean; }'.
-  No index signature with a parameter of type 'string' was found on type '{ publisher_offerings: boolean; publisher_offering_relationships: boolean; publisher_websites: boolean; publishers: boolean; publisher_performance: boolean; publisher_earnings: boolean; publisher_invoices: boolean; }'.
+./app/api/orders/[id]/groups/[groupId]/submissions/route.ts:47:20
+Type error: 'session' is possibly 'null'.
 
-[0m [90m 38 |[39m       [36mtry[39m {[0m
-[0m [90m 39 |[39m         [36mconst[39m result [33m=[39m [36mawait[39m db[33m.[39mexecute(sql[33m.[39mraw([32m`SELECT COUNT(*) as count FROM ${tableName}`[39m))[33m;[39m[0m
-[0m[31m[1m>[22m[39m[90m 40 |[39m         checks[tableName] [33m=[39m { [0m
-[0m [90m    |[39m         [31m[1m^[22m[39m[0m
-[0m [90m 41 |[39m           exists[33m:[39m [36mtrue[39m[33m,[39m [0m
-[0m [90m 42 |[39m           count[33m:[39m result[33m.[39mrows[[35m0[39m][33m.[39mcount [0m
-[0m [90m 43 |[39m         }[33m;[39m[0m
+[0m [90m 45 |[39m     [0m
+[0m [90m 46 |[39m     [90m// Check permissions - session is guaranteed to be non-null here[39m[0m
+[0m[31m[1m>[22m[39m[90m 47 |[39m     [36mif[39m (session [33m&&[39m session[33m.[39muserType [33m===[39m [32m'account'[39m) {[0m
+[0m [90m    |[39m                    [31m[1m^[22m[39m[0m
+[0m [90m 48 |[39m       [36mif[39m (order[33m.[39maccountId [33m!==[39m session[33m.[39muserId) {[0m
+[0m [90m 49 |[39m         [36mreturn[39m [33mNextResponse[39m[33m.[39mjson({ error[33m:[39m [32m'Forbidden - Account access denied'[39m }[33m,[39m { status[33m:[39m [35m403[39m })[33m;[39m[0m
+[0m [90m 50 |[39m       }[0m
 Next.js build worker exited with code: 1 and signal: null

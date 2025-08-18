@@ -100,8 +100,8 @@ export async function POST(
           where: eq(websites.domain, domain.domain)
         });
 
-        if (website && website.wholesalePrice) {
-          wholesalePrice = Math.floor(website.wholesalePrice * 100); // Convert to cents
+        if (website && (website as any).wholesalePrice) {
+          wholesalePrice = Math.floor((website as any).wholesalePrice * 100); // Convert to cents
           estimatedPrice = wholesalePrice + 7900; // Add service fee
         }
       } catch (error) {
@@ -166,13 +166,13 @@ export async function POST(
       .update(orders)
       .set({
         updatedAt: now,
-        metadata: sql`
-          COALESCE(metadata, '{}'::jsonb) || 
-          jsonb_build_object(
-            'lastBulkAssignment', ${now.toISOString()},
-            'bulkAssignmentCount', COALESCE((metadata->>'bulkAssignmentCount')::int, 0) + ${updatedLineItems.length}
-          )
-        `
+        // metadata: sql`
+        //   COALESCE(metadata, '{}'::jsonb) || 
+        //   jsonb_build_object(
+        //     'lastBulkAssignment', ${now.toISOString()},
+        //     'bulkAssignmentCount', COALESCE((metadata->>'bulkAssignmentCount')::int, 0) + ${updatedLineItems.length}
+        //   )
+        // `
       })
       .where(eq(orders.id, orderId));
 
