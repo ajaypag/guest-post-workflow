@@ -385,8 +385,8 @@ export default function AdminMigrationPage() {
                 <h3 className="text-lg font-medium text-gray-900">Migration Controls</h3>
               </div>
               <div className="p-6 space-y-4">
-                {/* Cleanup Failed Migration */}
-                {(migrationStatus.phase === 'failed' || migrationStatus.errors?.length > 0) && (
+                {/* Cleanup/Force Re-run Migration - Always show this button */}
+                {(
                   <button
                     onClick={async () => {
                       setIsLoading(true);
@@ -414,9 +414,9 @@ export default function AdminMigrationPage() {
                     className="w-full flex items-center justify-center px-4 py-2 border border-orange-300 rounded-md shadow-sm text-sm font-medium text-white bg-orange-600 hover:bg-orange-700 disabled:opacity-50 disabled:cursor-not-allowed"
                   >
                     <AlertTriangle className="h-4 w-4 mr-2" />
-                    Clear Failed Migration
+                    Force Clear & Re-run Migration
                   </button>
-                )}
+                }
 
                 {/* Pre-flight Check */}
                 <button

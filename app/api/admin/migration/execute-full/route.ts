@@ -16,8 +16,12 @@ export async function POST(request: NextRequest) {
       return NextResponse.json({ error: 'Migration already in progress' }, { status: 400 });
     }
 
-    if (currentState.phase === 'completed') {
-      return NextResponse.json({ error: 'Migration already completed' }, { status: 400 });
+    // Allow re-running if there's an error or if specifically requested
+    if (currentState.phase === 'completed' && !request.headers.get('x-force-rerun')) {
+      return NextResponse.json({ 
+        error: 'Migration appears complete. Click "Force Clear & Re-run Migration" to override.', 
+        needsForce: true 
+      }, { status: 400 });
     }
 
     // Initialize migration state
