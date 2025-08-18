@@ -52,25 +52,25 @@ export async function GET(
     //   .from(orderGroups)
     //   .innerJoin(clients, eq(orderGroups.clientId, clients.id))
     //   .where(eq(orderGroups.orderId, orderId));
-      
+    //       
     // Format the response
-    const formattedGroups = groups.map(({ orderGroup, client }) => ({
-      id: orderGroup.id,
-      clientId: orderGroup.clientId,
-      linkCount: orderGroup.linkCount,
-      targetPages: orderGroup.targetPages || [],
-      client: {
-        id: client.id,
-        name: client.name,
-        website: client.website
-      }
-    }));
-    
-    return NextResponse.json({
-      groups: formattedGroups,
-      totalGroups: formattedGroups.length,
-      totalLinks: formattedGroups.reduce((sum, g) => sum + g.linkCount, 0)
-    });
+    // const formattedGroups = groups.map(({ orderGroup, client }) => ({
+    //   id: orderGroup.id,
+    //   clientId: orderGroup.clientId,
+    //   linkCount: orderGroup.linkCount,
+    //   targetPages: orderGroup.targetPages || [],
+    //   client: {
+    //     id: client.id,
+    //     name: client.name,
+    //     website: client.website
+    //   }
+    // }));
+    // 
+    // return NextResponse.json({
+    //   groups: formattedGroups,
+    //   totalGroups: formattedGroups.length,
+    //   totalLinks: formattedGroups.reduce((sum, g) => sum + g.linkCount, 0)
+    // });
     
   } catch (error: any) {
     console.error('Error fetching order groups:', error);
