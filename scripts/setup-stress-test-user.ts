@@ -42,6 +42,8 @@ async function setupStressTestUser() {
       console.log('✅ Stress test user already exists');
       console.log(`   Email: ${existingUser[0].email}`);
       console.log(`   ID: ${existingUser[0].id}`);
+      console.log(`   Status: ${existingUser[0].status}`);
+      console.log(`   Email verified: ${existingUser[0].emailVerified}`);
       await pool.end();
       return;
     }
@@ -54,10 +56,11 @@ async function setupStressTestUser() {
       .insert(publishers)
       .values({
         email: TEST_PUBLISHER.email,
-        hashedPassword,
-        name: TEST_PUBLISHER.name,
+        password: hashedPassword,
+        contactName: TEST_PUBLISHER.name,
         companyName: TEST_PUBLISHER.companyName,
-        isVerified: true, // Verified for testing
+        emailVerified: true, // Verified for testing
+        status: 'active',
         createdAt: new Date(),
         updatedAt: new Date()
       })
@@ -68,10 +71,10 @@ async function setupStressTestUser() {
     console.log(`   ID: ${newPublisher.id}`);
     console.log(`   Company: ${newPublisher.companyName}`);
 
-    await client.end();
+    await pool.end();
   } catch (error) {
     console.error('❌ Error setting up stress test user:', error);
-    await client.end();
+    await pool.end();
     process.exit(1);
   }
 }
