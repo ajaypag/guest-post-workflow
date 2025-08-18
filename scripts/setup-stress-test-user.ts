@@ -55,6 +55,7 @@ async function setupStressTestUser() {
     const [newPublisher] = await db
       .insert(publishers)
       .values({
+        id: crypto.randomUUID(),
         email: TEST_PUBLISHER.email,
         password: hashedPassword,
         contactName: TEST_PUBLISHER.name,
