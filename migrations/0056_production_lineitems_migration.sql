@@ -83,6 +83,7 @@ BEGIN
                     wholesale_price,
                     service_fee,
                     added_at,
+                    added_by,
                     added_by_user_id,
                     display_order,
                     metadata
@@ -109,7 +110,8 @@ BEGIN
                     42000, -- Default wholesale price $420
                     7900, -- Standard service fee
                     NOW(),
-                    '97aca16f-8b81-44ad-a532-a6e3fa96cbfc', -- System user (order_groups has no created_by)
+                    '97aca16f-8b81-44ad-a532-a6e3fa96cbfc', -- System user for added_by
+                    '97aca16f-8b81-44ad-a532-a6e3fa96cbfc', -- System user for added_by_user_id
                     display_order_counter,
                     jsonb_build_object(
                         'migrated_from_group', group_rec.id,
