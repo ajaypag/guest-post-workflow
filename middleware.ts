@@ -146,7 +146,8 @@ export async function middleware(request: NextRequest) {
       !path.startsWith('/publisher/login') && 
       !path.startsWith('/publisher/signup') &&
       !path.startsWith('/publisher/verify') &&
-      !path.startsWith('/publisher/forgot-password')) {
+      !path.startsWith('/publisher/forgot-password') &&
+      !path.startsWith('/publisher/reset-password')) {
     try {
       // For UI pages, check cookie authentication
       const publisherTokenCookie = request.cookies.get('auth-token-publisher');
