@@ -56,11 +56,12 @@ interface Website {
   internalNotes: string | null;
 }
 
-export default function InternalWebsiteEditPage({ params }: { params: { id: string } }) {
+export default function InternalWebsiteEditPage({ params }: { params: Promise<{ id: string }> }) {
   const router = useRouter();
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const [websiteId, setWebsiteId] = useState<string>('');
   
   // Website data
   const [website, setWebsite] = useState<Website | null>(null);
@@ -74,13 +75,16 @@ export default function InternalWebsiteEditPage({ params }: { params: { id: stri
   const websiteTypeOptions = ['Blog', 'News', 'Magazine', 'Corporate', 'Personal', 'Portfolio'];
 
   useEffect(() => {
-    fetchWebsiteData();
-  }, [params.id]);
+    params.then(p => {
+      setWebsiteId(p.id);
+      fetchWebsiteData(p.id);
+    });
+  }, [params]);
 
-  const fetchWebsiteData = async () => {
+  const fetchWebsiteData = async (id: string) => {
     try {
       setLoading(true);
-      const response = await fetch(`/api/internal/websites/${params.id}`);
+      const response = await fetch(`/api/internal/websites/${id}`);
       
       if (!response.ok) {
         throw new Error('Failed to fetch website data');
@@ -221,7 +225,7 @@ export default function InternalWebsiteEditPage({ params }: { params: { id: stri
         }))
       };
       
-      const response = await fetch(`/api/internal/websites/${params.id}`, {
+      const response = await fetch(`/api/internal/websites/${websiteId}`, {
         method: 'PUT',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify(payload),
@@ -232,7 +236,7 @@ export default function InternalWebsiteEditPage({ params }: { params: { id: stri
         throw new Error(data.error || 'Failed to update website');
       }
       
-      router.push(`/internal/websites/${params.id}`);
+      router.push(`/internal/websites/${websiteId}`);
     } catch (err) {
       console.error('Error saving:', err);
       setError(err instanceof Error ? err.message : 'Failed to save changes');
@@ -272,7 +276,7 @@ export default function InternalWebsiteEditPage({ params }: { params: { id: stri
         {/* Header */}
         <div className="mb-6">
           <Link
-            href={`/internal/websites/${params.id}`}
+            href={`/internal/websites/${websiteId}`}
             className="inline-flex items-center text-sm text-gray-600 hover:text-gray-900"
           >
             <ArrowLeft className="w-4 h-4 mr-1" />

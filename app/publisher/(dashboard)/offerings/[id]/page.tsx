@@ -57,23 +57,27 @@ interface PricingRule {
   isActive: boolean;
 }
 
-export default function PublisherOfferingDetailPage({ params }: { params: { id: string } }) {
+export default function PublisherOfferingDetailPage({ params }: { params: Promise<{ id: string }> }) {
   const router = useRouter();
   const [offering, setOffering] = useState<Offering | null>(null);
   const [pricingRules, setPricingRules] = useState<PricingRule[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
+  const [offeringId, setOfferingId] = useState<string>('');
 
   useEffect(() => {
-    fetchOfferingDetails();
-  }, [params.id]);
+    params.then(p => {
+      setOfferingId(p.id);
+      fetchOfferingDetails(p.id);
+    });
+  }, [params]);
 
-  const fetchOfferingDetails = async () => {
+  const fetchOfferingDetails = async (id: string) => {
     try {
       setLoading(true);
       
       // Fetch offering details
-      const offeringResponse = await fetch(`/api/publisher/offerings/${params.id}`);
+      const offeringResponse = await fetch(`/api/publisher/offerings/${id}`);
       if (!offeringResponse.ok) {
         if (offeringResponse.status === 404) {
           throw new Error('Offering not found');
@@ -84,7 +88,7 @@ export default function PublisherOfferingDetailPage({ params }: { params: { id: 
       setOffering(offeringData);
 
       // Fetch pricing rules
-      const rulesResponse = await fetch(`/api/publisher/offerings/${params.id}/pricing-rules`);
+      const rulesResponse = await fetch(`/api/publisher/offerings/${id}/pricing-rules`);
       if (rulesResponse.ok) {
         const rulesData = await rulesResponse.json();
         setPricingRules(rulesData.rules || []);
@@ -187,14 +191,14 @@ export default function PublisherOfferingDetailPage({ params }: { params: { id: 
               <div className="flex items-center space-x-3">
                 {getAvailabilityBadge(offering.currentAvailability)}
                 <Link
-                  href={`/publisher/offerings/${offering.id}/edit`}
+                  href={`/publisher/offerings/${offeringId}/edit`}
                   className="inline-flex items-center px-4 py-2 border border-gray-300 rounded-md shadow-sm text-sm font-medium text-gray-700 bg-white hover:bg-gray-50"
                 >
                   <Edit className="w-4 h-4 mr-2" />
                   Edit
                 </Link>
                 <Link
-                  href={`/publisher/offerings/${offering.id}/pricing-rules`}
+                  href={`/publisher/offerings/${offeringId}/pricing-rules`}
                   className="inline-flex items-center px-4 py-2 border border-gray-300 rounded-md shadow-sm text-sm font-medium text-gray-700 bg-white hover:bg-gray-50"
                 >
                   <Settings className="w-4 h-4 mr-2" />
@@ -380,7 +384,7 @@ export default function PublisherOfferingDetailPage({ params }: { params: { id: 
               <div className="flex items-center justify-between mb-4">
                 <h2 className="text-lg font-semibold text-gray-900">Active Pricing Rules</h2>
                 <Link
-                  href={`/publisher/offerings/${offering.id}/pricing-rules`}
+                  href={`/publisher/offerings/${offeringId}/pricing-rules`}
                   className="text-sm text-blue-600 hover:text-blue-700"
                 >
                   Manage Rules →
