@@ -1,7 +1,7 @@
 'use client';
 
 import { useState } from 'react';
-import { Share2, Copy, CheckCircle, Loader2, X, AlertCircle } from 'lucide-react';
+import { Share2, Copy, CheckCircle, Loader2, X, AlertCircle, Video, Plus } from 'lucide-react';
 
 interface ShareOrderButtonProps {
   orderId: string;
@@ -11,10 +11,15 @@ interface ShareOrderButtonProps {
 export default function ShareOrderButton({ orderId, currentShareToken }: ShareOrderButtonProps) {
   const [showModal, setShowModal] = useState(false);
   const [shareUrl, setShareUrl] = useState('');
+  const [shareToken, setShareToken] = useState('');
   const [loading, setLoading] = useState(false);
   const [copied, setCopied] = useState(false);
   const [error, setError] = useState('');
   const [expiresInDays, setExpiresInDays] = useState(7);
+  const [showVideoForm, setShowVideoForm] = useState(false);
+  const [videoUrl, setVideoUrl] = useState('');
+  const [videoMessage, setVideoMessage] = useState('');
+  const [videoSaved, setVideoSaved] = useState(false);
 
   const generateShareLink = async () => {
     try {
@@ -35,6 +40,11 @@ export default function ShareOrderButton({ orderId, currentShareToken }: ShareOr
       
       const data = await response.json();
       setShareUrl(data.shareUrl);
+      // Extract token from URL
+      const tokenMatch = data.shareUrl.match(/\/claim\/([^\/]+)$/);
+      if (tokenMatch) {
+        setShareToken(tokenMatch[1]);
+      }
       
     } catch (error: any) {
       console.error('Error generating share link:', error);
@@ -51,6 +61,33 @@ export default function ShareOrderButton({ orderId, currentShareToken }: ShareOr
       setTimeout(() => setCopied(false), 2000);
     } catch (err) {
       console.error('Failed to copy:', err);
+    }
+  };
+
+  const saveVideo = async () => {
+    if (!shareToken || !videoUrl) return;
+    
+    try {
+      setLoading(true);
+      const response = await fetch(`/api/orders/share/${shareToken}/video`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        credentials: 'include',
+        body: JSON.stringify({ videoUrl, message: videoMessage })
+      });
+      
+      if (!response.ok) {
+        throw new Error('Failed to add video');
+      }
+      
+      setVideoSaved(true);
+      setShowVideoForm(false);
+      setTimeout(() => setVideoSaved(false), 3000);
+    } catch (error: any) {
+      console.error('Error adding video:', error);
+      setError(error.message || 'Failed to add video');
+    } finally {
+      setLoading(false);
     }
   };
 
@@ -177,6 +214,74 @@ export default function ShareOrderButton({ orderId, currentShareToken }: ShareOr
                       </button>
                     </div>
                   </div>
+
+                  {/* Add Video Button */}
+                  {!showVideoForm && !videoSaved && (
+                    <button
+                      onClick={() => setShowVideoForm(true)}
+                      className="w-full px-3 py-2 border border-blue-300 text-blue-600 rounded-lg hover:bg-blue-50 flex items-center justify-center text-sm"
+                    >
+                      <Plus className="h-4 w-4 mr-1" />
+                      Add Video Presentation (Optional)
+                    </button>
+                  )}
+
+                  {/* Video Saved Indicator */}
+                  {videoSaved && (
+                    <div className="bg-green-50 border border-green-200 rounded-lg p-3 flex items-center">
+                      <Video className="h-4 w-4 text-green-600 mr-2" />
+                      <p className="text-sm text-green-800">Video added to proposal!</p>
+                    </div>
+                  )}
+
+                  {/* Video Form */}
+                  {showVideoForm && (
+                    <div className="space-y-3 p-3 bg-gray-50 rounded-lg">
+                      <div className="flex items-center justify-between">
+                        <h4 className="text-sm font-medium text-gray-900">Add Video Presentation</h4>
+                        <button
+                          onClick={() => setShowVideoForm(false)}
+                          className="text-gray-400 hover:text-gray-600"
+                        >
+                          <X className="h-4 w-4" />
+                        </button>
+                      </div>
+                      
+                      <div>
+                        <label className="block text-xs font-medium text-gray-700 mb-1">
+                          Video URL
+                        </label>
+                        <input
+                          type="url"
+                          value={videoUrl}
+                          onChange={(e) => setVideoUrl(e.target.value)}
+                          placeholder="YouTube, Loom, Vimeo URL..."
+                          className="w-full px-3 py-1.5 text-sm border border-gray-300 rounded focus:ring-blue-500 focus:border-blue-500"
+                        />
+                      </div>
+                      
+                      <div>
+                        <label className="block text-xs font-medium text-gray-700 mb-1">
+                          Message (Optional)
+                        </label>
+                        <textarea
+                          value={videoMessage}
+                          onChange={(e) => setVideoMessage(e.target.value)}
+                          placeholder="Add a personal note..."
+                          rows={2}
+                          className="w-full px-3 py-1.5 text-sm border border-gray-300 rounded focus:ring-blue-500 focus:border-blue-500"
+                        />
+                      </div>
+                      
+                      <button
+                        onClick={saveVideo}
+                        disabled={!videoUrl || loading}
+                        className="w-full px-3 py-1.5 bg-blue-600 text-white text-sm rounded hover:bg-blue-700 disabled:bg-gray-300 disabled:cursor-not-allowed"
+                      >
+                        {loading ? 'Saving...' : 'Add Video'}
+                      </button>
+                    </div>
+                  )}
 
                   <div className="bg-amber-50 border border-amber-200 rounded-lg p-3">
                     <p className="text-sm text-amber-800">

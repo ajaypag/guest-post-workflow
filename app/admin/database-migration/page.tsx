@@ -46,6 +46,13 @@ export default function DatabaseMigrationPage() {
       endpoint: '/api/admin/pool-to-status-migration'
     },
     {
+      id: 'add_proposal_fields',
+      name: 'Add Proposal Video Fields',
+      description: 'Adds proposal_video_url and proposal_message columns to orders table for personalized video presentations',
+      dangerous: false,
+      endpoint: '/api/admin/database-migrations/add-proposal-fields'
+    },
+    {
       id: 'run_all_migrations',
       name: 'Run All Migrations',
       description: 'Runs all database migrations in the correct order',

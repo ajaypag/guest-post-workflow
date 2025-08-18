@@ -5,22 +5,29 @@ import { useParams, useRouter } from 'next/navigation';
 import { formatCurrency } from '@/lib/utils/formatting';
 import { 
   Loader2, CheckCircle, AlertCircle, Package, 
-  User, Mail, Lock, Building, ArrowRight
+  User, Mail, Lock, Building, ArrowRight, Globe, DollarSign, Target
 } from 'lucide-react';
+import OrderSiteReviewTableV2 from '@/components/orders/OrderSiteReviewTableV2';
+import type { OrderGroup, SiteSubmission } from '@/components/orders/OrderSiteReviewTableV2';
+import LinkioHeader from '@/components/LinkioHeader';
+import ProposalVideoEmbed from '@/components/ProposalVideoEmbed';
 
 interface OrderData {
   id: string;
   status: string;
   state?: string;
   totalPrice: number;
+  totalRetail: number;
   includesClientReview?: boolean;
   rushDelivery?: boolean;
   account?: {
     companyName?: string;
     contactName?: string;
   };
-  orderGroups?: any[];
+  orderGroups?: OrderGroup[];
   shareExpiresAt?: string;
+  proposalVideoUrl?: string;
+  proposalMessage?: string;
 }
 
 export default function ClaimOrderPage() {
@@ -29,18 +36,16 @@ export default function ClaimOrderPage() {
   const token = params.token as string;
   
   const [order, setOrder] = useState<OrderData | null>(null);
+  const [siteSubmissions, setSiteSubmissions] = useState<Record<string, SiteSubmission[]>>({});
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState('');
   const [claiming, setClaiming] = useState(false);
   const [showSignupForm, setShowSignupForm] = useState(false);
   
-  // Signup form fields
+  // Signup form fields (simplified to match main signup)
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
-  const [confirmPassword, setConfirmPassword] = useState('');
   const [contactName, setContactName] = useState('');
-  const [companyName, setCompanyName] = useState('');
-  const [phone, setPhone] = useState('');
 
   useEffect(() => {
     loadOrderByToken();
@@ -59,9 +64,14 @@ export default function ClaimOrderPage() {
       const data = await response.json();
       setOrder(data.order);
       
-      // Pre-fill company name if available
-      if (data.order?.account?.companyName) {
-        setCompanyName(data.order.account.companyName);
+      // Pre-fill contact name if available
+      if (data.order?.account?.contactName) {
+        setContactName(data.order.account.contactName);
+      }
+      
+      // Set site submissions from API response
+      if (data.siteSubmissions) {
+        setSiteSubmissions(data.siteSubmissions);
       }
       
     } catch (error: any) {
@@ -71,12 +81,15 @@ export default function ClaimOrderPage() {
       setLoading(false);
     }
   };
+  
+  // No longer needed - submissions come from main API call
 
   const handleClaimOrder = async (e: React.FormEvent) => {
     e.preventDefault();
     
-    if (password !== confirmPassword) {
-      setError('Passwords do not match');
+    // Basic validation (matches main signup form)
+    if (!email || !password || !contactName) {
+      setError('All fields are required');
       return;
     }
     
@@ -96,9 +109,7 @@ export default function ClaimOrderPage() {
         body: JSON.stringify({
           email,
           password,
-          contactName,
-          companyName,
-          phone
+          contactName
         })
       });
       
@@ -109,12 +120,8 @@ export default function ClaimOrderPage() {
       
       const result = await response.json();
       
-      // Success! Redirect to login with success message and verification notice
-      if (result.requiresEmailVerification) {
-        router.push(`/account/login?claimed=true&email=${encodeURIComponent(email)}&verify=true`);
-      } else {
-        router.push(`/account/login?claimed=true&email=${encodeURIComponent(email)}`);
-      }
+      // Success! Redirect to verification pending page
+      router.push(`/orders/claim/verification-pending?email=${encodeURIComponent(email)}&orderId=${result.orderId || ''}`)
       
     } catch (error: any) {
       console.error('Error claiming order:', error);
@@ -167,7 +174,9 @@ export default function ClaimOrderPage() {
   }
 
   return (
-    <div className="min-h-screen bg-gray-50">
+    <>
+      <LinkioHeader />
+      <div className="min-h-screen bg-gray-50">
       {/* Header */}
       <div className="bg-white border-b border-gray-200">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-6">
@@ -178,70 +187,104 @@ export default function ClaimOrderPage() {
                 Review the order details below and create an account to claim it
               </p>
             </div>
-            <div className="text-right">
-              <p className="text-sm text-gray-500">Order Value</p>
-              <p className="text-xl font-semibold text-gray-900">
-                {formatCurrency(order.totalPrice)}
-              </p>
-              {timeRemaining !== null && timeRemaining > 0 && (
-                <p className="text-xs text-orange-600 mt-1">
+            {timeRemaining !== null && timeRemaining > 0 && (
+              <div className="text-right">
+                <p className="text-xs text-orange-600">
                   Link expires in {timeRemaining} {timeRemaining === 1 ? 'day' : 'days'}
                 </p>
-              )}
-            </div>
+              </div>
+            )}
           </div>
         </div>
       </div>
 
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
-        {/* Order Preview */}
-        <div className="bg-white rounded-lg shadow-sm border border-gray-200 mb-8">
-          <div className="px-6 py-4 border-b border-gray-200">
-            <h2 className="text-lg font-medium text-gray-900">Order Details</h2>
-          </div>
-          
-          {/* Simple order summary - don't use OrderSiteReviewTable as it needs too much data */}
-          <div className="p-6">
-            {order.orderGroups && order.orderGroups.length > 0 ? (
-              <div className="space-y-4">
-                {order.orderGroups.map((group: any) => (
-                  <div key={group.id} className="border-l-4 border-blue-500 pl-4">
-                    <div className="flex items-center justify-between mb-2">
-                      <h3 className="font-medium text-gray-900">
-                        {group.client?.name || 'Unknown Client'}
-                      </h3>
-                      <span className="text-sm text-gray-500">
-                        {group.linkCount} {group.linkCount === 1 ? 'link' : 'links'}
-                      </span>
-                    </div>
+        {/* Personalized Video Proposal - Show if video URL exists */}
+        {order.proposalVideoUrl && (
+          <ProposalVideoEmbed 
+            videoUrl={order.proposalVideoUrl}
+            title="Your Personalized Proposal"
+            message={order.proposalMessage}
+          />
+        )}
+        
+        {/* Order Analysis - Show detailed site analysis like internal review page */}
+        {order.orderGroups && order.orderGroups.length > 0 ? (
+          <div className="space-y-6">
+            {order.orderGroups.map((group: any) => {
+              const groupSubmissions = siteSubmissions[group.id] || [];
+              
+              if (groupSubmissions.length === 0) {
+                return (
+                  <div key={group.id} className="bg-white rounded-lg shadow-sm border border-gray-200 p-8 text-center">
+                    <h3 className="text-lg font-medium text-gray-900 mb-2">
+                      {group.client?.name || 'Unknown Client'}
+                    </h3>
+                    <p className="text-gray-600">
+                      Analysis in progress - {group.linkCount} {group.linkCount === 1 ? 'link' : 'links'} requested
+                    </p>
                     {group.client?.website && (
-                      <p className="text-sm text-gray-600">
+                      <p className="text-sm text-gray-500 mt-1">
                         Website: {group.client.website}
                       </p>
                     )}
-                    {group.targetPages && group.targetPages.length > 0 && (
-                      <div className="mt-2">
-                        <p className="text-xs text-gray-500 mb-1">Target Pages:</p>
-                        <ul className="text-sm text-gray-600 space-y-1">
-                          {group.targetPages.slice(0, 3).map((page: any, idx: number) => (
-                            <li key={idx} className="truncate">
-                              • {page.url || page}
-                            </li>
-                          ))}
-                          {group.targetPages.length > 3 && (
-                            <li className="text-gray-400">
-                              • {group.targetPages.length - 3} more...
-                            </li>
-                          )}
-                        </ul>
-                      </div>
+                  </div>
+                );
+              }
+              
+              return (
+                <div key={group.id} className="bg-white rounded-lg shadow-sm border border-gray-200">
+                  <div className="px-6 py-4 border-b border-gray-200">
+                    <div className="flex items-center justify-between">
+                      <h3 className="text-lg font-medium text-gray-900">
+                        {group.client?.name || 'Unknown Client'}
+                      </h3>
+                      <span className="text-sm text-gray-500">
+                        {groupSubmissions.length} sites analyzed • {group.linkCount} links requested
+                      </span>
+                    </div>
+                    {group.client?.website && (
+                      <p className="text-sm text-gray-600 mt-1">
+                        Website: {group.client.website}
+                      </p>
                     )}
                   </div>
-                ))}
-                
-                <div className="pt-4 border-t border-gray-200">
-                  <div className="flex justify-between items-center">
-                    <span className="text-sm text-gray-600">
+                  
+                  <div className="p-0">
+                    <OrderSiteReviewTableV2
+                      orderId={order.id}
+                      orderGroups={[group]}
+                      siteSubmissions={{ [group.id]: groupSubmissions }}
+                      userType="account" // External users are account type
+                      permissions={{
+                        canChangeStatus: false,
+                        canApproveReject: false,
+                        canGenerateWorkflows: false,
+                        canMarkSitesReady: false,
+                        canAssignTargetPages: false,
+                        canViewInternalTools: false,
+                        canViewPricing: true,
+                        canEditDomainAssignments: false,
+                        canSetExclusionReason: false
+                      }}
+                      workflowStage="client_review"
+                      useStatusSystem={true}
+                      onApprove={async () => {}} // No-op for read-only
+                      onReject={async () => {}} // No-op for read-only
+                      onChangeInclusionStatus={async () => {}} // No-op for read-only
+                    />
+                  </div>
+                </div>
+              );
+            })}
+            
+            {/* Order Summary */}
+            <div className="bg-gray-50 rounded-lg p-6">
+              <div className="flex justify-between items-center">
+                <div>
+                  <p className="text-sm text-gray-600">Order Summary</p>
+                  <div className="flex items-center gap-4 mt-2">
+                    <span className="text-sm text-gray-700">
                       Total Links: {order.orderGroups.reduce((sum: number, g: any) => sum + g.linkCount, 0)}
                     </span>
                     {order.includesClientReview && (
@@ -256,12 +299,20 @@ export default function ClaimOrderPage() {
                     )}
                   </div>
                 </div>
+                <div className="text-right">
+                  <p className="text-sm text-gray-600">Sites Analyzed</p>
+                  <p className="text-2xl font-semibold text-gray-900">
+                    {Object.values(siteSubmissions).reduce((total, submissions) => total + submissions.length, 0)}
+                  </p>
+                </div>
               </div>
-            ) : (
-              <p className="text-gray-500">No order details available</p>
-            )}
+            </div>
           </div>
-        </div>
+        ) : (
+          <div className="bg-white rounded-lg shadow-sm border border-gray-200 p-8 text-center">
+            <p className="text-gray-500">No order analysis available yet</p>
+          </div>
+        )}
 
         {/* Claim Section */}
         {!showSignupForm ? (
@@ -295,7 +346,7 @@ export default function ClaimOrderPage() {
             )}
             
             <form onSubmit={handleClaimOrder} className="space-y-6">
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+              <div className="space-y-4">
                 <div>
                   <label className="block text-sm font-medium text-gray-700 mb-2">
                     <Mail className="inline h-4 w-4 mr-1" />
@@ -313,13 +364,14 @@ export default function ClaimOrderPage() {
                 <div>
                   <label className="block text-sm font-medium text-gray-700 mb-2">
                     <User className="inline h-4 w-4 mr-1" />
-                    Contact Name *
+                    Full Name *
                   </label>
                   <input
                     type="text"
                     value={contactName}
                     onChange={(e) => setContactName(e.target.value)}
                     className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-blue-500 focus:border-blue-500"
+                    placeholder="Your full name"
                     required
                   />
                 </div>
@@ -336,46 +388,6 @@ export default function ClaimOrderPage() {
                     className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-blue-500 focus:border-blue-500"
                     placeholder="Minimum 8 characters"
                     required
-                  />
-                </div>
-                
-                <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-2">
-                    <Lock className="inline h-4 w-4 mr-1" />
-                    Confirm Password *
-                  </label>
-                  <input
-                    type="password"
-                    value={confirmPassword}
-                    onChange={(e) => setConfirmPassword(e.target.value)}
-                    className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-blue-500 focus:border-blue-500"
-                    required
-                  />
-                </div>
-                
-                <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-2">
-                    <Building className="inline h-4 w-4 mr-1" />
-                    Company Name *
-                  </label>
-                  <input
-                    type="text"
-                    value={companyName}
-                    onChange={(e) => setCompanyName(e.target.value)}
-                    className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-blue-500 focus:border-blue-500"
-                    required
-                  />
-                </div>
-                
-                <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-2">
-                    Phone (Optional)
-                  </label>
-                  <input
-                    type="tel"
-                    value={phone}
-                    onChange={(e) => setPhone(e.target.value)}
-                    className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-blue-500 focus:border-blue-500"
                   />
                 </div>
               </div>
@@ -412,5 +424,6 @@ export default function ClaimOrderPage() {
         )}
       </div>
     </div>
+    </>
   );
 }
