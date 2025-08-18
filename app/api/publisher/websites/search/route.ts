@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { db } from '@/lib/db/connection';
-import { websites, publisherOfferingRelationships } from '@/lib/db/schema';
+import { websites } from '@/lib/db/websiteSchema';
+import { publisherOfferingRelationships } from '@/lib/db/publisherSchemaActual';
 import { eq, sql, and } from 'drizzle-orm';
 import { AuthServiceServer } from '@/lib/auth-server';
 import { normalizeDomain } from '@/lib/utils/domainNormalizer';
@@ -11,10 +12,10 @@ const searchSchema = z.object({
   domain: z.string().min(1).max(255)
 });
 
-export async function POST(request: NextRequest) {
+export async function GET(request: NextRequest) {
   try {
     // Check authentication
-    const session = await AuthServiceServer.getSession();
+    const session = await AuthServiceServer.getSession(request);
     if (!session || session.userType !== 'publisher') {
       return NextResponse.json(
         { error: 'Unauthorized' },
@@ -22,18 +23,16 @@ export async function POST(request: NextRequest) {
       );
     }
 
-    // Validate input
-    const body = await request.json();
-    const validation = searchSchema.safeParse(body);
+    // Get domain from query params
+    const { searchParams } = new URL(request.url);
+    const domain = searchParams.get('domain');
     
-    if (!validation.success) {
+    if (!domain) {
       return NextResponse.json(
-        { error: 'Invalid input', details: validation.error.errors },
+        { error: 'Domain parameter is required' },
         { status: 400 }
       );
     }
-
-    const { domain } = validation.data;
 
     // Normalize the domain
     let normalizedDomain: string;
@@ -76,24 +75,16 @@ export async function POST(request: NextRequest) {
       .limit(1);
 
       if (altWebsite.length === 0) {
-        return NextResponse.json(
-          { error: 'Website not found', domain: normalizedDomain },
-          { status: 404 }
-        );
+        // Website not found - it's new
+        return NextResponse.json({
+          exists: false,
+          website: null
+        });
       }
 
       // Found with www prefix
       const websiteData = altWebsite[0];
       
-      // Check if there are existing publishers
-      const publishers = await db.select({
-        count: sql<number>`count(*)::int`
-      })
-      .from(publisherOfferingRelationships)
-      .where(eq(publisherOfferingRelationships.websiteId, websiteData.id));
-
-      const publisherCount = publishers[0]?.count || 0;
-
       // Check if current publisher already has a relationship
       const existingRelationship = await db.select({
         id: publisherOfferingRelationships.id
@@ -108,25 +99,13 @@ export async function POST(request: NextRequest) {
       .limit(1);
 
       return NextResponse.json({
-        website: {
-          ...websiteData,
-          hasPublishers: publisherCount > 0,
-          publisherCount,
-          isAvailable: existingRelationship.length === 0
-        }
+        exists: true,
+        website: websiteData,
+        alreadyClaimed: existingRelationship.length > 0
       });
     }
 
     const websiteData = website[0];
-
-    // Check if there are existing publishers
-    const publishers = await db.select({
-      count: sql<number>`count(*)::int`
-    })
-    .from(publisherOfferingRelationships)
-    .where(eq(publisherOfferingRelationships.websiteId, websiteData.id));
-
-    const publisherCount = publishers[0]?.count || 0;
 
     // Check if current publisher already has a relationship
     const existingRelationship = await db.select({
@@ -142,12 +121,9 @@ export async function POST(request: NextRequest) {
     .limit(1);
 
     return NextResponse.json({
-      website: {
-        ...websiteData,
-        hasPublishers: publisherCount > 0,
-        publisherCount,
-        isAvailable: existingRelationship.length === 0
-      }
+      exists: true,
+      website: websiteData,
+      alreadyClaimed: existingRelationship.length > 0
     });
 
   } catch (error) {

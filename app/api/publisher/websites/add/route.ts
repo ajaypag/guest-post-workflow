@@ -1,32 +1,16 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { db } from '@/lib/db/connection';
-import { websites, publisherOfferingRelationships } from '@/lib/db/schema';
-import { eq, sql } from 'drizzle-orm';
+import { websites } from '@/lib/db/websiteSchema';
+import { publisherOfferings, publisherOfferingRelationships } from '@/lib/db/publisherSchemaActual';
+import { eq, and } from 'drizzle-orm';
 import { AuthServiceServer } from '@/lib/auth-server';
 import { normalizeDomain } from '@/lib/utils/domainNormalizer';
-import { z } from 'zod';
 import { v4 as uuidv4 } from 'uuid';
-
-// Input validation schema
-const addWebsiteSchema = z.object({
-  domain: z.string().min(1).max(255),
-  domainRating: z.number().min(0).max(100).nullable().optional(),
-  totalTraffic: z.number().min(0).nullable().optional(),
-  guestPostCost: z.string().nullable().optional(),
-  websiteType: z.string().optional(),
-  categories: z.array(z.string()).optional(),
-  turnaroundDays: z.number().min(1).default(7),
-  acceptsDoFollow: z.boolean().default(true),
-  requiresAuthorBio: z.boolean().default(false),
-  maxLinksPerPost: z.number().min(1).max(10).default(2),
-  contentGuidelines: z.string().optional(),
-  notes: z.string().optional()
-});
 
 export async function POST(request: NextRequest) {
   try {
     // Check authentication
-    const session = await AuthServiceServer.getSession();
+    const session = await AuthServiceServer.getSession(request);
     if (!session || session.userType !== 'publisher') {
       return NextResponse.json(
         { error: 'Unauthorized' },
@@ -41,23 +25,39 @@ export async function POST(request: NextRequest) {
       );
     }
 
-    // Validate input
     const body = await request.json();
-    const validation = addWebsiteSchema.safeParse(body);
-    
-    if (!validation.success) {
+    const { 
+      domain: rawDomain,
+      offering,
+      // Website fields (only used if website doesn't exist)
+      categories,
+      niche,
+      websiteType,
+      monthlyTraffic,
+      domainRating,
+      domainAuthority,
+      websiteLanguage,
+      targetAudience,
+      publisherTier,
+      typicalTurnaroundDays,
+      acceptsDoFollow,
+      requiresAuthorBio,
+      maxLinksPerPost,
+      contentGuidelinesUrl,
+      editorialCalendarUrl
+    } = body;
+
+    if (!rawDomain || !offering) {
       return NextResponse.json(
-        { error: 'Invalid input', details: validation.error.errors },
+        { error: 'Domain and offering details are required' },
         { status: 400 }
       );
     }
 
-    const data = validation.data;
-
     // Normalize the domain
     let normalizedDomain: string;
     try {
-      const normalized = normalizeDomain(data.domain);
+      const normalized = normalizeDomain(rawDomain);
       normalizedDomain = normalized.domain;
     } catch (err) {
       return NextResponse.json(
@@ -66,96 +66,139 @@ export async function POST(request: NextRequest) {
       );
     }
 
-    // Check if website already exists with this normalized domain
-    const existingWebsite = await db.select({
-      id: websites.id,
-      domain: websites.domain
-    })
-    .from(websites)
-    .where(eq(websites.domain, normalizedDomain))
-    .limit(1);
+    // Check if website already exists
+    const existingWebsite = await db
+      .select()
+      .from(websites)
+      .where(eq(websites.domain, normalizedDomain))
+      .limit(1);
 
-    if (existingWebsite.length > 0) {
-      return NextResponse.json(
-        { 
-          error: 'Website already exists', 
-          website: existingWebsite[0],
-          message: 'This website is already in our database. You can claim it instead.'
-        },
-        { status: 409 }
-      );
-    }
-
-    // Generate a unique ID for the website
-    const websiteId = uuidv4();
-
-    // Create timestamps
+    let websiteId: string;
     const now = new Date();
 
-    // Insert the new website
-    const [newWebsite] = await db.insert(websites)
+    if (existingWebsite.length > 0) {
+      // Website already exists - just use it
+      websiteId = existingWebsite[0].id;
+
+      // Check if this publisher already has an offering for this website
+      const existingRelationship = await db
+        .select()
+        .from(publisherOfferingRelationships)
+        .where(
+          and(
+            eq(publisherOfferingRelationships.websiteId, websiteId),
+            eq(publisherOfferingRelationships.publisherId, session.publisherId)
+          )
+        )
+        .limit(1);
+
+      if (existingRelationship.length > 0) {
+        return NextResponse.json(
+          { error: 'You already have an offering for this website' },
+          { status: 400 }
+        );
+      }
+    } else {
+      // Create new website with all the provided fields
+      const newWebsiteId = uuidv4();
+      
+      const [newWebsite] = await db
+        .insert(websites)
+        .values({
+          id: newWebsiteId,
+          domain: normalizedDomain,
+          // Categories and arrays
+          categories: categories && categories.length > 0 ? categories : null,
+          niche: niche && niche.length > 0 ? niche : null,
+          websiteType: websiteType && websiteType.length > 0 ? websiteType : null,
+          // Metrics
+          totalTraffic: monthlyTraffic || null,
+          domainRating: domainRating || null,
+          // Note: domainAuthority doesn't exist in the current schema, 
+          // but we're capturing it for when it's added
+          // Publishing info
+          websiteLanguage: websiteLanguage || 'en',
+          targetAudience: targetAudience || null,
+          publisherTier: publisherTier || 'standard',
+          typicalTurnaroundDays: typicalTurnaroundDays || 7,
+          acceptsDoFollow: acceptsDoFollow !== undefined ? acceptsDoFollow : true,
+          requiresAuthorBio: requiresAuthorBio || false,
+          maxLinksPerPost: maxLinksPerPost || 2,
+          contentGuidelinesUrl: contentGuidelinesUrl || null,
+          editorialCalendarUrl: editorialCalendarUrl || null,
+          // Metadata
+          source: 'publisher',
+          addedByPublisherId: session.publisherId,
+          sourceMetadata: {
+            addedBy: session.email,
+            addedAt: now.toISOString(),
+            domainAuthority: domainAuthority // Store here for now
+          },
+          status: 'Active',
+          hasGuestPost: offering.offeringType === 'guest_post',
+          hasLinkInsert: offering.offeringType === 'link_insertion',
+          // Timestamps
+          airtableCreatedAt: now,
+          airtableUpdatedAt: now,
+          createdAt: now,
+          updatedAt: now
+        })
+        .returning();
+
+      websiteId = newWebsite.id;
+    }
+
+    // Create publisher offering with all the details from the form
+    const [newOffering] = await db
+      .insert(publisherOfferings)
       .values({
-        id: websiteId,
-        // airtableId is now nullable, no need to provide it
-        domain: normalizedDomain,
-        domainRating: data.domainRating,
-        totalTraffic: data.totalTraffic,
-        guestPostCost: data.guestPostCost,
-        websiteType: data.websiteType ? [data.websiteType] : null,
-        categories: data.categories,
-        status: 'Active',
-        hasGuestPost: true,
-        
-        // Publishing details
-        typicalTurnaroundDays: data.turnaroundDays,
-        acceptsDoFollow: data.acceptsDoFollow,
-        requiresAuthorBio: data.requiresAuthorBio,
-        maxLinksPerPost: data.maxLinksPerPost,
-        contentGuidelinesUrl: data.contentGuidelines,
-        
-        // Source tracking
-        source: 'publisher',
-        addedByPublisherId: session.publisherId,
-        sourceMetadata: JSON.stringify({
-          addedBy: session.email,
-          addedAt: now.toISOString(),
-          initialData: data
-        }),
-        
-        // Timestamps - using current time for all
-        airtableCreatedAt: now,
-        airtableUpdatedAt: now,
+        publisherId: session.publisherId,
+        offeringType: offering.offeringType || 'guest_post',
+        basePrice: offering.basePrice || 10000, // Already in cents from form
+        currency: offering.currency || 'USD',
+        turnaroundDays: offering.turnaroundDays || 7,
+        minWordCount: offering.minWordCount || 500,
+        maxWordCount: offering.maxWordCount || 2000,
+        currentAvailability: offering.currentAvailability || 'available',
+        expressAvailable: offering.expressAvailable || false,
+        expressPrice: offering.expressPrice || null,
+        expressDays: offering.expressDays || null,
+        // Store additional requirements in attributes JSONB field
+        attributes: offering.attributes || {},
+        isActive: true,
         createdAt: now,
         updatedAt: now
       })
       .returning();
 
-    // Create the publisher relationship
-    const [newRelationship] = await db.insert(publisherOfferingRelationships)
+    // Create the relationship between publisher, offering, and website
+    await db
+      .insert(publisherOfferingRelationships)
       .values({
         publisherId: session.publisherId,
+        offeringId: newOffering.id,
         websiteId: websiteId,
-        relationshipType: 'owner', // They added it, so they're the owner
-        verificationStatus: 'verified', // Auto-verified since they added it
-        verificationMethod: 'publisher_added',
+        isPrimary: true,
         isActive: true,
-        isPrimary: true, // They're the first and primary publisher
-        publisherNotes: data.notes || 'Added via publisher portal',
-        verifiedAt: now,
+        relationshipType: existingWebsite.length > 0 ? 'reseller' : 'owner',
+        verificationStatus: existingWebsite.length > 0 ? 'pending' : 'verified',
+        verificationMethod: existingWebsite.length > 0 ? null : 'publisher_added',
+        verifiedAt: existingWebsite.length > 0 ? null : now,
         createdAt: now,
         updatedAt: now
-      })
-      .returning();
+      });
 
     return NextResponse.json({
       success: true,
-      website: newWebsite,
-      relationship: newRelationship,
-      message: 'Website added successfully'
+      websiteId,
+      offeringId: newOffering.id,
+      message: existingWebsite.length > 0 
+        ? 'Successfully created your offering for this existing website' 
+        : 'Successfully added website and created your offering'
     });
 
   } catch (error) {
-    console.error('Add website error:', error);
+    console.error('Error adding website:', error);
     
     // Check if it's a unique constraint violation
     if (error instanceof Error && error.message.includes('unique')) {
@@ -166,7 +209,7 @@ export async function POST(request: NextRequest) {
     }
     
     return NextResponse.json(
-      { error: 'Failed to add website' },
+      { error: 'Failed to add website and create offering' },
       { status: 500 }
     );
   }
