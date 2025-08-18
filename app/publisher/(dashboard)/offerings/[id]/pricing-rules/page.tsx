@@ -3,6 +3,7 @@
 import { useState, useEffect, use } from 'react';
 import { useRouter } from 'next/navigation';
 import Link from 'next/link';
+import NichePricingRuleEditor from '@/components/publisher/NichePricingRuleEditor';
 import { 
   ArrowLeft, 
   Plus, 
@@ -325,37 +326,63 @@ export default function PricingRulesPage({ params }: { params: Promise<{ id: str
   const editRule = (rule: PricingRule) => {
     setEditingRule(rule);
     
-    // Parse the rule back into form state
-    const ruleType = ruleTypes.find(rt => rt.field === rule.conditions.field)?.value || 'custom';
-    
-    let conditionValue = '';
-    if (rule.conditions.type === 'between' && rule.conditions.min !== undefined && rule.conditions.max !== undefined) {
-      conditionValue = `${rule.conditions.min}-${rule.conditions.max}`;
-    } else if ((rule.conditions.type === 'in' || rule.conditions.type === 'not_in') && rule.conditions.values) {
-      conditionValue = rule.conditions.values.join(', ');
-    } else if (rule.conditions.type === 'date_range' && rule.conditions.startDate && rule.conditions.endDate) {
-      conditionValue = `${rule.conditions.startDate} to ${rule.conditions.endDate}`;
-    } else if (rule.conditions.value !== undefined) {
-      conditionValue = String(rule.conditions.value);
+    // Determine rule type
+    let ruleType = rule.ruleType || 'custom';
+    if (!rule.ruleType) {
+      // Try to infer from field
+      ruleType = ruleTypes.find(rt => rt.field === rule.conditions.field)?.value || 'custom';
     }
+    
+    // For niche rules, just set the type and show the form
+    if (ruleType === 'niche') {
+      setRuleForm({
+        ruleName: rule.ruleName,
+        ruleType: 'niche',
+        description: rule.description || '',
+        conditionType: 'niche_match',
+        conditionValue: '',
+        conditionField: 'niche',
+        adjustmentType: 'percentage',
+        adjustmentValue: '',
+        priority: rule.priority,
+        isCumulative: rule.isCumulative,
+        autoApply: rule.autoApply,
+        requiresApproval: rule.requiresApproval,
+        validFrom: rule.validFrom ? rule.validFrom.split('T')[0] : '',
+        validUntil: rule.validUntil ? rule.validUntil.split('T')[0] : '',
+        isActive: rule.isActive
+      });
+    } else {
+      // Parse non-niche rules
+      let conditionValue = '';
+      if (rule.conditions.type === 'between' && rule.conditions.min !== undefined && rule.conditions.max !== undefined) {
+        conditionValue = `${rule.conditions.min}-${rule.conditions.max}`;
+      } else if ((rule.conditions.type === 'in' || rule.conditions.type === 'not_in') && rule.conditions.values) {
+        conditionValue = rule.conditions.values.join(', ');
+      } else if (rule.conditions.type === 'date_range' && rule.conditions.startDate && rule.conditions.endDate) {
+        conditionValue = `${rule.conditions.startDate} to ${rule.conditions.endDate}`;
+      } else if (rule.conditions.value !== undefined) {
+        conditionValue = String(rule.conditions.value);
+      }
 
-    setRuleForm({
-      ruleName: rule.ruleName,
-      ruleType: ruleType,
-      description: rule.description || '',
-      conditionType: rule.conditions.type || 'greater_than',
-      conditionValue,
-      conditionField: rule.conditions.field || '',
-      adjustmentType: rule.actions.adjustmentType || 'percentage',
-      adjustmentValue: String(rule.actions.adjustmentValue || ''),
-      priority: rule.priority,
-      isCumulative: rule.isCumulative,
-      autoApply: rule.autoApply,
-      requiresApproval: rule.requiresApproval,
-      validFrom: rule.validFrom ? rule.validFrom.split('T')[0] : '',
-      validUntil: rule.validUntil ? rule.validUntil.split('T')[0] : '',
-      isActive: rule.isActive
-    });
+      setRuleForm({
+        ruleName: rule.ruleName,
+        ruleType: ruleType,
+        description: rule.description || '',
+        conditionType: rule.conditions.type || 'greater_than',
+        conditionValue,
+        conditionField: rule.conditions.field || '',
+        adjustmentType: rule.actions.adjustmentType || 'percentage',
+        adjustmentValue: String(rule.actions.adjustmentValue || ''),
+        priority: rule.priority,
+        isCumulative: rule.isCumulative,
+        autoApply: rule.autoApply,
+        requiresApproval: rule.requiresApproval,
+        validFrom: rule.validFrom ? rule.validFrom.split('T')[0] : '',
+        validUntil: rule.validUntil ? rule.validUntil.split('T')[0] : '',
+        isActive: rule.isActive
+      });
+    }
     
     setShowAddRule(true);
   };
@@ -383,6 +410,23 @@ export default function PricingRulesPage({ params }: { params: Promise<{ id: str
   };
 
   const formatAdjustment = (rule: PricingRule) => {
+    // Special handling for niche rules with multiple adjustments
+    if (rule.ruleType === 'niche' && rule.actions.adjustments) {
+      const adjustmentCount = rule.actions.adjustments.length;
+      if (adjustmentCount === 0) return 'No adjustments';
+      if (adjustmentCount === 1) {
+        const adj = rule.actions.adjustments[0];
+        if (adj.type === 'percentage') {
+          return `${adj.value > 0 ? '+' : ''}${adj.value}%`;
+        } else if (adj.type === 'fixed') {
+          return `${adj.value > 0 ? '+' : ''}$${Math.abs(adj.value).toFixed(2)}`;
+        } else if (adj.type === 'multiplier') {
+          return `×${adj.value}`;
+        }
+      }
+      return `${adjustmentCount} niche adjustments`;
+    }
+    
     const { adjustmentType, adjustmentValue } = rule.actions;
     if (adjustmentType === 'percentage') {
       return `${adjustmentValue > 0 ? '+' : ''}${adjustmentValue}%`;
@@ -395,7 +439,12 @@ export default function PricingRulesPage({ params }: { params: Promise<{ id: str
   };
 
   const formatCondition = (rule: PricingRule) => {
-    const { type, field, value, values, min, max, startDate, endDate } = rule.conditions;
+    const { type, field, value, values, min, max, startDate, endDate, niches } = rule.conditions;
+    
+    // Special handling for niche rules
+    if (rule.ruleType === 'niche' && type === 'niche_match' && niches) {
+      return `Content in: ${niches.join(', ')}`;
+    }
     
     if (type === 'between' && min !== undefined && max !== undefined) {
       return `${field} between ${min} and ${max}`;
@@ -474,19 +523,80 @@ export default function PricingRulesPage({ params }: { params: Promise<{ id: str
         {/* Add/Edit Rule Form */}
         {showAddRule && (
           <div className="bg-white rounded-lg shadow-md p-6 mb-6">
-            <div className="flex items-center justify-between mb-4">
-              <h2 className="text-lg font-semibold text-gray-900">
-                {editingRule ? 'Edit Pricing Rule' : 'Add New Pricing Rule'}
-              </h2>
-              <button
-                onClick={resetForm}
-                className="text-gray-400 hover:text-gray-600"
-              >
-                <XCircle className="h-5 w-5" />
-              </button>
-            </div>
+            {/* Special handling for niche rule type */}
+            {ruleForm.ruleType === 'niche' && offering ? (
+              <NichePricingRuleEditor
+                basePrice={offering.basePrice}
+                currency={offering.currency}
+                existingConfig={editingRule ? {
+                  niches: editingRule.actions.adjustments?.map((adj: any) => ({
+                    name: adj.niche,
+                    adjustment: {
+                      type: adj.type || 'percentage',
+                      value: adj.value
+                    }
+                  })) || [],
+                  basePrice: offering.basePrice,
+                  currency: offering.currency
+                } : undefined}
+                onSave={async (ruleData) => {
+                  setSaving(true);
+                  setError('');
+                  setSuccess('');
+                  
+                  try {
+                    let response;
+                    if (editingRule) {
+                      response = await fetch(
+                        `/api/publisher/offerings/${offeringId}/pricing-rules/${editingRule.id}`,
+                        {
+                          method: 'PUT',
+                          headers: { 'Content-Type': 'application/json' },
+                          body: JSON.stringify(ruleData)
+                        }
+                      );
+                    } else {
+                      response = await fetch(
+                        `/api/publisher/offerings/${offeringId}/pricing-rules`,
+                        {
+                          method: 'POST',
+                          headers: { 'Content-Type': 'application/json' },
+                          body: JSON.stringify(ruleData)
+                        }
+                      );
+                    }
 
-            <form onSubmit={handleSubmit} className="space-y-6">
+                    if (!response.ok) {
+                      const data = await response.json();
+                      throw new Error(data.error || 'Failed to save pricing rule');
+                    }
+
+                    setSuccess(editingRule ? 'Rule updated successfully!' : 'Rule created successfully!');
+                    resetForm();
+                    await loadPricingRules();
+                  } catch (err) {
+                    setError(err instanceof Error ? err.message : 'Failed to save pricing rule');
+                  } finally {
+                    setSaving(false);
+                  }
+                }}
+                onCancel={resetForm}
+              />
+            ) : (
+              <>
+                <div className="flex items-center justify-between mb-4">
+                  <h2 className="text-lg font-semibold text-gray-900">
+                    {editingRule ? 'Edit Pricing Rule' : 'Add New Pricing Rule'}
+                  </h2>
+                  <button
+                    onClick={resetForm}
+                    className="text-gray-400 hover:text-gray-600"
+                  >
+                    <XCircle className="h-5 w-5" />
+                  </button>
+                </div>
+
+                <form onSubmit={handleSubmit} className="space-y-6">
               {/* Basic Info */}
               <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
                 <div>
@@ -739,6 +849,8 @@ export default function PricingRulesPage({ params }: { params: Promise<{ id: str
                 </button>
               </div>
             </form>
+              </>
+            )}
           </div>
         )}
 
