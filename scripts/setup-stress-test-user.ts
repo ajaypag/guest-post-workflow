@@ -7,7 +7,7 @@ import { drizzle } from 'drizzle-orm/node-postgres';
 import { Pool } from 'pg';
 import bcrypt from 'bcryptjs';
 import { eq } from 'drizzle-orm';
-import { publishers } from '../lib/db/publisherSchemaActual';
+import { publishers } from '../lib/db/accountSchema';
 import { config } from 'dotenv';
 
 // Load environment variables
