@@ -7,6 +7,7 @@ import { publisherEarnings } from '@/lib/db/publisherEarningsSchema';
 import { publisherOfferings } from '@/lib/db/publisherSchemaActual';
 import { eq, and, desc, sql, inArray } from 'drizzle-orm';
 import { AuthServiceServer } from '@/lib/auth-server';
+import { getPaginationParams, createPaginatedResponse } from '@/lib/utils/pagination';
 
 /**
  * GET /api/publisher/orders
@@ -22,9 +23,9 @@ export async function GET(request: NextRequest) {
 
     const searchParams = request.nextUrl.searchParams;
     const status = searchParams.get('status'); // Filter by publisher_status
-    const page = parseInt(searchParams.get('page') || '1');
-    const limit = parseInt(searchParams.get('limit') || '20');
-    const offset = (page - 1) * limit;
+    
+    // Use standard pagination params (with limit max of 100)
+    const paginationParams = getPaginationParams(request);
 
     // Build query conditions
     const conditions = [eq(orderLineItems.publisherId, session.publisherId!)];
@@ -95,8 +96,8 @@ export async function GET(request: NextRequest) {
       )
       .where(and(...conditions))
       .orderBy(desc(orderLineItems.id))
-      .limit(limit)
-      .offset(offset);
+      .limit(paginationParams.limit)
+      .offset(paginationParams.offset);
 
     // Format response
     const formattedOrders = publisherOrders.map(row => ({
@@ -149,14 +150,18 @@ export async function GET(request: NextRequest) {
       .from(orderLineItems)
       .where(eq(orderLineItems.publisherId, session.publisherId!));
 
+    // Create paginated response
+    const response = createPaginatedResponse(
+      formattedOrders,
+      Number(totalCount),
+      paginationParams,
+      request
+    );
+
     return NextResponse.json({
-      orders: formattedOrders,
-      pagination: {
-        page,
-        limit,
-        totalCount,
-        totalPages: Math.ceil(totalCount / limit)
-      },
+      orders: response.data,
+      meta: response.meta,
+      links: response.links,
       stats: stats[0] || {
         totalOrders: 0,
         pendingOrders: 0,

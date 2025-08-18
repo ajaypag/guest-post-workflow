@@ -4,7 +4,8 @@ import { publisherOfferingsService } from '@/lib/services/publisherOfferingsServ
 import { db } from '@/lib/db/connection';
 import { publisherOfferings, publisherOfferingRelationships, publisherPricingRules } from '@/lib/db/publisherSchemaActual';
 import { websites } from '@/lib/db/schema';
-import { eq } from 'drizzle-orm';
+import { eq, sql } from 'drizzle-orm';
+import { getPaginationParams, createPaginatedResponse } from '@/lib/utils/pagination';
 
 // GET /api/publisher/offerings - Get all offerings for the logged-in publisher
 export async function GET(request: NextRequest) {
@@ -25,7 +26,18 @@ export async function GET(request: NextRequest) {
       );
     }
 
-    // Get all offerings with their associated websites and pricing rules
+    // Get pagination parameters
+    const paginationParams = getPaginationParams(request);
+
+    // Get total count of offerings
+    const countResult = await db
+      .select({ count: sql<number>`COUNT(*)` })
+      .from(publisherOfferings)
+      .where(eq(publisherOfferings.publisherId, session.publisherId));
+    
+    const totalCount = Number(countResult[0]?.count || 0);
+
+    // Get paginated offerings with their associated websites
     const offeringsData = await db
       .select({
         offering: publisherOfferings,
@@ -41,9 +53,12 @@ export async function GET(request: NextRequest) {
         websites,
         eq(websites.id, publisherOfferingRelationships.websiteId)
       )
-      .where(eq(publisherOfferings.publisherId, session.publisherId));
+      .where(eq(publisherOfferings.publisherId, session.publisherId))
+      .orderBy(publisherOfferings.createdAt)
+      .limit(paginationParams.limit)
+      .offset(paginationParams.offset);
 
-    // Get pricing rules for each offering
+    // Get pricing rules for the paginated offerings only
     const offeringIds = [...new Set(offeringsData.map(o => o.offering.id))];
     const pricingRulesData = offeringIds.length > 0 
       ? await db
@@ -92,7 +107,19 @@ export async function GET(request: NextRequest) {
       pricingRules: pricingRulesByOffering[offering.id] || []
     }));
 
-    return NextResponse.json({ offerings });
+    // Create paginated response
+    const response = createPaginatedResponse(
+      offerings,
+      totalCount,
+      paginationParams,
+      request
+    );
+
+    return NextResponse.json({
+      offerings: response.data,
+      meta: response.meta,
+      links: response.links
+    });
   } catch (error) {
     console.error('Error fetching offerings:', error);
     return NextResponse.json(

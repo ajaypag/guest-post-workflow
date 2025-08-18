@@ -6,10 +6,49 @@ import { eq, and } from 'drizzle-orm';
 import { AuthServiceServer } from '@/lib/auth-server';
 import { normalizeDomain } from '@/lib/utils/domainNormalizer';
 import { v4 as uuidv4 } from 'uuid';
+import { validateInput, validateDomain, validatePrice, sanitizeText } from '@/lib/utils/inputValidation';
+import { apiWriteRateLimiter, getClientIp } from '@/lib/utils/rateLimiter';
 
 export async function POST(request: NextRequest) {
   try {
-    // Check authentication
+    // Rate limiting check FIRST (before auth to prevent brute force)
+    const clientIp = getClientIp(request);
+    const rateLimitKey = `api-write:${clientIp}`;
+    const { allowed, retryAfter } = apiWriteRateLimiter.check(rateLimitKey);
+    
+    if (!allowed) {
+      return NextResponse.json(
+        { error: 'Too many requests. Please try again later.', retryAfter },
+        { 
+          status: 429,
+          headers: { 'Retry-After': String(retryAfter) }
+        }
+      );
+    }
+    
+    // Parse and validate input BEFORE authentication
+    // This prevents malicious payloads from reaching deeper code
+    const body = await request.json();
+    const { domain: rawDomain, offering } = body;
+    
+    // Basic validation before auth
+    if (!rawDomain || !offering) {
+      return NextResponse.json(
+        { error: 'Domain and offering details are required' },
+        { status: 400 }
+      );
+    }
+    
+    // Validate domain format BEFORE auth (security first)
+    const domainValidation = validateDomain(rawDomain);
+    if (!domainValidation.valid) {
+      return NextResponse.json(
+        { error: domainValidation.error || 'Invalid domain' },
+        { status: 400 }
+      );
+    }
+
+    // NOW check authentication (after input validation)
     const session = await AuthServiceServer.getSession(request);
     if (!session || session.userType !== 'publisher') {
       return NextResponse.json(
@@ -25,10 +64,8 @@ export async function POST(request: NextRequest) {
       );
     }
 
-    const body = await request.json();
+    // Get full body data (already parsed and validated above)
     const { 
-      domain: rawDomain,
-      offering,
       // Website fields (only used if website doesn't exist)
       categories,
       niche,
@@ -47,23 +84,47 @@ export async function POST(request: NextRequest) {
       editorialCalendarUrl
     } = body;
 
-    if (!rawDomain || !offering) {
-      return NextResponse.json(
-        { error: 'Domain and offering details are required' },
-        { status: 400 }
-      );
-    }
-
-    // Normalize the domain
+    // Normalize the domain (after validation)
     let normalizedDomain: string;
     try {
-      const normalized = normalizeDomain(rawDomain);
+      const normalized = normalizeDomain(domainValidation.sanitized);
       normalizedDomain = normalized.domain;
     } catch (err) {
       return NextResponse.json(
         { error: 'Invalid domain format' },
         { status: 400 }
       );
+    }
+    
+    // Validate price if provided
+    if (offering.basePrice) {
+      const priceValidation = validatePrice(offering.basePrice);
+      if (!priceValidation.valid) {
+        return NextResponse.json(
+          { error: priceValidation.error || 'Invalid price' },
+          { status: 400 }
+        );
+      }
+      offering.basePrice = priceValidation.sanitized;
+    }
+    
+    // Sanitize all text fields
+    if (targetAudience) {
+      const validation = validateInput(targetAudience, 'text', { maxLength: 1000 });
+      if (!validation.valid) {
+        return NextResponse.json(
+          { error: validation.errors.join(', ') },
+          { status: 400 }
+        );
+      }
+    }
+    
+    if (offering.contentRequirements) {
+      offering.contentRequirements = sanitizeText(offering.contentRequirements);
+    }
+    
+    if (offering.prohibitedTopics) {
+      offering.prohibitedTopics = sanitizeText(offering.prohibitedTopics);
     }
 
     // Check if website already exists

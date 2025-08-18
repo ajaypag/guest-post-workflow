@@ -5,6 +5,7 @@ import { publisherOfferings, publisherOfferingRelationships } from '@/lib/db/pub
 import { eq, and, sql } from 'drizzle-orm';
 import { AuthServiceServer } from '@/lib/auth-server';
 import { normalizeDomain } from '@/lib/utils/domainNormalizer';
+import { getPaginationParams, createPaginatedResponse } from '@/lib/utils/pagination';
 
 export async function GET(request: NextRequest) {
   try {
@@ -26,7 +27,24 @@ export async function GET(request: NextRequest) {
       );
     }
 
-    // Get websites associated with this publisher through relationships
+    // Get pagination parameters
+    const paginationParams = getPaginationParams(request);
+
+    // First, get the total count
+    const countResult = await db
+      .select({ count: sql<number>`COUNT(DISTINCT ${websites.id})` })
+      .from(websites)
+      .innerJoin(
+        publisherOfferingRelationships,
+        and(
+          eq(publisherOfferingRelationships.websiteId, websites.id),
+          eq(publisherOfferingRelationships.publisherId, publisherId)
+        )
+      );
+    
+    const totalCount = Number(countResult[0]?.count || 0);
+
+    // Get paginated websites associated with this publisher through relationships
     const publisherWebsites = await db
       .select({
         id: websites.id,
@@ -57,10 +75,23 @@ export async function GET(request: NextRequest) {
         websites.categories,
         websites.createdAt,
         publisherOfferingRelationships.verificationStatus
-      );
+      )
+      .orderBy(websites.createdAt)
+      .limit(paginationParams.limit)
+      .offset(paginationParams.offset);
+
+    // Create paginated response
+    const response = createPaginatedResponse(
+      publisherWebsites,
+      totalCount,
+      paginationParams,
+      request
+    );
 
     return NextResponse.json({
-      websites: publisherWebsites
+      websites: response.data,
+      meta: response.meta,
+      links: response.links
     });
   } catch (error) {
     console.error('Error fetching publisher websites:', error);

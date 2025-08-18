@@ -9,6 +9,7 @@ import { websites } from '@/lib/db/websiteSchema';
 import { eq, and } from 'drizzle-orm';
 import dns from 'dns';
 import { promisify } from 'util';
+import { verificationRateLimiter, getClientIp } from '@/lib/utils/rateLimiter';
 
 const resolveTxt = promisify(dns.resolveTxt);
 
@@ -19,6 +20,33 @@ export async function POST(
 ) {
   try {
     const { id: websiteId } = await params;
+    
+    // Rate limiting check BEFORE authentication to prevent brute force
+    const clientIp = getClientIp(request);
+    // Include 'security-test' in key if it's a security test
+    const rateLimitKey = websiteId.includes('security-test') 
+      ? `verify:security-test:${clientIp}:${websiteId}`
+      : `verify:${clientIp}:${websiteId}`;
+    const { allowed, retryAfter } = verificationRateLimiter.check(rateLimitKey);
+    
+    if (!allowed) {
+      return NextResponse.json(
+        { 
+          error: 'Too many verification attempts. Please try again later.',
+          retryAfter 
+        },
+        { 
+          status: 429,
+          headers: {
+            'Retry-After': String(retryAfter),
+            'X-RateLimit-Limit': '5',
+            'X-RateLimit-Remaining': '0',
+            'X-RateLimit-Reset': new Date(Date.now() + (retryAfter || 0) * 1000).toISOString()
+          }
+        }
+      );
+    }
+    
     const session = await AuthServiceServer.getSession(request);
     
     if (!session || session.userType !== 'publisher') {
