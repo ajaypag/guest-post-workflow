@@ -27,9 +27,9 @@ const defaultFlags: FeatureFlags = {
   maxStreamingRetries: 3,
   streamingTimeout: 900000, // 15 minutes
   
-  // Line Items System - Start disabled for safety
-  enableLineItemsSystem: false, // Master flag for line items
-  lineItemsForNewOrders: false, // Use line items for new order creation
+  // Line Items System - MIGRATION IN PROGRESS - FORCED ENABLED
+  enableLineItemsSystem: true, // FORCED: Migrating to lineItems only
+  lineItemsForNewOrders: true, // FORCED: All new orders use lineItems
   lineItemsMigrationUI: true, // Allow migration UI (admin only)
 };
 
@@ -94,7 +94,7 @@ export const enableStreamingForWorkflow = (workflowId: string): boolean => {
 
 // Line Items feature flag helpers
 export const isLineItemsSystemEnabled = (): boolean => {
-  return featureFlags.enableLineItemsSystem;
+  return true; // FORCED: Migration to lineItems in progress
 };
 
 export const shouldUseLineItemsForNewOrders = (): boolean => {

@@ -311,7 +311,7 @@ export default function OrderSiteReviewTableV2({
   onSelectionChange,
   onAssignToLineItem,
   useStatusSystem = true, // Default to new system
-  useLineItems = false, // Default to not using line items yet
+  useLineItems = true, // FORCED: Migration to lineItems in progress
   benchmarkData
 }: OrderSiteReviewTableProps) {
   const [expandedGroups, setExpandedGroups] = useState<Set<string>>(

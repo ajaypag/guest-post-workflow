@@ -61,19 +61,20 @@ export async function POST(
       }
       
       // Check if using line items system
-      let useLineItems = false;
+      let useLineItems = true; // FORCED: Migration to lineItems in progress
       let lineItemsList: any[] = [];
       
-      if (isLineItemsSystemEnabled()) {
-        // Try to get line items first
-        lineItemsList = await db.query.orderLineItems.findMany({
-          where: eq(orderLineItems.orderId, orderId),
-          with: {
-            client: true
-          }
-        });
-        
-        useLineItems = lineItemsList.length > 0;
+      // Always use line items system
+      lineItemsList = await db.query.orderLineItems.findMany({
+        where: eq(orderLineItems.orderId, orderId),
+        with: {
+          client: true
+        }
+      });
+      
+      // If no line items exist, we'll need to handle the migration
+      if (lineItemsList.length === 0) {
+        console.warn(`[MIGRATION] Order ${orderId} has no line items yet`);
       }
       
       // Variables for invoice generation
