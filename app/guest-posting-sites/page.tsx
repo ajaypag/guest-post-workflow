@@ -186,9 +186,12 @@ export default async function GuestPostingSitesPage() {
                   placeholder="https://your-website.com/target-page"
                   className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent bg-white"
                 />
-                <button className="w-full px-6 py-3 bg-blue-600 text-white rounded-lg hover:bg-blue-700 font-medium transition-colors">
+                <Link
+                  href="/signup"
+                  className="w-full px-6 py-3 bg-blue-600 text-white rounded-lg hover:bg-blue-700 font-medium transition-colors inline-block text-center"
+                >
                   Get Expert Recommendations
-                </button>
+                </Link>
               </div>
               
               <p className="text-xs text-gray-500 text-center mt-3">

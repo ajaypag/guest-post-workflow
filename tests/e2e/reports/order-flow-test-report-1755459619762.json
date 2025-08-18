@@ -1,0 +1,15 @@
+{
+  "timestamp": "2025-08-17T19:40:19.762Z",
+  "summary": {
+    "totalTests": 12,
+    "passedTests": 0,
+    "failedTests": 12,
+    "successRate": "0.0%"
+  },
+  "issues": {
+    "ui": [],
+    "ux": [],
+    "performance": []
+  },
+  "recommendations": []
+}

@@ -24,6 +24,7 @@ export default function AccountAuthWrapper({ children }: AccountAuthWrapperProps
   const [loading, setLoading] = useState(true);
   const [authenticated, setAuthenticated] = useState(false);
   const [user, setUser] = useState<AccountUser | null>(null);
+  
 
   useEffect(() => {
     checkAuth();
@@ -72,7 +73,8 @@ export default function AccountAuthWrapper({ children }: AccountAuthWrapperProps
 
   const redirectToLogin = () => {
     const currentPath = encodeURIComponent(pathname);
-    router.push(`/account/login?redirect=${currentPath}`);
+    // Redirect to main login page which handles both internal and account users
+    router.push(`/login?redirect=${currentPath}`);
   };
   
   const logout = async () => {

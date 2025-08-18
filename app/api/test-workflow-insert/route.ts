@@ -25,7 +25,7 @@ export async function POST() {
       current_step: 0,
       user_id: '97aca16f-8b81-44ad-a532-a6e3fa96cbfc',
       created_by_name: 'Ajay Paghdal',
-      created_by_email: 'ajay@outreachlabs.com',
+      created_by_email: 'test@example.com',
       client_id: '156d153f-59d0-49e6-8b41-884445511c8d',
       created_at: '2025-07-02T18:39:42.315Z',
       updated_at: '2025-07-02T18:39:42.315Z'

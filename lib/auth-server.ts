@@ -10,7 +10,7 @@ import { AuthSession, UserType, UserRole } from './types/auth';
 export type { AuthSession };
 
 const JWT_SECRET = new TextEncoder().encode(
-  process.env.JWT_SECRET || 'your-secret-key-change-in-production'
+  process.env.JWT_SECRET || process.env.NEXTAUTH_SECRET || 'your-secret-key-change-in-production'
 );
 
 export class AuthServiceServer {
@@ -23,14 +23,16 @@ export class AuthServiceServer {
       // Try to get token from cookies first
       const cookieStore = await cookies();
       
-      // Check for account token first, then internal user token
+      // Check for tokens in priority order: publisher, account, internal user
+      const publisherTokenCookie = cookieStore.get('auth-token-publisher');
       const accountTokenCookie = cookieStore.get('auth-token-account');
       const authTokenCookie = cookieStore.get('auth-token');
-      token = accountTokenCookie?.value || authTokenCookie?.value;
+      token = publisherTokenCookie?.value || accountTokenCookie?.value || authTokenCookie?.value;
       
       console.log('🔐 Cookie check:', {
         hasAuthToken: !!token,
         cookieValue: token ? 'Token present' : 'No token',
+        publisherTokenCookie: publisherTokenCookie?.name,
         accountTokenCookie: accountTokenCookie?.name,
         authTokenCookie: authTokenCookie?.name,
         allCookies: cookieStore.getAll().map(c => c.name)
@@ -64,6 +66,8 @@ export class AuthServiceServer {
         accountId: payload.accountId as string | undefined,
         clientId: payload.clientId as string | null | undefined,
         companyName: payload.companyName as string | undefined,
+        publisherId: payload.publisherId as string | undefined,
+        status: payload.status as string | undefined,
       };
     } catch (error) {
       console.error('Session verification error:', error);
@@ -116,6 +120,19 @@ export class AuthServiceServer {
   }
   
   static async createAccountToken(sessionData: AuthSession): Promise<string> {
+    const token = await new SignJWT({
+      ...sessionData,
+      iat: Date.now(),
+      exp: Date.now() + 7 * 24 * 60 * 60 * 1000, // 7 days
+    })
+      .setProtectedHeader({ alg: 'HS256' })
+      .setExpirationTime('7d')
+      .sign(JWT_SECRET);
+    
+    return token;
+  }
+  
+  static async createPublisherToken(sessionData: any): Promise<string> {
     const token = await new SignJWT({
       ...sessionData,
       iat: Date.now(),

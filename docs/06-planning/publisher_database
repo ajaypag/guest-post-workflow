@@ -1,0 +1,612 @@
+Perfect. Here’s a buttoned-up, drop-in spec your AI coder can implement. It defines the exact 4 production tables (views) you asked to present:
+
+Website & Organization Directory
+
+Contacts & Relationships Matrix
+
+Contact→Website Detail
+
+Channel-Level Publisher Listings
+
+It includes: minimal schema dependencies, SQL for views, indexes, API contracts, and acceptance criteria.
+
+0) Minimal dependencies (tables)
+Use Postgres. Names + types are explicit so you can copy/paste.
+
+sql
+Copy
+Edit
+-- Organizations (publisher owners / networks / marketplaces)
+create table organizations (
+  id uuid primary key default gen_random_uuid(),
+  name text not null,
+  type text check (type in ('publisher','marketplace','agency')) default 'publisher',
+  website_url text,
+  created_at timestamptz default now(),
+  updated_at timestamptz default now()
+);
+
+-- Websites (domains you outreach to)
+create table websites (
+  id uuid primary key default gen_random_uuid(),
+  organization_id uuid references organizations(id) on delete set null,
+  domain text not null unique,             -- canonical (lowercase/punycode)
+  root_domain text generated always as (split_part(domain,'.',1) || '.' || split_part(domain,'.',2)) stored,
+  category text,                           -- e.g., 'Tech','Finance'
+  country text,                            -- ISO country code or label
+  is_active boolean default true,
+  created_at timestamptz default now(),
+  updated_at timestamptz default now()
+);
+
+-- Optional quality metrics (latest row per website/source)
+create table quality_metrics (
+  id uuid primary key default gen_random_uuid(),
+  website_id uuid not null references websites(id) on delete cascade,
+  source text not null,                     -- 'ahrefs','semrush','internal'
+  dr numeric,                               -- or integer
+  traffic integer,
+  last_fetched_at timestamptz not null default now()
+);
+
+-- Channels (how you work with a site)
+create table channels (
+  id uuid primary key default gen_random_uuid(),
+  type text not null check (type in ('direct','marketplace','freelancer','agency')),
+  name text not null,                       -- e.g., 'Direct','WhitePress','Indie Partner'
+  platform_url text,
+  organization_id uuid references organizations(id) on delete set null, -- owner of the channel, if any
+  created_at timestamptz default now(),
+  updated_at timestamptz default now()
+);
+
+-- Contacts (people)
+create table contacts (
+  id uuid primary key default gen_random_uuid(),
+  organization_id uuid references organizations(id) on delete set null,
+  full_name text not null,
+  title text,
+  notes text,
+  created_at timestamptz default now(),
+  updated_at timestamptz default now()
+);
+
+create table contact_emails (
+  id uuid primary key default gen_random_uuid(),
+  contact_id uuid not null references contacts(id) on delete cascade,
+  email text not null unique,
+  is_primary boolean default false,
+  verify_status text check (verify_status in ('valid','risky','invalid','unknown')) default 'unknown',
+  last_verified_at timestamptz
+);
+
+-- Contact↔Website relationships (+ role)
+create table contact_websites (
+  id uuid primary key default gen_random_uuid(),
+  contact_id uuid not null references contacts(id) on delete cascade,
+  website_id uuid not null references websites(id) on delete cascade,
+  relationship text not null check (
+    relationship in ('editor','contributor','owner','sales_rep','marketplace_agent','freelancer')
+  ),
+  channel_id uuid references channels(id) on delete set null,  -- through which channel they operate for this site
+  is_current boolean default true,
+  start_date date,
+  end_date date
+);
+
+-- Current monetization “offer summary” per website x channel x placement (for table #4)
+create table offer_summaries (
+  id uuid primary key default gen_random_uuid(),
+  website_id uuid not null references websites(id) on delete cascade,
+  channel_id uuid not null references channels(id) on delete cascade,
+  placement_type text not null check (
+    placement_type in ('guest_post','link_insertion','sponsored_post','homepage_link','resource_link','press_release')
+  ),
+  base_price_minor integer not null,          -- store in minor units
+  currency_code text not null,                -- ISO 4217
+  updated_at timestamptz default now(),
+  is_current boolean default true
+);
+
+-- Helper: one "primary" contact per (website, channel) for listings
+create table primary_contacts (
+  id uuid primary key default gen_random_uuid(),
+  website_id uuid not null references websites(id) on delete cascade,
+  channel_id uuid references channels(id) on delete set null,
+  contact_id uuid not null references contacts(id) on delete cascade,
+  is_active boolean default true,
+  unique (website_id, channel_id)
+);
+Indexes (minimum):
+
+sql
+Copy
+Edit
+create index on websites (organization_id);
+create index on quality_metrics (website_id, source, last_fetched_at desc);
+create index on contact_websites (website_id, is_current);
+create index on contact_websites (contact_id, is_current);
+create index on offer_summaries (website_id, channel_id, is_current) where is_current;
+create index on primary_contacts (website_id, channel_id);
+1) Website & Organization Directory (Table/View)
+Purpose: One row per website with org, category/country, and latest quality metrics.
+
+SQL view
+sql
+Copy
+Edit
+create or replace view view_website_directory as
+with qm as (
+  select distinct on (website_id, source)
+         website_id, source, dr, traffic, last_fetched_at
+  from quality_metrics
+  order by website_id, source, last_fetched_at desc
+),
+qm_best as (
+  -- pick a precedence (e.g., internal > ahrefs > semrush)
+  select q1.website_id,
+         coalesce(qi.dr, qa.dr, q1.dr) as dr,
+         coalesce(qi.traffic, qa.traffic, q1.traffic) as traffic
+  from (select distinct website_id from quality_metrics) w
+  left join qm qi on qi.website_id = w.website_id and qi.source = 'internal'
+  left join qm qa on qa.website_id = w.website_id and qa.source = 'ahrefs'
+  left join qm q1 on q1.website_id = w.website_id and q1.source = 'semrush'
+)
+select
+  w.id as website_id,
+  w.domain,
+  w.root_domain,
+  o.id as organization_id,
+  o.name as organization_name,
+  w.category,
+  w.country,
+  w.is_active,
+  qb.dr,
+  qb.traffic
+from websites w
+left join organizations o on o.id = w.organization_id
+left join qm_best qb on qb.website_id = w.id;
+API (REST)
+GET /api/websites?search=&category=&country=&active=true&sort=traffic_desc&limit=50&offset=0
+
+Response fields
+
+json
+Copy
+Edit
+{
+  "items":[
+    {
+      "website_id":"uuid",
+      "domain":"techpulse.io",
+      "root_domain":"techpulse.io",
+      "organization_id":"uuid",
+      "organization_name":"TechPulse Media",
+      "category":"Tech",
+      "country":"US",
+      "is_active":true,
+      "dr":68,
+      "traffic":54000
+    }
+  ],
+  "total":1234
+}
+UI columns (recommended): Website, Org, Category, Country, DR, Traffic, Primary Channel (optional join to primary_contacts → channels), Active Contacts count (see table #2 count).
+
+2) Contacts & Relationships Matrix (Table/View)
+Purpose: Each row = a person tied to a website, with role, email, channel, and verification state.
+
+SQL view
+sql
+Copy
+Edit
+create or replace view view_contact_relationships as
+select
+  cw.id as link_id,
+  c.id as contact_id,
+  c.full_name,
+  c.title,
+  coalesce(ce.email, null) as email,                          -- primary if possible
+  ce.verify_status,
+  w.id as website_id,
+  w.domain,
+  cw.relationship,
+  ch.id as channel_id,
+  ch.name as channel_name,
+  ch.type as channel_type,
+  cw.is_current,
+  cw.start_date,
+  cw.end_date
+from contact_websites cw
+join contacts c on c.id = cw.contact_id
+join websites w on w.id = cw.website_id
+left join channels ch on ch.id = cw.channel_id
+left join lateral (
+  select email, verify_status
+  from contact_emails e
+  where e.contact_id = c.id
+  order by is_primary desc, last_verified_at desc nulls last
+  limit 1
+) ce on true
+where cw.is_current = true;
+API (REST)
+GET /api/contacts/relationships?website_id=&channel_type=&relationship=&verified=valid&search=&limit=50&offset=0
+
+Response fields
+
+json
+Copy
+Edit
+{
+  "items":[
+    {
+      "contact_id":"uuid",
+      "full_name":"Maya Chen",
+      "title":"Editor",
+      "email":"maya@techpulse.io",
+      "verify_status":"valid",
+      "website_id":"uuid",
+      "domain":"techpulse.io",
+      "relationship":"editor",
+      "channel_id":"uuid",
+      "channel_name":"Direct",
+      "channel_type":"direct",
+      "is_current":true
+    }
+  ],
+  "total":278
+}
+UI columns: Contact, Title, Email (badge for verify_status), Website, Relationship, Channel, Last Activity (if you join messages later).
+
+3) Contact → Website Detail (Table/View)
+Purpose: Given a contact, list their active website roles and how to engage (channel + notes).
+
+SQL view (materialize or parameterize via API)
+sql
+Copy
+Edit
+create or replace view view_contact_website_detail as
+select
+  c.id as contact_id,
+  c.full_name,
+  c.title,
+  ce.email as primary_email,
+  ce.verify_status,
+  w.id as website_id,
+  w.domain,
+  cw.relationship,
+  ch.id as channel_id,
+  ch.name as channel_name,
+  ch.type as channel_type,
+  cw.is_current,
+  cw.start_date,
+  cw.end_date
+from contacts c
+left join lateral (
+  select email, verify_status
+  from contact_emails e
+  where e.contact_id = c.id
+  order by is_primary desc, last_verified_at desc nulls last
+  limit 1
+) ce on true
+join contact_websites cw on cw.contact_id = c.id and cw.is_current = true
+join websites w on w.id = cw.website_id
+left join channels ch on ch.id = cw.channel_id;
+API (REST)
+GET /api/contacts/{contact_id}/websites?current=true
+
+Response fields
+
+json
+Copy
+Edit
+{
+  "contact":{
+    "contact_id":"uuid",
+    "full_name":"Maya Chen",
+    "title":"Editor",
+    "primary_email":"maya@techpulse.io",
+    "verify_status":"valid"
+  },
+  "websites":[
+    {
+      "website_id":"uuid",
+      "domain":"techpulse.io",
+      "relationship":"editor",
+      "channel_id":"uuid",
+      "channel_name":"Direct",
+      "channel_type":"direct",
+      "start_date":"2024-11-01",
+      "end_date":null
+    }
+  ]
+}
+UI columns (child table): Website, Role, Channel, Start/End, Current.
+
+4) Channel-Level Publisher Listings (Table/View)
+Purpose: One row per website×channel showing current pricing (summary), primary contact, and placement types offered.
+
+SQL view
+sql
+Copy
+Edit
+create or replace view view_channel_publisher_listings as
+with current_offers as (
+  select os.website_id, os.channel_id,
+         array_agg(distinct os.placement_type) as placement_types,
+         -- representative price: lowest current base price among types
+         min(os.base_price_minor) as base_price_minor,
+         min(os.currency_code) as currency_code,          -- if mixed, min is arbitrary; override in API if needed
+         max(os.updated_at) as last_updated
+  from offer_summaries os
+  where os.is_current = true
+  group by os.website_id, os.channel_id
+),
+primary as (
+  select pc.website_id, pc.channel_id, pc.contact_id
+  from primary_contacts pc
+  where pc.is_active = true
+)
+select
+  w.id as website_id,
+  w.domain,
+  ch.id as channel_id,
+  ch.name as channel_name,
+  ch.type as channel_type,
+  coalesce(co.placement_types, '{}') as placement_types,
+  coalesce(co.base_price_minor, null) as base_price_minor,
+  coalesce(co.currency_code, null) as currency_code,
+  coalesce(co.last_updated, null) as last_updated,
+  p.contact_id as primary_contact_id,
+  c.full_name as primary_contact_name
+from websites w
+join contact_websites cw on cw.website_id = w.id and cw.is_current = true
+left join channels ch on ch.id = cw.channel_id
+left join current_offers co on co.website_id = w.id and co.channel_id = ch.id
+left join primary p on p.website_id = w.id and p.channel_id = ch.id
+left join contacts c on c.id = p.contact_id
+where ch.id is not null
+group by w.id, w.domain, ch.id, ch.name, ch.type, co.placement_types, co.base_price_minor, co.currency_code, co.last_updated, p.contact_id, c.full_name;
+API (REST)
+GET /api/listings?channel_type=&min_price=&placement=guest_post&search=&limit=50&offset=0
+
+Response fields
+
+json
+Copy
+Edit
+{
+  "items":[
+    {
+      "website_id":"uuid",
+      "domain":"techpulse.io",
+      "channel_id":"uuid",
+      "channel_name":"Direct",
+      "channel_type":"direct",
+      "placement_types":["guest_post","link_insertion"],
+      "base_price_minor":22000,
+      "currency_code":"USD",
+      "last_updated":"2025-08-10T12:00:00Z",
+      "primary_contact_id":"uuid",
+      "primary_contact_name":"Maya Chen"
+    }
+  ],
+  "total":612
+}
+UI columns: Website, Channel, Placement Types (chips), Base Price, Currency, Primary Contact, Last Updated.
+
+API DTOs (TypeScript)
+ts
+Copy
+Edit
+// shared
+type UUID = string;
+
+export interface WebsiteDirectoryRow {
+  website_id: UUID;
+  domain: string;
+  root_domain: string;
+  organization_id: UUID | null;
+  organization_name: string | null;
+  category: string | null;
+  country: string | null;
+  is_active: boolean;
+  dr: number | null;
+  traffic: number | null;
+}
+
+export interface ContactRelationshipRow {
+  link_id: UUID;
+  contact_id: UUID;
+  full_name: string;
+  title: string | null;
+  email: string | null;
+  verify_status: 'valid'|'risky'|'invalid'|'unknown';
+  website_id: UUID;
+  domain: string;
+  relationship: 'editor'|'contributor'|'owner'|'sales_rep'|'marketplace_agent'|'freelancer';
+  channel_id: UUID | null;
+  channel_name: string | null;
+  channel_type: 'direct'|'marketplace'|'freelancer'|'agency' | null;
+  is_current: boolean;
+  start_date?: string | null;
+  end_date?: string | null;
+}
+
+export interface ContactWebsiteDetailResponse {
+  contact: {
+    contact_id: UUID;
+    full_name: string;
+    title: string | null;
+    primary_email: string | null;
+    verify_status: 'valid'|'risky'|'invalid'|'unknown';
+  };
+  websites: Array<{
+    website_id: UUID;
+    domain: string;
+    relationship: ContactRelationshipRow['relationship'];
+    channel_id: UUID | null;
+    channel_name: string | null;
+    channel_type: ContactRelationshipRow['channel_type'];
+    start_date?: string | null;
+    end_date?: string | null;
+  }>;
+}
+
+export interface ChannelListingRow {
+  website_id: UUID;
+  domain: string;
+  channel_id: UUID;
+  channel_name: string;
+  channel_type: 'direct'|'marketplace'|'freelancer'|'agency';
+  placement_types: string[];
+  base_price_minor: number | null;
+  currency_code: string | null;
+  last_updated: string | null; // ISO
+  primary_contact_id: UUID | null;
+  primary_contact_name: string | null;
+}
+Validation & business rules
+Domain canonicalization: lowercase; strip www.; punycode encode; unique on websites.domain.
+
+Primary contact per (website, channel): enforce via primary_contacts unique constraint.
+
+is_current: only true rows appear in views #2–#4.
+
+Offer currency: store minor units; do any USD conversions in service layer if needed.
+
+Verification: verify_status must be one of the enum values; if missing, default unknown.
+
+Query patterns (for FE filters)
+Directory with contact count + primary channel:
+
+sql
+Copy
+Edit
+select d.*, coalesce(pc.channel_name,'Direct') as primary_channel,
+       cnt.active_contacts
+from view_website_directory d
+left join (
+  select website_id, count(*) as active_contacts
+  from contact_websites
+  where is_current = true
+  group by website_id
+) cnt on cnt.website_id = d.website_id
+left join (
+  select pc.website_id, ch.name as channel_name
+  from primary_contacts pc
+  join channels ch on ch.id = pc.channel_id
+) pc on pc.website_id = d.website_id
+order by traffic desc nulls last
+limit $1 offset $2;
+Contacts & relationships filtered by verified emails only:
+
+sql
+Copy
+Edit
+select * from view_contact_relationships
+where verify_status = 'valid'
+order by domain, channel_type, relationship;
+Listings with a specific placement:
+
+sql
+Copy
+Edit
+select * from view_channel_publisher_listings
+where $1 = any(placement_types)  -- $1 = 'guest_post'
+order by base_price_minor nulls last, domain
+limit $2 offset $3;
+Acceptance criteria
+Website & Organization Directory
+
+Returns 1 row per website.
+
+Shows org name (null-safe), DR/traffic from preferred source precedence.
+
+Search (?search=) matches domain OR organization_name (ILIKE).
+
+Sorting by traffic_desc or dr_desc works and is stable.
+
+Contacts & Relationships Matrix
+
+Returns only is_current = true links.
+
+Each contact row includes one best email (primary first, else most recently verified).
+
+relationship, channel_type enums enforced; invalid values rejected at write time.
+
+Contact→Website Detail
+
+For a given contact, returns 0..N active relationships.
+
+Includes primary email + verify status.
+
+Shows channel name/type; null channel is allowed (e.g., purely direct but not modeled).
+
+Channel-Level Publisher Listings
+
+Groups offers per website×channel; placement_types is de-duplicated.
+
+base_price_minor is the lowest current base among that website×channel.
+
+Includes primary contact if set; otherwise null.
+
+Edge cases to cover in tests
+Website with no organization (null org fields).
+
+Contact with no primary email; choose best by last_verified_at.
+
+Multiple contact links to same website; only is_current=true appear.
+
+Website listed on multiple channels; ensure separate rows in #4.
+
+Offers exist but is_current=false → listings show base_price_minor = null.
+
+Mixed currencies in offer_summaries for same website×channel → still aggregate placement_types; pick lowest price but keep its currency_code (or override in service).
+
+Optional: Seed helpers (for dev)
+sql
+Copy
+Edit
+insert into organizations (name,type) values ('TechPulse Media','publisher'), ('WhitePress','marketplace');
+
+insert into websites (organization_id,domain,category,country)
+values
+  ((select id from organizations where name='TechPulse Media'),'techpulse.io','Tech','US'),
+  ((select id from organizations where name='TechPulse Media'),'aiinsider.io','Tech','US');
+
+insert into channels (type,name) values ('direct','Direct'), ('marketplace','WhitePress');
+
+-- Contact + email
+insert into contacts (organization_id,full_name,title)
+values ((select id from organizations where name='TechPulse Media'),'Maya Chen','Editor');
+
+insert into contact_emails (contact_id,email,is_primary,verify_status)
+select id,'maya@techpulse.io',true,'valid' from contacts where full_name='Maya Chen';
+
+-- Relationship
+insert into contact_websites (contact_id,website_id,relationship,channel_id,is_current)
+values (
+  (select id from contacts where full_name='Maya Chen'),
+  (select id from websites where domain='techpulse.io'),
+  'editor',
+  (select id from channels where name='Direct'),
+  true
+);
+
+-- Listing price
+insert into offer_summaries (website_id,channel_id,placement_type,base_price_minor,currency_code)
+values (
+  (select id from websites where domain='techpulse.io'),
+  (select id from channels where name='Direct'),
+  'guest_post', 22000, 'USD'
+);
+
+-- Primary contact
+insert into primary_contacts (website_id,channel_id,contact_id,is_active)
+values (
+  (select id from websites where domain='techpulse.io'),
+  (select id from channels where name='Direct'),
+  (select id from contacts where full_name='Maya Chen'),
+  true
+);

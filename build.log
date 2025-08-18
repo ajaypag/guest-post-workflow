@@ -3,36 +3,32 @@
 > next build
 
    ▲ Next.js 15.3.4
-   - Environments: .env.local
+   - Environments: .env.local, .env
 
    Creating an optimized production build ...
- ✓ Compiled successfully in 27.0s
+ ✓ Compiled successfully in 43s
    Linting and checking validity of types ...
 
-./app/account/orders/[id]/confirm/page.tsx
-50:6  Warning: React Hook useEffect has a missing dependency: 'fetchOrder'. Either include it or remove the dependency array.  react-hooks/exhaustive-deps
-
-./app/account/orders/[id]/sites/page.tsx
-94:6  Warning: React Hook useEffect has a missing dependency: 'fetchOrderAndSites'. Either include it or remove the dependency array.  react-hooks/exhaustive-deps
-107:6  Warning: React Hook useEffect has missing dependencies: 'fetchSitesForGroup' and 'fetchSubmissions'. Either include them or remove the dependency array.  react-hooks/exhaustive-deps
-
 ./app/account/orders/[id]/status/page.tsx
-117:6  Warning: React Hook useEffect has a missing dependency: 'fetchOrder'. Either include it or remove the dependency array.  react-hooks/exhaustive-deps
+132:6  Warning: React Hook useEffect has a missing dependency: 'fetchOrder'. Either include it or remove the dependency array.  react-hooks/exhaustive-deps
 
 ./app/account/reset-password/page.tsx
 31:6  Warning: React Hook useEffect has a missing dependency: 'validateToken'. Either include it or remove the dependency array.  react-hooks/exhaustive-deps
 
-./app/admin/dataforseo-audit/page.tsx
-170:6  Warning: React Hook useEffect has missing dependencies: 'fetchErrors' and 'fetchTasks'. Either include them or remove the dependency array.  react-hooks/exhaustive-deps
+./app/admin/audit-images/page.tsx
+80:13  Warning: Image elements must have an alt prop, either with meaningful text, or an empty string for decorative images.  jsx-a11y/alt-text
 
-./app/admin/dataforseo-monitoring/page.tsx
-56:6  Warning: React Hook useEffect has a missing dependency: 'fetchData'. Either include it or remove the dependency array.  react-hooks/exhaustive-deps
-
-./app/admin/draft-orders-migration/page.tsx
-133:6  Warning: React Hook useEffect has a missing dependency: 'checkStatus'. Either include it or remove the dependency array.  react-hooks/exhaustive-deps
+./app/admin/domain-migration/page.tsx
+63:6  Warning: React Hook useEffect has a missing dependency: 'checkMigrationStatus'. Either include it or remove the dependency array.  react-hooks/exhaustive-deps
 
 ./app/admin/email/page.tsx
 105:6  Warning: React Hook useEffect has a missing dependency: 'loadLogs'. Either include it or remove the dependency array.  react-hooks/exhaustive-deps
+
+./app/admin/signup-monitoring/page.tsx
+43:6  Warning: React Hook useEffect has a missing dependency: 'fetchData'. Either include it or remove the dependency array.  react-hooks/exhaustive-deps
+
+./app/billing/page.tsx
+51:6  Warning: React Hook useEffect has a missing dependency: 'fetchBillingHistory'. Either include it or remove the dependency array.  react-hooks/exhaustive-deps
 
 ./app/bulk-analysis/assigned/page.tsx
 54:6  Warning: React Hook useEffect has a missing dependency: 'router'. Either include it or remove the dependency array.  react-hooks/exhaustive-deps
@@ -51,9 +47,9 @@
 48:6  Warning: React Hook useEffect has a missing dependency: 'loadProjects'. Either include it or remove the dependency array.  react-hooks/exhaustive-deps
 
 ./app/clients/[id]/bulk-analysis/projects/[projectId]/page.tsx
-276:6  Warning: React Hook useEffect has missing dependencies: 'loadClient' and 'loadProject'. Either include them or remove the dependency array.  react-hooks/exhaustive-deps
-282:6  Warning: React Hook useEffect has a missing dependency: 'loadDomains'. Either include it or remove the dependency array.  react-hooks/exhaustive-deps
-311:6  Warning: React Hook useEffect has missing dependencies: 'loadOrderContext' and 'orderContext.isLoading'. Either include them or remove the dependency array.  react-hooks/exhaustive-deps
+287:6  Warning: React Hook useEffect has missing dependencies: 'loadClient' and 'loadProject'. Either include them or remove the dependency array.  react-hooks/exhaustive-deps
+293:6  Warning: React Hook useEffect has a missing dependency: 'loadDomains'. Either include it or remove the dependency array.  react-hooks/exhaustive-deps
+322:6  Warning: React Hook useEffect has missing dependencies: 'loadOrderContext' and 'orderContext.isLoading'. Either include them or remove the dependency array.  react-hooks/exhaustive-deps
 
 ./app/clients/[id]/page.tsx
 70:6  Warning: React Hook useEffect has a missing dependency: 'loadClient'. Either include it or remove the dependency array.  react-hooks/exhaustive-deps
@@ -61,28 +57,37 @@
 ./app/clients/page.tsx
 34:6  Warning: React Hook useEffect has a missing dependency: 'loadClients'. Either include it or remove the dependency array.  react-hooks/exhaustive-deps
 
-./app/orders/[id]/confirm/page.tsx
-63:6  Warning: React Hook useEffect has a missing dependency: 'loadOrderDetails'. Either include it or remove the dependency array.  react-hooks/exhaustive-deps
+./app/internal/publishers/[id]/edit/page.tsx
+43:6  Warning: React Hook useEffect has a missing dependency: 'params'. Either include it or remove the dependency array.  react-hooks/exhaustive-deps
 
 ./app/orders/[id]/edit/page.tsx
-111:9  Warning: The 'packagePricing' object makes the dependencies of useCallback Hook (at line 367) change on every render. To fix this, wrap the initialization of 'packagePricing' in its own useMemo() Hook.  react-hooks/exhaustive-deps
-111:9  Warning: The 'packagePricing' object makes the dependencies of useCallback Hook (at line 588) change on every render. To fix this, wrap the initialization of 'packagePricing' in its own useMemo() Hook.  react-hooks/exhaustive-deps
-410:6  Warning: React Hook useEffect has missing dependencies: 'isAccountUser', 'loadAccounts', 'loadDraftOrder', and 'session'. Either include them or remove the dependency array.  react-hooks/exhaustive-deps
-596:25  Warning: React Hook useCallback received a function whose dependencies are unknown. Pass an inline function instead.  react-hooks/exhaustive-deps
+440:6  Warning: React Hook useCallback has a missing dependency: 'getCurrentWholesaleEstimate'. Either include it or remove the dependency array.  react-hooks/exhaustive-deps
+486:6  Warning: React Hook useEffect has missing dependencies: 'isAccountUser', 'loadAccounts', 'loadDraftOrder', and 'session'. Either include them or remove the dependency array.  react-hooks/exhaustive-deps
+769:6  Warning: React Hook useCallback has a missing dependency: 'orderPreferences'. Either include it or remove the dependency array.  react-hooks/exhaustive-deps
 
 ./app/orders/[id]/internal/page.tsx
-200:6  Warning: React Hook useEffect has missing dependencies: 'loadOrder' and 'router'. Either include them or remove the dependency array.  react-hooks/exhaustive-deps
-210:6  Warning: React Hook useEffect has missing dependencies: 'checkTargetPageStatuses' and 'loadSiteSubmissions'. Either include them or remove the dependency array.  react-hooks/exhaustive-deps
+284:6  Warning: React Hook useEffect has missing dependencies: 'loadOrder' and 'router'. Either include them or remove the dependency array.  react-hooks/exhaustive-deps
+298:6  Warning: React Hook useEffect has missing dependencies: 'checkTargetPageStatuses', 'loadBenchmarkData', and 'loadSiteSubmissions'. Either include them or remove the dependency array.  react-hooks/exhaustive-deps
+
+./app/orders/[id]/invoice/page.tsx
+47:6  Warning: React Hook useEffect has a missing dependency: 'fetchInvoice'. Either include it or remove the dependency array.  react-hooks/exhaustive-deps
 
 ./app/orders/[id]/page.tsx
-157:6  Warning: React Hook useEffect has a missing dependency: 'loadOrder'. Either include it or remove the dependency array.  react-hooks/exhaustive-deps
-163:6  Warning: React Hook useEffect has a missing dependency: 'loadSiteSubmissions'. Either include it or remove the dependency array.  react-hooks/exhaustive-deps
+213:6  Warning: React Hook useEffect has a missing dependency: 'loadOrder'. Either include it or remove the dependency array.  react-hooks/exhaustive-deps
+233:6  Warning: React Hook useEffect has missing dependencies: 'loadBenchmarkData' and 'loadSiteSubmissions'. Either include them or remove the dependency array.  react-hooks/exhaustive-deps
 
-./app/orders/[id]/test/page.tsx
-68:6  Warning: React Hook useEffect has a missing dependency: 'loadOrder'. Either include it or remove the dependency array.  react-hooks/exhaustive-deps
+./app/orders/[id]/payment/page.tsx
+97:13  Warning: Do not use an `<a>` element to navigate to `/orders/`. Use `<Link />` from `next/link` instead. See: https://nextjs.org/docs/messages/no-html-link-for-pages  @next/next/no-html-link-for-pages
+116:13  Warning: Do not use an `<a>` element to navigate to `/orders/`. Use `<Link />` from `next/link` instead. See: https://nextjs.org/docs/messages/no-html-link-for-pages  @next/next/no-html-link-for-pages
+
+./app/orders/[id]/review/page.tsx
+43:6  Warning: React Hook useEffect has a missing dependency: 'fetchOrder'. Either include it or remove the dependency array.  react-hooks/exhaustive-deps
+
+./app/orders/claim/[token]/page.tsx
+47:6  Warning: React Hook useEffect has a missing dependency: 'loadOrderByToken'. Either include it or remove the dependency array.  react-hooks/exhaustive-deps
 
 ./app/orders/page.tsx
-118:6  Warning: React Hook useEffect has a missing dependency: 'fetchOrders'. Either include it or remove the dependency array.  react-hooks/exhaustive-deps
+122:6  Warning: React Hook useEffect has a missing dependency: 'fetchOrders'. Either include it or remove the dependency array.  react-hooks/exhaustive-deps
 
 ./app/register/account/page.tsx
 51:6  Warning: React Hook useEffect has a missing dependency: 'verifyInvitation'. Either include it or remove the dependency array.  react-hooks/exhaustive-deps
@@ -90,8 +95,11 @@
 ./app/reset-password/page.tsx
 31:6  Warning: React Hook useEffect has a missing dependency: 'validateToken'. Either include it or remove the dependency array.  react-hooks/exhaustive-deps
 
+./app/verify-email/page.tsx
+25:6  Warning: React Hook useEffect has a missing dependency: 'verifyEmail'. Either include it or remove the dependency array.  react-hooks/exhaustive-deps
+
 ./components/AccountAuthWrapper.tsx
-36:6  Warning: React Hook useEffect has missing dependencies: 'checkAuth' and 'refreshTokenIfNeeded'. Either include them or remove the dependency array.  react-hooks/exhaustive-deps
+37:6  Warning: React Hook useEffect has missing dependencies: 'checkAuth' and 'refreshTokenIfNeeded'. Either include them or remove the dependency array.  react-hooks/exhaustive-deps
 
 ./components/BulkAnalysisResultsModal.tsx
 45:6  Warning: React Hook useEffect has a missing dependency: 'fetchResults'. Either include it or remove the dependency array.  react-hooks/exhaustive-deps
@@ -108,6 +116,9 @@
 ./components/StepForm.tsx
 244:6  Warning: React Hook useEffect has missing dependencies: 'autoSaveTimer', 'handleSave', and 'step.outputs.finalArticle'. Either include them or remove the dependency array.  react-hooks/exhaustive-deps
 
+./components/StructuredData.tsx
+9:5  Warning: `next/script`'s `beforeInteractive` strategy should not be used outside of `pages/_document.js`. See: https://nextjs.org/docs/messages/no-before-interactive-script-outside-document  @next/next/no-before-interactive-script-outside-document
+
 ./components/WorkflowList.tsx
 29:6  Warning: React Hook useEffect has a missing dependency: 'filterWorkflows'. Either include it or remove the dependency array.  react-hooks/exhaustive-deps
 
@@ -120,8 +131,29 @@
 ./components/bulk-analysis/MoveToProjectDialog.tsx
 41:6  Warning: React Hook useEffect has a missing dependency: 'loadProjects'. Either include it or remove the dependency array.  react-hooks/exhaustive-deps
 
+./components/orders/AdminDomainTable.tsx
+56:6  Warning: React Hook useEffect has a missing dependency: 'loadAdminData'. Either include it or remove the dependency array.  react-hooks/exhaustive-deps
+
+./components/orders/ChangeBulkAnalysisProject.tsx
+45:6  Warning: React Hook useEffect has a missing dependency: 'loadProjects'. Either include it or remove the dependency array.  react-hooks/exhaustive-deps
+
 ./components/orders/OrderSelectionModal.tsx
 51:6  Warning: React Hook useEffect has missing dependencies: 'loadAssociatedOrders' and 'loadDraftOrders'. Either include them or remove the dependency array.  react-hooks/exhaustive-deps
+
+./components/orders/OrderSiteReviewTable.tsx
+214:6  Warning: React Hook useCallback has an unnecessary dependency: 'userType'. Either exclude it or remove the dependency array.  react-hooks/exhaustive-deps
+
+./components/orders/PricingEstimator.tsx
+252:6  Warning: React Hook useCallback has a missing dependency: 'onEstimateChange'. Either include it or remove the dependency array. If 'onEstimateChange' changes too often, find the parent component that defines it and wrap that definition in useCallback.  react-hooks/exhaustive-deps
+
+./components/orders/StripePaymentForm.tsx
+281:6  Warning: React Hook useEffect has a missing dependency: 'initializePayment'. Either include it or remove the dependency array.  react-hooks/exhaustive-deps
+
+./components/publisher/PublisherEarningsOverview.tsx
+122:6  Warning: React Hook useEffect has a missing dependency: 'fetchEarnings'. Either include it or remove the dependency array.  react-hooks/exhaustive-deps
+
+./components/publisher/PublisherOrdersList.tsx
+120:6  Warning: React Hook useEffect has a missing dependency: 'fetchOrders'. Either include it or remove the dependency array.  react-hooks/exhaustive-deps
 
 ./components/steps/ClientLinkStep.tsx
 82:6  Warning: React Hook useEffect has missing dependencies: 'onChange' and 'step.outputs'. Either include them or remove the dependency array. If 'onChange' changes too often, find the parent component that defines it and wrap that definition in useCallback.  react-hooks/exhaustive-deps
@@ -157,551 +189,13 @@
 ./components/ui/AgenticOutlineGeneratorV2.tsx
 74:6  Warning: React Hook useEffect has missing dependencies: 'onComplete' and 'startPolling'. Either include them or remove the dependency array. If 'onComplete' changes too often, find the parent component that defines it and wrap that definition in useCallback.  react-hooks/exhaustive-deps
 
+./components/ui/DuplicateResolutionModal.tsx
+41:6  Warning: React Hook useEffect has a missing dependency: 'selectedDuplicate'. Either include it or remove the dependency array.  react-hooks/exhaustive-deps
+
 ./components/websites/QualificationModal.tsx
 41:6  Warning: React Hook useEffect has a missing dependency: 'loadClients'. Either include it or remove the dependency array.  react-hooks/exhaustive-deps
 
 ./components/websites/WebsiteDetailModal.tsx
-91:6  Warning: React Hook useEffect has a missing dependency: 'loadWebsiteDetails'. Either include it or remove the dependency array.  react-hooks/exhaustive-deps
+95:6  Warning: React Hook useEffect has a missing dependency: 'loadWebsiteDetails'. Either include it or remove the dependency array.  react-hooks/exhaustive-deps
 
 info  - Need to disable some ESLint rules? Learn more here: https://nextjs.org/docs/app/api-reference/config/eslint#disabling-rules
-   Collecting page data ...
-Could not generate static params, database not available: Error: Failed query: 
-      SELECT DISTINCT UNNEST(categories) as category
-      FROM websites
-      WHERE categories IS NOT NULL 
-        AND categories != '{}'
-      
-params: 
-    at p.queryWithCache (.next/server/chunks/72094.js:2:719)
-    at async Object.j [as generateStaticParams] (.next/server/app/guest-posting-sites/[category]/page.js:1:1189) {
-  query: '\n' +
-    '      SELECT DISTINCT UNNEST(categories) as category\n' +
-    '      FROM websites\n' +
-    '      WHERE categories IS NOT NULL \n' +
-    "        AND categories != '{}'\n" +
-    '      ',
-  params: [],
-  [cause]: Error: connect ECONNREFUSED 127.0.0.1:5432
-      at <unknown> (Error: connect ECONNREFUSED 127.0.0.1:5432)
-      at async (.next/server/chunks/72094.js:2:4721)
-      at async p.queryWithCache (.next/server/chunks/72094.js:2:694)
-      at async Object.j [as generateStaticParams] (.next/server/app/guest-posting-sites/[category]/page.js:1:1189) {
-    errno: -111,
-    code: 'ECONNREFUSED',
-    syscall: 'connect',
-    address: '127.0.0.1',
-    port: 5432
-  }
-}
-   Generating static pages (0/362) ...
-   Generating static pages (90/362) 
-   Generating static pages (180/362) 
-   Generating static pages (271/362) 
-Could not fetch websites data, database not available during build: Error: Failed query: select "id", "domain", "domain_rating", "total_traffic", "guest_post_cost", "categories", "overall_quality", "has_guest_post" from "websites" order by "websites"."domain_rating" DESC NULLS LAST limit $1
-params: 50
-    at p.queryWithCache (.next/server/chunks/72094.js:2:719)
-    at async (.next/server/chunks/72094.js:2:4749)
-    at async f (.next/server/app/guest-posting-sites/page.js:1:3405)
-    at async j (.next/server/app/guest-posting-sites/page.js:11:585) {
-  query: 'select "id", "domain", "domain_rating", "total_traffic", "guest_post_cost", "categories", "overall_quality", "has_guest_post" from "websites" order by "websites"."domain_rating" DESC NULLS LAST limit $1',
-  params: [Array],
-  [cause]: Error: connect ECONNREFUSED 127.0.0.1:5432
-      at <unknown> (Error: connect ECONNREFUSED 127.0.0.1:5432)
-      at async (.next/server/chunks/72094.js:2:4959)
-      at async p.queryWithCache (.next/server/chunks/72094.js:2:694)
-      at async (.next/server/chunks/72094.js:2:4749)
-      at async f (.next/server/app/guest-posting-sites/page.js:1:3405)
-      at async j (.next/server/app/guest-posting-sites/page.js:11:585) {
-    errno: -111,
-    code: 'ECONNREFUSED',
-    syscall: 'connect',
-    address: '127.0.0.1',
-    port: 5432
-  }
-}
- ✓ Generating static pages (362/362)
-   Finalizing page optimization ...
-   Collecting build traces ...
-
-Route (app)                                                                 Size  First Load JS
-┌ ○ /                                                                    7.11 kB         123 kB
-├ ○ /_not-found                                                            994 B         103 kB
-├ ○ /accept-invitation                                                    3.7 kB         109 kB
-├ ○ /account/dashboard                                                    8.2 kB         116 kB
-├ ○ /account/debug-client-loading                                        4.17 kB         112 kB
-├ ○ /account/forgot-password                                             2.86 kB         108 kB
-├ ○ /account/login                                                       2.92 kB         108 kB
-├ ƒ /account/orders/[id]/confirm                                         4.39 kB         112 kB
-├ ƒ /account/orders/[id]/sites                                           2.85 kB         122 kB
-├ ƒ /account/orders/[id]/status                                          6.31 kB         114 kB
-├ ○ /account/reset-password                                              2.89 kB         104 kB
-├ ○ /account/settings                                                     5.1 kB         113 kB
-├ ○ /accounts                                                            6.95 kB         115 kB
-├ ○ /admin                                                               4.88 kB         106 kB
-├ ○ /admin/account-invitations                                            3.7 kB         117 kB
-├ ○ /admin/add-client-fields-migration                                   3.46 kB         111 kB
-├ ○ /admin/add-selected-target-page                                        746 B         102 kB
-├ ○ /admin/agent-diagnostics                                             3.63 kB         105 kB
-├ ○ /admin/airtable-migration                                            2.77 kB         104 kB
-├ ○ /admin/airtable-sync                                                 2.81 kB         104 kB
-├ ○ /admin/analytics                                                     5.46 kB         121 kB
-├ ○ /admin/bulk-analysis-4tier-migration                                 2.62 kB         104 kB
-├ ○ /admin/bulk-analysis-migration                                       1.64 kB         103 kB
-├ ○ /admin/bulk-analysis-test                                              955 B         102 kB
-├ ○ /admin/bulk-url-migration                                             3.3 kB         108 kB
-├ ○ /admin/check-invitations-table                                       3.98 kB         112 kB
-├ ○ /admin/check-order-constraints                                        3.6 kB         111 kB
-├ ○ /admin/check-v2-data                                                 3.12 kB         111 kB
-├ ○ /admin/check-workflow-steps                                          1.25 kB         103 kB
-├ ○ /admin/client-archive-migration                                      3.02 kB         105 kB
-├ ○ /admin/client-type-migration                                         2.89 kB         108 kB
-├ ○ /admin/column-check                                                  1.19 kB         103 kB
-├ ○ /admin/create-system-user                                            1.06 kB         103 kB
-├ ○ /admin/database-migration                                            2.31 kB         104 kB
-├ ○ /admin/dataforseo-audit                                              4.58 kB         109 kB
-├ ○ /admin/dataforseo-count-migration                                    2.64 kB         104 kB
-├ ○ /admin/dataforseo-migration                                          3.78 kB         109 kB
-├ ○ /admin/dataforseo-migrations                                         2.83 kB         108 kB
-├ ○ /admin/dataforseo-monitoring                                         6.25 kB         111 kB
-├ ○ /admin/debug-account-clients                                         3.75 kB         111 kB
-├ ○ /admin/debug-invitations                                                4 kB         112 kB
-├ ○ /admin/debug-order-client-loading                                    3.71 kB         111 kB
-├ ○ /admin/debug-order-confirm                                           3.61 kB         111 kB
-├ ○ /admin/debug-reset-token                                             3.27 kB         105 kB
-├ ○ /admin/diagnostics                                                   3.27 kB         105 kB
-├ ○ /admin/draft-orders-migration                                        4.64 kB         112 kB
-├ ○ /admin/email                                                         3.56 kB         119 kB
-├ ○ /admin/fix-accounts-table                                            5.21 kB         113 kB
-├ ○ /admin/fix-article-v2                                                3.64 kB         105 kB
-├ ○ /admin/fix-formatting-qa                                              3.3 kB         105 kB
-├ ○ /admin/fix-invitations-table                                         5.23 kB         113 kB
-├ ○ /admin/fix-order-constraints                                         3.47 kB         111 kB
-├ ○ /admin/fix-outline-generation                                        3.35 kB         105 kB
-├ ○ /admin/fix-polish                                                    3.54 kB         105 kB
-├ ○ /admin/fix-polish-columns                                            2.87 kB         104 kB
-├ ○ /admin/fix-project-counts                                            2.86 kB         108 kB
-├ ○ /admin/fix-semantic-audit-v2                                         3.35 kB         105 kB
-├ ○ /admin/fix-streaming-schema                                          3.11 kB         105 kB
-├ ○ /admin/link-orchestration-diagnostics                                6.28 kB         108 kB
-├ ○ /admin/marketing-diagnostics                                         2.23 kB         104 kB
-├ ○ /admin/migrate-advertisers                                           4.51 kB         112 kB
-├ ○ /admin/migrate-ai-permissions                                        2.08 kB         104 kB
-├ ○ /admin/migrate-onboarding                                            4.47 kB         112 kB
-├ ○ /admin/migrate-target-page-id                                        2.53 kB         104 kB
-├ ○ /admin/migrations                                                    3.69 kB         105 kB
-├ ○ /admin/normalize-urls-migration                                      1.97 kB         103 kB
-├ ○ /admin/o3-deep-research-diagnostics                                  4.09 kB         106 kB
-├ ○ /admin/o3-response-analyzer                                          3.54 kB         105 kB
-├ ○ /admin/order-flow-diagnostics                                        4.44 kB         112 kB
-├ ○ /admin/order-groups-migration                                        3.87 kB         112 kB
-├ ○ /admin/order-migration                                               2.18 kB         107 kB
-├ ○ /admin/order-project-diagnostics                                     4.36 kB         112 kB
-├ ○ /admin/order-status-diagnostics                                      3.12 kB         105 kB
-├ ○ /admin/order-system-migration                                        3.98 kB         109 kB
-├ ○ /admin/order-type-migration                                          3.68 kB         111 kB
-├ ○ /admin/orphaned-clients                                              4.77 kB         112 kB
-├ ○ /admin/outline-generation-diagnostics                                 2.3 kB         104 kB
-├ ○ /admin/outline-generation-health                                     3.08 kB         105 kB
-├ ○ /admin/password-reset-migration                                        766 B         102 kB
-├ ○ /admin/payment-tables-migration                                      3.61 kB         111 kB
-├ ○ /admin/polish-health                                                 4.07 kB         106 kB
-├ ○ /admin/remove-duplicate-account-fields                               3.32 kB         105 kB
-├ ○ /admin/restore-workflow-steps                                        1.39 kB         103 kB
-├ ○ /admin/run-dataforseo-migration                                       2.7 kB         104 kB
-├ ○ /admin/site-selections-migration                                     2.37 kB         104 kB
-├ ○ /admin/step-7-diagnostics                                            4.77 kB         112 kB
-├ ○ /admin/streaming-diagnostics                                         3.34 kB         105 kB
-├ ○ /admin/streaming-migrate                                             3.95 kB         105 kB
-├ ○ /admin/streaming-migration                                            3.6 kB         105 kB
-├ ○ /admin/test-email-migration                                          3.39 kB         111 kB
-├ ○ /admin/test-invitation-link                                          4.01 kB         112 kB
-├ ○ /admin/unified-order-migration                                       2.91 kB         104 kB
-├ ○ /admin/user-system-migration                                         4.78 kB         112 kB
-├ ○ /admin/users                                                         6.12 kB         122 kB
-├ ○ /admin/varchar-limits                                                3.41 kB         105 kB
-├ ○ /admin/workflow-recovery                                             2.22 kB         104 kB
-├ ƒ /api/accept-invitation                                               1.03 kB         103 kB
-├ ƒ /api/accept-invitation/validate                                      1.03 kB         103 kB
-├ ƒ /api/account/change-password                                         1.03 kB         103 kB
-├ ƒ /api/account/clients                                                 1.03 kB         103 kB
-├ ƒ /api/account/debug-clients                                           1.03 kB         103 kB
-├ ƒ /api/account/profile                                                 1.03 kB         103 kB
-├ ƒ /api/accounts                                                        1.03 kB         103 kB
-├ ƒ /api/accounts/[id]                                                   1.03 kB         103 kB
-├ ƒ /api/accounts/[id]/permissions                                       1.03 kB         103 kB
-├ ƒ /api/accounts/[id]/reset-password                                    1.03 kB         103 kB
-├ ƒ /api/accounts/[id]/status                                            1.03 kB         103 kB
-├ ƒ /api/accounts/client                                                 1.03 kB         103 kB
-├ ƒ /api/accounts/onboarding                                             1.03 kB         103 kB
-├ ƒ /api/accounts/search                                                 1.03 kB         103 kB
-├ ƒ /api/accounts/signup                                                 1.03 kB         103 kB
-├ ƒ /api/admin/add-client-fields-migration                               1.03 kB         103 kB
-├ ƒ /api/admin/add-dataforseo-count-column                               1.03 kB         103 kB
-├ ƒ /api/admin/add-datasource-fields                                     1.03 kB         103 kB
-├ ƒ /api/admin/add-link-orchestration-columns                            1.03 kB         103 kB
-├ ƒ /api/admin/add-selected-target-page                                  1.03 kB         103 kB
-├ ƒ /api/admin/agent-diagnostics                                         1.03 kB         103 kB
-├ ƒ /api/admin/agent-diagnostics/sessions                                1.03 kB         103 kB
-├ ƒ /api/admin/agent-diagnostics/sessions/[sessionId]                    1.03 kB         103 kB
-├ ƒ /api/admin/analyze-o3-response                                       1.03 kB         103 kB
-├ ƒ /api/admin/apply-bulk-url-migration                                  1.03 kB         103 kB
-├ ƒ /api/admin/bulk-analysis-debug                                       1.03 kB         103 kB
-├ ƒ /api/admin/check-account-data                                        1.03 kB         103 kB
-├ ƒ /api/admin/check-agentic-tables                                      1.03 kB         103 kB
-├ ƒ /api/admin/check-agentic-versioning                                  1.03 kB         103 kB
-├ ƒ /api/admin/check-archive-columns                                     1.03 kB         103 kB
-├ ƒ /api/admin/check-bulk-analysis-improvements                          1.03 kB         103 kB
-├ ƒ /api/admin/check-bulk-url-migration                                  1.03 kB         103 kB
-├ ƒ /api/admin/check-client-type-migration                               1.03 kB         103 kB
-├ ƒ /api/admin/check-column-sizes                                        1.03 kB         103 kB
-├ ƒ /api/admin/check-dataforseo-status                                   1.03 kB         103 kB
-├ ƒ /api/admin/check-datasource-fields                                   1.03 kB         103 kB
-├ ƒ /api/admin/check-description-column                                  1.03 kB         103 kB
-├ ƒ /api/admin/check-email-logs-table                                    1.03 kB         103 kB
-├ ƒ /api/admin/check-formatting-qa-tables                                1.03 kB         103 kB
-├ ƒ /api/admin/check-invitations-table                                   1.03 kB         103 kB
-├ ƒ /api/admin/check-keywords-column                                     1.03 kB         103 kB
-├ ƒ /api/admin/check-link-orchestration-schema                           1.03 kB         103 kB
-├ ƒ /api/admin/check-link-orchestration-table                            1.03 kB         103 kB
-├ ƒ /api/admin/check-order-constraints                                   1.03 kB         103 kB
-├ ƒ /api/admin/check-order-groups-schema                                 1.03 kB         103 kB
-├ ƒ /api/admin/check-outline-generation-health                           1.03 kB         103 kB
-├ ƒ /api/admin/check-polish-tables                                       1.03 kB         103 kB
-├ ƒ /api/admin/check-polish-tables-direct                                1.03 kB         103 kB
-├ ƒ /api/admin/check-semantic-audit-tables                               1.03 kB         103 kB
-├ ƒ /api/admin/check-specific-domain                                     1.03 kB         103 kB
-├ ƒ /api/admin/check-streaming-status                                    1.03 kB         103 kB
-├ ƒ /api/admin/check-tables                                              1.03 kB         103 kB
-├ ƒ /api/admin/check-user-type-column                                    1.03 kB         103 kB
-├ ƒ /api/admin/check-v2-data                                             1.03 kB         103 kB
-├ ƒ /api/admin/check-varchar-limits                                      1.03 kB         103 kB
-├ ƒ /api/admin/cleanup-failed-outline-sessions                           1.03 kB         103 kB
-├ ƒ /api/admin/comprehensive-diagnostics                                 1.03 kB         103 kB
-├ ƒ /api/admin/create-order-groups-index                                 1.03 kB         103 kB
-├ ƒ /api/admin/create-site-selections                                    1.03 kB         103 kB
-├ ƒ /api/admin/create-system-user                                        1.03 kB         103 kB
-├ ƒ /api/admin/dataforseo-audit/errors                                   1.03 kB         103 kB
-├ ƒ /api/admin/dataforseo-audit/task/[taskId]                            1.03 kB         103 kB
-├ ƒ /api/admin/dataforseo-audit/tasks                                    1.03 kB         103 kB
-├ ƒ /api/admin/dataforseo-debug                                          1.03 kB         103 kB
-├ ƒ /api/admin/dataforseo-monitoring                                     1.03 kB         103 kB
-├ ƒ /api/admin/dataforseo-task-details                                   1.03 kB         103 kB
-├ ƒ /api/admin/debug-account-clients                                     1.03 kB         103 kB
-├ ƒ /api/admin/debug-analyzed-count                                      1.03 kB         103 kB
-├ ƒ /api/admin/debug-clients                                             1.03 kB         103 kB
-├ ƒ /api/admin/debug-clients-api                                         1.03 kB         103 kB
-├ ƒ /api/admin/debug-email-logs                                          1.03 kB         103 kB
-├ ƒ /api/admin/debug-invitations                                         1.03 kB         103 kB
-├ ƒ /api/admin/debug-link-orchestration-insert                           1.03 kB         103 kB
-├ ƒ /api/admin/debug-reset-token                                         1.03 kB         103 kB
-├ ƒ /api/admin/diagnose-article-v2                                       1.03 kB         103 kB
-├ ƒ /api/admin/diagnose-formatting-qa-enhancement                        1.03 kB         103 kB
-├ ƒ /api/admin/diagnose-o3-deep-research                                 1.03 kB         103 kB
-├ ƒ /api/admin/diagnose-orders-new                                       1.03 kB         103 kB
-├ ƒ /api/admin/diagnose-outline-generation                               1.03 kB         103 kB
-├ ƒ /api/admin/diagnose-outline-generation-error                         1.03 kB         103 kB
-├ ƒ /api/admin/diagnose-outline-generation-live                          1.03 kB         103 kB
-├ ƒ /api/admin/diagnose-polish-null-bytes                                1.03 kB         103 kB
-├ ƒ /api/admin/diagnose-semantic-audit-v2                                1.03 kB         103 kB
-├ ƒ /api/admin/diagnose-step-7/[id]                                      1.03 kB         103 kB
-├ ƒ /api/admin/diagnose-streaming-health                                 1.03 kB         103 kB
-├ ƒ /api/admin/diagnostics/client/[clientId]/target-pages                1.03 kB         103 kB
-├ ƒ /api/admin/diagnostics/order/[orderId]                               1.03 kB         103 kB
-├ ƒ /api/admin/draft-orders-migration/migrate                            1.03 kB         103 kB
-├ ƒ /api/admin/draft-orders-migration/status                             1.03 kB         103 kB
-├ ƒ /api/admin/enable-streaming                                          1.03 kB         103 kB
-├ ƒ /api/admin/feature-flags                                             1.03 kB         103 kB
-├ ƒ /api/admin/fix-account-data                                          1.03 kB         103 kB
-├ ƒ /api/admin/fix-accounts-table                                        1.03 kB         103 kB
-├ ƒ /api/admin/fix-article-v2-columns                                    1.03 kB         103 kB
-├ ƒ /api/admin/fix-email-logs-table                                      1.03 kB         103 kB
-├ ƒ /api/admin/fix-formatting-qa-columns                                 1.03 kB         103 kB
-├ ƒ /api/admin/fix-invitations-table                                     1.03 kB         103 kB
-├ ƒ /api/admin/fix-link-orchestration-schema                             1.03 kB         103 kB
-├ ƒ /api/admin/fix-order-constraints                                     1.03 kB         103 kB
-├ ƒ /api/admin/fix-outline-generation-columns                            1.03 kB         103 kB
-├ ƒ /api/admin/fix-outline-sessions-schema                               1.03 kB         103 kB
-├ ƒ /api/admin/fix-polish-approach-column                                1.03 kB         103 kB
-├ ƒ /api/admin/fix-polish-database-columns                               1.03 kB         103 kB
-├ ƒ /api/admin/fix-project-counts                                        1.03 kB         103 kB
-├ ƒ /api/admin/fix-streaming-service                                     1.03 kB         103 kB
-├ ƒ /api/admin/invitations                                               1.03 kB         103 kB
-├ ƒ /api/admin/invitations/[id]/resend                                   1.03 kB         103 kB
-├ ƒ /api/admin/invitations/[id]/revoke                                   1.03 kB         103 kB
-├ ƒ /api/admin/marketing-diagnostics/categories                          1.03 kB         103 kB
-├ ƒ /api/admin/marketing-diagnostics/db-test                             1.03 kB         103 kB
-├ ƒ /api/admin/marketing-diagnostics/websites                            1.03 kB         103 kB
-├ ƒ /api/admin/migrate-advertisers                                       1.03 kB         103 kB
-├ ƒ /api/admin/migrate-agentic                                           1.03 kB         103 kB
-├ ƒ /api/admin/migrate-agentic-versioning                                1.03 kB         103 kB
-├ ƒ /api/admin/migrate-ai-permissions                                    1.03 kB         103 kB
-├ ƒ /api/admin/migrate-archive                                           1.03 kB         103 kB
-├ ƒ /api/admin/migrate-article-v2                                        1.03 kB         103 kB
-├ ƒ /api/admin/migrate-bulk-analysis                                     1.03 kB         103 kB
-├ ƒ /api/admin/migrate-bulk-analysis-4tier                               1.03 kB         103 kB
-├ ƒ /api/admin/migrate-bulk-analysis-improvements                        1.03 kB         103 kB
-├ ƒ /api/admin/migrate-bulk-analysis-improvements-rollback               1.03 kB         103 kB
-├ ƒ /api/admin/migrate-client-type                                       1.03 kB         103 kB
-├ ƒ /api/admin/migrate-dataforseo                                        1.03 kB         103 kB
-├ ƒ /api/admin/migrate-dataforseo-logs                                   1.03 kB         103 kB
-├ ƒ /api/admin/migrate-description                                       1.03 kB         103 kB
-├ ƒ /api/admin/migrate-email-logs                                        1.03 kB         103 kB
-├ ƒ /api/admin/migrate-email-logs-direct                                 1.03 kB         103 kB
-├ ƒ /api/admin/migrate-email-logs-simple                                 1.03 kB         103 kB
-├ ƒ /api/admin/migrate-formatting-qa                                     1.03 kB         103 kB
-├ ƒ /api/admin/migrate-formatting-qa-v2                                  1.03 kB         103 kB
-├ ƒ /api/admin/migrate-keywords                                          1.03 kB         103 kB
-├ ƒ /api/admin/migrate-link-orchestration                                1.03 kB         103 kB
-├ ƒ /api/admin/migrate-onboarding                                        1.03 kB         103 kB
-├ ƒ /api/admin/migrate-order-groups-bulk-analysis                        1.03 kB         103 kB
-├ ƒ /api/admin/migrate-outline-background                                1.03 kB         103 kB
-├ ƒ /api/admin/migrate-outline-sessions                                  1.03 kB         103 kB
-├ ƒ /api/admin/migrate-polish                                            1.03 kB         103 kB
-├ ƒ /api/admin/migrate-polish-drizzle                                    1.03 kB         103 kB
-├ ƒ /api/admin/migrate-semantic-audit                                    1.03 kB         103 kB
-├ ƒ /api/admin/migrate-semantic-audit-v2                                 1.03 kB         103 kB
-├ ƒ /api/admin/migrate-streaming-columns                                 1.03 kB         103 kB
-├ ƒ /api/admin/migrate-streaming-schema                                  1.03 kB         103 kB
-├ ƒ /api/admin/migrate-target-page-id                                    1.03 kB         103 kB
-├ ƒ /api/admin/migrate-user-system                                       1.03 kB         103 kB
-├ ƒ /api/admin/migrations/run                                            1.03 kB         103 kB
-├ ƒ /api/admin/migrations/status                                         1.03 kB         103 kB
-├ ƒ /api/admin/normalize-urls-migration/run                              1.03 kB         103 kB
-├ ƒ /api/admin/normalize-urls-migration/status                           1.03 kB         103 kB
-├ ƒ /api/admin/order-migration                                           1.03 kB         103 kB
-├ ƒ /api/admin/order-project-diagnostics                                 1.03 kB         103 kB
-├ ƒ /api/admin/order-status-diagnostics/check-groups                     1.03 kB         103 kB
-├ ƒ /api/admin/order-status-diagnostics/check-order                      1.03 kB         103 kB
-├ ƒ /api/admin/order-system-migration                                    1.03 kB         103 kB
-├ ƒ /api/admin/order-type-migration                                      1.03 kB         103 kB
-├ ƒ /api/admin/orders-diagnostic                                         1.03 kB         103 kB
-├ ƒ /api/admin/orphaned-clients                                          1.03 kB         103 kB
-├ ƒ /api/admin/orphaned-clients/assign                                   1.03 kB         103 kB
-├ ƒ /api/admin/orphaned-clients/invite                                   1.03 kB         103 kB
-├ ƒ /api/admin/orphaned-clients/share                                    1.03 kB         103 kB
-├ ƒ /api/admin/password-reset-migration                                  1.03 kB         103 kB
-├ ƒ /api/admin/patch-health-check                                        1.03 kB         103 kB
-├ ƒ /api/admin/patch-link-orchestration-service                          1.03 kB         103 kB
-├ ƒ /api/admin/payment-tables-migration                                  1.03 kB         103 kB
-├ ƒ /api/admin/polish-health-check                                       1.03 kB         103 kB
-├ ƒ /api/admin/quick-client-check                                        1.03 kB         103 kB
-├ ƒ /api/admin/remove-duplicate-account-fields/check                     1.03 kB         103 kB
-├ ƒ /api/admin/remove-duplicate-account-fields/migrate                   1.03 kB         103 kB
-├ ƒ /api/admin/remove-duplicate-account-fields/rollback                  1.03 kB         103 kB
-├ ƒ /api/admin/retry-stuck-outline-session                               1.03 kB         103 kB
-├ ƒ /api/admin/rollback-bulk-url-migration                               1.03 kB         103 kB
-├ ƒ /api/admin/run-airtable-migration                                    1.03 kB         103 kB
-├ ƒ /api/admin/run-dataforseo-migration                                  1.03 kB         103 kB
-├ ƒ /api/admin/run-migrations                                            1.03 kB         103 kB
-├ ƒ /api/admin/sync-drizzle-schema                                       1.03 kB         103 kB
-├ ƒ /api/admin/test-db-connection                                        1.03 kB         103 kB
-├ ƒ /api/admin/test-email-migration                                      1.03 kB         103 kB
-├ ƒ /api/admin/test-formatting-qa-insert                                 1.03 kB         103 kB
-├ ƒ /api/admin/test-invitation-token                                     1.03 kB         103 kB
-├ ƒ /api/admin/test-link-orchestration                                   1.03 kB         103 kB
-├ ƒ /api/admin/test-o3-api-call                                          1.03 kB         103 kB
-├ ƒ /api/admin/test-outline-generation-insert                            1.03 kB         103 kB
-├ ƒ /api/admin/test-polish-insert                                        1.03 kB         103 kB
-├ ƒ /api/admin/test-polish-insert-real                                   1.03 kB         103 kB
-├ ƒ /api/admin/toggle-streaming                                          1.03 kB         103 kB
-├ ƒ /api/admin/unified-order-migration                                   1.03 kB         103 kB
-├ ƒ /api/admin/verify-order-groups-migration                             1.03 kB         103 kB
-├ ƒ /api/admin/verify-site-selections                                    1.03 kB         103 kB
-├ ƒ /api/admin/verify-user-system-migration                              1.03 kB         103 kB
-├ ƒ /api/admin/workflow-recovery/check/[id]                              1.03 kB         103 kB
-├ ƒ /api/admin/workflow-recovery/restore/[id]                            1.03 kB         103 kB
-├ ƒ /api/admin/workflow-recovery/scan                                    1.03 kB         103 kB
-├ ƒ /api/ai/responses/continue                                           1.03 kB         103 kB
-├ ƒ /api/ai/responses/create                                             1.03 kB         103 kB
-├ ƒ /api/airtable/sync                                                   1.03 kB         103 kB
-├ ƒ /api/airtable/webhook                                                1.03 kB         103 kB
-├ ƒ /api/airtable/websites/search                                        1.03 kB         103 kB
-├ ƒ /api/auth/account-login                                              1.03 kB         103 kB
-├ ƒ /api/auth/account-signup                                             1.03 kB         103 kB
-├ ƒ /api/auth/account/forgot-password                                    1.03 kB         103 kB
-├ ƒ /api/auth/account/login                                              1.03 kB         103 kB
-├ ƒ /api/auth/account/logout                                             1.03 kB         103 kB
-├ ƒ /api/auth/account/refresh                                            1.03 kB         103 kB
-├ ƒ /api/auth/account/reset-password                                     1.03 kB         103 kB
-├ ƒ /api/auth/account/reset-password/validate                            1.03 kB         103 kB
-├ ƒ /api/auth/account/verify                                             1.03 kB         103 kB
-├ ƒ /api/auth/check-session                                              1.03 kB         103 kB
-├ ƒ /api/auth/forgot-password                                            1.03 kB         103 kB
-├ ƒ /api/auth/login                                                      1.03 kB         103 kB
-├ ƒ /api/auth/register                                                   1.03 kB         103 kB
-├ ƒ /api/auth/reset-password                                             1.03 kB         103 kB
-├ ƒ /api/auth/reset-password/validate                                    1.03 kB         103 kB
-├ ƒ /api/auth/session                                                    1.03 kB         103 kB
-├ ƒ /api/bulk-analysis/analyze-dataforseo                                1.03 kB         103 kB
-├ ƒ /api/bulk-analysis/assigned-projects                                 1.03 kB         103 kB
-├ ƒ /api/bulk-analysis/projects                                          1.03 kB         103 kB
-├ ƒ /api/bulk-analysis/projects/[projectId]/default-target-pages         1.03 kB         103 kB
-├ ƒ /api/bulk-analysis/results/[jobId]                                   1.03 kB         103 kB
-├ ƒ /api/bulk-analysis/results/[jobId]/export                            1.03 kB         103 kB
-├ ƒ /api/check-table-structure                                           1.03 kB         103 kB
-├ ƒ /api/claim                                                           1.03 kB         103 kB
-├ ƒ /api/claim/validate                                                  1.03 kB         103 kB
-├ ƒ /api/clients                                                         1.03 kB         103 kB
-├ ƒ /api/clients/[id]                                                    1.03 kB         103 kB
-├ ƒ /api/clients/[id]/archive                                            1.03 kB         103 kB
-├ ƒ /api/clients/[id]/bulk-analysis                                      1.03 kB         103 kB
-├ ƒ /api/clients/[id]/bulk-analysis/[domainId]                           1.03 kB         103 kB
-├ ƒ /api/clients/[id]/bulk-analysis/ai-qualify                           1.03 kB         103 kB
-├ ƒ /api/clients/[id]/bulk-analysis/analyze-dataforseo                   1.03 kB         103 kB
-├ ƒ /api/clients/[id]/bulk-analysis/analyze-dataforseo/check-cache       1.03 kB         103 kB
-├ ƒ /api/clients/[id]/bulk-analysis/bulk                                 1.03 kB         103 kB
-├ ƒ /api/clients/[id]/bulk-analysis/check                                1.03 kB         103 kB
-├ ƒ /api/clients/[id]/bulk-analysis/dataforseo/batch                     1.03 kB         103 kB
-├ ƒ /api/clients/[id]/bulk-analysis/dataforseo/check-analyzed            1.03 kB         103 kB
-├ ƒ /api/clients/[id]/bulk-analysis/dataforseo/results                   1.03 kB         103 kB
-├ ƒ /api/clients/[id]/bulk-analysis/domains                              1.03 kB         103 kB
-├ ƒ /api/clients/[id]/bulk-analysis/export                               1.03 kB         103 kB
-├ ƒ /api/clients/[id]/bulk-analysis/master-qualify                       1.03 kB         103 kB
-├ ƒ /api/clients/[id]/bulk-analysis/move                                 1.03 kB         103 kB
-├ ƒ /api/clients/[id]/bulk-analysis/refresh                              1.03 kB         103 kB
-├ ƒ /api/clients/[id]/projects                                           1.03 kB         103 kB
-├ ƒ /api/clients/[id]/projects/[projectId]                               1.03 kB         103 kB
-├ ƒ /api/clients/[id]/target-pages                                       1.03 kB         103 kB
-├ ƒ /api/contacts/export                                                 1.03 kB         103 kB
-├ ƒ /api/contacts/search                                                 1.03 kB         103 kB
-├ ƒ /api/database-checker                                                1.03 kB         103 kB
-├ ƒ /api/dataforseo/config                                               1.03 kB         103 kB
-├ ƒ /api/dataforseo/test                                                 1.03 kB         103 kB
-├ ƒ /api/debug                                                           1.03 kB         103 kB
-├ ƒ /api/debug-users                                                     1.03 kB         103 kB
-├ ƒ /api/domains/available                                               1.03 kB         103 kB
-├ ƒ /api/email/bulk                                                      1.03 kB         103 kB
-├ ƒ /api/email/logs                                                      1.03 kB         103 kB
-├ ƒ /api/email/send                                                      1.03 kB         103 kB
-├ ƒ /api/email/stats                                                     1.03 kB         103 kB
-├ ƒ /api/email/test-config                                               1.03 kB         103 kB
-├ ƒ /api/fix-schema                                                      1.03 kB         103 kB
-├ ƒ /api/fix-workflows-schema                                            1.03 kB         103 kB
-├ ƒ /api/health                                                          1.03 kB         103 kB
-├ ƒ /api/internal-users/assignable                                       1.03 kB         103 kB
-├ ƒ /api/invitations                                                     1.03 kB         103 kB
-├ ƒ /api/invitations/[id]/revoke                                         1.03 kB         103 kB
-├ ƒ /api/invitations/send-account                                        1.03 kB         103 kB
-├ ƒ /api/invitations/verify                                              1.03 kB         103 kB
-├ ƒ /api/keywords/generate                                               1.03 kB         103 kB
-├ ƒ /api/migrate                                                         1.03 kB         103 kB
-├ ƒ /api/orders                                                          1.03 kB         103 kB
-├ ƒ /api/orders/[id]                                                     1.03 kB         103 kB
-├ ƒ /api/orders/[id]/confirm                                             1.03 kB         103 kB
-├ ƒ /api/orders/[id]/generate-workflows                                  1.03 kB         103 kB
-├ ƒ /api/orders/[id]/groups                                              1.03 kB         103 kB
-├ ƒ /api/orders/[id]/groups/[groupId]/associated-domains                 1.03 kB         103 kB
-├ ƒ /api/orders/[id]/groups/[groupId]/generate-workflows                 1.03 kB         103 kB
-├ ƒ /api/orders/[id]/groups/[groupId]/site-selections                    1.03 kB         103 kB
-├ ƒ /api/orders/[id]/groups/[groupId]/submissions                        1.03 kB         103 kB
-├ ƒ /api/orders/[id]/groups/[groupId]/submissions/[submissionId]/review  1.03 kB         103 kB
-├ ƒ /api/orders/[id]/groups/[groupId]/submissions/[submissionId]/status  1.03 kB         103 kB
-├ ƒ /api/orders/[id]/items                                               1.03 kB         103 kB
-├ ƒ /api/orders/[id]/record-payment                                      1.03 kB         103 kB
-├ ƒ /api/orders/[id]/state                                               1.03 kB         103 kB
-├ ƒ /api/orders/[id]/status-transition                                   1.03 kB         103 kB
-├ ƒ /api/orders/[id]/submit                                              1.03 kB         103 kB
-├ ƒ /api/orders/[id]/update-state                                        1.03 kB         103 kB
-├ ƒ /api/orders/calculate-pricing                                        1.03 kB         103 kB
-├ ƒ /api/orders/drafts                                                   1.03 kB         103 kB
-├ ƒ /api/orders/drafts/[id]                                              1.03 kB         103 kB
-├ ƒ /api/orders/new                                                      1.03 kB         103 kB
-├ ƒ /api/orders/share/[token]                                            1.03 kB         103 kB
-├ ƒ /api/projects/[projectId]/associate-order                            1.03 kB         103 kB
-├ ƒ /api/public/categories                                               1.03 kB         103 kB
-├ ƒ /api/public/websites                                                 1.03 kB         103 kB
-├ ƒ /api/register/account                                                1.03 kB         103 kB
-├ ƒ /api/setup-db                                                        1.03 kB         103 kB
-├ ƒ /api/target-pages/[id]                                               1.03 kB         103 kB
-├ ƒ /api/target-pages/[id]/description                                   1.03 kB         103 kB
-├ ƒ /api/target-pages/[id]/description/update                            1.03 kB         103 kB
-├ ƒ /api/target-pages/[id]/keywords                                      1.03 kB         103 kB
-├ ƒ /api/target-pages/[id]/keywords/update                               1.03 kB         103 kB
-├ ƒ /api/test-openai                                                     1.03 kB         103 kB
-├ ƒ /api/test-workflow-insert                                            1.03 kB         103 kB
-├ ƒ /api/users                                                           1.03 kB         103 kB
-├ ƒ /api/users/[id]                                                      1.03 kB         103 kB
-├ ƒ /api/websites/[id]                                                   1.03 kB         103 kB
-├ ƒ /api/websites/[id]/qualifications                                    1.03 kB         103 kB
-├ ƒ /api/websites/categories                                             1.03 kB         103 kB
-├ ƒ /api/websites/search                                                 1.03 kB         103 kB
-├ ƒ /api/workflows                                                       1.03 kB         103 kB
-├ ƒ /api/workflows/[id]                                                  1.03 kB         103 kB
-├ ƒ /api/workflows/[id]/analyze-target-urls                              1.03 kB         103 kB
-├ ƒ /api/workflows/[id]/auto-generate-v2                                 1.03 kB         103 kB
-├ ƒ /api/workflows/[id]/auto-generate-v2/stream                          1.03 kB         103 kB
-├ ƒ /api/workflows/[id]/final-polish-v2/start                            1.03 kB         103 kB
-├ ƒ /api/workflows/[id]/final-polish-v2/stream                           1.03 kB         103 kB
-├ ƒ /api/workflows/[id]/final-polish/[sessionId]                         1.03 kB         103 kB
-├ ƒ /api/workflows/[id]/final-polish/start                               1.03 kB         103 kB
-├ ƒ /api/workflows/[id]/final-polish/stream                              1.03 kB         103 kB
-├ ƒ /api/workflows/[id]/formatting-qa/[sessionId]                        1.03 kB         103 kB
-├ ƒ /api/workflows/[id]/formatting-qa/latest                             1.03 kB         103 kB
-├ ƒ /api/workflows/[id]/formatting-qa/start                              1.03 kB         103 kB
-├ ƒ /api/workflows/[id]/formatting-qa/stream                             1.03 kB         103 kB
-├ ƒ /api/workflows/[id]/orchestrate-links                                1.03 kB         103 kB
-├ ƒ /api/workflows/[id]/outline-generation/cancel                        1.03 kB         103 kB
-├ ƒ /api/workflows/[id]/outline-generation/continue                      1.03 kB         103 kB
-├ ƒ /api/workflows/[id]/outline-generation/latest                        1.03 kB         103 kB
-├ ƒ /api/workflows/[id]/outline-generation/start                         1.03 kB         103 kB
-├ ƒ /api/workflows/[id]/outline-generation/start-v2                      1.03 kB         103 kB
-├ ƒ /api/workflows/[id]/outline-generation/status                        1.03 kB         103 kB
-├ ƒ /api/workflows/[id]/outline-generation/stream                        1.03 kB         103 kB
-├ ƒ /api/workflows/[id]/polish-v2/cancel                                 1.03 kB         103 kB
-├ ƒ /api/workflows/[id]/restore-original-steps                           1.03 kB         103 kB
-├ ƒ /api/workflows/[id]/semantic-audit                                   1.03 kB         103 kB
-├ ƒ /api/workflows/[id]/semantic-audit-v2                                1.03 kB         103 kB
-├ ƒ /api/workflows/[id]/semantic-audit-v2/stream                         1.03 kB         103 kB
-├ ƒ /api/workflows/[id]/semantic-audit/stream                            1.03 kB         103 kB
-├ ƒ /api/workflows/[id]/validate                                         1.03 kB         103 kB
-├ ƒ /api/workflows/[id]/verify                                           1.03 kB         103 kB
-├ ○ /auth/signup/account                                                 3.78 kB         109 kB
-├ ○ /auth/signup/success                                                 2.02 kB         107 kB
-├ ○ /bulk-analysis                                                       5.16 kB         113 kB
-├ ○ /bulk-analysis/assigned                                              4.29 kB         112 kB
-├ ƒ /claim/[token]                                                       3.97 kB         109 kB
-├ ○ /clients                                                             5.55 kB         113 kB
-├ ƒ /clients/[id]                                                        41.8 kB         155 kB
-├ ƒ /clients/[id]/bulk-analysis                                          5.03 kB         118 kB
-├ ƒ /clients/[id]/bulk-analysis/projects/[projectId]                     31.6 kB         151 kB
-├ ○ /clients/new                                                         6.78 kB         114 kB
-├ ○ /contacts                                                            7.15 kB         115 kB
-├ ○ /database-checker                                                    1.49 kB         103 kB
-├ ○ /fix-schema                                                            773 B         102 kB
-├ ○ /fix-workflows-schema                                                  822 B         102 kB
-├ ○ /forgot-password                                                     2.58 kB         104 kB
-├ ○ /guest-posting-sites                                                   184 B         105 kB
-├ ● /guest-posting-sites/[category]                                        184 B         105 kB
-├ ○ /login                                                               3.64 kB         105 kB
-├ ○ /migrate                                                             1.06 kB         103 kB
-├ ○ /migrate-workflows-v2                                                3.44 kB         105 kB
-├ ○ /orders                                                              7.66 kB         115 kB
-├ ƒ /orders/[id]                                                         9.13 kB         117 kB
-├ ƒ /orders/[id]/confirm                                                 6.82 kB         114 kB
-├ ƒ /orders/[id]/detail                                                    406 B         102 kB
-├ ƒ /orders/[id]/edit                                                    16.3 kB         124 kB
-├ ƒ /orders/[id]/internal                                                10.6 kB         118 kB
-├ ƒ /orders/[id]/test                                                    3.39 kB         108 kB
-├ ƒ /orders/[id]/test-edit                                               3.75 kB         111 kB
-├ ○ /orders/new                                                          2.86 kB         111 kB
-├ ƒ /orders/share/[token]                                                3.84 kB         109 kB
-├ ○ /register/account                                                    4.08 kB         106 kB
-├ ○ /reset-password                                                      2.95 kB         104 kB
-├ ○ /signup                                                              4.14 kB         109 kB
-├ ○ /signup/marketing                                                     4.5 kB         109 kB
-├ ○ /test-workflow-insert                                                  813 B         102 kB
-├ ○ /update-workflows                                                    4.24 kB         109 kB
-├ ○ /websites                                                            9.17 kB         125 kB
-├ ƒ /workflow/[id]                                                        179 kB         293 kB
-├ ƒ /workflow/[id]/overview                                              4.06 kB         120 kB
-└ ○ /workflow/new                                                        5.94 kB         114 kB
-+ First Load JS shared by all                                             102 kB
-  ├ chunks/31684-e824339580001003.js                                     46.4 kB
-  ├ chunks/4bd1b696-2b085f532dc3a83e.js                                  53.2 kB
-  └ other shared chunks (total)                                          1.94 kB
-
-
-○  (Static)   prerendered as static content
-●  (SSG)      prerendered as static HTML (uses generateStaticParams)
-ƒ  (Dynamic)  server-rendered on demand
-

@@ -11,6 +11,9 @@ import * as orderLineItemSchema from './orderLineItemSchema';
 const connectionString = process.env.DATABASE_URL || 
   `postgresql://${process.env.DB_USER}:${process.env.DB_PASSWORD}@${process.env.DB_HOST}:${process.env.DB_PORT}/${process.env.DB_NAME}`;
 
+// Debug log for connection string (remove in production)
+console.log('🔗 Database connection string:', connectionString?.replace(/:[^@]+@/, ':****@'));
+
 // Create connection pool
 const pool = new Pool({
   connectionString,
