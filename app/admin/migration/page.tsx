@@ -386,37 +386,35 @@ export default function AdminMigrationPage() {
               </div>
               <div className="p-6 space-y-4">
                 {/* Cleanup/Force Re-run Migration - Always show this button */}
-                {(
-                  <button
-                    onClick={async () => {
-                      setIsLoading(true);
-                      try {
-                        const response = await fetch('/api/admin/migration/cleanup', {
-                          method: 'POST',
-                          headers: { 'Content-Type': 'application/json' }
-                        });
-                        if (response.ok) {
-                          const data = await response.json();
-                          setLogs(prev => [...prev, `✅ Cleanup completed: ${data.message}`]);
-                          // Refresh status
-                          await loadMigrationStatus();
-                        } else {
-                          const error = await response.json();
-                          setLogs(prev => [...prev, `❌ Cleanup failed: ${error.error}`]);
-                        }
-                      } catch (error) {
-                        setLogs(prev => [...prev, `❌ Cleanup error: ${error}`]);
-                      } finally {
-                        setIsLoading(false);
+                <button
+                  onClick={async () => {
+                    setIsLoading(true);
+                    try {
+                      const response = await fetch('/api/admin/migration/cleanup', {
+                        method: 'POST',
+                        headers: { 'Content-Type': 'application/json' }
+                      });
+                      if (response.ok) {
+                        const data = await response.json();
+                        setLogs(prev => [...prev, `✅ Cleanup completed: ${data.message}`]);
+                        // Refresh status
+                        await loadMigrationStatus();
+                      } else {
+                        const error = await response.json();
+                        setLogs(prev => [...prev, `❌ Cleanup failed: ${error.error}`]);
                       }
-                    }}
-                    disabled={isLoading}
-                    className="w-full flex items-center justify-center px-4 py-2 border border-orange-300 rounded-md shadow-sm text-sm font-medium text-white bg-orange-600 hover:bg-orange-700 disabled:opacity-50 disabled:cursor-not-allowed"
-                  >
+                    } catch (error) {
+                      setLogs(prev => [...prev, `❌ Cleanup error: ${error}`]);
+                    } finally {
+                      setIsLoading(false);
+                    }
+                  }}
+                  disabled={isLoading}
+                  className="w-full flex items-center justify-center px-4 py-2 border border-orange-300 rounded-md shadow-sm text-sm font-medium text-white bg-orange-600 hover:bg-orange-700 disabled:opacity-50 disabled:cursor-not-allowed"
+                >
                     <AlertTriangle className="h-4 w-4 mr-2" />
                     Force Clear & Re-run Migration
-                  </button>
-                }
+                </button>
 
                 {/* Pre-flight Check */}
                 <button
