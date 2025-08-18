@@ -1,6 +1,6 @@
 'use client';
 
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { useRouter } from 'next/navigation';
 import Link from 'next/link';
 import { 
@@ -28,6 +28,11 @@ export default function NewWebsitePage() {
   const [searchingWebsite, setSearchingWebsite] = useState(false);
   const [existingWebsite, setExistingWebsite] = useState<any>(null);
   const [error, setError] = useState<string | null>(null);
+  const [loadingOptions, setLoadingOptions] = useState(true);
+  const [categories, setCategories] = useState<string[]>([]);
+  const [niches, setNiches] = useState<string[]>([]);
+  const [websiteTypes, setWebsiteTypes] = useState<string[]>([]);
+  const [customNiche, setCustomNiche] = useState('');
   
   // Website data (Step 1)
   const [websiteData, setWebsiteData] = useState({
@@ -75,23 +80,30 @@ export default function NewWebsitePage() {
     minImages: '1'
   });
 
-  const categories = [
-    'Business', 'Technology', 'Health', 'Finance', 'Travel',
-    'Food', 'Fashion', 'Sports', 'Entertainment', 'Education',
-    'Lifestyle', 'News', 'Marketing', 'Real Estate', 'Automotive',
-    'Gaming', 'Cryptocurrency', 'AI/ML', 'SaaS', 'E-commerce'
-  ];
-
-  const websiteTypes = [
-    'Blog', 'News Site', 'Magazine', 'Corporate Site', 'SaaS',
-    'E-commerce', 'Educational', 'Government', 'Non-profit', 'Forum'
-  ];
-
-  const niches = [
-    'B2B', 'B2C', 'Technology', 'Healthcare', 'Finance', 'Education',
-    'Entertainment', 'Lifestyle', 'Travel', 'Food & Beverage', 'Fashion',
-    'Sports', 'Automotive', 'Real Estate', 'Legal', 'Marketing'
-  ];
+  // Fetch dynamic options from database
+  useEffect(() => {
+    const fetchOptions = async () => {
+      try {
+        const response = await fetch('/api/publisher/websites/options');
+        if (response.ok) {
+          const data = await response.json();
+          setCategories(data.categories || []);
+          setNiches(data.niches || []);
+          setWebsiteTypes(data.websiteTypes || []);
+        }
+      } catch (err) {
+        console.error('Error fetching options:', err);
+        // Set some defaults on error
+        setCategories(['Business', 'Technology', 'Health', 'Finance', 'Marketing']);
+        setNiches(['B2B', 'B2C', 'SaaS', 'E-commerce', 'Healthcare']);
+        setWebsiteTypes(['Blog', 'News Site', 'Magazine', 'Corporate Site', 'Forum']);
+      } finally {
+        setLoadingOptions(false);
+      }
+    };
+    
+    fetchOptions();
+  }, []);
 
   const offeringTypes = [
     { value: 'guest_post', label: 'Guest Post' },
@@ -375,19 +387,28 @@ export default function NewWebsitePage() {
             <label className="block text-sm font-medium text-gray-700 mb-2">
               Categories <span className="text-red-500">*</span>
             </label>
-            <div className="grid grid-cols-3 gap-2">
-              {categories.map(cat => (
-                <label key={cat} className="flex items-center">
-                  <input
-                    type="checkbox"
-                    checked={websiteData.categories.includes(cat)}
-                    onChange={() => handleArrayToggle('categories', cat)}
-                    className="mr-2"
-                  />
-                  <span className="text-sm">{cat}</span>
-                </label>
-              ))}
-            </div>
+            {loadingOptions ? (
+              <div className="flex items-center justify-center p-4">
+                <Loader2 className="h-5 w-5 animate-spin text-gray-500" />
+                <span className="ml-2 text-sm text-gray-500">Loading categories...</span>
+              </div>
+            ) : (
+              <div className="grid grid-cols-3 gap-2 max-h-48 overflow-y-auto p-2 border border-gray-200 rounded-lg">
+                {categories.length > 0 ? categories.map(cat => (
+                  <label key={cat} className="flex items-center hover:bg-gray-50 p-1 rounded">
+                    <input
+                      type="checkbox"
+                      checked={websiteData.categories.includes(cat)}
+                      onChange={() => handleArrayToggle('categories', cat)}
+                      className="mr-2"
+                    />
+                    <span className="text-sm">{cat}</span>
+                  </label>
+                )) : (
+                  <p className="text-sm text-gray-500 col-span-3">No categories available</p>
+                )}
+              </div>
+            )}
           </div>
 
           {/* Website Type */}
@@ -395,19 +416,28 @@ export default function NewWebsitePage() {
             <label className="block text-sm font-medium text-gray-700 mb-2">
               Website Type
             </label>
-            <div className="grid grid-cols-3 gap-2">
-              {websiteTypes.map(type => (
-                <label key={type} className="flex items-center">
-                  <input
-                    type="checkbox"
-                    checked={websiteData.websiteType.includes(type)}
-                    onChange={() => handleArrayToggle('websiteType', type)}
-                    className="mr-2"
-                  />
-                  <span className="text-sm">{type}</span>
-                </label>
-              ))}
-            </div>
+            {loadingOptions ? (
+              <div className="flex items-center justify-center p-4">
+                <Loader2 className="h-5 w-5 animate-spin text-gray-500" />
+                <span className="ml-2 text-sm text-gray-500">Loading website types...</span>
+              </div>
+            ) : (
+              <div className="grid grid-cols-3 gap-2 max-h-48 overflow-y-auto p-2 border border-gray-200 rounded-lg">
+                {websiteTypes.length > 0 ? websiteTypes.map(type => (
+                  <label key={type} className="flex items-center hover:bg-gray-50 p-1 rounded">
+                    <input
+                      type="checkbox"
+                      checked={websiteData.websiteType.includes(type)}
+                      onChange={() => handleArrayToggle('websiteType', type)}
+                      className="mr-2"
+                    />
+                    <span className="text-sm">{type}</span>
+                  </label>
+                )) : (
+                  <p className="text-sm text-gray-500 col-span-3">No website types available</p>
+                )}
+              </div>
+            )}
           </div>
 
           {/* Niche */}
@@ -415,18 +445,68 @@ export default function NewWebsitePage() {
             <label className="block text-sm font-medium text-gray-700 mb-2">
               Target Niches
             </label>
-            <div className="grid grid-cols-3 gap-2">
-              {niches.map(niche => (
-                <label key={niche} className="flex items-center">
-                  <input
-                    type="checkbox"
-                    checked={websiteData.niche.includes(niche)}
-                    onChange={() => handleArrayToggle('niche', niche)}
-                    className="mr-2"
-                  />
-                  <span className="text-sm">{niche}</span>
-                </label>
-              ))}
+            {loadingOptions ? (
+              <div className="flex items-center justify-center p-4">
+                <Loader2 className="h-5 w-5 animate-spin text-gray-500" />
+                <span className="ml-2 text-sm text-gray-500">Loading niches...</span>
+              </div>
+            ) : (
+              <div className="grid grid-cols-3 gap-2 max-h-48 overflow-y-auto p-2 border border-gray-200 rounded-lg">
+                {niches.length > 0 ? niches.map(niche => (
+                  <label key={niche} className="flex items-center hover:bg-gray-50 p-1 rounded">
+                    <input
+                      type="checkbox"
+                      checked={websiteData.niche.includes(niche)}
+                      onChange={() => handleArrayToggle('niche', niche)}
+                      className="mr-2"
+                    />
+                    <span className="text-sm">{niche}</span>
+                  </label>
+                )) : (
+                  <p className="text-sm text-gray-500 col-span-3">No niches available</p>
+                )}
+              </div>
+            )}
+            {/* Add custom niche */}
+            <div className="mt-2 flex items-center gap-2">
+              <input
+                type="text"
+                value={customNiche}
+                onChange={(e) => setCustomNiche(e.target.value)}
+                onKeyPress={(e) => {
+                  if (e.key === 'Enter' && customNiche.trim()) {
+                    e.preventDefault();
+                    const newNiche = customNiche.trim();
+                    if (!websiteData.niche.includes(newNiche)) {
+                      handleArrayToggle('niche', newNiche);
+                      if (!niches.includes(newNiche)) {
+                        setNiches([...niches, newNiche]);
+                      }
+                    }
+                    setCustomNiche('');
+                  }
+                }}
+                className="flex-1 px-3 py-1 text-sm border border-gray-300 rounded-lg"
+                placeholder="Add custom niche (press Enter)"
+              />
+              <button
+                type="button"
+                onClick={() => {
+                  if (customNiche.trim()) {
+                    const newNiche = customNiche.trim();
+                    if (!websiteData.niche.includes(newNiche)) {
+                      handleArrayToggle('niche', newNiche);
+                      if (!niches.includes(newNiche)) {
+                        setNiches([...niches, newNiche]);
+                      }
+                    }
+                    setCustomNiche('');
+                  }
+                }}
+                className="px-3 py-1 text-sm bg-blue-600 text-white rounded-lg hover:bg-blue-700"
+              >
+                Add
+              </button>
             </div>
           </div>
 

@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useRef } from 'react';
 import { 
   DollarSign, 
   TrendingUp, 
@@ -9,7 +9,8 @@ import {
   Plus,
   X,
   Percent,
-  Globe
+  Globe,
+  Info
 } from 'lucide-react';
 
 interface NichePricingConfig {
@@ -33,20 +34,18 @@ interface Props {
   onCancel: () => void;
 }
 
-// Common niches with typical pricing adjustments
+// Gray niches that require special pricing
 const COMMON_NICHES = [
-  { name: 'Finance/Crypto', typicalAdjustment: '+50%', reason: 'YMYL content, high compliance' },
-  { name: 'Health/Medical', typicalAdjustment: '+40%', reason: 'YMYL content, expertise required' },
-  { name: 'Legal', typicalAdjustment: '+35%', reason: 'Specialized knowledge required' },
-  { name: 'Technology/SaaS', typicalAdjustment: '+20%', reason: 'Technical expertise needed' },
-  { name: 'CBD/Cannabis', typicalAdjustment: '+60%', reason: 'High risk, compliance issues' },
-  { name: 'Gambling/Casino', typicalAdjustment: '+75%', reason: 'High risk industry' },
-  { name: 'Adult/Dating', typicalAdjustment: '+100%', reason: 'Restricted content' },
-  { name: 'Real Estate', typicalAdjustment: '+15%', reason: 'Market expertise required' },
-  { name: 'Education', typicalAdjustment: '0%', reason: 'Standard pricing' },
-  { name: 'Lifestyle/Fashion', typicalAdjustment: '-10%', reason: 'High volume, easier content' },
-  { name: 'Travel', typicalAdjustment: '0%', reason: 'Standard pricing' },
-  { name: 'Food/Recipe', typicalAdjustment: '-15%', reason: 'High volume, simpler content' },
+  { name: 'Cryptocurrency/Blockchain', typicalAdjustment: '+50%', reason: 'High risk, volatile market, regulatory concerns' },
+  { name: 'CBD/Cannabis', typicalAdjustment: '+75%', reason: 'Legal restrictions, platform limitations' },
+  { name: 'Online Gambling/Casino', typicalAdjustment: '+100%', reason: 'Heavily regulated, many restrictions' },
+  { name: 'Adult/Dating', typicalAdjustment: '+100%', reason: 'Content restrictions, limited platforms' },
+  { name: 'Forex/Binary Options', typicalAdjustment: '+80%', reason: 'High risk financial products' },
+  { name: 'Pharmaceuticals', typicalAdjustment: '+60%', reason: 'Regulatory compliance, YMYL content' },
+  { name: 'Vaping/E-cigarettes', typicalAdjustment: '+70%', reason: 'Age-restricted, health concerns' },
+  { name: 'Payday Loans', typicalAdjustment: '+90%', reason: 'Predatory lending concerns' },
+  { name: 'Essay Writing/Academic', typicalAdjustment: '+80%', reason: 'Academic integrity concerns' },
+  { name: 'Weight Loss/Diet Pills', typicalAdjustment: '+50%', reason: 'Health claims, FTC regulations' },
 ];
 
 export default function NichePricingRuleEditor({ 
@@ -68,6 +67,9 @@ export default function NichePricingRuleEditor({
   const [customNiche, setCustomNiche] = useState('');
   const [customAdjustmentType, setCustomAdjustmentType] = useState<'percentage' | 'multiplier' | 'fixed'>('percentage');
   const [customAdjustmentValue, setCustomAdjustmentValue] = useState('');
+  const [validationErrors, setValidationErrors] = useState<{[key: string]: string}>({});
+  const customNicheInputRef = useRef<HTMLInputElement>(null);
+  const announcementRef = useRef<HTMLDivElement>(null);
 
   useEffect(() => {
     // Load existing configuration if available
@@ -83,6 +85,25 @@ export default function NichePricingRuleEditor({
       setNichePricing(config);
     }
   }, [existingConfig]);
+
+  // Focus management for custom niche input
+  useEffect(() => {
+    if (showCustomNiche && customNicheInputRef.current) {
+      customNicheInputRef.current.focus();
+    }
+  }, [showCustomNiche]);
+
+  // Announce status changes to screen readers
+  const announceToScreenReader = (message: string) => {
+    if (announcementRef.current) {
+      announcementRef.current.textContent = message;
+      setTimeout(() => {
+        if (announcementRef.current) {
+          announcementRef.current.textContent = '';
+        }
+      }, 1000);
+    }
+  };
 
   const calculateAdjustedPrice = (adjustmentType: string, adjustmentValue: number) => {
     const base = basePrice / 100; // Convert from cents
@@ -107,6 +128,7 @@ export default function NichePricingRuleEditor({
         // Disable it
         const updated = { ...prev };
         delete updated[nicheName];
+        announceToScreenReader(`${nicheName} pricing removed`);
         return updated;
       } else {
         // Enable it with suggested adjustment
@@ -120,6 +142,7 @@ export default function NichePricingRuleEditor({
           }
         }
         
+        announceToScreenReader(`${nicheName} pricing added with ${adjustmentValue}% adjustment`);
         return {
           ...prev,
           [nicheName]: {
@@ -142,19 +165,46 @@ export default function NichePricingRuleEditor({
     }));
   };
 
+  const validateCustomNiche = () => {
+    const errors: {[key: string]: string} = {};
+    
+    if (!customNiche.trim()) {
+      errors.customNiche = 'Niche name is required';
+    }
+    
+    if (!customAdjustmentValue) {
+      errors.customAdjustmentValue = 'Adjustment value is required';
+    } else {
+      const value = parseFloat(customAdjustmentValue);
+      if (isNaN(value)) {
+        errors.customAdjustmentValue = 'Must be a valid number';
+      } else if (customAdjustmentType === 'percentage' && (value < -100 || value > 1000)) {
+        errors.customAdjustmentValue = 'Percentage must be between -100% and 1000%';
+      } else if (customAdjustmentType === 'multiplier' && value <= 0) {
+        errors.customAdjustmentValue = 'Multiplier must be greater than 0';
+      }
+    }
+    
+    setValidationErrors(errors);
+    return Object.keys(errors).length === 0;
+  };
+
   const addCustomNiche = () => {
-    if (customNiche && customAdjustmentValue) {
+    if (validateCustomNiche()) {
+      const adjustmentValue = parseFloat(customAdjustmentValue);
       setNichePricing(prev => ({
         ...prev,
         [customNiche]: {
           enabled: true,
           adjustmentType: customAdjustmentType,
-          adjustmentValue: parseFloat(customAdjustmentValue)
+          adjustmentValue
         }
       }));
+      announceToScreenReader(`Custom niche ${customNiche} added with ${customAdjustmentValue} ${customAdjustmentType} adjustment`);
       setCustomNiche('');
       setCustomAdjustmentValue('');
       setShowCustomNiche(false);
+      setValidationErrors({});
     }
   };
 
@@ -168,6 +218,11 @@ export default function NichePricingRuleEditor({
           value: config.adjustmentValue
         }
       }));
+
+    if (niches.length === 0) {
+      announceToScreenReader('Please select at least one niche before saving');
+      return;
+    }
 
     onSave({
       ruleName: 'Niche-Based Pricing',
@@ -194,15 +249,27 @@ export default function NichePricingRuleEditor({
   const activePricingCount = Object.values(nichePricing).filter(n => n.enabled).length;
 
   return (
-    <div className="bg-white rounded-lg shadow-md p-6">
+    <div className="bg-white rounded-lg shadow-md p-6" role="region" aria-labelledby="niche-pricing-heading">
+      {/* Screen reader announcements */}
+      <div 
+        ref={announcementRef}
+        className="sr-only" 
+        role="status" 
+        aria-live="polite" 
+        aria-atomic="true"
+      />
+      
       <div className="mb-6">
-        <h2 className="text-xl font-semibold text-gray-900 flex items-center">
-          <Globe className="h-5 w-5 mr-2 text-blue-600" />
-          Niche-Based Pricing Rules
+        <h2 id="niche-pricing-heading" className="text-xl font-semibold text-gray-900 flex items-center">
+          <Globe className="h-5 w-5 mr-2 text-blue-600" aria-hidden="true" />
+          Gray Niche Pricing Adjustments
         </h2>
         <p className="mt-2 text-sm text-gray-600">
-          Set different prices for different content niches. Your base price is{' '}
-          <span className="font-semibold">${(basePrice / 100).toFixed(2)} {currency}</span>
+          Set premium pricing for high-risk or restricted content niches. Your base price is{' '}
+          <span className="font-semibold">
+            <span className="sr-only">Base price: </span>
+            ${(basePrice / 100).toFixed(2)} {currency}
+          </span>
         </p>
       </div>
 
@@ -217,9 +284,9 @@ export default function NichePricingRuleEditor({
 
       {/* Common Niches Grid */}
       <div className="space-y-3 mb-6">
-        <h3 className="text-sm font-medium text-gray-700">Select Niches & Set Pricing</h3>
+        <h3 id="niches-list-heading" className="text-sm font-medium text-gray-700">Select Niches & Set Pricing</h3>
         
-        <div className="space-y-2">
+        <div className="space-y-2" role="group" aria-labelledby="niches-list-heading">
           {COMMON_NICHES.map(niche => {
             const isEnabled = nichePricing[niche.name]?.enabled;
             const config = nichePricing[niche.name];
@@ -239,39 +306,60 @@ export default function NichePricingRuleEditor({
                     <div className="flex items-center">
                       <input
                         type="checkbox"
+                        id={`niche-${niche.name.replace(/[^a-zA-Z0-9]/g, '-')}`}
                         checked={isEnabled || false}
                         onChange={() => handleNicheToggle(niche.name, niche.typicalAdjustment)}
                         className="h-4 w-4 text-blue-600 rounded border-gray-300"
+                        aria-describedby={`niche-${niche.name.replace(/[^a-zA-Z0-9]/g, '-')}-desc`}
                       />
-                      <label className="ml-3 font-medium text-gray-900">
+                      <label 
+                        htmlFor={`niche-${niche.name.replace(/[^a-zA-Z0-9]/g, '-')}`}
+                        className="ml-3 font-medium text-gray-900 cursor-pointer"
+                      >
                         {niche.name}
                       </label>
                       <span className="ml-2 text-xs text-gray-500">
                         (Typical: {niche.typicalAdjustment})
                       </span>
                     </div>
-                    <p className="mt-1 ml-7 text-xs text-gray-600">{niche.reason}</p>
+                    <p 
+                      id={`niche-${niche.name.replace(/[^a-zA-Z0-9]/g, '-')}-desc`}
+                      className="mt-1 ml-7 text-xs text-gray-600"
+                    >
+                      {niche.reason}
+                    </p>
                   </div>
 
                   {isEnabled && (
-                    <div className="flex items-center space-x-2 ml-4">
+                    <div className="flex items-center space-x-2 ml-4" role="group">
+                      <label className="sr-only" htmlFor={`adjustment-type-${niche.name.replace(/[^a-zA-Z0-9]/g, '-')}`}>
+                        Adjustment type for {niche.name}
+                      </label>
                       <select
+                        id={`adjustment-type-${niche.name.replace(/[^a-zA-Z0-9]/g, '-')}`}
                         value={config.adjustmentType}
                         onChange={(e) => handleAdjustmentChange(niche.name, 'adjustmentType', e.target.value)}
                         className="text-sm border border-gray-300 rounded px-2 py-1"
+                        aria-label={`Adjustment type for ${niche.name}`}
                       >
-                        <option value="percentage">%</option>
-                        <option value="multiplier">×</option>
-                        <option value="fixed">$</option>
+                        <option value="percentage">% Percentage</option>
+                        <option value="multiplier">× Multiplier</option>
+                        <option value="fixed">$ Fixed Amount</option>
                       </select>
                       
+                      <label className="sr-only" htmlFor={`adjustment-value-${niche.name.replace(/[^a-zA-Z0-9]/g, '-')}`}>
+                        Adjustment value for {niche.name}
+                      </label>
                       <input
+                        id={`adjustment-value-${niche.name.replace(/[^a-zA-Z0-9]/g, '-')}`}
                         type="number"
                         value={config.adjustmentValue}
                         onChange={(e) => handleAdjustmentChange(niche.name, 'adjustmentValue', parseFloat(e.target.value))}
                         className="w-20 text-sm border border-gray-300 rounded px-2 py-1"
                         placeholder="0"
                         step={config.adjustmentType === 'multiplier' ? '0.1' : '1'}
+                        aria-label={`Adjustment value for ${niche.name}`}
+                        aria-invalid={config.adjustmentValue < -100 || config.adjustmentValue > 1000}
                       />
 
                       <div className="flex items-center text-sm">
@@ -307,52 +395,90 @@ export default function NichePricingRuleEditor({
           <button
             onClick={() => setShowCustomNiche(true)}
             className="text-blue-600 hover:text-blue-700 text-sm font-medium flex items-center"
+            aria-expanded="false"
+            aria-controls="custom-niche-form"
           >
-            <Plus className="h-4 w-4 mr-1" />
+            <Plus className="h-4 w-4 mr-1" aria-hidden="true" />
             Add Custom Niche
           </button>
         ) : (
-          <div className="space-y-3">
+          <div id="custom-niche-form" className="space-y-3" role="region" aria-label="Add custom niche">
             <h4 className="text-sm font-medium text-gray-700">Add Custom Niche</h4>
             <div className="flex items-end space-x-2">
               <div className="flex-1">
-                <label className="block text-xs text-gray-600 mb-1">Niche Name</label>
+                <label htmlFor="custom-niche-name" className="block text-xs text-gray-600 mb-1">
+                  Niche Name <span className="text-red-500">*</span>
+                </label>
                 <input
+                  ref={customNicheInputRef}
+                  id="custom-niche-name"
                   type="text"
                   value={customNiche}
-                  onChange={(e) => setCustomNiche(e.target.value)}
-                  className="w-full text-sm border border-gray-300 rounded px-3 py-1.5"
+                  onChange={(e) => {
+                    setCustomNiche(e.target.value);
+                    if (validationErrors.customNiche) {
+                      setValidationErrors(prev => ({ ...prev, customNiche: '' }));
+                    }
+                  }}
+                  className={`w-full text-sm border ${validationErrors.customNiche ? 'border-red-500' : 'border-gray-300'} rounded px-3 py-1.5`}
                   placeholder="e.g., Cryptocurrency"
+                  aria-required="true"
+                  aria-invalid={!!validationErrors.customNiche}
+                  aria-describedby={validationErrors.customNiche ? 'custom-niche-error' : undefined}
                 />
+                {validationErrors.customNiche && (
+                  <p id="custom-niche-error" className="mt-1 text-xs text-red-600" role="alert">
+                    {validationErrors.customNiche}
+                  </p>
+                )}
               </div>
               
               <div>
-                <label className="block text-xs text-gray-600 mb-1">Type</label>
+                <label htmlFor="custom-adjustment-type" className="block text-xs text-gray-600 mb-1">Type</label>
                 <select
+                  id="custom-adjustment-type"
                   value={customAdjustmentType}
                   onChange={(e) => setCustomAdjustmentType(e.target.value as any)}
                   className="text-sm border border-gray-300 rounded px-2 py-1.5"
+                  aria-label="Adjustment type"
                 >
-                  <option value="percentage">%</option>
-                  <option value="multiplier">×</option>
-                  <option value="fixed">$</option>
+                  <option value="percentage">% Percentage</option>
+                  <option value="multiplier">× Multiplier</option>
+                  <option value="fixed">$ Fixed Amount</option>
                 </select>
               </div>
               
               <div>
-                <label className="block text-xs text-gray-600 mb-1">Value</label>
+                <label htmlFor="custom-adjustment-value" className="block text-xs text-gray-600 mb-1">
+                  Value <span className="text-red-500">*</span>
+                </label>
                 <input
+                  id="custom-adjustment-value"
                   type="number"
                   value={customAdjustmentValue}
-                  onChange={(e) => setCustomAdjustmentValue(e.target.value)}
-                  className="w-20 text-sm border border-gray-300 rounded px-2 py-1.5"
+                  onChange={(e) => {
+                    setCustomAdjustmentValue(e.target.value);
+                    if (validationErrors.customAdjustmentValue) {
+                      setValidationErrors(prev => ({ ...prev, customAdjustmentValue: '' }));
+                    }
+                  }}
+                  className={`w-20 text-sm border ${validationErrors.customAdjustmentValue ? 'border-red-500' : 'border-gray-300'} rounded px-2 py-1.5`}
                   placeholder="0"
+                  aria-required="true"
+                  aria-invalid={!!validationErrors.customAdjustmentValue}
+                  aria-describedby={validationErrors.customAdjustmentValue ? 'custom-value-error' : undefined}
                 />
+                {validationErrors.customAdjustmentValue && (
+                  <p id="custom-value-error" className="mt-1 text-xs text-red-600" role="alert">
+                    {validationErrors.customAdjustmentValue}
+                  </p>
+                )}
               </div>
               
               <button
                 onClick={addCustomNiche}
-                className="bg-blue-600 text-white px-3 py-1.5 rounded text-sm hover:bg-blue-700"
+                className="bg-blue-600 text-white px-3 py-1.5 rounded text-sm hover:bg-blue-700 focus:ring-2 focus:ring-blue-500 focus:ring-offset-2"
+                aria-label="Add custom niche"
               >
                 Add
               </button>
@@ -362,10 +488,12 @@ export default function NichePricingRuleEditor({
                   setShowCustomNiche(false);
                   setCustomNiche('');
                   setCustomAdjustmentValue('');
+                  setValidationErrors({});
                 }}
-                className="text-gray-400 hover:text-gray-600"
+                className="text-gray-400 hover:text-gray-600 p-1.5 rounded focus:ring-2 focus:ring-gray-500 focus:ring-offset-2"
+                aria-label="Cancel adding custom niche"
               >
-                <X className="h-4 w-4" />
+                <X className="h-4 w-4" aria-hidden="true" />
               </button>
             </div>
           </div>
