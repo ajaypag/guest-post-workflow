@@ -1,141 +1,210 @@
 const { Pool } = require('pg');
-require('dotenv').config();
+const { v4: uuidv4 } = require('uuid');
+
+const pool = new Pool({
+  connectionString: 'postgresql://postgres:postgres@localhost:5434/guest_post_workflow?sslmode=disable'
+});
 
 async function createTestData() {
-  const pool = new Pool({
-    connectionString: process.env.DATABASE_URL
-  });
-
   try {
-    console.log('🔄 Creating test data for publisher assignment...\n');
+    console.log('Creating test data to simulate production environment...\n');
     
-    // 1. Check if we have the necessary base data
-    console.log('1. Checking for existing data...');
+    // Create test clients
+    const client1Id = uuidv4();
+    const client2Id = uuidv4();
+    const client3Id = uuidv4();
     
-    // Check for users (needed for order creation)
-    const usersResult = await pool.query(`
-      SELECT id, name, email FROM users WHERE user_type = 'internal' LIMIT 1
-    `);
+    await pool.query(`
+      INSERT INTO clients (id, name, website, created_by, created_at, updated_at)
+      SELECT $1, 'Test Client 1', 'https://example1.com', '97aca16f-8b81-44ad-a532-a6e3fa96cbfc', NOW(), NOW()
+      WHERE NOT EXISTS (SELECT 1 FROM clients WHERE id = $1)
+    `, [client1Id]);
     
-    if (usersResult.rows.length === 0) {
-      console.log('❌ No internal users found');
-      return;
-    }
+    await pool.query(`
+      INSERT INTO clients (id, name, website, created_by, created_at, updated_at)
+      SELECT $1, 'Test Client 2', 'https://example2.com', '97aca16f-8b81-44ad-a532-a6e3fa96cbfc', NOW(), NOW()
+      WHERE NOT EXISTS (SELECT 1 FROM clients WHERE id = $1)
+    `, [client2Id]);
     
-    const internalUser = usersResult.rows[0];
-    console.log(`✅ Using internal user: ${internalUser.name}`);
+    await pool.query(`
+      INSERT INTO clients (id, name, website, created_by, created_at, updated_at)
+      SELECT $1, 'Test Client 3', 'https://example3.com', '97aca16f-8b81-44ad-a532-a6e3fa96cbfc', NOW(), NOW()
+      WHERE NOT EXISTS (SELECT 1 FROM clients WHERE id = $1)
+    `, [client3Id]);
     
-    // Check for accounts
-    const accountsResult = await pool.query(`
-      SELECT id, company_name FROM accounts LIMIT 1
-    `);
+    console.log('✅ Created 3 test clients');
     
-    if (accountsResult.rows.length === 0) {
-      console.log('❌ No accounts found');
-      return;
-    }
+    // Create test orders
+    const order1Id = uuidv4();
+    const order2Id = uuidv4();
+    const order3Id = uuidv4();
     
-    const account = accountsResult.rows[0];
-    console.log(`✅ Using account: ${account.company_name}`);
+    await pool.query(`
+      INSERT INTO orders (id, status, created_by, created_at, updated_at, state)
+      SELECT $1, 'pending', '97aca16f-8b81-44ad-a532-a6e3fa96cbfc', NOW(), NOW(), 'pending'
+      WHERE NOT EXISTS (SELECT 1 FROM orders WHERE id = $1)
+    `, [order1Id]);
     
-    // 2. Create a test client if needed
-    console.log('\n2. Creating test client...');
-    const clientResult = await pool.query(`
-      INSERT INTO clients (id, name, website, created_by, created_at)
-      VALUES (gen_random_uuid(), 'Test Client Co', 'testclient.com', $1, NOW())
-      ON CONFLICT DO NOTHING
-      RETURNING id, name
-    `, [internalUser.id]);
+    await pool.query(`
+      INSERT INTO orders (id, status, created_by, created_at, updated_at, state)
+      SELECT $1, 'pending', '97aca16f-8b81-44ad-a532-a6e3fa96cbfc', NOW(), NOW(), 'pending'
+      WHERE NOT EXISTS (SELECT 1 FROM orders WHERE id = $1)
+    `, [order2Id]);
     
-    // If no rows returned, get existing client
-    let client;
-    if (clientResult.rows.length === 0) {
-      const existingResult = await pool.query(`
-        SELECT id, name FROM clients WHERE name = 'Test Client Co' LIMIT 1
-      `);
-      client = existingResult.rows[0];
-    } else {
-      client = clientResult.rows[0];
-    }
+    await pool.query(`
+      INSERT INTO orders (id, status, created_by, created_at, updated_at, state)
+      SELECT $1, 'pending', '97aca16f-8b81-44ad-a532-a6e3fa96cbfc', NOW(), NOW(), 'pending'
+      WHERE NOT EXISTS (SELECT 1 FROM orders WHERE id = $1)
+    `, [order3Id]);
     
-    console.log(`✅ Test client ready: ${client.name}`);
+    console.log('✅ Created 3 test orders');
     
-    // 3. Create a test order
-    console.log('\n3. Creating test order...');
-    const orderResult = await pool.query(`
-      INSERT INTO orders (id, account_id, status, total_retail, estimated_links_count, created_by, created_at, updated_at)
-      VALUES (gen_random_uuid(), $1, 'confirmed', 50000, 3, $2, NOW(), NOW())
-      RETURNING id
-    `, [account.id, internalUser.id]);
+    // Create test domains for bulk_analysis_domains
+    const domain1Id = uuidv4();
+    const domain2Id = uuidv4();
+    const domain3Id = uuidv4();
     
-    const order = orderResult.rows[0];
-    console.log(`✅ Test order created: ${order.id.slice(-8)}`);
+    await pool.query(`
+      INSERT INTO bulk_analysis_domains (id, domain, created_at, updated_at)
+      SELECT $1, 'testsite1.com', NOW(), NOW()
+      WHERE NOT EXISTS (SELECT 1 FROM bulk_analysis_domains WHERE id = $1)
+    `, [domain1Id]);
     
-    // 4. Create test line items
-    console.log('\n4. Creating test line items...');
-    const lineItems = [
-      {
-        domain: 'example.com',
-        targetUrl: 'https://example.com/blog/article-1',
-        anchorText: 'best software solutions',
-        price: 5000
-      },
-      {
-        domain: 'testblog.net',
-        targetUrl: 'https://testblog.net/reviews/product-review',
-        anchorText: 'top rated products',
-        price: 7500
-      },
-      {
-        domain: 'marketing-hub.org',
-        targetUrl: 'https://marketing-hub.org/guides/seo-tips',
-        anchorText: 'SEO optimization',
-        price: 6000
-      }
-    ];
+    await pool.query(`
+      INSERT INTO bulk_analysis_domains (id, domain, created_at, updated_at)
+      SELECT $1, 'testsite2.com', NOW(), NOW()
+      WHERE NOT EXISTS (SELECT 1 FROM bulk_analysis_domains WHERE id = $1)
+    `, [domain2Id]);
     
-    for (const item of lineItems) {
+    await pool.query(`
+      INSERT INTO bulk_analysis_domains (id, domain, created_at, updated_at)
+      SELECT $1, 'testsite3.com', NOW(), NOW()
+      WHERE NOT EXISTS (SELECT 1 FROM bulk_analysis_domains WHERE id = $1)
+    `, [domain3Id]);
+    
+    console.log('✅ Created 3 test domains');
+    
+    // Create order groups (12 total, distributed among 3 orders)
+    const groupIds = [];
+    let groupCount = 0;
+    
+    // Order 1: 5 groups
+    for (let i = 0; i < 5; i++) {
+      const groupId = uuidv4();
+      groupIds.push(groupId);
       await pool.query(`
-        INSERT INTO order_line_items (
-          id, order_id, client_id, target_page_url, anchor_text, 
-          assigned_domain, estimated_price, status,
-          added_by_user_id, created_at, updated_at
-        ) VALUES (
-          gen_random_uuid(), $1, $2, $3, $4, $5, $6, 'approved', 
-          $7, NOW(), NOW()
-        )
-      `, [order.id, client.id, item.targetUrl, item.anchorText, item.domain, item.price, internalUser.id]);
+        INSERT INTO order_groups (
+          id, order_id, client_id, link_count, 
+          target_pages, anchor_texts, 
+          created_at, updated_at
+        ) 
+        SELECT $1, $2, $3, $4, $5::jsonb, $6::jsonb, NOW(), NOW()
+        WHERE NOT EXISTS (SELECT 1 FROM order_groups WHERE id = $1)
+      `, [
+        groupId, 
+        order1Id, 
+        client1Id, 
+        2, // 2 links per group
+        JSON.stringify([
+          { url: `https://example1.com/page${i+1}` },
+          { url: `https://example1.com/page${i+1}-alt` }
+        ]),
+        JSON.stringify([`anchor text ${i+1}`, `anchor text ${i+1} alt`])
+      ]);
+      groupCount++;
     }
     
-    console.log(`✅ Created ${lineItems.length} test line items`);
+    // Order 2: 4 groups  
+    for (let i = 0; i < 4; i++) {
+      const groupId = uuidv4();
+      groupIds.push(groupId);
+      await pool.query(`
+        INSERT INTO order_groups (
+          id, order_id, client_id, link_count,
+          target_pages, anchor_texts,
+          created_at, updated_at
+        )
+        SELECT $1, $2, $3, $4, $5::jsonb, $6::jsonb, NOW(), NOW()
+        WHERE NOT EXISTS (SELECT 1 FROM order_groups WHERE id = $1)
+      `, [
+        groupId,
+        order2Id,
+        client2Id,
+        1, // 1 link per group
+        JSON.stringify([{ url: `https://example2.com/page${i+1}` }]),
+        JSON.stringify([`anchor text ${i+1}`])
+      ]);
+      groupCount++;
+    }
     
-    // 5. Verify the test data
-    console.log('\n5. Verifying test data...');
-    const verifyResult = await pool.query(`
-      SELECT oli.id, oli.assigned_domain, oli.anchor_text, oli.estimated_price,
-             c.name as client_name, oli.publisher_id
-      FROM order_line_items oli
-      LEFT JOIN clients c ON oli.client_id = c.id
-      WHERE oli.order_id = $1
-      ORDER BY oli.created_at
-    `, [order.id]);
+    // Order 3: 3 groups
+    for (let i = 0; i < 3; i++) {
+      const groupId = uuidv4();
+      groupIds.push(groupId);
+      await pool.query(`
+        INSERT INTO order_groups (
+          id, order_id, client_id, link_count,
+          target_pages, anchor_texts,
+          created_at, updated_at
+        )
+        SELECT $1, $2, $3, $4, $5::jsonb, $6::jsonb, NOW(), NOW()
+        WHERE NOT EXISTS (SELECT 1 FROM order_groups WHERE id = $1)
+      `, [
+        groupId,
+        order3Id,
+        client3Id,
+        3, // 3 links per group
+        JSON.stringify([
+          { url: `https://example3.com/page${i+1}` },
+          { url: `https://example3.com/page${i+1}-b` },
+          { url: `https://example3.com/page${i+1}-c` }
+        ]),
+        JSON.stringify([`anchor ${i+1}`, `anchor ${i+1}b`, `anchor ${i+1}c`])
+      ]);
+      groupCount++;
+    }
     
-    console.log('✅ Test line items created:');
-    verifyResult.rows.forEach((row, idx) => {
-      console.log(`  ${idx + 1}. ${row.assigned_domain} - "${row.anchor_text}" ($${row.estimated_price / 100})`);
-      console.log(`     Publisher: ${row.publisher_id ? 'Assigned' : 'Not assigned'}`);
-    });
+    console.log(`✅ Created ${groupCount} order groups`);
     
-    console.log('\n🎉 Test data creation completed!');
-    console.log(`\n📋 Created:`);
-    console.log(`- Order ID: ${order.id}`);
-    console.log(`- Client: ${client.name}`);
-    console.log(`- Line Items: ${lineItems.length}`);
-    console.log(`\n💡 You can now test publisher assignment at:`);
-    console.log(`   /orders/${order.id}/internal`);
+    // Create some order_site_selections (optional, to test that join)
+    for (let i = 0; i < 3; i++) {
+      const selectionId = uuidv4();
+      await pool.query(`
+        INSERT INTO order_site_selections (
+          id, order_group_id, domain_id, status,
+          retail_price, wholesale_price,
+          created_at, updated_at
+        )
+        SELECT $1, $2, $3, 'approved', 49900, 42000, NOW(), NOW()
+        WHERE NOT EXISTS (SELECT 1 FROM order_site_selections WHERE id = $1)
+      `, [selectionId, groupIds[i], domain1Id]);
+    }
+    
+    console.log('✅ Created test site selections');
+    
+    // Clear any existing line items to start fresh
+    await pool.query('DELETE FROM order_line_items');
+    console.log('✅ Cleared existing line items');
+    
+    // Clear migration record so we can run it fresh
+    await pool.query(`DELETE FROM migrations WHERE name = '0056_production_lineitems_migration'`);
+    console.log('✅ Cleared migration record');
+    
+    // Verify the data
+    const orderCount = await pool.query('SELECT COUNT(*) FROM orders');
+    const groupCount2 = await pool.query('SELECT COUNT(*) FROM order_groups');
+    const lineItemCount = await pool.query('SELECT COUNT(*) FROM order_line_items');
+    
+    console.log('\n📊 Database state:');
+    console.log(`  - Orders: ${orderCount.rows[0].count}`);
+    console.log(`  - Order Groups: ${groupCount2.rows[0].count}`);
+    console.log(`  - Line Items: ${lineItemCount.rows[0].count} (should be 0 before migration)`);
+    
+    console.log('\n✅ Test data created successfully!');
+    console.log('Now you can run the migration to convert these order groups to line items.');
     
   } catch (error) {
-    console.error('❌ Failed to create test data:', error.message);
+    console.error('Error creating test data:', error.message);
   } finally {
     await pool.end();
   }

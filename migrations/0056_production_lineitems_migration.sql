@@ -15,7 +15,7 @@ ADD COLUMN IF NOT EXISTS client_reviewed_at TIMESTAMP,
 ADD COLUMN IF NOT EXISTS client_review_notes TEXT,
 ADD COLUMN IF NOT EXISTS delivery_notes TEXT,
 ADD COLUMN IF NOT EXISTS added_at TIMESTAMP NOT NULL DEFAULT NOW(),
-ADD COLUMN IF NOT EXISTS added_by UUID,
+ADD COLUMN IF NOT EXISTS added_by_user_id UUID,
 ADD COLUMN IF NOT EXISTS modified_at TIMESTAMP,
 ADD COLUMN IF NOT EXISTS modified_by UUID,
 ADD COLUMN IF NOT EXISTS cancelled_at TIMESTAMP,
@@ -83,7 +83,7 @@ BEGIN
                     wholesale_price,
                     service_fee,
                     added_at,
-                    added_by,
+                    added_by_user_id,
                     display_order,
                     metadata
                 ) VALUES (
@@ -105,11 +105,11 @@ BEGIN
                     COALESCE(selection_rec.status, 'pending'),
                     selection_rec.domain_id,
                     selection_rec.domain_name,
-                    COALESCE(selection_rec.retail_price, 0),
-                    COALESCE(selection_rec.wholesale_price, 0),
+                    49900, -- Default retail price $499
+                    42000, -- Default wholesale price $420
                     7900, -- Standard service fee
                     NOW(),
-                    COALESCE(group_rec.created_by, '97aca16f-8b81-44ad-a532-a6e3fa96cbfc'), -- Default to system user
+                    '97aca16f-8b81-44ad-a532-a6e3fa96cbfc', -- System user (order_groups has no created_by)
                     display_order_counter,
                     jsonb_build_object(
                         'migrated_from_group', group_rec.id,
