@@ -185,7 +185,7 @@ export async function GET(
           (submission.selectionPool === 'primary' ? 'included' : 'saved_for_later'),
         inclusionOrder: submission.inclusionOrder || submission.poolRank,
         exclusionReason: submission.exclusionReason,
-        canReview: session.userType === 'account' && 
+        canReview: session!.userType === 'account' && 
                    submission.submissionStatus === 'pending' &&
                    submission.submittedAt !== null,
         canViewDetails: true
@@ -207,9 +207,9 @@ export async function GET(
       submissions: enrichedSubmissions,
       summary,
       userCapabilities: {
-        canReview: session.userType === 'account' || session.userType === 'internal',
-        canUpdateStatus: session.userType === 'internal',
-        userType: session.userType
+        canReview: session!.userType === 'account' || session!.userType === 'internal',
+        canUpdateStatus: session!.userType === 'internal',
+        userType: session!.userType
       }
     });
     
