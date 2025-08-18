@@ -82,13 +82,20 @@ async function getSystemStatistics() {
     const hybridOrders = parseInt((hybridOrdersResult.rows[0] as any)?.count || '0');
 
     // Get last migration timestamp (from most recent completed order migration)
-    const lastMigrationResult = await db
-      .select({ modifiedAt: orderLineItems.modifiedAt })
-      .from(orderLineItems)
-      .orderBy(sql`${orderLineItems.modifiedAt} DESC`)
-      .limit(1);
-    
-    const lastMigration = lastMigrationResult[0]?.modifiedAt?.toISOString() || null;
+    let lastMigration = null;
+    try {
+      const lastMigrationResult = await db
+        .select({ modifiedAt: orderLineItems.modifiedAt })
+        .from(orderLineItems)
+        .orderBy(sql`${orderLineItems.modifiedAt} DESC`)
+        .limit(1);
+      
+      lastMigration = lastMigrationResult[0]?.modifiedAt?.toISOString() || null;
+    } catch (error) {
+      // Table or column might not exist yet - this is expected before migration
+      console.log('Could not query line items modifiedAt - table may not exist yet');
+      lastMigration = null;
+    }
 
     return {
       activeOrders,
