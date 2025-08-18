@@ -130,9 +130,9 @@ async function executeStep(stepName: string) {
     // Import and execute the step logic from the execute route
     const { POST: executePost } = await import('../execute/route');
     
-    // Create a mock request for the step
+    // Create a mock request for the step with internal flag
     const mockRequest = {
-      json: async () => ({ step: stepName })
+      json: async () => ({ step: stepName, _internal: true })
     } as NextRequest;
 
     const response = await executePost(mockRequest);

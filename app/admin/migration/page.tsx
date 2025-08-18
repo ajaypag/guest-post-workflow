@@ -399,7 +399,7 @@ export default function AdminMigrationPage() {
                           const data = await response.json();
                           setLogs(prev => [...prev, `✅ Cleanup completed: ${data.message}`]);
                           // Refresh status
-                          await fetchMigrationStatus();
+                          await loadMigrationStatus();
                         } else {
                           const error = await response.json();
                           setLogs(prev => [...prev, `❌ Cleanup failed: ${error.error}`]);
