@@ -59,10 +59,14 @@ BEGIN
             FOR i IN 1..COALESCE(group_rec.link_count, 1) LOOP
                 line_item_id := gen_random_uuid();
                 
-                -- Try to get a matching site selection
-                SELECT * INTO selection_rec
-                FROM order_site_selections
-                WHERE order_group_id = group_rec.id
+                -- Try to get a matching site selection with domain info
+                SELECT 
+                    oss.*,
+                    bad.domain as domain_name
+                INTO selection_rec
+                FROM order_site_selections oss
+                LEFT JOIN bulk_analysis_domains bad ON bad.id = oss.domain_id
+                WHERE oss.order_group_id = group_rec.id
                 LIMIT 1 OFFSET (i - 1);
                 
                 -- Insert line item
@@ -100,7 +104,7 @@ BEGIN
                     END,
                     COALESCE(selection_rec.status, 'pending'),
                     selection_rec.domain_id,
-                    selection_rec.domain,
+                    selection_rec.domain_name,
                     COALESCE(selection_rec.retail_price, 0),
                     COALESCE(selection_rec.wholesale_price, 0),
                     7900, -- Standard service fee
