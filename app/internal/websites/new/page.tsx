@@ -514,10 +514,12 @@ export default function InternalNewWebsitePage() {
                     )}
                   </div>
 
-                  {/* Quick Requirements */}
+                  {/* Expanded Requirements Section */}
                   <div className="mt-4 pt-4 border-t">
-                    <h4 className="text-sm font-semibold text-gray-700 mb-2">Quick Settings</h4>
-                    <div className="space-y-2">
+                    <h4 className="text-sm font-semibold text-gray-700 mb-3">Requirements & Policies</h4>
+                    
+                    {/* Link Policies */}
+                    <div className="space-y-3 mb-4">
                       <label className="flex items-center">
                         <input
                           type="checkbox"
@@ -527,6 +529,7 @@ export default function InternalNewWebsitePage() {
                         />
                         <span className="text-sm">Accepts DoFollow Links</span>
                       </label>
+                      
                       <label className="flex items-center">
                         <input
                           type="checkbox"
@@ -536,6 +539,155 @@ export default function InternalNewWebsitePage() {
                         />
                         <span className="text-sm">Requires Author Bio</span>
                       </label>
+                      
+                      <div>
+                        <label className="block text-xs font-medium text-gray-700 mb-1">
+                          Max Links Per Post
+                        </label>
+                        <input
+                          type="number"
+                          value={offering.requirements.maxLinksPerPost}
+                          onChange={(e) => updateOffering(index, 'requirements.maxLinksPerPost', e.target.value)}
+                          className="w-full px-2 py-1 border border-gray-300 rounded text-sm"
+                          min="1"
+                          max="10"
+                        />
+                      </div>
+                    </div>
+
+                    {/* Content Guidelines */}
+                    <div className="space-y-3 mb-4">
+                      <div>
+                        <label className="block text-xs font-medium text-gray-700 mb-1">
+                          Content Requirements
+                        </label>
+                        <textarea
+                          value={offering.requirements.contentRequirements}
+                          onChange={(e) => updateOffering(index, 'requirements.contentRequirements', e.target.value)}
+                          className="w-full px-2 py-1 border border-gray-300 rounded text-sm"
+                          rows={2}
+                          placeholder="E.g., Original content only, professional tone..."
+                        />
+                      </div>
+                      
+                      <div>
+                        <label className="block text-xs font-medium text-gray-700 mb-1">
+                          Prohibited Topics
+                        </label>
+                        <textarea
+                          value={offering.requirements.prohibitedTopics}
+                          onChange={(e) => updateOffering(index, 'requirements.prohibitedTopics', e.target.value)}
+                          className="w-full px-2 py-1 border border-gray-300 rounded text-sm"
+                          rows={2}
+                          placeholder="E.g., Gambling, adult content..."
+                        />
+                      </div>
+
+                      <div>
+                        <label className="block text-xs font-medium text-gray-700 mb-1">
+                          Link Requirements
+                        </label>
+                        <textarea
+                          value={offering.requirements.linkRequirements}
+                          onChange={(e) => updateOffering(index, 'requirements.linkRequirements', e.target.value)}
+                          className="w-full px-2 py-1 border border-gray-300 rounded text-sm"
+                          rows={2}
+                          placeholder="E.g., Links must be relevant, no competitors..."
+                        />
+                      </div>
+
+                      {offering.requirements.requiresAuthorBio && (
+                        <div>
+                          <label className="block text-xs font-medium text-gray-700 mb-1">
+                            Author Bio Requirements
+                          </label>
+                          <textarea
+                            value={offering.requirements.authorBioRequirements}
+                            onChange={(e) => updateOffering(index, 'requirements.authorBioRequirements', e.target.value)}
+                            className="w-full px-2 py-1 border border-gray-300 rounded text-sm"
+                            rows={2}
+                            placeholder="E.g., Max 100 words, include credentials..."
+                          />
+                        </div>
+                      )}
+
+                      <div>
+                        <label className="block text-xs font-medium text-gray-700 mb-1">
+                          Sample Post URL
+                        </label>
+                        <input
+                          type="url"
+                          value={offering.requirements.samplePostUrl}
+                          onChange={(e) => updateOffering(index, 'requirements.samplePostUrl', e.target.value)}
+                          className="w-full px-2 py-1 border border-gray-300 rounded text-sm"
+                          placeholder="https://example.com/sample-post"
+                        />
+                      </div>
+                    </div>
+
+                    {/* Required Elements */}
+                    <div className="mb-4">
+                      <label className="block text-xs font-medium text-gray-700 mb-2">
+                        Required Content Elements
+                      </label>
+                      <div className="grid grid-cols-2 gap-2">
+                        {[
+                          'Statistics/Data',
+                          'Expert Quotes', 
+                          'Case Studies',
+                          'Original Research',
+                          'Infographics',
+                          'Videos',
+                          'External Links',
+                          'Internal Links',
+                          'Meta Description'
+                        ].map(element => (
+                          <label key={element} className="flex items-center text-xs">
+                            <input
+                              type="checkbox"
+                              checked={offering.requirements.requiredElements.includes(element)}
+                              onChange={() => {
+                                const current = offering.requirements.requiredElements;
+                                const updated = current.includes(element)
+                                  ? current.filter(e => e !== element)
+                                  : [...current, element];
+                                updateOffering(index, 'requirements.requiredElements', updated);
+                              }}
+                              className="mr-1"
+                            />
+                            <span>{element}</span>
+                          </label>
+                        ))}
+                      </div>
+                    </div>
+
+                    {/* Image Requirements */}
+                    <div>
+                      <label className="flex items-center mb-2">
+                        <input
+                          type="checkbox"
+                          checked={offering.requirements.imagesRequired}
+                          onChange={(e) => updateOffering(index, 'requirements.imagesRequired', e.target.checked)}
+                          className="mr-2"
+                        />
+                        <span className="text-sm">Images Required</span>
+                      </label>
+                      
+                      {offering.requirements.imagesRequired && (
+                        <div className="pl-6">
+                          <label className="block text-xs font-medium text-gray-700 mb-1">
+                            Minimum Images
+                          </label>
+                          <input
+                            type="number"
+                            value={offering.requirements.minImages}
+                            onChange={(e) => updateOffering(index, 'requirements.minImages', e.target.value)}
+                            className="w-24 px-2 py-1 border border-gray-300 rounded text-sm"
+                            min="1"
+                            max="10"
+                          />
+                        </div>
+                      )}
                     </div>
                   </div>
                 </div>

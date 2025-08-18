@@ -639,11 +639,62 @@ export default function InternalWebsiteEditPage({ params }: { params: Promise<{ 
                           </div>
 
                           <div>
+                            <label className="block text-sm font-medium text-gray-700 mb-1">
+                              Link Requirements
+                            </label>
+                            <textarea
+                              value={offering.requirements.linkRequirements || ''}
+                              onChange={(e) => updateOffering(index, 'requirements.linkRequirements', e.target.value)}
+                              className="w-full px-3 py-2 border border-gray-300 rounded-lg"
+                              rows={2}
+                              placeholder="E.g., Links must be relevant to content, no direct competitors..."
+                            />
+                          </div>
+
+                          {offering.requirements.requiresAuthorBio && (
+                            <div>
+                              <label className="block text-sm font-medium text-gray-700 mb-1">
+                                Author Bio Requirements
+                              </label>
+                              <textarea
+                                value={offering.requirements.authorBioRequirements || ''}
+                                onChange={(e) => updateOffering(index, 'requirements.authorBioRequirements', e.target.value)}
+                                className="w-full px-3 py-2 border border-gray-300 rounded-lg"
+                                rows={2}
+                                placeholder="E.g., Max 100 words, must include author credentials..."
+                              />
+                            </div>
+                          )}
+
+                          <div>
+                            <label className="block text-sm font-medium text-gray-700 mb-1">
+                              Sample Post URL
+                            </label>
+                            <input
+                              type="url"
+                              value={offering.requirements.samplePostUrl || ''}
+                              onChange={(e) => updateOffering(index, 'requirements.samplePostUrl', e.target.value)}
+                              className="w-full px-3 py-2 border border-gray-300 rounded-lg"
+                              placeholder="https://example.com/sample-guest-post"
+                            />
+                          </div>
+
+                          <div>
                             <label className="block text-sm font-medium text-gray-700 mb-2">
                               Required Content Elements
                             </label>
-                            <div className="space-y-2">
-                              {['Statistics/Data', 'Expert Quotes', 'Case Studies', 'Original Research', 'Infographics', 'Videos'].map(element => (
+                            <div className="grid grid-cols-2 gap-2">
+                              {[
+                                'Statistics/Data',
+                                'Expert Quotes',
+                                'Case Studies',
+                                'Original Research',
+                                'Infographics',
+                                'Videos',
+                                'External Links',
+                                'Internal Links',
+                                'Meta Description'
+                              ].map(element => (
                                 <label key={element} className="flex items-center">
                                   <input
                                     type="checkbox"
@@ -655,6 +706,34 @@ export default function InternalWebsiteEditPage({ params }: { params: Promise<{ 
                                 </label>
                               ))}
                             </div>
+                          </div>
+
+                          <div>
+                            <label className="flex items-center mb-2">
+                              <input
+                                type="checkbox"
+                                checked={offering.requirements.imagesRequired || false}
+                                onChange={(e) => updateOffering(index, 'requirements.imagesRequired', e.target.checked)}
+                                className="mr-2"
+                              />
+                              <span className="text-sm font-medium text-gray-700">Images Required</span>
+                            </label>
+                            
+                            {offering.requirements.imagesRequired && (
+                              <div className="pl-6">
+                                <label className="block text-sm font-medium text-gray-700 mb-1">
+                                  Minimum Number of Images
+                                </label>
+                                <input
+                                  type="number"
+                                  value={offering.requirements.minImages || '1'}
+                                  onChange={(e) => updateOffering(index, 'requirements.minImages', e.target.value)}
+                                  className="w-full max-w-xs px-3 py-2 border border-gray-300 rounded-lg"
+                                  min="1"
+                                  max="10"
+                                />
+                              </div>
+                            )}
                           </div>
                         </div>
                       </div>
