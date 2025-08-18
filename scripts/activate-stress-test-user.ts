@@ -40,13 +40,12 @@ async function activateStressTestUser() {
 
     console.log('✅ Found user:', existingUser[0].email);
     console.log('   Current status:', existingUser[0].status);
-    console.log('   Is verified:', existingUser[0].isVerified);
+    console.log('   Email verified:', existingUser[0].emailVerified);
 
     console.log('🔐 Activating stress test publisher...');
     await db
       .update(publishers)
       .set({
-        isVerified: true,
         status: 'active',
         emailVerified: true,
         updatedAt: new Date()
