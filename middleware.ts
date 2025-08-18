@@ -188,7 +188,8 @@ export async function middleware(request: NextRequest) {
 
   // === ACCOUNT PROTECTED PAGES ===
   // Protect account UI pages (require account users)
-  if (path.startsWith('/account') && 
+  // Note: Be specific to avoid catching /accounts (admin page)
+  if ((path === '/account' || path.startsWith('/account/')) && 
       !path.startsWith('/account/login') && 
       !path.startsWith('/account/signup') &&
       !path.startsWith('/account/forgot-password') &&
@@ -347,7 +348,8 @@ export async function middleware(request: NextRequest) {
   // === PROTECTED UI PAGES ===
   
   // Protect account pages (require account users)
-  if (path.startsWith('/account') && 
+  // Note: Be specific to avoid catching /accounts (admin page)
+  if ((path === '/account' || path.startsWith('/account/')) && 
       !path.startsWith('/account/login') &&
       !path.startsWith('/account/forgot-password') &&
       !path.startsWith('/account/reset-password')) {
