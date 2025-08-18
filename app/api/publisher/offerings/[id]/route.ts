@@ -85,7 +85,6 @@ export async function GET(
       website: website ? {
         id: website.id,
         domain: website.domain,
-        name: website.name,
         categories: website.categories
       } : null,
       pricingRules: pricingRules.map(rule => ({
@@ -202,6 +201,7 @@ export async function PUT(
         // Create new relationship
         await db.insert(publisherOfferingRelationships)
           .values({
+            publisherId: session.publisherId,
             offeringId,
             websiteId: body.websiteId,
             isActive: true,
