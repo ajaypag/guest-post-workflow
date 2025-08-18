@@ -46,10 +46,6 @@ export default function NewWebsitePage() {
     websiteLanguage: 'en',
     targetAudience: '',
     publisherTier: 'standard',
-    typicalTurnaroundDays: '7',
-    acceptsDoFollow: true,
-    requiresAuthorBio: false,
-    maxLinksPerPost: '2',
     contentGuidelinesUrl: '',
     editorialCalendarUrl: ''
   });
@@ -74,6 +70,9 @@ export default function NewWebsitePage() {
     prohibitedTopics: '',
     requiredElements: [] as string[],
     samplePostUrl: '',
+    acceptsDoFollow: true,
+    requiresAuthorBio: false,
+    maxLinksPerPost: '2',
     authorBioRequirements: '',
     linkRequirements: '',
     imagesRequired: false,
@@ -107,12 +106,7 @@ export default function NewWebsitePage() {
 
   const offeringTypes = [
     { value: 'guest_post', label: 'Guest Post' },
-    { value: 'link_insertion', label: 'Link Insertion' },
-    { value: 'sponsored_post', label: 'Sponsored Post' },
-    { value: 'press_release', label: 'Press Release' },
-    { value: 'banner_ad', label: 'Banner Advertisement' },
-    { value: 'homepage_link', label: 'Homepage Link' },
-    { value: 'niche_edit', label: 'Niche Edit' }
+    { value: 'link_insertion', label: 'Link Insertion' }
   ];
 
   const availabilityOptions = [
@@ -246,10 +240,6 @@ export default function NewWebsitePage() {
         websiteLanguage: websiteData.websiteLanguage,
         targetAudience: websiteData.targetAudience || null,
         publisherTier: websiteData.publisherTier,
-        typicalTurnaroundDays: parseInt(websiteData.typicalTurnaroundDays),
-        acceptsDoFollow: websiteData.acceptsDoFollow,
-        requiresAuthorBio: websiteData.requiresAuthorBio,
-        maxLinksPerPost: parseInt(websiteData.maxLinksPerPost),
         contentGuidelinesUrl: websiteData.contentGuidelinesUrl || null,
         editorialCalendarUrl: websiteData.editorialCalendarUrl || null,
         
@@ -265,6 +255,9 @@ export default function NewWebsitePage() {
           expressAvailable: offeringData.expressAvailable,
           expressPrice: offeringData.expressPrice ? Math.round(parseFloat(offeringData.expressPrice) * 100) : null,
           expressDays: offeringData.expressDays ? parseInt(offeringData.expressDays) : null,
+          acceptsDoFollow: requirementsData.acceptsDoFollow,
+          requiresAuthorBio: requirementsData.requiresAuthorBio,
+          maxLinksPerPost: parseInt(requirementsData.maxLinksPerPost),
           attributes: {
             contentRequirements: requirementsData.contentRequirements || null,
             prohibitedTopics: requirementsData.prohibitedTopics || null,
@@ -554,45 +547,6 @@ export default function NewWebsitePage() {
             </div>
           </div>
 
-          {/* Publishing Policies */}
-          <div className="space-y-4">
-            <div className="flex items-center justify-between">
-              <label className="text-sm font-medium text-gray-700">
-                Accepts DoFollow Links
-              </label>
-              <input
-                type="checkbox"
-                checked={websiteData.acceptsDoFollow}
-                onChange={(e) => handleWebsiteChange('acceptsDoFollow', e.target.checked)}
-                className="h-4 w-4"
-              />
-            </div>
-            <div className="flex items-center justify-between">
-              <label className="text-sm font-medium text-gray-700">
-                Requires Author Bio
-              </label>
-              <input
-                type="checkbox"
-                checked={websiteData.requiresAuthorBio}
-                onChange={(e) => handleWebsiteChange('requiresAuthorBio', e.target.checked)}
-                className="h-4 w-4"
-              />
-            </div>
-            <div>
-              <label className="block text-sm font-medium text-gray-700 mb-2">
-                Max Links Per Post
-              </label>
-              <input
-                type="number"
-                value={websiteData.maxLinksPerPost}
-                onChange={(e) => handleWebsiteChange('maxLinksPerPost', e.target.value)}
-                className="w-full px-3 py-2 border border-gray-300 rounded-lg"
-                min="1"
-                max="10"
-              />
-            </div>
-          </div>
-
           {/* Target Audience */}
           <div>
             <label className="block text-sm font-medium text-gray-700 mb-2">
@@ -785,7 +739,66 @@ export default function NewWebsitePage() {
 
   const renderRequirementsStep = () => (
     <div className="space-y-6">
-      <h2 className="text-lg font-semibold text-gray-900">Content Requirements (Optional)</h2>
+      <h2 className="text-lg font-semibold text-gray-900">Content Requirements & Policies</h2>
+      
+      {/* Link Policies */}
+      <div className="bg-gray-50 p-4 rounded-lg space-y-4">
+        <h3 className="text-sm font-semibold text-gray-700 mb-3">Link Policies</h3>
+        <div className="flex items-center justify-between">
+          <label className="text-sm font-medium text-gray-700">
+            Accepts DoFollow Links
+          </label>
+          <input
+            type="checkbox"
+            checked={requirementsData.acceptsDoFollow}
+            onChange={(e) => handleRequirementsChange('acceptsDoFollow', e.target.checked)}
+            className="h-4 w-4"
+          />
+        </div>
+        <div>
+          <label className="block text-sm font-medium text-gray-700 mb-2">
+            Max Links Per Post
+          </label>
+          <input
+            type="number"
+            value={requirementsData.maxLinksPerPost}
+            onChange={(e) => handleRequirementsChange('maxLinksPerPost', e.target.value)}
+            className="w-full px-3 py-2 border border-gray-300 rounded-lg"
+            min="1"
+            max="10"
+          />
+        </div>
+      </div>
+
+      {/* Author Bio Settings */}
+      <div className="bg-gray-50 p-4 rounded-lg space-y-4">
+        <div className="flex items-center justify-between">
+          <label className="text-sm font-medium text-gray-700">
+            Requires Author Bio
+          </label>
+          <input
+            type="checkbox"
+            checked={requirementsData.requiresAuthorBio}
+            onChange={(e) => handleRequirementsChange('requiresAuthorBio', e.target.checked)}
+            className="h-4 w-4"
+          />
+        </div>
+        
+        {requirementsData.requiresAuthorBio && (
+          <div>
+            <label className="block text-sm font-medium text-gray-700 mb-2">
+              Author Bio Requirements
+            </label>
+            <textarea
+              value={requirementsData.authorBioRequirements}
+              onChange={(e) => handleRequirementsChange('authorBioRequirements', e.target.value)}
+              className="w-full px-3 py-2 border border-gray-300 rounded-lg"
+              rows={3}
+              placeholder="Describe requirements for author bios (length, format, links allowed, etc.)"
+            />
+          </div>
+        )}
+      </div>
       
       {/* Content Requirements */}
       <div>
@@ -848,22 +861,6 @@ export default function NewWebsitePage() {
           placeholder="Describe any specific requirements for links (anchor text rules, placement, etc.)"
         />
       </div>
-
-      {/* Author Bio Requirements */}
-      {websiteData.requiresAuthorBio && (
-        <div>
-          <label className="block text-sm font-medium text-gray-700 mb-2">
-            Author Bio Requirements
-          </label>
-          <textarea
-            value={requirementsData.authorBioRequirements}
-            onChange={(e) => handleRequirementsChange('authorBioRequirements', e.target.value)}
-            className="w-full px-3 py-2 border border-gray-300 rounded-lg"
-            rows={3}
-            placeholder="Describe requirements for author bios (length, format, links allowed, etc.)"
-          />
-        </div>
-      )}
 
       {/* Images */}
       <div className="space-y-4">
