@@ -329,7 +329,7 @@ test.describe('Publisher Workflow Responsive Design E2E', () => {
 
       test('touch interactions should work on mobile', async ({ page }) => {
         if (deviceName !== 'mobile') {
-          test.skip('Touch tests only on mobile');
+          return; // Skip this test for non-mobile
         }
         
         await loginAsPublisher(page);
@@ -372,7 +372,7 @@ test.describe('Publisher Workflow Responsive Design E2E', () => {
 
       test('forms should handle virtual keyboard on mobile', async ({ page }) => {
         if (deviceName !== 'mobile') {
-          test.skip('Virtual keyboard tests only on mobile');
+          return; // Skip this test for non-mobile
         }
         
         await loginAsPublisher(page);

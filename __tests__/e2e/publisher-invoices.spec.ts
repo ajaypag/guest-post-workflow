@@ -49,7 +49,7 @@ test.describe('Publisher Invoice Management E2E', () => {
     
     // Should show only pending invoices
     const statusElements = page.locator('[data-testid="invoice-status"]:visible');
-    await expect(statusElements).toHaveCount({ min: 0 }); // Could be 0 if no pending invoices
+    await expect(statusElements.count()).resolves.toBeGreaterThanOrEqual(0); // Could be 0 if no pending invoices
     
     // If invoices exist, they should all be pending
     const count = await statusElements.count();
@@ -360,7 +360,8 @@ test.describe('Publisher Invoice Management E2E', () => {
     await expect(page.locator('[data-testid="mobile-invoice-list"]')).toBeVisible();
     
     // Check mobile invoice cards
-    await expect(page.locator('[data-testid="mobile-invoice-card"]')).toHaveCount({ min: 0 });
+    const mobileInvoiceCards = page.locator('[data-testid="mobile-invoice-card"]');
+    await expect(mobileInvoiceCards.count()).resolves.toBeGreaterThanOrEqual(0);
     
     // Test mobile form
     await page.goto('/publisher/invoices/new');

@@ -606,7 +606,7 @@ export class ChaosTestFactory {
       }
     };
 
-    return configs[category] || configs.website_creation;
+    return (configs as any)[category] || configs.website_creation;
   }
 
   /**
@@ -644,7 +644,7 @@ export class ChaosTestFactory {
       }
     };
 
-    return configs[scenario] || configs.normal_load;
+    return (configs as any)[scenario] || configs.normal_load;
   }
 
   /**

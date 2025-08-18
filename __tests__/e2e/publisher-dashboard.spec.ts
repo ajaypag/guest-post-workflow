@@ -312,10 +312,12 @@ test.describe('Publisher Dashboard E2E', () => {
     await expect(page.locator('[data-testid="order-timeline"]')).toBeVisible();
     
     // Should show status changes with timestamps
-    await expect(page.locator('[data-testid="timeline-item"]')).toHaveCount({ min: 1 });
+    const timelineItems = page.locator('[data-testid="timeline-item"]');
+    await expect(timelineItems.count()).resolves.toBeGreaterThanOrEqual(1);
     
     // Check timeline items have timestamps
-    await expect(page.locator('[data-testid="timeline-timestamp"]')).toHaveCount({ min: 1 });
+    const timelineTimestamps = page.locator('[data-testid="timeline-timestamp"]');
+    await expect(timelineTimestamps.count()).resolves.toBeGreaterThanOrEqual(1);
   });
 
   test('should logout successfully', async ({ page }) => {
@@ -371,7 +373,8 @@ test.describe('Publisher Dashboard E2E', () => {
     
     // Check mobile order cards
     await page.click('[data-testid="nav-orders"]');
-    await expect(page.locator('[data-testid="mobile-order-card"]')).toHaveCount({ min: 1 });
+    const mobileOrderCards = page.locator('[data-testid="mobile-order-card"]');
+    await expect(mobileOrderCards.count()).resolves.toBeGreaterThanOrEqual(1);
     
     // Check mobile-friendly forms
     await page.click(`[data-testid="view-order-${TEST_LINE_ITEM_ID}"]`);

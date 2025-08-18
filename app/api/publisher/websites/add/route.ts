@@ -199,8 +199,8 @@ export async function POST(request: NextRequest) {
             domainAuthority: domainAuthority // Store here for now
           }),
           status: 'Active',
-          hasGuestPost: offeringsToProcess.some(o => o.offeringType === 'guest_post'),
-          hasLinkInsert: offeringsToProcess.some(o => o.offeringType === 'link_insertion'),
+          hasGuestPost: offeringsToProcess.some((o: any) => o.offeringType === 'guest_post'),
+          hasLinkInsert: offeringsToProcess.some((o: any) => o.offeringType === 'link_insertion'),
           // Timestamps
           airtableCreatedAt: now,
           airtableUpdatedAt: now,

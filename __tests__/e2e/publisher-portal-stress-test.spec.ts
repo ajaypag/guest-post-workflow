@@ -129,7 +129,7 @@ async function getAuthHeaders(request: APIRequestContext): Promise<Record<string
   });
   
   const cookies = loginResponse.headers()['set-cookie'];
-  const authCookie = cookies?.find(c => c.includes('auth-token-publisher'));
+  const authCookie = cookies?.includes('auth-token-publisher') ? cookies : undefined;
   
   return authCookie ? { 'Cookie': authCookie } : {};
 }

@@ -52,7 +52,8 @@ test.describe('Internal Order Assignment E2E', () => {
     await expect(page.locator('[data-testid="domain-select"]')).toBeVisible();
     
     // Verify publishers are listed
-    await expect(page.locator('[data-testid="publisher-option"]')).toHaveCount({ min: 1 });
+    const publisherOptions = page.locator('[data-testid="publisher-option"]');
+    await expect(publisherOptions.count()).resolves.toBeGreaterThanOrEqual(1);
   });
 
   test('should filter publishers by domain compatibility', async ({ page }) => {
@@ -257,6 +258,7 @@ test.describe('Internal Order Assignment E2E', () => {
     await expect(page.locator('text=Please try again')).toBeVisible();
     
     // Should retain form state for retry
-    await expect(page.locator('[data-testid="domain-select"]')).toHaveValue({ index: 0 });
+    const domainSelect = page.locator('[data-testid="domain-select"]');
+    await expect(domainSelect).toHaveValue('');
   });
 });

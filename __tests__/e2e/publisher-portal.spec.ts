@@ -196,7 +196,7 @@ test.describe('Publisher Portal E2E Tests', () => {
       const hasWebsites = await page.locator('button:has-text("Edit")').first().isVisible().catch(() => false);
       
       if (hasWebsites) {
-        await page.click('button:has-text("Edit")').first();
+        await page.click('button:has-text("Edit")');
         await expect(page).toHaveURL(/\/publisher\/websites\/[\w-]+\/edit/);
         
         // Check if edit form exists
@@ -309,7 +309,7 @@ test.describe('Publisher Portal E2E Tests', () => {
       
       if (hasOrders) {
         // Click on first order
-        await page.click('tr[data-testid="order-row"]').first();
+        await page.click('tr[data-testid="order-row"]');
         
         // Check if detail page exists
         const response = await page.waitForResponse(resp => 
