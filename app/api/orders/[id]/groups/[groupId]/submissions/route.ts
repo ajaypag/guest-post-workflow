@@ -77,9 +77,9 @@ export async function GET(
     // Debug logging
     console.log('[SUBMISSIONS API] Query conditions:', {
       orderGroupId: params.groupId,
-      userType: session.userType,
-      sessionUserId: session.userId,
-      orderAccountId: order.accountId,
+      userType: session!.userType,
+      sessionUserId: session!.userId,
+      orderAccountId: order!.accountId,
       status: status,
       includeCompleted: includeCompleted,
       conditions: conditions.length
