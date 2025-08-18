@@ -4,7 +4,7 @@ import { orders } from '@/lib/db/orderSchema';
 import { orderGroups } from '@/lib/db/orderGroupSchema';
 import { bulkAnalysisProjects } from '@/lib/db/bulkAnalysisSchema';
 import { clients, targetPages } from '@/lib/db/schema';
-import { eq } from 'drizzle-orm';
+import { eq, sql, and } from 'drizzle-orm';
 import { v4 as uuidv4 } from 'uuid';
 import { AuthServiceServer } from '@/lib/auth-server';
 import { generateKeywords, formatKeywordsForStorage } from '@/lib/services/keywordGenerationService';
@@ -46,23 +46,60 @@ export async function POST(
         throw new Error('Order must be in pending_confirmation status to confirm');
       }
       
-      // MIGRATION: Skip orderGroups logic during lineItems migration
-      // Get all order groups with their clients
-      const groups = await tx
+      // MIGRATION: Use lineItems instead of orderGroups for bulk analysis
+      let groups = [];
+      let lineItemsByClient: Record<string, any[]> = {};
+      
+      // Check if order has lineItems
+      const { orderLineItems } = await import('@/lib/db/orderLineItemSchema');
+      const lineItems = await tx
         .select({
-          orderGroup: orderGroups,
+          lineItem: orderLineItems,
           client: clients
         })
-        .from(orderGroups)
-        .innerJoin(clients, eq(orderGroups.clientId, clients.id))
-        .where(eq(orderGroups.orderId, orderId));
-        
-      // During migration, allow orders without groups
-      // if (groups.length === 0) {
-      //   throw new Error('No order groups found');
-      // }
+        .from(orderLineItems)
+        .innerJoin(clients, eq(orderLineItems.clientId, clients.id))
+        .where(eq(orderLineItems.orderId, orderId));
       
-      // Create bulk analysis projects for each group
+      if (lineItems.length > 0) {
+        // Group lineItems by client for bulk analysis projects
+        lineItems.forEach(({ lineItem, client }) => {
+          if (!lineItemsByClient[client.id]) {
+            lineItemsByClient[client.id] = [];
+          }
+          lineItemsByClient[client.id].push(lineItem);
+        });
+        
+        // Create pseudo-groups from lineItems for project creation
+        groups = Object.entries(lineItemsByClient).map(([clientId, items]) => {
+          const client = lineItems.find(li => li.client.id === clientId)?.client;
+          return {
+            orderGroup: {
+              id: `lineItems-${clientId}`, // Pseudo ID
+              clientId: clientId,
+              linkCount: items.length,
+              targetPages: items.map((item: any) => ({
+                pageId: item.targetPageId,
+                url: item.targetPageUrl
+              })).filter((tp: any) => tp.pageId || tp.url),
+              bulkAnalysisProjectId: null
+            },
+            client: client
+          };
+        });
+      } else {
+        // Fallback to orderGroups if no lineItems (legacy orders)
+        groups = await tx
+          .select({
+            orderGroup: orderGroups,
+            client: clients
+          })
+          .from(orderGroups)
+          .innerJoin(clients, eq(orderGroups.clientId, clients.id))
+          .where(eq(orderGroups.orderId, orderId));
+      }
+      
+      // Create bulk analysis projects for each group/client
       const projectPromises = groups.map(async ({ orderGroup, client }) => {
         // Only create if no project exists yet
         if (!orderGroup.bulkAnalysisProjectId) {
@@ -170,14 +207,32 @@ export async function POST(
             })
             .returning();
             
-          // Update order group with project ID
-          await tx
-            .update(orderGroups)
-            .set({ 
-              bulkAnalysisProjectId: project.id,
-              updatedAt: new Date()
-            })
-            .where(eq(orderGroups.id, orderGroup.id));
+          // Update order group with project ID (if using real orderGroups)
+          if (!orderGroup.id.startsWith('lineItems-')) {
+            await tx
+              .update(orderGroups)
+              .set({ 
+                bulkAnalysisProjectId: project.id,
+                updatedAt: new Date()
+              })
+              .where(eq(orderGroups.id, orderGroup.id));
+          } else {
+            // For lineItems, store the project ID in the line items metadata
+            const clientId = orderGroup.id.replace('lineItems-', '');
+            await tx
+              .update(orderLineItems)
+              .set({
+                metadata: sql`
+                  COALESCE(metadata, '{}'::jsonb) || 
+                  jsonb_build_object('bulkAnalysisProjectId', ${project.id})
+                `,
+                modifiedAt: new Date()
+              })
+              .where(and(
+                eq(orderLineItems.orderId, orderId),
+                eq(orderLineItems.clientId, clientId)
+              ));
+          }
             
           return { project, targetPageIds };
         }
