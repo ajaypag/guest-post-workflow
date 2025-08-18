@@ -84,16 +84,18 @@ async function getSystemStatistics() {
     // Get last migration timestamp (from most recent completed order migration)
     let lastMigration = null;
     try {
-      const lastMigrationResult = await db
-        .select({ modifiedAt: orderLineItems.modifiedAt })
-        .from(orderLineItems)
-        .orderBy(sql`${orderLineItems.modifiedAt} DESC`)
-        .limit(1);
+      // Use raw SQL to avoid Drizzle schema issues
+      const lastMigrationResult = await db.execute(sql`
+        SELECT modified_at 
+        FROM order_line_items 
+        ORDER BY modified_at DESC 
+        LIMIT 1
+      `);
       
-      lastMigration = lastMigrationResult[0]?.modifiedAt?.toISOString() || null;
+      const row = lastMigrationResult.rows[0] as any;
+      lastMigration = row?.modified_at ? new Date(row.modified_at).toISOString() : null;
     } catch (error) {
-      // Table or column might not exist yet - this is expected before migration
-      console.log('Could not query line items modifiedAt - table may not exist yet');
+      console.log('Could not query line items modifiedAt:', error);
       lastMigration = null;
     }
 
