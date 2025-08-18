@@ -57,7 +57,7 @@ export async function POST(request: NextRequest) {
 async function executeMigrationSequence() {
   const steps = [
     { name: 'preflight-check', description: 'Pre-flight Checks' },
-    { name: 'create-backup', description: 'Database Backup' },
+    // Removed backup step - not needed and causes issues
     { name: 'apply-migrations', description: 'Schema Updates' },
     { name: 'migrate-data', description: 'Data Migration' },
     { name: 'update-bulk-analysis', description: 'Bulk Analysis Fix' },
@@ -90,12 +90,28 @@ async function executeMigrationSequence() {
 
     } catch (error) {
       const errorMessage = error instanceof Error ? error.message : 'Unknown error';
+      const errorDetails = error instanceof Error && 'cause' in error ? 
+        (error as any).cause : undefined;
+      
+      // Build detailed error information
+      const fullErrorMessage = errorDetails ? 
+        `${errorMessage}\nDetails: ${JSON.stringify(errorDetails, null, 2)}` : 
+        errorMessage;
+      
       updateMigrationState({
         phase: 'failed',
-        currentStep: `${step.description} failed: ${errorMessage}`,
-        errors: [errorMessage]
+        currentStep: `${step.description} failed`,
+        errors: [fullErrorMessage],
+        progress: Math.round(baseProgress)
       });
-      throw error;
+      
+      console.error(`Migration step ${step.name} failed:`, {
+        step: step.name,
+        error: errorMessage,
+        details: errorDetails
+      });
+      
+      throw new Error(`${step.description} failed: ${errorMessage}`);
     }
   }
 

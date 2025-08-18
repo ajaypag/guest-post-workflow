@@ -20,7 +20,8 @@ let migrationState = {
   startedAt: null as string | null,
   completedAt: null as string | null,
   backupCreated: false,
-  canRollback: false
+  canRollback: false,
+  details: {} as Record<string, any>
 };
 
 export async function GET(request: NextRequest) {
@@ -51,6 +52,8 @@ export async function GET(request: NextRequest) {
 }
 
 async function analyzeMigrationStatus() {
+  const details: Record<string, any> = {};
+  
   try {
     // Count total orders
     const totalOrdersResult = await db
@@ -84,9 +87,8 @@ async function analyzeMigrationStatus() {
       .groupBy(orderGroups.orderId);
     const ordersWithGroups = ordersWithGroupsResult.length;
 
-    // Check if backup exists
-    const backupPath = path.join(process.cwd(), 'backups', 'pre-migration-backup.sql');
-    const backupCreated = fs.existsSync(backupPath);
+    // No backup checking - removed backup functionality
+    const backupCreated = false;
 
     // Determine migration phase based on data
     let phase: 'pre-migration' | 'in-progress' | 'completed' | 'failed' | 'rolled-back' = 'pre-migration';
@@ -111,6 +113,27 @@ async function analyzeMigrationStatus() {
       canRollback = true;
     }
 
+    // Check migration history
+    try {
+      const migrationHistory = await db.execute(sql`
+        SELECT name, applied_at 
+        FROM migrations 
+        WHERE name LIKE '%lineitem%' OR name LIKE '%0056%'
+        ORDER BY applied_at DESC
+      `);
+      details.migrationHistory = migrationHistory.rows;
+    } catch (error) {
+      details.migrationHistory = [];
+    }
+
+    // Get detailed counts
+    details.orderBreakdown = {
+      total: totalOrders,
+      withLineItems: ordersMigrated,
+      withGroups: ordersWithGroups,
+      needsMigration: Math.max(0, ordersWithGroups - ordersMigrated)
+    };
+
     return {
       phase,
       currentStep,
@@ -119,7 +142,8 @@ async function analyzeMigrationStatus() {
       totalOrders,
       lineItemsCreated,
       backupCreated,
-      canRollback
+      canRollback,
+      details
     };
   } catch (error) {
     console.error('Error analyzing migration status:', error);

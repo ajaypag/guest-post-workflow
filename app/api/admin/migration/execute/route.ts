@@ -30,9 +30,7 @@ export async function POST(request: NextRequest) {
       case 'preflight-check':
         result = await runPreflightCheck();
         break;
-      case 'create-backup':
-        result = await createDatabaseBackup();
-        break;
+      // Backup step removed - not needed
       case 'apply-migrations':
         result = await applyDatabaseMigrations();
         break;
@@ -46,7 +44,7 @@ export async function POST(request: NextRequest) {
         result = await validateMigration();
         break;
       default:
-        return NextResponse.json({ error: 'Invalid migration step' }, { status: 400 });
+        return NextResponse.json({ error: `Invalid migration step: ${step}` }, { status: 400 });
     }
 
     return NextResponse.json({
@@ -78,54 +76,93 @@ async function runPreflightCheck() {
     progress: 5
   });
 
-  const checks = [];
+  const checks = {
+    database: { status: 'pending', message: 'Checking database connectivity...' },
+    tables: { status: 'pending', message: 'Verifying required tables...' },
+    lineItems: { status: 'pending', message: 'Checking line items table...' },
+    migrations: { status: 'pending', message: 'Checking migration status...' },
+    data: { status: 'pending', message: 'Analyzing existing data...' }
+  };
 
   // Check database connectivity
   try {
     await db.execute(sql`SELECT 1`);
-    checks.push('✅ Database connectivity');
+    checks.database = { status: 'success', message: '✅ Database connected' };
   } catch (error) {
-    checks.push('❌ Database connectivity failed');
+    checks.database = { status: 'error', message: '❌ Database connection failed' };
     throw new Error('Database connectivity check failed');
   }
 
   // Check required tables exist
   try {
-    const tables = ['orders', 'order_line_items', 'order_groups', 'clients'];
+    const tables = ['orders', 'order_line_items', 'order_groups', 'clients', 'migrations'];
+    const missingTables = [];
     for (const table of tables) {
-      await db.execute(sql.raw(`SELECT 1 FROM ${table} LIMIT 1`));
+      try {
+        await db.execute(sql.raw(`SELECT 1 FROM ${table} LIMIT 1`));
+      } catch {
+        missingTables.push(table);
+      }
     }
-    checks.push('✅ Required tables exist');
-  } catch (error) {
-    checks.push('❌ Missing required tables');
-    throw new Error('Required database tables are missing');
+    if (missingTables.length > 0) {
+      checks.tables = { status: 'error', message: `❌ Missing tables: ${missingTables.join(', ')}` };
+      throw new Error(`Missing required tables: ${missingTables.join(', ')}`);
+    }
+    checks.tables = { status: 'success', message: '✅ All required tables exist' };
+  } catch (error: any) {
+    if (!error.message.startsWith('Missing required tables')) {
+      checks.tables = { status: 'error', message: '❌ Table check failed' };
+      throw error;
+    }
+    throw error;
   }
 
-  // Check for active migrations
-  const ordersInProgress = await db
-    .select({ count: sql<number>`cast(count(*) as int)` })
-    .from(orders)
-    .where(eq(orders.state, 'analyzing'));
-  
-  if (ordersInProgress[0].count > 0) {
-    checks.push(`⚠️ ${ordersInProgress[0].count} orders in analyzing state`);
-  } else {
-    checks.push('✅ No orders currently being processed');
-  }
-
-  // Check disk space (rough estimate)
+  // Check line items table structure
   try {
-    const { stdout } = await execAsync('df -h .');
-    const lines = stdout.split('\n');
-    const diskInfo = lines[1]?.split(/\s+/);
-    const usage = diskInfo?.[4];
-    if (usage && parseInt(usage) > 90) {
-      checks.push(`⚠️ Disk usage high: ${usage}`);
+    const result = await db.execute(sql`
+      SELECT column_name 
+      FROM information_schema.columns 
+      WHERE table_name = 'order_line_items'
+    `);
+    const columns = result.rows.map((r: any) => r.column_name);
+    const requiredColumns = ['id', 'order_id', 'client_id', 'status'];
+    const missingColumns = requiredColumns.filter(col => !columns.includes(col));
+    
+    if (missingColumns.length > 0) {
+      checks.lineItems = { status: 'warning', message: `⚠️ Missing columns: ${missingColumns.join(', ')}` };
     } else {
-      checks.push(`✅ Disk space available: ${usage || 'unknown'}`);
+      checks.lineItems = { status: 'success', message: `✅ Line items table ready (${columns.length} columns)` };
     }
   } catch (error) {
-    checks.push('⚠️ Could not check disk space');
+    checks.lineItems = { status: 'warning', message: '⚠️ Could not verify table structure' };
+  }
+
+  // Check existing migration status
+  try {
+    const migrationCheck = await db.execute(sql`
+      SELECT name FROM migrations WHERE name LIKE '%lineitem%' OR name LIKE '%0056%'
+    `);
+    if (migrationCheck.rows.length > 0) {
+      checks.migrations = { status: 'warning', message: `⚠️ Migration may have already run` };
+    } else {
+      checks.migrations = { status: 'success', message: '✅ No conflicting migrations found' };
+    }
+  } catch (error) {
+    checks.migrations = { status: 'warning', message: '⚠️ Could not check migration history' };
+  }
+
+  // Check existing data
+  try {
+    const orderCount = await db.select({ count: sql<number>`cast(count(*) as int)` }).from(orders);
+    const lineItemCount = await db.select({ count: sql<number>`cast(count(*) as int)` }).from(orderLineItems);
+    const groupCount = await db.select({ count: sql<number>`cast(count(*) as int)` }).from(orderGroups);
+    
+    checks.data = { 
+      status: 'success', 
+      message: `📊 Orders: ${orderCount[0].count}, Line Items: ${lineItemCount[0].count}, Groups: ${groupCount[0].count}` 
+    };
+  } catch (error) {
+    checks.data = { status: 'warning', message: '⚠️ Could not count existing data' };
   }
 
   updateMigrationState({
@@ -136,75 +173,7 @@ async function runPreflightCheck() {
   return { checks };
 }
 
-async function createDatabaseBackup() {
-  updateMigrationState({
-    currentStep: 'Creating database backup',
-    progress: 15
-  });
-
-  try {
-    // Create backups directory if it doesn't exist
-    const backupDir = path.join(process.cwd(), 'backups');
-    await fs.mkdir(backupDir, { recursive: true });
-
-    // Generate backup filename with timestamp
-    const timestamp = new Date().toISOString().replace(/[:.]/g, '-');
-    const backupFile = path.join(backupDir, `pre-migration-backup-${timestamp}.sql`);
-
-    // Use pg_dump to create backup
-    const databaseUrl = process.env.DATABASE_URL;
-    if (!databaseUrl) {
-      throw new Error('DATABASE_URL not configured');
-    }
-
-    // Parse DATABASE_URL to get connection details
-    const url = new URL(databaseUrl);
-    const dbName = url.pathname.substring(1);
-    const host = url.hostname;
-    const port = url.port || '5432';
-    const username = url.username;
-    const password = url.password;
-
-    // Create backup command
-    const pgDumpCommand = `PGPASSWORD="${password}" pg_dump -h ${host} -p ${port} -U ${username} -d ${dbName} --no-owner --no-privileges > "${backupFile}"`;
-
-    // Execute backup
-    await execAsync(pgDumpCommand, { timeout: 300000 }); // 5 minute timeout
-
-    // Verify backup file was created and has content
-    const stats = await fs.stat(backupFile);
-    if (stats.size === 0) {
-      throw new Error('Backup file is empty');
-    }
-
-    // Also create a symbolic link to the latest backup
-    const latestBackupFile = path.join(backupDir, 'pre-migration-backup.sql');
-    try {
-      await fs.unlink(latestBackupFile);
-    } catch (error) {
-      // File doesn't exist, that's ok
-    }
-    await fs.symlink(backupFile, latestBackupFile);
-
-    updateMigrationState({
-      currentStep: 'Database backup completed',
-      progress: 25,
-      backupCreated: true
-    });
-
-    return {
-      backupFile,
-      backupSize: `${Math.round(stats.size / 1024 / 1024 * 100) / 100} MB`
-    };
-  } catch (error) {
-    updateMigrationState({
-      phase: 'failed',
-      currentStep: 'Database backup failed',
-      errors: [`Backup failed: ${error instanceof Error ? error.message : 'Unknown error'}`]
-    });
-    throw error;
-  }
-}
+// Backup function removed - not needed for migration
 
 async function applyDatabaseMigrations() {
   updateMigrationState({

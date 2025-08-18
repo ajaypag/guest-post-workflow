@@ -126,9 +126,11 @@ END $$;
 ANALYZE order_line_items;
 
 -- Step 5: Add migration tracking
-INSERT INTO migrations (name, executed_at) 
-VALUES ('0056_production_lineitems_migration', NOW())
-ON CONFLICT (name) DO NOTHING;
+INSERT INTO migrations (name, applied_at) 
+SELECT '0056_production_lineitems_migration', NOW()
+WHERE NOT EXISTS (
+    SELECT 1 FROM migrations WHERE name = '0056_production_lineitems_migration'
+);
 
 -- Step 6: Add comments for documentation
 COMMENT ON TABLE order_line_items IS 'Primary order tracking system - each link is a separate trackable unit';
